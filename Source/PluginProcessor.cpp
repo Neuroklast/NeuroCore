@@ -134,8 +134,13 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    const auto totalNumInputChannels  = getTotalNumInputChannels();
+    const auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    evaluator.setVariable("a", parameters[0].load());
+    evaluator.setVariable("b", parameters[1].load());
+    evaluator.setVariable("c", parameters[2].load());
+    evaluator.setVariable("d", parameters[3].load());
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -152,11 +157,22 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    const double sr = getSampleRate();
+    for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
-            channelData[i] = evaluator.evaluate(channelData[i]);
+        const float mod = std::sin(modPhase);
+        evaluator.setVariable("mod", mod);
+        modPhase += 2.0f * juce::MathConstants<float>::pi * modFrequency.load() / static_cast<float>(sr);
+        if (modPhase > 2.0f * juce::MathConstants<float>::pi)
+            modPhase -= 2.0f * juce::MathConstants<float>::pi;
+
+        for (int channel = 0; channel < totalNumInputChannels; ++channel)
+        {
+            float x = buffer.getSample(channel, i);
+            if (evaluator.isValid())
+                x = evaluator.evaluate(x);
+            buffer.setSample(channel, i, x);
+        }
     }
 }
 
@@ -183,6 +199,17 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
+{
+    evaluator.parseFormula (text.toStdString());
+}
+
+void NeuroCoreAudioProcessor::setParameter (size_t index, float value)
+{
+    if (index < parameters.size())
+        parameters[index].store (value);
 }
 
 //==============================================================================
