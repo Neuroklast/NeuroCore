@@ -7,6 +7,7 @@
 */
 
 #include "PluginProcessor.h"
+#include "ExpressionEvaluator.h"
 #include "PluginEditor.h"
 
 //==============================================================================
@@ -22,6 +23,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                        )
 #endif
 {
+    evaluator.parseFormula("tanh(x)");
 }
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
@@ -153,8 +155,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            channelData[i] = evaluator.evaluate(channelData[i]);
     }
 }
 
