@@ -20,20 +20,37 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         sliders[i] = std::make_unique<juce::Slider>();
         sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+        sliders[i]->setRange (0.0, 1.0);
+        sliders[i]->onValueChange = [this, i]
+        {
+            const float v = static_cast<float> (sliders[i]->getValue());
+            sliderEditors[i]->setText (juce::String (v), juce::dontSendNotification);
+            audioProcessor.setParameter (i, v);
+        };
+        sliders[i]->setValue (0.0);
         addAndMakeVisible (*sliders[i]);
 
         sliderEditors[i] = std::make_unique<juce::TextEditor>();
         sliderEditors[i]->setMultiLine (false);
+        sliderEditors[i]->setText ("0", juce::dontSendNotification);
         addAndMakeVisible (*sliderEditors[i]);
     }
 
     formulaInputEditor = std::make_unique<juce::TextEditor>();
     formulaInputEditor->setMultiLine (true, true);
     formulaInputEditor->setReturnKeyStartsNewLine (true);
+    formulaInputEditor->setText ("tanh(x)", juce::dontSendNotification);
+    formulaInputEditor->onTextChange = [this]
+    {
+        audioProcessor.setFormula (formulaInputEditor->getText());
+        formulaDisplayEditor->setText (formulaInputEditor->getText(), juce::dontSendNotification);
+    };
     addAndMakeVisible (*formulaInputEditor);
+    audioProcessor.setFormula (formulaInputEditor->getText());
 
     formulaDisplayEditor = std::make_unique<juce::TextEditor>();
     formulaDisplayEditor->setMultiLine (false);
+    formulaDisplayEditor->setText ("tanh(x)", juce::dontSendNotification);
     addAndMakeVisible (*formulaDisplayEditor);
 }
 
