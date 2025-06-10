@@ -24,6 +24,7 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
+    void reset() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
@@ -64,6 +65,11 @@ public:
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
-    float modPhase = 0.0f;
+    float modPhase = 0.0f; // phase accumulator for sine LFO
+    juce::SmoothedValue<float> smoothedA;
+    juce::SmoothedValue<float> smoothedB;
+    juce::SmoothedValue<float> smoothedC;
+    juce::SmoothedValue<float> smoothedD;
+    juce::SmoothedValue<float> smoothedModFreq;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
