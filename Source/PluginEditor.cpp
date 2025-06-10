@@ -21,14 +21,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         sliders[i] = std::make_unique<juce::Slider>();
         sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-        sliders[i]->setRange (0.0, 1.0);
+        attachments.push_back (std::make_unique<juce::SliderParameterAttachment> (
+            audioProcessor.apvts, juce::String ("abcd"[i]), *sliders[i]));
         sliders[i]->onValueChange = [this, i]
         {
-            const float v = static_cast<float> (sliders[i]->getValue());
-            sliderEditors[i]->setText (juce::String (v), juce::dontSendNotification);
-            audioProcessor.setParameter (i, v);
+            sliderEditors[i]->setText (juce::String (sliders[i]->getValue()), juce::dontSendNotification);
         };
-        sliders[i]->setValue (0.0);
         addAndMakeVisible (*sliders[i]);
 
         sliderEditors[i] = std::make_unique<juce::TextEditor>();

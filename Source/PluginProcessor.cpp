@@ -13,14 +13,17 @@
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
+    : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+      apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+#else
+    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
 {
     evaluator.parseFormula("tanh(x)");
@@ -137,10 +140,16 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    evaluator.setVariable("a", parameters[0].load());
-    evaluator.setVariable("b", parameters[1].load());
-    evaluator.setVariable("c", parameters[2].load());
-    evaluator.setVariable("d", parameters[3].load());
+    auto* aParam  = apvts.getRawParameterValue("a");
+    auto* bParam  = apvts.getRawParameterValue("b");
+    auto* cParam  = apvts.getRawParameterValue("c");
+    auto* dParam  = apvts.getRawParameterValue("d");
+    auto* modFreq = apvts.getRawParameterValue("modFrequency");
+
+    evaluator.setVariable("a", aParam ? *aParam : 0.f);
+    evaluator.setVariable("b", bParam ? *bParam : 0.f);
+    evaluator.setVariable("c", cParam ? *cParam : 0.f);
+    evaluator.setVariable("d", dParam ? *dParam : 0.f);
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -162,7 +171,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     {
         const float mod = std::sin(modPhase);
         evaluator.setVariable("mod", mod);
-        modPhase += 2.0f * juce::MathConstants<float>::pi * modFrequency.load() / static_cast<float>(sr);
+        if (modFreq)
+            modPhase += 2.0f * juce::MathConstants<float>::pi * (*modFreq) / static_cast<float>(sr);
         if (modPhase > 2.0f * juce::MathConstants<float>::pi)
             modPhase -= 2.0f * juce::MathConstants<float>::pi;
 
@@ -190,15 +200,19 @@ juce::AudioProcessorEditor* NeuroCoreAudioProcessor::createEditor()
 //==============================================================================
 void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    if (auto state = apvts.copyState())
+    {
+        std::unique_ptr<juce::XmlElement> xml (state.createXml());
+        copyXmlToBinary (*xml, destData);
+    }
 }
 
 void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName (apvts.state.getType()))
+            apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
 void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
@@ -206,11 +220,25 @@ void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
     evaluator.parseFormula (text.toStdString());
 }
 
-void NeuroCoreAudioProcessor::setParameter (size_t index, float value)
+juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::createParameterLayout()
 {
-    if (index < parameters.size())
-        parameters[index].store (value);
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+    auto addParam = [&params](const juce::String& id, const juce::String& name,
+                              float min, float max, float def)
+    {
+        params.push_back (std::make_unique<juce::AudioParameterFloat> (id, name,
+                                                                      juce::NormalisableRange<float> { min, max }, def));
+    };
+
+    addParam ("a", "A", 0.f, 1.f, 0.f);
+    addParam ("b", "B", 0.f, 1.f, 0.f);
+    addParam ("c", "C", 0.f, 1.f, 0.f);
+    addParam ("d", "D", 0.f, 1.f, 0.f);
+    addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
+
+    return { params.begin(), params.end() };
 }
+
 
 float NeuroCoreAudioProcessor::evaluateFormula (float x)
 {
@@ -221,6 +249,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     evaluator.setVariable ("mod", 0.0f);
     return evaluator.isValid() ? evaluator.evaluate (x) : x;
 }
+
 
 //==============================================================================
 // This creates new instances of the plugin..

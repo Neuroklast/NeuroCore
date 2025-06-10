@@ -54,9 +54,12 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Updates expression and parameter values from the UI
+    // Updates expression from the UI
     void setFormula (const juce::String& text);
-    void setParameter (size_t index, float value);
+
+    juce::AudioProcessorValueTreeState apvts;
+
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
@@ -64,8 +67,6 @@ public:
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
-    std::array<std::atomic<float>, 4> parameters { { 0.f, 0.f, 0.f, 0.f } };
-    std::atomic<float> modFrequency { 1.0f };
     float modPhase = 0.0f;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };

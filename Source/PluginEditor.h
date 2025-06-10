@@ -27,6 +27,7 @@ public:
 
 private:
     NeuroCoreAudioProcessor& audioProcessor;
+    std::vector<std::unique_ptr<juce::SliderParameterAttachment>> attachments;
 
     // Left column controls
     std::array<std::unique_ptr<juce::Slider>, 4> sliders;
