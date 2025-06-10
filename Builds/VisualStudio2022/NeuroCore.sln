@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio Version 17
+
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuroCore - VST3", "NeuroCore_VST3.vcxproj", "{4F246504-F2CE-D23A-0CAF-74324D3AC385}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB} = {9829ACFC-D126-9988-FC77-19F85B1E6FAB}
+		{E2750509-8410-849D-30E5-6727B5A9EF21} = {E2750509-8410-849D-30E5-6727B5A9EF21}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuroCore - Shared Code", "NeuroCore_SharedCode.vcxproj", "{9829ACFC-D126-9988-FC77-19F85B1E6FAB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuroCore - VST3 Manifest Helper", "NeuroCore_VST3ManifestHelper.vcxproj", "{E2750509-8410-849D-30E5-6727B5A9EF21}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Debug|x64.ActiveCfg = Debug|x64
+		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Debug|x64.Build.0 = Debug|x64
+		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Release|x64.ActiveCfg = Release|x64
+		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Release|x64.Build.0 = Release|x64
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Debug|x64.ActiveCfg = Debug|x64
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Debug|x64.Build.0 = Debug|x64
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Release|x64.ActiveCfg = Release|x64
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Release|x64.Build.0 = Release|x64
+		{E2750509-8410-849D-30E5-6727B5A9EF21}.Debug|x64.ActiveCfg = Debug|x64
+		{E2750509-8410-849D-30E5-6727B5A9EF21}.Debug|x64.Build.0 = Debug|x64
+		{E2750509-8410-849D-30E5-6727B5A9EF21}.Release|x64.ActiveCfg = Release|x64
+		{E2750509-8410-849D-30E5-6727B5A9EF21}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
