@@ -58,6 +58,9 @@ public:
     void setFormula (const juce::String& text);
     void setParameter (size_t index, float value);
 
+    // Evaluates current formula for a single sample value.
+    float evaluateFormula (float x);
+
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
