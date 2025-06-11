@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
 #include "ExpressionEvaluator.h"
 
 //==============================================================================
@@ -58,6 +59,11 @@ public:
     // Updates expression from the UI
     void setFormula (const juce::String& text);
 
+    void setVariableName(int index, const juce::String& name);
+    juce::String getVariableName(int index) const noexcept { return variableNames[index]; }
+    const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
+    const ExpressionEvaluator& getEvaluator() const noexcept { return evaluator; }
+
     juce::AudioProcessorValueTreeState apvts;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
@@ -65,6 +71,7 @@ public:
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
+    std::array<juce::String, 4> variableNames{ "a", "b", "c", "d" };
     float modPhase = 0.0f; // phase accumulator for sine LFO
     juce::SmoothedValue<float> smoothedA;
     juce::SmoothedValue<float> smoothedB;

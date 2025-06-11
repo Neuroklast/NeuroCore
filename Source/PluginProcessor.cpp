@@ -34,6 +34,12 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     smoothedModFreq.reset(0.0);
 }
 
+void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
+{
+    if (juce::isPositiveAndBelow(index, variableNames.size()))
+        variableNames[(size_t)index] = name;
+}
+
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 {
 }
@@ -193,10 +199,19 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const double sr = getSampleRate();
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
-        evaluator.setVariable("a", smoothedA.getNextValue());
-        evaluator.setVariable("b", smoothedB.getNextValue());
-        evaluator.setVariable("c", smoothedC.getNextValue());
-        evaluator.setVariable("d", smoothedD.getNextValue());
+        float aVal = smoothedA.getNextValue();
+        float bVal = smoothedB.getNextValue();
+        float cVal = smoothedC.getNextValue();
+        float dVal = smoothedD.getNextValue();
+
+        evaluator.setVariable("a", aVal);
+        evaluator.setVariable("b", bVal);
+        evaluator.setVariable("c", cVal);
+        evaluator.setVariable("d", dVal);
+
+        const std::array<float,4> values{ aVal, bVal, cVal, dVal };
+        for (size_t v = 0; v < variableNames.size(); ++v)
+            evaluator.setVariable(variableNames[v].toStdString(), values[v]);
 
         auto freq = smoothedModFreq.getNextValue();
         const float mod = std::sin(modPhase);
