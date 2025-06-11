@@ -74,6 +74,7 @@ public:
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
+    std::array<std::atomic<float>, 4> parameterValues{};
     std::array<juce::String, 4> variableNames{ "a", "b", "c", "d" };
     float modPhase = 0.0f; // phase accumulator for sine LFO
     juce::SmoothedValue<float> smoothedA;
