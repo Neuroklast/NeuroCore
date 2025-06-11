@@ -4,8 +4,17 @@ NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe
 
 ## Voraussetzungen
 
-- **JUCE 7** oder neuer. Das Projekt wurde mit den Standardmodulen ohne Anpassungen erstellt.
-- **IDE**: Visual Studio 2022 (andere IDEs mit JUCE-Projucer/CMake sind möglich). Stellen Sie sicher, dass der JUCE-Pfad korrekt eingetragen ist (siehe *NeuroCore.jucer*). JUCE muss die VST3-SDK enthalten.
+- **JUCE 8.0.6** oder neuer. Der Pfad zu den JUCE-Modulen muss im Projucer unter *Global Paths* eingetragen sein, beispielsweise `D:\JUCE\modules` oder `~/JUCE/modules`. Stellen Sie sicher, dass die VST3‑SDK unter `juce_audio_processors/format_types/VST3_SDK` vorhanden ist.
+- **IDE**: Visual Studio 2022 (andere IDEs mit JUCE-Projucer/CMake sind möglich).
+
+## Abhängigkeiten einrichten
+
+1. JUCE inklusive Untermodulen klonen:
+   ```bash
+   git clone --recurse-submodules https://github.com/juce-framework/JUCE.git <JUCE>
+   ```
+2. Den Pfad `<JUCE>/modules` im Projucer unter *Global Paths → JUCE Modules* eintragen oder über die Umgebungsvariable `JUCE_PATH` bereitstellen.
+3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.
 
 ## Build-Schritte
 
