@@ -82,5 +82,6 @@ private:
     juce::SmoothedValue<float> smoothedC;
     juce::SmoothedValue<float> smoothedD;
     juce::SmoothedValue<float> smoothedModFreq;
+    std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };

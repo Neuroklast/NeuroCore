@@ -74,7 +74,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaDisplay->setFormula ("tanh(x)");
     addAndMakeVisible (*formulaDisplay);
 
-    optimizeButton = std::make_unique<juce::TextButton>("Optimieren");
+    optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
     optimizeButton->onClick = [this]
     {
         juce::String info;

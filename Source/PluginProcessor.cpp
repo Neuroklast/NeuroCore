@@ -35,6 +35,14 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     smoothedD.reset(0.0);
     smoothedModFreq.reset(0.0);
     parameterValues.fill(0.0f);
+
+    // load localisation
+    auto lang = juce::SystemStats::getUserLanguage();
+    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                            .getSiblingFile("Resources");
+    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
+    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
+    juce::LocalisedStrings::setCurrentMappings(translations.get());
 }
 
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
@@ -45,6 +53,7 @@ void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& nam
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 {
+    juce::LocalisedStrings::setCurrentMappings(nullptr);
 }
 
 //==============================================================================
