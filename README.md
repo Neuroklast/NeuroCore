@@ -36,3 +36,7 @@ Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das
 
 Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren.
 
+## Lokalisierung
+
+Sprachressourcen liegen im Ordner `Resources` in einfachen Textdateien. Beim Start lädt das Plug-in automatisch die Datei `de.txt` oder `en.txt` abhängig von der Systemsprache. Weitere Sprachen können durch zusätzliche Dateien im gleichen Format ergänzt werden.
+
