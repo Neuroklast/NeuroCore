@@ -15,6 +15,13 @@
       <FILE id="o8VUXn" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="EXPH" name="ExpressionEvaluator.h" compile="0" resource="0" file="Source/ExpressionEvaluator.h"/>
+      <FILE id="EXPC" name="ExpressionEvaluator.cpp" compile="1" resource="0" file="Source/ExpressionEvaluator.cpp"/>
+      <FILE id="FWCH" name="FormulaWaveComponent.h" compile="0" resource="0" file="Source/FormulaWaveComponent.h"/>
+      <FILE id="FWCC" name="FormulaWaveComponent.cpp" compile="1" resource="0" file="Source/FormulaWaveComponent.cpp"/>
+      <FILE id="CONF" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
+      <FILE id="LUTH" name="LookupTables.h" compile="0" resource="0" file="Source/LookupTables.h"/>
+      <FILE id="LUTC" name="LookupTables.cpp" compile="1" resource="0" file="Source/LookupTables.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

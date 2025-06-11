@@ -1,4 +1,5 @@
 #include "ExpressionEvaluator.h"
+#include "LookupTables.h"
 
 using namespace juce;
 
@@ -168,10 +169,10 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
 
     auto args = parseArgs();
 
-    if (name == "sin") return std::make_unique<FunctionNode>(std::sin, std::move(args[0]));
-    if (name == "cos") return std::make_unique<FunctionNode>(std::cos, std::move(args[0]));
-    if (name == "tan") return std::make_unique<FunctionNode>(std::tan, std::move(args[0]));
-    if (name == "tanh") return std::make_unique<FunctionNode>(std::tanh, std::move(args[0]));
+    if (name == "sin")  return std::make_unique<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]));
+    if (name == "cos")  return std::make_unique<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]));
+    if (name == "tan")  return std::make_unique<FunctionNode>(std::tan, std::move(args[0]));
+    if (name == "tanh") return std::make_unique<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]));
     if (name == "sqrt") return std::make_unique<FunctionNode>(std::sqrt, std::move(args[0]));
     if (name == "abs") return std::make_unique<FunctionNode>(std::fabs, std::move(args[0]));
     if (name == "sign") return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0]));
