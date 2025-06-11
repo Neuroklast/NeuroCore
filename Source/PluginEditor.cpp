@@ -9,6 +9,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "FormulaHelper.h"
+#include "FormulaWaveComponent.h"
+
 
 //==============================================================================
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
@@ -66,6 +68,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible (*formulaInputEditor);
     audioProcessor.setFormula (formulaInputEditor->getText());
 
+
     formulaDisplay = std::make_unique<FormulaDisplayComponent>();
     formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
     formulaDisplay->setFormula ("tanh(x)");
@@ -83,6 +86,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             formulaDisplay->setError(info);
     };
     addAndMakeVisible (*optimizeButton);
+
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
@@ -117,6 +121,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     int inputHeight = middleHeight * 2 / 3;
 
     formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
+
     formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, middleHeight - inputHeight - textHeight);
     optimizeButton->setBounds (middleX, middleHeight - textHeight, thirdWidth, textHeight);
 }
@@ -152,4 +157,5 @@ void NeuroCoreAudioProcessorEditor::showAutocomplete()
             });
     if (menu.getNumItems() > 0)
         menu.showAt(formulaInputEditor.get());
+
 }

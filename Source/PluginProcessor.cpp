@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "ExpressionEvaluator.h"
+#include "LookupTables.h"
 #include "PluginEditor.h"
 
 //==============================================================================
@@ -26,6 +27,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
 {
+    LookupTables::initialise();
     evaluator.parseFormula("tanh(x)");
     smoothedA.reset(0.0);
     smoothedB.reset(0.0);
@@ -281,6 +283,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
 
     return { params.begin(), params.end() };
+}
+
+
+float NeuroCoreAudioProcessor::evaluateFormula (float x)
+{
+    evaluator.setVariable ("a", parameters[0].load());
+    evaluator.setVariable ("b", parameters[1].load());
+    evaluator.setVariable ("c", parameters[2].load());
+    evaluator.setVariable ("d", parameters[3].load());
+    evaluator.setVariable ("mod", 0.0f);
+    return evaluator.isValid() ? evaluator.evaluate (x) : x;
 }
 
 

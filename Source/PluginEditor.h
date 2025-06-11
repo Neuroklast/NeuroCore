@@ -14,6 +14,8 @@
 #include "PluginProcessor.h"
 #include "FormulaDisplayComponent.h"
 #include "FormulaHelper.h"
+#include "FormulaWaveComponent.h"
+
 
 //==============================================================================
 /**
@@ -44,6 +46,8 @@ private:
     std::unique_ptr<juce::TextButton> optimizeButton;
 
     void showAutocomplete();
+
+    std::unique_ptr<FormulaWaveComponent> waveComponent;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };

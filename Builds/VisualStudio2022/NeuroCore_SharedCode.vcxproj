@@ -145,6 +145,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp"/>
     <ClCompile Include="..\..\Source\PluginEditor.cpp"/>
+    <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp"/>
+    <ClCompile Include="..\..\Source\FormulaWaveComponent.cpp"/>
+    <ClCompile Include="..\..\Source\LookupTables.cpp"/>
     <ClCompile Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3063,6 +3066,10 @@
   <ItemGroup>
     <ClInclude Include="..\..\Source\PluginProcessor.h"/>
     <ClInclude Include="..\..\Source\PluginEditor.h"/>
+    <ClInclude Include="..\..\Source\ExpressionEvaluator.h"/>
+    <ClInclude Include="..\..\Source\FormulaWaveComponent.h"/>
+    <ClInclude Include="..\..\Source\Config.h"/>
+    <ClInclude Include="..\..\Source\LookupTables.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_AnimatorSetBuilder.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_AnimatorUpdater.h"/>
