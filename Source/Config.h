@@ -97,9 +97,9 @@ namespace Config
     //==========================================================================
 
     /// Maximum number of presets stored.
-    inline constexpr int   kMaxPresets           = 128;
+    inline constexpr int   kMaxPresets           = 1024;
     /// File extension for preset files.
-    inline constexpr const char* kPresetFileExtension = ".formapreset";
+    inline constexpr const char* kPresetFileExtension = ".nrk";
     /// Folder containing factory presets.
     inline constexpr const char* kFactoryPresetFolder = "FactoryPresets/";
     /// Folder where user presets are stored.

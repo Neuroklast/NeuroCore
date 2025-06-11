@@ -184,22 +184,22 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
 
     if (name == "sin")  return std::make_unique<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]));
     if (name == "cos")  return std::make_unique<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]));
-    if (name == "tan")  return std::make_unique<FunctionNode>(std::tan, std::move(args[0]));
+    if (name == "tan")  return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0]));
     if (name == "tanh") return std::make_unique<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]));
-    if (name == "sqrt") return std::make_unique<FunctionNode>(std::sqrt, std::move(args[0]));
-    if (name == "abs") return std::make_unique<FunctionNode>(std::fabs, std::move(args[0]));
+    if (name == "sqrt") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0]));
+    if (name == "abs") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0]));
     if (name == "sign") return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0]));
-    if (name == "exp") return std::make_unique<FunctionNode>(std::exp, std::move(args[0]));
-    if (name == "log") return std::make_unique<FunctionNode>(std::log, std::move(args[0]));
-    if (name == "log10") return std::make_unique<FunctionNode>(std::log10, std::move(args[0]));
-    if (name == "floor") return std::make_unique<FunctionNode>(std::floor, std::move(args[0]));
-    if (name == "ceil") return std::make_unique<FunctionNode>(std::ceil, std::move(args[0]));
-    if (name == "round") return std::make_unique<FunctionNode>(std::round, std::move(args[0]));
+    if (name == "exp") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::exp), std::move(args[0]));
+    if (name == "log") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log), std::move(args[0]));
+    if (name == "log10") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0]));
+    if (name == "floor") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0]));
+    if (name == "ceil") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0]));
+    if (name == "round") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0]));
 
-    if (name == "pow") return std::make_unique<Func2Node>(std::pow, std::move(args[0]), std::move(args[1]));
-    if (name == "min") return std::make_unique<Func2Node>(juce::jmin<float>, std::move(args[0]), std::move(args[1]));
-    if (name == "max") return std::make_unique<Func2Node>(juce::jmax<float>, std::move(args[0]), std::move(args[1]));
-    if (name == "fmod") return std::make_unique<Func2Node>(std::fmod, std::move(args[0]), std::move(args[1]));
+    if (name == "pow") return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1]));
+    if (name == "min") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1]));
+    if (name == "max") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1]));
+    if (name == "fmod") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1]));
     if (name == "mod") return std::make_unique<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1]));
 
     if (name == "clamp") return std::make_unique<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2]));

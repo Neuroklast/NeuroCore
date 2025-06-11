@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <cmath>
 
 // ExpressionEvaluator parses a mathematical expression and evaluates it in real time.
 class ExpressionEvaluator
