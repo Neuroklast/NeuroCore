@@ -23,6 +23,7 @@ public:
 
     // Returns true if parsing succeeded.
     bool isValid() const noexcept { return valid; }
+    juce::String getLastError() const noexcept { return errorMessage; }
 
 private:
     struct Node;
@@ -102,11 +103,13 @@ private:
     NodePtr parseUnary();
     NodePtr parsePrimary();
     NodePtr parseFunction(const std::string& name);
+    void skipWhitespace() noexcept;
     bool expect(char c);
 
     std::string input;
     size_t pos = 0;
     bool valid = false;
+    juce::String errorMessage;
     NodePtr root;
     std::unordered_map<std::string, float> variables;
 };

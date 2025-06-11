@@ -13,6 +13,12 @@ ExpressionEvaluator::ExpressionEvaluator()
     variables["d"] = 0.0f;
 }
 
+void ExpressionEvaluator::skipWhitespace() noexcept
+{
+    while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos])))
+        ++pos;
+}
+
 ExpressionEvaluator::~ExpressionEvaluator() = default;
 
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
@@ -62,6 +68,7 @@ float ExpressionEvaluator::Func3Node::eval(const std::unordered_map<std::string,
 
 bool ExpressionEvaluator::expect(char c)
 {
+    skipWhitespace();
     if (pos < input.size() && input[pos] == c)
     {
         ++pos;
@@ -72,6 +79,7 @@ bool ExpressionEvaluator::expect(char c)
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
 {
+    skipWhitespace();
     if (expect('('))
     {
         auto node = parseExpression();
@@ -111,6 +119,7 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parseUnary()
 {
+    skipWhitespace();
     if (expect('+'))
         return std::make_unique<UnaryNode>(UnaryNode::plus, parseUnary());
     if (expect('-'))
@@ -120,6 +129,7 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseUnary()
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFactor()
 {
+    skipWhitespace();
     auto node = parseUnary();
     while (true)
     {
@@ -135,6 +145,7 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFactor()
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parseTerm()
 {
+    skipWhitespace();
     auto node = parseFactor();
     while (true)
     {
@@ -150,6 +161,7 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseTerm()
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parseExpression()
 {
+    skipWhitespace();
     auto node = parseTerm();
     while (true)
     {
@@ -165,7 +177,8 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseExpression()
 
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::string& name)
 {
-    auto parseArgs = [this]() { std::vector<NodePtr> args; args.push_back(parseExpression()); while (expect(',')) args.push_back(parseExpression()); expect(')'); return args; };
+    auto parseArgs = [this]() { std::vector<NodePtr> args; skipWhitespace(); args.push_back(parseExpression()); while (expect(',')) args.push_back(parseExpression()); expect(')'); return args; };
+    skipWhitespace();
 
     auto args = parseArgs();
 
@@ -199,16 +212,23 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     input = formula;
     pos = 0;
     valid = false;
+    errorMessage.clear();
+    skipWhitespace();
 
     try
     {
         root = parseExpression();
         if (pos != input.length())
+        {
+            errorMessage = "Syntaxfehler an Position " + juce::String((int)pos);
             return false;
+        }
         valid = root != nullptr;
         return valid;
     }
-    catch (...) { return false; }
+    catch (...) {
+        errorMessage = "Unbekannter Fehler";
+        return false; }
 }
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept
