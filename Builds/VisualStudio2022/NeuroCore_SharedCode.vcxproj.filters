@@ -748,6 +748,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaDisplayComponent.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaHelper.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaWaveComponent.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\LookupTables.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp">
       <Filter>NeuroCore\Source</Filter>
     </ClCompile>
@@ -3864,6 +3879,24 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\Config.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\ExpressionEvaluator.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaDisplayComponent.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaHelper.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaWaveComponent.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\LookupTables.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\PluginProcessor.h">
       <Filter>NeuroCore\Source</Filter>
     </ClInclude>

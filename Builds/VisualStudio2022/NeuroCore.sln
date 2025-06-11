@@ -2,6 +2,11 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio Version 17
 
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuroCore - Standalone Plugin", "NeuroCore_StandalonePlugin.vcxproj", "{6CDB3D57-44B7-4CDC-13A6-CC691F163F58}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9829ACFC-D126-9988-FC77-19F85B1E6FAB} = {9829ACFC-D126-9988-FC77-19F85B1E6FAB}
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuroCore - VST3", "NeuroCore_VST3.vcxproj", "{4F246504-F2CE-D23A-0CAF-74324D3AC385}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9829ACFC-D126-9988-FC77-19F85B1E6FAB} = {9829ACFC-D126-9988-FC77-19F85B1E6FAB}
@@ -22,6 +27,10 @@ Global
 		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Debug|x64.Build.0 = Debug|x64
 		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Release|x64.ActiveCfg = Release|x64
 		{4F246504-F2CE-D23A-0CAF-74324D3AC385}.Release|x64.Build.0 = Release|x64
+		{6CDB3D57-44B7-4CDC-13A6-CC691F163F58}.Debug|x64.ActiveCfg = Debug|x64
+		{6CDB3D57-44B7-4CDC-13A6-CC691F163F58}.Debug|x64.Build.0 = Debug|x64
+		{6CDB3D57-44B7-4CDC-13A6-CC691F163F58}.Release|x64.ActiveCfg = Release|x64
+		{6CDB3D57-44B7-4CDC-13A6-CC691F163F58}.Release|x64.Build.0 = Release|x64
 		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Debug|x64.ActiveCfg = Debug|x64
 		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Debug|x64.Build.0 = Debug|x64
 		{9829ACFC-D126-9988-FC77-19F85B1E6FAB}.Release|x64.ActiveCfg = Release|x64

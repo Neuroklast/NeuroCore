@@ -3,11 +3,30 @@
 <JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" useAppConfig="1"
               addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1" version="0.0.1"
               companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
-              companyEmail="infgo@neuroklast.net" pluginFormats="buildVST3"
+              companyEmail="infgo@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
               pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginChannelConfigs="2"
               pluginVST3Category="Distortion" cppLanguageStandard="latest">
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{2E2D7F5B-06F4-3734-1F27-F48BDA7FB349}" name="Source">
+      <FILE id="bW6NwE" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
+      <FILE id="nk7S7G" name="ExpressionEvaluator.cpp" compile="1" resource="0"
+            file="Source/ExpressionEvaluator.cpp"/>
+      <FILE id="ULd5tM" name="ExpressionEvaluator.h" compile="0" resource="0"
+            file="Source/ExpressionEvaluator.h"/>
+      <FILE id="gEp6s0" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
+            file="Source/FormulaDisplayComponent.cpp"/>
+      <FILE id="HaOSKp" name="FormulaDisplayComponent.h" compile="0" resource="0"
+            file="Source/FormulaDisplayComponent.h"/>
+      <FILE id="u5652q" name="FormulaHelper.cpp" compile="1" resource="0"
+            file="Source/FormulaHelper.cpp"/>
+      <FILE id="WIMgG6" name="FormulaHelper.h" compile="0" resource="0" file="Source/FormulaHelper.h"/>
+      <FILE id="F9aaAl" name="FormulaWaveComponent.cpp" compile="1" resource="0"
+            file="Source/FormulaWaveComponent.cpp"/>
+      <FILE id="oyTINU" name="FormulaWaveComponent.h" compile="0" resource="0"
+            file="Source/FormulaWaveComponent.h"/>
+      <FILE id="mKCjup" name="LookupTables.cpp" compile="1" resource="0"
+            file="Source/LookupTables.cpp"/>
+      <FILE id="J8mSCy" name="LookupTables.h" compile="0" resource="0" file="Source/LookupTables.h"/>
       <FILE id="qXvNdI" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="rM2xts" name="PluginProcessor.h" compile="0" resource="0"
@@ -15,13 +34,6 @@
       <FILE id="o8VUXn" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
-      <FILE id="EXPH" name="ExpressionEvaluator.h" compile="0" resource="0" file="Source/ExpressionEvaluator.h"/>
-      <FILE id="EXPC" name="ExpressionEvaluator.cpp" compile="1" resource="0" file="Source/ExpressionEvaluator.cpp"/>
-      <FILE id="FWCH" name="FormulaWaveComponent.h" compile="0" resource="0" file="Source/FormulaWaveComponent.h"/>
-      <FILE id="FWCC" name="FormulaWaveComponent.cpp" compile="1" resource="0" file="Source/FormulaWaveComponent.cpp"/>
-      <FILE id="CONF" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
-      <FILE id="LUTH" name="LookupTables.h" compile="0" resource="0" file="Source/LookupTables.h"/>
-      <FILE id="LUTC" name="LookupTables.cpp" compile="1" resource="0" file="Source/LookupTables.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
