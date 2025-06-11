@@ -34,6 +34,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     smoothedC.reset(0.0);
     smoothedD.reset(0.0);
     smoothedModFreq.reset(0.0);
+    parameterValues.fill(0.0f);
 }
 
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
@@ -177,10 +178,20 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     auto* dParam  = apvts.getRawParameterValue("d");
     auto* modFreq = apvts.getRawParameterValue("modFrequency");
 
-    smoothedA.setTargetValue(aParam ? *aParam : 0.f);
-    smoothedB.setTargetValue(bParam ? *bParam : 0.f);
-    smoothedC.setTargetValue(cParam ? *cParam : 0.f);
-    smoothedD.setTargetValue(dParam ? *dParam : 0.f);
+    const float aValT = aParam ? *aParam : 0.f;
+    const float bValT = bParam ? *bParam : 0.f;
+    const float cValT = cParam ? *cParam : 0.f;
+    const float dValT = dParam ? *dParam : 0.f;
+
+    parameterValues[0].store(aValT);
+    parameterValues[1].store(bValT);
+    parameterValues[2].store(cValT);
+    parameterValues[3].store(dValT);
+
+    smoothedA.setTargetValue(aValT);
+    smoothedB.setTargetValue(bValT);
+    smoothedC.setTargetValue(cValT);
+    smoothedD.setTargetValue(dValT);
     smoothedModFreq.setTargetValue(modFreq ? *modFreq : 0.f);
 
     // In case we have more outputs than inputs, this code clears any output
@@ -288,12 +299,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
 
 float NeuroCoreAudioProcessor::evaluateFormula (float x)
 {
-    evaluator.setVariable ("a", parameters[0].load());
-    evaluator.setVariable ("b", parameters[1].load());
-    evaluator.setVariable ("c", parameters[2].load());
-    evaluator.setVariable ("d", parameters[3].load());
-    evaluator.setVariable ("mod", 0.0f);
-    return evaluator.isValid() ? evaluator.evaluate (x) : x;
+    for (size_t i = 0; i < parameterValues.size(); ++i)
+    {
+        evaluator.setVariable(variableNames[i].toStdString(), parameterValues[i].load());
+    }
+    evaluator.setVariable("mod", 0.0f);
+    return evaluator.isValid() ? evaluator.evaluate(x) : x;
 }
 
 
