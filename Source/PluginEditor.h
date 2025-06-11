@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "FormulaWaveComponent.h"
 
 //==============================================================================
 /**
@@ -35,6 +36,8 @@ private:
     // Middle column editors
     std::unique_ptr<juce::TextEditor> formulaInputEditor;
     std::unique_ptr<juce::TextEditor> formulaDisplayEditor;
+
+    std::unique_ptr<FormulaWaveComponent> waveComponent;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };

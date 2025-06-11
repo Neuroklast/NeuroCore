@@ -62,6 +62,9 @@ public:
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
+    // Evaluates current formula for a single sample value.
+    float evaluateFormula (float x);
+
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;

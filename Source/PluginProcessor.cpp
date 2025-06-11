@@ -269,6 +269,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
 }
 
 
+float NeuroCoreAudioProcessor::evaluateFormula (float x)
+{
+    evaluator.setVariable ("a", parameters[0].load());
+    evaluator.setVariable ("b", parameters[1].load());
+    evaluator.setVariable ("c", parameters[2].load());
+    evaluator.setVariable ("d", parameters[3].load());
+    evaluator.setVariable ("mod", 0.0f);
+    return evaluator.isValid() ? evaluator.evaluate (x) : x;
+}
+
+
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

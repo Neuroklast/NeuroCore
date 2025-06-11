@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "FormulaWaveComponent.h"
 
 //==============================================================================
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
@@ -50,6 +51,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaDisplayEditor->setMultiLine (false);
     formulaDisplayEditor->setText ("tanh(x)", juce::dontSendNotification);
     addAndMakeVisible (*formulaDisplayEditor);
+
+    waveComponent = std::make_unique<FormulaWaveComponent> (audioProcessor);
+    addAndMakeVisible (*waveComponent);
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
@@ -86,4 +90,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
     formulaDisplayEditor->setBounds (middleX, inputHeight, thirdWidth,
                                      middleHeight - inputHeight);
+
+    if (waveComponent)
+        waveComponent->setBounds (middleX + thirdWidth, 0, thirdWidth, getHeight());
 }
