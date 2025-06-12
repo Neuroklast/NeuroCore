@@ -34,7 +34,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     smoothedC.reset(0.0);
     smoothedD.reset(0.0);
     smoothedModFreq.reset(0.0);
-    parameterValues.fill(0.0f);
+    for (auto& val : parameterValues)
+        val.store(0.0f);
 
     // load localisation
     auto lang = juce::SystemStats::getUserLanguage();
