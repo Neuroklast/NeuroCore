@@ -187,10 +187,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     auto* dParam  = apvts.getRawParameterValue("d");
     auto* modFreq = apvts.getRawParameterValue("modFrequency");
 
-    const float aValT = aParam ? *aParam : 0.f;
-    const float bValT = bParam ? *bParam : 0.f;
-    const float cValT = cParam ? *cParam : 0.f;
-    const float dValT = dParam ? *dParam : 0.f;
+    const float aValT = aParam ? aParam->load() : 0.f;
+    const float bValT = bParam ? bParam->load() : 0.f;
+    const float cValT = cParam ? cParam->load() : 0.f;
+    const float dValT = dParam ? dParam->load() : 0.f;
 
     parameterValues[0].store(aValT);
     parameterValues[1].store(bValT);
@@ -266,7 +266,8 @@ juce::AudioProcessorEditor* NeuroCoreAudioProcessor::createEditor()
 //==============================================================================
 void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    if (auto state = apvts.copyState())
+    auto state = apvts.copyState();
+    if (state.isValid())
     {
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
