@@ -130,8 +130,10 @@ void NeuroCoreAudioProcessorEditor::showAutocomplete()
 {
     auto caret = formulaInputEditor->getCaretPosition();
     auto text  = formulaInputEditor->getText();
-    int start = caret; while (start > 0 && juce::CharacterFunctions::isLetterOrDigit(text[start-1])) --start;
-    juce::String prefix = text.substring(start, caret);
+    int start = caret;
+    while (start > 0 && juce::CharacterFunctions::isLetterOrDigit (text[start - 1]))
+        --start;
+    juce::String prefix = text.substring (start, caret);
 
     if (prefix.length() < 1)
         return;
@@ -139,23 +141,26 @@ void NeuroCoreAudioProcessorEditor::showAutocomplete()
     juce::PopupMenu menu;
     for (auto& t : formulaTemplates)
         if (t.name.startsWithIgnoreCase(prefix))
-            menu.addItem(t.name, [this, caret, start, t]{
-                formulaInputEditor->moveCaretToPosition(start);
-                formulaInputEditor->insertTextAtCaret(t.name.substring(prefix.length()));
+            menu.addItem (t.name, [this, caret, start, prefix, t]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (t.name.substring (prefix.length()));
             });
     for (auto& f : builtinFunctions)
         if (f.startsWithIgnoreCase(prefix))
-            menu.addItem(f, [this, caret, start, f]{
-                formulaInputEditor->moveCaretToPosition(start);
-                formulaInputEditor->insertTextAtCaret(f.substring(prefix.length()));
+            menu.addItem (f, [this, caret, start, prefix, f]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (f.substring (prefix.length()));
             });
     for (auto& n : audioProcessor.getVariableNames())
         if (n.startsWithIgnoreCase(prefix))
-            menu.addItem(n, [this, caret, start, n]{
-                formulaInputEditor->moveCaretToPosition(start);
-                formulaInputEditor->insertTextAtCaret(n.substring(prefix.length()));
+            menu.addItem (n, [this, caret, start, prefix, n]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (n.substring (prefix.length()));
             });
     if (menu.getNumItems() > 0)
-        menu.showAt(formulaInputEditor.get());
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (*formulaInputEditor));
 
 }
