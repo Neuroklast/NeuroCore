@@ -29,7 +29,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
         sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, defaultColours[i]);
         sliderColours[i] = defaultColours[i];
-        attachments.push_back (std::make_unique<juce::SliderParameterAttachment> (
+        attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
             audioProcessor.apvts, juce::String ("abcd"[i]), *sliders[i]));
         sliders[i]->onValueChange = [this, i]
         {
