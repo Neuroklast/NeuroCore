@@ -35,6 +35,14 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
+    <GROUP id="{8A1018E5-0C4C-F28C-C88E-9F0C40ABB7EA}" name="Resources">
+      <GROUP id="{B1A8F998-9540-9E46-64F7-246F28040260}" name="img">
+        <FILE id="QLkK67" name="knob.png" compile="0" resource="1" file="Resources/img/knob.png"/>
+        <FILE id="EtpzeX" name="mockup.png" compile="0" resource="1" file="Resources/img/mockup.png"/>
+      </GROUP>
+      <FILE id="Gwwmnj" name="de.txt" compile="0" resource="1" file="Resources/de.txt"/>
+      <FILE id="PYzPHm" name="en.txt" compile="0" resource="1" file="Resources/en.txt"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_animation" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

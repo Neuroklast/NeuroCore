@@ -3033,6 +3033,7 @@
     <ClCompile Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\JuceLibraryCode\BinaryData.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_animation.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_devices.cpp"/>
@@ -4468,10 +4469,15 @@
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\marketplace\juce_TracktionMarketplaceStatus.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h"/>
+    <ClInclude Include="..\..\JuceLibraryCode\BinaryData.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JucePluginDefines.h"/>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Resources\img\knob.png"/>
+    <None Include="..\..\Resources\img\mockup.png"/>
+    <None Include="..\..\Resources\de.txt"/>
+    <None Include="..\..\Resources\en.txt"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\common\README.md"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\flowgraph\resampler\README.md"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\CMakeLists.txt"/>
