@@ -201,7 +201,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     smoothedB.setTargetValue(bValT);
     smoothedC.setTargetValue(cValT);
     smoothedD.setTargetValue(dValT);
-    smoothedModFreq.setTargetValue(modFreq ? *modFreq : 0.f);
+    smoothedModFreq.setTargetValue(modFreq ? modFreq->load() : 0.f);
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
