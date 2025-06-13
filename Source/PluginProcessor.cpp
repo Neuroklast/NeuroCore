@@ -10,6 +10,7 @@
 #include "ExpressionEvaluator.h"
 #include "LookupTables.h"
 #include "PluginEditor.h"
+#include "FormulaHelper.h"
 
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
@@ -44,6 +45,14 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
     translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
     juce::LocalisedStrings::setCurrentMappings(translations.get());
+
+    loadOptimizationRules(resDir.getChildFile("optimizations.txt"));
+
+    loadFormulaTemplates(resDir.getChildFile("templates.json"));
+
+    auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                        .getChildFile("NeuroCoreUserTemplates.txt");
+    loadUserTemplates(userFile);
 }
 
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)

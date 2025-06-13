@@ -1,1 +1,2 @@
 OptimizeButton=Optimize
+OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)
