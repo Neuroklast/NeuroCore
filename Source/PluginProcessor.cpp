@@ -29,11 +29,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 {
     LookupTables::initialise();
     evaluator.parseFormula("tanh(x)");
-    smoothedA.reset(0.0);
-    smoothedB.reset(0.0);
-    smoothedC.reset(0.0);
-    smoothedD.reset(0.0);
-    smoothedModFreq.reset(0.0);
+    waveShaper.setEvaluator(&evaluator);
+    waveShaper.setVariableNames(variableNames);
     for (auto& val : parameterValues)
         val.store(0.0f);
 
@@ -49,7 +46,10 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
 {
     if (juce::isPositiveAndBelow(index, variableNames.size()))
+    {
         variableNames[(size_t)index] = name;
+        waveShaper.setVariableNames(variableNames);
+    }
 }
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
@@ -122,14 +122,18 @@ void NeuroCoreAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused(samplesPerBlock);
-    auto timeMs = 20.0; // smoothing time
-    smoothedA.reset(sampleRate, timeMs / 1000.0);
-    smoothedB.reset(sampleRate, timeMs / 1000.0);
-    smoothedC.reset(sampleRate, timeMs / 1000.0);
-    smoothedD.reset(sampleRate, timeMs / 1000.0);
-    smoothedModFreq.reset(sampleRate, timeMs / 1000.0);
-    modPhase = 0.0f;
+    juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
+
+    inputGain.setGainPointer(apvts.getRawParameterValue("inputGain"));
+    waveShaper.setParameterPointers({ apvts.getRawParameterValue("a"),
+                                      apvts.getRawParameterValue("b"),
+                                      apvts.getRawParameterValue("c"),
+                                      apvts.getRawParameterValue("d") },
+                                     apvts.getRawParameterValue("modFrequency"));
+    polisher.setModePointer(apvts.getRawParameterValue("polisherMode"));
+    waveShaper.setVariableNames(variableNames);
+
+    chain.prepare(spec);
 }
 
 void NeuroCoreAudioProcessor::releaseResources()
@@ -140,14 +144,7 @@ void NeuroCoreAudioProcessor::releaseResources()
 
 void NeuroCoreAudioProcessor::reset()
 {
-    auto sr = getSampleRate();
-    auto timeMs = 20.0; // smoothing time
-    smoothedA.reset(sr, timeMs / 1000.0);
-    smoothedB.reset(sr, timeMs / 1000.0);
-    smoothedC.reset(sr, timeMs / 1000.0);
-    smoothedD.reset(sr, timeMs / 1000.0);
-    smoothedModFreq.reset(sr, timeMs / 1000.0);
-    modPhase = 0.0f;
+    chain.reset();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -186,23 +183,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     auto* bParam  = apvts.getRawParameterValue("b");
     auto* cParam  = apvts.getRawParameterValue("c");
     auto* dParam  = apvts.getRawParameterValue("d");
-    auto* modFreq = apvts.getRawParameterValue("modFrequency");
 
-    const float aValT = aParam ? aParam->load() : 0.f;
-    const float bValT = bParam ? bParam->load() : 0.f;
-    const float cValT = cParam ? cParam->load() : 0.f;
-    const float dValT = dParam ? dParam->load() : 0.f;
-
-    parameterValues[0].store(aValT);
-    parameterValues[1].store(bValT);
-    parameterValues[2].store(cValT);
-    parameterValues[3].store(dValT);
-
-    smoothedA.setTargetValue(aValT);
-    smoothedB.setTargetValue(bValT);
-    smoothedC.setTargetValue(cValT);
-    smoothedD.setTargetValue(dValT);
-    smoothedModFreq.setTargetValue(modFreq ? modFreq->load() : 0.f);
+    parameterValues[0].store(aParam ? aParam->load() : 0.f);
+    parameterValues[1].store(bParam ? bParam->load() : 0.f);
+    parameterValues[2].store(cParam ? cParam->load() : 0.f);
+    parameterValues[3].store(dParam ? dParam->load() : 0.f);
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -213,44 +198,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    const double sr = getSampleRate();
-    for (int i = 0; i < buffer.getNumSamples(); ++i)
-    {
-        float aVal = smoothedA.getNextValue();
-        float bVal = smoothedB.getNextValue();
-        float cVal = smoothedC.getNextValue();
-        float dVal = smoothedD.getNextValue();
-
-        evaluator.setVariable("a", aVal);
-        evaluator.setVariable("b", bVal);
-        evaluator.setVariable("c", cVal);
-        evaluator.setVariable("d", dVal);
-
-        const std::array<float,4> values{ aVal, bVal, cVal, dVal };
-        for (size_t v = 0; v < variableNames.size(); ++v)
-            evaluator.setVariable(variableNames[v].toStdString(), values[v]);
-
-        auto freq = smoothedModFreq.getNextValue();
-        const float mod = std::sin(modPhase);
-        evaluator.setVariable("mod", mod);
-        modPhase += 2.0f * juce::MathConstants<float>::pi * freq / static_cast<float>(sr);
-        if (modPhase > 2.0f * juce::MathConstants<float>::pi)
-            modPhase -= 2.0f * juce::MathConstants<float>::pi;
-
-        for (int channel = 0; channel < totalNumInputChannels; ++channel)
-        {
-            float x = buffer.getSample(channel, i);
-            if (evaluator.isValid())
-                x = evaluator.evaluate(x);
-            buffer.setSample(channel, i, x);
-        }
-    }
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> ctx(block);
+    chain.process(ctx);
 }
 
 //==============================================================================
@@ -303,6 +253,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("c", "C", 0.f, 1.f, 0.f);
     addParam ("d", "D", 0.f, 1.f, 0.f);
     addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
+    addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
+    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
 
     return { params.begin(), params.end() };
 }
