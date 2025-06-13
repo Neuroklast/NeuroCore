@@ -40,3 +40,9 @@ Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcess
 
 Sprachressourcen liegen im Ordner `Resources` in einfachen Textdateien. Beim Start lädt das Plug-in automatisch die Datei `de.txt` oder `en.txt` abhängig von der Systemsprache. Weitere Sprachen können durch zusätzliche Dateien im gleichen Format ergänzt werden.
 
+Optimierungsregeln für Formeln stehen in `Resources/optimizations.txt`. Jede Zeile enthält Muster, Ersatz und den Übersetzungsschlüssel. Beim Laden werden diese Regeln eingelesen und bei Klick auf *Optimieren* angewendet.
+
+Vorlagen für Formeln befinden sich in `Resources/templates.json`. Beim Start werden diese Einträge geladen und dienen als Basis für Template-Vorschläge.
+
+Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroCoreUserTemplates.txt` gespeichert und beim Start geladen.
+

@@ -1,0 +1,2 @@
+tanh(clamp(x,-1,1))|saturate(x)|OptimizedSaturate
+clamp(tanh(x),-1,1)|saturate(x)|OptimizedSaturate

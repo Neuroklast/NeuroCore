@@ -1,0 +1,6 @@
+[
+  {"name": "saturate(x)", "formula": "tanh(x)"},
+  {"name": "hardclip(x)", "formula": "clamp(x, -1, 1)"},
+  {"name": "softclip(x)", "formula": "x / (1 + abs(x))"},
+  {"name": "bias(x, b)",  "formula": "pow(x + b, 1.0) - b"}
+]
