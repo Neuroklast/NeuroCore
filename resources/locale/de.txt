@@ -1,2 +1,4 @@
 OptimizeButton=Optimieren
 OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt
+CompileButton=Kompilieren
+CompileError=Formel konnte nicht kompiliert werden

@@ -8,15 +8,18 @@
 
 #include "../core/PluginProcessor.h"
 #include "PluginEditor.h"
+#include "../core/Config.h"
 #include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
+#include "PluginLookAndFeel.h"
 
 
 //==============================================================================
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setSize (1200, 800);
+    setLookAndFeel (&lookAndFeel);
+    setSize (Config::kWindowWidth, Config::kWindowHeight);
 
     static const juce::Colour defaultColours[4] = {
         juce::Colours::red, juce::Colours::green,
@@ -29,8 +32,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
         sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, defaultColours[i]);
         sliderColours[i] = defaultColours[i];
+        auto paramId = juce::String::charToString (static_cast<juce_wchar>('a' + i));
         attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-            audioProcessor.apvts, juce::String ("abcd"[i]), *sliders[i]));
+            audioProcessor.apvts, paramId, *sliders[i]));
         sliders[i]->onValueChange = [this, i]
         {
             if (valueEditors[i])
@@ -87,10 +91,42 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible (*optimizeButton);
 
+    compileButton = std::make_unique<juce::TextButton>(TRANS("CompileButton"));
+    compileButton->onClick = [this]
+    {
+        if (formulaInputEditor != nullptr)
+        {
+            audioProcessor.setFormula (formulaInputEditor->getText());
+            auto err = audioProcessor.getEvaluator().getLastError();
+            errorLabel->setText (err.isNotEmpty() ? TRANS("CompileError") + ": " + err
+                                              : juce::String(),
+                                juce::dontSendNotification);
+            formulaDisplay->setFormula (formulaInputEditor->getText());
+            formulaDisplay->setError (err);
+        }
+    };
+    addAndMakeVisible (*compileButton);
+
+    errorLabel = std::make_unique<juce::Label>();
+    errorLabel->setColour (juce::Label::textColourId, juce::Colours::red);
+    addAndMakeVisible (*errorLabel);
+
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
+    setLookAndFeel (nullptr);
+}
+
+juce::String NeuroCoreAudioProcessorEditor::getFormulaText() const
+{
+    return formulaInputEditor ? formulaInputEditor->getText() : juce::String();
+}
+
+void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
+{
+    if (formulaInputEditor)
+        formulaInputEditor->setText (text, juce::dontSendNotification);
 }
 
 //==============================================================================
@@ -103,17 +139,20 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int thirdWidth = 400;
-    const int rowHeight  = getHeight() / 4;
-    const int sliderSize = rowHeight;
-    const int textHeight = 30;
+    const int thirdWidth = Config::kMiddleColumnWidth;
+    const int rowHeight  = Config::kKnobHeight + Config::kKnobSpacing;
+    const int sliderSize = Config::kKnobHeight;
+    const int textHeight = Config::kLabelHeight;
 
     for (int i = 0; i < sliders.size(); ++i)
     {
         int y = i * rowHeight;
-        sliders[i]->setBounds (0, y, sliderSize, sliderSize);
-        valueEditors[i]->setBounds (sliderSize, y, sliderSize, textHeight);
-        nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
+        if (sliders[i])
+            sliders[i]->setBounds (0, y, sliderSize, sliderSize);
+        if (valueEditors[i])
+            valueEditors[i]->setBounds (sliderSize, y, sliderSize, textHeight);
+        if (nameEditors[i])
+            nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
     }
 
     auto middleX = thirdWidth;
@@ -122,8 +161,10 @@ void NeuroCoreAudioProcessorEditor::resized()
 
     formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
 
-    formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, middleHeight - inputHeight - textHeight);
-    optimizeButton->setBounds (middleX, middleHeight - textHeight, thirdWidth, textHeight);
+    formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, textHeight);
+    compileButton->setBounds  (middleX, inputHeight + textHeight, thirdWidth, textHeight);
+    optimizeButton->setBounds (middleX, inputHeight + 2 * textHeight, thirdWidth, textHeight);
+    errorLabel->setBounds     (middleX, inputHeight + 3 * textHeight, thirdWidth, textHeight);
 }
 
 void NeuroCoreAudioProcessorEditor::showAutocomplete()
