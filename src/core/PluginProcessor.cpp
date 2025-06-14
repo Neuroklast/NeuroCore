@@ -35,7 +35,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #endif
 {
     LookupTables::initialise();
-    evaluator.parseFormula("tanh(x)");
+    evaluator.parseFormula(Config::kDefaultFormula);
     waveShaper.setEvaluator(&evaluator);
     waveShaper.setVariableNames(variableNames);
     for (auto& val : parameterValues)
@@ -156,12 +156,12 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
     dryBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
     dryBuffer.clear();
-    gainCompValue.reset(sampleRate, 0.02);
+    gainCompValue.reset(sampleRate, Config::kSmoothingTime);
     gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.prepare(spec);
     outputGain.setGainLinear(1.0f);
 
-    wetValue.reset(sampleRate, 0.02);
+    wetValue.reset(sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue(1.0f);
 
     waveShaper.setVariableNames(variableNames);
@@ -183,9 +183,9 @@ void NeuroCoreAudioProcessor::reset()
     chain.reset();
     oversampling.reset();
     dryWetMixer.reset();
-    wetValue.reset(getSampleRate(), 0.02f);
+    wetValue.reset(getSampleRate(), Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue(1.0f);
-    gainCompValue.reset(getSampleRate(), 0.02f);
+    gainCompValue.reset(getSampleRate(), Config::kSmoothingTime);
     gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.reset();
     outputGain.setGainLinear(1.0f);

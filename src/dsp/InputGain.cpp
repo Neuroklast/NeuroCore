@@ -10,13 +10,13 @@ void InputGain::prepare (const juce::dsp::ProcessSpec& spec)
         return;
     }
 
-    smoothedGain.reset(sampleRate, 0.02);
+    smoothedGain.reset(sampleRate, Config::kSmoothingTime);
     smoothedGain.setCurrentAndTargetValue(targetGain);
 }
 
 void InputGain::reset()
 {
-    smoothedGain.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+    smoothedGain.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate, Config::kSmoothingTime);
     smoothedGain.setCurrentAndTargetValue(targetGain);
 }
 

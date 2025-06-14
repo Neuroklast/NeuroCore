@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 namespace EffectParameters
 {
     inline constexpr const char* inputGain    = "inputGain";

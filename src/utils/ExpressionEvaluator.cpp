@@ -223,7 +223,7 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         root = parseExpression();
         if (pos != input.length())
         {
-            errorMessage = "Syntaxfehler an Position " + juce::String((int)pos);
+            errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
             logError(errorMessage);
             return false;
         }
@@ -232,7 +232,7 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     }
     catch (...)
     {
-        errorMessage = "Unbekannter Fehler";
+        errorMessage = TRANS("UnknownError");
         logError(errorMessage);
         return false;
     }

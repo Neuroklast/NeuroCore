@@ -62,9 +62,9 @@ void AdvancedOscillatorWrapper::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<SampleType>(spec.sampleRate);
     osc.prepare({ sampleRate, spec.maximumBlockSize, spec.numChannels });
-    amp.reset(sampleRate, 0.02);
+    amp.reset(sampleRate, Config::kSmoothingTime);
     amp.setCurrentAndTargetValue(ampTarget);
-    freq.reset(sampleRate, 0.02);
+    freq.reset(sampleRate, Config::kSmoothingTime);
     freq.setCurrentAndTargetValue(freqTarget);
     phase.reset();
 }

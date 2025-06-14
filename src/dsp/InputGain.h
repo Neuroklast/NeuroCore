@@ -1,6 +1,12 @@
 #pragma once
+
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
 #include <JuceHeader.h>
 #include "../core/EffectParameters.h"
+#include "../core/Config.h"
 
 class InputGain : public juce::dsp::ProcessorBase
 {
@@ -18,7 +24,7 @@ public:
 private:
     bool bypassed { false };
 
-	float sampleRate = 44100.0f;
+        float sampleRate = Config::kDefaultSampleRate;
     juce::SmoothedValue<SampleType> smoothedGain;
     SampleType targetGain { 1.0f };
 
