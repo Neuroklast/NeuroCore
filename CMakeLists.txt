@@ -40,6 +40,7 @@ set(SOURCE_FILES
     src/utils/PresetManager.cpp
     src/dsp/SignalPolisher.cpp
     src/dsp/WaveShaper.cpp
+    src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
