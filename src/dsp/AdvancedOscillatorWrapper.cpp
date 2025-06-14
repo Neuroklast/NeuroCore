@@ -20,6 +20,7 @@ bool AdvancedOscillatorWrapper::isInitialised() const noexcept
 void AdvancedOscillatorWrapper::setFrequency(SampleType newFreq, bool force) noexcept
 {
     freqTarget = newFreq;
+    freq.setTargetValue(newFreq);
     osc.setFrequency(newFreq, force);
 }
 
