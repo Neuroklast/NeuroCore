@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroCore VERSION 0.0.1 LANGUAGES CXX)
+project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
 
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
@@ -22,33 +22,10 @@ endif()
 
 list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
 
-include(${JUCE_DIR}/extras/Build/CMake/JUCE.cmake)
+# JUCE helper macros
+include(${JUCE_DIR}/extras/Build/CMake/JUCEModuleSupport.cmake)
+include(${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake)
 
-juce_add_plugin(NeuroCore
-    COMPANY_NAME "NEUROKLAST"
-    IS_SYNTH FALSE
-    NEEDS_MIDI_INPUT FALSE
-    NEEDS_MIDI_OUTPUT FALSE
-    IS_MIDI_EFFECT FALSE
-    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
-    PLUGIN_MANUFACTURER_CODE NRKL
-    PLUGIN_CODE NRCO
-    FORMATS Standalone VST3
-    PRODUCT_NAME "NeuroCore"
-    VST3_CATEGORIES "Fx|Distortion"
-)
-
-juce_generate_juce_header(NeuroCore)
-
-target_include_directories(NeuroCore PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/core
-    ${PROJECT_SOURCE_DIR}/src/dsp
-    ${PROJECT_SOURCE_DIR}/src/ui
-    ${PROJECT_SOURCE_DIR}/src/utils
-    ${PROJECT_SOURCE_DIR}/src/third_party
-    ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
-)
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
     src/utils/PresetManager.cpp
@@ -64,7 +41,35 @@ set(SOURCE_FILES
     src/ui/PluginEditor.cpp
 )
 
+juce_add_plugin(NeuroCore
+    COMPANY_NAME "NEUROKLAST"
+    IS_SYNTH FALSE
+    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE
+    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    COPY_PLUGIN_AFTER_BUILD TRUE
+    PLUGIN_MANUFACTURER_CODE NRKL
+    PLUGIN_CODE NRCO
+    FORMATS Standalone VST3
+    PRODUCT_NAME "NeuroCore"
+    VST3_CATEGORIES "Fx|Distortion"
+    VST3_AUTO_MANIFEST FALSE
+    SOURCES src/core/PluginProcessor.cpp src/ui/PluginEditor.cpp
+)
+
 target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
+
+juce_generate_juce_header(NeuroCore)
+
+target_include_directories(NeuroCore PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/ui
+    ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/third_party
+    ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
+)
 
 target_compile_features(NeuroCore PRIVATE cxx_std_17)
 
@@ -106,6 +111,7 @@ add_custom_command(TARGET NeuroCore POST_BUILD
 )
 
 juce_add_console_app(NeuroCoreTests PRODUCT_NAME "NeuroCoreTests")
+juce_generate_juce_header(NeuroCoreTests)
 
 target_sources(NeuroCoreTests PRIVATE
     tests/main.cpp

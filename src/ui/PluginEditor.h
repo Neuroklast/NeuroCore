@@ -12,6 +12,8 @@
 #include <array>
 #include <vector>
 #include "../core/PluginProcessor.h"
+#include "../core/Config.h"
+#include "PluginLookAndFeel.h"
 #include "FormulaDisplayComponent.h"
 #include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
@@ -25,6 +27,9 @@ class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor
 public:
     NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor&);
     ~NeuroCoreAudioProcessorEditor() override;
+
+    juce::String getFormulaText() const;
+    void setFormulaText(const juce::String& text);
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -44,6 +49,10 @@ private:
     std::unique_ptr<juce::TextEditor> formulaInputEditor;
     std::unique_ptr<FormulaDisplayComponent> formulaDisplay;
     std::unique_ptr<juce::TextButton> optimizeButton;
+    std::unique_ptr<juce::TextButton> compileButton;
+    std::unique_ptr<juce::Label>       errorLabel;
+
+    NeuroCoreLookAndFeel lookAndFeel;
 
     void showAutocomplete();
 
