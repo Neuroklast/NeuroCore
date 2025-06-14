@@ -34,6 +34,12 @@
       <FILE id="o8VUXn" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="IGAINh" name="InputGain.h" compile="0" resource="0" file="Source/InputGain.h"/>
+      <FILE id="IGAINc" name="InputGain.cpp" compile="1" resource="0" file="Source/InputGain.cpp"/>
+      <FILE id="WSHPh" name="WaveShaper.h" compile="0" resource="0" file="Source/WaveShaper.h"/>
+      <FILE id="WSHPc" name="WaveShaper.cpp" compile="1" resource="0" file="Source/WaveShaper.cpp"/>
+      <FILE id="POLh" name="SignalPolisher.h" compile="0" resource="0" file="Source/SignalPolisher.h"/>
+      <FILE id="POLc" name="SignalPolisher.cpp" compile="1" resource="0" file="Source/SignalPolisher.cpp"/>
     </GROUP>
     <GROUP id="{8A1018E5-0C4C-F28C-C88E-9F0C40ABB7EA}" name="Resources">
       <GROUP id="{B1A8F998-9540-9E46-64F7-246F28040260}" name="img">
