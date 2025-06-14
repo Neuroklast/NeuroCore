@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 /**
     @file Config.h
     @brief Central configuration constants for the NeuroCore plugin.
@@ -59,6 +64,12 @@ namespace Config
     /// Default output gain in decibels.
     inline constexpr float kDefaultGainOutDb   = 0.0f;
 
+    /// Fallback sample rate used during resets.
+    inline constexpr double kDefaultSampleRate = 44100.0;
+
+    /// Time in seconds used for parameter smoothing.
+    inline constexpr double kSmoothingTime     = 0.02;
+
     //==========================================================================
     // Parser / Interpreter constants
     //==========================================================================
@@ -91,6 +102,12 @@ namespace Config
     inline constexpr float kMinLfoFrequency     = 0.01f;
     /// Number of samples used to display the LFO.
     inline constexpr int   kLfoVisualSamples    = 512;
+
+    /// Number of samples displayed in the formula preview.
+    inline constexpr int   kFormulaPreviewSamples = 512;
+
+    /// Default resolution for lookup tables.
+    inline constexpr int   kLookupTableSize = 1024;
 
     //==========================================================================
     // Preset constants

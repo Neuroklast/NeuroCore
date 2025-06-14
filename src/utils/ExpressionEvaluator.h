@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 #include <JuceHeader.h>
 #include <functional>
 #include <memory>

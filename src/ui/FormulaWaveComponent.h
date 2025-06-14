@@ -1,7 +1,13 @@
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
+#include "../core/Config.h"
 
 //==============================================================================
 // Component that draws a sine wave and its transformation through the active
@@ -23,7 +29,7 @@ private:
     juce::Slider            zoomSlider;
     float                   zoom { 1.0f };
 
-    static constexpr int    numSamples = 512;
+    static constexpr int    numSamples = Config::kFormulaPreviewSamples;
     std::array<float, numSamples> inputValues {};
     std::array<float, numSamples> outputValues {};
 

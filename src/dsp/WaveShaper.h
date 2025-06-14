@@ -1,7 +1,13 @@
 #pragma once
+
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
 #include <JuceHeader.h>
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/EffectParameters.h"
+#include "../core/Config.h"
 
 class WaveShaper : public juce::dsp::ProcessorBase
 {
@@ -26,8 +32,13 @@ private:
     juce::SmoothedValue<SampleType> smoothedModFreq;
     std::array<float,4> paramTargets { 0.f, 0.f, 0.f, 0.f };
     float modFreqTarget { 0.f };
-    std::array<juce::String,4> variableNames { "a", "b", "c", "d" };
-    double sampleRate { 44100.0 };
+    std::array<juce::String,4> variableNames {
+        Config::kDefaultVariableNames[0],
+        Config::kDefaultVariableNames[1],
+        Config::kDefaultVariableNames[2],
+        Config::kDefaultVariableNames[3]
+    };
+    double sampleRate { Config::kDefaultSampleRate };
     juce::dsp::Oscillator<SampleType> lfo;
     bool bypassed { false };
 };

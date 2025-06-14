@@ -8,6 +8,11 @@
 
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 #include <JuceHeader.h>
 #include <cmath>
 #include <array>
@@ -84,7 +89,10 @@ private:
     //==============================================================================
     ExpressionEvaluator evaluator;
     std::array<std::atomic<float>, 4> parameterValues{};
-    std::array<juce::String, 4> variableNames{ "a", "b", "c", "d" };
+    std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
+                                               Config::kDefaultVariableNames[1],
+                                               Config::kDefaultVariableNames[2],
+                                               Config::kDefaultVariableNames[3] };
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
 
     InputGain inputGain;
