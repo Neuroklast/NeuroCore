@@ -28,6 +28,6 @@ private:
     float modFreqTarget { 0.f };
     std::array<juce::String,4> variableNames { "a", "b", "c", "d" };
     double sampleRate { 44100.0 };
-    SampleType modPhase { 0.0f };
+    juce::dsp::Oscillator<SampleType> lfo;
     bool bypassed { false };
 };
