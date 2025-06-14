@@ -1,6 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
-#include "EffectParameters.h"
+#include "../core/EffectParameters.h"
 
 class SignalPolisher : public juce::dsp::ProcessorBase
 {

@@ -1,7 +1,7 @@
 #include "PresetManager.h"
-#include "PluginProcessor.h"
+#include "../core/PluginProcessor.h"
 #include "ExpressionEvaluator.h"
-#include "Config.h"
+#include "../core/Config.h"
 
 using json = nlohmann::json;
 

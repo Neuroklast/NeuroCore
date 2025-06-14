@@ -11,11 +11,11 @@
 #include <JuceHeader.h>
 #include <cmath>
 #include <array>
-#include "ExpressionEvaluator.h"
-#include "PresetManager.h"
-#include "InputGain.h"
-#include "WaveShaper.h"
-#include "SignalPolisher.h"
+#include "../utils/ExpressionEvaluator.h"
+#include "../utils/PresetManager.h"
+#include "../dsp/InputGain.h"
+#include "../dsp/WaveShaper.h"
+#include "../dsp/SignalPolisher.h"
 #include "EffectParameters.h"
 #include "Config.h"
 
