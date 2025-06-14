@@ -27,34 +27,44 @@ juce_add_plugin(NeuroCore
 
 juce_generate_juce_header(NeuroCore)
 
+target_include_directories(NeuroCore PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/ui
+    ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/third_party
+    ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
+)
 set(SOURCE_FILES
-    Source/InputGain.cpp
-    Source/PresetManager.cpp
-    Source/SignalPolisher.cpp
-    Source/WaveShaper.cpp
-    Source/ExpressionEvaluator.cpp
-    Source/FormulaDisplayComponent.cpp
-    Source/FormulaHelper.cpp
-    Source/FormulaWaveComponent.cpp
-    Source/LookupTables.cpp
-    Source/PluginProcessor.cpp
-    Source/PluginEditor.cpp
+    src/dsp/InputGain.cpp
+    src/utils/PresetManager.cpp
+    src/dsp/SignalPolisher.cpp
+    src/dsp/WaveShaper.cpp
+    src/utils/ExpressionEvaluator.cpp
+    src/ui/FormulaDisplayComponent.cpp
+    src/utils/FormulaHelper.cpp
+    src/ui/FormulaWaveComponent.cpp
+    src/dsp/LookupTables.cpp
+    src/core/PluginProcessor.cpp
+    src/ui/PluginEditor.cpp
 )
 
 target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
 
 target_compile_features(NeuroCore PRIVATE cxx_std_17)
 
-juce_add_binary_data(ResourcesBinary
+juce_add_binary_data(resourcesBinary
     SOURCES
-        Resources/img/knob.png
-        Resources/img/mockup.png
-        Resources/de.txt
-        Resources/en.txt
+        resources/img/knob.png
+        resources/img/mockup.png
+        resources/locale/de.txt
+        resources/locale/en.txt
+        resources/optimizations.txt
+        resources/templates.json
 )
 
 target_link_libraries(NeuroCore PRIVATE
-    ResourcesBinary
+    resourcesBinary
     juce::juce_audio_utils
     juce::juce_audio_formats
     juce::juce_audio_devices
@@ -76,7 +86,7 @@ target_link_libraries(NeuroCore PRIVATE
 
 add_custom_command(TARGET NeuroCore POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/Resources
-        $<TARGET_FILE_DIR:NeuroCore>/Resources
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources
+        $<TARGET_FILE_DIR:NeuroCore>/resources
 )
 
