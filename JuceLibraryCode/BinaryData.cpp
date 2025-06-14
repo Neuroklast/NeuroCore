@@ -23414,8 +23414,11 @@ const char* mockup_png = (const char*) temp_binary_data_1;
 static const unsigned char temp_binary_data_2[] =
 "OptimizeButton=Optimieren\r\n"
 "OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt\r\n"
+"CompileButton=Kompilieren\r\n"
+"CompileError=Formel konnte nicht kompiliert werden\r\n"
 "ParseError=Syntaxfehler an Position %1\r\n"
-"UnknownError=Unbekannter Fehler\r\n";
+"UnknownError=Unbekannter Fehler\r\n"
+"\r\n";
 
 const char* de_txt = (const char*) temp_binary_data_2;
 
@@ -23423,8 +23426,11 @@ const char* de_txt = (const char*) temp_binary_data_2;
 static const unsigned char temp_binary_data_3[] =
 "OptimizeButton=Optimize\r\n"
 "OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)\r\n"
+"CompileButton=Compile\r\n"
+"CompileError=Failed to compile formula\r\n"
 "ParseError=Syntax error at position %1\r\n"
-"UnknownError=Unknown error\r\n";
+"UnknownError=Unknown error\r\n"
+"\r\n";
 
 const char* en_txt = (const char*) temp_binary_data_3;
 
@@ -23581,8 +23587,8 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
     {
         case 0xe90704e0:  numBytes = 381724; return knob_png;
         case 0x633e948f:  numBytes = 1267316; return mockup_png;
-        case 0xb060d5b2:  numBytes = 167; return de_txt;
-        case 0xb29481da:  numBytes = 160; return en_txt;
+        case 0xb060d5b2:  numBytes = 248; return de_txt;
+        case 0xb29481da:  numBytes = 225; return en_txt;
         case 0xbbbbcb57:  numBytes = 102; return optimizations_txt;
         case 0xd453fe2e:  numBytes = 234; return templates_json;
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
