@@ -23424,6 +23424,134 @@ static const unsigned char temp_binary_data_3[] =
 
 const char* en_txt = (const char*) temp_binary_data_3;
 
+//================== optimizations.txt ==================
+static const unsigned char temp_binary_data_4[] =
+"tanh(clamp(x,-1,1))|saturate(x)|OptimizedSaturate\r\n"
+"clamp(tanh(x),-1,1)|saturate(x)|OptimizedSaturate\r\n";
+
+const char* optimizations_txt = (const char*) temp_binary_data_4;
+
+//================== templates.json ==================
+static const unsigned char temp_binary_data_5[] =
+"[\r\n"
+"  {\"name\": \"saturate(x)\", \"formula\": \"tanh(x)\"},\r\n"
+"  {\"name\": \"hardclip(x)\", \"formula\": \"clamp(x, -1, 1)\"},\r\n"
+"  {\"name\": \"softclip(x)\", \"formula\": \"x / (1 + abs(x))\"},\r\n"
+"  {\"name\": \"bias(x, b)\",  \"formula\": \"pow(x + b, 1.0) - b\"}\r\n"
+"]\r\n";
+
+const char* templates_json = (const char*) temp_binary_data_5;
+
+//================== NeuroCore_Tests.jucer ==================
+static const unsigned char temp_binary_data_6[] =
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+"<JUCERPROJECT id=\"testProj\" name=\"NeuroCoreTests\" projectType=\"consoleapp\" useAppConfig=\"1\"\r\n"
+"              addUsingNamespaceToJuceHeader=\"1\" jucerFormatVersion=\"1\" version=\"0.0.1\"\r\n"
+"              companyName=\"NEUROKLAST\">\r\n"
+"  <MAINGROUP id=\"root\" name=\"NeuroCoreTests\">\r\n"
+"    <FILE id=\"MainCpp\" name=\"main.cpp\" compile=\"1\" resource=\"0\" file=\"main.cpp\"/>\r\n"
+"    <FILE id=\"EvalTest\" name=\"ExpressionEvaluatorTest.h\" compile=\"1\" resource=\"0\" file=\"ExpressionEvaluatorTest.h\"/>\r\n"
+"    <FILE id=\"ShaperTest\" name=\"WaveShaperTest.h\" compile=\"1\" resource=\"0\" file=\"WaveShaperTest.h\"/>\r\n"
+"  </MAINGROUP>\r\n"
+"  <MODULES>\r\n"
+"    <MODULE id=\"juce_core\" showAllCode=\"1\" useLocalCopy=\"0\" useGlobalPath=\"1\"/>\r\n"
+"    <MODULE id=\"juce_data_structures\" showAllCode=\"1\" useLocalCopy=\"0\" useGlobalPath=\"1\"/>\r\n"
+"    <MODULE id=\"juce_events\" showAllCode=\"1\" useLocalCopy=\"0\" useGlobalPath=\"1\"/>\r\n"
+"    <MODULE id=\"juce_audio_basics\" showAllCode=\"1\" useLocalCopy=\"0\" useGlobalPath=\"1\"/>\r\n"
+"    <MODULE id=\"juce_dsp\" showAllCode=\"1\" useLocalCopy=\"0\" useGlobalPath=\"1\"/>\r\n"
+"  </MODULES>\r\n"
+"  <EXPORTFORMATS>\r\n"
+"    <VS2022 targetFolder=\"../Builds/VisualStudio2022\">\r\n"
+"      <CONFIGURATIONS>\r\n"
+"        <CONFIGURATION isDebug=\"1\" name=\"Debug\" targetName=\"NeuroCore_Tests\"/>\r\n"
+"        <CONFIGURATION isDebug=\"0\" name=\"Release\" targetName=\"NeuroCore_Tests\"/>\r\n"
+"      </CONFIGURATIONS>\r\n"
+"      <MODULEPATHS>\r\n"
+"        <MODULEPATH id=\"juce_core\" path=\"D:/JUCE/modules\"/>\r\n"
+"        <MODULEPATH id=\"juce_data_structures\" path=\"D:/JUCE/modules\"/>\r\n"
+"        <MODULEPATH id=\"juce_events\" path=\"D:/JUCE/modules\"/>\r\n"
+"        <MODULEPATH id=\"juce_audio_basics\" path=\"D:/JUCE/modules\"/>\r\n"
+"        <MODULEPATH id=\"juce_dsp\" path=\"D:/JUCE/modules\"/>\r\n"
+"      </MODULEPATHS>\r\n"
+"    </VS2022>\r\n"
+"  </EXPORTFORMATS>\r\n"
+"</JUCERPROJECT>\r\n";
+
+const char* NeuroCore_Tests_jucer = (const char*) temp_binary_data_6;
+
+//================== README.md ==================
+static const unsigned char temp_binary_data_7[] =
+"# NeuroCore\r\n"
+"\r\n"
+"NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen \xc3\xbc""ber vier Parameter **a** bis **d** v"
+"erwenden. Zus\xc3\xa4tzlich steht ein Sinus-Modulationssignal (*mod*) bereit.\r\n"
+"\r\n"
+"## Voraussetzungen\r\n"
+"\r\n"
+"- **JUCE 8.0.6** oder neuer. Der Pfad zu den JUCE-Modulen muss im Projucer unter *Global Paths* eingetragen sein, beispielsweise `D:\\JUCE\\modules` oder `~/JUCE/modules`. Stellen Sie sicher, dass die VST3\xe2\x80\x91SDK unter `juce_audio_processors/"
+"format_types/VST3_SDK` vorhanden ist.\r\n"
+"- **IDE**: Visual Studio 2022 (andere IDEs mit JUCE-Projucer/CMake sind m\xc3\xb6glich).\r\n"
+"\r\n"
+"## Abh\xc3\xa4ngigkeiten einrichten\r\n"
+"\r\n"
+"1. JUCE inklusive Untermodulen klonen:\r\n"
+"   ```bash\r\n"
+"   git clone --recurse-submodules https://github.com/juce-framework/JUCE.git <JUCE>\r\n"
+"   ```\r\n"
+"2. Den Pfad `<JUCE>/modules` im Projucer unter *Global Paths \xe2\x86\x92 JUCE Modules* eintragen oder als Umgebungsvariable `JUCE_PATH` bereitstellen. Die Variable kann\r\n"
+"   unter Windows mit `set JUCE_PATH=C:\\JUCE` oder auf Linux/macOS mit `export JUCE_PATH=/path/zu/JUCE` gesetzt werden. Der Projucer liest diese Variable\r\n"
+"   automatisch, wenn kein fester Pfad hinterlegt ist.\r\n"
+"3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.\r\n"
+"\r\n"
+"## Build-Schritte\r\n"
+"\r\n"
+"1. Projektdatei `NeuroCore.jucer` im Projucer \xc3\xb6""ffnen. Sofern `JUCE_PATH` gesetzt ist, wird der Pfad automatisch verwendet. Andernfalls kann er unter\r\n"
+"   *Global Paths \xe2\x86\x92 JUCE Modules* eingetragen werden. Anschlie\xc3\x9f""end \xc3\xbc""ber *File \xe2\x86\x92 Export Project* die gew\xc3\xbcnschten Exporter generieren.\r\n"
+"2. F\xc3\xbcr die **Standalone-Version** das Projekt `NeuroCore_StandalonePlugin` in der IDE \xc3\xb6""ffnen und \xc3\xbc""bersetzen. Die erzeugte Anwendung verh\xc3\xa4lt sich wie ein eigenst\xc3\xa4ndiger Effekt.\r\n"
+"3. F\xc3\xbcr die **VST3-Version** das Projekt `NeuroCore_VST3` kompilieren. Die entstandene *.vst3*-Datei kann in kompatiblen Hosts geladen werden.\r\n"
+"\r\n"
+"### CMake-Build\r\n"
+"\r\n"
+"Alternativ l\xc3\xa4sst sich das Plug-in per CMake erzeugen. `JUCE_DIR` muss dabei auf das JUCE-Hauptverzeichnis zeigen. Die VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK` befinden.\r\n"
+"\r\n"
+"```bash\r\n"
+"cmake -B build -S . -DJUCE_DIR=<Pfad/zu/JUCE>\r\n"
+"cmake --build build --config Release\r\n"
+"```\r\n"
+"\r\n"
+"Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`. Die ben\xc3\xb6tigten Ressourcen werden automatisch in den Ausgabepfad kopiert.\r\n"
+"\r\n"
+"## Plug-in-\xc3\x9c""berblick\r\n"
+"\r\n"
+"Nach dem Start zeigt die Oberfl\xc3\xa4""che vier Regler (Parameter *a\xe2\x80\x93""d*) sowie ein Eingabefeld f\xc3\xbcr die Formel. Jede Formel darf die Variablen **x** (aktuelles Samplesignal), **mod** (Sinus-LFO) und die Parameter **a\xe2\x80\x93""d"
+"** verwenden. Beispiel:\r\n"
+"\r\n"
+"```\r\n"
+"clamp(tanh(x * a + mod * b), -c, d)\r\n"
+"```\r\n"
+"\r\n"
+"Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das Ergebnis mithilfe der Parameter *c* und *d*.\r\n"
+"\r\n"
+"## Presets laden und speichern\r\n"
+"\r\n"
+"Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort l\xc3\xa4sst sich ein `Va"
+"lueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren.\r\n"
+"\r\n"
+"## Lokalisierung\r\n"
+"\r\n"
+"Sprachressourcen liegen im Ordner `resources` in einfachen Textdateien. Beim Start l\xc3\xa4""dt das Plug-in automatisch die Datei `de.txt` oder `en.txt` abh\xc3\xa4ngig von der Systemsprache. Weitere Sprachen k\xc3\xb6nnen durch zus\xc3\xa4tzliche D"
+"ateien im gleichen Format erg\xc3\xa4nzt werden.\r\n"
+"\r\n"
+"Optimierungsregeln f\xc3\xbcr Formeln stehen in `resources/optimizations.txt`. Jede Zeile enth\xc3\xa4lt Muster, Ersatz und den \xc3\x9c""bersetzungsschl\xc3\xbcssel. Beim Laden werden diese Regeln eingelesen und bei Klick auf *Optimieren* angewendet"
+".\r\n"
+"\r\n"
+"Vorlagen f\xc3\xbcr Formeln befinden sich in `resources/templates.json`. Beim Start werden diese Eintr\xc3\xa4ge geladen und dienen als Basis f\xc3\xbcr Template-Vorschl\xc3\xa4ge.\r\n"
+"\r\n"
+"Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroCoreUserTemplates.txt` gespeichert und beim Start geladen.\r\n"
+"\r\n";
+
+const char* README_md = (const char*) temp_binary_data_7;
+
 
 const char* getNamedResource (const char* resourceNameUTF8, int& numBytes);
 const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
@@ -23440,6 +23568,10 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0x633e948f:  numBytes = 1267316; return mockup_png;
         case 0xb060d5b2:  numBytes = 94; return de_txt;
         case 0xb29481da:  numBytes = 92; return en_txt;
+        case 0xbbbbcb57:  numBytes = 102; return optimizations_txt;
+        case 0xd453fe2e:  numBytes = 234; return templates_json;
+        case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
+        case 0x64791dc8:  numBytes = 4159; return README_md;
         default: break;
     }
 
@@ -23452,7 +23584,11 @@ const char* namedResourceList[] =
     "knob_png",
     "mockup_png",
     "de_txt",
-    "en_txt"
+    "en_txt",
+    "optimizations_txt",
+    "templates_json",
+    "NeuroCore_Tests_jucer",
+    "README_md"
 };
 
 const char* originalFilenames[] =
@@ -23460,7 +23596,11 @@ const char* originalFilenames[] =
     "knob.png",
     "mockup.png",
     "de.txt",
-    "en.txt"
+    "en.txt",
+    "optimizations.txt",
+    "templates.json",
+    "NeuroCore_Tests.jucer",
+    "README.md"
 };
 
 const char* getNamedResourceOriginalFilename (const char* resourceNameUTF8);

@@ -20,8 +20,20 @@ namespace BinaryData
     extern const char*   en_txt;
     const int            en_txtSize = 92;
 
+    extern const char*   optimizations_txt;
+    const int            optimizations_txtSize = 102;
+
+    extern const char*   templates_json;
+    const int            templates_jsonSize = 234;
+
+    extern const char*   NeuroCore_Tests_jucer;
+    const int            NeuroCore_Tests_jucerSize = 1786;
+
+    extern const char*   README_md;
+    const int            README_mdSize = 4159;
+
     // Number of elements in the namedResourceList and originalFileNames arrays.
-    const int namedResourceListSize = 4;
+    const int namedResourceListSize = 8;
 
     // Points to the start of a list of resource names.
     extern const char* namedResourceList[];

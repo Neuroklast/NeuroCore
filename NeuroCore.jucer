@@ -7,57 +7,85 @@
               pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginChannelConfigs="2"
               pluginVST3Category="Distortion" cppLanguageStandard="latest">
   <MAINGROUP id="GyblaO" name="NeuroCore">
-    <GROUP id="{2E2D7F5B-06F4-3734-1F27-F48BDA7FB349}" name="src">
-      <FILE id="GPKano" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
-      <FILE id="RThJjA" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
-      <FILE id="aSXQyI" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
-      <FILE id="zs3kYE" name="PresetManager.cpp" compile="1" resource="0"
-            file="src/utils/PresetManager.cpp"/>
-      <FILE id="Bpeene" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
-      <FILE id="lDho2o" name="SignalPolisher.cpp" compile="1" resource="0"
-            file="src/dsp/SignalPolisher.cpp"/>
-      <FILE id="DGiE14" name="SignalPolisher.h" compile="0" resource="0"
-            file="src/dsp/SignalPolisher.h"/>
-      <FILE id="SHxgPc" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
-      <FILE id="kkLK7C" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
-      <FILE id="bW6NwE" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
-      <FILE id="nk7S7G" name="ExpressionEvaluator.cpp" compile="1" resource="0"
-            file="src/utils/ExpressionEvaluator.cpp"/>
-      <FILE id="ULd5tM" name="ExpressionEvaluator.h" compile="0" resource="0"
-            file="src/utils/ExpressionEvaluator.h"/>
-      <FILE id="gEp6s0" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
-            file="src/ui/FormulaDisplayComponent.cpp"/>
-      <FILE id="HaOSKp" name="FormulaDisplayComponent.h" compile="0" resource="0"
-            file="src/ui/FormulaDisplayComponent.h"/>
-      <FILE id="u5652q" name="FormulaHelper.cpp" compile="1" resource="0"
-            file="src/utils/FormulaHelper.cpp"/>
-      <FILE id="WIMgG6" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
-      <FILE id="F9aaAl" name="FormulaWaveComponent.cpp" compile="1" resource="0"
-            file="src/ui/FormulaWaveComponent.cpp"/>
-      <FILE id="oyTINU" name="FormulaWaveComponent.h" compile="0" resource="0"
-            file="src/ui/FormulaWaveComponent.h"/>
-      <FILE id="mKCjup" name="LookupTables.cpp" compile="1" resource="0"
-            file="src/dsp/LookupTables.cpp"/>
-      <FILE id="J8mSCy" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
-      <FILE id="qXvNdI" name="PluginProcessor.cpp" compile="1" resource="0"
-            file="src/core/PluginProcessor.cpp"/>
-      <FILE id="rM2xts" name="PluginProcessor.h" compile="0" resource="0"
-            file="src/core/PluginProcessor.h"/>
-      <FILE id="o8VUXn" name="PluginEditor.cpp" compile="1" resource="0"
-            file="src/ui/PluginEditor.cpp"/>
-      <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
-    </GROUP>
-    <GROUP id="{8A1018E5-0C4C-F28C-C88E-9F0C40ABB7EA}" name="resources">
-      <GROUP id="{E155C19A-8AEF-B9F4-97B7-A18AD4C3F05E}" name="nlohmann">
-        <FILE id="VKIADK" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
+    <GROUP id="{5932B18B-C765-AF0C-CA03-C0BC08854A27}" name="docs"/>
+    <GROUP id="{A18D38A8-682F-25CD-9B32-5578151C4AB0}" name="resources">
+      <GROUP id="{150DFBF1-8010-9483-1B67-02E23AC6861A}" name="img">
+        <FILE id="YIlFdH" name="knob.png" compile="0" resource="1" file="resources/img/knob.png"/>
+        <FILE id="DrIqsL" name="mockup.png" compile="0" resource="1" file="resources/img/mockup.png"/>
       </GROUP>
-      <GROUP id="{B1A8F998-9540-9E46-64F7-246F28040260}" name="img">
-        <FILE id="QLkK67" name="knob.png" compile="0" resource="1" file="resources/img/knob.png"/>
-        <FILE id="EtpzeX" name="mockup.png" compile="0" resource="1" file="resources/img/mockup.png"/>
+      <GROUP id="{8E7BB18B-EA96-4230-7CB2-2D1AE69C2EFD}" name="locale">
+        <FILE id="umpO7a" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
+        <FILE id="TPNr6Z" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
       </GROUP>
-      <FILE id="Gwwmnj" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
-      <FILE id="PYzPHm" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
+      <FILE id="SYsGPe" name="optimizations.txt" compile="0" resource="1"
+            file="resources/optimizations.txt"/>
+      <FILE id="BMHWSt" name="templates.json" compile="0" resource="1" file="resources/templates.json"/>
     </GROUP>
+    <GROUP id="{13C6FCCC-5778-4D1A-B6B1-492C82911CD7}" name="src">
+      <GROUP id="{DE01747B-7FDD-0AAC-372F-173792A2B3DC}" name="core">
+        <FILE id="OAahue" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
+        <FILE id="hq2341" name="EffectParameters.h" compile="0" resource="0"
+              file="src/core/EffectParameters.h"/>
+        <FILE id="FWoSmJ" name="PluginProcessor.cpp" compile="1" resource="0"
+              file="src/core/PluginProcessor.cpp"/>
+        <FILE id="A3Hf2o" name="PluginProcessor.h" compile="0" resource="0"
+              file="src/core/PluginProcessor.h"/>
+      </GROUP>
+      <GROUP id="{3B489D1D-0DCE-6DF9-AF37-3575C3D1D24E}" name="dsp">
+        <FILE id="nohekw" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
+        <FILE id="pBLJsL" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
+        <FILE id="jtAVfn" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
+        <FILE id="GfJXby" name="LookupTables.cpp" compile="1" resource="0"
+              file="src/dsp/LookupTables.cpp"/>
+        <FILE id="ZIQq15" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
+        <FILE id="Uc42tw" name="SignalPolisher.cpp" compile="1" resource="0"
+              file="src/dsp/SignalPolisher.cpp"/>
+        <FILE id="zWFILZ" name="SignalPolisher.h" compile="0" resource="0"
+              file="src/dsp/SignalPolisher.h"/>
+        <FILE id="WR8RAt" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
+        <FILE id="Dv6Xim" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
+      </GROUP>
+      <GROUP id="{7B946D71-FE10-F030-8DA6-046E14C00D49}" name="third_party">
+        <GROUP id="{7C1FDF67-9B8B-CD79-CC7E-429D0AB7223B}" name="nlohmann">
+          <FILE id="IKFAba" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
+        </GROUP>
+      </GROUP>
+      <GROUP id="{2C69F7B9-C142-FEF8-6BCA-447014FD34FE}" name="ui">
+        <FILE id="TW4Et9" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
+              file="src/ui/FormulaDisplayComponent.cpp"/>
+        <FILE id="kH6sp5" name="FormulaDisplayComponent.h" compile="0" resource="0"
+              file="src/ui/FormulaDisplayComponent.h"/>
+        <FILE id="AE84z1" name="FormulaWaveComponent.cpp" compile="1" resource="0"
+              file="src/ui/FormulaWaveComponent.cpp"/>
+        <FILE id="vwRO4b" name="FormulaWaveComponent.h" compile="0" resource="0"
+              file="src/ui/FormulaWaveComponent.h"/>
+        <FILE id="rb8pU2" name="PluginEditor.cpp" compile="1" resource="0"
+              file="src/ui/PluginEditor.cpp"/>
+        <FILE id="zoIDdq" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
+      </GROUP>
+      <GROUP id="{FB9EC58B-98EE-A3F1-8192-3F06D47D2762}" name="utils">
+        <FILE id="nsoSPR" name="ExpressionEvaluator.cpp" compile="1" resource="0"
+              file="src/utils/ExpressionEvaluator.cpp"/>
+        <FILE id="YEuvkQ" name="ExpressionEvaluator.h" compile="0" resource="0"
+              file="src/utils/ExpressionEvaluator.h"/>
+        <FILE id="UNPJ4p" name="FormulaHelper.cpp" compile="1" resource="0"
+              file="src/utils/FormulaHelper.cpp"/>
+        <FILE id="yQSGJZ" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
+        <FILE id="v3UWdU" name="PresetManager.cpp" compile="1" resource="0"
+              file="src/utils/PresetManager.cpp"/>
+        <FILE id="fdlByP" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
+      </GROUP>
+    </GROUP>
+    <GROUP id="{F9577DD7-D1ED-F1DA-1444-9BC18A92F1A7}" name="tests">
+      <FILE id="aiX5Kl" name="ExpressionEvaluatorTest.h" compile="0" resource="0"
+            file="tests/ExpressionEvaluatorTest.h"/>
+      <FILE id="AwWcDU" name="main.cpp" compile="1" resource="0" file="tests/main.cpp"/>
+      <FILE id="FKSl3A" name="NeuroCore_Tests.jucer" compile="0" resource="1"
+            file="tests/NeuroCore_Tests.jucer"/>
+      <FILE id="zNxZYP" name="WaveShaperTest.h" compile="0" resource="0"
+            file="tests/WaveShaperTest.h"/>
+    </GROUP>
+    <FILE id="VFTlMa" name="README.md" compile="0" resource="1" file="README.md"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_animation" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -89,24 +117,24 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="NeuroCore"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_animation" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_plugin_client" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_audio_utils" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_core" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_data_structures" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_dsp" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_events" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_graphics" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_opengl" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_osc" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_product_unlocking" path="$(JUCE_PATH)/modules"/>
-        <MODULEPATH id="juce_cryptography" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_animation" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_opengl" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_osc" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_product_unlocking" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="D:/JUCE/modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>

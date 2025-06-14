@@ -2,17 +2,38 @@
 
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="NeuroCore\Source">
-      <UniqueIdentifier>{828AFC6B-5BE4-6854-42DE-23A84D80E1A9}</UniqueIdentifier>
+    <Filter Include="NeuroCore\resources\img">
+      <UniqueIdentifier>{97D83B3D-4671-5132-8214-2B933A53BF69}</UniqueIdentifier>
     </Filter>
-    <Filter Include="NeuroCore\Resources\nlohmann">
-      <UniqueIdentifier>{E78DC158-0205-0C6C-797D-79572228E847}</UniqueIdentifier>
+    <Filter Include="NeuroCore\resources\locale">
+      <UniqueIdentifier>{E1F32EB2-D9DC-2998-FF9F-CC1FE1052A60}</UniqueIdentifier>
     </Filter>
-    <Filter Include="NeuroCore\Resources\img">
-      <UniqueIdentifier>{2372177D-0E95-7069-696B-7203169EB726}</UniqueIdentifier>
+    <Filter Include="NeuroCore\resources">
+      <UniqueIdentifier>{C5AB6AF8-5BB1-4A79-9F5A-6AA431E7573A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="NeuroCore\Resources">
-      <UniqueIdentifier>{0C1D4D6E-4984-E822-0FA7-83E4B527B900}</UniqueIdentifier>
+    <Filter Include="NeuroCore\src\core">
+      <UniqueIdentifier>{51CDF870-945B-DD80-8B4F-E8C03FEADAF3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\dsp">
+      <UniqueIdentifier>{B93283FB-7AF2-A799-2616-54405B0ECADA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\nlohmann">
+      <UniqueIdentifier>{E96F3D17-B487-0FD7-C7A1-399228EC3ACB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party">
+      <UniqueIdentifier>{58F66E34-898F-353C-4260-9641F21A590A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\ui">
+      <UniqueIdentifier>{5274A128-1889-225E-D9A3-CCC16C32B3B0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\utils">
+      <UniqueIdentifier>{DDCFFDA6-9E6F-161C-2384-22D67F12A20C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src">
+      <UniqueIdentifier>{E57F1CFF-141B-5692-5F1E-CF870DD90280}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\tests">
+      <UniqueIdentifier>{C9365292-8999-E56E-707C-6977935495F1}</UniqueIdentifier>
     </Filter>
     <Filter Include="NeuroCore">
       <UniqueIdentifier>{898C3DC8-5BC6-771C-8D3A-C13A1821BBDA}</UniqueIdentifier>
@@ -757,38 +778,41 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\InputGain.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\core\PluginProcessor.cpp">
+      <Filter>NeuroCore\src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\PresetManager.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\dsp\InputGain.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\SignalPolisher.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\dsp\LookupTables.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\WaveShaper.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\dsp\WaveShaper.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\FormulaDisplayComponent.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\FormulaHelper.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\FormulaWaveComponent.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\ui\PluginEditor.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\LookupTables.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\utils\ExpressionEvaluator.cpp">
+      <Filter>NeuroCore\src\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\PluginProcessor.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\utils\FormulaHelper.cpp">
+      <Filter>NeuroCore\src\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\PluginEditor.cpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClCompile Include="..\..\src\utils\PresetManager.cpp">
+      <Filter>NeuroCore\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\main.cpp">
+      <Filter>NeuroCore\tests</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.cpp">
       <Filter>JUCE Modules\juce_animation\animation</Filter>
@@ -3903,50 +3927,56 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\InputGain.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\core\Config.h">
+      <Filter>NeuroCore\src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\json.hpp">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\core\EffectParameters.h">
+      <Filter>NeuroCore\src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\PresetManager.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\core\PluginProcessor.h">
+      <Filter>NeuroCore\src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\SignalPolisher.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\dsp\DSPUtils.h">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\WaveShaper.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\dsp\InputGain.h">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Config.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\dsp\LookupTables.h">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\ExpressionEvaluator.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\dsp\SignalPolisher.h">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\FormulaDisplayComponent.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\dsp\WaveShaper.h">
+      <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\FormulaHelper.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp">
+      <Filter>NeuroCore\src\third_party\nlohmann</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\FormulaWaveComponent.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\LookupTables.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\PluginProcessor.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\ui\PluginEditor.h">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\PluginEditor.h">
-      <Filter>NeuroCore\Source</Filter>
+    <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h">
+      <Filter>NeuroCore\src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Resources\nlohmann\json.hpp">
-      <Filter>NeuroCore\Resources\nlohmann</Filter>
+    <ClInclude Include="..\..\src\utils\FormulaHelper.h">
+      <Filter>NeuroCore\src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Resources\nlohmann\json_fwd.hpp">
-      <Filter>NeuroCore\Resources\nlohmann</Filter>
+    <ClInclude Include="..\..\src\utils\PresetManager.h">
+      <Filter>NeuroCore\src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tests\ExpressionEvaluatorTest.h">
+      <Filter>NeuroCore\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tests\WaveShaperTest.h">
+      <Filter>NeuroCore\tests</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h">
       <Filter>JUCE Modules\juce_animation\animation</Filter>
@@ -8141,17 +8171,29 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Resources\img\knob.png">
-      <Filter>NeuroCore\Resources\img</Filter>
+    <None Include="..\..\resources\img\knob.png">
+      <Filter>NeuroCore\resources\img</Filter>
     </None>
-    <None Include="..\..\Resources\img\mockup.png">
-      <Filter>NeuroCore\Resources\img</Filter>
+    <None Include="..\..\resources\img\mockup.png">
+      <Filter>NeuroCore\resources\img</Filter>
     </None>
-    <None Include="..\..\Resources\de.txt">
-      <Filter>NeuroCore\Resources</Filter>
+    <None Include="..\..\resources\locale\de.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
     </None>
-    <None Include="..\..\Resources\en.txt">
-      <Filter>NeuroCore\Resources</Filter>
+    <None Include="..\..\resources\locale\en.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
+    </None>
+    <None Include="..\..\resources\optimizations.txt">
+      <Filter>NeuroCore\resources</Filter>
+    </None>
+    <None Include="..\..\resources\templates.json">
+      <Filter>NeuroCore\resources</Filter>
+    </None>
+    <None Include="..\..\tests\NeuroCore_Tests.jucer">
+      <Filter>NeuroCore\tests</Filter>
+    </None>
+    <None Include="..\..\README.md">
+      <Filter>NeuroCore</Filter>
     </None>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\common\README.md">
       <Filter>JUCE Modules\juce_audio_devices\native\oboe\src\common</Filter>
