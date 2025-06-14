@@ -22,7 +22,8 @@ endif()
 
 list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
 
-include(${JUCE_DIR}/extras/Build/CMake/JUCE.cmake)
+include("${JUCE_DIR}/extras/Build/CMake/JUCEModuleSupport.cmake")
+include("${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake")
 
 juce_add_plugin(NeuroCore
     COMPANY_NAME "NEUROKLAST"
