@@ -14,7 +14,7 @@
 class LookupTables
 {
 public:
-    // Initialise all tables with the given resolution (clamped 256..4098).
+    // Initialise all tables with the given resolution (clamped 256..4096).
     static void initialise (int size = Config::kLookupTableSize);
 
     // Fast access functions using the lookup tables.
