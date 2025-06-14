@@ -105,6 +105,8 @@ namespace Config
 
     /// Number of samples displayed in the formula preview.
     inline constexpr int   kFormulaPreviewSamples = 512;
+    /// Fallback block size if host provides an invalid value.
+    inline constexpr int   kDefaultBlockSize      = 512;
 
     /// Default resolution for lookup tables.
     inline constexpr int   kLookupTableSize = 1024;

@@ -110,7 +110,7 @@ private:
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
-                                         static_cast<juce::uint32> (Config::kFormulaPreviewSamples),
+                                         static_cast<juce::uint32> (Config::kDefaultBlockSize),
                                          static_cast<juce::uint32> (Config::kMaxChannels) };
 
     void updateProcessingSpec (double sampleRate, int blockSize);
