@@ -18,10 +18,10 @@ void WaveShaper::prepare (const juce::dsp::ProcessSpec& spec)
     }
     for (auto& s : smoothedParams)
     {
-        s.reset(sampleRate, 0.02);
+        s.reset(sampleRate, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
-    smoothedModFreq.reset (sampleRate, 0.02);
+    smoothedModFreq.reset (sampleRate, Config::kSmoothingTime);
     smoothedModFreq.setCurrentAndTargetValue (0.f);
     lfo.initialise ([] (SampleType x) { return std::sin (x); });
     lfo.prepare ({ sampleRate, spec.maximumBlockSize, 1 });
@@ -32,10 +32,10 @@ void WaveShaper::reset()
 {
     for (auto& s : smoothedParams)
     {
-        s.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+        s.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
-    smoothedModFreq.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+    smoothedModFreq.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate, Config::kSmoothingTime);
     smoothedModFreq.setCurrentAndTargetValue(0.f);
     lfo.reset();
 }

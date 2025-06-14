@@ -1,7 +1,13 @@
 #pragma once
+
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
 #include <JuceHeader.h>
 #include <atomic>
 #include <functional>
+#include "../core/Config.h"
 
 // Wrapper around juce::dsp::Oscillator<float> allowing custom waveforms.
 // Keeps oscillator and formula engine separated.
@@ -45,6 +51,6 @@ private:
     SampleType ampTarget  { 1.0f };
 
     juce::dsp::Phase<SampleType> phase;
-    SampleType sampleRate { 44100.0f };
+    SampleType sampleRate { Config::kDefaultSampleRate };
 };
 

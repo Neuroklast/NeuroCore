@@ -1,7 +1,13 @@
 #pragma once
 
+/*
+    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    Developed by Kay Schäfer and Simon Seifried
+*/
+
 #include <JuceHeader.h>
 #include <vector>
+#include "../core/Config.h"
 
 // Helper class that stores lookup tables for common curves.
 // Tables are initialised once at plugin start.
@@ -9,7 +15,7 @@ class LookupTables
 {
 public:
     // Initialise all tables with the given resolution (clamped 256..4098).
-    static void initialise (int size = 1024);
+    static void initialise (int size = Config::kLookupTableSize);
 
     // Fast access functions using the lookup tables.
     static float fastSin  (float x) noexcept;
