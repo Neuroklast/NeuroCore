@@ -17,7 +17,9 @@ void WaveShaper::prepare (const juce::dsp::ProcessSpec& spec)
     }
     smoothedModFreq.reset (sampleRate, 0.02);
     smoothedModFreq.setCurrentAndTargetValue (0.f);
-    modPhase = 0.f;
+    lfo.initialise ([] (SampleType x) { return std::sin (x); });
+    lfo.prepare ({ sampleRate, spec.maximumBlockSize, 1 });
+    lfo.reset();
 }
 
 void WaveShaper::reset()
@@ -29,7 +31,7 @@ void WaveShaper::reset()
     }
     smoothedModFreq.reset();
     smoothedModFreq.setCurrentAndTargetValue (0.f);
-    modPhase = 0.f;
+    lfo.reset();
 }
 
 void WaveShaper::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept
@@ -51,12 +53,10 @@ void WaveShaper::process (const juce::dsp::ProcessContextReplacing<SampleType>& 
                 evaluator->setVariable (variableNames[p].toStdString(), smoothedParams[p].getNextValue());
 
         auto freq = smoothedModFreq.getNextValue();
-        auto mod = std::sin (modPhase);
+        lfo.setFrequency (freq);
+        auto mod = lfo.processSample (0.0f);
         if (evaluator)
             evaluator->setVariable ("mod", mod);
-        modPhase += 2.0f * juce::MathConstants<float>::pi * freq / static_cast<float> (sampleRate);
-        if (modPhase > juce::MathConstants<float>::twoPi)
-            modPhase -= juce::MathConstants<float>::twoPi;
 
         for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
         {
