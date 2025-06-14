@@ -93,6 +93,9 @@ private:
     juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels, (size_t)std::log2(Config::kOversamplingFactor), juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
     juce::dsp::DryWetMixer<float> dryWetMixer;
     juce::SmoothedValue<float>    wetValue;
+    juce::SmoothedValue<float>    gainCompValue;
+    juce::dsp::Gain<float>        outputGain;
+    juce::AudioBuffer<float>      dryBuffer;
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
