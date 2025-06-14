@@ -1,6 +1,7 @@
 #include "PresetManager.h"
 #include "PluginProcessor.h"
 #include "ExpressionEvaluator.h"
+#include "Config.h"
 
 using json = nlohmann::json;
 
@@ -12,7 +13,7 @@ std::string PresetManager::encrypt(const std::string& text) const
 {
     std::string out = text;
     for (size_t i = 0; i < out.size(); ++i)
-        out[i] ^= key[(int) (i % key.size())];
+        out[i] ^= key[(int)(i % key.length())];
     return out;
 }
 
@@ -34,8 +35,13 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     j["variables"] = vars;
 
     json params;
-    for (auto* p : processor.apvts.getParameters())
-        params[p->getName(100).toStdString()] = p->getValue();
+    for (const auto& param : processor.apvts.state)
+    {
+        auto paramID = param.getProperty("id").toString();
+        auto paramValue = processor.apvts.getParameter(paramID)->getValue();
+        params[paramID.toStdString()] = paramValue;
+    }
+
     j["parameters"] = params;
 
     auto data = j.dump();
@@ -67,13 +73,20 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (j.contains("parameters"))
     {
         auto params = j["parameters"];
-        for (auto* p : processor.apvts.getParameters())
+        for (auto param : processor.apvts.state)
         {
-            auto id = p->getName(100).toStdString();
-            if (params.contains(id))
-                p->setValueNotifyingHost(params[id].get<float>());
+            auto paramID = param.getProperty("id").toString();
+            if (params.contains(paramID.toStdString()))
+            {
+                auto* parameter = processor.apvts.getParameter(paramID);
+                if (parameter != nullptr)
+                {
+                    parameter->setValueNotifyingHost(params[paramID.toStdString()].get<float>());
+                }
+            }
         }
     }
+
     return true;
 }
 

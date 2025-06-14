@@ -143,6 +143,10 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\InputGain.cpp"/>
+    <ClCompile Include="..\..\Source\PresetManager.cpp"/>
+    <ClCompile Include="..\..\Source\SignalPolisher.cpp"/>
+    <ClCompile Include="..\..\Source\WaveShaper.cpp"/>
     <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp"/>
     <ClCompile Include="..\..\Source\FormulaDisplayComponent.cpp"/>
     <ClCompile Include="..\..\Source\FormulaHelper.cpp"/>
@@ -3067,6 +3071,11 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_product_unlocking.cpp"/>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\InputGain.h"/>
+    <ClInclude Include="..\..\Source\json.hpp"/>
+    <ClInclude Include="..\..\Source\PresetManager.h"/>
+    <ClInclude Include="..\..\Source\SignalPolisher.h"/>
+    <ClInclude Include="..\..\Source\WaveShaper.h"/>
     <ClInclude Include="..\..\Source\Config.h"/>
     <ClInclude Include="..\..\Source\ExpressionEvaluator.h"/>
     <ClInclude Include="..\..\Source\FormulaDisplayComponent.h"/>
@@ -3075,6 +3084,8 @@
     <ClInclude Include="..\..\Source\LookupTables.h"/>
     <ClInclude Include="..\..\Source\PluginProcessor.h"/>
     <ClInclude Include="..\..\Source\PluginEditor.h"/>
+    <ClInclude Include="..\..\Resources\nlohmann\json.hpp"/>
+    <ClInclude Include="..\..\Resources\nlohmann\json_fwd.hpp"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_AnimatorSetBuilder.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_AnimatorUpdater.h"/>

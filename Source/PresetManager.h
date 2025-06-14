@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
-#include "json.hpp"
 #include <vector>
+#include "../Resources/nlohmann/json.hpp"
 
 class NeuroCoreAudioProcessor;
 

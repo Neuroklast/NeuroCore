@@ -8,6 +8,18 @@
               pluginVST3Category="Distortion" cppLanguageStandard="latest">
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{2E2D7F5B-06F4-3734-1F27-F48BDA7FB349}" name="Source">
+      <FILE id="GPKano" name="InputGain.cpp" compile="1" resource="0" file="Source/InputGain.cpp"/>
+      <FILE id="RThJjA" name="InputGain.h" compile="0" resource="0" file="Source/InputGain.h"/>
+      <FILE id="aSXQyI" name="json.hpp" compile="0" resource="0" file="Source/json.hpp"/>
+      <FILE id="zs3kYE" name="PresetManager.cpp" compile="1" resource="0"
+            file="Source/PresetManager.cpp"/>
+      <FILE id="Bpeene" name="PresetManager.h" compile="0" resource="0" file="Source/PresetManager.h"/>
+      <FILE id="lDho2o" name="SignalPolisher.cpp" compile="1" resource="0"
+            file="Source/SignalPolisher.cpp"/>
+      <FILE id="DGiE14" name="SignalPolisher.h" compile="0" resource="0"
+            file="Source/SignalPolisher.h"/>
+      <FILE id="SHxgPc" name="WaveShaper.cpp" compile="1" resource="0" file="Source/WaveShaper.cpp"/>
+      <FILE id="kkLK7C" name="WaveShaper.h" compile="0" resource="0" file="Source/WaveShaper.h"/>
       <FILE id="bW6NwE" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
       <FILE id="nk7S7G" name="ExpressionEvaluator.cpp" compile="1" resource="0"
             file="Source/ExpressionEvaluator.cpp"/>
@@ -34,14 +46,12 @@
       <FILE id="o8VUXn" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="NtBHBX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
-      <FILE id="IGAINh" name="InputGain.h" compile="0" resource="0" file="Source/InputGain.h"/>
-      <FILE id="IGAINc" name="InputGain.cpp" compile="1" resource="0" file="Source/InputGain.cpp"/>
-      <FILE id="WSHPh" name="WaveShaper.h" compile="0" resource="0" file="Source/WaveShaper.h"/>
-      <FILE id="WSHPc" name="WaveShaper.cpp" compile="1" resource="0" file="Source/WaveShaper.cpp"/>
-      <FILE id="POLh" name="SignalPolisher.h" compile="0" resource="0" file="Source/SignalPolisher.h"/>
-      <FILE id="POLc" name="SignalPolisher.cpp" compile="1" resource="0" file="Source/SignalPolisher.cpp"/>
     </GROUP>
     <GROUP id="{8A1018E5-0C4C-F28C-C88E-9F0C40ABB7EA}" name="Resources">
+      <GROUP id="{E155C19A-8AEF-B9F4-97B7-A18AD4C3F05E}" name="nlohmann">
+        <FILE id="VKIADK" name="json.hpp" compile="0" resource="0" file="Resources/nlohmann/json.hpp"/>
+        <FILE id="D0Pt34" name="json_fwd.hpp" compile="0" resource="0" file="Resources/nlohmann/json_fwd.hpp"/>
+      </GROUP>
       <GROUP id="{B1A8F998-9540-9E46-64F7-246F28040260}" name="img">
         <FILE id="QLkK67" name="knob.png" compile="0" resource="1" file="Resources/img/knob.png"/>
         <FILE id="EtpzeX" name="mockup.png" compile="0" resource="1" file="Resources/img/mockup.png"/>

@@ -23412,13 +23412,15 @@ const char* mockup_png = (const char*) temp_binary_data_1;
 
 //================== de.txt ==================
 static const unsigned char temp_binary_data_2[] =
-"OptimizeButton=Optimieren\r\n";
+"OptimizeButton=Optimieren\r\n"
+"OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt\r\n";
 
 const char* de_txt = (const char*) temp_binary_data_2;
 
 //================== en.txt ==================
 static const unsigned char temp_binary_data_3[] =
-"OptimizeButton=Optimize\r\n";
+"OptimizeButton=Optimize\r\n"
+"OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)\r\n";
 
 const char* en_txt = (const char*) temp_binary_data_3;
 
@@ -23436,8 +23438,8 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
     {
         case 0xe90704e0:  numBytes = 381724; return knob_png;
         case 0x633e948f:  numBytes = 1267316; return mockup_png;
-        case 0xb060d5b2:  numBytes = 27; return de_txt;
-        case 0xb29481da:  numBytes = 25; return en_txt;
+        case 0xb060d5b2:  numBytes = 94; return de_txt;
+        case 0xb29481da:  numBytes = 92; return en_txt;
         default: break;
     }
 

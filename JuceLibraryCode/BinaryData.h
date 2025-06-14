@@ -15,10 +15,10 @@ namespace BinaryData
     const int            mockup_pngSize = 1267316;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 27;
+    const int            de_txtSize = 94;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 25;
+    const int            en_txtSize = 92;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 4;

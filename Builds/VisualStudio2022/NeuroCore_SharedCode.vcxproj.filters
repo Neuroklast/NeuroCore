@@ -5,6 +5,9 @@
     <Filter Include="NeuroCore\Source">
       <UniqueIdentifier>{828AFC6B-5BE4-6854-42DE-23A84D80E1A9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\Resources\nlohmann">
+      <UniqueIdentifier>{E78DC158-0205-0C6C-797D-79572228E847}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\Resources\img">
       <UniqueIdentifier>{2372177D-0E95-7069-696B-7203169EB726}</UniqueIdentifier>
     </Filter>
@@ -754,6 +757,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\InputGain.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\PresetManager.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\SignalPolisher.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\WaveShaper.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp">
       <Filter>NeuroCore\Source</Filter>
     </ClCompile>
@@ -3888,6 +3903,21 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\InputGain.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\json.hpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\PresetManager.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\SignalPolisher.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\WaveShaper.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Config.h">
       <Filter>NeuroCore\Source</Filter>
     </ClInclude>
@@ -3911,6 +3941,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\PluginEditor.h">
       <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Resources\nlohmann\json.hpp">
+      <Filter>NeuroCore\Resources\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Resources\nlohmann\json_fwd.hpp">
+      <Filter>NeuroCore\Resources\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h">
       <Filter>JUCE Modules\juce_animation\animation</Filter>

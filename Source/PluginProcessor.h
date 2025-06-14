@@ -87,6 +87,6 @@ private:
     InputGain inputGain;
     WaveShaper waveShaper{ &evaluator };
     SignalPolisher polisher;
-    juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain{ inputGain, waveShaper, polisher };
+    juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
