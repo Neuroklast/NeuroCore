@@ -321,9 +321,29 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
 
 void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
 {
-    currentSpec.sampleRate = sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate;
-    currentSpec.maximumBlockSize = static_cast<juce::uint32> (juce::jmax (1, blockSize));
-    currentSpec.numChannels = static_cast<juce::uint32> (getTotalNumOutputChannels());
+    if (sampleRate <= 0.0)
+    {
+        logWarning("Invalid sample rate from host, using default");
+        sampleRate = Config::kDefaultSampleRate;
+    }
+
+    if (blockSize <= 0)
+    {
+        logWarning("Invalid block size from host, using default");
+        blockSize = Config::kDefaultBlockSize;
+    }
+
+    auto channels = getTotalNumOutputChannels();
+    if (channels <= 0)
+    {
+        logWarning("No output channels configured, falling back to stereo");
+        channels = Config::kMaxChannels;
+    }
+    channels = juce::jlimit(1, Config::kMaxChannels, channels);
+
+    currentSpec.sampleRate     = sampleRate;
+    currentSpec.maximumBlockSize = static_cast<juce::uint32> (blockSize);
+    currentSpec.numChannels    = static_cast<juce::uint32> (channels);
 
     oversampling.initProcessing (static_cast<size_t> (currentSpec.maximumBlockSize));
     oversampling.reset();
