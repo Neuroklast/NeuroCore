@@ -12,6 +12,7 @@
 #include "PluginEditor.h"
 #include "PresetManager.h"
 #include "FormulaHelper.h"
+#include "DSPUtils.h"
 
 
 //==============================================================================
@@ -143,6 +144,13 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::balanced);
     dryWetMixer.setWetLatency(oversampling.getLatencyInSamples());
 
+    dryBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
+    dryBuffer.clear();
+    gainCompValue.reset(sampleRate, 0.02);
+    gainCompValue.setCurrentAndTargetValue(1.0f);
+    outputGain.prepare(spec);
+    outputGain.setGainLinear(1.0f);
+
     wetValue.reset(sampleRate, 0.02);
     wetValue.setCurrentAndTargetValue(1.0f);
 
@@ -163,6 +171,10 @@ void NeuroCoreAudioProcessor::reset()
     dryWetMixer.reset();
     wetValue.reset();
     wetValue.setCurrentAndTargetValue(1.0f);
+    gainCompValue.reset();
+    gainCompValue.setCurrentAndTargetValue(1.0f);
+    outputGain.reset();
+    outputGain.setGainLinear(1.0f);
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -222,6 +234,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         buffer.clear (i, 0, buffer.getNumSamples());
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
+    jassert(buffer.getNumSamples() <= dryBuffer.getNumSamples());
+    for (int ch = 0; ch < totalNumOutputChannels; ++ch)
+        dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
+
+    auto dryBlock = juce::dsp::AudioBlock<float>(dryBuffer);
 
     dryWetMixer.pushDrySamples (block);
 
@@ -235,6 +252,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         dryWetMixer.setWetMixProportion (wetValue.getNextValue());
         dryWetMixer.mixWetSamples (block.getSubBlock (i, 1));
     }
+
+    DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
 }
 
 //==============================================================================
