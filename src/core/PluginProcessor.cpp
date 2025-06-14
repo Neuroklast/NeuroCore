@@ -137,35 +137,7 @@ void NeuroCoreAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
-
-    if (spec.sampleRate <= 0.0 || spec.numChannels == 0) {
-        logError("prepareToPlay received invalid ProcessSpec");
-        return;
-    }
-
-    oversampling.initProcessing(static_cast<size_t>(samplesPerBlock));
-    oversampling.reset();
-
-    const auto latency = static_cast<int>(oversampling.getLatencyInSamples());
-    setLatencySamples(latency);
-
-    dryWetMixer.prepare(spec);
-    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::balanced);
-    dryWetMixer.setWetLatency(oversampling.getLatencyInSamples());
-
-    dryBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
-    dryBuffer.clear();
-    gainCompValue.reset(sampleRate, Config::kSmoothingTime);
-    gainCompValue.setCurrentAndTargetValue(1.0f);
-    outputGain.prepare(spec);
-    outputGain.setGainLinear(1.0f);
-
-    wetValue.reset(sampleRate, Config::kSmoothingTime);
-    wetValue.setCurrentAndTargetValue(1.0f);
-
-    waveShaper.setVariableNames(variableNames);
-    chain.prepare(spec);
+    updateProcessingSpec(sampleRate, samplesPerBlock);
 }
 
 void NeuroCoreAudioProcessor::releaseResources()
@@ -176,6 +148,8 @@ void NeuroCoreAudioProcessor::releaseResources()
     dryBuffer.setSize(0, 0);
     gainCompValue.reset(getSampleRate(), 0.0);
     outputGain.reset();
+    currentSpec.sampleRate = 0.0;
+    currentSpec.maximumBlockSize = 0;
 }
 
 void NeuroCoreAudioProcessor::reset()
@@ -189,6 +163,8 @@ void NeuroCoreAudioProcessor::reset()
     gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.reset();
     outputGain.setGainLinear(1.0f);
+    currentSpec.sampleRate = getSampleRate();
+    currentSpec.maximumBlockSize = (juce::uint32) juce::jmax (1, getBlockSize());
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -341,6 +317,37 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     }
     evaluator.setVariable("mod", 0.0f);
     return evaluator.isValid() ? evaluator.evaluate(x) : x;
+}
+
+void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
+{
+    currentSpec.sampleRate = sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate;
+    currentSpec.maximumBlockSize = static_cast<juce::uint32> (juce::jmax (1, blockSize));
+    currentSpec.numChannels = static_cast<juce::uint32> (getTotalNumOutputChannels());
+
+    oversampling.initProcessing (static_cast<size_t> (currentSpec.maximumBlockSize));
+    oversampling.reset();
+
+    const auto latency = static_cast<int> (oversampling.getLatencyInSamples());
+    setLatencySamples (latency);
+
+    dryWetMixer.prepare (currentSpec);
+    dryWetMixer.setMixingRule (juce::dsp::DryWetMixingRule::balanced);
+    dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
+
+    dryBuffer.setSize ((int) currentSpec.numChannels, (int) currentSpec.maximumBlockSize);
+    dryBuffer.clear();
+
+    gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
+    gainCompValue.setCurrentAndTargetValue (1.0f);
+    outputGain.prepare (currentSpec);
+    outputGain.setGainLinear (1.0f);
+
+    wetValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
+    wetValue.setCurrentAndTargetValue (1.0f);
+
+    waveShaper.setVariableNames (variableNames);
+    chain.prepare (currentSpec);
 }
 
 

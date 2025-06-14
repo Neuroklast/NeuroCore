@@ -85,6 +85,9 @@ public:
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
 
+    // Returns the last process specification
+    juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return currentSpec; }
+
 private:
     //==============================================================================
     ExpressionEvaluator evaluator;
@@ -105,5 +108,11 @@ private:
     juce::dsp::Gain<float>        outputGain;
     juce::AudioBuffer<float>      dryBuffer;
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
+
+    juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
+                                         static_cast<juce::uint32> (Config::kFormulaPreviewSamples),
+                                         static_cast<juce::uint32> (Config::kMaxChannels) };
+
+    void updateProcessingSpec (double sampleRate, int blockSize);
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
