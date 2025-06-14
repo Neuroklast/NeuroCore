@@ -5,6 +5,12 @@
     <Filter Include="NeuroCore\Source">
       <UniqueIdentifier>{828AFC6B-5BE4-6854-42DE-23A84D80E1A9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\Resources\img">
+      <UniqueIdentifier>{2372177D-0E95-7069-696B-7203169EB726}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\Resources">
+      <UniqueIdentifier>{0C1D4D6E-4984-E822-0FA7-83E4B527B900}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore">
       <UniqueIdentifier>{898C3DC8-5BC6-771C-8D3A-C13A1821BBDA}</UniqueIdentifier>
     </Filter>
@@ -748,6 +754,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaDisplayComponent.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaHelper.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FormulaWaveComponent.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\LookupTables.cpp">
+      <Filter>NeuroCore\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp">
       <Filter>NeuroCore\Source</Filter>
     </ClCompile>
@@ -3793,6 +3814,9 @@
     <ClCompile Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.mm">
       <Filter>JUCE Modules\juce_product_unlocking</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\JuceLibraryCode\BinaryData.cpp">
+      <Filter>JUCE Library Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_animation.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
@@ -3864,6 +3888,24 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\Config.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\ExpressionEvaluator.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaDisplayComponent.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaHelper.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\FormulaWaveComponent.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\LookupTables.h">
+      <Filter>NeuroCore\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\PluginProcessor.h">
       <Filter>NeuroCore\Source</Filter>
     </ClInclude>
@@ -8052,6 +8094,9 @@
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h">
       <Filter>JUCE Library Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\JuceLibraryCode\BinaryData.h">
+      <Filter>JUCE Library Code</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h">
       <Filter>JUCE Library Code</Filter>
     </ClInclude>
@@ -8060,6 +8105,18 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Resources\img\knob.png">
+      <Filter>NeuroCore\Resources\img</Filter>
+    </None>
+    <None Include="..\..\Resources\img\mockup.png">
+      <Filter>NeuroCore\Resources\img</Filter>
+    </None>
+    <None Include="..\..\Resources\de.txt">
+      <Filter>NeuroCore\Resources</Filter>
+    </None>
+    <None Include="..\..\Resources\en.txt">
+      <Filter>NeuroCore\Resources</Filter>
+    </None>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\common\README.md">
       <Filter>JUCE Modules\juce_audio_devices\native\oboe\src\common</Filter>
     </None>

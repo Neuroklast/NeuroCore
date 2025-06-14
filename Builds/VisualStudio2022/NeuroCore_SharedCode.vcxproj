@@ -68,7 +68,7 @@
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -82,7 +82,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\NeuroCore.lib</OutputFile>
@@ -109,7 +109,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -123,7 +123,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\NeuroCore.lib</OutputFile>
@@ -143,6 +143,11 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\ExpressionEvaluator.cpp"/>
+    <ClCompile Include="..\..\Source\FormulaDisplayComponent.cpp"/>
+    <ClCompile Include="..\..\Source\FormulaHelper.cpp"/>
+    <ClCompile Include="..\..\Source\FormulaWaveComponent.cpp"/>
+    <ClCompile Include="..\..\Source\LookupTables.cpp"/>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp"/>
     <ClCompile Include="..\..\Source\PluginEditor.cpp"/>
     <ClCompile Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.cpp">
@@ -3028,6 +3033,7 @@
     <ClCompile Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\JuceLibraryCode\BinaryData.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_animation.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_devices.cpp"/>
@@ -3061,6 +3067,12 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_product_unlocking.cpp"/>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\Config.h"/>
+    <ClInclude Include="..\..\Source\ExpressionEvaluator.h"/>
+    <ClInclude Include="..\..\Source\FormulaDisplayComponent.h"/>
+    <ClInclude Include="..\..\Source\FormulaHelper.h"/>
+    <ClInclude Include="..\..\Source\FormulaWaveComponent.h"/>
+    <ClInclude Include="..\..\Source\LookupTables.h"/>
     <ClInclude Include="..\..\Source\PluginProcessor.h"/>
     <ClInclude Include="..\..\Source\PluginEditor.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h"/>
@@ -4457,10 +4469,15 @@
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\marketplace\juce_TracktionMarketplaceStatus.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h"/>
+    <ClInclude Include="..\..\JuceLibraryCode\BinaryData.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JucePluginDefines.h"/>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Resources\img\knob.png"/>
+    <None Include="..\..\Resources\img\mockup.png"/>
+    <None Include="..\..\Resources\de.txt"/>
+    <None Include="..\..\Resources\en.txt"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\common\README.md"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\src\flowgraph\resampler\README.md"/>
     <None Include="D:\JUCE\modules\juce_audio_devices\native\oboe\CMakeLists.txt"/>

@@ -7,25 +7,66 @@
 */
 
 #include "PluginProcessor.h"
+#include "ExpressionEvaluator.h"
+#include "LookupTables.h"
 #include "PluginEditor.h"
+#include "PresetManager.h"
+#include "FormulaHelper.h"
+
 
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
+    : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+      apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+      presetManager (*this)
+#else
+    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
 {
+    LookupTables::initialise();
+    evaluator.parseFormula("tanh(x)");
+    waveShaper.setEvaluator(&evaluator);
+    waveShaper.setVariableNames(variableNames);
+    for (auto& val : parameterValues)
+        val.store(0.0f);
+
+    // load localisation
+    auto lang = juce::SystemStats::getUserLanguage();
+    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                            .getSiblingFile("Resources");
+    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
+    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
+    juce::LocalisedStrings::setCurrentMappings(translations.get());
+
+    loadOptimizationRules(resDir.getChildFile("optimizations.txt"));
+
+    loadFormulaTemplates(resDir.getChildFile("templates.json"));
+
+    auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                        .getChildFile("NeuroCoreUserTemplates.txt");
+    loadUserTemplates(userFile);
+}
+
+void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
+{
+    if (juce::isPositiveAndBelow(index, variableNames.size()))
+    {
+        variableNames[(size_t)index] = name;
+        waveShaper.setVariableNames(variableNames);
+    }
 }
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 {
+    juce::LocalisedStrings::setCurrentMappings(nullptr);
 }
 
 //==============================================================================
@@ -93,14 +134,29 @@ void NeuroCoreAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
+
+    inputGain.setGainPointer(apvts.getRawParameterValue("inputGain"));
+    waveShaper.setParameterPointers({ apvts.getRawParameterValue("a"),
+                                      apvts.getRawParameterValue("b"),
+                                      apvts.getRawParameterValue("c"),
+                                      apvts.getRawParameterValue("d") },
+                                     apvts.getRawParameterValue("modFrequency"));
+    polisher.setModePointer(apvts.getRawParameterValue("polisherMode"));
+    waveShaper.setVariableNames(variableNames);
+
+    chain.prepare(spec);
 }
 
 void NeuroCoreAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+}
+
+void NeuroCoreAudioProcessor::reset()
+{
+    chain.reset();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -132,8 +188,18 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    const auto totalNumInputChannels  = getTotalNumInputChannels();
+    const auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    auto* aParam  = apvts.getRawParameterValue("a");
+    auto* bParam  = apvts.getRawParameterValue("b");
+    auto* cParam  = apvts.getRawParameterValue("c");
+    auto* dParam  = apvts.getRawParameterValue("d");
+
+    parameterValues[0].store(aParam ? aParam->load() : 0.f);
+    parameterValues[1].store(bParam ? bParam->load() : 0.f);
+    parameterValues[2].store(cParam ? cParam->load() : 0.f);
+    parameterValues[3].store(dParam ? dParam->load() : 0.f);
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -144,18 +210,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
-    }
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> ctx(block);
+    chain.process(ctx);
 }
 
 //==============================================================================
@@ -172,16 +229,59 @@ juce::AudioProcessorEditor* NeuroCoreAudioProcessor::createEditor()
 //==============================================================================
 void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    auto state = apvts.copyState();
+    if (state.isValid())
+    {
+        std::unique_ptr<juce::XmlElement> xml (state.createXml());
+        copyXmlToBinary (*xml, destData);
+    }
 }
 
 void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName (apvts.state.getType()))
+            apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
+
+void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
+{
+    evaluator.parseFormula (text.toStdString());
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+    auto addParam = [&params](const juce::String& id, const juce::String& name,
+                              float min, float max, float def)
+    {
+        params.push_back (std::make_unique<juce::AudioParameterFloat> (id, name,
+                                                                      juce::NormalisableRange<float> { min, max }, def));
+    };
+
+    addParam ("a", "A", 0.f, 1.f, 0.f);
+    addParam ("b", "B", 0.f, 1.f, 0.f);
+    addParam ("c", "C", 0.f, 1.f, 0.f);
+    addParam ("d", "D", 0.f, 1.f, 0.f);
+    addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
+    addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
+    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
+
+    return { params.begin(), params.end() };
+}
+
+
+float NeuroCoreAudioProcessor::evaluateFormula (float x)
+{
+    for (size_t i = 0; i < parameterValues.size(); ++i)
+    {
+        evaluator.setVariable(variableNames[i].toStdString(), parameterValues[i].load());
+    }
+    evaluator.setVariable("mod", 0.0f);
+    return evaluator.isValid() ? evaluator.evaluate(x) : x;
+}
+
 
 //==============================================================================
 // This creates new instances of the plugin..

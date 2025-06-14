@@ -9,6 +9,13 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
+#include "ExpressionEvaluator.h"
+#include "PresetManager.h"
+#include "InputGain.h"
+#include "WaveShaper.h"
+#include "SignalPolisher.h"
+
 
 //==============================================================================
 /**
@@ -23,6 +30,7 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
+    void reset() override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
@@ -53,7 +61,32 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // Updates expression from the UI
+    void setFormula (const juce::String& text);
+
+    void setVariableName(int index, const juce::String& name);
+    juce::String getVariableName(int index) const noexcept { return variableNames[index]; }
+    const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
+    const ExpressionEvaluator& getEvaluator() const noexcept { return evaluator; }
+
+    juce::AudioProcessorValueTreeState apvts;
+    PresetManager presetManager;
+
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    // Evaluates current formula for a single sample value.
+    float evaluateFormula (float x);
+
 private:
     //==============================================================================
+    ExpressionEvaluator evaluator;
+    std::array<std::atomic<float>, 4> parameterValues{};
+    std::array<juce::String, 4> variableNames{ "a", "b", "c", "d" };
+    std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
+
+    InputGain inputGain;
+    WaveShaper waveShaper{ &evaluator };
+    SignalPolisher polisher;
+    juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain{ inputGain, waveShaper, polisher };
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
