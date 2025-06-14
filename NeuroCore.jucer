@@ -3,7 +3,7 @@
 <JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" useAppConfig="1"
               addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1" version="0.0.1"
               companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
-              companyEmail="infgo@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
+              companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
               pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginChannelConfigs="2"
               pluginVST3Category="Distortion" cppLanguageStandard="latest">
   <MAINGROUP id="GyblaO" name="NeuroCore">

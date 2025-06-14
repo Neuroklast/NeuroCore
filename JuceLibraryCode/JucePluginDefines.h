@@ -53,7 +53,7 @@
  #define JucePlugin_ManufacturerWebsite    "http://neuroklast.net"
 #endif
 #ifndef  JucePlugin_ManufacturerEmail
- #define JucePlugin_ManufacturerEmail      "infgo@neuroklast.net"
+ #define JucePlugin_ManufacturerEmail      "info@neuroklast.net"
 #endif
 #ifndef  JucePlugin_ManufacturerCode
  #define JucePlugin_ManufacturerCode       0x4e524b4c
