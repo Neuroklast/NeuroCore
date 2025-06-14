@@ -13,12 +13,15 @@ NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe
    ```bash
    git clone --recurse-submodules https://github.com/juce-framework/JUCE.git <JUCE>
    ```
-2. Den Pfad `<JUCE>/modules` im Projucer unter *Global Paths → JUCE Modules* eintragen oder über die Umgebungsvariable `JUCE_PATH` bereitstellen.
+2. Den Pfad `<JUCE>/modules` im Projucer unter *Global Paths → JUCE Modules* eintragen oder als Umgebungsvariable `JUCE_PATH` bereitstellen. Die Variable kann
+   unter Windows mit `set JUCE_PATH=C:\JUCE` oder auf Linux/macOS mit `export JUCE_PATH=/path/zu/JUCE` gesetzt werden. Der Projucer liest diese Variable
+   automatisch, wenn kein fester Pfad hinterlegt ist.
 3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.
 
 ## Build-Schritte
 
-1. Projektdatei `NeuroCore.jucer` im Projucer öffnen und den JUCE-Pfad anpassen ("Global Path"). Anschließend über *File → Export Project* die gewünschten Exporter generieren.
+1. Projektdatei `NeuroCore.jucer` im Projucer öffnen. Sofern `JUCE_PATH` gesetzt ist, wird der Pfad automatisch verwendet. Andernfalls kann er unter
+   *Global Paths → JUCE Modules* eingetragen werden. Anschließend über *File → Export Project* die gewünschten Exporter generieren.
 2. Für die **Standalone-Version** das Projekt `NeuroCore_StandalonePlugin` in der IDE öffnen und übersetzen. Die erzeugte Anwendung verhält sich wie ein eigenständiger Effekt.
 3. Für die **VST3-Version** das Projekt `NeuroCore_VST3` kompilieren. Die entstandene *.vst3*-Datei kann in kompatiblen Hosts geladen werden.
 

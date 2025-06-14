@@ -90,24 +90,24 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="NeuroCore"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_animation" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_plugin_client" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_audio_utils" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_core" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_data_structures" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_dsp" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_events" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_graphics" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_opengl" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_osc" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_product_unlocking" path="D:/JUCE/modules"/>
-        <MODULEPATH id="juce_cryptography" path="D:/JUCE/modules"/>
+        <MODULEPATH id="juce_animation" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_core" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_data_structures" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_dsp" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_events" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_graphics" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_opengl" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_osc" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_product_unlocking" path="$(JUCE_PATH)/modules"/>
+        <MODULEPATH id="juce_cryptography" path="$(JUCE_PATH)/modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>
