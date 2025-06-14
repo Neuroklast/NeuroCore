@@ -33,7 +33,7 @@ public:
     void setAmplitude (SampleType newAmp) noexcept;
     SampleType getAmplitude() const noexcept { return ampTarget; }
     void setPhase (SampleType radians) noexcept;
-    SampleType getPhase() const noexcept { return phase.getCurrentPhase(); }
+    SampleType getPhase() const noexcept { return phase.phase; }
     void sync() noexcept; // reset phase
 
     // Custom waveform

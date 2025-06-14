@@ -36,7 +36,7 @@ void AdvancedOscillatorWrapper::setAmplitude(SampleType newAmp) noexcept
 
 void AdvancedOscillatorWrapper::setPhase(SampleType radians) noexcept
 {
-    phase.setCurrentPhase(radians);
+    phase.phase = radians;
     osc.reset();
 }
 
@@ -73,8 +73,10 @@ void AdvancedOscillatorWrapper::reset()
 {
     osc.reset();
     phase.reset();
-    amp.reset();
-    freq.reset();
+    amp.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate,
+              Config::kSmoothingTime);
+    freq.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate,
+               Config::kSmoothingTime);
     amp.setCurrentAndTargetValue(ampTarget);
     freq.setCurrentAndTargetValue(freqTarget);
 }
