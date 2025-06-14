@@ -212,6 +212,8 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
 
 bool ExpressionEvaluator::parseFormula(const std::string& formula)
 {
+    const juce::SpinLock::ScopedLockType sl(lock);
+
     input = formula;
     pos = 0;
     valid = false;
@@ -240,11 +242,14 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept
 {
+    const juce::SpinLock::ScopedLockType sl(lock);
     variables[name] = value;
 }
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
+    const juce::SpinLock::ScopedLockType sl(lock);
+
     if (!valid || !root)
         return 0.0f;
 

@@ -118,6 +118,7 @@ private:
     bool valid = false;
     juce::String errorMessage;
     NodePtr root;
+    mutable juce::SpinLock lock; // guards parse, variable access and evaluation
     std::unordered_map<std::string, float> variables;
 };
 
