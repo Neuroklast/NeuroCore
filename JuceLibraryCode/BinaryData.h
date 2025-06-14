@@ -15,10 +15,10 @@ namespace BinaryData
     const int            mockup_pngSize = 1267316;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 94;
+    const int            de_txtSize = 167;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 92;
+    const int            en_txtSize = 160;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
@@ -30,7 +30,7 @@ namespace BinaryData
     const int            NeuroCore_Tests_jucerSize = 1786;
 
     extern const char*   README_md;
-    const int            README_mdSize = 4159;
+    const int            README_mdSize = 4278;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 8;

@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\core\PluginProcessor.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputGain.cpp"/>
+    <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp"/>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp"/>
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp"/>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp"/>
@@ -3077,6 +3078,7 @@
     <ClInclude Include="..\..\src\core\PluginProcessor.h"/>
     <ClInclude Include="..\..\src\dsp\DSPUtils.h"/>
     <ClInclude Include="..\..\src\dsp\InputGain.h"/>
+    <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h"/>
     <ClInclude Include="..\..\src\dsp\LookupTables.h"/>
     <ClInclude Include="..\..\src\dsp\SignalPolisher.h"/>
     <ClInclude Include="..\..\src\dsp\WaveShaper.h"/>
@@ -3086,6 +3088,7 @@
     <ClInclude Include="..\..\src\ui\PluginEditor.h"/>
     <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h"/>
     <ClInclude Include="..\..\src\utils\FormulaHelper.h"/>
+    <ClInclude Include="..\..\src\utils\Log.h"/>
     <ClInclude Include="..\..\src\utils\PresetManager.h"/>
     <ClInclude Include="..\..\tests\ExpressionEvaluatorTest.h"/>
     <ClInclude Include="..\..\tests\WaveShaperTest.h"/>

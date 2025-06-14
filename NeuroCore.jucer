@@ -35,6 +35,10 @@
         <FILE id="nohekw" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
         <FILE id="pBLJsL" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
         <FILE id="jtAVfn" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
+        <FILE id="xawob4" name="AdvancedOscillatorWrapper.cpp" compile="1"
+              resource="0" file="src/dsp/AdvancedOscillatorWrapper.cpp"/>
+        <FILE id="wn5zzF" name="AdvancedOscillatorWrapper.h" compile="0" resource="0"
+              file="src/dsp/AdvancedOscillatorWrapper.h"/>
         <FILE id="GfJXby" name="LookupTables.cpp" compile="1" resource="0"
               file="src/dsp/LookupTables.cpp"/>
         <FILE id="ZIQq15" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
@@ -71,6 +75,7 @@
         <FILE id="UNPJ4p" name="FormulaHelper.cpp" compile="1" resource="0"
               file="src/utils/FormulaHelper.cpp"/>
         <FILE id="yQSGJZ" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
+        <FILE id="vW1Ove" name="Log.h" compile="0" resource="0" file="src/utils/Log.h"/>
         <FILE id="v3UWdU" name="PresetManager.cpp" compile="1" resource="0"
               file="src/utils/PresetManager.cpp"/>
         <FILE id="fdlByP" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>

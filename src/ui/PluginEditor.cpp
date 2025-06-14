@@ -19,7 +19,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setLookAndFeel (&lookAndFeel);
-    setSize (Config::kWindowWidth, Config::kWindowHeight);
+   
 
     static const juce::Colour defaultColours[4] = {
         juce::Colours::red, juce::Colours::green,
@@ -111,6 +111,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     errorLabel->setColour (juce::Label::textColourId, juce::Colours::red);
     addAndMakeVisible (*errorLabel);
 
+
+    setSize(Config::kWindowWidth, Config::kWindowHeight);
+
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
@@ -160,10 +163,13 @@ void NeuroCoreAudioProcessorEditor::resized()
     int inputHeight = middleHeight * 2 / 3;
 
     formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
-
+    if(formulaDisplay)
     formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, textHeight);
+	if (compileButton)
     compileButton->setBounds  (middleX, inputHeight + textHeight, thirdWidth, textHeight);
+	if (optimizeButton)
     optimizeButton->setBounds (middleX, inputHeight + 2 * textHeight, thirdWidth, textHeight);
+	if (errorLabel)
     errorLabel->setBounds     (middleX, inputHeight + 3 * textHeight, thirdWidth, textHeight);
 }
 

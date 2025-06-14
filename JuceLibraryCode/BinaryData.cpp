@@ -23413,14 +23413,18 @@ const char* mockup_png = (const char*) temp_binary_data_1;
 //================== de.txt ==================
 static const unsigned char temp_binary_data_2[] =
 "OptimizeButton=Optimieren\r\n"
-"OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt\r\n";
+"OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt\r\n"
+"ParseError=Syntaxfehler an Position %1\r\n"
+"UnknownError=Unbekannter Fehler\r\n";
 
 const char* de_txt = (const char*) temp_binary_data_2;
 
 //================== en.txt ==================
 static const unsigned char temp_binary_data_3[] =
 "OptimizeButton=Optimize\r\n"
-"OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)\r\n";
+"OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)\r\n"
+"ParseError=Syntax error at position %1\r\n"
+"UnknownError=Unknown error\r\n";
 
 const char* en_txt = (const char*) temp_binary_data_3;
 
@@ -23512,14 +23516,25 @@ static const unsigned char temp_binary_data_7[] =
 "\r\n"
 "### CMake-Build\r\n"
 "\r\n"
-"Alternativ l\xc3\xa4sst sich das Plug-in per CMake erzeugen. `JUCE_DIR` muss dabei auf das JUCE-Hauptverzeichnis zeigen. Die VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK` befinden.\r\n"
+"Alternativ l\xc3\xa4sst sich das Plug-in per CMake erzeugen. Ist `JUCE_DIR` nicht\r\n"
+"gesetzt, l\xc3\xa4""dt CMake die ben\xc3\xb6tigte JUCE-Version automatisch herunter. Die\r\n"
+"VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK`\r\n"
+"befinden.\r\n"
 "\r\n"
 "```bash\r\n"
-"cmake -B build -S . -DJUCE_DIR=<Pfad/zu/JUCE>\r\n"
+"cmake -B build -S .\r\n"
 "cmake --build build --config Release\r\n"
 "```\r\n"
 "\r\n"
-"Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`. Die ben\xc3\xb6tigten Ressourcen werden automatisch in den Ausgabepfad kopiert.\r\n"
+"Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.\r\n"
+"Die ben\xc3\xb6tigten Ressourcen werden automatisch in den Ausgabepfad kopiert.\r\n"
+"\r\n"
+"### Tests ausf\xc3\xbchren\r\n"
+"\r\n"
+"```bash\r\n"
+"cmake --build build --target NeuroCoreTests\r\n"
+"ctest --test-dir build\r\n"
+"```\r\n"
 "\r\n"
 "## Plug-in-\xc3\x9c""berblick\r\n"
 "\r\n"
@@ -23566,12 +23581,12 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
     {
         case 0xe90704e0:  numBytes = 381724; return knob_png;
         case 0x633e948f:  numBytes = 1267316; return mockup_png;
-        case 0xb060d5b2:  numBytes = 94; return de_txt;
-        case 0xb29481da:  numBytes = 92; return en_txt;
+        case 0xb060d5b2:  numBytes = 167; return de_txt;
+        case 0xb29481da:  numBytes = 160; return en_txt;
         case 0xbbbbcb57:  numBytes = 102; return optimizations_txt;
         case 0xd453fe2e:  numBytes = 234; return templates_json;
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
-        case 0x64791dc8:  numBytes = 4159; return README_md;
+        case 0x64791dc8:  numBytes = 4278; return README_md;
         default: break;
     }
 

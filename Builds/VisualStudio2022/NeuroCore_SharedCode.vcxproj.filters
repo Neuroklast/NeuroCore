@@ -784,6 +784,9 @@
     <ClCompile Include="..\..\src\dsp\InputGain.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
@@ -3942,6 +3945,9 @@
     <ClInclude Include="..\..\src\dsp\InputGain.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\dsp\LookupTables.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
@@ -3967,6 +3973,9 @@
       <Filter>NeuroCore\src\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils\FormulaHelper.h">
+      <Filter>NeuroCore\src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\Log.h">
       <Filter>NeuroCore\src\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils\PresetManager.h">
