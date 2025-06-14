@@ -1,9 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
 
+include(FetchContent)
+
 project(NeuroCore VERSION 0.0.1 LANGUAGES CXX)
 
 if(NOT DEFINED JUCE_DIR)
-    message(FATAL_ERROR "JUCE_DIR not set. Bitte Pfad zur JUCE-Installation angeben.")
+    if(DEFINED ENV{JUCE_DIR})
+        set(JUCE_DIR $ENV{JUCE_DIR} CACHE PATH "Path to JUCE" FORCE)
+    else()
+        message(STATUS "JUCE_DIR nicht gesetzt, lade JUCE automatisch...")
+        FetchContent_Declare(
+            juce
+            GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+            GIT_TAG 8.0.6
+        )
+        set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(juce)
+        set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH "Path to JUCE" FORCE)
+    endif()
 endif()
 
 list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
@@ -89,4 +103,33 @@ add_custom_command(TARGET NeuroCore POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/resources
         $<TARGET_FILE_DIR:NeuroCore>/resources
 )
+
+juce_add_console_app(NeuroCoreTests PRODUCT_NAME "NeuroCoreTests")
+
+target_sources(NeuroCoreTests PRIVATE
+    tests/main.cpp
+    tests/ExpressionEvaluatorTest.h
+    tests/WaveShaperTest.h
+    src/utils/ExpressionEvaluator.cpp
+    src/dsp/WaveShaper.cpp
+    src/dsp/LookupTables.cpp
+)
+
+target_include_directories(NeuroCoreTests PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/core
+)
+
+target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)
+
+target_link_libraries(NeuroCoreTests PRIVATE
+    juce::juce_audio_basics
+    juce::juce_dsp
+    juce::juce_data_structures
+    juce::juce_core
+)
+
+enable_testing()
+add_test(NAME NeuroCoreTests COMMAND NeuroCoreTests)
 

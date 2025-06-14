@@ -27,14 +27,25 @@ NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe
 
 ### CMake-Build
 
-Alternativ lässt sich das Plug-in per CMake erzeugen. `JUCE_DIR` muss dabei auf das JUCE-Hauptverzeichnis zeigen. Die VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK` befinden.
+Alternativ lässt sich das Plug-in per CMake erzeugen. Ist `JUCE_DIR` nicht
+gesetzt, lädt CMake die benötigte JUCE-Version automatisch herunter. Die
+VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK`
+befinden.
 
 ```bash
-cmake -B build -S . -DJUCE_DIR=<Pfad/zu/JUCE>
+cmake -B build -S .
 cmake --build build --config Release
 ```
 
-Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`. Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
+Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.
+Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
+
+### Tests ausführen
+
+```bash
+cmake --build build --target NeuroCoreTests
+ctest --test-dir build
+```
 
 ## Plug-in-Überblick
 
