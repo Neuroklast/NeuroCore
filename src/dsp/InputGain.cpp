@@ -1,17 +1,23 @@
 #include "InputGain.h"
+#include "../utils/Log.h"
 
 void InputGain::prepare (const juce::dsp::ProcessSpec& spec)
 {
-	sampleRate = spec.sampleRate;
+    sampleRate = spec.sampleRate;
+    if (sampleRate <= 0.0 || spec.numChannels == 0)
+    {
+        logError("InputGain::prepare received invalid ProcessSpec");
+        return;
+    }
 
-    smoothedGain.reset (sampleRate, 0.02);
-    smoothedGain.setCurrentAndTargetValue (targetGain);
+    smoothedGain.reset(sampleRate, 0.02);
+    smoothedGain.setCurrentAndTargetValue(targetGain);
 }
 
 void InputGain::reset()
 {
-    smoothedGain.reset(sampleRate, 0.02);
-    smoothedGain.setCurrentAndTargetValue (targetGain);
+    smoothedGain.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+    smoothedGain.setCurrentAndTargetValue(targetGain);
 }
 
 void InputGain::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept

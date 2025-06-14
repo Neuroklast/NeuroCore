@@ -1,15 +1,22 @@
 #include "SignalPolisher.h"
+#include "../utils/Log.h"
 
 void SignalPolisher::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    limiter.prepare (spec);
-    lastGood.assign (spec.numChannels, 0.0f);
+    if (spec.sampleRate <= 0.0 || spec.numChannels == 0)
+    {
+        logError("SignalPolisher::prepare received invalid ProcessSpec");
+        return;
+    }
+
+    limiter.prepare(spec);
+    lastGood.assign(spec.numChannels, 0.0f);
 }
 
 void SignalPolisher::reset()
 {
     limiter.reset();
-    std::fill (lastGood.begin(), lastGood.end(), 0.0f);
+    std::fill(lastGood.begin(), lastGood.end(), 0.0f);
 }
 
 void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept
