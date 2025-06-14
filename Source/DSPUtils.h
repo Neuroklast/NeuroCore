@@ -159,5 +159,72 @@ namespace DSPUtils
             gain.process(ctx);
         }
     }
+
+    // Perform FFT analysis on a single channel. Magnitudes will contain fftSize/2 values.
+    template <typename FloatType>
+    static inline void analyseFFT(const juce::dsp::AudioBlock<FloatType>& block,
+                                  int channel,
+                                  std::vector<FloatType>& magnitudes,
+                                  int order)
+    {
+        jassert(juce::isPositiveAndBelow(channel, static_cast<int>(block.getNumChannels())));
+
+        const size_t fftSize = static_cast<size_t>(1u << order);
+        juce::dsp::FFT fft(order);
+
+        std::vector<FloatType> data(fftSize * 2, FloatType(0));
+        const auto num = juce::jmin(static_cast<size_t>(block.getNumSamples()), fftSize);
+        std::copy(block.getChannelPointer(static_cast<size_t>(channel)),
+                  block.getChannelPointer(static_cast<size_t>(channel)) + num,
+                  data.begin());
+
+        fft.performRealOnlyForwardTransform(data.data());
+
+        magnitudes.resize(fftSize / 2);
+        for (size_t i = 0; i < fftSize / 2; ++i)
+        {
+            auto re = data[2 * i];
+            auto im = data[2 * i + 1];
+            magnitudes[i] = std::sqrt(re * re + im * im);
+        }
+
+#if JUCE_DEBUG
+        juce::StringArray dbgVals;
+        for (size_t i = 0; i < juce::jmin<size_t>(magnitudes.size(), 8); ++i)
+            dbgVals.add(juce::String(magnitudes[i], 2));
+        DBG("FFT magnitudes: " << dbgVals.joinIntoString(", "));
+#endif
+    }
+
+    // Calculate approximate integrated LUFS of one channel.
+    template <typename FloatType>
+    static inline double calculateLufs(const juce::dsp::AudioBlock<FloatType>& block,
+                                       int channel,
+                                       double sampleRate)
+    {
+        jassert(juce::isPositiveAndBelow(channel, static_cast<int>(block.getNumChannels())));
+
+        juce::AudioBuffer<FloatType> temp(1, static_cast<int>(block.getNumSamples()));
+        temp.copyFrom(0, 0, block.getChannelPointer(static_cast<size_t>(channel)),
+                      static_cast<int>(block.getNumSamples()));
+
+        auto tempBlock = juce::dsp::AudioBlock<FloatType>(temp);
+
+        auto hp = juce::dsp::IIR::Filter<FloatType>(
+            juce::dsp::IIR::Coefficients<FloatType>::makeHighPass(sampleRate, 40.0));
+        auto shelf = juce::dsp::IIR::Filter<FloatType>(
+            juce::dsp::IIR::Coefficients<FloatType>::makeHighShelf(sampleRate, 1500.0, 0.7071f,
+                                                                  juce::Decibels::decibelsToGain(4.0f)));
+
+        hp.process(juce::dsp::ProcessContextReplacing<FloatType>(tempBlock));
+        shelf.process(juce::dsp::ProcessContextReplacing<FloatType>(tempBlock));
+
+        const auto loudness = linearToDb(static_cast<double>(rms(tempBlock, 0)));
+
+#if JUCE_DEBUG
+        DBG("LUFS: " << loudness);
+#endif
+        return loudness;
+    }
 }
 
