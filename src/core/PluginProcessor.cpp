@@ -13,6 +13,7 @@
 #include "../utils/PresetManager.h"
 #include "../utils/FormulaHelper.h"
 #include "../dsp/DSPUtils.h"
+#include "../utils/Log.h"
 
 
 //==============================================================================
@@ -138,8 +139,10 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
 
-    if (spec.sampleRate <= 0.0 || spec.numChannels == 0)
-        return; // Nichts machen, keine DSP/Audio-Logik ausführen
+    if (spec.sampleRate <= 0.0 || spec.numChannels == 0) {
+        logError("prepareToPlay received invalid ProcessSpec");
+        return;
+    }
 
     oversampling.initProcessing(static_cast<size_t>(samplesPerBlock));
     oversampling.reset();
@@ -167,8 +170,12 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
 void NeuroCoreAudioProcessor::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
+    chain.reset();
+    oversampling.reset();
+    dryWetMixer.reset();
+    dryBuffer.setSize(0, 0);
+    gainCompValue.reset(getSampleRate(), 0.0);
+    outputGain.reset();
 }
 
 void NeuroCoreAudioProcessor::reset()
@@ -216,8 +223,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-	if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
-		return; // Nichts machen, keine DSP/Audio-Logik ausführen
+    if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
+    if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
+        return;
     auto getParam = [this](const char* id)
     {
         if (auto* p = apvts.getRawParameterValue (id))
@@ -244,6 +252,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
     jassert(buffer.getNumSamples() <= dryBuffer.getNumSamples());
+    if (buffer.getNumSamples() > dryBuffer.getNumSamples() || buffer.getNumChannels() > dryBuffer.getNumChannels())
+        dryBuffer.setSize(buffer.getNumChannels(), buffer.getNumSamples(), false, true, true);
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
 

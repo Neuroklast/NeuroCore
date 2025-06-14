@@ -1,5 +1,6 @@
 #include "ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
+#include "../utils/Log.h"
 
 using namespace juce;
 
@@ -80,6 +81,8 @@ bool ExpressionEvaluator::expect(char c)
 ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
 {
     skipWhitespace();
+    if (pos >= input.size())
+        return nullptr;
     if (expect('('))
     {
         auto node = parseExpression();
@@ -221,14 +224,18 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         if (pos != input.length())
         {
             errorMessage = "Syntaxfehler an Position " + juce::String((int)pos);
+            logError(errorMessage);
             return false;
         }
         valid = root != nullptr;
         return valid;
     }
-    catch (...) {
+    catch (...)
+    {
         errorMessage = "Unbekannter Fehler";
-        return false; }
+        logError(errorMessage);
+        return false;
+    }
 }
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept

@@ -1,4 +1,5 @@
 #include "WaveShaper.h"
+#include "../utils/Log.h"
 
 
 
@@ -10,10 +11,15 @@ void WaveShaper::setVariableNames(const std::array<juce::String,4>& names)
 void WaveShaper::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
+    if (sampleRate <= 0.0 || spec.numChannels == 0)
+    {
+        logError("WaveShaper::prepare received invalid ProcessSpec");
+        return;
+    }
     for (auto& s : smoothedParams)
     {
-        s.reset (sampleRate, 0.02);
-        s.setCurrentAndTargetValue (0.f);
+        s.reset(sampleRate, 0.02);
+        s.setCurrentAndTargetValue(0.f);
     }
     smoothedModFreq.reset (sampleRate, 0.02);
     smoothedModFreq.setCurrentAndTargetValue (0.f);
@@ -26,11 +32,11 @@ void WaveShaper::reset()
 {
     for (auto& s : smoothedParams)
     {
-        s.reset(sampleRate, 0.02);
-        s.setCurrentAndTargetValue (0.f);
+        s.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+        s.setCurrentAndTargetValue(0.f);
     }
-    smoothedModFreq.reset(sampleRate, 0.02);
-    smoothedModFreq.setCurrentAndTargetValue (0.f);
+    smoothedModFreq.reset(sampleRate > 0.0 ? sampleRate : 44100.0, 0.02);
+    smoothedModFreq.setCurrentAndTargetValue(0.f);
     lfo.reset();
 }
 
