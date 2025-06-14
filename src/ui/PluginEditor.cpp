@@ -6,9 +6,9 @@
   ==============================================================================
 */
 
-#include "PluginProcessor.h"
+#include "../core/PluginProcessor.h"
 #include "PluginEditor.h"
-#include "FormulaHelper.h"
+#include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
 
 

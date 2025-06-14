@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "PluginProcessor.h"
+#include "../core/PluginProcessor.h"
 
 //==============================================================================
 // Component that draws a sine wave and its transformation through the active

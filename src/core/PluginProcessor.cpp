@@ -7,12 +7,12 @@
 */
 
 #include "PluginProcessor.h"
-#include "ExpressionEvaluator.h"
-#include "LookupTables.h"
-#include "PluginEditor.h"
-#include "PresetManager.h"
-#include "FormulaHelper.h"
-#include "DSPUtils.h"
+#include "../utils/ExpressionEvaluator.h"
+#include "../dsp/LookupTables.h"
+#include "../ui/PluginEditor.h"
+#include "../utils/PresetManager.h"
+#include "../utils/FormulaHelper.h"
+#include "../dsp/DSPUtils.h"
 
 
 //==============================================================================

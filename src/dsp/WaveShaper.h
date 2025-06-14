@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
-#include "ExpressionEvaluator.h"
-#include "EffectParameters.h"
+#include "../utils/ExpressionEvaluator.h"
+#include "../core/EffectParameters.h"
 
 class WaveShaper : public juce::dsp::ProcessorBase
 {

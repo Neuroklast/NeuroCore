@@ -1,5 +1,5 @@
 #include "ExpressionEvaluator.h"
-#include "LookupTables.h"
+#include "../dsp/LookupTables.h"
 
 using namespace juce;
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
-#include "EffectParameters.h"
+#include "../core/EffectParameters.h"
 
 class InputGain : public juce::dsp::ProcessorBase
 {

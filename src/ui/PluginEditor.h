@@ -11,9 +11,9 @@
 #include <JuceHeader.h>
 #include <array>
 #include <vector>
-#include "PluginProcessor.h"
+#include "../core/PluginProcessor.h"
 #include "FormulaDisplayComponent.h"
-#include "FormulaHelper.h"
+#include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
 
 
