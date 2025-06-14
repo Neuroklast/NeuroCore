@@ -10,7 +10,9 @@
 #include "ExpressionEvaluator.h"
 #include "LookupTables.h"
 #include "PluginEditor.h"
+#include "PresetManager.h"
 #include "FormulaHelper.h"
+
 
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
@@ -23,7 +25,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-      apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+      apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+      presetManager (*this)
 #else
     : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
