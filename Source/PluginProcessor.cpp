@@ -139,6 +139,13 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     oversampling.initProcessing(static_cast<size_t>(samplesPerBlock));
     oversampling.reset();
 
+    dryWetMixer.prepare(spec);
+    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::balanced);
+    dryWetMixer.setWetLatency(oversampling.getLatencyInSamples());
+
+    wetValue.reset(sampleRate, 0.02);
+    wetValue.setCurrentAndTargetValue(1.0f);
+
     waveShaper.setVariableNames(variableNames);
     chain.prepare(spec);
 }
@@ -153,6 +160,9 @@ void NeuroCoreAudioProcessor::reset()
 {
     chain.reset();
     oversampling.reset();
+    dryWetMixer.reset();
+    wetValue.reset();
+    wetValue.setCurrentAndTargetValue(1.0f);
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -206,15 +216,25 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     waveShaper.setParameter (EffectParameters::paramD, parameterValues[3].load());
     waveShaper.setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
     polisher.setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
+    wetValue.setTargetValue (getParam (EffectParameters::dryWet));
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
+
+    dryWetMixer.pushDrySamples (block);
+
     auto upBlock = oversampling.processSamplesUp (block);
     juce::dsp::ProcessContextReplacing<float> ctx (upBlock);
     chain.process (ctx);
     oversampling.processSamplesDown (block);
+
+    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    {
+        dryWetMixer.setWetMixProportion (wetValue.getNextValue());
+        dryWetMixer.mixWetSamples (block.getSubBlock (i, 1));
+    }
 }
 
 //==============================================================================
@@ -268,6 +288,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("d", "D", 0.f, 1.f, 0.f);
     addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
+    addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
 
     return { params.begin(), params.end() };

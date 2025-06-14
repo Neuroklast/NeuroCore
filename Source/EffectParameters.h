@@ -9,4 +9,5 @@ namespace EffectParameters
     inline constexpr const char* paramD       = "d";
     inline constexpr const char* modFrequency = "modFrequency";
     inline constexpr const char* polisherMode = "polisherMode";
+    inline constexpr const char* dryWet       = "dryWet";
 }
