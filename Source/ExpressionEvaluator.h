@@ -25,6 +25,7 @@ public:
     // Returns true if parsing succeeded.
     bool isValid() const noexcept { return valid; }
     juce::String getLastError() const noexcept { return errorMessage; }
+    std::string getFormula() const noexcept { return input; }
 
 private:
     struct Node;

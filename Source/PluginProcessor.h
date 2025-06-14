@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include <array>
 #include "ExpressionEvaluator.h"
+#include "PresetManager.h"
 
 //==============================================================================
 /**
@@ -65,6 +66,7 @@ public:
     const ExpressionEvaluator& getEvaluator() const noexcept { return evaluator; }
 
     juce::AudioProcessorValueTreeState apvts;
+    PresetManager presetManager;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
