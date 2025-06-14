@@ -2,7 +2,7 @@
 #define EXPRESSIONEVALUATORTEST_H
 
 #include <JuceHeader.h>
-#include "../Source/ExpressionEvaluator.h"
+#include "../src/utils/ExpressionEvaluator.h"
 
 class ExpressionEvaluatorTest : public juce::UnitTest
 {

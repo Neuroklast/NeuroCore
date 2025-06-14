@@ -2,8 +2,8 @@
 #define WAVESHAPERTEST_H
 
 #include <JuceHeader.h>
-#include "../Source/WaveShaper.h"
-#include "../Source/EffectParameters.h"
+#include "../src/dsp/WaveShaper.h"
+#include "../src/core/EffectParameters.h"
 
 class WaveShaperTest : public juce::UnitTest
 {
