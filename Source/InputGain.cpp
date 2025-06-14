@@ -1,14 +1,38 @@
 #include "InputGain.h"
 
-void InputGain::prepare(const juce::dsp::ProcessSpec& spec)
+void InputGain::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    smoothedGain.reset(spec.sampleRate, 0.02);
-    smoothedGain.setCurrentAndTargetValue(1.0f);
+    smoothedGain.reset (spec.sampleRate, 0.02);
+    smoothedGain.setCurrentAndTargetValue (targetGain);
 }
 
-void InputGain::reset() noexcept
+void InputGain::reset()
 {
     smoothedGain.reset();
-    smoothedGain.setCurrentAndTargetValue(1.0f);
+    smoothedGain.setCurrentAndTargetValue (targetGain);
 }
 
+void InputGain::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept
+{
+    if (bypassed)
+        return;
+
+    auto& block = context.getOutputBlock();
+    const size_t numSamples = block.getNumSamples();
+
+    for (size_t sample = 0; sample < numSamples; ++sample)
+    {
+        auto g = smoothedGain.getNextValue();
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+            block.getChannelPointer (ch)[sample] *= g;
+    }
+}
+
+void InputGain::setParameter (const std::string& id, float v)
+{
+    if (id == EffectParameters::inputGain)
+    {
+        targetGain = v;
+        smoothedGain.setTargetValue (targetGain);
+    }
+}

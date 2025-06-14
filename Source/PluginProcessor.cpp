@@ -136,15 +136,10 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
 
-    inputGain.setGainPointer(apvts.getRawParameterValue("inputGain"));
-    waveShaper.setParameterPointers({ apvts.getRawParameterValue("a"),
-                                      apvts.getRawParameterValue("b"),
-                                      apvts.getRawParameterValue("c"),
-                                      apvts.getRawParameterValue("d") },
-                                     apvts.getRawParameterValue("modFrequency"));
-    polisher.setModePointer(apvts.getRawParameterValue("polisherMode"));
-    waveShaper.setVariableNames(variableNames);
+    oversampling.initProcessing(static_cast<size_t>(samplesPerBlock));
+    oversampling.reset();
 
+    waveShaper.setVariableNames(variableNames);
     chain.prepare(spec);
 }
 
@@ -157,6 +152,7 @@ void NeuroCoreAudioProcessor::releaseResources()
 void NeuroCoreAudioProcessor::reset()
 {
     chain.reset();
+    oversampling.reset();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -185,34 +181,40 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
-void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& /*midiMessages*/)
 {
     juce::ScopedNoDenormals noDenormals;
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    auto* aParam  = apvts.getRawParameterValue("a");
-    auto* bParam  = apvts.getRawParameterValue("b");
-    auto* cParam  = apvts.getRawParameterValue("c");
-    auto* dParam  = apvts.getRawParameterValue("d");
+    auto getParam = [this](const char* id)
+    {
+        if (auto* p = apvts.getRawParameterValue (id))
+            return p->load();
+        return 0.0f;
+    };
 
-    parameterValues[0].store(aParam ? aParam->load() : 0.f);
-    parameterValues[1].store(bParam ? bParam->load() : 0.f);
-    parameterValues[2].store(cParam ? cParam->load() : 0.f);
-    parameterValues[3].store(dParam ? dParam->load() : 0.f);
+    parameterValues[0].store (getParam (EffectParameters::paramA));
+    parameterValues[1].store (getParam (EffectParameters::paramB));
+    parameterValues[2].store (getParam (EffectParameters::paramC));
+    parameterValues[3].store (getParam (EffectParameters::paramD));
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
+    inputGain.setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
+    waveShaper.setParameter (EffectParameters::paramA, parameterValues[0].load());
+    waveShaper.setParameter (EffectParameters::paramB, parameterValues[1].load());
+    waveShaper.setParameter (EffectParameters::paramC, parameterValues[2].load());
+    waveShaper.setParameter (EffectParameters::paramD, parameterValues[3].load());
+    waveShaper.setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
+    polisher.setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
+
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    juce::dsp::AudioBlock<float> block(buffer);
-    juce::dsp::ProcessContextReplacing<float> ctx(block);
-    chain.process(ctx);
+    auto block = juce::dsp::AudioBlock<float> (buffer);
+    auto upBlock = oversampling.processSamplesUp (block);
+    juce::dsp::ProcessContextReplacing<float> ctx (upBlock);
+    chain.process (ctx);
+    oversampling.processSamplesDown (block);
 }
 
 //==============================================================================

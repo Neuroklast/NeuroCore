@@ -1,40 +1,22 @@
 #pragma once
 #include <JuceHeader.h>
+#include "EffectParameters.h"
 
-// Simple input gain processor with smoothing
-class InputGain
+class InputGain : public juce::dsp::ProcessorBase
 {
 public:
     using SampleType = float;
-
     InputGain() = default;
 
-    void setGainPointer(std::atomic<float>* ptr) noexcept { gainParam = ptr; }
+    void prepare (const juce::dsp::ProcessSpec& spec) override;
+    void reset() override;
+    void process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept override;
 
-    void prepare(const juce::dsp::ProcessSpec& spec);
-    void reset() noexcept;
-
-    template <typename ProcessContext>
-    void process(const ProcessContext& context) noexcept
-    {
-        auto& outBlock = context.getOutputBlock();
-        const size_t numSamples = outBlock.getNumSamples();
-
-        if (gainParam == nullptr)
-            return;
-
-        smoothedGain.setTargetValue(gainParam->load());
-
-        for (size_t sample = 0; sample < numSamples; ++sample)
-        {
-            auto g = smoothedGain.getNextValue();
-            for (size_t ch = 0; ch < outBlock.getNumChannels(); ++ch)
-                outBlock.getChannelPointer(ch)[sample] *= g;
-        }
-    }
+    void setParameter (const std::string& id, float v);
+    void setBypassed (bool b) noexcept { bypassed = b; }
 
 private:
-    std::atomic<float>* gainParam { nullptr };
+    bool bypassed { false };
     juce::SmoothedValue<SampleType> smoothedGain;
+    SampleType targetGain { 1.0f };
 };
-
