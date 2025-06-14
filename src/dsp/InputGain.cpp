@@ -2,13 +2,15 @@
 
 void InputGain::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    smoothedGain.reset (spec.sampleRate, 0.02);
+	sampleRate = spec.sampleRate;
+
+    smoothedGain.reset (sampleRate, 0.02);
     smoothedGain.setCurrentAndTargetValue (targetGain);
 }
 
 void InputGain::reset()
 {
-    smoothedGain.reset();
+    smoothedGain.reset(sampleRate, 0.02);
     smoothedGain.setCurrentAndTargetValue (targetGain);
 }
 

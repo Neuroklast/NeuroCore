@@ -17,6 +17,10 @@ public:
 
 private:
     bool bypassed { false };
+
+	float sampleRate = 44100.0f;
     juce::SmoothedValue<SampleType> smoothedGain;
     SampleType targetGain { 1.0f };
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(InputGain);
 };

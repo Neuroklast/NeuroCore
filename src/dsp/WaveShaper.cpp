@@ -1,6 +1,6 @@
 #include "WaveShaper.h"
 
-WaveShaper::WaveShaper(ExpressionEvaluator* eval) : evaluator(eval) {}
+
 
 void WaveShaper::setVariableNames(const std::array<juce::String,4>& names)
 {
@@ -26,10 +26,10 @@ void WaveShaper::reset()
 {
     for (auto& s : smoothedParams)
     {
-        s.reset();
+        s.reset(sampleRate, 0.02);
         s.setCurrentAndTargetValue (0.f);
     }
-    smoothedModFreq.reset();
+    smoothedModFreq.reset(sampleRate, 0.02);
     smoothedModFreq.setCurrentAndTargetValue (0.f);
     lfo.reset();
 }

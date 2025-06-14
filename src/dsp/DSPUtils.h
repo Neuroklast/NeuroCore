@@ -6,7 +6,7 @@ namespace DSPUtils
     // Convert dB to linear amplitude
     static inline constexpr double dbToLinear(double db) noexcept
     {
-        return std::pow(10.0, db / 20.0);
+        return (db == 0.0) ? 1.0 : std::exp(db * std::log(10.0) / 20.0);
     }
 
     // Convert linear amplitude to dB. Returns -inf for zero.

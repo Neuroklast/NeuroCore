@@ -29,7 +29,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
       presetManager (*this)
 #else
-    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+    presetManager(*this)
 #endif
 {
     LookupTables::initialise();
@@ -137,6 +138,9 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     juce::dsp::ProcessSpec spec { sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
 
+    if (spec.sampleRate <= 0.0 || spec.numChannels == 0)
+        return; // Nichts machen, keine DSP/Audio-Logik ausführen
+
     oversampling.initProcessing(static_cast<size_t>(samplesPerBlock));
     oversampling.reset();
 
@@ -172,9 +176,9 @@ void NeuroCoreAudioProcessor::reset()
     chain.reset();
     oversampling.reset();
     dryWetMixer.reset();
-    wetValue.reset();
+    wetValue.reset(getSampleRate(), 0.02f);
     wetValue.setCurrentAndTargetValue(1.0f);
-    gainCompValue.reset();
+    gainCompValue.reset(getSampleRate(), 0.02f);
     gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.reset();
     outputGain.setGainLinear(1.0f);
@@ -212,6 +216,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
+	if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
+		return; // Nichts machen, keine DSP/Audio-Logik ausführen
     auto getParam = [this](const char* id)
     {
         if (auto* p = apvts.getRawParameterValue (id))

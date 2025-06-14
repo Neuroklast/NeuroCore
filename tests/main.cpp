@@ -2,9 +2,9 @@
 #include "ExpressionEvaluatorTest.h"
 #include "WaveShaperTest.h"
 
-int main (int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-    juce::ConsoleApplication app (argc, argv);
+    juce::ConsoleApplication app; // Removed arguments
 
     ExpressionEvaluatorTest evaluatorTest;  // registers itself
     WaveShaperTest shaperTest;              // registers itself
@@ -13,3 +13,4 @@ int main (int argc, char* argv[])
     runner.runAllTests();
     return 0;
 }
+
