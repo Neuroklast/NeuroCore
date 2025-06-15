@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include "../src/dsp/WaveShaper.h"
 #include "../src/core/EffectParameters.h"
+#include <memory>
 
 class WaveShaperTest : public juce::UnitTest
 {
@@ -14,10 +15,10 @@ public:
     {
         beginTest("tanh(x) Shaper");
 
-        ExpressionEvaluator eval;
-        expect(eval.parseFormula("tanh(x)"));
+        auto eval = std::make_shared<ExpressionEvaluator>();
+        expect(eval->parseFormula("tanh(x)"));
 
-        WaveShaper shaper(&eval);
+        WaveShaper shaper(eval);
         juce::dsp::ProcessSpec spec{ 1.0, 4, 1 };
         shaper.prepare(spec);
 

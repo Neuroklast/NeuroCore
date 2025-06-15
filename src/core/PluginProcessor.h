@@ -16,6 +16,7 @@
 #include <JuceHeader.h>
 #include <cmath>
 #include <array>
+#include <memory>
 #include "../utils/ExpressionEvaluator.h"
 #include "../utils/PresetManager.h"
 #include "../dsp/InputGain.h"
@@ -75,7 +76,7 @@ public:
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept { return variableNames[index]; }
     const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
-    const ExpressionEvaluator& getEvaluator() const noexcept { return evaluator; }
+    const ExpressionEvaluator& getEvaluator() const noexcept { return *evaluator; }
 
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
@@ -90,7 +91,7 @@ public:
 
 private:
     //==============================================================================
-    ExpressionEvaluator evaluator;
+    std::shared_ptr<ExpressionEvaluator> evaluator;
     std::array<std::atomic<float>, 4> parameterValues{};
     std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
                                                Config::kDefaultVariableNames[1],
@@ -99,7 +100,7 @@ private:
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
 
     InputGain inputGain;
-    WaveShaper waveShaper{ &evaluator };
+    WaveShaper waveShaper{ evaluator };
     SignalPolisher polisher;
     juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels, (size_t)std::log2(Config::kOversamplingFactor), juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
     juce::dsp::DryWetMixer<float> dryWetMixer;
