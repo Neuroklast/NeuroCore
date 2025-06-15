@@ -9,6 +9,7 @@
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
+#include <functional>
 
 class WaveShaper : public juce::dsp::ProcessorBase
 {
@@ -31,8 +32,8 @@ public:
 private:
     std::shared_ptr<ExpressionEvaluator> evaluator;
     std::shared_ptr<ExpressionEvaluator> nextEvaluator;
-    juce::dsp::WaveShaper<SampleType> shaper;
-    juce::dsp::WaveShaper<SampleType> shaperNext;
+    juce::dsp::WaveShaper<SampleType, std::function<SampleType(SampleType)>> shaper;
+    juce::dsp::WaveShaper<SampleType, std::function<SampleType(SampleType)>> shaperNext;
     juce::SmoothedValue<SampleType> crossfade;
     juce::SpinLock crossfadeLock;
     bool crossfading { false };
