@@ -7,7 +7,7 @@ std::vector<float> LookupTables::tanhTable;
 
 void LookupTables::initialise (int size)
 {
-    size = juce::jlimit (256, 4098, size);
+    size = juce::jlimit (256, 4096, size);
     if (tableSize == size)
         return;
 
