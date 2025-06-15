@@ -69,6 +69,8 @@ namespace Config
 
     /// Time in seconds used for parameter smoothing.
     inline constexpr double kSmoothingTime     = 0.02;
+    /// Duration of function crossfades in seconds.
+    inline constexpr double kCrossfadeTime     = 0.15;
 
     //==========================================================================
     // Parser / Interpreter constants

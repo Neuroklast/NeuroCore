@@ -35,8 +35,9 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #endif
 {
     LookupTables::initialise();
-    evaluator.parseFormula(Config::kDefaultFormula);
-    waveShaper.setEvaluator(&evaluator);
+    evaluator = std::make_shared<ExpressionEvaluator>();
+    evaluator->parseFormula(Config::kDefaultFormula);
+    waveShaper.setEvaluator(evaluator);
     waveShaper.setVariableNames(variableNames);
     for (auto& val : parameterValues)
         val.store(0.0f);
@@ -283,7 +284,12 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 
 void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
 {
-    evaluator.parseFormula (text.toStdString());
+    auto newEval = std::make_shared<ExpressionEvaluator>();
+    if (newEval->parseFormula (text.toStdString()))
+    {
+        waveShaper.startFunctionCrossfade(newEval);
+        evaluator = std::move(newEval);
+    }
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::createParameterLayout()
@@ -313,10 +319,12 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
 {
     for (size_t i = 0; i < parameterValues.size(); ++i)
     {
-        evaluator.setVariable(variableNames[i].toStdString(), parameterValues[i].load());
+        if (evaluator)
+            evaluator->setVariable(variableNames[i].toStdString(), parameterValues[i].load());
     }
-    evaluator.setVariable("mod", 0.0f);
-    return evaluator.isValid() ? evaluator.evaluate(x) : x;
+    if (evaluator)
+        evaluator->setVariable("mod", 0.0f);
+    return (evaluator && evaluator->isValid()) ? evaluator->evaluate(x) : x;
 }
 
 void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)

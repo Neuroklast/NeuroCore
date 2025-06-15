@@ -5,6 +5,7 @@
     Developed by Kay Schäfer and Simon Seifried
 */
 #include <JuceHeader.h>
+#include <memory>
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
@@ -14,9 +15,10 @@ class WaveShaper : public juce::dsp::ProcessorBase
 public:
     using SampleType = float;
     WaveShaper() = default;
-    explicit WaveShaper(ExpressionEvaluator* eval) : evaluator(eval) {}
+    explicit WaveShaper(std::shared_ptr<ExpressionEvaluator> eval) { setEvaluator(eval); }
 
-    void setEvaluator (ExpressionEvaluator* eval) noexcept { evaluator = eval; }
+    void setEvaluator (std::shared_ptr<ExpressionEvaluator> eval) noexcept;
+    void startFunctionCrossfade (std::shared_ptr<ExpressionEvaluator> newEval);
     void setVariableNames (const std::array<juce::String,4>& names);
 
     void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -27,7 +29,13 @@ public:
     void setBypassed (bool b) noexcept { bypassed = b; }
 
 private:
-    ExpressionEvaluator* evaluator { nullptr };
+    std::shared_ptr<ExpressionEvaluator> evaluator;
+    std::shared_ptr<ExpressionEvaluator> nextEvaluator;
+    juce::dsp::WaveShaper<SampleType> shaper;
+    juce::dsp::WaveShaper<SampleType> shaperNext;
+    juce::SmoothedValue<SampleType> crossfade;
+    juce::SpinLock crossfadeLock;
+    bool crossfading { false };
     std::array<juce::SmoothedValue<SampleType>,4> smoothedParams;
     juce::SmoothedValue<SampleType> smoothedModFreq;
     std::array<float,4> paramTargets { 0.f, 0.f, 0.f, 0.f };
