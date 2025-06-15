@@ -4,4 +4,5 @@ CompileButton=Kompilieren
 CompileError=Formel konnte nicht kompiliert werden
 ParseError=Syntaxfehler an Position %1
 UnknownError=Unbekannter Fehler
+ArgumentError=Zu wenige Argumente für Funktion %1
 

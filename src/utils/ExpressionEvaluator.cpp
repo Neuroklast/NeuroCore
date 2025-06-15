@@ -185,27 +185,37 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
 
     auto args = parseArgs();
 
-    if (name == "sin")  return std::make_unique<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]));
-    if (name == "cos")  return std::make_unique<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]));
-    if (name == "tan")  return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0]));
-    if (name == "tanh") return std::make_unique<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]));
-    if (name == "sqrt") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0]));
-    if (name == "abs") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0]));
-    if (name == "sign") return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0]));
-    if (name == "exp") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::exp), std::move(args[0]));
-    if (name == "log") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log), std::move(args[0]));
-    if (name == "log10") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0]));
-    if (name == "floor") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0]));
-    if (name == "ceil") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0]));
-    if (name == "round") return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0]));
+    auto notEnoughArgs = [this, &name, &args](size_t n)
+    {
+        if (args.size() < n)
+        {
+            errorMessage = juce::String(TRANS("ArgumentError")).replace("%1", name);
+            return true;
+        }
+        return false;
+    };
 
-    if (name == "pow") return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1]));
-    if (name == "min") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1]));
-    if (name == "max") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1]));
-    if (name == "fmod") return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1]));
-    if (name == "mod") return std::make_unique<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1]));
+    if (name == "sin")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastSin,  std::move(args[0])); }
+    if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastCos,  std::move(args[0])); }
+    if (name == "tan")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0])); }
+    if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastTanh, std::move(args[0])); }
+    if (name == "sqrt") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0])); }
+    if (name == "abs")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0])); }
+    if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
+    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::exp), std::move(args[0])); }
+    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log), std::move(args[0])); }
+    if (name == "log10") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0])); }
+    if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
+    if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])); }
+    if (name == "round") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])); }
 
-    if (name == "clamp") return std::make_unique<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
+    if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])); }
+    if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])); }
+    if (name == "fmod") { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1])); }
+    if (name == "mod")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1])); }
+
+    if (name == "clamp") { if (notEnoughArgs(3)) return nullptr; return std::make_unique<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2])); }
 
     return nullptr;
 }
