@@ -29,6 +29,7 @@ void WaveShaper::startFunctionCrossfade(std::shared_ptr<ExpressionEvaluator> new
     };
     crossfade.reset(sampleRate, Config::kCrossfadeTime);
     crossfade.setCurrentAndTargetValue(0.f);
+    crossfade.setTargetValue(1.f); // fade von 0 nach 1
     crossfading = true;
 }
 
