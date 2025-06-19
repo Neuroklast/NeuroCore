@@ -12,6 +12,7 @@
 #include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
 #include "PluginLookAndFeel.h"
+#include "InlineAutocompleteEditor.h"
 
 
 //==============================================================================
@@ -58,7 +59,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible (*nameEditors[i]);
     }
 
-    formulaInputEditor = std::make_unique<juce::TextEditor>();
+    formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
     formulaInputEditor->setMultiLine (true, true);
     formulaInputEditor->setReturnKeyStartsNewLine (true);
     formulaInputEditor->setText ("tanh(x)", juce::dontSendNotification);
@@ -67,7 +68,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         audioProcessor.setFormula (formulaInputEditor->getText());
         formulaDisplay->setFormula (formulaInputEditor->getText());
         formulaDisplay->setError (audioProcessor.getEvaluator().getLastError());
-        showAutocomplete();
     };
     addAndMakeVisible (*formulaInputEditor);
     audioProcessor.setFormula (formulaInputEditor->getText());
@@ -173,41 +173,3 @@ void NeuroCoreAudioProcessorEditor::resized()
     errorLabel->setBounds     (middleX, inputHeight + 3 * textHeight, thirdWidth, textHeight);
 }
 
-void NeuroCoreAudioProcessorEditor::showAutocomplete()
-{
-    auto caret = formulaInputEditor->getCaretPosition();
-    auto text  = formulaInputEditor->getText();
-    int start = caret;
-    while (start > 0 && juce::CharacterFunctions::isLetterOrDigit (text[start - 1]))
-        --start;
-    juce::String prefix = text.substring (start, caret);
-
-    if (prefix.length() < 1)
-        return;
-
-    juce::PopupMenu menu;
-    for (auto& t : formulaTemplates)
-        if (t.name.startsWithIgnoreCase(prefix))
-            menu.addItem (t.name, [this, caret, start, prefix, t]
-            {
-                formulaInputEditor->setCaretPosition (start);
-                formulaInputEditor->insertTextAtCaret (t.name.substring (prefix.length()));
-            });
-    for (auto& f : builtinFunctions)
-        if (f.startsWithIgnoreCase(prefix))
-            menu.addItem (f, [this, caret, start, prefix, f]
-            {
-                formulaInputEditor->setCaretPosition (start);
-                formulaInputEditor->insertTextAtCaret (f.substring (prefix.length()));
-            });
-    for (auto& n : audioProcessor.getVariableNames())
-        if (n.startsWithIgnoreCase(prefix))
-            menu.addItem (n, [this, caret, start, prefix, n]
-            {
-                formulaInputEditor->setCaretPosition (start);
-                formulaInputEditor->insertTextAtCaret (n.substring (prefix.length()));
-            });
-    if (menu.getNumItems() > 0)
-        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (*formulaInputEditor));
-
-}

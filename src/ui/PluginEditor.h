@@ -17,6 +17,7 @@
 #include "FormulaDisplayComponent.h"
 #include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
+#include "InlineAutocompleteEditor.h"
 
 
 //==============================================================================
@@ -46,15 +47,13 @@ private:
     std::array<juce::Colour, 4> sliderColours;
 
     // Middle column editors
-    std::unique_ptr<juce::TextEditor> formulaInputEditor;
+    std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;
     std::unique_ptr<FormulaDisplayComponent> formulaDisplay;
     std::unique_ptr<juce::TextButton> optimizeButton;
     std::unique_ptr<juce::TextButton> compileButton;
     std::unique_ptr<juce::Label>       errorLabel;
 
     NeuroCoreLookAndFeel lookAndFeel;
-
-    void showAutocomplete();
 
     std::unique_ptr<FormulaWaveComponent> waveComponent;
 
