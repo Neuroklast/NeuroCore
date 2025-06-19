@@ -15,10 +15,10 @@ namespace BinaryData
     const int            mockup_pngSize = 1267316;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 248;
+    const int            de_txtSize = 300;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 225;
+    const int            en_txtSize = 274;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
