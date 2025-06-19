@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" useAppConfig="1"
-              addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1" version="0.0.1"
-              companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
+<JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" jucerFormatVersion="1"
+              version="0.0.1" companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
               companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
-              pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginChannelConfigs="2"
-              pluginVST3Category="Distortion" cppLanguageStandard="latest">
+              pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginVST3Category="Distortion"
+              cppLanguageStandard="20" pluginChannelConfigs="{2,2}">
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{5932B18B-C765-AF0C-CA03-C0BC08854A27}" name="docs"/>
     <GROUP id="{A18D38A8-682F-25CD-9B32-5578151C4AB0}" name="resources">

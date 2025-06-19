@@ -15,6 +15,8 @@
 #include "../dsp/DSPUtils.h"
 #include "../utils/Log.h"
 
+#define JucePlugin_MaxNumOutputChannels   2
+
 
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
@@ -361,7 +363,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 
     dryWetMixer.prepare (currentSpec);
     dryWetMixer.setMixingRule (juce::dsp::DryWetMixingRule::balanced);
-    dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
+    //dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
 
     dryBuffer.setSize ((int) currentSpec.numChannels, (int) currentSpec.maximumBlockSize);
     dryBuffer.clear();
