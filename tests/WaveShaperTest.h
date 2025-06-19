@@ -36,6 +36,35 @@ public:
         expectWithinAbsoluteError(buffer.getSample(0,1), std::tanh(-0.5f), 1e-5f);
         expectWithinAbsoluteError(buffer.getSample(0,2), std::tanh( 0.5f), 1e-5f);
         expectWithinAbsoluteError(buffer.getSample(0,3), std::tanh( 1.0f), 1e-5f);
+
+        beginTest("Crossfade Start");
+
+        auto evalOld = std::make_shared<ExpressionEvaluator>();
+        auto evalNew = std::make_shared<ExpressionEvaluator>();
+        expect(evalOld->parseFormula("x"));
+        expect(evalNew->parseFormula("2*x"));
+
+        WaveShaper fadeShaper(evalOld);
+        juce::dsp::ProcessSpec crossSpec{ 44100.0, 1, 1 };
+        fadeShaper.prepare(crossSpec);
+
+        juce::AudioBuffer<float> fadeBuffer(1, 1);
+        juce::dsp::AudioBlock<float> fadeBlock(fadeBuffer);
+        juce::dsp::ProcessContextReplacing<float> fadeCtx(fadeBlock);
+
+        fadeBuffer.setSample(0, 0, 1.0f);
+        fadeShaper.startFunctionCrossfade(evalNew);
+        fadeShaper.process(fadeCtx);
+        expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 1.0f, 1e-5f);
+
+        const int steps = static_cast<int>(Config::kCrossfadeTime * crossSpec.sampleRate) + 1;
+        for (int i = 0; i < steps; ++i)
+        {
+            fadeBuffer.setSample(0, 0, 1.0f);
+            fadeShaper.process(fadeCtx);
+        }
+
+        expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 2.0f, 1e-3f);
     }
 };
 
