@@ -15,7 +15,11 @@ class WaveShaper : public juce::dsp::ProcessorBase
 {
 public:
     using SampleType = float;
-    WaveShaper() = default;
+    WaveShaper() {
+        // ensure valid function to avoid crashes when no evaluator is set
+        shaper.functionToUse = [] (SampleType x) { return x; };
+        shaperNext.functionToUse = [] (SampleType x) { return x; };
+    }
     explicit WaveShaper(std::shared_ptr<ExpressionEvaluator> eval) { setEvaluator(eval); }
 
     void setEvaluator (std::shared_ptr<ExpressionEvaluator> eval) noexcept;
