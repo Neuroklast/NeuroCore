@@ -38,6 +38,7 @@ set(SOURCE_FILES
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
     src/ui/InlineAutocompleteEditor.cpp
+    src/ui/WaveformDisplayComponent.cpp
     src/dsp/LookupTables.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
