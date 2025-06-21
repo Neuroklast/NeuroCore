@@ -217,6 +217,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     parameterValues[2].store (getParam (EffectParameters::paramC));
     parameterValues[3].store (getParam (EffectParameters::paramD));
 
+
     getInputRouter().setUseLeft  (getParam (EffectParameters::useInputLeft ) > 0.5f);
     getInputRouter().setUseRight (getParam (EffectParameters::useInputRight) > 0.5f);
 
@@ -227,15 +228,13 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     getWaveShaper().setParameter (EffectParameters::paramD, parameterValues[3].load());
     getWaveShaper().setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
     getPolisher().setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
+
     wetValue.setTargetValue (getParam (EffectParameters::dryWet));
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
-    jassert(buffer.getNumSamples() <= dryBuffer.getNumSamples());
-    if (buffer.getNumSamples() > dryBuffer.getNumSamples() || buffer.getNumChannels() > dryBuffer.getNumChannels())
-        dryBuffer.setSize(buffer.getNumChannels(), buffer.getNumSamples(), false, true, true);
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
@@ -370,7 +369,13 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     dryWetMixer.setMixingRule (juce::dsp::DryWetMixingRule::balanced);
     //dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
 
-    dryBuffer.setSize ((int) currentSpec.numChannels, (int) currentSpec.maximumBlockSize);
+    if (dryBuffer.getNumChannels() != (int) currentSpec.numChannels
+        || dryBuffer.getNumSamples() < (int) currentSpec.maximumBlockSize)
+    {
+        dryBuffer.setSize ((int) currentSpec.numChannels,
+                           (int) currentSpec.maximumBlockSize,
+                           false, true, true);
+    }
     dryBuffer.clear();
 
     gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);

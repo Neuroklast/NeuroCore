@@ -40,7 +40,7 @@ private:
     juce::dsp::WaveShaper<SampleType, std::function<SampleType(SampleType)>> shaperNext;
     juce::SmoothedValue<SampleType> crossfade;
     juce::SpinLock crossfadeLock;
-    bool crossfading { false };
+    std::atomic<bool> crossfading { false };
     std::array<juce::SmoothedValue<SampleType>,4> smoothedParams;
     juce::SmoothedValue<SampleType> smoothedModFreq;
     std::array<float,4> paramTargets { 0.f, 0.f, 0.f, 0.f };
