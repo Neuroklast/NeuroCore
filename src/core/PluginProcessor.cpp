@@ -217,6 +217,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     parameterValues[2].store (getParam (EffectParameters::paramC));
     parameterValues[3].store (getParam (EffectParameters::paramD));
 
+    inputRouter.setUseLeft  (getParam (EffectParameters::useInputLeft ) > 0.5f);
+    inputRouter.setUseRight (getParam (EffectParameters::useInputRight) > 0.5f);
+
     inputGain.setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
     waveShaper.setParameter (EffectParameters::paramA, parameterValues[0].load());
     waveShaper.setParameter (EffectParameters::paramB, parameterValues[1].load());
@@ -312,6 +315,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
 
     return { params.begin(), params.end() };
 }
