@@ -34,8 +34,6 @@ static juce::dsp::StateVariableTPTFilterType parseFilterType(const juce::String&
 {
     if (t == "highpass") return juce::dsp::StateVariableTPTFilterType::highpass;
     if (t == "bandpass") return juce::dsp::StateVariableTPTFilterType::bandpass;
-    if (t == "notch")    return juce::dsp::StateVariableTPTFilterType::notch;
-    if (t == "allpass")  return juce::dsp::StateVariableTPTFilterType::allpass;
     return juce::dsp::StateVariableTPTFilterType::lowpass;
 }
 
