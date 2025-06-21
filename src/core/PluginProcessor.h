@@ -30,7 +30,8 @@
 //==============================================================================
 /**
 */
-class NeuroCoreAudioProcessor  : public juce::AudioProcessor
+class NeuroCoreAudioProcessor  : public juce::AudioProcessor,
+                                 private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     //==============================================================================
@@ -86,6 +87,9 @@ public:
 
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
+
+    // juce::AudioProcessorValueTreeState::Listener implementation
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     // Returns the last process specification
     juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return currentSpec; }

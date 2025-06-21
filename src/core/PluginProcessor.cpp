@@ -44,6 +44,11 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     for (auto& val : parameterValues)
         val.store(0.0f);
 
+    apvts.addParameterListener (EffectParameters::paramA, this);
+    apvts.addParameterListener (EffectParameters::paramB, this);
+    apvts.addParameterListener (EffectParameters::paramC, this);
+    apvts.addParameterListener (EffectParameters::paramD, this);
+
     // load localisation
     auto lang = juce::SystemStats::getUserLanguage();
     juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
@@ -72,6 +77,10 @@ void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& nam
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 {
+    apvts.removeParameterListener (EffectParameters::paramA, this);
+    apvts.removeParameterListener (EffectParameters::paramB, this);
+    apvts.removeParameterListener (EffectParameters::paramC, this);
+    apvts.removeParameterListener (EffectParameters::paramD, this);
     juce::LocalisedStrings::setCurrentMappings(nullptr);
 }
 
@@ -388,6 +397,14 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 
     getWaveShaper().setVariableNames (variableNames);
     chain.prepare (currentSpec);
+}
+
+void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+{
+    if (parameterID == EffectParameters::paramA)      parameterValues[0].store (newValue);
+    else if (parameterID == EffectParameters::paramB) parameterValues[1].store (newValue);
+    else if (parameterID == EffectParameters::paramC) parameterValues[2].store (newValue);
+    else if (parameterID == EffectParameters::paramD) parameterValues[3].store (newValue);
 }
 
 
