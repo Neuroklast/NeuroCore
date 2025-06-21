@@ -88,6 +88,9 @@ public:
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
 
+    void getInputWaveform(juce::AudioBuffer<float>& dest);
+    void getOutputWaveform(juce::AudioBuffer<float>& dest);
+
     // juce::AudioProcessorValueTreeState::Listener implementation
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
@@ -112,7 +115,12 @@ private:
     juce::SmoothedValue<float>    wetValue;
     juce::SmoothedValue<float>    gainCompValue;
     juce::dsp::Gain<float>        outputGain;
+    juce::dsp::Gain<float>        userOutputGain;
     juce::AudioBuffer<float>      dryBuffer;
+    juce::AudioBuffer<float>      inputWaveBuffer;
+    juce::AudioBuffer<float>      outputWaveBuffer;
+    std::atomic<int>             inputWrite { 0 };
+    std::atomic<int>             outputWrite { 0 };
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
 

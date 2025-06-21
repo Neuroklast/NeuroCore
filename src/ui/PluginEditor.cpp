@@ -10,11 +10,10 @@
 #include "PluginEditor.h"
 #include "../core/Config.h"
 #include "../utils/FormulaHelper.h"
-#include "FormulaWaveComponent.h"
+#include "WaveformDisplayComponent.h"
 #include "PluginLookAndFeel.h"
 #include "InlineAutocompleteEditor.h"
 #include "../core/EffectParameters.h"
-#include "../utils/ExpressionEvaluator.h"
 
 
 //==============================================================================
@@ -38,18 +37,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         auto paramId = juce::String::charToString (static_cast<juce_wchar>('a' + i));
         attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
             audioProcessor.apvts, paramId, *sliders[i]));
-        sliders[i]->onValueChange = [this, i]
-        {
-            if (valueEditors[i])
-                valueEditors[i]->setText (juce::String (sliders[i]->getValue()), juce::dontSendNotification);
-        };
         addAndMakeVisible (*sliders[i]);
-
-        valueEditors[i] = std::make_unique<juce::TextEditor>();
-        valueEditors[i]->setMultiLine (false);
-        valueEditors[i]->setReadOnly (true);
-        valueEditors[i]->setText ("0", juce::dontSendNotification);
-        addAndMakeVisible (*valueEditors[i]);
 
         nameEditors[i] = std::make_unique<juce::TextEditor>();
         nameEditors[i]->setText (audioProcessor.getVariableName(i), juce::dontSendNotification);
@@ -60,20 +48,30 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible (*nameEditors[i]);
     }
 
-    dryWetSlider = std::make_unique<juce::Slider>();
-    dryWetSlider->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    dryWetSlider->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-    dryWetSlider->setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::grey);
-    attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-        audioProcessor.apvts, EffectParameters::dryWet, *dryWetSlider));
-    addAndMakeVisible (*dryWetSlider);
+    inputGainSlider = std::make_unique<juce::Slider>();
+    inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    inputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::inputGain, *inputGainSlider));
+    addAndMakeVisible(*inputGainSlider);
 
-    inputLeftButton  = std::make_unique<juce::ToggleButton>(TRANS("InputLeft"));
-    inputRightButton = std::make_unique<juce::ToggleButton>(TRANS("InputRight"));
-    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputLeft, *inputLeftButton));
-    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputRight, *inputRightButton));
-    addAndMakeVisible(*inputLeftButton);
-    addAndMakeVisible(*inputRightButton);
+    mixSlider = std::make_unique<juce::Slider>();
+    mixSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    mixSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
+    addAndMakeVisible(*mixSlider);
+
+    outputGainSlider = std::make_unique<juce::Slider>();
+    outputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    outputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::outputGain, *outputGainSlider));
+    addAndMakeVisible(*outputGainSlider);
+
+    inputGainLabel  = std::make_unique<juce::Label>("", "INPUT GAIN");
+    mixLabel        = std::make_unique<juce::Label>("", "MIX");
+    outputGainLabel = std::make_unique<juce::Label>("", "OUTPUT GAIN");
+    addAndMakeVisible(*inputGainLabel);
+    addAndMakeVisible(*mixLabel);
+    addAndMakeVisible(*outputGainLabel);
 
     formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
     formulaInputEditor->setMultiLine (true, true);
@@ -85,51 +83,17 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 
 
-    optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
-    optimizeButton->onClick = [this]
-    {
-        juce::String info;
-        auto text = formulaInputEditor->getText();
-        auto opt = optimizeFormula(text, info);
-        if (opt != text)
-            formulaInputEditor->setText (opt, juce::dontSendNotification);
-        if (info.isNotEmpty())
-            errorLabel->setText(info, juce::dontSendNotification);
-    };
-    addAndMakeVisible (*optimizeButton);
+    formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
+    formulaInputEditor->setMultiLine(true, true);
+    formulaInputEditor->setReturnKeyStartsNewLine(true);
+    formulaInputEditor->setText(audioProcessor.getEvaluator().getFormula(), juce::dontSendNotification);
+    addAndMakeVisible(*formulaInputEditor);
+    audioProcessor.setFormula(formulaInputEditor->getText());
 
-    editSaveButton = std::make_unique<juce::TextButton>(TRANS("EditButton"));
-    editSaveButton->onClick = [this]
-    {
-        if (! editing)
-        {
-            editing = true;
-            formulaInputEditor->setReadOnly(false);
-            editSaveButton->setButtonText(TRANS("SaveButton"));
-        }
-        else
-        {
-            auto text = formulaInputEditor->getText();
-            auto test = std::make_shared<ExpressionEvaluator>();
-            if (test->parseFormula(text.toStdString()))
-            {
-                audioProcessor.setFormula(text);
-                formulaInputEditor->setReadOnly(true);
-                editSaveButton->setButtonText(TRANS("EditButton"));
-                editing = false;
-                errorLabel->setText(juce::String(), juce::dontSendNotification);
-            }
-            else
-            {
-                errorLabel->setText(TRANS("CompileError") + ": " + test->getLastError(), juce::dontSendNotification);
-            }
-        }
-    };
-    addAndMakeVisible (*editSaveButton);
-
-    errorLabel = std::make_unique<juce::Label>();
-    errorLabel->setColour (juce::Label::textColourId, juce::Colours::red);
-    addAndMakeVisible (*errorLabel);
+    inputDisplay  = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Input);
+    outputDisplay = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Output);
+    addAndMakeVisible(*inputDisplay);
+    addAndMakeVisible(*outputDisplay);
 
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
@@ -162,43 +126,38 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int thirdWidth = Config::kMiddleColumnWidth;
-    const int rowHeight  = Config::kKnobHeight + Config::kKnobSpacing;
-    const int sliderSize = Config::kKnobHeight;
-    const int textHeight = Config::kLabelHeight;
+    if (formulaInputEditor)
+        formulaInputEditor->setBounds(400, 30, 400, 150);
 
+    const int knobSize = 90;
+    const int labelHeight = 24;
+    const int yPos = 200;
+
+    const int xStart = 415;
     for (int i = 0; i < sliders.size(); ++i)
     {
-        int y = i * rowHeight;
         if (sliders[i])
-            sliders[i]->setBounds (0, y, sliderSize, sliderSize);
-        if (valueEditors[i])
-            valueEditors[i]->setBounds (sliderSize, y, sliderSize, textHeight);
+            sliders[i]->setBounds(xStart + i * 100, yPos, knobSize, knobSize);
         if (nameEditors[i])
-            nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
+            nameEditors[i]->setBounds(xStart + i * 100, 295, knobSize, labelHeight);
     }
 
-    int dryWetY = static_cast<int> (sliders.size()) * rowHeight;
-    if (dryWetSlider)
-        dryWetSlider->setBounds (0, dryWetY, sliderSize, sliderSize);
+    if (inputGainSlider)
+        inputGainSlider->setBounds(460, 420, 80, 80);
+    if (mixSlider)
+        mixSlider->setBounds(560, 400, 120, 120);
+    if (outputGainSlider)
+        outputGainSlider->setBounds(700, 420, 80, 80);
+    if (inputGainLabel)
+        inputGainLabel->setBounds(460, 510, 80, labelHeight);
+    if (mixLabel)
+        mixLabel->setBounds(560, 525, 120, labelHeight);
+    if (outputGainLabel)
+        outputGainLabel->setBounds(700, 510, 80, labelHeight);
 
-    int buttonY = dryWetY + rowHeight;
-    const int buttonHeight = textHeight;
-    if (inputLeftButton)
-        inputLeftButton->setBounds(0, buttonY, sliderSize, buttonHeight);
-    if (inputRightButton)
-        inputRightButton->setBounds(sliderSize, buttonY, sliderSize, buttonHeight);
-
-    auto middleX = thirdWidth;
-    int middleHeight = getHeight();
-    int inputHeight = middleHeight * 2 / 3;
-
-    formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
-    if (editSaveButton)
-        editSaveButton->setBounds (middleX, inputHeight, thirdWidth, textHeight);
-    if (optimizeButton)
-        optimizeButton->setBounds (middleX, inputHeight + textHeight, thirdWidth, textHeight);
-    if (errorLabel)
-        errorLabel->setBounds (middleX, inputHeight + 2 * textHeight, thirdWidth, textHeight);
+    if (inputDisplay)
+        inputDisplay->setBounds(40, 600, 320, 120);
+    if (outputDisplay)
+        outputDisplay->setBounds(840, 640, 320, 120);
 }
 

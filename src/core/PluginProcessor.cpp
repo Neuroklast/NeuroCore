@@ -162,6 +162,9 @@ void NeuroCoreAudioProcessor::releaseResources()
     dryBuffer.setSize (0, 0);
     gainCompValue.reset (getSampleRate(), 0.0);
     outputGain.reset();
+    userOutputGain.reset();
+    inputWaveBuffer.setSize(0, 0);
+    outputWaveBuffer.setSize(0, 0);
     currentSpec.sampleRate     = 0.0;
     currentSpec.maximumBlockSize = 0;
 }
@@ -178,6 +181,12 @@ void NeuroCoreAudioProcessor::reset()
     gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.reset();
     outputGain.setGainLinear(1.0f);
+    userOutputGain.reset();
+    userOutputGain.setGainLinear(1.0f);
+    inputWaveBuffer.clear();
+    outputWaveBuffer.clear();
+    inputWrite.store(0);
+    outputWrite.store(0);
     currentSpec.sampleRate = getSampleRate();
     currentSpec.maximumBlockSize = (juce::uint32) juce::jmax (1, getBlockSize());
 }
@@ -250,6 +259,17 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     juce::dsp::ProcessContextReplacing<float> routerCtx (block);
     getInputRouter().process (routerCtx);
 
+    const int fifoSize = Config::kWaveformDisplaySamples;
+    const auto inWrite = inputWrite.load();
+    for (int ch = 0; ch < juce::jmin(inputWaveBuffer.getNumChannels(), buffer.getNumChannels()); ++ch)
+    {
+        auto* dst = inputWaveBuffer.getWritePointer(ch);
+        auto* src = buffer.getReadPointer(ch);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            dst[(inWrite + i) % fifoSize] = src[i];
+    }
+    inputWrite.store((inWrite + buffer.getNumSamples()) % fifoSize);
+
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom (ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
@@ -269,6 +289,20 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     }
 
     DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
+
+    userOutputGain.setGainLinear(getParam(EffectParameters::outputGain));
+    juce::dsp::ProcessContextReplacing<float> outCtx(block);
+    userOutputGain.process(outCtx);
+
+    const auto outWrite = outputWrite.load();
+    for (int ch = 0; ch < juce::jmin(outputWaveBuffer.getNumChannels(), buffer.getNumChannels()); ++ch)
+    {
+        auto* dst = outputWaveBuffer.getWritePointer(ch);
+        auto* src = buffer.getReadPointer(ch);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            dst[(outWrite + i) % fifoSize] = src[i];
+    }
+    outputWrite.store((outWrite + buffer.getNumSamples()) % fifoSize);
 }
 
 //==============================================================================
@@ -327,6 +361,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("d", "D", 0.f, 1.f, 0.f);
     addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
+    addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
@@ -393,10 +428,19 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     }
     dryBuffer.clear();
 
+    inputWaveBuffer.setSize((int) currentSpec.numChannels, Config::kWaveformDisplaySamples, false, true, true);
+    inputWaveBuffer.clear();
+    inputWrite.store(0);
+    outputWaveBuffer.setSize((int) currentSpec.numChannels, Config::kWaveformDisplaySamples, false, true, true);
+    outputWaveBuffer.clear();
+    outputWrite.store(0);
+
     gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     gainCompValue.setCurrentAndTargetValue (1.0f);
     outputGain.prepare (currentSpec);
     outputGain.setGainLinear (1.0f);
+    userOutputGain.prepare(currentSpec);
+    userOutputGain.setGainLinear(1.0f);
 
     wetValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue (1.0f);
@@ -412,6 +456,36 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
     else if (parameterID == EffectParameters::paramB) parameterValues[1].store (newValue);
     else if (parameterID == EffectParameters::paramC) parameterValues[2].store (newValue);
     else if (parameterID == EffectParameters::paramD) parameterValues[3].store (newValue);
+}
+
+void NeuroCoreAudioProcessor::getInputWaveform(juce::AudioBuffer<float>& dest)
+{
+    const auto size = inputWaveBuffer.getNumSamples();
+    const auto num  = juce::jmin(dest.getNumSamples(), size);
+    const auto write = inputWrite.load();
+    const auto start = (write + size - num) % size;
+    for (int ch = 0; ch < juce::jmin(dest.getNumChannels(), inputWaveBuffer.getNumChannels()); ++ch)
+    {
+        auto* src = inputWaveBuffer.getReadPointer(ch);
+        auto* dst = dest.getWritePointer(ch);
+        for (int i = 0; i < num; ++i)
+            dst[i] = src[(start + i) % size];
+    }
+}
+
+void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
+{
+    const auto size = outputWaveBuffer.getNumSamples();
+    const auto num  = juce::jmin(dest.getNumSamples(), size);
+    const auto write = outputWrite.load();
+    const auto start = (write + size - num) % size;
+    for (int ch = 0; ch < juce::jmin(dest.getNumChannels(), outputWaveBuffer.getNumChannels()); ++ch)
+    {
+        auto* src = outputWaveBuffer.getReadPointer(ch);
+        auto* dst = dest.getWritePointer(ch);
+        for (int i = 0; i < num; ++i)
+            dst[i] = src[(start + i) % size];
+    }
 }
 
 

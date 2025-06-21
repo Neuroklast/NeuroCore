@@ -15,9 +15,8 @@
 #include "../core/Config.h"
 #include "PluginLookAndFeel.h"
 #include "../utils/FormulaHelper.h"
-#include "FormulaWaveComponent.h"
+#include "WaveformDisplayComponent.h"
 #include "InlineAutocompleteEditor.h"
-#include "../utils/ExpressionEvaluator.h"
 
 
 //==============================================================================
@@ -42,24 +41,20 @@ private:
 
     // Left column controls
     std::array<std::unique_ptr<juce::Slider>, 4> sliders;
-    std::array<std::unique_ptr<juce::TextEditor>, 4> valueEditors;
     std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
     std::array<juce::Colour, 4> sliderColours;
-    std::unique_ptr<juce::Slider> dryWetSlider;
-    std::unique_ptr<juce::ToggleButton> inputLeftButton;
-    std::unique_ptr<juce::ToggleButton> inputRightButton;
-    std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
+    std::unique_ptr<juce::Slider> inputGainSlider;
+    std::unique_ptr<juce::Slider> mixSlider;
+    std::unique_ptr<juce::Slider> outputGainSlider;
+    std::unique_ptr<juce::Label>  inputGainLabel;
+    std::unique_ptr<juce::Label>  mixLabel;
+    std::unique_ptr<juce::Label>  outputGainLabel;
 
     // Middle column editors
     std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;
-    std::unique_ptr<juce::TextButton>  optimizeButton;
-    std::unique_ptr<juce::TextButton>  editSaveButton;
-    std::unique_ptr<juce::Label>       errorLabel;
-    bool editing { false };
-
     NeuroCoreLookAndFeel lookAndFeel;
-
-    std::unique_ptr<FormulaWaveComponent> waveComponent;
+    std::unique_ptr<WaveformDisplayComponent> inputDisplay;
+    std::unique_ptr<WaveformDisplayComponent> outputDisplay;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };

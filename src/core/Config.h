@@ -107,6 +107,8 @@ namespace Config
 
     /// Number of samples displayed in the formula preview.
     inline constexpr int   kFormulaPreviewSamples = 512;
+    /// Number of samples captured for the realtime waveforms.
+    inline constexpr int   kWaveformDisplaySamples = 512;
     /// Fallback block size if host provides an invalid value.
     inline constexpr int   kDefaultBlockSize      = 512;
 
