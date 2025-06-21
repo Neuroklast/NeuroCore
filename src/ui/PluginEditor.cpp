@@ -59,6 +59,13 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible (*nameEditors[i]);
     }
 
+    inputLeftButton  = std::make_unique<juce::ToggleButton>(TRANS("InputLeft"));
+    inputRightButton = std::make_unique<juce::ToggleButton>(TRANS("InputRight"));
+    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputLeft, *inputLeftButton));
+    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputRight, *inputRightButton));
+    addAndMakeVisible(*inputLeftButton);
+    addAndMakeVisible(*inputRightButton);
+
     formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
     formulaInputEditor->setMultiLine (true, true);
     formulaInputEditor->setReturnKeyStartsNewLine (true);
@@ -157,6 +164,13 @@ void NeuroCoreAudioProcessorEditor::resized()
         if (nameEditors[i])
             nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
     }
+
+    int buttonY = (int)sliders.size() * rowHeight;
+    const int buttonHeight = textHeight;
+    if (inputLeftButton)
+        inputLeftButton->setBounds(0, buttonY, sliderSize, buttonHeight);
+    if (inputRightButton)
+        inputRightButton->setBounds(sliderSize, buttonY, sliderSize, buttonHeight);
 
     auto middleX = thirdWidth;
     int middleHeight = getHeight();

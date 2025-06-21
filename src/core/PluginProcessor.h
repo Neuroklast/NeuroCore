@@ -20,6 +20,7 @@
 #include "../utils/ExpressionEvaluator.h"
 #include "../utils/PresetManager.h"
 #include "../dsp/InputGain.h"
+#include "../dsp/InputRouter.h"
 #include "../dsp/WaveShaper.h"
 #include "../dsp/SignalPolisher.h"
 #include "EffectParameters.h"
@@ -99,16 +100,17 @@ private:
                                                Config::kDefaultVariableNames[3] };
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
 
-    InputGain inputGain;
-    WaveShaper waveShaper{ evaluator };
-    SignalPolisher polisher;
+    InputRouter                 inputRouter;
+    InputGain                   inputGain;
+    WaveShaper                  waveShaper{ evaluator };
+    SignalPolisher              polisher;
     juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels, (size_t)std::log2(Config::kOversamplingFactor), juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
     juce::dsp::DryWetMixer<float> dryWetMixer;
     juce::SmoothedValue<float>    wetValue;
     juce::SmoothedValue<float>    gainCompValue;
     juce::dsp::Gain<float>        outputGain;
     juce::AudioBuffer<float>      dryBuffer;
-    juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
+    juce::dsp::ProcessorChain<InputRouter, InputGain, WaveShaper, SignalPolisher> chain;
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
                                          static_cast<juce::uint32> (Config::kDefaultBlockSize),

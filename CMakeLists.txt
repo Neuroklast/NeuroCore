@@ -28,6 +28,7 @@ include(${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake)
 
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
+    src/dsp/InputRouter.cpp
     src/utils/PresetManager.cpp
     src/dsp/SignalPolisher.cpp
     src/dsp/WaveShaper.cpp
