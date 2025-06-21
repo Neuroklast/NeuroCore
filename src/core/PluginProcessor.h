@@ -17,7 +17,7 @@
 #include <cmath>
 #include <array>
 #include <memory>
-#include "../utils/ExpressionEvaluator.h"
+#include "../dsl/SignalChain.h"
 #include "../utils/PresetManager.h"
 #include "../dsp/InputGain.h"
 #include "../dsp/InputRouter.h"
@@ -72,13 +72,13 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Updates expression from the UI
+    // Updates signal chain script from the UI
     void setFormula (const juce::String& text);
+    juce::String getScript() const noexcept { return dslScript; }
 
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept { return variableNames[index]; }
     const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
-    const ExpressionEvaluator& getEvaluator() const noexcept { return *evaluator; }
 
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
@@ -106,12 +106,12 @@ public:
 
 private:
     //==============================================================================
-    std::shared_ptr<ExpressionEvaluator> evaluator;
     std::array<std::atomic<float>, 4> parameterValues{};
     std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
+    juce::String dslScript;
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
     juce::String currentLanguage;
 
@@ -130,7 +130,8 @@ private:
     std::atomic<int>             inputWrite { 0 };
     std::atomic<int>             outputWrite { 0 };
     InputRouter                   inputRouter;
-    juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
+    juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
+    dsl::SignalChain              signalChain;
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };
@@ -140,8 +141,7 @@ private:
     // Helper accessors for the processor chain
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
-    WaveShaper&     getWaveShaper()     noexcept { return chain.get<1>(); }
-    SignalPolisher& getPolisher()       noexcept { return chain.get<2>(); }
+    SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
 
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,

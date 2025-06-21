@@ -32,6 +32,8 @@ set(SOURCE_FILES
     src/utils/PresetManager.cpp
     src/dsp/SignalPolisher.cpp
     src/dsp/WaveShaper.cpp
+    src/dsl/DSLParser.cpp
+    src/dsl/SignalChain.cpp
     src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
     src/ui/FormulaDisplayComponent.cpp
@@ -69,6 +71,7 @@ juce_generate_juce_header(NeuroCore)
 target_include_directories(NeuroCore PRIVATE
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
     ${PROJECT_SOURCE_DIR}/src/utils
     ${PROJECT_SOURCE_DIR}/src/third_party
@@ -124,12 +127,15 @@ target_sources(NeuroCoreTests PRIVATE
     src/utils/ExpressionEvaluator.cpp
     src/dsp/WaveShaper.cpp
     src/dsp/LookupTables.cpp
+    src/dsl/DSLParser.cpp
+    src/dsl/SignalChain.cpp
 )
 
 target_include_directories(NeuroCoreTests PRIVATE
     ${PROJECT_SOURCE_DIR}/src/utils
     ${PROJECT_SOURCE_DIR}/src/dsp
     ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/dsl
 )
 
 target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)
@@ -139,6 +145,7 @@ target_link_libraries(NeuroCoreTests PRIVATE
     juce::juce_dsp
     juce::juce_data_structures
     juce::juce_core
+    curl
 )
 
 enable_testing()

@@ -37,10 +37,9 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #endif
 {
     LookupTables::initialise();
-    evaluator = std::make_shared<ExpressionEvaluator>();
-    evaluator->parseFormula(Config::kDefaultFormula);
-    getWaveShaper().setEvaluator(evaluator);
-    getWaveShaper().setVariableNames(variableNames);
+    juce::String err;
+    dslScript = "stage1: y = tanh(x)";
+    signalChain.loadScript(dslScript, err);
     for (auto& val : parameterValues)
         val.store(0.0f);
 
@@ -69,7 +68,6 @@ void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& nam
     if (juce::isPositiveAndBelow(index, variableNames.size()))
     {
         variableNames[(size_t)index] = name;
-        getWaveShaper().setVariableNames(variableNames);
     }
 }
 
@@ -240,11 +238,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     getInputRouter().setUseRight (getParam (EffectParameters::useInputRight) > 0.5f);
 
     getInputGain().setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
-    getWaveShaper().setParameter (EffectParameters::paramA, parameterValues[0].load());
-    getWaveShaper().setParameter (EffectParameters::paramB, parameterValues[1].load());
-    getWaveShaper().setParameter (EffectParameters::paramC, parameterValues[2].load());
-    getWaveShaper().setParameter (EffectParameters::paramD, parameterValues[3].load());
-    getWaveShaper().setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
+    std::array<float, 4> paramVals { parameterValues[0].load(), parameterValues[1].load(),
+                                     parameterValues[2].load(), parameterValues[3].load() };
     getPolisher().setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
 
     wetValue.setTargetValue (getParam (EffectParameters::dryWet));
@@ -275,8 +270,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     dryWetMixer.pushDrySamples (block);
 
     auto upBlock = oversampling.processSamplesUp (block);
-    juce::dsp::ProcessContextReplacing<float> ctx (upBlock);
-    chain.process (ctx);
+    juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
+    chain.get<0>().process (ctxGain);
+
+    juce::AudioBuffer<float> tmp (const_cast<float**>(upBlock.getArrayOfWritePointers()),
+                                 (int) upBlock.getNumChannels(), (int) upBlock.getNumSamples());
+    signalChain.processBlock(tmp, paramVals);
+
+    juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
+    chain.get<1>().process (ctxPolish);
     oversampling.processSamplesDown (block);
 
     for (size_t i = 0; i < block.getNumSamples(); ++i)
@@ -344,12 +346,9 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 
 void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
 {
-    auto newEval = std::make_shared<ExpressionEvaluator>();
-    if (newEval->parseFormula (text.toStdString()))
-    {
-        getWaveShaper().startFunctionCrossfade(newEval);
-        evaluator = std::move(newEval);
-    }
+    juce::String err;
+    if (signalChain.loadScript(text, err))
+        dslScript = text;
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::createParameterLayout()
@@ -380,14 +379,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
 
 float NeuroCoreAudioProcessor::evaluateFormula (float x)
 {
-    for (size_t i = 0; i < parameterValues.size(); ++i)
-    {
-        if (evaluator)
-            evaluator->setVariable(variableNames[i].toStdString(), parameterValues[i].load());
-    }
-    if (evaluator)
-        evaluator->setVariable("mod", 0.0f);
-    return (evaluator && evaluator->isValid()) ? evaluator->evaluate(x) : x;
+    juce::AudioBuffer<float> buf(1,1);
+    buf.setSample(0,0,x);
+    std::array<float,4> vals{ parameterValues[0].load(), parameterValues[1].load(),
+                             parameterValues[2].load(), parameterValues[3].load() };
+    signalChain.processBlock(buf, vals);
+    return buf.getSample(0,0);
 }
 
 void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
@@ -452,7 +449,6 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     wetValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue (1.0f);
 
-    getWaveShaper().setVariableNames (variableNames);
     inputRouter.prepare (currentSpec);
     chain.prepare (currentSpec);
 }
