@@ -46,8 +46,9 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     // load localisation
     auto lang = juce::SystemStats::getUserLanguage();
+    // resource directory next to the binary
     juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                            .getSiblingFile("Resources");
+                            .getSiblingFile("resources");
     juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
     translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
     juce::LocalisedStrings::setCurrentMappings(translations.get());
