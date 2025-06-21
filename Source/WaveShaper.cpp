@@ -1,4 +1,5 @@
 #include "WaveShaper.h"
+#include "Config.h"
 
 WaveShaper::WaveShaper(ExpressionEvaluator* eval) : evaluator(eval) {}
 
@@ -19,10 +20,10 @@ void WaveShaper::prepare(const juce::dsp::ProcessSpec& spec)
     sampleRate = spec.sampleRate;
     for (auto& s : smoothedParams)
     {
-        s.reset(sampleRate, 0.02);
+        s.reset(sampleRate, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
-    smoothedModFreq.reset(sampleRate, 0.02);
+    smoothedModFreq.reset(sampleRate, Config::kSmoothingTime);
     smoothedModFreq.setCurrentAndTargetValue(0.f);
     modPhase = 0.f;
 }

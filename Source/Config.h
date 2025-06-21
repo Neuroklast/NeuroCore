@@ -39,6 +39,11 @@ namespace Config
     /// Height of the result field widget in pixels.
     inline constexpr int kResultFieldHeight  = 30;
 
+    /// Width of the language selection box.
+    inline constexpr int kLanguageBoxWidth   = 100;
+    /// Height of the language selection box.
+    inline constexpr int kLanguageBoxHeight  = 24;
+
     /// Default font size in points.
     inline constexpr int kFontSizeDefault    = 14;
     /// Large font size in points.
@@ -58,6 +63,8 @@ namespace Config
     inline constexpr float kMaxInputValue      = 1.0f;
     /// Default output gain in decibels.
     inline constexpr float kDefaultGainOutDb   = 0.0f;
+    /// Time in seconds used for parameter smoothing.
+    inline constexpr float kSmoothingTime      = 0.02f;
 
     //==========================================================================
     // Parser / Interpreter constants
