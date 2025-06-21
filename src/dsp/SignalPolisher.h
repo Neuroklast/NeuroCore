@@ -21,9 +21,14 @@ public:
     void setParameter (const std::string& id, float v);
     void setBypassed (bool b) noexcept { bypassed = b; }
 
+    bool wasLimiterHit() noexcept { return limiterHit.exchange(false); }
+    bool wasInvalidSample() noexcept { return invalidSample.exchange(false); }
+
 private:
     int mode { None };
     bool bypassed { false };
     juce::dsp::Limiter<SampleType> limiter;
     std::vector<SampleType> lastGood;
+    std::atomic<bool> limiterHit { false };
+    std::atomic<bool> invalidSample { false };
 };

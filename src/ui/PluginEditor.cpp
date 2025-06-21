@@ -14,6 +14,7 @@
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
 #include "InlineAutocompleteEditor.h"
+#include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
 #include "../utils/ExpressionEvaluator.h"
 
@@ -223,6 +224,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputDisplay);
     addAndMakeVisible(*outputDisplay);
 
+    loudnessMeter = std::make_unique<LoudnessMeterComponent>(audioProcessor);
+    addAndMakeVisible(*loudnessMeter);
+
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
 
@@ -325,5 +329,8 @@ void NeuroCoreAudioProcessorEditor::resized()
         inputDisplay->setBounds(Config::kWaveDisplayXLeft, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
     if (outputDisplay)
         outputDisplay->setBounds(Config::kWaveDisplayXRight, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
+    if (loudnessMeter)
+        loudnessMeter->setBounds(Config::kLoudnessMeterX, gainY + Config::kWaveDisplayHeight + 20,
+                                 Config::kLoudnessMeterWidth, Config::kLoudnessMeterHeight);
 }
 
