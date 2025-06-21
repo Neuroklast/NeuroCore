@@ -27,8 +27,16 @@ void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleTyp
     auto& block = context.getOutputBlock();
     const size_t numSamples = block.getNumSamples();
 
+    float peakBefore = 0.0f;
     if (mode == Limiter)
     {
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        {
+            auto* data = block.getChannelPointer (ch);
+            for (size_t i = 0; i < numSamples; ++i)
+                peakBefore = juce::jmax (peakBefore, std::abs (data[i]));
+        }
+
         juce::dsp::ProcessContextReplacing<SampleType> ctx (block);
         limiter.process (ctx);
     }
@@ -49,11 +57,27 @@ void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleTyp
         {
             auto v = data[i];
             if (! std::isfinite (v))
+            {
+                invalidSample.store (true);
                 v = lastGood[ch];
+            }
             else
                 lastGood[ch] = v;
             data[i] = v;
         }
+    }
+
+    if (mode == Limiter)
+    {
+        float peakAfter = 0.0f;
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        {
+            auto* data = block.getChannelPointer (ch);
+            for (size_t i = 0; i < numSamples; ++i)
+                peakAfter = juce::jmax (peakAfter, std::abs (data[i]));
+        }
+        if (peakAfter < peakBefore - 1e-5f)
+            limiterHit.store (true);
     }
 }
 

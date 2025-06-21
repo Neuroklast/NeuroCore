@@ -88,6 +88,12 @@ namespace Config
     inline constexpr int kWaveDisplayWidth   = 320;
     inline constexpr int kWaveDisplayHeight  = 120;
 
+    /// Loudness meter placement.
+    inline constexpr int kLoudnessMeterX      = 560;
+    inline constexpr int kLoudnessMeterY      = 580;
+    inline constexpr int kLoudnessMeterWidth  = 80;
+    inline constexpr int kLoudnessMeterHeight = 150;
+
     /// Language selector placement.
     inline constexpr int kLanguageBoxX       = 20;
     inline constexpr int kLanguageBoxY       = 10;

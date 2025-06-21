@@ -291,6 +291,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     juce::dsp::ProcessContextReplacing<float> outCtx(block);
     userOutputGain.process(outCtx);
 
+    float rmsSum = 0.0f;
+    for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        rmsSum += static_cast<float>(DSPUtils::rms(block, static_cast<int>(ch)));
+    rmsSum /= juce::jmax(1u, block.getNumChannels());
+    lastLoudness.store(static_cast<float>(DSPUtils::linearToDb(rmsSum)));
+    limiterActive.store(getPolisher().wasLimiterHit());
+    if (getPolisher().wasInvalidSample())
+        invalidFlag.store(true);
+
     const auto outWrite = outputWrite.load();
     for (int ch = 0; ch < juce::jmin(outputWaveBuffer.getNumChannels(), buffer.getNumChannels()); ++ch)
     {

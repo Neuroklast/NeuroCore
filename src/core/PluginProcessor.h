@@ -94,6 +94,10 @@ public:
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
 
+    float getLoudnessDb()   const noexcept { return lastLoudness.load(); }
+    bool  isLimiterActive() const noexcept { return limiterActive.load(); }
+    bool  consumeInvalidFlag() noexcept { return invalidFlag.exchange(false); }
+
     // juce::AudioProcessorValueTreeState::Listener implementation
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
@@ -127,6 +131,10 @@ private:
     std::atomic<int>             outputWrite { 0 };
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain;
+
+    std::atomic<float> lastLoudness { -100.0f };
+    std::atomic<bool>  limiterActive { false };
+    std::atomic<bool>  invalidFlag   { false };
 
 
     // Helper accessors for the processor chain

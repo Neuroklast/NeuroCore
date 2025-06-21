@@ -18,6 +18,7 @@
 #include "FormulaDisplayComponent.h"
 #include "WaveformDisplayComponent.h"
 #include "InlineAutocompleteEditor.h"
+#include "LoudnessMeterComponent.h"
 
 
 //==============================================================================
@@ -71,6 +72,7 @@ private:
     NeuroCoreLookAndFeel lookAndFeel;
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
+    std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };
