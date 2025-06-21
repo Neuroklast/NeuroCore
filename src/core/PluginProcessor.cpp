@@ -233,9 +233,6 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         buffer.clear (i, 0, buffer.getNumSamples());
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
-    jassert(buffer.getNumSamples() <= dryBuffer.getNumSamples());
-    if (buffer.getNumSamples() > dryBuffer.getNumSamples() || buffer.getNumChannels() > dryBuffer.getNumChannels())
-        dryBuffer.setSize(buffer.getNumChannels(), buffer.getNumSamples(), false, true, true);
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
@@ -370,7 +367,13 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     dryWetMixer.setMixingRule (juce::dsp::DryWetMixingRule::balanced);
     //dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
 
-    dryBuffer.setSize ((int) currentSpec.numChannels, (int) currentSpec.maximumBlockSize);
+    if (dryBuffer.getNumChannels() != (int) currentSpec.numChannels
+        || dryBuffer.getNumSamples() < (int) currentSpec.maximumBlockSize)
+    {
+        dryBuffer.setSize ((int) currentSpec.numChannels,
+                           (int) currentSpec.maximumBlockSize,
+                           false, true, true);
+    }
     dryBuffer.clear();
 
     gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
