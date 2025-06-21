@@ -87,30 +87,33 @@ void AdvancedOscillatorWrapper::process(const juce::dsp::ProcessContextReplacing
     auto& block = ctx.getOutputBlock();
     auto numSamples = block.getNumSamples();
 
+    auto numChannels = block.getNumChannels();
+
     for (size_t sample = 0; sample < numSamples; ++sample)
     {
-        auto ampVal = amp.getNextValue();
+        auto ampVal  = amp.getNextValue();
         auto freqVal = freq.getNextValue();
         osc.setFrequency(freqVal);
 
-        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        SampleType oscSample;
+
+        if (useCustom.load(std::memory_order_acquire) && customFn)
+        {
+            auto inc = juce::MathConstants<SampleType>::twoPi * freqVal / sampleRate;
+            auto ph  = phase.advance(inc) - juce::MathConstants<SampleType>::pi;
+            oscSample = customFn(ph, 0.0f);
+        }
+        else
+        {
+            oscSample = osc.processSample(0.0f);
+        }
+
+        auto out = ampVal * oscSample;
+
+        for (size_t ch = 0; ch < numChannels; ++ch)
         {
             auto* data = block.getChannelPointer(ch);
-            auto in = data[sample];
-            SampleType oscSample;
-
-            if (useCustom.load(std::memory_order_acquire) && customFn)
-            {
-                auto inc = juce::MathConstants<SampleType>::twoPi * freqVal / sampleRate;
-                auto ph = phase.advance(inc) - juce::MathConstants<SampleType>::pi;
-                oscSample = customFn(ph, in);
-            }
-            else
-            {
-                oscSample = osc.processSample(0.0f);
-            }
-
-            data[sample] = in + ampVal * oscSample;
+            data[sample] += out;
         }
     }
 }
