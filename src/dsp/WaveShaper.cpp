@@ -19,7 +19,7 @@ void WaveShaper::startFunctionCrossfade(std::shared_ptr<ExpressionEvaluator> new
         return;
 
     const juce::SpinLock::ScopedLockType sl(crossfadeLock);
-    if (crossfading)
+    if (crossfading.load())
         return; // avoid multiple concurrent fades
 
     nextEvaluator = std::move(newEval);
@@ -30,7 +30,7 @@ void WaveShaper::startFunctionCrossfade(std::shared_ptr<ExpressionEvaluator> new
     crossfade.reset(sampleRate, Config::kCrossfadeTime);
     crossfade.setCurrentAndTargetValue(0.f);
     crossfade.setTargetValue(1.f); // fade von 0 nach 1
-    crossfading = true;
+    crossfading.store(true);
 }
 
 void WaveShaper::setVariableNames(const std::array<juce::String,4>& names)
@@ -74,7 +74,7 @@ void WaveShaper::reset()
     crossfade.reset(sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate,
                    Config::kCrossfadeTime);
     crossfade.setCurrentAndTargetValue(1.f);
-    crossfading = false;
+    crossfading.store(false);
 }
 
 void WaveShaper::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept
@@ -89,50 +89,73 @@ void WaveShaper::process (const juce::dsp::ProcessContextReplacing<SampleType>& 
         smoothedParams[i].setTargetValue (paramTargets[i]);
     smoothedModFreq.setTargetValue (modFreqTarget);
 
-    for (size_t sample = 0; sample < numSamples; ++sample)
+    bool fadeActive = crossfading.load();
+    if (fadeActive)
     {
-        for (size_t p = 0; p < smoothedParams.size(); ++p)
+        const juce::SpinLock::ScopedLockType sl(crossfadeLock);
+        for (size_t sample = 0; sample < numSamples; ++sample)
         {
-            auto val = smoothedParams[p].getNextValue();
-            if (evaluator)
-                evaluator->setVariable (variableNames[p].toStdString(), val);
-            if (nextEvaluator)
-                nextEvaluator->setVariable (variableNames[p].toStdString(), val);
-        }
-
-        auto freq = smoothedModFreq.getNextValue();
-        lfo.setFrequency (freq);
-        auto mod = lfo.processSample (0.0f);
-        if (evaluator)
-            evaluator->setVariable ("mod", mod);
-        if (nextEvaluator)
-            nextEvaluator->setVariable ("mod", mod);
-
-        auto fade = crossfading ? crossfade.getNextValue() : 1.f;
-
-        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
-        {
-            auto* data = block.getChannelPointer (ch);
-            auto x = data[sample];
-            auto cur = shaper.processSample (x);
-            if (crossfading)
+            for (size_t p = 0; p < smoothedParams.size(); ++p)
             {
+                auto val = smoothedParams[p].getNextValue();
+                if (evaluator)
+                    evaluator->setVariable (variableNames[p].toStdString(), val);
+                if (nextEvaluator)
+                    nextEvaluator->setVariable (variableNames[p].toStdString(), val);
+            }
+
+            auto freq = smoothedModFreq.getNextValue();
+            lfo.setFrequency (freq);
+            auto mod = lfo.processSample (0.0f);
+            if (evaluator)
+                evaluator->setVariable ("mod", mod);
+            if (nextEvaluator)
+                nextEvaluator->setVariable ("mod", mod);
+
+            auto fade = crossfade.getNextValue();
+
+            for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+            {
+                auto* data = block.getChannelPointer (ch);
+                auto x = data[sample];
+                auto cur = shaper.processSample (x);
                 auto next = shaperNext.processSample (x);
                 data[sample] = cur * (1.0f - fade) + next * fade;
             }
-            else
+
+            if (! crossfade.isSmoothing())
             {
-                data[sample] = cur;
+                shaper = shaperNext;
+                evaluator = nextEvaluator;
+                nextEvaluator.reset();
+                crossfading.store(false);
             }
         }
-
-        if (crossfading && ! crossfade.isSmoothing())
+    }
+    else
+    {
+        for (size_t sample = 0; sample < numSamples; ++sample)
         {
-            const juce::SpinLock::ScopedLockType sl(crossfadeLock);
-            shaper = shaperNext;
-            evaluator = nextEvaluator;
-            nextEvaluator.reset();
-            crossfading = false;
+            for (size_t p = 0; p < smoothedParams.size(); ++p)
+            {
+                auto val = smoothedParams[p].getNextValue();
+                if (evaluator)
+                    evaluator->setVariable (variableNames[p].toStdString(), val);
+            }
+
+            auto freq = smoothedModFreq.getNextValue();
+            lfo.setFrequency (freq);
+            auto mod = lfo.processSample (0.0f);
+            if (evaluator)
+                evaluator->setVariable ("mod", mod);
+
+            for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+            {
+                auto* data = block.getChannelPointer (ch);
+                auto x = data[sample];
+                auto cur = shaper.processSample (x);
+                data[sample] = cur;
+            }
         }
     }
 }
