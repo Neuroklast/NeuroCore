@@ -39,8 +39,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     LookupTables::initialise();
     evaluator = std::make_shared<ExpressionEvaluator>();
     evaluator->parseFormula(Config::kDefaultFormula);
-    waveShaper.setEvaluator(evaluator);
-    waveShaper.setVariableNames(variableNames);
+    getWaveShaper().setEvaluator(evaluator);
+    getWaveShaper().setVariableNames(variableNames);
     for (auto& val : parameterValues)
         val.store(0.0f);
 
@@ -66,7 +66,7 @@ void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& nam
     if (juce::isPositiveAndBelow(index, variableNames.size()))
     {
         variableNames[(size_t)index] = name;
-        waveShaper.setVariableNames(variableNames);
+        getWaveShaper().setVariableNames(variableNames);
     }
 }
 
@@ -217,13 +217,16 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     parameterValues[2].store (getParam (EffectParameters::paramC));
     parameterValues[3].store (getParam (EffectParameters::paramD));
 
-    inputGain.setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
-    waveShaper.setParameter (EffectParameters::paramA, parameterValues[0].load());
-    waveShaper.setParameter (EffectParameters::paramB, parameterValues[1].load());
-    waveShaper.setParameter (EffectParameters::paramC, parameterValues[2].load());
-    waveShaper.setParameter (EffectParameters::paramD, parameterValues[3].load());
-    waveShaper.setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
-    polisher.setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
+    getInputRouter().setUseLeft  (getParam (EffectParameters::useInputLeft ) > 0.5f);
+    getInputRouter().setUseRight (getParam (EffectParameters::useInputRight) > 0.5f);
+
+    getInputGain().setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
+    getWaveShaper().setParameter (EffectParameters::paramA, parameterValues[0].load());
+    getWaveShaper().setParameter (EffectParameters::paramB, parameterValues[1].load());
+    getWaveShaper().setParameter (EffectParameters::paramC, parameterValues[2].load());
+    getWaveShaper().setParameter (EffectParameters::paramD, parameterValues[3].load());
+    getWaveShaper().setParameter (EffectParameters::modFrequency, getParam (EffectParameters::modFrequency));
+    getPolisher().setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
     wetValue.setTargetValue (getParam (EffectParameters::dryWet));
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
@@ -289,7 +292,7 @@ void NeuroCoreAudioProcessor::setFormula (const juce::String& text)
     auto newEval = std::make_shared<ExpressionEvaluator>();
     if (newEval->parseFormula (text.toStdString()))
     {
-        waveShaper.startFunctionCrossfade(newEval);
+        getWaveShaper().startFunctionCrossfade(newEval);
         evaluator = std::move(newEval);
     }
 }
@@ -312,6 +315,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
 
     return { params.begin(), params.end() };
 }
@@ -376,7 +381,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     wetValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue (1.0f);
 
-    waveShaper.setVariableNames (variableNames);
+    getWaveShaper().setVariableNames (variableNames);
     chain.prepare (currentSpec);
 }
 
