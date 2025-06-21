@@ -15,6 +15,7 @@
 #include "FormulaDisplayComponent.h"
 #include "FormulaHelper.h"
 #include "FormulaWaveComponent.h"
+#include "Config.h"
 
 
 //==============================================================================
@@ -44,6 +45,10 @@ private:
     std::unique_ptr<juce::TextEditor> formulaInputEditor;
     std::unique_ptr<FormulaDisplayComponent> formulaDisplay;
     std::unique_ptr<juce::TextButton> optimizeButton;
+
+    // Language selection
+    std::unique_ptr<juce::ComboBox> languageBox;
+    juce::StringArray languageCodes;
 
     void showAutocomplete();
 
