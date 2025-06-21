@@ -80,6 +80,9 @@ public:
     const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
     const ExpressionEvaluator& getEvaluator() const noexcept { return *evaluator; }
 
+    void loadLanguage(const juce::String& lang);
+    juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
+
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
 
@@ -106,6 +109,7 @@ private:
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
+    juce::String currentLanguage;
 
 
     juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels,
