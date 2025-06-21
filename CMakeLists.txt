@@ -58,7 +58,7 @@ juce_add_plugin(NeuroCore
     PRODUCT_NAME "NeuroCore"
     VST3_CATEGORIES "Fx|Distortion"
     VST3_AUTO_MANIFEST FALSE
-    SOURCES src/core/PluginProcessor.cpp src/ui/PluginEditor.cpp
+    SOURCES ${SOURCE_FILES}
 )
 
 target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
