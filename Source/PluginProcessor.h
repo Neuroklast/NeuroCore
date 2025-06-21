@@ -72,6 +72,10 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
 
+    void loadLanguage(const juce::String& code);
+    juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
+    juce::StringArray getAvailableLanguages() const;
+
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // Evaluates current formula for a single sample value.
@@ -83,6 +87,7 @@ private:
     std::array<std::atomic<float>, 4> parameterValues{};
     std::array<juce::String, 4> variableNames{ "a", "b", "c", "d" };
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
+    juce::String currentLanguage { "en" };
 
     InputGain inputGain;
     WaveShaper waveShaper{ &evaluator };

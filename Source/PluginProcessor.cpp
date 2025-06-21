@@ -12,6 +12,7 @@
 #include "PluginEditor.h"
 #include "PresetManager.h"
 #include "FormulaHelper.h"
+#include "Config.h"
 
 
 //==============================================================================
@@ -32,19 +33,17 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #endif
 {
     LookupTables::initialise();
-    evaluator.parseFormula("tanh(x)");
+    evaluator.parseFormula(Config::kDefaultFormula);
     waveShaper.setEvaluator(&evaluator);
     waveShaper.setVariableNames(variableNames);
     for (auto& val : parameterValues)
         val.store(0.0f);
 
-    // load localisation
     auto lang = juce::SystemStats::getUserLanguage();
+    loadLanguage(lang.startsWithIgnoreCase("de") ? "de" : "en");
+
     juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
                             .getSiblingFile("Resources");
-    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
-    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
-    juce::LocalisedStrings::setCurrentMappings(translations.get());
 
     loadOptimizationRules(resDir.getChildFile("optimizations.txt"));
 
@@ -280,6 +279,35 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     }
     evaluator.setVariable("mod", 0.0f);
     return evaluator.isValid() ? evaluator.evaluate(x) : x;
+}
+
+void NeuroCoreAudioProcessor::loadLanguage(const juce::String& code)
+{
+    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                            .getSiblingFile("Resources");
+    juce::File langFile = resDir.getChildFile(code + ".txt");
+    if (langFile.existsAsFile())
+    {
+        translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
+        juce::LocalisedStrings::setCurrentMappings(translations.get());
+        currentLanguage = code;
+    }
+}
+
+juce::StringArray NeuroCoreAudioProcessor::getAvailableLanguages() const
+{
+    juce::StringArray list;
+    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                            .getSiblingFile("Resources");
+    juce::Array<juce::File> files;
+    resDir.findChildFiles(files, juce::File::findFiles, false, "*.txt");
+    for (auto& f : files)
+    {
+        auto code = f.getFileNameWithoutExtension();
+        if (code.length() == 2)
+            list.addIfNotAlreadyThere(code);
+    }
+    return list;
 }
 
 

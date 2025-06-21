@@ -10,13 +10,38 @@
 #include "PluginEditor.h"
 #include "FormulaHelper.h"
 #include "FormulaWaveComponent.h"
+#include "Config.h"
 
 
 //==============================================================================
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setSize (1200, 800);
+    setSize (Config::kWindowWidth, Config::kWindowHeight);
+
+    languageBox = std::make_unique<juce::ComboBox>();
+    languageCodes = audioProcessor.getAvailableLanguages();
+    for (int i = 0; i < languageCodes.size(); ++i)
+    {
+        auto code = languageCodes[i];
+        juce::String name = code.toLowerCase() == "de" ? TRANS("German")
+                               : code.toLowerCase() == "en" ? TRANS("English")
+                               : code.toUpperCase();
+        languageBox->addItem(name, i + 1);
+    }
+    int current = languageCodes.indexOf(audioProcessor.getCurrentLanguage());
+    languageBox->setSelectedId(current + 1, juce::dontSendNotification);
+    languageBox->onChange = [this]
+    {
+        int idx = languageBox->getSelectedId() - 1;
+        if (juce::isPositiveAndBelow(idx, languageCodes.size()))
+        {
+            audioProcessor.loadLanguage(languageCodes[idx]);
+            optimizeButton->setButtonText(TRANS("OptimizeButton"));
+            formulaDisplay->setError(audioProcessor.getEvaluator().getLastError());
+        }
+    };
+    addAndMakeVisible(*languageBox);
 
     static const juce::Colour defaultColours[4] = {
         juce::Colours::red, juce::Colours::green,
@@ -57,7 +82,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor = std::make_unique<juce::TextEditor>();
     formulaInputEditor->setMultiLine (true, true);
     formulaInputEditor->setReturnKeyStartsNewLine (true);
-    formulaInputEditor->setText ("tanh(x)", juce::dontSendNotification);
+    formulaInputEditor->setText (Config::kDefaultFormula, juce::dontSendNotification);
     formulaInputEditor->onTextChange = [this]
     {
         audioProcessor.setFormula (formulaInputEditor->getText());
@@ -71,7 +96,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     formulaDisplay = std::make_unique<FormulaDisplayComponent>();
     formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
-    formulaDisplay->setFormula ("tanh(x)");
+    formulaDisplay->setFormula (Config::kDefaultFormula);
     addAndMakeVisible (*formulaDisplay);
 
     optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
@@ -103,17 +128,19 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int thirdWidth = 400;
-    const int rowHeight  = getHeight() / 4;
+    const int thirdWidth = Config::kMiddleColumnWidth;
+    const int rowHeight  = (getHeight() - Config::kLanguageBoxHeight) / 4;
     const int sliderSize = rowHeight;
-    const int textHeight = 30;
+    const int textHeight = Config::kLabelHeight;
+
+    languageBox->setBounds (0, 0, Config::kLanguageBoxWidth, Config::kLanguageBoxHeight);
 
     for (int i = 0; i < sliders.size(); ++i)
     {
         int y = i * rowHeight;
-        sliders[i]->setBounds (0, y, sliderSize, sliderSize);
-        valueEditors[i]->setBounds (sliderSize, y, sliderSize, textHeight);
-        nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
+        sliders[i]->setBounds (0, y + Config::kLanguageBoxHeight, sliderSize, sliderSize);
+        valueEditors[i]->setBounds (sliderSize, y + Config::kLanguageBoxHeight, sliderSize, textHeight);
+        nameEditors[i]->setBounds (sliderSize, y + Config::kLanguageBoxHeight + textHeight, sliderSize, textHeight);
     }
 
     auto middleX = thirdWidth;

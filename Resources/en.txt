@@ -1,2 +1,6 @@
 OptimizeButton=Optimize
 OptimizedSaturate=Optimized: replaced tanh+clamp with saturate(x)
+SyntaxErrorAt=Syntax error at position %1
+UnknownError=Unknown error
+English=English
+German=German

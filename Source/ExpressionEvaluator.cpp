@@ -220,14 +220,14 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         root = parseExpression();
         if (pos != input.length())
         {
-            errorMessage = "Syntaxfehler an Position " + juce::String((int)pos);
+            errorMessage = TRANS("SyntaxErrorAt").replace("%1", juce::String((int)pos));
             return false;
         }
         valid = root != nullptr;
         return valid;
     }
     catch (...) {
-        errorMessage = "Unbekannter Fehler";
+        errorMessage = TRANS("UnknownError");
         return false; }
 }
 
