@@ -273,9 +273,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
     chain.get<0>().process (ctxGain);
 
-    juce::AudioBuffer<float> tmp (const_cast<float**>(upBlock.getArrayOfWritePointers()),
-                                 (int) upBlock.getNumChannels(), (int) upBlock.getNumSamples());
-    signalChain.processBlock(tmp, paramVals);
+    upBlock.copyTo (scriptBuffer);
+    signalChain.processBlock (scriptBuffer, paramVals);
+    upBlock.copyFrom (scriptBuffer);
 
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
     chain.get<1>().process (ctxPolish);
@@ -451,6 +451,23 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 
     inputRouter.prepare (currentSpec);
     chain.prepare (currentSpec);
+
+    auto scriptSamples = (int) (currentSpec.maximumBlockSize
+                                * oversampling.getOversamplingFactor());
+    if (scriptBuffer.getNumChannels() != (int) currentSpec.numChannels
+        || scriptBuffer.getNumSamples() < scriptSamples)
+    {
+        scriptBuffer.setSize ((int) currentSpec.numChannels,
+                              scriptSamples,
+                              false, true, true);
+    }
+    scriptBuffer.clear();
+
+    juce::dsp::ProcessSpec dslSpec { currentSpec.sampleRate
+                                      * oversampling.getOversamplingFactor(),
+                                      (juce::uint32) scriptSamples,
+                                      currentSpec.numChannels };
+    signalChain.prepare (dslSpec);
 }
 
 void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)

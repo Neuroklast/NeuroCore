@@ -127,6 +127,7 @@ private:
     juce::AudioBuffer<float>      dryBuffer;
     juce::AudioBuffer<float>      inputWaveBuffer;
     juce::AudioBuffer<float>      outputWaveBuffer;
+    juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
     std::atomic<int>             inputWrite { 0 };
     std::atomic<int>             outputWrite { 0 };
     InputRouter                   inputRouter;
