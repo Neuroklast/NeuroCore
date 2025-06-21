@@ -14,10 +14,10 @@
 #include "../core/PluginProcessor.h"
 #include "../core/Config.h"
 #include "PluginLookAndFeel.h"
-#include "FormulaDisplayComponent.h"
 #include "../utils/FormulaHelper.h"
 #include "FormulaWaveComponent.h"
 #include "InlineAutocompleteEditor.h"
+#include "../utils/ExpressionEvaluator.h"
 
 
 //==============================================================================
@@ -51,10 +51,10 @@ private:
 
     // Middle column editors
     std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;
-    std::unique_ptr<FormulaDisplayComponent> formulaDisplay;
-    std::unique_ptr<juce::TextButton> optimizeButton;
-    std::unique_ptr<juce::TextButton> compileButton;
+    std::unique_ptr<juce::TextButton>  optimizeButton;
+    std::unique_ptr<juce::TextButton>  editSaveButton;
     std::unique_ptr<juce::Label>       errorLabel;
+    bool editing { false };
 
     NeuroCoreLookAndFeel lookAndFeel;
 

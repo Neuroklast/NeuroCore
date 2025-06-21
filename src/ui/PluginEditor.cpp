@@ -13,6 +13,7 @@
 #include "FormulaWaveComponent.h"
 #include "PluginLookAndFeel.h"
 #include "InlineAutocompleteEditor.h"
+#include "../utils/ExpressionEvaluator.h"
 
 
 //==============================================================================
@@ -54,7 +55,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         nameEditors[i]->onTextChange = [this, i]
         {
             audioProcessor.setVariableName(i, nameEditors[i]->getText());
-            formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
         };
         addAndMakeVisible (*nameEditors[i]);
     }
@@ -69,21 +69,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
     formulaInputEditor->setMultiLine (true, true);
     formulaInputEditor->setReturnKeyStartsNewLine (true);
-    formulaInputEditor->setText ("tanh(x)", juce::dontSendNotification);
-    formulaInputEditor->onTextChange = [this]
-    {
-        audioProcessor.setFormula (formulaInputEditor->getText());
-        formulaDisplay->setFormula (formulaInputEditor->getText());
-        formulaDisplay->setError (audioProcessor.getEvaluator().getLastError());
-    };
+    formulaInputEditor->setText (audioProcessor.getEvaluator().getFormula(), juce::dontSendNotification);
+    formulaInputEditor->setReadOnly(true);
     addAndMakeVisible (*formulaInputEditor);
     audioProcessor.setFormula (formulaInputEditor->getText());
 
 
-    formulaDisplay = std::make_unique<FormulaDisplayComponent>();
-    formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
-    formulaDisplay->setFormula ("tanh(x)");
-    addAndMakeVisible (*formulaDisplay);
 
     optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
     optimizeButton->onClick = [this]
@@ -94,25 +85,38 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         if (opt != text)
             formulaInputEditor->setText (opt, juce::dontSendNotification);
         if (info.isNotEmpty())
-            formulaDisplay->setError(info);
+            errorLabel->setText(info, juce::dontSendNotification);
     };
     addAndMakeVisible (*optimizeButton);
 
-    compileButton = std::make_unique<juce::TextButton>(TRANS("CompileButton"));
-    compileButton->onClick = [this]
+    editSaveButton = std::make_unique<juce::TextButton>(TRANS("EditButton"));
+    editSaveButton->onClick = [this]
     {
-        if (formulaInputEditor != nullptr)
+        if (! editing)
         {
-            audioProcessor.setFormula (formulaInputEditor->getText());
-            auto err = audioProcessor.getEvaluator().getLastError();
-            errorLabel->setText (err.isNotEmpty() ? TRANS("CompileError") + ": " + err
-                                              : juce::String(),
-                                juce::dontSendNotification);
-            formulaDisplay->setFormula (formulaInputEditor->getText());
-            formulaDisplay->setError (err);
+            editing = true;
+            formulaInputEditor->setReadOnly(false);
+            editSaveButton->setButtonText(TRANS("SaveButton"));
+        }
+        else
+        {
+            auto text = formulaInputEditor->getText();
+            auto test = std::make_shared<ExpressionEvaluator>();
+            if (test->parseFormula(text.toStdString()))
+            {
+                audioProcessor.setFormula(text);
+                formulaInputEditor->setReadOnly(true);
+                editSaveButton->setButtonText(TRANS("EditButton"));
+                editing = false;
+                errorLabel->setText(juce::String(), juce::dontSendNotification);
+            }
+            else
+            {
+                errorLabel->setText(TRANS("CompileError") + ": " + test->getLastError(), juce::dontSendNotification);
+            }
         }
     };
-    addAndMakeVisible (*compileButton);
+    addAndMakeVisible (*editSaveButton);
 
     errorLabel = std::make_unique<juce::Label>();
     errorLabel->setColour (juce::Label::textColourId, juce::Colours::red);
@@ -177,13 +181,11 @@ void NeuroCoreAudioProcessorEditor::resized()
     int inputHeight = middleHeight * 2 / 3;
 
     formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
-    if(formulaDisplay)
-    formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, textHeight);
-	if (compileButton)
-    compileButton->setBounds  (middleX, inputHeight + textHeight, thirdWidth, textHeight);
-	if (optimizeButton)
-    optimizeButton->setBounds (middleX, inputHeight + 2 * textHeight, thirdWidth, textHeight);
-	if (errorLabel)
-    errorLabel->setBounds     (middleX, inputHeight + 3 * textHeight, thirdWidth, textHeight);
+    if (editSaveButton)
+        editSaveButton->setBounds (middleX, inputHeight, thirdWidth, textHeight);
+    if (optimizeButton)
+        optimizeButton->setBounds (middleX, inputHeight + textHeight, thirdWidth, textHeight);
+    if (errorLabel)
+        errorLabel->setBounds (middleX, inputHeight + 2 * textHeight, thirdWidth, textHeight);
 }
 
