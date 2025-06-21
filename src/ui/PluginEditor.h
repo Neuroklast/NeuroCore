@@ -45,6 +45,7 @@ private:
     std::array<std::unique_ptr<juce::TextEditor>, 4> valueEditors;
     std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
     std::array<juce::Colour, 4> sliderColours;
+    std::unique_ptr<juce::Slider> dryWetSlider;
     std::unique_ptr<juce::ToggleButton> inputLeftButton;
     std::unique_ptr<juce::ToggleButton> inputRightButton;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
