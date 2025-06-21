@@ -258,17 +258,20 @@ void ExpressionEvaluator::setVariable(const std::string& name, float value) noex
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
-    const juce::SpinLock::ScopedLockType sl(lock);
+    const juce::SpinLock::ScopedLockType sl (lock);
 
-    if (!valid || !root)
+    if (! valid || ! root)
         return 0.0f;
 
-    auto vars = variables;
-    vars["x"] = xValue;
-    float result = root->eval(vars);
+    auto& vars = const_cast<std::unordered_map<std::string, float>&> (variables);
+    auto old = vars["x"];                   // store current x to restore later
+    vars["x"] = xValue;                      // update directly to avoid copies
+    float result = root->eval (vars);
+    vars["x"] = old;                         // restore previous value
 
-    if (std::isfinite(result))
+    if (std::isfinite (result))
         return result;
+
     return 0.0f;
 }
 

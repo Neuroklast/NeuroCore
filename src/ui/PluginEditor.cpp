@@ -43,6 +43,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         inputRightButton->setButtonText(TRANS("InputRight"));
         optimizeButton->setButtonText(TRANS("OptimizeButton"));
         editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
+        if (polisherLabel)
+            polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     };
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
@@ -136,6 +138,15 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputGainLabel);
     addAndMakeVisible(*mixLabel);
     addAndMakeVisible(*outputGainLabel);
+
+    polisherLabel = std::make_unique<juce::Label>("", TRANS("PolisherLabel"));
+    addAndMakeVisible (*polisherLabel);
+
+    polisherBox = std::make_unique<juce::ComboBox>();
+    polisherBox->addItemList (juce::StringArray { "None", "Hard Clip", "Limiter" }, 1);
+    polisherAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        audioProcessor.apvts, EffectParameters::polisherMode, *polisherBox);
+    addAndMakeVisible (*polisherBox);
 
     inputGainValue  = std::make_unique<juce::Label>();
     mixValue        = std::make_unique<juce::Label>();
@@ -252,36 +263,37 @@ void NeuroCoreAudioProcessorEditor::resized()
     const int knobSize    = Config::kKnobSize;
     const int labelHeight = Config::kLabelHeight;
     const int valueHeight = Config::kValueFieldHeight;
+    const int pad         = Config::kUiPadding;
 
     if (languageLabel)
-        languageLabel->setBounds(Config::kLanguageBoxX,
-                                 Config::kLanguageBoxY,
+        languageLabel->setBounds(Config::kLanguageBoxX + pad,
+                                 Config::kLanguageBoxY + pad,
                                  Config::kLanguageLabelWidth,
                                  labelHeight);
     if (languageBox)
-        languageBox->setBounds(Config::kLanguageBoxX + Config::kLanguageLabelWidth + 4,
-                               Config::kLanguageBoxY,
+        languageBox->setBounds(Config::kLanguageBoxX + Config::kLanguageLabelWidth + 4 + pad,
+                               Config::kLanguageBoxY + pad,
                                Config::kLanguageBoxWidth,
                                labelHeight);
 
     if (formulaInputEditor)
-        formulaInputEditor->setBounds(Config::kFormulaEditorX, Config::kFormulaEditorY,
+        formulaInputEditor->setBounds(Config::kFormulaEditorX + pad, Config::kFormulaEditorY + pad,
                                      Config::kFormulaEditorWidth, Config::kFormulaEditorHeight);
     if (formulaDisplay)
-        formulaDisplay->setBounds(Config::kFormulaEditorX, Config::kFormulaDisplayY,
+        formulaDisplay->setBounds(Config::kFormulaEditorX + pad, Config::kFormulaDisplayY + pad,
                                   Config::kFormulaEditorWidth, labelHeight);
     if (editSaveButton)
-        editSaveButton->setBounds(Config::kFormulaEditorX, Config::kEditButtonY,
+        editSaveButton->setBounds(Config::kFormulaEditorX + pad, Config::kEditButtonY + pad,
                                   Config::kFormulaEditorWidth, labelHeight);
     if (optimizeButton)
-        optimizeButton->setBounds(Config::kFormulaEditorX, Config::kOptimizeButtonY,
+        optimizeButton->setBounds(Config::kFormulaEditorX + pad, Config::kOptimizeButtonY + pad,
                                   Config::kFormulaEditorWidth, labelHeight);
     if (errorLabel)
-        errorLabel->setBounds(Config::kFormulaEditorX, Config::kErrorLabelY,
+        errorLabel->setBounds(Config::kFormulaEditorX + pad, Config::kErrorLabelY + pad,
                               Config::kFormulaEditorWidth, labelHeight);
 
-    const int yPos = Config::kKnobRowY;
-    const int xStart = Config::kKnobRowXStart;
+    const int yPos = Config::kKnobRowY + pad;
+    const int xStart = Config::kKnobRowXStart + pad;
     for (int i = 0; i < sliders.size(); ++i)
     {
         if (sliders[i])
@@ -294,34 +306,38 @@ void NeuroCoreAudioProcessorEditor::resized()
 
     int gainY = yPos + knobSize + valueHeight + labelHeight + Config::kGainSectionGap;
     if (inputGainSlider)
-        inputGainSlider->setBounds(Config::kInputGainX, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
+        inputGainSlider->setBounds(Config::kInputGainX + pad, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
     if (mixSlider)
-        mixSlider->setBounds(Config::kMixX, gainY + Config::kMixYOffset, Config::kMixKnobSize, Config::kMixKnobSize);
+        mixSlider->setBounds(Config::kMixX + pad, gainY + Config::kMixYOffset, Config::kMixKnobSize, Config::kMixKnobSize);
     if (outputGainSlider)
-        outputGainSlider->setBounds(Config::kOutputGainX, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
+        outputGainSlider->setBounds(Config::kOutputGainX + pad, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
     if (inputGainLabel)
-        inputGainLabel->setBounds(Config::kInputGainX, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
+        inputGainLabel->setBounds(Config::kInputGainX + pad, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
     if (mixLabel)
-        mixLabel->setBounds(Config::kMixX, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset, Config::kMixKnobSize, labelHeight);
+        mixLabel->setBounds(Config::kMixX + pad, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset, Config::kMixKnobSize, labelHeight);
     if (outputGainLabel)
-        outputGainLabel->setBounds(Config::kOutputGainX, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
+        outputGainLabel->setBounds(Config::kOutputGainX + pad, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
     if (inputGainValue)
-        inputGainValue->setBounds(Config::kInputGainX, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
+        inputGainValue->setBounds(Config::kInputGainX + pad, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
     if (mixValue)
-        mixValue->setBounds(Config::kMixX, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset + labelHeight, Config::kMixKnobSize, valueHeight);
+        mixValue->setBounds(Config::kMixX + pad, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset + labelHeight, Config::kMixKnobSize, valueHeight);
     if (outputGainValue)
-        outputGainValue->setBounds(Config::kOutputGainX, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
+        outputGainValue->setBounds(Config::kOutputGainX + pad, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
     if (inputLeftButton)
-        inputLeftButton->setBounds(Config::kInputButtonX, gainY, Config::kInputButtonWidth, labelHeight);
+        inputLeftButton->setBounds(Config::kInputButtonX + pad, gainY, Config::kInputButtonWidth, labelHeight);
     if (inputRightButton)
-        inputRightButton->setBounds(Config::kInputButtonX, gainY + labelHeight, Config::kInputButtonWidth, labelHeight);
+        inputRightButton->setBounds(Config::kInputButtonX + pad, gainY + labelHeight, Config::kInputButtonWidth, labelHeight);
+    if (polisherLabel)
+        polisherLabel->setBounds(Config::kPolisherLabelX + pad, Config::kPolisherLabelY + pad, Config::kPolisherLabelWidth, labelHeight);
+    if (polisherBox)
+        polisherBox->setBounds(Config::kPolisherBoxX + pad, Config::kPolisherLabelY + pad, Config::kPolisherBoxWidth, labelHeight);
 
     if (inputDisplay)
-        inputDisplay->setBounds(Config::kWaveDisplayXLeft, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
+        inputDisplay->setBounds(Config::kWaveDisplayXLeft + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
     if (outputDisplay)
-        outputDisplay->setBounds(Config::kWaveDisplayXRight, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
+        outputDisplay->setBounds(Config::kWaveDisplayXRight + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
     if (loudnessMeter)
-        loudnessMeter->setBounds(Config::kLoudnessMeterX, gainY + Config::kWaveDisplayHeight + 20,
+        loudnessMeter->setBounds(Config::kLoudnessMeterX + pad, gainY + Config::kWaveDisplayHeight + 20,
                                  Config::kLoudnessMeterWidth, Config::kLoudnessMeterHeight);
 }
 

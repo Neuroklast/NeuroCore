@@ -77,7 +77,12 @@ public:
     juce::String getScript() const noexcept { return dslScript; }
 
     void setVariableName(int index, const juce::String& name);
-    juce::String getVariableName(int index) const noexcept { return variableNames[index]; }
+    juce::String getVariableName(int index) const noexcept
+    {
+        if (juce::isPositiveAndBelow (index, (int) variableNames.size()))
+            return variableNames[(size_t) index];
+        return {};
+    }
     const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
 
     void loadLanguage(const juce::String& lang);

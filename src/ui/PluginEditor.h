@@ -59,7 +59,10 @@ private:
     std::unique_ptr<juce::ToggleButton>  inputRightButton;
     std::unique_ptr<juce::ComboBox>      languageBox;
     std::unique_ptr<juce::Label>         languageLabel;
+    std::unique_ptr<juce::ComboBox>      polisherBox;
+    std::unique_ptr<juce::Label>         polisherLabel;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       polisherAttachment;
 
     // Middle column editors
     std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;

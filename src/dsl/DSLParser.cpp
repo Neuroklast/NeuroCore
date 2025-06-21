@@ -86,17 +86,17 @@ bool DSLParser::parse(const juce::String& text,
             desc.args[key] = value;
         }
 
-        if (desc.type == "stage" && ! desc.args.contains("y"))
+        if (desc.type == "stage" && desc.args.count("y") == 0)
         {
             error = "Error on line " + juce::String(i+1) + ": stage without formula.";
             return false;
         }
-        if (desc.type == "filter" && ! desc.args.contains("cutoff"))
+        if (desc.type == "filter" && desc.args.count("cutoff") == 0)
         {
             error = "Error on line " + juce::String(i+1) + ": filter missing cutoff.";
             return false;
         }
-        if (desc.type == "comp" && (! desc.args.contains("threshold") || ! desc.args.contains("ratio")))
+        if (desc.type == "comp" && (desc.args.count("threshold") == 0 || desc.args.count("ratio") == 0))
         {
             error = "Error on line " + juce::String(i+1) + ": compressor missing threshold/ratio.";
             return false;
