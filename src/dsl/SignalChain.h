@@ -4,6 +4,9 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
 #include "../utils/ExpressionEvaluator.h"
+#include <atomic>
+#include <vector>
+#include <utility>
 
 namespace dsl
 {
@@ -31,6 +34,7 @@ private:
         std::vector<float> xPrev, yPrev;
         juce::String formula;
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
+        std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -42,6 +46,7 @@ private:
         juce::String name;
         std::vector<float> last;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -52,6 +57,8 @@ private:
         ExpressionEvaluator cutoff, resonance;
         juce::dsp::StateVariableTPTFilterType type{ juce::dsp::StateVariableTPTFilterType::lowpass };
         float sampleRate{44100.0f};
+        int channels{1};
+        std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
@@ -61,14 +68,20 @@ private:
     {
         juce::dsp::Compressor<float> comp;
         ExpressionEvaluator threshold, ratio, attack, release;
+        int channels{1};
+        std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
 
-    std::vector<std::unique_ptr<Block>> chain;
+    using Chain   = std::vector<std::unique_ptr<Block>>;
+    using AliasMap = std::unordered_map<juce::String, juce::String>;
+
+    std::shared_ptr<Chain>   chain;
+    std::shared_ptr<AliasMap> aliases;
+
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
-    std::unordered_map<juce::String, juce::String> paramAliases;
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
 };
 

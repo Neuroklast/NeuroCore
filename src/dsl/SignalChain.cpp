@@ -1,9 +1,12 @@
 #include "SignalChain.h"
+#include <atomic>
 
 using namespace dsl;
 
 SignalChain::SignalChain()
 {
+    chain   = std::make_shared<Chain>();
+    aliases = std::make_shared<AliasMap>();
     variables["x"] = 0.0f;
     variables["x_prev"] = 0.0f;
     variables["y_prev"] = 0.0f;
@@ -13,8 +16,9 @@ SignalChain::SignalChain()
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 {
     currentSpec = spec;
-    for (auto& b : chain)
-        b->prepare(spec);
+    if (auto ptr = std::atomic_load(&chain))
+        for (auto& b : *ptr)
+            b->prepare (spec);
 }
 
 static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
@@ -41,10 +45,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 {
     DSLParser parser;
     std::vector<BlockDesc> desc;
-    if (! parser.parse(script, desc, paramAliases, error))
+    AliasMap newAliases;
+    if (! parser.parse (script, desc, newAliases, error))
         return false;
 
-    chain.clear();
+    auto newChain = std::make_shared<Chain>();
 
     for (const auto& d : desc)
     {
@@ -54,7 +59,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             st->formula = d.args.at("y");
             st->varPtr = &variables;
             st->eval.parseFormula(st->formula.toStdString());
-            chain.push_back(std::move(st));
+            newChain->push_back (std::move (st));
         }
         else if (d.type.startsWith("osc"))
         {
@@ -66,7 +71,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             oc->osc.setFrequency(freq);
             oc->varPtr = &variables;
             oc->name = d.name;
-            chain.push_back(std::move(oc));
+            newChain->push_back (std::move (oc));
         }
         else if (d.type.startsWith("filter"))
         {
@@ -82,7 +87,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 fi->resonance.parseFormula("0.7");
             fi->varPtr = &variables;
-            chain.push_back(std::move(fi));
+            newChain->push_back (std::move (fi));
         }
         else if (d.type.startsWith("comp"))
         {
@@ -104,10 +109,17 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 co->release.parseFormula("0.1");
             co->varPtr = &variables;
-            chain.push_back(std::move(co));
+            newChain->push_back (std::move (co));
         }
     }
 
+    // prepare newly created blocks when a valid spec is available
+    if (currentSpec.sampleRate > 0.0)
+        for (auto& b : *newChain)
+            b->prepare (currentSpec);
+
+    std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
+    std::atomic_store (&chain, newChain);
     return true;
 }
 
@@ -119,8 +131,14 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
     variables["c"] = params[2];
     variables["d"] = params[3];
 
-    for (const auto& kv : paramAliases)
-        variables[kv.second] = variables[kv.first];
+    auto aliasPtr = std::atomic_load (&aliases);
+    if (aliasPtr)
+        for (const auto& kv : *aliasPtr)
+            variables[kv.second] = variables[kv.first];
+
+    auto chainPtr = std::atomic_load (&chain);
+    if (! chainPtr)
+        return;
 
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
     {
@@ -128,10 +146,9 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
         {
             float x = buffer.getReadPointer(ch)[i];
             variables["x"] = x;
-            for (auto& b : chain)
-            {
-                x = b->process(ch, x);
-            }
+            for (auto& b : *chainPtr)
+                x = b->process (ch, x);
+
             buffer.getWritePointer(ch)[i] = x;
         }
     }
@@ -141,6 +158,10 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
+    varNames.clear();
+    if (varPtr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
 }
 
 float SignalChain::Stage::process(int ch, float x)
@@ -148,12 +169,15 @@ float SignalChain::Stage::process(int ch, float x)
     if (!varPtr)
         return x;
 
+    if (ch >= static_cast<int>(xPrev.size()))
+        return x;
+
     (*varPtr)["x_prev"] = xPrev[ch];
     (*varPtr)["y_prev"] = yPrev[ch];
     (*varPtr)["x"] = x;
 
-    for (const auto& kv : *varPtr)
-        eval.setVariable(kv.first.toStdString(), kv.second);
+    for (const auto& n : varNames)
+        eval.setVariable(n.second, (*varPtr)[n.first]);
 
     float y = eval.evaluate(x);
     y = juce::jlimit(-1.0f, 1.0f, y);
@@ -175,7 +199,8 @@ float SignalChain::Osc::process(int ch, float x)
     auto v = osc.processSample(0.0f) * depth;
     if (varPtr)
         (*varPtr)[name] = v;
-    last[ch] = v;
+    if (ch < static_cast<int>(last.size()))
+        last[ch] = v;
     return x;
 }
 
@@ -185,6 +210,11 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     filter.prepare(spec);
     sampleRate = spec.sampleRate;
     filter.setType(type);
+    channels = static_cast<int> (spec.numChannels);
+    varNames.clear();
+    if (varPtr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
 }
 
 float SignalChain::Filter::process(int ch, float x)
@@ -192,10 +222,13 @@ float SignalChain::Filter::process(int ch, float x)
     if (!varPtr)
         return x;
 
-    for (const auto& kv : *varPtr)
+    if (ch >= channels)
+        return x;
+
+    for (const auto& n : varNames)
     {
-        cutoff.setVariable(kv.first.toStdString(), kv.second);
-        resonance.setVariable(kv.first.toStdString(), kv.second);
+        cutoff.setVariable(n.second, (*varPtr)[n.first]);
+        resonance.setVariable(n.second, (*varPtr)[n.first]);
     }
 
     float fc = cutoff.evaluate(x);
@@ -216,6 +249,11 @@ void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
 {
     comp.reset();
     comp.prepare(spec);
+    channels = static_cast<int> (spec.numChannels);
+    varNames.clear();
+    if (varPtr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
 }
 
 float SignalChain::Comp::process(int ch, float x)
@@ -223,12 +261,16 @@ float SignalChain::Comp::process(int ch, float x)
     if (!varPtr)
         return x;
 
-    for (const auto& kv : *varPtr)
+    if (ch >= channels)
+        return x;
+
+    for (const auto& n : varNames)
     {
-        threshold.setVariable(kv.first.toStdString(), kv.second);
-        ratio.setVariable(kv.first.toStdString(), kv.second);
-        attack.setVariable(kv.first.toStdString(), kv.second);
-        release.setVariable(kv.first.toStdString(), kv.second);
+        auto v = (*varPtr)[n.first];
+        threshold.setVariable(n.second, v);
+        ratio.setVariable(n.second, v);
+        attack.setVariable(n.second, v);
+        release.setVariable(n.second, v);
     }
 
     comp.setThreshold(threshold.evaluate(x));

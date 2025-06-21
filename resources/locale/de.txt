@@ -13,4 +13,5 @@ InputGainLabel=Eingang Gain
 MixLabel=Mischung
 OutputGainLabel=Ausgang Gain
 LanguageLabel=Sprache
+PolisherLabel=Polisher
 

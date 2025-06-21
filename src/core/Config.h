@@ -23,6 +23,8 @@ namespace Config
     inline constexpr int kWindowWidth        = 1200;
     /// Height of the plugin window in pixels.
     inline constexpr int kWindowHeight       = 800;
+    /// Global padding for all UI elements.
+    inline constexpr int kUiPadding         = 8;
     /// Width of the left column in the editor layout.
     inline constexpr int kLeftColumnWidth    = 400;
     /// Width of the middle column in the editor layout.
@@ -99,6 +101,13 @@ namespace Config
     inline constexpr int kLanguageBoxY       = 10;
     inline constexpr int kLanguageBoxWidth   = 100;
     inline constexpr int kLanguageLabelWidth = 60;
+
+    /// Polisher mode selector placement.
+    inline constexpr int kPolisherLabelX      = 560;
+    inline constexpr int kPolisherLabelY      = kLoudnessMeterY + kLoudnessMeterHeight + 10;
+    inline constexpr int kPolisherLabelWidth  = 80;
+    inline constexpr int kPolisherBoxX        = kPolisherLabelX + kPolisherLabelWidth + 4;
+    inline constexpr int kPolisherBoxWidth    = 120;
 
     //==========================================================================
     // DSP constants
