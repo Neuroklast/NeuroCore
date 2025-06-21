@@ -27,7 +27,7 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     json j;
     j["name"] = name.toStdString();
     j["version"] = PLUGIN_VERSION;
-    j["formula"] = processor.getEvaluator().getFormula();
+    j["formula"] = processor.getScript().toStdString();
 
     json vars = json::array();
     for (auto& v : processor.getVariableNames())

@@ -16,7 +16,6 @@
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
-#include "../utils/ExpressionEvaluator.h"
 
 
 //==============================================================================
@@ -157,7 +156,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
     formulaInputEditor->setMultiLine(true, true);
     formulaInputEditor->setReturnKeyStartsNewLine(true);
-    formulaInputEditor->setText(audioProcessor.getEvaluator().getFormula(), juce::dontSendNotification);
+    formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
     formulaInputEditor->setReadOnly(true);
     formulaInputEditor->onTextChange = [this]
     {
@@ -197,20 +196,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         else
         {
             auto text = formulaInputEditor->getText();
-            auto test = std::make_shared<ExpressionEvaluator>();
-            if (test->parseFormula(text.toStdString()))
-            {
-                audioProcessor.setFormula(text);
-                formulaInputEditor->setReadOnly(true);
-                editSaveButton->setButtonText(TRANS("EditButton"));
-                editing = false;
-                formulaDisplay->setFormula(text);
-                errorLabel->setText(juce::String(), juce::dontSendNotification);
-            }
-            else
-            {
-                errorLabel->setText(TRANS("CompileError") + ": " + test->getLastError(), juce::dontSendNotification);
-            }
+            audioProcessor.setFormula(text);
+            formulaInputEditor->setReadOnly(true);
+            editSaveButton->setButtonText(TRANS("EditButton"));
+            editing = false;
+            formulaDisplay->setFormula(text);
+            errorLabel->setText(juce::String(), juce::dontSendNotification);
         }
     };
     addAndMakeVisible(*editSaveButton);
