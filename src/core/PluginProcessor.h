@@ -100,10 +100,7 @@ private:
                                                Config::kDefaultVariableNames[3] };
     std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
 
-    InputRouter                 inputRouter;
-    InputGain                   inputGain;
-    WaveShaper                  waveShaper{ evaluator };
-    SignalPolisher              polisher;
+
     juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels, (size_t)std::log2(Config::kOversamplingFactor), juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
     juce::dsp::DryWetMixer<float> dryWetMixer;
     juce::SmoothedValue<float>    wetValue;
@@ -111,6 +108,14 @@ private:
     juce::dsp::Gain<float>        outputGain;
     juce::AudioBuffer<float>      dryBuffer;
     juce::dsp::ProcessorChain<InputRouter, InputGain, WaveShaper, SignalPolisher> chain;
+
+
+    // Helper accessors for the processor chain
+    InputRouter&    getInputRouter()    noexcept { return chain.get<0>(); }
+    InputGain&      getInputGain()      noexcept { return chain.get<1>(); }
+    WaveShaper&     getWaveShaper()     noexcept { return chain.get<2>(); }
+    SignalPolisher& getPolisher()       noexcept { return chain.get<3>(); }
+
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
                                          static_cast<juce::uint32> (Config::kDefaultBlockSize),
