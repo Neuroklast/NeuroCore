@@ -781,10 +781,13 @@
     <ClCompile Include="..\..\src\core\PluginProcessor.cpp">
       <Filter>NeuroCore\src\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\dsp\InputGain.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp">
+    <ClCompile Include="..\..\src\dsp\InputRouter.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp">
@@ -802,7 +805,16 @@
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\LoudnessMeterComponent.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\utils\ExpressionEvaluator.cpp">
@@ -3939,13 +3951,16 @@
     <ClInclude Include="..\..\src\core\PluginProcessor.h">
       <Filter>NeuroCore\src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\dsp\DSPUtils.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\InputGain.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h">
+    <ClInclude Include="..\..\src\dsp\InputRouter.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\LookupTables.h">
@@ -3966,7 +3981,19 @@
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ui\InlineAutocompleteEditor.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\LoudnessMeterComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ui\PluginEditor.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h">
@@ -8200,6 +8227,15 @@
     </None>
     <None Include="..\..\tests\NeuroCore_Tests.jucer">
       <Filter>NeuroCore\tests</Filter>
+    </None>
+    <None Include="..\..\AGENTS.md">
+      <Filter>NeuroCore</Filter>
+    </None>
+    <None Include="..\..\CMakeLists.txt">
+      <Filter>NeuroCore</Filter>
+    </None>
+    <None Include="..\..\NeuroCore.jucer">
+      <Filter>NeuroCore</Filter>
     </None>
     <None Include="..\..\README.md">
       <Filter>NeuroCore</Filter>

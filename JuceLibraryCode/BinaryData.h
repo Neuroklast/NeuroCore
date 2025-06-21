@@ -15,10 +15,10 @@ namespace BinaryData
     const int            mockup_pngSize = 1267316;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 300;
+    const int            de_txtSize = 489;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 274;
+    const int            en_txtSize = 441;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
@@ -29,11 +29,20 @@ namespace BinaryData
     extern const char*   NeuroCore_Tests_jucer;
     const int            NeuroCore_Tests_jucerSize = 1786;
 
+    extern const char*   AGENTS_md;
+    const int            AGENTS_mdSize = 1241;
+
+    extern const char*   CMakeLists_txt;
+    const int            CMakeLists_txtSize = 4133;
+
+    extern const char*   NeuroCore_jucer;
+    const int            NeuroCore_jucerSize = 13740;
+
     extern const char*   README_md;
     const int            README_mdSize = 4278;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
-    const int namedResourceListSize = 8;
+    const int namedResourceListSize = 11;
 
     // Points to the start of a list of resource names.
     extern const char* namedResourceList[];

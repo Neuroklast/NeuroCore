@@ -117,14 +117,18 @@ OBJECTS_STANDALONE_PLUGIN := \
 
 OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/PluginProcessor_2edbcaaf.o \
-  $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
   $(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o \
+  $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
+  $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o \
   $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
+  $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
+  $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
+  $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
   $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o \
   $(JUCE_OBJDIR)/FormulaHelper_731856a0.o \
   $(JUCE_OBJDIR)/PresetManager_6bccacba.o \
@@ -223,14 +227,19 @@ $(JUCE_OBJDIR)/PluginProcessor_2edbcaaf.o: ../../src/core/PluginProcessor.cpp
 	@echo "Compiling PluginProcessor.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o: ../../src/dsp/AdvancedOscillatorWrapper.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling AdvancedOscillatorWrapper.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/InputGain_219ae3a5.o: ../../src/dsp/InputGain.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling InputGain.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
-$(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o: ../../src/dsp/AdvancedOscillatorWrapper.cpp
+$(JUCE_OBJDIR)/InputRouter_3bd9c22f.o: ../../src/dsp/InputRouter.cpp
 	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling AdvancedOscillatorWrapper.cpp"
+	@echo "Compiling InputRouter.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o: ../../src/dsp/LookupTables.cpp
@@ -258,9 +267,24 @@ $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o: ../../src/ui/FormulaWaveComponen
 	@echo "Compiling FormulaWaveComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o: ../../src/ui/InlineAutocompleteEditor.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling InlineAutocompleteEditor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o: ../../src/ui/LoudnessMeterComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling LoudnessMeterComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o: ../../src/ui/PluginEditor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PluginEditor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o: ../../src/ui/WaveformDisplayComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling WaveformDisplayComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o: ../../src/utils/ExpressionEvaluator.cpp
