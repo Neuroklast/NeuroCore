@@ -49,14 +49,11 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     apvts.addParameterListener (EffectParameters::paramC, this);
     apvts.addParameterListener (EffectParameters::paramD, this);
 
-    // load localisation
-    auto lang = juce::SystemStats::getUserLanguage();
+    loadLanguage(juce::SystemStats::getUserLanguage());
+
     // resource directory next to the binary
     juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
                             .getSiblingFile("resources");
-    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
-    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
-    juce::LocalisedStrings::setCurrentMappings(translations.get());
 
     loadOptimizationRules(resDir.getChildFile("optimizations.txt"));
 
@@ -486,6 +483,16 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
         for (int i = 0; i < num; ++i)
             dst[i] = src[(start + i) % size];
     }
+}
+
+void NeuroCoreAudioProcessor::loadLanguage(const juce::String& lang)
+{
+    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                            .getSiblingFile("resources").getChildFile("locale");
+    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
+    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
+    juce::LocalisedStrings::setCurrentMappings(translations.get());
+    currentLanguage = langFile.getFileNameWithoutExtension();
 }
 
 

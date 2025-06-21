@@ -9,4 +9,8 @@ UnknownError=Unbekannter Fehler
 ArgumentError=Zu wenige Argumente für Funktion %1
 InputLeft=Eingang L
 InputRight=Eingang R
+InputGainLabel=Eingang Gain
+MixLabel=Mischung
+OutputGainLabel=Ausgang Gain
+LanguageLabel=Sprache
 

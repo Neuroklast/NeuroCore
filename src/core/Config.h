@@ -49,6 +49,51 @@ namespace Config
     /// Large font size in points.
     inline constexpr int kFontSizeLarge      = 18;
 
+    /// Size of rotary knobs in pixels.
+    inline constexpr int kKnobSize          = 90;
+    /// Height of value displays below knobs.
+    inline constexpr int kValueFieldHeight  = 20;
+
+    /// Position and size of the formula editor.
+    inline constexpr int kFormulaEditorX      = 400;
+    inline constexpr int kFormulaEditorY      = 30;
+    inline constexpr int kFormulaEditorWidth  = 400;
+    inline constexpr int kFormulaEditorHeight = 120;
+    /// Y positions for controls beneath the formula editor.
+    inline constexpr int kFormulaDisplayY   = 150;
+    inline constexpr int kEditButtonY       = 180;
+    inline constexpr int kOptimizeButtonY   = 210;
+    inline constexpr int kErrorLabelY       = 240;
+
+    /// Layout for the modulation knobs.
+    inline constexpr int kKnobRowY          = 280;
+    inline constexpr int kKnobRowXStart     = 415;
+    inline constexpr int kKnobRowSpacing    = 100;
+
+    /// Additional spacing before the gain section.
+    inline constexpr int kGainSectionGap    = 20;
+    inline constexpr int kInputGainX        = 460;
+    inline constexpr int kMixX              = 560;
+    inline constexpr int kOutputGainX       = 700;
+    inline constexpr int kMixYOffset        = -20;
+    inline constexpr int kMixLabelYOffset   = 100;
+    inline constexpr int kGainKnobSize      = 80;
+    inline constexpr int kMixKnobSize       = 120;
+    inline constexpr int kInputButtonX      = 20;
+    inline constexpr int kInputButtonWidth  = 100;
+
+    /// Wave display placement.
+    inline constexpr int kWaveDisplayXLeft   = 40;
+    inline constexpr int kWaveDisplayXRight  = 840;
+    inline constexpr int kWaveDisplayWidth   = 320;
+    inline constexpr int kWaveDisplayHeight  = 120;
+
+    /// Language selector placement.
+    inline constexpr int kLanguageBoxX       = 20;
+    inline constexpr int kLanguageBoxY       = 10;
+    inline constexpr int kLanguageBoxWidth   = 100;
+    inline constexpr int kLanguageLabelWidth = 60;
+
     //==========================================================================
     // DSP constants
     //==========================================================================

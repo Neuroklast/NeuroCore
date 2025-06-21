@@ -56,6 +56,8 @@ private:
     std::unique_ptr<juce::Label>         outputGainValue;
     std::unique_ptr<juce::ToggleButton>  inputLeftButton;
     std::unique_ptr<juce::ToggleButton>  inputRightButton;
+    std::unique_ptr<juce::ComboBox>      languageBox;
+    std::unique_ptr<juce::Label>         languageLabel;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
 
     // Middle column editors
