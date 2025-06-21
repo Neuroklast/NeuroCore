@@ -155,18 +155,20 @@ void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 void NeuroCoreAudioProcessor::releaseResources()
 {
     chain.reset();
+    inputRouter.reset();
     oversampling.reset();
     dryWetMixer.reset();
-    dryBuffer.setSize(0, 0);
-    gainCompValue.reset(getSampleRate(), 0.0);
+    dryBuffer.setSize (0, 0);
+    gainCompValue.reset (getSampleRate(), 0.0);
     outputGain.reset();
-    currentSpec.sampleRate = 0.0;
+    currentSpec.sampleRate     = 0.0;
     currentSpec.maximumBlockSize = 0;
 }
 
 void NeuroCoreAudioProcessor::reset()
 {
     chain.reset();
+    inputRouter.reset();
     oversampling.reset();
     dryWetMixer.reset();
     wetValue.reset(getSampleRate(), Config::kSmoothingTime);
@@ -244,8 +246,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         buffer.clear (i, 0, buffer.getNumSamples());
 
     auto block = juce::dsp::AudioBlock<float> (buffer);
+    juce::dsp::ProcessContextReplacing<float> routerCtx (block);
+    getInputRouter().process (routerCtx);
+
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
-        dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
+        dryBuffer.copyFrom (ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
     auto dryBlock = juce::dsp::AudioBlock<float>(dryBuffer);
 
@@ -396,6 +401,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     wetValue.setCurrentAndTargetValue (1.0f);
 
     getWaveShaper().setVariableNames (variableNames);
+    inputRouter.prepare (currentSpec);
     chain.prepare (currentSpec);
 }
 

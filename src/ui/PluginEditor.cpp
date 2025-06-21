@@ -13,6 +13,7 @@
 #include "FormulaWaveComponent.h"
 #include "PluginLookAndFeel.h"
 #include "InlineAutocompleteEditor.h"
+#include "../core/EffectParameters.h"
 #include "../utils/ExpressionEvaluator.h"
 
 
@@ -58,6 +59,14 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         };
         addAndMakeVisible (*nameEditors[i]);
     }
+
+    dryWetSlider = std::make_unique<juce::Slider>();
+    dryWetSlider->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    dryWetSlider->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+    dryWetSlider->setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::grey);
+    attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        audioProcessor.apvts, EffectParameters::dryWet, *dryWetSlider));
+    addAndMakeVisible (*dryWetSlider);
 
     inputLeftButton  = std::make_unique<juce::ToggleButton>(TRANS("InputLeft"));
     inputRightButton = std::make_unique<juce::ToggleButton>(TRANS("InputRight"));
@@ -169,7 +178,11 @@ void NeuroCoreAudioProcessorEditor::resized()
             nameEditors[i]->setBounds (sliderSize, y + textHeight, sliderSize, textHeight);
     }
 
-    int buttonY = (int)sliders.size() * rowHeight;
+    int dryWetY = static_cast<int> (sliders.size()) * rowHeight;
+    if (dryWetSlider)
+        dryWetSlider->setBounds (0, dryWetY, sliderSize, sliderSize);
+
+    int buttonY = dryWetY + rowHeight;
     const int buttonHeight = textHeight;
     if (inputLeftButton)
         inputLeftButton->setBounds(0, buttonY, sliderSize, buttonHeight);
