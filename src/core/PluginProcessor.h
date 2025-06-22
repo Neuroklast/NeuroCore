@@ -142,8 +142,9 @@ private:
     juce::AudioBuffer<float>      outputWaveBuffer;
     juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
     juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
-    juce::AbstractFifo            inputFifo { Config::kWaveformDisplaySamples };
-    juce::AbstractFifo            outputFifo { Config::kWaveformDisplaySamples };
+    std::atomic<int>              inputWritePos  { 0 };
+    std::atomic<int>              outputWritePos { 0 };
+    std::unique_ptr<juce::dsp::Oversampling<float>> previewOversampling;
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
@@ -163,6 +164,10 @@ private:
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
                                          static_cast<juce::uint32> (Config::kDefaultBlockSize),
                                          static_cast<juce::uint32> (Config::kMaxChannels) };
+
+    void pushToRingBuffer (const juce::AudioBuffer<float>& src,
+                           juce::AudioBuffer<float>& dst,
+                           std::atomic<int>& pos) noexcept;
 
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
