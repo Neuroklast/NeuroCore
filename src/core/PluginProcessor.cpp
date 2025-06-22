@@ -242,10 +242,24 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         return 0.0f;
     };
 
-    parameterValues[0].store (getParam (EffectParameters::paramA));
-    parameterValues[1].store (getParam (EffectParameters::paramB));
-    parameterValues[2].store (getParam (EffectParameters::paramC));
-    parameterValues[3].store (getParam (EffectParameters::paramD));
+    auto clamp = [](const char* id, float v)
+    {
+        if (id == EffectParameters::inputGain || id == EffectParameters::outputGain)
+            return juce::jlimit(0.0f, 2.0f, v);
+        if (id == EffectParameters::dryWet)
+            return juce::jlimit(0.0f, 1.0f, v);
+        if (id == EffectParameters::modFrequency)
+            return juce::jlimit(0.1f, 20.0f, v);
+        if (id == EffectParameters::paramA || id == EffectParameters::paramB ||
+            id == EffectParameters::paramC || id == EffectParameters::paramD)
+            return juce::jlimit(0.0f, 1.0f, v);
+        return v;
+    };
+
+    parameterValues[0].store (clamp(EffectParameters::paramA, getParam (EffectParameters::paramA)));
+    parameterValues[1].store (clamp(EffectParameters::paramB, getParam (EffectParameters::paramB)));
+    parameterValues[2].store (clamp(EffectParameters::paramC, getParam (EffectParameters::paramC)));
+    parameterValues[3].store (clamp(EffectParameters::paramD, getParam (EffectParameters::paramD)));
     smoothedParams[0].setTargetValue(parameterValues[0].load());
     smoothedParams[1].setTargetValue(parameterValues[1].load());
     smoothedParams[2].setTargetValue(parameterValues[2].load());
@@ -255,10 +269,12 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     getInputRouter().setUseLeft  (getParam (EffectParameters::useInputLeft ) > 0.5f);
     getInputRouter().setUseRight (getParam (EffectParameters::useInputRight) > 0.5f);
 
-    getInputGain().setParameter (EffectParameters::inputGain, getParam (EffectParameters::inputGain));
-    getPolisher().setParameter (EffectParameters::polisherMode, getParam (EffectParameters::polisherMode));
+    getInputGain().setParameter (EffectParameters::inputGain,
+                                clamp(EffectParameters::inputGain, getParam (EffectParameters::inputGain)));
+    getPolisher().setParameter (EffectParameters::polisherMode,
+                                clamp(EffectParameters::polisherMode, getParam (EffectParameters::polisherMode)));
 
-    wetValue.setTargetValue (getParam (EffectParameters::dryWet));
+    wetValue.setTargetValue (clamp(EffectParameters::dryWet, getParam (EffectParameters::dryWet)));
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
@@ -322,7 +338,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
 
-    userOutputGain.setGainLinear(getParam(EffectParameters::outputGain));
+    userOutputGain.setGainLinear(clamp(EffectParameters::outputGain,
+                                        getParam(EffectParameters::outputGain)));
     juce::dsp::ProcessContextReplacing<float> outCtx(block);
     userOutputGain.process(outCtx);
 
