@@ -1,12 +1,24 @@
 #include "InputRouter.h"
+#include "../utils/Log.h"
 
 void InputRouter::prepare(const juce::dsp::ProcessSpec& spec)
 {
-    juce::ignoreUnused(spec);
+    sampleRate = spec.sampleRate;
+    blockSize  = static_cast<int>(spec.maximumBlockSize);
+
+    if (sampleRate <= 0.0 || blockSize <= 0 || spec.numChannels < 1)
+        logError("InputRouter::prepare received invalid ProcessSpec");
 }
 
 void InputRouter::reset()
 {
+    if (sampleRate <= 0.0)
+        sampleRate = Config::kDefaultSampleRate;
+    if (blockSize <= 0)
+        blockSize = Config::kDefaultBlockSize;
+
+    channelEnabled = { true, true };
+    bypassed = false;
 }
 
 void InputRouter::process(const juce::dsp::ProcessContextReplacing<SampleType>& ctx) noexcept
