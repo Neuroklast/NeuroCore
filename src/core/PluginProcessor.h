@@ -125,6 +125,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
     std::atomic<int> oversamplingIndex { (int) std::log2 (Config::kOversamplingFactor) };
     juce::dsp::DryWetMixer<float> dryWetMixer;
+    int                          dryWetLatency { 0 };
     juce::SmoothedValue<float>    wetValue;
     juce::SmoothedValue<float>    gainCompValue;
     juce::dsp::Gain<float>        outputGain;
