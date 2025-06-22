@@ -29,6 +29,7 @@ private:
     bool bypassed { false };
     juce::dsp::Limiter<SampleType> limiter;
     std::vector<SampleType> lastGood;
+    std::vector<juce::SmoothedValue<SampleType>> smoothRecovery;
     std::atomic<bool> limiterHit { false };
     std::atomic<bool> invalidSample { false };
 };

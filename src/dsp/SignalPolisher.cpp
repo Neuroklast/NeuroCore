@@ -11,12 +11,24 @@ void SignalPolisher::prepare (const juce::dsp::ProcessSpec& spec)
 
     limiter.prepare(spec);
     lastGood.assign(spec.numChannels, 0.0f);
+    smoothRecovery.resize(spec.numChannels);
+    for (auto& s : smoothRecovery)
+    {
+        s.reset(spec.sampleRate, Config::kSmoothingTime);
+        s.setCurrentAndTargetValue(0.f);
+    }
 }
 
 void SignalPolisher::reset()
 {
     limiter.reset();
     std::fill(lastGood.begin(), lastGood.end(), 0.0f);
+    for (auto& s : smoothRecovery)
+    {
+        auto rate = limiter.getSampleRate() > 0.0 ? limiter.getSampleRate() : Config::kDefaultSampleRate;
+        s.reset(rate, Config::kSmoothingTime);
+        s.setCurrentAndTargetValue(0.f);
+    }
 }
 
 void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept
@@ -53,16 +65,23 @@ void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleTyp
     for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
     {
         auto* data = block.getChannelPointer (ch);
+        auto& smoother = smoothRecovery[ch];
         for (size_t i = 0; i < numSamples; ++i)
         {
             auto v = data[i];
             if (! std::isfinite (v))
             {
                 invalidSample.store (true);
-                v = lastGood[ch];
+                smoother.setCurrentAndTargetValue(lastGood[ch]);
+                smoother.setTargetValue(0.f);
+                v = smoother.getNextValue();
             }
             else
+            {
                 lastGood[ch] = v;
+                if (smoother.isSmoothing())
+                    v = smoother.getNextValue();
+            }
             data[i] = v;
         }
     }

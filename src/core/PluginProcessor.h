@@ -142,13 +142,16 @@ private:
     juce::AudioBuffer<float>      inputWaveBuffer;
     juce::AudioBuffer<float>      outputWaveBuffer;
     juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
+    juce::AudioBuffer<float>      oldScriptBuffer; // buffer for previous DSL processing
     juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
     std::atomic<int>              inputWritePos  { 0 };
     std::atomic<int>              outputWritePos { 0 };
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
+    dsl::SignalChain              oldSignalChain;
     dsl::SignalChain              previewSignalChain;
+    juce::SmoothedValue<float>    formulaBlend;
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };

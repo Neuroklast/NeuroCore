@@ -12,13 +12,16 @@ public:
     void reset() override;
     void process(const juce::dsp::ProcessContextReplacing<SampleType>& ctx) noexcept override;
 
-    void setUseLeft(bool enable) noexcept { channelEnabled[0] = enable; }
-    void setUseRight(bool enable) noexcept { channelEnabled[1] = enable; }
+    void setUseLeft(bool enable) noexcept { channelEnabled[0] = enable; updateWeights(); }
+    void setUseRight(bool enable) noexcept { channelEnabled[1] = enable; updateWeights(); }
 
 private:
     std::array<bool,2> channelEnabled { true, true };
     double sampleRate { Config::kDefaultSampleRate };
     int    blockSize  { Config::kDefaultBlockSize };
     bool bypassed { false };
+    std::array<std::array<juce::SmoothedValue<SampleType>,2>,2> weights; // [out][in]
+
+    void updateWeights() noexcept;
 };
 
