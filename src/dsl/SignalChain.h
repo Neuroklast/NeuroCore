@@ -80,6 +80,20 @@ private:
         float process(int ch, float x) override;
     };
 
+    struct Env : Block
+    {
+        enum Mode { Peak = 0, Rms };
+        Mode mode{ Rms };
+        ExpressionEvaluator attack, release;
+        juce::String name;
+        float sampleRate{44100.0f};
+        std::vector<float> value;
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        void prepare(const juce::dsp::ProcessSpec& spec) override;
+        float process(int ch, float x) override;
+    };
+
     using Chain   = std::vector<std::unique_ptr<Block>>;
 
     std::shared_ptr<Chain>   chain;

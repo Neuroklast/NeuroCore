@@ -68,7 +68,8 @@ bool DSLParser::parse(const juce::String& text,
         }
         seen.add(id);
 
-        if (desc.type != "stage" && desc.type != "filter" && desc.type != "comp" && desc.type != "osc")
+        if (desc.type != "stage" && desc.type != "filter" &&
+            desc.type != "comp"  && desc.type != "osc" && desc.type != "env")
         {
             error = "Unknown block type on line " + juce::String(i+1);
             return false;
