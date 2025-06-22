@@ -14,4 +14,5 @@ MixLabel=Mischung
 OutputGainLabel=Ausgang Gain
 LanguageLabel=Sprache
 PolisherLabel=Polisher
+KnobGroupLabel=Parameter
 
