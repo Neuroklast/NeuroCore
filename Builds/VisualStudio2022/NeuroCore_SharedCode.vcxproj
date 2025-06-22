@@ -4504,8 +4504,8 @@
     <ClInclude Include="..\..\JuceLibraryCode\JucePluginDefines.h"/>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\resources\img\innerknob.png"/>
     <None Include="..\..\resources\img\outerKnob.png"/>
+    <None Include="..\..\resources\img\innerknob.png"/>
     <None Include="..\..\resources\locale\de.txt"/>
     <None Include="..\..\resources\locale\en.txt"/>
     <None Include="..\..\resources\optimizations.txt"/>

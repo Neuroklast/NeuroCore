@@ -513,8 +513,8 @@
 		BFBDBA9CE4EEA3A2521107BB /* img */ = {
 			isa = PBXGroup;
 			children = (
-				D1B24F829173D94BB4280068,
 				BA5229DC18D5B22CA2B5DD91,
+				D1B24F829173D94BB4280068,
 			);
 			name = img;
 			sourceTree = "<group>";

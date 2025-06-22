@@ -8222,10 +8222,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\resources\img\innerknob.png">
+    <None Include="..\..\resources\img\outerKnob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
-    <None Include="..\..\resources\img\outerKnob.png">
+    <None Include="..\..\resources\img\innerknob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
     <None Include="..\..\resources\locale\de.txt">
