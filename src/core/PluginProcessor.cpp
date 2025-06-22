@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "../utils/ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
+#include "../dsl/DSLParser.h"
 #include "../ui/PluginEditor.h"
 #include "../utils/PresetManager.h"
 #include "../utils/FormulaHelper.h"
@@ -364,6 +365,22 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 
 bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String& error)
 {
+    dsl::DSLParser parser;
+    std::vector<dsl::BlockDesc> blocks;
+    dsl::SignalChain::AliasMap aliases;
+
+    if (! parser.parse(text, blocks, aliases, error))
+        return false;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        auto key = juce::String::charToString(static_cast<juce_wchar>('a' + i));
+        auto it  = aliases.find(key);
+        variableNames[i] = it != aliases.end() ? it->second : key;
+        auto aliasName = variableNames[i];
+        parameterActive[i] = text.containsIgnoreCase(aliasName) || text.containsIgnoreCase(key);
+    }
+
     if (signalChain.loadScript(text, error))
     {
         dslScript = text;
