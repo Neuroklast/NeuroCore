@@ -436,12 +436,15 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
         oversampling->reset();
     }
 
-    const auto latency = static_cast<int> (oversampling.getLatencyInSamples());
+    const auto latency = oversampling != nullptr
+                             ? static_cast<int> (oversampling->getLatencyInSamples())
+                             : 0;
     setLatencySamples (latency);
 
     dryWetMixer.prepare (currentSpec);
     dryWetMixer.setMixingRule (juce::dsp::DryWetMixingRule::balanced);
-    //dryWetMixer.setWetLatency (oversampling.getLatencyInSamples());
+    // dry/wet mixer can compensate oversampling latency if needed
+    //dryWetMixer.setWetLatency (oversampling->getLatencyInSamples());
 
     if (dryBuffer.getNumChannels() != (int) currentSpec.numChannels
         || dryBuffer.getNumSamples() < (int) currentSpec.maximumBlockSize)

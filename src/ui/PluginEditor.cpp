@@ -180,7 +180,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
     formulaInputEditor->setReadOnly(true);
     formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
-    formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::transparentBlack);
+    // hide caret while editor is read only
+    formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                                  juce::Colours::transparentBlack);
     formulaInputEditor->onTextChange = [this]
     {
         if (formulaDisplay)
@@ -218,7 +220,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             editing = true;
             formulaInputEditor->setReadOnly(false);
             formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
-            formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::black);
+            // show caret when editor becomes editable
+            formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                                          juce::Colours::black);
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
@@ -229,7 +233,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             {
                 formulaInputEditor->setReadOnly(true);
                 formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
-                formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::transparentBlack);
+                // hide caret again after saving
+                formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                                              juce::Colours::transparentBlack);
                 editSaveButton->setButtonText(TRANS("EditButton"));
                 editing = false;
                 formulaDisplay->setFormula(text);
