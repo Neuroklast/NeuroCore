@@ -15,10 +15,10 @@ namespace BinaryData
     const int            outerKnob_pngSize = 56075;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 513;
+    const int            de_txtSize = 545;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 465;
+    const int            en_txtSize = 497;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
@@ -36,7 +36,7 @@ namespace BinaryData
     const int            CMakeLists_txtSize = 4325;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 14526;
+    const int            NeuroCore_jucerSize = 14542;
 
     extern const char*   README_md;
     const int            README_mdSize = 4278;
