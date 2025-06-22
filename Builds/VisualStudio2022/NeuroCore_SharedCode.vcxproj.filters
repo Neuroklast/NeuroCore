@@ -14,6 +14,9 @@
     <Filter Include="NeuroCore\src\core">
       <UniqueIdentifier>{51CDF870-945B-DD80-8B4F-E8C03FEADAF3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\src\dsl">
+      <UniqueIdentifier>{47FF4020-A735-A826-E628-491EE2E8E2D1}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\src\dsp">
       <UniqueIdentifier>{B93283FB-7AF2-A799-2616-54405B0ECADA}</UniqueIdentifier>
     </Filter>
@@ -780,6 +783,12 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\core\PluginProcessor.cpp">
       <Filter>NeuroCore\src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsl\DSLParser.cpp">
+      <Filter>NeuroCore\src\dsl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsl\SignalChain.cpp">
+      <Filter>NeuroCore\src\dsl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
@@ -3950,6 +3959,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\core\PluginProcessor.h">
       <Filter>NeuroCore\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dsl\DSLParser.h">
+      <Filter>NeuroCore\src\dsl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dsl\SignalChain.h">
+      <Filter>NeuroCore\src\dsl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h">
       <Filter>NeuroCore\src\dsp</Filter>

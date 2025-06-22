@@ -117,6 +117,8 @@ OBJECTS_STANDALONE_PLUGIN := \
 
 OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/PluginProcessor_2edbcaaf.o \
+  $(JUCE_OBJDIR)/DSLParser_266e9ef4.o \
+  $(JUCE_OBJDIR)/SignalChain_93c73c71.o \
   $(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o \
   $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
   $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o \
@@ -225,6 +227,16 @@ $(JUCE_OBJDIR)/include_juce_audio_plugin_client_Standalone_1a871192.o: ../../Juc
 $(JUCE_OBJDIR)/PluginProcessor_2edbcaaf.o: ../../src/core/PluginProcessor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PluginProcessor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/DSLParser_266e9ef4.o: ../../src/dsl/DSLParser.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling DSLParser.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/SignalChain_93c73c71.o: ../../src/dsl/SignalChain.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling SignalChain.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o: ../../src/dsp/AdvancedOscillatorWrapper.cpp
