@@ -43,6 +43,7 @@ set(SOURCE_FILES
     src/ui/InlineAutocompleteEditor.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
+    src/ui/custom/ParameterComponent.cpp
     src/dsp/LookupTables.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp

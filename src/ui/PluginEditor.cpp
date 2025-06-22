@@ -16,6 +16,7 @@
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
+#include "custom/ParameterComponent.h"
 
 
 //==============================================================================
@@ -49,57 +50,29 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
    
-
-    static const juce::Colour defaultColours[4] = {
-        juce::Colours::red, juce::Colours::blueviolet,
-        juce::Colours::blue, juce::Colours::mediumvioletred };
-
     knobGroup = std::make_unique<juce::GroupComponent>("", TRANS("KnobGroupLabel"));
     addAndMakeVisible(*knobGroup);
 
     const float startAngle = juce::MathConstants<float>::pi * 4.0f / 3.0f;
     const float endAngle   = juce::MathConstants<float>::pi * 8.0f / 3.0f;
 
-    for (int i = 0; i < sliders.size(); ++i)
+    for (int i = 0; i < paramComponents.size(); ++i)
     {
-        sliders[i] = std::make_unique<ParameterSlider>();
-        sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        sliders[i]->setRotaryParameters (startAngle, endAngle, true);
-        sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-        sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::transparentBlack);
-        sliderColours[i] = defaultColours[i];
-        auto paramId = juce::String::charToString (static_cast<juce_wchar>('a' + i));
-        attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-            audioProcessor.apvts, paramId, *sliders[i]));
-        sliders[i]->onValueChange = [this, i]
-        {
-            if (valueLabels[i])
-                valueLabels[i]->setText (juce::String (sliders[i]->getValue(), 2), juce::dontSendNotification);
-        };
-        sliders[i]->onRightClick = [this, i]
-        {
-            auto list = audioProcessor.getParameterMappings(i);
-            juce::String msg;
-            for (auto& s : list) msg += s + "\n";
-            if (msg.isEmpty()) msg = TRANS("NoMappings");
-            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
-                                                  TRANS("ParameterMapping"), msg);
-        };
-        addAndMakeVisible (*sliders[i]);
 
-        valueLabels[i] = std::make_unique<juce::Label>();
-        valueLabels[i]->setJustificationType (juce::Justification::centred);
-        valueLabels[i]->setText ("0", juce::dontSendNotification);
-        addAndMakeVisible (*valueLabels[i]);
-
+        auto paramId = juce::String::charToString(static_cast<juce_wchar>('a' + i));
+        paramComponents[i] = std::make_unique<ui::ParameterComponent>(audioProcessor.apvts,
+                                                                    paramId,
+                                                                    audioProcessor.getVariableName(i));
+        addAndMakeVisible(*paramComponents[i]);
         nameEditors[i] = std::make_unique<juce::TextEditor>();
-        nameEditors[i]->setText (audioProcessor.getVariableName(i), juce::dontSendNotification);
+        nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
         nameEditors[i]->onTextChange = [this, i]
         {
             audioProcessor.setVariableName(i, nameEditors[i]->getText());
-           
+            if (paramComponents[i])
+                paramComponents[i]->setAliasName(nameEditors[i]->getText());
         };
-        addAndMakeVisible (*nameEditors[i]);
+        addAndMakeVisible(*nameEditors[i]);
     }
 
     inputGainSlider = std::make_unique<juce::Slider>();
@@ -283,15 +256,15 @@ void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 
 void NeuroCoreAudioProcessorEditor::refreshParameterControls()
 {
-    for (int i = 0; i < sliders.size(); ++i)
+    for (int i = 0; i < paramComponents.size(); ++i)
     {
         if (nameEditors[i])
             nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
+        if (paramComponents[i])
+            paramComponents[i]->setAliasName(audioProcessor.getVariableName(i));
         bool active = audioProcessor.isParameterActive(i);
-        if (sliders[i])
-            sliders[i]->setEnabled(active);
-        if (valueLabels[i])
-            valueLabels[i]->setEnabled(active);
+        if (paramComponents[i])
+            paramComponents[i]->setEnabled(active);
         if (nameEditors[i])
             nameEditors[i]->setEnabled(active);
     }
@@ -338,11 +311,10 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(errorLabel.get(),         Config::kAreaErrorLabel);
     addItem(knobGroup.get(),         Config::kAreaKnobGroup);
 
-    for (int i = 0; i < sliders.size(); ++i)
+    for (int i = 0; i < paramComponents.size(); ++i)
     {
-        addItem(sliders[i].get(),      Config::kAreaKnobs[i]);
-        addItem(valueLabels[i].get(),  Config::kAreaKnobValues[i]);
-        addItem(nameEditors[i].get(),  Config::kAreaKnobNames[i]);
+        addItem(paramComponents[i].get(), Config::kAreaKnobs[i]);
+        addItem(nameEditors[i].get(),     Config::kAreaKnobNames[i]);
     }
 
     addItem(inputGainSlider.get(),   Config::kAreaInputGainSlider);
