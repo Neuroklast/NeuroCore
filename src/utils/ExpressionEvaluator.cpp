@@ -235,19 +235,29 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         root = parseExpression();
         if (pos != input.length())
         {
+<<<<<<< HEAD:src/utils/ExpressionEvaluator.cpp
             errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
             logError(errorMessage);
+=======
+            errorMessage = TRANS("SyntaxErrorAt").replace("%1", juce::String((int)pos));
+>>>>>>> 3557488850183a9b201dcb71bbc7fe89216d0532:Source/ExpressionEvaluator.cpp
             return false;
         }
         valid = root != nullptr;
         return valid;
     }
+<<<<<<< HEAD:src/utils/ExpressionEvaluator.cpp
     catch (...)
     {
         errorMessage = TRANS("UnknownError");
         logError(errorMessage);
         return false;
     }
+=======
+    catch (...) {
+        errorMessage = TRANS("UnknownError");
+        return false; }
+>>>>>>> 3557488850183a9b201dcb71bbc7fe89216d0532:Source/ExpressionEvaluator.cpp
 }
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept

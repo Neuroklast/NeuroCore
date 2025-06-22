@@ -1,0 +1,6 @@
+OptimizeButton=Optimieren
+OptimizedSaturate=Optimiert: tanh+clamp durch saturate(x) ersetzt
+SyntaxErrorAt=Syntaxfehler an Position %1
+UnknownError=Unbekannter Fehler
+English=Englisch
+German=Deutsch
