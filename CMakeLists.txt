@@ -85,6 +85,7 @@ juce_add_binary_data(resourcesBinary
     SOURCES
         resources/img/innerknob.png
         resources/img/outerKnob.png
+        resources/img/overknob.png
         resources/locale/de.txt
         resources/locale/en.txt
         resources/optimizations.txt
