@@ -50,10 +50,35 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     if (! parser.parse (script, desc, newAliases, error))
         return false;
 
+    parameterMappings.clear();
     for (const auto& kv : newAliases)
         variables.emplace(kv.second, 0.0f);
 
     auto newChain = std::make_shared<Chain>();
+
+    auto isNumeric = [](const juce::String& s)
+    {
+        if (s.isEmpty()) return false;
+        return s.retainCharacters("0123456789.-+").length() == s.length();
+    };
+
+    auto addDefaultMap = [](const juce::String& expr, float outMin, float outMax)
+    {
+        if (expr.containsIgnoreCase("map(") || isNumeric(expr))
+            return expr;
+        return juce::String("map(") + expr + ",0,1," + juce::String(outMin) + "," + juce::String(outMax) + ")";
+    };
+
+    auto findParam = [&newAliases](const juce::String& expr) -> juce::String
+    {
+        for (auto p : { juce::String("a"), juce::String("b"), juce::String("c"), juce::String("d") })
+        {
+            juce::String alias = newAliases.count(p) ? newAliases[p] : p;
+            if (expr.containsWholeWordIgnoreCase(alias) || expr.containsWholeWordIgnoreCase(p))
+                return alias;
+        }
+        return {};
+    };
 
     for (const auto& d : desc)
     {
@@ -83,11 +108,25 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             auto t = d.args.count("type") ? d.args.at("type").toLowerCase() : "lowpass";
             fi->type = parseFilterType(t);
             if (d.args.count("cutoff"))
-                fi->cutoff.parseFormula(d.args.at("cutoff").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("cutoff"), 20.f, 20000.f);
+                fi->cutoff.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " cutoff [20..20000 Hz]");
+            }
             else
+            {
                 fi->cutoff.parseFormula("1000");
+            }
             if (d.args.count("resonance"))
-                fi->resonance.parseFormula(d.args.at("resonance").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("resonance"), 0.1f, 10.f);
+                fi->resonance.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " resonance [0.1..10]");
+            }
             else
                 fi->resonance.parseFormula("0.7");
             fi->varPtr = &variables;
@@ -97,19 +136,43 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         {
             auto co = std::make_unique<Comp>();
             if (d.args.count("threshold"))
-                co->threshold.parseFormula(d.args.at("threshold").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("threshold"), -60.f, 0.f);
+                co->threshold.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " threshold [-60..0 dB]");
+            }
             else
                 co->threshold.parseFormula("0.0");
             if (d.args.count("ratio"))
-                co->ratio.parseFormula(d.args.at("ratio").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("ratio"), 1.f, 20.f);
+                co->ratio.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " ratio [1..20]");
+            }
             else
                 co->ratio.parseFormula("1.0");
             if (d.args.count("attack"))
-                co->attack.parseFormula(d.args.at("attack").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("attack"), 0.001f, 0.3f);
+                co->attack.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " attack [0.001..0.3 s]");
+            }
             else
                 co->attack.parseFormula("0.01");
             if (d.args.count("release"))
-                co->release.parseFormula(d.args.at("release").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("release"), 0.01f, 1.0f);
+                co->release.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " release [0.01..1 s]");
+            }
             else
                 co->release.parseFormula("0.1");
             co->varPtr = &variables;
@@ -385,5 +448,13 @@ float SignalChain::Env::process(int ch, float x)
     value[ch] = out;
     (*varPtr)[name] = out;
     return x;
+}
+
+juce::StringArray SignalChain::getMappingsFor(const juce::String& param) const
+{
+    auto it = parameterMappings.find(param);
+    if (it != parameterMappings.end())
+        return it->second;
+    return {};
 }
 

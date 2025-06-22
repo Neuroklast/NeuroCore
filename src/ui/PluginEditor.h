@@ -20,6 +20,21 @@
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
 
+class ParameterSlider : public juce::Slider
+{
+public:
+    std::function<void()> onRightClick;
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        if (e.mods.isRightButtonDown())
+        {
+            if (onRightClick) onRightClick();
+            return;
+        }
+        juce::Slider::mouseDown(e);
+    }
+};
+
 
 //==============================================================================
 /**
@@ -43,7 +58,7 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 
     // Left column controls
-    std::array<std::unique_ptr<juce::Slider>, 4> sliders;
+    std::array<std::unique_ptr<ParameterSlider>, 4> sliders;
     std::array<std::unique_ptr<juce::Label>, 4> valueLabels;
     std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
     std::array<juce::Colour, 4> sliderColours;
