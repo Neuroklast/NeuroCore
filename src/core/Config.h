@@ -25,6 +25,56 @@ namespace Config
     inline constexpr int kWindowHeight       = 800;
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 8;
+
+    //-------------------------------------------------------------------------
+    // Grid layout configuration
+    //-------------------------------------------------------------------------
+    /// Number of columns used by the editor grid.
+    inline constexpr int kGridColumns = 12;
+    /// Number of rows used by the editor grid.
+    inline constexpr int kGridRows    = 15;
+
+    /// Simple container describing a grid area.
+    struct GridArea { int row, column, rowSpan, columnSpan; };
+
+    // Layout positions for all UI elements
+    inline constexpr GridArea kAreaLanguageLabel     { 1,  1, 1, 2 };
+    inline constexpr GridArea kAreaLanguageBox       { 1,  3, 1, 2 };
+    inline constexpr GridArea kAreaInputLeftButton   { 1,  5, 1, 2 };
+    inline constexpr GridArea kAreaInputRightButton  { 1,  7, 1, 2 };
+    inline constexpr GridArea kAreaPolisherLabel     { 1,  9, 1, 2 };
+    inline constexpr GridArea kAreaPolisherBox       { 1, 11, 1, 2 };
+    inline constexpr GridArea kAreaFormulaEditor     { 2,  1, 2,12 };
+    inline constexpr GridArea kAreaEditButton        { 4,  1, 1, 6 };
+    inline constexpr GridArea kAreaOptimizeButton    { 4,  7, 1, 6 };
+    inline constexpr GridArea kAreaErrorLabel        { 5,  1, 1,12 };
+    inline constexpr GridArea kAreaKnob0             { 6,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1             { 6,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2             { 6,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3             { 6, 10, 1, 3 };
+    inline constexpr GridArea kAreaKnob0Value        { 7,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1Value        { 7,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2Value        { 7,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3Value        { 7, 10, 1, 3 };
+    inline constexpr GridArea kAreaKnob0Name         { 8,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1Name         { 8,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2Name         { 8,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3Name         { 8, 10, 1, 3 };
+    inline constexpr GridArea kAreaKnobs[kNumKnobs]  { kAreaKnob0, kAreaKnob1, kAreaKnob2, kAreaKnob3 };
+    inline constexpr GridArea kAreaKnobValues[kNumKnobs] { kAreaKnob0Value, kAreaKnob1Value, kAreaKnob2Value, kAreaKnob3Value };
+    inline constexpr GridArea kAreaKnobNames[kNumKnobs]  { kAreaKnob0Name, kAreaKnob1Name, kAreaKnob2Name, kAreaKnob3Name };
+    inline constexpr GridArea kAreaInputGainSlider   { 9,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixSlider         { 9,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainSlider  { 9,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputGainLabel    {10,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixLabel          {10,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainLabel   {10,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputGainValue    {11,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixValue          {11,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainValue   {11,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputDisplay      {12,  1, 2, 6 };
+    inline constexpr GridArea kAreaOutputDisplay     {12,  7, 2, 6 };
+    inline constexpr GridArea kAreaLoudnessMeter     {14, 10, 2, 3 };
     /// Width of the left column in the editor layout.
     inline constexpr int kLeftColumnWidth    = 400;
     /// Width of the middle column in the editor layout.

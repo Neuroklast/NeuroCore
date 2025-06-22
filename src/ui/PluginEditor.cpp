@@ -300,81 +300,58 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int knobSize    = Config::kKnobSize;
-    const int labelHeight = Config::kLabelHeight;
-    const int valueHeight = Config::kValueFieldHeight;
     const int pad         = Config::kUiPadding;
+    juce::Grid grid;
+    for (int c = 0; c < Config::kGridColumns; ++c)
+        grid.templateColumns.add(juce::Grid::TrackInfo(juce::Grid::Fr(1)));
+    for (int r = 0; r < Config::kGridRows; ++r)
+        grid.templateRows.add(juce::Grid::TrackInfo(juce::Grid::Fr(1)));
 
-    if (languageLabel)
-        languageLabel->setBounds(Config::kLanguageBoxX + pad,
-                                 Config::kLanguageBoxY + pad,
-                                 Config::kLanguageLabelWidth,
-                                 labelHeight);
-    if (languageBox)
-        languageBox->setBounds(Config::kLanguageBoxX + Config::kLanguageLabelWidth + 4 + pad,
-                               Config::kLanguageBoxY + pad,
-                               Config::kLanguageBoxWidth,
-                               labelHeight);
+    grid.setGap(juce::Grid::Px{ pad });
 
-    if (formulaInputEditor)
-        formulaInputEditor->setBounds(Config::kFormulaEditorX + pad, Config::kFormulaEditorY + pad,
-                                     Config::kFormulaEditorWidth, Config::kFormulaEditorHeight);
-      if (editSaveButton)
-        editSaveButton->setBounds(Config::kFormulaEditorX + pad, Config::kEditButtonY + pad,
-                                  Config::kFormulaEditorWidth, labelHeight);
-    if (optimizeButton)
-        optimizeButton->setBounds(Config::kFormulaEditorX + pad, Config::kOptimizeButtonY + pad,
-                                  Config::kFormulaEditorWidth, labelHeight);
-    if (errorLabel)
-        errorLabel->setBounds(Config::kFormulaEditorX + pad, Config::kErrorLabelY + pad,
-                              Config::kFormulaEditorWidth, labelHeight);
+    auto addItem = [&grid](juce::Component* comp, const Config::GridArea& area)
+    {
+        if (comp)
+            grid.items.add(juce::GridItem(*comp).withArea(area.row,
+                                                        area.column,
+                                                        area.row + area.rowSpan,
+                                                        area.column + area.columnSpan));
+    };
 
-    const int yPos = Config::kKnobRowY + pad;
-    const int xStart = Config::kKnobRowXStart + pad;
+    addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
+    addItem(languageBox.get(),      Config::kAreaLanguageBox);
+    addItem(inputLeftButton.get(),  Config::kAreaInputLeftButton);
+    addItem(inputRightButton.get(), Config::kAreaInputRightButton);
+    addItem(polisherLabel.get(),    Config::kAreaPolisherLabel);
+    addItem(polisherBox.get(),      Config::kAreaPolisherBox);
+    addItem(formulaInputEditor.get(), Config::kAreaFormulaEditor);
+    addItem(editSaveButton.get(),     Config::kAreaEditButton);
+    addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
+    addItem(errorLabel.get(),         Config::kAreaErrorLabel);
+
     for (int i = 0; i < sliders.size(); ++i)
     {
-        if (sliders[i])
-            sliders[i]->setBounds(xStart + i * Config::kKnobRowSpacing, yPos, knobSize, knobSize);
-        if (valueLabels[i])
-            valueLabels[i]->setBounds(xStart + i * Config::kKnobRowSpacing, yPos + knobSize, knobSize, valueHeight);
-        if (nameEditors[i])
-            nameEditors[i]->setBounds(xStart + i * Config::kKnobRowSpacing, yPos + knobSize + valueHeight, knobSize, labelHeight);
+        addItem(sliders[i].get(),      Config::kAreaKnobs[i]);
+        addItem(valueLabels[i].get(),  Config::kAreaKnobValues[i]);
+        addItem(nameEditors[i].get(),  Config::kAreaKnobNames[i]);
     }
 
-    int gainY = yPos + knobSize + valueHeight + labelHeight + Config::kGainSectionGap;
-    if (inputGainSlider)
-        inputGainSlider->setBounds(Config::kInputGainX + pad, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
-    if (mixSlider)
-        mixSlider->setBounds(Config::kMixX + pad, gainY + Config::kMixYOffset, Config::kMixKnobSize, Config::kMixKnobSize);
-    if (outputGainSlider)
-        outputGainSlider->setBounds(Config::kOutputGainX + pad, gainY, Config::kGainKnobSize, Config::kGainKnobSize);
-    if (inputGainLabel)
-        inputGainLabel->setBounds(Config::kInputGainX + pad, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
-    if (mixLabel)
-        mixLabel->setBounds(Config::kMixX + pad, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset, Config::kMixKnobSize, labelHeight);
-    if (outputGainLabel)
-        outputGainLabel->setBounds(Config::kOutputGainX + pad, gainY + Config::kGainKnobSize, Config::kGainKnobSize, labelHeight);
-    if (inputGainValue)
-        inputGainValue->setBounds(Config::kInputGainX + pad, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
-    if (mixValue)
-        mixValue->setBounds(Config::kMixX + pad, gainY + Config::kMixKnobSize + Config::kMixLabelYOffset + labelHeight, Config::kMixKnobSize, valueHeight);
-    if (outputGainValue)
-        outputGainValue->setBounds(Config::kOutputGainX + pad, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
-    if (inputLeftButton)
-        inputLeftButton->setBounds(Config::kInputButtonX + pad, Config::kInputButtonY + pad, Config::kInputButtonWidth, labelHeight);
-    if (inputRightButton)
-        inputRightButton->setBounds(Config::kInputButtonX + pad, Config::kInputButtonY + pad + labelHeight, Config::kInputButtonWidth, labelHeight);
-    if (polisherLabel)
-        polisherLabel->setBounds(Config::kPolisherLabelX + pad, Config::kPolisherLabelY + pad, Config::kPolisherLabelWidth, labelHeight);
-    if (polisherBox)
-        polisherBox->setBounds(Config::kPolisherBoxX + pad, Config::kPolisherLabelY + pad, Config::kPolisherBoxWidth, labelHeight);
+    addItem(inputGainSlider.get(),   Config::kAreaInputGainSlider);
+    addItem(mixSlider.get(),         Config::kAreaMixSlider);
+    addItem(outputGainSlider.get(),  Config::kAreaOutputGainSlider);
 
-    if (inputDisplay)
-        inputDisplay->setBounds(Config::kWaveDisplayXLeft + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
-    if (outputDisplay)
-        outputDisplay->setBounds(Config::kWaveDisplayXRight + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
-    if (loudnessMeter)
-        loudnessMeter->setBounds(Config::kLoudnessMeterX + pad, gainY + Config::kWaveDisplayHeight + 20,
-                                 Config::kLoudnessMeterWidth, Config::kLoudnessMeterHeight);
+    addItem(inputGainLabel.get(),    Config::kAreaInputGainLabel);
+    addItem(mixLabel.get(),          Config::kAreaMixLabel);
+    addItem(outputGainLabel.get(),   Config::kAreaOutputGainLabel);
+
+    addItem(inputGainValue.get(),    Config::kAreaInputGainValue);
+    addItem(mixValue.get(),          Config::kAreaMixValue);
+    addItem(outputGainValue.get(),   Config::kAreaOutputGainValue);
+
+    addItem(inputDisplay.get(),      Config::kAreaInputDisplay);
+    addItem(outputDisplay.get(),     Config::kAreaOutputDisplay);
+    addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
+
+    grid.performLayout(getLocalBounds().reduced(pad));
 }
 
