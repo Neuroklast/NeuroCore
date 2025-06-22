@@ -147,6 +147,7 @@ void NeuroCoreAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    previewBuffer.setSize (1, Config::kFormulaPreviewSamples, false, true, true);
     updateProcessingSpec(sampleRate, samplesPerBlock);
 }
 
@@ -402,8 +403,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     auto block = juce::dsp::AudioBlock<float> (buf);
     auto& upBlock = block;
 
-    if (previewBuffer.getNumSamples() < (int) upBlock.getNumSamples())
-        previewBuffer.setSize (1, (int) upBlock.getNumSamples(), false, true, true);
+    jassert (previewBuffer.getNumSamples() >= (int) upBlock.getNumSamples());
 
 
     juce::FloatVectorOperations::copy (previewBuffer.getWritePointer (0),
@@ -517,8 +517,6 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     }
     scriptBuffer.clear();
 
-    if (previewBuffer.getNumChannels() != 1 || previewBuffer.getNumSamples() < scriptSamples)
-        previewBuffer.setSize (1, scriptSamples, false, true, true);
     previewBuffer.clear();
 
     juce::dsp::ProcessSpec dslSpec { currentSpec.sampleRate * osFactor,
