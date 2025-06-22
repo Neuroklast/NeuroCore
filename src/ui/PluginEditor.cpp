@@ -283,6 +283,8 @@ void NeuroCoreAudioProcessorEditor::resized()
 {
     const int pad         = Config::kUiPadding;
     juce::Grid grid;
+    grid.justifyItems = juce::Grid::JustifyItems::center;
+    grid.alignItems   = juce::Grid::AlignItems::center;
     for (int c = 0; c < Config::kGridColumns; ++c)
         grid.templateColumns.add(juce::Grid::TrackInfo(juce::Grid::Fr(1)));
     for (int r = 0; r < Config::kGridRows; ++r)
@@ -308,6 +310,8 @@ void NeuroCoreAudioProcessorEditor::resized()
                 item.minHeight = Config::kRotaryDiameterMin + 40;
                 item.minWidth  = Config::kRotaryDiameterMin + 60;
             }
+            item.alignSelf   = juce::GridItem::AlignSelf::center;
+            item.justifySelf = juce::GridItem::JustifySelf::center;
             grid.items.add(std::move(item));
         }
     };
