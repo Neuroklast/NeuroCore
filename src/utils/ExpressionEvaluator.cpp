@@ -260,22 +260,24 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept
 {
-    const juce::SpinLock::ScopedLockType sl(lock);
+    // no locking here, access is real-time safe when parser isn't active
     variables[name] = value;
 }
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
-    const juce::SpinLock::ScopedLockType sl (lock);
+    Node* localRoot = nullptr;
+    std::unordered_map<std::string, float> varsCopy;
+    {
+        const juce::SpinLock::ScopedLockType sl(lock);
+        if (! valid || ! root)
+            return 0.0f;
+        localRoot = root.get();
+        varsCopy   = variables; // copy current variables quickly
+    }
 
-    if (! valid || ! root)
-        return 0.0f;
-
-    auto& vars = const_cast<std::unordered_map<std::string, float>&> (variables);
-    auto old = vars["x"];                   // store current x to restore later
-    vars["x"] = xValue;                      // update directly to avoid copies
-    float result = root->eval (vars);
-    vars["x"] = old;                         // restore previous value
+    varsCopy["x"] = xValue;
+    auto result = localRoot->eval(varsCopy);
 
     if (std::isfinite (result))
         return result;
