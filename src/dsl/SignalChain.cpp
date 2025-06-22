@@ -62,7 +62,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         return s.retainCharacters("0123456789.-+").length() == s.length();
     };
 
-    auto addDefaultMap = [](const juce::String& expr, float outMin, float outMax)
+    auto addDefaultMap = [isNumeric](const juce::String& expr, float outMin, float outMax)
     {
         if (expr.containsIgnoreCase("map(") || isNumeric(expr))
             return expr;
@@ -360,7 +360,9 @@ float SignalChain::Filter::process(int ch, float x)
     float fc = cutoff.evaluate(x);
     float res = resonance.evaluate(x);
 
-    fc = juce::jlimit(20.0f, sampleRate * 0.5f, fc);
+    const auto nyquist = sampleRate * 0.5f;
+    const auto maxFc = std::nextafter(nyquist, 0.0f); // keep strictly below Nyquist
+    fc = juce::jlimit(20.0f, maxFc, fc);
     res = juce::jlimit(0.1f, 10.0f, res);
 
     filter.setCutoffFrequency(fc);
