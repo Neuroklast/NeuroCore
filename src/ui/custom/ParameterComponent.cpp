@@ -1,4 +1,5 @@
 #include "ParameterComponent.h"
+#include "../../core/Config.h"
 
 using namespace juce;
 
@@ -66,8 +67,12 @@ namespace ui
 
         area.removeFromTop(5);
         nameLabel.setBounds(area.removeFromTop(20));
-        slider.setBounds(area.reduced(5));
-        mappingBox.setBounds(area.removeFromBottom(20));
+
+        auto bottom = area.removeFromBottom(20);
+        auto size = juce::jmax(Config::kRotaryDiameterMin, juce::jmin(area.getWidth(), area.getHeight()));
+        juce::Rectangle<int> knob(area.getCentreX() - size / 2, area.getCentreY() - size / 2, size, size);
+        slider.setBounds(knob);
+        mappingBox.setBounds(bottom);
     }
 
     void ParameterComponent::addMapping(const ParameterMapping& m)

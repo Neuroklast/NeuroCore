@@ -22,7 +22,7 @@ namespace Config
     /// Width of the plugin window in pixels.
     inline constexpr int kWindowWidth        = 1200;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 800;
+    inline constexpr int kWindowHeight       = 1200;
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 8;
 
@@ -107,6 +107,8 @@ namespace Config
 
     /// Size of rotary knobs in pixels.
     inline constexpr int kKnobSize          = 90;
+    /// Mindestdurchmesser aller Rotary-Slider.
+    inline constexpr int kRotaryDiameterMin = 200;
     /// Height of value displays below knobs.
     inline constexpr int kValueFieldHeight  = 20;
 
