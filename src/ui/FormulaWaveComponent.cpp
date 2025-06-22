@@ -62,7 +62,7 @@ void FormulaWaveComponent::paint (juce::Graphics& g)
     g.setColour (juce::Colours::grey);
     g.strokePath (inputPath, juce::PathStrokeType (1.0f));
 
-    g.setColour (juce::Colours::orange);
+    g.setColour (juce::Colours::red);
     g.strokePath (outputPath, juce::PathStrokeType (2.0f));
 }
 
