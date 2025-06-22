@@ -9,6 +9,7 @@ int main(int argc, char* argv[])
 
     ExpressionEvaluatorTest evaluatorTest;  // registers itself
     WaveShaperTest shaperTest;              // registers itself
+    SignalChainTest chainTest;              // registers itself
 
     juce::UnitTestRunner runner;
     runner.runAllTests();

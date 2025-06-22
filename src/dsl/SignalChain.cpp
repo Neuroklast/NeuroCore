@@ -50,6 +50,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     if (! parser.parse (script, desc, newAliases, error))
         return false;
 
+    for (const auto& kv : newAliases)
+        variables.emplace(kv.second, 0.0f);
+
     auto newChain = std::make_shared<Chain>();
 
     for (const auto& d : desc)
