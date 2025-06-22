@@ -9,8 +9,8 @@
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
     <GROUP id="{05E733A8-0CB1-11AD-B696-095FDFA18641}" name="resources">
       <GROUP id="{9D3500F1-97FB-395E-F120-232E4E3B8590}" name="img">
-        <FILE id="XUeQCy" name="knob.png" compile="0" resource="1" file="resources/img/knob.png"/>
-        <FILE id="eqySc2" name="mockup.png" compile="0" resource="1" file="resources/img/mockup.png"/>
+        <FILE id="g9LEza" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
+        <FILE id="QcwqAW" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
       </GROUP>
       <GROUP id="{65E85DCB-95F1-BB91-F972-8D2B85DBAE38}" name="locale">
         <FILE id="e6bLtT" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
