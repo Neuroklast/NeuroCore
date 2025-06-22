@@ -60,8 +60,13 @@ namespace Config
     inline constexpr GridArea kAreaKnob1Name         { 8,  4, 1, 3 };
     inline constexpr GridArea kAreaKnob2Name         { 8,  7, 1, 3 };
     inline constexpr GridArea kAreaKnob3Name         { 8, 10, 1, 3 };
-    inline constexpr GridArea kAreaKnobs[kNumKnobs]  { kAreaKnob0, kAreaKnob1, kAreaKnob2, kAreaKnob3 };
+    /// Number of modulation knobs available.
+    inline constexpr int kNumKnobs           = 4;
+    /// Areas for the individual knobs.
+    inline constexpr GridArea kAreaKnobs[kNumKnobs]      { kAreaKnob0, kAreaKnob1, kAreaKnob2, kAreaKnob3 };
+    /// Areas for the knob value displays.
     inline constexpr GridArea kAreaKnobValues[kNumKnobs] { kAreaKnob0Value, kAreaKnob1Value, kAreaKnob2Value, kAreaKnob3Value };
+    /// Areas for the knob name labels.
     inline constexpr GridArea kAreaKnobNames[kNumKnobs]  { kAreaKnob0Name, kAreaKnob1Name, kAreaKnob2Name, kAreaKnob3Name };
     inline constexpr GridArea kAreaInputGainSlider   { 9,  1, 1, 3 };
     inline constexpr GridArea kAreaMixSlider         { 9,  4, 1, 3 };
@@ -82,8 +87,6 @@ namespace Config
     /// Width of the right column in the editor layout.
     inline constexpr int kRightColumnWidth   = 400;
 
-    /// Number of modulation knobs available.
-    inline constexpr int kNumKnobs           = 4;
     /// Height of each knob widget in pixels.
     inline constexpr int kKnobHeight         = 80;
     /// Vertical spacing between knobs in pixels.
