@@ -440,13 +440,21 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     if (previewBuffer.getNumSamples() < (int) upBlock.getNumSamples())
         previewBuffer.setSize (1, (int) upBlock.getNumSamples(), false, true, true);
 
-    upBlock.copyTo (juce::dsp::AudioBlock<float> (previewBuffer));
+
+    juce::FloatVectorOperations::copy (previewBuffer.getWritePointer (0),
+                                      upBlock.getChannelPointer (0),
+                                      (int) upBlock.getNumSamples());
+
 
     std::array<float, 4> vals { parameterValues[0].load(), parameterValues[1].load(),
                                parameterValues[2].load(), parameterValues[3].load() };
     previewSignalChain.processBlock (previewBuffer, vals);
 
-    upBlock.copyFrom (juce::dsp::AudioBlock<float> (previewBuffer));
+
+    juce::FloatVectorOperations::copy (upBlock.getChannelPointer (0),
+                                      previewBuffer.getReadPointer (0),
+                                      (int) upBlock.getNumSamples());
+
 
     if (osIdx > 0)
         os.processSamplesDown (block);
