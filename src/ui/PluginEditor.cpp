@@ -45,8 +45,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
         if (polisherLabel)
             polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
-        if (oversamplingLabel)
-            oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
     };
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
@@ -150,13 +148,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         audioProcessor.apvts, EffectParameters::polisherMode, *polisherBox);
     addAndMakeVisible (*polisherBox);
 
-    oversamplingLabel = std::make_unique<juce::Label>("", TRANS("OversamplingLabel"));
-    addAndMakeVisible(*oversamplingLabel);
-    oversamplingBox = std::make_unique<juce::ComboBox>();
-    oversamplingBox->addItemList(juce::StringArray{ "Off", "2x", "4x", "8x" }, 1);
-    oversamplingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-        audioProcessor.apvts, EffectParameters::oversampling, *oversamplingBox);
-    addAndMakeVisible(*oversamplingBox);
 
     inputGainValue  = std::make_unique<juce::Label>();
     mixValue        = std::make_unique<juce::Label>();
@@ -273,7 +264,6 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
-    oversamplingAttachment.reset();
     setLookAndFeel (nullptr);
 }
 
@@ -387,12 +377,6 @@ void NeuroCoreAudioProcessorEditor::resized()
         polisherLabel->setBounds(Config::kPolisherLabelX + pad, Config::kPolisherLabelY + pad, Config::kPolisherLabelWidth, labelHeight);
     if (polisherBox)
         polisherBox->setBounds(Config::kPolisherBoxX + pad, Config::kPolisherLabelY + pad, Config::kPolisherBoxWidth, labelHeight);
-    if (oversamplingLabel)
-        oversamplingLabel->setBounds(Config::kOversamplingLabelX + pad, Config::kOversamplingLabelY + pad,
-                                     Config::kOversamplingLabelWidth, labelHeight);
-    if (oversamplingBox)
-        oversamplingBox->setBounds(Config::kOversamplingBoxX + pad, Config::kOversamplingLabelY + pad,
-                                   Config::kOversamplingBoxWidth, labelHeight);
 
     if (inputDisplay)
         inputDisplay->setBounds(Config::kWaveDisplayXLeft + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);
