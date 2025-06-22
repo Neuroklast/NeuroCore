@@ -141,11 +141,13 @@ private:
     juce::AudioBuffer<float>      inputWaveBuffer;
     juce::AudioBuffer<float>      outputWaveBuffer;
     juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
-    std::atomic<int>             inputWrite { 0 };
-    std::atomic<int>             outputWrite { 0 };
+    juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
+    juce::AbstractFifo            inputFifo { Config::kWaveformDisplaySamples };
+    juce::AbstractFifo            outputFifo { Config::kWaveformDisplaySamples };
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
+    dsl::SignalChain              previewSignalChain;
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };
