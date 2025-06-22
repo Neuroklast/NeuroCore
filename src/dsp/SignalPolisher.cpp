@@ -1,6 +1,7 @@
 #include "SignalPolisher.h"
 #include "../utils/Log.h"
 
+
 void SignalPolisher::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;

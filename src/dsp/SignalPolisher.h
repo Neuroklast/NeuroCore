@@ -6,6 +6,7 @@
 */
 #include <JuceHeader.h>
 #include "../core/EffectParameters.h"
+#include "../core/Config.h"
 
 class SignalPolisher : public juce::dsp::ProcessorBase
 {
