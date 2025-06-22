@@ -11,6 +11,9 @@
     <Filter Include="NeuroCore\resources">
       <UniqueIdentifier>{C5AB6AF8-5BB1-4A79-9F5A-6AA431E7573A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\scripts">
+      <UniqueIdentifier>{15EF0378-30E7-368B-6650-38BBA4A34EF5}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\src\core">
       <UniqueIdentifier>{51CDF870-945B-DD80-8B4F-E8C03FEADAF3}</UniqueIdentifier>
     </Filter>
@@ -8231,6 +8234,9 @@
     <None Include="..\..\resources\img\outerKnob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
+    <None Include="..\..\resources\img\overknob.png">
+      <Filter>NeuroCore\resources\img</Filter>
+    </None>
     <None Include="..\..\resources\img\innerknob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
@@ -8245,6 +8251,9 @@
     </None>
     <None Include="..\..\resources\templates.json">
       <Filter>NeuroCore\resources</Filter>
+    </None>
+    <None Include="..\..\scripts\install_linux_deps.sh">
+      <Filter>NeuroCore\scripts</Filter>
     </None>
     <None Include="..\..\tests\NeuroCore_Tests.jucer">
       <Filter>NeuroCore\tests</Filter>

@@ -218,7 +218,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             if (audioProcessor.setFormula(text, err))
             {
                 formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
+                
                 // hide caret again after saving
                 formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
                                               juce::Colours::transparentBlack);

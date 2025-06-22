@@ -4507,11 +4507,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\img\outerKnob.png"/>
+    <None Include="..\..\resources\img\overknob.png"/>
     <None Include="..\..\resources\img\innerknob.png"/>
     <None Include="..\..\resources\locale\de.txt"/>
     <None Include="..\..\resources\locale\en.txt"/>
     <None Include="..\..\resources\optimizations.txt"/>
     <None Include="..\..\resources\templates.json"/>
+    <None Include="..\..\scripts\install_linux_deps.sh"/>
     <None Include="..\..\tests\NeuroCore_Tests.jucer"/>
     <None Include="..\..\AGENTS.md"/>
     <None Include="..\..\CMakeLists.txt"/>

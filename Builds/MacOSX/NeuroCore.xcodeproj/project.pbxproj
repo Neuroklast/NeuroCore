@@ -130,6 +130,7 @@
 		486B7E98C6CFD4EA399B2362 /* WaveShaperTest.h */ /* WaveShaperTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = WaveShaperTest.h; path = ../../tests/WaveShaperTest.h; sourceTree = SOURCE_ROOT; };
 		48988EEEB50D5AFFF1330387 /* CMakeLists.txt */ /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = CMakeLists.txt; path = ../../CMakeLists.txt; sourceTree = SOURCE_ROOT; };
 		494C27855CD9A3F25DDBF279 /* include_juce_opengl.mm */ /* include_juce_opengl.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_opengl.mm; path = ../../JuceLibraryCode/include_juce_opengl.mm; sourceTree = SOURCE_ROOT; };
+		49FBD76EAC4369C471989A4D /* overknob.png */ /* overknob.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = overknob.png; path = ../../resources/img/overknob.png; sourceTree = SOURCE_ROOT; };
 		51BF09BB9040C1FABBB59C1E /* include_juce_audio_formats.mm */ /* include_juce_audio_formats.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_formats.mm; path = ../../JuceLibraryCode/include_juce_audio_formats.mm; sourceTree = SOURCE_ROOT; };
 		5392FE319A40C62F5A468622 /* PresetManager.h */ /* PresetManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PresetManager.h; path = ../../src/utils/PresetManager.h; sourceTree = SOURCE_ROOT; };
 		5760561330FEAAD121763006 /* juce_product_unlocking */ /* juce_product_unlocking */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_product_unlocking; path = "~/JUCE/modules/juce_product_unlocking"; sourceTree = "<absolute>"; };
@@ -164,6 +165,7 @@
 		89C9DBFBF22C5BC610D34DD3 /* PresetManager.cpp */ /* PresetManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PresetManager.cpp; path = ../../src/utils/PresetManager.cpp; sourceTree = SOURCE_ROOT; };
 		8A12E5C64F02FBF08202FF08 /* optimizations.txt */ /* optimizations.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = optimizations.txt; path = ../../resources/optimizations.txt; sourceTree = SOURCE_ROOT; };
 		8B9A0E6FA6BDA5ADF00AD491 /* AdvancedOscillatorWrapper.cpp */ /* AdvancedOscillatorWrapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AdvancedOscillatorWrapper.cpp; path = ../../src/dsp/AdvancedOscillatorWrapper.cpp; sourceTree = SOURCE_ROOT; };
+		8D7F88FECD965420C8556BBF /* install_linux_deps.sh */ /* install_linux_deps.sh */ = {isa = PBXFileReference; lastKnownFileType = file.sh; name = install_linux_deps.sh; path = ../../scripts/install_linux_deps.sh; sourceTree = SOURCE_ROOT; };
 		8F26C4069A2F111437CA8994 /* include_juce_gui_extra.mm */ /* include_juce_gui_extra.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_gui_extra.mm; path = ../../JuceLibraryCode/include_juce_gui_extra.mm; sourceTree = SOURCE_ROOT; };
 		953F6A94BA6D88702FCCE9CE /* include_juce_events.mm */ /* include_juce_events.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_events.mm; path = ../../JuceLibraryCode/include_juce_events.mm; sourceTree = SOURCE_ROOT; };
 		96982C51AFB00D26C19E7BDD /* DiscRecording.framework */ /* DiscRecording.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiscRecording.framework; path = System/Library/Frameworks/DiscRecording.framework; sourceTree = SDKROOT; };
@@ -387,6 +389,14 @@
 			name = nlohmann;
 			sourceTree = "<group>";
 		};
+		33ECC2EBCE301BAD3CDC4124 /* scripts */ = {
+			isa = PBXGroup;
+			children = (
+				8D7F88FECD965420C8556BBF,
+			);
+			name = scripts;
+			sourceTree = "<group>";
+		};
 		4823469D90E77B393692D150 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -494,6 +504,7 @@
 			isa = PBXGroup;
 			children = (
 				BE7CB8E907C7C96713D54A1D,
+				33ECC2EBCE301BAD3CDC4124,
 				DF17DE058598B295842571CF,
 				749C68218278F749F362B629,
 				9AC6B60C0B9A077D8DF567C8,
@@ -519,6 +530,7 @@
 			isa = PBXGroup;
 			children = (
 				BA5229DC18D5B22CA2B5DD91,
+				49FBD76EAC4369C471989A4D,
 				D1B24F829173D94BB4280068,
 			);
 			name = img;

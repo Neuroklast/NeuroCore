@@ -11,20 +11,26 @@ namespace BinaryData
     extern const char*   outerKnob_png;
     const int            outerKnob_pngSize = 41172;
 
+    extern const char*   overknob_png;
+    const int            overknob_pngSize = 54289;
+
     extern const char*   innerknob_png;
     const int            innerknob_pngSize = 124899;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 513;
+    const int            de_txtSize = 539;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 465;
+    const int            en_txtSize = 492;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
 
     extern const char*   templates_json;
     const int            templates_jsonSize = 234;
+
+    extern const char*   install_linux_deps_sh;
+    const int            install_linux_deps_shSize = 190;
 
     extern const char*   NeuroCore_Tests_jucer;
     const int            NeuroCore_Tests_jucerSize = 1786;
@@ -33,16 +39,16 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 4356;
+    const int            CMakeLists_txtSize = 4364;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 14542;
+    const int            NeuroCore_jucerSize = 14994;
 
     extern const char*   README_md;
-    const int            README_mdSize = 4278;
+    const int            README_mdSize = 4902;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
-    const int namedResourceListSize = 11;
+    const int namedResourceListSize = 13;
 
     // Points to the start of a list of resource names.
     extern const char* namedResourceList[];
