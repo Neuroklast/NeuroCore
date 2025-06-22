@@ -17,15 +17,24 @@ public:
     // Initialise all tables with the given resolution (clamped 256..4096).
     static void initialise (int size = Config::kLookupTableSize);
 
+    // Ensure tables for additional functions are allocated if required.
+    static void prepareFromScript (const juce::String& script);
+
     // Fast access functions using the lookup tables.
     static float fastSin  (float x) noexcept;
     static float fastCos  (float x) noexcept;
     static float fastTanh (float x) noexcept;
+    static float fastExp  (float x) noexcept;
+    static float fastLog  (float x) noexcept;
+    static float fastPow  (float x, float exponent) noexcept;
 
 private:
     static int tableSize;
     static std::vector<float> sinTable;
     static std::vector<float> cosTable;
     static std::vector<float> tanhTable;
+    static std::vector<float> expTable;
+    static std::vector<float> logTable;
+    static std::unordered_map<int, std::vector<float>> powTables;
 };
 

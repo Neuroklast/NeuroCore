@@ -45,6 +45,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
         if (polisherLabel)
             polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
+        if (oversamplingLabel)
+            oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
     };
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
@@ -148,6 +150,14 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         audioProcessor.apvts, EffectParameters::polisherMode, *polisherBox);
     addAndMakeVisible (*polisherBox);
 
+    oversamplingLabel = std::make_unique<juce::Label>("", TRANS("OversamplingLabel"));
+    addAndMakeVisible(*oversamplingLabel);
+    oversamplingBox = std::make_unique<juce::ComboBox>();
+    oversamplingBox->addItemList(juce::StringArray{ "Off", "2x", "4x", "8x" }, 1);
+    oversamplingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.apvts, EffectParameters::oversampling, *oversamplingBox);
+    addAndMakeVisible(*oversamplingBox);
+
     inputGainValue  = std::make_unique<juce::Label>();
     mixValue        = std::make_unique<juce::Label>();
     outputGainValue = std::make_unique<juce::Label>();
@@ -169,13 +179,18 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor->setReturnKeyStartsNewLine(true);
     formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
     formulaInputEditor->setReadOnly(true);
+    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
+    formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::transparentBlack);
     formulaInputEditor->onTextChange = [this]
     {
         if (formulaDisplay)
             formulaDisplay->setFormula(formulaInputEditor->getText());
     };
     addAndMakeVisible(*formulaInputEditor);
-    audioProcessor.setFormula(formulaInputEditor->getText());
+    {
+        juce::String err;
+        audioProcessor.setFormula(formulaInputEditor->getText(), err);
+    }
 
     formulaDisplay = std::make_unique<FormulaDisplayComponent>();
     formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
@@ -202,17 +217,28 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
+            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
+            formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::black);
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
         {
             auto text = formulaInputEditor->getText();
-            audioProcessor.setFormula(text);
-            formulaInputEditor->setReadOnly(true);
-            editSaveButton->setButtonText(TRANS("EditButton"));
-            editing = false;
-            formulaDisplay->setFormula(text);
-            errorLabel->setText(juce::String(), juce::dontSendNotification);
+            juce::String err;
+            if (audioProcessor.setFormula(text, err))
+            {
+                formulaInputEditor->setReadOnly(true);
+                formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
+                formulaInputEditor->setColour(juce::TextEditor::caretColourId, juce::Colours::transparentBlack);
+                editSaveButton->setButtonText(TRANS("EditButton"));
+                editing = false;
+                formulaDisplay->setFormula(text);
+                errorLabel->setText({}, juce::dontSendNotification);
+            }
+            else
+            {
+                errorLabel->setText(err, juce::dontSendNotification);
+            }
         }
     };
     addAndMakeVisible(*editSaveButton);
@@ -331,6 +357,12 @@ void NeuroCoreAudioProcessorEditor::resized()
         polisherLabel->setBounds(Config::kPolisherLabelX + pad, Config::kPolisherLabelY + pad, Config::kPolisherLabelWidth, labelHeight);
     if (polisherBox)
         polisherBox->setBounds(Config::kPolisherBoxX + pad, Config::kPolisherLabelY + pad, Config::kPolisherBoxWidth, labelHeight);
+    if (oversamplingLabel)
+        oversamplingLabel->setBounds(Config::kOversamplingLabelX + pad, Config::kOversamplingLabelY + pad,
+                                     Config::kOversamplingLabelWidth, labelHeight);
+    if (oversamplingBox)
+        oversamplingBox->setBounds(Config::kOversamplingBoxX + pad, Config::kOversamplingLabelY + pad,
+                                   Config::kOversamplingBoxWidth, labelHeight);
 
     if (inputDisplay)
         inputDisplay->setBounds(Config::kWaveDisplayXLeft + pad, gainY, Config::kWaveDisplayWidth, Config::kWaveDisplayHeight);

@@ -31,7 +31,8 @@
 /**
 */
 class NeuroCoreAudioProcessor  : public juce::AudioProcessor,
-                                 private juce::AudioProcessorValueTreeState::Listener
+                                 private juce::AudioProcessorValueTreeState::Listener,
+                                 private juce::AsyncUpdater
 {
 public:
     //==============================================================================
@@ -73,7 +74,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Updates signal chain script from the UI
-    void setFormula (const juce::String& text);
+    bool setFormula (const juce::String& text, juce::String& error);
     juce::String getScript() const noexcept { return dslScript; }
 
     void setVariableName(int index, const juce::String& name);
@@ -120,9 +121,8 @@ private:
     juce::String currentLanguage;
 
 
-    juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels,
-                                                 (size_t) std::log2 (Config::kOversamplingFactor),
-                                                 juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
+    std::atomic<int> oversamplingIndex { (int) std::log2 (Config::kOversamplingFactor) };
     juce::dsp::DryWetMixer<float> dryWetMixer;
     juce::SmoothedValue<float>    wetValue;
     juce::SmoothedValue<float>    gainCompValue;
@@ -154,5 +154,6 @@ private:
                                          static_cast<juce::uint32> (Config::kMaxChannels) };
 
     void updateProcessingSpec (double sampleRate, int blockSize);
+    void handleAsyncUpdate() override;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };

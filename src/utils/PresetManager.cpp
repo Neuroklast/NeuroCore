@@ -61,7 +61,10 @@ bool PresetManager::loadPreset(const juce::File& file)
         return false;
 
     if (j.contains("formula"))
-        processor.setFormula(j["formula"].get<std::string>());
+    {
+        juce::String err;
+        processor.setFormula(j["formula"].get<std::string>(), err);
+    }
 
     if (j.contains("variables"))
     {
