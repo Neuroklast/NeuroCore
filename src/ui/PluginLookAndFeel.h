@@ -33,42 +33,53 @@ public:
     setColour(glowColourId, Colour(0x66ff4444));
     setColour(shadowColourId, Colours::black.withAlpha(0.6f));
     setColour(errorColourId, Colour(0xffff4444));
+    outerKnob = juce::ImageCache::getFromMemory(BinaryData::outerKnob_png,
+                                                BinaryData::outerKnob_pngSize);
+    innerKnob = juce::ImageCache::getFromMemory(BinaryData::innerknob_png,
+                                                BinaryData::innerknob_pngSize);
   }
 
   ~NeuroCoreLookAndFeel() override = default;
 
-  // Draw rotary knob with thin red outline and simple pointer.
+  // Draw rotary knob composed of rotating outer image, static inner image and
+  // thin red pointer.
   void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height,
                         float sliderPosProportional, float rotaryStartAngle,
                         float rotaryEndAngle, juce::Slider &slider) override {
-    const auto bounds = juce::Rectangle<float>(
-        static_cast<float>(x), static_cast<float>(y), static_cast<float>(width),
-        static_cast<float>(height));
+    const auto bounds = juce::Rectangle<float>(static_cast<float>(x),
+                                               static_cast<float>(y),
+                                               static_cast<float>(width),
+                                               static_cast<float>(height));
     const auto radius =
-        juce::jmin(bounds.getWidth(), bounds.getHeight()) / 2.0f;
+        juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
     const auto centre = bounds.getCentre();
-    const auto angle =
-        rotaryStartAngle +
-        sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
+    const auto angle = rotaryStartAngle +
+                       sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
 
     juce::DropShadow(findColour(shadowColourId), 4, {})
         .drawForRectangle(g, bounds.toNearestInt());
 
-    g.setColour(findColour(juce::Slider::rotarySliderFillColourId));
-    g.fillEllipse(bounds);
+    const auto sw = static_cast<float>(outerKnob.getWidth());
+    const auto sh = static_cast<float>(outerKnob.getHeight());
+    const auto scaleX = bounds.getWidth() / sw;
+    const auto scaleY = bounds.getHeight() / sh;
 
-    auto outline = findColour(juce::Slider::rotarySliderOutlineColourId);
-    if (slider.isMouseOverOrDragging())
-      outline = outline.brighter();
-    g.setColour(outline);
-    g.drawEllipse(bounds.reduced(1.0f), 1.5f);
+    auto outerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
+                              .scaled(scaleX, scaleY)
+                              .rotated(angle)
+                              .translated(centre.x, centre.y);
+    g.drawImageTransformed(outerKnob, outerTransform, false);
+
+    auto innerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
+                              .scaled(scaleX, scaleY)
+                              .translated(centre.x, centre.y);
+    g.drawImageTransformed(innerKnob, innerTransform, false);
 
     juce::Path pointer;
-    pointer.addRoundedRectangle(-1.5f, -radius + 6.0f, 3.0f, radius - 12.0f,
-                                1.0f);
+    pointer.addRoundedRectangle(-1.0f, -radius + 6.0f, 2.0f, radius - 12.0f, 0.5f);
     g.setColour(findColour(juce::Slider::thumbColourId));
-    g.fillPath(pointer, juce::AffineTransform::rotation(angle).translated(
-                            centre.x, centre.y));
+    g.fillPath(pointer,
+               juce::AffineTransform::rotation(angle).translated(centre.x, centre.y));
   }
 
   // Draw rounded button background with red outline.
@@ -105,4 +116,8 @@ public:
     g.setColour(outline);
     g.drawRoundedRectangle(area.reduced(0.5f), 4.0f, 1.5f);
   }
+
+private:
+  juce::Image outerKnob;
+  juce::Image innerKnob;
 };
