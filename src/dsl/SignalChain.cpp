@@ -209,7 +209,13 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+        {
+            if (kv.first == "x")
+                continue;
+            auto idx = eval.getVariableIndex(kv.first.toStdString());
+            if (idx != ExpressionEvaluator::invalidIndex)
+                varNames.emplace_back(kv.first, idx);
+        }
 }
 
 float SignalChain::Stage::process(int ch, float x)

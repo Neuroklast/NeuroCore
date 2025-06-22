@@ -4,15 +4,7 @@
 
 using namespace juce;
 
-ExpressionEvaluator::ExpressionEvaluator()
-{
-    variables["x"] = 0.0f;
-    variables["mod"] = 0.0f;
-    variables["a"] = 0.0f;
-    variables["b"] = 0.0f;
-    variables["c"] = 0.0f;
-    variables["d"] = 0.0f;
-}
+ExpressionEvaluator::ExpressionEvaluator() = default;
 
 void ExpressionEvaluator::skipWhitespace() noexcept
 {
@@ -25,19 +17,18 @@ ExpressionEvaluator::~ExpressionEvaluator() = default;
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
 static bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
 
-float ExpressionEvaluator::VarNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::VarNode::eval(const float* vars) const noexcept
 {
-    auto it = vars.find(name);
-    return it != vars.end() ? it->second : 0.0f;
+    return vars[index];
 }
 
-float ExpressionEvaluator::UnaryNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::UnaryNode::eval(const float* vars) const noexcept
 {
     float v = child->eval(vars);
     return op == plus ? v : -v;
 }
 
-float ExpressionEvaluator::BinaryNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
 {
     float l = left->eval(vars);
     float r = right->eval(vars);
@@ -52,17 +43,17 @@ float ExpressionEvaluator::BinaryNode::eval(const std::unordered_map<std::string
     return 0.0f;
 }
 
-float ExpressionEvaluator::FunctionNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::FunctionNode::eval(const float* vars) const noexcept
 {
     return func(child->eval(vars));
 }
 
-float ExpressionEvaluator::Func2Node::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::Func2Node::eval(const float* vars) const noexcept
 {
     return func(left->eval(vars), right->eval(vars));
 }
 
-float ExpressionEvaluator::Func3Node::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::Func3Node::eval(const float* vars) const noexcept
 {
     return func(x->eval(vars), y->eval(vars), z->eval(vars));
 }
@@ -114,7 +105,17 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
         if (name == "e")
             return std::make_unique<ValueNode>(MathConstants<float>::euler);
 
-        return std::make_unique<VarNode>(name);
+        auto it = varIndices.find(name);
+        if (it == varIndices.end())
+        {
+            if (varIndices.size() >= MaxVariables)
+                return nullptr;
+            size_t idx = varIndices.size();
+            varIndices[name] = idx;
+            variables[idx] = 0.0f;
+            it = varIndices.find(name);
+        }
+        return std::make_unique<VarNode>(it->second);
     }
 
     return nullptr;
@@ -235,6 +236,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     input = formula;
     pos = 0;
     valid = false;
+    varIndices.clear();
+    variables.fill(0.0f);
     errorMessage.clear();
     skipWhitespace();
 
@@ -260,14 +263,21 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept
 {
-    // no locking here, access is real-time safe when parser isn't active
-    variables[name] = value;
+    auto it = varIndices.find(name);
+    if (it != varIndices.end())
+        variables[it->second] = value;
+}
+
+void ExpressionEvaluator::setVariable(size_t index, float value) noexcept
+{
+    if (index < MaxVariables)
+        variables[index] = value;
 }
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
     Node* localRoot = nullptr;
-    std::unordered_map<std::string, float> varsCopy;
+    std::array<float, MaxVariables> varsCopy;
     {
         const juce::SpinLock::ScopedLockType sl(lock);
         if (! valid || ! root)
@@ -276,12 +286,20 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
         varsCopy   = variables; // copy current variables quickly
     }
 
-    varsCopy["x"] = xValue;
-    auto result = localRoot->eval(varsCopy);
+    auto it = varIndices.find("x");
+    if (it != varIndices.end())
+        varsCopy[it->second] = xValue;
+    auto result = localRoot->eval(varsCopy.data());
 
     if (std::isfinite (result))
         return result;
 
     return 0.0f;
+}
+
+size_t ExpressionEvaluator::getVariableIndex(const std::string& name) const noexcept
+{
+    auto it = varIndices.find(name);
+    return it != varIndices.end() ? it->second : invalidIndex;
 }
 

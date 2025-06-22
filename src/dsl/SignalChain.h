@@ -38,7 +38,7 @@ private:
         std::vector<float> xPrev, yPrev;
         juce::String formula;
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<juce::String, size_t>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
