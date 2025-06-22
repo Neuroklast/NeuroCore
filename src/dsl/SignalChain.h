@@ -11,6 +11,8 @@
 namespace dsl
 {
 
+using AliasMap = std::unordered_map<juce::String, juce::String>;
+
 class SignalChain
 {
 public:
@@ -78,7 +80,6 @@ private:
     };
 
     using Chain   = std::vector<std::unique_ptr<Block>>;
-    using AliasMap = std::unordered_map<juce::String, juce::String>;
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;

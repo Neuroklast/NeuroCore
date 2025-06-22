@@ -368,7 +368,7 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
 {
     dsl::DSLParser parser;
     std::vector<dsl::BlockDesc> blocks;
-    dsl::SignalChain::AliasMap aliases;
+    dsl::AliasMap aliases;
 
     if (! parser.parse(text, blocks, aliases, error))
         return false;
