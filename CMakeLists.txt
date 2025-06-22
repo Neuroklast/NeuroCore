@@ -31,6 +31,7 @@ set(SOURCE_FILES
     src/dsp/InputRouter.cpp
     src/utils/PresetManager.cpp
     src/dsp/SignalPolisher.cpp
+    src/dsp/LowPassFilter.cpp
     src/dsp/WaveShaper.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp

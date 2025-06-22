@@ -14,5 +14,4 @@ MixLabel=MIX
 OutputGainLabel=OUTPUT GAIN
 LanguageLabel=Language
 PolisherLabel=Polisher
-OversamplingLabel=Oversampling
 

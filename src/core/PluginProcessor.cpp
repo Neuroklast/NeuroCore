@@ -38,10 +38,6 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 #endif
 {
     LookupTables::initialise();
-    oversampling = std::make_unique<juce::dsp::Oversampling<float>>(Config::kMaxChannels,
-                                                                    (size_t) oversamplingIndex.load(),
-                                                                    juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
-    oversampling->setUsingIntegerLatency(true);
     juce::String err;
     dslScript = "stage1: y = tanh(x)";
     signalChain.loadScript(dslScript, err);
@@ -53,7 +49,6 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     apvts.addParameterListener (EffectParameters::paramB, this);
     apvts.addParameterListener (EffectParameters::paramC, this);
     apvts.addParameterListener (EffectParameters::paramD, this);
-    apvts.addParameterListener (EffectParameters::oversampling, this);
 
     loadLanguage(juce::SystemStats::getUserLanguage());
 
@@ -84,7 +79,6 @@ NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
     apvts.removeParameterListener (EffectParameters::paramB, this);
     apvts.removeParameterListener (EffectParameters::paramC, this);
     apvts.removeParameterListener (EffectParameters::paramD, this);
-    apvts.removeParameterListener (EffectParameters::oversampling, this);
     juce::LocalisedStrings::setCurrentMappings(nullptr);
 }
 
@@ -160,8 +154,6 @@ void NeuroCoreAudioProcessor::releaseResources()
 {
     chain.reset();
     inputRouter.reset();
-    if (oversampling)
-        oversampling->reset();
     dryWetMixer.reset();
     dryBuffer.setSize (0, 0);
     gainCompValue.reset (getSampleRate(), 0.0);
@@ -171,7 +163,7 @@ void NeuroCoreAudioProcessor::releaseResources()
     outputWaveBuffer.setSize (0, 0);
     inputWritePos.store (0);
     outputWritePos.store (0);
-    previewOversampling.reset();
+    lowpassFilter.reset();
     currentSpec.sampleRate     = 0.0;
     currentSpec.maximumBlockSize = 0;
 }
@@ -180,8 +172,6 @@ void NeuroCoreAudioProcessor::reset()
 {
     chain.reset();
     inputRouter.reset();
-    if (oversampling)
-        oversampling->reset();
     dryWetMixer.reset();
     wetValue.reset(getSampleRate(), Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue(1.0f);
@@ -189,8 +179,7 @@ void NeuroCoreAudioProcessor::reset()
     gainCompValue.setCurrentAndTargetValue(1.0f);
     for (auto& s : smoothedParams)
     {
-        s.reset(getSampleRate() * (oversampling ? oversampling->getOversamplingFactor() : 1),
-                Config::kSmoothingTime);
+        s.reset(getSampleRate(), Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
     outputGain.reset();
@@ -201,8 +190,7 @@ void NeuroCoreAudioProcessor::reset()
     outputWaveBuffer.clear();
     inputWritePos.store (0);
     outputWritePos.store (0);
-    if (previewOversampling)
-        previewOversampling->reset();
+    lowpassFilter.reset();
     currentSpec.sampleRate = getSampleRate();
     currentSpec.maximumBlockSize = (juce::uint32) juce::jmax (1, getBlockSize());
 }
@@ -283,7 +271,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     dryWetMixer.pushDrySamples (block);
 
-    auto upBlock = oversampling ? oversampling->processSamplesUp (block) : block;
+    auto& upBlock = block;
     juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
     chain.get<0>().process (ctxGain);
 
@@ -294,8 +282,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
     chain.get<1>().process (ctxPolish);
-    if (oversampling)
-        oversampling->processSamplesDown (block);
+    juce::dsp::ProcessContextReplacing<float> ctxFilter (upBlock);
+    lowpassFilter.process (ctxFilter);
 
     for (size_t i = 0; i < block.getNumSamples(); ++i)
     {
@@ -399,10 +387,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
-    params.push_back (std::make_unique<juce::AudioParameterChoice> (EffectParameters::oversampling,
-                                                                   "Oversampling",
-                                                                   juce::StringArray{ "Off", "2x", "4x", "8x" },
-                                                                   (int) std::log2(Config::kOversamplingFactor)));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", false));
 
@@ -415,11 +399,8 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     juce::AudioBuffer<float> buf (1, 1);
     buf.setSample (0, 0, x);
 
-    const auto osIdx = oversamplingIndex.load();
     auto block = juce::dsp::AudioBlock<float> (buf);
-    auto upBlock = (previewOversampling && osIdx > 0)
-                       ? previewOversampling->processSamplesUp (block)
-                       : block;
+    auto& upBlock = block;
 
     if (previewBuffer.getNumSamples() < (int) upBlock.getNumSamples())
         previewBuffer.setSize (1, (int) upBlock.getNumSamples(), false, true, true);
@@ -440,8 +421,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
                                       (int) upBlock.getNumSamples());
 
 
-    if (previewOversampling && osIdx > 0)
-        previewOversampling->processSamplesDown (block);
+
 
     return buf.getSample (0, 0);
 }
@@ -472,15 +452,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     currentSpec.maximumBlockSize = static_cast<juce::uint32> (blockSize);
     currentSpec.numChannels    = static_cast<juce::uint32> (channels);
 
-    if (oversampling)
-    {
-        oversampling->initProcessing (static_cast<size_t> (currentSpec.maximumBlockSize));
-        oversampling->reset();
-    }
-
-    const auto latency = oversampling != nullptr
-                             ? static_cast<int> (oversampling->getLatencyInSamples())
-                             : 0;
+    const auto latency = 0;
     setLatencySamples (latency);
 
     if (dryWetLatency != latency)
@@ -511,11 +483,6 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     outputWaveBuffer.clear();
     outputWritePos.store (0);
 
-    previewOversampling = std::make_unique<juce::dsp::Oversampling<float>>(1,
-                                                                           (size_t) oversamplingIndex.load(),
-                                                                           juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
-    previewOversampling->setUsingIntegerLatency (true);
-    previewOversampling->initProcessing (static_cast<size_t> (Config::kFormulaPreviewSamples));
 
     gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     gainCompValue.setCurrentAndTargetValue (1.0f);
@@ -528,7 +495,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     wetValue.setCurrentAndTargetValue (1.0f);
 
     inputRouter.prepare (currentSpec);
-    auto osFactor = oversampling ? oversampling->getOversamplingFactor() : 1;
+    auto osFactor = 1;
     for (auto& s : smoothedParams)
     {
         s.reset(currentSpec.sampleRate * osFactor, Config::kSmoothingTime);
@@ -538,6 +505,8 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                     currentSpec.maximumBlockSize * (juce::uint32) osFactor,
                                     currentSpec.numChannels };
     chain.prepare (osSpec);
+    lowpassFilter.prepare (currentSpec);
+    *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
     auto scriptSamples = (int) (currentSpec.maximumBlockSize * osFactor);
     if (scriptBuffer.getNumChannels() != (int) currentSpec.numChannels
         || scriptBuffer.getNumSamples() < scriptSamples)
@@ -562,10 +531,6 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 void NeuroCoreAudioProcessor::handleAsyncUpdate()
 {
     suspendProcessing (true);
-    oversampling = std::make_unique<juce::dsp::Oversampling<float>>(Config::kMaxChannels,
-                                                                    (size_t) oversamplingIndex.load(),
-                                                                    juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
-    oversampling->setUsingIntegerLatency(true);
     updateProcessingSpec (getSampleRate(), getBlockSize());
     suspendProcessing (false);
 }
@@ -576,11 +541,6 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
     else if (parameterID == EffectParameters::paramB) { parameterValues[1].store (newValue); smoothedParams[1].setTargetValue(newValue); }
     else if (parameterID == EffectParameters::paramC) { parameterValues[2].store (newValue); smoothedParams[2].setTargetValue(newValue); }
     else if (parameterID == EffectParameters::paramD) { parameterValues[3].store (newValue); smoothedParams[3].setTargetValue(newValue); }
-    else if (parameterID == EffectParameters::oversampling)
-    {
-        oversamplingIndex.store ((int) newValue);
-        triggerAsyncUpdate();
-    }
 }
 
 void NeuroCoreAudioProcessor::pushToRingBuffer (const juce::AudioBuffer<float>& src,

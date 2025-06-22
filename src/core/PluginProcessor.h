@@ -23,6 +23,7 @@
 #include "../dsp/InputRouter.h"
 #include "../dsp/WaveShaper.h"
 #include "../dsp/SignalPolisher.h"
+#include "../dsp/LowPassFilter.h"
 #include "EffectParameters.h"
 #include "Config.h"
 
@@ -129,8 +130,8 @@ private:
     juce::String currentLanguage;
 
 
-    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
-    std::atomic<int> oversamplingIndex { (int) std::log2 (Config::kOversamplingFactor) };
+    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                   juce::dsp::IIR::Coefficients<float>> lowpassFilter;
     juce::dsp::DryWetMixer<float> dryWetMixer;
     int                          dryWetLatency { 0 };
     juce::SmoothedValue<float>    wetValue;
@@ -144,7 +145,6 @@ private:
     juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
     std::atomic<int>              inputWritePos  { 0 };
     std::atomic<int>              outputWritePos { 0 };
-    std::unique_ptr<juce::dsp::Oversampling<float>> previewOversampling;
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
