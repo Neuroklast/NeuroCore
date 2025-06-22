@@ -1,5 +1,6 @@
 #include "SignalChain.h"
 #include <atomic>
+#include <cmath>
 
 using namespace dsl;
 
@@ -110,6 +111,23 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 co->release.parseFormula("0.1");
             co->varPtr = &variables;
             newChain->push_back (std::move (co));
+        }
+        else if (d.type.startsWith("env"))
+        {
+            auto en = std::make_unique<Env>();
+            en->mode = d.args.count("type") && d.args.at("type").toLowerCase().startsWith("peak")
+                           ? Env::Peak : Env::Rms;
+            if (d.args.count("attack"))
+                en->attack.parseFormula(d.args.at("attack").toStdString());
+            else
+                en->attack.parseFormula("0.01");
+            if (d.args.count("release"))
+                en->release.parseFormula(d.args.at("release").toStdString());
+            else
+                en->release.parseFormula("0.1");
+            en->name = d.name;
+            en->varPtr = &variables;
+            newChain->push_back(std::move(en));
         }
     }
 
@@ -316,8 +334,47 @@ float SignalChain::Comp::process(int ch, float x)
     comp.setAttack(attack.evaluate(x));
     comp.setRelease(release.evaluate(x));
 
-    float y = comp.processSample(ch, x);
-    (*varPtr)["y"] = y;
-    return y;
+        float y = comp.processSample(ch, x);
+        (*varPtr)["y"] = y;
+        return y;
+    }
+
+void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
+{
+    sampleRate = spec.sampleRate;
+    value.assign(spec.numChannels, 0.0f);
+    varNames.clear();
+    if (varPtr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
+}
+
+float SignalChain::Env::process(int ch, float x)
+{
+    if (!varPtr || ch >= static_cast<int>(value.size()))
+        return x;
+
+    for (const auto& n : varNames)
+    {
+        attack.setVariable(n.second, (*varPtr)[n.first]);
+        release.setVariable(n.second, (*varPtr)[n.first]);
+    }
+
+    float atkTime  = juce::jlimit(0.0001f, 1.0f, attack.evaluate(x));
+    float relTime  = juce::jlimit(0.0001f, 1.0f, release.evaluate(x));
+    float atkCoeff = std::exp(-1.0f / (atkTime * sampleRate));
+    float relCoeff = std::exp(-1.0f / (relTime * sampleRate));
+
+    float input = mode == Rms ? x * x : std::abs(x);
+    float out = value[ch];
+    if (input > out)
+        out = atkCoeff * out + (1.0f - atkCoeff) * input;
+    else
+        out = relCoeff * out + (1.0f - relCoeff) * input;
+    if (mode == Rms)
+        out = std::sqrt(out);
+    value[ch] = out;
+    (*varPtr)[name] = out;
+    return x;
 }
 
