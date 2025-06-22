@@ -117,7 +117,6 @@ private:
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
     juce::String dslScript;
-    std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
     juce::String currentLanguage;
 
 

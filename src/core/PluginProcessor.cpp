@@ -510,11 +510,10 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
 
 void NeuroCoreAudioProcessor::loadLanguage(const juce::String& lang)
 {
-    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                            .getSiblingFile("resources").getChildFile("locale");
-    juce::File langFile = resDir.getChildFile(lang.startsWithIgnoreCase("de") ? "de.txt" : "en.txt");
-    translations = std::make_unique<juce::LocalisedStrings>(langFile, true);
-    juce::LocalisedStrings::setCurrentMappings(translations.get());
+    auto resDir  = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
+                        .getSiblingFile ("resources").getChildFile ("locale");
+    auto langFile = resDir.getChildFile (lang.startsWithIgnoreCase ("de") ? "de.txt" : "en.txt");
+    juce::LocalisedStrings::setCurrentMappings (new juce::LocalisedStrings (langFile, true));
     currentLanguage = langFile.getFileNameWithoutExtension();
 }
 
