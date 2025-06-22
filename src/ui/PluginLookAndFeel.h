@@ -26,7 +26,7 @@ public:
     setColour(TextButton::buttonOnColourId, Colour(0xffdd2222));
 
     setColour(TextEditor::backgroundColourId,
-              Colour::fromRGBA(0x14, 0x14, 0x14, 0xdd));
+        Colours::black);
     setColour(TextEditor::outlineColourId, Colour(0xffdd2222));
     setColour(TextEditor::textColourId, Colours::white);
 
@@ -74,7 +74,7 @@ public:
     g.drawImageTransformed(innerKnob, innerTransform, false);
 
     juce::Path pointer;
-    pointer.addRoundedRectangle(-1.0f, -radius + 6.0f, 2.0f, radius - 12.0f, 0.5f);
+    pointer.addRoundedRectangle(1.f, -radius+5, 2.0f, radius/3, 0.5f);
     g.setColour(findColour(juce::Slider::thumbColourId));
     g.fillPath(pointer,
                juce::AffineTransform::rotation(angle).translated(centre.x, centre.y));
@@ -108,10 +108,10 @@ public:
     auto area = juce::Rectangle<float>(0.0f, 0.0f, (float)width, (float)height);
     auto outline = textEditor.findColour(juce::TextEditor::outlineColourId);
     if (textEditor.hasKeyboardFocus(true))
-      outline = outline.brighter(0.2f);
+      outline = Colours::black;
     if (!textEditor.isEnabled())
-      outline = outline.darker(0.7f);
-    g.setColour(outline);
+      outline = Colours::black;
+    g.setColour(Colours::black);
     g.drawRoundedRectangle(area.reduced(0.5f), 4.0f, 1.5f);
   }
 

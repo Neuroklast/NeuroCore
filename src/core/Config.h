@@ -124,7 +124,7 @@ namespace Config
     /// Number of audio channels supported.
     inline constexpr int   kMaxChannels        = 2;
     /// Oversampling factor for internal processing.
-    inline constexpr int   kOversamplingFactor = 2;
+    inline constexpr int   kOversamplingFactor = 1;
     /// Minimum valid input sample value.
     inline constexpr float kMinInputValue      = -1.0f;
     /// Maximum valid input sample value.

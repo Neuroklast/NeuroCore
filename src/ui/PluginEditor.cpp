@@ -179,10 +179,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor->setReturnKeyStartsNewLine(true);
     formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
     formulaInputEditor->setReadOnly(true);
-    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::lightgrey);
+    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
     // hide caret while editor is read only
     formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-                                  juce::Colours::transparentBlack);
+        Colours::black);
     formulaInputEditor->onTextChange = [this]
     {
         if (formulaDisplay)
@@ -220,7 +220,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
+            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
             // show caret when editor becomes editable
             formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
                                           juce::Colours::black);
