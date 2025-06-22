@@ -1,9 +1,21 @@
 #include "WaveformDisplayComponent.h"
+#include <algorithm>
 
 WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
     : processor(proc), type(t)
 {
-    startTimerHz(30);
+    auto& displays = juce::Desktop::getInstance().getDisplays();
+    if (auto* display = displays.getPrimaryDisplay())
+    {
+        const int rate = display->verticalFrequencyHz.has_value()
+                            ? static_cast<int>(*display->verticalFrequencyHz)
+                            : 60;
+        startTimerHz (rate);
+    }
+    else
+    {
+        startTimerHz (60);
+    }
 }
 
 void WaveformDisplayComponent::timerCallback()
@@ -12,6 +24,28 @@ void WaveformDisplayComponent::timerCallback()
         processor.getInputWaveform(buffer);
     else
         processor.getOutputWaveform(buffer);
+
+    const auto* data = buffer.getReadPointer (0);
+    const int num    = buffer.getNumSamples();
+    int zeroIndex    = 0;
+
+    for (int i = 1; i < num; ++i)
+    {
+        if (data[i - 1] < 0.0f && data[i] >= 0.0f)
+        {
+            zeroIndex = i;
+            break;
+        }
+    }
+
+    if (zeroIndex > 0)
+    {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            auto* dst = buffer.getWritePointer (ch);
+            std::rotate (dst, dst + zeroIndex, dst + num);
+        }
+    }
     repaint();
 }
 
