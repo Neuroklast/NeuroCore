@@ -30,10 +30,10 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-      apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+      apvts (*this, nullptr, Config::kParameterStateID, createParameterLayout()),
       presetManager (*this)
 #else
-    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+    : apvts (*this, nullptr, Config::kParameterStateID, createParameterLayout()),
     presetManager(*this)
 #endif
 {
@@ -54,14 +54,14 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     // resource directory next to the binary
     juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                            .getSiblingFile("resources");
+                            .getSiblingFile(Config::kResourceFolder);
 
-    loadOptimizationRules(resDir.getChildFile("optimizations.txt"));
+    loadOptimizationRules(resDir.getChildFile(Config::kOptimizationFile));
 
-    loadFormulaTemplates(resDir.getChildFile("templates.json"));
+    loadFormulaTemplates(resDir.getChildFile(Config::kTemplateFile));
 
     auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                        .getChildFile("NeuroCoreUserTemplates.txt");
+                        .getChildFile(Config::kUserTemplateFile);
     loadUserTemplates(userFile);
 }
 
@@ -603,7 +603,7 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
 void NeuroCoreAudioProcessor::loadLanguage(const juce::String& lang)
 {
     auto resDir  = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
-                        .getSiblingFile ("resources").getChildFile ("locale");
+                        .getSiblingFile (Config::kResourceFolder).getChildFile ("locale");
     auto langFile = resDir.getChildFile (lang.startsWithIgnoreCase ("de") ? "de.txt" : "en.txt");
     juce::LocalisedStrings::setCurrentMappings (new juce::LocalisedStrings (langFile, true));
     currentLanguage = langFile.getFileNameWithoutExtension();
