@@ -48,6 +48,7 @@ namespace Config
     inline constexpr GridArea kAreaEditButton        { 4,  1, 1, 6 };
     inline constexpr GridArea kAreaOptimizeButton    { 4,  7, 1, 6 };
     inline constexpr GridArea kAreaErrorLabel        { 5,  1, 1,12 };
+    inline constexpr GridArea kAreaKnobGroup         { 6,  1, 3,12 };
     inline constexpr GridArea kAreaKnob0             { 6,  1, 1, 3 };
     inline constexpr GridArea kAreaKnob1             { 6,  4, 1, 3 };
     inline constexpr GridArea kAreaKnob2             { 6,  7, 1, 3 };

@@ -47,6 +47,7 @@ private:
     std::array<std::unique_ptr<juce::Label>, 4> valueLabels;
     std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
     std::array<juce::Colour, 4> sliderColours;
+    std::unique_ptr<juce::GroupComponent>      knobGroup;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;

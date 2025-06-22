@@ -54,6 +54,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         juce::Colours::red, juce::Colours::blueviolet,
         juce::Colours::blue, juce::Colours::mediumvioletred };
 
+    knobGroup = std::make_unique<juce::GroupComponent>("", TRANS("KnobGroupLabel"));
+    addAndMakeVisible(*knobGroup);
+
     const float startAngle = juce::MathConstants<float>::pi * 4.0f / 3.0f;
     const float endAngle   = juce::MathConstants<float>::pi * 8.0f / 3.0f;
 
@@ -324,6 +327,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(editSaveButton.get(),     Config::kAreaEditButton);
     addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
     addItem(errorLabel.get(),         Config::kAreaErrorLabel);
+    addItem(knobGroup.get(),         Config::kAreaKnobGroup);
 
     for (int i = 0; i < sliders.size(); ++i)
     {
@@ -349,5 +353,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
 
     grid.performLayout(getLocalBounds().reduced(pad));
+    if (knobGroup)
+        knobGroup->toBack();
 }
 

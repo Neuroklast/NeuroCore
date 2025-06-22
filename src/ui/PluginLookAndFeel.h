@@ -59,17 +59,17 @@ public:
 
     const auto sw = static_cast<float>(outerKnob.getWidth());
     const auto sh = static_cast<float>(outerKnob.getHeight());
-    const auto scaleX = bounds.getWidth() / sw;
-    const auto scaleY = bounds.getHeight() / sh;
+    const auto scale = juce::jmin(bounds.getWidth() / sw,
+                                  bounds.getHeight() / sh);
 
     auto outerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                              .scaled(scaleX, scaleY)
+                              .scaled(scale, scale)
                               .rotated(angle)
                               .translated(centre.x, centre.y);
     g.drawImageTransformed(outerKnob, outerTransform, false);
 
     auto innerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                              .scaled(scaleX, scaleY)
+                              .scaled(scale, scale)
                               .translated(centre.x, centre.y);
     g.drawImageTransformed(innerKnob, innerTransform, false);
 
