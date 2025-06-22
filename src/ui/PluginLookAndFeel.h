@@ -56,8 +56,6 @@ public:
     const auto angle = rotaryStartAngle +
                        sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
 
-    juce::DropShadow(findColour(shadowColourId), 4, {})
-        .drawForRectangle(g, bounds.toNearestInt());
 
     const auto sw = static_cast<float>(outerKnob.getWidth());
     const auto sh = static_cast<float>(outerKnob.getHeight());

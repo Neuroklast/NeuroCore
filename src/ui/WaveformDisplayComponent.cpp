@@ -34,7 +34,7 @@ void WaveformDisplayComponent::paint(juce::Graphics& g)
         p.lineTo(x, y);
     }
 
-    g.setColour(juce::Colours::orange);
+    g.setColour(juce::Colours::red);
     g.strokePath(p, juce::PathStrokeType(1.5f));
 }
 
