@@ -241,6 +241,8 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     sampleRate = spec.sampleRate;
     filter.setType(type);
     channels = static_cast<int> (spec.numChannels);
+    xPrev.assign(spec.numChannels, 0.0f);
+    yPrev.assign(spec.numChannels, 0.0f);
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -254,6 +256,10 @@ float SignalChain::Filter::process(int ch, float x)
 
     if (ch >= channels)
         return x;
+
+    (*varPtr)["x_prev"] = xPrev[ch];
+    (*varPtr)["y_prev"] = yPrev[ch];
+    (*varPtr)["x"] = x;
 
     for (const auto& n : varNames)
     {
@@ -271,6 +277,8 @@ float SignalChain::Filter::process(int ch, float x)
     filter.setResonance(res);
 
     float y = filter.processSample(ch, x);
+    xPrev[ch] = x;
+    yPrev[ch] = y;
     (*varPtr)["y"] = y;
     return y;
 }
