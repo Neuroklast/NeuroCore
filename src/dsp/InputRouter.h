@@ -17,6 +17,8 @@ public:
 
 private:
     std::array<bool,2> channelEnabled { true, true };
+    double sampleRate { Config::kDefaultSampleRate };
+    int    blockSize  { Config::kDefaultBlockSize };
     bool bypassed { false };
 };
 

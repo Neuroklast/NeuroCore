@@ -34,6 +34,8 @@ public:
     // Returns variable index or invalidIndex if unused.
     size_t getVariableIndex(const std::string& name) const noexcept;
 
+    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
+
 
 
     // Returns true if parsing succeeded.
@@ -130,7 +132,6 @@ private:
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
 
     static constexpr size_t MaxVariables = 16;
-    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
 
     std::unordered_map<std::string, size_t> varIndices;
     std::array<float, MaxVariables> variables{};
