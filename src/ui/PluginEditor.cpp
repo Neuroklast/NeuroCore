@@ -62,7 +62,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     for (int i = 0; i < sliders.size(); ++i)
     {
-        sliders[i] = std::make_unique<juce::Slider>();
+        sliders[i] = std::make_unique<ParameterSlider>();
         sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         sliders[i]->setRotaryParameters (startAngle, endAngle, true);
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
@@ -75,6 +75,15 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             if (valueLabels[i])
                 valueLabels[i]->setText (juce::String (sliders[i]->getValue(), 2), juce::dontSendNotification);
+        };
+        sliders[i]->onRightClick = [this, i]
+        {
+            auto list = audioProcessor.getParameterMappings(i);
+            juce::String msg;
+            for (auto& s : list) msg += s + "\n";
+            if (msg.isEmpty()) msg = TRANS("NoMappings");
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+                                                  TRANS("ParameterMapping"), msg);
         };
         addAndMakeVisible (*sliders[i]);
 
