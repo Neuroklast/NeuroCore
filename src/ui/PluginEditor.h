@@ -19,6 +19,7 @@
 #include "WaveformDisplayComponent.h"
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
+#include "custom/ParameterComponent.h"
 
 
 //==============================================================================
@@ -43,10 +44,8 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 
     // Left column controls
-    std::array<std::unique_ptr<juce::Slider>, 4> sliders;
-    std::array<std::unique_ptr<juce::Label>, 4> valueLabels;
-    std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
-    std::array<juce::Colour, 4> sliderColours;
+    std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
+    std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
     std::unique_ptr<juce::GroupComponent>      knobGroup;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
