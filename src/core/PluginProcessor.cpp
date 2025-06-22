@@ -167,10 +167,11 @@ void NeuroCoreAudioProcessor::releaseResources()
     gainCompValue.reset (getSampleRate(), 0.0);
     outputGain.reset();
     userOutputGain.reset();
-    inputWaveBuffer.setSize(0, 0);
-    outputWaveBuffer.setSize(0, 0);
-    inputFifo.setTotalSize (0);
-    outputFifo.setTotalSize (0);
+    inputWaveBuffer.setSize (0, 0);
+    outputWaveBuffer.setSize (0, 0);
+    inputWritePos.store (0);
+    outputWritePos.store (0);
+    previewOversampling.reset();
     currentSpec.sampleRate     = 0.0;
     currentSpec.maximumBlockSize = 0;
 }
@@ -198,6 +199,10 @@ void NeuroCoreAudioProcessor::reset()
     userOutputGain.setGainLinear(1.0f);
     inputWaveBuffer.clear();
     outputWaveBuffer.clear();
+    inputWritePos.store (0);
+    outputWritePos.store (0);
+    if (previewOversampling)
+        previewOversampling->reset();
     currentSpec.sampleRate = getSampleRate();
     currentSpec.maximumBlockSize = (juce::uint32) juce::jmax (1, getBlockSize());
 }
@@ -269,17 +274,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     juce::dsp::ProcessContextReplacing<float> routerCtx (block);
     getInputRouter().process (routerCtx);
 
-    int start1 = 0, size1 = 0, start2 = 0, size2 = 0;
-    inputFifo.prepareToWrite (buffer.getNumSamples(), start1, size1, start2, size2);
-    for (int ch = 0; ch < juce::jmin (inputWaveBuffer.getNumChannels(), buffer.getNumChannels()); ++ch)
-    {
-        auto* dst = inputWaveBuffer.getWritePointer (ch);
-        auto* src = buffer.getReadPointer (ch);
-        juce::FloatVectorOperations::copy (dst + start1, src, size1);
-        if (size2 > 0)
-            juce::FloatVectorOperations::copy (dst + start2, src + size1, size2);
-    }
-    inputFifo.finishedWrite (buffer.getNumSamples());
+    pushToRingBuffer (buffer, inputWaveBuffer, inputWritePos);
 
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom (ch, 0, buffer, ch, 0, buffer.getNumSamples());
@@ -324,16 +319,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (getPolisher().wasInvalidSample())
         invalidFlag.store(true);
 
-    outputFifo.prepareToWrite (buffer.getNumSamples(), start1, size1, start2, size2);
-    for (int ch = 0; ch < juce::jmin (outputWaveBuffer.getNumChannels(), buffer.getNumChannels()); ++ch)
-    {
-        auto* dst = outputWaveBuffer.getWritePointer (ch);
-        auto* src = buffer.getReadPointer (ch);
-        juce::FloatVectorOperations::copy (dst + start1, src, size1);
-        if (size2 > 0)
-            juce::FloatVectorOperations::copy (dst + start2, src + size1, size2);
-    }
-    outputFifo.finishedWrite (buffer.getNumSamples());
+    pushToRingBuffer (buffer, outputWaveBuffer, outputWritePos);
 }
 
 //==============================================================================
@@ -430,12 +416,10 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     buf.setSample (0, 0, x);
 
     const auto osIdx = oversamplingIndex.load();
-    juce::dsp::Oversampling<float> os (1, (size_t) osIdx,
-                                       juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
-    os.initProcessing (1);
-
     auto block = juce::dsp::AudioBlock<float> (buf);
-    auto upBlock = osIdx > 0 ? os.processSamplesUp (block) : block;
+    auto upBlock = (previewOversampling && osIdx > 0)
+                       ? previewOversampling->processSamplesUp (block)
+                       : block;
 
     if (previewBuffer.getNumSamples() < (int) upBlock.getNumSamples())
         previewBuffer.setSize (1, (int) upBlock.getNumSamples(), false, true, true);
@@ -456,8 +440,8 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
                                       (int) upBlock.getNumSamples());
 
 
-    if (osIdx > 0)
-        os.processSamplesDown (block);
+    if (previewOversampling && osIdx > 0)
+        previewOversampling->processSamplesDown (block);
 
     return buf.getSample (0, 0);
 }
@@ -518,15 +502,20 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     }
     dryBuffer.clear();
 
-    const int waveSize = juce::jmax (Config::kWaveformDisplaySamples,
-                                     (int) currentSpec.maximumBlockSize);
+    const int waveSize = Config::kWaveformDisplaySamples;
     inputWaveBuffer.setSize ((int) currentSpec.numChannels, waveSize, false, true, true);
     inputWaveBuffer.clear();
-    inputFifo.setTotalSize (waveSize);
+    inputWritePos.store (0);
 
     outputWaveBuffer.setSize ((int) currentSpec.numChannels, waveSize, false, true, true);
     outputWaveBuffer.clear();
-    outputFifo.setTotalSize (waveSize);
+    outputWritePos.store (0);
+
+    previewOversampling = std::make_unique<juce::dsp::Oversampling<float>>(1,
+                                                                           (size_t) oversamplingIndex.load(),
+                                                                           juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
+    previewOversampling->setUsingIntegerLatency (true);
+    previewOversampling->initProcessing (static_cast<size_t> (Config::kFormulaPreviewSamples));
 
     gainCompValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     gainCompValue.setCurrentAndTargetValue (1.0f);
@@ -594,36 +583,61 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
     }
 }
 
+void NeuroCoreAudioProcessor::pushToRingBuffer (const juce::AudioBuffer<float>& src,
+                                                juce::AudioBuffer<float>& dst,
+                                                std::atomic<int>& pos) noexcept
+{
+    const int total = dst.getNumSamples();
+    const int num   = juce::jmin (src.getNumSamples(), total);
+    int w = pos.load (std::memory_order_relaxed);
+    for (int ch = 0; ch < juce::jmin (dst.getNumChannels(), src.getNumChannels()); ++ch)
+    {
+        auto* d = dst.getWritePointer (ch);
+        auto* s = src.getReadPointer (ch);
+        const int first = juce::jmin (num, total - w);
+        juce::FloatVectorOperations::copy (d + w, s, first);
+        if (num > first)
+            juce::FloatVectorOperations::copy (d, s + first, num - first);
+    }
+    pos.store ((w + num) % total, std::memory_order_release);
+}
+
 void NeuroCoreAudioProcessor::getInputWaveform(juce::AudioBuffer<float>& dest)
 {
     const int num = dest.getNumSamples();
-    int start1 = 0, size1 = 0, start2 = 0, size2 = 0;
-    inputFifo.prepareToRead (num, start1, size1, start2, size2);
+    const int total = inputWaveBuffer.getNumSamples();
+    int w = inputWritePos.load (std::memory_order_acquire);
+    int start = w - num;
+    if (start < 0)
+        start += total;
     for (int ch = 0; ch < juce::jmin (dest.getNumChannels(), inputWaveBuffer.getNumChannels()); ++ch)
     {
         auto* src = inputWaveBuffer.getReadPointer (ch);
         auto* dst = dest.getWritePointer (ch);
-        juce::FloatVectorOperations::copy (dst, src + start1, size1);
-        if (size2 > 0)
-            juce::FloatVectorOperations::copy (dst + size1, src + start2, size2);
+        const int first = juce::jmin (num, total - start);
+        juce::FloatVectorOperations::copy (dst, src + start, first);
+        if (num > first)
+            juce::FloatVectorOperations::copy (dst + first, src, num - first);
     }
-    inputFifo.finishedRead (num);
 }
 
 void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
 {
     const int num = dest.getNumSamples();
-    int start1 = 0, size1 = 0, start2 = 0, size2 = 0;
-    outputFifo.prepareToRead (num, start1, size1, start2, size2);
+    const int total = outputWaveBuffer.getNumSamples();
+    int w = outputWritePos.load (std::memory_order_acquire);
+    int start = w - num;
+    if (start < 0)
+        start += total;
     for (int ch = 0; ch < juce::jmin (dest.getNumChannels(), outputWaveBuffer.getNumChannels()); ++ch)
     {
         auto* src = outputWaveBuffer.getReadPointer (ch);
         auto* dst = dest.getWritePointer (ch);
-        juce::FloatVectorOperations::copy (dst, src + start1, size1);
-        if (size2 > 0)
-            juce::FloatVectorOperations::copy (dst + size1, src + start2, size2);
+        const int first = juce::jmin (num, total - start);
+        juce::FloatVectorOperations::copy (dst, src + start, first);
+        if (num > first)
+            juce::FloatVectorOperations::copy (dst + first, src, num - first);
     }
-    outputFifo.finishedRead (num);
 }
 
 void NeuroCoreAudioProcessor::loadLanguage(const juce::String& lang)
