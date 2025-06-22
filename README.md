@@ -17,6 +17,14 @@ NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe
    unter Windows mit `set JUCE_PATH=C:\JUCE` oder auf Linux/macOS mit `export JUCE_PATH=/path/zu/JUCE` gesetzt werden. Der Projucer liest diese Variable
    automatisch, wenn kein fester Pfad hinterlegt ist.
 3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.
+4. Unter Linux die systemweiten Bibliotheken installieren. Ein Skript im Ordner
+   `scripts` automatisiert diesen Schritt:
+   ```bash
+   ./scripts/install_linux_deps.sh
+   ```
+   Das Skript installiert unter anderem `libx11-dev`, `libxrandr-dev`,
+   `libgl1-mesa-dev`, `libgtk-3-dev` sowie `libwebkit2gtk-4.1-dev` (unter
+   älteren Distributionen `libwebkit2gtk-4.0-dev`).
 
 ## Build-Schritte
 
@@ -39,6 +47,17 @@ cmake --build build --config Release
 
 Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.
 Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
+
+### Docker-Umgebung
+
+Eine vorbereitete `Dockerfile` befindet sich im Projektstamm. Sie enthält alle
+benötigten Pakete und baut die Tests automatisch. Ein Image kann mit
+
+```bash
+docker build -t neurocore .
+```
+
+erstellt werden.
 
 ### Tests ausführen
 
