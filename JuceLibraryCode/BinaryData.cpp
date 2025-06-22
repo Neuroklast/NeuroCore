@@ -2386,7 +2386,6 @@ static const unsigned char temp_binary_data_2[] =
 "OutputGainLabel=Ausgang Gain\r\n"
 "LanguageLabel=Sprache\r\n"
 "PolisherLabel=Polisher\r\n"
-"OversamplingLabel=Oversampling\r\n"
 "\r\n";
 
 const char* de_txt = (const char*) temp_binary_data_2;
@@ -2409,7 +2408,6 @@ static const unsigned char temp_binary_data_3[] =
 "OutputGainLabel=OUTPUT GAIN\r\n"
 "LanguageLabel=Language\r\n"
 "PolisherLabel=Polisher\r\n"
-"OversamplingLabel=Oversampling\r\n"
 "\r\n";
 
 const char* en_txt = (const char*) temp_binary_data_3;
@@ -2542,6 +2540,7 @@ static const unsigned char temp_binary_data_8[] =
 "    src/dsp/InputRouter.cpp\r\n"
 "    src/utils/PresetManager.cpp\r\n"
 "    src/dsp/SignalPolisher.cpp\r\n"
+"    src/dsp/LowPassFilter.cpp\r\n"
 "    src/dsp/WaveShaper.cpp\r\n"
 "    src/dsl/DSLParser.cpp\r\n"
 "    src/dsl/SignalChain.cpp\r\n"
@@ -2990,13 +2989,13 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
     {
         case 0xbaf5de7b:  numBytes = 41172; return outerKnob_png;
         case 0x6cd19d36:  numBytes = 124899; return innerknob_png;
-        case 0xb060d5b2:  numBytes = 545; return de_txt;
-        case 0xb29481da:  numBytes = 497; return en_txt;
+        case 0xb060d5b2:  numBytes = 513; return de_txt;
+        case 0xb29481da:  numBytes = 465; return en_txt;
         case 0xbbbbcb57:  numBytes = 102; return optimizations_txt;
         case 0xd453fe2e:  numBytes = 234; return templates_json;
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
         case 0x40c27d68:  numBytes = 1241; return AGENTS_md;
-        case 0x90e15cf5:  numBytes = 4325; return CMakeLists_txt;
+        case 0x90e15cf5:  numBytes = 4356; return CMakeLists_txt;
         case 0x7daaf120:  numBytes = 14542; return NeuroCore_jucer;
         case 0x64791dc8:  numBytes = 4278; return README_md;
         default: break;

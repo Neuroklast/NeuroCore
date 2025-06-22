@@ -150,6 +150,7 @@
     <ClCompile Include="..\..\src\dsp\InputGain.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputRouter.cpp"/>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp"/>
+    <ClCompile Include="..\..\src\dsp\LowPassFilter.cpp"/>
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp"/>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp"/>
@@ -3089,6 +3090,7 @@
     <ClInclude Include="..\..\src\dsp\InputGain.h"/>
     <ClInclude Include="..\..\src\dsp\InputRouter.h"/>
     <ClInclude Include="..\..\src\dsp\LookupTables.h"/>
+    <ClInclude Include="..\..\src\dsp\LowPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\SignalPolisher.h"/>
     <ClInclude Include="..\..\src\dsp\WaveShaper.h"/>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp"/>

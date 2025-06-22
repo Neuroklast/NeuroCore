@@ -36,6 +36,7 @@
 		21E3AE56B1F08C0655088009 /* Foundation.framework */ = {isa = PBXBuildFile; fileRef = 4535349D723CFBE230A3EE43; };
 		277320CE830709DFC44AAF13 /* include_juce_audio_plugin_client_ARA.cpp */ = {isa = PBXBuildFile; fileRef = CAF2FC673C2DA9DA2B791214; };
 		29BA62871AB04870EF97E634 /* include_juce_graphics.mm */ = {isa = PBXBuildFile; fileRef = CB48306678DAABEEFC31FB77; };
+		2A725E57468C58B1493DBF7E /* LowPassFilter.cpp */ = {isa = PBXBuildFile; fileRef = 7B7566F0100114CE15B008DF; };
 		2C4E15E40737474ED88628A0 /* BinaryData.cpp */ = {isa = PBXBuildFile; fileRef = D1C068B6FC50E4F7E970BC34; };
 		2E2FFFBC0928BAC1B9278D95 /* Security.framework */ = {isa = PBXBuildFile; fileRef = 0C038AB4D9522281F9B4F760; };
 		2E9EB7BA4AA562B59D3A8959 /* Cocoa.framework */ = {isa = PBXBuildFile; fileRef = 7F053C48BD27768D75AC23C6; };
@@ -154,6 +155,7 @@
 		7377F4CF9026538F6FA70EB7 /* PluginProcessor.h */ /* PluginProcessor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginProcessor.h; path = ../../src/core/PluginProcessor.h; sourceTree = SOURCE_ROOT; };
 		739F7C9F040EA052C72B95F8 /* juce_events */ /* juce_events */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_events; path = "~/JUCE/modules/juce_events"; sourceTree = "<absolute>"; };
 		7A51E20AB81140BB33863216 /* include_juce_dsp.mm */ /* include_juce_dsp.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_dsp.mm; path = ../../JuceLibraryCode/include_juce_dsp.mm; sourceTree = SOURCE_ROOT; };
+		7B7566F0100114CE15B008DF /* LowPassFilter.cpp */ /* LowPassFilter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = LowPassFilter.cpp; path = ../../src/dsp/LowPassFilter.cpp; sourceTree = SOURCE_ROOT; };
 		7DE500001D4B33260BA61210 /* include_juce_cryptography.mm */ /* include_juce_cryptography.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_cryptography.mm; path = ../../JuceLibraryCode/include_juce_cryptography.mm; sourceTree = SOURCE_ROOT; };
 		7F053C48BD27768D75AC23C6 /* Cocoa.framework */ /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		810D43F43F012D1A6D01F3FD /* FormulaHelper.cpp */ /* FormulaHelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FormulaHelper.cpp; path = ../../src/utils/FormulaHelper.cpp; sourceTree = SOURCE_ROOT; };
@@ -202,6 +204,7 @@
 		D23176DBD7930D3A7C1FB6D2 /* BinaryData.h */ /* BinaryData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = BinaryData.h; path = ../../JuceLibraryCode/BinaryData.h; sourceTree = SOURCE_ROOT; };
 		D29A22D41442659F9BF401E6 /* Info-Standalone_Plugin.plist */ /* Info-Standalone_Plugin.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-Standalone_Plugin.plist"; path = "Info-Standalone_Plugin.plist"; sourceTree = SOURCE_ROOT; };
 		D38562A393B573B66703F21C /* Log.h */ /* Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Log.h; path = ../../src/utils/Log.h; sourceTree = SOURCE_ROOT; };
+		D59E193A70CFF83261E9B602 /* LowPassFilter.h */ /* LowPassFilter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LowPassFilter.h; path = ../../src/dsp/LowPassFilter.h; sourceTree = SOURCE_ROOT; };
 		D5D8B6AE8842125194867EB2 /* juce_gui_basics */ /* juce_gui_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_basics; path = "~/JUCE/modules/juce_gui_basics"; sourceTree = "<absolute>"; };
 		D7C50550D90B36A356C60C24 /* LookupTables.h */ /* LookupTables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LookupTables.h; path = ../../src/dsp/LookupTables.h; sourceTree = SOURCE_ROOT; };
 		D7F9209655CD40D72A2B9D52 /* MetalKit.framework */ /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
@@ -407,6 +410,8 @@
 				84815FBD4E765463FF556C40,
 				6933E12854D18BC9A6AE4E00,
 				D7C50550D90B36A356C60C24,
+				7B7566F0100114CE15B008DF,
+				D59E193A70CFF83261E9B602,
 				11FD161597A316CD4815ACB0,
 				5C1B680E28C677943D9CE247,
 				CA0C2BDDBC1D516EA2CF7AF3,
@@ -850,6 +855,7 @@
 				412EBACA528E8292B11A4764,
 				D9FDD5BD54AFC86E38D01F74,
 				02F12CECA59DAAB7B8828C15,
+				2A725E57468C58B1493DBF7E,
 				06BB5038583A2459106C9C13,
 				FAA97308C01163B7FAFC0292,
 				AD46FAE2535F81CE8807142A,

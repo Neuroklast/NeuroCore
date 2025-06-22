@@ -802,6 +802,9 @@
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\dsp\LowPassFilter.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
@@ -3979,6 +3982,9 @@
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\LookupTables.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dsp\LowPassFilter.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\SignalPolisher.h">

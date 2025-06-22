@@ -85,7 +85,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         nameEditors[i]->onTextChange = [this, i]
         {
             audioProcessor.setVariableName(i, nameEditors[i]->getText());
-            formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
+           
         };
         addAndMakeVisible (*nameEditors[i]);
     }
@@ -176,8 +176,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         Colours::black);
     formulaInputEditor->onTextChange = [this]
     {
-        if (formulaDisplay)
-            formulaDisplay->setFormula(formulaInputEditor->getText());
+      
     };
     addAndMakeVisible(*formulaInputEditor);
     {
@@ -186,10 +185,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         refreshParameterControls();
     }
 
-    formulaDisplay = std::make_unique<FormulaDisplayComponent>();
-    formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
-    formulaDisplay->setFormula(formulaInputEditor->getText());
-    addAndMakeVisible(*formulaDisplay);
 
     optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
     optimizeButton->onClick = [this]
@@ -230,7 +225,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                                               juce::Colours::transparentBlack);
                 editSaveButton->setButtonText(TRANS("EditButton"));
                 editing = false;
-                formulaDisplay->setFormula(text);
+               
                 errorLabel->setText({}, juce::dontSendNotification);
                 refreshParameterControls();
             }
@@ -292,8 +287,7 @@ void NeuroCoreAudioProcessorEditor::refreshParameterControls()
         if (nameEditors[i])
             nameEditors[i]->setEnabled(active);
     }
-    if (formulaDisplay)
-        formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
+   
 }
 
 //==============================================================================
@@ -325,10 +319,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     if (formulaInputEditor)
         formulaInputEditor->setBounds(Config::kFormulaEditorX + pad, Config::kFormulaEditorY + pad,
                                      Config::kFormulaEditorWidth, Config::kFormulaEditorHeight);
-    if (formulaDisplay)
-        formulaDisplay->setBounds(Config::kFormulaEditorX + pad, Config::kFormulaDisplayY + pad,
-                                  Config::kFormulaEditorWidth, labelHeight);
-    if (editSaveButton)
+      if (editSaveButton)
         editSaveButton->setBounds(Config::kFormulaEditorX + pad, Config::kEditButtonY + pad,
                                   Config::kFormulaEditorWidth, labelHeight);
     if (optimizeButton)

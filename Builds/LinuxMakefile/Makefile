@@ -123,6 +123,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
   $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o \
   $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o \
+  $(JUCE_OBJDIR)/LowPassFilter_54cabd19.o \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
@@ -257,6 +258,11 @@ $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o: ../../src/dsp/InputRouter.cpp
 $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o: ../../src/dsp/LookupTables.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling LookupTables.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/LowPassFilter_54cabd19.o: ../../src/dsp/LowPassFilter.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling LowPassFilter.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o: ../../src/dsp/SignalPolisher.cpp
