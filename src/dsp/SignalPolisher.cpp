@@ -105,5 +105,6 @@ void SignalPolisher::process (const juce::dsp::ProcessContextReplacing<SampleTyp
 void SignalPolisher::setParameter (const std::string& id, float v)
 {
     if (id == EffectParameters::polisherMode)
-        mode = static_cast<int> (v);
+        // limit mode to available options
+        mode = juce::jlimit(0, 2, static_cast<int>(v));
 }

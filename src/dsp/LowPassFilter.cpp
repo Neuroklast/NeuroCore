@@ -30,7 +30,9 @@ void LowPassFilter::process (const juce::dsp::ProcessContextReplacing<SampleType
 
 void LowPassFilter::setCutoff(float freq) noexcept
 {
-    cutoff = freq;
+    // clamp cutoff to valid range
+    const float nyquist = sampleRate * 0.5f;
+    cutoff = juce::jlimit(20.0f, nyquist, freq);
     if (sampleRate > 0.0)
         *filter.state = *juce::dsp::IIR::Coefficients<SampleType>::makeLowPass(sampleRate, cutoff);
 }
