@@ -44,6 +44,8 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     LookupTables::prepareFromScript(dslScript);
     for (auto& val : parameterValues)
         val.store(0.0f);
+    formulaBlend.reset(Config::kDefaultSampleRate, Config::kCrossfadeTime);
+    formulaBlend.setCurrentAndTargetValue(1.f);
 
     apvts.addParameterListener (EffectParameters::paramA, this);
     apvts.addParameterListener (EffectParameters::paramB, this);
@@ -194,6 +196,8 @@ void NeuroCoreAudioProcessor::reset()
     lowpassFilter.reset();
     currentSpec.sampleRate = getSampleRate();
     currentSpec.maximumBlockSize = (juce::uint32) juce::jmax (1, getBlockSize());
+    formulaBlend.reset(getSampleRate(), Config::kCrossfadeTime);
+    formulaBlend.setCurrentAndTargetValue(1.f);
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -279,7 +283,31 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     upBlock.copyTo (scriptBuffer);
     std::array<juce::SmoothedValue<float>*,4> smPtr { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] };
     signalChain.processBlockSmoothed (scriptBuffer, smPtr);
-    upBlock.copyFrom (scriptBuffer);
+
+    if (formulaBlend.isSmoothing())
+    {
+        upBlock.copyTo(oldScriptBuffer);
+        oldSignalChain.processBlockSmoothed(oldScriptBuffer, smPtr);
+        const size_t numSamples = upBlock.getNumSamples();
+        const auto numChannels = upBlock.getNumChannels();
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            auto f = formulaBlend.getNextValue();
+            for (size_t ch = 0; ch < numChannels; ++ch)
+            {
+                auto* dst  = upBlock.getChannelPointer(ch);
+                auto* newPtr = scriptBuffer.getReadPointer((int)ch);
+                auto* oldPtr = oldScriptBuffer.getReadPointer((int)ch);
+                dst[i] = oldPtr[i] * (1.0f - f) + newPtr[i] * f;
+            }
+        }
+        if (! formulaBlend.isSmoothing())
+            oldSignalChain = signalChain;
+    }
+    else
+    {
+        upBlock.copyFrom (scriptBuffer);
+    }
 
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
     chain.get<1>().process (ctxPolish);
@@ -359,11 +387,18 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
         parameterActive[i] = text.containsIgnoreCase(aliasName) || text.containsIgnoreCase(key);
     }
 
+    oldSignalChain = signalChain;
+
     const bool ok = signalChain.loadScript (text, error) && previewSignalChain.loadScript (text, error);
     if (ok)
     {
         dslScript = text;
         LookupTables::prepareFromScript(text);
+
+        formulaBlend.reset(getSampleRate() > 0.0 ? getSampleRate() : Config::kDefaultSampleRate,
+                          Config::kCrossfadeTime);
+        formulaBlend.setCurrentAndTargetValue(0.f);
+        formulaBlend.setTargetValue(1.f);
         return true;
     }
     return false;
@@ -514,8 +549,12 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
         scriptBuffer.setSize ((int) currentSpec.numChannels,
                               scriptSamples,
                               false, true, true);
+        oldScriptBuffer.setSize ((int) currentSpec.numChannels,
+                                 scriptSamples,
+                                 false, true, true);
     }
     scriptBuffer.clear();
+    oldScriptBuffer.clear();
 
     previewBuffer.clear();
 
@@ -523,7 +562,11 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                       (juce::uint32) scriptSamples,
                                       currentSpec.numChannels };
     signalChain.prepare (dslSpec);
+    oldSignalChain.prepare (dslSpec);
     previewSignalChain.prepare ({ currentSpec.sampleRate * osFactor, (juce::uint32) scriptSamples, 1 });
+
+    formulaBlend.reset(currentSpec.sampleRate, Config::kCrossfadeTime);
+    formulaBlend.setCurrentAndTargetValue(1.f);
 }
 
 void NeuroCoreAudioProcessor::handleAsyncUpdate()
