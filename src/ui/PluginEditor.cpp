@@ -65,7 +65,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         sliders[i]->setRotaryParameters (startAngle, endAngle, true);
         sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-        sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, defaultColours[i]);
+        sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::transparentBlack);
         sliderColours[i] = defaultColours[i];
         auto paramId = juce::String::charToString (static_cast<juce_wchar>('a' + i));
         attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
@@ -268,6 +268,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
+    attachments.clear();
+    buttonAttachments.clear();
+    polisherAttachment.reset();
+    oversamplingAttachment.reset();
     setLookAndFeel (nullptr);
 }
 
@@ -356,9 +360,9 @@ void NeuroCoreAudioProcessorEditor::resized()
     if (outputGainValue)
         outputGainValue->setBounds(Config::kOutputGainX + pad, gainY + Config::kGainKnobSize + labelHeight, Config::kGainKnobSize, valueHeight);
     if (inputLeftButton)
-        inputLeftButton->setBounds(Config::kInputButtonX + pad, gainY, Config::kInputButtonWidth, labelHeight);
+        inputLeftButton->setBounds(Config::kInputButtonX + pad, Config::kInputButtonY + pad, Config::kInputButtonWidth, labelHeight);
     if (inputRightButton)
-        inputRightButton->setBounds(Config::kInputButtonX + pad, gainY + labelHeight, Config::kInputButtonWidth, labelHeight);
+        inputRightButton->setBounds(Config::kInputButtonX + pad, Config::kInputButtonY + pad + labelHeight, Config::kInputButtonWidth, labelHeight);
     if (polisherLabel)
         polisherLabel->setBounds(Config::kPolisherLabelX + pad, Config::kPolisherLabelY + pad, Config::kPolisherLabelWidth, labelHeight);
     if (polisherBox)

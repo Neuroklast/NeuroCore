@@ -388,7 +388,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
                                                                    juce::StringArray{ "Off", "2x", "4x", "8x" },
                                                                    (int) std::log2(Config::kOversamplingFactor)));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
-    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", false));
 
     return { params.begin(), params.end() };
 }
