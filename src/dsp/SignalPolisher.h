@@ -32,4 +32,5 @@ private:
     std::vector<juce::SmoothedValue<SampleType>> smoothRecovery;
     std::atomic<bool> limiterHit { false };
     std::atomic<bool> invalidSample { false };
+    double sampleRate { Config::kDefaultSampleRate };
 };

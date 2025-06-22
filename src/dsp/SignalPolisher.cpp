@@ -3,7 +3,8 @@
 
 void SignalPolisher::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    if (spec.sampleRate <= 0.0 || spec.numChannels == 0)
+    sampleRate = spec.sampleRate;
+    if (sampleRate <= 0.0 || spec.numChannels == 0)
     {
         logError("SignalPolisher::prepare received invalid ProcessSpec");
         return;
@@ -14,7 +15,7 @@ void SignalPolisher::prepare (const juce::dsp::ProcessSpec& spec)
     smoothRecovery.resize(spec.numChannels);
     for (auto& s : smoothRecovery)
     {
-        s.reset(spec.sampleRate, Config::kSmoothingTime);
+        s.reset(sampleRate, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
 }
@@ -25,7 +26,7 @@ void SignalPolisher::reset()
     std::fill(lastGood.begin(), lastGood.end(), 0.0f);
     for (auto& s : smoothRecovery)
     {
-        auto rate = limiter.getSampleRate() > 0.0 ? limiter.getSampleRate() : Config::kDefaultSampleRate;
+        auto rate = sampleRate > 0.0 ? sampleRate : Config::kDefaultSampleRate;
         s.reset(rate, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
