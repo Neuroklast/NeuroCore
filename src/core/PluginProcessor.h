@@ -85,6 +85,12 @@ public:
         return {};
     }
     const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
+    bool isParameterActive(int index) const noexcept
+    {
+        if (juce::isPositiveAndBelow(index, (int) parameterActive.size()))
+            return parameterActive[(size_t) index];
+        return false;
+    }
 
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
@@ -117,6 +123,7 @@ private:
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
+    std::array<bool, 4>        parameterActive{ true, true, true, true };
     std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
     juce::String currentLanguage;

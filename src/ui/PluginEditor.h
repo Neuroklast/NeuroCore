@@ -38,6 +38,7 @@ public:
     void resized() override;
 
 private:
+    void refreshParameterControls();
     NeuroCoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 

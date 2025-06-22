@@ -85,6 +85,9 @@ private:
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
+
+public:
+    std::shared_ptr<AliasMap> getAliases() const { return std::atomic_load(&aliases); }
 };
 
 } // namespace dsl

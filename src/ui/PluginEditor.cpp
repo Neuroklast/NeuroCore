@@ -192,6 +192,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     {
         juce::String err;
         audioProcessor.setFormula(formulaInputEditor->getText(), err);
+        refreshParameterControls();
     }
 
     formulaDisplay = std::make_unique<FormulaDisplayComponent>();
@@ -240,6 +241,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                 editing = false;
                 formulaDisplay->setFormula(text);
                 errorLabel->setText({}, juce::dontSendNotification);
+                refreshParameterControls();
             }
             else
             {
@@ -284,6 +286,24 @@ void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
         formulaInputEditor->setText (text, juce::dontSendNotification);
+}
+
+void NeuroCoreAudioProcessorEditor::refreshParameterControls()
+{
+    for (int i = 0; i < sliders.size(); ++i)
+    {
+        if (nameEditors[i])
+            nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
+        bool active = audioProcessor.isParameterActive(i);
+        if (sliders[i])
+            sliders[i]->setEnabled(active);
+        if (valueLabels[i])
+            valueLabels[i]->setEnabled(active);
+        if (nameEditors[i])
+            nameEditors[i]->setEnabled(active);
+    }
+    if (formulaDisplay)
+        formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
 }
 
 //==============================================================================
