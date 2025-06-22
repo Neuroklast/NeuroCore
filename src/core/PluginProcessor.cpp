@@ -39,7 +39,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     LookupTables::initialise();
     oversampling = std::make_unique<juce::dsp::Oversampling<float>>(Config::kMaxChannels,
                                                                     (size_t) oversamplingIndex.load(),
-                                                                    juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR);
+                                                                    juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
     juce::String err;
     dslScript = "stage1: y = tanh(x)";
     signalChain.loadScript(dslScript, err);
@@ -497,7 +497,7 @@ void NeuroCoreAudioProcessor::handleAsyncUpdate()
     suspendProcessing (true);
     oversampling = std::make_unique<juce::dsp::Oversampling<float>>(Config::kMaxChannels,
                                                                     (size_t) oversamplingIndex.load(),
-                                                                    juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR);
+                                                                    juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
     updateProcessingSpec (getSampleRate(), getBlockSize());
     suspendProcessing (false);
 }
