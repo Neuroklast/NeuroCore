@@ -9,10 +9,10 @@
 namespace BinaryData
 {
     extern const char*   outerKnob_png;
-    const int            outerKnob_pngSize = 23072;
+    const int            outerKnob_pngSize = 41172;
 
     extern const char*   innerknob_png;
-    const int            innerknob_pngSize = 119843;
+    const int            innerknob_pngSize = 124899;
 
     extern const char*   de_txt;
     const int            de_txtSize = 545;
