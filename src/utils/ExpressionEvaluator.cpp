@@ -138,7 +138,15 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFactor()
     {
         if (expect('^'))
         {
-            node = std::make_unique<BinaryNode>(BinaryNode::pow, std::move(node), parseUnary());
+            auto rhs = parseUnary();
+            if (auto* val = dynamic_cast<ValueNode*>(rhs.get()))
+            {
+                node = std::make_unique<FunctionNode>([exp = val->value](float x) { return LookupTables::fastPow(x, exp); }, std::move(node));
+            }
+            else
+            {
+                node = std::make_unique<BinaryNode>(BinaryNode::pow, std::move(node), std::move(rhs));
+            }
         }
         else
             break;
@@ -202,14 +210,14 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     if (name == "sqrt") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0])); }
     if (name == "abs")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0])); }
     if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
-    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::exp), std::move(args[0])); }
-    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log), std::move(args[0])); }
+    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastExp, std::move(args[0])); }
+    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastLog, std::move(args[0])); }
     if (name == "log10") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0])); }
     if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
     if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])); }
     if (name == "round") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])); }
 
-    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
+    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; if (auto* val = dynamic_cast<ValueNode*>(args[1].get())) return std::make_unique<FunctionNode>([exp = val->value](float x){ return LookupTables::fastPow(x, exp); }, std::move(args[0])); return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
     if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])); }
     if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])); }
     if (name == "fmod") { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1])); }
