@@ -189,6 +189,21 @@ namespace Config
     inline constexpr const char* kUserPresetFolder    = "UserPresets/";
 
     //==========================================================================
+    // File and state identifiers
+    //==========================================================================
+
+    /// Identifier for the parameter state ValueTree.
+    inline constexpr const char* kParameterStateID  = "PARAMETERS";
+    /// Name of the optimization rules file.
+    inline constexpr const char* kOptimizationFile   = "optimizations.txt";
+    /// Name of the formula template file.
+    inline constexpr const char* kTemplateFile       = "templates.json";
+    /// Name of the user template file.
+    inline constexpr const char* kUserTemplateFile   = "NeuroCoreUserTemplates.txt";
+    /// Name of the resources directory next to the executable.
+    inline constexpr const char* kResourceFolder     = "resources";
+
+    //==========================================================================
     // Error handling / safety
     //==========================================================================
 
