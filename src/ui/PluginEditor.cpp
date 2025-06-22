@@ -293,10 +293,23 @@ void NeuroCoreAudioProcessorEditor::resized()
     auto addItem = [&grid](juce::Component* comp, const Config::GridArea& area)
     {
         if (comp)
-            grid.items.add(juce::GridItem(*comp).withArea(area.row,
-                                                        area.column,
-                                                        area.row + area.rowSpan,
-                                                        area.column + area.columnSpan));
+        {
+            auto item = juce::GridItem(*comp).withArea(area.row,
+                                                     area.column,
+                                                     area.row + area.rowSpan,
+                                                     area.column + area.columnSpan);
+            if (dynamic_cast<juce::Slider*>(comp))
+            {
+                item.minHeight = Config::kRotaryDiameterMin;
+                item.minWidth  = Config::kRotaryDiameterMin;
+            }
+            if (dynamic_cast<ui::ParameterComponent*>(comp))
+            {
+                item.minHeight = Config::kRotaryDiameterMin + 40;
+                item.minWidth  = Config::kRotaryDiameterMin + 60;
+            }
+            grid.items.add(std::move(item));
+        }
     };
 
     addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
