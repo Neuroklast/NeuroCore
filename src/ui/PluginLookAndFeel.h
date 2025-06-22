@@ -18,7 +18,7 @@ public:
     setColour(ResizableWindow::backgroundColourId, Colour(0xff181a1a));
     setColour(Label::textColourId, Colours::white);
 
-    setColour(Slider::rotarySliderFillColourId, Colour(0xff202020));
+    setColour(Slider::rotarySliderFillColourId, juce::Colours::transparentBlack);
     setColour(Slider::rotarySliderOutlineColourId, Colour(0xffdd2222));
     setColour(Slider::thumbColourId, Colour(0xffdd2222));
 

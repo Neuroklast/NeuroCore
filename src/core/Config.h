@@ -82,6 +82,7 @@ namespace Config
     inline constexpr int kGainKnobSize      = 80;
     inline constexpr int kMixKnobSize       = 120;
     inline constexpr int kInputButtonX      = 20;
+    inline constexpr int kInputButtonY      = 20;
     inline constexpr int kInputButtonWidth  = 100;
 
     /// Wave display placement.
@@ -91,7 +92,7 @@ namespace Config
     inline constexpr int kWaveDisplayHeight  = 120;
 
     /// Loudness meter placement.
-    inline constexpr int kLoudnessMeterX      = 560;
+    inline constexpr int kLoudnessMeterX      = 1000;
     inline constexpr int kLoudnessMeterY      = 580;
     inline constexpr int kLoudnessMeterWidth  = 80;
     inline constexpr int kLoudnessMeterHeight = 150;
