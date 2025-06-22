@@ -53,8 +53,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
    
 
     static const juce::Colour defaultColours[4] = {
-        juce::Colours::red, juce::Colours::green,
-        juce::Colours::blue, juce::Colours::yellow };
+        juce::Colours::red, juce::Colours::blueviolet,
+        juce::Colours::blue, juce::Colours::mediumvioletred };
 
     const float startAngle = juce::MathConstants<float>::pi * 4.0f / 3.0f;
     const float endAngle   = juce::MathConstants<float>::pi * 8.0f / 3.0f;
