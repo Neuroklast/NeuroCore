@@ -83,8 +83,8 @@ target_compile_features(NeuroCore PRIVATE cxx_std_17)
 
 juce_add_binary_data(resourcesBinary
     SOURCES
-        resources/img/knob.png
-        resources/img/mockup.png
+        resources/img/innerknob.png
+        resources/img/outerKnob.png
         resources/locale/de.txt
         resources/locale/en.txt
         resources/optimizations.txt
