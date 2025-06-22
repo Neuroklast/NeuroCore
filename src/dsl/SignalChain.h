@@ -100,10 +100,12 @@ private:
     std::shared_ptr<AliasMap> aliases;
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
+    std::unordered_map<juce::String, juce::StringArray> parameterMappings;
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
 
 public:
     std::shared_ptr<AliasMap> getAliases() const { return std::atomic_load(&aliases); }
+    juce::StringArray getMappingsFor(const juce::String& param) const;
 };
 
 } // namespace dsl

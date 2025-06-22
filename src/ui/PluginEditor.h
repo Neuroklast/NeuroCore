@@ -21,6 +21,21 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 
+class ParameterSlider : public juce::Slider
+{
+public:
+    std::function<void()> onRightClick;
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        if (e.mods.isRightButtonDown())
+        {
+            if (onRightClick) onRightClick();
+            return;
+        }
+        juce::Slider::mouseDown(e);
+    }
+};
+
 
 //==============================================================================
 /**
@@ -44,6 +59,7 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 
     // Left column controls
+
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
     std::unique_ptr<juce::GroupComponent>      knobGroup;

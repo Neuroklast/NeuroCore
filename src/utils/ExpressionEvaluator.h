@@ -113,6 +113,16 @@ private:
         NodePtr x, y, z;
     };
 
+    struct Func5Node : Node
+    {
+        using Func = std::function<float(float, float, float, float, float)>;
+        Func5Node(Func f, NodePtr a, NodePtr b, NodePtr c, NodePtr d, NodePtr e)
+            : func(std::move(f)), a(std::move(a)), b(std::move(b)), c(std::move(c)), d(std::move(d)), e(std::move(e)) {}
+        float eval(const float* vars) const noexcept override;
+        Func func;
+        NodePtr a, b, c, d, e;
+    };
+
     // Parsing helpers
     class Lexer;
     NodePtr parseExpression();

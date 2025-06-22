@@ -93,6 +93,13 @@ public:
         return false;
     }
 
+    juce::StringArray getParameterMappings(int index) const
+    {
+        if (! juce::isPositiveAndBelow(index, (int) variableNames.size()))
+            return {};
+        return signalChain.getMappingsFor(variableNames[(size_t)index]);
+    }
+
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
 

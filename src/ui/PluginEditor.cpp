@@ -58,12 +58,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     for (int i = 0; i < paramComponents.size(); ++i)
     {
+
         auto paramId = juce::String::charToString(static_cast<juce_wchar>('a' + i));
         paramComponents[i] = std::make_unique<ui::ParameterComponent>(audioProcessor.apvts,
                                                                     paramId,
                                                                     audioProcessor.getVariableName(i));
         addAndMakeVisible(*paramComponents[i]);
-
         nameEditors[i] = std::make_unique<juce::TextEditor>();
         nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
         nameEditors[i]->onTextChange = [this, i]

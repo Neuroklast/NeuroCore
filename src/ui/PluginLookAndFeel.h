@@ -37,6 +37,8 @@ public:
                                                 BinaryData::outerKnob_pngSize);
     innerKnob = juce::ImageCache::getFromMemory(BinaryData::innerknob_png,
                                                 BinaryData::innerknob_pngSize);
+    overKnob = juce::ImageCache::getFromMemory(BinaryData::overknob_png,
+                                               BinaryData::overknob_pngSize);
   }
 
   ~NeuroCoreLookAndFeel() override = default;
@@ -72,6 +74,14 @@ public:
                               .scaled(scale, scale)
                               .translated(centre.x, centre.y);
     g.drawImageTransformed(innerKnob, innerTransform, false);
+
+    auto overAngle = rotaryStartAngle +
+                     sliderPosProportional * 2.0f * (rotaryEndAngle - rotaryStartAngle);
+    auto overTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
+                             .scaled(scale, scale)
+                             .rotated(overAngle)
+                             .translated(centre.x, centre.y);
+    g.drawImageTransformed(overKnob, overTransform, false);
 
     juce::Path pointer;
     pointer.addRoundedRectangle(1.f, -radius+5, 2.0f, radius/3, 0.5f);
@@ -118,4 +128,5 @@ public:
 private:
   juce::Image outerKnob;
   juce::Image innerKnob;
+  juce::Image overKnob;
 };

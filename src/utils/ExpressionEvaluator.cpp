@@ -58,6 +58,11 @@ float ExpressionEvaluator::Func3Node::eval(const float* vars) const noexcept
     return func(x->eval(vars), y->eval(vars), z->eval(vars));
 }
 
+float ExpressionEvaluator::Func5Node::eval(const float* vars) const noexcept
+{
+    return func(a->eval(vars), b->eval(vars), c->eval(vars), d->eval(vars), e->eval(vars));
+}
+
 bool ExpressionEvaluator::expect(char c)
 {
     skipWhitespace();
@@ -225,6 +230,16 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     if (name == "mod")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1])); }
 
     if (name == "clamp") { if (notEnoughArgs(3)) return nullptr; return std::make_unique<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2])); }
+
+    if (name == "map")
+    {
+        if (notEnoughArgs(5))
+            return nullptr;
+        return std::make_unique<Func5Node>(
+            [](float v, float in0, float in1, float out0, float out1)
+            { return juce::jmap(v, in0, in1, out0, out1); },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]), std::move(args[3]), std::move(args[4]));
+    }
 
     return nullptr;
 }
