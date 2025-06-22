@@ -91,6 +91,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         showAutocomplete();
     };
     addAndMakeVisible (*formulaInputEditor);
+    formulaInputEditor->addKeyListener (this);
     audioProcessor.setFormula (formulaInputEditor->getText());
 
 
@@ -112,10 +113,15 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible (*optimizeButton);
 
+    setWantsKeyboardFocus (true);
+    addKeyListener (this);
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
+    if (formulaInputEditor)
+        formulaInputEditor->removeKeyListener (this);
+    removeKeyListener (this);
 }
 
 //==============================================================================
@@ -190,4 +196,26 @@ void NeuroCoreAudioProcessorEditor::showAutocomplete()
     if (menu.getNumItems() > 0)
         menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (*formulaInputEditor));
 
+}
+
+bool NeuroCoreAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
+{
+    auto undoKey = juce::KeyPress ('z', juce::ModifierKeys::commandModifier, 0);
+    auto redoKey = juce::KeyPress ('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0);
+
+    if (key == undoKey)
+    {
+        formulaInputEditor->undo();
+        audioProcessor.performUndo();
+        return true;
+    }
+
+    if (key == redoKey)
+    {
+        formulaInputEditor->redo();
+        audioProcessor.performRedo();
+        return true;
+    }
+
+    return false;
 }

@@ -26,10 +26,10 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-      apvts (*this, nullptr, "PARAMETERS", createParameterLayout()),
+      apvts (*this, &undoManager, "PARAMETERS", createParameterLayout()),
       presetManager (*this)
 #else
-    : apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+    : apvts (*this, &undoManager, "PARAMETERS", createParameterLayout())
 #endif
 {
     LookupTables::initialise();
@@ -308,6 +308,16 @@ juce::StringArray NeuroCoreAudioProcessor::getAvailableLanguages() const
             list.addIfNotAlreadyThere(code);
     }
     return list;
+}
+
+void NeuroCoreAudioProcessor::performUndo()
+{
+    undoManager.undo();
+}
+
+void NeuroCoreAudioProcessor::performRedo()
+{
+    undoManager.redo();
 }
 
 

@@ -72,6 +72,12 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
 
+    // Provides undo/redo support for UI changes
+    void performUndo();
+    void performRedo();
+
+    juce::UndoManager& getUndoManager() noexcept { return undoManager; }
+
     void loadLanguage(const juce::String& code);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
     juce::StringArray getAvailableLanguages() const;
@@ -92,6 +98,7 @@ private:
     InputGain inputGain;
     WaveShaper waveShaper{ &evaluator };
     SignalPolisher polisher;
+    juce::UndoManager undoManager;
     juce::dsp::ProcessorChain<InputGain, WaveShaper, SignalPolisher> chain{ inputGain, waveShaper, polisher };
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
