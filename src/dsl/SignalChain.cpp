@@ -154,6 +154,36 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
     }
 }
 
+void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
+                                       std::array<juce::SmoothedValue<float>*,4> params)
+{
+    auto aliasPtr = std::atomic_load(&aliases);
+    auto chainPtr = std::atomic_load(&chain);
+    if (! chainPtr)
+        return;
+
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            if (params[0]) variables["a"] = params[0]->getNextValue();
+            if (params[1]) variables["b"] = params[1]->getNextValue();
+            if (params[2]) variables["c"] = params[2]->getNextValue();
+            if (params[3]) variables["d"] = params[3]->getNextValue();
+
+            if (aliasPtr)
+                for (const auto& kv : *aliasPtr)
+                    variables[kv.second] = variables[kv.first];
+
+            float x = buffer.getReadPointer(ch)[i];
+            variables["x"] = x;
+            for (auto& b : *chainPtr)
+                x = b->process(ch, x);
+            buffer.getWritePointer(ch)[i] = x;
+        }
+    }
+}
+
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     xPrev.assign(spec.numChannels, 0.0f);

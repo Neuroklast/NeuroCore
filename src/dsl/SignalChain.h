@@ -19,6 +19,8 @@ public:
     bool loadScript(const juce::String& script, juce::String& error);
     void processBlock(juce::AudioBuffer<float>& buffer,
                       const std::array<float,4>& params);
+    void processBlockSmoothed(juce::AudioBuffer<float>& buffer,
+                              std::array<juce::SmoothedValue<float>*,4> params);
 
 private:
     struct Block

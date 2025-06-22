@@ -117,6 +117,7 @@ private:
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
+    std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
     juce::String currentLanguage;
 
