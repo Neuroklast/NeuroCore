@@ -18,4 +18,5 @@ namespace EffectParameters
     inline constexpr const char* outputGain   = "outputGain";
     inline constexpr const char* useInputLeft  = "useInputLeft";
     inline constexpr const char* useInputRight = "useInputRight";
+    inline constexpr const char* oversampling  = "oversampling";
 }

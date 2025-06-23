@@ -158,6 +158,8 @@ private:
     dsl::SignalChain              signalChain;
     dsl::SignalChain              oldSignalChain;
     dsl::SignalChain              previewSignalChain;
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    std::atomic<int>              oversamplingIndex { 1 }; // 2x by default
     juce::SmoothedValue<float>    formulaBlend;
 
     std::atomic<float> lastLoudness { -100.0f };

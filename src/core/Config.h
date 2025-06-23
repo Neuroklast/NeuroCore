@@ -227,6 +227,8 @@ namespace Config
     inline constexpr int   kWaveformDisplaySamples = 2048;
     /// Fallback block size if host provides an invalid value.
     inline constexpr int   kDefaultBlockSize      = 512;
+    /// Default oversampling factor (1 = no OS, 2 = 2x, etc.)
+    inline constexpr int   kDefaultOversampling   = 2;
 
     /// Default resolution for lookup tables.
     inline constexpr int   kLookupTableSize = 1024;
