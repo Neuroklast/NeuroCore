@@ -174,13 +174,13 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
+	using namespace juce::gl;
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-	using namespace juce::gl;
 
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
