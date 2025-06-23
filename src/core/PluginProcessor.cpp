@@ -703,12 +703,24 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
     }
 }
 
-void NeuroCoreAudioProcessor::loadLanguage(const juce::String& lang)
+void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)
 {
     auto resDir  = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
                         .getSiblingFile (Config::kResourceFolder).getChildFile ("locale");
-    auto langFile = resDir.getChildFile (lang.startsWithIgnoreCase ("de") ? "de.txt" : "en.txt");
-    juce::LocalisedStrings::setCurrentMappings (new juce::LocalisedStrings (langFile, true));
+
+    juce::String fileName = lang.startsWithIgnoreCase ("de") ? "de.txt" : "en.txt";
+    auto langFile = resDir.getChildFile (fileName);
+
+    std::unique_ptr<juce::InputStream> in;
+
+    if (langFile.existsAsFile())
+        in = langFile.createInputStream();
+    else if (fileName == "de.txt")
+        in = std::make_unique<juce::MemoryInputStream> (BinaryData::de_txt, BinaryData::de_txtSize, false);
+    else
+        in = std::make_unique<juce::MemoryInputStream> (BinaryData::en_txt, BinaryData::en_txtSize, false);
+
+    juce::LocalisedStrings::setCurrentMappings (new juce::LocalisedStrings (*in, true));
     currentLanguage = langFile.getFileNameWithoutExtension();
 }
 
