@@ -125,7 +125,7 @@ namespace ui
             return;
 
         PopupMenu menu;
-        menu.addItem("Edit", [this]
+        menu.addItem(TRANS("ParameterEdit"), [this]
         {
             editMapping(mappings[(size_t)currentMapping]);
         });
@@ -140,12 +140,12 @@ namespace ui
 
     void ParameterComponent::editMapping(ParameterMapping& mapping)
     {
-        auto* w = new AlertWindow("Edit Mapping", {}, AlertWindow::NoIcon);
+        auto* w = new AlertWindow(TRANS("ParameterEditTitle"), {}, AlertWindow::NoIcon);
         w->addTextEditor("min", String(mapping.min));
         w->addTextEditor("max", String(mapping.max));
         w->addTextEditor("unit", mapping.unit);
-        w->addButton("OK", 1, KeyPress(KeyPress::returnKey));
-        w->addButton("Cancel", 0, KeyPress(KeyPress::escapeKey));
+        w->addButton(TRANS("OkButton"), 1, KeyPress(KeyPress::returnKey));
+        w->addButton(TRANS("CancelButton"), 0, KeyPress(KeyPress::escapeKey));
         w->enterModalState(true, ModalCallbackFunction::create([this, &mapping, w](int result)
         {
             std::unique_ptr<AlertWindow> owned(w);

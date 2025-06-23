@@ -37,16 +37,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     {
         auto id = languageBox->getSelectedId();
         audioProcessor.loadLanguage(id == 2 ? "de" : "en");
-        languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
-        inputGainLabel->setText(TRANS("InputGainLabel"), juce::dontSendNotification);
-        mixLabel->setText(TRANS("MixLabel"), juce::dontSendNotification);
-        outputGainLabel->setText(TRANS("OutputGainLabel"), juce::dontSendNotification);
-        inputLeftButton->setButtonText(TRANS("InputLeft"));
-        inputRightButton->setButtonText(TRANS("InputRight"));
-        optimizeButton->setButtonText(TRANS("OptimizeButton"));
-        editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
-        if (polisherLabel)
-            polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
+        updateTranslations();
     };
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
@@ -74,6 +65,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         };
         addAndMakeVisible(*nameEditors[i]);
     }
+
+    parameterGroup = std::make_unique<juce::GroupComponent>("params", TRANS("KnobGroupLabel"));
+    addAndMakeVisible(*parameterGroup);
 
     inputGainSlider = std::make_unique<juce::Slider>();
     inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -236,6 +230,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     loudnessMeter = std::make_unique<LoudnessMeterComponent>(audioProcessor);
     addAndMakeVisible(*loudnessMeter);
 
+    updateTranslations();
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
 
@@ -275,6 +270,22 @@ void NeuroCoreAudioProcessorEditor::refreshParameterControls()
             nameEditors[i]->setEnabled(active);
     }
    
+}
+
+void NeuroCoreAudioProcessorEditor::updateTranslations()
+{
+    languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
+    inputGainLabel->setText(TRANS("InputGainLabel"), juce::dontSendNotification);
+    mixLabel->setText(TRANS("MixLabel"), juce::dontSendNotification);
+    outputGainLabel->setText(TRANS("OutputGainLabel"), juce::dontSendNotification);
+    inputLeftButton->setButtonText(TRANS("InputLeft"));
+    inputRightButton->setButtonText(TRANS("InputRight"));
+    optimizeButton->setButtonText(TRANS("OptimizeButton"));
+    editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
+    if (polisherLabel)
+        polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
+    if (parameterGroup)
+        parameterGroup->setText(TRANS("KnobGroupLabel"));
 }
 
 //==============================================================================
@@ -332,7 +343,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(editSaveButton.get(),     Config::kAreaEditButton);
     addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
     addItem(errorLabel.get(),         Config::kAreaErrorLabel);
-    addItem(knobGroup.get(),         Config::kAreaKnobGroup);
+    addItem(parameterGroup.get(),         Config::kAreaKnobGroup);
 
     for (int i = 0; i < paramComponents.size(); ++i)
     {
@@ -357,8 +368,8 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
 
     grid.performLayout(getLocalBounds().reduced(pad));
-    if (knobGroup)
-        knobGroup->toBack();
+    if (parameterGroup)
+        parameterGroup->toBack();
 
     clampChildrenToBounds();
 }
