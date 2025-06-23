@@ -108,6 +108,10 @@ private:
     std::array<juce::dsp::LinkwitzRileyFilter<float>,2> lowMidXover;
     std::array<juce::dsp::LinkwitzRileyFilter<float>,2> midHighXover;
 
+    ExpressionEvaluator lowMidExpr, midHighExpr;
+    std::vector<std::pair<juce::String, size_t>> lowMidVars, midHighVars;
+    juce::SmoothedValue<float> lowMidSm, midHighSm;
+
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};

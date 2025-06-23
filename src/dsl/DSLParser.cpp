@@ -23,6 +23,7 @@ static Scope parseScopeName(const juce::String& n)
 bool DSLParser::parse(const juce::String& text,
                       std::vector<BlockDesc>& blocks,
                       std::unordered_map<juce::String, juce::String>& paramAliases,
+                      std::unordered_map<Scope, ScopeRange>& ranges,
                       juce::String& error)
 {
     blocks.clear();
@@ -45,12 +46,38 @@ bool DSLParser::parse(const juce::String& text,
         if (line.endsWithChar('{'))
         {
             auto name = line.dropLastCharacters(1).trim();
+            juce::String low, high;
+            auto open = name.indexOfChar('[');
+            if (open >= 0)
+            {
+                auto close = name.indexOfChar(']', open + 1);
+                if (close < 0)
+                {
+                    error = "Missing ']' on line " + juce::String(i+1);
+                    return false;
+                }
+                auto range = name.substring(open + 1, close);
+                auto comma = range.indexOfChar(',');
+                if (comma < 0)
+                {
+                    error = "Malformed range on line " + juce::String(i+1);
+                    return false;
+                }
+                low  = range.substring(0, comma).trim();
+                high = range.substring(comma + 1).trim();
+                name  = name.substring(0, open).trim();
+            }
+
             auto sc = parseScopeName(name);
             if (sc == Scope::Count)
             {
                 error = "Invalid scope '" + name + "' on line " + juce::String(i+1);
                 return false;
             }
+
+            if (sc == Scope::Low || sc == Scope::MidBand || sc == Scope::High)
+                ranges[sc] = { low, high };
+
             scopeStack.push_back(sc);
             continue;
         }
@@ -159,6 +186,11 @@ bool DSLParser::parse(const juce::String& text,
         error = "Unclosed scope";
         return false;
     }
+
+    if (ranges[Scope::Low].high.isNotEmpty() && ranges[Scope::MidBand].low.isEmpty())
+        ranges[Scope::MidBand].low = ranges[Scope::Low].high;
+    if (ranges[Scope::MidBand].high.isNotEmpty() && ranges[Scope::High].low.isEmpty())
+        ranges[Scope::High].low = ranges[Scope::MidBand].high;
 
     return true;
 }

@@ -401,7 +401,8 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
     std::vector<dsl::BlockDesc> blocks;
     dsl::AliasMap aliases;
 
-    if (! parser.parse(text, blocks, aliases, error))
+    std::unordered_map<dsl::Scope, dsl::ScopeRange> dummyRanges;
+    if (! parser.parse(text, blocks, aliases, dummyRanges, error))
         return false;
 
     for (int i = 0; i < 4; ++i)

@@ -14,6 +14,8 @@ SignalChain::SignalChain()
     variables["x_prev"] = 0.0f;
     variables["y_prev"] = 0.0f;
     variables["a"] = variables["b"] = variables["c"] = variables["d"] = 0.0f;
+    lowMidExpr.parseFormula(juce::String(Config::kDefaultLowMidFreq).toStdString());
+    midHighExpr.parseFormula(juce::String(Config::kDefaultMidHighFreq).toStdString());
 }
 
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
@@ -25,14 +27,37 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
                 b->prepare(spec);
 
     juce::dsp::ProcessSpec mono{ spec.sampleRate, spec.maximumBlockSize, 1 };
+    lowMidVars.clear();
+    midHighVars.clear();
+    for (const auto& kv : variables)
+    {
+        auto idx1 = lowMidExpr.getVariableIndex(kv.first.toStdString());
+        if (idx1 != ExpressionEvaluator::invalidIndex)
+            lowMidVars.emplace_back(kv.first, idx1);
+        auto idx2 = midHighExpr.getVariableIndex(kv.first.toStdString());
+        if (idx2 != ExpressionEvaluator::invalidIndex)
+            midHighVars.emplace_back(kv.first, idx2);
+    }
+
+    lowMidSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    midHighSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    for (const auto& p : lowMidVars) lowMidExpr.setVariable(p.second, variables[p.first]);
+    for (const auto& p : midHighVars) midHighExpr.setVariable(p.second, variables[p.first]);
+    auto f1 = juce::jlimit(20.0f, static_cast<float>(spec.sampleRate) * 0.49f,
+                           lowMidExpr.evaluate(0.f));
+    auto f2 = juce::jlimit(20.0f, static_cast<float>(spec.sampleRate) * 0.49f,
+                           midHighExpr.evaluate(0.f));
+    lowMidSm.setCurrentAndTargetValue(f1);
+    midHighSm.setCurrentAndTargetValue(f2);
+
     for (auto& f : lowMidXover)
     {
-        f.setCutoffFrequency(200.0f);
+        f.setCutoffFrequency(f1);
         f.prepare(mono);
     }
     for (auto& f : midHighXover)
     {
-        f.setCutoffFrequency(4000.0f);
+        f.setCutoffFrequency(f2);
         f.prepare(mono);
     }
 }
@@ -62,7 +87,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     DSLParser parser;
     std::vector<BlockDesc> desc;
     AliasMap newAliases;
-    if (! parser.parse (script, desc, newAliases, error))
+    std::unordered_map<Scope, ScopeRange> ranges;
+    if (! parser.parse (script, desc, newAliases, ranges, error))
         return false;
 
     parameterMappings.clear();
@@ -214,6 +240,29 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             chainRef.push_back(std::move(en));
         }
     }
+
+    auto getRange = [&ranges](Scope sc) -> ScopeRange
+    {
+        auto it = ranges.find(sc);
+        if (it != ranges.end()) return it->second;
+        return {};
+    };
+
+    auto lowR = getRange(Scope::Low);
+    auto midR = getRange(Scope::MidBand);
+    auto highR = getRange(Scope::High);
+
+    auto lowMidStr = lowR.high.isNotEmpty() ? lowR.high
+                                            : (midR.low.isNotEmpty() ? midR.low : juce::String(Config::kDefaultLowMidFreq));
+    auto midHighStr = midR.high.isNotEmpty() ? midR.high
+                                             : (highR.low.isNotEmpty() ? highR.low : juce::String(Config::kDefaultMidHighFreq));
+
+    lowMidExpr.parseFormula(addDefaultMap(lowMidStr, 20.f, 20000.f).toStdString());
+    midHighExpr.parseFormula(addDefaultMap(midHighStr, 20.f, 20000.f).toStdString());
+    if (auto pn = findParam(lowMidStr); pn.isNotEmpty())
+        parameterMappings[pn].add("crossover1 [Hz]");
+    if (auto pn = findParam(midHighStr); pn.isNotEmpty())
+        parameterMappings[pn].add("crossover2 [Hz]");
 
     // prepare newly created blocks when a valid spec is available
     if (currentSpec.sampleRate > 0.0)
@@ -382,19 +431,33 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     auto midBChain   = std::atomic_load(&chains[(size_t)Scope::MidBand]);
     auto highChain   = std::atomic_load(&chains[(size_t)Scope::High]);
     if (lowChain || midBChain || highChain)
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-            for (int i = 0; i < buffer.getNumSamples(); ++i)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            for (const auto& p : lowMidVars)  lowMidExpr.setVariable(p.second, variables[p.first]);
+            for (const auto& p : midHighVars) midHighExpr.setVariable(p.second, variables[p.first]);
+            auto tgt1 = juce::jlimit(20.0f, static_cast<float>(currentSpec.sampleRate) * 0.49f,
+                                     lowMidExpr.evaluate(0.f));
+            auto tgt2 = juce::jlimit(20.0f, static_cast<float>(currentSpec.sampleRate) * 0.49f,
+                                     midHighExpr.evaluate(0.f));
+            lowMidSm.setTargetValue(tgt1);
+            midHighSm.setTargetValue(tgt2);
+            auto f1 = lowMidSm.getNextValue();
+            auto f2 = midHighSm.getNextValue();
+            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
             {
+                lowMidXover[ch].setCutoffFrequency(f1);
+                midHighXover[ch].setCutoffFrequency(f2);
                 float inp = buffer.getSample(ch, i);
                 float low, high1;
                 lowMidXover[ch].processSample(ch, inp, low, high1);
                 float mid, high;
                 midHighXover[ch].processSample(ch, high1, mid, high);
                 if (lowChain)  { variables["x"] = low;  low  = apply(lowChain, ch, low); }
-                if (midBChain){ variables["x"] = mid;  mid  = apply(midBChain,ch, mid); }
-                if (highChain){ variables["x"] = high; high = apply(highChain,ch, high); }
+                if (midBChain){ variables["x"] = mid;  mid  = apply(midBChain, ch, mid); }
+                if (highChain){ variables["x"] = high; high = apply(highChain, ch, high); }
                 buffer.setSample(ch, i, low + mid + high);
             }
+        }
 }
 
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)

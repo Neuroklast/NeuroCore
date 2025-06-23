@@ -29,6 +29,12 @@ struct BlockDesc
     Scope scope { Scope::Global };
 };
 
+struct ScopeRange
+{
+    juce::String low;
+    juce::String high;
+};
+
 class DSLParser
 {
 public:
@@ -36,6 +42,7 @@ public:
     bool parse(const juce::String& text,
                std::vector<BlockDesc>& blocks,
                std::unordered_map<juce::String, juce::String>& paramAliases,
+               std::unordered_map<Scope, ScopeRange>& ranges,
                juce::String& error);
 };
 

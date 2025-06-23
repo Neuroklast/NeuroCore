@@ -187,6 +187,10 @@ namespace Config
     inline constexpr double kSmoothingTime     = 0.02;
     /// Duration of function crossfades in seconds.
     inline constexpr double kCrossfadeTime     = 0.15;
+    /// Default crossover between Low and Mid in Hz.
+    inline constexpr float  kDefaultLowMidFreq  = 200.0f;
+    /// Default crossover between Mid and High in Hz.
+    inline constexpr float  kDefaultMidHighFreq = 4000.0f;
 
     //==========================================================================
     // Parser / Interpreter constants
