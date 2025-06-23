@@ -7,6 +7,19 @@ static juce::String trimLower(const juce::String& s)
     return s.trim().toLowerCase();
 }
 
+static Scope parseScopeName(const juce::String& n)
+{
+    auto s = trimLower(n);
+    if (s == "left")    return Scope::Left;
+    if (s == "right")   return Scope::Right;
+    if (s == "mid")     return Scope::Mid;
+    if (s == "side")    return Scope::Side;
+    if (s == "low")     return Scope::Low;
+    if (s == "midband" || s == "midb" || s == "band") return Scope::MidBand;
+    if (s == "high")    return Scope::High;
+    return Scope::Count;
+}
+
 bool DSLParser::parse(const juce::String& text,
                       std::vector<BlockDesc>& blocks,
                       std::unordered_map<juce::String, juce::String>& paramAliases,
@@ -20,6 +33,7 @@ bool DSLParser::parse(const juce::String& text,
     lines.addLines(text);
 
     juce::StringArray seen;
+    std::vector<Scope> scopeStack{ Scope::Global };
     for (int i = 0; i < lines.size(); ++i)
     {
         auto line = lines[i].trim();
@@ -27,6 +41,30 @@ bool DSLParser::parse(const juce::String& text,
             continue;
         if (line.startsWithChar('#') || line.startsWith("//"))
             continue;
+
+        if (line.endsWithChar('{'))
+        {
+            auto name = line.dropLastCharacters(1).trim();
+            auto sc = parseScopeName(name);
+            if (sc == Scope::Count)
+            {
+                error = "Invalid scope '" + name + "' on line " + juce::String(i+1);
+                return false;
+            }
+            scopeStack.push_back(sc);
+            continue;
+        }
+
+        if (line == "}")
+        {
+            if (scopeStack.size() <= 1)
+            {
+                error = "Unexpected '}' on line " + juce::String(i+1);
+                return false;
+            }
+            scopeStack.pop_back();
+            continue;
+        }
 
         if (line.startsWithIgnoreCase("param"))
         {
@@ -60,6 +98,7 @@ bool DSLParser::parse(const juce::String& text,
         BlockDesc desc;
         desc.name = id;
         desc.type = id.retainCharacters("abcdefghijklmnopqrstuvwxyz");
+        desc.scope = scopeStack.back();
 
         if (seen.contains(id))
         {
@@ -85,6 +124,16 @@ bool DSLParser::parse(const juce::String& text,
             auto key = trimLower(arg.substring(0, eq));
             auto value = arg.substring(eq+1).trim();
             desc.args[key] = value;
+            if (key == "target")
+            {
+                auto sc = parseScopeName(value);
+                if (sc == Scope::Count)
+                {
+                    error = "Invalid target on line " + juce::String(i+1);
+                    return false;
+                }
+                desc.scope = sc;
+            }
         }
 
         if (desc.type == "stage" && desc.args.count("y") == 0)
@@ -103,6 +152,12 @@ bool DSLParser::parse(const juce::String& text,
             return false;
         }
         blocks.push_back(std::move(desc));
+    }
+
+    if (scopeStack.size() != 1)
+    {
+        error = "Unclosed scope";
+        return false;
     }
 
     return true;

@@ -8,11 +8,25 @@
 namespace dsl
 {
 
+enum class Scope
+{
+    Global = 0,
+    Left,
+    Right,
+    Mid,
+    Side,
+    Low,
+    MidBand,
+    High,
+    Count
+};
+
 struct BlockDesc
 {
     juce::String type;   // stage, filter, comp, env, osc
     juce::String name;   // stage1 etc
     std::unordered_map<juce::String, juce::String> args; // raw arguments
+    Scope scope { Scope::Global };
 };
 
 class DSLParser

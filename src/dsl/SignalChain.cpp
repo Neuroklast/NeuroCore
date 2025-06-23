@@ -7,7 +7,8 @@ using namespace dsl;
 
 SignalChain::SignalChain()
 {
-    chain   = std::make_shared<Chain>();
+    for (auto& c : chains)
+        c = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
     variables["x"] = 0.0f;
     variables["x_prev"] = 0.0f;
@@ -18,9 +19,22 @@ SignalChain::SignalChain()
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 {
     currentSpec = spec;
-    if (auto ptr = std::atomic_load(&chain))
-        for (auto& b : *ptr)
-            b->prepare (spec);
+    for (auto& ch : chains)
+        if (auto ptr = std::atomic_load(&ch))
+            for (auto& b : *ptr)
+                b->prepare(spec);
+
+    juce::dsp::ProcessSpec mono{ spec.sampleRate, spec.maximumBlockSize, 1 };
+    for (auto& f : lowMidXover)
+    {
+        f.setCutoffFrequency(200.0f);
+        f.prepare(mono);
+    }
+    for (auto& f : midHighXover)
+    {
+        f.setCutoffFrequency(4000.0f);
+        f.prepare(mono);
+    }
 }
 
 static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
@@ -55,7 +69,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     for (const auto& kv : newAliases)
         variables.emplace(kv.second, 0.0f);
 
-    auto newChain = std::make_shared<Chain>();
+    std::array<std::shared_ptr<Chain>, kNumScopes> newChains;
+    for (auto& c : newChains)
+        c = std::make_shared<Chain>();
 
     auto isNumeric = [](const juce::String& s)
     {
@@ -83,13 +99,14 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     for (const auto& d : desc)
     {
+        auto& chainRef = *newChains[static_cast<size_t>(d.scope)];
         if (d.type.startsWith("stage"))
         {
             auto st = std::make_unique<Stage>();
             st->formula = d.args.at("y");
             st->varPtr = &variables;
             st->eval.parseFormula(st->formula.toStdString());
-            newChain->push_back (std::move (st));
+            chainRef.push_back (std::move (st));
         }
         else if (d.type.startsWith("osc"))
         {
@@ -101,7 +118,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             oc->osc.setFrequency(freq);
             oc->varPtr = &variables;
             oc->name = d.name;
-            newChain->push_back (std::move (oc));
+            chainRef.push_back (std::move (oc));
         }
         else if (d.type.startsWith("filter"))
         {
@@ -131,7 +148,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 fi->resonance.parseFormula("0.7");
             fi->varPtr = &variables;
-            newChain->push_back (std::move (fi));
+            chainRef.push_back (std::move (fi));
         }
         else if (d.type.startsWith("comp"))
         {
@@ -177,7 +194,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 co->release.parseFormula("0.1");
             co->varPtr = &variables;
-            newChain->push_back (std::move (co));
+            chainRef.push_back (std::move (co));
         }
         else if (d.type.startsWith("env"))
         {
@@ -194,17 +211,19 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 en->release.parseFormula("0.1");
             en->name = d.name;
             en->varPtr = &variables;
-            newChain->push_back(std::move(en));
+            chainRef.push_back(std::move(en));
         }
     }
 
     // prepare newly created blocks when a valid spec is available
     if (currentSpec.sampleRate > 0.0)
-        for (auto& b : *newChain)
-            b->prepare (currentSpec);
+        for (auto& ch : newChains)
+            for (auto& b : *ch)
+                b->prepare(currentSpec);
 
     std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
-    std::atomic_store (&chain, newChain);
+    for (size_t i = 0; i < newChains.size(); ++i)
+        std::atomic_store (&chains[i], newChains[i]);
     return true;
 }
 
@@ -221,34 +240,92 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
         for (const auto& kv : *aliasPtr)
             variables[kv.second] = variables[kv.first];
 
-    auto chainPtr = std::atomic_load (&chain);
-    if (! chainPtr)
-        return;
-
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    auto apply = [this](std::shared_ptr<Chain> ptr, int ch, float x)
     {
+        if (!ptr) return x;
+        for (auto& b : *ptr) x = b->process(ch, x);
+        return x;
+    };
+
+    auto global = std::atomic_load(&chains[(size_t)Scope::Global]);
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         for (int i = 0; i < buffer.getNumSamples(); ++i)
         {
-            float x = buffer.getReadPointer(ch)[i];
+            float x = buffer.getSample(ch, i);
             variables["x"] = x;
-            for (auto& b : *chainPtr)
-                x = b->process (ch, x);
-
-            buffer.getWritePointer(ch)[i] = x;
+            x = apply(global, ch, x);
+            buffer.setSample(ch, i, x);
         }
-    }
+
+    auto leftChain  = std::atomic_load(&chains[(size_t)Scope::Left]);
+    if (leftChain && buffer.getNumChannels() > 0)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float x = buffer.getSample(0, i);
+            variables["x"] = x;
+            x = apply(leftChain, 0, x);
+            buffer.setSample(0, i, x);
+        }
+
+    auto rightChain = std::atomic_load(&chains[(size_t)Scope::Right]);
+    if (rightChain && buffer.getNumChannels() > 1)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float x = buffer.getSample(1, i);
+            variables["x"] = x;
+            x = apply(rightChain, 1, x);
+            buffer.setSample(1, i, x);
+        }
+
+    auto midChain  = std::atomic_load(&chains[(size_t)Scope::Mid]);
+    auto sideChain = std::atomic_load(&chains[(size_t)Scope::Side]);
+    if ((midChain || sideChain) && buffer.getNumChannels() > 1)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float L = buffer.getSample(0, i);
+            float R = buffer.getSample(1, i);
+            float M = 0.5f * (L + R);
+            float S = 0.5f * (L - R);
+            if (midChain)  { variables["x"] = M; M = apply(midChain, 0, M); }
+            if (sideChain) { variables["x"] = S; S = apply(sideChain, 1, S); }
+            buffer.setSample(0, i, M + S);
+            buffer.setSample(1, i, M - S);
+        }
+
+    auto lowChain    = std::atomic_load(&chains[(size_t)Scope::Low]);
+    auto midBChain   = std::atomic_load(&chains[(size_t)Scope::MidBand]);
+    auto highChain   = std::atomic_load(&chains[(size_t)Scope::High]);
+    if (lowChain || midBChain || highChain)
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+            {
+                float inp = buffer.getSample(ch, i);
+                float low, high1;
+                lowMidXover[ch].processSample(ch, inp, low, high1);
+                float mid, high;
+                midHighXover[ch].processSample(ch, high1, mid, high);
+                if (lowChain)  { variables["x"] = low;  low  = apply(lowChain,  ch, low); }
+                if (midBChain){ variables["x"] = mid;  mid  = apply(midBChain,ch, mid); }
+                if (highChain){ variables["x"] = high; high = apply(highChain,ch, high); }
+                buffer.setSample(ch, i, low + mid + high);
+            }
 }
 
 void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                                        std::array<juce::SmoothedValue<float>*,4> params)
 {
     auto aliasPtr = std::atomic_load(&aliases);
-    auto chainPtr = std::atomic_load(&chain);
-    if (! chainPtr)
-        return;
+
+    auto apply = [this](std::shared_ptr<Chain> ptr, int ch, float x)
+    {
+        if (!ptr) return x;
+        for (auto& b : *ptr) x = b->process(ch, x);
+        return x;
+    };
+
+    auto global = std::atomic_load(&chains[(size_t)Scope::Global]);
 
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-    {
         for (int i = 0; i < buffer.getNumSamples(); ++i)
         {
             if (params[0]) variables["a"] = params[0]->getNextValue();
@@ -260,13 +337,64 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 for (const auto& kv : *aliasPtr)
                     variables[kv.second] = variables[kv.first];
 
-            float x = buffer.getReadPointer(ch)[i];
+            float x = buffer.getSample(ch, i);
             variables["x"] = x;
-            for (auto& b : *chainPtr)
-                x = b->process(ch, x);
-            buffer.getWritePointer(ch)[i] = x;
+            x = apply(global, ch, x);
+            buffer.setSample(ch, i, x);
         }
-    }
+
+    auto leftChain  = std::atomic_load(&chains[(size_t)Scope::Left]);
+    if (leftChain && buffer.getNumChannels() > 0)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float x = buffer.getSample(0, i);
+            variables["x"] = x;
+            x = apply(leftChain, 0, x);
+            buffer.setSample(0, i, x);
+        }
+
+    auto rightChain = std::atomic_load(&chains[(size_t)Scope::Right]);
+    if (rightChain && buffer.getNumChannels() > 1)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float x = buffer.getSample(1, i);
+            variables["x"] = x;
+            x = apply(rightChain, 1, x);
+            buffer.setSample(1, i, x);
+        }
+
+    auto midChain  = std::atomic_load(&chains[(size_t)Scope::Mid]);
+    auto sideChain = std::atomic_load(&chains[(size_t)Scope::Side]);
+    if ((midChain || sideChain) && buffer.getNumChannels() > 1)
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            float L = buffer.getSample(0, i);
+            float R = buffer.getSample(1, i);
+            float M = 0.5f * (L + R);
+            float S = 0.5f * (L - R);
+            if (midChain)  { variables["x"] = M; M = apply(midChain, 0, M); }
+            if (sideChain) { variables["x"] = S; S = apply(sideChain, 1, S); }
+            buffer.setSample(0, i, M + S);
+            buffer.setSample(1, i, M - S);
+        }
+
+    auto lowChain    = std::atomic_load(&chains[(size_t)Scope::Low]);
+    auto midBChain   = std::atomic_load(&chains[(size_t)Scope::MidBand]);
+    auto highChain   = std::atomic_load(&chains[(size_t)Scope::High]);
+    if (lowChain || midBChain || highChain)
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+            {
+                float inp = buffer.getSample(ch, i);
+                float low, high1;
+                lowMidXover[ch].processSample(ch, inp, low, high1);
+                float mid, high;
+                midHighXover[ch].processSample(ch, high1, mid, high);
+                if (lowChain)  { variables["x"] = low;  low  = apply(lowChain, ch, low); }
+                if (midBChain){ variables["x"] = mid;  mid  = apply(midBChain,ch, mid); }
+                if (highChain){ variables["x"] = high; high = apply(highChain,ch, high); }
+                buffer.setSample(ch, i, low + mid + high);
+            }
 }
 
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)

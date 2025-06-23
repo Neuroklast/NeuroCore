@@ -100,8 +100,13 @@ private:
 
     using Chain   = std::vector<std::unique_ptr<Block>>;
 
-    std::shared_ptr<Chain>   chain;
+    static constexpr size_t kNumScopes = static_cast<size_t>(Scope::Count);
+
+    std::array<std::shared_ptr<Chain>, kNumScopes> chains;
     std::shared_ptr<AliasMap> aliases;
+
+    std::array<juce::dsp::LinkwitzRileyFilter<float>,2> lowMidXover;
+    std::array<juce::dsp::LinkwitzRileyFilter<float>,2> midHighXover;
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
