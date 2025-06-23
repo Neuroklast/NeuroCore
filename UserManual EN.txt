@@ -1,0 +1,136 @@
+NeuroCore DSL – User Manual
+1. What is the NeuroCore DSL?
+The NeuroCore DSL is a text based language that lets you describe complex audio effect chains
+(waveshaping, filters, compressors, LFOs, envelopes, etc.) inside a single text field.
+You have full control over the signal flow and can use your own formulas in realtime with four macro knobs.
+
+2. Basic preset structure
+Every preset consists of lines. Each line describes an effect stage or a modulator.
+
+Signal flow: lines are executed from top to bottom.
+
+Input and output: each stage uses the result of the previous stage as input.
+
+Parameters: the letters a, b, c, d (or alias names) represent the four macro knobs.
+
+3. Blocks and syntax
+3.1 Parameter naming
+```
+param a = gain
+param b = tone
+param c = drive
+param d = depth
+```
+Assigns descriptive names to knobs a–d.
+Within the script you can reference either a/b/... or the alias.
+Only the letters a–d are allowed; case is ignored.
+
+3.2 Waveshaping Stage
+```
+stage1: y = tanh(a * x)
+stage2: y = y + 0.3 * pow(y,3)
+```
+Defines a mathematical function applied to the signal.
+You can use all common functions and operators: +, -, *, /, pow, sin, cos, tanh, exp, log, abs, min, max ...
+
+Input variables:
+
+```
+x      = input of the stage
+x_prev = previous input
+y_prev = previous output
+```
+
+3.3 Filter Stage
+```
+filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
+```
+Types: lowpass, highpass, bandpass.
+Parameters may contain macros, modulators and formulas.
+
+3.4 Compressor
+```
+comp1: threshold = c; ratio = 4; attack = 0.01; release = 0.1
+```
+All parameters are formulas, controllable via knob, LFO or envelope.
+
+3.5 Envelope Follower
+```
+env1: type = rms; attack = 0.01; release = 0.1
+```
+Modes: rms, peak. Produces a variable (env1) that can be used in other blocks.
+
+3.6 LFO (oscillator/modulator)
+```
+osc1: shape = sine; freq = 2.0; depth = d
+```
+Shapes: sine, triangle, square, saw, noise.
+Outputs one value per sample, e.g. for modulation inside stages or filters.
+
+4. Example preset (Marshall-style distortion)
+```
+param a = inputGain
+param b = tone
+param c = masterVolume
+param d = compThresh
+
+stage1: y = inputGain * x
+stage2: y = tanh(2.5 * y + 0.3 * pow(y, 3)) + 0.05 * y_prev
+filter1: type = bandpass; cutoff = 500 + 1500 * tone; resonance = 0.8
+stage3: y = tanh(y + 0.2 * y_prev) + 0.05 * pow(y, 5)
+comp1: threshold = compThresh; ratio = 6; attack = 0.005; release = 0.05
+env1: type = rms; attack = 0.01; release = 0.1
+osc1: shape = sine; freq = 0.25; depth = 0.1
+stage4: y = masterVolume * (y + 0.1 * env1 + 0.05 * osc1)
+```
+
+5. Tips
+Ensure the correct order: modulators (env1, osc1 ...) must be defined before they are used.
+
+Only top to bottom: references to later blocks are not possible.
+
+No duplicate names: each block name (stage1, filter1, env1, osc1, etc.) may only appear once.
+
+Lines starting with # or // are ignored.
+
+6. Error messages
+If something goes wrong (typo, undefined variable, wrong syntax) the plug-in shows the exact line and a short description.
+
+Example:
+```
+Error on line 4: 'osc2' is not defined. Did you mean 'osc1'?
+```
+
+7. Parameter automation
+All parameters (a–d or aliases) can be automated in the DAW and update the formula live.
+
+8. More examples
+Soft clipping:
+```
+stage1: y = a * x
+stage2: y = tanh(y)
+```
+Auto Wah:
+```
+env1: type = rms; attack = 0.01; release = 0.05
+osc1: shape = sine; freq = 1.0; depth = b
+filter1: type = bandpass; cutoff = 600 + env1 * 1000 + osc1 * 200
+```
+
+9. Common mistakes
+Blocks in the wrong order
+
+Undefined or duplicate names
+
+Syntax errors (missing semicolons, equal signs, ...)
+
+Using modulators before they are defined
+
+10. Quick start
+Select the DSL text field inside the plug-in.
+
+Write or load a preset as shown above.
+
+Click "Compile" or "Save" to activate the formula.
+
+Control the parameters using the knobs or automation.

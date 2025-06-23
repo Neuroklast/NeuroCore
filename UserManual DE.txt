@@ -27,6 +27,7 @@ param d = depth
 Weist den Reglern a–d sprechende Namen zu.
 
 Im restlichen Script kannst du entweder a/b/… oder den Alias verwenden.
+Nur die Buchstaben a–d sind zulässig; Groß- und Kleinschreibung werden ignoriert.
 
 3.2. Waveshaping-Stage
 plaintext
@@ -52,7 +53,7 @@ plaintext
 Kopieren
 Bearbeiten
 filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
-Typen: lowpass, highpass, bandpass, notch, allpass
+Typen: lowpass, highpass, bandpass
 
 Parameter können Makros, Modulatoren und Formeln enthalten.
 
@@ -68,7 +69,7 @@ plaintext
 Kopieren
 Bearbeiten
 env1: type = rms; attack = 0.01; release = 0.1
-Typen: rms, peak, abs
+Typen: rms, peak
 
 Ergibt eine Variable (env1), die du in anderen Blöcken nutzen kannst.
 
