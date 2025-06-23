@@ -5,15 +5,6 @@
 #include <deque>
 #include "../dsp/DSPUtils.h"
 #include <juce_opengl/juce_opengl.h>
-#if JUCE_WINDOWS
-#include <GL/gl.h>
-#include <GL/glu.h>
-#elif JUCE_MAC
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
 
 WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
     : processor(proc), type(t)
