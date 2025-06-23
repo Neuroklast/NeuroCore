@@ -5,7 +5,7 @@
 #if JUCE_WINDOWS
 #include <GL/gl.h>
 #elif JUCE_MAC
-#include <OpenGL/gl3.h>
+#include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
 #endif
@@ -174,6 +174,12 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
 	using namespace juce::gl;
 
     glEnable(GL_LINE_SMOOTH);
