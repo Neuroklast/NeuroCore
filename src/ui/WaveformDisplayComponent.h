@@ -5,6 +5,7 @@
 #include "../core/Config.h"
 
 class WaveformDisplayComponent : public juce::Component,
+                                 public juce::SettableTooltipClient,
                                  private juce::OpenGLRenderer,
                                  private juce::Timer
 {

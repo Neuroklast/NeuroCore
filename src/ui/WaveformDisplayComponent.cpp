@@ -2,6 +2,13 @@
 #include <algorithm>
 #include "../dsp/DSPUtils.h"
 #include <juce_opengl/juce_opengl.h>
+#if JUCE_WINDOWS
+#include <GL/gl.h>
+#elif JUCE_MAC
+#include <OpenGL/gl3.h>
+#else
+#include <GL/gl.h>
+#endif
 
 WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
     : processor(proc), type(t)
@@ -118,13 +125,16 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectang
     {
         yStr = juce::String(value, 2);
     }
-    juce::Component::setTooltip(xStr + ", " + yStr);
+    setTooltip(xStr + ", " + yStr);
 }
 
 void WaveformDisplayComponent::mouseMove(const juce::MouseEvent& e)
 {
-    auto area = getLocalBounds().toFloat().reduced(
-        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
+    auto area = getLocalBounds().toFloat()
+                    .withTrimmedLeft(40.0f)
+                    .withTrimmedRight(20.0f)
+                    .withTrimmedTop(20.0f)
+                    .withTrimmedBottom(40.0f);
     updateTooltip(e.position.toInt(), area);
 }
 
@@ -171,8 +181,11 @@ void WaveformDisplayComponent::newOpenGLContextCreated()
 void WaveformDisplayComponent::renderOpenGL()
 {
     juce::OpenGLHelpers::clear(juce::Colours::black);
-    auto area = getLocalBounds().toFloat().reduced(
-        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
+    auto area = getLocalBounds().toFloat()
+                    .withTrimmedLeft(40.0f)
+                    .withTrimmedRight(20.0f)
+                    .withTrimmedTop(20.0f)
+                    .withTrimmedBottom(40.0f);
 
     auto scale = openGLContext.getRenderingScale();
     glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
@@ -203,8 +216,11 @@ void WaveformDisplayComponent::renderOpenGL()
 void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
-    auto plot = bounds.reduced(
-        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
+    auto plot = bounds
+                    .withTrimmedLeft(40.0f)
+                    .withTrimmedRight(20.0f)
+                    .withTrimmedTop(20.0f)
+                    .withTrimmedBottom(40.0f);
 
     g.setColour(juce::Colours::white);
     g.drawRect(plot);
