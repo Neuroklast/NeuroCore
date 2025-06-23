@@ -58,6 +58,8 @@ public:
 
 private:
     void refreshParameterControls();
+    /// Updates all text labels after language change.
+    void updateTranslations();
     NeuroCoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 
@@ -65,7 +67,7 @@ private:
 
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
-    std::unique_ptr<juce::GroupComponent>      knobGroup;
+    std::unique_ptr<juce::GroupComponent>      parameterGroup;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;

@@ -168,15 +168,15 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
     {
         juce::PopupMenu menu;
         juce::PopupMenu xMenu, yMenu;
-        xMenu.addItem(1, "Samples", true, xScale == XScale::Samples);
-        xMenu.addItem(2, "Zeit (ms)", true, xScale == XScale::Time);
-        xMenu.addItem(3, "Frequenz (Hz)", true, xScale == XScale::Frequency);
-        yMenu.addItem(4, "Linear", true, yScale == YScale::Linear);
-        yMenu.addItem(5, "dB", true, yScale == YScale::Decibel);
-        menu.addSubMenu("X-Achse", xMenu);
-        menu.addSubMenu("Y-Achse", yMenu);
-        menu.addItem(6, "Grid", true, showGrid);
-        menu.addItem(7, "Y invertieren", true, invertY);
+        xMenu.addItem(1, TRANS("ScaleSamples"), true, xScale == XScale::Samples);
+        xMenu.addItem(2, TRANS("ScaleTime"), true, xScale == XScale::Time);
+        xMenu.addItem(3, TRANS("ScaleFrequency"), true, xScale == XScale::Frequency);
+        yMenu.addItem(4, TRANS("ScaleLinear"), true, yScale == YScale::Linear);
+        yMenu.addItem(5, TRANS("ScaleDecibel"), true, yScale == YScale::Decibel);
+        menu.addSubMenu(TRANS("XAxis"), xMenu);
+        menu.addSubMenu(TRANS("YAxis"), yMenu);
+        menu.addItem(6, TRANS("ToggleGrid"), true, showGrid);
+        menu.addItem(7, TRANS("ToggleInvertY"), true, invertY);
         menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
             [this](int res)
             {
@@ -315,9 +315,16 @@ void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
         }
     }
 
-    g.drawFittedText(xScale == XScale::Samples ? "Samples" : (xScale == XScale::Time ? "Zeit (ms)" : "Frequenz (Hz)"), (int)plot.getX(), (int)plot.getBottom() + 26, (int)plot.getWidth(), 20, juce::Justification::centred, 1);
-    g.addTransform(juce::AffineTransform::rotation(-juce::MathConstants<float>::halfPi, plot.getX() - 30.0f, plot.getCentreY()));
-    g.drawFittedText(yScale == YScale::Linear ? "Amplitude" : "Amplitude (dB)", (int)plot.getX() - 80, (int)plot.getY(), 60, (int)plot.getHeight(), juce::Justification::centredRight, 1);
+    g.drawFittedText(xScale == XScale::Samples ? TRANS("ScaleSamples") : (xScale == XScale::Time ? TRANS("ScaleTime") : TRANS("ScaleFrequency")),
+                    (int)plot.getX(), (int)plot.getBottom() + 26,
+                    (int)plot.getWidth(), 20,
+                    juce::Justification::centred, 1);
+    g.addTransform(juce::AffineTransform::rotation(-juce::MathConstants<float>::halfPi,
+                                                   plot.getX() - 30.0f,
+                                                   plot.getCentreY()));
+    g.drawFittedText(yScale == YScale::Linear ? TRANS("AxisAmplitude") : TRANS("AxisAmplitudeDb"),
+                    (int)plot.getX() - 80, (int)plot.getY(),
+                    60, (int)plot.getHeight(), juce::Justification::centredRight, 1);
 }
 
 void WaveformDisplayComponent::paint(juce::Graphics& g)

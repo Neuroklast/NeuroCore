@@ -47,9 +47,9 @@ LoudnessMeterComponent::ScaleInfo LoudnessMeterComponent::currentScaleInfo() con
 {
     switch (scale)
     {
-        case Scale::LUFS:   return { "LUFS", -60.0f, 0.0f, 10.0f };
-        case Scale::KSystem:return { "K-20", -20.0f, 20.0f, 5.0f };
-        default:           return { "dBFS", -60.0f, 0.0f, 10.0f };
+        case Scale::LUFS:   return { TRANS("MeterScaleLufs"), -60.0f, 0.0f, 10.0f };
+        case Scale::KSystem:return { TRANS("MeterScaleKsys"), -20.0f, 20.0f, 5.0f };
+        default:           return { TRANS("MeterScaleDbfs"), -60.0f, 0.0f, 10.0f };
     }
 }
 
@@ -65,9 +65,9 @@ float LoudnessMeterComponent::valueToY(float db, juce::Rectangle<float> area) co
 void LoudnessMeterComponent::showContextMenu()
 {
     juce::PopupMenu m;
-    m.addItem(1, "dBFS", true, scale == Scale::dBFS);
-    m.addItem(2, "LUFS", true, scale == Scale::LUFS);
-    m.addItem(3, "K-System", true, scale == Scale::KSystem);
+    m.addItem(1, TRANS("MeterScaleDbfs"), true, scale == Scale::dBFS);
+    m.addItem(2, TRANS("MeterScaleLufs"), true, scale == Scale::LUFS);
+    m.addItem(3, TRANS("MeterScaleKsys"), true, scale == Scale::KSystem);
     m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this), [this](int res)
     {
         switch (res)
