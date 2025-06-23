@@ -147,12 +147,15 @@
     <ClCompile Include="..\..\src\dsl\DSLParser.cpp"/>
     <ClCompile Include="..\..\src\dsl\SignalChain.cpp"/>
     <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp"/>
+    <ClCompile Include="..\..\src\dsp\BandPassFilter.cpp"/>
+    <ClCompile Include="..\..\src\dsp\HighPassFilter.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputGain.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputRouter.cpp"/>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp"/>
     <ClCompile Include="..\..\src\dsp\LowPassFilter.cpp"/>
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp"/>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp"/>
+    <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp"/>
@@ -3086,7 +3089,9 @@
     <ClInclude Include="..\..\src\dsl\DSLParser.h"/>
     <ClInclude Include="..\..\src\dsl\SignalChain.h"/>
     <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h"/>
+    <ClInclude Include="..\..\src\dsp\BandPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\DSPUtils.h"/>
+    <ClInclude Include="..\..\src\dsp\HighPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\InputGain.h"/>
     <ClInclude Include="..\..\src\dsp\InputRouter.h"/>
     <ClInclude Include="..\..\src\dsp\LookupTables.h"/>
@@ -3094,6 +3099,7 @@
     <ClInclude Include="..\..\src\dsp\SignalPolisher.h"/>
     <ClInclude Include="..\..\src\dsp\WaveShaper.h"/>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp"/>
+    <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h"/>
     <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h"/>
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h"/>
     <ClInclude Include="..\..\src\ui\InlineAutocompleteEditor.h"/>

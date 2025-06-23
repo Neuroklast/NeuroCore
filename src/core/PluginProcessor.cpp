@@ -720,7 +720,7 @@ void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)
     else
         in = std::make_unique<juce::MemoryInputStream> (BinaryData::en_txt, BinaryData::en_txtSize, false);
 
-    juce::LocalisedStrings::setCurrentMappings (new juce::LocalisedStrings (*in, true));
+    juce::LocalisedStrings::setCurrentMappings(new juce::LocalisedStrings(in->readEntireStreamAsString(), true));
     currentLanguage = langFile.getFileNameWithoutExtension();
 }
 

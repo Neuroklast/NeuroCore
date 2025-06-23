@@ -29,6 +29,7 @@ WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
     openGLContext.setContinuousRepainting(true);
+    
 
     const double rate = 60.0;
     smoothedData.resize(buffer.getNumSamples());
@@ -204,6 +205,7 @@ void WaveformDisplayComponent::newOpenGLContextCreated()
     glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    glDisable(GL_DEBUG_OUTPUT);
 
 
     glEnable(GL_LINE_SMOOTH);

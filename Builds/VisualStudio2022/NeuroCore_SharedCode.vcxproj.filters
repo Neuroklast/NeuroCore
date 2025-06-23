@@ -29,6 +29,9 @@
     <Filter Include="NeuroCore\src\third_party">
       <UniqueIdentifier>{58F66E34-898F-353C-4260-9641F21A590A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\src\ui\custom">
+      <UniqueIdentifier>{113195A1-26AA-1CA9-F814-703D48503E16}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\src\ui">
       <UniqueIdentifier>{5274A128-1889-225E-D9A3-CCC16C32B3B0}</UniqueIdentifier>
     </Filter>
@@ -796,6 +799,12 @@
     <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\dsp\BandPassFilter.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsp\HighPassFilter.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\dsp\InputGain.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
@@ -813,6 +822,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp">
+      <Filter>NeuroCore\src\ui\custom</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
@@ -3975,7 +3987,13 @@
     <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\dsp\BandPassFilter.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\dsp\DSPUtils.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dsp\HighPassFilter.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\dsp\InputGain.h">
@@ -3998,6 +4016,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp">
       <Filter>NeuroCore\src\third_party\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h">
+      <Filter>NeuroCore\src\ui\custom</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h">
       <Filter>NeuroCore\src\ui</Filter>

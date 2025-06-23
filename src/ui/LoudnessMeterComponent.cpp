@@ -47,9 +47,9 @@ LoudnessMeterComponent::ScaleInfo LoudnessMeterComponent::currentScaleInfo() con
 {
     switch (scale)
     {
-        case Scale::LUFS:   return { TRANS("MeterScaleLufs"), -60.0f, 0.0f, 10.0f };
-        case Scale::KSystem:return { TRANS("MeterScaleKsys"), -20.0f, 20.0f, 5.0f };
-        default:           return { TRANS("MeterScaleDbfs"), -60.0f, 0.0f, 10.0f };
+    case Scale::LUFS:   return { "LUFS", -60.0f, 0.0f, 10.0f };
+    case Scale::KSystem:return { "K-20", -20.0f, 20.0f, 5.0f };
+    default:           return { "dBFS", -60.0f, 0.0f, 10.0f };
     }
 }
 
@@ -95,6 +95,7 @@ void LoudnessMeterComponent::newOpenGLContextCreated()
     glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    glDisable(GL_DEBUG_OUTPUT);
 }
 
 void LoudnessMeterComponent::renderOpenGL()

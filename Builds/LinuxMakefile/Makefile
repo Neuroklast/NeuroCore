@@ -120,12 +120,15 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/DSLParser_266e9ef4.o \
   $(JUCE_OBJDIR)/SignalChain_93c73c71.o \
   $(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o \
+  $(JUCE_OBJDIR)/BandPassFilter_50e9440c.o \
+  $(JUCE_OBJDIR)/HighPassFilter_ae1418b9.o \
   $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
   $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o \
   $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o \
   $(JUCE_OBJDIR)/LowPassFilter_54cabd19.o \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
+  $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
   $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
@@ -245,6 +248,16 @@ $(JUCE_OBJDIR)/AdvancedOscillatorWrapper_50422f0d.o: ../../src/dsp/AdvancedOscil
 	@echo "Compiling AdvancedOscillatorWrapper.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/BandPassFilter_50e9440c.o: ../../src/dsp/BandPassFilter.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling BandPassFilter.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/HighPassFilter_ae1418b9.o: ../../src/dsp/HighPassFilter.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling HighPassFilter.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/InputGain_219ae3a5.o: ../../src/dsp/InputGain.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling InputGain.cpp"
@@ -273,6 +286,11 @@ $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o: ../../src/dsp/SignalPolisher.cpp
 $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o: ../../src/dsp/WaveShaper.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling WaveShaper.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o: ../../src/ui/custom/ParameterComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ParameterComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o: ../../src/ui/FormulaDisplayComponent.cpp
