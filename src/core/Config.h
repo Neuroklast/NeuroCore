@@ -13,6 +13,8 @@
     throughout the project without instantiating any objects.
 */
 
+#include <JuceHeader.h>
+
 namespace Config
 {
     //==========================================================================
@@ -230,6 +232,13 @@ namespace Config
 
     /// Default resolution for lookup tables.
     inline constexpr int   kLookupTableSize = 1024;
+
+    /// Default line width of the waveform in pixels.
+    inline constexpr float kWaveformLineWidth     = 1.5f;
+    /// Default waveform colour as ARGB.
+    inline constexpr juce::uint32 kWaveformColourARGB = 0xff00ffff;
+    /// Number of history frames used for the echo effect.
+    inline constexpr int   kWaveformEchoFrames   = 4;
 
     //==========================================================================
     // Preset constants

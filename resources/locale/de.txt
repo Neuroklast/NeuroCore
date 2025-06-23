@@ -16,3 +16,23 @@ LanguageLabel=Sprache
 PolisherLabel=Polisher
 KnobGroupLabel=Parameter
 
+# Waveform display strings
+WaveMenuSamples=Samples
+WaveMenuTime=Zeit (ms)
+WaveMenuFrequency=Frequenz (Hz)
+WaveMenuLinear=Linear
+WaveMenuDecibel=dB
+WaveMenuGrid=Gitter
+WaveMenuInvertY=Y invertieren
+WaveMenuEcho=Echo
+WaveAxisX=X-Achse
+WaveAxisY=Y-Achse
+WaveAxisSamples=Samples
+WaveAxisTime=Zeit (ms)
+WaveAxisFrequency=Frequenz (Hz)
+WaveAxisAmplitude=Amplitude
+WaveAxisAmplitudeDb=Amplitude (dB)
+WaveUnitMs=ms
+WaveUnitHz=Hz
+WaveUnitDb=dB
+

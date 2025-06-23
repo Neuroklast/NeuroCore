@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
 #include "../core/Config.h"
+#include "WaveformLookAndFeel.h"
 
 class WaveformDisplayComponent : public juce::Component,
                                  public juce::SettableTooltipClient,
@@ -24,6 +25,9 @@ public:
 
     void setXScale(XScale s) noexcept { xScale = s; }
     void setYScale(YScale s) noexcept { yScale = s; }
+    void setWaveColour(juce::Colour c) noexcept { waveColour = c; }
+    void setLineWidth(float w) noexcept { lineWidth = w; }
+    void enableEcho(bool e) noexcept { showEcho = e; }
 
 private:
     void timerCallback() override;
@@ -45,8 +49,12 @@ private:
     YScale yScale { YScale::Linear };
     bool showGrid { true };
     bool invertY { false };
-    juce::Colour glowColour { juce::Colours::cyan };
+    juce::Colour waveColour { juce::Colour(Config::kWaveformColourARGB) };
+    float lineWidth { Config::kWaveformLineWidth };
+    bool showEcho { false };
+    WaveformLookAndFeel lookAndFeel;
     juce::TooltipWindow tooltipWindow { this };
+    std::deque<std::vector<float>> history;
 
     std::vector<float> fftMagnitudes;
     static constexpr int fftOrder = 11; // 2048 point FFT

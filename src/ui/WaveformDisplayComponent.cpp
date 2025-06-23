@@ -26,6 +26,8 @@ WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc
         startTimerHz(60);
     }
 
+    setLookAndFeel(&lookAndFeel);
+
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
     openGLContext.setContinuousRepainting(true);
@@ -34,6 +36,7 @@ WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc
 WaveformDisplayComponent::~WaveformDisplayComponent()
 {
     openGLContext.detach();
+    setLookAndFeel(nullptr);
 }
 
 void WaveformDisplayComponent::timerCallback()
@@ -71,6 +74,19 @@ void WaveformDisplayComponent::timerCallback()
         DSPUtils::analyseFFT(block, 0, fftMagnitudes, fftOrder);
     }
 
+    if (showEcho)
+    {
+        std::vector<float> copy(buffer.getReadPointer(0),
+                                buffer.getReadPointer(0) + buffer.getNumSamples());
+        history.push_back(std::move(copy));
+        while (static_cast<int>(history.size()) > Config::kWaveformEchoFrames)
+            history.pop_front();
+    }
+    else
+    {
+        history.clear();
+    }
+
     repaint();
 }
 
@@ -105,7 +121,7 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectang
     switch (xScale)
     {
         case XScale::Samples: xStr = juce::String(index); break;
-        case XScale::Time:    xStr = juce::String((index / processor.getSampleRate()) * 1000.0, 2) + " ms"; break;
+        case XScale::Time:    xStr = juce::String((index / processor.getSampleRate()) * 1000.0, 2) + " " + TRANS("WaveUnitMs"); break;
         case XScale::Frequency:
             if (!fftMagnitudes.empty())
             {
@@ -144,15 +160,16 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
     {
         juce::PopupMenu menu;
         juce::PopupMenu xMenu, yMenu;
-        xMenu.addItem(1, "Samples", true, xScale == XScale::Samples);
-        xMenu.addItem(2, "Zeit (ms)", true, xScale == XScale::Time);
-        xMenu.addItem(3, "Frequenz (Hz)", true, xScale == XScale::Frequency);
-        yMenu.addItem(4, "Linear", true, yScale == YScale::Linear);
-        yMenu.addItem(5, "dB", true, yScale == YScale::Decibel);
-        menu.addSubMenu("X-Achse", xMenu);
-        menu.addSubMenu("Y-Achse", yMenu);
-        menu.addItem(6, "Grid", true, showGrid);
-        menu.addItem(7, "Y invertieren", true, invertY);
+        xMenu.addItem(1, TRANS("WaveMenuSamples"), true, xScale == XScale::Samples);
+        xMenu.addItem(2, TRANS("WaveMenuTime"), true, xScale == XScale::Time);
+        xMenu.addItem(3, TRANS("WaveMenuFrequency"), true, xScale == XScale::Frequency);
+        yMenu.addItem(4, TRANS("WaveMenuLinear"), true, yScale == YScale::Linear);
+        yMenu.addItem(5, TRANS("WaveMenuDecibel"), true, yScale == YScale::Decibel);
+        menu.addSubMenu(TRANS("WaveAxisX"), xMenu);
+        menu.addSubMenu(TRANS("WaveAxisY"), yMenu);
+        menu.addItem(6, TRANS("WaveMenuGrid"), true, showGrid);
+        menu.addItem(7, TRANS("WaveMenuInvertY"), true, invertY);
+        menu.addItem(8, TRANS("WaveMenuEcho"), true, showEcho);
         menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
             [this](int res)
             {
@@ -165,6 +182,7 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
                     case 5: yScale = YScale::Decibel; break;
                     case 6: showGrid = !showGrid; break;
                     case 7: invertY = !invertY; break;
+                    case 8: showEcho = !showEcho; break;
                     default: break;
                 }
                 repaint();
@@ -174,37 +192,51 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
-	using namespace juce::gl;
+    juce::OpenGLHelpers::clear(lookAndFeel.findColour(WaveformLookAndFeel::backgroundColourId));
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    glLineWidth(lineWidth);
+    glColor4f(waveColour.getFloatRed(), waveColour.getFloatGreen(), waveColour.getFloatBlue(), 0.7f);
+    auto drawBuffer = [&](const float* bufferData, int count, float alpha)
+        glColor4f(waveColour.getFloatRed(), waveColour.getFloatGreen(), waveColour.getFloatBlue(), alpha);
+        glLineWidth(lineWidth);
+        for (int i = 0; i < count; ++i)
+            float value = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? fftMagnitudes[i] : bufferData[i];
+            float x = indexToX(i, count, area);
+    };
 
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-}
+    drawBuffer(data, num, 1.0f);
 
-void WaveformDisplayComponent::renderOpenGL()
-{
-    juce::OpenGLHelpers::clear(juce::Colours::black);
-    auto area = getLocalBounds().toFloat()
+    if (showEcho)
+    {
+        float alphaStep = 1.0f / (static_cast<float>(history.size()) + 1.0f);
+        float a = alphaStep;
+        for (auto it = history.rbegin(); it != history.rend(); ++it, a += alphaStep)
+        {
+            int count = static_cast<int>(it->size());
+            drawBuffer(it->data(), count, juce::jlimit(0.0f, 1.0f, a));
+        }
                     .withTrimmedLeft(40.0f)
                     .withTrimmedRight(20.0f)
                     .withTrimmedTop(20.0f)
                     .withTrimmedBottom(40.0f);
 
-    auto scale = openGLContext.getRenderingScale();
-    using namespace juce::gl;
-    glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
-
-    glLineWidth(1.5f);
-    glColor4f(glowColour.getFloatRed(), glowColour.getFloatGreen(), glowColour.getFloatBlue(), 0.7f);
-
-    int num = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
-    const float* data = buffer.getReadPointer(0);
-
+    g.setColour(lookAndFeel.findColour(WaveformLookAndFeel::axisColourId));
+            g.setColour(lookAndFeel.findColour(WaveformLookAndFeel::gridColourId).withAlpha(alpha));
+        g.setColour(lookAndFeel.findColour(WaveformLookAndFeel::axisColourId));
+        else if (xScale == XScale::Time) label = juce::String(value, 0) + " " + TRANS("WaveUnitMs");
+        else label = juce::String(value, 0) + " " + TRANS("WaveUnitHz");
+            g.setColour(lookAndFeel.findColour(WaveformLookAndFeel::gridColourId).withAlpha(0.5f));
+        g.setColour(lookAndFeel.findColour(WaveformLookAndFeel::axisColourId));
+            g.drawFittedText(juce::String(value, 0) + " " + TRANS("WaveUnitDb"), (int)plot.getX() - 50, (int)y - 10, 45, 20, juce::Justification::centredRight, 1);
+    g.drawFittedText(xScale == XScale::Samples ? TRANS("WaveAxisSamples") : (xScale == XScale::Time ? TRANS("WaveAxisTime") : TRANS("WaveAxisFrequency")),
+                    (int)plot.getX(), (int)plot.getBottom() + 26, (int)plot.getWidth(), 20, juce::Justification::centred, 1);
+    g.drawFittedText(yScale == YScale::Linear ? TRANS("WaveAxisAmplitude") : TRANS("WaveAxisAmplitudeDb"),
+                    (int)plot.getX() - 80, (int)plot.getY(), 60, (int)plot.getHeight(), juce::Justification::centredRight, 1);
     for (int pass = 3; pass >= 0; --pass)
     {
         float alpha = 0.2f + 0.2f * pass;
