@@ -17,6 +17,8 @@ class SignalChain
 {
 public:
     SignalChain();
+    SignalChain(const SignalChain& other);
+    SignalChain& operator=(const SignalChain& other);
     void prepare(const juce::dsp::ProcessSpec& spec);
     bool loadScript(const juce::String& script, juce::String& error);
     void processBlock(juce::AudioBuffer<float>& buffer,
@@ -30,6 +32,7 @@ private:
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
         virtual float process(int ch, float x) = 0;
+        virtual std::unique_ptr<Block> clone() const = 0;
     };
 
     struct Stage : Block
@@ -41,6 +44,7 @@ private:
         std::vector<std::pair<juce::String, size_t>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        std::unique_ptr<Block> clone() const override;
     };
 
     struct Osc : Block
@@ -53,6 +57,7 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        std::unique_ptr<Block> clone() const override;
     };
 
     struct Filter : Block
@@ -67,6 +72,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        std::unique_ptr<Block> clone() const override;
     };
 
     struct Comp : Block
@@ -79,6 +85,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        std::unique_ptr<Block> clone() const override;
     };
 
     struct Env : Block
@@ -96,6 +103,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        std::unique_ptr<Block> clone() const override;
     };
 
     using Chain   = std::vector<std::unique_ptr<Block>>;

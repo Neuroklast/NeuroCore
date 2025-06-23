@@ -18,6 +18,63 @@ SignalChain::SignalChain()
     midHighExpr.parseFormula(juce::String(Config::kDefaultMidHighFreq).toStdString());
 }
 
+SignalChain::SignalChain(const SignalChain& other)
+{
+    *this = other;
+}
+
+SignalChain& SignalChain::operator=(const SignalChain& other)
+{
+    if (this == &other)
+        return *this;
+
+    variables = other.variables;
+    parameterMappings = other.parameterMappings;
+
+    lowMidExpr.parseFormula(other.lowMidExpr.getFormula());
+    midHighExpr.parseFormula(other.midHighExpr.getFormula());
+    lowMidVars = other.lowMidVars;
+    midHighVars = other.midHighVars;
+    lowMidSm = other.lowMidSm;
+    midHighSm = other.midHighSm;
+    currentSpec = other.currentSpec;
+    for (size_t i = 0; i < lowMidXover.size(); ++i)
+        lowMidXover[i] = other.lowMidXover[i];
+    for (size_t i = 0; i < midHighXover.size(); ++i)
+        midHighXover[i] = other.midHighXover[i];
+
+    auto newAliases = std::make_shared<AliasMap>();
+    if (auto a = std::atomic_load(&other.aliases))
+        *newAliases = *a;
+    std::atomic_store(&aliases, newAliases);
+
+    for (size_t i = 0; i < kNumScopes; ++i)
+    {
+        auto newChain = std::make_shared<Chain>();
+        if (auto src = std::atomic_load(&other.chains[i]))
+        {
+            for (const auto& block : *src)
+            {
+                auto cloned = block->clone();
+                if (auto* st = dynamic_cast<Stage*>(cloned.get()))
+                    st->varPtr = &variables;
+                else if (auto* oc = dynamic_cast<Osc*>(cloned.get()))
+                    oc->varPtr = &variables;
+                else if (auto* fi = dynamic_cast<Filter*>(cloned.get()))
+                    fi->varPtr = &variables;
+                else if (auto* co = dynamic_cast<Comp*>(cloned.get()))
+                    co->varPtr = &variables;
+                else if (auto* en = dynamic_cast<Env*>(cloned.get()))
+                    en->varPtr = &variables;
+                newChain->push_back(std::move(cloned));
+            }
+        }
+        std::atomic_store(&chains[i], newChain);
+    }
+
+    return *this;
+}
+
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 {
     currentSpec = spec;
@@ -505,6 +562,17 @@ float SignalChain::Stage::process(int ch, float x)
     return y;
 }
 
+std::unique_ptr<SignalChain::Block> SignalChain::Stage::clone() const
+{
+    auto st = std::make_unique<Stage>();
+    st->formula = formula;
+    st->eval.parseFormula(formula.toStdString());
+    st->xPrev = xPrev;
+    st->yPrev = yPrev;
+    st->varNames = varNames;
+    return st;
+}
+
 void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
 {
     osc.prepare({spec.sampleRate, spec.maximumBlockSize, 1});
@@ -519,6 +587,17 @@ float SignalChain::Osc::process(int ch, float x)
     if (ch < static_cast<int>(last.size()))
         last[ch] = v;
     return x;
+}
+
+std::unique_ptr<SignalChain::Block> SignalChain::Osc::clone() const
+{
+    auto oc = std::make_unique<Osc>();
+    oc->osc = osc;
+    oc->depth = depth;
+    oc->name = name;
+    oc->last = last;
+    oc->varNames = varNames;
+    return oc;
 }
 
 void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
@@ -572,6 +651,21 @@ float SignalChain::Filter::process(int ch, float x)
     return y;
 }
 
+std::unique_ptr<SignalChain::Block> SignalChain::Filter::clone() const
+{
+    auto fi = std::make_unique<Filter>();
+    fi->filter = filter;
+    fi->cutoff.parseFormula(cutoff.getFormula());
+    fi->resonance.parseFormula(resonance.getFormula());
+    fi->type = type;
+    fi->sampleRate = sampleRate;
+    fi->channels = channels;
+    fi->xPrev = xPrev;
+    fi->yPrev = yPrev;
+    fi->varNames = varNames;
+    return fi;
+}
+
 void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
 {
     comp.reset();
@@ -618,10 +712,27 @@ float SignalChain::Comp::process(int ch, float x)
     comp.setAttack(atkSm.getNextValue());
     comp.setRelease(relSm.getNextValue());
 
-        float y = comp.processSample(ch, x);
-        (*varPtr)["y"] = y;
-        return y;
-    }
+    float y = comp.processSample(ch, x);
+    (*varPtr)["y"] = y;
+    return y;
+}
+
+std::unique_ptr<SignalChain::Block> SignalChain::Comp::clone() const
+{
+    auto co = std::make_unique<Comp>();
+    co->comp = comp;
+    co->threshold.parseFormula(threshold.getFormula());
+    co->ratio.parseFormula(ratio.getFormula());
+    co->attack.parseFormula(attack.getFormula());
+    co->release.parseFormula(release.getFormula());
+    co->thrSm = thrSm;
+    co->ratioSm = ratioSm;
+    co->atkSm = atkSm;
+    co->relSm = relSm;
+    co->channels = channels;
+    co->varNames = varNames;
+    return co;
+}
 
 void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {
@@ -681,6 +792,25 @@ float SignalChain::Env::process(int ch, float x)
     value[ch] = out;
     (*varPtr)[name] = out;
     return x;
+}
+
+std::unique_ptr<SignalChain::Block> SignalChain::Env::clone() const
+{
+    auto en = std::make_unique<Env>();
+    en->mode = mode;
+    en->attack.parseFormula(attack.getFormula());
+    en->release.parseFormula(release.getFormula());
+    en->name = name;
+    en->sampleRate = sampleRate;
+    en->atkTime = atkTime;
+    en->relTime = relTime;
+    en->atkCoeff = atkCoeff;
+    en->relCoeff = relCoeff;
+    en->prevAtk = prevAtk;
+    en->prevRel = prevRel;
+    en->value = value;
+    en->varNames = varNames;
+    return en;
 }
 
 juce::StringArray SignalChain::getMappingsFor(const juce::String& param) const
