@@ -1,6 +1,7 @@
 #include "WaveformDisplayComponent.h"
 #include <algorithm>
 #include "../dsp/DSPUtils.h"
+#include <juce_opengl/juce_opengl.h>
 
 WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
     : processor(proc), type(t)
@@ -117,12 +118,13 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectang
     {
         yStr = juce::String(value, 2);
     }
-    setTooltip(xStr + ", " + yStr);
+    juce::Component::setTooltip(xStr + ", " + yStr);
 }
 
 void WaveformDisplayComponent::mouseMove(const juce::MouseEvent& e)
 {
-    auto area = getLocalBounds().toFloat().reduced(40.0f, 20.0f, 20.0f, 40.0f);
+    auto area = getLocalBounds().toFloat().reduced(
+        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
     updateTooltip(e.position.toInt(), area);
 }
 
@@ -169,8 +171,11 @@ void WaveformDisplayComponent::newOpenGLContextCreated()
 void WaveformDisplayComponent::renderOpenGL()
 {
     juce::OpenGLHelpers::clear(juce::Colours::black);
-    auto area = getLocalBounds().toFloat().reduced(40.0f, 20.0f, 20.0f, 40.0f);
-    juce::OpenGLHelpers::prepareFor2D(openGLContext.getWidth(), openGLContext.getHeight());
+    auto area = getLocalBounds().toFloat().reduced(
+        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
+
+    auto scale = openGLContext.getRenderingScale();
+    glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
 
     glLineWidth(1.5f);
     glColor4f(glowColour.getFloatRed(), glowColour.getFloatGreen(), glowColour.getFloatBlue(), 0.7f);
@@ -198,7 +203,8 @@ void WaveformDisplayComponent::renderOpenGL()
 void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
-    auto plot = bounds.reduced(40.0f, 20.0f, 20.0f, 40.0f);
+    auto plot = bounds.reduced(
+        juce::BorderSize<float>(20.0f, 40.0f, 40.0f, 20.0f));
 
     g.setColour(juce::Colours::white);
     g.drawRect(plot);
