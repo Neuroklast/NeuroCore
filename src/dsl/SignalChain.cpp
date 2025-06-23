@@ -1,4 +1,5 @@
 #include "SignalChain.h"
+#include "../core/Config.h"
 #include <atomic>
 #include <cmath>
 
@@ -380,6 +381,14 @@ void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
     comp.reset();
     comp.prepare(spec);
     channels = static_cast<int> (spec.numChannels);
+    thrSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    ratioSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    atkSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    relSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    thrSm.setCurrentAndTargetValue(threshold.evaluate(0.f));
+    ratioSm.setCurrentAndTargetValue(ratio.evaluate(0.f));
+    atkSm.setCurrentAndTargetValue(attack.evaluate(0.f));
+    relSm.setCurrentAndTargetValue(release.evaluate(0.f));
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -403,10 +412,15 @@ float SignalChain::Comp::process(int ch, float x)
         release.setVariable(n.second, v);
     }
 
-    comp.setThreshold(threshold.evaluate(x));
-    comp.setRatio(ratio.evaluate(x));
-    comp.setAttack(attack.evaluate(x));
-    comp.setRelease(release.evaluate(x));
+    thrSm.setTargetValue(threshold.evaluate(x));
+    ratioSm.setTargetValue(ratio.evaluate(x));
+    atkSm.setTargetValue(attack.evaluate(x));
+    relSm.setTargetValue(release.evaluate(x));
+
+    comp.setThreshold(thrSm.getNextValue());
+    comp.setRatio(ratioSm.getNextValue());
+    comp.setAttack(atkSm.getNextValue());
+    comp.setRelease(relSm.getNextValue());
 
         float y = comp.processSample(ch, x);
         (*varPtr)["y"] = y;
@@ -417,6 +431,16 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
     value.assign(spec.numChannels, 0.0f);
+    atkTime.reset(sampleRate, Config::kSmoothingTime);
+    relTime.reset(sampleRate, Config::kSmoothingTime);
+    auto initAtk = juce::jlimit(0.0001f, 1.0f, attack.evaluate(0.f));
+    auto initRel = juce::jlimit(0.0001f, 1.0f, release.evaluate(0.f));
+    atkTime.setCurrentAndTargetValue(initAtk);
+    relTime.setCurrentAndTargetValue(initRel);
+    prevAtk = initAtk;
+    prevRel = initRel;
+    atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
+    relCoeff = std::exp(-1.0f / (initRel * sampleRate));
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -434,10 +458,21 @@ float SignalChain::Env::process(int ch, float x)
         release.setVariable(n.second, (*varPtr)[n.first]);
     }
 
-    float atkTime  = juce::jlimit(0.0001f, 1.0f, attack.evaluate(x));
-    float relTime  = juce::jlimit(0.0001f, 1.0f, release.evaluate(x));
-    float atkCoeff = std::exp(-1.0f / (atkTime * sampleRate));
-    float relCoeff = std::exp(-1.0f / (relTime * sampleRate));
+    atkTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, attack.evaluate(x)));
+    relTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, release.evaluate(x)));
+
+    auto a = atkTime.getNextValue();
+    auto r = relTime.getNextValue();
+    if (a != prevAtk)
+    {
+        atkCoeff = std::exp(-1.0f / (a * sampleRate));
+        prevAtk = a;
+    }
+    if (r != prevRel)
+    {
+        relCoeff = std::exp(-1.0f / (r * sampleRate));
+        prevRel = r;
+    }
 
     float input = mode == Rms ? x * x : std::abs(x);
     float out = value[ch];
