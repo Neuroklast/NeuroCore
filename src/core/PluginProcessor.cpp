@@ -15,6 +15,7 @@
 #include "../utils/FormulaHelper.h"
 #include "../dsp/DSPUtils.h"
 #include "../utils/Log.h"
+#include "../utils/Localiser.h"
 
 #define JucePlugin_MaxNumOutputChannels   2
 
@@ -83,8 +84,6 @@ NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
     apvts.removeParameterListener (EffectParameters::paramC, this);
     apvts.removeParameterListener (EffectParameters::paramD, this);
     apvts.removeParameterListener (EffectParameters::oversampling, this);
-    juce::LocalisedStrings::setCurrentMappings(nullptr);
-    translations.reset();
 }
 
 //==============================================================================
@@ -710,29 +709,8 @@ void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)
                        .getSiblingFile (Config::kResourceFolder)
                        .getChildFile ("locale");
 
-    const bool useGerman = lang.startsWithIgnoreCase ("de");
-    juce::String fileName = useGerman ? "de.txt" : "en.txt";
-    auto langFile = resDir.getChildFile (fileName);
-
-    std::unique_ptr<juce::InputStream> in;
-
-    if (langFile.existsAsFile())
-        in = langFile.createInputStream();
-    else if (useGerman)
-        in = std::make_unique<juce::MemoryInputStream> (BinaryData::de_txt, BinaryData::de_txtSize, false);
-    else
-        in = std::make_unique<juce::MemoryInputStream> (BinaryData::en_txt, BinaryData::en_txtSize, false);
-
-    if (in != nullptr)
-    {
-        translations = std::make_unique<juce::LocalisedStrings> (in->readEntireStreamAsString(), true);
-        juce::LocalisedStrings::setCurrentMappings (translations.get());
-        currentLanguage = useGerman ? "de" : "en";
-    }
-    else
-    {
-        juce::Logger::writeToLog ("Could not load language file: " + fileName);
-    }
+    Localiser::getInstance().loadLanguage (resDir, lang);
+    currentLanguage = Localiser::getInstance().getCurrentLanguage();
 }
 
 

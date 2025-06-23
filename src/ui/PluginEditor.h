@@ -20,6 +20,7 @@
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
+#include "../utils/Localiser.h"
 
 class ParameterSlider : public juce::Slider
 {
@@ -40,7 +41,8 @@ public:
 //==============================================================================
 /**
 */
-class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor
+class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor,
+                                       private Localiser::Listener
 {
 public:
     NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor&);
@@ -60,6 +62,7 @@ private:
     void refreshParameterControls();
     /// Updates all text labels after language change.
     void updateTranslations();
+    void languageChanged() override { updateTranslations(); }
     NeuroCoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
 

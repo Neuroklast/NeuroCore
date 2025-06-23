@@ -17,6 +17,7 @@
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
 #include "custom/ParameterComponent.h"
+#include "../utils/Localiser.h"
 
 
 //==============================================================================
@@ -24,6 +25,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setLookAndFeel (&lookAndFeel);
+    Localiser::getInstance().addListener(this);
 
     languageLabel = std::make_unique<juce::Label>();
     languageLabel->setMinimumHorizontalScale(1.0f);
@@ -37,7 +39,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     {
         auto id = languageBox->getSelectedId();
         audioProcessor.loadLanguage(id == 2 ? "de" : "en");
-        updateTranslations();
     };
     languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
     addAndMakeVisible(*languageBox);
@@ -239,6 +240,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
+    Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
 }
 

@@ -1,6 +1,7 @@
 #include "WaveformDisplayComponent.h"
 #include <algorithm>
 #include "../dsp/DSPUtils.h"
+#include "../utils/Localiser.h"
 #include <juce_opengl/juce_opengl.h>
 #if JUCE_WINDOWS
 #include <GL/gl.h>
