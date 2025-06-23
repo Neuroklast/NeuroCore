@@ -174,6 +174,8 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
+	using namespace juce::gl;
+
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 }
@@ -188,6 +190,7 @@ void WaveformDisplayComponent::renderOpenGL()
                     .withTrimmedBottom(40.0f);
 
     auto scale = openGLContext.getRenderingScale();
+    using namespace juce::gl;
     glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
 
     glLineWidth(1.5f);
