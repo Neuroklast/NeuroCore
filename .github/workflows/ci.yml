@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Clone JUCE
+        shell: bash
+        run: |
+          git clone --depth 1 --branch 8.0.6 --recurse-submodules https://github.com/juce-framework/JUCE.git "$HOME/JUCE"
+
+      - name: Clone VST3 SDK
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/steinbergmedia/vst3sdk.git vst3sdk
+          mkdir -p "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
+          cp -r vst3sdk/* "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: bash scripts/install_linux_deps.sh
+
+      - name: Configure
+        shell: bash
+        run: cmake -B build -S . -DJUCE_DIR="$HOME/JUCE"
+
+      - name: Build
+        shell: bash
+        run: |
+          cmake --build build --config Release 2>&1 | tee build-${{ matrix.os }}.log
+
+      - name: Build tests
+        shell: bash
+        run: cmake --build build --target NeuroCoreTests --config Release
+
+      - name: Run tests
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-log-${{ matrix.os }}
+          path: build-${{ matrix.os }}.log
