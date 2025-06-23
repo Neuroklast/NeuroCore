@@ -9,13 +9,13 @@
 namespace BinaryData
 {
     extern const char*   outerKnob_png;
-    const int            outerKnob_pngSize = 41172;
+    const int            outerKnob_pngSize = 80640;
 
     extern const char*   overknob_png;
-    const int            overknob_pngSize = 54289;
+    const int            overknob_pngSize = 65593;
 
     extern const char*   innerknob_png;
-    const int            innerknob_pngSize = 124899;
+    const int            innerknob_pngSize = 131806;
 
     extern const char*   de_txt;
     const int            de_txtSize = 539;
@@ -39,10 +39,10 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 4364;
+    const int            CMakeLists_txtSize = 4442;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 14994;
+    const int            NeuroCore_jucerSize = 15485;
 
     extern const char*   README_md;
     const int            README_mdSize = 4902;
