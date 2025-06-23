@@ -76,7 +76,7 @@ public:
     g.drawImageTransformed(innerKnob, innerTransform, false);
 
     auto overAngle = rotaryStartAngle +
-                     sliderPosProportional * 2.0f * (rotaryEndAngle - rotaryStartAngle);
+                     sliderPosProportional * 5.f * (rotaryEndAngle - rotaryStartAngle);
     auto overTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
                              .scaled(scale, scale)
                              .rotated(overAngle)
