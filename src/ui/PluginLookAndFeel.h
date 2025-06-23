@@ -76,7 +76,7 @@ public:
     g.drawImageTransformed(innerKnob, innerTransform, false);
 
     auto overAngle = rotaryStartAngle +
-                     sliderPosProportional * 5.f * (rotaryEndAngle - rotaryStartAngle);
+                     sliderPosProportional * std::tanh(sliderPosProportional) * 2.f * (rotaryEndAngle - rotaryStartAngle);
     auto overTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
                              .scaled(scale, scale)
                              .rotated(overAngle)
@@ -84,7 +84,7 @@ public:
     g.drawImageTransformed(overKnob, overTransform, false);
 
     juce::Path pointer;
-    pointer.addRoundedRectangle(1.f, -radius+5, 2.0f, radius/3, 0.5f);
+    pointer.addRoundedRectangle(1.f, -radius+5, 2.0f, radius/4, 0.5f);
     g.setColour(findColour(juce::Slider::thumbColourId));
     g.fillPath(pointer,
                juce::AffineTransform::rotation(angle).translated(centre.x, centre.y));
