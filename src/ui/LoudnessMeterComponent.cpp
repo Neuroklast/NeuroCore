@@ -98,11 +98,19 @@ void LoudnessMeterComponent::renderOpenGL()
 {
     juce::OpenGLHelpers::clear(juce::Colours::black);
     auto bounds = getLocalBounds().toFloat();
-    auto meterArea = bounds.reduced(10.0f, 20.0f);
+    constexpr float labelWidth = 45.0f;
+    auto area = bounds.reduced(10.0f, 20.0f);
+    area.removeFromLeft(labelWidth);
+    auto meterArea = area;
     auto info = currentScaleInfo();
 
     using namespace juce::gl;
     glViewport(0, 0, getWidth(), getHeight());
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
     // meter background
     glColor3f(0.2f, 0.2f, 0.2f);
@@ -141,10 +149,11 @@ void LoudnessMeterComponent::renderOpenGL()
 
 void LoudnessMeterComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black);
-
     auto bounds = getLocalBounds().toFloat();
-    auto meterArea = bounds.reduced(10.0f, 20.0f);
+    constexpr float labelWidth = 45.0f;
+    auto area = bounds.reduced(10.0f, 20.0f);
+    auto labelArea = area.removeFromLeft(labelWidth);
+    auto meterArea = area;
     auto info = currentScaleInfo();
 
     g.setColour(juce::Colours::white);
@@ -156,7 +165,13 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
         g.setColour(juce::Colours::darkgrey);
         g.drawLine(meterArea.getX(), y, meterArea.getRight(), y);
         g.setColour(juce::Colours::white);
-        g.drawFittedText(juce::String(db, 0), (int)meterArea.getX() - 35, (int)y - 7, 30, 14, juce::Justification::centredRight, 1);
+        g.drawFittedText(juce::String(db, 0),
+                         (int)labelArea.getX(),
+                         (int)y - 7,
+                         (int)labelArea.getWidth(),
+                         14,
+                         juce::Justification::centredRight,
+                         1);
     }
 
     auto ledArea = juce::Rectangle<float>(bounds.getWidth() - 15.0f, 5.0f, 10.0f, 10.0f);
