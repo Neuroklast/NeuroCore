@@ -30,6 +30,7 @@ private:
 
     NeuroCoreAudioProcessor& processor;
     float loudness { -100.0f };
+    juce::SmoothedValue<float> smoothedLoudness;
     bool  limiter { false };
     bool  blink   { false };
     int   blinkCount { 0 };

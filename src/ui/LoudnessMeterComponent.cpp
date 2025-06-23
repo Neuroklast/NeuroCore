@@ -7,6 +7,9 @@ LoudnessMeterComponent::LoudnessMeterComponent(NeuroCoreAudioProcessor& proc)
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(true);
     openGLContext.attachTo(*this);
+
+    smoothedLoudness.reset(30.0, 0.1);
+    smoothedLoudness.setCurrentAndTargetValue(-100.0f);
 }
 
 LoudnessMeterComponent::~LoudnessMeterComponent()
@@ -16,7 +19,7 @@ LoudnessMeterComponent::~LoudnessMeterComponent()
 
 void LoudnessMeterComponent::timerCallback()
 {
-    loudness = processor.getLoudnessDb();
+    smoothedLoudness.setTargetValue(processor.getLoudnessDb());
     limiter  = processor.isLimiterActive();
     if (processor.consumeInvalidFlag())
         blinkCount = 6; // roughly 200 ms at 30 Hz
@@ -122,6 +125,7 @@ void LoudnessMeterComponent::renderOpenGL()
     glEnd();
 
     // filled level
+    loudness = smoothedLoudness.getNextValue();
     float yLevel = valueToY(loudness, meterArea);
     glColor3f(limiter ? 1.0f : 0.0f, limiter ? 0.0f : 1.0f, 0.0f);
     glBegin(GL_QUADS);
@@ -149,6 +153,7 @@ void LoudnessMeterComponent::renderOpenGL()
 
 void LoudnessMeterComponent::paint(juce::Graphics& g)
 {
+    loudness = smoothedLoudness.getNextValue();
     auto bounds = getLocalBounds().toFloat();
     constexpr float labelWidth = 45.0f;
     auto area = bounds.reduced(10.0f, 20.0f);

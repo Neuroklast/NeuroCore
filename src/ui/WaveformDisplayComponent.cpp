@@ -29,6 +29,14 @@ WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
     openGLContext.setContinuousRepainting(true);
+
+    const double rate = 60.0;
+    smoothedData.resize(buffer.getNumSamples());
+    for (auto& s : smoothedData)
+        s.reset(rate, 0.1);
+    smoothedFft.resize(static_cast<size_t>(1u << (fftOrder - 1)));
+    for (auto& s : smoothedFft)
+        s.reset(rate, 0.1);
 }
 
 WaveformDisplayComponent::~WaveformDisplayComponent()
@@ -45,30 +53,45 @@ void WaveformDisplayComponent::timerCallback()
 
     const auto* data = buffer.getReadPointer(0);
     const int num    = buffer.getNumSamples();
-    int zeroIndex    = 0;
 
-    for (int i = 1; i < num; ++i)
+    if (fixedWave)
     {
-        if (data[i - 1] < 0.0f && data[i] >= 0.0f)
+        int zeroIndex = 0;
+        for (int i = 1; i < num; ++i)
         {
-            zeroIndex = i;
-            break;
+            if (data[i - 1] < 0.0f && data[i] >= 0.0f)
+            {
+                zeroIndex = i;
+                break;
+            }
+        }
+
+        if (zeroIndex > 0)
+        {
+            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+            {
+                auto* dst = buffer.getWritePointer(ch);
+                std::rotate(dst, dst + zeroIndex, dst + num);
+            }
         }
     }
 
-    if (zeroIndex > 0)
-    {
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-        {
-            auto* dst = buffer.getWritePointer(ch);
-            std::rotate(dst, dst + zeroIndex, dst + num);
-        }
-    }
+    for (int i = 0; i < num; ++i)
+        smoothedData[(size_t)i].setTargetValue(buffer.getSample(0, i));
 
     if (xScale == XScale::Frequency)
     {
         juce::dsp::AudioBlock<float> block(buffer);
         DSPUtils::analyseFFT(block, 0, fftMagnitudes, fftOrder);
+        if (smoothedFft.size() != fftMagnitudes.size())
+        {
+            smoothedFft.resize(fftMagnitudes.size());
+            const double rate = 60.0;
+            for (auto& s : smoothedFft)
+                s.reset(rate, 0.1);
+        }
+        for (size_t i = 0; i < fftMagnitudes.size(); ++i)
+            smoothedFft[i].setTargetValue(fftMagnitudes[i]);
     }
 
     repaint();
@@ -98,9 +121,10 @@ float WaveformDisplayComponent::valueToY(float v, juce::Rectangle<float> area) c
 
 void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectangle<float> area)
 {
-    auto num = buffer.getNumSamples();
+    auto total = buffer.getNumSamples();
+    int num = juce::jlimit(1, total, static_cast<int>(total / zoom));
     int index = juce::jlimit(0, num - 1, static_cast<int>((pos.x - area.getX()) / area.getWidth() * num));
-    float value = buffer.getSample(0, index);
+    float value = smoothedData[(size_t)index].getCurrentValue();
     juce::String xStr;
     switch (xScale)
     {
@@ -111,7 +135,7 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectang
             {
                 float freq = (index / static_cast<float>(fftMagnitudes.size())) * (processor.getSampleRate() / 2.0f);
                 xStr = juce::String(freq, 1) + " Hz";
-                value = fftMagnitudes[index];
+                value = smoothedFft[(size_t)index].getCurrentValue();
             }
             break;
     }
@@ -199,21 +223,26 @@ void WaveformDisplayComponent::renderOpenGL()
     using namespace juce::gl;
     glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
 
-    glLineWidth(1.5f);
-    glColor4f(glowColour.getFloatRed(), glowColour.getFloatGreen(), glowColour.getFloatBlue(), 0.7f);
+    glLineWidth(lineThickness);
+    glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), 0.7f);
 
-    int num = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
-    const float* data = buffer.getReadPointer(0);
+    int total = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
+    int num   = juce::jlimit(1, total, static_cast<int>(total / zoom));
 
     for (int pass = 3; pass >= 0; --pass)
     {
         float alpha = 0.2f + 0.2f * pass;
-        glLineWidth(1.5f + static_cast<float>(pass));
-        glColor4f(glowColour.getFloatRed(), glowColour.getFloatGreen(), glowColour.getFloatBlue(), alpha);
+        glLineWidth(lineThickness + static_cast<float>(pass));
+        glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), alpha);
         glBegin(GL_LINE_STRIP);
         for (int i = 0; i < num; ++i)
         {
-            float value = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? fftMagnitudes[i] : data[i];
+            float value = 0.0f;
+            if (xScale == XScale::Frequency && !fftMagnitudes.empty())
+                value = smoothedFft[(size_t)i].getNextValue();
+            else
+                value = smoothedData[(size_t)i].getNextValue();
+
             float x = indexToX(i, num, area);
             float y = valueToY(value, area);
             glVertex2f(x, y);
@@ -236,6 +265,8 @@ void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
 
     int xTicks = 10;
     int yTicks = 4;
+    int totalSamples = buffer.getNumSamples();
+    int visibleSamples = juce::jlimit(1, totalSamples, static_cast<int>(totalSamples / zoom));
 
     for (int i = 0; i <= xTicks; ++i)
     {
@@ -251,8 +282,8 @@ void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
         double value = 0.0;
         switch (xScale)
         {
-            case XScale::Samples: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, static_cast<double>(buffer.getNumSamples() - 1)); break;
-            case XScale::Time: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, (buffer.getNumSamples() - 1) / processor.getSampleRate()); value *= 1000.0; break;
+            case XScale::Samples: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, static_cast<double>(visibleSamples - 1)); break;
+            case XScale::Time: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, (visibleSamples - 1) / processor.getSampleRate()); value *= 1000.0; break;
             case XScale::Frequency: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, processor.getSampleRate() / 2.0); break;
         }
         juce::String label;

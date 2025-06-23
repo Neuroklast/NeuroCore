@@ -24,6 +24,11 @@ public:
 
     void setXScale(XScale s) noexcept { xScale = s; }
     void setYScale(YScale s) noexcept { yScale = s; }
+    void setZoom(float z) noexcept { zoom = juce::jlimit(1.0f, 10.0f, z); }
+    void setFixedWave(bool f) noexcept { fixedWave = f; }
+
+    float lineThickness { 1.5f };
+    juce::Colour lineColour { juce::Colours::cyan };
 
 private:
     void timerCallback() override;
@@ -45,9 +50,12 @@ private:
     YScale yScale { YScale::Linear };
     bool showGrid { true };
     bool invertY { false };
-    juce::Colour glowColour { juce::Colours::cyan };
+    bool fixedWave { true };
+    float zoom { 1.0f };
     juce::TooltipWindow tooltipWindow { this };
 
+    std::vector<juce::SmoothedValue<float>> smoothedData;
+    std::vector<juce::SmoothedValue<float>> smoothedFft;
     std::vector<float> fftMagnitudes;
     static constexpr int fftOrder = 11; // 2048 point FFT
 };
