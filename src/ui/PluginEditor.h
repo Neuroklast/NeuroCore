@@ -67,7 +67,6 @@ private:
 
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
-    std::unique_ptr<juce::GroupComponent>      parameterGroup;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;
