@@ -273,6 +273,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
     for (size_t i = 0; i < newChains.size(); ++i)
         std::atomic_store (&chains[i], newChains[i]);
+
+    // ensure filters and internal variables match the new script
+    if (currentSpec.sampleRate > 0.0)
+        prepare(currentSpec);
+
     return true;
 }
 
