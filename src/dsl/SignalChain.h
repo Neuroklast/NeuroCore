@@ -73,6 +73,7 @@ private:
     {
         juce::dsp::Compressor<float> comp;
         ExpressionEvaluator threshold, ratio, attack, release;
+        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm;
         int channels{1};
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
@@ -87,6 +88,9 @@ private:
         ExpressionEvaluator attack, release;
         juce::String name;
         float sampleRate{44100.0f};
+        juce::SmoothedValue<float> atkTime, relTime;
+        float atkCoeff{0.0f}, relCoeff{0.0f};
+        float prevAtk{0.0f}, prevRel{0.0f};
         std::vector<float> value;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
