@@ -145,6 +145,7 @@ private:
     juce::SmoothedValue<float>    gainCompValue;
     juce::dsp::Gain<float>        outputGain;
     juce::dsp::Gain<float>        userOutputGain;
+    juce::SmoothedValue<float>    userGainValue;
     juce::AudioBuffer<float>      dryBuffer;
     juce::AudioBuffer<float>      inputWaveBuffer;
     juce::AudioBuffer<float>      outputWaveBuffer;

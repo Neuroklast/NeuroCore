@@ -164,6 +164,7 @@ void NeuroCoreAudioProcessor::releaseResources()
     gainCompValue.reset (getSampleRate(), 0.0);
     outputGain.reset();
     userOutputGain.reset();
+    userGainValue.reset(getSampleRate(), 0.0);
     inputWaveBuffer.setSize (0, 0);
     outputWaveBuffer.setSize (0, 0);
     inputWritePos.store (0);
@@ -193,6 +194,8 @@ void NeuroCoreAudioProcessor::reset()
     outputGain.setGainLinear(1.0f);
     userOutputGain.reset();
     userOutputGain.setGainLinear(1.0f);
+    userGainValue.reset(getSampleRate(), Config::kSmoothingTime);
+    userGainValue.setCurrentAndTargetValue(1.0f);
     inputWaveBuffer.clear();
     outputWaveBuffer.clear();
     inputWritePos.store (0);
@@ -347,10 +350,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
 
-    userOutputGain.setGainLinear(clamp(EffectParameters::outputGain,
-                                        getParam(EffectParameters::outputGain)));
-    juce::dsp::ProcessContextReplacing<float> outCtx(block);
-    userOutputGain.process(outCtx);
+    userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
+                                       getParam(EffectParameters::outputGain)));
+    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    {
+        userOutputGain.setGainLinear(userGainValue.getNextValue());
+        auto slice = block.getSubBlock(i, 1);
+        juce::dsp::ProcessContextReplacing<float> outCtxSlice(slice);
+        userOutputGain.process(outCtxSlice);
+    }
 
     float rmsSum = 0.0f;
     for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
@@ -572,6 +580,8 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     outputGain.setGainLinear (1.0f);
     userOutputGain.prepare(currentSpec);
     userOutputGain.setGainLinear(1.0f);
+    userGainValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
+    userGainValue.setCurrentAndTargetValue(1.0f);
 
     wetValue.reset (currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue (1.0f);
@@ -628,6 +638,7 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
     else if (parameterID == EffectParameters::paramB) { parameterValues[1].store (newValue); smoothedParams[1].setTargetValue(newValue); }
     else if (parameterID == EffectParameters::paramC) { parameterValues[2].store (newValue); smoothedParams[2].setTargetValue(newValue); }
     else if (parameterID == EffectParameters::paramD) { parameterValues[3].store (newValue); smoothedParams[3].setTargetValue(newValue); }
+    else if (parameterID == EffectParameters::outputGain) { userGainValue.setTargetValue(newValue); }
     else if (parameterID == EffectParameters::oversampling)
     {
         oversamplingIndex.store((int) newValue);
