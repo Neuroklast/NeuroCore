@@ -197,8 +197,54 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
-    juce::OpenGLHelpers::clear(lookAndFeel.findColour(WaveformLookAndFeel::backgroundColourId));
+    juce::OpenGLHelpers::clear(
+        lookAndFeel.findColour(WaveformLookAndFeel::backgroundColourId));
+
     glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    juce::Rectangle<float> area(0.0f, 0.0f, (float)getWidth(), (float)getHeight());
+    glLineWidth(lineWidth);
+    glColor4f(waveColour.getFloatRed(),
+              waveColour.getFloatGreen(),
+              waveColour.getFloatBlue(),
+              0.7f);
+
+    auto drawBuffer = [&](const float* bufferData, int count, float alpha)
+    {
+        glColor4f(waveColour.getFloatRed(),
+                  waveColour.getFloatGreen(),
+                  waveColour.getFloatBlue(),
+                  alpha);
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < count; ++i)
+        {
+            float value = (xScale == XScale::Frequency && !fftMagnitudes.empty())
+                              ? fftMagnitudes[i]
+                              : bufferData[i];
+            float x = indexToX(i, count, area);
+            float y = valueToY(value, area);
+            glVertex2f(x, y);
+        }
+        glEnd();
+    };
+
+    if (buffer.getNumSamples() > 0)
+        drawBuffer(buffer.getReadPointer(0), buffer.getNumSamples(), 1.0f);
+
+    if (showEcho)
+    {
+        float alphaStep = 1.0f / (static_cast<float>(history.size()) + 1.0f);
+        float a         = alphaStep;
+        for (auto it = history.rbegin(); it != history.rend(); ++it, a += alphaStep)
+        {
+            int count = static_cast<int>(it->size());
+            drawBuffer(it->data(), count, juce::jlimit(0.0f, 1.0f, a));
+        }
+    }
     glLoadIdentity();
     glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
