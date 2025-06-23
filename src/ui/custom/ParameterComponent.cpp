@@ -1,5 +1,6 @@
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
+#include "../../utils/Localiser.h"
 
 using namespace juce;
 

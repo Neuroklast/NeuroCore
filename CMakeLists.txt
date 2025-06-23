@@ -39,6 +39,7 @@ set(SOURCE_FILES
     src/dsl/SignalChain.cpp
     src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
+    src/utils/Localiser.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
@@ -130,6 +131,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/ExpressionEvaluatorTest.h
     tests/WaveShaperTest.h
     src/utils/ExpressionEvaluator.cpp
+    src/utils/Localiser.cpp
     src/dsp/WaveShaper.cpp
     src/dsp/LookupTables.cpp
     src/dsl/DSLParser.cpp

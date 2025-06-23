@@ -1,4 +1,5 @@
 #include "LoudnessMeterComponent.h"
+#include "../utils/Localiser.h"
 
 LoudnessMeterComponent::LoudnessMeterComponent(NeuroCoreAudioProcessor& proc)
     : processor(proc)

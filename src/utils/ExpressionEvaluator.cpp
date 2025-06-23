@@ -1,6 +1,7 @@
 #include "ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
+#include "Localiser.h"
 
 using namespace juce;
 
