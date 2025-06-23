@@ -69,8 +69,11 @@ namespace ui
         nameLabel.setBounds(area.removeFromTop(20));
 
         auto bottom = area.removeFromBottom(20);
-        auto size = juce::jmax(Config::kRotaryDiameterMin, juce::jmin(area.getWidth(), area.getHeight()));
-        juce::Rectangle<int> knob(area.getCentreX() - size / 2, area.getCentreY() - size / 2, size, size);
+        auto size = juce::jmin(juce::jmin(area.getWidth(), area.getHeight()), Config::kRotaryDiameterMin);
+        juce::Rectangle<int> knob(area.getCentreX() - size / 2,
+                                  area.getCentreY() - size / 2,
+                                  size,
+                                  size);
         slider.setBounds(knob);
         mappingBox.setBounds(bottom);
     }

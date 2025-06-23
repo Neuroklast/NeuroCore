@@ -66,8 +66,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible(*nameEditors[i]);
     }
 
-    parameterGroup = std::make_unique<juce::GroupComponent>("params", TRANS("KnobGroupLabel"));
-    addAndMakeVisible(*parameterGroup);
 
     inputGainSlider = std::make_unique<juce::Slider>();
     inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -284,8 +282,6 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
     editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
     if (polisherLabel)
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
-    if (parameterGroup)
-        parameterGroup->setText(TRANS("KnobGroupLabel"));
 }
 
 //==============================================================================
@@ -324,7 +320,7 @@ void NeuroCoreAudioProcessorEditor::resized()
             }
             if (dynamic_cast<ui::ParameterComponent*>(comp))
             {
-                item.minHeight = Config::kRotaryDiameterMin + 40;
+                item.minHeight = Config::kRotaryDiameterMin + 105;
                 item.minWidth  = Config::kRotaryDiameterMin + 60;
             }
             item.alignSelf   = juce::GridItem::AlignSelf::center;
@@ -343,7 +339,6 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(editSaveButton.get(),     Config::kAreaEditButton);
     addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
     addItem(errorLabel.get(),         Config::kAreaErrorLabel);
-    addItem(parameterGroup.get(),         Config::kAreaKnobGroup);
 
     for (int i = 0; i < paramComponents.size(); ++i)
     {
@@ -368,8 +363,6 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
 
     grid.performLayout(getLocalBounds().reduced(pad));
-    if (parameterGroup)
-        parameterGroup->toBack();
 
     clampChildrenToBounds();
 }
