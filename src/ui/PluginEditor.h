@@ -53,6 +53,9 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    /// Ensures all children stay within the editor bounds.
+    void clampChildrenToBounds();
+
 private:
     void refreshParameterControls();
     NeuroCoreAudioProcessor& audioProcessor;
