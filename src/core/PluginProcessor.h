@@ -135,6 +135,7 @@ private:
     std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
     juce::String currentLanguage;
+    std::unique_ptr<juce::LocalisedStrings> translations;
 
 
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
