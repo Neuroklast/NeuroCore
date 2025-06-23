@@ -26,6 +26,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     setLookAndFeel (&lookAndFeel);
 
     languageLabel = std::make_unique<juce::Label>();
+    languageLabel->setMinimumHorizontalScale(1.0f);
     languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
     addAndMakeVisible(*languageLabel);
 
@@ -118,13 +119,17 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*outputGainSlider);
 
     inputGainLabel  = std::make_unique<juce::Label>("", TRANS("InputGainLabel"));
+    inputGainLabel->setMinimumHorizontalScale(1.0f);
     mixLabel        = std::make_unique<juce::Label>("", TRANS("MixLabel"));
+    mixLabel->setMinimumHorizontalScale(1.0f);
     outputGainLabel = std::make_unique<juce::Label>("", TRANS("OutputGainLabel"));
+    outputGainLabel->setMinimumHorizontalScale(1.0f);
     addAndMakeVisible(*inputGainLabel);
     addAndMakeVisible(*mixLabel);
     addAndMakeVisible(*outputGainLabel);
 
     polisherLabel = std::make_unique<juce::Label>("", TRANS("PolisherLabel"));
+    polisherLabel->setMinimumHorizontalScale(1.0f);
     addAndMakeVisible (*polisherLabel);
 
     polisherBox = std::make_unique<juce::ComboBox>();
@@ -140,6 +145,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     for (auto* l : { inputGainValue.get(), mixValue.get(), outputGainValue.get() })
     {
         l->setJustificationType(juce::Justification::centred);
+        l->setMinimumHorizontalScale(1.0f);
         addAndMakeVisible(*l);
     }
 
@@ -219,6 +225,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*editSaveButton);
 
     errorLabel = std::make_unique<juce::Label>();
+    errorLabel->setMinimumHorizontalScale(1.0f);
     errorLabel->setColour(juce::Label::textColourId, juce::Colours::red);
     addAndMakeVisible(*errorLabel);
 
@@ -353,5 +360,17 @@ void NeuroCoreAudioProcessorEditor::resized()
     grid.performLayout(getLocalBounds().reduced(pad));
     if (knobGroup)
         knobGroup->toBack();
+
+    clampChildrenToBounds();
+}
+
+void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
+{
+    auto bounds = getLocalBounds();
+    for (int i = 0; i < getNumChildComponents(); ++i)
+    {
+        if (auto* c = getChildComponent(i))
+            c->setBounds(c->getBounds().getIntersection(bounds));
+    }
 }
 
