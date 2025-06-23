@@ -56,10 +56,27 @@ bool DSLParser::parse(const juce::String& text,
             return false;
         }
         auto id = trimLower(line.substring(0, colon));
-        auto rest = line.substring(colon+1).trim();
+        auto rest = line.substring(colon + 1).trim();
         BlockDesc desc;
         desc.name = id;
         desc.type = id.retainCharacters("abcdefghijklmnopqrstuvwxyz");
+
+        // allow shorthand block names for common filters
+        if (desc.type == "hpf" || desc.type == "hp" || desc.type == "highpass")
+        {
+            desc.type = "filter";
+            desc.args["type"] = "highpass";
+        }
+        else if (desc.type == "bpf" || desc.type == "bp" || desc.type == "bandpass")
+        {
+            desc.type = "filter";
+            desc.args["type"] = "bandpass";
+        }
+        else if (desc.type == "lpf" || desc.type == "lp" || desc.type == "lowpass")
+        {
+            desc.type = "filter";
+            desc.args["type"] = "lowpass";
+        }
 
         if (seen.contains(id))
         {

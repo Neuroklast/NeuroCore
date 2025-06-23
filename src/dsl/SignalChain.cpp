@@ -38,8 +38,11 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
 
 static juce::dsp::StateVariableTPTFilterType parseFilterType(const juce::String& t)
 {
-    if (t == "highpass") return juce::dsp::StateVariableTPTFilterType::highpass;
-    if (t == "bandpass") return juce::dsp::StateVariableTPTFilterType::bandpass;
+    auto token = t.trim().toLowerCase();
+    if (token == "highpass" || token == "hpf" || token == "hp")
+        return juce::dsp::StateVariableTPTFilterType::highpass;
+    if (token == "bandpass" || token == "bpf" || token == "bp")
+        return juce::dsp::StateVariableTPTFilterType::bandpass;
     return juce::dsp::StateVariableTPTFilterType::lowpass;
 }
 
