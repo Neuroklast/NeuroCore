@@ -26,7 +26,7 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
             for (auto& b : *ptr)
                 b->prepare(spec);
 
-    juce::dsp::ProcessSpec mono{ spec.sampleRate, spec.maximumBlockSize, 1 };
+    juce::dsp::ProcessSpec xspec{ spec.sampleRate, spec.maximumBlockSize, spec.numChannels };
     lowMidVars.clear();
     midHighVars.clear();
     for (const auto& kv : variables)
@@ -53,12 +53,12 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
     for (auto& f : lowMidXover)
     {
         f.setCutoffFrequency(f1);
-        f.prepare(mono);
+        f.prepare(xspec);
     }
     for (auto& f : midHighXover)
     {
         f.setCutoffFrequency(f2);
-        f.prepare(mono);
+        f.prepare(xspec);
     }
 }
 
