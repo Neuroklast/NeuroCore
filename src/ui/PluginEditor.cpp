@@ -179,10 +179,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor->setReturnKeyStartsNewLine(true);
     formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
     formulaInputEditor->setReadOnly(true);
-    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
+    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::black);
     // hide caret while editor is read only
     formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-        Colours::black);
+                                  juce::Colours::black);
     addAndMakeVisible(*formulaInputEditor);
     {
         juce::String err;
@@ -211,10 +211,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
+            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, juce::Colours::black);
             // show caret when editor becomes editable
             formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-                                          juce::Colours::black);
+                                         juce::Colours::black);
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
