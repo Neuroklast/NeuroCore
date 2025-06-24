@@ -313,7 +313,10 @@ void NeuroCoreAudioProcessorEditor::resized()
         if (comp == nullptr)
             return;
 
-        juce::FlexItem item(*comp, col * area.columnSpan, row * area.rowSpan);
+        juce::FlexItem item;
+        item.associatedComponent = comp; // Associate the component
+        item.width = col * area.columnSpan; // Set width
+        item.height = row * area.rowSpan; // Set height
         item.order     = area.row * Config::kGridColumns + area.column;
         item.margin    = pad;
 
