@@ -342,16 +342,27 @@ void NeuroCoreAudioProcessorEditor::resized()
     grid.columnGap = juce::Grid::Px(Config::kUiPadding);
 
     for (int i = 0; i < Config::kGridRows; ++i)
-        grid.templateRows.add(juce::Grid::TrackInfo(1_fr));
+    {
+        if (i >= 8 && i < 11)
+            grid.templateRows.add(juce::Grid::TrackInfo(juce::Grid::Fr(2.6f)));
+        else
+            grid.templateRows.add(juce::Grid::TrackInfo(1_fr));
+    }
 
     for (int i = 0; i < Config::kGridColumns; ++i)
         grid.templateColumns.add(juce::Grid::TrackInfo(1_fr));
 
-    auto add = [&](juce::Component* comp, int rStart, int rEnd, int cStart, int cEnd)
+    auto add = [&](juce::Component* comp, int rStart, int rEnd, int cStart, int cEnd, bool fixed = false)
     {
         if (!comp) return;
-        grid.items.add(juce::GridItem(*comp).withArea(rStart + 1, cStart + 1,
-                                                     rEnd + 1, cEnd + 1));
+        juce::GridItem item(*comp);
+        item.withArea(rStart + 1, cStart + 1, rEnd + 1, cEnd + 1);
+        if (fixed)
+        {
+            item.width  = juce::GridItem::Px(Config::kParameterKnobSize);
+            item.height = juce::GridItem::Px(Config::kParameterKnobSize);
+        }
+        grid.items.add(std::move(item));
     };
 
     add(pluginNameLabel.get(), 0, 2, 0, 2);
@@ -371,10 +382,10 @@ void NeuroCoreAudioProcessorEditor::resized()
 
     add(loudnessMeter.get(),   6,14, 9,12);
 
-    add(paramComponents[0].get(), 8,11,0,3);
-    add(paramComponents[1].get(), 8,11,3,6);
-    add(paramComponents[2].get(), 8,11,6,9);
-    add(paramComponents[3].get(), 8,11,9,12);
+    add(paramComponents[0].get(), 8,11,0,3, true);
+    add(paramComponents[1].get(), 8,11,3,6, true);
+    add(paramComponents[2].get(), 8,11,6,9, true);
+    add(paramComponents[3].get(), 8,11,9,12, true);
     add(inputDisplay.get(),      8,11,9,12);
 
     add(inputGainSlider.get(), 11,14,0,4);

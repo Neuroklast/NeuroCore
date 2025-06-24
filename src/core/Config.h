@@ -111,6 +111,8 @@ namespace Config
     inline constexpr int kKnobSize          = 90;
     /// Mindestdurchmesser aller Rotary-Slider.
     inline constexpr int kRotaryDiameterMin = 160;
+    /// Fixed size of each ParameterComponent knob.
+    inline constexpr int kParameterKnobSize = 300;
     /// Height of value displays below knobs.
     inline constexpr int kValueFieldHeight  = 20;
 

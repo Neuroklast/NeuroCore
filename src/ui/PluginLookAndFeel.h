@@ -43,8 +43,7 @@ public:
 
   ~NeuroCoreLookAndFeel() override = default;
 
-  // Draw rotary knob composed of rotating outer image, static inner image and
-  // thin red pointer.
+  // Draw rotary knob using fixed inner/outer images and a rotating overlay.
   void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height,
                         float sliderPosProportional, float rotaryStartAngle,
                         float rotaryEndAngle, juce::Slider &slider) override {
@@ -52,42 +51,32 @@ public:
                                                static_cast<float>(y),
                                                static_cast<float>(width),
                                                static_cast<float>(height));
-    const auto radius =
-        juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
     const auto centre = bounds.getCentre();
     const auto angle = rotaryStartAngle +
                        sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
-
 
     const auto sw = static_cast<float>(outerKnob.getWidth());
     const auto sh = static_cast<float>(outerKnob.getHeight());
     const auto scale = juce::jmin(bounds.getWidth() / sw,
                                   bounds.getHeight() / sh);
 
-    auto outerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                              .scaled(scale, scale)
-                              .rotated(angle)
-                              .translated(centre.x, centre.y);
-    g.drawImageTransformed(outerKnob, outerTransform, false);
+    auto base = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
+                    .scaled(scale, scale)
+                    .translated(centre.x, centre.y);
+    g.drawImageTransformed(innerKnob, base, false);
 
-    auto innerTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                              .scaled(scale, scale)
-                              .translated(centre.x, centre.y);
-    g.drawImageTransformed(innerKnob, innerTransform, false);
+    juce::Path wedge;
+    wedge.addPieSegment(bounds, rotaryStartAngle, angle, 0.75);
+    g.setColour(juce::Colours::red.withAlpha(0.35f));
+    g.fillPath(wedge);
 
-    auto overAngle = rotaryStartAngle +
-                     sliderPosProportional * std::tanh(sliderPosProportional) * 2.f * (rotaryEndAngle - rotaryStartAngle);
     auto overTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
                              .scaled(scale, scale)
-                             .rotated(overAngle)
+                             .rotated(angle)
                              .translated(centre.x, centre.y);
     g.drawImageTransformed(overKnob, overTransform, false);
 
-    juce::Path pointer;
-    pointer.addRoundedRectangle(1.f, -radius+5, 2.0f, radius/4, 0.5f);
-    g.setColour(findColour(juce::Slider::thumbColourId));
-    g.fillPath(pointer,
-               juce::AffineTransform::rotation(angle).translated(centre.x, centre.y));
+    g.drawImageTransformed(outerKnob, base, false);
   }
 
   // Draw rounded button background with red outline.
