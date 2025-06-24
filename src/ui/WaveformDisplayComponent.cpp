@@ -121,26 +121,49 @@ float WaveformDisplayComponent::valueToY(float v, juce::Rectangle<float> area) c
     return area.getY() + norm * area.getHeight();
 }
 
-void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectangle<float> area)
+void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos,
+    juce::Rectangle<float> area)
 {
-    auto total = buffer.getNumSamples();
-    int num = juce::jlimit(1, total, static_cast<int>(total / zoom));
-    int index = juce::jlimit(0, num - 1, static_cast<int>((pos.x - area.getX()) / area.getWidth() * num));
-    float value = smoothedData[(size_t)index].getCurrentValue();
+    // 1) Total Samples bzw. FFT-Bins ermitteln
+    const int total = (xScale == XScale::Frequency && !fftMagnitudes.empty())
+        ? static_cast<int>(fftMagnitudes.size())
+        : buffer.getNumSamples();
+
+    // 2) Wie viele Punkte angezeigt werden
+    const int num = juce::jlimit(1, total, static_cast<int>(total / zoom));
+
+    // 3) Index anhand der Maus-X-Position, geklammert auf [0..num-1]
+    const int index = juce::jlimit(0, num - 1,
+        static_cast<int>((pos.x - area.getX())
+            / area.getWidth()
+            * num));
+
+    // 4) Wert aus dem richtigen Glätter-Array
+    float value;
+    if (xScale == XScale::Frequency && !smoothedFft.empty())
+        value = smoothedFft[(size_t)index].getCurrentValue();
+    else
+        value = smoothedData[(size_t)index].getCurrentValue();
+
+    // 5) X-Label
     juce::String xStr;
-    switch (xScale)
+    if (xScale == XScale::Frequency)
     {
-        case XScale::Samples: xStr = juce::String(index); break;
-        case XScale::Time:    xStr = juce::String((index / processor.getSampleRate()) * 1000.0, 2) + " ms"; break;
-        case XScale::Frequency:
-            if (!fftMagnitudes.empty())
-            {
-                float freq = (index / static_cast<float>(fftMagnitudes.size())) * (processor.getSampleRate() / 2.0f);
-                xStr = juce::String(freq, 1) + " Hz";
-                value = smoothedFft[(size_t)index].getCurrentValue();
-            }
-            break;
+        float freq = (index / static_cast<float>(fftMagnitudes.size()))
+            * (processor.getSampleRate() / 2.0f);
+        xStr = juce::String(freq, 1) + " Hz";
     }
+    else if (xScale == XScale::Time)
+    {
+        xStr = juce::String((index / processor.getSampleRate()) * 1000.0, 2)
+            + " ms";
+    }
+    else  // Samples
+    {
+        xStr = juce::String(index);
+    }
+
+    // 6) Y-Label (linear vs. Dezibel)
     juce::String yStr;
     if (yScale == YScale::Decibel)
     {
@@ -151,8 +174,10 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos, juce::Rectang
     {
         yStr = juce::String(value, 2);
     }
+
     setTooltip(xStr + ", " + yStr);
 }
+
 
 void WaveformDisplayComponent::mouseMove(const juce::MouseEvent& e)
 {
@@ -232,7 +257,7 @@ void WaveformDisplayComponent::renderOpenGL()
     int total = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
     int num   = juce::jlimit(1, total, static_cast<int>(total / zoom));
 
-    for (int pass = 3; pass >= 0; --pass)
+    for (int pass = 1; pass >= 0; --pass)
     {
         float alpha = 0.2f + 0.2f * pass;
         glLineWidth(lineThickness + static_cast<float>(pass));

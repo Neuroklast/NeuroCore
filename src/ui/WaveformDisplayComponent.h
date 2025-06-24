@@ -27,8 +27,8 @@ public:
     void setZoom(float z) noexcept { zoom = juce::jlimit(1.0f, 10.0f, z); }
     void setFixedWave(bool f) noexcept { fixedWave = f; }
 
-    float lineThickness { 1.5f };
-    juce::Colour lineColour { juce::Colours::cyan };
+    float lineThickness { 0.5f };
+    juce::Colour lineColour { juce::Colours::red };
 
 private:
     void timerCallback() override;

@@ -390,17 +390,17 @@ void NeuroCoreAudioProcessorEditor::resized()
                                        );
 
     if (inputDisplay)
-        inputDisplay->setBounds(getGridCellBounds(14, 0, 4, 6));
+        inputDisplay->setBounds(getGridCellBounds(13, 0, 5, 6));
     if (outputDisplay)
-        outputDisplay->setBounds(getGridCellBounds(14, 6, 4, 6));
+        outputDisplay->setBounds(getGridCellBounds(13, 6, 5, 6));
     
     if (inputGainSlider)
-        inputGainSlider->setBounds(getGridCellBounds(10, 0, 4, 4));
+        inputGainSlider->setBounds(getGridCellBounds(10, 0, 3, 3));
 	
     if (mixSlider)
-        mixSlider->setBounds(getGridCellBounds(10, 4, 4, 4));
+        mixSlider->setBounds(getGridCellBounds(10, 3, 3, 3));
     if (outputGainSlider)
-        outputGainSlider->setBounds(getGridCellBounds(10, 8, 4, 4));
+        outputGainSlider->setBounds(getGridCellBounds(10, 6, 3, 3));
     
 
 
