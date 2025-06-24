@@ -383,7 +383,7 @@ void NeuroCoreAudioProcessorEditor::resized()
 
     add(outputDisplay.get(),    14,16,3,9);
 
-    grid.performLayout(bounds.reduced(Config::kUiPadding));
+    grid.performLayout(bounds.reduced(Config::kUiPadding).toNearestInt());
 
     clampChildrenToBounds();
 }

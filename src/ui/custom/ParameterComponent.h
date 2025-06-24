@@ -50,7 +50,7 @@ namespace ui
         juce::Label  minLabel;
         juce::Label  valueLabel;
         juce::Label  maxLabel;
-        juce::ComboBox mappingBox;
+     
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
     };
 } // namespace ui

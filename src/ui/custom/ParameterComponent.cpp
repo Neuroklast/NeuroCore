@@ -12,7 +12,7 @@ namespace ui
         : valueTreeState(vts), paramID(id), aliasName(alias)
     {
         slider.setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
+        slider.setTextBoxStyle(Slider::TextBoxAbove, false, 0, 0);
         slider.addMouseListener(this, true);
         addAndMakeVisible(slider);
 
@@ -24,13 +24,6 @@ namespace ui
             l->setJustificationType(Justification::left);
             addAndMakeVisible(*l);
         }
-
-        mappingBox.onChange = [this]
-        {
-            currentMapping = mappingBox.getSelectedItemIndex();
-            updateLabels();
-        };
-        addAndMakeVisible(mappingBox);
 
         attachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(valueTreeState, paramID, slider);
 
@@ -76,17 +69,9 @@ namespace ui
                                   size,
                                   size);
         slider.setBounds(knob);
-        mappingBox.setBounds(bottom);
+      
     }
 
-    void ParameterComponent::addMapping(const ParameterMapping& m)
-    {
-        mappings.push_back(m);
-        mappingBox.addItem(m.context, mappings.size());
-        if (mappings.size() == 1)
-            mappingBox.setSelectedItemIndex(0, dontSendNotification);
-        updateLabels();
-    }
 
     void ParameterComponent::parameterChanged(const String& id, float)
     {
