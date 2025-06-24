@@ -73,8 +73,38 @@ void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& nam
 {
     if (juce::isPositiveAndBelow(index, variableNames.size()))
     {
-        variableNames[(size_t)index] = name;
+        const juce::SpinLock::ScopedLockType sl(variableLock);
+        variableNames[(size_t) index] = name;
     }
+}
+
+juce::String NeuroCoreAudioProcessor::getVariableName(int index) const noexcept
+{
+    const juce::SpinLock::ScopedLockType sl(variableLock);
+    if (juce::isPositiveAndBelow(index, (int) variableNames.size()))
+        return variableNames[(size_t) index];
+    return {};
+}
+
+std::array<juce::String, 4> NeuroCoreAudioProcessor::getVariableNames() const
+{
+    const juce::SpinLock::ScopedLockType sl(variableLock);
+    return variableNames;
+}
+
+bool NeuroCoreAudioProcessor::isParameterActive(int index) const noexcept
+{
+    if (juce::isPositiveAndBelow(index, (int) parameterActive.size()))
+        return parameterActive[(size_t) index].load();
+    return false;
+}
+
+juce::StringArray NeuroCoreAudioProcessor::getParameterMappings(int index) const
+{
+    const juce::SpinLock::ScopedLockType sl(variableLock);
+    if (! juce::isPositiveAndBelow(index, (int) variableNames.size()))
+        return {};
+    return signalChain.getMappingsFor(variableNames[(size_t) index]);
 }
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
@@ -412,13 +442,16 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
     if (! parser.parse(text, blocks, aliases, error))
         return false;
 
-    for (int i = 0; i < 4; ++i)
     {
-        auto key = juce::String::charToString(static_cast<juce_wchar>('a' + i));
-        auto it  = aliases.find(key);
-        variableNames[i] = it != aliases.end() ? it->second : key;
-        auto aliasName = variableNames[i];
-        parameterActive[i] = text.containsIgnoreCase(aliasName) || text.containsIgnoreCase(key);
+        const juce::SpinLock::ScopedLockType sl(variableLock);
+        for (int i = 0; i < 4; ++i)
+        {
+            auto key = juce::String::charToString(static_cast<juce_wchar>('a' + i));
+            auto it  = aliases.find(key);
+            variableNames[i] = it != aliases.end() ? it->second : key;
+            auto aliasName = variableNames[i];
+            parameterActive[i].store(text.containsIgnoreCase(aliasName) || text.containsIgnoreCase(key));
+        }
     }
 
     oldSignalChain = signalChain;

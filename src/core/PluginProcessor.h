@@ -79,26 +79,11 @@ public:
     juce::String getScript() const noexcept { return dslScript; }
 
     void setVariableName(int index, const juce::String& name);
-    juce::String getVariableName(int index) const noexcept
-    {
-        if (juce::isPositiveAndBelow (index, (int) variableNames.size()))
-            return variableNames[(size_t) index];
-        return {};
-    }
-    const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
-    bool isParameterActive(int index) const noexcept
-    {
-        if (juce::isPositiveAndBelow(index, (int) parameterActive.size()))
-            return parameterActive[(size_t) index];
-        return false;
-    }
+    juce::String getVariableName(int index) const noexcept;
+    std::array<juce::String, 4> getVariableNames() const;
+    bool isParameterActive(int index) const noexcept;
 
-    juce::StringArray getParameterMappings(int index) const
-    {
-        if (! juce::isPositiveAndBelow(index, (int) variableNames.size()))
-            return {};
-        return signalChain.getMappingsFor(variableNames[(size_t)index]);
-    }
+    juce::StringArray getParameterMappings(int index) const;
 
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
@@ -127,11 +112,14 @@ public:
 private:
     //==============================================================================
     std::array<std::atomic<float>, 4> parameterValues{};
+    // Zugriff von UI-Threads, nicht im Audio-Thread
+    mutable juce::SpinLock variableLock;
     std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
-    std::array<bool, 4>        parameterActive{ true, true, true, true };
+    // Aktiv-Flags werden mit atomaren Booleans gehalten
+    std::array<std::atomic<bool>, 4> parameterActive{ true, true, true, true };
     std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
     juce::String currentLanguage;
