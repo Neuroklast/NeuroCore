@@ -33,9 +33,13 @@ public:
     if (auto *p2 = proc2.apvts.getParameter(EffectParameters::paramA))
       expectWithinAbsoluteError(p2->getValue(), 0.5f, 0.0001f);
 
-    beginTest("File encrypted");
+    beginTest("File format");
+    juce::FileInputStream in(tmp.getFile());
+    char magic[4]{};
+    in.read(magic, 4);
+    expectEquals(juce::String(magic, 4), juce::String("NRK\0", 4));
     auto content = tmp.getFile().loadFileAsString();
-    expect(!content.contains("{"));
+    expect(!content.contains("x * 2"));
   }
 };
 

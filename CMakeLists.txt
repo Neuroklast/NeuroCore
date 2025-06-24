@@ -4,6 +4,7 @@ include(FetchContent)
 
 project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
 
+
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
         set(JUCE_DIR $ENV{JUCE_DIR} CACHE PATH "Path to JUCE" FORCE)

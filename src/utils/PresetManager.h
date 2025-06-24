@@ -7,6 +7,7 @@
 #include <JuceHeader.h>
 #include <vector>
 #include "../third_party/nlohmann/json.hpp"
+#include <array>
 
 class NeuroCoreAudioProcessor;
 
@@ -27,11 +28,24 @@ public:
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;
 
 private:
-    std::string encrypt(const std::string& text) const;
-    std::string decrypt(const std::string& text) const;
+    std::vector<uint8_t> encrypt(const juce::MemoryBlock& data) const;
+    bool decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock& dest) const;
+
+    struct Header {
+        char     magic[4];
+        int32_t  version;
+        char     classID[32];
+        int64_t  chunkListOffset;
+    };
+
+    struct ChunkEntry {
+        char     id[4];
+        int64_t  offset;
+        int64_t  length;
+    };
 
     NeuroCoreAudioProcessor& processor;
-    const juce::String key { "NeuroCoreKey" };
+    std::array<uint8_t, 32> key{};
 };
 
 
