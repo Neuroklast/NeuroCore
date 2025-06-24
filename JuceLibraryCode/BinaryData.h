@@ -18,10 +18,10 @@ namespace BinaryData
     const int            innerknob_pngSize = 74600;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 961;
+    const int            de_txtSize = 979;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 891;
+    const int            en_txtSize = 908;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
@@ -39,13 +39,13 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 4506;
+    const int            CMakeLists_txtSize = 5098;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 15993;
+    const int            NeuroCore_jucerSize = 16201;
 
     extern const char*   README_md;
-    const int            README_mdSize = 5589;
+    const int            README_mdSize = 5802;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 13;

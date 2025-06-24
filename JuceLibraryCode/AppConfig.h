@@ -43,6 +43,7 @@
 #define JUCE_MODULE_AVAILABLE_juce_opengl                   1
 #define JUCE_MODULE_AVAILABLE_juce_osc                      1
 #define JUCE_MODULE_AVAILABLE_juce_product_unlocking        1
+#define JUCE_MODULE_AVAILABLE_melatonin_inspector           1
 
 #define JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED 1
 
