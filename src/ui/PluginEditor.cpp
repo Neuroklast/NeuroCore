@@ -344,13 +344,13 @@ void NeuroCoreAudioProcessorEditor::resized()
     for (int i = 0; i < Config::kGridRows; ++i)
     {
         if (i >= 8 && i < 11)
-            grid.templateRows.add(juce::Grid::TrackInfo(juce::Grid::Fr(2.6f)));
+            grid.templateRows.add(juce::Grid::TrackInfo(juce::Grid::Fr(16)));
         else
-            grid.templateRows.add(juce::Grid::TrackInfo(1_fr));
+            grid.templateRows.add(juce::Grid::TrackInfo(16_fr));
     }
 
     for (int i = 0; i < Config::kGridColumns; ++i)
-        grid.templateColumns.add(juce::Grid::TrackInfo(1_fr));
+        grid.templateColumns.add(juce::Grid::TrackInfo(12_fr));
 
     auto add = [&](juce::Component* comp, int rStart, int rEnd, int cStart, int cEnd, bool fixed = false)
     {
@@ -359,8 +359,8 @@ void NeuroCoreAudioProcessorEditor::resized()
         item.withArea(rStart + 1, cStart + 1, rEnd + 1, cEnd + 1);
         if (fixed)
         {
-            item.width  = juce::GridItem::Px(Config::kParameterKnobSize);
-            item.height = juce::GridItem::Px(Config::kParameterKnobSize);
+            item.width  = Config::kParameterKnobSize;
+            item.height = Config::kParameterKnobSize;
         }
         grid.items.add(std::move(item));
     };

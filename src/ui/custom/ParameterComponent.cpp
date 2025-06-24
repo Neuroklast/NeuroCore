@@ -51,8 +51,16 @@ namespace ui
         nameLabel.setBounds(0, getHeight() - 24, getWidth(), 24);
     }
 
+
+    void ParameterComponent::parameterChanged(const String& id, float)
+    {
+        if (id == paramID)
+        {
             MessageManager::callAsync([this] { updateLabel(); });
-    void ParameterComponent::updateLabel()
+        }
+    }
+       
+    void ParameterComponent::updateLabel(){
         auto* param = valueTreeState.getParameter(paramID);
         if (!param)
             return;
@@ -62,6 +70,7 @@ namespace ui
         else
             nameLabel.setText(param->getName(64), dontSendNotification);
     }
+
 
     void ParameterComponent::mouseUp(const MouseEvent& e)
     {
