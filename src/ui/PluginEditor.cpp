@@ -27,6 +27,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     setLookAndFeel (&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
+
     pluginNameLabel = std::make_unique<juce::Label>();
     pluginNameLabel->setText(PLUGIN_NAME, juce::dontSendNotification);
     pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
@@ -40,8 +41,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
     {
-        juce::File manual = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                                 .getSiblingFile("UserManual " + (audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? "DE" : "EN") + ".txt");
+
+            juce::String languageSuffix = audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? "DE" : "EN";
+            juce::File manual = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                .getSiblingFile("UserManual " + languageSuffix + ".txt");
+
         manual.startAsProcess();
     };
     addAndMakeVisible(*helpButton);
