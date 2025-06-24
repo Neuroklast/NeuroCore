@@ -34,3 +34,4 @@ MeterScaleLufs=LUFS
 MeterScaleKsys=K-System
 AxisAmplitude=Amplitude
 AxisAmplitudeDb=Amplitude (dB)
+HelpButton=Help

@@ -38,6 +38,9 @@ namespace Config
     struct GridArea { int row, column, rowSpan, columnSpan; };
 
     // Layout positions for all UI elements
+    inline constexpr GridArea kAreaPluginName       { 0,  1, 1, 8 };
+    inline constexpr GridArea kAreaVersionLabel     { 0,  9, 1, 2 };
+    inline constexpr GridArea kAreaHelpButton       { 0, 11, 1, 2 };
     inline constexpr GridArea kAreaLanguageLabel     { 1,  1, 1, 2 };
     inline constexpr GridArea kAreaLanguageBox       { 1,  3, 1, 2 };
     inline constexpr GridArea kAreaInputLeftButton   { 1,  5, 1, 2 };
