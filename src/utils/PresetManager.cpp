@@ -39,7 +39,9 @@ std::vector<uint8_t> PresetManager::encrypt(const juce::MemoryBlock& data) const
     block.copyFrom(data.getData(), 0, data.getSize());
 
     juce::BlowFish bf(key.data(), (int)key.size());
+
     bf.encrypt(block.getData(), data.getSize(), padded);
+
 
     std::vector<uint8_t> result;
     result.resize(4 + padded);
@@ -73,9 +75,11 @@ bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock&
 bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
 {
     json meta;
+
     meta[kAttrName] = name.toStdString();
     meta[kAttrFileName] = file.getFileName().toStdString();
     meta[kAttrPluginName] = JucePlugin_Name;
+
     meta["Author"] = JucePlugin_Manufacturer;
 
     juce::MemoryBlock state;
@@ -157,9 +161,11 @@ bool PresetManager::loadPreset(const juce::File& file)
         if (std::memcmp(e.id, kMetaId, 4) == 0)
         {
             in.setPosition(e.offset);
+
             juce::MemoryBlock metaBytes;
             in.readIntoMemoryBlock(metaBytes, (size_t)e.length);
             auto metaJson = json::parse(metaBytes.toString().toStdString(), nullptr, false);
+
             // ignore metadata but we could display in UI
         }
         else if (std::memcmp(e.id, kStateId, 4) == 0)
