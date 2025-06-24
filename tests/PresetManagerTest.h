@@ -17,7 +17,8 @@ public:
     beginTest("Save and load preset");
     TestProcessor proc;
     PresetManager mgr(proc);
-    proc.setFormula("x * 2", {});
+    juce::String err;
+    proc.setFormula("x * 2", err);
     proc.setVariableName(0, "gain");
     if (auto *p = proc.apvts.getParameter(EffectParameters::paramA))
       p->setValueNotifyingHost(0.5f);
