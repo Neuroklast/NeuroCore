@@ -50,6 +50,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*blankToggle);
 
     presetsButton = std::make_unique<juce::TextButton>("Presets");
+    presetsButton->onClick = [this]
+    {
+        if (! presetTable)
+            presetTable = std::make_unique<PresetTableComponent>(audioProcessor);
+        else
+            presetTable->refresh();
+        if (! presetWindow)
+        {
+            presetWindow = std::make_unique<juce::DialogWindow>("Presets", juce::Colours::black, true);
+            presetWindow->setUsingNativeTitleBar(true);
+            presetWindow->setContentOwned(presetTable.get(), false);
+            presetWindow->centreWithSize(500, 400);
+        }
+        presetWindow->setVisible(true);
+    };
     addAndMakeVisible(*presetsButton);
 
     bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
@@ -94,7 +109,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             audioProcessor.getVariableName(i));
         addAndMakeVisible(*paramComponents[i]);
 
-        // 2.2) TextEditor für Alias-Name
+        // 2.2) TextEditor fÃ¼r Alias-Name
         nameEditors[i] = std::make_unique<juce::TextEditor>();
         nameEditors[i]->setText(audioProcessor.getVariableName(i),
             juce::dontSendNotification);

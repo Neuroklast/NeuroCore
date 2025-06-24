@@ -45,6 +45,7 @@ set(SOURCE_FILES
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
     src/ui/InlineAutocompleteEditor.cpp
+    src/ui/PresetTableComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/custom/ParameterComponent.cpp
@@ -91,6 +92,7 @@ juce_add_binary_data(resourcesBinary
         resources/img/innerknob.png
         resources/img/outerKnob.png
         resources/img/overknob.png
+        "resources/img/knob lights.png"
         resources/locale/de.txt
         resources/locale/en.txt
         resources/optimizations.txt
