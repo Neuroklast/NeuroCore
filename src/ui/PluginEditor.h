@@ -21,7 +21,10 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
-#include "melatonin_inspector/melatonin_inspector.h"
+#include "PresetTableComponent.h"
+#if __has_include(<melatonin_inspector/melatonin_inspector.h>)
+# include <melatonin_inspector/melatonin_inspector.h>
+#endif
 
 class ParameterSlider : public juce::Slider
 {
@@ -114,6 +117,8 @@ private:
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
+    std::unique_ptr<PresetTableComponent>     presetTable;
+    std::unique_ptr<juce::DialogWindow>       presetWindow;
 
     //melatonin::Inspector inspector{ *this };
 
