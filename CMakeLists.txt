@@ -4,6 +4,7 @@ include(FetchContent)
 
 project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
 
+
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
         set(JUCE_DIR $ENV{JUCE_DIR} CACHE PATH "Path to JUCE" FORCE)
@@ -130,9 +131,18 @@ target_sources(NeuroCoreTests PRIVATE
     tests/main.cpp
     tests/ExpressionEvaluatorTest.h
     tests/WaveShaperTest.h
+    tests/PresetManagerTest.h
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/dsp/WaveShaper.cpp
+    src/utils/PresetManager.cpp
+    src/dsp/InputGain.cpp
+    src/dsp/InputRouter.cpp
+    src/dsp/SignalPolisher.cpp
+    src/dsp/LowPassFilter.cpp
+    src/dsp/HighPassFilter.cpp
+    src/dsp/BandPassFilter.cpp
+    src/core/PluginProcessor.cpp
     src/dsp/LookupTables.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
@@ -152,6 +162,15 @@ target_link_libraries(NeuroCoreTests PRIVATE
     juce::juce_dsp
     juce::juce_data_structures
     juce::juce_core
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_audio_formats
+    juce::juce_audio_devices
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_cryptography
     curl
 )
 
