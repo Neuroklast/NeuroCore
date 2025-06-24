@@ -24,7 +24,50 @@ namespace Config
     /// Height of the plugin window in pixels.
     inline constexpr int kWindowHeight       = 1200;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 8;
+    inline constexpr int kUiPadding          = 8;
+
+    /// Height of the top bar containing labels and buttons.
+    inline constexpr int kTopBarHeight       = 30;
+    /// Width of the plug-in name label.
+    inline constexpr int kPluginNameWidth    = 200;
+    /// Width of the version label.
+    inline constexpr int kVersionLabelWidth  = 50;
+    /// Width of the help button.
+    inline constexpr int kHelpButtonWidth    = 80;
+    /// Width of an input toggle button.
+    inline constexpr int kInputToggleWidth   = 30;
+    /// Width of the language description label.
+    inline constexpr int kLanguageLabelWidth = 80;
+    /// Width of the language selection box.
+    inline constexpr int kLanguageBoxWidth   = 100;
+
+    /// Default spacing between child components.
+    inline constexpr int kItemSpacing        = 5;
+
+    /// Height of the formula editor area.
+    inline constexpr int kFormulaEditorHeightLayout = 200;
+    /// Width of the column containing edit/optimize buttons.
+    inline constexpr int kButtonColumnWidth  = 120;
+    /// Height of standard buttons in the button column.
+    inline constexpr int kButtonHeight       = 30;
+    /// Height of the polisher label below the buttons.
+    inline constexpr int kPolisherLabelHeight = 20;
+    /// Height of the error label under the editor.
+    inline constexpr int kErrorLabelHeight   = 20;
+
+    /// Height of the knob row section.
+    inline constexpr int kKnobRowHeight      = 120;
+    /// Space above the knob row.
+    inline constexpr int kKnobRowGap         = 10;
+    /// Height used for knob name editors.
+    inline constexpr int kKnobNameHeight     = 20;
+
+    /// Height of the waveform display section.
+    inline constexpr int kWaveformDisplayHeightLayout = 180;
+    /// Height of the gain slider row.
+    inline constexpr int kGainRowHeight      = 120;
+    /// Width of the loudness meter on the right side.
+    inline constexpr int kLoudnessMeterWidthNarrow = 50;
 
     //-------------------------------------------------------------------------
     // Grid layout configuration

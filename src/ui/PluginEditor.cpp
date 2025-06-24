@@ -328,54 +328,54 @@ void NeuroCoreAudioProcessorEditor::resized()
     auto area     = getLocalBounds().reduced(pad);
 
     // top bar elements
-    auto topBar = area.removeFromTop(30);
-    if (pluginNameLabel) pluginNameLabel->setBounds(topBar.removeFromLeft(200));
-    if (versionLabel)    versionLabel   ->setBounds(topBar.removeFromLeft(50));
-    if (helpButton)      helpButton     ->setBounds(topBar.removeFromLeft(80));
-    if (inputLeftButton) inputLeftButton->setBounds(topBar.removeFromLeft(30));
-    if (inputRightButton)inputRightButton->setBounds(topBar.removeFromLeft(30));
-    if (languageLabel)   languageLabel  ->setBounds(topBar.removeFromLeft(80));
-    if (languageBox)     languageBox    ->setBounds(topBar.removeFromLeft(100));
+    auto topBar = area.removeFromTop(Config::kTopBarHeight);
+    if (pluginNameLabel) pluginNameLabel->setBounds(topBar.removeFromLeft(Config::kPluginNameWidth));
+    if (versionLabel)    versionLabel   ->setBounds(topBar.removeFromLeft(Config::kVersionLabelWidth));
+    if (helpButton)      helpButton     ->setBounds(topBar.removeFromLeft(Config::kHelpButtonWidth));
+    if (inputLeftButton) inputLeftButton->setBounds(topBar.removeFromLeft(Config::kInputToggleWidth));
+    if (inputRightButton)inputRightButton->setBounds(topBar.removeFromLeft(Config::kInputToggleWidth));
+    if (languageLabel)   languageLabel  ->setBounds(topBar.removeFromLeft(Config::kLanguageLabelWidth));
+    if (languageBox)     languageBox    ->setBounds(topBar.removeFromLeft(Config::kLanguageBoxWidth));
 
     // formula editor
     if (formulaInputEditor)
-        formulaInputEditor->setBounds(area.removeFromTop(200).reduced(5));
+        formulaInputEditor->setBounds(area.removeFromTop(Config::kFormulaEditorHeightLayout).reduced(Config::kItemSpacing));
 
     // buttons next to editor
     auto btnCol = getLocalBounds().reduced(pad)
-                  .removeFromTop(200)
-                  .removeFromRight(120)
-                  .reduced(5);
-    if (editSaveButton) editSaveButton->setBounds(btnCol.removeFromTop(30));
-    if (optimizeButton) optimizeButton->setBounds(btnCol.removeFromTop(30));
-    if (polisherLabel)  polisherLabel ->setBounds(btnCol.removeFromTop(20));
-    if (polisherBox)    polisherBox   ->setBounds(btnCol.removeFromTop(30));
+                  .removeFromTop(Config::kFormulaEditorHeightLayout)
+                  .removeFromRight(Config::kButtonColumnWidth)
+                  .reduced(Config::kItemSpacing);
+    if (editSaveButton) editSaveButton->setBounds(btnCol.removeFromTop(Config::kButtonHeight));
+    if (optimizeButton) optimizeButton->setBounds(btnCol.removeFromTop(Config::kButtonHeight));
+    if (polisherLabel)  polisherLabel ->setBounds(btnCol.removeFromTop(Config::kPolisherLabelHeight));
+    if (polisherBox)    polisherBox   ->setBounds(btnCol.removeFromTop(Config::kButtonHeight));
 
     // error display under editor
     if (errorLabel)
-        errorLabel->setBounds(area.removeFromTop(20).reduced(5));
+        errorLabel->setBounds(area.removeFromTop(Config::kErrorLabelHeight).reduced(Config::kItemSpacing));
 
     // parameter row
-    auto knobRow = area.removeFromTop(120).withTrimmedTop(10);
+    auto knobRow = area.removeFromTop(Config::kKnobRowHeight).withTrimmedTop(Config::kKnobRowGap);
     int w = knobRow.getWidth() / (int)paramComponents.size();
     for (int i = 0; i < paramComponents.size(); ++i)
     {
-        auto cell = knobRow.removeFromLeft(w).reduced(5);
-        if (paramComponents[i]) paramComponents[i]->setBounds(cell.removeFromTop(cell.getHeight() - 20));
-        if (nameEditors[i])     nameEditors[i]     ->setBounds(cell.withHeight(20));
+        auto cell = knobRow.removeFromLeft(w).reduced(Config::kItemSpacing);
+        if (paramComponents[i]) paramComponents[i]->setBounds(cell.removeFromTop(cell.getHeight() - Config::kKnobNameHeight));
+        if (nameEditors[i])     nameEditors[i]     ->setBounds(cell.withHeight(Config::kKnobNameHeight));
     }
 
     // waveform displays
-    auto dispArea = area.removeFromTop(180).reduced(5);
+    auto dispArea = area.removeFromTop(Config::kWaveformDisplayHeightLayout).reduced(Config::kItemSpacing);
     if (inputDisplay)  inputDisplay ->setBounds(dispArea.removeFromLeft(dispArea.getWidth()/2));
     if (outputDisplay) outputDisplay->setBounds(dispArea);
 
     // gain sliders
-    auto gainRow = area.removeFromTop(120).withTrimmedTop(5);
+    auto gainRow = area.removeFromTop(Config::kGainRowHeight).withTrimmedTop(Config::kItemSpacing);
     int gw = gainRow.getWidth() / 3;
-    if (inputGainSlider)  inputGainSlider ->setBounds(gainRow.removeFromLeft(gw).reduced(5));
-    if (mixSlider)        mixSlider       ->setBounds(gainRow.removeFromLeft(gw).reduced(5));
-    if (outputGainSlider) outputGainSlider->setBounds(gainRow.reduced(5));
+    if (inputGainSlider)  inputGainSlider ->setBounds(gainRow.removeFromLeft(gw).reduced(Config::kItemSpacing));
+    if (mixSlider)        mixSlider       ->setBounds(gainRow.removeFromLeft(gw).reduced(Config::kItemSpacing));
+    if (outputGainSlider) outputGainSlider->setBounds(gainRow.reduced(Config::kItemSpacing));
 
     // labels and values below sliders
     if (inputGainLabel)
@@ -393,7 +393,7 @@ void NeuroCoreAudioProcessorEditor::resized()
 
     // loudness meter
     if (loudnessMeter)
-        loudnessMeter->setBounds(getLocalBounds().removeFromRight(50).reduced(5));
+        loudnessMeter->setBounds(getLocalBounds().removeFromRight(Config::kLoudnessMeterWidthNarrow).reduced(Config::kItemSpacing));
 
     clampChildrenToBounds();
 }
