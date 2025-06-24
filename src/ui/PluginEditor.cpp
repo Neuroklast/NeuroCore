@@ -27,6 +27,25 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     setLookAndFeel (&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
+    pluginNameLabel = std::make_unique<juce::Label>();
+    pluginNameLabel->setText(PLUGIN_NAME, juce::dontSendNotification);
+    pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(*pluginNameLabel);
+
+    versionLabel = std::make_unique<juce::Label>();
+    versionLabel->setText(juce::String("v") + PLUGIN_VERSION, juce::dontSendNotification);
+    versionLabel->setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(*versionLabel);
+
+    helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
+    helpButton->onClick = [this]
+    {
+        juce::File manual = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                                 .getSiblingFile("UserManual " + (audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? "DE" : "EN") + ".txt");
+        manual.startAsProcess();
+    };
+    addAndMakeVisible(*helpButton);
+
     languageLabel = std::make_unique<juce::Label>();
     languageLabel->setMinimumHorizontalScale(1.0f);
     languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
@@ -72,6 +91,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     inputGainSlider->setRotaryParameters(startAngle, endAngle, true);
     inputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    inputGainSlider->setTooltip(TRANS("InputGainLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::inputGain, *inputGainSlider));
     inputGainSlider->onValueChange = [this]
     {
@@ -87,6 +107,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     mixSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     mixSlider->setRotaryParameters(startAngle, endAngle, true);
     mixSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    mixSlider->setTooltip(TRANS("MixLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
     mixSlider->onValueChange = [this]
     {
@@ -99,6 +120,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     outputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     outputGainSlider->setRotaryParameters(startAngle, endAngle, true);
     outputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    outputGainSlider->setTooltip(TRANS("OutputGainLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::outputGain, *outputGainSlider));
     outputGainSlider->onValueChange = [this]
     {
@@ -284,6 +306,8 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
     editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
     if (polisherLabel)
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
+    if (helpButton)
+        helpButton->setButtonText(TRANS("HelpButton"));
 }
 
 //==============================================================================
@@ -331,6 +355,10 @@ void NeuroCoreAudioProcessorEditor::resized()
 
         flex.items.add(std::move(item));
     };
+
+    addItem(pluginNameLabel.get(), Config::kAreaPluginName);
+    addItem(versionLabel.get(),    Config::kAreaVersionLabel);
+    addItem(helpButton.get(),      Config::kAreaHelpButton);
 
     addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
     addItem(languageBox.get(),      Config::kAreaLanguageBox);
