@@ -39,45 +39,74 @@ public:
                                                 BinaryData::innerknob_pngSize);
     overKnob = juce::ImageCache::getFromMemory(BinaryData::overknob_png,
                                                BinaryData::overknob_pngSize);
+	knobLights = juce::ImageCache::getFromMemory(BinaryData::knob_lights_png,
+		BinaryData::knob_lights_pngSize);
   }
 
   ~NeuroCoreLookAndFeel() override = default;
 
   // Draw rotary knob using fixed inner/outer images and a rotating overlay.
-  void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height,
-                        float sliderPosProportional, float rotaryStartAngle,
-                        float rotaryEndAngle, juce::Slider &slider) override {
-    const auto bounds = juce::Rectangle<float>(static_cast<float>(x),
-                                               static_cast<float>(y),
-                                               static_cast<float>(width),
-                                               static_cast<float>(height));
-    const auto centre = bounds.getCentre();
-    const auto angle = rotaryStartAngle +
-                       sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
+  void drawRotarySlider(juce::Graphics& g,
+      int x, int y, int width, int height,
+      float sliderPosProportional,
+      float rotaryStartAngle,
+      float rotaryEndAngle,
+      juce::Slider&) override
+  {
+      g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+      
 
-    const auto sw = static_cast<float>(outerKnob.getWidth());
-    const auto sh = static_cast<float>(outerKnob.getHeight());
-    const auto scale = juce::jmin(bounds.getWidth() / sw,
-                                  bounds.getHeight() / sh);
+      // 1) Quadrat zentriert berechnen
+      const int side = juce::jmin(width, height);
+      const int cx = x + (width - side) / 2;
+      const int cy = y + (height - side) / 2;
+      const juce::Rectangle<float> area{ (float)cx, (float)cy, (float)side, (float)side };
 
-    auto base = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                    .scaled(scale, scale)
-                    .translated(centre.x, centre.y);
-    g.drawImageTransformed(innerKnob, base, false);
+      // 2) Hintergrund (innerKnob)
+      g.drawImageWithin(innerKnob,
+          area.getX(), area.getY(),
+          area.getWidth(), area.getHeight(),
+          juce::RectanglePlacement::fillDestination);
 
-    juce::Path wedge;
-    wedge.addPieSegment(bounds, rotaryStartAngle, angle, 0.75);
-    g.setColour(juce::Colours::red.withAlpha(0.35f));
-    g.fillPath(wedge);
+      // 3) Pie-Wedge
+      const float angle = rotaryStartAngle
+          + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
 
-    auto overTransform = juce::AffineTransform::translation(-sw * 0.5f, -sh * 0.5f)
-                             .scaled(scale, scale)
-                             .rotated(angle)
-                             .translated(centre.x, centre.y);
-    g.drawImageTransformed(overKnob, overTransform, false);
+      juce::Path wedge;
+      wedge.addPieSegment(area.reduced(side * 0.09f),
+          rotaryStartAngle,
+          angle,
+          0.65f);
+      g.saveState();
+      g.reduceClipRegion(wedge);
 
-    g.drawImageTransformed(outerKnob, base, false);
+      g.drawImageWithin(knobLights,
+          area.getX(), area.getY(),
+          area.getWidth(), area.getHeight(),
+          juce::RectanglePlacement::fillDestination);
+      g.restoreState();
+
+      // 4) Ring (overKnob) um die exakte Mitte rotieren
+      const auto centre = area.getCentre();
+      g.saveState();
+      g.addTransform(juce::AffineTransform::rotation(angle,
+          centre.x,
+          centre.y));
+      g.drawImageWithin(overKnob,
+          area.getX(), area.getY(),
+          area.getWidth(), area.getHeight(),
+          juce::RectanglePlacement::fillDestination);
+      g.restoreState();
+
+      // 5) Vordergrund (outerKnob)
+      g.drawImageWithin(outerKnob,
+          area.getX(), area.getY(),
+          area.getWidth(), area.getHeight(),
+          juce::RectanglePlacement::fillDestination);
   }
+
+
+
 
   // Draw rounded button background with red outline.
   void drawButtonBackground(juce::Graphics &g, juce::Button &button,
@@ -118,4 +147,5 @@ private:
   juce::Image outerKnob;
   juce::Image innerKnob;
   juce::Image overKnob;
+  juce::Image knobLights;
 };

@@ -22,7 +22,7 @@ namespace Config
     /// Width of the plugin window in pixels.
     inline constexpr int kWindowWidth        = 1200;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 800;
+    inline constexpr int kWindowHeight       = 900;
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 8;
 

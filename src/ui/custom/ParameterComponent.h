@@ -14,7 +14,7 @@ namespace ui
         ~ParameterComponent() override;
 
         void paint(juce::Graphics& g) override;
-        void resized() override;
+    
 
         void setAliasName(const juce::String& name);
 

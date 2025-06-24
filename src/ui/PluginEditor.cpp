@@ -336,65 +336,62 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 void NeuroCoreAudioProcessorEditor::resized()
 {
     // --- Header ---------------------------------------------------
-    if (pluginNameLabel)
-        pluginNameLabel->setBounds(getGridCellBounds(0, 0, 2, 2));
-    if (helpButton)
-        helpButton->setBounds(getGridCellBounds(0, 2, 2, 2));
-    if (inputLeftButton)
-        inputLeftButton->setBounds(getGridCellBounds(0, 4, 2, 1));
-    if (inputRightButton)
-        inputRightButton->setBounds(getGridCellBounds(0, 5, 2, 1));
-    if (blankToggle)
-        blankToggle->setBounds(getGridCellBounds(0, 6, 2, 1));
-    if (presetsButton)
-        presetsButton->setBounds(getGridCellBounds(0, 7, 2, 2));
-    if (bypassButton)
-        bypassButton->setBounds(getGridCellBounds(0, 9, 2, 3));
-
-    // --- Editor & Side Panel -------------------------------------
-    if (formulaInputEditor)
-        formulaInputEditor->setBounds(getGridCellBounds(2, 0, 6, 8));
-
-    if (editSaveButton)
-        editSaveButton->setBounds(getGridCellBounds(2, 8, 1, 4));
-    if (optimizeButton)
-        optimizeButton->setBounds(getGridCellBounds(3, 8, 1, 4));
-    if (functionsButton)
-        functionsButton->setBounds(getGridCellBounds(4, 8, 1, 4));
-    if (stagesButton)
-        stagesButton->setBounds(getGridCellBounds(5, 8, 1, 4));
-
-    if (loudnessMeter)
-        loudnessMeter->setBounds(getGridCellBounds(6, 9, 8, 3));
+   if (pluginNameLabel)
+       pluginNameLabel->setBounds(getGridCellBounds(0, 0, 1, 2));
+   pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
+   pluginNameLabel->setJustificationType(juce::Justification::centred);
+   if (helpButton)
+       helpButton->setBounds(getGridCellBounds(0, 2, 0, 2));
+   if (inputLeftButton)
+       inputLeftButton->setBounds(getGridCellBounds(0, 4, 1, 1));
+   if (inputRightButton)
+       inputRightButton->setBounds(getGridCellBounds(0, 5, 1, 1));
+   if (blankToggle)
+       blankToggle->setBounds(getGridCellBounds(0, 6, 1, 1));
+   if (presetsButton)
+       presetsButton->setBounds(getGridCellBounds(0, 7, 1, 2));
+   if (bypassButton)
+       bypassButton->setBounds(getGridCellBounds(0, 9, 1, 3));
+    //
+    //// --- Editor & Side Panel -------------------------------------
+   if (formulaInputEditor)
+       formulaInputEditor->setBounds(getGridCellBounds(1, 0, 6, 8));
+   
+   if (editSaveButton)
+       editSaveButton->setBounds(getGridCellBounds(1, 7, 1, 2));
+   if (optimizeButton)
+       optimizeButton->setBounds(getGridCellBounds(2, 7, 1, 2));
+   if (functionsButton)
+       functionsButton->setBounds(getGridCellBounds(3, 7, 1, 2));
+   if (stagesButton)
+       stagesButton->setBounds(getGridCellBounds(4, 7, 1, 2));
+   
+   if (loudnessMeter)
+       loudnessMeter->setBounds(getGridCellBounds(1, 8, 4, 4));
 
     // --- Circle Knobs --------------------------------------------
     if (paramComponents[0])
-        paramComponents[0]->setBounds(getGridCellBounds(8, 0, 3, 3)
-                                         .withSizeKeepingCentre(Config::kParameterKnobSize,
-                                                               Config::kParameterKnobSize));
+        paramComponents[0]->setBounds(getGridCellBounds(4, 0, 2, 2));
     if (paramComponents[1])
-        paramComponents[1]->setBounds(getGridCellBounds(8, 3, 3, 3)
-                                         .withSizeKeepingCentre(Config::kParameterKnobSize,
-                                                               Config::kParameterKnobSize));
+        paramComponents[1]->setBounds(getGridCellBounds(8, 2, 2, 2)
+                                         );
     if (paramComponents[2])
-        paramComponents[2]->setBounds(getGridCellBounds(8, 6, 3, 3)
-                                         .withSizeKeepingCentre(Config::kParameterKnobSize,
-                                                               Config::kParameterKnobSize));
+        paramComponents[2]->setBounds(getGridCellBounds(8, 5, 2, 2)
+                                         );
     if (paramComponents[3])
-        paramComponents[3]->setBounds(getGridCellBounds(8, 9, 3, 3)
-                                         .withSizeKeepingCentre(Config::kParameterKnobSize,
-                                                               Config::kParameterKnobSize));
+        paramComponents[3]->setBounds(getGridCellBounds(8, 8, 2, 2)
+                                       );
 
     if (inputDisplay)
         inputDisplay->setBounds(getGridCellBounds(8, 9, 3, 3));
-
+    
     if (inputGainSlider)
         inputGainSlider->setBounds(getGridCellBounds(11, 0, 3, 4));
     if (mixSlider)
         mixSlider->setBounds(getGridCellBounds(11, 4, 3, 4));
     if (outputGainSlider)
         outputGainSlider->setBounds(getGridCellBounds(11, 8, 3, 4));
-
+    
     if (outputDisplay)
         outputDisplay->setBounds(getGridCellBounds(14, 3, 2, 6));
 
@@ -411,24 +408,23 @@ void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
     }
 }
 
-juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds (int row, int col,
-                                                                       int rowSpan,
-                                                                       int colSpan) const
+juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds(int row, int col, int rowspan,  int colSpan) const
 {
-    auto area = getLocalBounds().reduced (cellMargin);
-    int cellW = area.getWidth()  / numCols;
+    auto area = getLocalBounds().reduced(cellMargin);
+    int cellW = area.getWidth() / numCols;
     int cellH = area.getHeight() / numRows;
 
-    row     = juce::jlimit (0, numRows - 1, row);
-    col     = juce::jlimit (0, numCols - 1, col);
-    rowSpan = juce::jlimit (1, numRows - row, rowSpan);
-    colSpan = juce::jlimit (1, numCols - col, colSpan);
+    row = juce::jlimit(0, numRows - 1, row);
+    col = juce::jlimit(0, numCols - 1, col);
+    rowspan = juce::jlimit(1, numRows - row, rowspan);
+    colSpan = juce::jlimit(1, numCols - col, colSpan);
 
     int x = area.getX() + col * cellW + cellMargin;
     int y = area.getY() + row * cellH + cellMargin;
     int w = cellW * colSpan - 2 * cellMargin;
-    int h = cellH * rowSpan - 2 * cellMargin;
+    int h = cellH * rowspan - 2 * cellMargin;
 
     return { x, y, w, h };
+
 }
 

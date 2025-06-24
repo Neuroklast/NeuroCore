@@ -18,6 +18,7 @@ namespace ui
         const float startAngle = MathConstants<float>::pi * 4.0f / 3.0f;
         const float endAngle   = MathConstants<float>::pi * 8.0f / 3.0f;
         slider.setRotaryParameters(startAngle, endAngle, true);
+		slider.setTextBoxStyle(Slider::TextBoxBelow, false, 0, 0);
         nameLabel.setInterceptsMouseClicks(false, false);
         attachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(valueTreeState, paramID, slider);
 
@@ -43,12 +44,6 @@ namespace ui
     void ParameterComponent::paint(Graphics& g)
     {
         g.fillAll(Colours::transparentBlack);
-    }
-
-    void ParameterComponent::resized()
-    {
-        slider.setBounds(getLocalBounds());
-        nameLabel.setBounds(0, getHeight() - 24, getWidth(), 24);
     }
 
 
