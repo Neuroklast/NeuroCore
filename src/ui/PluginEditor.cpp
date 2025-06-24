@@ -294,39 +294,40 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int pad         = Config::kUiPadding;
-    juce::Grid grid;
-    grid.justifyItems = juce::Grid::JustifyItems::center;
-    grid.alignItems   = juce::Grid::AlignItems::center;
-    for (int c = 0; c < Config::kGridColumns; ++c)
-        grid.templateColumns.add(juce::Grid::TrackInfo(juce::Grid::Fr(1)));
-    for (int r = 0; r < Config::kGridRows; ++r)
-        grid.templateRows.add(juce::Grid::TrackInfo(juce::Grid::Fr(1)));
+    const int pad = Config::kUiPadding;
+    auto bounds   = getLocalBounds().reduced(pad).toFloat();
 
-    grid.setGap(juce::Grid::Px{ pad });
+    const float col = bounds.getWidth()  / Config::kGridColumns;
+    const float row = bounds.getHeight() / Config::kGridRows;
 
-    auto addItem = [&grid](juce::Component* comp, const Config::GridArea& area)
+    juce::FlexBox flex;
+    flex.flexWrap      = juce::FlexBox::Wrap::wrap;
+    flex.alignContent  = juce::FlexBox::AlignContent::stretch;
+    flex.alignItems    = juce::FlexBox::AlignItems::center;
+    flex.justifyContent= juce::FlexBox::JustifyContent::flexStart;
+
+    auto addItem = [&](juce::Component* comp, const Config::GridArea& area)
     {
-        if (comp)
+        if (comp == nullptr)
+            return;
+
+        juce::FlexItem item(*comp, col * area.columnSpan, row * area.rowSpan);
+        item.order     = area.row * Config::kGridColumns + area.column;
+        item.margin    = pad;
+
+        if (dynamic_cast<juce::Slider*>(comp))
         {
-            auto item = juce::GridItem(*comp).withArea(area.row,
-                                                     area.column,
-                                                     area.row + area.rowSpan,
-                                                     area.column + area.columnSpan);
-            if (dynamic_cast<juce::Slider*>(comp))
-            {
-                item.minHeight = Config::kRotaryDiameterMin;
-                item.minWidth  = Config::kRotaryDiameterMin;
-            }
-            if (dynamic_cast<ui::ParameterComponent*>(comp))
-            {
-                item.minHeight = Config::kRotaryDiameterMin + 105;
-                item.minWidth  = Config::kRotaryDiameterMin + 60;
-            }
-            item.alignSelf   = juce::GridItem::AlignSelf::center;
-            item.justifySelf = juce::GridItem::JustifySelf::center;
-            grid.items.add(std::move(item));
+            item.minHeight = Config::kRotaryDiameterMin;
+            item.minWidth  = Config::kRotaryDiameterMin;
         }
+
+        if (dynamic_cast<ui::ParameterComponent*>(comp))
+        {
+            item.minHeight = Config::kRotaryDiameterMin + 105;
+            item.minWidth  = Config::kRotaryDiameterMin + 60;
+        }
+
+        flex.items.add(std::move(item));
     };
 
     addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
@@ -362,7 +363,7 @@ void NeuroCoreAudioProcessorEditor::resized()
     addItem(outputDisplay.get(),     Config::kAreaOutputDisplay);
     addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
 
-    grid.performLayout(getLocalBounds().reduced(pad));
+    flex.performLayout(bounds);
 
     clampChildrenToBounds();
 }
