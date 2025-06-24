@@ -29,14 +29,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 
     pluginNameLabel = std::make_unique<juce::Label>();
-    pluginNameLabel->setText(PLUGIN_NAME, juce::dontSendNotification);
+    pluginNameLabel->setText(juce::String(PLUGIN_NAME) + " v" + PLUGIN_VERSION,
+                             juce::dontSendNotification);
     pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(*pluginNameLabel);
-
-    versionLabel = std::make_unique<juce::Label>();
-    versionLabel->setText(juce::String("v") + PLUGIN_VERSION, juce::dontSendNotification);
-    versionLabel->setJustificationType(juce::Justification::centredLeft);
-    addAndMakeVisible(*versionLabel);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
@@ -49,6 +45,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         manual.startAsProcess();
     };
     addAndMakeVisible(*helpButton);
+
+    blankToggle = std::make_unique<juce::ToggleButton>("Blank");
+    addAndMakeVisible(*blankToggle);
+
+    presetsButton = std::make_unique<juce::TextButton>("Presets");
+    addAndMakeVisible(*presetsButton);
+
+    bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
+    addAndMakeVisible(*bypassButton);
+
+    functionsButton = std::make_unique<juce::TextButton>("Functions");
+    addAndMakeVisible(*functionsButton);
+
+    stagesButton = std::make_unique<juce::TextButton>("Stages");
+    addAndMakeVisible(*stagesButton);
 
     languageLabel = std::make_unique<juce::Label>();
     languageLabel->setMinimumHorizontalScale(1.0f);
@@ -324,83 +335,55 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int pad = Config::kUiPadding;
-    auto bounds   = getLocalBounds().reduced(pad).toFloat();
+    auto bounds = getLocalBounds().toFloat();
 
-    const float col = bounds.getWidth()  / Config::kGridColumns;
-    const float row = bounds.getHeight() / Config::kGridRows;
+    juce::Grid grid;
+    grid.rowGap    = juce::Grid::Px(Config::kUiPadding);
+    grid.columnGap = juce::Grid::Px(Config::kUiPadding);
 
-    juce::FlexBox flex;
-    flex.flexWrap      = juce::FlexBox::Wrap::wrap;
-    flex.alignContent  = juce::FlexBox::AlignContent::stretch;
-    flex.alignItems    = juce::FlexBox::AlignItems::center;
-    flex.justifyContent= juce::FlexBox::JustifyContent::flexStart;
+    for (int i = 0; i < Config::kGridRows; ++i)
+        grid.templateRows.add(juce::Grid::TrackInfo(1_fr));
 
-    auto addItem = [&](juce::Component* comp, const Config::GridArea& area)
+    for (int i = 0; i < Config::kGridColumns; ++i)
+        grid.templateColumns.add(juce::Grid::TrackInfo(1_fr));
+
+    auto add = [&](juce::Component* comp, int rStart, int rEnd, int cStart, int cEnd)
     {
-        if (comp == nullptr)
-            return;
-
-        juce::FlexItem item;
-        item.associatedComponent = comp; // Associate the component
-        item.width = col * area.columnSpan; // Set width
-        item.height = row * area.rowSpan; // Set height
-        item.order     = area.row * Config::kGridColumns + area.column;
-        item.margin    = pad;
-
-        if (dynamic_cast<juce::Slider*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin;
-            item.minWidth  = Config::kRotaryDiameterMin;
-        }
-
-        if (dynamic_cast<ui::ParameterComponent*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin + 105;
-            item.minWidth  = Config::kRotaryDiameterMin + 60;
-        }
-
-        flex.items.add(std::move(item));
+        if (!comp) return;
+        grid.items.add(juce::GridItem(*comp).withArea(rStart + 1, cStart + 1,
+                                                     rEnd + 1, cEnd + 1));
     };
 
-    addItem(pluginNameLabel.get(), Config::kAreaPluginName);
-    addItem(versionLabel.get(),    Config::kAreaVersionLabel);
-    addItem(helpButton.get(),      Config::kAreaHelpButton);
+    add(pluginNameLabel.get(), 0, 2, 0, 2);
+    add(helpButton.get(),      0, 2, 2, 4);
+    add(inputLeftButton.get(), 0, 2, 4, 5);
+    add(inputRightButton.get(),0, 2, 5, 6);
+    add(blankToggle.get(),     0, 2, 6, 7);
+    add(presetsButton.get(),   0, 2, 7, 9);
+    add(bypassButton.get(),    0, 2, 9,12);
 
-    addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
-    addItem(languageBox.get(),      Config::kAreaLanguageBox);
-    addItem(inputLeftButton.get(),  Config::kAreaInputLeftButton);
-    addItem(inputRightButton.get(), Config::kAreaInputRightButton);
-    addItem(polisherLabel.get(),    Config::kAreaPolisherLabel);
-    addItem(polisherBox.get(),      Config::kAreaPolisherBox);
-    addItem(formulaInputEditor.get(), Config::kAreaFormulaEditor);
-    addItem(editSaveButton.get(),     Config::kAreaEditButton);
-    addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
-    addItem(errorLabel.get(),         Config::kAreaErrorLabel);
+    add(formulaInputEditor.get(), 2, 8, 0, 8);
 
-    for (int i = 0; i < paramComponents.size(); ++i)
-    {
-        addItem(paramComponents[i].get(), Config::kAreaKnobs[i]);
-        addItem(nameEditors[i].get(),     Config::kAreaKnobNames[i]);
-    }
+    add(editSaveButton.get(),   2, 3, 8,12);
+    add(optimizeButton.get(),   3, 4, 8,12);
+    add(functionsButton.get(),  4, 5, 8,12);
+    add(stagesButton.get(),     5, 6, 8,12);
 
-    addItem(inputGainSlider.get(),   Config::kAreaInputGainSlider);
-    addItem(mixSlider.get(),         Config::kAreaMixSlider);
-    addItem(outputGainSlider.get(),  Config::kAreaOutputGainSlider);
+    add(loudnessMeter.get(),   6,14, 9,12);
 
-    addItem(inputGainLabel.get(),    Config::kAreaInputGainLabel);
-    addItem(mixLabel.get(),          Config::kAreaMixLabel);
-    addItem(outputGainLabel.get(),   Config::kAreaOutputGainLabel);
+    add(paramComponents[0].get(), 8,11,0,3);
+    add(paramComponents[1].get(), 8,11,3,6);
+    add(paramComponents[2].get(), 8,11,6,9);
+    add(paramComponents[3].get(), 8,11,9,12);
+    add(inputDisplay.get(),      8,11,9,12);
 
-    addItem(inputGainValue.get(),    Config::kAreaInputGainValue);
-    addItem(mixValue.get(),          Config::kAreaMixValue);
-    addItem(outputGainValue.get(),   Config::kAreaOutputGainValue);
+    add(inputGainSlider.get(), 11,14,0,4);
+    add(mixSlider.get(),        11,14,4,8);
+    add(outputGainSlider.get(), 11,14,8,12);
 
-    addItem(inputDisplay.get(),      Config::kAreaInputDisplay);
-    addItem(outputDisplay.get(),     Config::kAreaOutputDisplay);
-    addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
+    add(outputDisplay.get(),    14,16,3,9);
 
-    flex.performLayout(bounds);
+    grid.performLayout(bounds.reduced(Config::kUiPadding));
 
     clampChildrenToBounds();
 }

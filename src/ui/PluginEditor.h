@@ -72,8 +72,12 @@ private:
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
     std::unique_ptr<juce::Label>         pluginNameLabel;
-    std::unique_ptr<juce::Label>         versionLabel;
     std::unique_ptr<juce::TextButton>    helpButton;
+    std::unique_ptr<juce::ToggleButton>  blankToggle;
+    std::unique_ptr<juce::TextButton>    presetsButton;
+    std::unique_ptr<juce::ToggleButton>  bypassButton;
+    std::unique_ptr<juce::TextButton>    functionsButton;
+    std::unique_ptr<juce::TextButton>    stagesButton;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;
