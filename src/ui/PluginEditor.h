@@ -63,10 +63,10 @@ public:
 private:
     static constexpr int numRows    = 18;
     static constexpr int numCols = 12;
-    static constexpr int cellMargin = 0;
+    static constexpr int cellMargin = 5;
 
     juce::Rectangle<int> getGridCellBounds(int row, int col,
-        int rowSpan = 1, int colSpan = 1) const;
+        int rowSpan, int colSpan ) ;
     void refreshParameterControls();
     /// Updates all text labels after language change.
     void updateTranslations();

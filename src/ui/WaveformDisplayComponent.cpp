@@ -215,12 +215,12 @@ void WaveformDisplayComponent::newOpenGLContextCreated()
 
 void WaveformDisplayComponent::renderOpenGL()
 {
-    juce::OpenGLHelpers::clear(juce::Colours::black);
+    juce::OpenGLHelpers::clear(juce::Colours::transparentBlack);
     auto area = getLocalBounds().toFloat()
-                    .withTrimmedLeft(40.0f)
+                    .withTrimmedLeft(60.0f)
                     .withTrimmedRight(20.0f)
                     .withTrimmedTop(20.0f)
-                    .withTrimmedBottom(40.0f);
+                    .withTrimmedBottom(50.0f);
 
     auto scale = openGLContext.getRenderingScale();
     using namespace juce::gl;
@@ -258,10 +258,10 @@ void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
     auto plot = bounds
-                    .withTrimmedLeft(40.0f)
+                    .withTrimmedLeft(60.0f)
                     .withTrimmedRight(20.0f)
                     .withTrimmedTop(20.0f)
-                    .withTrimmedBottom(40.0f);
+                    .withTrimmedBottom(50.0f);
 
     g.setColour(juce::Colours::white);
     g.drawRect(plot);
@@ -326,7 +326,7 @@ void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
                                                    plot.getX() - 30.0f,
                                                    plot.getCentreY()));
     g.drawFittedText(yScale == YScale::Linear ? TRANS("AxisAmplitude") : TRANS("AxisAmplitudeDb"),
-                    (int)plot.getX() - 80, (int)plot.getY(),
+                    (int)plot.getX() - 70, (int)plot.getY() - 15,
                     60, (int)plot.getHeight(), juce::Justification::centredRight, 1);
 }
 

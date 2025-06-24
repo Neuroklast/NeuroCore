@@ -15,7 +15,7 @@ namespace BinaryData
     const int            knob_lights_pngSize = 95148;
 
     extern const char*   overknob_png;
-    const int            overknob_pngSize = 36429;
+    const int            overknob_pngSize = 85891;
 
     extern const char*   innerknob_png;
     const int            innerknob_pngSize = 537203;
@@ -45,7 +45,7 @@ namespace BinaryData
     const int            CMakeLists_txtSize = 5142;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 16481;
+    const int            NeuroCore_jucerSize = 16595;
 
     extern const char*   README_md;
     const int            README_mdSize = 5802;

@@ -10,6 +10,7 @@
     <GROUP id="{05E733A8-0CB1-11AD-B696-095FDFA18641}" name="resources">
       <GROUP id="{9D3500F1-97FB-395E-F120-232E4E3B8590}" name="img">
         <FILE id="HJObR5" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
+        <FILE id="o9qKjG" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
         <FILE id="h7D1cP" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
         <FILE id="XGvMD5" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
       </GROUP>

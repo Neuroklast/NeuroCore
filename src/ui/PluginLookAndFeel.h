@@ -86,20 +86,20 @@ public:
           juce::RectanglePlacement::fillDestination);
       g.restoreState();
 
-      // 4) Ring (overKnob) um die exakte Mitte rotieren
+      // 4) Ring (outerKnob) um die exakte Mitte rotieren
       const auto centre = area.getCentre();
       g.saveState();
       g.addTransform(juce::AffineTransform::rotation(angle,
           centre.x,
           centre.y));
-      g.drawImageWithin(overKnob,
+      g.drawImageWithin(outerKnob,
           area.getX(), area.getY(),
           area.getWidth(), area.getHeight(),
           juce::RectanglePlacement::fillDestination);
       g.restoreState();
 
-      // 5) Vordergrund (outerKnob)
-      g.drawImageWithin(outerKnob,
+      // 5) Vordergrund (overknob)
+      g.drawImageWithin(overKnob,
           area.getX(), area.getY(),
           area.getWidth(), area.getHeight(),
           juce::RectanglePlacement::fillDestination);

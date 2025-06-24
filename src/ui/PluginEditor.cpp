@@ -82,25 +82,30 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     const float startAngle = juce::MathConstants<float>::pi * 4.0f / 3.0f;
     const float endAngle   = juce::MathConstants<float>::pi * 8.0f / 3.0f;
 
-    for (int i = 0; i < paramComponents.size(); ++i)
+    for (int i = 0; i < (int)paramComponents.size(); ++i)
     {
-
+        // ID a,b,c,d
         auto paramId = juce::String::charToString(static_cast<juce_wchar>('a' + i));
-        paramComponents[i] = std::make_unique<ui::ParameterComponent>(audioProcessor.apvts,
-                                                                    paramId,
-                                                                    audioProcessor.getVariableName(i));
-        addAndMakeVisible(*paramComponents[i]);
-        nameEditors[i] = std::make_unique<juce::TextEditor>();
-        nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
-        nameEditors[i]->onTextChange = [this, i]
-        {
-            audioProcessor.setVariableName(i, nameEditors[i]->getText());
-            if (paramComponents[i])
-                paramComponents[i]->setAliasName(nameEditors[i]->getText());
-        };
-        addAndMakeVisible(*nameEditors[i]);
-    }
 
+        // 2.1) ParameterComponent bauen und sichtbar machen
+        paramComponents[i] = std::make_unique<ui::ParameterComponent>(
+            audioProcessor.apvts,
+            paramId,
+            audioProcessor.getVariableName(i));
+        addAndMakeVisible(*paramComponents[i]);
+
+        // 2.2) TextEditor für Alias-Name
+        nameEditors[i] = std::make_unique<juce::TextEditor>();
+        nameEditors[i]->setText(audioProcessor.getVariableName(i),
+            juce::dontSendNotification);
+        nameEditors[i]->onTextChange = [this, i]
+            {
+                auto newName = nameEditors[i]->getText();
+                audioProcessor.setVariableName(i, newName);
+                paramComponents[i]->setAliasName(newName);
+            };
+            addAndMakeVisible(*nameEditors[i]);
+    }
 
     inputGainSlider = std::make_unique<juce::Slider>();
     inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -346,28 +351,30 @@ void NeuroCoreAudioProcessorEditor::resized()
        inputLeftButton->setBounds(getGridCellBounds(0, 4, 1, 1));
    if (inputRightButton)
        inputRightButton->setBounds(getGridCellBounds(0, 5, 1, 1));
-   if (blankToggle)
-       blankToggle->setBounds(getGridCellBounds(0, 6, 1, 1));
-   if (presetsButton)
-       presetsButton->setBounds(getGridCellBounds(0, 7, 1, 2));
    if (bypassButton)
-       bypassButton->setBounds(getGridCellBounds(0, 9, 1, 3));
+       bypassButton->setBounds(getGridCellBounds(0, 6, 1, 1));
+   if (languageLabel)
+	   languageLabel->setBounds(getGridCellBounds(0, 9, 1, 1));
+   if (languageBox)
+	   languageBox->setBounds(getGridCellBounds(0, 10, 1, 2));
     //
     //// --- Editor & Side Panel -------------------------------------
    if (formulaInputEditor)
-       formulaInputEditor->setBounds(getGridCellBounds(1, 0, 6, 8));
+       formulaInputEditor->setBounds(getGridCellBounds(1, 0, 5, 8));
    
    if (editSaveButton)
-       editSaveButton->setBounds(getGridCellBounds(1, 7, 1, 2));
+       editSaveButton->setBounds(getGridCellBounds(1, 8, 1, 2));
    if (optimizeButton)
-       optimizeButton->setBounds(getGridCellBounds(2, 7, 1, 2));
+       optimizeButton->setBounds(getGridCellBounds(2, 8, 1, 2));
    if (functionsButton)
-       functionsButton->setBounds(getGridCellBounds(3, 7, 1, 2));
+       functionsButton->setBounds(getGridCellBounds(3, 8, 1, 2));
    if (stagesButton)
-       stagesButton->setBounds(getGridCellBounds(4, 7, 1, 2));
+       stagesButton->setBounds(getGridCellBounds(4, 8, 1, 2));
+   if (presetsButton)
+       presetsButton->setBounds(getGridCellBounds(5, 8, 1, 2));
    
    if (loudnessMeter)
-       loudnessMeter->setBounds(getGridCellBounds(1, 8, 4, 4));
+       loudnessMeter->setBounds(getGridCellBounds(1, 10, 5, 2));
 
     // --- Circle Knobs --------------------------------------------
     if (paramComponents[0])
@@ -383,19 +390,21 @@ void NeuroCoreAudioProcessorEditor::resized()
                                        );
 
     if (inputDisplay)
-        inputDisplay->setBounds(getGridCellBounds(8, 9, 3, 3));
+        inputDisplay->setBounds(getGridCellBounds(14, 0, 4, 6));
+    if (outputDisplay)
+        outputDisplay->setBounds(getGridCellBounds(14, 6, 4, 6));
     
     if (inputGainSlider)
-        inputGainSlider->setBounds(getGridCellBounds(11, 0, 3, 4));
+        inputGainSlider->setBounds(getGridCellBounds(10, 0, 4, 4));
+	
     if (mixSlider)
-        mixSlider->setBounds(getGridCellBounds(11, 4, 3, 4));
+        mixSlider->setBounds(getGridCellBounds(10, 4, 4, 4));
     if (outputGainSlider)
-        outputGainSlider->setBounds(getGridCellBounds(11, 8, 3, 4));
+        outputGainSlider->setBounds(getGridCellBounds(10, 8, 4, 4));
     
-    if (outputDisplay)
-        outputDisplay->setBounds(getGridCellBounds(14, 3, 2, 6));
 
-    clampChildrenToBounds();
+
+    //clampChildrenToBounds();
 }
 
 void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
@@ -408,7 +417,7 @@ void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
     }
 }
 
-juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds(int row, int col, int rowspan,  int colSpan) const
+juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds(int row, int col, int rowspan,  int colSpan) 
 {
     auto area = getLocalBounds().reduced(cellMargin);
     int cellW = area.getWidth() / numCols;

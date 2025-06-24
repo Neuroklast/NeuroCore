@@ -8441,6 +8441,9 @@
     <None Include="..\..\resources\img\outerKnob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
+    <None Include="..\..\resources\img\knob lights.png">
+      <Filter>NeuroCore\resources\img</Filter>
+    </None>
     <None Include="..\..\resources\img\overknob.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
