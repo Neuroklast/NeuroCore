@@ -1,4 +1,4 @@
-# NeuroCore
+#NeuroCore
 
 NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen über vier Parameter **a** bis **d** verwenden. Zusätzlich steht ein Sinus-Modulationssignal (*mod*) bereit.
 
@@ -78,7 +78,7 @@ Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das
 
 ## Presets laden und speichern
 
-Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren.
+Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren. Preset-Dateien werden beim Speichern mit Blowfish verschlüsselt.
 
 ## Lokalisierung
 
@@ -99,11 +99,10 @@ Eine ausführliche Beschreibung der internen Skriptsprache befindet sich in
 ### Kurzübersicht
 
 - `stage`: mathematische Formel, Pflichtargument `y`
-- `filter`: Typ `lowpass`, `highpass` oder `bandpass`; `cutoff` Pflicht, `resonance` optional
-- `comp`: Kompressor mit `threshold`, `ratio`, optional `attack` und `release`
-- `env`: Envelope-Follower in den Modi `rms` oder `peak`
-- `osc`: LFO mit `shape`, `freq` und optional `depth`
-- `param`: weist den Buchstaben `a`–`d` Aliasnamen zu
+- `filter`: Typ `lowpass`, `highpass` oder `bandpass`;
+`cutoff` Pflicht, `resonance` optional - `comp`: Kompressor mit `threshold`, `ratio`,
+    optional `attack` und `release` - `env`: Envelope - Follower in den Modi `rms` oder `peak` - `osc`: LFO mit `shape`, `freq` und
+                                                                                                                                 optional `depth` - `param`
+    : weist den Buchstaben `a`–`d` Aliasnamen zu
 
-Die Blöcke werden strikt von oben nach unten abgearbeitet.
-
+          Die Blöcke werden strikt von oben nach unten abgearbeitet.
