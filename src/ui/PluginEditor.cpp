@@ -29,14 +29,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 
     pluginNameLabel = std::make_unique<juce::Label>();
-    pluginNameLabel->setText(PLUGIN_NAME, juce::dontSendNotification);
+    pluginNameLabel->setText(juce::String(PLUGIN_NAME) + " v" + PLUGIN_VERSION,
+                             juce::dontSendNotification);
     pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(*pluginNameLabel);
-
-    versionLabel = std::make_unique<juce::Label>();
-    versionLabel->setText(juce::String("v") + PLUGIN_VERSION, juce::dontSendNotification);
-    versionLabel->setJustificationType(juce::Justification::centredLeft);
-    addAndMakeVisible(*versionLabel);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
@@ -49,6 +45,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         manual.startAsProcess();
     };
     addAndMakeVisible(*helpButton);
+
+    blankToggle = std::make_unique<juce::ToggleButton>("Blank");
+    addAndMakeVisible(*blankToggle);
+
+    presetsButton = std::make_unique<juce::TextButton>("Presets");
+    addAndMakeVisible(*presetsButton);
+
+    bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
+    addAndMakeVisible(*bypassButton);
+
+    functionsButton = std::make_unique<juce::TextButton>("Functions");
+    addAndMakeVisible(*functionsButton);
+
+    stagesButton = std::make_unique<juce::TextButton>("Stages");
+    addAndMakeVisible(*stagesButton);
 
     languageLabel = std::make_unique<juce::Label>();
     languageLabel->setMinimumHorizontalScale(1.0f);
@@ -324,83 +335,65 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    const int pad = Config::kUiPadding;
-    auto bounds   = getLocalBounds().reduced(pad).toFloat();
+    // --- Header ---------------------------------------------------
+   if (pluginNameLabel)
+       pluginNameLabel->setBounds(getGridCellBounds(0, 0, 1, 2));
+   pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
+   pluginNameLabel->setJustificationType(juce::Justification::centred);
+   if (helpButton)
+       helpButton->setBounds(getGridCellBounds(0, 2, 0, 2));
+   if (inputLeftButton)
+       inputLeftButton->setBounds(getGridCellBounds(0, 4, 1, 1));
+   if (inputRightButton)
+       inputRightButton->setBounds(getGridCellBounds(0, 5, 1, 1));
+   if (blankToggle)
+       blankToggle->setBounds(getGridCellBounds(0, 6, 1, 1));
+   if (presetsButton)
+       presetsButton->setBounds(getGridCellBounds(0, 7, 1, 2));
+   if (bypassButton)
+       bypassButton->setBounds(getGridCellBounds(0, 9, 1, 3));
+    //
+    //// --- Editor & Side Panel -------------------------------------
+   if (formulaInputEditor)
+       formulaInputEditor->setBounds(getGridCellBounds(1, 0, 6, 8));
+   
+   if (editSaveButton)
+       editSaveButton->setBounds(getGridCellBounds(1, 7, 1, 2));
+   if (optimizeButton)
+       optimizeButton->setBounds(getGridCellBounds(2, 7, 1, 2));
+   if (functionsButton)
+       functionsButton->setBounds(getGridCellBounds(3, 7, 1, 2));
+   if (stagesButton)
+       stagesButton->setBounds(getGridCellBounds(4, 7, 1, 2));
+   
+   if (loudnessMeter)
+       loudnessMeter->setBounds(getGridCellBounds(1, 8, 4, 4));
 
-    const float col = bounds.getWidth()  / Config::kGridColumns;
-    const float row = bounds.getHeight() / Config::kGridRows;
+    // --- Circle Knobs --------------------------------------------
+    if (paramComponents[0])
+        paramComponents[0]->setBounds(getGridCellBounds(4, 0, 2, 2));
+    if (paramComponents[1])
+        paramComponents[1]->setBounds(getGridCellBounds(8, 2, 2, 2)
+                                         );
+    if (paramComponents[2])
+        paramComponents[2]->setBounds(getGridCellBounds(8, 5, 2, 2)
+                                         );
+    if (paramComponents[3])
+        paramComponents[3]->setBounds(getGridCellBounds(8, 8, 2, 2)
+                                       );
 
-    juce::FlexBox flex;
-    flex.flexWrap      = juce::FlexBox::Wrap::wrap;
-    flex.alignContent  = juce::FlexBox::AlignContent::stretch;
-    flex.alignItems    = juce::FlexBox::AlignItems::center;
-    flex.justifyContent= juce::FlexBox::JustifyContent::flexStart;
-
-    auto addItem = [&](juce::Component* comp, const Config::GridArea& area)
-    {
-        if (comp == nullptr)
-            return;
-
-        juce::FlexItem item;
-        item.associatedComponent = comp; // Associate the component
-        item.width = col * area.columnSpan; // Set width
-        item.height = row * area.rowSpan; // Set height
-        item.order     = area.row * Config::kGridColumns + area.column;
-        item.margin    = pad;
-
-        if (dynamic_cast<juce::Slider*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin;
-            item.minWidth  = Config::kRotaryDiameterMin;
-        }
-
-        if (dynamic_cast<ui::ParameterComponent*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin + 105;
-            item.minWidth  = Config::kRotaryDiameterMin + 60;
-        }
-
-        flex.items.add(std::move(item));
-    };
-
-    addItem(pluginNameLabel.get(), Config::kAreaPluginName);
-    addItem(versionLabel.get(),    Config::kAreaVersionLabel);
-    addItem(helpButton.get(),      Config::kAreaHelpButton);
-
-    addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
-    addItem(languageBox.get(),      Config::kAreaLanguageBox);
-    addItem(inputLeftButton.get(),  Config::kAreaInputLeftButton);
-    addItem(inputRightButton.get(), Config::kAreaInputRightButton);
-    addItem(polisherLabel.get(),    Config::kAreaPolisherLabel);
-    addItem(polisherBox.get(),      Config::kAreaPolisherBox);
-    addItem(formulaInputEditor.get(), Config::kAreaFormulaEditor);
-    addItem(editSaveButton.get(),     Config::kAreaEditButton);
-    addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
-    addItem(errorLabel.get(),         Config::kAreaErrorLabel);
-
-    for (int i = 0; i < paramComponents.size(); ++i)
-    {
-        addItem(paramComponents[i].get(), Config::kAreaKnobs[i]);
-        addItem(nameEditors[i].get(),     Config::kAreaKnobNames[i]);
-    }
-
-    addItem(inputGainSlider.get(),   Config::kAreaInputGainSlider);
-    addItem(mixSlider.get(),         Config::kAreaMixSlider);
-    addItem(outputGainSlider.get(),  Config::kAreaOutputGainSlider);
-
-    addItem(inputGainLabel.get(),    Config::kAreaInputGainLabel);
-    addItem(mixLabel.get(),          Config::kAreaMixLabel);
-    addItem(outputGainLabel.get(),   Config::kAreaOutputGainLabel);
-
-    addItem(inputGainValue.get(),    Config::kAreaInputGainValue);
-    addItem(mixValue.get(),          Config::kAreaMixValue);
-    addItem(outputGainValue.get(),   Config::kAreaOutputGainValue);
-
-    addItem(inputDisplay.get(),      Config::kAreaInputDisplay);
-    addItem(outputDisplay.get(),     Config::kAreaOutputDisplay);
-    addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
-
-    flex.performLayout(bounds);
+    if (inputDisplay)
+        inputDisplay->setBounds(getGridCellBounds(8, 9, 3, 3));
+    
+    if (inputGainSlider)
+        inputGainSlider->setBounds(getGridCellBounds(11, 0, 3, 4));
+    if (mixSlider)
+        mixSlider->setBounds(getGridCellBounds(11, 4, 3, 4));
+    if (outputGainSlider)
+        outputGainSlider->setBounds(getGridCellBounds(11, 8, 3, 4));
+    
+    if (outputDisplay)
+        outputDisplay->setBounds(getGridCellBounds(14, 3, 2, 6));
 
     clampChildrenToBounds();
 }
@@ -413,5 +406,25 @@ void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
         if (auto* c = getChildComponent(i))
             c->setBounds(c->getBounds().getIntersection(bounds));
     }
+}
+
+juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds(int row, int col, int rowspan,  int colSpan) const
+{
+    auto area = getLocalBounds().reduced(cellMargin);
+    int cellW = area.getWidth() / numCols;
+    int cellH = area.getHeight() / numRows;
+
+    row = juce::jlimit(0, numRows - 1, row);
+    col = juce::jlimit(0, numCols - 1, col);
+    rowspan = juce::jlimit(1, numRows - row, rowspan);
+    colSpan = juce::jlimit(1, numCols - col, colSpan);
+
+    int x = area.getX() + col * cellW + cellMargin;
+    int y = area.getY() + row * cellH + cellMargin;
+    int w = cellW * colSpan - 2 * cellMargin;
+    int h = cellH * rowspan - 2 * cellMargin;
+
+    return { x, y, w, h };
+
 }
 

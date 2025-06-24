@@ -22,7 +22,7 @@ namespace Config
     /// Width of the plugin window in pixels.
     inline constexpr int kWindowWidth        = 1200;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 1200;
+    inline constexpr int kWindowHeight       = 900;
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 8;
 
@@ -32,7 +32,7 @@ namespace Config
     /// Number of columns used by the editor grid.
     inline constexpr int kGridColumns = 12;
     /// Number of rows used by the editor grid.
-    inline constexpr int kGridRows    = 15;
+    inline constexpr int kGridRows    = 16;
 
     /// Simple container describing a grid area.
     struct GridArea { int row, column, rowSpan, columnSpan; };
@@ -111,6 +111,8 @@ namespace Config
     inline constexpr int kKnobSize          = 90;
     /// Mindestdurchmesser aller Rotary-Slider.
     inline constexpr int kRotaryDiameterMin = 160;
+    /// Fixed size of each ParameterComponent knob.
+    inline constexpr int kParameterKnobSize = 300;
     /// Height of value displays below knobs.
     inline constexpr int kValueFieldHeight  = 20;
 

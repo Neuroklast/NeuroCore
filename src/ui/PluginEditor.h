@@ -59,7 +59,14 @@ public:
     /// Ensures all children stay within the editor bounds.
     void clampChildrenToBounds();
 
+
 private:
+    static constexpr int numRows    = 18;
+    static constexpr int numCols = 12;
+    static constexpr int cellMargin = 0;
+
+    juce::Rectangle<int> getGridCellBounds(int row, int col,
+        int rowSpan = 1, int colSpan = 1) const;
     void refreshParameterControls();
     /// Updates all text labels after language change.
     void updateTranslations();
@@ -72,8 +79,12 @@ private:
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
     std::unique_ptr<juce::Label>         pluginNameLabel;
-    std::unique_ptr<juce::Label>         versionLabel;
     std::unique_ptr<juce::TextButton>    helpButton;
+    std::unique_ptr<juce::ToggleButton>  blankToggle;
+    std::unique_ptr<juce::TextButton>    presetsButton;
+    std::unique_ptr<juce::ToggleButton>  bypassButton;
+    std::unique_ptr<juce::TextButton>    functionsButton;
+    std::unique_ptr<juce::TextButton>    stagesButton;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;
