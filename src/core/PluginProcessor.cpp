@@ -17,6 +17,12 @@
 #include "../utils/Log.h"
 #include "../utils/Localiser.h"
 
+#ifndef JucePlugin_Name
+#define JucePlugin_Name "NeuroCore"
+#endif
+#ifndef JucePlugin_Manufacturer
+#define JucePlugin_Manufacturer "NEUROKLAST"
+#endif
 #define JucePlugin_MaxNumOutputChannels   2
 
 

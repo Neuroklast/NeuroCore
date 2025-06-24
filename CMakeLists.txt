@@ -171,6 +171,8 @@ target_link_libraries(NeuroCoreTests PRIVATE
     juce::juce_events
     juce::juce_graphics
     juce::juce_cryptography
+    juce::juce_opengl
+    resourcesBinary
     curl
 )
 

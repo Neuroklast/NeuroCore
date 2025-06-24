@@ -4,6 +4,13 @@
 #include "ExpressionEvaluator.h"
 #include <cstring>
 
+#ifndef JucePlugin_Name
+#define JucePlugin_Name "NeuroCore"
+#endif
+#ifndef JucePlugin_Manufacturer
+#define JucePlugin_Manufacturer "NEUROKLAST"
+#endif
+
 
 using json = nlohmann::json;
 
@@ -12,6 +19,9 @@ constexpr char kMagic[4] = {'N','R','K','\0'};
 constexpr int kVersion = 1;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
+constexpr const char* kAttrName       = "Name";
+constexpr const char* kAttrFileName   = "FileName";
+constexpr const char* kAttrPluginName = "PluginName";
 }
 
 PresetManager::PresetManager(NeuroCoreAudioProcessor& proc) : processor(proc)
@@ -29,7 +39,9 @@ std::vector<uint8_t> PresetManager::encrypt(const juce::MemoryBlock& data) const
     block.copyFrom(data.getData(), 0, data.getSize());
 
     juce::BlowFish bf(key.data(), (int)key.size());
- 
+
+    bf.encrypt(block.getData(), data.getSize(), padded);
+
 
     std::vector<uint8_t> result;
     result.resize(4 + padded);
@@ -53,7 +65,7 @@ bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock&
 
     juce::MemoryBlock block(data.data() + 4, cipherSize);
     juce::BlowFish bf(key.data(), (int)key.size());
-    bf.decrypt(block.getData(), (int)cipherSize);
+    bf.decrypt(block.getData(), cipherSize);
 
     dest.setSize(originalSize);
     dest.copyFrom(block.getData(), 0, originalSize);
@@ -63,7 +75,11 @@ bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock&
 bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
 {
     json meta;
-   
+
+    meta[kAttrName] = name.toStdString();
+    meta[kAttrFileName] = file.getFileName().toStdString();
+    meta[kAttrPluginName] = JucePlugin_Name;
+
     meta["Author"] = JucePlugin_Manufacturer;
 
     juce::MemoryBlock state;
@@ -145,8 +161,11 @@ bool PresetManager::loadPreset(const juce::File& file)
         if (std::memcmp(e.id, kMetaId, 4) == 0)
         {
             in.setPosition(e.offset);
-          
-            
+
+            juce::MemoryBlock metaBytes;
+            in.readIntoMemoryBlock(metaBytes, (size_t)e.length);
+            auto metaJson = json::parse(metaBytes.toString().toStdString(), nullptr, false);
+
             // ignore metadata but we could display in UI
         }
         else if (std::memcmp(e.id, kStateId, 4) == 0)
