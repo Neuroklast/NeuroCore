@@ -325,82 +325,75 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 void NeuroCoreAudioProcessorEditor::resized()
 {
     const int pad = Config::kUiPadding;
-    auto bounds   = getLocalBounds().reduced(pad).toFloat();
+    auto area     = getLocalBounds().reduced(pad);
 
-    const float col = bounds.getWidth()  / Config::kGridColumns;
-    const float row = bounds.getHeight() / Config::kGridRows;
+    // top bar elements
+    auto topBar = area.removeFromTop(30);
+    if (pluginNameLabel) pluginNameLabel->setBounds(topBar.removeFromLeft(200));
+    if (versionLabel)    versionLabel   ->setBounds(topBar.removeFromLeft(50));
+    if (helpButton)      helpButton     ->setBounds(topBar.removeFromLeft(80));
+    if (inputLeftButton) inputLeftButton->setBounds(topBar.removeFromLeft(30));
+    if (inputRightButton)inputRightButton->setBounds(topBar.removeFromLeft(30));
+    if (languageLabel)   languageLabel  ->setBounds(topBar.removeFromLeft(80));
+    if (languageBox)     languageBox    ->setBounds(topBar.removeFromLeft(100));
 
-    juce::FlexBox flex;
-    flex.flexWrap      = juce::FlexBox::Wrap::wrap;
-    flex.alignContent  = juce::FlexBox::AlignContent::stretch;
-    flex.alignItems    = juce::FlexBox::AlignItems::center;
-    flex.justifyContent= juce::FlexBox::JustifyContent::flexStart;
+    // formula editor
+    if (formulaInputEditor)
+        formulaInputEditor->setBounds(area.removeFromTop(200).reduced(5));
 
-    auto addItem = [&](juce::Component* comp, const Config::GridArea& area)
-    {
-        if (comp == nullptr)
-            return;
+    // buttons next to editor
+    auto btnCol = getLocalBounds().reduced(pad)
+                  .removeFromTop(200)
+                  .removeFromRight(120)
+                  .reduced(5);
+    if (editSaveButton) editSaveButton->setBounds(btnCol.removeFromTop(30));
+    if (optimizeButton) optimizeButton->setBounds(btnCol.removeFromTop(30));
+    if (polisherLabel)  polisherLabel ->setBounds(btnCol.removeFromTop(20));
+    if (polisherBox)    polisherBox   ->setBounds(btnCol.removeFromTop(30));
 
-        juce::FlexItem item;
-        item.associatedComponent = comp; // Associate the component
-        item.width = col * area.columnSpan; // Set width
-        item.height = row * area.rowSpan; // Set height
-        item.order     = area.row * Config::kGridColumns + area.column;
-        item.margin    = pad;
+    // error display under editor
+    if (errorLabel)
+        errorLabel->setBounds(area.removeFromTop(20).reduced(5));
 
-        if (dynamic_cast<juce::Slider*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin;
-            item.minWidth  = Config::kRotaryDiameterMin;
-        }
-
-        if (dynamic_cast<ui::ParameterComponent*>(comp))
-        {
-            item.minHeight = Config::kRotaryDiameterMin + 105;
-            item.minWidth  = Config::kRotaryDiameterMin + 60;
-        }
-
-        flex.items.add(std::move(item));
-    };
-
-    addItem(pluginNameLabel.get(), Config::kAreaPluginName);
-    addItem(versionLabel.get(),    Config::kAreaVersionLabel);
-    addItem(helpButton.get(),      Config::kAreaHelpButton);
-
-    addItem(languageLabel.get(),    Config::kAreaLanguageLabel);
-    addItem(languageBox.get(),      Config::kAreaLanguageBox);
-    addItem(inputLeftButton.get(),  Config::kAreaInputLeftButton);
-    addItem(inputRightButton.get(), Config::kAreaInputRightButton);
-    addItem(polisherLabel.get(),    Config::kAreaPolisherLabel);
-    addItem(polisherBox.get(),      Config::kAreaPolisherBox);
-    addItem(formulaInputEditor.get(), Config::kAreaFormulaEditor);
-    addItem(editSaveButton.get(),     Config::kAreaEditButton);
-    addItem(optimizeButton.get(),     Config::kAreaOptimizeButton);
-    addItem(errorLabel.get(),         Config::kAreaErrorLabel);
-
+    // parameter row
+    auto knobRow = area.removeFromTop(120).withTrimmedTop(10);
+    int w = knobRow.getWidth() / (int)paramComponents.size();
     for (int i = 0; i < paramComponents.size(); ++i)
     {
-        addItem(paramComponents[i].get(), Config::kAreaKnobs[i]);
-        addItem(nameEditors[i].get(),     Config::kAreaKnobNames[i]);
+        auto cell = knobRow.removeFromLeft(w).reduced(5);
+        if (paramComponents[i]) paramComponents[i]->setBounds(cell.removeFromTop(cell.getHeight() - 20));
+        if (nameEditors[i])     nameEditors[i]     ->setBounds(cell.withHeight(20));
     }
 
-    addItem(inputGainSlider.get(),   Config::kAreaInputGainSlider);
-    addItem(mixSlider.get(),         Config::kAreaMixSlider);
-    addItem(outputGainSlider.get(),  Config::kAreaOutputGainSlider);
+    // waveform displays
+    auto dispArea = area.removeFromTop(180).reduced(5);
+    if (inputDisplay)  inputDisplay ->setBounds(dispArea.removeFromLeft(dispArea.getWidth()/2));
+    if (outputDisplay) outputDisplay->setBounds(dispArea);
 
-    addItem(inputGainLabel.get(),    Config::kAreaInputGainLabel);
-    addItem(mixLabel.get(),          Config::kAreaMixLabel);
-    addItem(outputGainLabel.get(),   Config::kAreaOutputGainLabel);
+    // gain sliders
+    auto gainRow = area.removeFromTop(120).withTrimmedTop(5);
+    int gw = gainRow.getWidth() / 3;
+    if (inputGainSlider)  inputGainSlider ->setBounds(gainRow.removeFromLeft(gw).reduced(5));
+    if (mixSlider)        mixSlider       ->setBounds(gainRow.removeFromLeft(gw).reduced(5));
+    if (outputGainSlider) outputGainSlider->setBounds(gainRow.reduced(5));
 
-    addItem(inputGainValue.get(),    Config::kAreaInputGainValue);
-    addItem(mixValue.get(),          Config::kAreaMixValue);
-    addItem(outputGainValue.get(),   Config::kAreaOutputGainValue);
+    // labels and values below sliders
+    if (inputGainLabel)
+        inputGainLabel ->setBounds(inputGainSlider->getBounds().withY(inputGainSlider->getBottom()));
+    if (mixLabel)
+        mixLabel       ->setBounds(mixSlider->getBounds().withY(mixSlider->getBottom()));
+    if (outputGainLabel)
+        outputGainLabel->setBounds(outputGainSlider->getBounds().withY(outputGainSlider->getBottom()));
+    if (inputGainValue)
+        inputGainValue ->setBounds(inputGainLabel->getBounds().withY(inputGainLabel->getBottom()));
+    if (mixValue)
+        mixValue       ->setBounds(mixLabel->getBounds().withY(mixLabel->getBottom()));
+    if (outputGainValue)
+        outputGainValue->setBounds(outputGainLabel->getBounds().withY(outputGainLabel->getBottom()));
 
-    addItem(inputDisplay.get(),      Config::kAreaInputDisplay);
-    addItem(outputDisplay.get(),     Config::kAreaOutputDisplay);
-    addItem(loudnessMeter.get(),     Config::kAreaLoudnessMeter);
-
-    flex.performLayout(bounds);
+    // loudness meter
+    if (loudnessMeter)
+        loudnessMeter->setBounds(getLocalBounds().removeFromRight(50).reduced(5));
 
     clampChildrenToBounds();
 }
