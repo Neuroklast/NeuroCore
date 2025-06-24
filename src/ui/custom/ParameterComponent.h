@@ -14,11 +14,16 @@ namespace ui
         ~ParameterComponent() override;
 
         void paint(juce::Graphics& g) override;
-    
+        void resized() override;
+        void paintOverChildren(juce::Graphics& g) override;
+
+        static void setInfoMode(bool enabled) noexcept { infoMode = enabled; }
+        static bool isInfoMode() noexcept { return infoMode; }
 
         void setAliasName(const juce::String& name);
 
         void parameterChanged(const juce::String& id, float newValue) override;
+        void setEnabled(bool shouldBeEnabled) override;
 
     private:
         void updateLabel();
@@ -30,7 +35,12 @@ namespace ui
 
         juce::Slider slider;
         juce::Label  nameLabel;
+        juce::Label  valueLabel;
+        juce::Label  minLabel;
+        juce::Label  maxLabel;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
+
+        static bool infoMode;
     };
 } // namespace ui
 
