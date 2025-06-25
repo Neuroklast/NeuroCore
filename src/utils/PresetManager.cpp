@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "PresetManager.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"

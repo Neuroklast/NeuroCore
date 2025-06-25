@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"

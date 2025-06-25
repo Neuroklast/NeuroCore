@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "Localiser.h"
 
 Localiser& Localiser::getInstance()

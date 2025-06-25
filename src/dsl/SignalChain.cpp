@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "SignalChain.h"
 #include "../core/Config.h"
 #include <atomic>

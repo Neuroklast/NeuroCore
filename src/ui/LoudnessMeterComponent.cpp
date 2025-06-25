@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "LoudnessMeterComponent.h"
 #include "../utils/Localiser.h"
 

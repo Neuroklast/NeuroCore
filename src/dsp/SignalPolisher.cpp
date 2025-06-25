@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "SignalPolisher.h"
 #include "../utils/Log.h"
 

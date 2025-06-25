@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "LookupTables.h"
 #include <unordered_map>
 #include <cmath>
