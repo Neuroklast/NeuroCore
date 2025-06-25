@@ -19,6 +19,7 @@
 #include "../core/EffectParameters.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
+#include "WeightedLayout.h"
 
 
 //==============================================================================
@@ -309,6 +310,55 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     loudnessMeter = std::make_unique<LoudnessMeterComponent>(audioProcessor);
     addAndMakeVisible(*loudnessMeter);
 
+    using namespace ui;
+    layoutRoot = makeColumn();
+    layoutRoot->margin = 5;
+
+    auto header = makeRow();
+    header->innerMargin = 5;
+    header->addChild(makeLeaf(pluginNameLabel.get(), 2.0f));
+    header->addChild(makeLeaf(helpButton.get(), 1.0f));
+    header->addChild(makeLeaf(inputLeftButton.get(), 1.0f));
+    header->addChild(makeLeaf(inputRightButton.get(), 1.0f));
+    header->addChild(makeLeaf(bypassButton.get(), 1.0f));
+    header->addChild(makeLeaf(languageLabel.get(), 1.0f));
+    header->addChild(makeLeaf(languageBox.get(), 1.0f));
+    layoutRoot->addChild(std::move(header));
+
+    auto body = makeRow();
+    body->innerMargin = 5;
+
+    auto left = makeColumn(1.0f);
+    left->innerMargin = 5;
+    for (auto& pc : paramComponents)
+        left->addChild(makeLeaf(pc.get()));
+    left->addChild(makeLeaf(inputGainSlider.get()));
+    left->addChild(makeLeaf(mixSlider.get()));
+    left->addChild(makeLeaf(outputGainSlider.get()));
+    body->addChild(std::move(left));
+
+    auto center = makeColumn(2.0f);
+    center->innerMargin = 5;
+    center->addChild(makeLeaf(formulaInputEditor.get(), 3.0f));
+    auto buttons = makeRow();
+    buttons->innerMargin = 5;
+    buttons->addChild(makeLeaf(editSaveButton.get()));
+    buttons->addChild(makeLeaf(optimizeButton.get()));
+    buttons->addChild(makeLeaf(functionsButton.get()));
+    buttons->addChild(makeLeaf(stagesButton.get()));
+    buttons->addChild(makeLeaf(presetsButton.get()));
+    center->addChild(std::move(buttons));
+    center->addChild(makeLeaf(loudnessMeter.get()));
+    body->addChild(std::move(center));
+
+    auto right = makeColumn(1.0f);
+    right->innerMargin = 5;
+    right->addChild(makeLeaf(inputDisplay.get()));
+    right->addChild(makeLeaf(outputDisplay.get()));
+    body->addChild(std::move(right));
+
+    layoutRoot->addChild(std::move(body));
+
     updateTranslations();
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
@@ -378,100 +428,16 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
-    // --- Header ---------------------------------------------------
-   if (pluginNameLabel)
-       pluginNameLabel->setBounds(getGridCellBounds(0, 0, 1, 2));
-   pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
-   pluginNameLabel->setJustificationType(juce::Justification::centred);
-   if (helpButton)
-       helpButton->setBounds(getGridCellBounds(0, 2, 0, 2));
-   if (inputLeftButton)
-       inputLeftButton->setBounds(getGridCellBounds(0, 4, 1, 1));
-   if (inputRightButton)
-       inputRightButton->setBounds(getGridCellBounds(0, 5, 1, 1));
-   if (bypassButton)
-       bypassButton->setBounds(getGridCellBounds(0, 6, 1, 1));
-   if (languageLabel)
-	   languageLabel->setBounds(getGridCellBounds(0, 9, 1, 1));
-   if (languageBox)
-	   languageBox->setBounds(getGridCellBounds(0, 10, 1, 2));
-    //
-    //// --- Editor & Side Panel -------------------------------------
-   if (formulaInputEditor)
-       formulaInputEditor->setBounds(getGridCellBounds(1, 0, 5, 8));
-   
-   if (editSaveButton)
-       editSaveButton->setBounds(getGridCellBounds(1, 8, 1, 2));
-   if (optimizeButton)
-       optimizeButton->setBounds(getGridCellBounds(2, 8, 1, 2));
-   if (functionsButton)
-       functionsButton->setBounds(getGridCellBounds(3, 8, 1, 2));
-   if (stagesButton)
-       stagesButton->setBounds(getGridCellBounds(4, 8, 1, 2));
-   if (presetsButton)
-       presetsButton->setBounds(getGridCellBounds(5, 8, 1, 2));
-   
-   if (loudnessMeter)
-       loudnessMeter->setBounds(getGridCellBounds(1, 10, 5, 2));
-
-    // --- Circle Knobs --------------------------------------------
-    if (paramComponents[0])
-        paramComponents[0]->setBounds(getGridCellBounds(4, 0, 2, 2));
-    if (paramComponents[1])
-        paramComponents[1]->setBounds(getGridCellBounds(8, 2, 2, 2)
-                                         );
-    if (paramComponents[2])
-        paramComponents[2]->setBounds(getGridCellBounds(8, 5, 2, 2)
-                                         );
-    if (paramComponents[3])
-        paramComponents[3]->setBounds(getGridCellBounds(8, 8, 2, 2)
-                                       );
-
-    if (inputDisplay)
-        inputDisplay->setBounds(getGridCellBounds(13, 0, 5, 6));
-    if (outputDisplay)
-        outputDisplay->setBounds(getGridCellBounds(13, 6, 5, 6));
-    
-    if (inputGainSlider)
-        inputGainSlider->setBounds(getGridCellBounds(10, 0, 3, 3));
-	
-    if (mixSlider)
-        mixSlider->setBounds(getGridCellBounds(10, 3, 3, 3));
-    if (outputGainSlider)
-        outputGainSlider->setBounds(getGridCellBounds(10, 6, 3, 3));
-    
-
-
-    //clampChildrenToBounds();
-}
-
-void NeuroCoreAudioProcessorEditor::clampChildrenToBounds()
-{
-    auto bounds = getLocalBounds();
-    for (int i = 0; i < getNumChildComponents(); ++i)
+    if (layoutRoot)
+        ui::performLayout(*layoutRoot, getLocalBounds());
+    if (pluginNameLabel)
     {
-        if (auto* c = getChildComponent(i))
-            c->setBounds(c->getBounds().getIntersection(bounds));
+        pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
+        pluginNameLabel->setJustificationType(juce::Justification::centred);
     }
 }
 
-juce::Rectangle<int> NeuroCoreAudioProcessorEditor::getGridCellBounds(int row, int col, int rowspan,  int colSpan) 
-{
-    auto area = getLocalBounds().reduced(cellMargin);
-    int cellW = area.getWidth() / numCols;
-    int cellH = area.getHeight() / numRows;
 
-    row = juce::jlimit(0, numRows - 1, row);
-    col = juce::jlimit(0, numCols - 1, col);
-    rowspan = juce::jlimit(1, numRows - row, rowspan);
-    colSpan = juce::jlimit(1, numCols - col, colSpan);
 
-    int x = area.getX() + col * cellW + cellMargin;
-    int y = area.getY() + row * cellH + cellMargin;
-    int w = cellW * colSpan - 2 * cellMargin;
-    int h = cellH * rowspan - 2 * cellMargin;
 
-    return { x, y, w, h };
-
-}
 

@@ -48,6 +48,7 @@ set(SOURCE_FILES
     src/ui/PresetTableComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
+    src/ui/WeightedLayout.cpp
     src/ui/custom/ParameterComponent.cpp
     src/dsp/LookupTables.cpp
     src/core/PluginProcessor.cpp
@@ -133,6 +134,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/main.cpp
     tests/ExpressionEvaluatorTest.h
     tests/WaveShaperTest.h
+    tests/WeightedLayoutTest.h
     tests/PresetManagerTest.h
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
@@ -148,6 +150,7 @@ target_sources(NeuroCoreTests PRIVATE
     src/dsp/LookupTables.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
+    src/ui/WeightedLayout.cpp
 )
 
 target_include_directories(NeuroCoreTests PRIVATE
@@ -155,6 +158,7 @@ target_include_directories(NeuroCoreTests PRIVATE
     ${PROJECT_SOURCE_DIR}/src/dsp
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/dsl
+    ${PROJECT_SOURCE_DIR}/src/ui
 )
 
 target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)
