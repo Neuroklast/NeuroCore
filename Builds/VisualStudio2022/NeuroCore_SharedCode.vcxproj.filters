@@ -8492,6 +8492,9 @@
     <None Include="..\..\resources\locale\en.txt">
       <Filter>NeuroCore\resources\locale</Filter>
     </None>
+    <None Include="..\..\resources\locale\functions_de.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
+    </None>
     <None Include="..\..\resources\optimizations.txt">
       <Filter>NeuroCore\resources</Filter>
     </None>

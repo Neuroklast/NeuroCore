@@ -227,6 +227,7 @@
 		CAF2FC673C2DA9DA2B791214 /* include_juce_audio_plugin_client_ARA.cpp */ /* include_juce_audio_plugin_client_ARA.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_audio_plugin_client_ARA.cpp; path = ../../JuceLibraryCode/include_juce_audio_plugin_client_ARA.cpp; sourceTree = SOURCE_ROOT; };
 		CB48306678DAABEEFC31FB77 /* include_juce_graphics.mm */ /* include_juce_graphics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_graphics.mm; path = ../../JuceLibraryCode/include_juce_graphics.mm; sourceTree = SOURCE_ROOT; };
 		CC16047CED75FF223ACA81A8 /* PluginLookAndFeel.h */ /* PluginLookAndFeel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginLookAndFeel.h; path = ../../src/ui/PluginLookAndFeel.h; sourceTree = SOURCE_ROOT; };
+		CCED826EC2BDDC141236C612 /* functions_de.txt */ /* functions_de.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = functions_de.txt; path = ../../resources/locale/functions_de.txt; sourceTree = SOURCE_ROOT; };
 		CF7CC571B9B7098432D0DE9D /* Localiser.h */ /* Localiser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Localiser.h; path = ../../src/utils/Localiser.h; sourceTree = SOURCE_ROOT; };
 		D1B24F829173D94BB4280068 /* innerknob.png */ /* innerknob.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = innerknob.png; path = ../../resources/img/innerknob.png; sourceTree = SOURCE_ROOT; };
 		D1C068B6FC50E4F7E970BC34 /* BinaryData.cpp */ /* BinaryData.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData.cpp; path = ../../JuceLibraryCode/BinaryData.cpp; sourceTree = SOURCE_ROOT; };
@@ -543,6 +544,7 @@
 			children = (
 				81BC73AAB84BED1E87FCB87D,
 				F438AA916CD5D4EC5186E102,
+				CCED826EC2BDDC141236C612,
 			);
 			name = locale;
 			sourceTree = "<group>";

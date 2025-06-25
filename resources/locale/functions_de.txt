@@ -1,0 +1,319 @@
+{
+  "functions": [
+    {
+      "name": "sin",
+      "description": "Gibt den Sinus von x zurück, eine glatte, periodische Schwingung.",
+      "soundCharacter": "Sehr weich und organisch, angenehme Obertöne mit Betonung der unteren Harmonischen.",
+      "useCases": [
+        "LFO-Modulation (Tremolo, Auto-Wah)",
+        "Weiches Waveshaping",
+        "Subtiles Vibrato"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–π, +π] für eine volle Periode",
+        "aliasing": "Bei Oversampling < 4× hörbare Artefakte oberhalb ~2 kHz",
+        "performance": "Sehr günstig, kein Lookup-Table nötig"
+      },
+      "example": "y = sin(x)",
+      "keywords": ["smooth", "round", "warm", "gentle", "musical"]
+    },
+    {
+      "name": "cos",
+      "description": "Gibt den Kosinus von x zurück, eine phasenverschobene Sinusschwingung.",
+      "soundCharacter": "Weich und etwas dunkler, mit klarer, organischer Wellenform.",
+      "useCases": [
+        "Phasenversetzte LFOs",
+        "Kombinierte Sin/Cos-Modulation",
+        "Sanfte Crossfades"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–π, +π] für eine volle Periode",
+        "aliasing": "Bei Oversampling < 4× hörbare Artefakte oberhalb ~2 kHz",
+        "performance": "Sehr günstig"
+      },
+      "example": "y = cos(x)",
+      "keywords": ["smooth", "warm", "organic", "round", "soft"]
+    },
+    {
+      "name": "tan",
+      "description": "Berechnet den Tangens von x, steiler Anstieg bei ±π/2.",
+      "soundCharacter": "Schrill und aggressiv, mit vielen hohen Obertönen.",
+      "useCases": [
+        "Harte Distortion-Effekte",
+        "Screechy Modulation",
+        "Extreme Klangmanipulation"
+      ],
+      "dangersAndLimits": {
+        "domain": "x darf nicht nahe ±(π/2) liegen",
+        "aliasing": "Oversampling ≥ 8× empfohlen",
+        "performance": "Günstig, Lookup-Table für Stabilität möglich"
+      },
+      "example": "y = tan(x)",
+      "keywords": ["edgy", "harsh", "piercing", "screechy", "aggressive"]
+    },
+    {
+      "name": "tanh",
+      "description": "Hyperbolischer Tangens, liefert S-förmige Sättigung zwischen –1 und +1.",
+      "soundCharacter": "Sanfte Röhrensättigung, harmonisch reich und smooth-kompressiv.",
+      "useCases": [
+        "Warmer Tube-Drive",
+        "Soft-Clipping für Gitarre/Bass",
+        "Musikalische Kompression"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–5, +5] für musikalische Sättigung",
+        "aliasing": "Oversampling ≥ 4× empfohlen",
+        "performance": "Teuer, Lookup-Table dringend empfohlen"
+      },
+      "example": "y = tanh(x)",
+      "keywords": ["soft", "tube", "warm", "saturated", "smooth"]
+    },
+    {
+      "name": "sqrt",
+      "description": "Zieht die Quadratwurzel aus x (nur für x ≥ 0).",
+      "soundCharacter": "Crunchy, betont größere Amplituden und dämpft kleine.",
+      "useCases": [
+        "Transienten-Shaping",
+        "Asymmetrische Sättigung",
+        "Creative Warp-Sounds"
+      ],
+      "dangersAndLimits": {
+        "domain": "x ≥ 0, sonst NaN",
+        "aliasing": "Moderater Bedarf an Oversampling",
+        "performance": "Mittel, kleine Lookup-Table möglich"
+      },
+      "example": "y = sqrt(x)",
+      "keywords": ["crunchy", "punchy", "asymmetrical", "dynamic", "softbite"]
+    },
+    {
+      "name": "abs",
+      "description": "Berechnet den Betrag von x, negative Werte werden positiv.",
+      "soundCharacter": "Percussiv-raspelnd, erzeugt gerade Harmonische.",
+      "useCases": [
+        "Full-Wave Rectifier",
+        "Envelope-Follower-Basis",
+        "Brass-ähnliche Verzerrung"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Starke Obertöne → Oversampling ≥ 4× empfohlen",
+        "performance": "Sehr günstig"
+      },
+      "example": "y = abs(x)",
+      "keywords": ["percussive", "raspy", "harsh", "rectified", "edgy"]
+    },
+    {
+      "name": "sign",
+      "description": "Gibt –1 für x<0, 0 für x=0, +1 für x>0 zurück.",
+      "soundCharacter": "Hartes Hard-Clipping, digital-glitchy.",
+      "useCases": [
+        "Extrem Hard-Clipper",
+        "Bit-Crusher-Effekte",
+        "Gate-artige Sounds"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Sehr hoch, Oversampling ≥ 8× nötig",
+        "performance": "Günstig"
+      },
+      "example": "y = sign(x)",
+      "keywords": ["digital", "hard", "aggressive", "glitchy", "harsh"]
+    },
+    {
+      "name": "exp",
+      "description": "Berechnet e^x, exponentielles Wachstum/Abfall.",
+      "soundCharacter": "Explosiv und asymmetrisch mit reichhaltigen Obertönen.",
+      "useCases": [
+        "Steilkompression",
+        "Kreative Distortion",
+        "Envelope Warping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–5, +5], Overflow darüber möglich",
+        "aliasing": "Hohe Obertöne → Oversampling ≥ 8× empfohlen",
+        "performance": "Teuer, Lookup-Table erforderlich"
+      },
+      "example": "y = exp(x)",
+      "keywords": ["punchy", "asymmetrical", "dynamic", "explosive", "rich"]
+    },
+    {
+      "name": "log",
+      "description": "Natürlicher Logarithmus (nur für x>0).",
+      "soundCharacter": "Weich und kompressiv, analog-ähnlicher Klang.",
+      "useCases": [
+        "dB-Konvertierung",
+        "Soft-Compander",
+        "Dynamik-Shaping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x>0, bei x≤0 Fehler oder Clamp",
+        "aliasing": "Geringer Bedarf an Oversampling",
+        "performance": "Mittel"
+      },
+      "example": "y = log(x)",
+      "keywords": ["soft", "analog", "warm", "compressive", "smooth"]
+    },
+    {
+      "name": "log10",
+      "description": "Zehnerlogarithmus (nur für x>0), ideal zur dB-Skalierung.",
+      "soundCharacter": "Klar und präzise für Lautheitsmessungen.",
+      "useCases": [
+        "Metering",
+        "dB-Skalierung",
+        "Dynamic Mapping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x>0",
+        "aliasing": "Kaum relevant",
+        "performance": "Mittel"
+      },
+      "example": "y = log10(x)",
+      "keywords": ["precise", "metering", "analytic", "clean", "transparent"]
+    },
+    {
+      "name": "floor",
+      "description": "Rundet x ab auf das nächstkleinere Integer.",
+      "soundCharacter": "Stufig und digital, lo-fi-Charakter.",
+      "useCases": [
+        "Bitcrushing",
+        "Rhythmische Quantisierung"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Hoch, Filter und Oversampling nötig",
+        "performance": "Günstig"
+      },
+      "example": "y = floor(x)",
+      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+    },
+    {
+      "name": "ceil",
+      "description": "Rundet x auf das nächsthöhere Integer.",
+      "soundCharacter": "Stufig und digital mit leicht anderem Artefaktprofil.",
+      "useCases": [
+        "Bitcrushing-Variationen",
+        "Rhythmische Effekte"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Hoch",
+        "performance": "Günstig"
+      },
+      "example": "y = ceil(x)",
+      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+    },
+    {
+      "name": "round",
+      "description": "Rundet x auf das nächste Integer.",
+      "soundCharacter": "Quantisiert, weniger extrem als floor/ceil.",
+      "useCases": [
+        "Subtile Bit-Quantisierung",
+        "Rhythmische Gates"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Hoch",
+        "performance": "Günstig"
+      },
+      "example": "y = round(x)",
+      "keywords": ["quantized", "digital", "gated", "clean", "steppy"]
+    },
+    {
+      "name": "pow",
+      "description": "Potenzfunktion x^y, erlaubt exponentielle Formung.",
+      "soundCharacter": "Flexibel: von mild (y<1) bis hart (y>1).",
+      "useCases": [
+        "Custom Waveshaping (z.B. x^3)",
+        "Dynamics-Warping",
+        "Creative Spectral Shaping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x≥0 für nicht-ganzzahlige y",
+        "aliasing": "Steile Kurven erzeugen viele Obertöne",
+        "performance": "Sehr teuer, Lookup-Table empfohlen"
+      },
+      "example": "y = pow(x, y)",
+      "keywords": ["flexible", "dynamic", "custom", "warm", "punchy"]
+    },
+    {
+      "name": "min",
+      "description": "Gibt den kleineren Wert von a und b zurück.",
+      "soundCharacter": "Sanftes Clamping, kontrolliert Peaks.",
+      "useCases": [
+        "Soft Clipping",
+        "Range-Mapping"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Minimal",
+        "performance": "Sehr günstig"
+      },
+      "example": "y = min(a, b)",
+      "keywords": ["clamped", "limited", "controlled", "smooth", "precise"]
+    },
+    {
+      "name": "max",
+      "description": "Gibt den größeren Wert von a und b zurück.",
+      "soundCharacter": "Härteres Clamping, scharf begrenzend.",
+      "useCases": [
+        "Hard Clipping",
+        "Dynamics Limiting"
+      ],
+      "dangersAndLimits": {
+        "domain": "Überall definiert",
+        "aliasing": "Minimal",
+        "performance": "Sehr günstig"
+      },
+      "example": "y = max(a, b)",
+      "keywords": ["clamped", "limited", "hard", "precise", "sharp"]
+    },
+    {
+      "name": "fmod",
+      "description": "Berechnet den Rest von x modulo y.",
+      "soundCharacter": "Zyklisch und metallisch, erzeugt ringmodartige Muster.",
+      "useCases": [
+        "Ring-Modulation",
+        "Wave-Folding-Effekte"
+      ],
+      "dangersAndLimits": {
+        "domain": "y ≠ 0",
+        "aliasing": "Moderate Obertöne, Oversampling ≥ 4× hilft",
+        "performance": "Mittel"
+      },
+      "example": "y = fmod(x, y)",
+      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+    },
+    {
+      "name": "mod",
+      "description": "Alternative Schreibweise für x modulo y.",
+      "soundCharacter": "Zyklisch und repetitiv, ringmodartig.",
+      "useCases": [
+        "Ring-Modulation",
+        "Pattern-Generator"
+      ],
+      "dangersAndLimits": {
+        "domain": "y ≠ 0",
+        "aliasing": "Moderate Obertöne",
+        "performance": "Mittel"
+      },
+      "example": "y = mod(x, y)",
+      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+    },
+    {
+      "name": "clamp",
+      "description": "Begrenzt x auf den Bereich [low, high].",
+      "soundCharacter": "Kontrolliertes Clipping ohne harte Artefakte.",
+      "useCases": [
+        "Hard/Soft Clipper",
+        "Range Safety"
+      ],
+      "dangersAndLimits": {
+        "domain": "low < high",
+        "aliasing": "Minimal",
+        "performance": "Sehr günstig"
+      },
+      "example": "y = clamp(x, low, high)",
+      "keywords": ["controlled", "safe", "clipped", "limited", "precise"]
+    }
+  ]
+}
