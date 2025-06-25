@@ -20,6 +20,7 @@
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
 #include "WeightedLayout.h"
+#include "ValidationOverlay.h"
 
 
 //==============================================================================
@@ -236,46 +237,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         else
         {
             auto text = formulaInputEditor->getText();
-            struct TestThread : juce::ThreadWithProgressWindow
-            {
-                TestThread(const juce::String& s, NeuroCoreAudioProcessor& p)
-                    : juce::ThreadWithProgressWindow(TRANS("StabilityTesting"), true, true), script(s), proc(p) {}
-                void run() override { ok = proc.testFormulaStability(script, warn, [this](float p){ setProgress(p); }); }
-                juce::String script; NeuroCoreAudioProcessor& proc; juce::String warn; bool ok { true }; };
-            TestThread t(text, audioProcessor);
-            setEnabled(false);
-            t.launchThread();
-            t.waitForThreadToExit(-1);
-            setEnabled(true);
-
-            if (! t.ok)
-            {
-                bool proceed = juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                                                                  TRANS("StabilityCheckTitle"),
-                                                                  t.warn,
-                                                                  TRANS("ActivateAnyway"),
-                                                                  TRANS("EditButton"),
-                                                                  nullptr,
-                                                                  nullptr);
-                if (! proceed)
-                    return;
-            }
-
-            juce::String err;
-            if (audioProcessor.setFormula(text, err))
-            {
-                formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-                editSaveButton->setButtonText(TRANS("EditButton"));
-                editing = false;
-                errorLabel->setText({}, juce::dontSendNotification);
-                refreshParameterControls();
-            }
-            else
-            {
-                errorLabel->setText(err, juce::dontSendNotification);
-            }
+            validateAndOverlay(text);
         }
     };
     addAndMakeVisible(*editSaveButton);
@@ -408,6 +370,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
+    validationOverlay.reset();
     Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
 }
@@ -504,6 +467,45 @@ void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
         presetOverlay->removeFromDesktop();
         presetOverlay.reset();
     }
+}
+
+void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
+{
+    if (validationOverlay)
+    {
+        removeChildComponent(validationOverlay.get());
+        validationOverlay.reset();
+    }
+
+    validationOverlay = std::make_unique<ValidationOverlay>(audioProcessor, expr);
+    addAndMakeVisible(*validationOverlay);
+    validationOverlay->setBounds(getLocalBounds());
+    validationOverlay->onResult = [this, expr](bool stable)
+    {
+        if (validationOverlay)
+        {
+            removeChildComponent(validationOverlay.get());
+            validationOverlay.reset();
+        }
+
+        juce::String err;
+        if (audioProcessor.setFormula(expr, err))
+        {
+            formulaInputEditor->setReadOnly(true);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                              juce::Colours::transparentBlack);
+            editSaveButton->setButtonText(TRANS("EditButton"));
+            editing = false;
+            errorLabel->setText({}, juce::dontSendNotification);
+            refreshParameterControls();
+        }
+        else
+        {
+            errorLabel->setText(err, juce::dontSendNotification);
+        }
+    };
+    validationOverlay->grabKeyboardFocus();
+    validationOverlay->toFront(true);
 }
 
 
