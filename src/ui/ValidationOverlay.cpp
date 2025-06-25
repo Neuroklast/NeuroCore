@@ -34,17 +34,27 @@ ValidationOverlay::~ValidationOverlay()
 
 void ValidationOverlay::startTest()
 {
+
+    // Copy script to avoid capturing this after component destruction
+    auto scriptCopy = script;
+
     auto safeThis = juce::Component::SafePointer<ValidationOverlay>(this);
-    worker = std::make_unique<std::thread>([safeThis, this]() {
+
+    // Start worker thread that validates the formula asynchronously
+    worker = std::make_unique<std::thread>([safeThis, scriptCopy, proc = std::ref(processor)]()
+    {
         juce::String warn;
-        bool ok = processor.testFormulaStability(script, warn,
+        bool ok = proc.get().testFormulaStability(scriptCopy, warn,
+
             [safeThis](float p)
             {
                 if (safeThis)
                     safeThis->progress = p;
             });
 
-        juce::MessageManager::callAsync([safeThis, ok, warn]() {
+        juce::MessageManager::callAsync([safeThis, ok, warn]()
+        {
+
             if (! safeThis)
                 return;
 
