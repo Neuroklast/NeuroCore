@@ -16,11 +16,11 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
       paramID        (id),
       aliasName      (alias)
 {
-    // Optional: Default-Größe (kann vom Parent überschrieben werden)
+    // Optional: Default-GrÃ¶ÃŸe (kann vom Parent Ã¼berschrieben werden)
     setSize (Config::kParameterKnobSize,
              Config::kParameterKnobSize);
 
-    // Slider als großer Knob über gesamten Bereich
+    // Slider als groÃŸer Knob Ã¼ber gesamten Bereich
     slider.setSliderStyle      (Slider::RotaryHorizontalVerticalDrag);
     const float startAngle = MathConstants<float>::pi * 4.0f / 3.0f;
     const float endAngle   = MathConstants<float>::pi * 8.0f / 3.0f;
@@ -48,12 +48,12 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
     // Bindung an den ValueTreeState
     attachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(valueTreeState, paramID, slider);
 
-    // Callback für sofortiges Label-Update
+    // Callback fÃ¼r sofortiges Label-Update
     slider.onValueChange = [this] { updateLabel(); };
 
     valueTreeState.addParameterListener (paramID, this);
 
-    // Initial einmal befüllen, sonst bleiben die Labels leer
+    // Initial einmal befÃ¼llen, sonst bleiben die Labels leer
     updateLabel();
 }
 
@@ -76,11 +76,11 @@ void ParameterComponent::paint (Graphics& g)
 
 void ParameterComponent::resized()
 {
-    // Slider füllt den gesamten Komponent-Bereich
+    // Slider fÃ¼llt den gesamten Komponent-Bereich
     auto bounds = getLocalBounds();
     slider.setBounds (bounds);
 
-    // Label-Größen und Abstände
+    // Label-GrÃ¶ÃŸen und AbstÃ¤nde
     const int labelH  = 16;
     const int margin  = 2;
     const int labelW  = jmin (bounds.getWidth() / 2, 40);
@@ -201,6 +201,16 @@ void ParameterComponent::setEnabled (bool shouldBeEnabled)
     Component::setEnabled (shouldBeEnabled);
     slider.setEnabled   (shouldBeEnabled);
     if (! shouldBeEnabled)
+    {
+        // Keep the parameter value but hide it visually
         slider.setValue (0.0f, dontSendNotification);
+    }
+    else
+    {
+        // Sync the slider with the parameter when re-enabled
+        if (auto* v = valueTreeState.getRawParameterValue (paramID))
+            slider.setValue (v->load(), dontSendNotification);
+        updateLabel();
+    }
 }
 } // namespace ui
