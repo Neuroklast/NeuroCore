@@ -49,6 +49,7 @@ set(SOURCE_FILES
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp
+    src/ui/StabilityOverlay.cpp
     src/ui/custom/ParameterComponent.cpp
     src/dsp/LookupTables.cpp
     src/core/PluginProcessor.cpp

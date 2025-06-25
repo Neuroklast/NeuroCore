@@ -19,6 +19,7 @@
 #include "WaveformDisplayComponent.h"
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
+#include "StabilityOverlay.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
 #include "PresetTableComponent.h"
@@ -55,6 +56,7 @@ public:
 
     juce::String getFormulaText() const;
     void setFormulaText(const juce::String& text);
+    void showStabilityWarning(const juce::String& msg);
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -113,6 +115,7 @@ private:
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
     std::unique_ptr<PresetTableComponent>     presetTable;
     std::unique_ptr<juce::DialogWindow>       presetWindow;
+    std::unique_ptr<StabilityOverlay>         stabilityOverlay;
 
     //melatonin::Inspector inspector{ *this };
 

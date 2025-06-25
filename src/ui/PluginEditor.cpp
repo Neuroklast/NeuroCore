@@ -270,15 +270,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
             if (! t.ok)
             {
-                bool proceed = juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                                                                  TRANS("StabilityCheckTitle"),
-                                                                  t.warn,
-                                                                  TRANS("ActivateAnyway"),
-                                                                  TRANS("EditButton"),
-                                                                  nullptr,
-                                                                  nullptr);
-                if (! proceed)
-                    return;
+                showStabilityWarning(t.warn);
+                return;
             }
 
             juce::String err;
@@ -429,6 +422,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     buttonAttachments.clear();
     polisherAttachment.reset();
     Localiser::getInstance().removeListener(this);
+    stabilityOverlay.reset();
     setLookAndFeel (nullptr);
 }
 
@@ -441,6 +435,20 @@ void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
         formulaInputEditor->setText (text, juce::dontSendNotification);
+}
+
+void NeuroCoreAudioProcessorEditor::showStabilityWarning(const juce::String& msg)
+{
+    if (stabilityOverlay)
+    {
+        removeChildComponent(stabilityOverlay.get());
+        stabilityOverlay.reset();
+    }
+    stabilityOverlay = std::make_unique<StabilityOverlay>(msg);
+    stabilityOverlay->onDismiss = [this] { stabilityOverlay.reset(); };
+    addAndMakeVisible(*stabilityOverlay);
+    stabilityOverlay->setBounds(getLocalBounds());
+    stabilityOverlay->toFront(true);
 }
 
 void NeuroCoreAudioProcessorEditor::refreshParameterControls()
