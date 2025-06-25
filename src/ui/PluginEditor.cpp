@@ -480,28 +480,33 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay = std::make_unique<ValidationOverlay>(audioProcessor, expr);
     addAndMakeVisible(*validationOverlay);
     validationOverlay->setBounds(getLocalBounds());
-    validationOverlay->onResult = [this, expr](bool stable)
+
+    auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
+    validationOverlay->onResult = [safeEditor, expr](bool stable)
     {
-        if (validationOverlay)
+        if (! safeEditor)
+            return;
+
+        if (safeEditor->validationOverlay)
         {
-            removeChildComponent(validationOverlay.get());
-            validationOverlay.reset();
+            safeEditor->removeChildComponent(safeEditor->validationOverlay.get());
+            safeEditor->validationOverlay.reset();
         }
 
         juce::String err;
-        if (audioProcessor.setFormula(expr, err))
+        if (safeEditor->audioProcessor.setFormula(expr, err))
         {
-            formulaInputEditor->setReadOnly(true);
-            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-            editSaveButton->setButtonText(TRANS("EditButton"));
-            editing = false;
-            errorLabel->setText({}, juce::dontSendNotification);
-            refreshParameterControls();
+            safeEditor->formulaInputEditor->setReadOnly(true);
+            safeEditor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                          juce::Colours::transparentBlack);
+            safeEditor->editSaveButton->setButtonText(TRANS("EditButton"));
+            safeEditor->editing = false;
+            safeEditor->errorLabel->setText({}, juce::dontSendNotification);
+            safeEditor->refreshParameterControls();
         }
         else
         {
-            errorLabel->setText(err, juce::dontSendNotification);
+            safeEditor->errorLabel->setText(err, juce::dontSendNotification);
         }
     };
     validationOverlay->grabKeyboardFocus();
