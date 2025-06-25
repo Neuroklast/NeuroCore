@@ -658,7 +658,10 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     currentSpec.maximumBlockSize = static_cast<juce::uint32> (blockSize);
     currentSpec.numChannels    = static_cast<juce::uint32> (channels);
 
-    auto osStages = oversamplingIndex.load();
+    juce::dsp::ProcessSpec mixerSpec { currentSpec.sampleRate,
+                                       currentSpec.maximumBlockSize + (juce::uint32) latency,
+                                       currentSpec.numChannels };
+    dryWetMixer.prepare (mixerSpec);
     size_t osFactor = 1;
     int latency = 0;
     if (osStages > 0)
