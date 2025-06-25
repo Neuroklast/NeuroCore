@@ -368,6 +368,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             auto* newPtr = scriptBuffer.getReadPointer(ch);
             auto* oldPtr = oldScriptBuffer.getReadPointer(ch);
 
+    dryWetMixer.setWetMixProportion (0.0f);
+    dryWetMixer.mixWetSamples (dryBlock);
+
             juce::FloatVectorOperations::copyWithMultiply(dst, newPtr, *blend, numSamples);
 
 
