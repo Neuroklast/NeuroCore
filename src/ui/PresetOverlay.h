@@ -31,3 +31,18 @@ private:
 
     void refreshTable();
 };
+
+class ModalCallback : public juce::ModalComponentManager::Callback
+{
+public:
+    ModalCallback(std::function<void(int)> callback) : callback(std::move(callback)) {}
+
+    void modalStateFinished(int result) override
+    {
+        if (callback)
+            callback(result);
+    }
+
+private:
+    std::function<void(int)> callback;
+};

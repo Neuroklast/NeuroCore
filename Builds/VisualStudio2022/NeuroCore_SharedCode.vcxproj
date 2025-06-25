@@ -161,6 +161,7 @@
     <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp"/>
     <ClCompile Include="..\..\src\ui\LoudnessMeterComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp"/>
+    <ClCompile Include="..\..\src\ui\PresetOverlay.cpp"/>
     <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\WeightedLayout.cpp"/>
@@ -3194,6 +3195,7 @@
     <ClInclude Include="..\..\src\ui\LoudnessMeterComponent.h"/>
     <ClInclude Include="..\..\src\ui\PluginEditor.h"/>
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h"/>
+    <ClInclude Include="..\..\src\ui\PresetOverlay.h"/>
     <ClInclude Include="..\..\src\ui\PresetTableComponent.h"/>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h"/>
     <ClInclude Include="..\..\src\ui\WeightedLayout.h"/>
