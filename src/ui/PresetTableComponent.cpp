@@ -129,27 +129,4 @@ void PresetTableComponent::resized()
     table.setBoundsInset(juce::BorderSize<int>(8));
 }
 
-void PresetTableComponent::lookAndFeelChanged()
-{
-    const auto& lf = getLookAndFeel();
-    if (auto* nlf = dynamic_cast<const NeuroCoreLookAndFeel*>(&lf))
-    {
-        setColour(backgroundColourId,       nlf->findColour(NeuroCoreLookAndFeel::presetTableBackgroundColourId));
-        setColour(textColourId,             nlf->findColour(NeuroCoreLookAndFeel::presetTableTextColourId));
-        setColour(alternateRowColourId,     nlf->findColour(NeuroCoreLookAndFeel::presetTableAltRowColourId));
-        setColour(highlightColourId,        nlf->findColour(NeuroCoreLookAndFeel::presetTableHighlightColourId));
-        setColour(headerBackgroundColourId, nlf->findColour(NeuroCoreLookAndFeel::presetTableHeaderBackgroundColourId));
-        setColour(headerTextColourId,       nlf->findColour(NeuroCoreLookAndFeel::presetTableHeaderTextColourId));
-    }
 
-    table.setColour(juce::ListBox::backgroundColourId, findColour(backgroundColourId));
-    table.setColour(juce::ListBox::textColourId,       findColour(textColourId));
-    table.setColour(juce::ListBox::outlineColourId,    findColour(headerBackgroundColourId));
-    table.setColour(juce::ListBox::highlightColourId,  findColour(highlightColourId));
-
-    auto& header = table.getHeader();
-    header.setColour(juce::TableHeaderComponent::backgroundColourId,
-                     findColour(headerBackgroundColourId));
-    header.setColour(juce::TableHeaderComponent::textColourId,
-                     findColour(headerTextColourId));
-}

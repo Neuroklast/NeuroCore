@@ -19,7 +19,7 @@ public:
 
     explicit PresetTableComponent(NeuroCoreAudioProcessor& proc);
     void resized() override;
-    void lookAndFeelChanged() override;
+    
 
     int getNumRows() override;
     void paintRowBackground(juce::Graphics&, int, int, int, bool) override;

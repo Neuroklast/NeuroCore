@@ -49,12 +49,12 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
                 }
             }));
     };
-
     deleteButton.onClick = [this]
         {
             auto row = table.getSelectedRow();
             if (row < 0)
                 return;
+
             auto file = table.getFileForRow(row);
             if (!file.exists())
                 return;
@@ -68,14 +68,13 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
                 {
                     std::unique_ptr<juce::AlertWindow> cleanup(aw);
                     if (result == 1)
-    auto bg = lookAndFeel.findColour(NeuroCoreLookAndFeel::presetTableBackgroundColourId);
-    auto outline = lookAndFeel.findColour(NeuroCoreLookAndFeel::presetTableHeaderTextColourId);
-    g.setColour(bg);
-    g.setColour(outline);
+                    {
+                        file.deleteFile();
                         refreshTable();
                     }
                 }));
         };
+
 
 
     setInterceptsMouseClicks(true, true);
