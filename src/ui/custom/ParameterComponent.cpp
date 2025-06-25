@@ -122,29 +122,40 @@ namespace ui
             PopupMenu menu;
             menu.addItem(1, TRANS("Set Min"));
             menu.addItem(2, TRANS("Set Max"));
-            auto res = menu.showAt(this);
+
+            PopupMenu::Options opts;
+            opts.withTargetComponent(this);
+            auto res = menu.showMenu(opts);
             if (res == 1 || res == 2)
             {
                 bool setMin = res == 1;
-                AlertWindow aw("", TRANS("Enter value"), AlertWindow::NoIcon);
-                aw.addTextEditor("val", setMin ? String(slider.getMinimum()) : String(slider.getMaximum()));
-                aw.addButton("OK", 1, KeyPress(KeyPress::returnKey));
-                aw.addButton("Cancel", 0, KeyPress(KeyPress::escapeKey));
-                if (aw.runModalLoop() == 1)
-                {
-                    float v = aw.getTextEditor("val")->getText().getFloatValue();
-                    if (auto* p = dynamic_cast<AudioParameterFloat*>(valueTreeState.getParameter(paramID)))
-                    {
-                        auto min = setMin ? v : p->range.start;
-                        auto max = setMin ? p->range.end : v;
-                        if (max > min)
-                        {
-                            p->range.start = min;
-                            p->range.end = max;
-                            slider.setRange(min, max);
-                        }
-                    }
-                }
+                auto* aw = new AlertWindow("", TRANS("Enter value"), AlertWindow::NoIcon);
+                aw->addTextEditor("val", setMin ? String(slider.getMinimum()) : String(slider.getMaximum()));
+                aw->addButton("OK", 1, KeyPress(KeyPress::returnKey));
+                aw->addButton("Cancel", 0, KeyPress(KeyPress::escapeKey));
+
+                aw->enterModalState(true,
+                                     ModalCallbackFunction::create([this, awPtr = Component::SafePointer<AlertWindow>(aw), setMin](int result)
+                                     {
+                                         if (result != 1 || awPtr == nullptr)
+                                             return;
+
+                                         const auto v = awPtr->getTextEditor("val")->getText().getFloatValue();
+
+                                         if (auto* p = dynamic_cast<AudioParameterFloat*>(valueTreeState.getParameter(paramID)))
+                                         {
+                                             auto min = setMin ? v : p->range.start;
+                                             auto max = setMin ? p->range.end : v;
+
+                                             if (max > min)
+                                             {
+                                                 p->range.start = min;
+                                                 p->range.end = max;
+                                                 slider.setRange(min, max);
+                                             }
+                                         }
+                                     }),
+                                     true);
             }
         }
     }
