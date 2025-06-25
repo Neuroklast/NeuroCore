@@ -58,6 +58,7 @@ set(SOURCE_FILES
     src/ui/InlineAutocompleteEditor.cpp
     src/ui/PresetTableComponent.cpp
     src/ui/PresetOverlay.cpp
+    src/ui/FunctionsOverlay.cpp
     src/ui/ValidationOverlay.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
@@ -109,6 +110,8 @@ juce_add_binary_data(resourcesBinary
         "resources/img/knob lights.png"
         resources/locale/de.txt
         resources/locale/en.txt
+        resources/locale/functions_de.txt
+        resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
 )

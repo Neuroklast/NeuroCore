@@ -19,6 +19,8 @@
         <FILE id="siracM" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
         <FILE id="iLC6dD" name="functions_de.txt" compile="0" resource="1"
               file="resources/locale/functions_de.txt"/>
+        <FILE id="yus1nB" name="functions_en.txt" compile="0" resource="1"
+              file="resources/locale/functions_en.txt"/>
       </GROUP>
       <FILE id="nScnny" name="optimizations.txt" compile="0" resource="1"
             file="resources/optimizations.txt"/>
