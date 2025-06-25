@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "WaveShaper.h"
 #include "../utils/Log.h"
 
@@ -162,9 +163,10 @@ void WaveShaper::process (const juce::dsp::ProcessContextReplacing<SampleType>& 
 
 void WaveShaper::setParameter (const std::string& id, float v)
 {
-    if (id == EffectParameters::paramA)         paramTargets[0] = v;
-    else if (id == EffectParameters::paramB)    paramTargets[1] = v;
-    else if (id == EffectParameters::paramC)    paramTargets[2] = v;
-    else if (id == EffectParameters::paramD)    paramTargets[3] = v;
-    else if (id == EffectParameters::modFrequency) modFreqTarget = v;
+    if (id == EffectParameters::paramA)         paramTargets[0] = juce::jlimit(0.0f, 1.0f, v);
+    else if (id == EffectParameters::paramB)    paramTargets[1] = juce::jlimit(0.0f, 1.0f, v);
+    else if (id == EffectParameters::paramC)    paramTargets[2] = juce::jlimit(0.0f, 1.0f, v);
+    else if (id == EffectParameters::paramD)    paramTargets[3] = juce::jlimit(0.0f, 1.0f, v);
+    else if (id == EffectParameters::modFrequency)
+        modFreqTarget = juce::jlimit(0.1f, 20.0f, v);
 }

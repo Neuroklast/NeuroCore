@@ -49,6 +49,31 @@ public:
             c.processBlock(buf, {0,0,0,0});
             expectLessThan(buf.getSample(0,0), 1.0f);
         }
+
+        beginTest("Envelope follower pass-through");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nenv1: type = peak";
+            expect(c.loadScript(sc, e));
+            c.prepare(spec);
+            juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,0.5f);
+            c.processBlock(buf, {0,0,0,0});
+            expectWithinAbsoluteError(buf.getSample(0,0), 0.5f, 1e-5f);
+        }
+
+        beginTest("Parameter alias usage");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "param a = gain\nstage1: y = gain * x";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+            juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
+            c.processBlock(buf, {2.f,0.f,0.f,0.f});
+            expectWithinAbsoluteError(buf.getSample(0,0), 2.0f, 1e-5f);
+        }
     }
 };
 

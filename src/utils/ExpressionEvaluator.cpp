@@ -1,18 +1,12 @@
+#include <JuceHeader.h>
 #include "ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
+#include "Localiser.h"
 
 using namespace juce;
 
-ExpressionEvaluator::ExpressionEvaluator()
-{
-    variables["x"] = 0.0f;
-    variables["mod"] = 0.0f;
-    variables["a"] = 0.0f;
-    variables["b"] = 0.0f;
-    variables["c"] = 0.0f;
-    variables["d"] = 0.0f;
-}
+ExpressionEvaluator::ExpressionEvaluator() = default;
 
 void ExpressionEvaluator::skipWhitespace() noexcept
 {
@@ -25,19 +19,18 @@ ExpressionEvaluator::~ExpressionEvaluator() = default;
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
 static bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
 
-float ExpressionEvaluator::VarNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::VarNode::eval(const float* vars) const noexcept
 {
-    auto it = vars.find(name);
-    return it != vars.end() ? it->second : 0.0f;
+    return vars[index];
 }
 
-float ExpressionEvaluator::UnaryNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::UnaryNode::eval(const float* vars) const noexcept
 {
     float v = child->eval(vars);
     return op == plus ? v : -v;
 }
 
-float ExpressionEvaluator::BinaryNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
 {
     float l = left->eval(vars);
     float r = right->eval(vars);
@@ -52,19 +45,24 @@ float ExpressionEvaluator::BinaryNode::eval(const std::unordered_map<std::string
     return 0.0f;
 }
 
-float ExpressionEvaluator::FunctionNode::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::FunctionNode::eval(const float* vars) const noexcept
 {
     return func(child->eval(vars));
 }
 
-float ExpressionEvaluator::Func2Node::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::Func2Node::eval(const float* vars) const noexcept
 {
     return func(left->eval(vars), right->eval(vars));
 }
 
-float ExpressionEvaluator::Func3Node::eval(const std::unordered_map<std::string, float>& vars) const noexcept
+float ExpressionEvaluator::Func3Node::eval(const float* vars) const noexcept
 {
     return func(x->eval(vars), y->eval(vars), z->eval(vars));
+}
+
+float ExpressionEvaluator::Func5Node::eval(const float* vars) const noexcept
+{
+    return func(a->eval(vars), b->eval(vars), c->eval(vars), d->eval(vars), e->eval(vars));
 }
 
 bool ExpressionEvaluator::expect(char c)
@@ -114,7 +112,17 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
         if (name == "e")
             return std::make_unique<ValueNode>(MathConstants<float>::euler);
 
-        return std::make_unique<VarNode>(name);
+        auto it = varIndices.find(name);
+        if (it == varIndices.end())
+        {
+            if (varIndices.size() >= MaxVariables)
+                return nullptr;
+            size_t idx = varIndices.size();
+            varIndices[name] = idx;
+            variables[idx] = 0.0f;
+            it = varIndices.find(name);
+        }
+        return std::make_unique<VarNode>(it->second);
     }
 
     return nullptr;
@@ -138,7 +146,15 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFactor()
     {
         if (expect('^'))
         {
-            node = std::make_unique<BinaryNode>(BinaryNode::pow, std::move(node), parseUnary());
+            auto rhs = parseUnary();
+            if (auto* val = dynamic_cast<ValueNode*>(rhs.get()))
+            {
+                node = std::make_unique<FunctionNode>([exp = val->value](float x) { return LookupTables::fastPow(x, exp); }, std::move(node));
+            }
+            else
+            {
+                node = std::make_unique<BinaryNode>(BinaryNode::pow, std::move(node), std::move(rhs));
+            }
         }
         else
             break;
@@ -202,20 +218,30 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     if (name == "sqrt") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0])); }
     if (name == "abs")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0])); }
     if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
-    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::exp), std::move(args[0])); }
-    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log), std::move(args[0])); }
+    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastExp, std::move(args[0])); }
+    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(&LookupTables::fastLog, std::move(args[0])); }
     if (name == "log10") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0])); }
     if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
     if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])); }
     if (name == "round") { if (notEnoughArgs(1)) return nullptr; return std::make_unique<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])); }
 
-    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
+    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; if (auto* val = dynamic_cast<ValueNode*>(args[1].get())) return std::make_unique<FunctionNode>([exp = val->value](float x){ return LookupTables::fastPow(x, exp); }, std::move(args[0])); return std::make_unique<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
     if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])); }
     if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])); }
     if (name == "fmod") { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1])); }
     if (name == "mod")  { if (notEnoughArgs(2)) return nullptr; return std::make_unique<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1])); }
 
     if (name == "clamp") { if (notEnoughArgs(3)) return nullptr; return std::make_unique<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2])); }
+
+    if (name == "map")
+    {
+        if (notEnoughArgs(5))
+            return nullptr;
+        return std::make_unique<Func5Node>(
+            [](float v, float in0, float in1, float out0, float out1)
+            { return juce::jmap(v, in0, in1, out0, out1); },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]), std::move(args[3]), std::move(args[4]));
+    }
 
     return nullptr;
 }
@@ -227,6 +253,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     input = formula;
     pos = 0;
     valid = false;
+    varIndices.clear();
+    variables.fill(0.0f);
     errorMessage.clear();
     skipWhitespace();
 
@@ -262,26 +290,43 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
 
 void ExpressionEvaluator::setVariable(const std::string& name, float value) noexcept
 {
-    const juce::SpinLock::ScopedLockType sl(lock);
-    variables[name] = value;
+    auto it = varIndices.find(name);
+    if (it != varIndices.end())
+        variables[it->second] = value;
+}
+
+void ExpressionEvaluator::setVariable(size_t index, float value) noexcept
+{
+    if (index < MaxVariables)
+        variables[index] = value;
 }
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
-    const juce::SpinLock::ScopedLockType sl (lock);
+    Node* localRoot = nullptr;
+    std::array<float, MaxVariables> varsCopy;
+    {
+        const juce::SpinLock::ScopedLockType sl(lock);
+        if (! valid || ! root)
+            return 0.0f;
+        localRoot = root.get();
+        varsCopy   = variables; // copy current variables quickly
+    }
 
-    if (! valid || ! root)
-        return 0.0f;
-
-    auto& vars = const_cast<std::unordered_map<std::string, float>&> (variables);
-    auto old = vars["x"];                   // store current x to restore later
-    vars["x"] = xValue;                      // update directly to avoid copies
-    float result = root->eval (vars);
-    vars["x"] = old;                         // restore previous value
+    auto it = varIndices.find("x");
+    if (it != varIndices.end())
+        varsCopy[it->second] = xValue;
+    auto result = localRoot->eval(varsCopy.data());
 
     if (std::isfinite (result))
         return result;
 
     return 0.0f;
+}
+
+size_t ExpressionEvaluator::getVariableIndex(const std::string& name) const noexcept
+{
+    auto it = varIndices.find(name);
+    return it != varIndices.end() ? it->second : invalidIndex;
 }
 

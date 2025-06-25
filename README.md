@@ -1,4 +1,4 @@
-# NeuroCore
+#NeuroCore
 
 NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen über vier Parameter **a** bis **d** verwenden. Zusätzlich steht ein Sinus-Modulationssignal (*mod*) bereit.
 
@@ -17,6 +17,14 @@ NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe
    unter Windows mit `set JUCE_PATH=C:\JUCE` oder auf Linux/macOS mit `export JUCE_PATH=/path/zu/JUCE` gesetzt werden. Der Projucer liest diese Variable
    automatisch, wenn kein fester Pfad hinterlegt ist.
 3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.
+4. Unter Linux die systemweiten Bibliotheken installieren. Ein Skript im Ordner
+   `scripts` automatisiert diesen Schritt:
+   ```bash
+   ./scripts/install_linux_deps.sh
+   ```
+   Das Skript installiert unter anderem `libx11-dev`, `libxrandr-dev`,
+   `libgl1-mesa-dev`, `libgtk-3-dev` sowie `libwebkit2gtk-4.1-dev` (unter
+   älteren Distributionen `libwebkit2gtk-4.0-dev`).
 
 ## Build-Schritte
 
@@ -40,6 +48,17 @@ cmake --build build --config Release
 Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.
 Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
 
+### Docker-Umgebung
+
+Eine vorbereitete `Dockerfile` befindet sich im Projektstamm. Sie enthält alle
+benötigten Pakete und baut die Tests automatisch. Ein Image kann mit
+
+```bash
+docker build -t neurocore .
+```
+
+erstellt werden.
+
 ### Tests ausführen
 
 ```bash
@@ -59,7 +78,7 @@ Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das
 
 ## Presets laden und speichern
 
-Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren.
+Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren. Preset-Dateien werden beim Speichern mit Blowfish verschlüsselt.
 
 ## Lokalisierung
 
@@ -71,3 +90,19 @@ Vorlagen für Formeln befinden sich in `resources/templates.json`. Beim Start we
 
 Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroCoreUserTemplates.txt` gespeichert und beim Start geladen.
 
+## DSL-Handbücher
+
+Eine ausführliche Beschreibung der internen Skriptsprache befindet sich in
+`UserManual DE.txt`. Für internationale Nutzer gibt es eine Übersetzung in
+`UserManual EN.txt`.
+
+### Kurzübersicht
+
+- `stage`: mathematische Formel, Pflichtargument `y`
+- `filter`: Typ `lowpass`, `highpass` oder `bandpass`;
+`cutoff` Pflicht, `resonance` optional - `comp`: Kompressor mit `threshold`, `ratio`,
+    optional `attack` und `release` - `env`: Envelope - Follower in den Modi `rms` oder `peak` - `osc`: LFO mit `shape`, `freq` und
+                                                                                                                                 optional `depth` - `param`
+    : weist den Buchstaben `a`–`d` Aliasnamen zu
+
+          Die Blöcke werden strikt von oben nach unten abgearbeitet.

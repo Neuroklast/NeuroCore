@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <array>
 #include <cmath>
 
 // ExpressionEvaluator parses a mathematical expression and evaluates it in real time.
@@ -24,8 +25,18 @@ public:
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
 
-    // Sets value for variables: x, mod, a, b, c, d.
+    // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
+
+    // Sets variable by index for faster access.
+    void setVariable(size_t index, float value) noexcept;
+
+    // Returns variable index or invalidIndex if unused.
+    size_t getVariableIndex(const std::string& name) const noexcept;
+
+    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
+
+
 
     // Returns true if parsing succeeded.
     bool isValid() const noexcept { return valid; }
@@ -39,28 +50,28 @@ private:
     struct Node
     {
         virtual ~Node() = default;
-        virtual float eval(const std::unordered_map<std::string, float>& vars) const noexcept = 0;
+        virtual float eval(const float* vars) const noexcept = 0;
     };
 
     struct ValueNode : Node
     {
         explicit ValueNode(float v) : value(v) {}
-        float eval(const std::unordered_map<std::string, float>&) const noexcept override { return value; }
+        float eval(const float*) const noexcept override { return value; }
         float value;
     };
 
     struct VarNode : Node
     {
-        explicit VarNode(std::string n) : name(std::move(n)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
-        std::string name;
+        explicit VarNode(size_t idx) : index(idx) {}
+        float eval(const float* vars) const noexcept override;
+        size_t index;
     };
 
     struct UnaryNode : Node
     {
         enum Type { plus, minus };
         UnaryNode(Type t, NodePtr c) : op(t), child(std::move(c)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
+        float eval(const float* vars) const noexcept override;
         Type op;
         NodePtr child;
     };
@@ -69,7 +80,7 @@ private:
     {
         enum Type { add, sub, mul, div, pow };
         BinaryNode(Type t, NodePtr l, NodePtr r) : op(t), left(std::move(l)), right(std::move(r)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
+        float eval(const float* vars) const noexcept override;
         Type op;
         NodePtr left, right;
     };
@@ -78,7 +89,7 @@ private:
     {
         using Func = std::function<float(float)>;
         FunctionNode(Func f, NodePtr c) : func(std::move(f)), child(std::move(c)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
+        float eval(const float* vars) const noexcept override;
         Func func;
         NodePtr child;
     };
@@ -87,7 +98,7 @@ private:
     {
         using Func = std::function<float(float, float)>;
         Func2Node(Func f, NodePtr a, NodePtr b) : func(std::move(f)), left(std::move(a)), right(std::move(b)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
+        float eval(const float* vars) const noexcept override;
         Func func;
         NodePtr left, right;
     };
@@ -97,9 +108,19 @@ private:
         using Func = std::function<float(float, float, float)>;
         Func3Node(Func f, NodePtr a, NodePtr b, NodePtr c)
             : func(std::move(f)), x(std::move(a)), y(std::move(b)), z(std::move(c)) {}
-        float eval(const std::unordered_map<std::string, float>& vars) const noexcept override;
+        float eval(const float* vars) const noexcept override;
         Func func;
         NodePtr x, y, z;
+    };
+
+    struct Func5Node : Node
+    {
+        using Func = std::function<float(float, float, float, float, float)>;
+        Func5Node(Func f, NodePtr a, NodePtr b, NodePtr c, NodePtr d, NodePtr e)
+            : func(std::move(f)), a(std::move(a)), b(std::move(b)), c(std::move(c)), d(std::move(d)), e(std::move(e)) {}
+        float eval(const float* vars) const noexcept override;
+        Func func;
+        NodePtr a, b, c, d, e;
     };
 
     // Parsing helpers
@@ -119,6 +140,10 @@ private:
     juce::String errorMessage;
     NodePtr root;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
-    std::unordered_map<std::string, float> variables;
+
+    static constexpr size_t MaxVariables = 16;
+
+    std::unordered_map<std::string, size_t> varIndices;
+    std::array<float, MaxVariables> variables{};
 };
 

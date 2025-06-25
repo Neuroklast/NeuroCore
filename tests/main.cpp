@@ -1,17 +1,20 @@
-#include <JuceHeader.h>
 #include "ExpressionEvaluatorTest.h"
-#include "WaveShaperTest.h"
+#include "PresetManagerTest.h"
 #include "SignalChainTest.h"
+#include "WaveShaperTest.h"
+#include "WeightedLayoutTest.h"
+#include <JuceHeader.h>
 
-int main(int argc, char* argv[])
-{
-    juce::ConsoleApplication app; // Removed arguments
+int main(int argc, char *argv[]) {
+  juce::ConsoleApplication app; // Removed arguments
 
-    ExpressionEvaluatorTest evaluatorTest;  // registers itself
-    WaveShaperTest shaperTest;              // registers itself
+  ExpressionEvaluatorTest evaluatorTest; // registers itself
+  WaveShaperTest shaperTest;             // registers itself
+  SignalChainTest chainTest;             // registers itself
+  PresetManagerTest presetTest;          // registers itself
+  WeightedLayoutTest layoutTest;         // registers itself
 
-    juce::UnitTestRunner runner;
-    runner.runAllTests();
-    return 0;
+  juce::UnitTestRunner runner;
+  runner.runAllTests();
+  return 0;
 }
-

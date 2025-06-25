@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "FormulaDisplayComponent.h"
 
 FormulaDisplayComponent::FormulaDisplayComponent() {}

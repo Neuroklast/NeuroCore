@@ -22,9 +22,67 @@ namespace Config
     /// Width of the plugin window in pixels.
     inline constexpr int kWindowWidth        = 1200;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 800;
+    inline constexpr int kWindowHeight       = 900;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 8;
+    inline constexpr int kUiPadding         = 5;
+
+    //-------------------------------------------------------------------------
+    // Grid layout configuration
+    //-------------------------------------------------------------------------
+    /// Number of columns used by the editor grid.
+    inline constexpr int kGridColumns = 12;
+    /// Number of rows used by the editor grid.
+    inline constexpr int kGridRows    = 16;
+
+    /// Simple container describing a grid area.
+    struct GridArea { int row, column, rowSpan, columnSpan; };
+
+    // Layout positions for all UI elements
+    inline constexpr GridArea kAreaPluginName       { 0,  1, 1, 8 };
+    inline constexpr GridArea kAreaVersionLabel     { 0,  9, 1, 2 };
+    inline constexpr GridArea kAreaHelpButton       { 0, 11, 1, 2 };
+    inline constexpr GridArea kAreaLanguageLabel     { 1,  1, 1, 2 };
+    inline constexpr GridArea kAreaLanguageBox       { 1,  3, 1, 2 };
+    inline constexpr GridArea kAreaInputLeftButton   { 1,  5, 1, 2 };
+    inline constexpr GridArea kAreaInputRightButton  { 1,  7, 1, 2 };
+    inline constexpr GridArea kAreaPolisherLabel     { 1,  9, 1, 2 };
+    inline constexpr GridArea kAreaPolisherBox       { 1, 11, 1, 2 };
+    inline constexpr GridArea kAreaFormulaEditor     { 2,  1, 2,12 };
+    inline constexpr GridArea kAreaEditButton        { 4,  1, 1, 6 };
+    inline constexpr GridArea kAreaOptimizeButton    { 4,  7, 1, 6 };
+    inline constexpr GridArea kAreaErrorLabel        { 5,  1, 1,12 };
+    inline constexpr GridArea kAreaKnob0             { 6,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1             { 6,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2             { 6,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3             { 6, 10, 1, 3 };
+    inline constexpr GridArea kAreaKnob0Value        { 7,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1Value        { 7,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2Value        { 7,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3Value        { 7, 10, 1, 3 };
+    inline constexpr GridArea kAreaKnob0Name         { 8,  1, 1, 3 };
+    inline constexpr GridArea kAreaKnob1Name         { 8,  4, 1, 3 };
+    inline constexpr GridArea kAreaKnob2Name         { 8,  7, 1, 3 };
+    inline constexpr GridArea kAreaKnob3Name         { 8, 10, 1, 3 };
+    /// Number of modulation knobs available.
+    inline constexpr int kNumKnobs           = 4;
+    /// Areas for the individual knobs.
+    inline constexpr GridArea kAreaKnobs[kNumKnobs]      { kAreaKnob0, kAreaKnob1, kAreaKnob2, kAreaKnob3 };
+    /// Areas for the knob value displays.
+    inline constexpr GridArea kAreaKnobValues[kNumKnobs] { kAreaKnob0Value, kAreaKnob1Value, kAreaKnob2Value, kAreaKnob3Value };
+    /// Areas for the knob name labels.
+    inline constexpr GridArea kAreaKnobNames[kNumKnobs]  { kAreaKnob0Name, kAreaKnob1Name, kAreaKnob2Name, kAreaKnob3Name };
+    inline constexpr GridArea kAreaInputGainSlider   { 9,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixSlider         { 9,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainSlider  { 9,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputGainLabel    {10,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixLabel          {10,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainLabel   {10,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputGainValue    {11,  1, 1, 3 };
+    inline constexpr GridArea kAreaMixValue          {11,  4, 1, 3 };
+    inline constexpr GridArea kAreaOutputGainValue   {11,  7, 1, 3 };
+    inline constexpr GridArea kAreaInputDisplay      {12,  1, 2, 6 };
+    inline constexpr GridArea kAreaOutputDisplay     {12,  7, 2, 6 };
+    inline constexpr GridArea kAreaLoudnessMeter     {14, 10, 2, 3 };
     /// Width of the left column in the editor layout.
     inline constexpr int kLeftColumnWidth    = 400;
     /// Width of the middle column in the editor layout.
@@ -32,8 +90,6 @@ namespace Config
     /// Width of the right column in the editor layout.
     inline constexpr int kRightColumnWidth   = 400;
 
-    /// Number of modulation knobs available.
-    inline constexpr int kNumKnobs           = 4;
     /// Height of each knob widget in pixels.
     inline constexpr int kKnobHeight         = 80;
     /// Vertical spacing between knobs in pixels.
@@ -58,6 +114,10 @@ namespace Config
 
     /// Size of rotary knobs in pixels.
     inline constexpr int kKnobSize          = 90;
+    /// Mindestdurchmesser aller Rotary-Slider.
+    inline constexpr int kRotaryDiameterMin = 160;
+    /// Fixed size of each ParameterComponent knob.
+    inline constexpr int kParameterKnobSize = 300;
     /// Height of value displays below knobs.
     inline constexpr int kValueFieldHeight  = 20;
 
@@ -87,6 +147,7 @@ namespace Config
     inline constexpr int kGainKnobSize      = 80;
     inline constexpr int kMixKnobSize       = 120;
     inline constexpr int kInputButtonX      = 20;
+    inline constexpr int kInputButtonY      = 20;
     inline constexpr int kInputButtonWidth  = 100;
 
     /// Wave display placement.
@@ -96,7 +157,7 @@ namespace Config
     inline constexpr int kWaveDisplayHeight  = 120;
 
     /// Loudness meter placement.
-    inline constexpr int kLoudnessMeterX      = 560;
+    inline constexpr int kLoudnessMeterX      = 1000;
     inline constexpr int kLoudnessMeterY      = 580;
     inline constexpr int kLoudnessMeterWidth  = 80;
     inline constexpr int kLoudnessMeterHeight = 150;
@@ -114,14 +175,13 @@ namespace Config
     inline constexpr int kPolisherBoxX        = kPolisherLabelX + kPolisherLabelWidth + 4;
     inline constexpr int kPolisherBoxWidth    = 120;
 
+
     //==========================================================================
     // DSP constants
     //==========================================================================
 
     /// Number of audio channels supported.
     inline constexpr int   kMaxChannels        = 2;
-    /// Oversampling factor for internal processing.
-    inline constexpr int   kOversamplingFactor = 2;
     /// Minimum valid input sample value.
     inline constexpr float kMinInputValue      = -1.0f;
     /// Maximum valid input sample value.
@@ -175,9 +235,11 @@ namespace Config
     /// Number of samples displayed in the formula preview.
     inline constexpr int   kFormulaPreviewSamples = 512;
     /// Number of samples captured for the realtime waveforms.
-    inline constexpr int   kWaveformDisplaySamples = 512;
+    inline constexpr int   kWaveformDisplaySamples = 2048;
     /// Fallback block size if host provides an invalid value.
     inline constexpr int   kDefaultBlockSize      = 512;
+    /// Default oversampling factor (1 = no OS, 2 = 2x, etc.)
+    inline constexpr int   kDefaultOversampling   = 2;
 
     /// Default resolution for lookup tables.
     inline constexpr int   kLookupTableSize = 1024;
@@ -194,6 +256,21 @@ namespace Config
     inline constexpr const char* kFactoryPresetFolder = "FactoryPresets/";
     /// Folder where user presets are stored.
     inline constexpr const char* kUserPresetFolder    = "UserPresets/";
+
+    //==========================================================================
+    // File and state identifiers
+    //==========================================================================
+
+    /// Identifier for the parameter state ValueTree.
+    inline constexpr const char* kParameterStateID  = "PARAMETERS";
+    /// Name of the optimization rules file.
+    inline constexpr const char* kOptimizationFile   = "optimizations.txt";
+    /// Name of the formula template file.
+    inline constexpr const char* kTemplateFile       = "templates.json";
+    /// Name of the user template file.
+    inline constexpr const char* kUserTemplateFile   = "NeuroCoreUserTemplates.txt";
+    /// Name of the resources directory next to the executable.
+    inline constexpr const char* kResourceFolder     = "resources";
 
     //==========================================================================
     // Error handling / safety

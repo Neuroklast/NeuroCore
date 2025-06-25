@@ -8,23 +8,32 @@
 
 namespace BinaryData
 {
-    extern const char*   knob_png;
-    const int            knob_pngSize = 381724;
+    extern const char*   innerknob_png;
+    const int            innerknob_pngSize = 537203;
 
-    extern const char*   mockup_png;
-    const int            mockup_pngSize = 1267316;
+    extern const char*   knob_lights_png;
+    const int            knob_lights_pngSize = 95148;
+
+    extern const char*   outerKnob_png;
+    const int            outerKnob_pngSize = 41283;
+
+    extern const char*   overknob_png;
+    const int            overknob_pngSize = 85891;
 
     extern const char*   de_txt;
-    const int            de_txtSize = 513;
+    const int            de_txtSize = 1205;
 
     extern const char*   en_txt;
-    const int            en_txtSize = 465;
+    const int            en_txtSize = 1106;
 
     extern const char*   optimizations_txt;
     const int            optimizations_txtSize = 102;
 
     extern const char*   templates_json;
     const int            templates_jsonSize = 234;
+
+    extern const char*   install_linux_deps_sh;
+    const int            install_linux_deps_shSize = 190;
 
     extern const char*   NeuroCore_Tests_jucer;
     const int            NeuroCore_Tests_jucerSize = 1786;
@@ -33,16 +42,16 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 4325;
+    const int            CMakeLists_txtSize = 5348;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 14024;
+    const int            NeuroCore_jucerSize = 31898;
 
     extern const char*   README_md;
-    const int            README_mdSize = 4278;
+    const int            README_mdSize = 5802;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
-    const int namedResourceListSize = 11;
+    const int namedResourceListSize = 14;
 
     // Points to the start of a list of resource names.
     extern const char* namedResourceList[];

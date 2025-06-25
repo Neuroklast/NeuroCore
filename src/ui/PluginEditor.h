@@ -19,12 +19,35 @@
 #include "WaveformDisplayComponent.h"
 #include "InlineAutocompleteEditor.h"
 #include "LoudnessMeterComponent.h"
+#include "custom/ParameterComponent.h"
+#include "../utils/Localiser.h"
+#include "PresetTableComponent.h"
+#include "WeightedLayout.h"
+#if __has_include(<melatonin_inspector/melatonin_inspector.h>)
+# include <melatonin_inspector/melatonin_inspector.h>
+#endif
+
+class ParameterSlider : public juce::Slider
+{
+public:
+    std::function<void()> onRightClick;
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        if (e.mods.isRightButtonDown())
+        {
+            if (onRightClick) onRightClick();
+            return;
+        }
+        juce::Slider::mouseDown(e);
+    }
+};
 
 
 //==============================================================================
 /**
 */
-class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor
+class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor,
+                                       private Localiser::Listener
 {
 public:
     NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor&);
@@ -37,15 +60,28 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+
+
 private:
+    void refreshParameterControls();
+    /// Updates all text labels after language change.
+    void updateTranslations();
+    void languageChanged() override { updateTranslations(); }
     NeuroCoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
+    std::unique_ptr<ui::LayoutNode> layoutRoot;
 
     // Left column controls
-    std::array<std::unique_ptr<juce::Slider>, 4> sliders;
-    std::array<std::unique_ptr<juce::Label>, 4> valueLabels;
-    std::array<std::unique_ptr<juce::TextEditor>, 4> nameEditors;
-    std::array<juce::Colour, 4> sliderColours;
+
+    std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
+    std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
+    std::unique_ptr<juce::Label>         pluginNameLabel;
+    std::unique_ptr<juce::TextButton>    helpButton;
+    std::unique_ptr<juce::ToggleButton>  blankToggle;
+    std::unique_ptr<juce::TextButton>    presetsButton;
+    std::unique_ptr<juce::ToggleButton>  bypassButton;
+    std::unique_ptr<juce::TextButton>    functionsButton;
+    std::unique_ptr<juce::TextButton>    stagesButton;
     std::unique_ptr<juce::Slider>        inputGainSlider;
     std::unique_ptr<juce::Slider>        mixSlider;
     std::unique_ptr<juce::Slider>        outputGainSlider;
@@ -66,7 +102,6 @@ private:
 
     // Middle column editors
     std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;
-    std::unique_ptr<FormulaDisplayComponent> formulaDisplay;
     std::unique_ptr<juce::TextButton>       optimizeButton;
     std::unique_ptr<juce::TextButton>       editSaveButton;
     std::unique_ptr<juce::Label>            errorLabel;
@@ -76,6 +111,10 @@ private:
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
+    std::unique_ptr<PresetTableComponent>     presetTable;
+    std::unique_ptr<juce::DialogWindow>       presetWindow;
+
+    //melatonin::Inspector inspector{ *this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };

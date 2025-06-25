@@ -1,5 +1,8 @@
+#include <JuceHeader.h>
 #include "SignalChain.h"
+#include "../core/Config.h"
 #include <atomic>
+#include <cmath>
 
 using namespace dsl;
 
@@ -36,8 +39,11 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
 
 static juce::dsp::StateVariableTPTFilterType parseFilterType(const juce::String& t)
 {
-    if (t == "highpass") return juce::dsp::StateVariableTPTFilterType::highpass;
-    if (t == "bandpass") return juce::dsp::StateVariableTPTFilterType::bandpass;
+    auto token = t.trim().toLowerCase();
+    if (token == "highpass" || token == "hpf" || token == "hp")
+        return juce::dsp::StateVariableTPTFilterType::highpass;
+    if (token == "bandpass" || token == "bpf" || token == "bp")
+        return juce::dsp::StateVariableTPTFilterType::bandpass;
     return juce::dsp::StateVariableTPTFilterType::lowpass;
 }
 
@@ -49,7 +55,35 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     if (! parser.parse (script, desc, newAliases, error))
         return false;
 
+    parameterMappings.clear();
+    for (const auto& kv : newAliases)
+        variables.emplace(kv.second, 0.0f);
+
     auto newChain = std::make_shared<Chain>();
+
+    auto isNumeric = [](const juce::String& s)
+    {
+        if (s.isEmpty()) return false;
+        return s.retainCharacters("0123456789.-+").length() == s.length();
+    };
+
+    auto addDefaultMap = [isNumeric](const juce::String& expr, float outMin, float outMax)
+    {
+        if (expr.containsIgnoreCase("map(") || isNumeric(expr))
+            return expr;
+        return juce::String("map(") + expr + ",0,1," + juce::String(outMin) + "," + juce::String(outMax) + ")";
+    };
+
+    auto findParam = [&newAliases](const juce::String& expr) -> juce::String
+    {
+        for (auto p : { juce::String("a"), juce::String("b"), juce::String("c"), juce::String("d") })
+        {
+            juce::String alias = newAliases.count(p) ? newAliases[p] : p;
+            if (expr.containsWholeWordIgnoreCase(alias) || expr.containsWholeWordIgnoreCase(p))
+                return alias;
+        }
+        return {};
+    };
 
     for (const auto& d : desc)
     {
@@ -79,11 +113,25 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             auto t = d.args.count("type") ? d.args.at("type").toLowerCase() : "lowpass";
             fi->type = parseFilterType(t);
             if (d.args.count("cutoff"))
-                fi->cutoff.parseFormula(d.args.at("cutoff").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("cutoff"), 20.f, 20000.f);
+                fi->cutoff.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " cutoff [20..20000 Hz]");
+            }
             else
+            {
                 fi->cutoff.parseFormula("1000");
+            }
             if (d.args.count("resonance"))
-                fi->resonance.parseFormula(d.args.at("resonance").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("resonance"), 0.1f, 10.f);
+                fi->resonance.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " resonance [0.1..10]");
+            }
             else
                 fi->resonance.parseFormula("0.7");
             fi->varPtr = &variables;
@@ -93,23 +141,64 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         {
             auto co = std::make_unique<Comp>();
             if (d.args.count("threshold"))
-                co->threshold.parseFormula(d.args.at("threshold").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("threshold"), -60.f, 0.f);
+                co->threshold.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " threshold [-60..0 dB]");
+            }
             else
                 co->threshold.parseFormula("0.0");
             if (d.args.count("ratio"))
-                co->ratio.parseFormula(d.args.at("ratio").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("ratio"), 1.f, 20.f);
+                co->ratio.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " ratio [1..20]");
+            }
             else
                 co->ratio.parseFormula("1.0");
             if (d.args.count("attack"))
-                co->attack.parseFormula(d.args.at("attack").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("attack"), 0.001f, 0.3f);
+                co->attack.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " attack [0.001..0.3 s]");
+            }
             else
                 co->attack.parseFormula("0.01");
             if (d.args.count("release"))
-                co->release.parseFormula(d.args.at("release").toStdString());
+            {
+                auto expr = addDefaultMap(d.args.at("release"), 0.01f, 1.0f);
+                co->release.parseFormula(expr.toStdString());
+                auto pn = findParam(expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add(d.name + " release [0.01..1 s]");
+            }
             else
                 co->release.parseFormula("0.1");
             co->varPtr = &variables;
             newChain->push_back (std::move (co));
+        }
+        else if (d.type.startsWith("env"))
+        {
+            auto en = std::make_unique<Env>();
+            en->mode = d.args.count("type") && d.args.at("type").toLowerCase().startsWith("peak")
+                           ? Env::Peak : Env::Rms;
+            if (d.args.count("attack"))
+                en->attack.parseFormula(d.args.at("attack").toStdString());
+            else
+                en->attack.parseFormula("0.01");
+            if (d.args.count("release"))
+                en->release.parseFormula(d.args.at("release").toStdString());
+            else
+                en->release.parseFormula("0.1");
+            en->name = d.name;
+            en->varPtr = &variables;
+            newChain->push_back(std::move(en));
         }
     }
 
@@ -154,6 +243,36 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
     }
 }
 
+void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
+                                       std::array<juce::SmoothedValue<float>*,4> params)
+{
+    auto aliasPtr = std::atomic_load(&aliases);
+    auto chainPtr = std::atomic_load(&chain);
+    if (! chainPtr)
+        return;
+
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            if (params[0]) variables["a"] = params[0]->getNextValue();
+            if (params[1]) variables["b"] = params[1]->getNextValue();
+            if (params[2]) variables["c"] = params[2]->getNextValue();
+            if (params[3]) variables["d"] = params[3]->getNextValue();
+
+            if (aliasPtr)
+                for (const auto& kv : *aliasPtr)
+                    variables[kv.second] = variables[kv.first];
+
+            float x = buffer.getReadPointer(ch)[i];
+            variables["x"] = x;
+            for (auto& b : *chainPtr)
+                x = b->process(ch, x);
+            buffer.getWritePointer(ch)[i] = x;
+        }
+    }
+}
+
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     xPrev.assign(spec.numChannels, 0.0f);
@@ -161,7 +280,13 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+        {
+            if (kv.first == "x")
+                continue;
+            auto idx = eval.getVariableIndex(kv.first.toStdString());
+            if (idx != ExpressionEvaluator::invalidIndex)
+                varNames.emplace_back(kv.first, idx);
+        }
 }
 
 float SignalChain::Stage::process(int ch, float x)
@@ -211,6 +336,8 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     sampleRate = spec.sampleRate;
     filter.setType(type);
     channels = static_cast<int> (spec.numChannels);
+    xPrev.assign(spec.numChannels, 0.0f);
+    yPrev.assign(spec.numChannels, 0.0f);
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -225,6 +352,10 @@ float SignalChain::Filter::process(int ch, float x)
     if (ch >= channels)
         return x;
 
+    (*varPtr)["x_prev"] = xPrev[ch];
+    (*varPtr)["y_prev"] = yPrev[ch];
+    (*varPtr)["x"] = x;
+
     for (const auto& n : varNames)
     {
         cutoff.setVariable(n.second, (*varPtr)[n.first]);
@@ -234,13 +365,17 @@ float SignalChain::Filter::process(int ch, float x)
     float fc = cutoff.evaluate(x);
     float res = resonance.evaluate(x);
 
-    fc = juce::jlimit(20.0f, sampleRate * 0.5f, fc);
+    const auto nyquist = sampleRate * 0.5f;
+    const auto maxFc = std::nextafter(nyquist, 0.0f); // keep strictly below Nyquist
+    fc = juce::jlimit(20.0f, maxFc, fc);
     res = juce::jlimit(0.1f, 10.0f, res);
 
     filter.setCutoffFrequency(fc);
     filter.setResonance(res);
 
     float y = filter.processSample(ch, x);
+    xPrev[ch] = x;
+    yPrev[ch] = y;
     (*varPtr)["y"] = y;
     return y;
 }
@@ -250,6 +385,14 @@ void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
     comp.reset();
     comp.prepare(spec);
     channels = static_cast<int> (spec.numChannels);
+    thrSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    ratioSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    atkSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    relSm.reset(spec.sampleRate, Config::kSmoothingTime);
+    thrSm.setCurrentAndTargetValue(threshold.evaluate(0.f));
+    ratioSm.setCurrentAndTargetValue(ratio.evaluate(0.f));
+    atkSm.setCurrentAndTargetValue(attack.evaluate(0.f));
+    relSm.setCurrentAndTargetValue(release.evaluate(0.f));
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -273,13 +416,86 @@ float SignalChain::Comp::process(int ch, float x)
         release.setVariable(n.second, v);
     }
 
-    comp.setThreshold(threshold.evaluate(x));
-    comp.setRatio(ratio.evaluate(x));
-    comp.setAttack(attack.evaluate(x));
-    comp.setRelease(release.evaluate(x));
+    thrSm.setTargetValue(threshold.evaluate(x));
+    ratioSm.setTargetValue(ratio.evaluate(x));
+    atkSm.setTargetValue(attack.evaluate(x));
+    relSm.setTargetValue(release.evaluate(x));
 
-    float y = comp.processSample(ch, x);
-    (*varPtr)["y"] = y;
-    return y;
+    comp.setThreshold(thrSm.getNextValue());
+    comp.setRatio(ratioSm.getNextValue());
+    comp.setAttack(atkSm.getNextValue());
+    comp.setRelease(relSm.getNextValue());
+
+        float y = comp.processSample(ch, x);
+        (*varPtr)["y"] = y;
+        return y;
+    }
+
+void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
+{
+    sampleRate = spec.sampleRate;
+    value.assign(spec.numChannels, 0.0f);
+    atkTime.reset(sampleRate, Config::kSmoothingTime);
+    relTime.reset(sampleRate, Config::kSmoothingTime);
+    auto initAtk = juce::jlimit(0.0001f, 1.0f, attack.evaluate(0.f));
+    auto initRel = juce::jlimit(0.0001f, 1.0f, release.evaluate(0.f));
+    atkTime.setCurrentAndTargetValue(initAtk);
+    relTime.setCurrentAndTargetValue(initRel);
+    prevAtk = initAtk;
+    prevRel = initRel;
+    atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
+    relCoeff = std::exp(-1.0f / (initRel * sampleRate));
+    varNames.clear();
+    if (varPtr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
+}
+
+float SignalChain::Env::process(int ch, float x)
+{
+    if (!varPtr || ch >= static_cast<int>(value.size()))
+        return x;
+
+    for (const auto& n : varNames)
+    {
+        attack.setVariable(n.second, (*varPtr)[n.first]);
+        release.setVariable(n.second, (*varPtr)[n.first]);
+    }
+
+    atkTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, attack.evaluate(x)));
+    relTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, release.evaluate(x)));
+
+    auto a = atkTime.getNextValue();
+    auto r = relTime.getNextValue();
+    if (a != prevAtk)
+    {
+        atkCoeff = std::exp(-1.0f / (a * sampleRate));
+        prevAtk = a;
+    }
+    if (r != prevRel)
+    {
+        relCoeff = std::exp(-1.0f / (r * sampleRate));
+        prevRel = r;
+    }
+
+    float input = mode == Rms ? x * x : std::abs(x);
+    float out = value[ch];
+    if (input > out)
+        out = atkCoeff * out + (1.0f - atkCoeff) * input;
+    else
+        out = relCoeff * out + (1.0f - relCoeff) * input;
+    if (mode == Rms)
+        out = std::sqrt(out);
+    value[ch] = out;
+    (*varPtr)[name] = out;
+    return x;
+}
+
+juce::StringArray SignalChain::getMappingsFor(const juce::String& param) const
+{
+    auto it = parameterMappings.find(param);
+    if (it != parameterMappings.end())
+        return it->second;
+    return {};
 }
 

@@ -67,7 +67,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;..\..\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -81,7 +81,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;..\..\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
@@ -108,7 +108,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;..\..\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -122,7 +122,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;..\..\JuceLibraryCode;D:\JUCE\modules;..\..\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=0.0.1;JUCE_APP_VERSION_HEX=0x1;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=1;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=1;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;JUCE_SHARED_CODE=1;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
@@ -147,19 +147,26 @@
     <ClCompile Include="..\..\src\dsl\DSLParser.cpp"/>
     <ClCompile Include="..\..\src\dsl\SignalChain.cpp"/>
     <ClCompile Include="..\..\src\dsp\AdvancedOscillatorWrapper.cpp"/>
+    <ClCompile Include="..\..\src\dsp\BandPassFilter.cpp"/>
+    <ClCompile Include="..\..\src\dsp\HighPassFilter.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputGain.cpp"/>
     <ClCompile Include="..\..\src\dsp\InputRouter.cpp"/>
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp"/>
+    <ClCompile Include="..\..\src\dsp\LowPassFilter.cpp"/>
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp"/>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp"/>
+    <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp"/>
     <ClCompile Include="..\..\src\ui\LoudnessMeterComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp"/>
+    <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp"/>
+    <ClCompile Include="..\..\src\ui\WeightedLayout.cpp"/>
     <ClCompile Include="..\..\src\utils\ExpressionEvaluator.cpp"/>
     <ClCompile Include="..\..\src\utils\FormulaHelper.cpp"/>
+    <ClCompile Include="..\..\src\utils\Localiser.cpp"/>
     <ClCompile Include="..\..\src\utils\PresetManager.cpp"/>
     <ClCompile Include="..\..\tests\main.cpp"/>
     <ClCompile Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.cpp">
@@ -3045,6 +3052,90 @@
     <ClCompile Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData1.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData2.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData3.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData4.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData5.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData6.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData7.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData8.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData9.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData10.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData11.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData12.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData13.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData14.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData15.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData16.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData17.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData18.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData19.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData20.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData21.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData22.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData23.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\tests\member_disabled.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\tests\member_enabled.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\tests\unique_ptr_disabled.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\tests\unique_ptr_enabled.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\melatonin_inspector\melatonin_inspector.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\BinaryData.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_animation.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp"/>
@@ -3077,6 +3168,7 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_opengl.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_osc.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_product_unlocking.cpp"/>
+    <ClCompile Include="..\..\JuceLibraryCode\include_melatonin_inspector.cpp"/>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\core\Config.h"/>
@@ -3085,25 +3177,34 @@
     <ClInclude Include="..\..\src\dsl\DSLParser.h"/>
     <ClInclude Include="..\..\src\dsl\SignalChain.h"/>
     <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h"/>
+    <ClInclude Include="..\..\src\dsp\BandPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\DSPUtils.h"/>
+    <ClInclude Include="..\..\src\dsp\HighPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\InputGain.h"/>
     <ClInclude Include="..\..\src\dsp\InputRouter.h"/>
     <ClInclude Include="..\..\src\dsp\LookupTables.h"/>
+    <ClInclude Include="..\..\src\dsp\LowPassFilter.h"/>
     <ClInclude Include="..\..\src\dsp\SignalPolisher.h"/>
     <ClInclude Include="..\..\src\dsp\WaveShaper.h"/>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp"/>
+    <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h"/>
     <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h"/>
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h"/>
     <ClInclude Include="..\..\src\ui\InlineAutocompleteEditor.h"/>
     <ClInclude Include="..\..\src\ui\LoudnessMeterComponent.h"/>
     <ClInclude Include="..\..\src\ui\PluginEditor.h"/>
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h"/>
+    <ClInclude Include="..\..\src\ui\PresetTableComponent.h"/>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h"/>
+    <ClInclude Include="..\..\src\ui\WeightedLayout.h"/>
     <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h"/>
     <ClInclude Include="..\..\src\utils\FormulaHelper.h"/>
+    <ClInclude Include="..\..\src\utils\Localiser.h"/>
     <ClInclude Include="..\..\src\utils\Log.h"/>
     <ClInclude Include="..\..\src\utils\PresetManager.h"/>
     <ClInclude Include="..\..\tests\ExpressionEvaluatorTest.h"/>
+    <ClInclude Include="..\..\tests\PresetManagerTest.h"/>
+    <ClInclude Include="..\..\tests\SignalChainTest.h"/>
     <ClInclude Include="..\..\tests\WaveShaperTest.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_Animator.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_animation\animation\juce_AnimatorSetBuilder.h"/>
@@ -4498,18 +4599,46 @@
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\marketplace\juce_OnlineUnlockStatus.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\marketplace\juce_TracktionMarketplaceStatus.h"/>
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\InspectorBinaryData.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\accesibility.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\box_model.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\collapsable_panel.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\color_picker.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\colour_property_component.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\component_tree_view_item.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\fps_meter.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\inspector_image_button.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\overlay.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\preview.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\properties.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\tree_component.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\undo_manager_inspector.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\colors.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\colour_ids.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\component_helpers.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\inspector_settings.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\misc.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\overlay_mouse_listener.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\timing.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\component_model.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\inspector_component.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\lookandfeel.h"/>
+    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin_inspector.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\BinaryData.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JucePluginDefines.h"/>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\resources\img\knob.png"/>
-    <None Include="..\..\resources\img\mockup.png"/>
+    <None Include="..\..\resources\img\innerknob.png"/>
+    <None Include="..\..\resources\img\knob lights.png"/>
+    <None Include="..\..\resources\img\outerKnob.png"/>
+    <None Include="..\..\resources\img\overknob.png"/>
     <None Include="..\..\resources\locale\de.txt"/>
     <None Include="..\..\resources\locale\en.txt"/>
     <None Include="..\..\resources\optimizations.txt"/>
     <None Include="..\..\resources\templates.json"/>
+    <None Include="..\..\scripts\install_linux_deps.sh"/>
     <None Include="..\..\tests\NeuroCore_Tests.jucer"/>
     <None Include="..\..\AGENTS.md"/>
     <None Include="..\..\CMakeLists.txt"/>
@@ -4538,6 +4667,8 @@
     <None Include="D:\JUCE\modules\juce_graphics\image_formats\jpglib\changes to libjpeg for JUCE.txt"/>
     <None Include="D:\JUCE\modules\juce_graphics\image_formats\pnglib\libpng_readme.txt"/>
     <None Include="D:\JUCE\modules\juce_graphics\unicode\sheenbidi\JUCE_CHANGES.txt"/>
+    <None Include="..\..\modules\melatonin_inspector\CMakeLists.txt"/>
+    <None Include="..\..\modules\melatonin_inspector\README.md"/>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
 </Project>

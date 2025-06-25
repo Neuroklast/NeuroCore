@@ -1,0 +1,153 @@
+NeuroCore DSL – User Manual
+1. Was ist die NeuroCore DSL?
+Die NeuroCore-DSL ist eine textbasierte Sprache, mit der du komplexe Audio-Effektketten
+(mit Waveshaping, Filtern, Kompressoren, LFOs, Hüllkurven etc.) direkt in einem einzigen Textfeld beschreibst.
+Du hast vollständige Kontrolle über den Signalfluss, kannst eigene Formeln nutzen
+und alles in Echtzeit mit vier Makro-Reglern steuern.
+
+2. Grundaufbau eines DSL-Presets
+Jedes Preset besteht aus Zeilen.
+Jede Zeile beschreibt eine Effekt-Stage oder einen Modulator.
+
+Signalfluss: Zeilen werden von oben nach unten abgearbeitet.
+
+Ein- und Ausgang: Jede Stage nutzt das Ergebnis der vorherigen Stage als Eingang.
+
+Parameter: Die Buchstaben a, b, c, d (oder Aliasnamen) stehen für die vier Makro-Regler.
+
+3. Blöcke und ihre Syntax
+3.1. Parameterbenennung
+plaintext
+Kopieren
+Bearbeiten
+param a = gain
+param b = tone
+param c = drive
+param d = depth
+Weist den Reglern a–d sprechende Namen zu.
+
+Im restlichen Script kannst du entweder a/b/… oder den Alias verwenden.
+Nur die Buchstaben a–d sind zulässig; Groß- und Kleinschreibung werden ignoriert.
+
+3.2. Waveshaping-Stage
+plaintext
+Kopieren
+Bearbeiten
+stage1: y = tanh(a * x)
+stage2: y = y + 0.3 * pow(y,3)
+Definiert eine mathematische Funktion, die auf das Signal angewendet wird.
+
+Du kannst alle üblichen Funktionen und Operatoren nutzen:
++, -, *, /, pow, sin, cos, tanh, exp, log, abs, min, max etc.
+
+Eingabevariablen:
+
+x = Input der Stage
+
+x_prev = Vorheriger Input
+
+y_prev = Vorheriges Output
+
+3.3. Filter-Stage
+plaintext
+Kopieren
+Bearbeiten
+filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
+Typen: lowpass, highpass, bandpass
+
+Parameter können Makros, Modulatoren und Formeln enthalten.
+
+3.4. Kompressor
+plaintext
+Kopieren
+Bearbeiten
+comp1: threshold = c; ratio = 4; attack = 0.01; release = 0.1
+Alle Parameter sind Formeln, z. B. regelbar durch Regler, LFO oder Envelope.
+
+3.5. Envelope Follower (Hüllkurve)
+plaintext
+Kopieren
+Bearbeiten
+env1: type = rms; attack = 0.01; release = 0.1
+Typen: rms, peak
+
+Ergibt eine Variable (env1), die du in anderen Blöcken nutzen kannst.
+
+3.6. LFO (Oszillator/Modulator)
+plaintext
+Kopieren
+Bearbeiten
+osc1: shape = sine; freq = 2.0; depth = d
+Formen: sine, triangle, square, saw, noise
+
+Gibt pro Sample einen Wert aus, z. B. für Modulation in Stage oder Filter.
+
+4. Beispiel-Preset (Marshall-Style Distortion)
+plaintext
+Kopieren
+Bearbeiten
+param a = inputGain
+param b = tone
+param c = masterVolume
+param d = compThresh
+
+stage1: y = inputGain * x
+stage2: y = tanh(2.5 * y + 0.3 * pow(y, 3)) + 0.05 * y_prev
+filter1: type = bandpass; cutoff = 500 + 1500 * tone; resonance = 0.8
+stage3: y = tanh(y + 0.2 * y_prev) + 0.05 * pow(y, 5)
+comp1: threshold = compThresh; ratio = 6; attack = 0.005; release = 0.05
+env1: type = rms; attack = 0.01; release = 0.1
+osc1: shape = sine; freq = 0.25; depth = 0.1
+stage4: y = masterVolume * (y + 0.1 * env1 + 0.05 * osc1)
+5. Tipps & Hinweise
+Reihenfolge beachten: Modulatoren (env1, osc1 etc.) müssen vor ihrer Nutzung definiert werden.
+
+Nur von oben nach unten: Keine Referenzen auf spätere Blöcke möglich.
+
+Keine doppelten Namen: Jeder Blockname (stage1, filter1, env1, osc1, etc.) darf nur einmal vergeben werden.
+
+Kommentare: Zeilen mit # oder // werden ignoriert.
+
+6. Fehlermeldungen
+Bei Fehlern (z. B. Tippfehler, undefinierte Variable, falsche Syntax) zeigt das Plugin die genaue Zeile und eine Beschreibung an.
+
+Beispiel:
+Error on line 4: 'osc2' is not defined. Did you mean 'osc1'?
+
+7. Parameter-Automation
+Alle Parameter (a–d oder Aliase) sind über die DAW automatisierbar und werden live in der Formel aktualisiert.
+
+8. Weitere Beispiele
+Soft-Clipping:
+
+plaintext
+Kopieren
+Bearbeiten
+stage1: y = a * x
+stage2: y = tanh(y)
+Auto-Wah:
+
+plaintext
+Kopieren
+Bearbeiten
+env1: type = rms; attack = 0.01; release = 0.05
+osc1: shape = sine; freq = 1.0; depth = b
+filter1: type = bandpass; cutoff = 600 + env1 * 1000 + osc1 * 200
+9. Häufige Fehlerquellen
+Blöcke in falscher Reihenfolge
+
+Undefinierte oder doppelte Namen
+
+Syntaxfehler (fehlendes Semikolon, Gleichheitszeichen etc.)
+
+Nutzung von Modulatoren vor deren Definition
+
+10. Schnellstart
+Wähle das DSL-Textfeld im Plugin aus.
+
+Schreibe oder lade ein Preset nach obigem Muster.
+
+Klicke auf „Compile“ oder „Save“, um die Formel zu aktivieren.
+
+Steuere die Parameter mit den Reglern oder via Automation.
+

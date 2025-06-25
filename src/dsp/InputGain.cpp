@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "InputGain.h"
 #include "../utils/Log.h"
 
@@ -40,7 +41,8 @@ void InputGain::setParameter (const std::string& id, float v)
 {
     if (id == EffectParameters::inputGain)
     {
-        targetGain = v;
+        // ensure gain stays within valid range
+        targetGain = juce::jlimit(0.0f, 2.0f, v);
         smoothedGain.setTargetValue (targetGain);
     }
 }

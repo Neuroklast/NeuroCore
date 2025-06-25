@@ -23,6 +23,7 @@
 #include "../dsp/InputRouter.h"
 #include "../dsp/WaveShaper.h"
 #include "../dsp/SignalPolisher.h"
+#include "../dsp/LowPassFilter.h"
 #include "EffectParameters.h"
 #include "Config.h"
 
@@ -31,7 +32,8 @@
 /**
 */
 class NeuroCoreAudioProcessor  : public juce::AudioProcessor,
-                                 private juce::AudioProcessorValueTreeState::Listener
+                                 private juce::AudioProcessorValueTreeState::Listener,
+                                 private juce::AsyncUpdater
 {
 public:
     //==============================================================================
@@ -73,17 +75,15 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Updates signal chain script from the UI
-    void setFormula (const juce::String& text);
+    bool setFormula (const juce::String& text, juce::String& error);
     juce::String getScript() const noexcept { return dslScript; }
 
     void setVariableName(int index, const juce::String& name);
-    juce::String getVariableName(int index) const noexcept
-    {
-        if (juce::isPositiveAndBelow (index, (int) variableNames.size()))
-            return variableNames[(size_t) index];
-        return {};
-    }
-    const std::array<juce::String, 4>& getVariableNames() const noexcept { return variableNames; }
+    juce::String getVariableName(int index) const noexcept;
+    std::array<juce::String, 4> getVariableNames() const;
+    bool isParameterActive(int index) const noexcept;
+
+    juce::StringArray getParameterMappings(int index) const;
 
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
@@ -95,6 +95,10 @@ public:
 
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
+
+    bool testFormulaStability (const juce::String& script,
+                               juce::String& warning,
+                               std::function<void(float)> progress = {});
 
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
@@ -112,32 +116,44 @@ public:
 private:
     //==============================================================================
     std::array<std::atomic<float>, 4> parameterValues{};
+    // Zugriff von UI-Threads, nicht im Audio-Thread
+    mutable juce::SpinLock variableLock;
     std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
+    // Aktiv-Flags werden mit atomaren Booleans gehalten
+    std::array<std::atomic<bool>, 4> parameterActive{ true, true, true, true };
+    std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
-    std::unique_ptr<juce::LocalisedStrings> translations; // holds current language strings
     juce::String currentLanguage;
 
 
-    juce::dsp::Oversampling<float> oversampling { Config::kMaxChannels,
-                                                 (size_t) std::log2 (Config::kOversamplingFactor),
-                                                 juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
+    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                   juce::dsp::IIR::Coefficients<float>> lowpassFilter;
     juce::dsp::DryWetMixer<float> dryWetMixer;
+    int                          dryWetLatency { 0 };
     juce::SmoothedValue<float>    wetValue;
     juce::SmoothedValue<float>    gainCompValue;
     juce::dsp::Gain<float>        outputGain;
     juce::dsp::Gain<float>        userOutputGain;
+    juce::SmoothedValue<float>    userGainValue;
     juce::AudioBuffer<float>      dryBuffer;
     juce::AudioBuffer<float>      inputWaveBuffer;
     juce::AudioBuffer<float>      outputWaveBuffer;
     juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
-    std::atomic<int>             inputWrite { 0 };
-    std::atomic<int>             outputWrite { 0 };
+    juce::AudioBuffer<float>      oldScriptBuffer; // buffer for previous DSL processing
+    juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
+    std::atomic<int>              inputWritePos  { 0 };
+    std::atomic<int>              outputWritePos { 0 };
     InputRouter                   inputRouter;
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
+    dsl::SignalChain              oldSignalChain;
+    dsl::SignalChain              previewSignalChain;
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    std::atomic<int>              oversamplingIndex { 1 }; // 2x by default
+    juce::SmoothedValue<float>    formulaBlend;
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };
@@ -154,6 +170,11 @@ private:
                                          static_cast<juce::uint32> (Config::kDefaultBlockSize),
                                          static_cast<juce::uint32> (Config::kMaxChannels) };
 
+    void pushToRingBuffer (const juce::AudioBuffer<float>& src,
+                           juce::AudioBuffer<float>& dst,
+                           std::atomic<int>& pos) noexcept;
+
     void updateProcessingSpec (double sampleRate, int blockSize);
+    void handleAsyncUpdate() override;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
 };
