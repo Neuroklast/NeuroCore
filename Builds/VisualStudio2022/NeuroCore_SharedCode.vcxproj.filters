@@ -853,6 +853,9 @@
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\FunctionsOverlay.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
@@ -4150,6 +4153,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\FunctionsOverlay.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\InlineAutocompleteEditor.h">
@@ -8493,6 +8499,9 @@
       <Filter>NeuroCore\resources\locale</Filter>
     </None>
     <None Include="..\..\resources\locale\functions_de.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
+    </None>
+    <None Include="..\..\resources\locale\functions_en.txt">
       <Filter>NeuroCore\resources\locale</Filter>
     </None>
     <None Include="..\..\resources\optimizations.txt">

@@ -76,6 +76,7 @@
 		9F1D85825700F1BA5F4A6A6D /* include_juce_cryptography.mm */ = {isa = PBXBuildFile; fileRef = 7DE500001D4B33260BA61210; };
 		9F51B7EADAE2DD728E9D57E8 /* MetalKit.framework */ = {isa = PBXBuildFile; fileRef = D7F9209655CD40D72A2B9D52; settings = { ATTRIBUTES = (Weak, ); }; };
 		9F9C87206316CFDFE485CA62 /* InlineAutocompleteEditor.cpp */ = {isa = PBXBuildFile; fileRef = DCF1D06671D27FEAFC6E9A56; };
+		A1C92177608874CE6D74E192 /* FunctionsOverlay.cpp */ = {isa = PBXBuildFile; fileRef = 71A36D86546286B80ACC1D45; };
 		A64F2800733159DA791A600C /* WaveformDisplayComponent.cpp */ = {isa = PBXBuildFile; fileRef = A95180CDE5F9ADA55929CB73; };
 		A75AB4922E95BBAB079C7918 /* LoudnessMeterComponent.cpp */ = {isa = PBXBuildFile; fileRef = B64A9EE7ABFD503A7039CDE6; };
 		A7807DC2F49A5F066D5DB955 /* include_juce_product_unlocking.mm */ = {isa = PBXBuildFile; fileRef = 3AB90FE6DF0446053FD1A2FB; };
@@ -109,6 +110,7 @@
 		0467697438C1DCCEC275B436 /* Localiser.cpp */ /* Localiser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Localiser.cpp; path = ../../src/utils/Localiser.cpp; sourceTree = SOURCE_ROOT; };
 		066547B8283C04568BFE97CD /* DSLParser.cpp */ /* DSLParser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = DSLParser.cpp; path = ../../src/dsl/DSLParser.cpp; sourceTree = SOURCE_ROOT; };
 		0C038AB4D9522281F9B4F760 /* Security.framework */ /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		0C5768CE242BB241A42831C2 /* FunctionsOverlay.h */ /* FunctionsOverlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FunctionsOverlay.h; path = ../../src/ui/FunctionsOverlay.h; sourceTree = SOURCE_ROOT; };
 		0C7E392948866FEB3639094F /* include_juce_animation.cpp */ /* include_juce_animation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_animation.cpp; path = ../../JuceLibraryCode/include_juce_animation.cpp; sourceTree = SOURCE_ROOT; };
 		0FBA0B5ED13236481C5F20A8 /* Shared Code */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libNeuroCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		103023A195A90D82A87A8F3A /* DSPUtils.h */ /* DSPUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DSPUtils.h; path = ../../src/dsp/DSPUtils.h; sourceTree = SOURCE_ROOT; };
@@ -169,6 +171,7 @@
 		6D1952D12292FA0552F47230 /* VST3 */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuroCore.vst3; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F373936F1AEA419E5A8FF40 /* Accelerate.framework */ /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		714E5C4E4E8DC6EB72A10289 /* juce_graphics */ /* juce_graphics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_graphics; path = "~/JUCE/modules/juce_graphics"; sourceTree = "<absolute>"; };
+		71A36D86546286B80ACC1D45 /* FunctionsOverlay.cpp */ /* FunctionsOverlay.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FunctionsOverlay.cpp; path = ../../src/ui/FunctionsOverlay.cpp; sourceTree = SOURCE_ROOT; };
 		732A0BBECC4567A1788FF887 /* NeuroCore_Tests.jucer */ /* NeuroCore_Tests.jucer */ = {isa = PBXFileReference; lastKnownFileType = file.jucer; name = NeuroCore_Tests.jucer; path = ../../tests/NeuroCore_Tests.jucer; sourceTree = SOURCE_ROOT; };
 		7377F4CF9026538F6FA70EB7 /* PluginProcessor.h */ /* PluginProcessor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginProcessor.h; path = ../../src/core/PluginProcessor.h; sourceTree = SOURCE_ROOT; };
 		738A1D67BE4B3F19B3AC18EB /* include_melatonin_inspector.cpp */ /* include_melatonin_inspector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_melatonin_inspector.cpp; path = ../../JuceLibraryCode/include_melatonin_inspector.cpp; sourceTree = SOURCE_ROOT; };
@@ -243,6 +246,7 @@
 		DBCACB0FD0DBE1562C09F383 /* ParameterComponent.cpp */ /* ParameterComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ParameterComponent.cpp; path = ../../src/ui/custom/ParameterComponent.cpp; sourceTree = SOURCE_ROOT; };
 		DCF1D06671D27FEAFC6E9A56 /* InlineAutocompleteEditor.cpp */ /* InlineAutocompleteEditor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = InlineAutocompleteEditor.cpp; path = ../../src/ui/InlineAutocompleteEditor.cpp; sourceTree = SOURCE_ROOT; };
 		DD1AB0933083D88E561AF730 /* ParameterComponent.h */ /* ParameterComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ParameterComponent.h; path = ../../src/ui/custom/ParameterComponent.h; sourceTree = SOURCE_ROOT; };
+		E01D327DF434C4AF99DDEF1C /* functions_en.txt */ /* functions_en.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = functions_en.txt; path = ../../resources/locale/functions_en.txt; sourceTree = SOURCE_ROOT; };
 		E1770EDCD4256301FA2051F6 /* CoreAudio.framework */ /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E3D74622C74AFE0782C93B1E /* Info-VST3.plist */ /* Info-VST3.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-VST3.plist"; path = "Info-VST3.plist"; sourceTree = SOURCE_ROOT; };
 		E84EF5CC7E827CD7A4FBBE0C /* juce_audio_devices */ /* juce_audio_devices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_devices; path = "~/JUCE/modules/juce_audio_devices"; sourceTree = "<absolute>"; };
@@ -545,6 +549,7 @@
 				81BC73AAB84BED1E87FCB87D,
 				F438AA916CD5D4EC5186E102,
 				CCED826EC2BDDC141236C612,
+				E01D327DF434C4AF99DDEF1C,
 			);
 			name = locale;
 			sourceTree = "<group>";
@@ -633,6 +638,8 @@
 				68209393F08C6231520FC124,
 				F8E0753859A0514846E6F2E4,
 				625D109BAE38BD4CEC7DF6A9,
+				71A36D86546286B80ACC1D45,
+				0C5768CE242BB241A42831C2,
 				DCF1D06671D27FEAFC6E9A56,
 				F37F4BE01EE93B63A31E6C3D,
 				B64A9EE7ABFD503A7039CDE6,
@@ -942,6 +949,7 @@
 				49F0C198956D93AF9C411099,
 				AD46FAE2535F81CE8807142A,
 				C625D6F68B05E8FD8D9A8626,
+				A1C92177608874CE6D74E192,
 				9F9C87206316CFDFE485CA62,
 				A75AB4922E95BBAB079C7918,
 				B75E9874F67DD28C3FC054E6,

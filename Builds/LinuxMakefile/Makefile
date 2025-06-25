@@ -132,6 +132,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
+  $(JUCE_OBJDIR)/FunctionsOverlay_42a5185a.o \
   $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
   $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
@@ -313,6 +314,11 @@ $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o: ../../src/ui/FormulaDisplayCo
 $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o: ../../src/ui/FormulaWaveComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling FormulaWaveComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/FunctionsOverlay_42a5185a.o: ../../src/ui/FunctionsOverlay.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling FunctionsOverlay.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o: ../../src/ui/InlineAutocompleteEditor.cpp

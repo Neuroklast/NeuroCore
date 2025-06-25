@@ -206,6 +206,16 @@ void DslTerminalEditor::openGLContextClosing()
 {
 }
 
+void DslTerminalEditor::insertTextAtCaret(const juce::String& text)
+{
+    if (document)
+    {
+        auto caretPosition = fallbackEditor->getCaretPos(); // Use fallbackEditor to get caret position
+        document->insertText(caretPosition, text);
+    }
+}
+
+
 
 void DslTerminalEditor::codeDocumentTextInserted(const juce::String&, int)
 {
