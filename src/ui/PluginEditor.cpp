@@ -52,21 +52,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*blankToggle);
 
     presetsButton = std::make_unique<juce::TextButton>("Presets");
-    presetsButton->onClick = [this]
-    {
-        if (! presetTable)
-            presetTable = std::make_unique<PresetTableComponent>(audioProcessor);
-        else
-            presetTable->refresh();
-        if (! presetWindow)
-        {
-            presetWindow = std::make_unique<juce::DialogWindow>("Presets", juce::Colours::black, true);
-            presetWindow->setUsingNativeTitleBar(true);
-            presetWindow->setContentOwned(presetTable.get(), false);
-            presetWindow->centreWithSize(500, 400);
-        }
-        presetWindow->setVisible(true);
-    };
+    presetsButton->onClick = [this] { showPresetOverlay(); };
     addAndMakeVisible(*presetsButton);
 
     bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
@@ -493,6 +479,31 @@ void NeuroCoreAudioProcessorEditor::resized()
     {
         pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
         pluginNameLabel->setJustificationType(juce::Justification::centred);
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::showPresetOverlay()
+{
+    hidePresetOverlay();
+    presetOverlay = std::make_unique<PresetOverlay>();
+    presetOverlay->onPresetSelected = [this](int idx)
+    {
+        audioProcessor.loadPreset(idx);
+        hidePresetOverlay();
+    };
+    presetOverlay->onClose = [this] { hidePresetOverlay(); };
+    addAndMakeVisible(*presetOverlay);
+    presetOverlay->toFront(true);
+    presetOverlay->setBounds(getLocalBounds());
+    presetOverlay->setPresetNames(audioProcessor.getPresetNames());
+}
+
+void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
+{
+    if (presetOverlay)
+    {
+        removeChildComponent(presetOverlay.get());
+        presetOverlay.reset();
     }
 }
 
