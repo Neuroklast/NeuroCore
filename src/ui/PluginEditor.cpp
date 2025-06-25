@@ -492,9 +492,12 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
         hidePresetOverlay();
     };
     presetOverlay->onClose = [this] { hidePresetOverlay(); };
-    addAndMakeVisible(*presetOverlay);
+
+    auto bounds = getScreenBounds();
+    presetOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
+    presetOverlay->setBounds(bounds);
+    presetOverlay->enterModalState(true);
     presetOverlay->toFront(true);
-    presetOverlay->setBounds(getLocalBounds());
     presetOverlay->grabKeyboardFocus();
 }
 
@@ -502,7 +505,9 @@ void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
     {
-        removeChildComponent(presetOverlay.get());
+        presetOverlay->exitModalState(0);
+        presetOverlay->setVisible(false);
+        presetOverlay->removeFromDesktop();
         presetOverlay.reset();
     }
 }

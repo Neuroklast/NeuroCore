@@ -4,6 +4,7 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
     : table(proc), processor(proc), lookAndFeel(lf)
 {
     setLookAndFeel(&lookAndFeel);
+    setOpaque(false);
     setAlwaysOnTop(true);
     setWantsKeyboardFocus(true);
     addAndMakeVisible(table);
@@ -27,21 +28,25 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
 
     saveButton.onClick = [this]
     {
-        juce::AlertWindow aw("Save Preset", "", juce::AlertWindow::NoIcon);
-        aw.setLookAndFeel(&getLookAndFeel());
-        aw.addTextEditor("name", "", "Name:");
-        aw.addButton("OK", 1);
-        aw.addButton("Cancel", 0);
-        if (aw.runModalLoop() == 1)
+        auto* aw = new juce::AlertWindow("Save Preset", {}, juce::AlertWindow::NoIcon);
+        aw->setLookAndFeel(&getLookAndFeel());
+        aw->addTextEditor("name", {}, "Name:");
+        aw->addButton("OK", 1);
+        aw->addButton("Cancel", 0);
+        aw->enterModalState(true, [this, aw](int result)
         {
-            auto name = aw.getTextEditor("name")->getText();
-            auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                           .getChildFile(Config::kUserPresetFolder);
-            dir.createDirectory();
-            auto file = dir.getChildFile(name).withFileExtension(Config::kPresetFileExtension);
-            processor.presetManager.savePreset(file, name);
-            refreshTable();
-        }
+            std::unique_ptr<juce::AlertWindow> cleanup(aw);
+            if (result == 1)
+            {
+                auto name = aw->getTextEditor("name")->getText();
+                auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                               .getChildFile(Config::kUserPresetFolder);
+                dir.createDirectory();
+                auto file = dir.getChildFile(name).withFileExtension(Config::kPresetFileExtension);
+                processor.presetManager.savePreset(file, name);
+                refreshTable();
+            }
+        });
     };
 
     deleteButton.onClick = [this]
@@ -52,14 +57,20 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
         auto file = table.getFileForRow(row);
         if (! file.exists())
             return;
-        if (juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                                              "Delete Preset",
-                                              file.getFileName(),
-                                              "Delete", "Cancel"))
-        {
-            file.deleteFile();
-            refreshTable();
-        }
+
+        juce::NativeMessageBox::showOkCancelBoxAsync(juce::AlertWindow::WarningIcon,
+                                                     "Delete Preset",
+                                                     file.getFileName(),
+                                                     "Delete", "Cancel",
+                                                     this,
+                                                     [this, file](int r)
+                                                     {
+                                                         if (r != 0)
+                                                         {
+                                                             file.deleteFile();
+                                                             refreshTable();
+                                                         }
+                                                     });
     };
 
     setInterceptsMouseClicks(true, true);
@@ -69,6 +80,8 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
 PresetOverlay::~PresetOverlay()
 {
     setLookAndFeel(nullptr);
+    if (isOnDesktop())
+        removeFromDesktop();
 }
 
 void PresetOverlay::refreshTable()
