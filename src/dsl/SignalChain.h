@@ -59,6 +59,10 @@ private:
     {
         juce::dsp::StateVariableTPTFilter<float> filter;
         ExpressionEvaluator cutoff, resonance;
+        // Parameters for extended bandpass support
+        ExpressionEvaluator center, width, lowcut, highcut;
+        bool useCenterWidth { false };
+        bool useLowHigh    { false };
         juce::dsp::StateVariableTPTFilterType type{ juce::dsp::StateVariableTPTFilterType::lowpass };
         float sampleRate{44100.0f};
         int channels{1};

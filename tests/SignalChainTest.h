@@ -38,6 +38,26 @@ public:
             expectGreaterOrEqual(buf.getSample(0,0), 0.5f);
         }
 
+        beginTest("Bandpass center/width");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nfilter1: type = bandpass; center = 1000; width = 500";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+        }
+
+        beginTest("Bandpass low/high cut");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nfilter1: type = bandpass; lowcut = 400; highcut = 1600";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+        }
+
         beginTest("Compressor reduces level");
         {
             dsl::SignalChain c;

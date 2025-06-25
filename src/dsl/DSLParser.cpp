@@ -110,10 +110,34 @@ bool DSLParser::parse(const juce::String& text,
             error = "Error on line " + juce::String(i+1) + ": stage without formula.";
             return false;
         }
-        if (desc.type == "filter" && desc.args.count("cutoff") == 0)
+        if (desc.type == "filter")
         {
-            error = "Error on line " + juce::String(i+1) + ": filter missing cutoff.";
-            return false;
+            auto fType = desc.args.count("type") ? trimLower(desc.args["type"]) : juce::String("lowpass");
+            if (fType == "bandpass")
+            {
+                const bool hasCW = desc.args.count("center") && desc.args.count("width");
+                const bool hasLH = desc.args.count("lowcut") && desc.args.count("highcut");
+                if (! hasCW && ! hasLH)
+                {
+                    error = "Bitte entweder lowcut/highcut oder center/width angeben!";
+                    return false;
+                }
+                if (hasCW && ! hasLH)
+                {
+                    desc.args["lowcut"]  = desc.args["center"] + " - (" + desc.args["width"] + ")/2";
+                    desc.args["highcut"] = desc.args["center"] + " + (" + desc.args["width"] + ")/2";
+                }
+                else if (hasLH && ! hasCW)
+                {
+                    desc.args["center"] = "(" + desc.args["lowcut"] + " + " + desc.args["highcut"] + ")/2";
+                    desc.args["width"]  = "(" + desc.args["highcut"] + " - " + desc.args["lowcut"] + ")";
+                }
+            }
+            else if (desc.args.count("cutoff") == 0)
+            {
+                error = "Error on line " + juce::String(i+1) + ": filter missing cutoff.";
+                return false;
+            }
         }
         if (desc.type == "comp" && (desc.args.count("threshold") == 0 || desc.args.count("ratio") == 0))
         {
