@@ -33,6 +33,7 @@
 		1053F863007043F2AD2599FE /* include_juce_core_CompilationTime.cpp */ = {isa = PBXBuildFile; fileRef = 4453F64499A727B91AF523C6; };
 		13B6351C42D5CBCABD581973 /* Metal.framework */ = {isa = PBXBuildFile; fileRef = 3938BF6782D97A92B7733317; settings = { ATTRIBUTES = (Weak, ); }; };
 		17BBC31BDD5034E634EC350E /* include_juce_audio_utils.mm */ = {isa = PBXBuildFile; fileRef = 19ABEDDA880B9857E39B1402; };
+		1D985D10E58AA9249F1D5F52 /* PresetOverlay.cpp */ = {isa = PBXBuildFile; fileRef = AF9F751AE4167A466BBF5D59; };
 		1DB22817887226905178A81D /* include_juce_audio_devices.mm */ = {isa = PBXBuildFile; fileRef = 976660CE3854075F36E60A1F; };
 		21E3AE56B1F08C0655088009 /* Foundation.framework */ = {isa = PBXBuildFile; fileRef = 4535349D723CFBE230A3EE43; };
 		277320CE830709DFC44AAF13 /* include_juce_audio_plugin_client_ARA.cpp */ = {isa = PBXBuildFile; fileRef = CAF2FC673C2DA9DA2B791214; };
@@ -127,6 +128,7 @@
 		241D31BCC071AF10EBAD2D2D /* SignalChain.cpp */ /* SignalChain.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SignalChain.cpp; path = ../../src/dsl/SignalChain.cpp; sourceTree = SOURCE_ROOT; };
 		2ADFF3C29C3C1854AC24C3BE /* IOKit.framework */ /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		3228BCBB8803778B3C2A1562 /* include_juce_osc.cpp */ /* include_juce_osc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_osc.cpp; path = ../../JuceLibraryCode/include_juce_osc.cpp; sourceTree = SOURCE_ROOT; };
+		326EE892E957EEF1B2C064F9 /* PresetOverlay.h */ /* PresetOverlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PresetOverlay.h; path = ../../src/ui/PresetOverlay.h; sourceTree = SOURCE_ROOT; };
 		375F7839D03031555DD3BAAA /* include_juce_gui_basics.mm */ /* include_juce_gui_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_gui_basics.mm; path = ../../JuceLibraryCode/include_juce_gui_basics.mm; sourceTree = SOURCE_ROOT; };
 		38C1D66F6213090E394E23CA /* include_juce_audio_basics.mm */ /* include_juce_audio_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_basics.mm; path = ../../JuceLibraryCode/include_juce_audio_basics.mm; sourceTree = SOURCE_ROOT; };
 		3938BF6782D97A92B7733317 /* Metal.framework */ /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
@@ -202,6 +204,7 @@
 		A80F998BBAF914056DC8F056 /* NeuroCore.jucer */ /* NeuroCore.jucer */ = {isa = PBXFileReference; lastKnownFileType = file.jucer; name = NeuroCore.jucer; path = ../../NeuroCore.jucer; sourceTree = SOURCE_ROOT; };
 		A8E0642364EEAD9F56696EA1 /* juce_audio_processors */ /* juce_audio_processors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_processors; path = "~/JUCE/modules/juce_audio_processors"; sourceTree = "<absolute>"; };
 		A95180CDE5F9ADA55929CB73 /* WaveformDisplayComponent.cpp */ /* WaveformDisplayComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = WaveformDisplayComponent.cpp; path = ../../src/ui/WaveformDisplayComponent.cpp; sourceTree = SOURCE_ROOT; };
+		AF9F751AE4167A466BBF5D59 /* PresetOverlay.cpp */ /* PresetOverlay.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PresetOverlay.cpp; path = ../../src/ui/PresetOverlay.cpp; sourceTree = SOURCE_ROOT; };
 		B3D4FDDB1970BB698BFF8DF5 /* JucePluginDefines.h */ /* JucePluginDefines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = JucePluginDefines.h; path = ../../JuceLibraryCode/JucePluginDefines.h; sourceTree = SOURCE_ROOT; };
 		B428F6C865F7FC5C1E6A5AB4 /* BandPassFilter.h */ /* BandPassFilter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = BandPassFilter.h; path = ../../src/dsp/BandPassFilter.h; sourceTree = SOURCE_ROOT; };
 		B45E06DAFA10FD0551116273 /* json.hpp */ /* json.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = json.hpp; path = ../../src/third_party/nlohmann/json.hpp; sourceTree = SOURCE_ROOT; };
@@ -624,6 +627,8 @@
 				675A49D1E45D07B1A19685D2,
 				18FA1309F8A9A71FBFE7A000,
 				CC16047CED75FF223ACA81A8,
+				AF9F751AE4167A466BBF5D59,
+				326EE892E957EEF1B2C064F9,
 				21DEC45BACECA3C26369EE4F,
 				645EB100853A5035E14F2046,
 				A95180CDE5F9ADA55929CB73,
@@ -933,6 +938,7 @@
 				9F9C87206316CFDFE485CA62,
 				A75AB4922E95BBAB079C7918,
 				B75E9874F67DD28C3FC054E6,
+				1D985D10E58AA9249F1D5F52,
 				8E76AADD06BB33B3FBB327B8,
 				A64F2800733159DA791A600C,
 				6C7EC7EFE26A3A11B3748E3C,

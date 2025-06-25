@@ -862,6 +862,9 @@
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\PresetOverlay.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
@@ -4156,6 +4159,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\PresetOverlay.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PresetTableComponent.h">

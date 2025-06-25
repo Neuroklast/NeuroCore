@@ -47,6 +47,7 @@ set(SOURCE_FILES
     src/ui/DslTerminalEditor.cpp
     src/ui/InlineAutocompleteEditor.cpp
     src/ui/PresetTableComponent.cpp
+    src/ui/PresetOverlay.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp

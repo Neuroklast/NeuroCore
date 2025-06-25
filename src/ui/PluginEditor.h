@@ -21,7 +21,7 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
-#include "PresetTableComponent.h"
+#include "PresetOverlay.h"
 #include "WeightedLayout.h"
 #if __has_include(<melatonin_inspector/melatonin_inspector.h>)
 # include <melatonin_inspector/melatonin_inspector.h>
@@ -111,8 +111,10 @@ private:
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
-    std::unique_ptr<PresetTableComponent>     presetTable;
-    std::unique_ptr<juce::DialogWindow>       presetWindow;
+    std::unique_ptr<PresetOverlay>            presetOverlay;
+
+    void showPresetOverlay();
+    void hidePresetOverlay();
 
     //melatonin::Inspector inspector{ *this };
 

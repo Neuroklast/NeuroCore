@@ -135,6 +135,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
   $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
+  $(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
   $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
@@ -326,6 +327,11 @@ $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o: ../../src/ui/LoudnessMeterComp
 $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o: ../../src/ui/PluginEditor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PluginEditor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o: ../../src/ui/PresetOverlay.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling PresetOverlay.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponent.cpp
