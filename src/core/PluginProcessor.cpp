@@ -278,6 +278,14 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
+    // ensure DSP spec matches the current host configuration
+    auto sr = getSampleRate() > 0.0 ? getSampleRate() : Config::kDefaultSampleRate;
+    auto bs = buffer.getNumSamples();
+    if (bs > static_cast<int>(currentSpec.maximumBlockSize)
+        || sr != currentSpec.sampleRate
+        || totalNumOutputChannels != static_cast<int>(currentSpec.numChannels))
+        updateProcessingSpec(sr, bs);
+
     if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
     if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
         return;
