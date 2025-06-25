@@ -368,7 +368,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             auto* newPtr = scriptBuffer.getReadPointer(ch);
             auto* oldPtr = oldScriptBuffer.getReadPointer(ch);
 
-            juce::FloatVectorOperations::copyWithMultiply(dst, newPtr, blend, numSamples);
+            juce::FloatVectorOperations::copyWithMultiply(dst, newPtr, *blend, numSamples);
+
+
             juce::FloatVectorOperations::addWithMultiply(dst, oldPtr, inv, numSamples);
         }
 

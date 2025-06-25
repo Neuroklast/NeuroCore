@@ -3,6 +3,7 @@
 
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "../core/Config.h"
 #include "../utils/ExpressionEvaluator.h"
 #include <atomic>
 #include <vector>

@@ -23,9 +23,7 @@
 #include "../utils/Localiser.h"
 #include "PresetOverlay.h"
 #include "WeightedLayout.h"
-#if __has_include(<melatonin_inspector/melatonin_inspector.h>)
-# include <melatonin_inspector/melatonin_inspector.h>
-#endif
+
 
 class ParameterSlider : public juce::Slider
 {
