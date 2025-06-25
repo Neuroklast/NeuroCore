@@ -50,6 +50,7 @@
 		412EBACA528E8292B11A4764 /* InputGain.cpp */ = {isa = PBXBuildFile; fileRef = 029EB9A52BC0F996D2496C20; };
 		4278156896383A600FA55B0D /* FormulaHelper.cpp */ = {isa = PBXBuildFile; fileRef = 810D43F43F012D1A6D01F3FD; };
 		47FBDE55494FCE3986B40981 /* include_juce_gui_extra.mm */ = {isa = PBXBuildFile; fileRef = 8F26C4069A2F111437CA8994; };
+		49F0C198956D93AF9C411099 /* DslTerminalEditor.cpp */ = {isa = PBXBuildFile; fileRef = D644D4CE217BDCC204B18394; };
 		4FCB99FD181110778DC541A7 /* include_juce_opengl.mm */ = {isa = PBXBuildFile; fileRef = 494C27855CD9A3F25DDBF279; };
 		5754AE01877BA773DBC93BE0 /* SignalChain.cpp */ = {isa = PBXBuildFile; fileRef = 241D31BCC071AF10EBAD2D2D; };
 		575E859F791A5621DF0FD5F5 /* IOKit.framework */ = {isa = PBXBuildFile; fileRef = 2ADFF3C29C3C1854AC24C3BE; };
@@ -137,6 +138,7 @@
 		443430C2EF891EDB67BF849E /* ExpressionEvaluatorTest.h */ /* ExpressionEvaluatorTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ExpressionEvaluatorTest.h; path = ../../tests/ExpressionEvaluatorTest.h; sourceTree = SOURCE_ROOT; };
 		4453F64499A727B91AF523C6 /* include_juce_core_CompilationTime.cpp */ /* include_juce_core_CompilationTime.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_core_CompilationTime.cpp; path = ../../JuceLibraryCode/include_juce_core_CompilationTime.cpp; sourceTree = SOURCE_ROOT; };
 		4535349D723CFBE230A3EE43 /* Foundation.framework */ /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		482703385F3349FFBF212035 /* DslTerminalEditor.h */ /* DslTerminalEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DslTerminalEditor.h; path = ../../src/ui/DslTerminalEditor.h; sourceTree = SOURCE_ROOT; };
 		486B7E98C6CFD4EA399B2362 /* WaveShaperTest.h */ /* WaveShaperTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = WaveShaperTest.h; path = ../../tests/WaveShaperTest.h; sourceTree = SOURCE_ROOT; };
 		48988EEEB50D5AFFF1330387 /* CMakeLists.txt */ /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = CMakeLists.txt; path = ../../CMakeLists.txt; sourceTree = SOURCE_ROOT; };
 		494C27855CD9A3F25DDBF279 /* include_juce_opengl.mm */ /* include_juce_opengl.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_opengl.mm; path = ../../JuceLibraryCode/include_juce_opengl.mm; sourceTree = SOURCE_ROOT; };
@@ -229,6 +231,7 @@
 		D38562A393B573B66703F21C /* Log.h */ /* Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Log.h; path = ../../src/utils/Log.h; sourceTree = SOURCE_ROOT; };
 		D59E193A70CFF83261E9B602 /* LowPassFilter.h */ /* LowPassFilter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LowPassFilter.h; path = ../../src/dsp/LowPassFilter.h; sourceTree = SOURCE_ROOT; };
 		D5D8B6AE8842125194867EB2 /* juce_gui_basics */ /* juce_gui_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_basics; path = "~/JUCE/modules/juce_gui_basics"; sourceTree = "<absolute>"; };
+		D644D4CE217BDCC204B18394 /* DslTerminalEditor.cpp */ /* DslTerminalEditor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = DslTerminalEditor.cpp; path = ../../src/ui/DslTerminalEditor.cpp; sourceTree = SOURCE_ROOT; };
 		D7C50550D90B36A356C60C24 /* LookupTables.h */ /* LookupTables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LookupTables.h; path = ../../src/dsp/LookupTables.h; sourceTree = SOURCE_ROOT; };
 		D7F9209655CD40D72A2B9D52 /* MetalKit.framework */ /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		DBCACB0FD0DBE1562C09F383 /* ParameterComponent.cpp */ /* ParameterComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ParameterComponent.cpp; path = ../../src/ui/custom/ParameterComponent.cpp; sourceTree = SOURCE_ROOT; };
@@ -608,6 +611,8 @@
 			isa = PBXGroup;
 			children = (
 				7EA138A1121DE2B46E3210DA,
+				D644D4CE217BDCC204B18394,
+				482703385F3349FFBF212035,
 				20C87221032CC0B67F1ACEF5,
 				68209393F08C6231520FC124,
 				F8E0753859A0514846E6F2E4,
@@ -922,6 +927,7 @@
 				06BB5038583A2459106C9C13,
 				FAA97308C01163B7FAFC0292,
 				E53D0A8B19C3E674BFF7ED50,
+				49F0C198956D93AF9C411099,
 				AD46FAE2535F81CE8807142A,
 				C625D6F68B05E8FD8D9A8626,
 				9F9C87206316CFDFE485CA62,

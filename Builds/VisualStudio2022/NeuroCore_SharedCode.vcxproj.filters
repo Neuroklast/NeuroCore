@@ -844,6 +844,9 @@
     <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\DslTerminalEditor.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
@@ -4133,6 +4136,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h">
       <Filter>NeuroCore\src\ui\custom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\DslTerminalEditor.h">
+      <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
