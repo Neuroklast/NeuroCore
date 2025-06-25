@@ -4,7 +4,7 @@
 
 using namespace juce;
 
-namespace {
+
 
 //==============================================================================
 class DslTerminalEditor::AutoCompleteCodeEditor : public CodeEditorComponent,
@@ -121,7 +121,6 @@ private:
     String suggestion;
 };
 
-} // namespace
 
 DslTerminalEditor::DslTerminalEditor(NeuroCoreAudioProcessor& proc)
     : processor(proc)
