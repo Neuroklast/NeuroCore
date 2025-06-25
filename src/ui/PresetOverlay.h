@@ -1,29 +1,28 @@
 #pragma once
 #include <JuceHeader.h>
+#include "PresetTableComponent.h"
 
-class PresetOverlay : public juce::Component, public juce::ListBoxModel
+class NeuroCoreAudioProcessor;
+
+// modal overlay showing preset table with action buttons
+class PresetOverlay : public juce::Component
 {
 public:
-    PresetOverlay();
+    explicit PresetOverlay(NeuroCoreAudioProcessor& processor);
 
     void paint(juce::Graphics& g) override;
     void resized() override;
 
-    int getNumRows() override;
-    void paintListBoxItem(int row, juce::Graphics& g, int width, int height, bool selected) override;
-    void listBoxItemClicked(int row, const juce::MouseEvent&) override;
-
-    void setPresetNames(const juce::StringArray& names);
-
-    std::function<void(int)> onPresetSelected;
-    std::function<void()> onClose;
+    std::function<void(int)> onPresetSelected; //!< callback when user chooses a preset
+    std::function<void()> onClose;             //!< called when overlay should close
 
 private:
-    juce::ListBox presetList;
+    PresetTableComponent table;
+    NeuroCoreAudioProcessor& processor;
     juce::TextButton loadButton { "Load" };
     juce::TextButton saveButton { "Save" };
     juce::TextButton deleteButton { "Delete" };
     juce::TextButton closeButton { "Close" };
 
-    juce::StringArray presetNames;
+    void refreshTable();
 };

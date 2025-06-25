@@ -485,7 +485,7 @@ void NeuroCoreAudioProcessorEditor::resized()
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 {
     hidePresetOverlay();
-    presetOverlay = std::make_unique<PresetOverlay>();
+    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor);
     presetOverlay->onPresetSelected = [this](int idx)
     {
         audioProcessor.loadPreset(idx);
@@ -495,7 +495,6 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     addAndMakeVisible(*presetOverlay);
     presetOverlay->toFront(true);
     presetOverlay->setBounds(getLocalBounds());
-    presetOverlay->setPresetNames(audioProcessor.getPresetNames());
 }
 
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()

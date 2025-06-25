@@ -16,6 +16,8 @@ public:
 
     void refresh();
     juce::File getFileForRow(int row) const;
+    int getSelectedRow() const { return table.getSelectedRow(); }
+    juce::TableListBox& getTable() { return table; }
 
 private:
     struct Entry
