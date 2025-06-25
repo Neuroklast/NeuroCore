@@ -25,6 +25,8 @@ if(NOT DEFINED JUCE_DIR)
             GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
             GIT_TAG 8.0.6
         )
+    src/ui/ProgressOverlay.cpp
+    src/ui/CircularProgressBar.cpp
         set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(juce)
         set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH "Path to JUCE" FORCE)

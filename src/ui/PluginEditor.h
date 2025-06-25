@@ -17,6 +17,9 @@
 #include "../utils/FormulaHelper.h"
 #include "FormulaDisplayComponent.h"
 #include "WaveformDisplayComponent.h"
+#include "ProgressOverlay.h"
+    void startStabilityCheck(const juce::String& script);
+    void stabilityCheckFinished(bool ok, const juce::String& warning, const juce::String& script);
 #include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "StabilityOverlay.h"
@@ -103,6 +106,9 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       polisherAttachment;
 
     // Middle column editors
+    std::unique_ptr<ProgressOverlay>          progressOverlay;
+    std::unique_ptr<juce::Thread>             stabilityThread;
+    std::atomic<float>                        stabilityProgress { 0.0f };
     std::unique_ptr<DslTerminalEditor> formulaInputEditor;
     std::unique_ptr<juce::TextButton>       optimizeButton;
     std::unique_ptr<juce::TextButton>       editSaveButton;

@@ -14,6 +14,7 @@
 #include "WaveformDisplayComponent.h"
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
+#include "ProgressOverlay.h"
 #include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
@@ -236,39 +237,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         else
         {
             auto text = formulaInputEditor->getText();
-            struct TestThread : juce::ThreadWithProgressWindow
-            {
-                TestThread(const juce::String& s, NeuroCoreAudioProcessor& p)
-                    : juce::ThreadWithProgressWindow(TRANS("StabilityTesting"), true, true), script(s), proc(p) {}
-                void run() override { ok = proc.testFormulaStability(script, warn, [this](float p){ setProgress(p); }); }
-                juce::String script; NeuroCoreAudioProcessor& proc; juce::String warn; bool ok { true }; };
-            TestThread t(text, audioProcessor);
-            setEnabled(false);
-            t.launchThread();
-            t.waitForThreadToExit(-1);
-            setEnabled(true);
-
-            if (! t.ok)
-            {
-                showStabilityWarning(t.warn);
-                return;
-            }
-
-            juce::String err;
-            if (audioProcessor.setFormula(text, err))
-            {
-                formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-                editSaveButton->setButtonText(TRANS("EditButton"));
-                editing = false;
-                errorLabel->setText({}, juce::dontSendNotification);
-                refreshParameterControls();
-            }
-            else
-            {
-                errorLabel->setText(err, juce::dontSendNotification);
-            }
+            startStabilityCheck(text);
+            return;
         }
     };
     addAndMakeVisible(*editSaveButton);
@@ -403,6 +373,10 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     polisherAttachment.reset();
     Localiser::getInstance().removeListener(this);
     stabilityOverlay.reset();
+    progressOverlay.reset();
+    if (stabilityThread && stabilityThread->isThreadRunning())
+        stabilityThread->signalThreadShouldExit();
+    stabilityThread.reset();
     setLookAndFeel (nullptr);
 }
 
@@ -414,6 +388,73 @@ juce::String NeuroCoreAudioProcessorEditor::getFormulaText() const
 void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
+void NeuroCoreAudioProcessorEditor::startStabilityCheck(const juce::String& script)
+{
+    if (progressOverlay)
+        return;
+
+    stabilityProgress.store(0.0f);
+    progressOverlay = std::make_unique<ProgressOverlay>(TRANS("StabilityTesting"), stabilityProgress);
+    addAndMakeVisible(*progressOverlay);
+    progressOverlay->setBounds(getLocalBounds());
+    progressOverlay->toFront(true);
+
+    struct TestThread : juce::Thread
+    {
+        TestThread(const juce::String& s, NeuroCoreAudioProcessor& p, std::atomic<float>& prog,
+                    NeuroCoreAudioProcessorEditor& o)
+            : juce::Thread("StabilityCheck"), script(s), proc(p), progress(prog), owner(o) {}
+
+        void run() override
+        {
+            bool ok = proc.testFormulaStability(script, warning,
+                                                 [this](float p){ progress.store(p); });
+            juce::MessageManager::callAsync([this, ok]
+            {
+                owner.stabilityCheckFinished(ok, warning, script);
+            });
+        }
+
+        juce::String script;
+        NeuroCoreAudioProcessor& proc;
+        std::atomic<float>& progress;
+        juce::String warning;
+        NeuroCoreAudioProcessorEditor& owner;
+    };
+
+    stabilityThread = std::make_unique<TestThread>(script, audioProcessor, stabilityProgress, *this);
+    stabilityThread->startThread();
+}
+
+void NeuroCoreAudioProcessorEditor::stabilityCheckFinished(bool ok, const juce::String& warning,
+                                                           const juce::String& script)
+{
+    progressOverlay.reset();
+    stabilityThread.reset();
+
+    if (! ok)
+    {
+        showStabilityWarning(warning);
+        return;
+    }
+
+    juce::String err;
+    if (audioProcessor.setFormula(script, err))
+    {
+        formulaInputEditor->setReadOnly(true);
+        formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                                      juce::Colours::transparentBlack);
+        editSaveButton->setButtonText(TRANS("EditButton"));
+        editing = false;
+        errorLabel->setText({}, juce::dontSendNotification);
+        refreshParameterControls();
+    }
+    else
+    {
+        errorLabel->setText(err, juce::dontSendNotification);
+    }
+}
+
         formulaInputEditor->setText (text);
 }
 
