@@ -14,7 +14,7 @@
 #include "WaveformDisplayComponent.h"
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
-#include "InlineAutocompleteEditor.h"
+#include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
 #include "custom/ParameterComponent.h"
@@ -210,15 +210,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputLeftButton);
     addAndMakeVisible(*inputRightButton);
 
-    formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
-    formulaInputEditor->setMultiLine(true, true);
-    formulaInputEditor->setReturnKeyStartsNewLine(true);
-    formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
-    formulaInputEditor->setReadOnly(true);
-    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
-    // hide caret while editor is read only
-    formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-        Colours::black);
+    formulaInputEditor = std::make_unique<DslTerminalEditor>();
+    formulaInputEditor->setText(audioProcessor.getScript());
+    formulaInputEditor->setOpaque(true);
     addAndMakeVisible(*formulaInputEditor);
     {
         juce::String err;
@@ -247,10 +241,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
-            // show caret when editor becomes editable
-            formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-                                          juce::Colours::black);
+            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId, Colours::black);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                              juce::Colours::black);
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
@@ -285,7 +278,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             if (audioProcessor.setFormula(text, err))
             {
                 formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
                                               juce::Colours::transparentBlack);
                 editSaveButton->setButtonText(TRANS("EditButton"));
                 editing = false;

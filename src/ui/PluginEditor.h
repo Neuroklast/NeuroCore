@@ -17,7 +17,7 @@
 #include "../utils/FormulaHelper.h"
 #include "FormulaDisplayComponent.h"
 #include "WaveformDisplayComponent.h"
-#include "InlineAutocompleteEditor.h"
+#include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
@@ -101,7 +101,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       polisherAttachment;
 
     // Middle column editors
-    std::unique_ptr<InlineAutocompleteEditor> formulaInputEditor;
+    std::unique_ptr<DslTerminalEditor> formulaInputEditor;
     std::unique_ptr<juce::TextButton>       optimizeButton;
     std::unique_ptr<juce::TextButton>       editSaveButton;
     std::unique_ptr<juce::Label>            errorLabel;
