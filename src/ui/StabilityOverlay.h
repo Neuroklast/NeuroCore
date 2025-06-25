@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <functional>
 
 class StabilityOverlay : public juce::Component
 {

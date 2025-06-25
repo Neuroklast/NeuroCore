@@ -374,9 +374,12 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     Localiser::getInstance().removeListener(this);
     stabilityOverlay.reset();
     progressOverlay.reset();
-    if (stabilityThread && stabilityThread->isThreadRunning())
+    if (stabilityThread)
+    {
         stabilityThread->signalThreadShouldExit();
-    stabilityThread.reset();
+        stabilityThread->waitForThreadToExit(-1);
+        stabilityThread.reset();
+    }
     setLookAndFeel (nullptr);
 }
 
