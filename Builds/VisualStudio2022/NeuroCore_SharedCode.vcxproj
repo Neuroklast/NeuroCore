@@ -163,6 +163,7 @@
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp"/>
     <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp"/>
+    <ClCompile Include="..\..\src\ui\WeightedLayout.cpp"/>
     <ClCompile Include="..\..\src\utils\ExpressionEvaluator.cpp"/>
     <ClCompile Include="..\..\src\utils\FormulaHelper.cpp"/>
     <ClCompile Include="..\..\src\utils\Localiser.cpp"/>
@@ -3195,6 +3196,7 @@
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h"/>
     <ClInclude Include="..\..\src\ui\PresetTableComponent.h"/>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h"/>
+    <ClInclude Include="..\..\src\ui\WeightedLayout.h"/>
     <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h"/>
     <ClInclude Include="..\..\src\utils\FormulaHelper.h"/>
     <ClInclude Include="..\..\src\utils\Localiser.h"/>

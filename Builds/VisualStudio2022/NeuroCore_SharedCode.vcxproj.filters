@@ -865,6 +865,9 @@
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\WeightedLayout.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\utils\ExpressionEvaluator.cpp">
       <Filter>NeuroCore\src\utils</Filter>
     </ClCompile>
@@ -4153,6 +4156,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\WeightedLayout.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils\ExpressionEvaluator.h">

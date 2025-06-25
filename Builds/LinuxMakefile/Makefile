@@ -136,6 +136,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
+  $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
   $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o \
   $(JUCE_OBJDIR)/FormulaHelper_731856a0.o \
   $(JUCE_OBJDIR)/Localiser_408913ae.o \
@@ -329,6 +330,11 @@ $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponen
 $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o: ../../src/ui/WaveformDisplayComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling WaveformDisplayComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o: ../../src/ui/WeightedLayout.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling WeightedLayout.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o: ../../src/utils/ExpressionEvaluator.cpp

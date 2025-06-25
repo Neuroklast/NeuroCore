@@ -22,6 +22,7 @@
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
 #include "PresetTableComponent.h"
+#include "WeightedLayout.h"
 #if __has_include(<melatonin_inspector/melatonin_inspector.h>)
 # include <melatonin_inspector/melatonin_inspector.h>
 #endif
@@ -59,23 +60,16 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    /// Ensures all children stay within the editor bounds.
-    void clampChildrenToBounds();
 
 
 private:
-    static constexpr int numRows    = 18;
-    static constexpr int numCols = 12;
-    static constexpr int cellMargin = 5;
-
-    juce::Rectangle<int> getGridCellBounds(int row, int col,
-        int rowSpan, int colSpan ) ;
     void refreshParameterControls();
     /// Updates all text labels after language change.
     void updateTranslations();
     void languageChanged() override { updateTranslations(); }
     NeuroCoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
+    std::unique_ptr<ui::LayoutNode> layoutRoot;
 
     // Left column controls
 
