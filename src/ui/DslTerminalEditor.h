@@ -7,6 +7,7 @@
 
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
+#include "../utils/FormulaHelper.h"
 
 /**
     @class DslTerminalEditor
@@ -19,7 +20,7 @@ class DslTerminalEditor : public juce::Component,
                           private juce::OpenGLRenderer
 {
 public:
-    DslTerminalEditor();
+    explicit DslTerminalEditor(NeuroCoreAudioProcessor& proc);
     ~DslTerminalEditor() override;
 
     void setText(const juce::String& t);
@@ -45,9 +46,12 @@ private:
 
     bool useOpenGL() const noexcept;
 
+    class AutoCompleteCodeEditor;
+
     juce::OpenGLContext openGLContext;
     std::unique_ptr<juce::CodeDocument> document;
-    std::unique_ptr<juce::CodeEditorComponent> fallbackEditor;
+    std::unique_ptr<AutoCompleteCodeEditor> fallbackEditor;
+    NeuroCoreAudioProcessor& processor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DslTerminalEditor)
 };

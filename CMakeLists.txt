@@ -44,6 +44,7 @@ set(SOURCE_FILES
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
+    src/ui/DslTerminalEditor.cpp
     src/ui/InlineAutocompleteEditor.cpp
     src/ui/PresetTableComponent.cpp
     src/ui/WaveformDisplayComponent.cpp

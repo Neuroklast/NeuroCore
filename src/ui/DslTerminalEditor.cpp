@@ -1,10 +1,133 @@
 #include <JuceHeader.h>
 #include "DslTerminalEditor.h"
+#include "../utils/FormulaHelper.h"
 
-DslTerminalEditor::DslTerminalEditor()
+using namespace juce;
+
+namespace {
+
+//==============================================================================
+class DslTerminalEditor::AutoCompleteCodeEditor : public CodeEditorComponent,
+                                                 private CodeDocument::Listener
 {
-    document = std::make_unique<juce::CodeDocument>();
-    fallbackEditor = std::make_unique<juce::CodeEditorComponent>(*document, nullptr);
+public:
+    AutoCompleteCodeEditor(CodeDocument& doc, CodeTokeniser* tok,
+                           NeuroCoreAudioProcessor& p)
+        : CodeEditorComponent(doc, tok), processor(p)
+    {
+        doc.addListener(this);
+    }
+
+    ~AutoCompleteCodeEditor() override
+    {
+        getDocument().removeListener(this);
+    }
+
+    bool keyPressed(const KeyPress& key) override
+    {
+        if (key == KeyPress::tabKey && suggestion.isNotEmpty())
+        {
+            insertTextAtCaret(suggestion);
+            suggestion.clear();
+            repaint();
+            return true;
+        }
+        return CodeEditorComponent::keyPressed(key);
+    }
+
+    void caretPositionMoved() override
+    {
+        CodeEditorComponent::caretPositionMoved();
+        updateSuggestion();
+    }
+
+    void codeDocumentTextInserted(const String&, int) override { updateSuggestion(); }
+    void codeDocumentTextDeleted(int, int) override { updateSuggestion(); }
+
+    void paintOverChildren(Graphics& g) override
+    {
+        CodeEditorComponent::paintOverChildren(g);
+        if (suggestion.isNotEmpty())
+        {
+            auto caret = getCharacterBounds(getCaretPos());
+            auto w = getFont().getStringWidth(suggestion);
+            g.setColour(Colours::lightgrey);
+            g.drawText(suggestion, caret.getRight(), caret.getY(), w,
+                       caret.getHeight(), Justification::left, false);
+        }
+    }
+
+private:
+    static bool isDistanceLeOne(const String& a, const String& b)
+    {
+        const int len1 = a.length();
+        const int len2 = b.length();
+        if (std::abs(len1 - len2) > 1)
+            return false;
+
+        int i = 0, j = 0, edits = 0;
+        while (i < len1 && j < len2)
+        {
+            auto ca = CharacterFunctions::toLowerCase(a[i]);
+            auto cb = CharacterFunctions::toLowerCase(b[j]);
+            if (ca == cb) { ++i; ++j; continue; }
+            if (++edits > 1) return false;
+            if (len1 > len2) ++i;
+            else if (len2 > len1) ++j;
+            else { ++i; ++j; }
+        }
+        edits += len1 - i;
+        edits += len2 - j;
+        return edits <= 1;
+    }
+
+    String findSuggestionFor(const String& text) const
+    {
+        int caret = getCaretPos().getPosition();
+        int start = caret;
+        while (start > 0 && CharacterFunctions::isLetterOrDigit(text[start - 1]))
+            --start;
+        String prefix = text.substring(start, caret);
+        if (prefix.isEmpty())
+            return {};
+
+        for (auto& n : processor.getVariableNames())
+            if (n.startsWithIgnoreCase(prefix))
+                return n.substring(prefix.length());
+        for (auto& f : builtinFunctions)
+            if (f.startsWithIgnoreCase(prefix))
+                return f.substring(prefix.length());
+        for (auto& t : formulaTemplates)
+            if (t.name.startsWithIgnoreCase(prefix))
+                return t.name.substring(prefix.length());
+
+        for (auto& f : builtinFunctions)
+            if (isDistanceLeOne(prefix, f))
+                return f.substring(prefix.length());
+        for (auto& t : formulaTemplates)
+            if (isDistanceLeOne(prefix, t.name))
+                return t.name.substring(prefix.length());
+
+        return {};
+    }
+
+    void updateSuggestion()
+    {
+        suggestion = findSuggestionFor(getDocument().getAllContent());
+        repaint();
+    }
+
+    NeuroCoreAudioProcessor& processor;
+    String suggestion;
+};
+
+} // namespace
+
+DslTerminalEditor::DslTerminalEditor(NeuroCoreAudioProcessor& proc)
+    : processor(proc)
+{
+    document = std::make_unique<CodeDocument>();
+    fallbackEditor = std::make_unique<AutoCompleteCodeEditor>(*document, nullptr, processor);
     document->addListener(this);
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(false);

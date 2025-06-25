@@ -210,9 +210,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputLeftButton);
     addAndMakeVisible(*inputRightButton);
 
-    formulaInputEditor = std::make_unique<DslTerminalEditor>();
+    formulaInputEditor = std::make_unique<DslTerminalEditor>(audioProcessor);
     formulaInputEditor->setText(audioProcessor.getScript());
     formulaInputEditor->setOpaque(true);
+    formulaInputEditor->setReadOnly(true);
     addAndMakeVisible(*formulaInputEditor);
     {
         juce::String err;
