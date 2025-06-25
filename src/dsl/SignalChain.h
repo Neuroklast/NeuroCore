@@ -37,8 +37,10 @@ private:
         ExpressionEvaluator eval;
         std::vector<float> xPrev, yPrev;
         juce::String formula;
-        std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
-        std::vector<std::pair<juce::String, size_t>> varNames;
+        float* vars = nullptr;
+        const std::unordered_map<juce::String, int>* indexMap = nullptr;
+        int xIdx{-1}, xPrevIdx{-1}, yPrevIdx{-1}, yIdx{-1};
+        std::vector<std::pair<int, size_t>> varIndices;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -49,8 +51,9 @@ private:
         float depth = 1.0f;
         juce::String name;
         std::vector<float> last;
-        std::unordered_map<juce::String, float>* varPtr = nullptr;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        float* vars = nullptr;
+        const std::unordered_map<juce::String, int>* indexMap = nullptr;
+        int varIndex{-1};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -63,8 +66,10 @@ private:
         float sampleRate{44100.0f};
         int channels{1};
         std::vector<float> xPrev, yPrev;
-        std::vector<std::pair<juce::String, std::string>> varNames;
-        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        std::vector<std::pair<int, std::string>> varIndices;
+        float* vars = nullptr;
+        const std::unordered_map<juce::String, int>* indexMap = nullptr;
+        int xIdx{-1}, xPrevIdx{-1}, yPrevIdx{-1}, yIdx{-1};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -75,8 +80,10 @@ private:
         ExpressionEvaluator threshold, ratio, attack, release;
         juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm;
         int channels{1};
-        std::vector<std::pair<juce::String, std::string>> varNames;
-        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        std::vector<std::pair<int, std::string>> varIndices;
+        float* vars = nullptr;
+        const std::unordered_map<juce::String, int>* indexMap = nullptr;
+        int yIdx{-1};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -92,8 +99,10 @@ private:
         float atkCoeff{0.0f}, relCoeff{0.0f};
         float prevAtk{0.0f}, prevRel{0.0f};
         std::vector<float> value;
-        std::vector<std::pair<juce::String, std::string>> varNames;
-        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        std::vector<std::pair<int, std::string>> varIndices;
+        float* vars = nullptr;
+        const std::unordered_map<juce::String, int>* indexMap = nullptr;
+        int varIndex{-1};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
     };
@@ -103,8 +112,12 @@ private:
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
 
-    std::unordered_map<juce::String, float> variables; // env1, osc1 ...
-    std::unordered_map<juce::String, juce::StringArray> parameterMappings;
+    std::array<float, ExpressionEvaluator::MaxVariables> variables{};
+    std::unordered_map<juce::String, int>                nameToIndex;
+    std::array<int, 4>                                   paramIndices{};
+    std::array<int, 4>                                   aliasIndices{};
+    int xIndex{-1}, xPrevIndex{-1}, yPrevIndex{-1}, yIndex{-1};
+    std::unordered_map<juce::String, juce::StringArray>  parameterMappings;
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
 
 public:

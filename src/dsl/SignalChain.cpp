@@ -10,10 +10,27 @@ SignalChain::SignalChain()
 {
     chain   = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
-    variables["x"] = 0.0f;
-    variables["x_prev"] = 0.0f;
-    variables["y_prev"] = 0.0f;
-    variables["a"] = variables["b"] = variables["c"] = variables["d"] = 0.0f;
+
+    int idx = 0;
+    auto addVar = [this, &idx](const juce::String& name)
+    {
+        if (idx < static_cast<int>(variables.size()))
+        {
+            nameToIndex[name] = idx;
+            variables[idx] = 0.0f;
+            return idx++;
+        }
+        return -1;
+    };
+
+    xIndex     = addVar("x");
+    xPrevIndex = addVar("x_prev");
+    yPrevIndex = addVar("y_prev");
+    yIndex     = addVar("y");
+    paramIndices[0] = addVar("a");
+    paramIndices[1] = addVar("b");
+    paramIndices[2] = addVar("c");
+    paramIndices[3] = addVar("d");
 }
 
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
@@ -56,8 +73,36 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         return false;
 
     parameterMappings.clear();
+    nameToIndex.clear();
+    int idx = 0;
+    auto addVar = [this, &idx](const juce::String& name)
+    {
+        auto it = nameToIndex.find(name);
+        if (it != nameToIndex.end())
+            return it->second;
+        if (idx >= static_cast<int>(variables.size()))
+            return -1;
+        nameToIndex[name] = idx;
+        variables[idx] = 0.0f;
+        return idx++;
+    };
+
+    xIndex     = addVar("x");
+    xPrevIndex = addVar("x_prev");
+    yPrevIndex = addVar("y_prev");
+    yIndex     = addVar("y");
+    paramIndices[0] = addVar("a");
+    paramIndices[1] = addVar("b");
+    paramIndices[2] = addVar("c");
+    paramIndices[3] = addVar("d");
+
+    aliasIndices.fill(-1);
     for (const auto& kv : newAliases)
-        variables.emplace(kv.second, 0.0f);
+    {
+        int letter = kv.first.toLowerCase()[0] - 'a';
+        if (letter >= 0 && letter < 4)
+            aliasIndices[(size_t)letter] = addVar(kv.second);
+    }
 
     auto newChain = std::make_shared<Chain>();
 
@@ -91,7 +136,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         {
             auto st = std::make_unique<Stage>();
             st->formula = d.args.at("y");
-            st->varPtr = &variables;
+            st->vars = variables.data();
+            st->indexMap = &nameToIndex;
+            st->xIdx = xIndex;
+            st->xPrevIdx = xPrevIndex;
+            st->yPrevIdx = yPrevIndex;
+            st->yIdx = yIndex;
             st->eval.parseFormula(st->formula.toStdString());
             newChain->push_back (std::move (st));
         }
@@ -103,8 +153,10 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             auto freq = d.args.count("freq") ? d.args.at("freq").getFloatValue() : 1.f;
             oc->depth = d.args.count("depth") ? d.args.at("depth").getFloatValue() : 1.f;
             oc->osc.setFrequency(freq);
-            oc->varPtr = &variables;
+            oc->vars = variables.data();
+            oc->indexMap = &nameToIndex;
             oc->name = d.name;
+            oc->varIndex = addVar(d.name);
             newChain->push_back (std::move (oc));
         }
         else if (d.type.startsWith("filter"))
@@ -134,7 +186,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             else
                 fi->resonance.parseFormula("0.7");
-            fi->varPtr = &variables;
+            fi->vars = variables.data();
+            fi->indexMap = &nameToIndex;
+            fi->xIdx = xIndex;
+            fi->xPrevIdx = xPrevIndex;
+            fi->yPrevIdx = yPrevIndex;
+            fi->yIdx = yIndex;
             newChain->push_back (std::move (fi));
         }
         else if (d.type.startsWith("comp"))
@@ -180,7 +237,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             else
                 co->release.parseFormula("0.1");
-            co->varPtr = &variables;
+            co->vars = variables.data();
+            co->indexMap = &nameToIndex;
+            co->yIdx = yIndex;
             newChain->push_back (std::move (co));
         }
         else if (d.type.startsWith("env"))
@@ -197,7 +256,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 en->release.parseFormula("0.1");
             en->name = d.name;
-            en->varPtr = &variables;
+            en->vars = variables.data();
+            en->indexMap = &nameToIndex;
+            en->varIndex = addVar(d.name);
             newChain->push_back(std::move(en));
         }
     }
@@ -215,15 +276,14 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
                                const std::array<float,4>& params)
 {
-    variables["a"] = params[0];
-    variables["b"] = params[1];
-    variables["c"] = params[2];
-    variables["d"] = params[3];
+    variables[paramIndices[0]] = params[0];
+    variables[paramIndices[1]] = params[1];
+    variables[paramIndices[2]] = params[2];
+    variables[paramIndices[3]] = params[3];
 
-    auto aliasPtr = std::atomic_load (&aliases);
-    if (aliasPtr)
-        for (const auto& kv : *aliasPtr)
-            variables[kv.second] = variables[kv.first];
+    for (size_t i = 0; i < aliasIndices.size(); ++i)
+        if (aliasIndices[i] >= 0)
+            variables[aliasIndices[i]] = variables[paramIndices[i]];
 
     auto chainPtr = std::atomic_load (&chain);
     if (! chainPtr)
@@ -234,7 +294,7 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer,
         for (int i = 0; i < buffer.getNumSamples(); ++i)
         {
             float x = buffer.getReadPointer(ch)[i];
-            variables["x"] = x;
+            variables[xIndex] = x;
             for (auto& b : *chainPtr)
                 x = b->process (ch, x);
 
@@ -255,17 +315,17 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     {
         for (int i = 0; i < buffer.getNumSamples(); ++i)
         {
-            if (params[0]) variables["a"] = params[0]->getNextValue();
-            if (params[1]) variables["b"] = params[1]->getNextValue();
-            if (params[2]) variables["c"] = params[2]->getNextValue();
-            if (params[3]) variables["d"] = params[3]->getNextValue();
+            if (params[0]) variables[paramIndices[0]] = params[0]->getNextValue();
+            if (params[1]) variables[paramIndices[1]] = params[1]->getNextValue();
+            if (params[2]) variables[paramIndices[2]] = params[2]->getNextValue();
+            if (params[3]) variables[paramIndices[3]] = params[3]->getNextValue();
 
-            if (aliasPtr)
-                for (const auto& kv : *aliasPtr)
-                    variables[kv.second] = variables[kv.first];
+            for (size_t a = 0; a < aliasIndices.size(); ++a)
+                if (aliasIndices[a] >= 0)
+                    variables[aliasIndices[a]] = variables[paramIndices[a]];
 
             float x = buffer.getReadPointer(ch)[i];
-            variables["x"] = x;
+            variables[xIndex] = x;
             for (auto& b : *chainPtr)
                 x = b->process(ch, x);
             buffer.getWritePointer(ch)[i] = x;
@@ -277,39 +337,38 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
-    varNames.clear();
-    if (varPtr)
-        for (const auto& kv : *varPtr)
+    varIndices.clear();
+    if (indexMap)
+    {
+        for (const auto& kv : *indexMap)
         {
             if (kv.first == "x")
                 continue;
             auto idx = eval.getVariableIndex(kv.first.toStdString());
             if (idx != ExpressionEvaluator::invalidIndex)
-                varNames.emplace_back(kv.first, idx);
+                varIndices.emplace_back(kv.second, idx);
         }
+    }
 }
 
 float SignalChain::Stage::process(int ch, float x)
 {
-    if (!varPtr)
+    if (!vars || ch >= static_cast<int>(xPrev.size()))
         return x;
 
-    if (ch >= static_cast<int>(xPrev.size()))
-        return x;
+    vars[xPrevIdx] = xPrev[ch];
+    vars[yPrevIdx] = yPrev[ch];
+    vars[xIdx]     = x;
 
-    (*varPtr)["x_prev"] = xPrev[ch];
-    (*varPtr)["y_prev"] = yPrev[ch];
-    (*varPtr)["x"] = x;
-
-    for (const auto& n : varNames)
-        eval.setVariable(n.second, (*varPtr)[n.first]);
+    for (const auto& n : varIndices)
+        eval.setVariable(n.second, vars[n.first]);
 
     float y = eval.evaluate(x);
     y = juce::jlimit(-1.0f, 1.0f, y);
 
     xPrev[ch] = x;
     yPrev[ch] = y;
-    (*varPtr)["y"] = y;
+    vars[yIdx] = y;
     return y;
 }
 
@@ -322,8 +381,8 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
 float SignalChain::Osc::process(int ch, float x)
 {
     auto v = osc.processSample(0.0f) * depth;
-    if (varPtr)
-        (*varPtr)[name] = v;
+    if (vars && varIndex >= 0)
+        vars[varIndex] = v;
     if (ch < static_cast<int>(last.size()))
         last[ch] = v;
     return x;
@@ -338,28 +397,25 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     channels = static_cast<int> (spec.numChannels);
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
-    varNames.clear();
-    if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    varIndices.clear();
+    if (indexMap)
+        for (const auto& kv : *indexMap)
+            varIndices.emplace_back(kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Filter::process(int ch, float x)
 {
-    if (!varPtr)
+    if (!vars || ch >= channels)
         return x;
 
-    if (ch >= channels)
-        return x;
+    vars[xPrevIdx] = xPrev[ch];
+    vars[yPrevIdx] = yPrev[ch];
+    vars[xIdx]     = x;
 
-    (*varPtr)["x_prev"] = xPrev[ch];
-    (*varPtr)["y_prev"] = yPrev[ch];
-    (*varPtr)["x"] = x;
-
-    for (const auto& n : varNames)
+    for (const auto& n : varIndices)
     {
-        cutoff.setVariable(n.second, (*varPtr)[n.first]);
-        resonance.setVariable(n.second, (*varPtr)[n.first]);
+        cutoff.setVariable(n.second, vars[n.first]);
+        resonance.setVariable(n.second, vars[n.first]);
     }
 
     float fc = cutoff.evaluate(x);
@@ -376,7 +432,7 @@ float SignalChain::Filter::process(int ch, float x)
     float y = filter.processSample(ch, x);
     xPrev[ch] = x;
     yPrev[ch] = y;
-    (*varPtr)["y"] = y;
+    vars[yIdx] = y;
     return y;
 }
 
@@ -393,23 +449,23 @@ void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
     ratioSm.setCurrentAndTargetValue(ratio.evaluate(0.f));
     atkSm.setCurrentAndTargetValue(attack.evaluate(0.f));
     relSm.setCurrentAndTargetValue(release.evaluate(0.f));
-    varNames.clear();
-    if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    varIndices.clear();
+    if (indexMap)
+        for (const auto& kv : *indexMap)
+            varIndices.emplace_back(kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Comp::process(int ch, float x)
 {
-    if (!varPtr)
+    if (!vars)
         return x;
 
     if (ch >= channels)
         return x;
 
-    for (const auto& n : varNames)
+    for (const auto& n : varIndices)
     {
-        auto v = (*varPtr)[n.first];
+        auto v = vars[n.first];
         threshold.setVariable(n.second, v);
         ratio.setVariable(n.second, v);
         attack.setVariable(n.second, v);
@@ -427,7 +483,8 @@ float SignalChain::Comp::process(int ch, float x)
     comp.setRelease(relSm.getNextValue());
 
         float y = comp.processSample(ch, x);
-        (*varPtr)["y"] = y;
+        if (yIdx >= 0)
+            vars[yIdx] = y;
         return y;
     }
 
@@ -445,21 +502,21 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     prevRel = initRel;
     atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
-    varNames.clear();
-    if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    varIndices.clear();
+    if (indexMap)
+        for (const auto& kv : *indexMap)
+            varIndices.emplace_back(kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Env::process(int ch, float x)
 {
-    if (!varPtr || ch >= static_cast<int>(value.size()))
+    if (!vars || ch >= static_cast<int>(value.size()))
         return x;
 
-    for (const auto& n : varNames)
+    for (const auto& n : varIndices)
     {
-        attack.setVariable(n.second, (*varPtr)[n.first]);
-        release.setVariable(n.second, (*varPtr)[n.first]);
+        attack.setVariable(n.second, vars[n.first]);
+        release.setVariable(n.second, vars[n.first]);
     }
 
     atkTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, attack.evaluate(x)));
@@ -487,7 +544,8 @@ float SignalChain::Env::process(int ch, float x)
     if (mode == Rms)
         out = std::sqrt(out);
     value[ch] = out;
-    (*varPtr)[name] = out;
+    if (varIndex >= 0)
+        vars[varIndex] = out;
     return x;
 }
 

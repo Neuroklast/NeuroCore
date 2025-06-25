@@ -350,19 +350,28 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     {
         upBlock.copyTo(oldScriptBuffer);
         oldSignalChain.processBlockSmoothed(oldScriptBuffer, smPtr);
-        const size_t numSamples = upBlock.getNumSamples();
-        const auto numChannels = upBlock.getNumChannels();
-        for (size_t i = 0; i < numSamples; ++i)
+
+        const int numSamples  = (int) upBlock.getNumSamples();
+        const int numChannels = (int) upBlock.getNumChannels();
+
+        auto* blend = blendBuffer.getWritePointer(0);
+        auto* inv   = blendBuffer.getWritePointer(1);
+        for (int i = 0; i < numSamples; ++i)
         {
-            auto f = formulaBlend.getNextValue();
-            for (size_t ch = 0; ch < numChannels; ++ch)
-            {
-                auto* dst  = upBlock.getChannelPointer(ch);
-                auto* newPtr = scriptBuffer.getReadPointer((int)ch);
-                auto* oldPtr = oldScriptBuffer.getReadPointer((int)ch);
-                dst[i] = oldPtr[i] * (1.0f - f) + newPtr[i] * f;
-            }
+            blend[i] = formulaBlend.getNextValue();
+            inv[i]   = 1.0f - blend[i];
         }
+
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            auto* dst  = upBlock.getChannelPointer(ch);
+            auto* newPtr = scriptBuffer.getReadPointer(ch);
+            auto* oldPtr = oldScriptBuffer.getReadPointer(ch);
+
+            juce::FloatVectorOperations::multiply(dst, newPtr, blend, numSamples);
+            juce::FloatVectorOperations::multiplyAdd(dst, oldPtr, inv, numSamples);
+        }
+
         if (! formulaBlend.isSmoothing())
             oldSignalChain = signalChain;
     }
@@ -379,23 +388,31 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (oversampler)
         oversampler->processSamplesDown (block);
 
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    const int numSamples = (int) block.getNumSamples();
+    auto* wetPtr = blendBuffer.getWritePointer(0);
+    auto* invWet = blendBuffer.getWritePointer(1);
+    for (int i = 0; i < numSamples; ++i)
     {
-        dryWetMixer.setWetMixProportion (wetValue.getNextValue());
-        dryWetMixer.mixWetSamples (block.getSubBlock (i, 1));
+        wetPtr[i] = wetValue.getNextValue();
+        invWet[i] = 1.0f - wetPtr[i];
+    }
+    for (int ch = 0; ch < (int) block.getNumChannels(); ++ch)
+    {
+        auto* wet = block.getWritePointer(ch);
+        auto* dry = dryBlock.getReadPointer(ch);
+        juce::FloatVectorOperations::multiply(wet, wet, wetPtr, numSamples);
+        juce::FloatVectorOperations::multiplyAdd(wet, dry, invWet, numSamples);
     }
 
     DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
 
     userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
                                        getParam(EffectParameters::outputGain)));
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
-    {
-        userOutputGain.setGainLinear(userGainValue.getNextValue());
-        auto slice = block.getSubBlock(i, 1);
-        juce::dsp::ProcessContextReplacing<float> outCtxSlice(slice);
-        userOutputGain.process(outCtxSlice);
-    }
+    auto* gainPtr = blendBuffer.getWritePointer(0);
+    for (int i = 0; i < numSamples; ++i)
+        gainPtr[i] = userGainValue.getNextValue();
+    for (int ch = 0; ch < (int) block.getNumChannels(); ++ch)
+        juce::FloatVectorOperations::multiply(block.getWritePointer(ch), gainPtr, numSamples);
 
     float rmsSum = 0.0f;
     for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
@@ -712,9 +729,11 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
         oldScriptBuffer.setSize ((int) currentSpec.numChannels,
                                  scriptSamples,
                                  false, true, true);
+        blendBuffer.setSize(2, scriptSamples, false, true, true);
     }
     scriptBuffer.clear();
     oldScriptBuffer.clear();
+    blendBuffer.clear();
 
     previewBuffer.clear();
 
