@@ -6,6 +6,7 @@
   ==============================================================================
 */
 
+#include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
 #include "PluginEditor.h"
 #include "../core/Config.h"
@@ -259,7 +260,13 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                 juce::String script; NeuroCoreAudioProcessor& proc; juce::String warn; bool ok { true }; };
             TestThread t(text, audioProcessor);
             setEnabled(false);
+#if JUCE_MODAL_LOOPS_PERMITTED
             t.runThread();
+#else
+            t.launchThread();
+            while (t.isThreadRunning())
+                juce::Thread::sleep(10);
+#endif
             setEnabled(true);
 
             if (! t.ok)

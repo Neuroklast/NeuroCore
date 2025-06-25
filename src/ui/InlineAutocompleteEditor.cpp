@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "InlineAutocompleteEditor.h"
 #include <cmath>
 

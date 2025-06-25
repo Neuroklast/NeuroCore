@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "PresetTableComponent.h"
 #include "../utils/PresetManager.h"
 #include "../third_party/nlohmann/json.hpp"

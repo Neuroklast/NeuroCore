@@ -1,4 +1,5 @@
 #define JUCE_MODAL_LOOPS_PERMITTED 1
+#include <JuceHeader.h>
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
 #include "../../utils/Localiser.h"
@@ -126,38 +127,40 @@ namespace ui
 
             PopupMenu::Options opts;
             opts.withTargetComponent(this);
-            auto res = menu.showMenu(opts);
-            if (res == 1 || res == 2)
+            menu.showMenuAsync(opts, [this](int res)
             {
-                bool setMin = res == 1;
-                auto* aw = new AlertWindow("", TRANS("Enter value"), AlertWindow::NoIcon);
-                aw->addTextEditor("val", setMin ? String(slider.getMinimum()) : String(slider.getMaximum()));
-                aw->addButton("OK", 1, KeyPress(KeyPress::returnKey));
-                aw->addButton("Cancel", 0, KeyPress(KeyPress::escapeKey));
+                if (res == 1 || res == 2)
+                {
+                    const bool setMin = (res == 1);
+                    auto* aw = new AlertWindow("", TRANS("Enter value"), AlertWindow::NoIcon);
+                    aw->addTextEditor("val", setMin ? String(slider.getMinimum()) : String(slider.getMaximum()));
+                    aw->addButton("OK", 1, KeyPress(KeyPress::returnKey));
+                    aw->addButton("Cancel", 0, KeyPress(KeyPress::escapeKey));
 
-                aw->enterModalState(true,
-                                     ModalCallbackFunction::create([this, awPtr = Component::SafePointer<AlertWindow>(aw), setMin](int result)
-                                     {
-                                         if (result != 1 || awPtr == nullptr)
-                                             return;
-
-                                         const auto v = awPtr->getTextEditor("val")->getText().getFloatValue();
-
-                                         if (auto* p = dynamic_cast<AudioParameterFloat*>(valueTreeState.getParameter(paramID)))
+                    aw->enterModalState(true,
+                                         ModalCallbackFunction::create([this, awPtr = Component::SafePointer<AlertWindow>(aw), setMin](int result)
                                          {
-                                             auto min = setMin ? v : p->range.start;
-                                             auto max = setMin ? p->range.end : v;
+                                             if (result != 1 || awPtr == nullptr)
+                                                 return;
 
-                                             if (max > min)
+                                             const auto v = awPtr->getTextEditor("val")->getText().getFloatValue();
+
+                                             if (auto* p = dynamic_cast<AudioParameterFloat*>(valueTreeState.getParameter(paramID)))
                                              {
-                                                 p->range.start = min;
-                                                 p->range.end = max;
-                                                 slider.setRange(min, max);
+                                                 const auto min = setMin ? v : p->range.start;
+                                                 const auto max = setMin ? p->range.end : v;
+
+                                                 if (max > min)
+                                                 {
+                                                     p->range.start = min;
+                                                     p->range.end = max;
+                                                     slider.setRange(min, max);
+                                                 }
                                              }
-                                         }
-                                     }),
-                                     true);
-            }
+                                         }),
+                                         true);
+                }
+            });
         }
     }
 

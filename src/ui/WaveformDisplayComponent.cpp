@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "WaveformDisplayComponent.h"
 #include <algorithm>
 #include "../dsp/DSPUtils.h"
@@ -138,7 +139,7 @@ void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos,
             / area.getWidth()
             * num));
 
-    // 4) Wert aus dem richtigen Gl‰tter-Array
+    // 4) Wert aus dem richtigen Gl√§tter-Array
     float value;
     if (xScale == XScale::Frequency && !smoothedFft.empty())
         value = smoothedFft[(size_t)index].getCurrentValue();
