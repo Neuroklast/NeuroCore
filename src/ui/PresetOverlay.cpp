@@ -1,4 +1,5 @@
 #include "PresetOverlay.h"
+#include "PluginLookAndFeel.h"
 
 PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
     : table(proc), processor(proc), lookAndFeel(lf)
@@ -67,8 +68,10 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
                 {
                     std::unique_ptr<juce::AlertWindow> cleanup(aw);
                     if (result == 1)
-                    {
-                        file.deleteFile();
+    auto bg = lookAndFeel.findColour(NeuroCoreLookAndFeel::presetTableBackgroundColourId);
+    auto outline = lookAndFeel.findColour(NeuroCoreLookAndFeel::presetTableHeaderTextColourId);
+    g.setColour(bg);
+    g.setColour(outline);
                         refreshTable();
                     }
                 }));

@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "PresetTableComponent.h"
+#include "PluginLookAndFeel.h"
 #include "../utils/PresetManager.h"
 #include "../third_party/nlohmann/json.hpp"
 
@@ -25,9 +26,10 @@ PresetTableComponent::PresetTableComponent(NeuroCoreAudioProcessor& proc)
 {
     addAndMakeVisible(table);
     table.setModel(this);
-    table.getHeader().addColumn("Name", 1, 200, 80, 400, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn("Name",   1, 200, 80, 400, juce::TableHeaderComponent::defaultFlags);
     table.getHeader().addColumn("Author", 2, 120, 50, 200, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn("Date", 3, 150, 50, 200, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn("Date",   3, 150, 50, 200, juce::TableHeaderComponent::defaultFlags);
+
     lookAndFeelChanged();
     refresh();
 }
@@ -129,6 +131,17 @@ void PresetTableComponent::resized()
 
 void PresetTableComponent::lookAndFeelChanged()
 {
+    const auto& lf = getLookAndFeel();
+    if (auto* nlf = dynamic_cast<const NeuroCoreLookAndFeel*>(&lf))
+    {
+        setColour(backgroundColourId,       nlf->findColour(NeuroCoreLookAndFeel::presetTableBackgroundColourId));
+        setColour(textColourId,             nlf->findColour(NeuroCoreLookAndFeel::presetTableTextColourId));
+        setColour(alternateRowColourId,     nlf->findColour(NeuroCoreLookAndFeel::presetTableAltRowColourId));
+        setColour(highlightColourId,        nlf->findColour(NeuroCoreLookAndFeel::presetTableHighlightColourId));
+        setColour(headerBackgroundColourId, nlf->findColour(NeuroCoreLookAndFeel::presetTableHeaderBackgroundColourId));
+        setColour(headerTextColourId,       nlf->findColour(NeuroCoreLookAndFeel::presetTableHeaderTextColourId));
+    }
+
     table.setColour(juce::ListBox::backgroundColourId, findColour(backgroundColourId));
     table.setColour(juce::ListBox::textColourId,       findColour(textColourId));
     table.setColour(juce::ListBox::outlineColourId,    findColour(headerBackgroundColourId));
