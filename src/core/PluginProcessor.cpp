@@ -537,6 +537,70 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
     return buf.getSample (0, 0);
 }
 
+bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
+                                                   juce::String& warning,
+                                                   std::function<void(float)> progress)
+{
+    dsl::SignalChain testChain;
+    if (! testChain.loadScript(script, warning))
+        return false;
+
+    const double sr = Config::kDefaultSampleRate;
+    const int    bs = Config::kDefaultBlockSize;
+    const int    samples = (int) sr; // 1 second
+    testChain.prepare({ sr, (juce::uint32) bs, 1 });
+
+    juce::AudioBuffer<float> buf(1, bs);
+    std::array<float,4> params{};
+    int invalid = 0;
+    const int maxInvalid = 10;
+
+    auto run = [&](float value, int paramIndex)
+    {
+        params.fill(0.f);
+        params[paramIndex] = value;
+        int processed = 0;
+        juce::Random rng;
+        while (processed < samples)
+        {
+            const int block = juce::jmin(bs, samples - processed);
+            buf.setSize(1, block, false, false, true);
+            for (int i = 0; i < block; ++i)
+            {
+                float t = (float) (processed + i) / (float) sr;
+                float s = std::sin(2.0f * juce::MathConstants<float>::pi * 440.0f * t);
+                s += rng.nextFloat() * 0.1f - 0.05f;
+                buf.setSample(0, i, s);
+            }
+            testChain.processBlock(buf, params);
+            for (int i = 0; i < block; ++i)
+            {
+                float v = buf.getSample(0, i);
+                if (! std::isfinite(v) || std::abs(v) > 1.5f)
+                {
+                    ++invalid;
+                    if (invalid > maxInvalid)
+                        return false;
+                }
+            }
+            processed += block;
+            if (progress)
+                progress((float) processed / (float) samples);
+        }
+        return true;
+    };
+
+    for (int param = 0; param < 4; ++param)
+        for (float val : { 0.f, 0.5f, 1.f })
+            if (! run(val, param))
+            {
+                warning = TRANS("StabilityWarning");
+                return false;
+            }
+
+    return true;
+}
+
 void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
 {
     if (sampleRate <= 0.0)
