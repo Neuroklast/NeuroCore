@@ -14,7 +14,7 @@
 #include "WaveformDisplayComponent.h"
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
-#include "InlineAutocompleteEditor.h"
+#include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "../core/EffectParameters.h"
 #include "custom/ParameterComponent.h"
@@ -52,21 +52,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*blankToggle);
 
     presetsButton = std::make_unique<juce::TextButton>("Presets");
-    presetsButton->onClick = [this]
-    {
-        if (! presetTable)
-            presetTable = std::make_unique<PresetTableComponent>(audioProcessor);
-        else
-            presetTable->refresh();
-        if (! presetWindow)
-        {
-            presetWindow = std::make_unique<juce::DialogWindow>("Presets", juce::Colours::black, true);
-            presetWindow->setUsingNativeTitleBar(true);
-            presetWindow->setContentOwned(presetTable.get(), false);
-            presetWindow->centreWithSize(500, 400);
-        }
-        presetWindow->setVisible(true);
-    };
+    presetsButton->onClick = [this] { showPresetOverlay(); };
     addAndMakeVisible(*presetsButton);
 
     bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
@@ -210,15 +196,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputLeftButton);
     addAndMakeVisible(*inputRightButton);
 
-    formulaInputEditor = std::make_unique<InlineAutocompleteEditor>(audioProcessor);
-    formulaInputEditor->setMultiLine(true, true);
-    formulaInputEditor->setReturnKeyStartsNewLine(true);
-    formulaInputEditor->setText(audioProcessor.getScript(), juce::dontSendNotification);
+    formulaInputEditor = std::make_unique<DslTerminalEditor>(audioProcessor);
+    formulaInputEditor->setText(audioProcessor.getScript());
+    formulaInputEditor->setOpaque(true);
     formulaInputEditor->setReadOnly(true);
-    formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
-    // hide caret while editor is read only
-    formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-        Colours::black);
     addAndMakeVisible(*formulaInputEditor);
     {
         juce::String err;
@@ -234,7 +215,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         auto text = formulaInputEditor->getText();
         auto opt  = optimizeFormula(text, info);
         if (opt != text)
-            formulaInputEditor->setText(opt, juce::dontSendNotification);
+            formulaInputEditor->setText(opt);
         if (info.isNotEmpty())
             errorLabel->setText(info, juce::dontSendNotification);
     };
@@ -247,10 +228,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setColour(juce::TextEditor::backgroundColourId, Colours::black);
-            // show caret when editor becomes editable
-            formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
-                                          juce::Colours::black);
+            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId, Colours::black);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                              juce::Colours::black);
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
@@ -278,7 +258,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             if (audioProcessor.setFormula(text, err))
             {
                 formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
+                formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
                                               juce::Colours::transparentBlack);
                 editSaveButton->setButtonText(TRANS("EditButton"));
                 editing = false;
@@ -434,7 +414,7 @@ juce::String NeuroCoreAudioProcessorEditor::getFormulaText() const
 void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
-        formulaInputEditor->setText (text, juce::dontSendNotification);
+        formulaInputEditor->setText (text);
 }
 
 void NeuroCoreAudioProcessorEditor::showStabilityWarning(const juce::String& msg)
@@ -501,6 +481,36 @@ void NeuroCoreAudioProcessorEditor::resized()
     {
         pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
         pluginNameLabel->setJustificationType(juce::Justification::centred);
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::showPresetOverlay()
+{
+    hidePresetOverlay();
+    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor, lookAndFeel);
+    presetOverlay->onPresetSelected = [this](int idx)
+    {
+        audioProcessor.loadPreset(idx);
+        hidePresetOverlay();
+    };
+    presetOverlay->onClose = [this] { hidePresetOverlay(); };
+
+    auto bounds = getScreenBounds();
+    presetOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
+    presetOverlay->setBounds(bounds);
+    presetOverlay->enterModalState(true);
+    presetOverlay->toFront(true);
+    presetOverlay->grabKeyboardFocus();
+}
+
+void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
+{
+    if (presetOverlay)
+    {
+        presetOverlay->exitModalState(0);
+        presetOverlay->setVisible(false);
+        presetOverlay->removeFromDesktop();
+        presetOverlay.reset();
     }
 }
 
