@@ -542,7 +542,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
 
 bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                                                    juce::String& warning,
-                                                   std::function<void(float)> progress)
+                                                   std::function<bool(float)> progress)
 {
     dsl::SignalChain testChain;
     if (! testChain.loadScript(script, warning))
@@ -588,7 +588,10 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
             }
             processed += block;
             if (progress)
-                progress((float) processed / (float) samples);
+            {
+                if (! progress((float) processed / (float) samples))
+                    return false;
+            }
         }
         return true;
     };

@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <thread>
+#include <atomic>
 class NeuroCoreAudioProcessor;
 
 /** Modal overlay performing DSL validation and stability testing. */
@@ -25,8 +26,11 @@ private:
 
     juce::String warningString;
 
-    double progress{ 0.0 };
-    juce::ProgressBar progressBar{ progress };
+    std::atomic<double> progress{ 0.0 };
+    double progressValue{ 0.0 };
+    juce::ProgressBar progressBar{ progressValue };
+
+    std::atomic<bool> abortRequested{ false };
 
     juce::Label messageLabel;
     juce::TextButton okButton { "OK" };

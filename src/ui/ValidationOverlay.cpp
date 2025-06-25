@@ -28,6 +28,7 @@ ValidationOverlay::ValidationOverlay(NeuroCoreAudioProcessor& proc, const juce::
 ValidationOverlay::~ValidationOverlay()
 {
     stopTimer();
+    abortRequested = true;
     if (worker && worker->joinable())
         worker->join();
 }
@@ -44,13 +45,24 @@ void ValidationOverlay::startTest()
     worker = std::make_unique<std::thread>([safeThis, scriptCopy, proc = std::ref(processor)]()
     {
         juce::String warn;
-        bool ok = proc.get().testFormulaStability(scriptCopy, warn,
-
-            [safeThis](float p)
+        const auto progressFn = [safeThis](float p)
+        {
+            if (safeThis)
             {
-                if (safeThis)
-                    safeThis->progress = p;
-            });
+                safeThis->progress.store(p);
+                return ! safeThis->abortRequested.load();
+            }
+            return false;
+        };
+
+        bool ok = false;
+        if (! safeThis || safeThis->abortRequested.load())
+            return;
+
+        ok = proc.get().testFormulaStability(scriptCopy, warn, progressFn);
+
+        if (! safeThis || safeThis->abortRequested.load())
+            return;
 
         juce::MessageManager::callAsync([safeThis, ok, warn]()
         {
@@ -101,7 +113,8 @@ void ValidationOverlay::resized()
 
 bool ValidationOverlay::keyPressed(const juce::KeyPress& kp)
 {
-    if (state == ValidationOverlay::State::warning && (kp == juce::KeyPress::returnKey || kp == juce::KeyPress::returnKey))
+    if (state == ValidationOverlay::State::warning &&
+        (kp == juce::KeyPress::returnKey || kp == juce::KeyPress::escapeKey))
     {
         okButton.triggerClick();
         return true;
@@ -113,6 +126,9 @@ bool ValidationOverlay::keyPressed(const juce::KeyPress& kp)
 void ValidationOverlay::timerCallback()
 {
     if (state == running)
+    {
+        progressValue = progress.load();
         progressBar.repaint();
+    }
 }
 
