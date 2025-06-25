@@ -8,10 +8,13 @@ class NeuroCoreAudioProcessor;
 class PresetOverlay : public juce::Component
 {
 public:
-    explicit PresetOverlay(NeuroCoreAudioProcessor& processor);
+    PresetOverlay(NeuroCoreAudioProcessor& processor, juce::LookAndFeel& lf);
+    ~PresetOverlay() override;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
+    bool keyPressed(const juce::KeyPress& kp) override;
+    void mouseUp(const juce::MouseEvent& ev) override;
 
     std::function<void(int)> onPresetSelected; //!< callback when user chooses a preset
     std::function<void()> onClose;             //!< called when overlay should close
@@ -19,10 +22,12 @@ public:
 private:
     PresetTableComponent table;
     NeuroCoreAudioProcessor& processor;
+    juce::LookAndFeel& lookAndFeel;
     juce::TextButton loadButton { "Load" };
     juce::TextButton saveButton { "Save" };
     juce::TextButton deleteButton { "Delete" };
     juce::TextButton closeButton { "Close" };
+    juce::Rectangle<int> panel;
 
     void refreshTable();
 };

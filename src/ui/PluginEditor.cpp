@@ -485,7 +485,7 @@ void NeuroCoreAudioProcessorEditor::resized()
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 {
     hidePresetOverlay();
-    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor);
+    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor, lookAndFeel);
     presetOverlay->onPresetSelected = [this](int idx)
     {
         audioProcessor.loadPreset(idx);
