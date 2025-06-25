@@ -251,17 +251,36 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         else
         {
             auto text = formulaInputEditor->getText();
+            struct TestThread : juce::ThreadWithProgressWindow
+            {
+                TestThread(const juce::String& s, NeuroCoreAudioProcessor& p)
+                    : juce::ThreadWithProgressWindow(TRANS("StabilityTesting"), true, true), script(s), proc(p) {}
+                void run() override { ok = proc.testFormulaStability(script, warn, [this](float p){ setProgress(p); }); }
+                juce::String script; NeuroCoreAudioProcessor& proc; juce::String warn; bool ok { true }; };
+            TestThread t(text, audioProcessor);
+            setEnabled(false);
+            t.runThread();
+            setEnabled(true);
+
+            if (! t.ok)
+            {
+                bool proceed = juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
+                                                                  TRANS("StabilityCheckTitle"),
+                                                                  t.warn,
+                                                                  TRANS("ActivateAnyway"),
+                                                                  TRANS("EditButton"));
+                if (! proceed)
+                    return;
+            }
+
             juce::String err;
             if (audioProcessor.setFormula(text, err))
             {
                 formulaInputEditor->setReadOnly(true);
-                
-                // hide caret again after saving
                 formulaInputEditor->setColour(juce::CaretComponent::caretColourId,
                                               juce::Colours::transparentBlack);
                 editSaveButton->setButtonText(TRANS("EditButton"));
                 editing = false;
-               
                 errorLabel->setText({}, juce::dontSendNotification);
                 refreshParameterControls();
             }

@@ -96,6 +96,10 @@ public:
     // Evaluates current formula for a single sample value.
     float evaluateFormula (float x);
 
+    bool testFormulaStability (const juce::String& script,
+                               juce::String& warning,
+                               std::function<void(float)> progress = {});
+
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
 
