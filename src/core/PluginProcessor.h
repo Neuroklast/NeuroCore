@@ -98,7 +98,7 @@ public:
 
     bool testFormulaStability (const juce::String& script,
                                juce::String& warning,
-                               std::function<void(float)> progress = {});
+                               std::function<bool(float)> progress = {});
 
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
