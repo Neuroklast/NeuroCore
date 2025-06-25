@@ -37,7 +37,7 @@ void ValidationOverlay::startTest()
     worker = std::make_unique<std::thread>([this]() {
         juce::String warn;
         bool ok = processor.testFormulaStability(script, warn,
-            [this](float p) { progress.store(p); });
+            [this](float p) { progress = p; });
         juce::MessageManager::callAsync([this, ok, warn]() {
             if (ok)
             {
@@ -46,8 +46,8 @@ void ValidationOverlay::startTest()
             }
             else
             {
-                state = warning;
-                warning = warn;
+                state = ValidationOverlay::State::warning; // Assign the enum value to `state`.
+                warningString = warn;  // Assign the string to the `warning` member variable.
                 progressBar.setVisible(false);
                 okButton.setVisible(true);
                 messageLabel.setText(warn, juce::dontSendNotification);
@@ -55,6 +55,7 @@ void ValidationOverlay::startTest()
                 resized();
                 repaint();
             }
+
         });
     });
 }
@@ -82,7 +83,7 @@ void ValidationOverlay::resized()
 
 bool ValidationOverlay::keyPressed(const juce::KeyPress& kp)
 {
-    if (state == warning && (kp == juce::KeyPress::returnKey || kp == juce::KeyPress::numberPadEnter))
+    if (state == ValidationOverlay::State::warning && (kp == juce::KeyPress::returnKey || kp == juce::KeyPress::returnKey))
     {
         okButton.triggerClick();
         return true;

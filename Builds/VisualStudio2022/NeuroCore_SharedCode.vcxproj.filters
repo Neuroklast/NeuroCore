@@ -868,6 +868,9 @@
     <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\ValidationOverlay.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
@@ -4165,6 +4168,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PresetTableComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\ValidationOverlay.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h">

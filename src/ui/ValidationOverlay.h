@@ -22,10 +22,12 @@ private:
     NeuroCoreAudioProcessor& processor;
     juce::String script;
     std::unique_ptr<std::thread> worker;
-    std::atomic<double> progress { 0.0 };
-    juce::String warning;
 
-    juce::ProgressBar progressBar { progress };
+    juce::String warningString;
+
+    double progress{ 0.0 };
+    juce::ProgressBar progressBar{ progress };
+
     juce::Label messageLabel;
     juce::TextButton okButton { "OK" };
     juce::Rectangle<int> panel;

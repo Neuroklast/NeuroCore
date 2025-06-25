@@ -4,7 +4,7 @@
 PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
     : table(proc), processor(proc), lookAndFeel(lf)
 {
-    setLookAndFeel(&lookAndFeel);
+    //setLookAndFeel(&lookAndFeel);
     setOpaque(false);
     setAlwaysOnTop(true);
     setWantsKeyboardFocus(true);
@@ -30,7 +30,7 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
     saveButton.onClick = [this]
     {
         auto* aw = new juce::AlertWindow("Save Preset", {}, juce::AlertWindow::NoIcon);
-        aw->setLookAndFeel(&getLookAndFeel());
+        //aw->setLookAndFeel(&getLookAndFeel());
         aw->addTextEditor("name", {}, "Name:");
         aw->addButton("OK", 1);
         aw->addButton("Cancel", 0);
@@ -83,7 +83,7 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
 
 PresetOverlay::~PresetOverlay()
 {
-    setLookAndFeel(nullptr);
+    //setLookAndFeel(nullptr);
     if (isOnDesktop())
         removeFromDesktop();
 }

@@ -128,7 +128,7 @@ public:
                             bool isMouseOverButton,
                             bool isButtonDown) override {
     auto bounds = button.getLocalBounds().toFloat();
-    auto cornerSize = juce::jmin(bounds.getHeight(), bounds.getWidth()) / 2.5f;
+    auto cornerSize = juce::jmin(bounds.getHeight(), bounds.getWidth()) / 5.f;
 
     auto fill = findColour(juce::TextButton::buttonColourId);
     if (isMouseOverButton)

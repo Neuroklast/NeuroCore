@@ -137,6 +137,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
   $(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
+  $(JUCE_OBJDIR)/ValidationOverlay_cb0cdedc.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
   $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
   $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o \
@@ -337,6 +338,11 @@ $(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o: ../../src/ui/PresetOverlay.cpp
 $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PresetTableComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/ValidationOverlay_cb0cdedc.o: ../../src/ui/ValidationOverlay.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ValidationOverlay.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o: ../../src/ui/WaveformDisplayComponent.cpp
