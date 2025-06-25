@@ -112,7 +112,7 @@ private:
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
 
-    std::array<float, ExpressionEvaluator::MaxVariables> variables{};
+    std::array<float, Config::kMaxVariables>             variables{};
     std::unordered_map<juce::String, int>                nameToIndex;
     std::array<int, 4>                                   paramIndices{};
     std::array<int, 4>                                   aliasIndices{};

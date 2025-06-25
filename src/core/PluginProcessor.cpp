@@ -368,8 +368,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             auto* newPtr = scriptBuffer.getReadPointer(ch);
             auto* oldPtr = oldScriptBuffer.getReadPointer(ch);
 
-            juce::FloatVectorOperations::multiply(dst, newPtr, blend, numSamples);
-            juce::FloatVectorOperations::multiplyAdd(dst, oldPtr, inv, numSamples);
+            juce::FloatVectorOperations::copyWithMultiply(dst, newPtr, blend, numSamples);
+            juce::FloatVectorOperations::addWithMultiply(dst, oldPtr, inv, numSamples);
         }
 
         if (! formulaBlend.isSmoothing())
@@ -398,10 +398,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     }
     for (int ch = 0; ch < (int) block.getNumChannels(); ++ch)
     {
-        auto* wet = block.getWritePointer(ch);
-        auto* dry = dryBlock.getReadPointer(ch);
+        auto* wet = block.getChannelPointer(ch);
+        auto* dry = dryBlock.getChannelPointer(ch);
         juce::FloatVectorOperations::multiply(wet, wet, wetPtr, numSamples);
-        juce::FloatVectorOperations::multiplyAdd(wet, dry, invWet, numSamples);
+        juce::FloatVectorOperations::addWithMultiply(wet, dry, invWet, numSamples);
     }
 
     DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
@@ -412,7 +412,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (int i = 0; i < numSamples; ++i)
         gainPtr[i] = userGainValue.getNextValue();
     for (int ch = 0; ch < (int) block.getNumChannels(); ++ch)
-        juce::FloatVectorOperations::multiply(block.getWritePointer(ch), gainPtr, numSamples);
+        juce::FloatVectorOperations::multiply(block.getChannelPointer(ch), gainPtr, numSamples);
 
     float rmsSum = 0.0f;
     for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
