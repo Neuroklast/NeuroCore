@@ -23,6 +23,7 @@
 #include "../utils/Localiser.h"
 #include "PresetOverlay.h"
 #include "ValidationOverlay.h"
+#include "FunctionsOverlay.h"
 #include "WeightedLayout.h"
 #if __has_include(<melatonin_inspector/melatonin_inspector.h>)
 # include <melatonin_inspector/melatonin_inspector.h>
@@ -113,10 +114,13 @@ private:
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
     std::unique_ptr<PresetOverlay>            presetOverlay;
+    std::unique_ptr<FunctionsOverlay>         functionsOverlay;
     std::unique_ptr<ValidationOverlay>        validationOverlay;
 
     void showPresetOverlay();
     void hidePresetOverlay();
+    void showFunctionsOverlay();
+    void hideFunctionsOverlay();
     void validateAndOverlay(const juce::String& expr);
 
     //melatonin::Inspector inspector{ *this };

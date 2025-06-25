@@ -60,6 +60,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*bypassButton);
 
     functionsButton = std::make_unique<juce::TextButton>("Functions");
+    functionsButton->onClick = [this] { showFunctionsOverlay(); };
     addAndMakeVisible(*functionsButton);
 
     stagesButton = std::make_unique<juce::TextButton>("Stages");
@@ -458,6 +459,34 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     presetOverlay->grabKeyboardFocus();
 }
 
+void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
+{
+    hideFunctionsOverlay();
+    functionsOverlay = std::make_unique<FunctionsOverlay>(audioProcessor);
+    functionsOverlay->onInsert = [this](const juce::String& text)
+    {
+        auto caret = formulaInputEditor->getText().isNotEmpty() ? formulaInputEditor->getText().length() : 0;
+        formulaInputEditor->insertTextAtCaret(text);
+    };
+    functionsOverlay->onClose = [this]{ hideFunctionsOverlay(); };
+    auto bounds = getScreenBounds();
+    functionsOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
+    functionsOverlay->setBounds(bounds);
+    functionsOverlay->enterModalState(true);
+    functionsOverlay->toFront(true);
+    functionsOverlay->grabKeyboardFocus();
+}
+
+void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
+{
+    if (functionsOverlay)
+    {
+        functionsOverlay->exitModalState(0);
+        functionsOverlay->setVisible(false);
+        functionsOverlay->removeFromDesktop();
+        functionsOverlay.reset();
+    }
+}
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
