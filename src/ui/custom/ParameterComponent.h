@@ -23,7 +23,7 @@ namespace ui
         void setAliasName(const juce::String& name);
 
         void parameterChanged(const juce::String& id, float newValue) override;
-        void setEnabled(bool shouldBeEnabled) override;
+        void setEnabled(bool shouldBeEnabled);
 
     private:
         void updateLabel();
