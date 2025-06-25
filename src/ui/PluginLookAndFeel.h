@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "PresetTableComponent.h"
 
 // Simple custom LookAndFeel used to style the plugin UI. Currently
 // it just tweaks the rotary slider appearance but can be extended
@@ -9,7 +10,13 @@ public:
   enum ColourIds {
     glowColourId = 0x2340000,   ///< subtle glow around active controls
     shadowColourId = 0x2340001, ///< drop shadow colour
-    errorColourId = 0x2340002   ///< error highlight
+    errorColourId = 0x2340002,  ///< error highlight
+    presetTableBackgroundColourId = 0x2340003,
+    presetTableTextColourId = 0x2340004,
+    presetTableAltRowColourId = 0x2340005,
+    presetTableHighlightColourId = 0x2340006,
+    presetTableHeaderBackgroundColourId = 0x2340007,
+    presetTableHeaderTextColourId = 0x2340008
   };
 
   NeuroCoreLookAndFeel() {
@@ -29,6 +36,13 @@ public:
         Colours::black);
     setColour(TextEditor::outlineColourId, Colour(0xffdd2222));
     setColour(TextEditor::textColourId, Colours::white);
+
+    setColour(presetTableBackgroundColourId, Colour(0xff181818));
+    setColour(presetTableTextColourId, Colours::white);
+    setColour(presetTableAltRowColourId, Colour(0xff202020));
+    setColour(presetTableHighlightColourId, Colour(0xff303030));
+    setColour(presetTableHeaderBackgroundColourId, Colour(0xff181a1a));
+    setColour(presetTableHeaderTextColourId, Colours::white);
 
     setColour(glowColourId, Colour(0x66ff4444));
     setColour(shadowColourId, Colours::black.withAlpha(0.6f));

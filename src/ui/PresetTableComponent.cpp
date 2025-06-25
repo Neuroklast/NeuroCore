@@ -28,6 +28,7 @@ PresetTableComponent::PresetTableComponent(NeuroCoreAudioProcessor& proc)
     table.getHeader().addColumn("Name", 1, 200, 80, 400, juce::TableHeaderComponent::defaultFlags);
     table.getHeader().addColumn("Author", 2, 120, 50, 200, juce::TableHeaderComponent::defaultFlags);
     table.getHeader().addColumn("Date", 3, 150, 50, 200, juce::TableHeaderComponent::defaultFlags);
+    lookAndFeelChanged();
     refresh();
 }
 
@@ -87,12 +88,16 @@ int PresetTableComponent::getNumRows()
 
 void PresetTableComponent::paintRowBackground(juce::Graphics& g, int row, int, int, bool selected)
 {
-    auto alt = getLookAndFeel().findColour(juce::ListBox::backgroundColourId)
-                   .interpolatedWith(getLookAndFeel().findColour(juce::ListBox::textColourId), 0.03f);
+    auto bg  = findColour(backgroundColourId);
+    auto alt = findColour(alternateRowColourId);
+    auto hl  = findColour(highlightColourId);
+
     if (selected)
-        g.fillAll(juce::Colours::lightblue);
+        g.fillAll(hl);
     else if (row % 2)
         g.fillAll(alt);
+    else
+        g.fillAll(bg);
 }
 
 void PresetTableComponent::paintCell(juce::Graphics& g, int row, int columnId, int width, int height, bool)
@@ -104,9 +109,9 @@ void PresetTableComponent::paintCell(juce::Graphics& g, int row, int columnId, i
     if (columnId == 1) text = e.name;
     else if (columnId == 2) text = e.author;
     else if (columnId == 3) text = e.date.toString(true, true);
-    g.setColour(getLookAndFeel().findColour(juce::ListBox::textColourId));
+    g.setColour(findColour(textColourId));
     g.drawText(text, 2, 0, width - 4, height, juce::Justification::centredLeft, true);
-    g.setColour(getLookAndFeel().findColour(juce::ListBox::backgroundColourId));
+    g.setColour(findColour(backgroundColourId));
     g.fillRect(width - 1, 0, 1, height);
 }
 
@@ -120,4 +125,18 @@ juce::File PresetTableComponent::getFileForRow(int row) const
 void PresetTableComponent::resized()
 {
     table.setBoundsInset(juce::BorderSize<int>(8));
+}
+
+void PresetTableComponent::lookAndFeelChanged()
+{
+    table.setColour(juce::ListBox::backgroundColourId, findColour(backgroundColourId));
+    table.setColour(juce::ListBox::textColourId,       findColour(textColourId));
+    table.setColour(juce::ListBox::outlineColourId,    findColour(headerBackgroundColourId));
+    table.setColour(juce::ListBox::highlightColourId,  findColour(highlightColourId));
+
+    auto& header = table.getHeader();
+    header.setColour(juce::TableHeaderComponent::backgroundColourId,
+                     findColour(headerBackgroundColourId));
+    header.setColour(juce::TableHeaderComponent::textColourId,
+                     findColour(headerTextColourId));
 }
