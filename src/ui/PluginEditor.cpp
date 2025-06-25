@@ -495,6 +495,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     addAndMakeVisible(*presetOverlay);
     presetOverlay->toFront(true);
     presetOverlay->setBounds(getLocalBounds());
+    presetOverlay->grabKeyboardFocus();
 }
 
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()

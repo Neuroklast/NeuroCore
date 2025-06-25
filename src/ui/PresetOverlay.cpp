@@ -4,6 +4,8 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
     : table(proc), processor(proc), lookAndFeel(lf)
 {
     setLookAndFeel(&lookAndFeel);
+    setAlwaysOnTop(true);
+    setWantsKeyboardFocus(true);
     addAndMakeVisible(table);
     addAndMakeVisible(loadButton);
     addAndMakeVisible(saveButton);
