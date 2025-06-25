@@ -129,11 +129,13 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
   $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o \
+  $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
   $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
   $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
+  $(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
   $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
@@ -297,6 +299,11 @@ $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o: ../../src/ui/custom/ParameterCompo
 	@echo "Compiling ParameterComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o: ../../src/ui/DslTerminalEditor.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling DslTerminalEditor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o: ../../src/ui/FormulaDisplayComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling FormulaDisplayComponent.cpp"
@@ -320,6 +327,11 @@ $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o: ../../src/ui/LoudnessMeterComp
 $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o: ../../src/ui/PluginEditor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PluginEditor.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o: ../../src/ui/PresetOverlay.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling PresetOverlay.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponent.cpp

@@ -103,6 +103,12 @@ public:
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
 
+    /** Returns the names of all available user presets. */
+    juce::StringArray getPresetNames() const;
+
+    /** Loads the preset at the given index from the user preset folder. */
+    void loadPreset(int index);
+
     float getLoudnessDb()   const noexcept { return lastLoudness.load(); }
     bool  isLimiterActive() const noexcept { return limiterActive.load(); }
     bool  consumeInvalidFlag() noexcept { return invalidFlag.exchange(false); }

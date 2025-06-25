@@ -807,6 +807,26 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
     }
 }
 
+juce::StringArray NeuroCoreAudioProcessor::getPresetNames() const
+{
+    juce::StringArray result;
+    auto base = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                    .getChildFile(Config::kUserPresetFolder);
+    auto files = presetManager.getAvailablePresets(base);
+    for (auto& f : files)
+        result.add(f.getFileNameWithoutExtension());
+    return result;
+}
+
+void NeuroCoreAudioProcessor::loadPreset(int index)
+{
+    auto base = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                    .getChildFile(Config::kUserPresetFolder);
+    auto files = presetManager.getAvailablePresets(base);
+    if (juce::isPositiveAndBelow(index, (int)files.size()))
+        presetManager.loadPreset(files[(size_t)index]);
+}
+
 void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)
 {
     auto resDir = juce::File::getSpecialLocation (juce::File::currentApplicationFile)

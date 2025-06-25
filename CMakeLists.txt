@@ -4,6 +4,16 @@ include(FetchContent)
 
 project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
 
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(X11 REQUIRED x11)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
+    if(NOT X11_FOUND OR NOT GTK3_FOUND OR NOT WEBKIT2GTK_FOUND)
+        message(FATAL_ERROR "Benötigte X11/GTK Abhängigkeiten fehlen. Bitte ./scripts/install_linux_deps.sh ausführen")
+    endif()
+endif()
+
 
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
@@ -44,8 +54,10 @@ set(SOURCE_FILES
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
+    src/ui/DslTerminalEditor.cpp
     src/ui/InlineAutocompleteEditor.cpp
     src/ui/PresetTableComponent.cpp
+    src/ui/PresetOverlay.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp
