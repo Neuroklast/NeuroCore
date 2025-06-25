@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "WaveShaper.h"
 #include "../utils/Log.h"
 

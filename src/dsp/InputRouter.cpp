@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "InputRouter.h"
 #include "../utils/Log.h"
 

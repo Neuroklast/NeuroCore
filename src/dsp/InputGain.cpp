@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "InputGain.h"
 #include "../utils/Log.h"
 

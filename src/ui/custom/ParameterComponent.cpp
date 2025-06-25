@@ -1,4 +1,4 @@
-#define JUCE_MODAL_LOOPS_PERMITTED 1
+#include <JuceHeader.h>
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
 #include "../../utils/Localiser.h"
@@ -126,9 +126,10 @@ namespace ui
 
             PopupMenu::Options opts;
             opts.withTargetComponent(this);
-            auto res = menu.showMenu(opts);
-            if (res == 1 || res == 2)
+            menu.showMenuAsync(opts, [this](int res)
             {
+                if (res != 1 && res != 2)
+                    return;
                 bool setMin = res == 1;
                 auto* aw = new AlertWindow("", TRANS("Enter value"), AlertWindow::NoIcon);
                 aw->addTextEditor("val", setMin ? String(slider.getMinimum()) : String(slider.getMaximum()));
@@ -157,7 +158,7 @@ namespace ui
                                          }
                                      }),
                                      true);
-            }
+            });
         }
     }
 

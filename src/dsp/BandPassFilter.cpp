@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "BandPassFilter.h"
 #include "../utils/Log.h"
 

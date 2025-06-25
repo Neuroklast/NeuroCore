@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "FormulaHelper.h"
 #include "ExpressionEvaluator.h"
 #include "Localiser.h"

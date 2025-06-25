@@ -1,3 +1,4 @@
+#include <JuceHeader.h>
 #include "LowPassFilter.h"
 #include "../utils/Log.h"
 
