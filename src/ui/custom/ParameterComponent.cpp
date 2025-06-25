@@ -1,3 +1,4 @@
+#define JUCE_MODAL_LOOPS_PERMITTED 1
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
 #include "../../utils/Localiser.h"

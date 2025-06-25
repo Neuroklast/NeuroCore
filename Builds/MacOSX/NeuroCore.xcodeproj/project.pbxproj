@@ -27,12 +27,16 @@
 		02D5A194255E874E83B55A33 /* QuartzCore.framework */ = {isa = PBXBuildFile; fileRef = B4D3776AF8EA79A70EEE6D51; };
 		02F12CECA59DAAB7B8828C15 /* LookupTables.cpp */ = {isa = PBXBuildFile; fileRef = 6933E12854D18BC9A6AE4E00; };
 		0311C5AB567A0BC0D3950950 /* WebKit.framework */ = {isa = PBXBuildFile; fileRef = C0C65A1C00C706772C009F63; };
+		056390AE206246180DDD0A27 /* BinaryData4.cpp */ = {isa = PBXBuildFile; fileRef = B388D28D71A4D7B88A4CD1B0; };
 		06BB5038583A2459106C9C13 /* SignalPolisher.cpp */ = {isa = PBXBuildFile; fileRef = 11FD161597A316CD4815ACB0; };
 		0D1B74AC93649D927E891F57 /* HighPassFilter.cpp */ = {isa = PBXBuildFile; fileRef = 8AEA8E22527C0B107506E0B9; };
 		0DA39155EF0AEA91006D7692 /* VST3 Manifest Helper */ = {isa = PBXBuildFile; fileRef = EA7E153D5F60EBD7D5D1F8B7; };
+		0E65D4E1A5AA71CDC56A87B4 /* BinaryData10.cpp */ = {isa = PBXBuildFile; fileRef = AE71D195C82D65F54B3FA893; };
 		1053F863007043F2AD2599FE /* include_juce_core_CompilationTime.cpp */ = {isa = PBXBuildFile; fileRef = 4453F64499A727B91AF523C6; };
 		13B6351C42D5CBCABD581973 /* Metal.framework */ = {isa = PBXBuildFile; fileRef = 3938BF6782D97A92B7733317; settings = { ATTRIBUTES = (Weak, ); }; };
+		1480A31A900621147E6385E6 /* member_enabled.cpp */ = {isa = PBXBuildFile; fileRef = 6DE80E9EC7FD7678C916F2EC; };
 		17BBC31BDD5034E634EC350E /* include_juce_audio_utils.mm */ = {isa = PBXBuildFile; fileRef = 19ABEDDA880B9857E39B1402; };
+		1A772EDEE092ADC1E642D376 /* BinaryData2.cpp */ = {isa = PBXBuildFile; fileRef = B0AE7C14E6CB0AC4E8AB9B9C; };
 		1DB22817887226905178A81D /* include_juce_audio_devices.mm */ = {isa = PBXBuildFile; fileRef = 976660CE3854075F36E60A1F; };
 		21E3AE56B1F08C0655088009 /* Foundation.framework */ = {isa = PBXBuildFile; fileRef = 4535349D723CFBE230A3EE43; };
 		277320CE830709DFC44AAF13 /* include_juce_audio_plugin_client_ARA.cpp */ = {isa = PBXBuildFile; fileRef = CAF2FC673C2DA9DA2B791214; };
@@ -42,33 +46,48 @@
 		2E2FFFBC0928BAC1B9278D95 /* Security.framework */ = {isa = PBXBuildFile; fileRef = 0C038AB4D9522281F9B4F760; };
 		2E9EB7BA4AA562B59D3A8959 /* Cocoa.framework */ = {isa = PBXBuildFile; fileRef = 7F053C48BD27768D75AC23C6; };
 		2F8C7FDA5EAA5836834CB592 /* include_juce_core.mm */ = {isa = PBXBuildFile; fileRef = 60ECACBB1C8B400BA609F17E; };
+		2FC33A7C89028E482BFCBDDC /* BinaryData8.cpp */ = {isa = PBXBuildFile; fileRef = 98048F0C714C40117973BDD4; };
+		2FDB4CCA5A6E468382421B5E /* BinaryData17.cpp */ = {isa = PBXBuildFile; fileRef = 2970B325594DA4B86EA7AC88; };
 		30E628D2D4E5907ED059370B /* include_juce_audio_processors_ara.cpp */ = {isa = PBXBuildFile; fileRef = F06E580D8B7BF60868073EF4; };
 		3307C93AE683CCE1C3D5D4F4 /* include_juce_graphics_Harfbuzz.cpp */ = {isa = PBXBuildFile; fileRef = F7AE1968C5D577E5C3E1C432; };
 		373C0136AAA404D43DC02B18 /* include_juce_gui_basics.mm */ = {isa = PBXBuildFile; fileRef = 375F7839D03031555DD3BAAA; };
+		377B0CF521FF89F7E289471A /* BinaryData23.cpp */ = {isa = PBXBuildFile; fileRef = 13A4FA43D7A29D096B5A6F6E; };
 		38CFC1AD53B6345449C98CA0 /* CoreAudio.framework */ = {isa = PBXBuildFile; fileRef = E1770EDCD4256301FA2051F6; };
 		3B1AD9AD6974A40355C295D7 /* main.cpp */ = {isa = PBXBuildFile; fileRef = CA1781BEEE6B2ED384E74BE3; };
+		41228C0B149FA751421E2E6C /* BinaryData12.cpp */ = {isa = PBXBuildFile; fileRef = AC65AC8AE7718B87019F030D; };
 		412EBACA528E8292B11A4764 /* InputGain.cpp */ = {isa = PBXBuildFile; fileRef = 029EB9A52BC0F996D2496C20; };
 		4278156896383A600FA55B0D /* FormulaHelper.cpp */ = {isa = PBXBuildFile; fileRef = 810D43F43F012D1A6D01F3FD; };
 		47FBDE55494FCE3986B40981 /* include_juce_gui_extra.mm */ = {isa = PBXBuildFile; fileRef = 8F26C4069A2F111437CA8994; };
+		4B8FF305B09CBA77B206B2B5 /* BinaryData15.cpp */ = {isa = PBXBuildFile; fileRef = 1994FBAF3037183C243BE7FB; };
 		4FCB99FD181110778DC541A7 /* include_juce_opengl.mm */ = {isa = PBXBuildFile; fileRef = 494C27855CD9A3F25DDBF279; };
+		517F0B1C462EE8381877206B /* BinaryData6.cpp */ = {isa = PBXBuildFile; fileRef = 196B1D0E379EEAE879E9CD4D; };
 		5754AE01877BA773DBC93BE0 /* SignalChain.cpp */ = {isa = PBXBuildFile; fileRef = 241D31BCC071AF10EBAD2D2D; };
 		575E859F791A5621DF0FD5F5 /* IOKit.framework */ = {isa = PBXBuildFile; fileRef = 2ADFF3C29C3C1854AC24C3BE; };
 		5C87D70651BEF59A5ED3B973 /* include_juce_animation.cpp */ = {isa = PBXBuildFile; fileRef = 0C7E392948866FEB3639094F; };
+		5ED09802A4730B94CB43D879 /* member_disabled.cpp */ = {isa = PBXBuildFile; fileRef = 5427DB623F17637A2D829565; };
+		6072969163FF0326EC8746C8 /* unique_ptr_enabled.cpp */ = {isa = PBXBuildFile; fileRef = F0EF3966D59011F1265D19FF; };
 		60F734A2D74B7DAC723766C4 /* Standalone Plugin */ = {isa = PBXBuildFile; fileRef = A1E5AF0BBF9D2CA4B8E68106; };
+		612492B75439DFAD01C3BCFE /* BinaryData19.cpp */ = {isa = PBXBuildFile; fileRef = FA48E165E3B316C8CF61CA35; };
+		6330FDC34FF1030B0BA381F5 /* BinaryData3.cpp */ = {isa = PBXBuildFile; fileRef = C7212B5E6E7235A3476E03EA; };
 		64C0F4DC5A5BC2B5EA88AFC7 /* PluginProcessor.cpp */ = {isa = PBXBuildFile; fileRef = A76D127FE6F423FB3419CBB8; };
 		67D9461FF628EB75ACF4CE9E /* include_juce_osc.cpp */ = {isa = PBXBuildFile; fileRef = 3228BCBB8803778B3C2A1562; };
+		6AB234EC1D46BDC4E758BC32 /* BinaryData9.cpp */ = {isa = PBXBuildFile; fileRef = C53CDE4A8B3F4A28805230DD; };
 		6D822FC8239DABD12C8A35A8 /* RecentFilesMenuTemplate.nib */ = {isa = PBXBuildFile; fileRef = 65B6C0B4165CC211D85B4764; };
 		70B9F4ABC7A7C1D55CDC1A62 /* include_juce_data_structures.mm */ = {isa = PBXBuildFile; fileRef = 3C987BD21BD96031993C2199; };
 		757152D3C4972E5D381003E4 /* CoreMIDI.framework */ = {isa = PBXBuildFile; fileRef = 69C1D6B22E674CA5D5300857; };
 		7C5AA3236325DB158B82A0DD /* PresetManager.cpp */ = {isa = PBXBuildFile; fileRef = 89C9DBFBF22C5BC610D34DD3; };
 		7E35675F2A0D1764C3063D9D /* include_juce_audio_plugin_client_VST3.mm */ = {isa = PBXBuildFile; fileRef = A2E353A0138A054D8D96EC59; };
+		7E67F87317242D50B32FE60A /* BinaryData7.cpp */ = {isa = PBXBuildFile; fileRef = 9AC2E3AF2F301A3ED26E7C65; };
 		803FB8EE9CBC6705F84949F7 /* include_melatonin_inspector.cpp */ = {isa = PBXBuildFile; fileRef = 738A1D67BE4B3F19B3AC18EB; };
 		8AAD20248C4A8A6B9913C106 /* AdvancedOscillatorWrapper.cpp */ = {isa = PBXBuildFile; fileRef = 8B9A0E6FA6BDA5ADF00AD491; };
 		8C24EDEED3C34B3CD0166AB2 /* Accelerate.framework */ = {isa = PBXBuildFile; fileRef = 6F373936F1AEA419E5A8FF40; };
 		8C70CB01701320B622345C74 /* Shared Code */ = {isa = PBXBuildFile; fileRef = 0FBA0B5ED13236481C5F20A8; };
+		8E76AADD06BB33B3FBB327B8 /* PresetTableComponent.cpp */ = {isa = PBXBuildFile; fileRef = 21DEC45BACECA3C26369EE4F; };
 		8EF86793236ACEECB201AAAD /* include_juce_audio_processors.mm */ = {isa = PBXBuildFile; fileRef = EAF5263BEE027D4CDEF271C0; };
 		8FF5FE9029FA437A731CB186 /* DiscRecording.framework */ = {isa = PBXBuildFile; fileRef = 96982C51AFB00D26C19E7BDD; };
+		967AD71AA07DA982BD96302B /* BinaryData11.cpp */ = {isa = PBXBuildFile; fileRef = 39EC4F897EA2A77A953F0D9C; };
 		96FFB4DB7C15A15A5A26F0B3 /* VST3 */ = {isa = PBXBuildFile; fileRef = 6D1952D12292FA0552F47230; };
+		9BC1FD49752DB97A1039F0B0 /* BinaryData20.cpp */ = {isa = PBXBuildFile; fileRef = 0AA4B252EF19A1A969B622B9; };
 		9F1D85825700F1BA5F4A6A6D /* include_juce_cryptography.mm */ = {isa = PBXBuildFile; fileRef = 7DE500001D4B33260BA61210; };
 		9F51B7EADAE2DD728E9D57E8 /* MetalKit.framework */ = {isa = PBXBuildFile; fileRef = D7F9209655CD40D72A2B9D52; settings = { ATTRIBUTES = (Weak, ); }; };
 		9F9C87206316CFDFE485CA62 /* InlineAutocompleteEditor.cpp */ = {isa = PBXBuildFile; fileRef = DCF1D06671D27FEAFC6E9A56; };
@@ -76,19 +95,28 @@
 		A75AB4922E95BBAB079C7918 /* LoudnessMeterComponent.cpp */ = {isa = PBXBuildFile; fileRef = B64A9EE7ABFD503A7039CDE6; };
 		A7807DC2F49A5F066D5DB955 /* include_juce_product_unlocking.mm */ = {isa = PBXBuildFile; fileRef = 3AB90FE6DF0446053FD1A2FB; };
 		AD46FAE2535F81CE8807142A /* FormulaDisplayComponent.cpp */ = {isa = PBXBuildFile; fileRef = 20C87221032CC0B67F1ACEF5; };
+		ADC2C25A35112131A120E29F /* BinaryData22.cpp */ = {isa = PBXBuildFile; fileRef = 94E9A00CB0457554B4E323AC; };
 		B364CDB5E9C3AE0EE7D14B8F /* include_juce_audio_formats.mm */ = {isa = PBXBuildFile; fileRef = 51BF09BB9040C1FABBB59C1E; };
+		B5DC833922EF796B769581B2 /* BinaryData18.cpp */ = {isa = PBXBuildFile; fileRef = F145BEBE5BDAC75C3B977ADE; };
 		B75E9874F67DD28C3FC054E6 /* PluginEditor.cpp */ = {isa = PBXBuildFile; fileRef = 675A49D1E45D07B1A19685D2; };
 		BA2F70641B2D5C5D1725C163 /* include_juce_audio_processors_lv2_libs.cpp */ = {isa = PBXBuildFile; fileRef = B8B769E654FE1468F85C3E36; };
 		BACEF45A7E9108A1EA307C8D /* include_juce_audio_plugin_client_Standalone.cpp */ = {isa = PBXBuildFile; fileRef = 4333BD53A840FE35B6B1952E; };
+		BCEA7C7F8A8A74A82F4E8730 /* BinaryData5.cpp */ = {isa = PBXBuildFile; fileRef = 95E7CB9D7F7C6EBB50244C84; };
 		C0DDFBF57B221867DD0FC964 /* CoreAudioKit.framework */ = {isa = PBXBuildFile; fileRef = 97D3114E40CA20EB31148857; };
 		C4A5C4A273FE0219303D19D1 /* DSLParser.cpp */ = {isa = PBXBuildFile; fileRef = 066547B8283C04568BFE97CD; };
 		C625D6F68B05E8FD8D9A8626 /* FormulaWaveComponent.cpp */ = {isa = PBXBuildFile; fileRef = F8E0753859A0514846E6F2E4; };
+		C74A899A1578727005E3B682 /* unique_ptr_disabled.cpp */ = {isa = PBXBuildFile; fileRef = 92A42F8A47DBE22AACC887A6; };
 		C85804F34292F8FFA5884150 /* include_juce_events.mm */ = {isa = PBXBuildFile; fileRef = 953F6A94BA6D88702FCCE9CE; };
+		C97F08070639925678A18F31 /* BinaryData13.cpp */ = {isa = PBXBuildFile; fileRef = 11AD66339067862B8F03B1C6; };
+		CBD245611CAE2D42F210EFE7 /* BinaryData14.cpp */ = {isa = PBXBuildFile; fileRef = A75BF13A770C5430C0B319B8; };
 		CFE666FC33378A705D43FC6B /* Localiser.cpp */ = {isa = PBXBuildFile; fileRef = 0467697438C1DCCEC275B436; };
+		D86AFA49C79B0610B02D9351 /* melatonin_inspector.cpp */ = {isa = PBXBuildFile; fileRef = 922C4F1BD9190CE50CE67F4B; };
 		D9FDD5BD54AFC86E38D01F74 /* InputRouter.cpp */ = {isa = PBXBuildFile; fileRef = BA3AF076FB86C0A44DC96468; };
 		E53D0A8B19C3E674BFF7ED50 /* ParameterComponent.cpp */ = {isa = PBXBuildFile; fileRef = DBCACB0FD0DBE1562C09F383; };
 		ED0D34A4572558A46A58F5E5 /* include_juce_graphics_Sheenbidi.c */ = {isa = PBXBuildFile; fileRef = 6A19C2FE923194F8353392D8; };
 		EFF7784609B55FB28437F79C /* OpenGL.framework */ = {isa = PBXBuildFile; fileRef = C778215BD75D53EDBB308E8C; };
+		F03B298FC4A845B210CEC70C /* BinaryData16.cpp */ = {isa = PBXBuildFile; fileRef = 89183A8EE9937E5895809FC8; };
+		F09B40E2323B9F7EF94A448A /* BinaryData21.cpp */ = {isa = PBXBuildFile; fileRef = 103BD88A69D64EC823431C88; };
 		F713D2953688204F6CDAE92C /* include_juce_audio_basics.mm */ = {isa = PBXBuildFile; fileRef = 38C1D66F6213090E394E23CA; };
 		F983BA43A6616354AC76D7C0 /* juce_VST3ManifestHelper.mm */ = {isa = PBXBuildFile; fileRef = A21D37E7A64DC600672CA786; settings = { COMPILER_FLAGS = "-fobjc-arc -w -DJUCE_SKIP_PRECOMPILED_HEADER"; }; };
 		F9DB2944BBE1446327249F01 /* AudioToolbox.framework */ = {isa = PBXBuildFile; fileRef = C1A3D9BA71E5E78738398DFD; };
@@ -96,6 +124,7 @@
 		FC923AFDE2042EE5B3C250A4 /* BandPassFilter.cpp */ = {isa = PBXBuildFile; fileRef = 12489CA4E56B17F2BA7BD2FE; };
 		FD1F514F415C97BE3799B8A0 /* include_juce_dsp.mm */ = {isa = PBXBuildFile; fileRef = 7A51E20AB81140BB33863216; };
 		FE52853CBDBFEB6913E849F4 /* ExpressionEvaluator.cpp */ = {isa = PBXBuildFile; fileRef = 5E74A2971F05E4CA27C288AE; };
+		FEE95464B6F359E1BE197C4D /* BinaryData1.cpp */ = {isa = PBXBuildFile; fileRef = 1ADD6A6DE7C08CFF16C5BA45; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -103,50 +132,84 @@
 		029EB9A52BC0F996D2496C20 /* InputGain.cpp */ /* InputGain.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = InputGain.cpp; path = ../../src/dsp/InputGain.cpp; sourceTree = SOURCE_ROOT; };
 		0467697438C1DCCEC275B436 /* Localiser.cpp */ /* Localiser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Localiser.cpp; path = ../../src/utils/Localiser.cpp; sourceTree = SOURCE_ROOT; };
 		066547B8283C04568BFE97CD /* DSLParser.cpp */ /* DSLParser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = DSLParser.cpp; path = ../../src/dsl/DSLParser.cpp; sourceTree = SOURCE_ROOT; };
+		094DC95FB7526CD24DFCED0C /* inspector_image_button.h */ /* inspector_image_button.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = inspector_image_button.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/inspector_image_button.h"; sourceTree = SOURCE_ROOT; };
+		0A7B0CA343C9575982F3CE36 /* undo.png */ /* undo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = undo.png; path = "../../src/third_party/melatonin_inspector-main/Assets/undo.png"; sourceTree = SOURCE_ROOT; };
+		0AA4B252EF19A1A969B622B9 /* BinaryData20.cpp */ /* BinaryData20.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData20.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData20.cpp"; sourceTree = SOURCE_ROOT; };
 		0C038AB4D9522281F9B4F760 /* Security.framework */ /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		0C7E392948866FEB3639094F /* include_juce_animation.cpp */ /* include_juce_animation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_animation.cpp; path = ../../JuceLibraryCode/include_juce_animation.cpp; sourceTree = SOURCE_ROOT; };
+		0E6E321210B299EFF50095F8 /* expand-on.png */ /* expand-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "expand-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/expand-on.png"; sourceTree = SOURCE_ROOT; };
 		0FBA0B5ED13236481C5F20A8 /* Shared Code */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libNeuroCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		103023A195A90D82A87A8F3A /* DSPUtils.h */ /* DSPUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DSPUtils.h; path = ../../src/dsp/DSPUtils.h; sourceTree = SOURCE_ROOT; };
+		103BD88A69D64EC823431C88 /* BinaryData21.cpp */ /* BinaryData21.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData21.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData21.cpp"; sourceTree = SOURCE_ROOT; };
 		11A898EA24C234458CDE2E07 /* AppConfig.h */ /* AppConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AppConfig.h; path = ../../JuceLibraryCode/AppConfig.h; sourceTree = SOURCE_ROOT; };
+		11AD66339067862B8F03B1C6 /* BinaryData13.cpp */ /* BinaryData13.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData13.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData13.cpp"; sourceTree = SOURCE_ROOT; };
 		11FD161597A316CD4815ACB0 /* SignalPolisher.cpp */ /* SignalPolisher.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SignalPolisher.cpp; path = ../../src/dsp/SignalPolisher.cpp; sourceTree = SOURCE_ROOT; };
 		12489CA4E56B17F2BA7BD2FE /* BandPassFilter.cpp */ /* BandPassFilter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BandPassFilter.cpp; path = ../../src/dsp/BandPassFilter.cpp; sourceTree = SOURCE_ROOT; };
+		13A4FA43D7A29D096B5A6F6E /* BinaryData23.cpp */ /* BinaryData23.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData23.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData23.cpp"; sourceTree = SOURCE_ROOT; };
+		15647CC921D872D7A339B6AD /* dogfood-off.png */ /* dogfood-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "dogfood-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/dogfood-off.png"; sourceTree = SOURCE_ROOT; };
 		167EB6D39E0969B832AFED7C /* Config.h */ /* Config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Config.h; path = ../../src/core/Config.h; sourceTree = SOURCE_ROOT; };
+		17BECAB256B093266C26908E /* previous.svg */ /* previous.svg */ = {isa = PBXFileReference; lastKnownFileType = file.svg; name = previous.svg; path = "../../src/third_party/melatonin_inspector-main/Assets/previous.svg"; sourceTree = SOURCE_ROOT; };
 		18123E18B590F7E75F9254D8 /* SignalChain.h */ /* SignalChain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SignalChain.h; path = ../../src/dsl/SignalChain.h; sourceTree = SOURCE_ROOT; };
 		18FA1309F8A9A71FBFE7A000 /* PluginEditor.h */ /* PluginEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginEditor.h; path = ../../src/ui/PluginEditor.h; sourceTree = SOURCE_ROOT; };
+		196B1D0E379EEAE879E9CD4D /* BinaryData6.cpp */ /* BinaryData6.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData6.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData6.cpp"; sourceTree = SOURCE_ROOT; };
+		1994FBAF3037183C243BE7FB /* BinaryData15.cpp */ /* BinaryData15.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData15.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData15.cpp"; sourceTree = SOURCE_ROOT; };
 		19ABEDDA880B9857E39B1402 /* include_juce_audio_utils.mm */ /* include_juce_audio_utils.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_utils.mm; path = ../../JuceLibraryCode/include_juce_audio_utils.mm; sourceTree = SOURCE_ROOT; };
 		19C528B447E652DC64D6E707 /* WaveformDisplayComponent.h */ /* WaveformDisplayComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = WaveformDisplayComponent.h; path = ../../src/ui/WaveformDisplayComponent.h; sourceTree = SOURCE_ROOT; };
 		1A6A91553722907BEE5672BF /* AdvancedOscillatorWrapper.h */ /* AdvancedOscillatorWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AdvancedOscillatorWrapper.h; path = ../../src/dsp/AdvancedOscillatorWrapper.h; sourceTree = SOURCE_ROOT; };
+		1ADD6A6DE7C08CFF16C5BA45 /* BinaryData1.cpp */ /* BinaryData1.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData1.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData1.cpp"; sourceTree = SOURCE_ROOT; };
 		1FCE504C00B055F652B56EBE /* juce_osc */ /* juce_osc */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_osc; path = "~/JUCE/modules/juce_osc"; sourceTree = "<absolute>"; };
 		2019EAF72C47955F3930B917 /* FormulaHelper.h */ /* FormulaHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FormulaHelper.h; path = ../../src/utils/FormulaHelper.h; sourceTree = SOURCE_ROOT; };
 		20C87221032CC0B67F1ACEF5 /* FormulaDisplayComponent.cpp */ /* FormulaDisplayComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FormulaDisplayComponent.cpp; path = ../../src/ui/FormulaDisplayComponent.cpp; sourceTree = SOURCE_ROOT; };
+		21DEC45BACECA3C26369EE4F /* PresetTableComponent.cpp */ /* PresetTableComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PresetTableComponent.cpp; path = ../../src/ui/PresetTableComponent.cpp; sourceTree = SOURCE_ROOT; };
 		238DFBB4157BCCB9BE5BDA47 /* DSLParser.h */ /* DSLParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DSLParser.h; path = ../../src/dsl/DSLParser.h; sourceTree = SOURCE_ROOT; };
 		241D31BCC071AF10EBAD2D2D /* SignalChain.cpp */ /* SignalChain.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SignalChain.cpp; path = ../../src/dsl/SignalChain.cpp; sourceTree = SOURCE_ROOT; };
+		2970B325594DA4B86EA7AC88 /* BinaryData17.cpp */ /* BinaryData17.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData17.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData17.cpp"; sourceTree = SOURCE_ROOT; };
 		2ADFF3C29C3C1854AC24C3BE /* IOKit.framework */ /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		3228BCBB8803778B3C2A1562 /* include_juce_osc.cpp */ /* include_juce_osc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_osc.cpp; path = ../../JuceLibraryCode/include_juce_osc.cpp; sourceTree = SOURCE_ROOT; };
+		356855DFA3386BF6584F36E5 /* copy_cmake_assets.rb */ /* copy_cmake_assets.rb */ = {isa = PBXFileReference; lastKnownFileType = file.rb; name = copy_cmake_assets.rb; path = "../../src/third_party/melatonin_inspector-main/copy_cmake_assets.rb"; sourceTree = SOURCE_ROOT; };
 		375F7839D03031555DD3BAAA /* include_juce_gui_basics.mm */ /* include_juce_gui_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_gui_basics.mm; path = ../../JuceLibraryCode/include_juce_gui_basics.mm; sourceTree = SOURCE_ROOT; };
+		37E6DEAA9135425322DB2354 /* component_model.h */ /* component_model.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = component_model.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/component_model.h"; sourceTree = SOURCE_ROOT; };
 		38C1D66F6213090E394E23CA /* include_juce_audio_basics.mm */ /* include_juce_audio_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_basics.mm; path = ../../JuceLibraryCode/include_juce_audio_basics.mm; sourceTree = SOURCE_ROOT; };
+		3911FF86E7A3646371CBAF15 /* overlay.h */ /* overlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = overlay.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/overlay.h"; sourceTree = SOURCE_ROOT; };
 		3938BF6782D97A92B7733317 /* Metal.framework */ /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		39EC4F897EA2A77A953F0D9C /* BinaryData11.cpp */ /* BinaryData11.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData11.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData11.cpp"; sourceTree = SOURCE_ROOT; };
+		3A73873B7AAB968F4EFE32EF /* InspectorBinaryData.h */ /* InspectorBinaryData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = InspectorBinaryData.h; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/InspectorBinaryData.h"; sourceTree = SOURCE_ROOT; };
 		3AB90FE6DF0446053FD1A2FB /* include_juce_product_unlocking.mm */ /* include_juce_product_unlocking.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_product_unlocking.mm; path = ../../JuceLibraryCode/include_juce_product_unlocking.mm; sourceTree = SOURCE_ROOT; };
 		3AFCC4F876217D6E486113DF /* LoudnessMeterComponent.h */ /* LoudnessMeterComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LoudnessMeterComponent.h; path = ../../src/ui/LoudnessMeterComponent.h; sourceTree = SOURCE_ROOT; };
+		3B6AC546D43EE2E70A809F3F /* preview.h */ /* preview.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = preview.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/preview.h"; sourceTree = SOURCE_ROOT; };
 		3C987BD21BD96031993C2199 /* include_juce_data_structures.mm */ /* include_juce_data_structures.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_data_structures.mm; path = ../../JuceLibraryCode/include_juce_data_structures.mm; sourceTree = SOURCE_ROOT; };
+		3E5AE9963959FE12B7264146 /* overlay_mouse_listener.h */ /* overlay_mouse_listener.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = overlay_mouse_listener.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/overlay_mouse_listener.h"; sourceTree = SOURCE_ROOT; };
 		41018DC5E217E8EA7D4131AB /* WaveShaper.h */ /* WaveShaper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = WaveShaper.h; path = ../../src/dsp/WaveShaper.h; sourceTree = SOURCE_ROOT; };
+		4108F2C4DFE214B3157C5888 /* undo-on.png */ /* undo-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "undo-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/undo-on.png"; sourceTree = SOURCE_ROOT; };
 		4333BD53A840FE35B6B1952E /* include_juce_audio_plugin_client_Standalone.cpp */ /* include_juce_audio_plugin_client_Standalone.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_audio_plugin_client_Standalone.cpp; path = ../../JuceLibraryCode/include_juce_audio_plugin_client_Standalone.cpp; sourceTree = SOURCE_ROOT; };
 		443430C2EF891EDB67BF849E /* ExpressionEvaluatorTest.h */ /* ExpressionEvaluatorTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ExpressionEvaluatorTest.h; path = ../../tests/ExpressionEvaluatorTest.h; sourceTree = SOURCE_ROOT; };
 		4453F64499A727B91AF523C6 /* include_juce_core_CompilationTime.cpp */ /* include_juce_core_CompilationTime.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_core_CompilationTime.cpp; path = ../../JuceLibraryCode/include_juce_core_CompilationTime.cpp; sourceTree = SOURCE_ROOT; };
 		4535349D723CFBE230A3EE43 /* Foundation.framework */ /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		4813EEE311261E50F75A829C /* undo_manager_inspector.h */ /* undo_manager_inspector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = undo_manager_inspector.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/undo_manager_inspector.h"; sourceTree = SOURCE_ROOT; };
 		486B7E98C6CFD4EA399B2362 /* WaveShaperTest.h */ /* WaveShaperTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = WaveShaperTest.h; path = ../../tests/WaveShaperTest.h; sourceTree = SOURCE_ROOT; };
 		48988EEEB50D5AFFF1330387 /* CMakeLists.txt */ /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = CMakeLists.txt; path = ../../CMakeLists.txt; sourceTree = SOURCE_ROOT; };
 		494C27855CD9A3F25DDBF279 /* include_juce_opengl.mm */ /* include_juce_opengl.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_opengl.mm; path = ../../JuceLibraryCode/include_juce_opengl.mm; sourceTree = SOURCE_ROOT; };
 		49FBD76EAC4369C471989A4D /* overknob.png */ /* overknob.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = overknob.png; path = ../../resources/img/overknob.png; sourceTree = SOURCE_ROOT; };
+		4DC0F50E416BBE07C103A8E9 /* accesibility.h */ /* accesibility.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = accesibility.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/accesibility.h"; sourceTree = SOURCE_ROOT; };
+		4DE281747E61EAB9247C5924 /* move-on.png */ /* move-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "move-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/move-on.png"; sourceTree = SOURCE_ROOT; };
 		51BF09BB9040C1FABBB59C1E /* include_juce_audio_formats.mm */ /* include_juce_audio_formats.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_formats.mm; path = ../../JuceLibraryCode/include_juce_audio_formats.mm; sourceTree = SOURCE_ROOT; };
+		52226084DD8B28D0F1F6E20D /* update_juce_colours.rb */ /* update_juce_colours.rb */ = {isa = PBXFileReference; lastKnownFileType = file.rb; name = update_juce_colours.rb; path = "../../src/third_party/melatonin_inspector-main/update_juce_colours.rb"; sourceTree = SOURCE_ROOT; };
 		5392FE319A40C62F5A468622 /* PresetManager.h */ /* PresetManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PresetManager.h; path = ../../src/utils/PresetManager.h; sourceTree = SOURCE_ROOT; };
+		5427DB623F17637A2D829565 /* member_disabled.cpp */ /* member_disabled.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = member_disabled.cpp; path = "../../src/third_party/melatonin_inspector-main/tests/member_disabled.cpp"; sourceTree = SOURCE_ROOT; };
+		557C8680532233BFB014FED3 /* lookandfeel.h */ /* lookandfeel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lookandfeel.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/lookandfeel.h"; sourceTree = SOURCE_ROOT; };
+		56AAB8DFC770EE436754D26D /* colour_property_component.h */ /* colour_property_component.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = colour_property_component.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/colour_property_component.h"; sourceTree = SOURCE_ROOT; };
+		573A94D9ACA724D02DB0CBE9 /* Eyedropper-on.png */ /* Eyedropper-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Eyedropper-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/Eyedropper-on.png"; sourceTree = SOURCE_ROOT; };
 		5760561330FEAAD121763006 /* juce_product_unlocking */ /* juce_product_unlocking */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_product_unlocking; path = "~/JUCE/modules/juce_product_unlocking"; sourceTree = "<absolute>"; };
 		587BC4F04E1BE742D712F8FC /* juce_data_structures */ /* juce_data_structures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_data_structures; path = "~/JUCE/modules/juce_data_structures"; sourceTree = "<absolute>"; };
+		5B32D1149D14D21896F568F0 /* tab-off.png */ /* tab-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "tab-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/tab-off.png"; sourceTree = SOURCE_ROOT; };
+		5B4B12379B0EE5EB64CBB0BA /* inspector_component.h */ /* inspector_component.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = inspector_component.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/inspector_component.h"; sourceTree = SOURCE_ROOT; };
 		5C1B680E28C677943D9CE247 /* SignalPolisher.h */ /* SignalPolisher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SignalPolisher.h; path = ../../src/dsp/SignalPolisher.h; sourceTree = SOURCE_ROOT; };
+		5D4E9F5C492C2BB7122883BF /* box_model.h */ /* box_model.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = box_model.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/box_model.h"; sourceTree = SOURCE_ROOT; };
 		5E74A2971F05E4CA27C288AE /* ExpressionEvaluator.cpp */ /* ExpressionEvaluator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ExpressionEvaluator.cpp; path = ../../src/utils/ExpressionEvaluator.cpp; sourceTree = SOURCE_ROOT; };
 		60ECACBB1C8B400BA609F17E /* include_juce_core.mm */ /* include_juce_core.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_core.mm; path = ../../JuceLibraryCode/include_juce_core.mm; sourceTree = SOURCE_ROOT; };
 		6207456585D762144916C946 /* juce_core */ /* juce_core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_core; path = "~/JUCE/modules/juce_core"; sourceTree = "<absolute>"; };
 		625D109BAE38BD4CEC7DF6A9 /* FormulaWaveComponent.h */ /* FormulaWaveComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FormulaWaveComponent.h; path = ../../src/ui/FormulaWaveComponent.h; sourceTree = SOURCE_ROOT; };
+		645EB100853A5035E14F2046 /* PresetTableComponent.h */ /* PresetTableComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PresetTableComponent.h; path = ../../src/ui/PresetTableComponent.h; sourceTree = SOURCE_ROOT; };
 		65B6C0B4165CC211D85B4764 /* RecentFilesMenuTemplate.nib */ /* RecentFilesMenuTemplate.nib */ = {isa = PBXFileReference; lastKnownFileType = file.nib; name = RecentFilesMenuTemplate.nib; path = RecentFilesMenuTemplate.nib; sourceTree = SOURCE_ROOT; };
 		675A49D1E45D07B1A19685D2 /* PluginEditor.cpp */ /* PluginEditor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PluginEditor.cpp; path = ../../src/ui/PluginEditor.cpp; sourceTree = SOURCE_ROOT; };
 		68209393F08C6231520FC124 /* FormulaDisplayComponent.h */ /* FormulaDisplayComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FormulaDisplayComponent.h; path = ../../src/ui/FormulaDisplayComponent.h; sourceTree = SOURCE_ROOT; };
@@ -157,12 +220,16 @@
 		6B815E2AC4D6D8A3D621E7E9 /* juce_cryptography */ /* juce_cryptography */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_cryptography; path = "~/JUCE/modules/juce_cryptography"; sourceTree = "<absolute>"; };
 		6CF38C9864893CA5DDF33152 /* templates.json */ /* templates.json */ = {isa = PBXFileReference; lastKnownFileType = file.json; name = templates.json; path = ../../resources/templates.json; sourceTree = SOURCE_ROOT; };
 		6D1952D12292FA0552F47230 /* VST3 */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NeuroCore.vst3; sourceTree = BUILT_PRODUCTS_DIR; };
+		6DE80E9EC7FD7678C916F2EC /* member_enabled.cpp */ /* member_enabled.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = member_enabled.cpp; path = "../../src/third_party/melatonin_inspector-main/tests/member_enabled.cpp"; sourceTree = SOURCE_ROOT; };
 		6F373936F1AEA419E5A8FF40 /* Accelerate.framework */ /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		6F5864208E10DDC48A7E6796 /* README.md */ /* README.md */ = {isa = PBXFileReference; lastKnownFileType = file.md; name = README.md; path = "../../src/third_party/melatonin_inspector-main/README.md"; sourceTree = SOURCE_ROOT; };
+		7081BFCB384DB8ECC0A80BB9 /* collapsable_panel.h */ /* collapsable_panel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = collapsable_panel.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/collapsable_panel.h"; sourceTree = SOURCE_ROOT; };
 		714E5C4E4E8DC6EB72A10289 /* juce_graphics */ /* juce_graphics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_graphics; path = "~/JUCE/modules/juce_graphics"; sourceTree = "<absolute>"; };
 		732A0BBECC4567A1788FF887 /* NeuroCore_Tests.jucer */ /* NeuroCore_Tests.jucer */ = {isa = PBXFileReference; lastKnownFileType = file.jucer; name = NeuroCore_Tests.jucer; path = ../../tests/NeuroCore_Tests.jucer; sourceTree = SOURCE_ROOT; };
 		7377F4CF9026538F6FA70EB7 /* PluginProcessor.h */ /* PluginProcessor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginProcessor.h; path = ../../src/core/PluginProcessor.h; sourceTree = SOURCE_ROOT; };
 		738A1D67BE4B3F19B3AC18EB /* include_melatonin_inspector.cpp */ /* include_melatonin_inspector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_melatonin_inspector.cpp; path = ../../JuceLibraryCode/include_melatonin_inspector.cpp; sourceTree = SOURCE_ROOT; };
 		739F7C9F040EA052C72B95F8 /* juce_events */ /* juce_events */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_events; path = "~/JUCE/modules/juce_events"; sourceTree = "<absolute>"; };
+		765586515E63FE66DF25B423 /* Search.png */ /* Search.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Search.png; path = "../../src/third_party/melatonin_inspector-main/Assets/Search.png"; sourceTree = SOURCE_ROOT; };
 		76FD6B0AA01470BE02BF93F0 /* melatonin_inspector */ /* melatonin_inspector */ = {isa = PBXFileReference; lastKnownFileType = folder; name = melatonin_inspector; path = ../../modules/melatonin_inspector; sourceTree = SOURCE_ROOT; };
 		7A51E20AB81140BB33863216 /* include_juce_dsp.mm */ /* include_juce_dsp.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_dsp.mm; path = ../../JuceLibraryCode/include_juce_dsp.mm; sourceTree = SOURCE_ROOT; };
 		7B7566F0100114CE15B008DF /* LowPassFilter.cpp */ /* LowPassFilter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = LowPassFilter.cpp; path = ../../src/dsp/LowPassFilter.cpp; sourceTree = SOURCE_ROOT; };
@@ -171,27 +238,52 @@
 		7F053C48BD27768D75AC23C6 /* Cocoa.framework */ /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		810D43F43F012D1A6D01F3FD /* FormulaHelper.cpp */ /* FormulaHelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FormulaHelper.cpp; path = ../../src/utils/FormulaHelper.cpp; sourceTree = SOURCE_ROOT; };
 		81BC73AAB84BED1E87FCB87D /* de.txt */ /* de.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = de.txt; path = ../../resources/locale/de.txt; sourceTree = SOURCE_ROOT; };
+		83E7755615768F419DDD847B /* lock-on.png */ /* lock-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "lock-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/lock-on.png"; sourceTree = SOURCE_ROOT; };
 		84815FBD4E765463FF556C40 /* InputRouter.h */ /* InputRouter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = InputRouter.h; path = ../../src/dsp/InputRouter.h; sourceTree = SOURCE_ROOT; };
+		88101CE861582599A328C7FC /* properties.h */ /* properties.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = properties.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/properties.h"; sourceTree = SOURCE_ROOT; };
+		89183A8EE9937E5895809FC8 /* BinaryData16.cpp */ /* BinaryData16.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData16.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData16.cpp"; sourceTree = SOURCE_ROOT; };
 		89C9DBFBF22C5BC610D34DD3 /* PresetManager.cpp */ /* PresetManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PresetManager.cpp; path = ../../src/utils/PresetManager.cpp; sourceTree = SOURCE_ROOT; };
 		8A12E5C64F02FBF08202FF08 /* optimizations.txt */ /* optimizations.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = optimizations.txt; path = ../../resources/optimizations.txt; sourceTree = SOURCE_ROOT; };
 		8AEA8E22527C0B107506E0B9 /* HighPassFilter.cpp */ /* HighPassFilter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = HighPassFilter.cpp; path = ../../src/dsp/HighPassFilter.cpp; sourceTree = SOURCE_ROOT; };
 		8B9A0E6FA6BDA5ADF00AD491 /* AdvancedOscillatorWrapper.cpp */ /* AdvancedOscillatorWrapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AdvancedOscillatorWrapper.cpp; path = ../../src/dsp/AdvancedOscillatorWrapper.cpp; sourceTree = SOURCE_ROOT; };
+		8BCAC3CBB070AEACDE285D4C /* enabled-off.png */ /* enabled-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "enabled-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/enabled-off.png"; sourceTree = SOURCE_ROOT; };
+		8C28D3F73BCB6CD11BF1CB4C /* timing-on.png */ /* timing-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "timing-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/timing-on.png"; sourceTree = SOURCE_ROOT; };
+		8CE66E0DDB1B86C9B3DC120E /* timing.h */ /* timing.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = timing.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/timing.h"; sourceTree = SOURCE_ROOT; };
 		8D7F88FECD965420C8556BBF /* install_linux_deps.sh */ /* install_linux_deps.sh */ = {isa = PBXFileReference; lastKnownFileType = file.sh; name = install_linux_deps.sh; path = ../../scripts/install_linux_deps.sh; sourceTree = SOURCE_ROOT; };
+		8E1DB6886873D887934CCE47 /* Clear.png */ /* Clear.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Clear.png; path = "../../src/third_party/melatonin_inspector-main/Assets/Clear.png"; sourceTree = SOURCE_ROOT; };
 		8F26C4069A2F111437CA8994 /* include_juce_gui_extra.mm */ /* include_juce_gui_extra.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_gui_extra.mm; path = ../../JuceLibraryCode/include_juce_gui_extra.mm; sourceTree = SOURCE_ROOT; };
+		922C4F1BD9190CE50CE67F4B /* melatonin_inspector.cpp */ /* melatonin_inspector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = melatonin_inspector.cpp; path = "../../src/third_party/melatonin_inspector-main/melatonin_inspector.cpp"; sourceTree = SOURCE_ROOT; };
+		92A42F8A47DBE22AACC887A6 /* unique_ptr_disabled.cpp */ /* unique_ptr_disabled.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = unique_ptr_disabled.cpp; path = "../../src/third_party/melatonin_inspector-main/tests/unique_ptr_disabled.cpp"; sourceTree = SOURCE_ROOT; };
+		94E9A00CB0457554B4E323AC /* BinaryData22.cpp */ /* BinaryData22.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData22.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData22.cpp"; sourceTree = SOURCE_ROOT; };
 		953F6A94BA6D88702FCCE9CE /* include_juce_events.mm */ /* include_juce_events.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_events.mm; path = ../../JuceLibraryCode/include_juce_events.mm; sourceTree = SOURCE_ROOT; };
+		95E7CB9D7F7C6EBB50244C84 /* BinaryData5.cpp */ /* BinaryData5.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData5.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData5.cpp"; sourceTree = SOURCE_ROOT; };
 		96982C51AFB00D26C19E7BDD /* DiscRecording.framework */ /* DiscRecording.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiscRecording.framework; path = System/Library/Frameworks/DiscRecording.framework; sourceTree = SDKROOT; };
 		976660CE3854075F36E60A1F /* include_juce_audio_devices.mm */ /* include_juce_audio_devices.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_devices.mm; path = ../../JuceLibraryCode/include_juce_audio_devices.mm; sourceTree = SOURCE_ROOT; };
 		97D3114E40CA20EB31148857 /* CoreAudioKit.framework */ /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
+		98048F0C714C40117973BDD4 /* BinaryData8.cpp */ /* BinaryData8.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData8.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData8.cpp"; sourceTree = SOURCE_ROOT; };
+		9AC2E3AF2F301A3ED26E7C65 /* BinaryData7.cpp */ /* BinaryData7.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData7.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData7.cpp"; sourceTree = SOURCE_ROOT; };
 		9AC6B60C0B9A077D8DF567C8 /* AGENTS.md */ /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = file.md; name = AGENTS.md; path = ../../AGENTS.md; sourceTree = SOURCE_ROOT; };
+		9D84263A2578FB832BDBD1A2 /* CMakeLists.txt */ /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = CMakeLists.txt; path = "../../src/third_party/melatonin_inspector-main/CMakeLists.txt"; sourceTree = SOURCE_ROOT; };
+		9FB34006C5E7E441C7166203 /* colors.h */ /* colors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = colors.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/colors.h"; sourceTree = SOURCE_ROOT; };
 		A177910D176E7A33901155DE /* ExpressionEvaluator.h */ /* ExpressionEvaluator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ExpressionEvaluator.h; path = ../../src/utils/ExpressionEvaluator.h; sourceTree = SOURCE_ROOT; };
 		A1E5AF0BBF9D2CA4B8E68106 /* Standalone Plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeuroCore.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A21D37E7A64DC600672CA786 /* juce_VST3ManifestHelper.mm */ /* juce_VST3ManifestHelper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_VST3ManifestHelper.mm; path = "$(HOME)/JUCE/modules/juce_audio_plugin_client/VST3/juce_VST3ManifestHelper.mm"; sourceTree = "<absolute>"; };
+		A2471053E17C326DB11DDF05 /* colour_ids.h */ /* colour_ids.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = colour_ids.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/colour_ids.h"; sourceTree = SOURCE_ROOT; };
 		A2E353A0138A054D8D96EC59 /* include_juce_audio_plugin_client_VST3.mm */ /* include_juce_audio_plugin_client_VST3.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_plugin_client_VST3.mm; path = ../../JuceLibraryCode/include_juce_audio_plugin_client_VST3.mm; sourceTree = SOURCE_ROOT; };
 		A6628FFFC726E896C852EE74 /* InputGain.h */ /* InputGain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = InputGain.h; path = ../../src/dsp/InputGain.h; sourceTree = SOURCE_ROOT; };
+		A75BF13A770C5430C0B319B8 /* BinaryData14.cpp */ /* BinaryData14.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData14.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData14.cpp"; sourceTree = SOURCE_ROOT; };
 		A76D127FE6F423FB3419CBB8 /* PluginProcessor.cpp */ /* PluginProcessor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PluginProcessor.cpp; path = ../../src/core/PluginProcessor.cpp; sourceTree = SOURCE_ROOT; };
 		A80F998BBAF914056DC8F056 /* NeuroCore.jucer */ /* NeuroCore.jucer */ = {isa = PBXFileReference; lastKnownFileType = file.jucer; name = NeuroCore.jucer; path = ../../NeuroCore.jucer; sourceTree = SOURCE_ROOT; };
 		A8E0642364EEAD9F56696EA1 /* juce_audio_processors */ /* juce_audio_processors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_processors; path = "~/JUCE/modules/juce_audio_processors"; sourceTree = "<absolute>"; };
 		A95180CDE5F9ADA55929CB73 /* WaveformDisplayComponent.cpp */ /* WaveformDisplayComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = WaveformDisplayComponent.cpp; path = ../../src/ui/WaveformDisplayComponent.cpp; sourceTree = SOURCE_ROOT; };
+		AAF9687197199473ABDE29CB /* Logo.png */ /* Logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Logo.png; path = "../../src/third_party/melatonin_inspector-main/Assets/Logo.png"; sourceTree = SOURCE_ROOT; };
+		AC65AC8AE7718B87019F030D /* BinaryData12.cpp */ /* BinaryData12.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData12.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData12.cpp"; sourceTree = SOURCE_ROOT; };
+		AE71D195C82D65F54B3FA893 /* BinaryData10.cpp */ /* BinaryData10.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData10.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData10.cpp"; sourceTree = SOURCE_ROOT; };
+		AE87EBE502CF81FE1A5611B8 /* speedometer-off.png */ /* speedometer-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "speedometer-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/speedometer-off.png"; sourceTree = SOURCE_ROOT; };
+		B06C51C0D635400255047F52 /* tab-on.png */ /* tab-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "tab-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/tab-on.png"; sourceTree = SOURCE_ROOT; };
+		B07386200DFD4E1589614F17 /* timing-off.png */ /* timing-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "timing-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/timing-off.png"; sourceTree = SOURCE_ROOT; };
+		B0AE7C14E6CB0AC4E8AB9B9C /* BinaryData2.cpp */ /* BinaryData2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData2.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData2.cpp"; sourceTree = SOURCE_ROOT; };
+		B388D28D71A4D7B88A4CD1B0 /* BinaryData4.cpp */ /* BinaryData4.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData4.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData4.cpp"; sourceTree = SOURCE_ROOT; };
 		B3D4FDDB1970BB698BFF8DF5 /* JucePluginDefines.h */ /* JucePluginDefines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = JucePluginDefines.h; path = ../../JuceLibraryCode/JucePluginDefines.h; sourceTree = SOURCE_ROOT; };
 		B428F6C865F7FC5C1E6A5AB4 /* BandPassFilter.h */ /* BandPassFilter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = BandPassFilter.h; path = ../../src/dsp/BandPassFilter.h; sourceTree = SOURCE_ROOT; };
 		B45E06DAFA10FD0551116273 /* json.hpp */ /* json.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = json.hpp; path = ../../src/third_party/nlohmann/json.hpp; sourceTree = SOURCE_ROOT; };
@@ -204,14 +296,21 @@
 		BBBCE347E15E43D9A94DDAFA /* juce_gui_extra */ /* juce_gui_extra */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_extra; path = "~/JUCE/modules/juce_gui_extra"; sourceTree = "<absolute>"; };
 		BDA74650BA4153030F69DA10 /* juce_audio_plugin_client */ /* juce_audio_plugin_client */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_plugin_client; path = "~/JUCE/modules/juce_audio_plugin_client"; sourceTree = "<absolute>"; };
 		BE28D679782B8C6EEA5898C4 /* juce_opengl */ /* juce_opengl */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_opengl; path = "~/JUCE/modules/juce_opengl"; sourceTree = "<absolute>"; };
+		BE539E940D93FF90AC7CD606 /* enabled-on.png */ /* enabled-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "enabled-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/enabled-on.png"; sourceTree = SOURCE_ROOT; };
 		C0C65A1C00C706772C009F63 /* WebKit.framework */ /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		C1A3D9BA71E5E78738398DFD /* AudioToolbox.framework */ /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		C4836CBB2844B98D9D5A13D1 /* move-off.png */ /* move-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "move-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/move-off.png"; sourceTree = SOURCE_ROOT; };
+		C53CDE4A8B3F4A28805230DD /* BinaryData9.cpp */ /* BinaryData9.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData9.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData9.cpp"; sourceTree = SOURCE_ROOT; };
+		C6A7F87B1B3310A7F998FDB1 /* expand-off.png */ /* expand-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "expand-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/expand-off.png"; sourceTree = SOURCE_ROOT; };
+		C7212B5E6E7235A3476E03EA /* BinaryData3.cpp */ /* BinaryData3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData3.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData3.cpp"; sourceTree = SOURCE_ROOT; };
 		C778215BD75D53EDBB308E8C /* OpenGL.framework */ /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		C8821A51745291DECCB43CC6 /* speedometer-on.png */ /* speedometer-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "speedometer-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/speedometer-on.png"; sourceTree = SOURCE_ROOT; };
 		CA0C2BDDBC1D516EA2CF7AF3 /* WaveShaper.cpp */ /* WaveShaper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = WaveShaper.cpp; path = ../../src/dsp/WaveShaper.cpp; sourceTree = SOURCE_ROOT; };
 		CA1781BEEE6B2ED384E74BE3 /* main.cpp */ /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../tests/main.cpp; sourceTree = SOURCE_ROOT; };
 		CAF2FC673C2DA9DA2B791214 /* include_juce_audio_plugin_client_ARA.cpp */ /* include_juce_audio_plugin_client_ARA.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_audio_plugin_client_ARA.cpp; path = ../../JuceLibraryCode/include_juce_audio_plugin_client_ARA.cpp; sourceTree = SOURCE_ROOT; };
 		CB48306678DAABEEFC31FB77 /* include_juce_graphics.mm */ /* include_juce_graphics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_graphics.mm; path = ../../JuceLibraryCode/include_juce_graphics.mm; sourceTree = SOURCE_ROOT; };
 		CC16047CED75FF223ACA81A8 /* PluginLookAndFeel.h */ /* PluginLookAndFeel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PluginLookAndFeel.h; path = ../../src/ui/PluginLookAndFeel.h; sourceTree = SOURCE_ROOT; };
+		CEF81825784ABEA472EACA21 /* misc.h */ /* misc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = misc.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/misc.h"; sourceTree = SOURCE_ROOT; };
 		CF7CC571B9B7098432D0DE9D /* Localiser.h */ /* Localiser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Localiser.h; path = ../../src/utils/Localiser.h; sourceTree = SOURCE_ROOT; };
 		D1B24F829173D94BB4280068 /* innerknob.png */ /* innerknob.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = innerknob.png; path = ../../resources/img/innerknob.png; sourceTree = SOURCE_ROOT; };
 		D1C068B6FC50E4F7E970BC34 /* BinaryData.cpp */ /* BinaryData.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData.cpp; path = ../../JuceLibraryCode/BinaryData.cpp; sourceTree = SOURCE_ROOT; };
@@ -221,8 +320,11 @@
 		D38562A393B573B66703F21C /* Log.h */ /* Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Log.h; path = ../../src/utils/Log.h; sourceTree = SOURCE_ROOT; };
 		D59E193A70CFF83261E9B602 /* LowPassFilter.h */ /* LowPassFilter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LowPassFilter.h; path = ../../src/dsp/LowPassFilter.h; sourceTree = SOURCE_ROOT; };
 		D5D8B6AE8842125194867EB2 /* juce_gui_basics */ /* juce_gui_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_basics; path = "~/JUCE/modules/juce_gui_basics"; sourceTree = "<absolute>"; };
+		D732683E1DFE3511115369E1 /* color_picker.h */ /* color_picker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = color_picker.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/color_picker.h"; sourceTree = SOURCE_ROOT; };
 		D7C50550D90B36A356C60C24 /* LookupTables.h */ /* LookupTables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LookupTables.h; path = ../../src/dsp/LookupTables.h; sourceTree = SOURCE_ROOT; };
+		D7DC34C81ABA96BBED3781F4 /* melatonin_inspector.h */ /* melatonin_inspector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = melatonin_inspector.h; path = "../../src/third_party/melatonin_inspector-main/melatonin_inspector.h"; sourceTree = SOURCE_ROOT; };
 		D7F9209655CD40D72A2B9D52 /* MetalKit.framework */ /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		DA8482F60DC017820D504E56 /* dogfood-on.png */ /* dogfood-on.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "dogfood-on.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/dogfood-on.png"; sourceTree = SOURCE_ROOT; };
 		DBCACB0FD0DBE1562C09F383 /* ParameterComponent.cpp */ /* ParameterComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ParameterComponent.cpp; path = ../../src/ui/custom/ParameterComponent.cpp; sourceTree = SOURCE_ROOT; };
 		DCF1D06671D27FEAFC6E9A56 /* InlineAutocompleteEditor.cpp */ /* InlineAutocompleteEditor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = InlineAutocompleteEditor.cpp; path = ../../src/ui/InlineAutocompleteEditor.cpp; sourceTree = SOURCE_ROOT; };
 		DD1AB0933083D88E561AF730 /* ParameterComponent.h */ /* ParameterComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ParameterComponent.h; path = ../../src/ui/custom/ParameterComponent.h; sourceTree = SOURCE_ROOT; };
@@ -231,17 +333,28 @@
 		E84EF5CC7E827CD7A4FBBE0C /* juce_audio_devices */ /* juce_audio_devices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_devices; path = "~/JUCE/modules/juce_audio_devices"; sourceTree = "<absolute>"; };
 		EA2070EE99D24F8BFAF95257 /* README.md */ /* README.md */ = {isa = PBXFileReference; lastKnownFileType = file.md; name = README.md; path = ../../README.md; sourceTree = SOURCE_ROOT; };
 		EA7E153D5F60EBD7D5D1F8B7 /* VST3 Manifest Helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = juce_vst3_helper; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA87083A75D9D72E13CA9A36 /* component_helpers.h */ /* component_helpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = component_helpers.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/component_helpers.h"; sourceTree = SOURCE_ROOT; };
 		EAF5263BEE027D4CDEF271C0 /* include_juce_audio_processors.mm */ /* include_juce_audio_processors.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_processors.mm; path = ../../JuceLibraryCode/include_juce_audio_processors.mm; sourceTree = SOURCE_ROOT; };
+		EB9B6CF23B26E3EA8253D573 /* inspector_settings.h */ /* inspector_settings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = inspector_settings.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/helpers/inspector_settings.h"; sourceTree = SOURCE_ROOT; };
 		EE3E230D4F5DB8F5C7B1CFC4 /* JuceHeader.h */ /* JuceHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = JuceHeader.h; path = ../../JuceLibraryCode/JuceHeader.h; sourceTree = SOURCE_ROOT; };
+		EEEBFB0EC8CFF99E304FFBBE /* Eyedropper-off.png */ /* Eyedropper-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Eyedropper-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/Eyedropper-off.png"; sourceTree = SOURCE_ROOT; };
 		F06E580D8B7BF60868073EF4 /* include_juce_audio_processors_ara.cpp */ /* include_juce_audio_processors_ara.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_audio_processors_ara.cpp; path = ../../JuceLibraryCode/include_juce_audio_processors_ara.cpp; sourceTree = SOURCE_ROOT; };
+		F0EF3966D59011F1265D19FF /* unique_ptr_enabled.cpp */ /* unique_ptr_enabled.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = unique_ptr_enabled.cpp; path = "../../src/third_party/melatonin_inspector-main/tests/unique_ptr_enabled.cpp"; sourceTree = SOURCE_ROOT; };
+		F145BEBE5BDAC75C3B977ADE /* BinaryData18.cpp */ /* BinaryData18.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData18.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData18.cpp"; sourceTree = SOURCE_ROOT; };
+		F28E842A16375EF097984CFC /* component_tree_view_item.h */ /* component_tree_view_item.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = component_tree_view_item.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/component_tree_view_item.h"; sourceTree = SOURCE_ROOT; };
 		F373733D02CF3E837D3FF9EB /* juce_audio_basics */ /* juce_audio_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_basics; path = "~/JUCE/modules/juce_audio_basics"; sourceTree = "<absolute>"; };
 		F37F4BE01EE93B63A31E6C3D /* InlineAutocompleteEditor.h */ /* InlineAutocompleteEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = InlineAutocompleteEditor.h; path = ../../src/ui/InlineAutocompleteEditor.h; sourceTree = SOURCE_ROOT; };
 		F438AA916CD5D4EC5186E102 /* en.txt */ /* en.txt */ = {isa = PBXFileReference; lastKnownFileType = text.txt; name = en.txt; path = ../../resources/locale/en.txt; sourceTree = SOURCE_ROOT; };
+		F5BD1D770A9D2E5E6CDD9042 /* fps_meter.h */ /* fps_meter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = fps_meter.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/fps_meter.h"; sourceTree = SOURCE_ROOT; };
+		F71434AE14B64B1919EE9004 /* tree_component.h */ /* tree_component.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = tree_component.h; path = "../../src/third_party/melatonin_inspector-main/melatonin/components/tree_component.h"; sourceTree = SOURCE_ROOT; };
 		F79B321DEF32D05DEEB612CB /* juce_dsp */ /* juce_dsp */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_dsp; path = "~/JUCE/modules/juce_dsp"; sourceTree = "<absolute>"; };
 		F7AE1968C5D577E5C3E1C432 /* include_juce_graphics_Harfbuzz.cpp */ /* include_juce_graphics_Harfbuzz.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = include_juce_graphics_Harfbuzz.cpp; path = ../../JuceLibraryCode/include_juce_graphics_Harfbuzz.cpp; sourceTree = SOURCE_ROOT; };
 		F8E0753859A0514846E6F2E4 /* FormulaWaveComponent.cpp */ /* FormulaWaveComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FormulaWaveComponent.cpp; path = ../../src/ui/FormulaWaveComponent.cpp; sourceTree = SOURCE_ROOT; };
+		FA48E165E3B316C8CF61CA35 /* BinaryData19.cpp */ /* BinaryData19.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BinaryData19.cpp; path = "../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData19.cpp"; sourceTree = SOURCE_ROOT; };
 		FC88064FBC2E0C3B556CDA65 /* juce_audio_formats */ /* juce_audio_formats */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_formats; path = "~/JUCE/modules/juce_audio_formats"; sourceTree = "<absolute>"; };
+		FE29A7C8FF73C1C12EB6AEF4 /* lock-off.png */ /* lock-off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "lock-off.png"; path = "../../src/third_party/melatonin_inspector-main/Assets/lock-off.png"; sourceTree = SOURCE_ROOT; };
 		FE43FC826AECB8C94ADA09C5 /* knob lights.png */ /* knob lights.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "knob lights.png"; path = "../../resources/img/knob lights.png"; sourceTree = SOURCE_ROOT; };
+		FFBD51EBFB17B4DE347082FD /* LICENSE */ /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = file; name = LICENSE; path = "../../src/third_party/melatonin_inspector-main/LICENSE"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -317,7 +430,8 @@
 		0B903BB5E7AFBDA33FF119ED /* third_party */ = {
 			isa = PBXGroup;
 			children = (
-				8C20B1FD675BBCFF72C87804,
+				8F3187093F19981B6CA3D429,
+				D8D641A82591877756B41C16,
 			);
 			name = third_party;
 			sourceTree = "<group>";
@@ -361,6 +475,37 @@
 			name = "JUCE Modules";
 			sourceTree = "<group>";
 		};
+		2CA3FEA1A380363DB7BE2515 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				8E1DB6886873D887934CCE47,
+				15647CC921D872D7A339B6AD,
+				DA8482F60DC017820D504E56,
+				8BCAC3CBB070AEACDE285D4C,
+				BE539E940D93FF90AC7CD606,
+				C6A7F87B1B3310A7F998FDB1,
+				0E6E321210B299EFF50095F8,
+				EEEBFB0EC8CFF99E304FFBBE,
+				573A94D9ACA724D02DB0CBE9,
+				FE29A7C8FF73C1C12EB6AEF4,
+				83E7755615768F419DDD847B,
+				AAF9687197199473ABDE29CB,
+				C4836CBB2844B98D9D5A13D1,
+				4DE281747E61EAB9247C5924,
+				17BECAB256B093266C26908E,
+				765586515E63FE66DF25B423,
+				AE87EBE502CF81FE1A5611B8,
+				C8821A51745291DECCB43CC6,
+				5B32D1149D14D21896F568F0,
+				B06C51C0D635400255047F52,
+				B07386200DFD4E1589614F17,
+				8C28D3F73BCB6CD11BF1CB4C,
+				4108F2C4DFE214B3157C5888,
+				0A7B0CA343C9575982F3CE36,
+			);
+			name = Assets;
+			sourceTree = "<group>";
+		};
 		2DEBF60816D4A2846FBA08CA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -370,6 +515,37 @@
 				65B6C0B4165CC211D85B4764,
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		2E88D403691F60A9BF38D7E5 /* LatestCompiledAssets */ = {
+			isa = PBXGroup;
+			children = (
+				1ADD6A6DE7C08CFF16C5BA45,
+				B0AE7C14E6CB0AC4E8AB9B9C,
+				C7212B5E6E7235A3476E03EA,
+				B388D28D71A4D7B88A4CD1B0,
+				95E7CB9D7F7C6EBB50244C84,
+				196B1D0E379EEAE879E9CD4D,
+				9AC2E3AF2F301A3ED26E7C65,
+				98048F0C714C40117973BDD4,
+				C53CDE4A8B3F4A28805230DD,
+				AE71D195C82D65F54B3FA893,
+				39EC4F897EA2A77A953F0D9C,
+				AC65AC8AE7718B87019F030D,
+				11AD66339067862B8F03B1C6,
+				A75BF13A770C5430C0B319B8,
+				1994FBAF3037183C243BE7FB,
+				89183A8EE9937E5895809FC8,
+				2970B325594DA4B86EA7AC88,
+				F145BEBE5BDAC75C3B977ADE,
+				FA48E165E3B316C8CF61CA35,
+				0AA4B252EF19A1A969B622B9,
+				103BD88A69D64EC823431C88,
+				94E9A00CB0457554B4E323AC,
+				13A4FA43D7A29D096B5A6F6E,
+				3A73873B7AAB968F4EFE32EF,
+			);
+			name = LatestCompiledAssets;
 			sourceTree = "<group>";
 		};
 		33ECC2EBCE301BAD3CDC4124 /* scripts */ = {
@@ -389,6 +565,18 @@
 				EA7E153D5F60EBD7D5D1F8B7,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		54E45A186275AA3CE50B4491 /* melatonin */ = {
+			isa = PBXGroup;
+			children = (
+				6AC9BC39E6A0605AD131734B,
+				70E47AD3DEE1CF2A76EA26E4,
+				37E6DEAA9135425322DB2354,
+				5B4B12379B0EE5EB64CBB0BA,
+				557C8680532233BFB014FED3,
+			);
+			name = melatonin;
 			sourceTree = "<group>";
 		};
 		56357B3BA7D899E49C01419F /* utils */ = {
@@ -440,6 +628,40 @@
 				56357B3BA7D899E49C01419F,
 			);
 			name = src;
+			sourceTree = "<group>";
+		};
+		6AC9BC39E6A0605AD131734B /* components */ = {
+			isa = PBXGroup;
+			children = (
+				4DC0F50E416BBE07C103A8E9,
+				5D4E9F5C492C2BB7122883BF,
+				7081BFCB384DB8ECC0A80BB9,
+				D732683E1DFE3511115369E1,
+				56AAB8DFC770EE436754D26D,
+				F28E842A16375EF097984CFC,
+				F5BD1D770A9D2E5E6CDD9042,
+				094DC95FB7526CD24DFCED0C,
+				3911FF86E7A3646371CBAF15,
+				3B6AC546D43EE2E70A809F3F,
+				88101CE861582599A328C7FC,
+				F71434AE14B64B1919EE9004,
+				4813EEE311261E50F75A829C,
+			);
+			name = components;
+			sourceTree = "<group>";
+		};
+		70E47AD3DEE1CF2A76EA26E4 /* helpers */ = {
+			isa = PBXGroup;
+			children = (
+				9FB34006C5E7E441C7166203,
+				A2471053E17C326DB11DDF05,
+				EA87083A75D9D72E13CA9A36,
+				EB9B6CF23B26E3EA8253D573,
+				CEF81825784ABEA472EACA21,
+				3E5AE9963959FE12B7264146,
+				8CE66E0DDB1B86C9B3DC120E,
+			);
+			name = helpers;
 			sourceTree = "<group>";
 		};
 		73D2F3800230B34CEAAC8670 /* JUCE Library Code */ = {
@@ -500,12 +722,22 @@
 			name = custom;
 			sourceTree = "<group>";
 		};
-		8C20B1FD675BBCFF72C87804 /* nlohmann */ = {
+		8F3187093F19981B6CA3D429 /* melatonin_inspector-main */ = {
 			isa = PBXGroup;
 			children = (
-				B45E06DAFA10FD0551116273,
+				2CA3FEA1A380363DB7BE2515,
+				2E88D403691F60A9BF38D7E5,
+				54E45A186275AA3CE50B4491,
+				EB697372337F27177C8C0147,
+				9D84263A2578FB832BDBD1A2,
+				356855DFA3386BF6584F36E5,
+				FFBD51EBFB17B4DE347082FD,
+				922C4F1BD9190CE50CE67F4B,
+				D7DC34C81ABA96BBED3781F4,
+				6F5864208E10DDC48A7E6796,
+				52226084DD8B28D0F1F6E20D,
 			);
-			name = nlohmann;
+			name = "melatonin_inspector-main";
 			sourceTree = "<group>";
 		};
 		BB7FBC047C6F67E13E9E5B1D /* NeuroCore */ = {
@@ -608,10 +840,31 @@
 				675A49D1E45D07B1A19685D2,
 				18FA1309F8A9A71FBFE7A000,
 				CC16047CED75FF223ACA81A8,
+				21DEC45BACECA3C26369EE4F,
+				645EB100853A5035E14F2046,
 				A95180CDE5F9ADA55929CB73,
 				19C528B447E652DC64D6E707,
 			);
 			name = ui;
+			sourceTree = "<group>";
+		};
+		D8D641A82591877756B41C16 /* nlohmann */ = {
+			isa = PBXGroup;
+			children = (
+				B45E06DAFA10FD0551116273,
+			);
+			name = nlohmann;
+			sourceTree = "<group>";
+		};
+		EB697372337F27177C8C0147 /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				5427DB623F17637A2D829565,
+				6DE80E9EC7FD7678C916F2EC,
+				92A42F8A47DBE22AACC887A6,
+				F0EF3966D59011F1265D19FF,
+			);
+			name = tests;
 			sourceTree = "<group>";
 		};
 		F0662D2E98A16E26BC988492 /* locale */ = {
@@ -907,12 +1160,41 @@
 				2A725E57468C58B1493DBF7E,
 				06BB5038583A2459106C9C13,
 				FAA97308C01163B7FAFC0292,
+				FEE95464B6F359E1BE197C4D,
+				1A772EDEE092ADC1E642D376,
+				6330FDC34FF1030B0BA381F5,
+				056390AE206246180DDD0A27,
+				BCEA7C7F8A8A74A82F4E8730,
+				517F0B1C462EE8381877206B,
+				7E67F87317242D50B32FE60A,
+				2FC33A7C89028E482BFCBDDC,
+				6AB234EC1D46BDC4E758BC32,
+				0E65D4E1A5AA71CDC56A87B4,
+				967AD71AA07DA982BD96302B,
+				41228C0B149FA751421E2E6C,
+				C97F08070639925678A18F31,
+				CBD245611CAE2D42F210EFE7,
+				4B8FF305B09CBA77B206B2B5,
+				F03B298FC4A845B210CEC70C,
+				2FDB4CCA5A6E468382421B5E,
+				B5DC833922EF796B769581B2,
+				612492B75439DFAD01C3BCFE,
+				9BC1FD49752DB97A1039F0B0,
+				F09B40E2323B9F7EF94A448A,
+				ADC2C25A35112131A120E29F,
+				377B0CF521FF89F7E289471A,
+				5ED09802A4730B94CB43D879,
+				1480A31A900621147E6385E6,
+				C74A899A1578727005E3B682,
+				6072969163FF0326EC8746C8,
+				D86AFA49C79B0610B02D9351,
 				E53D0A8B19C3E674BFF7ED50,
 				AD46FAE2535F81CE8807142A,
 				C625D6F68B05E8FD8D9A8626,
 				9F9C87206316CFDFE485CA62,
 				A75AB4922E95BBAB079C7918,
 				B75E9874F67DD28C3FC054E6,
+				8E76AADD06BB33B3FBB327B8,
 				A64F2800733159DA791A600C,
 				FE52853CBDBFEB6913E849F4,
 				4278156896383A600FA55B0D,

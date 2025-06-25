@@ -3,7 +3,7 @@
 <JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" jucerFormatVersion="1"
               version="0.0.1" companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
               companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
-              pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginVST3Category="Distortion"
+              pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginVST3Category="Fx"
               cppLanguageStandard="20" pluginChannelConfigs="{2,2}">
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
@@ -28,103 +28,241 @@
     </GROUP>
     <GROUP id="{AA596A90-F5B9-4CE4-5CD6-B39E656A7126}" name="src">
       <GROUP id="{C588D082-C650-9100-D715-0B4DBFBEBC1A}" name="core">
-        <FILE id="KrxxSi" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
-        <FILE id="aEziTO" name="EffectParameters.h" compile="0" resource="0"
+        <FILE id="Ysrfbc" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
+        <FILE id="rEeYM9" name="EffectParameters.h" compile="0" resource="0"
               file="src/core/EffectParameters.h"/>
-        <FILE id="Ur7uKV" name="PluginProcessor.cpp" compile="1" resource="0"
+        <FILE id="HACXVL" name="PluginProcessor.cpp" compile="1" resource="0"
               file="src/core/PluginProcessor.cpp"/>
-        <FILE id="isxIha" name="PluginProcessor.h" compile="0" resource="0"
+        <FILE id="CAOwAn" name="PluginProcessor.h" compile="0" resource="0"
               file="src/core/PluginProcessor.h"/>
       </GROUP>
       <GROUP id="{97121B39-FA27-EBEA-A5CE-9AD7CE852A65}" name="dsl">
-        <FILE id="HbNT4i" name="DSLParser.cpp" compile="1" resource="0" file="src/dsl/DSLParser.cpp"/>
-        <FILE id="o87fHM" name="DSLParser.h" compile="0" resource="0" file="src/dsl/DSLParser.h"/>
-        <FILE id="hdsD49" name="SignalChain.cpp" compile="1" resource="0" file="src/dsl/SignalChain.cpp"/>
-        <FILE id="EDJvkq" name="SignalChain.h" compile="0" resource="0" file="src/dsl/SignalChain.h"/>
+        <FILE id="GKXUgT" name="DSLParser.cpp" compile="1" resource="0" file="src/dsl/DSLParser.cpp"/>
+        <FILE id="wGp9rU" name="DSLParser.h" compile="0" resource="0" file="src/dsl/DSLParser.h"/>
+        <FILE id="YDCAe1" name="SignalChain.cpp" compile="1" resource="0" file="src/dsl/SignalChain.cpp"/>
+        <FILE id="qW7F3o" name="SignalChain.h" compile="0" resource="0" file="src/dsl/SignalChain.h"/>
       </GROUP>
       <GROUP id="{29AEAA9D-9768-2ED5-FEA7-248047CDC0E0}" name="dsp">
-        <FILE id="wzuxzw" name="AdvancedOscillatorWrapper.cpp" compile="1"
+        <FILE id="yIBnlu" name="AdvancedOscillatorWrapper.cpp" compile="1"
               resource="0" file="src/dsp/AdvancedOscillatorWrapper.cpp"/>
-        <FILE id="CGX8SE" name="AdvancedOscillatorWrapper.h" compile="0" resource="0"
+        <FILE id="oxofJL" name="AdvancedOscillatorWrapper.h" compile="0" resource="0"
               file="src/dsp/AdvancedOscillatorWrapper.h"/>
-        <FILE id="NzquMp" name="BandPassFilter.cpp" compile="1" resource="0"
+        <FILE id="xVHMDQ" name="BandPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/BandPassFilter.cpp"/>
-        <FILE id="Q0hyeZ" name="BandPassFilter.h" compile="0" resource="0"
+        <FILE id="VXjEA3" name="BandPassFilter.h" compile="0" resource="0"
               file="src/dsp/BandPassFilter.h"/>
-        <FILE id="ehRxB3" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
-        <FILE id="YJbyse" name="HighPassFilter.cpp" compile="1" resource="0"
+        <FILE id="K1Slya" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
+        <FILE id="q3J6Fb" name="HighPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/HighPassFilter.cpp"/>
-        <FILE id="W8w7rg" name="HighPassFilter.h" compile="0" resource="0"
+        <FILE id="waiy11" name="HighPassFilter.h" compile="0" resource="0"
               file="src/dsp/HighPassFilter.h"/>
-        <FILE id="lOlzJY" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
-        <FILE id="XPkPbz" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
-        <FILE id="sdlnwB" name="InputRouter.cpp" compile="1" resource="0" file="src/dsp/InputRouter.cpp"/>
-        <FILE id="spH7CO" name="InputRouter.h" compile="0" resource="0" file="src/dsp/InputRouter.h"/>
-        <FILE id="gWKwll" name="LookupTables.cpp" compile="1" resource="0"
+        <FILE id="j3CRve" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
+        <FILE id="fKsHzL" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
+        <FILE id="omrlCS" name="InputRouter.cpp" compile="1" resource="0" file="src/dsp/InputRouter.cpp"/>
+        <FILE id="GCZMP1" name="InputRouter.h" compile="0" resource="0" file="src/dsp/InputRouter.h"/>
+        <FILE id="efzfCO" name="LookupTables.cpp" compile="1" resource="0"
               file="src/dsp/LookupTables.cpp"/>
-        <FILE id="Bhs7VR" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
-        <FILE id="NKRklK" name="LowPassFilter.cpp" compile="1" resource="0"
+        <FILE id="RCMo72" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
+        <FILE id="BUrrYP" name="LowPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/LowPassFilter.cpp"/>
-        <FILE id="sjSi44" name="LowPassFilter.h" compile="0" resource="0" file="src/dsp/LowPassFilter.h"/>
-        <FILE id="k0nGzs" name="SignalPolisher.cpp" compile="1" resource="0"
+        <FILE id="TFOk9C" name="LowPassFilter.h" compile="0" resource="0" file="src/dsp/LowPassFilter.h"/>
+        <FILE id="kUFGCc" name="SignalPolisher.cpp" compile="1" resource="0"
               file="src/dsp/SignalPolisher.cpp"/>
-        <FILE id="rGwBgY" name="SignalPolisher.h" compile="0" resource="0"
+        <FILE id="d2AaK8" name="SignalPolisher.h" compile="0" resource="0"
               file="src/dsp/SignalPolisher.h"/>
-        <FILE id="uasHbT" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
-        <FILE id="NRY0i4" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
+        <FILE id="csOIlK" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
+        <FILE id="bRioLn" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
       </GROUP>
       <GROUP id="{25747840-CB9B-A25C-2A1C-8B87ACE70BE7}" name="third_party">
-        <GROUP id="{0E0127D2-F6A1-3A97-A51A-FA102A000A95}" name="nlohmann">
-          <FILE id="sncsCM" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
+        <GROUP id="{DCAB2B66-DC7C-46B0-CECA-C8010C70B654}" name="melatonin_inspector-main">
+          <GROUP id="{8E69F9B4-7EB9-755B-8D7F-1FFD28539BDE}" name="Assets">
+            <FILE id="YhnHfv" name="Clear.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/Clear.png"/>
+            <FILE id="ZELA2w" name="dogfood-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/dogfood-off.png"/>
+            <FILE id="mxePB9" name="dogfood-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/dogfood-on.png"/>
+            <FILE id="pSU8Np" name="enabled-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/enabled-off.png"/>
+            <FILE id="rDXqRI" name="enabled-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/enabled-on.png"/>
+            <FILE id="tv4ao1" name="expand-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/expand-off.png"/>
+            <FILE id="EGzudI" name="expand-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/expand-on.png"/>
+            <FILE id="cdOYpD" name="Eyedropper-off.png" compile="0" resource="1"
+                  file="src/third_party/melatonin_inspector-main/Assets/Eyedropper-off.png"/>
+            <FILE id="EZKCvC" name="Eyedropper-on.png" compile="0" resource="1"
+                  file="src/third_party/melatonin_inspector-main/Assets/Eyedropper-on.png"/>
+            <FILE id="rhEHpU" name="lock-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/lock-off.png"/>
+            <FILE id="kjFR54" name="lock-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/lock-on.png"/>
+            <FILE id="i8etPk" name="Logo.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/Logo.png"/>
+            <FILE id="uk4Zqd" name="move-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/move-off.png"/>
+            <FILE id="ze0WEQ" name="move-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/move-on.png"/>
+            <FILE id="opSW76" name="previous.svg" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/previous.svg"/>
+            <FILE id="c5X8nD" name="Search.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/Search.png"/>
+            <FILE id="zOxMOE" name="speedometer-off.png" compile="0" resource="1"
+                  file="src/third_party/melatonin_inspector-main/Assets/speedometer-off.png"/>
+            <FILE id="ncYwrU" name="speedometer-on.png" compile="0" resource="1"
+                  file="src/third_party/melatonin_inspector-main/Assets/speedometer-on.png"/>
+            <FILE id="vEF3rR" name="tab-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/tab-off.png"/>
+            <FILE id="Rq7IKU" name="tab-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/tab-on.png"/>
+            <FILE id="LtrHBK" name="timing-off.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/timing-off.png"/>
+            <FILE id="fA5Nx5" name="timing-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/timing-on.png"/>
+            <FILE id="oA3MXz" name="undo-on.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/undo-on.png"/>
+            <FILE id="IPV8c6" name="undo.png" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/Assets/undo.png"/>
+          </GROUP>
+          <GROUP id="{8CC3B2E8-8D64-2F2D-0EAE-93F929D05935}" name="LatestCompiledAssets">
+            <FILE id="ISPI4L" name="BinaryData1.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData1.cpp"/>
+            <FILE id="qRVWpH" name="BinaryData2.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData2.cpp"/>
+            <FILE id="uEcHi2" name="BinaryData3.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData3.cpp"/>
+            <FILE id="Su4pvL" name="BinaryData4.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData4.cpp"/>
+            <FILE id="GcQT10" name="BinaryData5.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData5.cpp"/>
+            <FILE id="xuVKrT" name="BinaryData6.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData6.cpp"/>
+            <FILE id="pMWRsc" name="BinaryData7.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData7.cpp"/>
+            <FILE id="jLcAiY" name="BinaryData8.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData8.cpp"/>
+            <FILE id="qDzOov" name="BinaryData9.cpp" compile="1" resource="0" file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData9.cpp"/>
+            <FILE id="mD2s0p" name="BinaryData10.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData10.cpp"/>
+            <FILE id="TL2ixO" name="BinaryData11.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData11.cpp"/>
+            <FILE id="oeUAY3" name="BinaryData12.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData12.cpp"/>
+            <FILE id="rrViXz" name="BinaryData13.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData13.cpp"/>
+            <FILE id="T5TJ7B" name="BinaryData14.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData14.cpp"/>
+            <FILE id="pCj7jK" name="BinaryData15.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData15.cpp"/>
+            <FILE id="IW1wsg" name="BinaryData16.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData16.cpp"/>
+            <FILE id="g7CjRe" name="BinaryData17.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData17.cpp"/>
+            <FILE id="f93aQa" name="BinaryData18.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData18.cpp"/>
+            <FILE id="Kc0cgI" name="BinaryData19.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData19.cpp"/>
+            <FILE id="C5Vcxh" name="BinaryData20.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData20.cpp"/>
+            <FILE id="XEZXGQ" name="BinaryData21.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData21.cpp"/>
+            <FILE id="JcMD86" name="BinaryData22.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData22.cpp"/>
+            <FILE id="XBfgDE" name="BinaryData23.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData23.cpp"/>
+            <FILE id="J0Bh4C" name="InspectorBinaryData.h" compile="0" resource="0"
+                  file="src/third_party/melatonin_inspector-main/LatestCompiledAssets/InspectorBinaryData.h"/>
+          </GROUP>
+          <GROUP id="{5554D50D-C294-E299-5CB8-3E5F31523D7F}" name="melatonin">
+            <GROUP id="{7DA9B3D3-28EB-A7A8-78EC-74A00FB9A84C}" name="components">
+              <FILE id="Vzs0J4" name="accesibility.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/accesibility.h"/>
+              <FILE id="xRtuVs" name="box_model.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/box_model.h"/>
+              <FILE id="Lx7Azu" name="collapsable_panel.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/collapsable_panel.h"/>
+              <FILE id="gYVL3U" name="color_picker.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/color_picker.h"/>
+              <FILE id="kWPojc" name="colour_property_component.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/colour_property_component.h"/>
+              <FILE id="EeicmB" name="component_tree_view_item.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/component_tree_view_item.h"/>
+              <FILE id="l1JlJM" name="fps_meter.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/fps_meter.h"/>
+              <FILE id="dY8eUS" name="inspector_image_button.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/inspector_image_button.h"/>
+              <FILE id="iq04Vi" name="overlay.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/overlay.h"/>
+              <FILE id="TLic25" name="preview.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/preview.h"/>
+              <FILE id="Y74pnm" name="properties.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/components/properties.h"/>
+              <FILE id="jzOwm4" name="tree_component.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/tree_component.h"/>
+              <FILE id="pwQDrT" name="undo_manager_inspector.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/components/undo_manager_inspector.h"/>
+            </GROUP>
+            <GROUP id="{E970A634-0406-47C1-B7A1-008E7D7B82C1}" name="helpers">
+              <FILE id="HgmMuS" name="colors.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/helpers/colors.h"/>
+              <FILE id="U3nL35" name="colour_ids.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/helpers/colour_ids.h"/>
+              <FILE id="CItmUq" name="component_helpers.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/helpers/component_helpers.h"/>
+              <FILE id="Ilz5w8" name="inspector_settings.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/helpers/inspector_settings.h"/>
+              <FILE id="dXIowM" name="misc.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/helpers/misc.h"/>
+              <FILE id="S9BP6t" name="overlay_mouse_listener.h" compile="0" resource="0"
+                    file="src/third_party/melatonin_inspector-main/melatonin/helpers/overlay_mouse_listener.h"/>
+              <FILE id="jwIxhF" name="timing.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/helpers/timing.h"/>
+            </GROUP>
+            <FILE id="ohA2BV" name="component_model.h" compile="0" resource="0"
+                  file="src/third_party/melatonin_inspector-main/melatonin/component_model.h"/>
+            <FILE id="Kf0RYk" name="inspector_component.h" compile="0" resource="0"
+                  file="src/third_party/melatonin_inspector-main/melatonin/inspector_component.h"/>
+            <FILE id="AjuABP" name="lookandfeel.h" compile="0" resource="0" file="src/third_party/melatonin_inspector-main/melatonin/lookandfeel.h"/>
+          </GROUP>
+          <GROUP id="{1FF3B526-7D7A-037D-892F-1EE44CCA9352}" name="tests">
+            <FILE id="JVMuYv" name="member_disabled.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/tests/member_disabled.cpp"/>
+            <FILE id="WWlQs3" name="member_enabled.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/tests/member_enabled.cpp"/>
+            <FILE id="QDKNoB" name="unique_ptr_disabled.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/tests/unique_ptr_disabled.cpp"/>
+            <FILE id="BalhBD" name="unique_ptr_enabled.cpp" compile="1" resource="0"
+                  file="src/third_party/melatonin_inspector-main/tests/unique_ptr_enabled.cpp"/>
+          </GROUP>
+          <FILE id="Oe1wqQ" name="CMakeLists.txt" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/CMakeLists.txt"/>
+          <FILE id="PoumaG" name="copy_cmake_assets.rb" compile="0" resource="1"
+                file="src/third_party/melatonin_inspector-main/copy_cmake_assets.rb"/>
+          <FILE id="aA06st" name="LICENSE" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/LICENSE"/>
+          <FILE id="DC884d" name="melatonin_inspector.cpp" compile="1" resource="0"
+                file="src/third_party/melatonin_inspector-main/melatonin_inspector.cpp"/>
+          <FILE id="s7Deqz" name="melatonin_inspector.h" compile="0" resource="0"
+                file="src/third_party/melatonin_inspector-main/melatonin_inspector.h"/>
+          <FILE id="dm8xjy" name="README.md" compile="0" resource="1" file="src/third_party/melatonin_inspector-main/README.md"/>
+          <FILE id="jkJ8qE" name="update_juce_colours.rb" compile="0" resource="1"
+                file="src/third_party/melatonin_inspector-main/update_juce_colours.rb"/>
+        </GROUP>
+        <GROUP id="{DC77FB0A-9E4F-74A7-79ED-C9C8803678A4}" name="nlohmann">
+          <FILE id="bZWqga" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
         </GROUP>
       </GROUP>
       <GROUP id="{12DAB435-0398-C1D9-F87B-77A3F3F1CEC8}" name="ui">
         <GROUP id="{296AE9F2-B266-4ADB-2A5C-8D18E2C0F2CA}" name="custom">
-          <FILE id="TnLME3" name="ParameterComponent.cpp" compile="1" resource="0"
+          <FILE id="E1lPYf" name="ParameterComponent.cpp" compile="1" resource="0"
                 file="src/ui/custom/ParameterComponent.cpp"/>
-          <FILE id="AYjde5" name="ParameterComponent.h" compile="0" resource="0"
+          <FILE id="kGg4n0" name="ParameterComponent.h" compile="0" resource="0"
                 file="src/ui/custom/ParameterComponent.h"/>
         </GROUP>
-        <FILE id="wnHych" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
+        <FILE id="ANiGa1" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
               file="src/ui/FormulaDisplayComponent.cpp"/>
-        <FILE id="BQvikK" name="FormulaDisplayComponent.h" compile="0" resource="0"
+        <FILE id="SIt8d2" name="FormulaDisplayComponent.h" compile="0" resource="0"
               file="src/ui/FormulaDisplayComponent.h"/>
-        <FILE id="KEhzRt" name="FormulaWaveComponent.cpp" compile="1" resource="0"
+        <FILE id="MDjfLg" name="FormulaWaveComponent.cpp" compile="1" resource="0"
               file="src/ui/FormulaWaveComponent.cpp"/>
-        <FILE id="qgTvjG" name="FormulaWaveComponent.h" compile="0" resource="0"
+        <FILE id="r12kPZ" name="FormulaWaveComponent.h" compile="0" resource="0"
               file="src/ui/FormulaWaveComponent.h"/>
-        <FILE id="ovgR78" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
+        <FILE id="BNRjVw" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
               file="src/ui/InlineAutocompleteEditor.cpp"/>
-        <FILE id="K9H2rU" name="InlineAutocompleteEditor.h" compile="0" resource="0"
+        <FILE id="jrOXBo" name="InlineAutocompleteEditor.h" compile="0" resource="0"
               file="src/ui/InlineAutocompleteEditor.h"/>
-        <FILE id="QTekuw" name="LoudnessMeterComponent.cpp" compile="1" resource="0"
+        <FILE id="W23Z6p" name="LoudnessMeterComponent.cpp" compile="1" resource="0"
               file="src/ui/LoudnessMeterComponent.cpp"/>
-        <FILE id="H3aeB0" name="LoudnessMeterComponent.h" compile="0" resource="0"
+        <FILE id="ezrDqX" name="LoudnessMeterComponent.h" compile="0" resource="0"
               file="src/ui/LoudnessMeterComponent.h"/>
-        <FILE id="YYKf0x" name="PluginEditor.cpp" compile="1" resource="0"
+        <FILE id="UwXIcm" name="PluginEditor.cpp" compile="1" resource="0"
               file="src/ui/PluginEditor.cpp"/>
-        <FILE id="W7fglO" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
-        <FILE id="Sfnp6i" name="PluginLookAndFeel.h" compile="0" resource="0"
+        <FILE id="fECcE7" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
+        <FILE id="RO9ZCX" name="PluginLookAndFeel.h" compile="0" resource="0"
               file="src/ui/PluginLookAndFeel.h"/>
-        <FILE id="igPNeM" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
+        <FILE id="CXSGNx" name="PresetTableComponent.cpp" compile="1" resource="0"
+              file="src/ui/PresetTableComponent.cpp"/>
+        <FILE id="Y8ovPV" name="PresetTableComponent.h" compile="0" resource="0"
+              file="src/ui/PresetTableComponent.h"/>
+        <FILE id="dSmYMg" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
               file="src/ui/WaveformDisplayComponent.cpp"/>
-        <FILE id="nbQVgZ" name="WaveformDisplayComponent.h" compile="0" resource="0"
+        <FILE id="NGKULF" name="WaveformDisplayComponent.h" compile="0" resource="0"
               file="src/ui/WaveformDisplayComponent.h"/>
       </GROUP>
       <GROUP id="{12CF16CA-2541-D8A6-B20D-B597957767BC}" name="utils">
-        <FILE id="QrVPI2" name="ExpressionEvaluator.cpp" compile="1" resource="0"
+        <FILE id="IGLLqz" name="ExpressionEvaluator.cpp" compile="1" resource="0"
               file="src/utils/ExpressionEvaluator.cpp"/>
-        <FILE id="WwkTBU" name="ExpressionEvaluator.h" compile="0" resource="0"
+        <FILE id="M7k62C" name="ExpressionEvaluator.h" compile="0" resource="0"
               file="src/utils/ExpressionEvaluator.h"/>
-        <FILE id="QUhOGj" name="FormulaHelper.cpp" compile="1" resource="0"
+        <FILE id="NNEtbI" name="FormulaHelper.cpp" compile="1" resource="0"
               file="src/utils/FormulaHelper.cpp"/>
-        <FILE id="RsTMYP" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
-        <FILE id="hkwDrs" name="Localiser.cpp" compile="1" resource="0" file="src/utils/Localiser.cpp"/>
-        <FILE id="M1SNg0" name="Localiser.h" compile="0" resource="0" file="src/utils/Localiser.h"/>
-        <FILE id="gReVTa" name="Log.h" compile="0" resource="0" file="src/utils/Log.h"/>
-        <FILE id="BFWBX1" name="PresetManager.cpp" compile="1" resource="0"
+        <FILE id="ARbXrH" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
+        <FILE id="qhPC9R" name="Localiser.cpp" compile="1" resource="0" file="src/utils/Localiser.cpp"/>
+        <FILE id="qy1Tzl" name="Localiser.h" compile="0" resource="0" file="src/utils/Localiser.h"/>
+        <FILE id="ci4kw1" name="Log.h" compile="0" resource="0" file="src/utils/Log.h"/>
+        <FILE id="pwyyMu" name="PresetManager.cpp" compile="1" resource="0"
               file="src/utils/PresetManager.cpp"/>
-        <FILE id="WJ5yNY" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
+        <FILE id="mNzaA6" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
       </GROUP>
     </GROUP>
     <GROUP id="{1175EE83-A15E-5CE7-9102-4104F340ACE7}" name="tests">

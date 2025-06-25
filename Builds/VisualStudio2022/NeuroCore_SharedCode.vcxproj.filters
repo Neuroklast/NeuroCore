@@ -23,6 +23,27 @@
     <Filter Include="NeuroCore\src\dsp">
       <UniqueIdentifier>{B93283FB-7AF2-A799-2616-54405B0ECADA}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\Assets">
+      <UniqueIdentifier>{407EA9DF-AA8F-A0EE-D7D2-3333C3A3364E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets">
+      <UniqueIdentifier>{DFF50344-B4E6-48B5-8ECF-5065337F622F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components">
+      <UniqueIdentifier>{1858D66E-8CA6-0D5F-C786-C202376C490D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers">
+      <UniqueIdentifier>{FF18465D-355F-7501-ABC8-A2965590F4C4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\melatonin">
+      <UniqueIdentifier>{54314DF8-4424-B41F-C1EF-C0F875223D06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main\tests">
+      <UniqueIdentifier>{C6FA987D-3B4F-03ED-F583-40FCD363E811}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\third_party\melatonin_inspector-main">
+      <UniqueIdentifier>{9249BE68-B5D2-FE30-036E-2171D387AF49}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\src\third_party\nlohmann">
       <UniqueIdentifier>{E96F3D17-B487-0FD7-C7A1-399228EC3ACB}</UniqueIdentifier>
     </Filter>
@@ -841,6 +862,90 @@
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData1.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData2.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData3.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData4.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData5.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData6.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData7.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData8.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData9.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData10.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData11.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData12.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData13.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData14.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData15.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData16.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData17.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData18.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData19.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData20.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData21.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData22.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\BinaryData23.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\tests\member_disabled.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\tests\member_enabled.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\tests\unique_ptr_disabled.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\tests\unique_ptr_enabled.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\third_party\melatonin_inspector-main\melatonin_inspector.cpp">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClCompile>
@@ -857,6 +962,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp">
@@ -4122,6 +4230,81 @@
     <ClInclude Include="..\..\src\dsp\WaveShaper.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\LatestCompiledAssets\InspectorBinaryData.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\LatestCompiledAssets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\accesibility.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\box_model.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\collapsable_panel.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\color_picker.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\colour_property_component.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\component_tree_view_item.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\fps_meter.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\inspector_image_button.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\overlay.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\preview.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\properties.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\tree_component.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\components\undo_manager_inspector.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\colors.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\colour_ids.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\component_helpers.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\inspector_settings.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\misc.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\overlay_mouse_listener.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\helpers\timing.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\component_model.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\inspector_component.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin\lookandfeel.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\melatonin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\third_party\melatonin_inspector-main\melatonin_inspector.h">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp">
       <Filter>NeuroCore\src\third_party\nlohmann</Filter>
     </ClInclude>
@@ -4144,6 +4327,9 @@
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\PresetTableComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h">
@@ -8464,6 +8650,93 @@
     </None>
     <None Include="..\..\scripts\install_linux_deps.sh">
       <Filter>NeuroCore\scripts</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\Clear.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\dogfood-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\dogfood-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\enabled-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\enabled-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\expand-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\expand-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\Eyedropper-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\Eyedropper-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\lock-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\lock-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\Logo.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\move-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\move-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\previous.svg">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\Search.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\speedometer-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\speedometer-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\tab-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\tab-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\timing-off.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\timing-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\undo-on.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\Assets\undo.png">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main\Assets</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\CMakeLists.txt">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\copy_cmake_assets.rb">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\LICENSE">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\README.md">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
+    </None>
+    <None Include="..\..\src\third_party\melatonin_inspector-main\update_juce_colours.rb">
+      <Filter>NeuroCore\src\third_party\melatonin_inspector-main</Filter>
     </None>
     <None Include="..\..\tests\NeuroCore_Tests.jucer">
       <Filter>NeuroCore\tests</Filter>
