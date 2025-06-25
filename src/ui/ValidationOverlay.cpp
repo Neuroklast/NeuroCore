@@ -34,28 +34,43 @@ ValidationOverlay::~ValidationOverlay()
 
 void ValidationOverlay::startTest()
 {
-    worker = std::make_unique<std::thread>([this]() {
+    // Copy script to avoid capturing this after component destruction
+    auto scriptCopy = script;
+
+    auto safeThis = juce::Component::SafePointer<ValidationOverlay>(this);
+
+    // Start worker thread that validates the formula asynchronously
+    worker = std::make_unique<std::thread>([safeThis, scriptCopy, proc = std::ref(processor)]()
+    {
         juce::String warn;
-        bool ok = processor.testFormulaStability(script, warn,
-            [this](float p) { progress = p; });
-        juce::MessageManager::callAsync([this, ok, warn]() {
+        bool ok = proc.get().testFormulaStability(scriptCopy, warn,
+            [safeThis](float p)
+            {
+                if (safeThis)
+                    safeThis->progress = p;
+            });
+
+        juce::MessageManager::callAsync([safeThis, ok, warn]()
+        {
+            if (! safeThis)
+                return;
+
             if (ok)
             {
-                if (onResult)
-                    onResult(true);
+                if (safeThis->onResult)
+                    safeThis->onResult(true);
             }
             else
             {
-                state = ValidationOverlay::State::warning; // Assign the enum value to `state`.
-                warningString = warn;  // Assign the string to the `warning` member variable.
-                progressBar.setVisible(false);
-                okButton.setVisible(true);
-                messageLabel.setText(warn, juce::dontSendNotification);
-                grabKeyboardFocus();
-                resized();
-                repaint();
+                safeThis->state = ValidationOverlay::State::warning;
+                safeThis->warningString = warn;
+                safeThis->progressBar.setVisible(false);
+                safeThis->okButton.setVisible(true);
+                safeThis->messageLabel.setText(warn, juce::dontSendNotification);
+                safeThis->grabKeyboardFocus();
+                safeThis->resized();
+                safeThis->repaint();
             }
-
         });
     });
 }
