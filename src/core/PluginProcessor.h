@@ -153,7 +153,7 @@ private:
     std::atomic<int>              inputWritePos  { 0 };
     std::atomic<int>              outputWritePos { 0 };
     InputRouter                   inputRouter;
-    juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
+    juce::dsp::ProcessorChain<InputGain, juce::dsp::NoiseGate<float>, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
     dsl::SignalChain              oldSignalChain;
     dsl::SignalChain              previewSignalChain;
@@ -169,7 +169,8 @@ private:
     // Helper accessors for the processor chain
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
-    SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
+    juce::dsp::NoiseGate<float>& getNoiseGate() noexcept { return chain.get<1>(); }
+    SignalPolisher& getPolisher()       noexcept { return chain.get<2>(); }
 
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
