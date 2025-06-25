@@ -34,6 +34,7 @@ ValidationOverlay::~ValidationOverlay()
 
 void ValidationOverlay::startTest()
 {
+
     // Copy script to avoid capturing this after component destruction
     auto scriptCopy = script;
 
@@ -44,6 +45,7 @@ void ValidationOverlay::startTest()
     {
         juce::String warn;
         bool ok = proc.get().testFormulaStability(scriptCopy, warn,
+
             [safeThis](float p)
             {
                 if (safeThis)
@@ -52,6 +54,7 @@ void ValidationOverlay::startTest()
 
         juce::MessageManager::callAsync([safeThis, ok, warn]()
         {
+
             if (! safeThis)
                 return;
 

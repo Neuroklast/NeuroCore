@@ -100,7 +100,7 @@ Eine ausführliche Beschreibung der internen Skriptsprache befindet sich in
 
 - `stage`: mathematische Formel, Pflichtargument `y`
 - `filter`: Typ `lowpass`, `highpass` oder `bandpass`;
-`cutoff` Pflicht, `resonance` optional - `comp`: Kompressor mit `threshold`, `ratio`,
+  bei Bandpass entweder `center`/`width` oder `lowcut`/`highcut`, sonst `cutoff` Pflicht, `resonance` optional - `comp`: Kompressor mit `threshold`, `ratio`,
     optional `attack` und `release` - `env`: Envelope - Follower in den Modi `rms` oder `peak` - `osc`: LFO mit `shape`, `freq` und
                                                                                                                                  optional `depth` - `param`
     : weist den Buchstaben `a`–`d` Aliasnamen zu

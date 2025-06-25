@@ -371,8 +371,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         upBlock.copyFrom (scriptBuffer);
     }
 
+    juce::dsp::ProcessContextReplacing<float> ctxGate (upBlock);
+    chain.get<1>().process (ctxGate);
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
-    chain.get<1>().process (ctxPolish);
+    chain.get<2>().process (ctxPolish);
     juce::dsp::ProcessContextReplacing<float> ctxFilter (upBlock);
     lowpassFilter.process (ctxFilter);
 
@@ -700,6 +702,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                     currentSpec.maximumBlockSize * (juce::uint32) osFactor,
                                     currentSpec.numChannels };
     chain.prepare (osSpec);
+    chain.get<1>().setThreshold(-60.0f);
     lowpassFilter.prepare (currentSpec);
     *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
     auto scriptSamples = (int) (currentSpec.maximumBlockSize * osFactor);

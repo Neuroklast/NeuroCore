@@ -9,18 +9,20 @@
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
     <GROUP id="{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}" name="resources">
       <GROUP id="{77B36C55-0DF8-337B-1083-B2E4666F6F09}" name="img">
-        <FILE id="r637kS" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
-        <FILE id="RYsfCg" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
-        <FILE id="xbz4xY" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
-        <FILE id="Nw0rcn" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
+        <FILE id="PgogBv" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
+        <FILE id="rivHeZ" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
+        <FILE id="S2WiEU" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
+        <FILE id="kvfta6" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
       </GROUP>
       <GROUP id="{01A2F6C4-31F8-EBE4-A7EA-77F04E50F440}" name="locale">
-        <FILE id="fupLYE" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
-        <FILE id="lx836f" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
+        <FILE id="Y4Pq8H" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
+        <FILE id="siracM" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
+        <FILE id="iLC6dD" name="functions_de.txt" compile="0" resource="1"
+              file="resources/locale/functions_de.txt"/>
       </GROUP>
-      <FILE id="VFvVs8" name="optimizations.txt" compile="0" resource="1"
+      <FILE id="nScnny" name="optimizations.txt" compile="0" resource="1"
             file="resources/optimizations.txt"/>
-      <FILE id="cXDXoy" name="templates.json" compile="0" resource="1" file="resources/templates.json"/>
+      <FILE id="slD00j" name="templates.json" compile="0" resource="1" file="resources/templates.json"/>
     </GROUP>
     <GROUP id="{E0A14B83-8D9B-38D1-5F26-9EFC91CA7C75}" name="scripts">
       <FILE id="lPp3UK" name="install_linux_deps.sh" compile="0" resource="1"
