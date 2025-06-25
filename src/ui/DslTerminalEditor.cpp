@@ -5,15 +5,16 @@ DslTerminalEditor::DslTerminalEditor()
 {
     document = std::make_unique<juce::CodeDocument>();
     fallbackEditor = std::make_unique<juce::CodeEditorComponent>(*document, nullptr);
+    document->addListener(this);
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(false);
     addAndMakeVisible(*fallbackEditor);
     openGLContext.attachTo(*this);
-    startTimerHz(2); // cursor blink
 }
 
 DslTerminalEditor::~DslTerminalEditor()
 {
+    document->removeListener(this);
     openGLContext.detach();
 }
 
@@ -27,15 +28,6 @@ juce::String DslTerminalEditor::getText() const
     return document->getAllContent();
 }
 
-void DslTerminalEditor::addChangeListener(juce::ChangeListener* l)
-{
-    fallbackEditor->addChangeListener(l);
-}
-
-void DslTerminalEditor::removeChangeListener(juce::ChangeListener* l)
-{
-    fallbackEditor->removeChangeListener(l);
-}
 
 void DslTerminalEditor::undo()
 {
@@ -47,14 +39,10 @@ void DslTerminalEditor::redo()
     document->getUndoManager().redo();
 }
 
-void DslTerminalEditor::showPopupMenu()
-{
-    fallbackEditor->showPopupMenu();
-}
 
 void DslTerminalEditor::setCaretPosition(int pos)
 {
-    fallbackEditor->moveCaretToPosition(juce::CodeDocument::Position(*document, pos));
+    fallbackEditor->moveCaretTo({ *document, pos }, false);
 }
 
 void DslTerminalEditor::setReadOnly(bool shouldBeReadOnly)
@@ -96,10 +84,15 @@ void DslTerminalEditor::openGLContextClosing()
 {
 }
 
-void DslTerminalEditor::timerCallback()
+
+void DslTerminalEditor::codeDocumentTextInserted(const juce::String&, int)
 {
-    cursorVisible = ! cursorVisible;
-    fallbackEditor->setCaretVisible(cursorVisible);
+    sendChangeMessage();
+}
+
+void DslTerminalEditor::codeDocumentTextDeleted(int, int)
+{
+    sendChangeMessage();
 }
 
 bool DslTerminalEditor::useOpenGL() const noexcept

@@ -14,7 +14,8 @@
     Für Systeme ohne OpenGL wird intern ein TextEditor verwendet.
 */
 class DslTerminalEditor : public juce::Component,
-                          private juce::Timer,
+                          public juce::ChangeBroadcaster,
+                          private juce::CodeDocument::Listener,
                           private juce::OpenGLRenderer
 {
 public:
@@ -23,11 +24,8 @@ public:
 
     void setText(const juce::String& t);
     juce::String getText() const;
-    void addChangeListener(juce::ChangeListener* l);
-    void removeChangeListener(juce::ChangeListener* l);
     void undo();
     void redo();
-    void showPopupMenu();
     void setCaretPosition(int pos);
     void setReadOnly(bool shouldBeReadOnly);
     void setEditorColour(int colourID, juce::Colour colour);
@@ -35,19 +33,21 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
 
+    // CodeDocument::Listener
+    void codeDocumentTextInserted(const juce::String&, int) override;
+    void codeDocumentTextDeleted(int, int) override;
+
 private:
     // juce::OpenGLRenderer
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
 
-    void timerCallback() override;
     bool useOpenGL() const noexcept;
 
     juce::OpenGLContext openGLContext;
     std::unique_ptr<juce::CodeDocument> document;
     std::unique_ptr<juce::CodeEditorComponent> fallbackEditor;
-    bool cursorVisible { true };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DslTerminalEditor)
 };
