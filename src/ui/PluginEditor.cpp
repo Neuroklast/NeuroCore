@@ -228,7 +228,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         auto text = formulaInputEditor->getText();
         auto opt  = optimizeFormula(text, info);
         if (opt != text)
-            formulaInputEditor->setText(opt, juce::dontSendNotification);
+            formulaInputEditor->setText(opt);
         if (info.isNotEmpty())
             errorLabel->setText(info, juce::dontSendNotification);
     };
@@ -433,7 +433,7 @@ juce::String NeuroCoreAudioProcessorEditor::getFormulaText() const
 void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
-        formulaInputEditor->setText (text, juce::dontSendNotification);
+        formulaInputEditor->setText (text);
 }
 
 void NeuroCoreAudioProcessorEditor::refreshParameterControls()
