@@ -24,7 +24,7 @@ namespace Config
     /// Height of the plugin window in pixels.
     inline constexpr int kWindowHeight       = 900;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 8;
+    inline constexpr int kUiPadding         = 5;
 
     //-------------------------------------------------------------------------
     // Grid layout configuration

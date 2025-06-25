@@ -1,41 +1,52 @@
+// WeightedLayout.h
 #pragma once
 
 #include <JuceHeader.h>
-#include <functional>
 #include <vector>
 #include <memory>
+#include <functional>
 
 namespace ui
 {
-    /** Type of layout node. */
     enum class LayoutType { Row, Column, Leaf };
 
-    /** Layout node for weighted, recursive layout. */
     struct LayoutNode
     {
-        LayoutType type { LayoutType::Leaf };
-        float weight { 1.0f };
-        int margin { 0 };
-        bool drawBorder { false };
-        juce::Component* component { nullptr }; ///< Only for leaf nodes
-        float aspectRatio { 0.0f };
-        bool showHideEnabled { false };
-        std::function<bool()> visibleWhen; ///< Returns true if node should be visible
-        int minWidth { 0 };
-        int minHeight { 0 };
-        int maxWidth { std::numeric_limits<int>::max() };
-        int maxHeight { std::numeric_limits<int>::max() };
-        int innerMargin { 0 };
-        std::function<void()> onLayoutFinished;
-        std::vector<std::unique_ptr<LayoutNode>> children;
+        // --- Layout-Parameter ---
+        LayoutType type{ LayoutType::Leaf };
+        float      weight{ 1.0f };
+        int        margin{ 0 };       ///< Outer-Padding
+        int        innerMargin{ 0 };  ///< Gap zwischen Kindern
+        bool       drawBorder{ false };
 
+        // --- für Border-Zeichnen ---
+        juce::Rectangle<int> lastBounds;  ///< wird in performLayout() gesetzt :contentReference[oaicite:0]{index=0}
+
+        // --- Sichtbarkeits-Flags ---
+        bool                  showHideEnabled{ false };
+        std::function<bool()> visibleWhen;
+
+        // --- Größen-Beschränkungen ---
+        int minWidth{ 0 }, minHeight{ 0 };
+        int maxWidth{ std::numeric_limits<int>::max() },
+            maxHeight{ std::numeric_limits<int>::max() };
+
+        // --- Leaf-spezifisch ---
+        juce::Component* component{ nullptr };
+        float            aspectRatio{ 0.0f };
+        std::function<void()> onLayoutFinished;
+
+        // --- Kinder ---
+        std::vector<std::unique_ptr<LayoutNode>> children;
         LayoutNode() = default;
         explicit LayoutNode(LayoutType t) : type(t) {}
-        /** Adds a child node. */
         void addChild(std::unique_ptr<LayoutNode> child) { children.push_back(std::move(child)); }
+
+        /** Layout + Border-Zeichnen in einem Rutsch. */
+        void layoutAndDraw(juce::Graphics& g, juce::Rectangle<int> bounds) noexcept;
     };
 
-    /** Creates a row container node. */
+    // Factory-Funktionen
     inline std::unique_ptr<LayoutNode> makeRow(float weight = 1.0f, int margin = 0, bool border = false)
     {
         auto n = std::make_unique<LayoutNode>(LayoutType::Row);
@@ -44,8 +55,6 @@ namespace ui
         n->drawBorder = border;
         return n;
     }
-
-    /** Creates a column container node. */
     inline std::unique_ptr<LayoutNode> makeColumn(float weight = 1.0f, int margin = 0, bool border = false)
     {
         auto n = std::make_unique<LayoutNode>(LayoutType::Column);
@@ -54,8 +63,6 @@ namespace ui
         n->drawBorder = border;
         return n;
     }
-
-    /** Creates a leaf node for a JUCE component. */
     inline std::unique_ptr<LayoutNode> makeLeaf(juce::Component* c, float weight = 1.0f, float aspect = 0.0f)
     {
         auto n = std::make_unique<LayoutNode>(LayoutType::Leaf);
@@ -65,7 +72,9 @@ namespace ui
         return n;
     }
 
-    /** Performs layout on the given node. */
+    /** Nur die Bounds-Berechnung (nimmt margin & innerMargin in account). */
     void performLayout(LayoutNode& node, juce::Rectangle<int> bounds);
-}
 
+    /** Zeichnet alle Borders anhand der in performLayout gesetzten lastBounds. */
+    void drawBorders(const LayoutNode& node, juce::Graphics& g);
+}

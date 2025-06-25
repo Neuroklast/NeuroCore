@@ -128,34 +128,6 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/LowPassFilter_54cabd19.o \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
-  $(JUCE_OBJDIR)/BinaryData1_2b8d0047.o \
-  $(JUCE_OBJDIR)/BinaryData2_2b9b17c8.o \
-  $(JUCE_OBJDIR)/BinaryData3_2ba92f49.o \
-  $(JUCE_OBJDIR)/BinaryData4_2bb746ca.o \
-  $(JUCE_OBJDIR)/BinaryData5_2bc55e4b.o \
-  $(JUCE_OBJDIR)/BinaryData6_2bd375cc.o \
-  $(JUCE_OBJDIR)/BinaryData7_2be18d4d.o \
-  $(JUCE_OBJDIR)/BinaryData8_2befa4ce.o \
-  $(JUCE_OBJDIR)/BinaryData9_2bfdbc4f.o \
-  $(JUCE_OBJDIR)/BinaryData10_4616ef93.o \
-  $(JUCE_OBJDIR)/BinaryData11_46250714.o \
-  $(JUCE_OBJDIR)/BinaryData12_46331e95.o \
-  $(JUCE_OBJDIR)/BinaryData13_46413616.o \
-  $(JUCE_OBJDIR)/BinaryData14_464f4d97.o \
-  $(JUCE_OBJDIR)/BinaryData15_465d6518.o \
-  $(JUCE_OBJDIR)/BinaryData16_466b7c99.o \
-  $(JUCE_OBJDIR)/BinaryData17_4679941a.o \
-  $(JUCE_OBJDIR)/BinaryData18_4687ab9b.o \
-  $(JUCE_OBJDIR)/BinaryData19_4695c31c.o \
-  $(JUCE_OBJDIR)/BinaryData20_47cbc832.o \
-  $(JUCE_OBJDIR)/BinaryData21_47d9dfb3.o \
-  $(JUCE_OBJDIR)/BinaryData22_47e7f734.o \
-  $(JUCE_OBJDIR)/BinaryData23_47f60eb5.o \
-  $(JUCE_OBJDIR)/member_disabled_3106ba48.o \
-  $(JUCE_OBJDIR)/member_enabled_431a7b7f.o \
-  $(JUCE_OBJDIR)/unique_ptr_disabled_4d6f7422.o \
-  $(JUCE_OBJDIR)/unique_ptr_enabled_c8261e65.o \
-  $(JUCE_OBJDIR)/melatonin_inspector_238fd038.o \
   $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
@@ -164,6 +136,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
+  $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
   $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o \
   $(JUCE_OBJDIR)/FormulaHelper_731856a0.o \
   $(JUCE_OBJDIR)/Localiser_408913ae.o \
@@ -319,146 +292,6 @@ $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o: ../../src/dsp/WaveShaper.cpp
 	@echo "Compiling WaveShaper.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
-$(JUCE_OBJDIR)/BinaryData1_2b8d0047.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData1.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData1.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData2_2b9b17c8.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData2.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData2.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData3_2ba92f49.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData3.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData3.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData4_2bb746ca.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData4.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData4.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData5_2bc55e4b.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData5.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData5.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData6_2bd375cc.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData6.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData6.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData7_2be18d4d.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData7.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData7.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData8_2befa4ce.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData8.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData8.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData9_2bfdbc4f.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData9.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData9.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData10_4616ef93.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData10.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData10.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData11_46250714.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData11.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData11.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData12_46331e95.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData12.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData12.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData13_46413616.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData13.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData13.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData14_464f4d97.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData14.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData14.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData15_465d6518.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData15.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData15.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData16_466b7c99.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData16.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData16.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData17_4679941a.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData17.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData17.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData18_4687ab9b.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData18.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData18.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData19_4695c31c.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData19.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData19.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData20_47cbc832.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData20.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData20.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData21_47d9dfb3.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData21.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData21.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData22_47e7f734.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData22.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData22.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/BinaryData23_47f60eb5.o: ../../src/third_party/melatonin_inspector-main/LatestCompiledAssets/BinaryData23.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling BinaryData23.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/member_disabled_3106ba48.o: ../../src/third_party/melatonin_inspector-main/tests/member_disabled.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling member_disabled.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/member_enabled_431a7b7f.o: ../../src/third_party/melatonin_inspector-main/tests/member_enabled.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling member_enabled.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/unique_ptr_disabled_4d6f7422.o: ../../src/third_party/melatonin_inspector-main/tests/unique_ptr_disabled.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling unique_ptr_disabled.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/unique_ptr_enabled_c8261e65.o: ../../src/third_party/melatonin_inspector-main/tests/unique_ptr_enabled.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling unique_ptr_enabled.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
-$(JUCE_OBJDIR)/melatonin_inspector_238fd038.o: ../../src/third_party/melatonin_inspector-main/melatonin_inspector.cpp
-	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling melatonin_inspector.cpp"
-	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
-
 $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o: ../../src/ui/custom/ParameterComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling ParameterComponent.cpp"
@@ -497,6 +330,11 @@ $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponen
 $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o: ../../src/ui/WaveformDisplayComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling WaveformDisplayComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o: ../../src/ui/WeightedLayout.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling WeightedLayout.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o: ../../src/utils/ExpressionEvaluator.cpp
