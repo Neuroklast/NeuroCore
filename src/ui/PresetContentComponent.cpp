@@ -1,4 +1,5 @@
 #include "PresetContentComponent.h"
+#include "../utils/Localiser.h"
 namespace {
 class ModalCallback : public juce::ModalComponentManager::Callback
 {
@@ -31,10 +32,10 @@ PresetContentComponent::PresetContentComponent(NeuroCoreAudioProcessor& proc, ju
             onPresetSelected(row);
     };
     saveButton.onClick = [this] {
-        auto* aw = new juce::AlertWindow("Save Preset", {}, juce::AlertWindow::NoIcon);
-        aw->addTextEditor("name", {}, "Name:");
-        aw->addButton("OK", 1);
-        aw->addButton("Cancel", 0);
+        auto* aw = new juce::AlertWindow(TRANS("Save Preset"), {}, juce::AlertWindow::NoIcon);
+        aw->addTextEditor("name", {}, TRANS("Name:"));
+        aw->addButton(TRANS("OK"), 1);
+        aw->addButton(TRANS("Cancel"), 0);
         aw->enterModalState(true, new ModalCallback([this, aw](int result)
         {
             std::unique_ptr<juce::AlertWindow> cleanup(aw);
@@ -55,11 +56,11 @@ PresetContentComponent::PresetContentComponent(NeuroCoreAudioProcessor& proc, ju
         if (row < 0) return;
         auto file = table.getFileForRow(row);
         if (!file.exists()) return;
-        auto* aw = new juce::AlertWindow("Delete Preset",
-                                         "Are you sure you want to delete the preset: " + file.getFileName(),
+        auto* aw = new juce::AlertWindow(TRANS("Delete Preset"),
+                                         TRANS("Are you sure you want to delete the preset: ") + file.getFileName(),
                                          juce::AlertWindow::WarningIcon);
-        aw->addButton("Delete", 1);
-        aw->addButton("Cancel", 0);
+        aw->addButton(TRANS("Delete"), 1);
+        aw->addButton(TRANS("Cancel"), 0);
         aw->enterModalState(true, new ModalCallback([this, file, aw](int result)
         {
             std::unique_ptr<juce::AlertWindow> cleanup(aw);

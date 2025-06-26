@@ -3,6 +3,7 @@
 #include "../core/PluginProcessor.h"
 #include <vector>
 #include "PluginLookAndFeel.h"
+#include "../utils/Localiser.h"
 
 class FunctionPlotComponent : public juce::Component
 {
@@ -52,8 +53,8 @@ private:
     NeuroCoreAudioProcessor& processor;
     juce::TextEditor searchField;
     juce::ListBox listBox{"functions", this};
-    juce::TextButton insertButton{"Insert"};
-    juce::TextButton closeButton{"Close"};
+    juce::TextButton insertButton{TRANS("Insert")};
+    juce::TextButton closeButton{TRANS("Close")};
 
     juce::Label nameLabel, descLabel, exampleLabel, extraLabel;
     FunctionPlotComponent plot;
