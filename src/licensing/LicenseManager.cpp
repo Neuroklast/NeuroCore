@@ -49,10 +49,12 @@ bool LicenseManager::activateOnline(const juce::String& licenseKey)
 
 bool LicenseManager::generateOfflineRequest(const juce::File& file, const juce::String& licenseKey) const
 {
-    juce::DynamicObject obj;
-    obj.setProperty("key", licenseKey);
-    obj.setProperty("machine", HardwareFingerprint::generate());
-    return file.replaceWithText(juce::JSON::toString(obj));
+    auto dynamicObject = std::make_unique<juce::DynamicObject>();
+    dynamicObject->setProperty("key", licenseKey);
+    dynamicObject->setProperty("machine", HardwareFingerprint::generate());
+
+    juce::var jsonVar(dynamicObject.release());
+    return file.replaceWithText(juce::JSON::toString(jsonVar));
 }
 
 bool LicenseManager::importLicenseFile(const juce::File& file)

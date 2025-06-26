@@ -29,7 +29,8 @@ public:
     bool deactivateLicense();
 
     /// Returns raw license information as JSON string.
-    juce::String getLicenseInfo() const { return licenseJson.toStyledString(); }
+    juce::String getLicenseInfo() const { return juce::JSON::toString(licenseJson); }
+
 
 private:
     bool saveLicense(const juce::String& data);

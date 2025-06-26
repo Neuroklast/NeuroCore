@@ -293,11 +293,11 @@ namespace Config
     //==========================================================================
 
     /// Enable formula parsing debug log.
-    inline constexpr bool kDebugLogFormulas     = false;
+    inline constexpr bool kDebugLogFormulas     = true;
     /// Show parse errors in the GUI.
     inline constexpr bool kDebugShowParseErrors = true;
     /// Log time spent evaluating formulas.
-    inline constexpr bool kLogEvaluationTime    = false;
+    inline constexpr bool kLogEvaluationTime    = true;
 
 } // namespace Config
 

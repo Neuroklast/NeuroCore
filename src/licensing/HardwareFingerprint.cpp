@@ -1,16 +1,25 @@
 #include "HardwareFingerprint.h"
 #include <JuceHeader.h>
 
+static String getMacAddressList()
+{
+    String addressList;
+
+    for (auto& addr : MACAddress::getAllAddresses())
+        addressList << addr.toString() << newLine;
+
+    return addressList;
+}
+
 juce::String HardwareFingerprint::generate()
 {
     juce::String id;
-    id << juce::SystemStats::getDeviceDescription();
-    id << juce::SystemStats::getDeviceManufacturer();
-    id << juce::SystemStats::getMACAddresses().joinIntoString(";");
     id << juce::SystemStats::getComputerName();
-    id << juce::SystemStats::getUniqueDeviceId();
+    id << juce::SystemStats::getUniqueDeviceID();
+    id << getMacAddressList();
 
-    juce::SHA256 sha;
-    sha.processBytes(id.toRawUTF8(), id.getNumBytesAsUTF8());
-    return sha.getString();
+
+    auto hash = juce::SHA256(id.toRawUTF8(), static_cast<size_t>(id.getNumBytesAsUTF8())); // Convert the hash result to a hex string}
+    return hash.toHexString();
+
 }

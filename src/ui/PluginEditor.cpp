@@ -282,6 +282,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     header->addChild(makeLeaf(languageBox.get(), 1.0f));
     layoutRoot->addChild(std::move(header));
 
+
+
     auto body = makeRow();
     body->innerMargin = Config::kUiPadding;
 	
