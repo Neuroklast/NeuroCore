@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include <thread>
 #include <atomic>
+#include "custom/ProgressBarComponent.h"
 class NeuroCoreAudioProcessor;
 
 /** Modal overlay performing DSL validation and stability testing. */
@@ -26,9 +27,8 @@ private:
 
     juce::String warningString;
 
-    std::atomic<double> progress{ 0.0 };
-    double progressValue{ 0.0 };
-    juce::ProgressBar progressBar{ progressValue };
+    std::atomic<float> progress{ 0.0f };
+    ui::ProgressBarComponent progressBar;
 
     std::atomic<bool> abortRequested{ false };
 
