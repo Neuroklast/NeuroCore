@@ -505,56 +505,57 @@ void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 
 void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
 {
+    // Remove an existing validation overlay if present
     if (validationOverlay)
     {
         removeChildComponent(validationOverlay.get());
         validationOverlay.reset();
     }
 
+    // Prepare the content component that performs the validation
     auto content = std::make_unique<ValidationContentComponent>(audioProcessor, expr);
-    auto* ptr = content.get();
+    auto* contentPtr = content.get();
 
+    // Create the modal overlay that will host the content
     validationOverlay = std::make_unique<ModalOverlay>();
     validationOverlay->setMode(OverlayMode::Blocking);
     validationOverlay->setContent(std::move(content));
 
-    struct ResultHandler
+    // Safely capture this editor instance for the asynchronous callback
+    auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
+
+    contentPtr->onResult = [safeEditor, expr](bool /*stable*/)
     {
-        NeuroCoreAudioProcessorEditor* editor { nullptr };
-        juce::String expression;
+        if (! safeEditor || ! safeEditor->alive.load())
+            return;
 
-        void operator()(bool /*stable*/) const
+        // Close and destroy the overlay
+        if (safeEditor->validationOverlay)
         {
-            if (! editor || ! editor->alive.load())
-                return;
+            safeEditor->removeChildComponent(safeEditor->validationOverlay.get());
+            safeEditor->validationOverlay.reset();
+        }
 
-            if (editor->validationOverlay)
-            {
-                editor->removeChildComponent(editor->validationOverlay.get());
-                editor->validationOverlay.reset();
-            }
-
-            juce::String err;
-            if (editor->audioProcessor.setFormula(expression, err))
-            {
-                editor->formulaInputEditor->setReadOnly(true);
-                editor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                                             juce::Colours::transparentBlack);
-                editor->editSaveButton->setButtonText(TRANS("EditButton"));
-                editor->editing = false;
-                editor->errorLabel->setText({}, juce::dontSendNotification);
-                editor->refreshParameterControls();
-            }
-            else
-            {
-                editor->errorLabel->setText(err, juce::dontSendNotification);
-            }
+        // Apply the formula and update UI state accordingly
+        juce::String err;
+        if (safeEditor->audioProcessor.setFormula(expr, err))
+        {
+            safeEditor->formulaInputEditor->setReadOnly(true);
+            safeEditor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                           juce::Colours::transparentBlack);
+            safeEditor->editSaveButton->setButtonText(TRANS("EditButton"));
+            safeEditor->editing = false;
+            safeEditor->errorLabel->setText({}, juce::dontSendNotification);
+            safeEditor->refreshParameterControls();
+        }
+        else
+        {
+            safeEditor->errorLabel->setText(err, juce::dontSendNotification);
         }
     };
 
-    ptr->onResult = ResultHandler{ this, expr };
-
-    validationOverlay->show(*this);
+    // Finally show the overlay
+    validationOverlay->show(*safeEditor);
 }
 
 
