@@ -105,10 +105,10 @@
               file="src/ui/FormulaWaveComponent.cpp"/>
         <FILE id="ibfwhA" name="FormulaWaveComponent.h" compile="0" resource="0"
               file="src/ui/FormulaWaveComponent.h"/>
-        <FILE id="AN5eND" name="FunctionsOverlay.cpp" compile="1" resource="0"
-              file="src/ui/FunctionsOverlay.cpp"/>
-        <FILE id="kZJyOQ" name="FunctionsOverlay.h" compile="0" resource="0"
-              file="src/ui/FunctionsOverlay.h"/>
+        <FILE id="AN5eND" name="FunctionsContentComponent.cpp" compile="1" resource="0"
+              file="src/ui/FunctionsContentComponent.cpp"/>
+        <FILE id="kZJyOQ" name="FunctionsContentComponent.h" compile="0" resource="0"
+              file="src/ui/FunctionsContentComponent.h"/>
         <FILE id="lOvHqR" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
               file="src/ui/InlineAutocompleteEditor.cpp"/>
         <FILE id="iDzTkQ" name="InlineAutocompleteEditor.h" compile="0" resource="0"
@@ -122,17 +122,17 @@
         <FILE id="fQXOsG" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
         <FILE id="E91hPq" name="PluginLookAndFeel.h" compile="0" resource="0"
               file="src/ui/PluginLookAndFeel.h"/>
-        <FILE id="sZGwct" name="PresetOverlay.cpp" compile="1" resource="0"
-              file="src/ui/PresetOverlay.cpp"/>
-        <FILE id="Jpd6MM" name="PresetOverlay.h" compile="0" resource="0" file="src/ui/PresetOverlay.h"/>
+        <FILE id="sZGwct" name="PresetContentComponent.cpp" compile="1" resource="0"
+              file="src/ui/PresetContentComponent.cpp"/>
+        <FILE id="Jpd6MM" name="PresetContentComponent.h" compile="0" resource="0" file="src/ui/PresetContentComponent.h"/>
         <FILE id="FyXky1" name="PresetTableComponent.cpp" compile="1" resource="0"
               file="src/ui/PresetTableComponent.cpp"/>
         <FILE id="p5YagN" name="PresetTableComponent.h" compile="0" resource="0"
               file="src/ui/PresetTableComponent.h"/>
-        <FILE id="lySs9g" name="ValidationOverlay.cpp" compile="1" resource="0"
-              file="src/ui/ValidationOverlay.cpp"/>
-        <FILE id="VjOk6S" name="ValidationOverlay.h" compile="0" resource="0"
-              file="src/ui/ValidationOverlay.h"/>
+        <FILE id="lySs9g" name="ValidationContentComponent.cpp" compile="1" resource="0"
+              file="src/ui/ValidationContentComponent.cpp"/>
+        <FILE id="VjOk6S" name="ValidationContentComponent.h" compile="0" resource="0"
+              file="src/ui/ValidationContentComponent.h"/>
         <FILE id="rfaPfc" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
               file="src/ui/WaveformDisplayComponent.cpp"/>
         <FILE id="ySQX5t" name="WaveformDisplayComponent.h" compile="0" resource="0"
@@ -141,6 +141,10 @@
               file="src/ui/WeightedLayout.cpp"/>
         <FILE id="bA7ZaM" name="WeightedLayout.h" compile="0" resource="0"
               file="src/ui/WeightedLayout.h"/>
+        <FILE id="MoOv1" name="ModalOverlay.cpp" compile="1" resource="0"
+              file="src/ui/ModalOverlay.cpp"/>
+        <FILE id="xw8sK" name="ModalOverlay.h" compile="0" resource="0"
+              file="src/ui/ModalOverlay.h"/>
       </GROUP>
       <GROUP id="{12CF16CA-2541-D8A6-B20D-B597957767BC}" name="utils">
         <FILE id="LTXivi" name="ExpressionEvaluator.cpp" compile="1" resource="0"
