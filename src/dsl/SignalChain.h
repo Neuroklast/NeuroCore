@@ -67,6 +67,7 @@ private:
         float sampleRate{44100.0f};
         int channels{1};
         std::vector<float> xPrev, yPrev;
+        juce::SmoothedValue<float> cutoffSm, resSm;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;

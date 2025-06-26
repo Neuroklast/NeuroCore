@@ -381,6 +381,10 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     channels = static_cast<int> (spec.numChannels);
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
+    cutoffSm.reset(sampleRate, Config::kSmoothingTime);
+    resSm.reset(sampleRate, Config::kSmoothingTime);
+    cutoffSm.setCurrentAndTargetValue(cutoff.evaluate(0.f));
+    resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -437,8 +441,10 @@ float SignalChain::Filter::process(int ch, float x)
     fc = juce::jlimit(20.0f, maxFc, fc);
     res = juce::jlimit(0.1f, 10.0f, res);
 
-    filter.setCutoffFrequency(fc);
-    filter.setResonance(res);
+    cutoffSm.setTargetValue(fc);
+    resSm.setTargetValue(res);
+    filter.setCutoffFrequency(cutoffSm.getNextValue());
+    filter.setResonance(resSm.getNextValue());
 
     float y = filter.processSample(ch, x);
     xPrev[ch] = x;
