@@ -27,12 +27,14 @@ struct FunctionInfo
     juce::String performance;
 };
 
-class FunctionsOverlay : public juce::Component,
-                         public juce::ListBoxModel
+class FunctionsContentComponent : public juce::Component, public juce::ListBoxModel
 {
 public:
-    FunctionsOverlay(NeuroCoreAudioProcessor& p);
-    ~FunctionsOverlay() override = default;
+    explicit FunctionsContentComponent(NeuroCoreAudioProcessor& p);
+    ~FunctionsContentComponent() override = default;
+
+    std::function<void(const juce::String&)> onInsert;
+    std::function<void()> onClose;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
@@ -42,9 +44,6 @@ public:
     void paintListBoxItem(int row, juce::Graphics& g, int width, int height, bool selected) override;
     void selectedRowsChanged(int row) override;
 
-    std::function<void(const juce::String&)> onInsert;
-    std::function<void()> onClose;
-
 private:
     void loadFunctions();
     void updateDetails(int index);
@@ -52,9 +51,9 @@ private:
 
     NeuroCoreAudioProcessor& processor;
     juce::TextEditor searchField;
-    juce::ListBox listBox{ "functions", this };
-    juce::TextButton insertButton{ "Insert" };
-    juce::TextButton closeButton{ "Close" };
+    juce::ListBox listBox{"functions", this};
+    juce::TextButton insertButton{"Insert"};
+    juce::TextButton closeButton{"Close"};
 
     juce::Label nameLabel, descLabel, exampleLabel, extraLabel;
     FunctionPlotComponent plot;
@@ -62,4 +61,5 @@ private:
     std::vector<FunctionInfo> allFunctions;
     std::vector<int> filtered;
     int currentIndex{ -1 };
+    juce::Rectangle<int> panel;
 };
