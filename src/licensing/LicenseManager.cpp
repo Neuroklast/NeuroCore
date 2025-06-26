@@ -1,9 +1,7 @@
 #include "LicenseManager.h"
+#include "../core/Config.h"
 #include <JuceHeader.h>
 
-namespace {
-constexpr const char* kServerUrl = "https://licensing.example.com/activate";
-}
 
 LicenseManager::LicenseManager()
 {
@@ -29,7 +27,7 @@ juce::File LicenseManager::getLicenseFile() const
 
 bool LicenseManager::activateOnline(const juce::String& licenseKey)
 {
-    juce::URL url(kServerUrl);
+    juce::URL url(Config::kLicenseServerUrl);
     url = url.withParameter("key", licenseKey);
     url = url.withParameter("machine", HardwareFingerprint::generate());
 

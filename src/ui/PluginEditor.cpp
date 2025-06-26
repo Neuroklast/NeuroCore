@@ -52,21 +52,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible(*helpButton);
 
-    blankToggle = std::make_unique<juce::ToggleButton>("Blank");
+    blankToggle = std::make_unique<juce::ToggleButton>(TRANS("Blank"));
     addAndMakeVisible(*blankToggle);
 
-    presetsButton = std::make_unique<juce::TextButton>("Presets");
+    presetsButton = std::make_unique<juce::TextButton>(TRANS("Presets"));
     presetsButton->onClick = [this] { showPresetOverlay(); };
     addAndMakeVisible(*presetsButton);
 
-    bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
+    bypassButton = std::make_unique<juce::ToggleButton>(TRANS("Bypass"));
     addAndMakeVisible(*bypassButton);
 
-    functionsButton = std::make_unique<juce::TextButton>("Functions");
+    functionsButton = std::make_unique<juce::TextButton>(TRANS("Functions"));
     functionsButton->onClick = [this] { showFunctionsOverlay(); };
     addAndMakeVisible(*functionsButton);
 
-    stagesButton = std::make_unique<juce::TextButton>("Stages");
+    stagesButton = std::make_unique<juce::TextButton>(TRANS("Stages"));
     addAndMakeVisible(*stagesButton);
 
     languageLabel = std::make_unique<juce::Label>();
@@ -462,7 +462,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 
     presetOverlay = std::make_unique<ModalOverlay>();
     presetOverlay->setMode(OverlayMode::Closable);
-    presetOverlay->setTitle("Presets");
+    presetOverlay->setTitle(TRANS("Presets"));
     presetOverlay->setContent(std::move(content));
     presetOverlay->show(*this);
 
@@ -482,7 +482,7 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
 
     functionsOverlay = std::make_unique<ModalOverlay>();
     functionsOverlay->setMode(OverlayMode::Closable);
-    functionsOverlay->setTitle("Functions");
+    functionsOverlay->setTitle(TRANS("Functions"));
     functionsOverlay->setContent(std::move(content));
     functionsOverlay->show(*this);
 

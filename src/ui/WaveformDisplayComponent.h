@@ -57,5 +57,5 @@ private:
     std::vector<juce::SmoothedValue<float>> smoothedData;
     std::vector<juce::SmoothedValue<float>> smoothedFft;
     std::vector<float> fftMagnitudes;
-    static constexpr int fftOrder = 11; // 2048 point FFT
+    static constexpr int fftOrder = Config::kWaveformFftOrder; // 2^order samples
 };

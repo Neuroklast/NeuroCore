@@ -11,6 +11,8 @@
 #include "../core/Config.h"
 #include <functional>
 
+/// DSP processor that evaluates a user-defined formula for each sample.
+/// A second evaluator can be crossfaded in for seamless transitions.
 class WaveShaper : public juce::dsp::ProcessorBase
 {
 public:

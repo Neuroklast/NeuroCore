@@ -104,7 +104,7 @@ void LoudnessMeterComponent::renderOpenGL()
 {
     juce::OpenGLHelpers::clear(juce::Colours::black);
     auto bounds = getLocalBounds().toFloat();
-    constexpr float labelWidth = 45.0f;
+    constexpr float labelWidth = Config::kLoudnessLabelWidth;
     auto area = bounds.reduced(10.0f, 20.0f);
     area.removeFromLeft(labelWidth);
     auto meterArea = area;
@@ -158,7 +158,7 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
 {
     loudness = smoothedLoudness.getNextValue();
     auto bounds = getLocalBounds().toFloat();
-    constexpr float labelWidth = 45.0f;
+    constexpr float labelWidth = Config::kLoudnessLabelWidth;
     auto area = bounds.reduced(10.0f, 20.0f);
     auto labelArea = area.removeFromLeft(labelWidth);
     auto meterArea = area;
