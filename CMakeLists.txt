@@ -65,6 +65,7 @@ set(SOURCE_FILES
     src/ui/WeightedLayout.cpp
     src/ui/custom/ParameterComponent.cpp
     src/ui/custom/ProgressBarComponent.cpp
+    src/ui/custom/ModalOverlay.cpp
     src/dsp/LookupTables.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp

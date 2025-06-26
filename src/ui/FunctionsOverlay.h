@@ -3,6 +3,7 @@
 #include "../core/PluginProcessor.h"
 #include <vector>
 #include "PluginLookAndFeel.h"
+#include "custom/ModalOverlay.h"
 
 class FunctionPlotComponent : public juce::Component
 {
@@ -27,14 +28,13 @@ struct FunctionInfo
     juce::String performance;
 };
 
-class FunctionsOverlay : public juce::Component,
+class FunctionsOverlay : public ui::ModalOverlay,
                          public juce::ListBoxModel
 {
 public:
     FunctionsOverlay(NeuroCoreAudioProcessor& p);
     ~FunctionsOverlay() override = default;
 
-    void paint(juce::Graphics& g) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& kp) override;
 
@@ -43,7 +43,6 @@ public:
     void selectedRowsChanged(int row) override;
 
     std::function<void(const juce::String&)> onInsert;
-    std::function<void()> onClose;
 
 private:
     void loadFunctions();

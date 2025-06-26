@@ -40,10 +40,8 @@ void FunctionPlotComponent::paint(juce::Graphics& g)
     g.strokePath(p, juce::PathStrokeType(1.2f));
 }
 
-FunctionsOverlay::FunctionsOverlay(NeuroCoreAudioProcessor& p) : processor(p)
+FunctionsOverlay::FunctionsOverlay(NeuroCoreAudioProcessor& p) : ModalOverlay(true), processor(p)
 {
-    setOpaque(false);
-    setWantsKeyboardFocus(true);
     addAndMakeVisible(searchField);
     addAndMakeVisible(listBox);
     addAndMakeVisible(insertButton);
@@ -141,18 +139,10 @@ void FunctionsOverlay::updateDetails(int index)
     plot.setFormula(formula);
 }
 
-void FunctionsOverlay::paint(juce::Graphics& g)
-{
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(getLocalBounds().reduced(40));
-    g.setColour(juce::Colours::white);
-    g.drawRect(getLocalBounds().reduced(40));
-}
-
 void FunctionsOverlay::resized()
 {
-    auto area = getLocalBounds().reduced(40);
+    panel = getLocalBounds().reduced(40);
+    auto area = panel;
     auto left = area.removeFromLeft(area.getWidth()*6/10);
     searchField.setBounds(left.removeFromTop(24));
     listBox.setBounds(left);
@@ -167,6 +157,7 @@ void FunctionsOverlay::resized()
     auto buttons = right.removeFromBottom(30);
     insertButton.setBounds(buttons.removeFromLeft(80));
     closeButton.setBounds(buttons.removeFromLeft(80));
+    ModalOverlay::resized();
 }
 
 bool FunctionsOverlay::keyPressed(const juce::KeyPress& kp)

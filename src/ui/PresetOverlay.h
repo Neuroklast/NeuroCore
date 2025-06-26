@@ -1,23 +1,20 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PresetTableComponent.h"
+#include "custom/ModalOverlay.h"
 
 class NeuroCoreAudioProcessor;
 
 // modal overlay showing preset table with action buttons
-class PresetOverlay : public juce::Component
+class PresetOverlay : public ui::ModalOverlay
 {
 public:
     PresetOverlay(NeuroCoreAudioProcessor& processor, juce::LookAndFeel& lf);
     ~PresetOverlay() override;
 
-    void paint(juce::Graphics& g) override;
     void resized() override;
-    bool keyPressed(const juce::KeyPress& kp) override;
-    void mouseUp(const juce::MouseEvent& ev) override;
 
     std::function<void(int)> onPresetSelected; //!< callback when user chooses a preset
-    std::function<void()> onClose;             //!< called when overlay should close
 
 private:
     PresetTableComponent table;
@@ -27,7 +24,6 @@ private:
     juce::TextButton saveButton { "Save" };
     juce::TextButton deleteButton { "Delete" };
     juce::TextButton closeButton { "Close" };
-    juce::Rectangle<int> panel;
 
     void refreshTable();
 };

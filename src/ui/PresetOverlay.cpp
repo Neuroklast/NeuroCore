@@ -2,12 +2,8 @@
 #include "PluginLookAndFeel.h"
 
 PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
-    : table(proc), processor(proc), lookAndFeel(lf)
+    : ModalOverlay(true), table(proc), processor(proc), lookAndFeel(lf)
 {
-    //setLookAndFeel(&lookAndFeel);
-    setOpaque(false);
-    setAlwaysOnTop(true);
-    setWantsKeyboardFocus(true);
     addAndMakeVisible(table);
     addAndMakeVisible(loadButton);
     addAndMakeVisible(saveButton);
@@ -77,29 +73,17 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
 
 
 
-    setInterceptsMouseClicks(true, true);
     refreshTable();
 }
 
 PresetOverlay::~PresetOverlay()
 {
     //setLookAndFeel(nullptr);
-    if (isOnDesktop())
-        removeFromDesktop();
 }
 
 void PresetOverlay::refreshTable()
 {
     table.refresh();
-}
-
-void PresetOverlay::paint(juce::Graphics& g)
-{
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel, 1);
 }
 
 void PresetOverlay::resized()
@@ -116,22 +100,5 @@ void PresetOverlay::resized()
     saveButton.setBounds(buttons.removeFromLeft(w).reduced(2));
     deleteButton.setBounds(buttons.removeFromLeft(w).reduced(2));
     closeButton.setBounds(buttons.reduced(2));
-}
-
-bool PresetOverlay::keyPressed(const juce::KeyPress& kp)
-{
-    if (kp == juce::KeyPress::escapeKey)
-    {
-        if (onClose)
-            onClose();
-        return true;
-    }
-    return false;
-}
-
-void PresetOverlay::mouseUp(const juce::MouseEvent& ev)
-{
-    if (! panel.contains(ev.getPosition()))
-        if (onClose)
-            onClose();
+    ModalOverlay::resized();
 }

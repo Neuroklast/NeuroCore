@@ -452,11 +452,8 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     };
     presetOverlay->onClose = [this] { hidePresetOverlay(); };
 
-    auto bounds = getScreenBounds();
-    presetOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    presetOverlay->setBounds(bounds);
-    presetOverlay->enterModalState(true);
-    presetOverlay->toFront(true);
+    addAndMakeVisible(*presetOverlay);
+    presetOverlay->setBounds(getLocalBounds());
     presetOverlay->grabKeyboardFocus();
 }
 
@@ -470,11 +467,8 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
         formulaInputEditor->insertTextAtCaret(text);
     };
     functionsOverlay->onClose = [this]{ hideFunctionsOverlay(); };
-    auto bounds = getScreenBounds();
-    functionsOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    functionsOverlay->setBounds(bounds);
-    functionsOverlay->enterModalState(true);
-    functionsOverlay->toFront(true);
+    addAndMakeVisible(*functionsOverlay);
+    functionsOverlay->setBounds(getLocalBounds());
     functionsOverlay->grabKeyboardFocus();
 }
 
@@ -482,9 +476,8 @@ void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
 {
     if (functionsOverlay)
     {
-        functionsOverlay->exitModalState(0);
         functionsOverlay->setVisible(false);
-        functionsOverlay->removeFromDesktop();
+        removeChildComponent(functionsOverlay.get());
         functionsOverlay.reset();
     }
 }
@@ -492,9 +485,8 @@ void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
     {
-        presetOverlay->exitModalState(0);
         presetOverlay->setVisible(false);
-        presetOverlay->removeFromDesktop();
+        removeChildComponent(presetOverlay.get());
         presetOverlay.reset();
     }
 }
@@ -511,32 +503,32 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     addAndMakeVisible(*validationOverlay);
     validationOverlay->setBounds(getLocalBounds());
 
-    auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
-    validationOverlay->onResult = [safeEditor, expr](bool stable)
+    auto weakEditor = juce::WeakReference<NeuroCoreAudioProcessorEditor>(this);
+    validationOverlay->onResult = [weakEditor, expr](bool stable)
     {
-        if (! safeEditor || ! safeEditor->alive.load())
+        if (weakEditor == nullptr || ! weakEditor->alive.load())
             return;
 
-        if (safeEditor->validationOverlay)
+        if (weakEditor->validationOverlay)
         {
-            safeEditor->removeChildComponent(safeEditor->validationOverlay.get());
-            safeEditor->validationOverlay.reset();
+            weakEditor->removeChildComponent(weakEditor->validationOverlay.get());
+            weakEditor->validationOverlay.reset();
         }
 
         juce::String err;
-        if (safeEditor->audioProcessor.setFormula(expr, err))
+        if (weakEditor->audioProcessor.setFormula(expr, err))
         {
-            safeEditor->formulaInputEditor->setReadOnly(true);
-            safeEditor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+            weakEditor->formulaInputEditor->setReadOnly(true);
+            weakEditor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
                                                           juce::Colours::transparentBlack);
-            safeEditor->editSaveButton->setButtonText(TRANS("EditButton"));
-            safeEditor->editing = false;
-            safeEditor->errorLabel->setText({}, juce::dontSendNotification);
-            safeEditor->refreshParameterControls();
+            weakEditor->editSaveButton->setButtonText(TRANS("EditButton"));
+            weakEditor->editing = false;
+            weakEditor->errorLabel->setText({}, juce::dontSendNotification);
+            weakEditor->refreshParameterControls();
         }
         else
         {
-            safeEditor->errorLabel->setText(err, juce::dontSendNotification);
+            weakEditor->errorLabel->setText(err, juce::dontSendNotification);
         }
     };
     validationOverlay->grabKeyboardFocus();

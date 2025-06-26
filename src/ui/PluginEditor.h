@@ -127,6 +127,7 @@ private:
 
     //melatonin::Inspector inspector{ *this };
 
+    JUCE_DECLARE_WEAK_REFERENCEABLE (NeuroCoreAudioProcessorEditor)
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
 };
 

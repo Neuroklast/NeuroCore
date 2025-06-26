@@ -3,17 +3,17 @@
 #include <thread>
 #include <atomic>
 #include "custom/ProgressBarComponent.h"
+#include "custom/ModalOverlay.h"
 class NeuroCoreAudioProcessor;
 
 /** Modal overlay performing DSL validation and stability testing. */
-class ValidationOverlay : public juce::Component,
+class ValidationOverlay : public ui::ModalOverlay,
                           private juce::Timer
 {
 public:
     ValidationOverlay(NeuroCoreAudioProcessor& proc, const juce::String& expr);
     ~ValidationOverlay() override;
 
-    void paint(juce::Graphics& g) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& kp) override;
 
@@ -34,8 +34,7 @@ private:
 
     juce::Label messageLabel;
     juce::TextButton okButton { "OK" };
-    juce::Rectangle<int> panel;
-
     void startTest();
     void timerCallback() override;
+    JUCE_DECLARE_WEAK_REFERENCEABLE(ValidationOverlay)
 };

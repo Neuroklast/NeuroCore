@@ -2,12 +2,8 @@
 #include "../core/PluginProcessor.h"
 
 ValidationOverlay::ValidationOverlay(NeuroCoreAudioProcessor& proc, const juce::String& expr)
-    : processor(proc), script(expr)
+    : ModalOverlay(false), processor(proc), script(expr)
 {
-    setOpaque(false);
-    setInterceptsMouseClicks(true, true);
-    setAlwaysOnTop(true);
-    setWantsKeyboardFocus(true);
 
     addAndMakeVisible(progressBar);
     addAndMakeVisible(messageLabel);
@@ -39,64 +35,54 @@ void ValidationOverlay::startTest()
     // Copy script to avoid capturing this after component destruction
     auto scriptCopy = script;
 
-    auto safeThis = juce::Component::SafePointer<ValidationOverlay>(this);
+    auto weakThis = juce::WeakReference<ValidationOverlay>(this);
 
     // Start worker thread that validates the formula asynchronously
-    worker = std::make_unique<std::thread>([safeThis, scriptCopy, proc = std::ref(processor)]()
+    worker = std::make_unique<std::thread>([weakThis, scriptCopy, proc = std::ref(processor)]()
     {
         juce::String warn;
-        const auto progressFn = [safeThis](float p)
+        const auto progressFn = [weakThis](float p)
         {
-            if (safeThis)
+            if (auto* self = weakThis.get())
             {
-                safeThis->progress.store(p);
-                return ! safeThis->abortRequested.load();
+                self->progress.store(p);
+                return ! self->abortRequested.load();
             }
             return false;
         };
 
         bool ok = false;
-        if (! safeThis || safeThis->abortRequested.load())
+        if (weakThis == nullptr || weakThis->abortRequested.load())
             return;
 
         ok = proc.get().testFormulaStability(scriptCopy, warn, progressFn);
 
-        if (! safeThis || safeThis->abortRequested.load())
+        if (weakThis == nullptr || weakThis->abortRequested.load())
             return;
 
-        juce::MessageManager::callAsync([safeThis, ok, warn]()
+        juce::MessageManager::callAsync([weakThis, ok, warn]()
         {
-
-            if (! safeThis)
-                return;
-
-            if (ok)
+            if (auto* self = weakThis.get())
             {
-                if (safeThis->onResult)
-                    safeThis->onResult(true);
-            }
-            else
-            {
-                safeThis->state = ValidationOverlay::State::warning;
-                safeThis->warningString = warn;
-                safeThis->progressBar.setVisible(false);
-                safeThis->okButton.setVisible(true);
-                safeThis->messageLabel.setText(warn, juce::dontSendNotification);
-                safeThis->grabKeyboardFocus();
-                safeThis->resized();
-                safeThis->repaint();
+                if (ok)
+                {
+                    if (self->onResult)
+                        self->onResult(true);
+                }
+                else
+                {
+                    self->state = ValidationOverlay::State::warning;
+                    self->warningString = warn;
+                    self->progressBar.setVisible(false);
+                    self->okButton.setVisible(true);
+                    self->messageLabel.setText(warn, juce::dontSendNotification);
+                    self->grabKeyboardFocus();
+                    self->resized();
+                    self->repaint();
+                }
             }
         });
     });
-}
-
-void ValidationOverlay::paint(juce::Graphics& g)
-{
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel);
 }
 
 void ValidationOverlay::resized()
@@ -109,6 +95,7 @@ void ValidationOverlay::resized()
     auto btnHeight = 24;
     okButton.setBounds(area.removeFromBottom(btnHeight).removeFromRight(80));
     messageLabel.setBounds(area);
+    ModalOverlay::resized();
 }
 
 bool ValidationOverlay::keyPressed(const juce::KeyPress& kp)
