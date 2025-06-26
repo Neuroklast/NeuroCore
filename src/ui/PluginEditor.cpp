@@ -27,7 +27,7 @@
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setLookAndFeel (&lookAndFeel);
+    juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
 

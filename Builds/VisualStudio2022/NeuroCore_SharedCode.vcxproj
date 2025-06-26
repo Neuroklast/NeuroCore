@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\src\dsp\SignalPolisher.cpp"/>
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp"/>
     <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp"/>
+    <ClCompile Include="..\..\src\ui\custom\ProgressBarComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\DslTerminalEditor.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaDisplayComponent.cpp"/>
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp"/>
@@ -3192,6 +3193,7 @@
     <ClInclude Include="..\..\src\dsp\WaveShaper.h"/>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp"/>
     <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h"/>
+    <ClInclude Include="..\..\src\ui\custom\ProgressBarComponent.h"/>
     <ClInclude Include="..\..\src\ui\DslTerminalEditor.h"/>
     <ClInclude Include="..\..\src\ui\FormulaDisplayComponent.h"/>
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h"/>

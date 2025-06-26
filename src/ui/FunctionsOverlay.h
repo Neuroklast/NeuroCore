@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
 #include <vector>
+#include "PluginLookAndFeel.h"
 
 class FunctionPlotComponent : public juce::Component
 {

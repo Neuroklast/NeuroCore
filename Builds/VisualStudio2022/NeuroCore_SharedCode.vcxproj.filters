@@ -844,6 +844,9 @@
     <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\custom\ProgressBarComponent.cpp">
+      <Filter>NeuroCore\src\ui\custom</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\DslTerminalEditor.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
@@ -4144,6 +4147,9 @@
       <Filter>NeuroCore\src\third_party\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h">
+      <Filter>NeuroCore\src\ui\custom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\custom\ProgressBarComponent.h">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\DslTerminalEditor.h">

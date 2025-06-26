@@ -25,9 +25,7 @@
 #include "ValidationOverlay.h"
 #include "FunctionsOverlay.h"
 #include "WeightedLayout.h"
-#if __has_include(<melatonin_inspector/melatonin_inspector.h>)
-# include <melatonin_inspector/melatonin_inspector.h>
-#endif
+
 
 class ParameterSlider : public juce::Slider
 {
@@ -73,7 +71,9 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
     std::unique_ptr<ui::LayoutNode> layoutRoot;
 
-    // Left column controls
+
+        // Left column controls
+
 
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;

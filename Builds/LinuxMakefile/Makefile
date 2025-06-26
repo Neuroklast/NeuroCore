@@ -129,6 +129,7 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
   $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o \
+  $(JUCE_OBJDIR)/ProgressBarComponent_a133c75a.o \
   $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
@@ -299,6 +300,11 @@ $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o: ../../src/dsp/WaveShaper.cpp
 $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o: ../../src/ui/custom/ParameterComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling ParameterComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/ProgressBarComponent_a133c75a.o: ../../src/ui/custom/ProgressBarComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ProgressBarComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o: ../../src/ui/DslTerminalEditor.cpp

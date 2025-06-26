@@ -11722,6 +11722,7 @@ static const unsigned char temp_binary_data_13[] =
 "    src/ui/LoudnessMeterComponent.cpp\r\n"
 "    src/ui/WeightedLayout.cpp\r\n"
 "    src/ui/custom/ParameterComponent.cpp\r\n"
+"    src/ui/custom/ProgressBarComponent.cpp\r\n"
 "    src/dsp/LookupTables.cpp\r\n"
 "    src/core/PluginProcessor.cpp\r\n"
 "    src/ui/PluginEditor.cpp\r\n"
@@ -11875,20 +11876,22 @@ static const unsigned char temp_binary_data_14[] =
 "    <GROUP id=\"{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}\" name=\"docs\"/>\r\n"
 "    <GROUP id=\"{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}\" name=\"resources\">\r\n"
 "      <GROUP id=\"{77B36C55-0DF8-337B-1083-B2E4666F6F09}\" name=\"img\">\r\n"
-"        <FILE id=\"PgogBv\" name=\"innerknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/innerknob.png\"/>\r\n"
-"        <FILE id=\"rivHeZ\" name=\"knob lights.png\" compile=\"0\" resource=\"1\" file=\"resources/img/knob lights.png\"/>\r\n"
-"        <FILE id=\"S2WiEU\" name=\"outerKnob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/outerKnob.png\"/>\r\n"
-"        <FILE id=\"kvfta6\" name=\"overknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/overknob.png\"/>\r\n"
+"        <FILE id=\"G0DJIl\" name=\"innerknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/innerknob.png\"/>\r\n"
+"        <FILE id=\"pVJz3p\" name=\"knob lights.png\" compile=\"0\" resource=\"1\" file=\"resources/img/knob lights.png\"/>\r\n"
+"        <FILE id=\"QLN5Pj\" name=\"outerKnob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/outerKnob.png\"/>\r\n"
+"        <FILE id=\"g4nzIP\" name=\"overknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/overknob.png\"/>\r\n"
 "      </GROUP>\r\n"
 "      <GROUP id=\"{01A2F6C4-31F8-EBE4-A7EA-77F04E50F440}\" name=\"locale\">\r\n"
-"        <FILE id=\"Y4Pq8H\" name=\"de.txt\" compile=\"0\" resource=\"1\" file=\"resources/locale/de.txt\"/>\r\n"
-"        <FILE id=\"siracM\" name=\"en.txt\" compile=\"0\" resource=\"1\" file=\"resources/locale/en.txt\"/>\r\n"
-"        <FILE id=\"iLC6dD\" name=\"functions_de.txt\" compile=\"0\" resource=\"1\"\r\n"
+"        <FILE id=\"rWwWfP\" name=\"de.txt\" compile=\"0\" resource=\"1\" file=\"resources/locale/de.txt\"/>\r\n"
+"        <FILE id=\"c9jau4\" name=\"en.txt\" compile=\"0\" resource=\"1\" file=\"resources/locale/en.txt\"/>\r\n"
+"        <FILE id=\"pgI6XD\" name=\"functions_de.txt\" compile=\"0\" resource=\"1\"\r\n"
 "              file=\"resources/locale/functions_de.txt\"/>\r\n"
+"        <FILE id=\"HGzdWN\" name=\"functions_en.txt\" compile=\"0\" resource=\"1\"\r\n"
+"              file=\"resources/locale/functions_en.txt\"/>\r\n"
 "      </GROUP>\r\n"
-"      <FILE id=\"nScnny\" name=\"optimizations.txt\" compile=\"0\" resource=\"1\"\r\n"
+"      <FILE id=\"CFhqWO\" name=\"optimizations.txt\" compile=\"0\" resource=\"1\"\r\n"
 "            file=\"resources/optimizations.txt\"/>\r\n"
-"      <FILE id=\"slD00j\" name=\"templates.json\" compile=\"0\" resource=\"1\" file=\"resources/templates.json\"/>\r\n"
+"      <FILE id=\"bmaWaM\" name=\"templates.json\" compile=\"0\" resource=\"1\" file=\"resources/templates.json\"/>\r\n"
 "    </GROUP>\r\n"
 "    <GROUP id=\"{E0A14B83-8D9B-38D1-5F26-9EFC91CA7C75}\" name=\"scripts\">\r\n"
 "      <FILE id=\"lPp3UK\" name=\"install_linux_deps.sh\" compile=\"0\" resource=\"1\"\r\n"
@@ -12291,8 +12294,8 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0x6bf5ee41:  numBytes = 190; return install_linux_deps_sh;
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
         case 0x40c27d68:  numBytes = 1241; return AGENTS_md;
-        case 0x90e15cf5:  numBytes = 5987; return CMakeLists_txt;
-        case 0x7daaf120:  numBytes = 18516; return NeuroCore_jucer;
+        case 0x90e15cf5:  numBytes = 6031; return CMakeLists_txt;
+        case 0x7daaf120:  numBytes = 18650; return NeuroCore_jucer;
         case 0x64791dc8:  numBytes = 5874; return README_md;
         default: break;
     }

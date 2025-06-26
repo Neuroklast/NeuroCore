@@ -48,10 +48,10 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 5987;
+    const int            CMakeLists_txtSize = 6031;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 18516;
+    const int            NeuroCore_jucerSize = 18650;
 
     extern const char*   README_md;
     const int            README_mdSize = 5874;
