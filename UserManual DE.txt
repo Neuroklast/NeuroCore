@@ -51,11 +51,11 @@ y_prev = Vorheriges Output
 3.3. Filter-Stage
 plaintext
 Kopieren
-Bearbeiten
 filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
 Typen: lowpass, highpass, bandpass
 
-Parameter können Makros, Modulatoren und Formeln enthalten.
+Parameter können Makros, Modulatoren und Formeln enthalten. Bei Bandpass-Filtern dürfen
+entweder `center` und `width` oder `lowcut` und `highcut` angegeben werden.
 
 3.4. Kompressor
 plaintext
@@ -93,7 +93,7 @@ param d = compThresh
 
 stage1: y = inputGain * x
 stage2: y = tanh(2.5 * y + 0.3 * pow(y, 3)) + 0.05 * y_prev
-filter1: type = bandpass; cutoff = 500 + 1500 * tone; resonance = 0.8
+filter1: type = bandpass; center = 1200 + 300 * tone; width = 1000; resonance = 0.8
 stage3: y = tanh(y + 0.2 * y_prev) + 0.05 * pow(y, 5)
 comp1: threshold = compThresh; ratio = 6; attack = 0.005; release = 0.05
 env1: type = rms; attack = 0.01; release = 0.1
@@ -132,7 +132,7 @@ Kopieren
 Bearbeiten
 env1: type = rms; attack = 0.01; release = 0.05
 osc1: shape = sine; freq = 1.0; depth = b
-filter1: type = bandpass; cutoff = 600 + env1 * 1000 + osc1 * 200
+filter1: type = bandpass; lowcut = 400 + env1 * 200; highcut = 2000 + osc1 * 200
 9. Häufige Fehlerquellen
 Blöcke in falscher Reihenfolge
 

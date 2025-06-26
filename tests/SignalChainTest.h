@@ -3,6 +3,7 @@
 
 #include <JuceHeader.h>
 #include "../src/dsl/SignalChain.h"
+#include "../src/core/Config.h"
 
 class SignalChainTest : public juce::UnitTest
 {
@@ -36,6 +37,26 @@ public:
             juce::AudioBuffer<float> buf(1,2); buf.clear(); buf.setSample(0,0,1.0f);
             c.processBlock(buf, {0,0,0,0});
             expectGreaterOrEqual(buf.getSample(0,0), 0.5f);
+        }
+
+        beginTest("Bandpass center/width");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nfilter1: type = bandpass; center = 1000; width = 500";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+        }
+
+        beginTest("Bandpass low/high cut");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nfilter1: type = bandpass; lowcut = 400; highcut = 1600";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
         }
 
         beginTest("Compressor reduces level");
@@ -73,6 +94,35 @@ public:
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
             c.processBlock(buf, {2.f,0.f,0.f,0.f});
             expectWithinAbsoluteError(buf.getSample(0,0), 2.0f, 1e-5f);
+        }
+
+        beginTest("Filter parameter smoothing");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "stage1: y = x\nfilter1: cutoff = map(a,0,1,500,5000)";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+
+            juce::SmoothedValue<float> aSm;
+            aSm.reset(spec.sampleRate, Config::kSmoothingTime);
+            aSm.setCurrentAndTargetValue(0.f);
+            std::array<juce::SmoothedValue<float>*,4> ptr{ &aSm, nullptr, nullptr, nullptr };
+
+            juce::AudioBuffer<float> buf(1,8); buf.clear();
+            juce::AudioBuffer<float> tmp(1,1); tmp.setSample(0,0,1.0f);
+            for (int i = 0; i < buf.getNumSamples(); ++i)
+            {
+                if (i % 2 == 0)
+                    aSm.setTargetValue(1.f);
+                else
+                    aSm.setTargetValue(0.f);
+                tmp.setSample(0,0,1.0f);
+                c.processBlockSmoothed(tmp, ptr);
+                buf.setSample(0,i, tmp.getSample(0,0));
+                expect(std::isfinite(buf.getSample(0,i)));
+            }
         }
     }
 };

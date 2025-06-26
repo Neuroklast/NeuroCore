@@ -20,13 +20,17 @@
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
 #include "WeightedLayout.h"
+#include "ModalOverlay.h"
+#include "ValidationContentComponent.h"
+#include "PresetContentComponent.h"
+#include "FunctionsContentComponent.h"
 
 
 //==============================================================================
 NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setLookAndFeel (&lookAndFeel);
+    juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
 
@@ -48,20 +52,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible(*helpButton);
 
-    blankToggle = std::make_unique<juce::ToggleButton>("Blank");
+    blankToggle = std::make_unique<juce::ToggleButton>(TRANS("Blank"));
     addAndMakeVisible(*blankToggle);
 
-    presetsButton = std::make_unique<juce::TextButton>("Presets");
+    presetsButton = std::make_unique<juce::TextButton>(TRANS("Presets"));
     presetsButton->onClick = [this] { showPresetOverlay(); };
     addAndMakeVisible(*presetsButton);
 
-    bypassButton = std::make_unique<juce::ToggleButton>("Bypass");
+    bypassButton = std::make_unique<juce::ToggleButton>(TRANS("Bypass"));
     addAndMakeVisible(*bypassButton);
 
-    functionsButton = std::make_unique<juce::TextButton>("Functions");
+    functionsButton = std::make_unique<juce::TextButton>(TRANS("Functions"));
+    functionsButton->onClick = [this] { showFunctionsOverlay(); };
     addAndMakeVisible(*functionsButton);
 
-    stagesButton = std::make_unique<juce::TextButton>("Stages");
+    stagesButton = std::make_unique<juce::TextButton>(TRANS("Stages"));
     addAndMakeVisible(*stagesButton);
 
     languageLabel = std::make_unique<juce::Label>();
@@ -236,46 +241,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         else
         {
             auto text = formulaInputEditor->getText();
-            struct TestThread : juce::ThreadWithProgressWindow
-            {
-                TestThread(const juce::String& s, NeuroCoreAudioProcessor& p)
-                    : juce::ThreadWithProgressWindow(TRANS("StabilityTesting"), true, true), script(s), proc(p) {}
-                void run() override { ok = proc.testFormulaStability(script, warn, [this](float p){ setProgress(p); }); }
-                juce::String script; NeuroCoreAudioProcessor& proc; juce::String warn; bool ok { true }; };
-            TestThread t(text, audioProcessor);
-            setEnabled(false);
-            t.launchThread();
-            t.waitForThreadToExit(-1);
-            setEnabled(true);
-
-            if (! t.ok)
-            {
-                bool proceed = juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                                                                  TRANS("StabilityCheckTitle"),
-                                                                  t.warn,
-                                                                  TRANS("ActivateAnyway"),
-                                                                  TRANS("EditButton"),
-                                                                  nullptr,
-                                                                  nullptr);
-                if (! proceed)
-                    return;
-            }
-
-            juce::String err;
-            if (audioProcessor.setFormula(text, err))
-            {
-                formulaInputEditor->setReadOnly(true);
-                formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-                editSaveButton->setButtonText(TRANS("EditButton"));
-                editing = false;
-                errorLabel->setText({}, juce::dontSendNotification);
-                refreshParameterControls();
-            }
-            else
-            {
-                errorLabel->setText(err, juce::dontSendNotification);
-            }
+            validateAndOverlay(text);
         }
     };
     addAndMakeVisible(*editSaveButton);
@@ -297,6 +263,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     layoutRoot = makeColumn();
     layoutRoot->margin = Config::kUiPadding;
 	layoutRoot->innerMargin = Config::kUiPadding;
+	layoutRoot->aspectRatio = 1.618f; // Golden ratio for a nice layout
 
 	layoutRoot->drawBorder = true;
 
@@ -304,6 +271,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 	auto header = makeRow(0.1f);
 	header->innerMargin = Config::kUiPadding;
 	header->margin = Config::kUiPadding;
+	header->drawBorder = false;
+	
+
     
     
     header->addChild(makeLeaf(pluginNameLabel.get(), 2.0f));
@@ -315,6 +285,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     header->addChild(makeLeaf(languageBox.get(), 1.0f));
     layoutRoot->addChild(std::move(header));
 
+
+
     auto body = makeRow();
     body->innerMargin = Config::kUiPadding;
 	
@@ -323,7 +295,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 	auto left = makeColumn(5.f);
     auto editor = makeRow();
-	auto formulaEditor = makeColumn(5.f);
+	auto formulaEditor = makeColumn(6.f);
     auto paramKnobs = makeColumn(1.f);
     auto buttons = makeColumn(1.f);
 	
@@ -354,6 +326,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto right = makeColumn(1.f);
 	right->innerMargin = Config::kUiPadding;
+	right->drawBorder = false;
+	right->margin = Config::kUiPadding;
 
     right->addChild(makeLeaf(loudnessMeter.get()));
     
@@ -374,7 +348,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 	auto wavemeter = makeRow(0.8f, 0, true);
 	wavemeter->drawBorder = true;
-	wavemeter->innerMargin = 5;
+	wavemeter->innerMargin = Config::kUiPadding;
+	wavemeter->margin = Config::kUiPadding;
     wavemeter->addChild(makeLeaf(inputDisplay.get()));
     wavemeter->addChild(makeLeaf(outputDisplay.get()));
 
@@ -408,6 +383,9 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
+    presetOverlay.reset();
+    functionsOverlay.reset();
+    validationOverlay.reset();
     Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
 }
@@ -479,31 +457,85 @@ void NeuroCoreAudioProcessorEditor::resized()
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 {
     hidePresetOverlay();
-    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor, lookAndFeel);
-    presetOverlay->onPresetSelected = [this](int idx)
+    auto content = std::make_unique<PresetContentComponent>(audioProcessor, lookAndFeel);
+    auto* ptr = content.get();
+
+    presetOverlay = std::make_unique<ModalOverlay>();
+    presetOverlay->setMode(OverlayMode::Closable);
+    presetOverlay->setTitle(TRANS("Presets"));
+    presetOverlay->setContent(std::move(content));
+    presetOverlay->show(*this);
+
+    ptr->onPresetSelected = [this](int idx)
     {
         audioProcessor.loadPreset(idx);
-        hidePresetOverlay();
+        presetOverlay.reset();
     };
-    presetOverlay->onClose = [this] { hidePresetOverlay(); };
-
-    auto bounds = getScreenBounds();
-    presetOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    presetOverlay->setBounds(bounds);
-    presetOverlay->enterModalState(true);
-    presetOverlay->toFront(true);
-    presetOverlay->grabKeyboardFocus();
+    ptr->onClose = [this] { presetOverlay.reset(); };
 }
 
+void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
+{
+    hideFunctionsOverlay();
+    auto content = std::make_unique<FunctionsContentComponent>(audioProcessor);
+    auto* ptr = content.get();
+
+    functionsOverlay = std::make_unique<ModalOverlay>();
+    functionsOverlay->setMode(OverlayMode::Closable);
+    functionsOverlay->setTitle(TRANS("Functions"));
+    functionsOverlay->setContent(std::move(content));
+    functionsOverlay->show(*this);
+
+    ptr->onInsert = [this](const juce::String& text)
+    {
+        formulaInputEditor->insertTextAtCaret(text);
+    };
+    ptr->onClose = [this]{ functionsOverlay.reset(); };
+}
+
+void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
+{
+    if (functionsOverlay)
+        functionsOverlay.reset();
+}
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
-    {
-        presetOverlay->exitModalState(0);
-        presetOverlay->setVisible(false);
-        presetOverlay->removeFromDesktop();
         presetOverlay.reset();
-    }
+}
+
+void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
+{
+    validationOverlay.reset();
+
+    auto content = std::make_unique<ValidationContentComponent>(audioProcessor, expr);
+    auto* ptr = content.get();
+
+    validationOverlay = std::make_unique<ModalOverlay>();
+    validationOverlay->setMode(OverlayMode::Blocking);
+    validationOverlay->setTitle("Validating Script...");
+    validationOverlay->setContent(std::move(content));
+    validationOverlay->show(*this);
+
+    ptr->onResult = [this, expr](bool stable)
+    {
+        validationOverlay.reset();
+        juce::String err;
+        if (audioProcessor.setFormula(expr, err))
+        {
+            formulaInputEditor->setReadOnly(true);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                              juce::Colours::transparentBlack);
+            editSaveButton->setButtonText(TRANS("EditButton"));
+            editing = false;
+            errorLabel->setText({}, juce::dontSendNotification);
+            refreshParameterControls();
+        }
+        else
+        {
+            errorLabel->setText(err, juce::dontSendNotification);
+        }
+    };
 }
 
 

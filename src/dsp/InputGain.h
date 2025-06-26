@@ -8,6 +8,9 @@
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
 
+/// Simple processor applying a smoothed gain to the incoming audio.
+/// The gain value is updated via setParameter and interpolated to
+/// avoid clicks when changed.
 class InputGain : public juce::dsp::ProcessorBase
 {
 public:

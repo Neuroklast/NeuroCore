@@ -37,6 +37,8 @@ public:
     // CodeDocument::Listener
     void codeDocumentTextInserted(const juce::String&, int) override;
     void codeDocumentTextDeleted(int, int) override;
+    void insertTextAtCaret(const juce::String& text);
+
 
 private:
     // juce::OpenGLRenderer

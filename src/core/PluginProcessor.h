@@ -26,6 +26,16 @@
 #include "../dsp/LowPassFilter.h"
 #include "EffectParameters.h"
 #include "Config.h"
+#include "../licensing/LicenseManager.h"
+
+
+struct ValidationProgressInfo
+{
+    float       progress { 0.0f };   ///< Progress in range [0,1]
+    juce::String message;             ///< Description of current task
+    int         nanCount { 0 };       ///< Number of NaN samples seen
+    int         infCount { 0 };       ///< Number of Inf samples seen
+};
 
 
 //==============================================================================
@@ -98,7 +108,10 @@ public:
 
     bool testFormulaStability (const juce::String& script,
                                juce::String& warning,
-                               std::function<void(float)> progress = {});
+                               std::function<bool(const ValidationProgressInfo&)> progress = {});
+
+    /** Smoothly bypass or enable the output during validation. */
+    void setValidationBypass(bool enable);
 
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);
@@ -134,6 +147,11 @@ private:
     juce::String dslScript;
     juce::String currentLanguage;
 
+    // Licensing
+    LicenseManager licenseManager;
+    bool           isLicensed  { false };
+    double         demoStartMs { 0.0 };
+
 
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                    juce::dsp::IIR::Coefficients<float>> lowpassFilter;
@@ -153,13 +171,14 @@ private:
     std::atomic<int>              inputWritePos  { 0 };
     std::atomic<int>              outputWritePos { 0 };
     InputRouter                   inputRouter;
-    juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
+    juce::dsp::ProcessorChain<InputGain, juce::dsp::NoiseGate<float>, SignalPolisher> chain;
     dsl::SignalChain              signalChain;
     dsl::SignalChain              oldSignalChain;
     dsl::SignalChain              previewSignalChain;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
     std::atomic<int>              oversamplingIndex { 1 }; // 2x by default
     juce::SmoothedValue<float>    formulaBlend;
+    bool                          bypassActive { false };
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };
@@ -169,7 +188,8 @@ private:
     // Helper accessors for the processor chain
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
-    SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
+    juce::dsp::NoiseGate<float>& getNoiseGate() noexcept { return chain.get<1>(); }
+    SignalPolisher& getPolisher()       noexcept { return chain.get<2>(); }
 
 
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,

@@ -112,18 +112,60 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             auto fi = std::make_unique<Filter>();
             auto t = d.args.count("type") ? d.args.at("type").toLowerCase() : "lowpass";
             fi->type = parseFilterType(t);
-            if (d.args.count("cutoff"))
+
+            if (fi->type == juce::dsp::StateVariableTPTFilterType::bandpass)
             {
-                auto expr = addDefaultMap(d.args.at("cutoff"), 20.f, 20000.f);
-                fi->cutoff.parseFormula(expr.toStdString());
-                auto pn = findParam(expr);
-                if (pn.isNotEmpty())
-                    parameterMappings[pn].add(d.name + " cutoff [20..20000 Hz]");
+                fi->useCenterWidth = d.args.count("center") && d.args.count("width");
+                fi->useLowHigh    = d.args.count("lowcut") && d.args.count("highcut");
+
+                if (fi->useCenterWidth)
+                {
+                    auto exprC = addDefaultMap(d.args.at("center"), 20.f, 20000.f);
+                    fi->center.parseFormula(exprC.toStdString());
+                    auto pn = findParam(exprC);
+                    if (pn.isNotEmpty())
+                        parameterMappings[pn].add(d.name + " center [20..20000 Hz]");
+
+                    auto exprW = addDefaultMap(d.args.at("width"), 1.f, 20000.f);
+                    fi->width.parseFormula(exprW.toStdString());
+                    pn = findParam(exprW);
+                    if (pn.isNotEmpty())
+                        parameterMappings[pn].add(d.name + " width [1..20000 Hz]");
+                }
+                if (fi->useLowHigh)
+                {
+                    auto exprL = addDefaultMap(d.args.at("lowcut"), 20.f, 20000.f);
+                    fi->lowcut.parseFormula(exprL.toStdString());
+                    auto pn = findParam(exprL);
+                    if (pn.isNotEmpty())
+                        parameterMappings[pn].add(d.name + " lowcut [20..20000 Hz]");
+
+                    auto exprH = addDefaultMap(d.args.at("highcut"), 20.f, 20000.f);
+                    fi->highcut.parseFormula(exprH.toStdString());
+                    pn = findParam(exprH);
+                    if (pn.isNotEmpty())
+                        parameterMappings[pn].add(d.name + " highcut [20..20000 Hz]");
+                }
+
+                // fallback cutoff/resonance
+                fi->cutoff.parseFormula("1000");
             }
             else
             {
-                fi->cutoff.parseFormula("1000");
+                if (d.args.count("cutoff"))
+                {
+                    auto expr = addDefaultMap(d.args.at("cutoff"), 20.f, 20000.f);
+                    fi->cutoff.parseFormula(expr.toStdString());
+                    auto pn = findParam(expr);
+                    if (pn.isNotEmpty())
+                        parameterMappings[pn].add(d.name + " cutoff [20..20000 Hz]");
+                }
+                else
+                {
+                    fi->cutoff.parseFormula("1000");
+                }
             }
+
             if (d.args.count("resonance"))
             {
                 auto expr = addDefaultMap(d.args.at("resonance"), 0.1f, 10.f);
@@ -134,6 +176,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             else
                 fi->resonance.parseFormula("0.7");
+
             fi->varPtr = &variables;
             newChain->push_back (std::move (fi));
         }
@@ -338,6 +381,10 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     channels = static_cast<int> (spec.numChannels);
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
+    cutoffSm.reset(sampleRate, Config::kSmoothingTime);
+    resSm.reset(sampleRate, Config::kSmoothingTime);
+    cutoffSm.setCurrentAndTargetValue(cutoff.evaluate(0.f));
+    resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -360,18 +407,46 @@ float SignalChain::Filter::process(int ch, float x)
     {
         cutoff.setVariable(n.second, (*varPtr)[n.first]);
         resonance.setVariable(n.second, (*varPtr)[n.first]);
+        center.setVariable(n.second, (*varPtr)[n.first]);
+        width.setVariable(n.second, (*varPtr)[n.first]);
+        lowcut.setVariable(n.second, (*varPtr)[n.first]);
+        highcut.setVariable(n.second, (*varPtr)[n.first]);
     }
 
     float fc = cutoff.evaluate(x);
     float res = resonance.evaluate(x);
+
+    if (type == juce::dsp::StateVariableTPTFilterType::bandpass)
+    {
+        if (useCenterWidth)
+        {
+            float c  = center.evaluate(x);
+            float w  = width.evaluate(x);
+            fc       = c;
+            if (! resonance.isValid())
+                res = (w != 0.0f ? juce::jlimit(0.1f, 10.0f, c / w) : res);
+        }
+        else if (useLowHigh)
+        {
+            float lo = lowcut.evaluate(x);
+            float hi = highcut.evaluate(x);
+            fc       = (lo + hi) * 0.5f;
+            if (! resonance.isValid())
+                res = ((hi - lo) != 0.0f ? juce::jlimit(0.1f, 10.0f, fc / (hi - lo)) : res);
+        }
+    }
 
     const auto nyquist = sampleRate * 0.5f;
     const auto maxFc = std::nextafter(nyquist, 0.0f); // keep strictly below Nyquist
     fc = juce::jlimit(20.0f, maxFc, fc);
     res = juce::jlimit(0.1f, 10.0f, res);
 
-    filter.setCutoffFrequency(fc);
-    filter.setResonance(res);
+    cutoffSm.setTargetValue(fc);
+    resSm.setTargetValue(res);
+    const float fcSm = cutoffSm.getNextValue();
+    const float rqSm = resSm.getNextValue();
+    filter.setCutoffFrequency(fcSm);
+    filter.setResonance(rqSm);
 
     float y = filter.processSample(ch, x);
     xPrev[ch] = x;

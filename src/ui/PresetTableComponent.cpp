@@ -90,9 +90,9 @@ int PresetTableComponent::getNumRows()
 
 void PresetTableComponent::paintRowBackground(juce::Graphics& g, int row, int, int, bool selected)
 {
-    auto bg  = findColour(backgroundColourId);
-    auto alt = findColour(alternateRowColourId);
-    auto hl  = findColour(highlightColourId);
+	auto bg = Colours::black;
+    auto alt = Colours::grey;
+    auto hl  = Colours::darkred;
 
     if (selected)
         g.fillAll(hl);
@@ -111,9 +111,9 @@ void PresetTableComponent::paintCell(juce::Graphics& g, int row, int columnId, i
     if (columnId == 1) text = e.name;
     else if (columnId == 2) text = e.author;
     else if (columnId == 3) text = e.date.toString(true, true);
-    g.setColour(findColour(textColourId));
+    g.setColour(Colours::white);
     g.drawText(text, 2, 0, width - 4, height, juce::Justification::centredLeft, true);
-    g.setColour(findColour(backgroundColourId));
+    g.setColour(Colours::black);
     g.fillRect(width - 1, 0, 1, height);
 }
 

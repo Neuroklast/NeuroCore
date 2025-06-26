@@ -74,6 +74,12 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile(Config::kUserTemplateFile);
     loadUserTemplates(userFile);
+
+    if (Config::kEnableLicensing)
+    {
+        isLicensed = licenseManager.verifyLicense();
+        demoStartMs = juce::Time::getMillisecondCounterHiRes();
+    }
 }
 
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
@@ -281,6 +287,21 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
     if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
         return;
+
+    if (Config::kEnableLicensing)
+    {
+        if (! isLicensed)
+            isLicensed = licenseManager.verifyLicense();
+        if (! isLicensed)
+        {
+            double elapsed = (juce::Time::getMillisecondCounterHiRes() - demoStartMs) / 1000.0;
+            if (elapsed > Config::kDemoDurationSeconds)
+            {
+                buffer.clear();
+                return;
+            }
+        }
+    }
     auto getParam = [this](const char* id)
     {
         if (auto* p = apvts.getRawParameterValue (id))
@@ -320,7 +341,17 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     getPolisher().setParameter (EffectParameters::polisherMode,
                                 clamp(EffectParameters::polisherMode, getParam (EffectParameters::polisherMode)));
 
-    wetValue.setTargetValue (clamp(EffectParameters::dryWet, getParam (EffectParameters::dryWet)));
+    const float dryWet = clamp(EffectParameters::dryWet, getParam(EffectParameters::dryWet));
+    wetValue.setTargetValue (dryWet);
+
+    bool currentBypass = (dryWet == 0.0f);
+    if (currentBypass && !bypassActive)
+    {
+        lowpassFilter.reset();
+        if (oversampler)
+            oversampler->reset();
+    }
+    bypassActive = currentBypass;
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
@@ -338,7 +369,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     dryWetMixer.pushDrySamples (block);
 
-    auto upBlock = oversampler ? oversampler->processSamplesUp (block) : block;
+    auto upBlock = block;
+    if (!bypassActive && oversampler)
+        upBlock = oversampler->processSamplesUp (block);
     juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
     chain.get<0>().process (ctxGain);
 
@@ -371,12 +404,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         upBlock.copyFrom (scriptBuffer);
     }
 
+    juce::dsp::ProcessContextReplacing<float> ctxGate (upBlock);
+    chain.get<1>().process (ctxGate);
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
-    chain.get<1>().process (ctxPolish);
+    chain.get<2>().process (ctxPolish);
     juce::dsp::ProcessContextReplacing<float> ctxFilter (upBlock);
-    lowpassFilter.process (ctxFilter);
+    if (!bypassActive)
+        lowpassFilter.process (ctxFilter);
 
-    if (oversampler)
+    if (!bypassActive && oversampler)
         oversampler->processSamplesDown (block);
 
     for (size_t i = 0; i < block.getNumSamples(); ++i)
@@ -473,6 +509,13 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
                           Config::kCrossfadeTime);
         formulaBlend.setCurrentAndTargetValue(0.f);
         formulaBlend.setTargetValue(1.f);
+        lowpassFilter.reset();
+        if (oversampler)
+            oversampler->reset();
+        if (auto* p = apvts.getRawParameterValue(EffectParameters::dryWet))
+            bypassActive = (p->load() == 0.0f);
+        else
+            bypassActive = false;
         return true;
     }
     return false;
@@ -540,7 +583,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
 
 bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                                                    juce::String& warning,
-                                                   std::function<void(float)> progress)
+                                                   std::function<bool(const ValidationProgressInfo&)> progress)
 {
     dsl::SignalChain testChain;
     if (! testChain.loadScript(script, warning))
@@ -553,8 +596,9 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
 
     juce::AudioBuffer<float> buf(1, bs);
     std::array<float,4> params{};
+    int nanCount = 0;
+    int infCount = 0;
     int invalid = 0;
-    const int maxInvalid = 10;
 
     auto run = [&](float value, int paramIndex)
     {
@@ -562,6 +606,7 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
         params[paramIndex] = value;
         int processed = 0;
         juce::Random rng;
+        juce::String msg = "param " + juce::String::charToString((juce_wchar)('a' + paramIndex)) + "=" + juce::String(value);
         while (processed < samples)
         {
             const int block = juce::jmin(bs, samples - processed);
@@ -577,16 +622,26 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
             for (int i = 0; i < block; ++i)
             {
                 float v = buf.getSample(0, i);
+                if (std::isnan(v)) ++nanCount;
+                else if (std::isinf(v)) ++infCount;
                 if (! std::isfinite(v) || std::abs(v) > 1.5f)
                 {
                     ++invalid;
-                    if (invalid > maxInvalid)
+                    if (invalid > Config::kInvalidValueThreshold)
                         return false;
                 }
             }
             processed += block;
             if (progress)
-                progress((float) processed / (float) samples);
+            {
+                ValidationProgressInfo info;
+                info.progress = (float) processed / (float) samples;
+                info.message  = msg;
+                info.nanCount = nanCount;
+                info.infCount = infCount;
+                if (! progress(info))
+                    return false;
+            }
         }
         return true;
     };
@@ -598,6 +653,16 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                 warning = TRANS("StabilityWarning");
                 return false;
             }
+
+    if (progress)
+    {
+        ValidationProgressInfo info;
+        info.progress = 1.0f;
+        info.message  = TRANS("done");
+        info.nanCount = nanCount;
+        info.infCount = infCount;
+        progress(info);
+    }
 
     return true;
 }
@@ -700,6 +765,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                     currentSpec.maximumBlockSize * (juce::uint32) osFactor,
                                     currentSpec.numChannels };
     chain.prepare (osSpec);
+    chain.get<1>().setThreshold(-60.0f);
     lowpassFilter.prepare (currentSpec);
     *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
     auto scriptSamples = (int) (currentSpec.maximumBlockSize * osFactor);
@@ -804,6 +870,16 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
         juce::FloatVectorOperations::copy (dst, src + start, first);
         if (num > first)
             juce::FloatVectorOperations::copy (dst + first, src, num - first);
+    }
+}
+
+void NeuroCoreAudioProcessor::setValidationBypass(bool enable)
+{
+    if (auto* p = apvts.getRawParameterValue(EffectParameters::dryWet))
+    {
+        float target = enable ? 0.0f : p->load();
+        wetValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
+        wetValue.setTargetValue(target);
     }
 }
 

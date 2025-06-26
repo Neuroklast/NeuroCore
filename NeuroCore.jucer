@@ -8,19 +8,27 @@
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
     <GROUP id="{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}" name="resources">
+      <GROUP id="{CAD75D28-A416-5820-041C-133A5E07D04D}" name="fonts">
+        <FILE id="M1qZ84" name="apex.otf" compile="0" resource="1" file="resources/fonts/apex.otf"/>
+      </GROUP>
       <GROUP id="{77B36C55-0DF8-337B-1083-B2E4666F6F09}" name="img">
-        <FILE id="r637kS" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
-        <FILE id="RYsfCg" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
-        <FILE id="xbz4xY" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
-        <FILE id="Nw0rcn" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
+        <FILE id="G0DJIl" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
+        <FILE id="aVTCRt" name="warning.png" compile="0" resource="1" file="resources/img/warning.png"/>
+        <FILE id="pVJz3p" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
+        <FILE id="QLN5Pj" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
+        <FILE id="g4nzIP" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
       </GROUP>
       <GROUP id="{01A2F6C4-31F8-EBE4-A7EA-77F04E50F440}" name="locale">
-        <FILE id="fupLYE" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
-        <FILE id="lx836f" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
+        <FILE id="rWwWfP" name="de.txt" compile="0" resource="1" file="resources/locale/de.txt"/>
+        <FILE id="c9jau4" name="en.txt" compile="0" resource="1" file="resources/locale/en.txt"/>
+        <FILE id="pgI6XD" name="functions_de.txt" compile="0" resource="1"
+              file="resources/locale/functions_de.txt"/>
+        <FILE id="HGzdWN" name="functions_en.txt" compile="0" resource="1"
+              file="resources/locale/functions_en.txt"/>
       </GROUP>
-      <FILE id="VFvVs8" name="optimizations.txt" compile="0" resource="1"
+      <FILE id="CFhqWO" name="optimizations.txt" compile="0" resource="1"
             file="resources/optimizations.txt"/>
-      <FILE id="cXDXoy" name="templates.json" compile="0" resource="1" file="resources/templates.json"/>
+      <FILE id="bmaWaM" name="templates.json" compile="0" resource="1" file="resources/templates.json"/>
     </GROUP>
     <GROUP id="{E0A14B83-8D9B-38D1-5F26-9EFC91CA7C75}" name="scripts">
       <FILE id="lPp3UK" name="install_linux_deps.sh" compile="0" resource="1"
@@ -28,115 +36,148 @@
     </GROUP>
     <GROUP id="{AA596A90-F5B9-4CE4-5CD6-B39E656A7126}" name="src">
       <GROUP id="{C588D082-C650-9100-D715-0B4DBFBEBC1A}" name="core">
-        <FILE id="r6GOG2" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
-        <FILE id="hOxJiC" name="EffectParameters.h" compile="0" resource="0"
+        <FILE id="VFLo8Q" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
+        <FILE id="RhukfS" name="EffectParameters.h" compile="0" resource="0"
               file="src/core/EffectParameters.h"/>
-        <FILE id="nh4Srr" name="PluginProcessor.cpp" compile="1" resource="0"
+        <FILE id="zDRB1t" name="PluginProcessor.cpp" compile="1" resource="0"
               file="src/core/PluginProcessor.cpp"/>
-        <FILE id="RZaJh1" name="PluginProcessor.h" compile="0" resource="0"
+        <FILE id="v8ndHl" name="PluginProcessor.h" compile="0" resource="0"
               file="src/core/PluginProcessor.h"/>
       </GROUP>
       <GROUP id="{97121B39-FA27-EBEA-A5CE-9AD7CE852A65}" name="dsl">
-        <FILE id="NzX6BH" name="DSLParser.cpp" compile="1" resource="0" file="src/dsl/DSLParser.cpp"/>
-        <FILE id="d7lVQX" name="DSLParser.h" compile="0" resource="0" file="src/dsl/DSLParser.h"/>
-        <FILE id="Gv9l6Z" name="SignalChain.cpp" compile="1" resource="0" file="src/dsl/SignalChain.cpp"/>
-        <FILE id="vOEUeL" name="SignalChain.h" compile="0" resource="0" file="src/dsl/SignalChain.h"/>
+        <FILE id="j1ke4f" name="DSLParser.cpp" compile="1" resource="0" file="src/dsl/DSLParser.cpp"/>
+        <FILE id="vy8vcQ" name="DSLParser.h" compile="0" resource="0" file="src/dsl/DSLParser.h"/>
+        <FILE id="gpR0ga" name="SignalChain.cpp" compile="1" resource="0" file="src/dsl/SignalChain.cpp"/>
+        <FILE id="pj3ZjW" name="SignalChain.h" compile="0" resource="0" file="src/dsl/SignalChain.h"/>
       </GROUP>
       <GROUP id="{29AEAA9D-9768-2ED5-FEA7-248047CDC0E0}" name="dsp">
-        <FILE id="GHSEkv" name="AdvancedOscillatorWrapper.cpp" compile="1"
+        <FILE id="ZJbFBY" name="AdvancedOscillatorWrapper.cpp" compile="1"
               resource="0" file="src/dsp/AdvancedOscillatorWrapper.cpp"/>
-        <FILE id="StjpMd" name="AdvancedOscillatorWrapper.h" compile="0" resource="0"
+        <FILE id="UfRw6H" name="AdvancedOscillatorWrapper.h" compile="0" resource="0"
               file="src/dsp/AdvancedOscillatorWrapper.h"/>
-        <FILE id="KUsaDZ" name="BandPassFilter.cpp" compile="1" resource="0"
+        <FILE id="pfgxnw" name="BandPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/BandPassFilter.cpp"/>
-        <FILE id="vkeCT9" name="BandPassFilter.h" compile="0" resource="0"
+        <FILE id="qbdkch" name="BandPassFilter.h" compile="0" resource="0"
               file="src/dsp/BandPassFilter.h"/>
-        <FILE id="ynxkRT" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
-        <FILE id="IHbKfE" name="HighPassFilter.cpp" compile="1" resource="0"
+        <FILE id="F8G9ix" name="DSPUtils.h" compile="0" resource="0" file="src/dsp/DSPUtils.h"/>
+        <FILE id="O4SwBC" name="HighPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/HighPassFilter.cpp"/>
-        <FILE id="UclZtq" name="HighPassFilter.h" compile="0" resource="0"
+        <FILE id="m7GFhK" name="HighPassFilter.h" compile="0" resource="0"
               file="src/dsp/HighPassFilter.h"/>
-        <FILE id="tnqGbB" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
-        <FILE id="Xhk0G9" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
-        <FILE id="kVhXAi" name="InputRouter.cpp" compile="1" resource="0" file="src/dsp/InputRouter.cpp"/>
-        <FILE id="MqJ2CN" name="InputRouter.h" compile="0" resource="0" file="src/dsp/InputRouter.h"/>
-        <FILE id="BSiqZ8" name="LookupTables.cpp" compile="1" resource="0"
+        <FILE id="VFIGEP" name="InputGain.cpp" compile="1" resource="0" file="src/dsp/InputGain.cpp"/>
+        <FILE id="QfFMUS" name="InputGain.h" compile="0" resource="0" file="src/dsp/InputGain.h"/>
+        <FILE id="KRupPg" name="InputRouter.cpp" compile="1" resource="0" file="src/dsp/InputRouter.cpp"/>
+        <FILE id="uh3Kro" name="InputRouter.h" compile="0" resource="0" file="src/dsp/InputRouter.h"/>
+        <FILE id="UAviCc" name="LookupTables.cpp" compile="1" resource="0"
               file="src/dsp/LookupTables.cpp"/>
-        <FILE id="ky4Fmv" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
-        <FILE id="wmR35G" name="LowPassFilter.cpp" compile="1" resource="0"
+        <FILE id="Ado6I7" name="LookupTables.h" compile="0" resource="0" file="src/dsp/LookupTables.h"/>
+        <FILE id="WuhCII" name="LookupTableSmoother.cpp" compile="1" resource="0"
+              file="src/dsp/LookupTableSmoother.cpp"/>
+        <FILE id="w2Hnx3" name="LookupTableSmoother.h" compile="0" resource="0"
+              file="src/dsp/LookupTableSmoother.h"/>
+        <FILE id="E5l7uu" name="LowPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/LowPassFilter.cpp"/>
-        <FILE id="fXHttY" name="LowPassFilter.h" compile="0" resource="0" file="src/dsp/LowPassFilter.h"/>
-        <FILE id="kFM1Gl" name="SignalPolisher.cpp" compile="1" resource="0"
+        <FILE id="acn6ep" name="LowPassFilter.h" compile="0" resource="0" file="src/dsp/LowPassFilter.h"/>
+        <FILE id="DLfLxr" name="SignalPolisher.cpp" compile="1" resource="0"
               file="src/dsp/SignalPolisher.cpp"/>
-        <FILE id="ZQRuFG" name="SignalPolisher.h" compile="0" resource="0"
+        <FILE id="ZktouY" name="SignalPolisher.h" compile="0" resource="0"
               file="src/dsp/SignalPolisher.h"/>
-        <FILE id="dgl8bh" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
-        <FILE id="XdVLtd" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
+        <FILE id="MHKhP7" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
+        <FILE id="ga9R15" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
       </GROUP>
-      <GROUP id="{25747840-CB9B-A25C-2A1C-8B87ACE70BE7}" name="third_party">
-        <GROUP id="{DC77FB0A-9E4F-74A7-79ED-C9C8803678A4}" name="nlohmann">
-          <FILE id="uER2MW" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
+      <GROUP id="{5CCEABB8-3382-B067-41BC-9BA7545D936A}" name="licensing">
+        <FILE id="Ze9HN9" name="HardwareFingerprint.cpp" compile="1" resource="0"
+              file="src/licensing/HardwareFingerprint.cpp"/>
+        <FILE id="QTWIfI" name="HardwareFingerprint.h" compile="0" resource="0"
+              file="src/licensing/HardwareFingerprint.h"/>
+        <FILE id="a4KTJi" name="LicenseManager.cpp" compile="1" resource="0"
+              file="src/licensing/LicenseManager.cpp"/>
+        <FILE id="yep5h6" name="LicenseManager.h" compile="0" resource="0"
+              file="src/licensing/LicenseManager.h"/>
+      </GROUP>
+      <GROUP id="{7D58B9E2-F993-0F18-11E3-E0F03BD7029B}" name="third_party">
+        <GROUP id="{5C0A9B23-6521-1A5A-3FEE-42B028B53A72}" name="nlohmann">
+          <FILE id="Ec1i4I" name="json.hpp" compile="0" resource="0" file="src/third_party/nlohmann/json.hpp"/>
         </GROUP>
       </GROUP>
-      <GROUP id="{12DAB435-0398-C1D9-F87B-77A3F3F1CEC8}" name="ui">
-        <GROUP id="{296AE9F2-B266-4ADB-2A5C-8D18E2C0F2CA}" name="custom">
-          <FILE id="M6piXl" name="ParameterComponent.cpp" compile="1" resource="0"
+      <GROUP id="{8DAA9E4A-2888-823B-BE78-9ED66C2F810D}" name="ui">
+        <GROUP id="{88E979F5-477D-FBB4-B669-52FFC1BE443F}" name="custom">
+          <FILE id="W4yMoI" name="ParameterComponent.cpp" compile="1" resource="0"
                 file="src/ui/custom/ParameterComponent.cpp"/>
-          <FILE id="Dz6u6q" name="ParameterComponent.h" compile="0" resource="0"
+          <FILE id="ibAsDJ" name="ParameterComponent.h" compile="0" resource="0"
                 file="src/ui/custom/ParameterComponent.h"/>
+          <FILE id="eu1S8s" name="ProgressBarComponent.cpp" compile="1" resource="0"
+                file="src/ui/custom/ProgressBarComponent.cpp"/>
+          <FILE id="JIalws" name="ProgressBarComponent.h" compile="0" resource="0"
+                file="src/ui/custom/ProgressBarComponent.h"/>
         </GROUP>
-        <FILE id="OmFLQw" name="DslTerminalEditor.cpp" compile="1" resource="0"
+        <FILE id="MwBlHm" name="DslTerminalEditor.cpp" compile="1" resource="0"
               file="src/ui/DslTerminalEditor.cpp"/>
-        <FILE id="hjhLnI" name="DslTerminalEditor.h" compile="0" resource="0"
+        <FILE id="sfWJ6Y" name="DslTerminalEditor.h" compile="0" resource="0"
               file="src/ui/DslTerminalEditor.h"/>
-        <FILE id="daTpmu" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
+        <FILE id="BVBhAG" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
               file="src/ui/FormulaDisplayComponent.cpp"/>
-        <FILE id="u0dw2b" name="FormulaDisplayComponent.h" compile="0" resource="0"
+        <FILE id="fTfvrG" name="FormulaDisplayComponent.h" compile="0" resource="0"
               file="src/ui/FormulaDisplayComponent.h"/>
-        <FILE id="tFPOjO" name="FormulaWaveComponent.cpp" compile="1" resource="0"
+        <FILE id="fnPM9J" name="FormulaWaveComponent.cpp" compile="1" resource="0"
               file="src/ui/FormulaWaveComponent.cpp"/>
-        <FILE id="YyyNxu" name="FormulaWaveComponent.h" compile="0" resource="0"
+        <FILE id="CCGbBN" name="FormulaWaveComponent.h" compile="0" resource="0"
               file="src/ui/FormulaWaveComponent.h"/>
-        <FILE id="a4YL6Y" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
+        <FILE id="nuE0BK" name="FunctionsContentComponent.cpp" compile="1"
+              resource="0" file="src/ui/FunctionsContentComponent.cpp"/>
+        <FILE id="XJJqzc" name="FunctionsContentComponent.h" compile="0" resource="0"
+              file="src/ui/FunctionsContentComponent.h"/>
+        <FILE id="GAbhiU" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
               file="src/ui/InlineAutocompleteEditor.cpp"/>
-        <FILE id="DQZeaz" name="InlineAutocompleteEditor.h" compile="0" resource="0"
+        <FILE id="PxU2eG" name="InlineAutocompleteEditor.h" compile="0" resource="0"
               file="src/ui/InlineAutocompleteEditor.h"/>
-        <FILE id="KBUeum" name="LoudnessMeterComponent.cpp" compile="1" resource="0"
+        <FILE id="oEWfz1" name="LoudnessMeterComponent.cpp" compile="1" resource="0"
               file="src/ui/LoudnessMeterComponent.cpp"/>
-        <FILE id="UHh9xo" name="LoudnessMeterComponent.h" compile="0" resource="0"
+        <FILE id="zHN7rw" name="LoudnessMeterComponent.h" compile="0" resource="0"
               file="src/ui/LoudnessMeterComponent.h"/>
-        <FILE id="he3wPF" name="PluginEditor.cpp" compile="1" resource="0"
+        <FILE id="DDg7Si" name="ModalOverlay.cpp" compile="1" resource="0"
+              file="src/ui/ModalOverlay.cpp"/>
+        <FILE id="UZqWnZ" name="ModalOverlay.h" compile="0" resource="0" file="src/ui/ModalOverlay.h"/>
+        <FILE id="cYItTM" name="PluginEditor.cpp" compile="1" resource="0"
               file="src/ui/PluginEditor.cpp"/>
-        <FILE id="KdKFRw" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
-        <FILE id="cmrURb" name="PluginLookAndFeel.h" compile="0" resource="0"
+        <FILE id="IARLpC" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
+        <FILE id="oIr9qQ" name="PluginLookAndFeel.h" compile="0" resource="0"
               file="src/ui/PluginLookAndFeel.h"/>
-        <FILE id="YKp3BJ" name="PresetTableComponent.cpp" compile="1" resource="0"
+        <FILE id="mu8PLc" name="PresetContentComponent.cpp" compile="1" resource="0"
+              file="src/ui/PresetContentComponent.cpp"/>
+        <FILE id="NDzBbQ" name="PresetContentComponent.h" compile="0" resource="0"
+              file="src/ui/PresetContentComponent.h"/>
+        <FILE id="UqJiax" name="PresetTableComponent.cpp" compile="1" resource="0"
               file="src/ui/PresetTableComponent.cpp"/>
-        <FILE id="yDeqsV" name="PresetTableComponent.h" compile="0" resource="0"
+        <FILE id="LbueGG" name="PresetTableComponent.h" compile="0" resource="0"
               file="src/ui/PresetTableComponent.h"/>
-        <FILE id="wHpQuM" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
+        <FILE id="o14mJC" name="ValidationContentComponent.cpp" compile="1"
+              resource="0" file="src/ui/ValidationContentComponent.cpp"/>
+        <FILE id="NiEgj3" name="ValidationContentComponent.h" compile="0" resource="0"
+              file="src/ui/ValidationContentComponent.h"/>
+        <FILE id="dkhzth" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
               file="src/ui/WaveformDisplayComponent.cpp"/>
-        <FILE id="hFoUfG" name="WaveformDisplayComponent.h" compile="0" resource="0"
+        <FILE id="FfFOVV" name="WaveformDisplayComponent.h" compile="0" resource="0"
               file="src/ui/WaveformDisplayComponent.h"/>
-        <FILE id="BRpBzM" name="WeightedLayout.cpp" compile="1" resource="0"
+        <FILE id="nsVTrv" name="WeightedLayout.cpp" compile="1" resource="0"
               file="src/ui/WeightedLayout.cpp"/>
-        <FILE id="O2zo4u" name="WeightedLayout.h" compile="0" resource="0"
+        <FILE id="EAXpBV" name="WeightedLayout.h" compile="0" resource="0"
               file="src/ui/WeightedLayout.h"/>
       </GROUP>
-      <GROUP id="{12CF16CA-2541-D8A6-B20D-B597957767BC}" name="utils">
-        <FILE id="rXCYZ9" name="ExpressionEvaluator.cpp" compile="1" resource="0"
+      <GROUP id="{4A4E8D1E-58E4-3D4A-4232-1D5982BD9F53}" name="utils">
+        <FILE id="A6TuLO" name="ExpressionEvaluator.cpp" compile="1" resource="0"
               file="src/utils/ExpressionEvaluator.cpp"/>
-        <FILE id="zifbYX" name="ExpressionEvaluator.h" compile="0" resource="0"
+        <FILE id="dXTo8J" name="ExpressionEvaluator.h" compile="0" resource="0"
               file="src/utils/ExpressionEvaluator.h"/>
-        <FILE id="JcynZe" name="FormulaHelper.cpp" compile="1" resource="0"
+        <FILE id="nL03o0" name="FormulaHelper.cpp" compile="1" resource="0"
               file="src/utils/FormulaHelper.cpp"/>
-        <FILE id="uenmJl" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
-        <FILE id="Ox0ekV" name="Localiser.cpp" compile="1" resource="0" file="src/utils/Localiser.cpp"/>
-        <FILE id="ZOih7T" name="Localiser.h" compile="0" resource="0" file="src/utils/Localiser.h"/>
-        <FILE id="H7Iip4" name="Log.h" compile="0" resource="0" file="src/utils/Log.h"/>
-        <FILE id="FARWjc" name="PresetManager.cpp" compile="1" resource="0"
+        <FILE id="qRO49M" name="FormulaHelper.h" compile="0" resource="0" file="src/utils/FormulaHelper.h"/>
+        <FILE id="VFXZmY" name="Localiser.cpp" compile="1" resource="0" file="src/utils/Localiser.cpp"/>
+        <FILE id="FMyMM4" name="Localiser.h" compile="0" resource="0" file="src/utils/Localiser.h"/>
+        <FILE id="kJXQgT" name="Log.h" compile="0" resource="0" file="src/utils/Log.h"/>
+        <FILE id="UzDg0u" name="PresetManager.cpp" compile="1" resource="0"
               file="src/utils/PresetManager.cpp"/>
-        <FILE id="DGogQf" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
+        <FILE id="N7K8QY" name="PresetManager.h" compile="0" resource="0" file="src/utils/PresetManager.h"/>
       </GROUP>
     </GROUP>
     <GROUP id="{8E3512B1-F1C5-11F4-B939-7F8B9E6B3593}" name="tests">

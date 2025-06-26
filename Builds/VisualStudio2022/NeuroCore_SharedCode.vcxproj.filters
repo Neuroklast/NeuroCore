@@ -2,6 +2,9 @@
 
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="NeuroCore\resources\fonts">
+      <UniqueIdentifier>{ED9AB0AD-A856-C928-5BC3-0298EA42A5FE}</UniqueIdentifier>
+    </Filter>
     <Filter Include="NeuroCore\resources\img">
       <UniqueIdentifier>{97D83B3D-4671-5132-8214-2B933A53BF69}</UniqueIdentifier>
     </Filter>
@@ -22,6 +25,9 @@
     </Filter>
     <Filter Include="NeuroCore\src\dsp">
       <UniqueIdentifier>{B93283FB-7AF2-A799-2616-54405B0ECADA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NeuroCore\src\licensing">
+      <UniqueIdentifier>{9BFBFCB5-FC64-ECB5-1130-DCEB45FEB6FA}</UniqueIdentifier>
     </Filter>
     <Filter Include="NeuroCore\src\third_party\nlohmann">
       <UniqueIdentifier>{E96F3D17-B487-0FD7-C7A1-399228EC3ACB}</UniqueIdentifier>
@@ -832,6 +838,9 @@
     <ClCompile Include="..\..\src\dsp\LookupTables.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\dsp\LookupTableSmoother.cpp">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\dsp\LowPassFilter.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
@@ -841,7 +850,16 @@
     <ClCompile Include="..\..\src\dsp\WaveShaper.cpp">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\licensing\HardwareFingerprint.cpp">
+      <Filter>NeuroCore\src\licensing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\licensing\LicenseManager.cpp">
+      <Filter>NeuroCore\src\licensing</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\custom\ParameterComponent.cpp">
+      <Filter>NeuroCore\src\ui\custom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\custom\ProgressBarComponent.cpp">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\DslTerminalEditor.cpp">
@@ -853,19 +871,28 @@
     <ClCompile Include="..\..\src\ui\FormulaWaveComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\FunctionsContentComponent.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\InlineAutocompleteEditor.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\LoudnessMeterComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ui\ModalOverlay.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ui\PluginEditor.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ui\PresetOverlay.cpp">
+    <ClCompile Include="..\..\src\ui\PresetContentComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\PresetTableComponent.cpp">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui\ValidationContentComponent.cpp">
       <Filter>NeuroCore\src\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ui\WaveformDisplayComponent.cpp">
@@ -4125,6 +4152,9 @@
     <ClInclude Include="..\..\src\dsp\LookupTables.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\dsp\LookupTableSmoother.h">
+      <Filter>NeuroCore\src\dsp</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\dsp\LowPassFilter.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
@@ -4134,10 +4164,19 @@
     <ClInclude Include="..\..\src\dsp\WaveShaper.h">
       <Filter>NeuroCore\src\dsp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\licensing\HardwareFingerprint.h">
+      <Filter>NeuroCore\src\licensing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\licensing\LicenseManager.h">
+      <Filter>NeuroCore\src\licensing</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\third_party\nlohmann\json.hpp">
       <Filter>NeuroCore\src\third_party\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\custom\ParameterComponent.h">
+      <Filter>NeuroCore\src\ui\custom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\custom\ProgressBarComponent.h">
       <Filter>NeuroCore\src\ui\custom</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\DslTerminalEditor.h">
@@ -4149,10 +4188,16 @@
     <ClInclude Include="..\..\src\ui\FormulaWaveComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ui\FunctionsContentComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ui\InlineAutocompleteEditor.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\LoudnessMeterComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\ModalOverlay.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PluginEditor.h">
@@ -4161,10 +4206,13 @@
     <ClInclude Include="..\..\src\ui\PluginLookAndFeel.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ui\PresetOverlay.h">
+    <ClInclude Include="..\..\src\ui\PresetContentComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\PresetTableComponent.h">
+      <Filter>NeuroCore\src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ui\ValidationContentComponent.h">
       <Filter>NeuroCore\src\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ui\WaveformDisplayComponent.h">
@@ -8468,7 +8516,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\resources\fonts\apex.otf">
+      <Filter>NeuroCore\resources\fonts</Filter>
+    </None>
     <None Include="..\..\resources\img\innerknob.png">
+      <Filter>NeuroCore\resources\img</Filter>
+    </None>
+    <None Include="..\..\resources\img\warning.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
     <None Include="..\..\resources\img\knob lights.png">
@@ -8484,6 +8538,12 @@
       <Filter>NeuroCore\resources\locale</Filter>
     </None>
     <None Include="..\..\resources\locale\en.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
+    </None>
+    <None Include="..\..\resources\locale\functions_de.txt">
+      <Filter>NeuroCore\resources\locale</Filter>
+    </None>
+    <None Include="..\..\resources\locale\functions_en.txt">
       <Filter>NeuroCore\resources\locale</Filter>
     </None>
     <None Include="..\..\resources\optimizations.txt">

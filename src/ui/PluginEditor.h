@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include <array>
 #include <vector>
+#include <atomic>
 #include "../core/PluginProcessor.h"
 #include "../core/Config.h"
 #include "PluginLookAndFeel.h"
@@ -21,11 +22,12 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
-#include "PresetOverlay.h"
+#include "ModalOverlay.h"
+#include "ValidationContentComponent.h"
+#include "PresetContentComponent.h"
+#include "FunctionsContentComponent.h"
 #include "WeightedLayout.h"
-#if __has_include(<melatonin_inspector/melatonin_inspector.h>)
-# include <melatonin_inspector/melatonin_inspector.h>
-#endif
+
 
 class ParameterSlider : public juce::Slider
 {
@@ -71,7 +73,9 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
     std::unique_ptr<ui::LayoutNode> layoutRoot;
 
-    // Left column controls
+
+        // Left column controls
+
 
     std::array<std::unique_ptr<ui::ParameterComponent>, 4> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, 4>          nameEditors;
@@ -111,10 +115,15 @@ private:
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
-    std::unique_ptr<PresetOverlay>            presetOverlay;
+    std::unique_ptr<ModalOverlay>            presetOverlay;
+    std::unique_ptr<ModalOverlay>            functionsOverlay;
+    std::unique_ptr<ModalOverlay>            validationOverlay;
 
     void showPresetOverlay();
     void hidePresetOverlay();
+    void showFunctionsOverlay();
+    void hideFunctionsOverlay();
+    void validateAndOverlay(const juce::String& expr);
 
     //melatonin::Inspector inspector{ *this };
 

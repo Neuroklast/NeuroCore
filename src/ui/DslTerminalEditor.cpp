@@ -130,6 +130,7 @@ DslTerminalEditor::DslTerminalEditor(NeuroCoreAudioProcessor& proc)
     document->addListener(this);
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(false);
+    openGLContext.setComponentPaintingEnabled(true);
     addAndMakeVisible(*fallbackEditor);
     openGLContext.attachTo(*this);
 }
@@ -205,6 +206,16 @@ void DslTerminalEditor::renderOpenGL()
 void DslTerminalEditor::openGLContextClosing()
 {
 }
+
+void DslTerminalEditor::insertTextAtCaret(const juce::String& text)
+{
+    if (document)
+    {
+        auto caretPosition = fallbackEditor->getCaretPos(); // Use fallbackEditor to get caret position
+        document->insertText(caretPosition, text);
+    }
+}
+
 
 
 void DslTerminalEditor::codeDocumentTextInserted(const juce::String&, int)

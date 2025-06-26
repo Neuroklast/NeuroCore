@@ -125,18 +125,25 @@ OBJECTS_SHARED_CODE := \
   $(JUCE_OBJDIR)/InputGain_219ae3a5.o \
   $(JUCE_OBJDIR)/InputRouter_3bd9c22f.o \
   $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o \
+  $(JUCE_OBJDIR)/LookupTableSmoother_cf7aeeeb.o \
   $(JUCE_OBJDIR)/LowPassFilter_54cabd19.o \
   $(JUCE_OBJDIR)/SignalPolisher_b940cf54.o \
   $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o \
+  $(JUCE_OBJDIR)/HardwareFingerprint_62e96915.o \
+  $(JUCE_OBJDIR)/LicenseManager_24fd17dd.o \
   $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o \
+  $(JUCE_OBJDIR)/ProgressBarComponent_a133c75a.o \
   $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o \
   $(JUCE_OBJDIR)/FormulaDisplayComponent_81edfc26.o \
   $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o \
+  $(JUCE_OBJDIR)/FunctionsContentComponent_72462784.o \
   $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o \
   $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o \
+  $(JUCE_OBJDIR)/ModalOverlay_94bd5e08.o \
   $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o \
-  $(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o \
+  $(JUCE_OBJDIR)/PresetContentComponent_b11676a8.o \
   $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o \
+  $(JUCE_OBJDIR)/ValidationContentComponent_48889342.o \
   $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o \
   $(JUCE_OBJDIR)/WeightedLayout_c2f3e946.o \
   $(JUCE_OBJDIR)/ExpressionEvaluator_39236fa3.o \
@@ -279,6 +286,11 @@ $(JUCE_OBJDIR)/LookupTables_3e55ff4d.o: ../../src/dsp/LookupTables.cpp
 	@echo "Compiling LookupTables.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/LookupTableSmoother_cf7aeeeb.o: ../../src/dsp/LookupTableSmoother.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling LookupTableSmoother.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/LowPassFilter_54cabd19.o: ../../src/dsp/LowPassFilter.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling LowPassFilter.cpp"
@@ -294,9 +306,24 @@ $(JUCE_OBJDIR)/WaveShaper_350aa8d8.o: ../../src/dsp/WaveShaper.cpp
 	@echo "Compiling WaveShaper.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/HardwareFingerprint_62e96915.o: ../../src/licensing/HardwareFingerprint.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling HardwareFingerprint.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/LicenseManager_24fd17dd.o: ../../src/licensing/LicenseManager.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling LicenseManager.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/ParameterComponent_9a90fab7.o: ../../src/ui/custom/ParameterComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling ParameterComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/ProgressBarComponent_a133c75a.o: ../../src/ui/custom/ProgressBarComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ProgressBarComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/DslTerminalEditor_34e40beb.o: ../../src/ui/DslTerminalEditor.cpp
@@ -314,6 +341,11 @@ $(JUCE_OBJDIR)/FormulaWaveComponent_751019e3.o: ../../src/ui/FormulaWaveComponen
 	@echo "Compiling FormulaWaveComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/FunctionsContentComponent_72462784.o: ../../src/ui/FunctionsContentComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling FunctionsContentComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/InlineAutocompleteEditor_a9013d93.o: ../../src/ui/InlineAutocompleteEditor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling InlineAutocompleteEditor.cpp"
@@ -324,19 +356,29 @@ $(JUCE_OBJDIR)/LoudnessMeterComponent_6167a4a2.o: ../../src/ui/LoudnessMeterComp
 	@echo "Compiling LoudnessMeterComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/ModalOverlay_94bd5e08.o: ../../src/ui/ModalOverlay.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ModalOverlay.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/PluginEditor_74bf5d25.o: ../../src/ui/PluginEditor.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PluginEditor.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
-$(JUCE_OBJDIR)/PresetOverlay_fefc70b6.o: ../../src/ui/PresetOverlay.cpp
+$(JUCE_OBJDIR)/PresetContentComponent_b11676a8.o: ../../src/ui/PresetContentComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
-	@echo "Compiling PresetOverlay.cpp"
+	@echo "Compiling PresetContentComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/PresetTableComponent_1fef5133.o: ../../src/ui/PresetTableComponent.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling PresetTableComponent.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/ValidationContentComponent_48889342.o: ../../src/ui/ValidationContentComponent.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling ValidationContentComponent.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_SHARED_CODE) $(JUCE_CFLAGS_SHARED_CODE) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/WaveformDisplayComponent_20e7125d.o: ../../src/ui/WaveformDisplayComponent.cpp

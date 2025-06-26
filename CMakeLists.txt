@@ -51,18 +51,25 @@ set(SOURCE_FILES
     src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
+    src/licensing/HardwareFingerprint.cpp
+    src/licensing/LicenseManager.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
     src/ui/DslTerminalEditor.cpp
     src/ui/InlineAutocompleteEditor.cpp
+    src/ui/ModalOverlay.cpp
     src/ui/PresetTableComponent.cpp
-    src/ui/PresetOverlay.cpp
+    src/ui/PresetContentComponent.cpp
+    src/ui/FunctionsContentComponent.cpp
+    src/ui/ValidationContentComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp
     src/ui/custom/ParameterComponent.cpp
+    src/ui/custom/ProgressBarComponent.cpp
     src/dsp/LookupTables.cpp
+    src/dsp/LookupTableSmoother.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -94,6 +101,7 @@ target_include_directories(NeuroCore PRIVATE
     ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
     ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/licensing
     ${PROJECT_SOURCE_DIR}/src/third_party
     ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
 )
@@ -108,6 +116,8 @@ juce_add_binary_data(resourcesBinary
         "resources/img/knob lights.png"
         resources/locale/de.txt
         resources/locale/en.txt
+        resources/locale/functions_de.txt
+        resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
 )
@@ -160,8 +170,11 @@ target_sources(NeuroCoreTests PRIVATE
     src/dsp/BandPassFilter.cpp
     src/core/PluginProcessor.cpp
     src/dsp/LookupTables.cpp
+    src/dsp/LookupTableSmoother.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
+    src/licensing/HardwareFingerprint.cpp
+    src/licensing/LicenseManager.cpp
     src/ui/WeightedLayout.cpp
 )
 
@@ -171,6 +184,7 @@ target_include_directories(NeuroCoreTests PRIVATE
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
+    ${PROJECT_SOURCE_DIR}/src/licensing
 )
 
 target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)

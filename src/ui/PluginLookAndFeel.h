@@ -22,6 +22,31 @@ public:
   NeuroCoreLookAndFeel() {
     using namespace juce;
 
+
+    // 1) Aktuelles Scheme kopieren
+    auto scheme = getCurrentColourScheme();
+
+    // 2) Basis: Schwarz + Grau
+    scheme.setUIColour(ColourScheme::windowBackground, Colour(0xFF000000)); // reines Schwarz
+    scheme.setUIColour(ColourScheme::widgetBackground, Colour(0xFF000000)); // sehr dunkles Grau
+    scheme.setUIColour(ColourScheme::defaultText, Colour(0xFFCCCCCC)); // helles Grau
+
+    // 3) Roter Akzent
+    scheme.setUIColour(ColourScheme::highlightedText, Colour(0xFFFF0000)); // Knall-Rot
+
+    // 4) Outline in mittlerem Grau
+    scheme.setUIColour(ColourScheme::outline, Colour(0xFFFF0000));
+
+
+    // 5) Scheme übernehmen
+    setColourScheme(scheme);
+
+    // — wenn du zusätzliche IDs (deine enum ColourIds) brauchst, kannst du sie
+    //   danach immer noch mit setColour überschreiben, z.B.:
+    setColour(glowColourId, Colour(0x66FF0000));
+    setColour(shadowColourId, Colours::black.withAlpha(0.6f));
+    setColour(errorColourId, Colour(0xFFFF4444));
+
     setColour(ResizableWindow::backgroundColourId, Colour(0xff181a1a));
     setColour(Label::textColourId, Colours::white);
 
@@ -128,7 +153,7 @@ public:
                             bool isMouseOverButton,
                             bool isButtonDown) override {
     auto bounds = button.getLocalBounds().toFloat();
-    auto cornerSize = juce::jmin(bounds.getHeight(), bounds.getWidth()) / 2.5f;
+    auto cornerSize = juce::jmin(bounds.getHeight(), bounds.getWidth()) / 5.f;
 
     auto fill = findColour(juce::TextButton::buttonColourId);
     if (isMouseOverButton)

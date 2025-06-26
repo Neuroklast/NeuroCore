@@ -1,0 +1,319 @@
+{
+  "functions": [
+    {
+      "name": "sin",
+      "description": "Returns the sine of x, a smooth periodic oscillation.",
+      "soundCharacter": "Very soft and organic with pleasant lower harmonics.",
+      "useCases": [
+        "LFO modulation (tremolo, auto-wah)",
+        "Smooth waveshaping",
+        "Subtle vibrato"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–π, +π] for a full period",
+        "aliasing": "Audible artifacts above ~2 kHz when oversampling < 4×",
+        "performance": "Very cheap, no lookup table needed"
+      },
+      "example": "y = sin(x)",
+      "keywords": ["smooth", "round", "warm", "gentle", "musical"]
+    },
+    {
+      "name": "cos",
+      "description": "Returns the cosine of x, a phase-shifted sine wave.",
+      "soundCharacter": "Smooth and slightly darker with a clear organic shape.",
+      "useCases": [
+        "Phase‑shifted LFOs",
+        "Combined sin/cos modulation",
+        "Gentle crossfades"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–π, +π] for a full period",
+        "aliasing": "Audible artifacts above ~2 kHz when oversampling < 4×",
+        "performance": "Very cheap"
+      },
+      "example": "y = cos(x)",
+      "keywords": ["smooth", "warm", "organic", "round", "soft"]
+    },
+    {
+      "name": "tan",
+      "description": "Computes the tangent of x, steep rise near ±π/2.",
+      "soundCharacter": "Shrill and aggressive with many high overtones.",
+      "useCases": [
+        "Hard distortion effects",
+        "Screechy modulation",
+        "Extreme sound manipulation"
+      ],
+      "dangersAndLimits": {
+        "domain": "x must not be close to ±(π/2)",
+        "aliasing": "Oversampling ≥ 8× recommended",
+        "performance": "Cheap, lookup table can improve stability"
+      },
+      "example": "y = tan(x)",
+      "keywords": ["edgy", "harsh", "piercing", "screechy", "aggressive"]
+    },
+    {
+      "name": "tanh",
+      "description": "Hyperbolic tangent, provides S-shaped saturation between –1 and +1.",
+      "soundCharacter": "Gentle tube saturation, harmonically rich and smooth-compressive.",
+      "useCases": [
+        "Warm tube drive",
+        "Soft clipping for guitar/bass",
+        "Musical compression"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–5, +5] for musical saturation",
+        "aliasing": "Oversampling ≥ 4× recommended",
+        "performance": "Expensive, lookup table strongly recommended"
+      },
+      "example": "y = tanh(x)",
+      "keywords": ["soft", "tube", "warm", "saturated", "smooth"]
+    },
+    {
+      "name": "sqrt",
+      "description": "Calculates the square root of x (only for x ≥ 0).",
+      "soundCharacter": "Crunchy, emphasizes large amplitudes and dampens small ones.",
+      "useCases": [
+        "Transient shaping",
+        "Asymmetric saturation",
+        "Creative warp sounds"
+      ],
+      "dangersAndLimits": {
+        "domain": "x ≥ 0, otherwise NaN",
+        "aliasing": "Moderate need for oversampling",
+        "performance": "Medium, small lookup table possible"
+      },
+      "example": "y = sqrt(x)",
+      "keywords": ["crunchy", "punchy", "asymmetrical", "dynamic", "softbite"]
+    },
+    {
+      "name": "abs",
+      "description": "Returns the absolute value of x, negatives become positive.",
+      "soundCharacter": "Percussive and raspy, creates even harmonics.",
+      "useCases": [
+        "Full-wave rectifier",
+        "Envelope follower basis",
+        "Brass-like distortion"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "Strong overtones → oversampling ≥ 4× recommended",
+        "performance": "Very cheap"
+      },
+      "example": "y = abs(x)",
+      "keywords": ["percussive", "raspy", "harsh", "rectified", "edgy"]
+    },
+    {
+      "name": "sign",
+      "description": "Returns –1 for x<0, 0 for x=0, +1 for x>0.",
+      "soundCharacter": "Hard hard-clipping, digital and glitchy.",
+      "useCases": [
+        "Extreme hard clipper",
+        "Bit crusher effects",
+        "Gate-like sounds"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "Very high, oversampling ≥ 8× required",
+        "performance": "Cheap"
+      },
+      "example": "y = sign(x)",
+      "keywords": ["digital", "hard", "aggressive", "glitchy", "harsh"]
+    },
+    {
+      "name": "exp",
+      "description": "Calculates e^x for exponential growth/decay.",
+      "soundCharacter": "Explosive and asymmetrical with rich overtones.",
+      "useCases": [
+        "Steep compression",
+        "Creative distortion",
+        "Envelope warping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x in [–5, +5], overflow possible above",
+        "aliasing": "High overtones → oversampling ≥ 8× recommended",
+        "performance": "Expensive, lookup table required"
+      },
+      "example": "y = exp(x)",
+      "keywords": ["punchy", "asymmetrical", "dynamic", "explosive", "rich"]
+    },
+    {
+      "name": "log",
+      "description": "Natural logarithm (only for x>0).",
+      "soundCharacter": "Soft and compressive, analog-like tone.",
+      "useCases": [
+        "dB conversion",
+        "Soft compander",
+        "Dynamics shaping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x>0, error or clamp below",
+        "aliasing": "Low need for oversampling",
+        "performance": "Medium"
+      },
+      "example": "y = log(x)",
+      "keywords": ["soft", "analog", "warm", "compressive", "smooth"]
+    },
+    {
+      "name": "log10",
+      "description": "Base-10 logarithm (only for x>0), ideal for dB scaling.",
+      "soundCharacter": "Clear and precise for loudness measurements.",
+      "useCases": [
+        "Metering",
+        "dB scaling",
+        "Dynamic mapping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x>0",
+        "aliasing": "Hardly relevant",
+        "performance": "Medium"
+      },
+      "example": "y = log10(x)",
+      "keywords": ["precise", "metering", "analytic", "clean", "transparent"]
+    },
+    {
+      "name": "floor",
+      "description": "Rounds x down to the next lower integer.",
+      "soundCharacter": "Steppy and digital, lo-fi character.",
+      "useCases": [
+        "Bitcrushing",
+        "Rhythmic quantization"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "High, filtering and oversampling needed",
+        "performance": "Cheap"
+      },
+      "example": "y = floor(x)",
+      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+    },
+    {
+      "name": "ceil",
+      "description": "Rounds x up to the next higher integer.",
+      "soundCharacter": "Steppy and digital with slightly different artifacts.",
+      "useCases": [
+        "Bitcrushing variations",
+        "Rhythmic effects"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "High",
+        "performance": "Cheap"
+      },
+      "example": "y = ceil(x)",
+      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+    },
+    {
+      "name": "round",
+      "description": "Rounds x to the nearest integer.",
+      "soundCharacter": "Quantized, less extreme than floor/ceil.",
+      "useCases": [
+        "Subtle bit quantization",
+        "Rhythmic gates"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "High",
+        "performance": "Cheap"
+      },
+      "example": "y = round(x)",
+      "keywords": ["quantized", "digital", "gated", "clean", "steppy"]
+    },
+    {
+      "name": "pow",
+      "description": "Power function x^y enabling exponential shaping.",
+      "soundCharacter": "Flexible: from mild (y<1) to hard (y>1).",
+      "useCases": [
+        "Custom waveshaping (e.g. x^3)",
+        "Dynamics warping",
+        "Creative spectral shaping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x≥0 for non-integer y",
+        "aliasing": "Steep curves create many overtones",
+        "performance": "Very expensive, lookup table recommended"
+      },
+      "example": "y = pow(x, y)",
+      "keywords": ["flexible", "dynamic", "custom", "warm", "punchy"]
+    },
+    {
+      "name": "min",
+      "description": "Returns the smaller of a and b.",
+      "soundCharacter": "Gentle clamping, controls peaks.",
+      "useCases": [
+        "Soft clipping",
+        "Range mapping"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "Minimal",
+        "performance": "Very cheap"
+      },
+      "example": "y = min(a, b)",
+      "keywords": ["clamped", "limited", "controlled", "smooth", "precise"]
+    },
+    {
+      "name": "max",
+      "description": "Returns the larger of a and b.",
+      "soundCharacter": "Harder clamping, sharply limiting.",
+      "useCases": [
+        "Hard clipping",
+        "Dynamics limiting"
+      ],
+      "dangersAndLimits": {
+        "domain": "Defined everywhere",
+        "aliasing": "Minimal",
+        "performance": "Very cheap"
+      },
+      "example": "y = max(a, b)",
+      "keywords": ["clamped", "limited", "hard", "precise", "sharp"]
+    },
+    {
+      "name": "fmod",
+      "description": "Returns the remainder of x modulo y.",
+      "soundCharacter": "Cyclic and metallic, creates ring-mod-like patterns.",
+      "useCases": [
+        "Ring modulation",
+        "Wave folding effects"
+      ],
+      "dangersAndLimits": {
+        "domain": "y ≠ 0",
+        "aliasing": "Moderate overtones, oversampling ≥ 4× helps",
+        "performance": "Medium"
+      },
+      "example": "y = fmod(x, y)",
+      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+    },
+    {
+      "name": "mod",
+      "description": "Alternative notation for x modulo y.",
+      "soundCharacter": "Cyclic and repetitive, ring-mod-like.",
+      "useCases": [
+        "Ring modulation",
+        "Pattern generator"
+      ],
+      "dangersAndLimits": {
+        "domain": "y ≠ 0",
+        "aliasing": "Moderate overtones",
+        "performance": "Medium"
+      },
+      "example": "y = mod(x, y)",
+      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+    },
+    {
+      "name": "clamp",
+      "description": "Clamps x to the range [low, high].",
+      "soundCharacter": "Controlled clipping without harsh artifacts.",
+      "useCases": [
+        "Hard/soft clipper",
+        "Range safety"
+      ],
+      "dangersAndLimits": {
+        "domain": "low < high",
+        "aliasing": "Minimal",
+        "performance": "Very cheap"
+      },
+      "example": "y = clamp(x, low, high)",
+      "keywords": ["controlled", "safe", "clipped", "limited", "precise"]
+    }
+  ]
+}
