@@ -15,6 +15,7 @@
 WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
     : processor(proc), type(t)
 {
+    setOpaque(false);
     auto& displays = juce::Desktop::getInstance().getDisplays();
     if (auto* display = displays.getPrimaryDisplay())
     {
