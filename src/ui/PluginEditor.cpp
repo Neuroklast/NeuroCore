@@ -518,33 +518,41 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->setMode(OverlayMode::Blocking);
     validationOverlay->setContent(std::move(content));
 
-    ptr->onResult = [this, expr](bool stable)
+    struct ResultHandler
     {
-        if (! alive.load())
-            return;
+        NeuroCoreAudioProcessorEditor* editor { nullptr };
+        juce::String expression;
 
-        if (validationOverlay)
+        void operator()(bool /*stable*/) const
         {
-            removeChildComponent(validationOverlay.get());
-            validationOverlay.reset();
-        }
+            if (! editor || ! editor->alive.load())
+                return;
 
-        juce::String err;
-        if (audioProcessor.setFormula(expr, err))
-        {
-            formulaInputEditor->setReadOnly(true);
-            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                               juce::Colours::transparentBlack);
-            editSaveButton->setButtonText(TRANS("EditButton"));
-            editing = false;
-            errorLabel->setText({}, juce::dontSendNotification);
-            refreshParameterControls();
-        }
-        else
-        {
-            errorLabel->setText(err, juce::dontSendNotification);
+            if (editor->validationOverlay)
+            {
+                editor->removeChildComponent(editor->validationOverlay.get());
+                editor->validationOverlay.reset();
+            }
+
+            juce::String err;
+            if (editor->audioProcessor.setFormula(expression, err))
+            {
+                editor->formulaInputEditor->setReadOnly(true);
+                editor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                             juce::Colours::transparentBlack);
+                editor->editSaveButton->setButtonText(TRANS("EditButton"));
+                editor->editing = false;
+                editor->errorLabel->setText({}, juce::dontSendNotification);
+                editor->refreshParameterControls();
+            }
+            else
+            {
+                editor->errorLabel->setText(err, juce::dontSendNotification);
+            }
         }
     };
+
+    ptr->onResult = ResultHandler{ this, expr };
 
     validationOverlay->show(*this);
 }
