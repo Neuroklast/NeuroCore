@@ -1,0 +1,221 @@
+/*
+  ==============================================================================
+
+    This file contains the basic framework code for a JUCE plugin editor.
+
+  ==============================================================================
+*/
+
+#include "PluginProcessor.h"
+#include "PluginEditor.h"
+#include "FormulaHelper.h"
+#include "FormulaWaveComponent.h"
+#include "Config.h"
+
+
+//==============================================================================
+NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor& p)
+    : AudioProcessorEditor (&p), audioProcessor (p)
+{
+    setSize (Config::kWindowWidth, Config::kWindowHeight);
+
+    languageBox = std::make_unique<juce::ComboBox>();
+    languageCodes = audioProcessor.getAvailableLanguages();
+    for (int i = 0; i < languageCodes.size(); ++i)
+    {
+        auto code = languageCodes[i];
+        juce::String name = code.toLowerCase() == "de" ? TRANS("German")
+                               : code.toLowerCase() == "en" ? TRANS("English")
+                               : code.toUpperCase();
+        languageBox->addItem(name, i + 1);
+    }
+    int current = languageCodes.indexOf(audioProcessor.getCurrentLanguage());
+    languageBox->setSelectedId(current + 1, juce::dontSendNotification);
+    languageBox->onChange = [this]
+    {
+        int idx = languageBox->getSelectedId() - 1;
+        if (juce::isPositiveAndBelow(idx, languageCodes.size()))
+        {
+            audioProcessor.loadLanguage(languageCodes[idx]);
+            optimizeButton->setButtonText(TRANS("OptimizeButton"));
+            formulaDisplay->setError(audioProcessor.getEvaluator().getLastError());
+        }
+    };
+    addAndMakeVisible(*languageBox);
+
+    static const juce::Colour defaultColours[4] = {
+        juce::Colours::red, juce::Colours::green,
+        juce::Colours::blue, juce::Colours::yellow };
+
+    for (int i = 0; i < sliders.size(); ++i)
+    {
+        sliders[i] = std::make_unique<juce::Slider>();
+        sliders[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        sliders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+        sliders[i]->setColour (juce::Slider::rotarySliderFillColourId, defaultColours[i]);
+        sliderColours[i] = defaultColours[i];
+        attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+            audioProcessor.apvts, juce::String ("abcd"[i]), *sliders[i]));
+        sliders[i]->onValueChange = [this, i]
+        {
+            if (valueEditors[i])
+                valueEditors[i]->setText (juce::String (sliders[i]->getValue()), juce::dontSendNotification);
+        };
+        addAndMakeVisible (*sliders[i]);
+
+        valueEditors[i] = std::make_unique<juce::TextEditor>();
+        valueEditors[i]->setMultiLine (false);
+        valueEditors[i]->setReadOnly (true);
+        valueEditors[i]->setText ("0", juce::dontSendNotification);
+        addAndMakeVisible (*valueEditors[i]);
+
+        nameEditors[i] = std::make_unique<juce::TextEditor>();
+        nameEditors[i]->setText (audioProcessor.getVariableName(i), juce::dontSendNotification);
+        nameEditors[i]->onTextChange = [this, i]
+        {
+            audioProcessor.setVariableName(i, nameEditors[i]->getText());
+            formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
+        };
+        addAndMakeVisible (*nameEditors[i]);
+    }
+
+    formulaInputEditor = std::make_unique<juce::TextEditor>();
+    formulaInputEditor->setMultiLine (true, true);
+    formulaInputEditor->setReturnKeyStartsNewLine (true);
+    formulaInputEditor->setText (Config::kDefaultFormula, juce::dontSendNotification);
+    formulaInputEditor->onTextChange = [this]
+    {
+        audioProcessor.setFormula (formulaInputEditor->getText());
+        formulaDisplay->setFormula (formulaInputEditor->getText());
+        formulaDisplay->setError (audioProcessor.getEvaluator().getLastError());
+        showAutocomplete();
+    };
+    addAndMakeVisible (*formulaInputEditor);
+    formulaInputEditor->addKeyListener (this);
+    audioProcessor.setFormula (formulaInputEditor->getText());
+
+
+    formulaDisplay = std::make_unique<FormulaDisplayComponent>();
+    formulaDisplay->setVariableColours(audioProcessor.getVariableNames(), sliderColours);
+    formulaDisplay->setFormula (Config::kDefaultFormula);
+    addAndMakeVisible (*formulaDisplay);
+
+    optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
+    optimizeButton->onClick = [this]
+    {
+        juce::String info;
+        auto text = formulaInputEditor->getText();
+        auto opt = optimizeFormula(text, info);
+        if (opt != text)
+            formulaInputEditor->setText (opt, juce::dontSendNotification);
+        if (info.isNotEmpty())
+            formulaDisplay->setError(info);
+    };
+    addAndMakeVisible (*optimizeButton);
+
+    setWantsKeyboardFocus (true);
+    addKeyListener (this);
+}
+
+NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
+{
+    if (formulaInputEditor)
+        formulaInputEditor->removeKeyListener (this);
+    removeKeyListener (this);
+}
+
+//==============================================================================
+void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
+{
+    // (Our component is opaque, so we must completely fill the background with a solid colour)
+    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+
+}
+
+void NeuroCoreAudioProcessorEditor::resized()
+{
+    const int thirdWidth = Config::kMiddleColumnWidth;
+    const int rowHeight  = (getHeight() - Config::kLanguageBoxHeight) / 4;
+    const int sliderSize = rowHeight;
+    const int textHeight = Config::kLabelHeight;
+
+    languageBox->setBounds (0, 0, Config::kLanguageBoxWidth, Config::kLanguageBoxHeight);
+
+    for (int i = 0; i < sliders.size(); ++i)
+    {
+        int y = i * rowHeight;
+        sliders[i]->setBounds (0, y + Config::kLanguageBoxHeight, sliderSize, sliderSize);
+        valueEditors[i]->setBounds (sliderSize, y + Config::kLanguageBoxHeight, sliderSize, textHeight);
+        nameEditors[i]->setBounds (sliderSize, y + Config::kLanguageBoxHeight + textHeight, sliderSize, textHeight);
+    }
+
+    auto middleX = thirdWidth;
+    int middleHeight = getHeight();
+    int inputHeight = middleHeight * 2 / 3;
+
+    formulaInputEditor->setBounds (middleX, 0, thirdWidth, inputHeight);
+
+    formulaDisplay->setBounds (middleX, inputHeight, thirdWidth, middleHeight - inputHeight - textHeight);
+    optimizeButton->setBounds (middleX, middleHeight - textHeight, thirdWidth, textHeight);
+}
+
+void NeuroCoreAudioProcessorEditor::showAutocomplete()
+{
+    auto caret = formulaInputEditor->getCaretPosition();
+    auto text  = formulaInputEditor->getText();
+    int start = caret;
+    while (start > 0 && juce::CharacterFunctions::isLetterOrDigit (text[start - 1]))
+        --start;
+    juce::String prefix = text.substring (start, caret);
+
+    if (prefix.length() < 1)
+        return;
+
+    juce::PopupMenu menu;
+    for (auto& t : formulaTemplates)
+        if (t.name.startsWithIgnoreCase(prefix))
+            menu.addItem (t.name, [this, caret, start, prefix, t]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (t.name.substring (prefix.length()));
+            });
+    for (auto& f : builtinFunctions)
+        if (f.startsWithIgnoreCase(prefix))
+            menu.addItem (f, [this, caret, start, prefix, f]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (f.substring (prefix.length()));
+            });
+    for (auto& n : audioProcessor.getVariableNames())
+        if (n.startsWithIgnoreCase(prefix))
+            menu.addItem (n, [this, caret, start, prefix, n]
+            {
+                formulaInputEditor->setCaretPosition (start);
+                formulaInputEditor->insertTextAtCaret (n.substring (prefix.length()));
+            });
+    if (menu.getNumItems() > 0)
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (*formulaInputEditor));
+
+}
+
+bool NeuroCoreAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
+{
+    auto undoKey = juce::KeyPress ('z', juce::ModifierKeys::commandModifier, 0);
+    auto redoKey = juce::KeyPress ('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0);
+
+    if (key == undoKey)
+    {
+        formulaInputEditor->undo();
+        audioProcessor.performUndo();
+        return true;
+    }
+
+    if (key == redoKey)
+    {
+        formulaInputEditor->redo();
+        audioProcessor.performRedo();
+        return true;
+    }
+
+    return false;
+}
