@@ -518,32 +518,31 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->setMode(OverlayMode::Blocking);
     validationOverlay->setContent(std::move(content));
 
-    auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
-    ptr->onResult = [safeEditor, expr](bool stable)
+    ptr->onResult = [this, expr](bool stable)
     {
-        if (! safeEditor || ! safeEditor->alive.load())
+        if (! alive.load())
             return;
 
-        if (safeEditor->validationOverlay)
+        if (validationOverlay)
         {
-            safeEditor->removeChildComponent(safeEditor->validationOverlay.get());
-            safeEditor->validationOverlay.reset();
+            removeChildComponent(validationOverlay.get());
+            validationOverlay.reset();
         }
 
         juce::String err;
-        if (safeEditor->audioProcessor.setFormula(expr, err))
+        if (audioProcessor.setFormula(expr, err))
         {
-            safeEditor->formulaInputEditor->setReadOnly(true);
-            safeEditor->formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                                          juce::Colours::transparentBlack);
-            safeEditor->editSaveButton->setButtonText(TRANS("EditButton"));
-            safeEditor->editing = false;
-            safeEditor->errorLabel->setText({}, juce::dontSendNotification);
-            safeEditor->refreshParameterControls();
+            formulaInputEditor->setReadOnly(true);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                               juce::Colours::transparentBlack);
+            editSaveButton->setButtonText(TRANS("EditButton"));
+            editing = false;
+            errorLabel->setText({}, juce::dontSendNotification);
+            refreshParameterControls();
         }
         else
         {
-            safeEditor->errorLabel->setText(err, juce::dontSendNotification);
+            errorLabel->setText(err, juce::dontSendNotification);
         }
     };
 
