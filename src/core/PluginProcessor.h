@@ -166,6 +166,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
     std::atomic<int>              oversamplingIndex { 1 }; // 2x by default
     juce::SmoothedValue<float>    formulaBlend;
+    bool                          bypassActive { false };
 
     std::atomic<float> lastLoudness { -100.0f };
     std::atomic<bool>  limiterActive { false };

@@ -443,8 +443,10 @@ float SignalChain::Filter::process(int ch, float x)
 
     cutoffSm.setTargetValue(fc);
     resSm.setTargetValue(res);
-    filter.setCutoffFrequency(cutoffSm.getNextValue());
-    filter.setResonance(resSm.getNextValue());
+    const float fcSm = cutoffSm.getNextValue();
+    const float rqSm = resSm.getNextValue();
+    filter.setCutoffFrequency(fcSm);
+    filter.setResonance(rqSm);
 
     float y = filter.processSample(ch, x);
     xPrev[ch] = x;

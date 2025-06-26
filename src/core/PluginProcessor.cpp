@@ -341,7 +341,17 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     getPolisher().setParameter (EffectParameters::polisherMode,
                                 clamp(EffectParameters::polisherMode, getParam (EffectParameters::polisherMode)));
 
-    wetValue.setTargetValue (clamp(EffectParameters::dryWet, getParam (EffectParameters::dryWet)));
+    const float dryWet = clamp(EffectParameters::dryWet, getParam(EffectParameters::dryWet));
+    wetValue.setTargetValue (dryWet);
+
+    bool currentBypass = (dryWet == 0.0f);
+    if (currentBypass && !bypassActive)
+    {
+        lowpassFilter.reset();
+        if (oversampler)
+            oversampler->reset();
+    }
+    bypassActive = currentBypass;
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
@@ -359,7 +369,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     dryWetMixer.pushDrySamples (block);
 
-    auto upBlock = oversampler ? oversampler->processSamplesUp (block) : block;
+    auto upBlock = block;
+    if (!bypassActive && oversampler)
+        upBlock = oversampler->processSamplesUp (block);
     juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
     chain.get<0>().process (ctxGain);
 
@@ -397,9 +409,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
     chain.get<2>().process (ctxPolish);
     juce::dsp::ProcessContextReplacing<float> ctxFilter (upBlock);
-    lowpassFilter.process (ctxFilter);
+    if (!bypassActive)
+        lowpassFilter.process (ctxFilter);
 
-    if (oversampler)
+    if (!bypassActive && oversampler)
         oversampler->processSamplesDown (block);
 
     for (size_t i = 0; i < block.getNumSamples(); ++i)
@@ -496,6 +509,13 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
                           Config::kCrossfadeTime);
         formulaBlend.setCurrentAndTargetValue(0.f);
         formulaBlend.setTargetValue(1.f);
+        lowpassFilter.reset();
+        if (oversampler)
+            oversampler->reset();
+        if (auto* p = apvts.getRawParameterValue(EffectParameters::dryWet))
+            bypassActive = (p->load() == 0.0f);
+        else
+            bypassActive = false;
         return true;
     }
     return false;
