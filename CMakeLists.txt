@@ -66,6 +66,7 @@ set(SOURCE_FILES
     src/ui/custom/ParameterComponent.cpp
     src/ui/custom/ProgressBarComponent.cpp
     src/dsp/LookupTables.cpp
+    src/dsp/LookupTableSmoother.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -165,6 +166,7 @@ target_sources(NeuroCoreTests PRIVATE
     src/dsp/BandPassFilter.cpp
     src/core/PluginProcessor.cpp
     src/dsp/LookupTables.cpp
+    src/dsp/LookupTableSmoother.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
     src/ui/WeightedLayout.cpp
