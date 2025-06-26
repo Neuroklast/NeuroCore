@@ -22,9 +22,10 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
-#include "PresetOverlay.h"
-#include "ValidationOverlay.h"
-#include "FunctionsOverlay.h"
+#include "ModalOverlay.h"
+#include "PresetContentComponent.h"
+#include "ValidationContentComponent.h"
+#include "FunctionsContentComponent.h"
 #include "WeightedLayout.h"
 
 
@@ -114,9 +115,9 @@ private:
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
-    std::unique_ptr<PresetOverlay>            presetOverlay;
-    std::unique_ptr<FunctionsOverlay>         functionsOverlay;
-    std::unique_ptr<ValidationOverlay>        validationOverlay;
+    std::unique_ptr<ModalOverlay>             presetOverlay;
+    std::unique_ptr<ModalOverlay>             functionsOverlay;
+    std::unique_ptr<ModalOverlay>             validationOverlay;
     std::atomic_bool                          alive { true };
 
     void showPresetOverlay();

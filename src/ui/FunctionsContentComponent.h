@@ -27,14 +27,13 @@ struct FunctionInfo
     juce::String performance;
 };
 
-class FunctionsOverlay : public juce::Component,
-                         public juce::ListBoxModel
+class FunctionsContentComponent : public juce::Component,
+                                  public juce::ListBoxModel
 {
 public:
-    FunctionsOverlay(NeuroCoreAudioProcessor& p);
-    ~FunctionsOverlay() override = default;
+    explicit FunctionsContentComponent(NeuroCoreAudioProcessor& p);
+    ~FunctionsContentComponent() override = default;
 
-    void paint(juce::Graphics& g) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& kp) override;
 

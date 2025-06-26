@@ -20,7 +20,10 @@
 #include "custom/ParameterComponent.h"
 #include "../utils/Localiser.h"
 #include "WeightedLayout.h"
-#include "ValidationOverlay.h"
+#include "ModalOverlay.h"
+#include "PresetContentComponent.h"
+#include "FunctionsContentComponent.h"
+#include "ValidationContentComponent.h"
 
 
 //==============================================================================
@@ -444,47 +447,50 @@ void NeuroCoreAudioProcessorEditor::resized()
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 {
     hidePresetOverlay();
-    presetOverlay = std::make_unique<PresetOverlay>(audioProcessor, lookAndFeel);
-    presetOverlay->onPresetSelected = [this](int idx)
+
+    auto content = std::make_unique<PresetContentComponent>(audioProcessor, lookAndFeel);
+    auto* ptr = content.get();
+
+    presetOverlay = std::make_unique<ModalOverlay>();
+    presetOverlay->setMode(OverlayMode::Closable);
+    presetOverlay->setContent(std::move(content));
+
+    ptr->onPresetSelected = [this](int idx)
     {
         audioProcessor.loadPreset(idx);
         hidePresetOverlay();
     };
-    presetOverlay->onClose = [this] { hidePresetOverlay(); };
+    ptr->onClose = [this] { hidePresetOverlay(); };
 
-    auto bounds = getScreenBounds();
-    presetOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    presetOverlay->setBounds(bounds);
-    presetOverlay->enterModalState(true);
-    presetOverlay->toFront(true);
-    presetOverlay->grabKeyboardFocus();
+    presetOverlay->show(*this);
 }
 
 void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
 {
     hideFunctionsOverlay();
-    functionsOverlay = std::make_unique<FunctionsOverlay>(audioProcessor);
-    functionsOverlay->onInsert = [this](const juce::String& text)
+
+    auto content = std::make_unique<FunctionsContentComponent>(audioProcessor);
+    auto* ptr = content.get();
+
+    functionsOverlay = std::make_unique<ModalOverlay>();
+    functionsOverlay->setMode(OverlayMode::Closable);
+    functionsOverlay->setContent(std::move(content));
+
+    ptr->onInsert = [this](const juce::String& text)
     {
         auto caret = formulaInputEditor->getText().isNotEmpty() ? formulaInputEditor->getText().length() : 0;
         formulaInputEditor->insertTextAtCaret(text);
     };
-    functionsOverlay->onClose = [this]{ hideFunctionsOverlay(); };
-    auto bounds = getScreenBounds();
-    functionsOverlay->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    functionsOverlay->setBounds(bounds);
-    functionsOverlay->enterModalState(true);
-    functionsOverlay->toFront(true);
-    functionsOverlay->grabKeyboardFocus();
+    ptr->onClose = [this]{ hideFunctionsOverlay(); };
+
+    functionsOverlay->show(*this);
 }
 
 void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
 {
     if (functionsOverlay)
     {
-        functionsOverlay->exitModalState(0);
-        functionsOverlay->setVisible(false);
-        functionsOverlay->removeFromDesktop();
+        removeChildComponent(functionsOverlay.get());
         functionsOverlay.reset();
     }
 }
@@ -492,9 +498,7 @@ void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
     {
-        presetOverlay->exitModalState(0);
-        presetOverlay->setVisible(false);
-        presetOverlay->removeFromDesktop();
+        removeChildComponent(presetOverlay.get());
         presetOverlay.reset();
     }
 }
@@ -507,12 +511,15 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
         validationOverlay.reset();
     }
 
-    validationOverlay = std::make_unique<ValidationOverlay>(audioProcessor, expr);
-    addAndMakeVisible(*validationOverlay);
-    validationOverlay->setBounds(getLocalBounds());
+    auto content = std::make_unique<ValidationContentComponent>(audioProcessor, expr);
+    auto* ptr = content.get();
+
+    validationOverlay = std::make_unique<ModalOverlay>();
+    validationOverlay->setMode(OverlayMode::Blocking);
+    validationOverlay->setContent(std::move(content));
 
     auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
-    validationOverlay->onResult = [safeEditor, expr](bool stable)
+    ptr->onResult = [safeEditor, expr](bool stable)
     {
         if (! safeEditor || ! safeEditor->alive.load())
             return;
@@ -539,8 +546,8 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
             safeEditor->errorLabel->setText(err, juce::dontSendNotification);
         }
     };
-    validationOverlay->grabKeyboardFocus();
-    validationOverlay->toFront(true);
+
+    validationOverlay->show(*this);
 }
 
 

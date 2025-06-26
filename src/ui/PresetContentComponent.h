@@ -4,20 +4,18 @@
 
 class NeuroCoreAudioProcessor;
 
-// modal overlay showing preset table with action buttons
-class PresetOverlay : public juce::Component
+// component showing preset table with action buttons
+class PresetContentComponent : public juce::Component
 {
 public:
-    PresetOverlay(NeuroCoreAudioProcessor& processor, juce::LookAndFeel& lf);
-    ~PresetOverlay() override;
+    PresetContentComponent(NeuroCoreAudioProcessor& processor, juce::LookAndFeel& lf);
+    ~PresetContentComponent() override;
 
-    void paint(juce::Graphics& g) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& kp) override;
-    void mouseUp(const juce::MouseEvent& ev) override;
 
-    std::function<void(int)> onPresetSelected; //!< callback when user chooses a preset
-    std::function<void()> onClose;             //!< called when overlay should close
+    std::function<void(int)> onPresetSelected;
+    std::function<void()> onClose;
 
 private:
     PresetTableComponent table;
@@ -27,7 +25,6 @@ private:
     juce::TextButton saveButton { "Save" };
     juce::TextButton deleteButton { "Delete" };
     juce::TextButton closeButton { "Close" };
-    juce::Rectangle<int> panel;
 
     void refreshTable();
 };
@@ -35,14 +32,12 @@ private:
 class ModalCallback : public juce::ModalComponentManager::Callback
 {
 public:
-    ModalCallback(std::function<void(int)> callback) : callback(std::move(callback)) {}
-
+    explicit ModalCallback(std::function<void(int)> cb) : callback(std::move(cb)) {}
     void modalStateFinished(int result) override
     {
         if (callback)
             callback(result);
     }
-
 private:
     std::function<void(int)> callback;
 };

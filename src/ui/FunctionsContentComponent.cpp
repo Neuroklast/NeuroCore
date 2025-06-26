@@ -1,4 +1,4 @@
-#include "FunctionsOverlay.h"
+#include "FunctionsContentComponent.h"
 #include "../third_party/nlohmann/json.hpp"
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/Config.h"
@@ -40,10 +40,8 @@ void FunctionPlotComponent::paint(juce::Graphics& g)
     g.strokePath(p, juce::PathStrokeType(1.2f));
 }
 
-FunctionsOverlay::FunctionsOverlay(NeuroCoreAudioProcessor& p) : processor(p)
+FunctionsContentComponent::FunctionsContentComponent(NeuroCoreAudioProcessor& p) : processor(p)
 {
-    setOpaque(false);
-    setWantsKeyboardFocus(true);
     addAndMakeVisible(searchField);
     addAndMakeVisible(listBox);
     addAndMakeVisible(insertButton);
@@ -63,7 +61,7 @@ FunctionsOverlay::FunctionsOverlay(NeuroCoreAudioProcessor& p) : processor(p)
     filterList();
 }
 
-void FunctionsOverlay::loadFunctions()
+void FunctionsContentComponent::loadFunctions()
 {
     juce::File res = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
                         .getSiblingFile(Config::kResourceFolder)
@@ -95,7 +93,7 @@ void FunctionsOverlay::loadFunctions()
     }
 }
 
-void FunctionsOverlay::filterList()
+void FunctionsContentComponent::filterList()
 {
     juce::String q = searchField.getText().toLowerCase();
     filtered.clear();
@@ -113,9 +111,9 @@ void FunctionsOverlay::filterList()
     if(!filtered.empty()) { listBox.selectRow(0); selectedRowsChanged(0); }
 }
 
-int FunctionsOverlay::getNumRows() { return (int)filtered.size(); }
+int FunctionsContentComponent::getNumRows() { return (int)filtered.size(); }
 
-void FunctionsOverlay::paintListBoxItem(int row, juce::Graphics& g, int width, int height, bool selected)
+void FunctionsContentComponent::paintListBoxItem(int row, juce::Graphics& g, int width, int height, bool selected)
 {
     if (!juce::isPositiveAndBelow(row, filtered.size())) return;
     if (selected) g.fillAll(juce::Colours::darkgrey);
@@ -123,14 +121,14 @@ void FunctionsOverlay::paintListBoxItem(int row, juce::Graphics& g, int width, i
     g.drawText(allFunctions[filtered[row]].name, 4,0,width,height, juce::Justification::centredLeft);
 }
 
-void FunctionsOverlay::selectedRowsChanged(int row)
+void FunctionsContentComponent::selectedRowsChanged(int row)
 {
     currentIndex = row;
     if (juce::isPositiveAndBelow(row, filtered.size()))
         updateDetails(filtered[row]);
 }
 
-void FunctionsOverlay::updateDetails(int index)
+void FunctionsContentComponent::updateDetails(int index)
 {
     auto& f = allFunctions[index];
     nameLabel.setText(f.name, juce::dontSendNotification);
@@ -141,18 +139,9 @@ void FunctionsOverlay::updateDetails(int index)
     plot.setFormula(formula);
 }
 
-void FunctionsOverlay::paint(juce::Graphics& g)
+void FunctionsContentComponent::resized()
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(getLocalBounds().reduced(40));
-    g.setColour(juce::Colours::white);
-    g.drawRect(getLocalBounds().reduced(40));
-}
-
-void FunctionsOverlay::resized()
-{
-    auto area = getLocalBounds().reduced(40);
+    auto area = getLocalBounds();
     auto left = area.removeFromLeft(area.getWidth()*6/10);
     searchField.setBounds(left.removeFromTop(24));
     listBox.setBounds(left);
@@ -169,7 +158,7 @@ void FunctionsOverlay::resized()
     closeButton.setBounds(buttons.removeFromLeft(80));
 }
 
-bool FunctionsOverlay::keyPressed(const juce::KeyPress& kp)
+bool FunctionsContentComponent::keyPressed(const juce::KeyPress& kp)
 {
     if (kp == juce::KeyPress::escapeKey) { if(onClose) onClose(); return true; }
     if (kp == juce::KeyPress::returnKey) { insertButton.triggerClick(); return true; }

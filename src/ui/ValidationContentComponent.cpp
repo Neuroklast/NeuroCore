@@ -1,18 +1,17 @@
-#include "ValidationOverlay.h"
+#include "ValidationContentComponent.h"
 #include "../core/PluginProcessor.h"
 
-ValidationOverlay::ValidationOverlay(NeuroCoreAudioProcessor& proc, const juce::String& expr)
+ValidationContentComponent::ValidationContentComponent(NeuroCoreAudioProcessor& proc, const juce::String& expr)
     : processor(proc), script(expr)
 {
-    setOpaque(false);
     setInterceptsMouseClicks(true, true);
-    setAlwaysOnTop(true);
     setWantsKeyboardFocus(true);
 
     addAndMakeVisible(progressBar);
     addAndMakeVisible(messageLabel);
     addAndMakeVisible(okButton);
-    okButton.onClick = [this] {
+    okButton.onClick = [this]
+    {
         if (onResult)
             onResult(false);
     };
@@ -25,7 +24,7 @@ ValidationOverlay::ValidationOverlay(NeuroCoreAudioProcessor& proc, const juce::
     startTest();
 }
 
-ValidationOverlay::~ValidationOverlay()
+ValidationContentComponent::~ValidationContentComponent()
 {
     stopTimer();
     abortRequested = true;
@@ -33,15 +32,11 @@ ValidationOverlay::~ValidationOverlay()
         worker->join();
 }
 
-void ValidationOverlay::startTest()
+void ValidationContentComponent::startTest()
 {
-
-    // Copy script to avoid capturing this after component destruction
     auto scriptCopy = script;
+    auto safeThis = juce::Component::SafePointer<ValidationContentComponent>(this);
 
-    auto safeThis = juce::Component::SafePointer<ValidationOverlay>(this);
-
-    // Start worker thread that validates the formula asynchronously
     worker = std::make_unique<std::thread>([safeThis, scriptCopy, proc = std::ref(processor)]()
     {
         juce::String warn;
@@ -66,7 +61,6 @@ void ValidationOverlay::startTest()
 
         juce::MessageManager::callAsync([safeThis, ok, warn]()
         {
-
             if (! safeThis)
                 return;
 
@@ -77,7 +71,7 @@ void ValidationOverlay::startTest()
             }
             else
             {
-                safeThis->state = ValidationOverlay::State::warning;
+                safeThis->state = ValidationContentComponent::State::warning;
                 safeThis->warningString = warn;
                 safeThis->progressBar.setVisible(false);
                 safeThis->okButton.setVisible(true);
@@ -90,19 +84,9 @@ void ValidationOverlay::startTest()
     });
 }
 
-void ValidationOverlay::paint(juce::Graphics& g)
+void ValidationContentComponent::resized()
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel);
-}
-
-void ValidationOverlay::resized()
-{
-    panel = getLocalBounds().withSizeKeepingCentre(getWidth() * 6 / 10, getHeight() * 3 / 10);
-    auto area = panel.reduced(8);
+    auto area = getLocalBounds();
     auto barHeight = 24;
     progressBar.setBounds(area.removeFromTop(barHeight));
     area.removeFromTop(4);
@@ -111,23 +95,21 @@ void ValidationOverlay::resized()
     messageLabel.setBounds(area);
 }
 
-bool ValidationOverlay::keyPressed(const juce::KeyPress& kp)
+bool ValidationContentComponent::keyPressed(const juce::KeyPress& kp)
 {
-    if (state == ValidationOverlay::State::warning &&
+    if (state == ValidationContentComponent::State::warning &&
         (kp == juce::KeyPress::returnKey || kp == juce::KeyPress::escapeKey))
     {
         okButton.triggerClick();
         return true;
     }
-    // consume escape or other keys
-    return true;
+    return false;
 }
 
-void ValidationOverlay::timerCallback()
+void ValidationContentComponent::timerCallback()
 {
     if (state == running)
     {
         progressBar.setProgress(progress.load());
     }
 }
-

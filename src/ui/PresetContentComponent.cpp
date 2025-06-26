@@ -1,13 +1,9 @@
-#include "PresetOverlay.h"
+#include "PresetContentComponent.h"
 #include "PluginLookAndFeel.h"
 
-PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
+PresetContentComponent::PresetContentComponent(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
     : table(proc), processor(proc), lookAndFeel(lf)
 {
-    //setLookAndFeel(&lookAndFeel);
-    setOpaque(false);
-    setAlwaysOnTop(true);
-    setWantsKeyboardFocus(true);
     addAndMakeVisible(table);
     addAndMakeVisible(loadButton);
     addAndMakeVisible(saveButton);
@@ -30,7 +26,6 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
     saveButton.onClick = [this]
     {
         auto* aw = new juce::AlertWindow("Save Preset", {}, juce::AlertWindow::NoIcon);
-        //aw->setLookAndFeel(&getLookAndFeel());
         aw->addTextEditor("name", {}, "Name:");
         aw->addButton("OK", 1);
         aw->addButton("Cancel", 0);
@@ -75,38 +70,22 @@ PresetOverlay::PresetOverlay(NeuroCoreAudioProcessor& proc, juce::LookAndFeel& l
                 }));
         };
 
-
-
     setInterceptsMouseClicks(true, true);
     refreshTable();
 }
 
-PresetOverlay::~PresetOverlay()
+PresetContentComponent::~PresetContentComponent()
 {
-    //setLookAndFeel(nullptr);
-    if (isOnDesktop())
-        removeFromDesktop();
 }
 
-void PresetOverlay::refreshTable()
+void PresetContentComponent::refreshTable()
 {
     table.refresh();
 }
 
-void PresetOverlay::paint(juce::Graphics& g)
+void PresetContentComponent::resized()
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel, 1);
-}
-
-void PresetOverlay::resized()
-{
-    panel = getLocalBounds().withSizeKeepingCentre(getWidth() * 6 / 10,
-                                                  getHeight() * 6 / 10);
-    auto box = panel;
+    auto box = getLocalBounds();
     auto buttonHeight = 24;
     auto listArea = box.removeFromTop(box.getHeight() - buttonHeight - 8).reduced(4);
     table.setBounds(listArea);
@@ -118,7 +97,7 @@ void PresetOverlay::resized()
     closeButton.setBounds(buttons.reduced(2));
 }
 
-bool PresetOverlay::keyPressed(const juce::KeyPress& kp)
+bool PresetContentComponent::keyPressed(const juce::KeyPress& kp)
 {
     if (kp == juce::KeyPress::escapeKey)
     {
@@ -127,11 +106,4 @@ bool PresetOverlay::keyPressed(const juce::KeyPress& kp)
         return true;
     }
     return false;
-}
-
-void PresetOverlay::mouseUp(const juce::MouseEvent& ev)
-{
-    if (! panel.contains(ev.getPosition()))
-        if (onClose)
-            onClose();
 }
