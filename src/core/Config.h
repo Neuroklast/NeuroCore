@@ -71,6 +71,9 @@ namespace Config
     /// Default resolution for lookup tables.
     inline constexpr int   kLookupTableSize = 1024;
 
+    /// Number of invalid (NaN/Inf) samples tolerated during validation.
+    inline constexpr int   kInvalidValueThreshold = 10;
+
     //==========================================================================
     // Preset constants
     //==========================================================================

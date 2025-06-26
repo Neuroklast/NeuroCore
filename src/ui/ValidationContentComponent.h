@@ -27,7 +27,13 @@ private:
     juce::String warningString;
 
     std::atomic<float> progress{0.0f};
+    std::atomic<int> nanCount{0};
+    std::atomic<int> infCount{0};
+    juce::SpinLock textLock;
+    juce::String progressText;
     ui::ProgressBarComponent progressBar;
+    juce::Label statsLabel;
+    juce::ImageComponent icon;
 
     std::atomic<bool> abortRequested{false};
 
