@@ -74,6 +74,12 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile(Config::kUserTemplateFile);
     loadUserTemplates(userFile);
+
+    if (Config::kEnableLicensing)
+    {
+        isLicensed = licenseManager.verifyLicense();
+        demoStartMs = juce::Time::getMillisecondCounterHiRes();
+    }
 }
 
 void NeuroCoreAudioProcessor::setVariableName(int index, const juce::String& name)
@@ -281,6 +287,21 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
     if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
         return;
+
+    if (Config::kEnableLicensing)
+    {
+        if (! isLicensed)
+            isLicensed = licenseManager.verifyLicense();
+        if (! isLicensed)
+        {
+            double elapsed = (juce::Time::getMillisecondCounterHiRes() - demoStartMs) / 1000.0;
+            if (elapsed > Config::kDemoDurationSeconds)
+            {
+                buffer.clear();
+                return;
+            }
+        }
+    }
     auto getParam = [this](const char* id)
     {
         if (auto* p = apvts.getRawParameterValue (id))
