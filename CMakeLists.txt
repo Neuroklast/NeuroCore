@@ -51,6 +51,8 @@ set(SOURCE_FILES
     src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
+    src/licensing/HardwareFingerprint.cpp
+    src/licensing/LicenseManager.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
     src/ui/FormulaWaveComponent.cpp
@@ -98,6 +100,7 @@ target_include_directories(NeuroCore PRIVATE
     ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
     ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/licensing
     ${PROJECT_SOURCE_DIR}/src/third_party
     ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
 )
@@ -169,6 +172,8 @@ target_sources(NeuroCoreTests PRIVATE
     src/dsp/LookupTableSmoother.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
+    src/licensing/HardwareFingerprint.cpp
+    src/licensing/LicenseManager.cpp
     src/ui/WeightedLayout.cpp
 )
 
@@ -178,6 +183,7 @@ target_include_directories(NeuroCoreTests PRIVATE
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
+    ${PROJECT_SOURCE_DIR}/src/licensing
 )
 
 target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)

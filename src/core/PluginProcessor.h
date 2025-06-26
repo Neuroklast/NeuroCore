@@ -26,6 +26,7 @@
 #include "../dsp/LowPassFilter.h"
 #include "EffectParameters.h"
 #include "Config.h"
+#include "../licensing/LicenseManager.h"
 
 
 //==============================================================================
@@ -133,6 +134,11 @@ private:
     std::array<juce::SmoothedValue<float>, 4> smoothedParams;
     juce::String dslScript;
     juce::String currentLanguage;
+
+    // Licensing
+    LicenseManager licenseManager;
+    bool           isLicensed  { false };
+    double         demoStartMs { 0.0 };
 
 
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,

@@ -281,6 +281,14 @@ namespace Config
     inline constexpr float kClampMax            = 1.0f;
 
     //==========================================================================
+    // Licensing
+    //==========================================================================
+    /// Enable licensing checks (disable for development builds).
+    inline constexpr bool  kEnableLicensing      = true;
+    /// Duration in seconds for the built-in demo mode.
+    inline constexpr double kDemoDurationSeconds = 30.0 * 60.0; // 30 minutes
+
+    //==========================================================================
     // Debugging / logging
     //==========================================================================
 
