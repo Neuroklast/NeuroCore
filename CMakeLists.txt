@@ -58,10 +58,11 @@ set(SOURCE_FILES
     src/ui/FormulaWaveComponent.cpp
     src/ui/DslTerminalEditor.cpp
     src/ui/InlineAutocompleteEditor.cpp
+    src/ui/ModalOverlay.cpp
     src/ui/PresetTableComponent.cpp
-    src/ui/PresetOverlay.cpp
-    src/ui/FunctionsOverlay.cpp
-    src/ui/ValidationOverlay.cpp
+    src/ui/PresetContentComponent.cpp
+    src/ui/FunctionsContentComponent.cpp
+    src/ui/ValidationContentComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp
