@@ -368,6 +368,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
+    alive.store(false);
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
@@ -513,7 +514,7 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     auto safeEditor = juce::Component::SafePointer<NeuroCoreAudioProcessorEditor>(this);
     validationOverlay->onResult = [safeEditor, expr](bool stable)
     {
-        if (! safeEditor)
+        if (! safeEditor || ! safeEditor->alive.load())
             return;
 
         if (safeEditor->validationOverlay)
