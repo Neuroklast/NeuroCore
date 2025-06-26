@@ -8,6 +8,7 @@ LoudnessMeterComponent::LoudnessMeterComponent(NeuroCoreAudioProcessor& proc)
     startTimerHz(30);
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(true);
+    openGLContext.setComponentPaintingEnabled(true);
     openGLContext.attachTo(*this);
 
     smoothedLoudness.reset(30.0, 0.1);

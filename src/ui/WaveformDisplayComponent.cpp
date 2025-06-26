@@ -30,8 +30,9 @@ WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc
     }
 
     openGLContext.setRenderer(this);
-    openGLContext.attachTo(*this);
     openGLContext.setContinuousRepainting(true);
+    openGLContext.setComponentPaintingEnabled(true);
+    openGLContext.attachTo(*this);
     
 
     const double rate = 60.0;
