@@ -4,6 +4,7 @@ ModalOverlay::ModalOverlay()
 {
     setInterceptsMouseClicks(true, true);
     setOpaque(false);
+    setAlwaysOnTop(true);
     addAndMakeVisible(titleLabel);
     addAndMakeVisible(okButton);
     addAndMakeVisible(backButton);
@@ -48,11 +49,23 @@ void ModalOverlay::show(juce::Component& parent)
 
 void ModalOverlay::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black.withAlpha(0.5f));
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel);
+    if (auto* lf = dynamic_cast<juce::LookAndFeel_V4*>(&getLookAndFeel()))
+    {
+        const auto& scheme = lf->getCurrentColourScheme();
+        g.fillAll(scheme.getUIColour(juce::LookAndFeel_V4::ColourScheme::windowBackground).withAlpha(0.5f));
+        g.setColour(scheme.getUIColour(juce::LookAndFeel_V4::ColourScheme::widgetBackground));
+        g.fillRect(panel);
+        g.setColour(scheme.getUIColour(juce::LookAndFeel_V4::ColourScheme::outline));
+        g.drawRect(panel);
+    }
+    else
+    {
+        g.fillAll(juce::Colours::black.withAlpha(0.5f));
+        g.setColour(juce::Colours::darkgrey);
+        g.fillRect(panel);
+        g.setColour(juce::Colours::white);
+        g.drawRect(panel);
+    }
 }
 
 void ModalOverlay::resized()

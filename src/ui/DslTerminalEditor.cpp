@@ -130,6 +130,7 @@ DslTerminalEditor::DslTerminalEditor(NeuroCoreAudioProcessor& proc)
     document->addListener(this);
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(false);
+    openGLContext.setComponentPaintingEnabled(true);
     addAndMakeVisible(*fallbackEditor);
     openGLContext.attachTo(*this);
 }
