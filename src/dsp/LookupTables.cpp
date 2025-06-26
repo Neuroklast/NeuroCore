@@ -10,6 +10,12 @@ std::vector<float> LookupTables::tanhTable;
 std::vector<float> LookupTables::expTable;
 std::vector<float> LookupTables::logTable;
 std::unordered_map<int, std::vector<float>> LookupTables::powTables;
+LookupTables::SmoothingOptions LookupTables::smoothing{};
+
+void LookupTables::setSmoothingOptions (const SmoothingOptions& opts)
+{
+    smoothing = opts;
+}
 
 void LookupTables::initialise (int size)
 {
@@ -40,6 +46,10 @@ void LookupTables::initialise (int size)
     expTable.clear();
     logTable.clear();
     powTables.clear();
+
+    LookupTableSmoother::smooth(sinTable, smoothing);
+    LookupTableSmoother::smooth(cosTable, smoothing);
+    LookupTableSmoother::smooth(tanhTable, smoothing);
 }
 
 static inline float interp (const std::vector<float>& table, float pos)

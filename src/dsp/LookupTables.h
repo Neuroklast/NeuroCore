@@ -8,6 +8,7 @@
 #include <JuceHeader.h>
 #include <vector>
 #include "../core/Config.h"
+#include "LookupTableSmoother.h"
 
 // Helper class that stores lookup tables for common curves.
 // Tables are initialised once at plugin start.
@@ -19,6 +20,9 @@ public:
 
     // Ensure tables for additional functions are allocated if required.
     static void prepareFromScript (const juce::String& script);
+
+    using SmoothingOptions = LookupTableSmoother::Options;
+    static void setSmoothingOptions (const SmoothingOptions& opts);
 
     // Fast access functions using the lookup tables.
     static float fastSin  (float x) noexcept;
@@ -36,5 +40,6 @@ private:
     static std::vector<float> expTable;
     static std::vector<float> logTable;
     static std::unordered_map<int, std::vector<float>> powTables;
+    static SmoothingOptions smoothing;
 };
 
