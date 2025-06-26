@@ -127,8 +127,7 @@ void ValidationOverlay::timerCallback()
 {
     if (state == running)
     {
-        progressValue = progress.load();
-        progressBar.repaint();
+        progressBar.setProgress(progress.load());
     }
 }
 
