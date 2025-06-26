@@ -4,6 +4,7 @@
 FormulaWaveComponent::FormulaWaveComponent (NeuroCoreAudioProcessor& p)
     : processor (p)
 {
+    setOpaque (false);
     zoomSlider.setRange (1.0, 10.0, 0.01);
     zoomSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     zoomSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
@@ -41,7 +42,7 @@ void FormulaWaveComponent::updateWave()
 
 void FormulaWaveComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::black);
+    g.fillAll (juce::Colours::transparentBlack);
 
     const int w = getWidth();
     const int h = getHeight() - 40; // leave space for slider
