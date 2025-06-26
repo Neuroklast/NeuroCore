@@ -260,6 +260,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     layoutRoot = makeColumn();
     layoutRoot->margin = Config::kUiPadding;
 	layoutRoot->innerMargin = Config::kUiPadding;
+	layoutRoot->aspectRatio = 1.618f; // Golden ratio for a nice layout
 
 	layoutRoot->drawBorder = true;
 
@@ -267,6 +268,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 	auto header = makeRow(0.1f);
 	header->innerMargin = Config::kUiPadding;
 	header->margin = Config::kUiPadding;
+	header->drawBorder = false;
+	
+
     
     
     header->addChild(makeLeaf(pluginNameLabel.get(), 2.0f));
@@ -286,7 +290,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 	auto left = makeColumn(5.f);
     auto editor = makeRow();
-	auto formulaEditor = makeColumn(5.f);
+	auto formulaEditor = makeColumn(6.f);
     auto paramKnobs = makeColumn(1.f);
     auto buttons = makeColumn(1.f);
 	
@@ -317,6 +321,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto right = makeColumn(1.f);
 	right->innerMargin = Config::kUiPadding;
+	right->drawBorder = false;
+	right->margin = Config::kUiPadding;
 
     right->addChild(makeLeaf(loudnessMeter.get()));
     
@@ -337,7 +343,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
 	auto wavemeter = makeRow(0.8f, 0, true);
 	wavemeter->drawBorder = true;
-	wavemeter->innerMargin = 5;
+	wavemeter->innerMargin = Config::kUiPadding;
+	wavemeter->margin = Config::kUiPadding;
     wavemeter->addChild(makeLeaf(inputDisplay.get()));
     wavemeter->addChild(makeLeaf(outputDisplay.get()));
 
