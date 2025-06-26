@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include <array>
 #include <vector>
+#include <atomic>
 #include "../core/PluginProcessor.h"
 #include "../core/Config.h"
 #include "PluginLookAndFeel.h"
@@ -116,6 +117,7 @@ private:
     std::unique_ptr<PresetOverlay>            presetOverlay;
     std::unique_ptr<FunctionsOverlay>         functionsOverlay;
     std::unique_ptr<ValidationOverlay>        validationOverlay;
+    std::atomic_bool                          alive { true };
 
     void showPresetOverlay();
     void hidePresetOverlay();
