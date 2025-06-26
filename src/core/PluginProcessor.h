@@ -29,6 +29,15 @@
 #include "../licensing/LicenseManager.h"
 
 
+struct ValidationProgressInfo
+{
+    float       progress { 0.0f };   ///< Progress in range [0,1]
+    juce::String message;             ///< Description of current task
+    int         nanCount { 0 };       ///< Number of NaN samples seen
+    int         infCount { 0 };       ///< Number of Inf samples seen
+};
+
+
 //==============================================================================
 /**
 */
@@ -99,7 +108,10 @@ public:
 
     bool testFormulaStability (const juce::String& script,
                                juce::String& warning,
-                               std::function<bool(float)> progress = {});
+                               std::function<bool(const ValidationProgressInfo&)> progress = {});
+
+    /** Smoothly bypass or enable the output during validation. */
+    void setValidationBypass(bool enable);
 
     void getInputWaveform(juce::AudioBuffer<float>& dest);
     void getOutputWaveform(juce::AudioBuffer<float>& dest);

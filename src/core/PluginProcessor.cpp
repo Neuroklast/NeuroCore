@@ -583,7 +583,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
 
 bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                                                    juce::String& warning,
-                                                   std::function<bool(float)> progress)
+                                                   std::function<bool(const ValidationProgressInfo&)> progress)
 {
     dsl::SignalChain testChain;
     if (! testChain.loadScript(script, warning))
@@ -596,8 +596,9 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
 
     juce::AudioBuffer<float> buf(1, bs);
     std::array<float,4> params{};
+    int nanCount = 0;
+    int infCount = 0;
     int invalid = 0;
-    const int maxInvalid = 10;
 
     auto run = [&](float value, int paramIndex)
     {
@@ -605,6 +606,7 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
         params[paramIndex] = value;
         int processed = 0;
         juce::Random rng;
+        juce::String msg = "param " + juce::String::charToString((juce_wchar)('a' + paramIndex)) + "=" + juce::String(value);
         while (processed < samples)
         {
             const int block = juce::jmin(bs, samples - processed);
@@ -620,17 +622,24 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
             for (int i = 0; i < block; ++i)
             {
                 float v = buf.getSample(0, i);
+                if (std::isnan(v)) ++nanCount;
+                else if (std::isinf(v)) ++infCount;
                 if (! std::isfinite(v) || std::abs(v) > 1.5f)
                 {
                     ++invalid;
-                    if (invalid > maxInvalid)
+                    if (invalid > Config::kInvalidValueThreshold)
                         return false;
                 }
             }
             processed += block;
             if (progress)
             {
-                if (! progress((float) processed / (float) samples))
+                ValidationProgressInfo info;
+                info.progress = (float) processed / (float) samples;
+                info.message  = msg;
+                info.nanCount = nanCount;
+                info.infCount = infCount;
+                if (! progress(info))
                     return false;
             }
         }
@@ -644,6 +653,16 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                 warning = TRANS("StabilityWarning");
                 return false;
             }
+
+    if (progress)
+    {
+        ValidationProgressInfo info;
+        info.progress = 1.0f;
+        info.message  = TRANS("done");
+        info.nanCount = nanCount;
+        info.infCount = infCount;
+        progress(info);
+    }
 
     return true;
 }
@@ -851,6 +870,16 @@ void NeuroCoreAudioProcessor::getOutputWaveform(juce::AudioBuffer<float>& dest)
         juce::FloatVectorOperations::copy (dst, src + start, first);
         if (num > first)
             juce::FloatVectorOperations::copy (dst + first, src, num - first);
+    }
+}
+
+void NeuroCoreAudioProcessor::setValidationBypass(bool enable)
+{
+    if (auto* p = apvts.getRawParameterValue(EffectParameters::dryWet))
+    {
+        float target = enable ? 0.0f : p->load();
+        wetValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
+        wetValue.setTargetValue(target);
     }
 }
 
