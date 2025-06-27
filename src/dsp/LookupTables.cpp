@@ -164,6 +164,66 @@ float LookupTables::fastPow (float x, float exponent) noexcept
     return interp (table, pos);
 }
 
+juce::dsp::SIMDRegister<float> LookupTables::fastSinSimd(const juce::dsp::SIMDRegister<float>& x) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastSin(vals[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
+juce::dsp::SIMDRegister<float> LookupTables::fastCosSimd(const juce::dsp::SIMDRegister<float>& x) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastCos(vals[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
+juce::dsp::SIMDRegister<float> LookupTables::fastTanhSimd(const juce::dsp::SIMDRegister<float>& x) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastTanh(vals[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
+juce::dsp::SIMDRegister<float> LookupTables::fastExpSimd(const juce::dsp::SIMDRegister<float>& x) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastExp(vals[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
+juce::dsp::SIMDRegister<float> LookupTables::fastLogSimd(const juce::dsp::SIMDRegister<float>& x) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastLog(vals[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
+juce::dsp::SIMDRegister<float> LookupTables::fastPowSimd(const juce::dsp::SIMDRegister<float>& x, float exponent) noexcept
+{
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float vals[width];
+    x.copyToRawArray(vals);
+    for (size_t i = 0; i < width; ++i)
+        vals[i] = fastPow(vals[i], exponent);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(vals);
+}
+
 void LookupTables::prepareFromScript (const juce::String& script)
 {
     if (script.containsIgnoreCase ("exp("))

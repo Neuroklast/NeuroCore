@@ -57,6 +57,28 @@ public:
             expectWithinAbsoluteError(buf.getSample(0,2), 6.f, 1e-6f);
             expectWithinAbsoluteError(buf.getSample(0,3), 8.f, 1e-6f);
         }
+
+        beginTest("SIMD Functor");
+        {
+            ExpressionEvaluator eval;
+            expect(eval.parseFormula("a * x + b"));
+            auto fnScalar = eval.toFunction();
+            auto fnSimd   = eval.toFunctionSimd();
+            juce::dsp::SIMDRegister<float> vars[ExpressionEvaluator::MaxVariables]{};
+            vars[eval.getVariableIndex("a")] = juce::dsp::SIMDRegister<float>(2.0f);
+            vars[eval.getVariableIndex("b")] = juce::dsp::SIMDRegister<float>(1.0f);
+            vars[eval.getVariableIndex("x")] = juce::dsp::SIMDRegister<float>(3.0f);
+            auto simdResult = fnSimd(vars);
+            float scalarVars[ExpressionEvaluator::MaxVariables]{};
+            scalarVars[eval.getVariableIndex("a")] = 2.0f;
+            scalarVars[eval.getVariableIndex("b")] = 1.0f;
+            scalarVars[eval.getVariableIndex("x")] = 3.0f;
+            auto scalarResult = fnScalar(scalarVars);
+            constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+            alignas(16) float arr[width];
+            simdResult.copyToRawArray(arr);
+            expectWithinAbsoluteError(arr[0], scalarResult, 1e-6f);
+        }
     }
 };
 

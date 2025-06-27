@@ -24,10 +24,21 @@ float ExpressionEvaluator::VarNode::eval(const float* vars) const noexcept
     return vars[index];
 }
 
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::VarNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    return vars[index];
+}
+
 float ExpressionEvaluator::UnaryNode::eval(const float* vars) const noexcept
 {
     float v = child->eval(vars);
     return op == plus ? v : -v;
+}
+
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::UnaryNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto v = child->evalSimd(vars);
+    return op == plus ? v : v * juce::dsp::SIMDRegister<float>(-1.0f);
 }
 
 float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
@@ -45,9 +56,57 @@ float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
     return 0.0f;
 }
 
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto l = left->evalSimd(vars);
+    auto r = right->evalSimd(vars);
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float lf[width];
+    alignas(16) float rf[width];
+    l.copyToRawArray(lf);
+    r.copyToRawArray(rf);
+    float res[width];
+
+    switch (op)
+    {
+        case add:
+            return l + r;
+        case sub:
+            return l - r;
+        case mul:
+            return l * r;
+        case div:
+        {
+            for (size_t i = 0; i < width; ++i)
+                res[i] = rf[i] != 0.0f ? lf[i] / rf[i] : 0.0f;
+            return juce::dsp::SIMDRegister<float>::fromRawArray(res);
+        }
+        case pow:
+        {
+            juce::dsp::SIMDRegister<float> logL = LookupTables::fastLogSimd(l);
+            juce::dsp::SIMDRegister<float> mult = logL * r;
+            return LookupTables::fastExpSimd(mult);
+        }
+    }
+
+    for (size_t i = 0; i < width; ++i) res[i] = 0.0f;
+    return juce::dsp::SIMDRegister<float>::fromRawArray(res);
+}
+
 float ExpressionEvaluator::FunctionNode::eval(const float* vars) const noexcept
 {
     return func(child->eval(vars));
+}
+
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::FunctionNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto v = child->evalSimd(vars);
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float arr[width];
+    v.copyToRawArray(arr);
+    for (size_t i = 0; i < width; ++i)
+        arr[i] = func(arr[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(arr);
 }
 
 float ExpressionEvaluator::Func2Node::eval(const float* vars) const noexcept
@@ -55,14 +114,67 @@ float ExpressionEvaluator::Func2Node::eval(const float* vars) const noexcept
     return func(left->eval(vars), right->eval(vars));
 }
 
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func2Node::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto a = left->evalSimd(vars);
+    auto b = right->evalSimd(vars);
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float arrA[width];
+    alignas(16) float arrB[width];
+    a.copyToRawArray(arrA);
+    b.copyToRawArray(arrB);
+    float res[width];
+    for (size_t i = 0; i < width; ++i)
+        res[i] = func(arrA[i], arrB[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(res);
+}
+
 float ExpressionEvaluator::Func3Node::eval(const float* vars) const noexcept
 {
     return func(x->eval(vars), y->eval(vars), z->eval(vars));
 }
 
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func3Node::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto a = x->evalSimd(vars);
+    auto b = y->evalSimd(vars);
+    auto c = z->evalSimd(vars);
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float arrA[width];
+    alignas(16) float arrB[width];
+    alignas(16) float arrC[width];
+    a.copyToRawArray(arrA);
+    b.copyToRawArray(arrB);
+    c.copyToRawArray(arrC);
+    float res[width];
+    for (size_t i = 0; i < width; ++i)
+        res[i] = func(arrA[i], arrB[i], arrC[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(res);
+}
+
 float ExpressionEvaluator::Func5Node::eval(const float* vars) const noexcept
 {
     return func(a->eval(vars), b->eval(vars), c->eval(vars), d->eval(vars), e->eval(vars));
+}
+
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func5Node::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    auto av = a->evalSimd(vars);
+    auto bv = b->evalSimd(vars);
+    auto cv = c->evalSimd(vars);
+    auto dv = d->evalSimd(vars);
+    auto ev = e->evalSimd(vars);
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas(16) float arrA[width];
+    alignas(16) float arrB[width];
+    alignas(16) float arrC[width];
+    alignas(16) float arrD[width];
+    alignas(16) float arrE[width];
+    av.copyToRawArray(arrA); bv.copyToRawArray(arrB); cv.copyToRawArray(arrC); dv.copyToRawArray(arrD); ev.copyToRawArray(arrE);
+    float res[width];
+    for (size_t i = 0; i < width; ++i)
+        res[i] = func(arrA[i], arrB[i], arrC[i], arrD[i], arrE[i]);
+    return juce::dsp::SIMDRegister<float>::fromRawArray(res);
 }
 
 bool ExpressionEvaluator::expect(char c)
@@ -279,6 +391,7 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         {
             LookupTables::prepareFromScript(formula);
             compiled = [ptr = root.get()](const float* vars) noexcept { return ptr->eval(vars); };
+            compiledSimd = [ptr = root.get()](const juce::dsp::SIMDRegister<float>* vars) noexcept { return ptr->evalSimd(vars); };
         }
         return valid;
     }
@@ -368,6 +481,69 @@ void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
             post(i, result);
         else
             samples[i] = result;
+    }
+}
+
+void ExpressionEvaluator::evaluateBlockSimd(float* samples, size_t numSamples,
+                                            const std::function<void(size_t, SimdVarArray&)>& pre,
+                                            const std::function<void(size_t, juce::dsp::SIMDRegister<float>)>& post) const noexcept
+{
+    if (numSamples == 0)
+        return;
+
+    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> func;
+    SimdVarArray varsCopy{};
+    size_t xIndex = invalidIndex;
+    {
+        const juce::SpinLock::ScopedLockType sl(lock);
+        func = compiledSimd;
+        for (size_t i = 0; i < MaxVariables; ++i)
+            varsCopy[i] = juce::dsp::SIMDRegister<float>(variables[i]);
+        auto it = varIndices.find("x");
+        if (it != varIndices.end())
+            xIndex = it->second;
+    }
+    if (!func)
+        return;
+
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    size_t i = 0;
+    for (; i + width <= numSamples; i += width)
+    {
+        juce::dsp::SIMDRegister<float> x = juce::dsp::SIMDRegister<float>::fromRawArray(samples + i);
+        if (xIndex != invalidIndex)
+            varsCopy[xIndex] = x;
+        if (pre)
+            pre(i, varsCopy);
+        auto result = func(varsCopy.data());
+        result.copyToRawArray(samples + i);
+        if (post)
+            post(i, result);
+    }
+
+    if (i < numSamples)
+    {
+        // process remaining samples using scalar path
+        evaluateBlock(samples + i, numSamples - i,
+                      [&](size_t idx, VarArray& svars)
+                      {
+                          if (xIndex != invalidIndex)
+                              svars[xIndex] = samples[i + idx];
+                          if (pre)
+                          {
+                              SimdVarArray simdVars;
+                              for (size_t v = 0; v < MaxVariables; ++v)
+                                  simdVars[v] = juce::dsp::SIMDRegister<float>(svars[v]);
+                              pre(i + idx, simdVars);
+                              for (size_t v = 0; v < MaxVariables; ++v)
+                                  svars[v] = simdVars[v][0];
+                          }
+                      },
+                      [&](size_t idx, float value)
+                      {
+                          if (post)
+                              post(i + idx, juce::dsp::SIMDRegister<float>(value));
+                      });
     }
 }
 
@@ -486,6 +662,12 @@ std::function<float(const float*)> ExpressionEvaluator::toFunction() const noexc
 {
     const juce::SpinLock::ScopedLockType sl(lock);
     return compiled;
+}
+
+std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> ExpressionEvaluator::toFunctionSimd() const noexcept
+{
+    const juce::SpinLock::ScopedLockType sl(lock);
+    return compiledSimd;
 }
 
 std::string ExpressionEvaluator::nodeKey(const Node* node)
