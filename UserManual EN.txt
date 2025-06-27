@@ -24,6 +24,12 @@ param d = depth
 Assigns descriptive names to knobs a–d.
 Within the script you can reference either a/b/... or the alias.
 Only the letters a–d are allowed; case is ignored.
+Parameter declarations may optionally define a range:
+```
+param a = gain [0, 2]
+```
+This sets the minimum and maximum value for knob *a*. Without a range the
+default span is `0` to `1`.
 
 3.2 Waveshaping Stage
 ```

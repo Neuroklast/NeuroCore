@@ -17,9 +17,6 @@ Parameter: Die Buchstaben a, b, c, d (oder Aliasnamen) stehen für die vier Makr
 
 3. Blöcke und ihre Syntax
 3.1. Parameterbenennung
-plaintext
-Kopieren
-Bearbeiten
 param a = gain
 param b = tone
 param c = drive
@@ -28,11 +25,14 @@ Weist den Reglern a–d sprechende Namen zu.
 
 Im restlichen Script kannst du entweder a/b/… oder den Alias verwenden.
 Nur die Buchstaben a–d sind zulässig; Groß- und Kleinschreibung werden ignoriert.
+Optional kann ein Wertebereich angegeben werden:
+```
+param a = gain [0, 2]
+```
+Damit erhält Regler *a* einen Minimalwert von 0 und einen Maximalwert von 2.
+Ohne Bereich gilt standardmäßig 0 bis 1.
 
 3.2. Waveshaping-Stage
-plaintext
-Kopieren
-Bearbeiten
 stage1: y = tanh(a * x)
 stage2: y = y + 0.3 * pow(y,3)
 Definiert eine mathematische Funktion, die auf das Signal angewendet wird.
@@ -43,14 +43,10 @@ Du kannst alle üblichen Funktionen und Operatoren nutzen:
 Eingabevariablen:
 
 x = Input der Stage
-
 x_prev = Vorheriger Input
-
 y_prev = Vorheriges Output
 
 3.3. Filter-Stage
-plaintext
-Kopieren
 filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
 Typen: lowpass, highpass, bandpass
 
@@ -58,34 +54,22 @@ Parameter können Makros, Modulatoren und Formeln enthalten. Bei Bandpass-Filter
 entweder `center` und `width` oder `lowcut` und `highcut` angegeben werden.
 
 3.4. Kompressor
-plaintext
-Kopieren
-Bearbeiten
 comp1: threshold = c; ratio = 4; attack = 0.01; release = 0.1
 Alle Parameter sind Formeln, z. B. regelbar durch Regler, LFO oder Envelope.
 
 3.5. Envelope Follower (Hüllkurve)
-plaintext
-Kopieren
-Bearbeiten
 env1: type = rms; attack = 0.01; release = 0.1
 Typen: rms, peak
 
 Ergibt eine Variable (env1), die du in anderen Blöcken nutzen kannst.
 
 3.6. LFO (Oszillator/Modulator)
-plaintext
-Kopieren
-Bearbeiten
 osc1: shape = sine; freq = 2.0; depth = d
 Formen: sine, triangle, square, saw, noise
 
 Gibt pro Sample einen Wert aus, z. B. für Modulation in Stage oder Filter.
 
 4. Beispiel-Preset (Marshall-Style Distortion)
-plaintext
-Kopieren
-Bearbeiten
 param a = inputGain
 param b = tone
 param c = masterVolume
@@ -119,17 +103,10 @@ Alle Parameter (a–d oder Aliase) sind über die DAW automatisierbar und werden
 
 8. Weitere Beispiele
 Soft-Clipping:
-
-plaintext
-Kopieren
-Bearbeiten
 stage1: y = a * x
 stage2: y = tanh(y)
-Auto-Wah:
 
-plaintext
-Kopieren
-Bearbeiten
+Auto-Wah:
 env1: type = rms; attack = 0.01; release = 0.05
 osc1: shape = sine; freq = 1.0; depth = b
 filter1: type = bandpass; lowcut = 400 + env1 * 200; highcut = 2000 + osc1 * 200
