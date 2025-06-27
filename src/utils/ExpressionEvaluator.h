@@ -27,6 +27,10 @@ public:
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
 
+    /** Returns a callable functor that evaluates the parsed expression using
+        the given variable array. The functor is thread-safe and immutable. */
+    std::function<float(const float*)> toFunction() const noexcept;
+
     /** Type used for the block callbacks. */
     using VarArray = std::array<float, MaxVariables>;
 
@@ -132,6 +136,9 @@ private:
         Func func;
         NodePtr a, b, c, d, e;
     };
+
+    static bool isConstant(const Node* node) noexcept;
+    static NodePtr constantFold(NodePtr node);
 
     // Parsing helpers
     class Lexer;

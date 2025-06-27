@@ -261,6 +261,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     try
     {
         root = parseExpression();
+        if (root)
+            root = constantFold(std::move(root));
         if (pos != input.length())
         {
             errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
@@ -268,6 +270,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
             return false;
         }
         valid = root != nullptr;
+        if (valid)
+            LookupTables::prepareFromScript(formula);
         return valid;
     }
     catch (...)
@@ -327,20 +331,18 @@ void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
     if (numSamples == 0)
         return;
 
-    Node* localRoot = nullptr;
+    auto func     = toFunction();
     VarArray varsCopy;
     size_t xIndex = invalidIndex;
-
     {
         const juce::SpinLock::ScopedLockType sl(lock);
-        if (!valid || !root)
-            return;
-        localRoot = root.get();
-        varsCopy  = variables;
-        auto it   = varIndices.find("x");
+        varsCopy = variables;
+        auto it = varIndices.find("x");
         if (it != varIndices.end())
             xIndex = it->second;
     }
+    if (!func)
+        return;
 
     for (size_t i = 0; i < numSamples; ++i)
     {
@@ -350,7 +352,7 @@ void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
         if (pre)
             pre(i, varsCopy);
 
-        float result = localRoot->eval(varsCopy.data());
+        float result = func(varsCopy.data());
         result = std::isfinite(result) ? result : 0.0f;
 
         if (post)
@@ -358,5 +360,125 @@ void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
         else
             samples[i] = result;
     }
+}
+
+bool ExpressionEvaluator::isConstant(const Node* node) noexcept
+{
+    if (dynamic_cast<const ValueNode*>(node))
+        return true;
+    if (dynamic_cast<const VarNode*>(node))
+        return false;
+    if (auto* u = dynamic_cast<const UnaryNode*>(node))
+        return isConstant(u->child.get());
+    if (auto* b = dynamic_cast<const BinaryNode*>(node))
+        return isConstant(b->left.get()) && isConstant(b->right.get());
+    if (auto* f = dynamic_cast<const FunctionNode*>(node))
+        return isConstant(f->child.get());
+    if (auto* f2 = dynamic_cast<const Func2Node*>(node))
+        return isConstant(f2->left.get()) && isConstant(f2->right.get());
+    if (auto* f3 = dynamic_cast<const Func3Node*>(node))
+        return isConstant(f3->x.get()) && isConstant(f3->y.get()) && isConstant(f3->z.get());
+    if (auto* f5 = dynamic_cast<const Func5Node*>(node))
+        return isConstant(f5->a.get()) && isConstant(f5->b.get()) && isConstant(f5->c.get()) &&
+               isConstant(f5->d.get()) && isConstant(f5->e.get());
+    return false;
+}
+
+ExpressionEvaluator::NodePtr ExpressionEvaluator::constantFold(NodePtr node)
+{
+    if (!node)
+        return nullptr;
+
+    if (auto* u = dynamic_cast<UnaryNode*>(node.get()))
+    {
+        u->child = constantFold(std::move(u->child));
+        if (isConstant(u->child.get()))
+        {
+            VarArray vars{};
+            float v = u->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    if (auto* b = dynamic_cast<BinaryNode*>(node.get()))
+    {
+        b->left  = constantFold(std::move(b->left));
+        b->right = constantFold(std::move(b->right));
+        if (isConstant(b->left.get()) && isConstant(b->right.get()))
+        {
+            VarArray vars{};
+            float v = b->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    if (auto* f = dynamic_cast<FunctionNode*>(node.get()))
+    {
+        f->child = constantFold(std::move(f->child));
+        if (isConstant(f->child.get()))
+        {
+            VarArray vars{};
+            float v = f->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    if (auto* f2 = dynamic_cast<Func2Node*>(node.get()))
+    {
+        f2->left  = constantFold(std::move(f2->left));
+        f2->right = constantFold(std::move(f2->right));
+        if (isConstant(f2->left.get()) && isConstant(f2->right.get()))
+        {
+            VarArray vars{};
+            float v = f2->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    if (auto* f3 = dynamic_cast<Func3Node*>(node.get()))
+    {
+        f3->x = constantFold(std::move(f3->x));
+        f3->y = constantFold(std::move(f3->y));
+        f3->z = constantFold(std::move(f3->z));
+        if (isConstant(f3->x.get()) && isConstant(f3->y.get()) && isConstant(f3->z.get()))
+        {
+            VarArray vars{};
+            float v = f3->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    if (auto* f5 = dynamic_cast<Func5Node*>(node.get()))
+    {
+        f5->a = constantFold(std::move(f5->a));
+        f5->b = constantFold(std::move(f5->b));
+        f5->c = constantFold(std::move(f5->c));
+        f5->d = constantFold(std::move(f5->d));
+        f5->e = constantFold(std::move(f5->e));
+        if (isConstant(f5->a.get()) && isConstant(f5->b.get()) && isConstant(f5->c.get()) &&
+            isConstant(f5->d.get()) && isConstant(f5->e.get()))
+        {
+            VarArray vars{};
+            float v = f5->eval(vars.data());
+            return std::make_unique<ValueNode>(v);
+        }
+        return node;
+    }
+
+    return node;
+}
+
+std::function<float(const float*)> ExpressionEvaluator::toFunction() const noexcept
+{
+    const juce::SpinLock::ScopedLockType sl(lock);
+    if (!valid || !root)
+        return [](const float*) noexcept { return 0.f; };
+    Node* r = root.get();
+    return [r](const float* vars) noexcept { return r->eval(vars); };
 }
 

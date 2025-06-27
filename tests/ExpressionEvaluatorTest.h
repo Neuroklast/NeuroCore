@@ -38,6 +38,25 @@ public:
             expect(! eval.parseFormula("pow(2)"));
             expect(eval.getLastError().isNotEmpty());
         }
+
+        beginTest("Block Evaluation");
+        {
+            ExpressionEvaluator eval;
+            expect(eval.parseFormula("x * 2"));
+
+            juce::AudioBuffer<float> buf(1, 4);
+            buf.setSample(0,0, 1.f);
+            buf.setSample(0,1, 2.f);
+            buf.setSample(0,2, 3.f);
+            buf.setSample(0,3, 4.f);
+
+            eval.evaluateBlock(buf.getWritePointer(0), 4);
+
+            expectWithinAbsoluteError(buf.getSample(0,0), 2.f, 1e-6f);
+            expectWithinAbsoluteError(buf.getSample(0,1), 4.f, 1e-6f);
+            expectWithinAbsoluteError(buf.getSample(0,2), 6.f, 1e-6f);
+            expectWithinAbsoluteError(buf.getSample(0,3), 8.f, 1e-6f);
+        }
     }
 };
 
