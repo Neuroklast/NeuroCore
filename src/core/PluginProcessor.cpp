@@ -625,7 +625,7 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
                 s += rng.nextFloat() * 0.1f - 0.05f;
                 buf.setSample(0, i, s);
             }
-            testChain.processBlock(buf, params);
+            testChain.processBlock(buf);
             for (int i = 0; i < block; ++i)
             {
                 float v = buf.getSample(0, i);

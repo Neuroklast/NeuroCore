@@ -23,6 +23,8 @@ public:
     void setValueTreeState(juce::AudioProcessorValueTreeState* vts) noexcept;
     void processBlock(juce::AudioBuffer<float>& buffer);
 
+    void processBlockSmoothed(juce::AudioBuffer<float>& buffer, std::array<juce::SmoothedValue<float>*, 4> params);
+
 private:
     struct Block
     {
@@ -64,6 +66,7 @@ private:
         float* yPtr{nullptr};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer);
     };
 
     struct Osc : Block
@@ -76,6 +79,7 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer);
     };
 
     struct Filter : Block
