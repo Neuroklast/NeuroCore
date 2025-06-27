@@ -41,11 +41,26 @@ void ModalOverlay::setTitle(const juce::String& text)
 
 void ModalOverlay::show(juce::Component& parent)
 {
-    parent.addAndMakeVisible(this);
-    setBounds(parent.getLocalBounds());
+    setOpaque(false);
+    setInterceptsMouseClicks(true, true);
+
+    if (getPeer() == nullptr)
+    {
+        int flags = juce::ComponentPeer::windowIsTemporary
+            | juce::ComponentPeer::windowIsSemiTransparent;
+
+        addToDesktop(flags);
+        setAlwaysOnTop(true);
+    }
+
+    setBounds(parent.getScreenBounds());
+
+    setVisible(true);
     toFront(true);
     grabKeyboardFocus();
 }
+
+
 
 void ModalOverlay::paint(juce::Graphics& g)
 {

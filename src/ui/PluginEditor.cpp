@@ -136,6 +136,14 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     mixSlider->setRotaryParameters(startAngle, endAngle, true);
     mixSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 30);
     mixSlider->setRange(0.0, 1.0, 0.01);
+	mixSlider->setValue(0.5, juce::dontSendNotification);
+	mixSlider->setDoubleClickReturnValue(true, 0.5);
+	mixSlider->setSkewFactorFromMidPoint(0.5);
+	mixSlider->setScrollWheelEnabled(true);
+	
+
+
+
 	
 
     mixSlider->setTooltip(TRANS("MixLabel"));

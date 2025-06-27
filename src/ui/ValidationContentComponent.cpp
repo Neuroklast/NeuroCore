@@ -78,15 +78,12 @@ void ValidationContentComponent::startTest()
 
 void ValidationContentComponent::paint(juce::Graphics& g)
 {
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel);
+
 }
 
 void ValidationContentComponent::resized()
 {
-    panel = getLocalBounds().withSizeKeepingCentre(getWidth()*6/10, getHeight()*3/10);
+    panel = getLocalBounds().withSizeKeepingCentre(getWidth(), getHeight());
     auto area = panel.reduced(8);
     auto barHeight = 24;
     progressBar.setBounds(area.removeFromTop(barHeight));
@@ -96,6 +93,10 @@ void ValidationContentComponent::resized()
     auto bottom = area.removeFromBottom(btnHeight);
     okButton.setBounds(bottom.removeFromRight(80));
     icon.setBounds(bottom.removeFromLeft(24));
+	icon.setBounds(getLocalBounds().removeFromTop(24).removeFromLeft(24).withTrimmedLeft(8));
+	icon.setSize(getLocalBounds().getWidth() , getLocalBounds().getHeight() );
+	icon.toBack();
+	icon.setAlpha(0.5f);
     messageLabel.setBounds(area);
 }
 
