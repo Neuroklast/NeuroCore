@@ -59,7 +59,7 @@ public:
 
 private:
     struct Node;
-    using NodePtr = std::unique_ptr<Node>;
+    using NodePtr = std::shared_ptr<Node>;
 
     struct Node
     {
@@ -139,6 +139,8 @@ private:
 
     static bool isConstant(const Node* node) noexcept;
     static NodePtr constantFold(NodePtr node);
+    static std::string nodeKey(const Node* node);
+    static NodePtr eliminateCSE(NodePtr node, std::unordered_map<std::string, NodePtr>& cache);
 
     // Parsing helpers
     class Lexer;
@@ -156,6 +158,7 @@ private:
     bool valid = false;
     juce::String errorMessage;
     NodePtr root;
+    std::function<float(const float*)> compiled;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
 
     std::unordered_map<std::string, size_t> varIndices;
