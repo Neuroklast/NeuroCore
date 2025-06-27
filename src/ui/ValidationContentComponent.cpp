@@ -44,7 +44,7 @@ void ValidationContentComponent::startTest()
             nanCount.store(info.nanCount);
             infCount.store(info.infCount);
             {
-                const juce::ScopedLock sl(textLock);
+                const juce::SpinLock::ScopedLockType sl(textLock);
                 progressText = info.message;
             }
             return !abortRequested.load();
@@ -116,7 +116,7 @@ void ValidationContentComponent::timerCallback()
         progressBar.setProgress(progress.load());
         juce::String txt;
         {
-            const juce::ScopedLock sl(textLock);
+            const juce::SpinLock::ScopedLockType sl(textLock);
             txt = progressText;
         }
         statsLabel.setText("NaN: " + juce::String(nanCount.load()) +

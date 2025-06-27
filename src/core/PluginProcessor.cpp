@@ -7,6 +7,7 @@
 */
 
 #include <JuceHeader.h>
+#include <vector>
 #include "PluginProcessor.h"
 #include "../utils/ExpressionEvaluator.h"
 #include "../dsp/LookupTables.h"
@@ -373,8 +374,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (!bypassActive && oversampler)
         upBlock = oversampler->processSamplesUp (block);
 
-    juce::AudioBuffer<float> upBuffer (const_cast<float**> (upBlock.getArrayOfWritePointers()),
-                                       (int) upBlock.getNumChannels(),
+    std::vector<float*> chPtrs;
+    chPtrs.reserve (upBlock.getNumChannels());
+    for (size_t ch = 0; ch < upBlock.getNumChannels(); ++ch)
+        chPtrs.push_back (upBlock.getChannelPointer (ch));
+    juce::AudioBuffer<float> upBuffer (chPtrs.data(), (int) upBlock.getNumChannels(),
                                        (int) upBlock.getNumSamples());
     chain.get<0>().processBlock (upBuffer);
 

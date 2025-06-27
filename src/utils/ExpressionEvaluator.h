@@ -16,6 +16,8 @@
 class ExpressionEvaluator
 {
 public:
+    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
+    static constexpr size_t MaxVariables = 16;
     ExpressionEvaluator();
     ~ExpressionEvaluator();
 
@@ -43,9 +45,6 @@ public:
 
     // Returns variable index or invalidIndex if unused.
     size_t getVariableIndex(const std::string& name) const noexcept;
-
-    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
-    static constexpr size_t MaxVariables = 16;
 
 
 
