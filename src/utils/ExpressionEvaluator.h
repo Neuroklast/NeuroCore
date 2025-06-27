@@ -16,6 +16,8 @@
 class ExpressionEvaluator
 {
 public:
+    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
+    static constexpr size_t MaxVariables = 16;
     ExpressionEvaluator();
     ~ExpressionEvaluator();
 
@@ -24,6 +26,20 @@ public:
 
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
+
+    /** Returns a callable functor that evaluates the parsed expression using
+        the given variable array. The functor is thread-safe and immutable. */
+    std::function<float(const float*)> toFunction() const noexcept;
+
+    /** Type used for the block callbacks. */
+    using VarArray = std::array<float, MaxVariables>;
+
+    /** Evaluates the parsed expression for a block of samples. The optional
+        callbacks allow updating variables before evaluation and handling the
+        result afterwards. */
+    void evaluateBlock(float* samples, size_t numSamples,
+                       const std::function<void(size_t, VarArray&)>& pre = nullptr,
+                       const std::function<void(size_t, float)>& post = nullptr) const noexcept;
 
     // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
@@ -34,8 +50,6 @@ public:
     // Returns variable index or invalidIndex if unused.
     size_t getVariableIndex(const std::string& name) const noexcept;
 
-    static constexpr size_t invalidIndex = static_cast<size_t>(-1);
-
 
 
     // Returns true if parsing succeeded.
@@ -45,7 +59,7 @@ public:
 
 private:
     struct Node;
-    using NodePtr = std::unique_ptr<Node>;
+    using NodePtr = std::shared_ptr<Node>;
 
     struct Node
     {
@@ -123,6 +137,11 @@ private:
         NodePtr a, b, c, d, e;
     };
 
+    static bool isConstant(const Node* node) noexcept;
+    static NodePtr constantFold(NodePtr node);
+    static std::string nodeKey(const Node* node);
+    static NodePtr eliminateCSE(NodePtr node, std::unordered_map<std::string, NodePtr>& cache);
+
     // Parsing helpers
     class Lexer;
     NodePtr parseExpression();
@@ -139,9 +158,8 @@ private:
     bool valid = false;
     juce::String errorMessage;
     NodePtr root;
+    std::function<float(const float*)> compiled;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
-
-    static constexpr size_t MaxVariables = 16;
 
     std::unordered_map<std::string, size_t> varIndices;
     std::array<float, MaxVariables> variables{};

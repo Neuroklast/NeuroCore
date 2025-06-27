@@ -23,8 +23,8 @@ public:
         juce::AudioBuffer<float> buffer(1,4);
         buffer.clear();
         buffer.setSample(0,0,1.0f);
-        std::array<float,4> params{2.f,0.f,0.f,0.f};
-        chain.processBlock(buffer, params);
+        chain.setValueTreeState(nullptr);
+        chain.processBlock(buffer);
         expectWithinAbsoluteError(buffer.getSample(0,0), 2.0f, 1e-5f);
 
         beginTest("Filter block with high cutoff");
@@ -35,7 +35,8 @@ public:
             expect(c.loadScript(sc, e));
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,2); buf.clear(); buf.setSample(0,0,1.0f);
-            c.processBlock(buf, {0,0,0,0});
+            c.setValueTreeState(nullptr);
+            c.processBlock(buf);
             expectGreaterOrEqual(buf.getSample(0,0), 0.5f);
         }
 
@@ -67,7 +68,8 @@ public:
             expect(c.loadScript(sc, e));
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
-            c.processBlock(buf, {0,0,0,0});
+            c.setValueTreeState(nullptr);
+            c.processBlock(buf);
             expectLessThan(buf.getSample(0,0), 1.0f);
         }
 
@@ -79,7 +81,8 @@ public:
             expect(c.loadScript(sc, e));
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,0.5f);
-            c.processBlock(buf, {0,0,0,0});
+            c.setValueTreeState(nullptr);
+            c.processBlock(buf);
             expectWithinAbsoluteError(buf.getSample(0,0), 0.5f, 1e-5f);
         }
 
@@ -92,7 +95,8 @@ public:
             expect(e.isEmpty());
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
-            c.processBlock(buf, {2.f,0.f,0.f,0.f});
+            c.setValueTreeState(nullptr);
+            c.processBlock(buf);
             expectWithinAbsoluteError(buf.getSample(0,0), 2.0f, 1e-5f);
         }
 
@@ -108,8 +112,7 @@ public:
             juce::SmoothedValue<float> aSm;
             aSm.reset(spec.sampleRate, Config::kSmoothingTime);
             aSm.setCurrentAndTargetValue(0.f);
-            std::array<juce::SmoothedValue<float>*,4> ptr{ &aSm, nullptr, nullptr, nullptr };
-
+            c.setValueTreeState(nullptr);
             juce::AudioBuffer<float> buf(1,8); buf.clear();
             juce::AudioBuffer<float> tmp(1,1); tmp.setSample(0,0,1.0f);
             for (int i = 0; i < buf.getNumSamples(); ++i)
@@ -119,7 +122,7 @@ public:
                 else
                     aSm.setTargetValue(0.f);
                 tmp.setSample(0,0,1.0f);
-                c.processBlockSmoothed(tmp, ptr);
+                c.processBlock(tmp);
                 buf.setSample(0,i, tmp.getSample(0,0));
                 expect(std::isfinite(buf.getSample(0,i)));
             }

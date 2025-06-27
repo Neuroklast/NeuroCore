@@ -31,6 +31,12 @@ public:
     void prepare (const juce::dsp::ProcessSpec& spec) override;
     void reset() override;
     void process (const juce::dsp::ProcessContextReplacing<SampleType>& context) noexcept override;
+    void processBlock (juce::AudioBuffer<SampleType>& buffer)
+    {
+        juce::dsp::AudioBlock<SampleType> block(buffer);
+        juce::dsp::ProcessContextReplacing<SampleType> ctx(block);
+        process(ctx);
+    }
 
     void setParameter (const std::string& id, float v);
     void setBypassed (bool b) noexcept { bypassed = b; }

@@ -134,7 +134,6 @@ public:
 
 private:
     //==============================================================================
-    std::array<std::atomic<float>, 4> parameterValues{};
     // Zugriff von UI-Threads, nicht im Audio-Thread
     mutable juce::SpinLock variableLock;
     std::array<juce::String, 4> variableNames{ Config::kDefaultVariableNames[0],
