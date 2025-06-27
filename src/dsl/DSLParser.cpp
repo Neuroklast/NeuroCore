@@ -11,16 +11,19 @@ static juce::String trimLower(const juce::String& s)
 bool DSLParser::parse(const juce::String& text,
                       std::vector<BlockDesc>& blocks,
                       std::unordered_map<juce::String, juce::String>& paramAliases,
+                      std::vector<ParamDesc>& params,
                       juce::String& error)
 {
     blocks.clear();
     paramAliases.clear();
+    params.clear();
     error.clear();
 
     juce::StringArray lines;
     lines.addLines(text);
 
     juce::StringArray seen;
+    bool parsingParams = true;
     for (int i = 0; i < lines.size(); ++i)
     {
         auto line = lines[i].trim();
@@ -31,24 +34,62 @@ bool DSLParser::parse(const juce::String& text,
 
         if (line.startsWithIgnoreCase("param"))
         {
-            auto tokens = juce::StringArray::fromTokens(line, false);
-            if (tokens.size() >= 4)
+            if (! parsingParams)
             {
-                auto sym = trimLower(tokens[1]);
-                if (tokens[2] == "=")
-                {
-                    if (sym != "a" && sym != "b" && sym != "c" && sym != "d")
-                    {
-                        error = "Invalid parameter symbol on line " + juce::String(i+1);
-                        return false;
-                    }
-                    paramAliases[sym] = trimLower(tokens[3]);
-                    continue;
-                }
+                error = "Parameter declarations must appear before blocks";
+                return false;
             }
-            error = "Malformed parameter line at " + juce::String(i+1);
-            return false;
+
+            auto eqPos = line.indexOfChar('=');
+            if (eqPos < 0)
+            {
+                error = "Malformed parameter line at " + juce::String(i+1);
+                return false;
+            }
+
+            auto sym = trimLower(line.substring(5, eqPos));
+            sym = sym.trim();
+            auto rest = line.substring(eqPos + 1).trim();
+            auto namePart = rest.upToFirstOccurrenceOf("[", false, false).trim();
+            auto rangePart = rest.fromFirstOccurrenceOf("[", false, false).trim();
+
+            if (sym.isEmpty() || namePart.isEmpty())
+            {
+                error = "Malformed parameter line at " + juce::String(i+1);
+                return false;
+            }
+
+            ParamDesc pd;
+            pd.alias = sym;
+            pd.name  = namePart;
+            pd.min = 0.f;
+            pd.max = 1.f;
+
+            if (rangePart.isNotEmpty())
+            {
+                if (! (rangePart.startsWith("[") && rangePart.endsWith("]")))
+                {
+                    error = "Invalid range on line " + juce::String(i+1);
+                    return false;
+                }
+                auto vals = rangePart.trimCharactersAtStart("[")
+                                       .trimCharactersAtEnd("]");
+                auto comma = vals.indexOfChar(',');
+                if (comma < 0)
+                {
+                    error = "Invalid range on line " + juce::String(i+1);
+                    return false;
+                }
+                pd.min = vals.substring(0, comma).trim().getFloatValue();
+                pd.max = vals.substring(comma + 1).trim().getFloatValue();
+            }
+
+            paramAliases[pd.alias] = pd.name.toLowerCase();
+            params.push_back(pd);
+            continue;
         }
+
+        parsingParams = false;
 
         auto colon = line.indexOfChar(':');
         if (colon < 0)

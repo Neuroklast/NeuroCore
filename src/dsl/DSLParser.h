@@ -15,6 +15,14 @@ struct BlockDesc
     std::unordered_map<juce::String, juce::String> args; // raw arguments
 };
 
+struct ParamDesc
+{
+    juce::String alias;      ///< Single letter alias (a,b,c,...)
+    juce::String name;       ///< Human readable name
+    float min { 0.f };       ///< Minimum value
+    float max { 1.f };       ///< Maximum value
+};
+
 class DSLParser
 {
 public:
@@ -22,6 +30,7 @@ public:
     bool parse(const juce::String& text,
                std::vector<BlockDesc>& blocks,
                std::unordered_map<juce::String, juce::String>& paramAliases,
+               std::vector<ParamDesc>& params,
                juce::String& error);
 };
 

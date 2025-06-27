@@ -10,6 +10,7 @@ SignalChain::SignalChain()
 {
     chain   = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
+    paramInfo.clear();
     variables["x"] = 0.0f;
     variables["x_prev"] = 0.0f;
     variables["y_prev"] = 0.0f;
@@ -69,10 +70,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     DSLParser parser;
     std::vector<BlockDesc> desc;
     AliasMap newAliases;
-    if (! parser.parse (script, desc, newAliases, error))
+    std::vector<ParamDesc> parsedParams;
+    if (! parser.parse (script, desc, newAliases, parsedParams, error))
         return false;
 
     parameterMappings.clear();
+    paramInfo = parsedParams;
     for (const auto& kv : newAliases)
         variables.emplace(kv.second, 0.0f);
 
@@ -84,11 +87,31 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         return s.retainCharacters("0123456789.-+").length() == s.length();
     };
 
-    auto addDefaultMap = [isNumeric](const juce::String& expr, float outMin, float outMax)
+    auto applyInlineRange = [](const juce::String& expr) -> juce::String
     {
-        if (expr.containsIgnoreCase("map(") || isNumeric(expr))
-            return expr;
-        return juce::String("map(") + expr + ",0,1," + juce::String(outMin) + "," + juce::String(outMax) + ")";
+        auto open = expr.indexOfChar('[');
+        auto close = expr.indexOfChar(']');
+        if (open > 0 && close > open)
+        {
+            auto id = expr.substring(0, open).trim();
+            auto vals = expr.substring(open + 1, close).trim();
+            auto comma = vals.indexOfChar(',');
+            if (comma > 0)
+            {
+                auto min = vals.substring(0, comma).trim();
+                auto max = vals.substring(comma + 1).trim();
+                return juce::String("map(") + id + ",0,1," + min + "," + max + ")";
+            }
+        }
+        return expr;
+    };
+
+    auto addDefaultMap = [isNumeric, applyInlineRange](const juce::String& expr, float outMin, float outMax)
+    {
+        auto e = applyInlineRange(expr);
+        if (e.containsIgnoreCase("map(") || isNumeric(e))
+            return e;
+        return juce::String("map(") + e + ",0,1," + juce::String(outMin) + "," + juce::String(outMax) + ")";
     };
 
     auto findParam = [&newAliases](const juce::String& expr) -> juce::String
