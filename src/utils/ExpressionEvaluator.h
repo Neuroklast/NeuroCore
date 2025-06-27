@@ -30,6 +30,8 @@ public:
     /** Returns a callable functor that evaluates the parsed expression using
         the given variable array. The functor is thread-safe and immutable. */
     std::function<float(const float*)> toFunction() const noexcept;
+    /** Returns a SIMD functor equivalent to toFunction. */
+    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> toFunctionSimd() const noexcept;
 
     /** Type used for the block callbacks. */
     using VarArray = std::array<float, MaxVariables>;
@@ -40,6 +42,12 @@ public:
     void evaluateBlock(float* samples, size_t numSamples,
                        const std::function<void(size_t, VarArray&)>& pre = nullptr,
                        const std::function<void(size_t, float)>& post = nullptr) const noexcept;
+
+    using SimdVarArray = std::array<juce::dsp::SIMDRegister<float>, MaxVariables>;
+    /** SIMD variant of evaluateBlock using vector registers. */
+    void evaluateBlockSimd(float* samples, size_t numSamples,
+                           const std::function<void(size_t, SimdVarArray&)>& pre = nullptr,
+                           const std::function<void(size_t, juce::dsp::SIMDRegister<float>)>& post = nullptr) const noexcept;
 
     // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
@@ -65,12 +73,14 @@ private:
     {
         virtual ~Node() = default;
         virtual float eval(const float* vars) const noexcept = 0;
+        virtual juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept = 0;
     };
 
     struct ValueNode : Node
     {
         explicit ValueNode(float v) : value(v) {}
         float eval(const float*) const noexcept override { return value; }
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>*) const noexcept override { return juce::dsp::SIMDRegister<float>(value); }
         float value;
     };
 
@@ -78,6 +88,7 @@ private:
     {
         explicit VarNode(size_t idx) : index(idx) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         size_t index;
     };
 
@@ -86,6 +97,7 @@ private:
         enum Type { plus, minus };
         UnaryNode(Type t, NodePtr c) : op(t), child(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Type op;
         NodePtr child;
     };
@@ -95,6 +107,7 @@ private:
         enum Type { add, sub, mul, div, pow };
         BinaryNode(Type t, NodePtr l, NodePtr r) : op(t), left(std::move(l)), right(std::move(r)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Type op;
         NodePtr left, right;
     };
@@ -104,6 +117,7 @@ private:
         using Func = std::function<float(float)>;
         FunctionNode(Func f, NodePtr c) : func(std::move(f)), child(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
         NodePtr child;
     };
@@ -113,6 +127,7 @@ private:
         using Func = std::function<float(float, float)>;
         Func2Node(Func f, NodePtr a, NodePtr b) : func(std::move(f)), left(std::move(a)), right(std::move(b)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
         NodePtr left, right;
     };
@@ -123,6 +138,7 @@ private:
         Func3Node(Func f, NodePtr a, NodePtr b, NodePtr c)
             : func(std::move(f)), x(std::move(a)), y(std::move(b)), z(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
         NodePtr x, y, z;
     };
@@ -133,6 +149,7 @@ private:
         Func5Node(Func f, NodePtr a, NodePtr b, NodePtr c, NodePtr d, NodePtr e)
             : func(std::move(f)), a(std::move(a)), b(std::move(b)), c(std::move(c)), d(std::move(d)), e(std::move(e)) {}
         float eval(const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
         NodePtr a, b, c, d, e;
     };
@@ -159,6 +176,7 @@ private:
     juce::String errorMessage;
     NodePtr root;
     std::function<float(const float*)> compiled;
+    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> compiledSimd;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
 
     std::unordered_map<std::string, size_t> varIndices;

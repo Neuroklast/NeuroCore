@@ -437,32 +437,39 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
         float* prevX = &xPrev[ch];
         float* prevY = &yPrev[ch];
 
-        auto pre = [this, prevX, prevY, data](size_t i, VarArray& vars)
+        auto pre = [this, prevX, prevY, data](size_t i, ExpressionEvaluator::SimdVarArray& vars)
         {
             if (idxXPrev != ExpressionEvaluator::invalidIndex)
-                vars[idxXPrev] = *prevX;
+                vars[idxXPrev] = juce::dsp::SIMDRegister<float>(*prevX);
             if (idxYPrev != ExpressionEvaluator::invalidIndex)
-                vars[idxYPrev] = *prevY;
+                vars[idxYPrev] = juce::dsp::SIMDRegister<float>(*prevY);
             if (idxX != ExpressionEvaluator::invalidIndex)
-                vars[idxX] = data[i];
+                vars[idxX] = juce::dsp::SIMDRegister<float>::fromRawArray(data + i);
             for (size_t p = 0; p < 4; ++p)
                 if (paramIndices[p] != ExpressionEvaluator::invalidIndex && paramSmoothers[p])
-                    vars[paramIndices[p]] = paramSmoothers[p]->getNextValue();
+                    vars[paramIndices[p]] = juce::dsp::SIMDRegister<float>(paramSmoothers[p]->getNextValue());
             for (const auto& vr : varRefs)
-                vars[vr.index] = *vr.value;
+                vars[vr.index] = juce::dsp::SIMDRegister<float>(*vr.value);
         };
 
-        auto post = [this, prevX, prevY, data](size_t i, float result)
+        auto post = [this, prevX, prevY, data](size_t i, juce::dsp::SIMDRegister<float> result)
         {
-            float y = juce::jlimit (-1.0f, 1.0f, result);
-            *prevX  = data[i];
-            *prevY  = y;
-            if (yPtr)
-                *yPtr = y;
-            data[i] = y;
+            constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+            alignas(16) float arr[width];
+            result.copyToRawArray(arr);
+            for (size_t k = 0; k < width; ++k)
+            {
+                float y = juce::jlimit(-1.0f, 1.0f, arr[k]);
+                size_t idx = i + k;
+                *prevX = data[idx];
+                *prevY = y;
+                if (yPtr)
+                    *yPtr = y;
+                data[idx] = y;
+            }
         };
 
-        eval.evaluateBlock (data, numSamples, pre, post);
+        eval.evaluateBlockSimd (data, numSamples, pre, post);
     }
 }
 

@@ -31,6 +31,13 @@ public:
     static float fastExp  (float x) noexcept;
     static float fastLog  (float x) noexcept;
     static float fastPow  (float x, float exponent) noexcept;
+    // SIMD versions
+    static juce::dsp::SIMDRegister<float> fastSinSimd (const juce::dsp::SIMDRegister<float>& x) noexcept;
+    static juce::dsp::SIMDRegister<float> fastCosSimd (const juce::dsp::SIMDRegister<float>& x) noexcept;
+    static juce::dsp::SIMDRegister<float> fastTanhSimd(const juce::dsp::SIMDRegister<float>& x) noexcept;
+    static juce::dsp::SIMDRegister<float> fastExpSimd (const juce::dsp::SIMDRegister<float>& x) noexcept;
+    static juce::dsp::SIMDRegister<float> fastLogSimd (const juce::dsp::SIMDRegister<float>& x) noexcept;
+    static juce::dsp::SIMDRegister<float> fastPowSimd (const juce::dsp::SIMDRegister<float>& x, float exponent) noexcept;
 
 private:
     static int tableSize;
