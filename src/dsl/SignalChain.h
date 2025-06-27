@@ -135,6 +135,7 @@ private:
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
+    std::vector<ParamDesc> paramInfo;
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
