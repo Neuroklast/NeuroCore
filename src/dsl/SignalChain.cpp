@@ -350,7 +350,7 @@ float SignalChain::Stage::process(int ch, float x)
     if (! varPtr || ch >= static_cast<int>(xPrev.size()))
         return x;
 
-    using VarArray = std::array<float, ExpressionEvaluator::MaxVariables>;
+    using VarArray = ExpressionEvaluator::VarArray;
 
     std::array<float,4> params{};
     for (size_t i = 0; i < 4; ++i)
@@ -372,7 +372,7 @@ float SignalChain::Stage::process(int ch, float x)
     };
 
     float y = x;
-    auto post = [this, ch, &y](size_t, float result)
+    auto post = [this, ch, &y, x](size_t, float result)
     {
         y = juce::jlimit(-1.0f, 1.0f, result);
         xPrev[ch] = x;
@@ -390,7 +390,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     if (! varPtr)
         return;
 
-    using VarArray = std::array<float, ExpressionEvaluator::MaxVariables>;
+    using VarArray = ExpressionEvaluator::VarArray;
 
     juce::dsp::AudioBlock<float> block (buffer);
     const size_t numSamples  = block.getNumSamples();
@@ -599,7 +599,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     const float fcSm = cutoffSm.getNextValue();
     const float rqSm = resSm.getNextValue();
 
-    filter.state->setCutoffAndResonance(sampleRate, fcSm, rqSm);
+    filter.setCutoffFrequency(fcSm);
+    filter.setResonance(rqSm);
 
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> ctx(block);

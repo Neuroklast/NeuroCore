@@ -25,11 +25,14 @@ public:
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
 
+    /** Type used for the block callbacks. */
+    using VarArray = std::array<float, MaxVariables>;
+
     /** Evaluates the parsed expression for a block of samples. The optional
         callbacks allow updating variables before evaluation and handling the
         result afterwards. */
     void evaluateBlock(float* samples, size_t numSamples,
-                       const std::function<void(size_t, std::array<float, MaxVariables>&)>& pre = nullptr,
+                       const std::function<void(size_t, VarArray&)>& pre = nullptr,
                        const std::function<void(size_t, float)>& post = nullptr) const noexcept;
 
     // Sets value for variables by name.
@@ -42,6 +45,7 @@ public:
     size_t getVariableIndex(const std::string& name) const noexcept;
 
     static constexpr size_t invalidIndex = static_cast<size_t>(-1);
+    static constexpr size_t MaxVariables = 16;
 
 
 
@@ -147,8 +151,6 @@ private:
     juce::String errorMessage;
     NodePtr root;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
-
-    static constexpr size_t MaxVariables = 16;
 
     std::unordered_map<std::string, size_t> varIndices;
     std::array<float, MaxVariables> variables{};

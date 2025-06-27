@@ -294,7 +294,7 @@ void ExpressionEvaluator::setVariable(size_t index, float value) noexcept
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
     Node* localRoot = nullptr;
-    std::array<float, MaxVariables> varsCopy;
+    VarArray varsCopy;
     {
         const juce::SpinLock::ScopedLockType sl(lock);
         if (! valid || ! root)
@@ -321,14 +321,14 @@ size_t ExpressionEvaluator::getVariableIndex(const std::string& name) const noex
 }
 
 void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
-                                        const std::function<void(size_t, std::array<float, MaxVariables>&)>& pre,
+                                        const std::function<void(size_t, VarArray&)>& pre,
                                         const std::function<void(size_t, float)>& post) const noexcept
 {
     if (numSamples == 0)
         return;
 
     Node* localRoot = nullptr;
-    std::array<float, MaxVariables> varsCopy;
+    VarArray varsCopy;
     size_t xIndex = invalidIndex;
 
     {
