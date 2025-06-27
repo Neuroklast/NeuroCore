@@ -558,62 +558,6 @@ float SignalChain::Filter::process(int ch, float x)
     return y;
 }
 
-void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
-{
-    if (! varPtr)
-        return;
-
-    for (const auto& n : varNames)
-    {
-        auto v = (*varPtr)[n.first];
-        cutoff.setVariable(n.second, v);
-        resonance.setVariable(n.second, v);
-        center.setVariable(n.second, v);
-        width.setVariable(n.second, v);
-        lowcut.setVariable(n.second, v);
-        highcut.setVariable(n.second, v);
-    }
-
-    float fc  = cutoff.evaluate(0.f);
-    float res = resonance.evaluate(0.f);
-
-    if (type == juce::dsp::StateVariableTPTFilterType::bandpass)
-    {
-        if (useCenterWidth)
-        {
-            float c = center.evaluate(0.f);
-            float w = width.evaluate(0.f);
-            fc = c;
-            if (! resonance.isValid())
-                res = (w != 0.0f ? juce::jlimit(0.1f, 10.0f, c / w) : res);
-        }
-        else if (useLowHigh)
-        {
-            float lo = lowcut.evaluate(0.f);
-            float hi = highcut.evaluate(0.f);
-            fc = (lo + hi) * 0.5f;
-            if (! resonance.isValid())
-                res = ((hi - lo) != 0.0f ? juce::jlimit(0.1f, 10.0f, fc / (hi - lo)) : res);
-        }
-    }
-
-    const auto nyquist = sampleRate * 0.5f;
-    const auto maxFc = std::nextafter(nyquist, 0.0f);
-    fc  = juce::jlimit(20.0f, maxFc, fc);
-    res = juce::jlimit(0.1f, 10.0f, res);
-
-    cutoffSm.setTargetValue(fc);
-    resSm.setTargetValue(res);
-    const float fcSm = cutoffSm.getNextValue();
-    const float rqSm = resSm.getNextValue();
-
-    filter.setCutoffFrequency(fcSm);
-    filter.setResonance(rqSm);
-
-    juce::dsp::AudioBlock<float> block(buffer);
-    juce::dsp::ProcessContextReplacing<float> ctx(block);
-    filter.process(ctx);
-}
 
 void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
 {
@@ -666,34 +610,6 @@ float SignalChain::Comp::process(int ch, float x)
         return y;
     }
 
-void SignalChain::Comp::processBlock(juce::AudioBuffer<float>& buffer)
-{
-    if (! varPtr)
-        return;
-
-    for (const auto& n : varNames)
-    {
-        auto v = (*varPtr)[n.first];
-        threshold.setVariable(n.second, v);
-        ratio.setVariable(n.second, v);
-        attack.setVariable(n.second, v);
-        release.setVariable(n.second, v);
-    }
-
-    thrSm.setTargetValue(threshold.evaluate(0.f));
-    ratioSm.setTargetValue(ratio.evaluate(0.f));
-    atkSm.setTargetValue(attack.evaluate(0.f));
-    relSm.setTargetValue(release.evaluate(0.f));
-
-    comp.setThreshold(thrSm.getNextValue());
-    comp.setRatio(ratioSm.getNextValue());
-    comp.setAttack(atkSm.getNextValue());
-    comp.setRelease(relSm.getNextValue());
-
-    juce::dsp::AudioBlock<float> block(buffer);
-    juce::dsp::ProcessContextReplacing<float> ctx(block);
-    comp.process(ctx);
-}
 
 void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {

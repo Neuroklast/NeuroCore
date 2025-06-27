@@ -64,7 +64,6 @@ private:
         float* yPtr{nullptr};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Osc : Block
@@ -77,7 +76,6 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Filter : Block
@@ -97,7 +95,6 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Comp : Block
@@ -110,7 +107,6 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Env : Block

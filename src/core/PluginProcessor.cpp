@@ -380,12 +380,16 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     chain.get<0>().processBlock (upBuffer);
 
     upBlock.copyTo (scriptBuffer);
-    signalChain.processBlock (scriptBuffer);
+    signalChain.processBlockSmoothed (
+        scriptBuffer,
+        { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] });
 
     if (formulaBlend.isSmoothing())
     {
         upBlock.copyTo(oldScriptBuffer);
-        oldSignalChain.processBlock(oldScriptBuffer);
+        oldSignalChain.processBlockSmoothed (
+            oldScriptBuffer,
+            { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] });
         const size_t numSamples = upBlock.getNumSamples();
         const auto numChannels = upBlock.getNumChannels();
         for (size_t i = 0; i < numSamples; ++i)
@@ -569,7 +573,9 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
                                       (int) upBlock.getNumSamples());
 
 
-    previewSignalChain.processBlock (previewBuffer);
+    previewSignalChain.processBlockSmoothed (
+        previewBuffer,
+        { nullptr, nullptr, nullptr, nullptr });
 
 
     juce::FloatVectorOperations::copy (upBlock.getChannelPointer (0),
