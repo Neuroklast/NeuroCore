@@ -30,6 +30,19 @@ private:
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
         virtual float process(int ch, float x) = 0;
+        virtual void processBlock(juce::AudioBuffer<float>& buffer)
+        {
+            juce::dsp::AudioBlock<float> block(buffer);
+            const size_t numSamples  = block.getNumSamples();
+            const size_t numChannels = block.getNumChannels();
+
+            for (size_t ch = 0; ch < numChannels; ++ch)
+            {
+                auto* data = block.getChannelPointer(ch);
+                for (size_t i = 0; i < numSamples; ++i)
+                    data[i] = process(static_cast<int>(ch), data[i]);
+            }
+        }
     };
 
     struct Stage : Block
@@ -38,9 +51,21 @@ private:
         std::vector<float> xPrev, yPrev;
         juce::String formula;
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
-        std::vector<std::pair<juce::String, size_t>> varNames;
+        struct VarRef { float* value; size_t index; };
+        std::vector<VarRef> varRefs;
+        std::array<float*,4> paramPtrs{{nullptr, nullptr, nullptr, nullptr}};
+        std::array<size_t,4> paramIndices{{ExpressionEvaluator::invalidIndex,
+                                           ExpressionEvaluator::invalidIndex,
+                                           ExpressionEvaluator::invalidIndex,
+                                           ExpressionEvaluator::invalidIndex}};
+        size_t idxX{ExpressionEvaluator::invalidIndex};
+        size_t idxXPrev{ExpressionEvaluator::invalidIndex};
+        size_t idxYPrev{ExpressionEvaluator::invalidIndex};
+        size_t idxY{ExpressionEvaluator::invalidIndex};
+        float* yPtr{nullptr};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Osc : Block
@@ -53,6 +78,7 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Filter : Block
@@ -72,6 +98,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Comp : Block
@@ -84,6 +111,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Env : Block
@@ -101,6 +129,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     using Chain   = std::vector<std::unique_ptr<Block>>;

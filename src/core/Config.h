@@ -150,8 +150,6 @@ namespace Config
     /// Fallback sample rate used during resets.
     inline constexpr double kDefaultSampleRate = 44100.0;
 
-    /// Time in seconds used for parameter smoothing.
-    inline constexpr double kSmoothingTime     = 0.02;
     /// Duration of function crossfades in seconds.
     inline constexpr double kCrossfadeTime     = 0.15;
 

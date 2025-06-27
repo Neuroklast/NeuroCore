@@ -28,9 +28,7 @@ public:
         buffer.setSample(0, 2,  0.5f);
         buffer.setSample(0, 3,  1.0f);
 
-        juce::dsp::AudioBlock<float> block(buffer);
-        juce::dsp::ProcessContextReplacing<float> ctx(block);
-        shaper.process(ctx);
+        shaper.processBlock(buffer);
 
         expectWithinAbsoluteError(buffer.getSample(0,0), std::tanh(-1.0f), 1e-5f);
         expectWithinAbsoluteError(buffer.getSample(0,1), std::tanh(-0.5f), 1e-5f);
@@ -49,19 +47,17 @@ public:
         fadeShaper.prepare(crossSpec);
 
         juce::AudioBuffer<float> fadeBuffer(1, 1);
-        juce::dsp::AudioBlock<float> fadeBlock(fadeBuffer);
-        juce::dsp::ProcessContextReplacing<float> fadeCtx(fadeBlock);
 
         fadeBuffer.setSample(0, 0, 1.0f);
         fadeShaper.startFunctionCrossfade(evalNew);
-        fadeShaper.process(fadeCtx);
+        fadeShaper.processBlock(fadeBuffer);
         expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 1.0f, 1e-5f);
 
         const int steps = static_cast<int>(Config::kCrossfadeTime * crossSpec.sampleRate) + 1;
         for (int i = 0; i < steps; ++i)
         {
             fadeBuffer.setSample(0, 0, 1.0f);
-            fadeShaper.process(fadeCtx);
+            fadeShaper.processBlock(fadeBuffer);
         }
 
         expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 2.0f, 1e-3f);

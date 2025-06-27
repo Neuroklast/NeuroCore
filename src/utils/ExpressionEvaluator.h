@@ -25,6 +25,13 @@ public:
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
 
+    /** Evaluates the parsed expression for a block of samples. The optional
+        callbacks allow updating variables before evaluation and handling the
+        result afterwards. */
+    void evaluateBlock(float* samples, size_t numSamples,
+                       const std::function<void(size_t, std::array<float, MaxVariables>&)>& pre = nullptr,
+                       const std::function<void(size_t, float)>& post = nullptr) const noexcept;
+
     // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
 

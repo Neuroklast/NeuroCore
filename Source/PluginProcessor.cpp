@@ -209,9 +209,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    chain.get<0>().processBlock(buffer);
+    chain.get<1>().processBlock(buffer);
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> ctx(block);
-    chain.process(ctx);
+    chain.get<2>().process (ctx);
 }
 
 //==============================================================================

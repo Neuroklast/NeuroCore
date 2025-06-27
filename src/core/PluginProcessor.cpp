@@ -356,9 +356,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    getInputRouter().processBlock(buffer);
+
     auto block = juce::dsp::AudioBlock<float> (buffer);
-    juce::dsp::ProcessContextReplacing<float> routerCtx (block);
-    getInputRouter().process (routerCtx);
 
     pushToRingBuffer (buffer, inputWaveBuffer, inputWritePos);
 
@@ -372,8 +372,11 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     auto upBlock = block;
     if (!bypassActive && oversampler)
         upBlock = oversampler->processSamplesUp (block);
-    juce::dsp::ProcessContextReplacing<float> ctxGain (upBlock);
-    chain.get<0>().process (ctxGain);
+
+    juce::AudioBuffer<float> upBuffer (const_cast<float**> (upBlock.getArrayOfWritePointers()),
+                                       (int) upBlock.getNumChannels(),
+                                       (int) upBlock.getNumSamples());
+    chain.get<0>().processBlock (upBuffer);
 
     upBlock.copyTo (scriptBuffer);
     std::array<juce::SmoothedValue<float>*,4> smPtr { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] };
