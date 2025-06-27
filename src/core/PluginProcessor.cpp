@@ -50,9 +50,10 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     juce::String err;
     dslScript = "stage1: y = tanh(x)";
     signalChain.loadScript(dslScript, err);
+    signalChain.setValueTreeState(&apvts);
+    oldSignalChain.setValueTreeState(&apvts);
+    previewSignalChain.setValueTreeState(&apvts);
     LookupTables::prepareFromScript(dslScript);
-    for (auto& val : parameterValues)
-        val.store(0.0f);
     formulaBlend.reset(Config::kDefaultSampleRate, Config::kCrossfadeTime);
     formulaBlend.setCurrentAndTargetValue(1.f);
 
@@ -324,14 +325,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         return v;
     };
 
-    parameterValues[0].store (clamp(EffectParameters::paramA, getParam (EffectParameters::paramA)));
-    parameterValues[1].store (clamp(EffectParameters::paramB, getParam (EffectParameters::paramB)));
-    parameterValues[2].store (clamp(EffectParameters::paramC, getParam (EffectParameters::paramC)));
-    parameterValues[3].store (clamp(EffectParameters::paramD, getParam (EffectParameters::paramD)));
-    smoothedParams[0].setTargetValue(parameterValues[0].load());
-    smoothedParams[1].setTargetValue(parameterValues[1].load());
-    smoothedParams[2].setTargetValue(parameterValues[2].load());
-    smoothedParams[3].setTargetValue(parameterValues[3].load());
+    smoothedParams[0].setTargetValue(clamp(EffectParameters::paramA, getParam (EffectParameters::paramA)));
+    smoothedParams[1].setTargetValue(clamp(EffectParameters::paramB, getParam (EffectParameters::paramB)));
+    smoothedParams[2].setTargetValue(clamp(EffectParameters::paramC, getParam (EffectParameters::paramC)));
+    smoothedParams[3].setTargetValue(clamp(EffectParameters::paramD, getParam (EffectParameters::paramD)));
 
 
     getInputRouter().setUseLeft  (getParam (EffectParameters::useInputLeft ) > 0.5f);
@@ -383,13 +380,12 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     chain.get<0>().processBlock (upBuffer);
 
     upBlock.copyTo (scriptBuffer);
-    std::array<juce::SmoothedValue<float>*,4> smPtr { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] };
-    signalChain.processBlockSmoothed (scriptBuffer, smPtr);
+    signalChain.processBlock (scriptBuffer);
 
     if (formulaBlend.isSmoothing())
     {
         upBlock.copyTo(oldScriptBuffer);
-        oldSignalChain.processBlockSmoothed(oldScriptBuffer, smPtr);
+        oldSignalChain.processBlock(oldScriptBuffer);
         const size_t numSamples = upBlock.getNumSamples();
         const auto numChannels = upBlock.getNumChannels();
         for (size_t i = 0; i < numSamples; ++i)
@@ -573,9 +569,7 @@ float NeuroCoreAudioProcessor::evaluateFormula (float x)
                                       (int) upBlock.getNumSamples());
 
 
-    std::array<float, 4> vals { parameterValues[0].load(), parameterValues[1].load(),
-                               parameterValues[2].load(), parameterValues[3].load() };
-    previewSignalChain.processBlock (previewBuffer, vals);
+    previewSignalChain.processBlock (previewBuffer);
 
 
     juce::FloatVectorOperations::copy (upBlock.getChannelPointer (0),
@@ -811,10 +805,10 @@ void NeuroCoreAudioProcessor::handleAsyncUpdate()
 
 void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
 {
-    if (parameterID == EffectParameters::paramA)  { parameterValues[0].store (newValue); smoothedParams[0].setTargetValue(newValue); }
-    else if (parameterID == EffectParameters::paramB) { parameterValues[1].store (newValue); smoothedParams[1].setTargetValue(newValue); }
-    else if (parameterID == EffectParameters::paramC) { parameterValues[2].store (newValue); smoothedParams[2].setTargetValue(newValue); }
-    else if (parameterID == EffectParameters::paramD) { parameterValues[3].store (newValue); smoothedParams[3].setTargetValue(newValue); }
+    if (parameterID == EffectParameters::paramA)  { smoothedParams[0].setTargetValue(newValue); }
+    else if (parameterID == EffectParameters::paramB) { smoothedParams[1].setTargetValue(newValue); }
+    else if (parameterID == EffectParameters::paramC) { smoothedParams[2].setTargetValue(newValue); }
+    else if (parameterID == EffectParameters::paramD) { smoothedParams[3].setTargetValue(newValue); }
     else if (parameterID == EffectParameters::outputGain) { userGainValue.setTargetValue(newValue); }
     else if (parameterID == EffectParameters::oversampling)
     {

@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../core/EffectParameters.h"
 #include <atomic>
 #include <vector>
 #include <utility>
@@ -19,10 +20,8 @@ public:
     SignalChain();
     void prepare(const juce::dsp::ProcessSpec& spec);
     bool loadScript(const juce::String& script, juce::String& error);
-    void processBlock(juce::AudioBuffer<float>& buffer,
-                      const std::array<float,4>& params);
-    void processBlockSmoothed(juce::AudioBuffer<float>& buffer,
-                              std::array<juce::SmoothedValue<float>*,4> params);
+    void setValueTreeState(juce::AudioProcessorValueTreeState* vts) noexcept;
+    void processBlock(juce::AudioBuffer<float>& buffer);
 
 private:
     struct Block
@@ -53,7 +52,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
         struct VarRef { float* value; size_t index; };
         std::vector<VarRef> varRefs;
-        std::array<float*,4> paramPtrs{{nullptr, nullptr, nullptr, nullptr}};
+        std::array<juce::SmoothedValue<float>*,4> paramSmoothers{{nullptr, nullptr, nullptr, nullptr}};
         std::array<size_t,4> paramIndices{{ExpressionEvaluator::invalidIndex,
                                            ExpressionEvaluator::invalidIndex,
                                            ExpressionEvaluator::invalidIndex,
@@ -139,6 +138,12 @@ private:
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
+    std::array<juce::SmoothedValue<float>,4> paramSmooth;
+    juce::AudioProcessorValueTreeState* valueTreeState { nullptr };
+    static constexpr const char* paramIDs[4] { EffectParameters::paramA,
+                                               EffectParameters::paramB,
+                                               EffectParameters::paramC,
+                                               EffectParameters::paramD };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
 
 public:
