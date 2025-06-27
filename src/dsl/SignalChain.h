@@ -150,6 +150,9 @@ private:
 public:
     std::shared_ptr<AliasMap> getAliases() const { return std::atomic_load(&aliases); }
     juce::StringArray getMappingsFor(const juce::String& param) const;
+
+    /** Set the value of one of the four script parameters. */
+    void setParameter(size_t index, float value) noexcept;
 };
 
 } // namespace dsl
