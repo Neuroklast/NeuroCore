@@ -13636,8 +13636,12 @@ static const unsigned char temp_binary_data_16[] =
 "  <MAINGROUP id=\"GyblaO\" name=\"NeuroCore\">\r\n"
 "    <GROUP id=\"{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}\" name=\"docs\"/>\r\n"
 "    <GROUP id=\"{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}\" name=\"resources\">\r\n"
+"      <GROUP id=\"{CAD75D28-A416-5820-041C-133A5E07D04D}\" name=\"fonts\">\r\n"
+"        <FILE id=\"M1qZ84\" name=\"apex.otf\" compile=\"0\" resource=\"1\" file=\"resources/fonts/apex.otf\"/>\r\n"
+"      </GROUP>\r\n"
 "      <GROUP id=\"{77B36C55-0DF8-337B-1083-B2E4666F6F09}\" name=\"img\">\r\n"
 "        <FILE id=\"G0DJIl\" name=\"innerknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/innerknob.png\"/>\r\n"
+"        <FILE id=\"aVTCRt\" name=\"warning.png\" compile=\"0\" resource=\"1\" file=\"resources/img/warning.png\"/>\r\n"
 "        <FILE id=\"pVJz3p\" name=\"knob lights.png\" compile=\"0\" resource=\"1\" file=\"resources/img/knob lights.png\"/>\r\n"
 "        <FILE id=\"QLN5Pj\" name=\"outerKnob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/outerKnob.png\"/>\r\n"
 "        <FILE id=\"g4nzIP\" name=\"overknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/overknob.png\"/>\r\n"
@@ -14080,7 +14084,7 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
         case 0x40c27d68:  numBytes = 1241; return AGENTS_md;
         case 0x90e15cf5:  numBytes = 6405; return CMakeLists_txt;
-        case 0x7daaf120:  numBytes = 20218; return NeuroCore_jucer;
+        case 0x7daaf120:  numBytes = 20514; return NeuroCore_jucer;
         case 0x64791dc8:  numBytes = 5874; return README_md;
         default: break;
     }
