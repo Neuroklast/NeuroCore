@@ -280,7 +280,7 @@
 		F8E0753859A0514846E6F2E4 /* FormulaWaveComponent.cpp */ /* FormulaWaveComponent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = FormulaWaveComponent.cpp; path = ../../src/ui/FormulaWaveComponent.cpp; sourceTree = SOURCE_ROOT; };
 		FB63D1428F623B4B255C60C2 /* PresetContentComponent.h */ /* PresetContentComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PresetContentComponent.h; path = ../../src/ui/PresetContentComponent.h; sourceTree = SOURCE_ROOT; };
 		FC88064FBC2E0C3B556CDA65 /* juce_audio_formats */ /* juce_audio_formats */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_formats; path = "~/JUCE/modules/juce_audio_formats"; sourceTree = "<absolute>"; };
-		FE43FC826AECB8C94ADA09C5 /* knob lights.png */ /* knob lights.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "knob lights.png"; path = "../../resources/img/knob lights.png"; sourceTree = SOURCE_ROOT; };
+               FE43FC826AECB8C94ADA09C5 /* knob_lights.png */ /* knob_lights.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "knob_lights.png"; path = "../../resources/img/knob_lights.png"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
