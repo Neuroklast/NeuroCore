@@ -51,13 +51,13 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Upload build log
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-log-${{ matrix.os }}
           path: build-${{ matrix.os }}.log
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: NeuroCore-${{ matrix.os }}
           path: build/NeuroCore_artefacts
