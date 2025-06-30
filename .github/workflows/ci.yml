@@ -2,8 +2,8 @@ name: Build
 
 on:
   push:
-    # Trigger on pushes to the main or master branch
-    branches: [master, main]
+    # Trigger on pushes to the master branch
+    branches: [master]
   pull_request:
     # Run CI on all pull requests
 
