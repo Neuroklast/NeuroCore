@@ -32,6 +32,13 @@ jobs:
           mkdir -p "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
           cp -r vst3sdk/* "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
 
+      - name: Build juceaide
+        shell: bash
+        run: |
+          cmake -S "$HOME/JUCE/extras/Build/juceaide" -B "$HOME/JUCE/juceaide_build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$HOME/JUCE/juceaide_build" --config Release
+          echo "$HOME/JUCE/juceaide_build/juceaide_artefacts" >> "$GITHUB_PATH"
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: bash scripts/install_linux_deps.sh
