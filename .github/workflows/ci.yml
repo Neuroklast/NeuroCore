@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build:
@@ -55,3 +55,9 @@ jobs:
         with:
           name: build-log-${{ matrix.os }}
           path: build-${{ matrix.os }}.log
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: NeuroCore-${{ matrix.os }}
+          path: build/NeuroCore_artefacts
