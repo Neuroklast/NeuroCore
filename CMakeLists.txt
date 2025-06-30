@@ -121,7 +121,7 @@ juce_add_binary_data(resourcesBinary
         resources/img/innerknob.png
         resources/img/outerKnob.png
         resources/img/overknob.png
-        "resources/img/knob lights.png"
+        resources/img/knob_lights.png
         resources/locale/de.txt
         resources/locale/en.txt
         resources/locale/functions_de.txt
