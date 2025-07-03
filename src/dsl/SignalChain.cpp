@@ -726,3 +726,9 @@ juce::StringArray SignalChain::getMappingsFor(const juce::String& param) const
     return {};
 }
 
+void SignalChain::setParameter(size_t index, float value) noexcept
+{
+    if (index < paramSmooth.size())
+        paramSmooth[index].setCurrentAndTargetValue(value);
+}
+

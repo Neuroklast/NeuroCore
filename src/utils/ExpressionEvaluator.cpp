@@ -254,11 +254,21 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFactor()
 {
     skipWhitespace();
     auto node = parseUnary();
+    if (! node)
+    {
+        errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+        return nullptr;
+    }
     while (true)
     {
         if (expect('^'))
         {
             auto rhs = parseUnary();
+            if (! rhs)
+            {
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+                return nullptr;
+            }
             if (auto* val = dynamic_cast<ValueNode*>(rhs.get()))
             {
                 node = std::make_shared<FunctionNode>([exp = val->value](float x) { return LookupTables::fastPow(x, exp); }, std::move(node));
@@ -278,12 +288,33 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseTerm()
 {
     skipWhitespace();
     auto node = parseFactor();
+    if (! node)
+    {
+        errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+        return nullptr;
+    }
     while (true)
     {
         if (expect('*'))
-            node = std::make_shared<BinaryNode>(BinaryNode::mul, std::move(node), parseFactor());
+        {
+            auto rhs = parseFactor();
+            if (! rhs)
+            {
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+                return nullptr;
+            }
+            node = std::make_shared<BinaryNode>(BinaryNode::mul, std::move(node), std::move(rhs));
+        }
         else if (expect('/'))
-            node = std::make_shared<BinaryNode>(BinaryNode::div, std::move(node), parseFactor());
+        {
+            auto rhs = parseFactor();
+            if (! rhs)
+            {
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+                return nullptr;
+            }
+            node = std::make_shared<BinaryNode>(BinaryNode::div, std::move(node), std::move(rhs));
+        }
         else
             break;
     }
@@ -294,12 +325,33 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseExpression()
 {
     skipWhitespace();
     auto node = parseTerm();
+    if (! node)
+    {
+        errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+        return nullptr;
+    }
     while (true)
     {
         if (expect('+'))
-            node = std::make_shared<BinaryNode>(BinaryNode::add, std::move(node), parseTerm());
+        {
+            auto rhs = parseTerm();
+            if (! rhs)
+            {
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+                return nullptr;
+            }
+            node = std::make_shared<BinaryNode>(BinaryNode::add, std::move(node), std::move(rhs));
+        }
         else if (expect('-'))
-            node = std::make_shared<BinaryNode>(BinaryNode::sub, std::move(node), parseTerm());
+        {
+            auto rhs = parseTerm();
+            if (! rhs)
+            {
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+                return nullptr;
+            }
+            node = std::make_shared<BinaryNode>(BinaryNode::sub, std::move(node), std::move(rhs));
+        }
         else
             break;
     }
@@ -373,6 +425,13 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     try
     {
         root = parseExpression();
+        if (! root)
+        {
+            if (errorMessage.isEmpty())
+                errorMessage = juce::String(TRANS("ParseError")).replace("%1", juce::String((int)pos));
+            logError(errorMessage);
+            return false;
+        }
         if (root)
             root = constantFold(std::move(root));
         if (root)
