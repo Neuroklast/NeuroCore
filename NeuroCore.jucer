@@ -14,7 +14,7 @@
       <GROUP id="{77B36C55-0DF8-337B-1083-B2E4666F6F09}" name="img">
         <FILE id="G0DJIl" name="innerknob.png" compile="0" resource="1" file="resources/img/innerknob.png"/>
         <FILE id="aVTCRt" name="warning.png" compile="0" resource="1" file="resources/img/warning.png"/>
-        <FILE id="pVJz3p" name="knob lights.png" compile="0" resource="1" file="resources/img/knob lights.png"/>
+        <FILE id="pVJz3p" name="knob_lights.png" compile="0" resource="1" file="resources/img/knob_lights.png"/>
         <FILE id="QLN5Pj" name="outerKnob.png" compile="0" resource="1" file="resources/img/outerKnob.png"/>
         <FILE id="g4nzIP" name="overknob.png" compile="0" resource="1" file="resources/img/overknob.png"/>
       </GROUP>

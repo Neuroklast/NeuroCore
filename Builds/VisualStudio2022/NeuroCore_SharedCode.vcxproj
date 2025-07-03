@@ -4562,7 +4562,7 @@
     <None Include="..\..\resources\fonts\apex.otf"/>
     <None Include="..\..\resources\img\innerknob.png"/>
     <None Include="..\..\resources\img\warning.png"/>
-    <None Include="..\..\resources\img\knob lights.png"/>
+    <None Include="..\..\resources\img\knob_lights.png"/>
     <None Include="..\..\resources\img\outerKnob.png"/>
     <None Include="..\..\resources\img\overknob.png"/>
     <None Include="..\..\resources\locale\de.txt"/>

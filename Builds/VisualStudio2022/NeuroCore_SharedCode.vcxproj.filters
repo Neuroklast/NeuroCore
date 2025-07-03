@@ -8387,7 +8387,7 @@
     <None Include="..\..\resources\img\warning.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
-    <None Include="..\..\resources\img\knob lights.png">
+    <None Include="..\..\resources\img\knob_lights.png">
       <Filter>NeuroCore\resources\img</Filter>
     </None>
     <None Include="..\..\resources\img\outerKnob.png">

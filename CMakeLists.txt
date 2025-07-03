@@ -25,7 +25,7 @@ if(NOT DEFINED JUCE_DIR)
             GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
             GIT_TAG 8.0.6
         )
-        set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
+        set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(juce)
         set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH "Path to JUCE" FORCE)
     endif()
@@ -33,9 +33,17 @@ endif()
 
 list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
 
+# Always build the helper tools (juceaide)
+set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
+
+add_subdirectory(${JUCE_DIR} JUCE)
+
 # JUCE helper macros
 include(${JUCE_DIR}/extras/Build/CMake/JUCEModuleSupport.cmake)
 include(${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake)
+
+# Ensure the VST3 SDK is available for JUCE
+juce_set_vst3_sdk_path(${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK)
 
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
@@ -113,7 +121,7 @@ juce_add_binary_data(resourcesBinary
         resources/img/innerknob.png
         resources/img/outerKnob.png
         resources/img/overknob.png
-        "resources/img/knob lights.png"
+        resources/img/knob_lights.png
         resources/locale/de.txt
         resources/locale/en.txt
         resources/locale/functions_de.txt
