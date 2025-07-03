@@ -588,6 +588,87 @@ float SignalChain::Filter::process(int ch, float x)
     return y;
 }
 
+void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
+{
+    if (! varPtr)
+        return;
+
+    juce::dsp::AudioBlock<float> block(buffer);
+    const size_t numSamples  = block.getNumSamples();
+    const size_t numChannels = juce::jmin(block.getNumChannels(), (size_t)channels);
+
+    for (size_t ch = 0; ch < numChannels; ++ch)
+    {
+        auto* data = block.getChannelPointer(ch);
+        float prevX = xPrev[ch];
+        float prevY = yPrev[ch];
+
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            float x = data[i];
+
+            (*varPtr)["x_prev"] = prevX;
+            (*varPtr)["y_prev"] = prevY;
+            (*varPtr)["x"] = x;
+
+            for (const auto& n : varNames)
+            {
+                auto v = (*varPtr)[n.first];
+                cutoff.setVariable(n.second, v);
+                resonance.setVariable(n.second, v);
+                center.setVariable(n.second, v);
+                width.setVariable(n.second, v);
+                lowcut.setVariable(n.second, v);
+                highcut.setVariable(n.second, v);
+            }
+
+            float fc = cutoff.evaluate(x);
+            float res = resonance.evaluate(x);
+
+            if (type == juce::dsp::StateVariableTPTFilterType::bandpass)
+            {
+                if (useCenterWidth)
+                {
+                    float c  = center.evaluate(x);
+                    float w  = width.evaluate(x);
+                    fc       = c;
+                    if (! resonance.isValid())
+                        res = (w != 0.0f ? juce::jlimit(0.1f, 10.0f, c / w) : res);
+                }
+                else if (useLowHigh)
+                {
+                    float lo = lowcut.evaluate(x);
+                    float hi = highcut.evaluate(x);
+                    fc       = (lo + hi) * 0.5f;
+                    if (! resonance.isValid())
+                        res = ((hi - lo) != 0.0f ? juce::jlimit(0.1f, 10.0f, fc / (hi - lo)) : res);
+                }
+            }
+
+            const auto nyquist = sampleRate * 0.5f;
+            const auto maxFc   = std::nextafter(nyquist, 0.0f);
+            fc  = juce::jlimit(20.0f, maxFc, fc);
+            res = juce::jlimit(0.1f, 10.0f, res);
+
+            cutoffSm.setTargetValue(fc);
+            resSm.setTargetValue(res);
+            const float fcSm = cutoffSm.getNextValue();
+            const float rqSm = resSm.getNextValue();
+            filter.setCutoffFrequency(fcSm);
+            filter.setResonance(rqSm);
+
+            float y = filter.processSample(ch, x);
+            prevX = x;
+            prevY = y;
+            (*varPtr)["y"] = y;
+            data[i] = y;
+        }
+
+        xPrev[ch] = prevX;
+        yPrev[ch] = prevY;
+    }
+}
+
 
 void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
 {
@@ -635,10 +716,53 @@ float SignalChain::Comp::process(int ch, float x)
     comp.setAttack(atkSm.getNextValue());
     comp.setRelease(relSm.getNextValue());
 
-        float y = comp.processSample(ch, x);
-        (*varPtr)["y"] = y;
-        return y;
+    float y = comp.processSample(ch, x);
+    (*varPtr)["y"] = y;
+    return y;
+}
+
+void SignalChain::Comp::processBlock(juce::AudioBuffer<float>& buffer)
+{
+    if (! varPtr)
+        return;
+
+    juce::dsp::AudioBlock<float> block(buffer);
+    const size_t numSamples  = block.getNumSamples();
+    const size_t numChannels = juce::jmin(block.getNumChannels(), (size_t)channels);
+
+    for (size_t ch = 0; ch < numChannels; ++ch)
+    {
+        auto* data = block.getChannelPointer(ch);
+
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            float x = data[i];
+
+            for (const auto& n : varNames)
+            {
+                auto v = (*varPtr)[n.first];
+                threshold.setVariable(n.second, v);
+                ratio.setVariable(n.second, v);
+                attack.setVariable(n.second, v);
+                release.setVariable(n.second, v);
+            }
+
+            thrSm.setTargetValue(threshold.evaluate(x));
+            ratioSm.setTargetValue(ratio.evaluate(x));
+            atkSm.setTargetValue(attack.evaluate(x));
+            relSm.setTargetValue(release.evaluate(x));
+
+            comp.setThreshold(thrSm.getNextValue());
+            comp.setRatio(ratioSm.getNextValue());
+            comp.setAttack(atkSm.getNextValue());
+            comp.setRelease(relSm.getNextValue());
+
+            float y = comp.processSample(ch, x);
+            (*varPtr)["y"] = y;
+            data[i] = y;
+        }
     }
+}
 
 
 void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
