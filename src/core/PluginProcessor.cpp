@@ -612,6 +612,8 @@ bool NeuroCoreAudioProcessor::testFormulaStability(const juce::String& script,
     {
         params.fill(0.f);
         params[paramIndex] = value;
+        for (size_t i = 0; i < params.size(); ++i)
+            testChain.setParameter(i, params[i]);
         int processed = 0;
         juce::Random rng;
         juce::String msg = "param " + juce::String::charToString((juce_wchar)('a' + paramIndex)) + "=" + juce::String(value);

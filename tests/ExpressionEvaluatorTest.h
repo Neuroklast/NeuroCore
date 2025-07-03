@@ -79,6 +79,20 @@ public:
             simdResult.copyToRawArray(arr);
             expectWithinAbsoluteError(arr[0], scalarResult, 1e-6f);
         }
+
+        beginTest("Ungueltiger Ausdruck");
+        {
+            ExpressionEvaluator eval;
+            expect(! eval.parseFormula("a +"));
+            expect(eval.getLastError().isNotEmpty());
+        }
+
+        beginTest("Unbekannte Funktion");
+        {
+            ExpressionEvaluator eval;
+            expect(! eval.parseFormula("foo(1)"));
+            expect(eval.getLastError().isNotEmpty());
+        }
     }
 };
 
