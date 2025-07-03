@@ -785,24 +785,6 @@
     <Filter Include="JUCE Modules\juce_product_unlocking">
       <UniqueIdentifier>{409F7733-AD90-6113-85BA-7136DD178413}</UniqueIdentifier>
     </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector\LatestCompiledAssets">
-      <UniqueIdentifier>{DBD8B084-3417-D22B-8E81-B5A6AB273CA1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector\melatonin\components">
-      <UniqueIdentifier>{91BD1979-6BD9-0257-6910-E7F932D124A7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector\melatonin\helpers">
-      <UniqueIdentifier>{0C99BA14-0679-2ADE-7F10-4C99B1D2F87E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector\melatonin">
-      <UniqueIdentifier>{E07EF099-F5F3-FCB9-3D1B-1F09395D9A4A}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector\tests">
-      <UniqueIdentifier>{CC9B1B2E-9F2D-40BF-74F6-D4EFEA537D31}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JUCE Modules\melatonin_inspector">
-      <UniqueIdentifier>{971C50C9-B602-4094-FFD1-C76B4761BC74}</UniqueIdentifier>
-    </Filter>
     <Filter Include="JUCE Modules">
       <UniqueIdentifier>{FE955B6B-68AC-AA07-70D8-2413F6DB65C8}</UniqueIdentifier>
     </Filter>
@@ -2593,7 +2575,16 @@
     <ClCompile Include="D:\JUCE\modules\juce_graphics\contexts\juce_LowLevelGraphicsSoftwareRenderer.cpp">
       <Filter>JUCE Modules\juce_graphics\contexts</Filter>
     </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\detail\juce_JustifiedText.cpp">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_graphics\detail\juce_Ranges.cpp">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\detail\juce_ShapedText.cpp">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\detail\juce_SimpleShapedText.cpp">
       <Filter>JUCE Modules\juce_graphics\detail</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_graphics\effects\juce_DropShadowEffect.cpp">
@@ -2848,13 +2839,7 @@
     <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_GlyphArrangement.cpp">
       <Filter>JUCE Modules\juce_graphics\fonts</Filter>
     </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_JustifiedText.cpp">
-      <Filter>JUCE Modules\juce_graphics\fonts</Filter>
-    </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_ShapedText.cpp">
-      <Filter>JUCE Modules\juce_graphics\fonts</Filter>
-    </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_SimpleShapedText.cpp">
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_GlyphArrangementOptions.cpp">
       <Filter>JUCE Modules\juce_graphics\fonts</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_graphics\fonts\juce_TextLayout.cpp">
@@ -3097,10 +3082,7 @@
     <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DGraphicsContext_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DHelpers_windows.cpp">
-      <Filter>JUCE Modules\juce_graphics\native</Filter>
-    </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DHwndContext_windows.cpp">
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DGraphicsContextImpl_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DImage_windows.cpp">
@@ -3112,10 +3094,10 @@
     <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DMetrics_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DResources_windows.cpp">
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_DirectWriteTypeface_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
-    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_DirectWriteTypeface_windows.cpp">
+    <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_DirectX_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_graphics\native\juce_Fonts_android.cpp">
@@ -3302,6 +3284,9 @@
       <Filter>JUCE Modules\juce_gui_basics\desktop</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\detail\juce_AccessibilityHelpers.cpp">
+      <Filter>JUCE Modules\juce_gui_basics\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_gui_basics\detail\juce_ComponentPeerHelpers.cpp">
       <Filter>JUCE Modules\juce_gui_basics\detail</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\drawables\juce_Drawable.cpp">
@@ -3529,6 +3514,9 @@
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\native\juce_ContentSharer_ios.cpp">
       <Filter>JUCE Modules\juce_gui_basics\native</Filter>
     </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_gui_basics\native\juce_Direct2DHwndContext_windows.cpp">
+      <Filter>JUCE Modules\juce_gui_basics\native</Filter>
+    </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\native\juce_DragAndDrop_linux.cpp">
       <Filter>JUCE Modules\juce_gui_basics\native</Filter>
     </ClCompile>
@@ -3692,6 +3680,9 @@
       <Filter>JUCE Modules\juce_gui_basics\widgets</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\widgets\juce_TextEditor.cpp">
+      <Filter>JUCE Modules\juce_gui_basics\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\JUCE\modules\juce_gui_basics\widgets\juce_TextEditorModel.cpp">
       <Filter>JUCE Modules\juce_gui_basics\widgets</Filter>
     </ClCompile>
     <ClCompile Include="D:\JUCE\modules\juce_gui_basics\widgets\juce_Toolbar.cpp">
@@ -3955,90 +3946,6 @@
     <ClCompile Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.mm">
       <Filter>JUCE Modules\juce_product_unlocking</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData1.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData2.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData3.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData4.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData5.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData6.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData7.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData8.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData9.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData10.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData11.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData12.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData13.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData14.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData15.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData16.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData17.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData18.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData19.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData20.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData21.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData22.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\BinaryData23.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\tests\member_disabled.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\tests\member_enabled.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\tests\unique_ptr_disabled.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\tests\unique_ptr_enabled.cpp">
-      <Filter>JUCE Modules\melatonin_inspector\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\melatonin_inspector\melatonin_inspector.cpp">
-      <Filter>JUCE Modules\melatonin_inspector</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\BinaryData.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
@@ -4109,9 +4016,6 @@
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_product_unlocking.cpp">
-      <Filter>JUCE Library Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\JuceLibraryCode\include_melatonin_inspector.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -5769,6 +5673,12 @@
     <ClInclude Include="D:\JUCE\modules\juce_core\detail\juce_CallbackListenerList.h">
       <Filter>JUCE Modules\juce_core\detail</Filter>
     </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_core\detail\juce_LruCache.h">
+      <Filter>JUCE Modules\juce_core\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_core\detail\juce_NativeFileHandle.h">
+      <Filter>JUCE Modules\juce_core\detail</Filter>
+    </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_core\files\juce_AndroidDocument.h">
       <Filter>JUCE Modules\juce_core\files</Filter>
     </ClInclude>
@@ -6138,6 +6048,9 @@
     <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\deflate.h">
       <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
     </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\gzguts.h">
+      <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
+    </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\inffast.h">
       <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
     </ClInclude>
@@ -6156,9 +6069,6 @@
     <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\zconf.h">
       <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\zconf.in.h">
-      <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
-    </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_core\zip\zlib\zlib.h">
       <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
     </ClInclude>
@@ -6172,6 +6082,9 @@
       <Filter>JUCE Modules\juce_core\zip</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_core\zip\juce_ZipFile.h">
+      <Filter>JUCE Modules\juce_core\zip</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_core\zip\juce_zlib.h">
       <Filter>JUCE Modules\juce_core\zip</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_core\juce_core.h">
@@ -6483,7 +6396,19 @@
     <ClInclude Include="D:\JUCE\modules\juce_graphics\contexts\juce_LowLevelGraphicsSoftwareRenderer.h">
       <Filter>JUCE Modules\juce_graphics\contexts</Filter>
     </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\detail\juce_JustifiedText.h">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\detail\juce_Ranges.h">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\detail\juce_ShapedText.h">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\detail\juce_SimpleShapedText.h">
+      <Filter>JUCE Modules\juce_graphics\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\detail\juce_Unicode.h">
       <Filter>JUCE Modules\juce_graphics\detail</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\effects\juce_DropShadowEffect.h">
@@ -7338,7 +7263,7 @@
     <ClInclude Include="D:\JUCE\modules\juce_graphics\fonts\juce_GlyphArrangement.h">
       <Filter>JUCE Modules\juce_graphics\fonts</Filter>
     </ClInclude>
-    <ClInclude Include="D:\JUCE\modules\juce_graphics\fonts\juce_LruCache.h">
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\fonts\juce_GlyphArrangementOptions.h">
       <Filter>JUCE Modules\juce_graphics\fonts</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\fonts\juce_TextLayout.h">
@@ -7452,6 +7377,9 @@
     <ClInclude Include="D:\JUCE\modules\juce_graphics\images\juce_ImageFileFormat.h">
       <Filter>JUCE Modules\juce_graphics\images</Filter>
     </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\images\juce_ImagePixelDataNativeExtensions.h">
+      <Filter>JUCE Modules\juce_graphics\images</Filter>
+    </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\images\juce_ScaledImage.h">
       <Filter>JUCE Modules\juce_graphics\images</Filter>
     </ClInclude>
@@ -7464,7 +7392,7 @@
     <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DGraphicsContext_windows.h">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClInclude>
-    <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DHwndContext_windows.h">
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DGraphicsContextImpl_windows.h">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DImage_windows.h">
@@ -7474,6 +7402,9 @@
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DMetrics_windows.h">
+      <Filter>JUCE Modules\juce_graphics\native</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_Direct2DPixelDataPage_windows.h">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_graphics\native\juce_DirectX_windows.h">
@@ -7711,6 +7642,9 @@
       <Filter>JUCE Modules\juce_gui_basics\detail</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_gui_basics\detail\juce_ComponentHelpers.h">
+      <Filter>JUCE Modules\juce_gui_basics\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_gui_basics\detail\juce_ComponentPeerHelpers.h">
       <Filter>JUCE Modules\juce_gui_basics\detail</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_gui_basics\detail\juce_CustomMouseCursorInfo.h">
@@ -8050,6 +7984,9 @@
       <Filter>JUCE Modules\juce_gui_basics\native\accessibility</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_gui_basics\native\juce_CGMetalLayerRenderer_mac.h">
+      <Filter>JUCE Modules\juce_gui_basics\native</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\JUCE\modules\juce_gui_basics\native\juce_Direct2DHwndContext_windows.h">
       <Filter>JUCE Modules\juce_gui_basics\native</Filter>
     </ClInclude>
     <ClInclude Include="D:\JUCE\modules\juce_gui_basics\native\juce_MultiTouchMapper.h">
@@ -8427,81 +8364,6 @@
     <ClInclude Include="D:\JUCE\modules\juce_product_unlocking\juce_product_unlocking.h">
       <Filter>JUCE Modules\juce_product_unlocking</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\LatestCompiledAssets\InspectorBinaryData.h">
-      <Filter>JUCE Modules\melatonin_inspector\LatestCompiledAssets</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\accesibility.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\box_model.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\collapsable_panel.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\color_picker.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\colour_property_component.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\component_tree_view_item.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\fps_meter.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\inspector_image_button.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\overlay.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\preview.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\properties.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\tree_component.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\components\undo_manager_inspector.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\colors.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\colour_ids.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\component_helpers.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\inspector_settings.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\misc.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\overlay_mouse_listener.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\helpers\timing.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\component_model.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\inspector_component.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin\lookandfeel.h">
-      <Filter>JUCE Modules\melatonin_inspector\melatonin</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\melatonin_inspector\melatonin_inspector.h">
-      <Filter>JUCE Modules\melatonin_inspector</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h">
       <Filter>JUCE Library Code</Filter>
     </ClInclude>
@@ -8630,6 +8492,9 @@
     <None Include="D:\JUCE\modules\juce_core\native\java\README.txt">
       <Filter>JUCE Modules\juce_core\native\java</Filter>
     </None>
+    <None Include="D:\JUCE\modules\juce_core\zip\zlib\JUCE_CHANGES.txt">
+      <Filter>JUCE Modules\juce_core\zip\zlib</Filter>
+    </None>
     <None Include="D:\JUCE\modules\juce_graphics\image_formats\jpglib\changes to libjpeg for JUCE.txt">
       <Filter>JUCE Modules\juce_graphics\image_formats\jpglib</Filter>
     </None>
@@ -8638,12 +8503,6 @@
     </None>
     <None Include="D:\JUCE\modules\juce_graphics\unicode\sheenbidi\JUCE_CHANGES.txt">
       <Filter>JUCE Modules\juce_graphics\unicode\sheenbidi</Filter>
-    </None>
-    <None Include="..\..\modules\melatonin_inspector\CMakeLists.txt">
-      <Filter>JUCE Modules\melatonin_inspector</Filter>
-    </None>
-    <None Include="..\..\modules\melatonin_inspector\README.md">
-      <Filter>JUCE Modules\melatonin_inspector</Filter>
     </None>
   </ItemGroup>
 </Project>

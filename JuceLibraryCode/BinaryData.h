@@ -57,7 +57,7 @@ namespace BinaryData
     const int            CMakeLists_txtSize = 6405;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 20514;
+    const int            NeuroCore_jucerSize = 20234;
 
     extern const char*   README_md;
     const int            README_mdSize = 5874;
