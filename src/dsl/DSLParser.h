@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include <vector>
 #include <unordered_map>
+#include "AST.h"
 
 namespace dsl
 {
@@ -32,6 +33,16 @@ public:
                std::unordered_map<juce::String, juce::String>& paramAliases,
                std::vector<ParamDesc>& params,
                juce::String& error);
+
+    /** Parses the script into an AST structure. */
+    bool parseAST(const juce::String& text,
+                  Ast& ast,
+                  std::unordered_map<juce::String, juce::String>& paramAliases,
+                  std::vector<ParamDesc>& params,
+                  juce::String& error);
+
+    /** Converts the AST into the intermediate representation. */
+    static void astToIR(const Ast& ast, std::vector<BlockDesc>& blocks);
 };
 
 } // namespace dsl

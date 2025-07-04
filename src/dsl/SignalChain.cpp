@@ -68,11 +68,14 @@ static juce::dsp::StateVariableTPTFilterType parseFilterType(const juce::String&
 bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 {
     DSLParser parser;
-    std::vector<BlockDesc> desc;
+    Ast ast;
     AliasMap newAliases;
     std::vector<ParamDesc> parsedParams;
-    if (! parser.parse (script, desc, newAliases, parsedParams, error))
+    if (! parser.parseAST(script, ast, newAliases, parsedParams, error))
         return false;
+
+    std::vector<BlockDesc> desc;
+    DSLParser::astToIR(ast, desc);
 
     parameterMappings.clear();
     paramInfo = parsedParams;
