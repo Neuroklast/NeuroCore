@@ -5846,7 +5846,7 @@ static const unsigned char temp_binary_data_2[] =
 
 const char* warning_png = (const char*) temp_binary_data_2;
 
-//================== knob lights.png ==================
+//================== knob_lights.png ==================
 static const unsigned char temp_binary_data_3[] =
 { 137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,3,32,0,0,3,32,8,6,0,0,0,219,112,6,104,0,0,5,180,105,84,88,116,88,77,76,58,99,111,109,46,97,100,111,98,101,46,120,109,112,0,0,0,0,0,60,63,120,112,97,99,107,101,116,32,98,101,103,105,110,61,34,239,187,191,
 34,32,105,100,61,34,87,53,77,48,77,112,67,101,104,105,72,122,114,101,83,122,78,84,99,122,107,99,57,100,34,63,62,10,60,120,58,120,109,112,109,101,116,97,32,120,109,108,110,115,58,120,61,34,97,100,111,98,101,58,110,115,58,109,101,116,97,47,34,32,120,58,
@@ -13435,7 +13435,7 @@ static const unsigned char temp_binary_data_15[] =
 "            GIT_REPOSITORY https://github.com/juce-framework/JUCE.git\r\n"
 "            GIT_TAG 8.0.6\r\n"
 "        )\r\n"
-"        set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL \"\" FORCE)\r\n"
+"        set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL \"\" FORCE)\r\n"
 "        FetchContent_MakeAvailable(juce)\r\n"
 "        set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH \"Path to JUCE\" FORCE)\r\n"
 "    endif()\r\n"
@@ -13443,9 +13443,17 @@ static const unsigned char temp_binary_data_15[] =
 "\r\n"
 "list(APPEND CMAKE_PREFIX_PATH \"${JUCE_DIR}\")\r\n"
 "\r\n"
+"# Always build the helper tools (juceaide)\r\n"
+"set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL \"\" FORCE)\r\n"
+"\r\n"
+"add_subdirectory(${JUCE_DIR} JUCE)\r\n"
+"\r\n"
 "# JUCE helper macros\r\n"
 "include(${JUCE_DIR}/extras/Build/CMake/JUCEModuleSupport.cmake)\r\n"
 "include(${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake)\r\n"
+"\r\n"
+"# Ensure the VST3 SDK is available for JUCE\r\n"
+"juce_set_vst3_sdk_path(${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK)\r\n"
 "\r\n"
 "set(SOURCE_FILES\r\n"
 "    src/dsp/InputGain.cpp\r\n"
@@ -13523,7 +13531,7 @@ static const unsigned char temp_binary_data_15[] =
 "        resources/img/innerknob.png\r\n"
 "        resources/img/outerKnob.png\r\n"
 "        resources/img/overknob.png\r\n"
-"        \"resources/img/knob lights.png\"\r\n"
+"        resources/img/knob_lights.png\r\n"
 "        resources/locale/de.txt\r\n"
 "        resources/locale/en.txt\r\n"
 "        resources/locale/functions_de.txt\r\n"
@@ -13642,7 +13650,7 @@ static const unsigned char temp_binary_data_16[] =
 "      <GROUP id=\"{77B36C55-0DF8-337B-1083-B2E4666F6F09}\" name=\"img\">\r\n"
 "        <FILE id=\"G0DJIl\" name=\"innerknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/innerknob.png\"/>\r\n"
 "        <FILE id=\"aVTCRt\" name=\"warning.png\" compile=\"0\" resource=\"1\" file=\"resources/img/warning.png\"/>\r\n"
-"        <FILE id=\"pVJz3p\" name=\"knob lights.png\" compile=\"0\" resource=\"1\" file=\"resources/img/knob lights.png\"/>\r\n"
+"        <FILE id=\"pVJz3p\" name=\"knob_lights.png\" compile=\"0\" resource=\"1\" file=\"resources/img/knob_lights.png\"/>\r\n"
 "        <FILE id=\"QLN5Pj\" name=\"outerKnob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/outerKnob.png\"/>\r\n"
 "        <FILE id=\"g4nzIP\" name=\"overknob.png\" compile=\"0\" resource=\"1\" file=\"resources/img/overknob.png\"/>\r\n"
 "      </GROUP>\r\n"
@@ -14079,7 +14087,7 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0x6bf5ee41:  numBytes = 190; return install_linux_deps_sh;
         case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
         case 0x40c27d68:  numBytes = 1241; return AGENTS_md;
-        case 0x90e15cf5:  numBytes = 6405; return CMakeLists_txt;
+        case 0x90e15cf5:  numBytes = 6675; return CMakeLists_txt;
         case 0x7daaf120:  numBytes = 20234; return NeuroCore_jucer;
         case 0x64791dc8:  numBytes = 5874; return README_md;
         default: break;
@@ -14116,7 +14124,7 @@ const char* originalFilenames[] =
     "apex.otf",
     "innerknob.png",
     "warning.png",
-    "knob lights.png",
+    "knob_lights.png",
     "outerKnob.png",
     "overknob.png",
     "de.txt",
