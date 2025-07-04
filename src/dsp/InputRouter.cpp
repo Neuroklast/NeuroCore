@@ -48,18 +48,23 @@ void InputRouter::process(const juce::dsp::ProcessContextReplacing<SampleType>& 
     auto* left  = block.getChannelPointer(0);
     auto* right = block.getChannelPointer(1);
 
+    std::vector<SampleType> wl0(numSamples), wr0(numSamples),
+        wl1(numSamples), wr1(numSamples);
+
     for (size_t i = 0; i < numSamples; ++i)
     {
-        auto wl0 = weights[0][0].getNextValue();
-        auto wr0 = weights[0][1].getNextValue();
-        auto wl1 = weights[1][0].getNextValue();
-        auto wr1 = weights[1][1].getNextValue();
+        wl0[i] = weights[0][0].getNextValue();
+        wr0[i] = weights[0][1].getNextValue();
+        wl1[i] = weights[1][0].getNextValue();
+        wr1[i] = weights[1][1].getNextValue();
+    }
 
+    for (size_t i = 0; i < numSamples; ++i)
+    {
         auto l = left[i];
         auto r = right[i];
-
-        left[i]  = l * wl0 + r * wr0;
-        right[i] = l * wl1 + r * wr1;
+        left[i]  = l * wl0[i] + r * wr0[i];
+        right[i] = l * wl1[i] + r * wr1[i];
     }
 }
 

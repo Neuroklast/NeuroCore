@@ -27,14 +27,17 @@ void InputGain::process (const juce::dsp::ProcessContextReplacing<SampleType>& c
         return;
 
     auto& block = context.getOutputBlock();
-    const size_t numSamples = block.getNumSamples();
+    const size_t numSamples  = block.getNumSamples();
+    const size_t numChannels = block.getNumChannels();
 
-    for (size_t sample = 0; sample < numSamples; ++sample)
-    {
-        auto g = smoothedGain.getNextValue();
-        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
-            block.getChannelPointer (ch)[sample] *= g;
-    }
+    std::vector<SampleType> gains(numSamples);
+    for (size_t i = 0; i < numSamples; ++i)
+        gains[i] = smoothedGain.getNextValue();
+
+    for (size_t ch = 0; ch < numChannels; ++ch)
+        juce::FloatVectorOperations::multiply(block.getChannelPointer(ch),
+                                              gains.data(),
+                                              static_cast<int>(numSamples));
 }
 
 void InputGain::setParameter (const std::string& id, float v)

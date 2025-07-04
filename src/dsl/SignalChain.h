@@ -99,6 +99,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Comp : Block
@@ -111,6 +112,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Env : Block
