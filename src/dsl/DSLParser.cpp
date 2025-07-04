@@ -190,3 +190,89 @@ bool DSLParser::parse(const juce::String& text,
 
     return true;
 }
+
+bool DSLParser::parseAST(const juce::String& text,
+                         Ast& ast,
+                         std::unordered_map<juce::String, juce::String>& paramAliases,
+                         std::vector<ParamDesc>& params,
+                         juce::String& error)
+{
+    std::vector<BlockDesc> blocks;
+    if (!parse(text, blocks, paramAliases, params, error))
+        return false;
+
+    ast.clear();
+    for (const auto& b : blocks)
+    {
+        if (b.type == "stage")
+        {
+            auto n = std::make_unique<StageNode>();
+            n->name = b.name;
+            auto it = b.args.find("y");
+            if (it != b.args.end())
+                n->formula = it->second;
+            ast.push_back(std::move(n));
+        }
+        else if (b.type == "filter")
+        {
+            auto n = std::make_unique<FilterNode>();
+            n->name = b.name;
+            n->type = b.args.count("type") ? b.args.at("type") : juce::String("lowpass");
+            n->args = b.args;
+            ast.push_back(std::move(n));
+        }
+        else if (b.type == "osc")
+        {
+            auto n = std::make_unique<OscNode>();
+            n->name = b.name;
+            n->shape = b.args.count("shape") ? b.args.at("shape") : juce::String("sine");
+            n->args = b.args;
+            ast.push_back(std::move(n));
+        }
+        else if (b.type == "comp")
+        {
+            auto n = std::make_unique<CompNode>();
+            n->name = b.name;
+            n->args = b.args;
+            ast.push_back(std::move(n));
+        }
+        else if (b.type == "env")
+        {
+            auto n = std::make_unique<EnvNode>();
+            n->name = b.name;
+            n->mode = b.args.count("type") ? b.args.at("type") : juce::String("rms");
+            n->args = b.args;
+            ast.push_back(std::move(n));
+        }
+    }
+
+    return true;
+}
+
+void DSLParser::astToIR(const Ast& ast, std::vector<BlockDesc>& blocks)
+{
+    blocks.clear();
+    for (const auto& node : ast)
+    {
+        if (auto* st = dynamic_cast<StageNode*>(node.get()))
+        {
+            BlockDesc d; d.type = "stage"; d.name = st->name; d.args["y"] = st->formula; blocks.push_back(std::move(d));
+        }
+        else if (auto* fi = dynamic_cast<FilterNode*>(node.get()))
+        {
+            BlockDesc d; d.type = "filter"; d.name = fi->name; d.args = fi->args; blocks.push_back(std::move(d));
+        }
+        else if (auto* oc = dynamic_cast<OscNode*>(node.get()))
+        {
+            BlockDesc d; d.type = "osc"; d.name = oc->name; d.args = oc->args; blocks.push_back(std::move(d));
+        }
+        else if (auto* co = dynamic_cast<CompNode*>(node.get()))
+        {
+            BlockDesc d; d.type = "comp"; d.name = co->name; d.args = co->args; blocks.push_back(std::move(d));
+        }
+        else if (auto* en = dynamic_cast<EnvNode*>(node.get()))
+        {
+            BlockDesc d; d.type = "env"; d.name = en->name; d.args = en->args; blocks.push_back(std::move(d));
+        }
+    }
+}
