@@ -20,6 +20,7 @@ ValidationContentComponent::ValidationContentComponent(NeuroCoreAudioProcessor& 
     messageLabel.setText("Validating...", juce::dontSendNotification);
     statsLabel.setJustificationType(juce::Justification::centred);
     statsLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+	progressBar.setColours(juce::Colours::black, juce::Colours::red);
 
     startTimerHz(30);
     startTest();
