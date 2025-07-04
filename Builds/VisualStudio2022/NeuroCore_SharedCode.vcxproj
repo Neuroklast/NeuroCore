@@ -3108,6 +3108,7 @@
     <ClInclude Include="..\..\src\core\Config.h"/>
     <ClInclude Include="..\..\src\core\EffectParameters.h"/>
     <ClInclude Include="..\..\src\core\PluginProcessor.h"/>
+    <ClInclude Include="..\..\src\dsl\AST.h"/>
     <ClInclude Include="..\..\src\dsl\DSLParser.h"/>
     <ClInclude Include="..\..\src\dsl\SignalChain.h"/>
     <ClInclude Include="..\..\src\dsp\AdvancedOscillatorWrapper.h"/>
@@ -4560,9 +4561,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\fonts\apex.otf"/>
+    <None Include="..\..\resources\img\knob lights.png"/>
     <None Include="..\..\resources\img\innerknob.png"/>
     <None Include="..\..\resources\img\warning.png"/>
-    <None Include="..\..\resources\img\knob lights.png"/>
     <None Include="..\..\resources\img\outerKnob.png"/>
     <None Include="..\..\resources\img\overknob.png"/>
     <None Include="..\..\resources\locale\de.txt"/>

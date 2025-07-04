@@ -11,14 +11,14 @@ namespace BinaryData
     extern const char*   apex_otf;
     const int            apex_otfSize = 7932;
 
+    extern const char*   knob_lights_png;
+    const int            knob_lights_pngSize = 95148;
+
     extern const char*   innerknob_png;
     const int            innerknob_pngSize = 286936;
 
     extern const char*   warning_png;
     const int            warning_pngSize = 116792;
-
-    extern const char*   knob_lights_png;
-    const int            knob_lights_pngSize = 95148;
 
     extern const char*   outerKnob_png;
     const int            outerKnob_pngSize = 79433;
@@ -54,10 +54,10 @@ namespace BinaryData
     const int            AGENTS_mdSize = 1241;
 
     extern const char*   CMakeLists_txt;
-    const int            CMakeLists_txtSize = 6675;
+    const int            CMakeLists_txtSize = 6405;
 
     extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 20234;
+    const int            NeuroCore_jucerSize = 20322;
 
     extern const char*   README_md;
     const int            README_mdSize = 5874;
