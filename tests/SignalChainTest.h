@@ -127,6 +127,31 @@ public:
                 expect(std::isfinite(buf.getSample(0,i)));
             }
         }
+
+        beginTest("Variable refs update after parameter change");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            juce::String sc = "param a = gain\n"
+                              "stage1: y = gain * x\n"
+                              "filter1: cutoff = map(gain,0,1,500,5000)\n"
+                              "comp1: threshold = gain";
+            expect(c.loadScript(sc, e));
+            expect(e.isEmpty());
+            c.prepare(spec);
+            c.setValueTreeState(nullptr);
+            juce::AudioBuffer<float> buf(1,1);
+            buf.setSample(0,0,1.0f);
+            c.setParameter(0, 0.0f);
+            c.processBlock(buf);
+            float out1 = buf.getSample(0,0);
+            buf.setSample(0,0,1.0f);
+            c.setParameter(0, 1.0f);
+            c.processBlock(buf);
+            float out2 = buf.getSample(0,0);
+            expect(std::isfinite(out1));
+            expect(out1 != out2);
+        }
     }
 };
 

@@ -521,10 +521,38 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     resSm.reset(sampleRate, Config::kSmoothingTime);
     cutoffSm.setCurrentAndTargetValue(cutoff.evaluate(0.f));
     resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
-    varNames.clear();
+    cutoffRefs.clear();
+    resRefs.clear();
+    centerRefs.clear();
+    widthRefs.clear();
+    lowRefs.clear();
+    highRefs.clear();
+    xPrevPtr = yPrevPtr = xPtr = yPtr = nullptr;
+
     if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    {
+        xPrevPtr = &(*varPtr)["x_prev"];
+        yPrevPtr = &(*varPtr)["y_prev"];
+        xPtr     = &(*varPtr)["x"];
+        yPtr     = &(*varPtr)["y"];
+
+        auto fill = [this](ExpressionEvaluator& ev, std::vector<VarRef>& refs)
+        {
+            for (auto& kv : *varPtr)
+            {
+                auto idx = ev.getVariableIndex(kv.first.toStdString());
+                if (idx != ExpressionEvaluator::invalidIndex)
+                    refs.push_back({ &kv.second, idx });
+            }
+        };
+
+        fill(cutoff,   cutoffRefs);
+        fill(resonance,resRefs);
+        fill(center,   centerRefs);
+        fill(width,    widthRefs);
+        fill(lowcut,   lowRefs);
+        fill(highcut,  highRefs);
+    }
 }
 
 float SignalChain::Filter::process(int ch, float x)
@@ -535,19 +563,16 @@ float SignalChain::Filter::process(int ch, float x)
     if (ch >= channels)
         return x;
 
-    (*varPtr)["x_prev"] = xPrev[ch];
-    (*varPtr)["y_prev"] = yPrev[ch];
-    (*varPtr)["x"] = x;
+    if (xPrevPtr) *xPrevPtr = xPrev[ch];
+    if (yPrevPtr) *yPrevPtr = yPrev[ch];
+    if (xPtr)     *xPtr     = x;
 
-    for (const auto& n : varNames)
-    {
-        cutoff.setVariable(n.second, (*varPtr)[n.first]);
-        resonance.setVariable(n.second, (*varPtr)[n.first]);
-        center.setVariable(n.second, (*varPtr)[n.first]);
-        width.setVariable(n.second, (*varPtr)[n.first]);
-        lowcut.setVariable(n.second, (*varPtr)[n.first]);
-        highcut.setVariable(n.second, (*varPtr)[n.first]);
-    }
+    for (const auto& vr : cutoffRefs)   cutoff.setVariable(vr.index, *vr.value);
+    for (const auto& vr : resRefs)      resonance.setVariable(vr.index, *vr.value);
+    for (const auto& vr : centerRefs)   center.setVariable(vr.index, *vr.value);
+    for (const auto& vr : widthRefs)    width.setVariable(vr.index, *vr.value);
+    for (const auto& vr : lowRefs)      lowcut.setVariable(vr.index, *vr.value);
+    for (const auto& vr : highRefs)     highcut.setVariable(vr.index, *vr.value);
 
     float fc = cutoff.evaluate(x);
     float res = resonance.evaluate(x);
@@ -587,7 +612,7 @@ float SignalChain::Filter::process(int ch, float x)
     float y = filter.processSample(ch, x);
     xPrev[ch] = x;
     yPrev[ch] = y;
-    (*varPtr)["y"] = y;
+    if (yPtr) *yPtr = y;
     return y;
 }
 
@@ -610,20 +635,16 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
         {
             float x = data[i];
 
-            (*varPtr)["x_prev"] = prevX;
-            (*varPtr)["y_prev"] = prevY;
-            (*varPtr)["x"] = x;
+            if (xPrevPtr) *xPrevPtr = prevX;
+            if (yPrevPtr) *yPrevPtr = prevY;
+            if (xPtr)     *xPtr     = x;
 
-            for (const auto& n : varNames)
-            {
-                auto v = (*varPtr)[n.first];
-                cutoff.setVariable(n.second, v);
-                resonance.setVariable(n.second, v);
-                center.setVariable(n.second, v);
-                width.setVariable(n.second, v);
-                lowcut.setVariable(n.second, v);
-                highcut.setVariable(n.second, v);
-            }
+            for (const auto& vr : cutoffRefs)   cutoff.setVariable(vr.index, *vr.value);
+            for (const auto& vr : resRefs)      resonance.setVariable(vr.index, *vr.value);
+            for (const auto& vr : centerRefs)   center.setVariable(vr.index, *vr.value);
+            for (const auto& vr : widthRefs)    width.setVariable(vr.index, *vr.value);
+            for (const auto& vr : lowRefs)      lowcut.setVariable(vr.index, *vr.value);
+            for (const auto& vr : highRefs)     highcut.setVariable(vr.index, *vr.value);
 
             float fc = cutoff.evaluate(x);
             float res = resonance.evaluate(x);
@@ -663,7 +684,7 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
             float y = filter.processSample(ch, x);
             prevX = x;
             prevY = y;
-            (*varPtr)["y"] = y;
+            if (yPtr) *yPtr = y;
             data[i] = y;
         }
 
@@ -686,10 +707,29 @@ void SignalChain::Comp::prepare(const juce::dsp::ProcessSpec& spec)
     ratioSm.setCurrentAndTargetValue(ratio.evaluate(0.f));
     atkSm.setCurrentAndTargetValue(attack.evaluate(0.f));
     relSm.setCurrentAndTargetValue(release.evaluate(0.f));
-    varNames.clear();
+    thrRefs.clear();
+    ratioRefs.clear();
+    atkRefs.clear();
+    relRefs.clear();
+    yPtr = nullptr;
     if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    {
+        yPtr = &(*varPtr)["y"];
+        auto fill = [this](ExpressionEvaluator& ev, std::vector<VarRef>& refs)
+        {
+            for (auto& kv : *varPtr)
+            {
+                auto idx = ev.getVariableIndex(kv.first.toStdString());
+                if (idx != ExpressionEvaluator::invalidIndex)
+                    refs.push_back({ &kv.second, idx });
+            }
+        };
+
+        fill(threshold, thrRefs);
+        fill(ratio,    ratioRefs);
+        fill(attack,   atkRefs);
+        fill(release,  relRefs);
+    }
 }
 
 float SignalChain::Comp::process(int ch, float x)
@@ -700,14 +740,10 @@ float SignalChain::Comp::process(int ch, float x)
     if (ch >= channels)
         return x;
 
-    for (const auto& n : varNames)
-    {
-        auto v = (*varPtr)[n.first];
-        threshold.setVariable(n.second, v);
-        ratio.setVariable(n.second, v);
-        attack.setVariable(n.second, v);
-        release.setVariable(n.second, v);
-    }
+    for (const auto& vr : thrRefs)   threshold.setVariable(vr.index, *vr.value);
+    for (const auto& vr : ratioRefs) ratio.setVariable(vr.index, *vr.value);
+    for (const auto& vr : atkRefs)   attack.setVariable(vr.index, *vr.value);
+    for (const auto& vr : relRefs)   release.setVariable(vr.index, *vr.value);
 
     thrSm.setTargetValue(threshold.evaluate(x));
     ratioSm.setTargetValue(ratio.evaluate(x));
@@ -720,7 +756,7 @@ float SignalChain::Comp::process(int ch, float x)
     comp.setRelease(relSm.getNextValue());
 
     float y = comp.processSample(ch, x);
-    (*varPtr)["y"] = y;
+    if (yPtr) *yPtr = y;
     return y;
 }
 
@@ -741,14 +777,10 @@ void SignalChain::Comp::processBlock(juce::AudioBuffer<float>& buffer)
         {
             float x = data[i];
 
-            for (const auto& n : varNames)
-            {
-                auto v = (*varPtr)[n.first];
-                threshold.setVariable(n.second, v);
-                ratio.setVariable(n.second, v);
-                attack.setVariable(n.second, v);
-                release.setVariable(n.second, v);
-            }
+            for (const auto& vr : thrRefs)   threshold.setVariable(vr.index, *vr.value);
+            for (const auto& vr : ratioRefs) ratio.setVariable(vr.index, *vr.value);
+            for (const auto& vr : atkRefs)   attack.setVariable(vr.index, *vr.value);
+            for (const auto& vr : relRefs)   release.setVariable(vr.index, *vr.value);
 
             thrSm.setTargetValue(threshold.evaluate(x));
             ratioSm.setTargetValue(ratio.evaluate(x));
@@ -761,7 +793,7 @@ void SignalChain::Comp::processBlock(juce::AudioBuffer<float>& buffer)
             comp.setRelease(relSm.getNextValue());
 
             float y = comp.processSample(ch, x);
-            (*varPtr)["y"] = y;
+            if (yPtr) *yPtr = y;
             data[i] = y;
         }
     }
@@ -782,10 +814,24 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     prevRel = initRel;
     atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
-    varNames.clear();
+    atkRefs.clear();
+    relRefs.clear();
+    valuePtr = nullptr;
     if (varPtr)
-        for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+    {
+        valuePtr = &(*varPtr)[name];
+        auto fill = [this](ExpressionEvaluator& ev, std::vector<VarRef>& refs)
+        {
+            for (auto& kv : *varPtr)
+            {
+                auto idx = ev.getVariableIndex(kv.first.toStdString());
+                if (idx != ExpressionEvaluator::invalidIndex)
+                    refs.push_back({ &kv.second, idx });
+            }
+        };
+        fill(attack, atkRefs);
+        fill(release, relRefs);
+    }
 }
 
 float SignalChain::Env::process(int ch, float x)
@@ -793,11 +839,8 @@ float SignalChain::Env::process(int ch, float x)
     if (!varPtr || ch >= static_cast<int>(value.size()))
         return x;
 
-    for (const auto& n : varNames)
-    {
-        attack.setVariable(n.second, (*varPtr)[n.first]);
-        release.setVariable(n.second, (*varPtr)[n.first]);
-    }
+    for (const auto& vr : atkRefs) attack.setVariable(vr.index, *vr.value);
+    for (const auto& vr : relRefs) release.setVariable(vr.index, *vr.value);
 
     atkTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, attack.evaluate(x)));
     relTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, release.evaluate(x)));
@@ -824,7 +867,7 @@ float SignalChain::Env::process(int ch, float x)
     if (mode == Rms)
         out = std::sqrt(out);
     value[ch] = out;
-    (*varPtr)[name] = out;
+    if (valuePtr) *valuePtr = out;
     return x;
 }
 
