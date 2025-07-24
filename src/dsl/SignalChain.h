@@ -95,7 +95,12 @@ private:
         int channels{1};
         std::vector<float> xPrev, yPrev;
         juce::SmoothedValue<float> cutoffSm, resSm;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        struct VarRef { float* value; size_t index; };
+        std::vector<VarRef> cutoffRefs, resRefs, centerRefs, widthRefs, lowRefs, highRefs;
+        float* xPrevPtr{nullptr};
+        float* yPrevPtr{nullptr};
+        float* xPtr{nullptr};
+        float* yPtr{nullptr};
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
@@ -108,7 +113,9 @@ private:
         ExpressionEvaluator threshold, ratio, attack, release;
         juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm;
         int channels{1};
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        struct VarRef { float* value; size_t index; };
+        std::vector<VarRef> thrRefs, ratioRefs, atkRefs, relRefs;
+        float* yPtr{nullptr};
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
@@ -126,7 +133,9 @@ private:
         float atkCoeff{0.0f}, relCoeff{0.0f};
         float prevAtk{0.0f}, prevRel{0.0f};
         std::vector<float> value;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        struct VarRef { float* value; size_t index; };
+        std::vector<VarRef> atkRefs, relRefs;
+        float* valuePtr{nullptr};
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
