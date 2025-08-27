@@ -190,3 +190,208 @@ bool DSLParser::parse(const juce::String& text,
 
     return true;
 }
+
+bool DSLParser::checkSyntax(const juce::String& text, std::vector<SyntaxError>& errors)
+{
+    errors.clear();
+    
+    juce::StringArray lines;
+    lines.addLines(text);
+    
+    bool parsingParams = true;
+    juce::StringArray seenIds;
+    
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        auto line = lines[i].trim();
+        if (line.isEmpty())
+            continue;
+        if (line.startsWithChar('#') || line.startsWith("//"))
+            continue;
+            
+        // Check for parameter declarations
+        if (line.startsWithIgnoreCase("param"))
+        {
+            if (!parsingParams)
+            {
+                addSyntaxError(errors, i + 1, 1, 5, 
+                             "Parameter declarations must appear before blocks", 
+                             SyntaxError::Error);
+                continue;
+            }
+            
+            if (!validateParamSyntax(line, i + 1, errors))
+                continue;
+        }
+        else
+        {
+            parsingParams = false;
+            
+            if (!validateBlockSyntax(line, i + 1, errors))
+                continue;
+                
+            // Check for duplicate block names
+            auto colon = line.indexOfChar(':');
+            if (colon > 0)
+            {
+                auto id = line.substring(0, colon).trim().toLowerCase();
+                if (seenIds.contains(id))
+                {
+                    addSyntaxError(errors, i + 1, 1, colon,
+                                 "Duplicate block name: " + id,
+                                 SyntaxError::Error);
+                }
+                else
+                {
+                    seenIds.add(id);
+                }
+            }
+        }
+    }
+    
+    return errors.empty();
+}
+
+void DSLParser::addSyntaxError(std::vector<SyntaxError>& errors, int line, int column, 
+                              int length, const juce::String& message, 
+                              SyntaxError::Severity severity)
+{
+    SyntaxError error;
+    error.line = line;
+    error.column = column;
+    error.length = length;
+    error.message = message;
+    error.severity = severity;
+    errors.push_back(error);
+}
+
+bool DSLParser::validateBlockSyntax(const juce::String& line, int lineNumber, std::vector<SyntaxError>& errors)
+{
+    auto colon = line.indexOfChar(':');
+    if (colon < 0)
+    {
+        addSyntaxError(errors, lineNumber, 1, line.length(),
+                     "Missing ':' - block declarations must be in format 'name: type arg1=val1 arg2=val2'",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    auto id = line.substring(0, colon).trim();
+    auto rest = line.substring(colon + 1).trim();
+    
+    if (id.isEmpty())
+    {
+        addSyntaxError(errors, lineNumber, 1, colon,
+                     "Empty block name",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    // Check for valid block types
+    auto type = id.retainCharacters("abcdefghijklmnopqrstuvwxyz").toLowerCase();
+    juce::StringArray validTypes = { "stage", "filter", "comp", "env", "osc", "hpf", "hp", "highpass", 
+                                    "lpf", "lp", "lowpass", "bpf", "bp", "bandpass" };
+    
+    if (!validTypes.contains(type))
+    {
+        addSyntaxError(errors, lineNumber, 1, id.length(),
+                     "Unknown block type: " + type + ". Valid types: " + validTypes.joinIntoString(", "),
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    // Parse and validate arguments
+    juce::StringArray args;
+    args.addTokens(rest, " \t", "");
+    
+    for (auto& arg : args)
+    {
+        if (arg.trim().isEmpty()) continue;
+        
+        auto eq = arg.indexOfChar('=');
+        if (eq <= 0)
+        {
+            int argStart = line.indexOf(arg);
+            addSyntaxError(errors, lineNumber, argStart + 1, arg.length(),
+                         "Invalid argument format. Expected 'key=value', got: " + arg,
+                         SyntaxError::Error);
+            return false;
+        }
+        
+        auto key = arg.substring(0, eq).trim();
+        auto value = arg.substring(eq + 1).trim();
+        
+        if (key.isEmpty())
+        {
+            int argStart = line.indexOf(arg);
+            addSyntaxError(errors, lineNumber, argStart + 1, eq,
+                         "Empty argument name",
+                         SyntaxError::Error);
+            return false;
+        }
+        
+        if (value.isEmpty())
+        {
+            int argStart = line.indexOf(arg) + eq + 1;
+            addSyntaxError(errors, lineNumber, argStart + 1, 1,
+                         "Empty argument value for: " + key,
+                         SyntaxError::Warning);
+        }
+    }
+    
+    return true;
+}
+
+bool DSLParser::validateParamSyntax(const juce::String& line, int lineNumber, std::vector<SyntaxError>& errors)
+{
+    auto eqPos = line.indexOfChar('=');
+    if (eqPos < 0)
+    {
+        addSyntaxError(errors, lineNumber, 1, line.length(),
+                     "Parameter declaration missing '='. Format: param x = Name [min max]",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    auto sym = line.substring(5, eqPos).trim(); // Skip "param"
+    auto rest = line.substring(eqPos + 1).trim();
+    
+    if (sym.isEmpty())
+    {
+        addSyntaxError(errors, lineNumber, 6, eqPos - 5,
+                     "Missing parameter symbol",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    if (sym.length() != 1 || !juce::CharacterFunctions::isLetter(sym[0]))
+    {
+        int symStart = line.indexOf(sym);
+        addSyntaxError(errors, lineNumber, symStart + 1, sym.length(),
+                     "Parameter symbol must be a single letter",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    auto namePart = rest.upToFirstOccurrenceOf("[", false, false).trim();
+    if (namePart.isEmpty())
+    {
+        int nameStart = line.indexOf(rest);
+        addSyntaxError(errors, lineNumber, nameStart + 1, 1,
+                     "Missing parameter name",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    // Check for range specification
+    if (rest.contains("[") && !rest.contains("]"))
+    {
+        int bracketPos = line.indexOf("[");
+        addSyntaxError(errors, lineNumber, bracketPos + 1, 1,
+                     "Unclosed range bracket",
+                     SyntaxError::Error);
+        return false;
+    }
+    
+    return true;
+}

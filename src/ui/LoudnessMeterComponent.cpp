@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "LoudnessMeterComponent.h"
 #include "../utils/Localiser.h"
+#include "../utils/OpenGLErrorHandler.h"
 
 LoudnessMeterComponent::LoudnessMeterComponent(NeuroCoreAudioProcessor& proc)
     : processor(proc)
@@ -93,16 +94,26 @@ void LoudnessMeterComponent::mouseDown(const juce::MouseEvent& e)
 void LoudnessMeterComponent::newOpenGLContextCreated()
 {
     using namespace juce::gl;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_DEBUG_OUTPUT);
+    
+    // Clear any existing errors before we start
+    OpenGLErrorHandler::clearErrors();
+    
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_PROJECTION));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0));
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_MODELVIEW));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glDisable(GL_DEBUG_OUTPUT));
+    
+    // Verify the context was set up successfully
+    NEUROCORE_CHECK_OPENGL_ERROR("LoudnessMeterComponent OpenGL context creation");
 }
 
 void LoudnessMeterComponent::renderOpenGL()
 {
+    // Clear any errors from previous frame at start
+    OpenGLErrorHandler::clearErrors();
+    
     juce::OpenGLHelpers::clear(juce::Colours::black);
     auto bounds = getLocalBounds().toFloat();
     constexpr float labelWidth = Config::kLoudnessLabelWidth;
@@ -112,36 +123,39 @@ void LoudnessMeterComponent::renderOpenGL()
     auto info = currentScaleInfo();
 
     using namespace juce::gl;
-    glViewport(0, 0, getWidth(), getHeight());
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    NEUROCORE_OPENGL_CALL(glViewport(0, 0, getWidth(), getHeight()));
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_PROJECTION));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0));
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_MODELVIEW));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
 
     // meter background
-    glColor3f(0.2f, 0.2f, 0.2f);
-    glBegin(GL_QUADS);
+    NEUROCORE_OPENGL_CALL(glColor3f(0.2f, 0.2f, 0.2f));
+    NEUROCORE_OPENGL_CALL(glBegin(GL_QUADS));
     glVertex2f(meterArea.getX(), meterArea.getY());
     glVertex2f(meterArea.getRight(), meterArea.getY());
     glVertex2f(meterArea.getRight(), meterArea.getBottom());
     glVertex2f(meterArea.getX(), meterArea.getBottom());
-    glEnd();
+    NEUROCORE_OPENGL_CALL(glEnd());
 
     // filled level
     loudness = smoothedLoudness.getNextValue();
     float yLevel = valueToY(loudness, meterArea);
-    glColor3f(limiter ? 1.0f : 0.0f, limiter ? 0.0f : 1.0f, 0.0f);
-    glBegin(GL_QUADS);
+    NEUROCORE_OPENGL_CALL(glColor3f(limiter ? 1.0f : 0.0f, limiter ? 0.0f : 1.0f, 0.0f));
+    NEUROCORE_OPENGL_CALL(glBegin(GL_QUADS));
     glVertex2f(meterArea.getX(), yLevel);
     glVertex2f(meterArea.getRight(), yLevel);
     glVertex2f(meterArea.getRight(), meterArea.getBottom());
     glVertex2f(meterArea.getX(), meterArea.getBottom());
-    glEnd();
+    NEUROCORE_OPENGL_CALL(glEnd());
 
     // grid lines
-    glColor3f(0.6f, 0.6f, 0.6f);
-    glLineWidth(1.0f);
+    NEUROCORE_OPENGL_CALL(glColor3f(0.6f, 0.6f, 0.6f));
+    NEUROCORE_OPENGL_CALL(glLineWidth(1.0f));
+    
+    // Performance critical section - disable error checking temporarily for loop
+    NEUROCORE_OPENGL_DISABLE_CHECKING();
     for (float db = info.minDb; db <= info.maxDb; db += info.step)
     {
         float y = valueToY(db, meterArea);
@@ -150,6 +164,10 @@ void LoudnessMeterComponent::renderOpenGL()
         glVertex2f(meterArea.getRight(), y);
         glEnd();
     }
+    
+    // Re-enable error checking and verify rendering completed successfully
+    NEUROCORE_OPENGL_RESTORE_CHECKING();
+    NEUROCORE_CHECK_OPENGL_ERROR("LoudnessMeterComponent rendering");
 
     // LED
     // all text and LED are drawn in paint()

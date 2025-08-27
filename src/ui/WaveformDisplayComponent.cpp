@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "../dsp/DSPUtils.h"
 #include "../utils/Localiser.h"
+#include "../utils/OpenGLErrorHandler.h"
 #include <juce_opengl/juce_opengl.h>
 #if JUCE_WINDOWS
 #include <GL/gl.h>
@@ -229,20 +230,29 @@ void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
 void WaveformDisplayComponent::newOpenGLContextCreated()
 {
 	using namespace juce::gl;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_DEBUG_OUTPUT);
+    
+    // Clear any existing errors before we start
+    OpenGLErrorHandler::clearErrors();
+    
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_PROJECTION));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0));
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_MODELVIEW));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glDisable(GL_DEBUG_OUTPUT));
 
-
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    NEUROCORE_OPENGL_CALL(glEnable(GL_LINE_SMOOTH));
+    NEUROCORE_OPENGL_CALL(glHint(GL_LINE_SMOOTH_HINT, GL_NICEST));
+    
+    // Verify the context was set up successfully
+    NEUROCORE_CHECK_OPENGL_ERROR("WaveformDisplayComponent OpenGL context creation");
 }
 
 void WaveformDisplayComponent::renderOpenGL()
 {
+    // Clear any errors from previous frame at start
+    OpenGLErrorHandler::clearErrors();
+    
     juce::OpenGLHelpers::clear(juce::Colours::transparentBlack);
     auto area = getLocalBounds().toFloat()
                     .withTrimmedLeft(60.0f)
@@ -252,14 +262,18 @@ void WaveformDisplayComponent::renderOpenGL()
 
     auto scale = openGLContext.getRenderingScale();
     using namespace juce::gl;
-    glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
+    
+    NEUROCORE_OPENGL_CALL(glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale)));
 
-    glLineWidth(lineThickness);
-    glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), 0.7f);
+    NEUROCORE_OPENGL_CALL(glLineWidth(lineThickness));
+    NEUROCORE_OPENGL_CALL(glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), 0.7f));
 
     int total = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
     int num   = juce::jlimit(1, total, static_cast<int>(total / zoom));
 
+    // Performance critical section - disable error checking temporarily for vertex operations
+    NEUROCORE_OPENGL_DISABLE_CHECKING();
+    
     for (int pass = 1; pass >= 0; --pass)
     {
         float alpha = 0.2f + 0.2f * pass;
@@ -280,6 +294,10 @@ void WaveformDisplayComponent::renderOpenGL()
         }
         glEnd();
     }
+    
+    // Re-enable error checking and verify rendering completed successfully
+    NEUROCORE_OPENGL_RESTORE_CHECKING();
+    NEUROCORE_CHECK_OPENGL_ERROR("WaveformDisplayComponent rendering");
 }
 
 void WaveformDisplayComponent::drawAxes(juce::Graphics& g)

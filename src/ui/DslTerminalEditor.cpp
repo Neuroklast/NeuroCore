@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "DslTerminalEditor.h"
 #include "../utils/FormulaHelper.h"
+#include "../utils/OpenGLErrorHandler.h"
 
 using namespace juce;
 
@@ -196,11 +197,32 @@ void DslTerminalEditor::resized()
 
 void DslTerminalEditor::newOpenGLContextCreated()
 {
+    // Clear any existing errors before we start
+    OpenGLErrorHandler::clearErrors();
+    
+    // Basic OpenGL setup for terminal editor
+    using namespace juce::gl;
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_PROJECTION));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0));
+    NEUROCORE_OPENGL_CALL(glMatrixMode(GL_MODELVIEW));
+    NEUROCORE_OPENGL_CALL(glLoadIdentity());
+    NEUROCORE_OPENGL_CALL(glDisable(GL_DEBUG_OUTPUT));
+    
+    // Verify the context was set up successfully
+    NEUROCORE_CHECK_OPENGL_ERROR("DslTerminalEditor OpenGL context creation");
 }
 
 void DslTerminalEditor::renderOpenGL()
 {
+    // Clear any errors from previous frame at start
+    OpenGLErrorHandler::clearErrors();
+    
     juce::OpenGLHelpers::clear(juce::Colours::black);
+    
+    // Terminal editor uses minimal OpenGL rendering
+    // Most rendering is handled by the fallback editor component
+    NEUROCORE_CHECK_OPENGL_ERROR("DslTerminalEditor rendering");
 }
 
 void DslTerminalEditor::openGLContextClosing()

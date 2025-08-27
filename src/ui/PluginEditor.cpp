@@ -518,6 +518,9 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
 
     auto content = std::make_unique<ValidationContentComponent>(audioProcessor, expr);
     auto* ptr = content.get();
+    
+    // Set to persist after save for analysis review
+    ptr->setPersistAfterSave(true);
 
     validationOverlay = std::make_unique<ModalOverlay>();
     validationOverlay->setMode(OverlayMode::Blocking);
@@ -525,23 +528,66 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->setContent(std::move(content));
     validationOverlay->show(*this);
 
-    ptr->onResult = [this, expr](bool stable)
+    ptr->onResult = [this, expr](ValidationContentComponent::ValidationResult result)
     {
-        validationOverlay.reset();
-        juce::String err;
-        if (audioProcessor.setFormula(expr, err))
+        switch (result)
         {
-            formulaInputEditor->setReadOnly(true);
-            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-            editSaveButton->setButtonText(TRANS("EditButton"));
-            editing = false;
-            errorLabel->setText({}, juce::dontSendNotification);
-            refreshParameterControls();
-        }
-        else
-        {
-            errorLabel->setText(err, juce::dontSendNotification);
+            case ValidationContentComponent::ValidationResult::Success:
+            case ValidationContentComponent::ValidationResult::UserProceed:
+            {
+                // Apply the code
+                juce::String err;
+                if (audioProcessor.setFormula(expr, err))
+                {
+                    formulaInputEditor->setReadOnly(true);
+                    formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                      juce::Colours::transparentBlack);
+                    editSaveButton->setButtonText(TRANS("EditButton"));
+                    editing = false;
+                    errorLabel->setText({}, juce::dontSendNotification);
+                    refreshParameterControls();
+                    
+                    // For successful validation, keep overlay open to show analysis
+                    if (result == ValidationContentComponent::ValidationResult::Success) {
+                        validationOverlay->setTitle("Validation Complete - Analysis Results");
+                        validationOverlay->setMode(OverlayMode::Closable);
+                        // Don't reset the overlay, let user close it manually
+                        return;
+                    }
+                }
+                else
+                {
+                    errorLabel->setText(err, juce::dontSendNotification);
+                }
+                validationOverlay.reset();
+                break;
+            }
+            
+            case ValidationContentComponent::ValidationResult::UserCancel:
+                // User chose to go back to editor - don't apply changes
+                validationOverlay.reset();
+                // Keep in editing mode
+                break;
+                
+            case ValidationContentComponent::ValidationResult::Stable:
+                // Legacy compatibility - treat as success
+                juce::String err;
+                if (audioProcessor.setFormula(expr, err))
+                {
+                    formulaInputEditor->setReadOnly(true);
+                    formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                      juce::Colours::transparentBlack);
+                    editSaveButton->setButtonText(TRANS("EditButton"));
+                    editing = false;
+                    errorLabel->setText({}, juce::dontSendNotification);
+                    refreshParameterControls();
+                }
+                else
+                {
+                    errorLabel->setText(err, juce::dontSendNotification);
+                }
+                validationOverlay.reset();
+                break;
         }
     };
 }
