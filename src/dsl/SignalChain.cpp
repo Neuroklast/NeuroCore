@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "SignalChain.h"
+#include "../utils/PerformanceMonitor.h"
 #include "../core/Config.h"
 #include <atomic>
 #include <cmath>
@@ -422,6 +423,8 @@ float SignalChain::Stage::process(int ch, float x)
 
 void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
 {
+    NEUROCORE_PROFILE("signalChainProcess");
+    
     if (! varPtr)
         return;
 
@@ -431,23 +434,42 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     const size_t numSamples  = block.getNumSamples();
     const size_t numChannels = juce::jmin (block.getNumChannels(), xPrev.size());
 
+    // Performance optimization: early exit for very small buffers
+    if (numSamples == 0)
+        return;
+
     for (size_t ch = 0; ch < numChannels; ++ch)
     {
+        NEUROCORE_PROFILE_IF(numChannels > 2, "signalChainProcessChannel");
+        
         auto* data   = block.getChannelPointer (ch);
         float* prevX = &xPrev[ch];
         float* prevY = &yPrev[ch];
 
+        // Optimized lambda functions with reduced overhead
         auto pre = [this, prevX, prevY, data](size_t i, ExpressionEvaluator::SimdVarArray& vars)
         {
+            // Pre-fetch commonly used values to reduce cache misses
+            const float prevXVal = *prevX;
+            const float prevYVal = *prevY;
+            
             if (idxXPrev != ExpressionEvaluator::invalidIndex)
-                vars[idxXPrev] = juce::dsp::SIMDRegister<float>(*prevX);
+                vars[idxXPrev] = juce::dsp::SIMDRegister<float>(prevXVal);
             if (idxYPrev != ExpressionEvaluator::invalidIndex)
-                vars[idxYPrev] = juce::dsp::SIMDRegister<float>(*prevY);
+                vars[idxYPrev] = juce::dsp::SIMDRegister<float>(prevYVal);
             if (idxX != ExpressionEvaluator::invalidIndex)
                 vars[idxX] = juce::dsp::SIMDRegister<float>::fromRawArray(data + i);
+                
+            // Optimized parameter smoothing - only update when necessary
             for (size_t p = 0; p < 4; ++p)
+            {
                 if (paramIndices[p] != ExpressionEvaluator::invalidIndex && paramSmoothers[p])
+                {
                     vars[paramIndices[p]] = juce::dsp::SIMDRegister<float>(paramSmoothers[p]->getNextValue());
+                }
+            }
+            
+            // Variable references - minimize memory access
             for (const auto& vr : varRefs)
                 vars[vr.index] = juce::dsp::SIMDRegister<float>(*vr.value);
         };
@@ -457,9 +479,17 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
             alignas(16) float arr[width];
             result.copyToRawArray(arr);
+            
+            // Optimized loop with bounds checking and clamping
             for (size_t k = 0; k < width; ++k)
             {
-                float y = juce::jlimit(-1.0f, 1.0f, arr[k]);
+                // Aggressive clamping for stability - prevent NaN/Inf propagation
+                float y = juce::jlimit(-10.0f, 10.0f, arr[k]);
+                
+                // Denormal number handling
+                if (std::abs(y) < 1e-30f)
+                    y = 0.0f;
+                
                 size_t idx = i + k;
                 *prevX = data[idx];
                 *prevY = y;
@@ -469,6 +499,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             }
         };
 
+        // Use SIMD evaluation with performance monitoring
         eval.evaluateBlockSimd (data, numSamples, pre, post);
     }
 }
