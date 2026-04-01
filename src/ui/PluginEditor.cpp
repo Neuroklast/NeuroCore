@@ -33,6 +33,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
+    setResizable(true, true);
+    setResizeLimits(600, 400, 1600, 1000);
+
 
     pluginNameLabel = std::make_unique<juce::Label>();
     pluginNameLabel->setText(juce::String(PLUGIN_NAME) + " v" + PLUGIN_VERSION,
@@ -100,6 +103,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             audioProcessor.apvts,
             paramId,
             audioProcessor.getVariableName(i));
+        paramComponents[i]->setMidiLearnManager(&audioProcessor.midiLearnManager);
         addAndMakeVisible(*paramComponents[i]);
 
         // 2.2) TextEditor für Alias-Name
@@ -190,6 +194,16 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     polisherAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         audioProcessor.apvts, EffectParameters::polisherMode, *polisherBox);
     addAndMakeVisible (*polisherBox);
+
+    oversamplingLabel = std::make_unique<juce::Label>("", TRANS("OversamplingLabel"));
+    oversamplingLabel->setMinimumHorizontalScale(1.0f);
+    addAndMakeVisible(*oversamplingLabel);
+
+    oversamplingBox = std::make_unique<juce::ComboBox>();
+    oversamplingBox->addItemList(juce::StringArray { "1x", "2x", "4x", "8x" }, 1);
+    oversamplingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.apvts, EffectParameters::oversampling, *oversamplingBox);
+    addAndMakeVisible(*oversamplingBox);
 
 
     inputGainValue  = std::make_unique<juce::Label>();
@@ -291,6 +305,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     header->addChild(makeLeaf(bypassButton.get(), 1.0f));
     header->addChild(makeLeaf(languageLabel.get(), 1.0f));
     header->addChild(makeLeaf(languageBox.get(), 1.0f));
+    header->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
+    header->addChild(makeLeaf(oversamplingBox.get(), 1.0f));
     layoutRoot->addChild(std::move(header));
 
 
@@ -391,6 +407,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
+    oversamplingAttachment.reset();
     presetOverlay.reset();
     functionsOverlay.reset();
     validationOverlay.reset();
@@ -440,6 +457,8 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
         helpButton->setButtonText(TRANS("HelpButton"));
+    if (oversamplingLabel)
+        oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
 }
 
 //==============================================================================
@@ -460,6 +479,34 @@ void NeuroCoreAudioProcessorEditor::resized()
         pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
         pluginNameLabel->setJustificationType(juce::Justification::centred);
     }
+}
+
+bool NeuroCoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)
+{
+    auto applyUndoRedo = [this](bool isUndo) -> bool
+    {
+        bool ok = isUndo ? audioProcessor.undo() : audioProcessor.redo();
+        if (ok)
+        {
+            formulaInputEditor->setText(audioProcessor.getScript());
+            refreshParameterControls();
+        }
+        return ok;
+    };
+
+    // Ctrl+Shift+Z / Cmd+Shift+Z → Redo (check before plain Ctrl+Z)
+    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+        return applyUndoRedo(false);
+
+    // Ctrl+Z / Cmd+Z → Undo
+    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier, 0))
+        return applyUndoRedo(true);
+
+    // Ctrl+Y / Cmd+Y → Redo (alternative)
+    if (key == juce::KeyPress('y', juce::ModifierKeys::commandModifier, 0))
+        return applyUndoRedo(false);
+
+    return false;
 }
 
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()

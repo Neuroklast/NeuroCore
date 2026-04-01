@@ -2,6 +2,7 @@
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
 #include "../../utils/Localiser.h"
+#include "../MidiLearnManager.h"
 
 using namespace juce;
 
@@ -153,12 +154,39 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
         menu.addItem (1, TRANS("Set Min"));
         menu.addItem (2, TRANS("Set Max"));
 
+        // MIDI Learn options
+        if (midiLearnMgr != nullptr)
+        {
+            menu.addSeparator();
+            int mappedCC = midiLearnMgr->getMappedCC(paramID);
+            if (mappedCC >= 0)
+            {
+                menu.addItem(3, "MIDI Learn (CC " + String(mappedCC) + ")");
+                menu.addItem(4, "MIDI Unlearn");
+            }
+            else
+            {
+                menu.addItem(3, "MIDI Learn");
+            }
+        }
+
         PopupMenu::Options opts;
         opts.withTargetComponent (this);
 
         menu.showMenuAsync (opts,
             [this] (int res)
             {
+                if (res == 3 && midiLearnMgr != nullptr)
+                {
+                    midiLearnMgr->startLearning(paramID);
+                    return;
+                }
+                if (res == 4 && midiLearnMgr != nullptr)
+                {
+                    midiLearnMgr->clearMappingForParam(paramID);
+                    return;
+                }
+
                 if (res != 1 && res != 2)
                     return;
 

@@ -280,11 +280,14 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
-void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& /*midiMessages*/)
+void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     const auto totalNumInputChannels  = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    // Process MIDI Learn CC mappings
+    midiLearnManager.processMidiMessages(midiMessages, apvts);
 
     if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
     if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)
@@ -470,6 +473,9 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto state = apvts.copyState();
     if (state.isValid())
     {
+        // Save MIDI Learn mappings into the state tree
+        state.addChild(midiLearnManager.getState(), -1, nullptr);
+
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
     }
@@ -479,11 +485,80 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 {
     std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
     if (xmlState.get() != nullptr)
+    {
         if (xmlState->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
+        {
+            auto tree = juce::ValueTree::fromXml (*xmlState);
+
+            // Restore MIDI Learn mappings
+            auto midiState = tree.getChildWithName("MidiLearnMappings");
+            if (midiState.isValid())
+            {
+                midiLearnManager.setState(midiState);
+                tree.removeChild(midiState, nullptr);
+            }
+
+            apvts.replaceState (tree);
+        }
+    }
 }
 
+// UndoableAction for formula changes supporting undo/redo
+class FormulaChangeAction : public juce::UndoableAction
+{
+public:
+    FormulaChangeAction(NeuroCoreAudioProcessor& proc,
+                        const juce::String& newScript,
+                        const juce::String& oldScript)
+        : processor(proc), newFormula(newScript), oldFormula(oldScript)
+    {}
+
+    bool perform() override
+    {
+        // perform() is called by UndoManager::perform() on first registration,
+        // and also when redoing. The formula is already applied on first call
+        // (setFormula calls applyFormula before registering), so we track that.
+        if (firstTime)
+        {
+            firstTime = false;
+            return true; // Already applied by setFormula()
+        }
+        juce::String err;
+        return processor.applyFormula(newFormula, err);
+    }
+
+    bool undo() override
+    {
+        juce::String err;
+        return processor.applyFormula(oldFormula, err);
+    }
+
+    int getSizeInUnits() override { return static_cast<int>(newFormula.length() + oldFormula.length()); }
+
+private:
+    NeuroCoreAudioProcessor& processor;
+    juce::String newFormula;
+    juce::String oldFormula;
+    bool firstTime { true };
+};
+
 bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String& error)
+{
+    // Save old script for undo before applying
+    juce::String oldScript = getScript();
+
+    // Apply the formula directly
+    if (applyFormula(text, error))
+    {
+        // Register the undo action (only if it actually changed)
+        if (oldScript != text)
+            undoManager.perform(new FormulaChangeAction(*this, text, oldScript), "Formula Change");
+        return true;
+    }
+    return false;
+}
+
+bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error)
 {
     dsl::DSLParser parser;
     std::vector<dsl::BlockDesc> blocks;

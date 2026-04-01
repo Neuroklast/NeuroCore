@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
+project(NeuroCore VERSION 0.2.0 LANGUAGES C CXX)
 
 if(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
@@ -78,6 +78,7 @@ set(SOURCE_FILES
     src/ui/custom/ProgressBarComponent.cpp
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
+    src/ui/MidiLearnManager.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -85,10 +86,10 @@ set(SOURCE_FILES
 juce_add_plugin(NeuroCore
     COMPANY_NAME "NEUROKLAST"
     IS_SYNTH FALSE
-    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
-    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    EDITOR_WANTS_KEYBOARD_FOCUS TRUE
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE NRKL
     PLUGIN_CODE NRCO
@@ -184,6 +185,7 @@ target_sources(NeuroCoreTests PRIVATE
     src/dsl/SignalChain.cpp
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseManager.cpp
+    src/ui/MidiLearnManager.cpp
     src/ui/WeightedLayout.cpp
 )
 

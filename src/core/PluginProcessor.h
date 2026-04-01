@@ -27,6 +27,7 @@
 #include "EffectParameters.h"
 #include "Config.h"
 #include "../licensing/LicenseManager.h"
+#include "../ui/MidiLearnManager.h"
 
 
 struct ValidationProgressInfo
@@ -86,11 +87,20 @@ public:
 
     // Updates signal chain script from the UI
     bool setFormula (const juce::String& text, juce::String& error);
+
+    /** Apply a formula without undo tracking (used by undo/redo actions). */
+    bool applyFormula (const juce::String& text, juce::String& error);
+
     juce::String getScript() const
     {
         const juce::SpinLock::ScopedLockType lock(variableLock);
         return dslScript;
     }
+
+    /** Undo the last formula change. */
+    bool undo() { return undoManager.undo(); }
+    /** Redo the last undone formula change. */
+    bool redo() { return undoManager.redo(); }
 
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept;
@@ -104,6 +114,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
+    MidiLearnManager midiLearnManager;
+    juce::UndoManager undoManager;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

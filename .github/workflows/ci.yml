@@ -16,36 +16,34 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Clone JUCE
         shell: bash
         run: |
-          git clone --depth 1 --branch 8.0.6 --recurse-submodules https://github.com/juce-framework/JUCE.git "$HOME/JUCE"
-
-      - name: Clone VST3 SDK
-        shell: bash
-        run: |
-          git clone --depth 1 https://github.com/steinbergmedia/vst3sdk.git vst3sdk
-          mkdir -p "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
-          cp -r vst3sdk/* "$HOME/JUCE/modules/juce_audio_processors/format_types/VST3_SDK"
-
-      - name: Build juceaide
-        shell: bash
-        run: |
-          cmake -S "$HOME/JUCE/extras/Build/juceaide" -B "$HOME/JUCE/juceaide_build" -DCMAKE_BUILD_TYPE=Release
-          cmake --build "$HOME/JUCE/juceaide_build" --config Release
-          echo "$HOME/JUCE/juceaide_build/juceaide_artefacts" >> "$GITHUB_PATH"
+          git clone --depth 1 --branch 8.0.6 --recurse-submodules https://github.com/juce-framework/JUCE.git "${{ github.workspace }}/juce_sdk"
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: bash scripts/install_linux_deps.sh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libgl1-mesa-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libasound2-dev \
+            libcurl4-openssl-dev \
+            pkg-config
 
       - name: Configure
         shell: bash
-        run: cmake -B build -S . -DJUCE_DIR="$HOME/JUCE"
+        run: cmake -B build -S . -DJUCE_DIR="${{ github.workspace }}/juce_sdk" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         shell: bash
@@ -59,6 +57,43 @@ jobs:
       - name: Run tests
         shell: bash
         run: ctest --test-dir build --output-on-failure
+
+      - name: Download pluginval (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip -o pluginval.zip
+          unzip -o pluginval.zip
+
+      - name: Download pluginval (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          curl -fsSL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip -o pluginval.zip
+          unzip -o pluginval.zip
+
+      - name: Download pluginval (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          curl -fsSL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip -o pluginval.zip
+          unzip -o pluginval.zip
+
+      - name: Validate VST3 (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x ./pluginval
+          ./pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
+
+      - name: Validate VST3 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x ./pluginval.app/Contents/MacOS/pluginval
+          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
+
+      - name: Validate VST3 (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          ./pluginval.exe --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
