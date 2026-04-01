@@ -533,7 +533,7 @@ public:
         return processor.applyFormula(oldFormula, err);
     }
 
-    int getSizeInUnits() override { return (int)(newFormula.length() + oldFormula.length()); }
+    int getSizeInUnits() override { return static_cast<int>(newFormula.length() + oldFormula.length()); }
 
 private:
     NeuroCoreAudioProcessor& processor;

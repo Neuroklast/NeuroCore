@@ -108,9 +108,8 @@ void MidiLearnManager::processMidiMessages(const juce::MidiBuffer& midiBuffer,
             // Assign the mapping and stop learning.
             juce::String param;
             {
-                const juce::SpinLock::ScopedTryLockType sl(lock);
-                if (sl.isLocked())
-                    param = learningParam;
+                const juce::SpinLock::ScopedLockType sl(lock);
+                param = learningParam;
             }
             if (param.isNotEmpty())
             {

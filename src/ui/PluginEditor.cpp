@@ -483,36 +483,29 @@ void NeuroCoreAudioProcessorEditor::resized()
 
 bool NeuroCoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)
 {
+    auto applyUndoRedo = [this](bool isUndo) -> bool
+    {
+        bool ok = isUndo ? audioProcessor.undo() : audioProcessor.redo();
+        if (ok)
+        {
+            formulaInputEditor->setText(audioProcessor.getScript());
+            refreshParameterControls();
+        }
+        return ok;
+    };
+
+    // Ctrl+Shift+Z / Cmd+Shift+Z → Redo (check before plain Ctrl+Z)
+    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+        return applyUndoRedo(false);
+
     // Ctrl+Z / Cmd+Z → Undo
     if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier, 0))
-    {
-        if (audioProcessor.undo())
-        {
-            formulaInputEditor->setText(audioProcessor.getScript());
-            refreshParameterControls();
-            return true;
-        }
-    }
-    // Ctrl+Shift+Z / Cmd+Shift+Z → Redo
-    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
-    {
-        if (audioProcessor.redo())
-        {
-            formulaInputEditor->setText(audioProcessor.getScript());
-            refreshParameterControls();
-            return true;
-        }
-    }
+        return applyUndoRedo(true);
+
     // Ctrl+Y / Cmd+Y → Redo (alternative)
     if (key == juce::KeyPress('y', juce::ModifierKeys::commandModifier, 0))
-    {
-        if (audioProcessor.redo())
-        {
-            formulaInputEditor->setText(audioProcessor.getScript());
-            refreshParameterControls();
-            return true;
-        }
-    }
+        return applyUndoRedo(false);
+
     return false;
 }
 
