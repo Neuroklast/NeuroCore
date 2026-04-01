@@ -1,5 +1,31 @@
 # AGENTS
 
+> **⚠️ WICHTIG FÜR JEDEN CODING-AGENT:**
+> 1. Lies zuerst **`docs/AGENT_WORKFLOW.md`** bevor du Code änderst
+> 2. Lies **`docs/DEVELOPMENT_STATUS.md`** um den aktuellen Entwicklungsstand zu verstehen
+> 3. Lies **`docs/LESSONS_LEARNED.md`** um bekannte Fallstricke zu beachten
+> 4. Aktualisiere **`docs/DEVELOPMENT_STATUS.md`** und **`docs/LESSONS_LEARNED.md`** am Ende jeder Session
+
+---
+
+## Dokumentation
+
+| Dokument | Beschreibung |
+|---|---|
+| [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md) | Verbindlicher Workflow für Coding-Agent-Sessions |
+| [`docs/DEVELOPMENT_STATUS.md`](docs/DEVELOPMENT_STATUS.md) | Aktueller Entwicklungsstand und Checklisten |
+| [`docs/LESSONS_LEARNED.md`](docs/LESSONS_LEARNED.md) | Erfahrungsspeicher aus allen Sessions |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architektur-Übersicht aller Module |
+| [`docs/DSL_REFERENCE.md`](docs/DSL_REFERENCE.md) | DSL-Sprachreferenz |
+| [`docs/ANALYSIS.md`](docs/ANALYSIS.md) | Code-Analyse: Bugs, Probleme, Lücken |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phasen-basierte Entwicklungs-Roadmap |
+| [`docs/UNIQUE_SELLING_POINTS.md`](docs/UNIQUE_SELLING_POINTS.md) | Alleinstellungsmerkmale |
+| [`docs/VISAGE_UI_INTEGRATION.md`](docs/VISAGE_UI_INTEGRATION.md) | VisageUI Integration Guide |
+
+---
+
+## Build & Setup
+
 Dieses Projekt basiert auf JUCE und benötigt wenige externe Abhängigkeiten.
 Die folgenden Schritte installieren alle benötigten Komponenten:
 
