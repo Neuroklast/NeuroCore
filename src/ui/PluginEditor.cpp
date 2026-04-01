@@ -103,6 +103,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             audioProcessor.apvts,
             paramId,
             audioProcessor.getVariableName(i));
+        paramComponents[i]->setMidiLearnManager(&audioProcessor.midiLearnManager);
         addAndMakeVisible(*paramComponents[i]);
 
         // 2.2) TextEditor für Alias-Name
@@ -478,6 +479,41 @@ void NeuroCoreAudioProcessorEditor::resized()
         pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
         pluginNameLabel->setJustificationType(juce::Justification::centred);
     }
+}
+
+bool NeuroCoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)
+{
+    // Ctrl+Z / Cmd+Z → Undo
+    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier, 0))
+    {
+        if (audioProcessor.undo())
+        {
+            formulaInputEditor->setText(audioProcessor.getScript());
+            refreshParameterControls();
+            return true;
+        }
+    }
+    // Ctrl+Shift+Z / Cmd+Shift+Z → Redo
+    if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+    {
+        if (audioProcessor.redo())
+        {
+            formulaInputEditor->setText(audioProcessor.getScript());
+            refreshParameterControls();
+            return true;
+        }
+    }
+    // Ctrl+Y / Cmd+Y → Redo (alternative)
+    if (key == juce::KeyPress('y', juce::ModifierKeys::commandModifier, 0))
+    {
+        if (audioProcessor.redo())
+        {
+            formulaInputEditor->setText(audioProcessor.getScript());
+            refreshParameterControls();
+            return true;
+        }
+    }
+    return false;
 }
 
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()

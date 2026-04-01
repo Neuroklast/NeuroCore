@@ -87,6 +87,10 @@ public:
 
     // Updates signal chain script from the UI
     bool setFormula (const juce::String& text, juce::String& error);
+
+    /** Apply a formula without undo tracking (used by undo/redo actions). */
+    bool applyFormula (const juce::String& text, juce::String& error);
+
     juce::String getScript() const
     {
         const juce::SpinLock::ScopedLockType lock(variableLock);

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <JuceHeader.h>
+
+class MidiLearnManager;
+
 namespace ui
 {
 
@@ -25,6 +28,9 @@ namespace ui
         void parameterChanged(const juce::String& id, float newValue) override;
         void setEnabled(bool shouldBeEnabled);
 
+        /** Set a MidiLearnManager to enable MIDI Learn in the right-click menu. */
+        void setMidiLearnManager(MidiLearnManager* mgr) { midiLearnMgr = mgr; }
+
     private:
         void updateLabel();
         void mouseUp(const juce::MouseEvent& event) override;
@@ -32,6 +38,7 @@ namespace ui
         juce::AudioProcessorValueTreeState& valueTreeState;
         juce::String                        paramID;
         juce::String                        aliasName;
+        MidiLearnManager*                   midiLearnMgr { nullptr };
 
         juce::Slider slider;
         juce::Label  nameLabel;
