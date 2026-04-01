@@ -33,6 +33,9 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
 
+    setResizable(true, true);
+    setResizeLimits(600, 400, 1600, 1000);
+
 
     pluginNameLabel = std::make_unique<juce::Label>();
     pluginNameLabel->setText(juce::String(PLUGIN_NAME) + " v" + PLUGIN_VERSION,
@@ -191,6 +194,16 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         audioProcessor.apvts, EffectParameters::polisherMode, *polisherBox);
     addAndMakeVisible (*polisherBox);
 
+    oversamplingLabel = std::make_unique<juce::Label>("", TRANS("OversamplingLabel"));
+    oversamplingLabel->setMinimumHorizontalScale(1.0f);
+    addAndMakeVisible(*oversamplingLabel);
+
+    oversamplingBox = std::make_unique<juce::ComboBox>();
+    oversamplingBox->addItemList(juce::StringArray { "1x", "2x", "4x", "8x" }, 1);
+    oversamplingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.apvts, EffectParameters::oversampling, *oversamplingBox);
+    addAndMakeVisible(*oversamplingBox);
+
 
     inputGainValue  = std::make_unique<juce::Label>();
     mixValue        = std::make_unique<juce::Label>();
@@ -291,6 +304,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     header->addChild(makeLeaf(bypassButton.get(), 1.0f));
     header->addChild(makeLeaf(languageLabel.get(), 1.0f));
     header->addChild(makeLeaf(languageBox.get(), 1.0f));
+    header->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
+    header->addChild(makeLeaf(oversamplingBox.get(), 1.0f));
     layoutRoot->addChild(std::move(header));
 
 
@@ -391,6 +406,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
+    oversamplingAttachment.reset();
     presetOverlay.reset();
     functionsOverlay.reset();
     validationOverlay.reset();
@@ -440,6 +456,8 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
         helpButton->setButtonText(TRANS("HelpButton"));
+    if (oversamplingLabel)
+        oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
 }
 
 //==============================================================================

@@ -27,6 +27,7 @@
 #include "EffectParameters.h"
 #include "Config.h"
 #include "../licensing/LicenseManager.h"
+#include "../ui/MidiLearnManager.h"
 
 
 struct ValidationProgressInfo
@@ -92,6 +93,11 @@ public:
         return dslScript;
     }
 
+    /** Undo the last formula change. */
+    bool undo() { return undoManager.undo(); }
+    /** Redo the last undone formula change. */
+    bool redo() { return undoManager.redo(); }
+
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept;
     std::array<juce::String, 4> getVariableNames() const;
@@ -104,6 +110,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
+    MidiLearnManager midiLearnManager;
+    juce::UndoManager undoManager;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

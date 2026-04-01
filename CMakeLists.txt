@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)
+project(NeuroCore VERSION 0.2.0 LANGUAGES C CXX)
 
 if(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)

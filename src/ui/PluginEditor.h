@@ -101,8 +101,11 @@ private:
     std::unique_ptr<juce::Label>         languageLabel;
     std::unique_ptr<juce::ComboBox>      polisherBox;
     std::unique_ptr<juce::Label>         polisherLabel;
+    std::unique_ptr<juce::ComboBox>      oversamplingBox;
+    std::unique_ptr<juce::Label>         oversamplingLabel;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       polisherAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       oversamplingAttachment;
 
     // Middle column editors
     std::unique_ptr<DslTerminalEditor> formulaInputEditor;

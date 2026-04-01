@@ -39,3 +39,4 @@ StabilityCheckTitle=Stabilitätsprüfung
 StabilityTesting=Stabilitätsprüfung läuft...
 StabilityWarning=Achtung: Die aktuelle Eingabe ist instabil und erzeugt hörbare Fehler.
 ActivateAnyway=Auf eigene Gefahr aktivieren
+OversamplingLabel=Oversampling
