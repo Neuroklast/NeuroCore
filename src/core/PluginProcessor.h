@@ -86,7 +86,11 @@ public:
 
     // Updates signal chain script from the UI
     bool setFormula (const juce::String& text, juce::String& error);
-    juce::String getScript() const noexcept { return dslScript; }
+    juce::String getScript() const
+    {
+        const juce::SpinLock::ScopedLockType lock(variableLock);
+        return dslScript;
+    }
 
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept;

@@ -99,8 +99,6 @@ juce_add_plugin(NeuroCore
     SOURCES ${SOURCE_FILES}
 )
 
-target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
-
 juce_generate_juce_header(NeuroCore)
 
 target_include_directories(NeuroCore PRIVATE
@@ -162,7 +160,10 @@ juce_generate_juce_header(NeuroCoreTests)
 
 target_sources(NeuroCoreTests PRIVATE
     tests/main.cpp
+    tests/DSLParserTest.h
     tests/ExpressionEvaluatorTest.h
+    tests/LookupTableSmootherTest.h
+    tests/SignalChainTest.h
     tests/WaveShaperTest.h
     tests/WeightedLayoutTest.h
     tests/PresetManagerTest.h

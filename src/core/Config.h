@@ -146,8 +146,8 @@ namespace Config
     //==========================================================================
     // Licensing
     //==========================================================================
-    /// Enable licensing checks (disable for development builds).
-    inline constexpr bool  kEnableLicensing      = true;
+    /// Enable licensing checks (set to true when real license server is deployed).
+    inline constexpr bool  kEnableLicensing      = false;
     /// Activation server URL used for license validation.
     inline constexpr const char* kLicenseServerUrl = "https://licensing.example.com/activate";
     /// Duration in seconds for the built-in demo mode.
