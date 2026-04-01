@@ -515,6 +515,14 @@ public:
 
     bool perform() override
     {
+        // perform() is called by UndoManager::perform() on first registration,
+        // and also when redoing. The formula is already applied on first call
+        // (setFormula calls applyFormula before registering), so we track that.
+        if (firstTime)
+        {
+            firstTime = false;
+            return true; // Already applied by setFormula()
+        }
         juce::String err;
         return processor.applyFormula(newFormula, err);
     }
@@ -531,23 +539,15 @@ private:
     NeuroCoreAudioProcessor& processor;
     juce::String newFormula;
     juce::String oldFormula;
+    bool firstTime { true };
 };
 
 bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String& error)
 {
-    // First validate the formula without applying it
-    dsl::DSLParser parser;
-    std::vector<dsl::BlockDesc> blocks;
-    dsl::AliasMap aliases;
-    std::vector<dsl::ParamDesc> params;
-
-    if (! parser.parse(text, blocks, aliases, params, error))
-        return false;
-
-    // Save old script for undo
+    // Save old script for undo before applying
     juce::String oldScript = getScript();
 
-    // Apply the formula
+    // Apply the formula directly
     if (applyFormula(text, error))
     {
         // Register the undo action (only if it actually changed)
