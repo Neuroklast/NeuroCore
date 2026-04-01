@@ -149,6 +149,7 @@ private:
 
 public:
     std::shared_ptr<AliasMap> getAliases() const { return std::atomic_load(&aliases); }
+    std::shared_ptr<Chain> getChain() const { return std::atomic_load(&chain); }
     juce::StringArray getMappingsFor(const juce::String& param) const;
 
     /** Set the value of one of the four script parameters. */

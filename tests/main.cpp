@@ -1,3 +1,4 @@
+#include "DSLParserTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
 #include "SignalChainTest.h"
@@ -9,6 +10,7 @@
 int main(int argc, char *argv[]) {
   juce::ConsoleApplication app; // Removed arguments
 
+  DSLParserTest parserTest;              // registers itself
   ExpressionEvaluatorTest evaluatorTest; // registers itself
   WaveShaperTest shaperTest;             // registers itself
   SignalChainTest chainTest;             // registers itself
