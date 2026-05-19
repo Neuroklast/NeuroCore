@@ -147,6 +147,8 @@ namespace DSPUtils
                                           juce::SmoothedValue<FloatType>& smoothed,
                                           juce::dsp::Gain<FloatType>& gain)
     {
+        juce::ignoreUnused(gain);
+
         const auto inRms  = static_cast<FloatType>(rms(dry, 0));
         auto       outRms = static_cast<FloatType>(rms(mixed, 0));
 
@@ -156,12 +158,13 @@ namespace DSPUtils
         auto correction = juce::jlimit<FloatType>(FloatType(0.25), FloatType(2.0), inRms / outRms);
         smoothed.setTargetValue(correction);
 
-        for (size_t i = 0; i < mixed.getNumSamples(); ++i)
+        const auto numSamples  = mixed.getNumSamples();
+        const auto numChannels = mixed.getNumChannels();
+        for (size_t i = 0; i < numSamples; ++i)
         {
-            gain.setGainLinear(smoothed.getNextValue());
-            auto slice = mixed.getSubBlock(i, 1);
-            juce::dsp::ProcessContextReplacing<FloatType> ctx(slice);
-            gain.process(ctx);
+            const auto g = smoothed.getNextValue();
+            for (size_t ch = 0; ch < numChannels; ++ch)
+                mixed.getChannelPointer(ch)[i] *= g;
         }
     }
 
@@ -232,4 +235,3 @@ namespace DSPUtils
         return loudness;
     }
 }
-

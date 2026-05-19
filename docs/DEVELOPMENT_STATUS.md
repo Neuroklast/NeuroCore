@@ -1,6 +1,6 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-04-01  
+**Letzte Aktualisierung:** 2026-05-19  
 **Version:** 0.2.0  
 **Gesamtfortschritt:** ~65–70%
 
@@ -18,8 +18,8 @@
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) | 85% | 2026-04-01 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
-| DSP/SignalPolisher | ✅ Funktional | 75% | 2026-04-01 |
-| DSP/DSPUtils | ⚠️ autoGainCompensate ineffizient | 65% | 2026-04-01 |
+| DSP/SignalPolisher | ✅ Funktional + DC-Blocker nach DSL integriert | 82% | 2026-05-19 |
+| DSP/DSPUtils | ✅ autoGainCompensate optimiert (direkte Sample-Multiplikation) | 85% | 2026-05-19 |
 | UI/DslTerminalEditor | ✅ Funktional | 70% | 2026-04-01 |
 | UI/WaveformDisplay | ✅ Funktional | 70% | 2026-04-01 |
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
@@ -27,12 +27,12 @@
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
 | Preset-System | ✅ Funktional (Blowfish) | 70% | 2026-04-01 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
-| Licensing | ❌ Placeholder-URL, für Dev deaktiviert | 20% | 2026-04-01 |
+| Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
 | Tests | ✅ DSLParser-Tests + alle Header verlinkt | 60% | 2026-04-01 |
 | CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval | 80% | 2026-04-01 |
 | Dokumentation | ✅ Vollständig (docs/) | 70% | 2026-04-01 |
 | Installer | ❌ Fehlt | 0% | — |
-| AU-Format | ❌ Fehlt (nur VST3+Standalone) | 0% | — |
+| AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
 
 ---
 
@@ -55,12 +55,12 @@
 
 ### Nächste Schritte (Priorität)
 
-- [ ] `SpinLock` + `juce::String` im Audio-Thread durch Lock-Free-Pattern ersetzen
+- [x] Audit: `variableLock`/`variableNames` nicht im Audio-Thread verwendet
 - [ ] `PluginProcessor` aufteilen (God-Class auflösen)
-- [ ] DC-Blocker in Signalkette einbauen
-- [ ] `autoGainCompensate()` optimieren
-- [ ] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
-- [ ] AU-Format für macOS aktivieren
+- [x] DC-Blocker in Signalkette einbauen
+- [x] `autoGainCompensate()` optimieren
+- [x] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
+- [x] AU-Format für macOS aktivieren
 - [ ] Windows/macOS Installer
 
 ### Kürzlich abgeschlossen
@@ -73,6 +73,9 @@
 - [x] `getChain()` atomic getter zu `SignalChain.h` hinzugefügt
 - [x] `tests/DSLParserTest.h` erstellt (13 Tests)
 - [x] `tests/SignalChainTest.h` und `tests/LookupTableSmootherTest.h` in CMake Test-Target aufgenommen
+- [x] `docs/AGENTS.md` erstellt (maschinelle Agent-Guidelines)
+- [x] `resources/factory_presets.json` mit Factory-Presets erstellt
+- [x] `resources/templates.json` auf 15+ Kurzformeln erweitert
 - [x] Vollständige Codebase-Analyse durchgeführt
 - [x] Dokumentationsstruktur erstellt (`docs/` Verzeichnis)
 
@@ -84,10 +87,8 @@
 
 | # | Problem | Datei | Priorität |
 |---|---|---|---|
-| 1 | Blockierender HTTP-Call im UI-Thread | `LicenseManager.cpp` | 🔴 Kritisch |
-| 2 | SpinLock + String-Heap-Allokation im Audio-Thread | `PluginProcessor.h` | 🔴 Kritisch |
-| 3 | God-Class PluginProcessor | `PluginProcessor.cpp` | 🟡 Hoch |
-| 4 | `autoGainCompensate` per-Sample | `DSPUtils.h` | 🟡 Hoch |
+| 1 | God-Class PluginProcessor | `PluginProcessor.cpp` | 🟡 Hoch |
+| 2 | Licensing-Backend noch Placeholder (Produktionsserver fehlt) | `Config.h` / `LicenseManager.cpp` | 🟡 Hoch |
 
 Vollständige Analyse: `docs/ANALYSIS.md`
 

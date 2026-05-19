@@ -2,5 +2,17 @@
   {"name": "saturate(x)", "formula": "tanh(x)"},
   {"name": "hardclip(x)", "formula": "clamp(x, -1, 1)"},
   {"name": "softclip(x)", "formula": "x / (1 + abs(x))"},
-  {"name": "bias(x, b)",  "formula": "pow(x + b, 1.0) - b"}
+  {"name": "bias(x, b)", "formula": "pow(x + b, 1.0) - b"},
+  {"name": "drive(x, a)", "formula": "tanh(x * a)"},
+  {"name": "fold(x, a)", "formula": "fold(x * a, -1, 1)"},
+  {"name": "ring(x, f)", "formula": "x * sin(2 * pi * f * t)"},
+  {"name": "tremolo(x, rate, depth)", "formula": "x * (1 - depth + depth * (0.5 + 0.5 * sin(2 * pi * rate * t)))"},
+  {"name": "vibrato-ish(x, d)", "formula": "x + y_prev * d"},
+  {"name": "rectify(x)", "formula": "abs(x)"},
+  {"name": "bitcrush(x, bits)", "formula": "bitcrush(x, bits)"},
+  {"name": "quantize(x, n)", "formula": "quantize(x, n)"},
+  {"name": "noise blend(x, amt)", "formula": "x + noise(t * sr) * amt"},
+  {"name": "feedback(x, fb)", "formula": "x + y_prev * fb"},
+  {"name": "gate(x, th)", "formula": "x * step(th, abs(x))"},
+  {"name": "parallel sat(x, mix)", "formula": "x * (1 - mix) + tanh(x * 2.0) * mix"}
 ]

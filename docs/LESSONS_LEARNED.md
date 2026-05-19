@@ -9,6 +9,30 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-05-19 – Stabilitätsfixes + Agent Docs + Factory Presets
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** Kritische DSP/Licensing-Schwächen beheben, `docs/AGENTS.md` erstellen, Factory-Presets/Templates erweitern  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- `DSPUtils::autoGainCompensate()` sollte im Hotpath ausschließlich direkte Sample-Multiplikation verwenden; per-Sample `getSubBlock()` + `ProcessContext` erzeugt unnötigen Overhead.
+- Ein `juce::Thread`-basierter Async-Wrapper mit `juce::MessageManager::callAsync()` ist ein robuster Weg, blockierende Licensing-HTTP-Aufrufe aus dem Message-Thread herauszuhalten.
+- DC-Offset-Entfernung gehört direkt hinter die DSL-Signalkette; in oversampelten Setups müssen Coefficients auf der effektiven Processing-Samplerate gesetzt werden.
+- Oversampling-Latenz muss an zwei Stellen konsistent sein: `setLatencySamples(...)` für den Host und `dryWetMixer.setWetLatency(...)` für internes Dry/Wet-Alignment.
+
+#### Fallstricke
+
+- Lokale Linux-Builds können ohne `install_linux_deps.sh` bereits bei CMake-Dependency-Checks fehlschlagen.
+- Die aktuelle CMake/JUCE-Konfiguration kann lokal beim Test-Build über `juce::juceaide` scheitern; das ist ein bestehendes Infrastrukturproblem und nicht Teil der inhaltlichen Fixes.
+
+#### Empfehlungen für nächste Session
+
+1. CMake/JUCE-Tooling (`juce::juceaide`) robust machen, damit lokale Tests ohne Workarounds laufen.
+2. Factory-Presets an Preset-UI/Import-Workflow anbinden (falls noch nicht konsumiert).
+3. `PluginProcessor` schrittweise entkoppeln (God-Class-Abbau).
+
 ### 2026-04-01 – Phase 2 Professionalität: Build-Fixes + Feature-Integration
 
 **Agent:** GitHub Copilot Coding Agent  
