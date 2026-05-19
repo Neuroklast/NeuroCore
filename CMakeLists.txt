@@ -93,7 +93,8 @@ juce_add_plugin(NeuroCore
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE NRKL
     PLUGIN_CODE NRCO
-    FORMATS Standalone VST3
+    FORMATS Standalone VST3 AU
+    AU_MAIN_TYPE "kAudioUnitType_Effect"
     PRODUCT_NAME "NeuroCore"
     VST3_CATEGORIES "Fx|Distortion"
     VST3_AUTO_MANIFEST FALSE
@@ -167,6 +168,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/SignalChainTest.h
     tests/WaveShaperTest.h
     tests/WeightedLayoutTest.h
+    tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
@@ -221,4 +223,3 @@ target_link_libraries(NeuroCoreTests PRIVATE
 
 enable_testing()
 add_test(NAME NeuroCoreTests COMMAND NeuroCoreTests)
-

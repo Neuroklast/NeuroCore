@@ -215,6 +215,7 @@ void NeuroCoreAudioProcessor::releaseResources()
     inputWritePos.store (0);
     outputWritePos.store (0);
     lowpassFilter.reset();
+    dcBlocker.reset();
     if (oversampler)
         oversampler->reset();
     currentSpec.sampleRate     = 0.0;
@@ -246,6 +247,7 @@ void NeuroCoreAudioProcessor::reset()
     inputWritePos.store (0);
     outputWritePos.store (0);
     lowpassFilter.reset();
+    dcBlocker.reset();
     if (oversampler)
         oversampler->reset();
     currentSpec.sampleRate = getSampleRate();
@@ -415,6 +417,8 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     }
 
     juce::dsp::ProcessContextReplacing<float> ctxGate (upBlock);
+    juce::dsp::ProcessContextReplacing<float> ctxDC (upBlock);
+    dcBlocker.process(ctxDC);
     chain.get<1>().process (ctxGate);
     juce::dsp::ProcessContextReplacing<float> ctxPolish (upBlock);
     chain.get<2>().process (ctxPolish);
@@ -853,6 +857,8 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     chain.get<1>().setThreshold(-60.0f);
     lowpassFilter.prepare (currentSpec);
     *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
+    dcBlocker.prepare (osSpec);
+    *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 20.0f);
     auto scriptSamples = (int) (currentSpec.maximumBlockSize * osFactor);
     if (scriptBuffer.getNumChannels() != (int) currentSpec.numChannels
         || scriptBuffer.getNumSamples() < scriptSamples)

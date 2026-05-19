@@ -170,6 +170,8 @@ private:
 
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                    juce::dsp::IIR::Coefficients<float>> lowpassFilter;
+    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                   juce::dsp::IIR::Coefficients<float>> dcBlocker;
     juce::dsp::DryWetMixer<float> dryWetMixer;
     int                          dryWetLatency { 0 };
     juce::SmoothedValue<float>    wetValue;
