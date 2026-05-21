@@ -42,12 +42,27 @@ public:
     void evaluateBlock(float* samples, size_t numSamples,
                        const std::function<void(size_t, VarArray&)>& pre = nullptr,
                        const std::function<void(size_t, float)>& post = nullptr) const noexcept;
+    template<typename PreFn, typename PostFn>
+    inline void evaluateBlockT(float* samples, size_t numSamples, PreFn&& pre, PostFn&& post) const noexcept;
 
     using SimdVarArray = std::array<juce::dsp::SIMDRegister<float>, MaxVariables>;
     /** SIMD variant of evaluateBlock using vector registers. */
     void evaluateBlockSimd(float* samples, size_t numSamples,
                            const std::function<void(size_t, SimdVarArray&)>& pre = nullptr,
                            const std::function<void(size_t, juce::dsp::SIMDRegister<float>)>& post = nullptr) const noexcept;
+    template<typename PreFn, typename PostFn>
+    inline void evaluateBlockSimdT(float* samples, size_t numSamples, PreFn&& pre, PostFn&& post) const noexcept;
+    template<typename PreFn, typename PostFn>
+    inline void evaluateBlockSimdUnsafe(float* samples, size_t numSamples,
+                                        const std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
+                                        SimdVarArray& varsCopy,
+                                        size_t xIndex,
+                                        PreFn&& pre,
+                                        PostFn&& post) const noexcept;
+    bool captureScalarState(std::function<float(const float*)>& func, VarArray& varsCopy, size_t& xIndex) const noexcept;
+    bool captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
+                          SimdVarArray& varsCopy,
+                          size_t& xIndex) const noexcept;
 
     // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
@@ -115,10 +130,12 @@ private:
     struct FunctionNode : Node
     {
         using Func = std::function<float(float)>;
-        FunctionNode(Func f, NodePtr c) : func(std::move(f)), child(std::move(c)) {}
+        using SimdFunc = std::function<juce::dsp::SIMDRegister<float>(juce::dsp::SIMDRegister<float>)>;
+        FunctionNode(Func f, NodePtr c, SimdFunc sf = {}) : func(std::move(f)), simdFunc(std::move(sf)), child(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
+        SimdFunc simdFunc;
         NodePtr child;
     };
 
@@ -135,11 +152,17 @@ private:
     struct Func3Node : Node
     {
         using Func = std::function<float(float, float, float)>;
+        using SimdFunc = std::function<juce::dsp::SIMDRegister<float>(juce::dsp::SIMDRegister<float>,
+                                                                       juce::dsp::SIMDRegister<float>,
+                                                                       juce::dsp::SIMDRegister<float>)>;
         Func3Node(Func f, NodePtr a, NodePtr b, NodePtr c)
             : func(std::move(f)), x(std::move(a)), y(std::move(b)), z(std::move(c)) {}
+        Func3Node(Func f, SimdFunc sf, NodePtr a, NodePtr b, NodePtr c)
+            : func(std::move(f)), simdFunc(std::move(sf)), x(std::move(a)), y(std::move(b)), z(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
         Func func;
+        SimdFunc simdFunc;
         NodePtr x, y, z;
     };
 
@@ -183,3 +206,76 @@ private:
     std::array<float, MaxVariables> variables{};
 };
 
+template<typename PreFn, typename PostFn>
+inline void ExpressionEvaluator::evaluateBlockT(float* samples, size_t numSamples, PreFn&& pre, PostFn&& post) const noexcept
+{
+    if (numSamples == 0)
+        return;
+
+    std::function<float(const float*)> func;
+    VarArray varsCopy{};
+    size_t xIndex = invalidIndex;
+    if (!captureScalarState(func, varsCopy, xIndex))
+        return;
+
+    for (size_t i = 0; i < numSamples; ++i)
+    {
+        if (xIndex != invalidIndex)
+            varsCopy[xIndex] = samples[i];
+
+        pre(i, varsCopy);
+
+        float result = func(varsCopy.data());
+        post(i, std::isfinite(result) ? result : 0.0f);
+    }
+}
+
+template<typename PreFn, typename PostFn>
+inline void ExpressionEvaluator::evaluateBlockSimdT(float* samples, size_t numSamples, PreFn&& pre, PostFn&& post) const noexcept
+{
+    if (numSamples == 0)
+        return;
+
+    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> func;
+    SimdVarArray varsCopy{};
+    size_t xIndex = invalidIndex;
+    if (!captureSimdState(func, varsCopy, xIndex))
+        return;
+
+    evaluateBlockSimdUnsafe(samples, numSamples, func, varsCopy, xIndex,
+                            std::forward<PreFn>(pre), std::forward<PostFn>(post));
+}
+
+template<typename PreFn, typename PostFn>
+inline void ExpressionEvaluator::evaluateBlockSimdUnsafe(
+    float* samples,
+    size_t numSamples,
+    const std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
+    SimdVarArray& varsCopy,
+    size_t xIndex,
+    PreFn&& pre,
+    PostFn&& post) const noexcept
+{
+    if (!func || numSamples == 0)
+        return;
+
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    size_t i = 0;
+    for (; i + width <= numSamples; i += width)
+    {
+        if (xIndex != invalidIndex)
+            varsCopy[xIndex] = juce::dsp::SIMDRegister<float>::fromRawArray(samples + i);
+
+        pre(i, varsCopy);
+        post(i, func(varsCopy.data()));
+    }
+
+    for (; i < numSamples; ++i)
+    {
+        if (xIndex != invalidIndex)
+            varsCopy[xIndex] = juce::dsp::SIMDRegister<float>(samples[i]);
+
+        pre(i, varsCopy);
+        post(i, func(varsCopy.data()));
+    }
+}

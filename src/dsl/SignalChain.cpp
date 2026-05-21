@@ -416,7 +416,7 @@ float SignalChain::Stage::process(int ch, float x)
             *yPtr = y;
     };
 
-    eval.evaluateBlock(&y, 1, pre, post);
+    eval.evaluateBlockT(&y, 1, pre, post);
     return y;
 }
 
@@ -425,26 +425,29 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     if (! varPtr)
         return;
 
-    using VarArray = ExpressionEvaluator::VarArray;
-
     juce::dsp::AudioBlock<float> block (buffer);
     const size_t numSamples  = block.getNumSamples();
     const size_t numChannels = juce::jmin (block.getNumChannels(), xPrev.size());
+
+    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> simdFunc;
+    ExpressionEvaluator::SimdVarArray baseVars{};
+    size_t xIndex = ExpressionEvaluator::invalidIndex;
+    if (!eval.captureSimdState(simdFunc, baseVars, xIndex))
+        return;
 
     for (size_t ch = 0; ch < numChannels; ++ch)
     {
         auto* data   = block.getChannelPointer (ch);
         float* prevX = &xPrev[ch];
         float* prevY = &yPrev[ch];
+        auto evalVars = baseVars;
 
-        auto pre = [this, prevX, prevY, data](size_t i, ExpressionEvaluator::SimdVarArray& vars)
+        auto pre = [this, prevX, prevY](size_t, ExpressionEvaluator::SimdVarArray& vars)
         {
             if (idxXPrev != ExpressionEvaluator::invalidIndex)
                 vars[idxXPrev] = juce::dsp::SIMDRegister<float>(*prevX);
             if (idxYPrev != ExpressionEvaluator::invalidIndex)
                 vars[idxYPrev] = juce::dsp::SIMDRegister<float>(*prevY);
-            if (idxX != ExpressionEvaluator::invalidIndex)
-                vars[idxX] = juce::dsp::SIMDRegister<float>::fromRawArray(data + i);
             for (size_t p = 0; p < 4; ++p)
                 if (paramIndices[p] != ExpressionEvaluator::invalidIndex && paramSmoothers[p])
                     vars[paramIndices[p]] = juce::dsp::SIMDRegister<float>(paramSmoothers[p]->getNextValue());
@@ -452,12 +455,14 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
                 vars[vr.index] = juce::dsp::SIMDRegister<float>(*vr.value);
         };
 
-        auto post = [this, prevX, prevY, data](size_t i, juce::dsp::SIMDRegister<float> result)
+        auto post = [this, prevX, prevY, data, numSamples](size_t i, juce::dsp::SIMDRegister<float> result)
         {
             constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
             alignas(16) float arr[width];
             result.copyToRawArray(arr);
-            for (size_t k = 0; k < width; ++k)
+            const size_t remaining = numSamples - i;
+            const size_t count = juce::jmin(width, remaining);
+            for (size_t k = 0; k < count; ++k)
             {
                 float y = juce::jlimit(-1.0f, 1.0f, arr[k]);
                 size_t idx = i + k;
@@ -469,7 +474,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             }
         };
 
-        eval.evaluateBlockSimd (data, numSamples, pre, post);
+        eval.evaluateBlockSimdUnsafe(data, numSamples, simdFunc, evalVars, xIndex, pre, post);
     }
 }
 
@@ -731,4 +736,3 @@ void SignalChain::setParameter(size_t index, float value) noexcept
     if (index < paramSmooth.size())
         paramSmooth[index].setCurrentAndTargetValue(value);
 }
-

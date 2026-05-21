@@ -27,6 +27,11 @@
 #endif
 #define JucePlugin_MaxNumOutputChannels   2
 
+namespace
+{
+constexpr const char* kDslScriptStateKey = "DSLScript";
+}
+
 
 //==============================================================================
 NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
@@ -376,11 +381,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     if (!bypassActive && oversampler)
         upBlock = oversampler->processSamplesUp (block);
 
-    std::vector<float*> chPtrs;
-    chPtrs.reserve (upBlock.getNumChannels());
-    for (size_t ch = 0; ch < upBlock.getNumChannels(); ++ch)
-        chPtrs.push_back (upBlock.getChannelPointer (ch));
-    juce::AudioBuffer<float> upBuffer (chPtrs.data(), (int) upBlock.getNumChannels(),
+    const size_t upChannels = juce::jmin(upBlock.getNumChannels(), upChannelPtrs.size());
+    for (size_t ch = 0; ch < upChannels; ++ch)
+        upChannelPtrs[ch] = upBlock.getChannelPointer(ch);
+    juce::AudioBuffer<float> upBuffer (upChannelPtrs.data(), (int) upChannels,
                                        (int) upBlock.getNumSamples());
     chain.get<0>().processBlock (upBuffer);
 
@@ -477,6 +481,7 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto state = apvts.copyState();
     if (state.isValid())
     {
+        state.setProperty(kDslScriptStateKey, getScript(), nullptr);
         // Save MIDI Learn mappings into the state tree
         state.addChild(midiLearnManager.getState(), -1, nullptr);
 
@@ -493,6 +498,7 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
         if (xmlState->hasTagName (apvts.state.getType()))
         {
             auto tree = juce::ValueTree::fromXml (*xmlState);
+            const auto scriptFromState = tree.getProperty(kDslScriptStateKey).toString();
 
             // Restore MIDI Learn mappings
             auto midiState = tree.getChildWithName("MidiLearnMappings");
@@ -503,6 +509,12 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             }
 
             apvts.replaceState (tree);
+
+            if (scriptFromState.isNotEmpty())
+            {
+                juce::String err;
+                applyFormula(scriptFromState, err);
+            }
         }
     }
 }

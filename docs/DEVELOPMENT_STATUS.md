@@ -1,6 +1,6 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-05-19  
+**Letzte Aktualisierung:** 2026-05-21  
 **Version:** 0.2.0  
 **Gesamtfortschritt:** ~65–70%
 
@@ -10,12 +10,12 @@
 
 | Modul | Status | Fortschritt | Letzte Änderung |
 |---|---|---|---|
-| Core/PluginProcessor | ⚠️ God-Class, aber Undo/Redo + MIDI Learn integriert | 70% | 2026-04-01 |
+| Core/PluginProcessor | ⚠️ God-Class, aber Undo/Redo + MIDI Learn integriert; Audio-Callback ohne chPtr-Heap-Allokation | 72% | 2026-05-21 |
 | Core/PluginEditor | ✅ Resizable (600×400 – 1600×1000), Oversampling ComboBox, Undo/Redo Shortcuts | 75% | 2026-04-01 |
 | Core/Config.h | ✅ Vollständig | 95% | 2026-04-01 |
 | DSL/DSLParser | ✅ Funktional, Tests vorhanden | 80% | 2026-04-01 |
-| DSL/SignalChain | ✅ atomic_load/store korrekt | 75% | 2026-04-01 |
-| DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) | 85% | 2026-04-01 |
+| DSL/SignalChain | ✅ atomic_load/store korrekt, Stage-SIMD mit externem Evaluator-Snapshot | 80% | 2026-05-21 |
+| DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
 | DSP/SignalPolisher | ✅ Funktional + DC-Blocker nach DSL integriert | 82% | 2026-05-19 |
@@ -25,7 +25,7 @@
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
 | UI/ParameterComponent | ✅ MIDI Learn Rechtsklick-Menü | 85% | 2026-04-01 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ Funktional (Blowfish) | 70% | 2026-04-01 |
+| Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) | 82% | 2026-05-21 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
 | Tests | ✅ DSLParser-Tests + alle Header verlinkt | 60% | 2026-04-01 |
@@ -62,6 +62,8 @@
 - [x] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
 - [x] AU-Format für macOS aktivieren
 - [ ] Windows/macOS Installer
+- [x] NRK-Presetformat: DSCR-Chunk für rohes DSL-Skript ergänzen
+- [x] ExpressionEvaluator-Hotpath: Template-Block-Evaluierung + SIMD-Funktionspfade für sin/cos/tanh/exp/abs/clamp
 
 ### Kürzlich abgeschlossen
 
@@ -73,6 +75,8 @@
 - [x] `getChain()` atomic getter zu `SignalChain.h` hinzugefügt
 - [x] `tests/DSLParserTest.h` erstellt (13 Tests)
 - [x] `tests/SignalChainTest.h` und `tests/LookupTableSmootherTest.h` in CMake Test-Target aufgenommen
+- [x] `PresetManager` auf NRK v2 mit `DSCR`-Chunk erweitert (STAT-Fallback kompatibel)
+- [x] `PresetManagerTest` erweitert: DSCR-Chunk write/read validiert
 - [x] `docs/AGENTS.md` erstellt (maschinelle Agent-Guidelines)
 - [x] `resources/factory_presets.json` mit Factory-Presets erstellt
 - [x] `resources/templates.json` auf 15+ Kurzformeln erweitert

@@ -17,7 +17,7 @@ using json = nlohmann::json;
 
 namespace {
 constexpr char kMagic[4] = {'N','R','K','\0'};
-constexpr int kVersion = 1;
+constexpr int kVersion = 2;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
 constexpr const char* kAttrName       = "Name";
@@ -86,6 +86,8 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     juce::MemoryBlock state;
     processor.getStateInformation(state);
     auto encrypted = encrypt(state);
+    const juce::String script = processor.getScript();
+    juce::MemoryBlock scriptBlock(script.toRawUTF8(), static_cast<size_t>(script.getNumBytesAsUTF8()));
 
     std::string metaStr = meta.dump();
     juce::MemoryBlock metaBlock(metaStr.data(), metaStr.size());
@@ -99,16 +101,20 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
 
     const int64_t metaOffset = sizeof(Header);
     const int64_t stateOffset = metaOffset + (int64_t)metaBlock.getSize();
-    const int64_t listOffset = stateOffset + (int64_t)encrypted.size();
+    const int64_t dscrOffset = stateOffset + (int64_t)encrypted.size();
+    const int64_t listOffset = dscrOffset + (int64_t)scriptBlock.getSize();
     header.chunkListOffset = listOffset;
 
-    ChunkEntry entries[2];
+    ChunkEntry entries[3];
     std::memcpy(entries[0].id, kMetaId, 4);
     entries[0].offset = metaOffset;
     entries[0].length = (int64_t)metaBlock.getSize();
     std::memcpy(entries[1].id, kStateId, 4);
     entries[1].offset = stateOffset;
     entries[1].length = (int64_t)encrypted.size();
+    std::memcpy(entries[2].id, PresetManager::kDscrId, 4);
+    entries[2].offset = dscrOffset;
+    entries[2].length = (int64_t)scriptBlock.getSize();
 
     juce::FileOutputStream out(file);
     if (!out.openedOk())
@@ -116,8 +122,9 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     out.write(&header, sizeof(header));
     out.write(metaBlock.getData(), metaBlock.getSize());
     out.write(encrypted.data(), encrypted.size());
+    out.write(scriptBlock.getData(), scriptBlock.getSize());
     out.write(kMetaId, 4); // "List" header
-    const int32_t numEntries = 2;
+    const int32_t numEntries = 3;
     out.writeIntBigEndian(numEntries); // using big endian for portability
     for (auto& e : entries)
     {
@@ -157,6 +164,7 @@ bool PresetManager::loadPreset(const juce::File& file)
     }
 
     std::vector<uint8_t> stateData;
+    juce::String dscrScript;
     for (auto& e : entries)
     {
         if (std::memcmp(e.id, kMetaId, 4) == 0)
@@ -175,6 +183,14 @@ bool PresetManager::loadPreset(const juce::File& file)
             stateData.resize((size_t)e.length);
             in.read(stateData.data(), (int)e.length);
         }
+        else if (std::memcmp(e.id, PresetManager::kDscrId, 4) == 0)
+        {
+            in.setPosition(e.offset);
+            juce::MemoryBlock scriptBytes;
+            in.readIntoMemoryBlock(scriptBytes, static_cast<size_t>(e.length));
+            dscrScript = juce::String::fromUTF8(static_cast<const char*>(scriptBytes.getData()),
+                                                static_cast<int>(scriptBytes.getSize()));
+        }
     }
 
     if (stateData.empty())
@@ -185,6 +201,13 @@ bool PresetManager::loadPreset(const juce::File& file)
         return false;
 
     processor.setStateInformation(plain.getData(), (int)plain.getSize());
+
+    if (dscrScript.isNotEmpty())
+    {
+        juce::String err;
+        if (!processor.applyFormula(dscrScript, err))
+            return false;
+    }
     return true;
 }
 
@@ -199,4 +222,3 @@ std::vector<juce::File> PresetManager::getAvailablePresets(const juce::File& dir
         result.push_back(iter.getFile());
     return result;
 }
-

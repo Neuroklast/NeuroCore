@@ -44,8 +44,9 @@ private:
         int64_t  length;
     };
 
+    static constexpr char kDscrId[4] {'D', 'S', 'C', 'R'};
+
     NeuroCoreAudioProcessor& processor;
     std::array<uint8_t, 32> key{};
 };
-
 
