@@ -99,9 +99,6 @@ public:
     {
       auto* presetData = static_cast<char*>(presetBytes.getData());
       expect(presetData != nullptr);
-      if (presetData == nullptr)
-        return;
-
       std::memcpy(presetData + dscrOffset,
                   dscrOverride.toRawUTF8(),
                   static_cast<size_t>(dscrLength));

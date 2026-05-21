@@ -21,8 +21,9 @@ constexpr int kVersion = 2;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
 constexpr int32_t kNumChunksV2 = 3;
-// NRK files currently contain very few chunks (META/STAT/DSCR in v2). 32 is a
-// defensive hard cap to reject malformed files with absurd entry counts.
+// NRK files currently contain very few chunks (META/STAT/DSCR in v2). 32 keeps
+// headroom for future format expansion while still rejecting malformed files
+// that try to force oversized chunk-entry allocations.
 constexpr int32_t kMaxReasonableChunkEntries = 32;
 constexpr const char* kAttrName       = "Name";
 constexpr const char* kAttrFileName   = "FileName";
@@ -159,6 +160,8 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (std::memcmp(listId, kMetaId, 4) != 0 && std::memcmp(listId, "List", 4) != 0)
         return false;
     int32_t numEntries = in.readIntBigEndian();
+    // A valid preset needs at least one chunk entry (STAT in legacy, plus DSCR
+    // in v2). Zero entries mean there is no restorable payload.
     if (numEntries <= 0 || numEntries > kMaxReasonableChunkEntries)
         return false;
     std::vector<ChunkEntry> entries(numEntries);
