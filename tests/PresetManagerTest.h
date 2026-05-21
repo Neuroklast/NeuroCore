@@ -6,6 +6,7 @@
 #include "../src/core/PluginProcessor.h"
 #include "../src/utils/PresetManager.h"
 #include <JuceHeader.h>
+#include <cstring>
 
 class PresetManagerTest : public juce::UnitTest {
 public:
@@ -63,6 +64,8 @@ public:
 
     bool foundDscr = false;
     juce::String scriptFromDscr;
+    int64_t dscrOffset = -1;
+    int64_t dscrLength = 0;
     for (int i = 0; i < numEntries; ++i)
     {
       char id[4]{};
@@ -72,6 +75,8 @@ public:
       if (juce::String(id, 4) == juce::String("DSCR", 4))
       {
         foundDscr = true;
+        dscrOffset = offset;
+        dscrLength = length;
         in.setPosition(offset);
         juce::MemoryBlock scriptBytes;
         in.readIntoMemoryBlock(scriptBytes, static_cast<size_t>(length));
@@ -82,6 +87,27 @@ public:
 
     expect(foundDscr);
     expectEquals(scriptFromDscr, juce::String("x * 2"));
+
+    beginTest("DSCR chunk has priority over STAT script");
+    juce::MemoryBlock presetBytes;
+    expect(tmp.getFile().loadFileAsData(presetBytes));
+    const juce::String dscrOverride("x * 3");
+    const auto dscrOverrideLength = static_cast<int64_t>(dscrOverride.getNumBytesAsUTF8());
+    expectEquals(dscrLength, dscrOverrideLength);
+    if (dscrOffset >= 0 && dscrLength == dscrOverrideLength &&
+        dscrOffset + dscrLength <= static_cast<int64_t>(presetBytes.getSize()))
+    {
+      std::memcpy(static_cast<char*>(presetBytes.getData()) + dscrOffset,
+                  dscrOverride.toRawUTF8(),
+                  static_cast<size_t>(dscrLength));
+      juce::TemporaryFile patched(".nrk");
+      expect(patched.getFile().replaceWithData(presetBytes.getData(), presetBytes.getSize()));
+
+      TestProcessor proc3;
+      PresetManager mgr3(proc3);
+      expect(mgr3.loadPreset(patched.getFile()));
+      expectEquals(proc3.getScript(), dscrOverride);
+    }
 
   }
 };

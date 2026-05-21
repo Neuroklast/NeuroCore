@@ -25,10 +25,10 @@
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
 | UI/ParameterComponent | ✅ MIDI Learn Rechtsklick-Menü | 85% | 2026-04-01 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) | 82% | 2026-05-21 |
+| Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) + robustere Chunk-Validierung | 84% | 2026-05-21 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ DSLParser-Tests + alle Header verlinkt | 60% | 2026-04-01 |
+| Tests | ✅ DSLParser-Tests + PresetManager-DSCR-Prioritäts-Test erweitert | 63% | 2026-05-21 |
 | CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval | 80% | 2026-04-01 |
 | Dokumentation | ✅ Vollständig (docs/) | 70% | 2026-04-01 |
 | Installer | ❌ Fehlt | 0% | — |
@@ -77,11 +77,14 @@
 - [x] `tests/SignalChainTest.h` und `tests/LookupTableSmootherTest.h` in CMake Test-Target aufgenommen
 - [x] `PresetManager` auf NRK v2 mit `DSCR`-Chunk erweitert (STAT-Fallback kompatibel)
 - [x] `PresetManagerTest` erweitert: DSCR-Chunk write/read validiert
+- [x] `PresetManager` Chunk-Parsing gehärtet (Entry-Limits + Read-Checks + Negative-Offset/Length-Guards)
+- [x] `PresetManagerTest` erweitert: DSCR-Chunk-Priorität gegenüber `STAT` verifiziert
 - [x] `docs/AGENTS.md` erstellt (maschinelle Agent-Guidelines)
 - [x] `resources/factory_presets.json` mit Factory-Presets erstellt
 - [x] `resources/templates.json` auf 15+ Kurzformeln erweitert
 - [x] Vollständige Codebase-Analyse durchgeführt
 - [x] Dokumentationsstruktur erstellt (`docs/` Verzeichnis)
+- [x] `AGENTS.md` / `docs/AGENTS.md` / `README.md` um verpflichtende Session-Abschluss-Schritte ergänzt
 
 ---
 

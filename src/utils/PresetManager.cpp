@@ -20,6 +20,8 @@ constexpr char kMagic[4] = {'N','R','K','\0'};
 constexpr int kVersion = 2;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
+constexpr int32_t kNumChunksV2 = 3;
+constexpr int32_t kMaxReasonableChunkEntries = 32;
 constexpr const char* kAttrName       = "Name";
 constexpr const char* kAttrFileName   = "FileName";
 constexpr const char* kAttrPluginName = "PluginName";
@@ -105,7 +107,7 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     const int64_t listOffset = dscrOffset + (int64_t)scriptBlock.getSize();
     header.chunkListOffset = listOffset;
 
-    ChunkEntry entries[3];
+    ChunkEntry entries[kNumChunksV2];
     std::memcpy(entries[0].id, kMetaId, 4);
     entries[0].offset = metaOffset;
     entries[0].length = (int64_t)metaBlock.getSize();
@@ -124,7 +126,7 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     out.write(encrypted.data(), encrypted.size());
     out.write(scriptBlock.getData(), scriptBlock.getSize());
     out.write(kMetaId, 4); // "List" header
-    const int32_t numEntries = 3;
+    const int32_t numEntries = kNumChunksV2;
     out.writeIntBigEndian(numEntries); // using big endian for portability
     for (auto& e : entries)
     {
@@ -155,12 +157,17 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (std::memcmp(listId, kMetaId, 4) != 0 && std::memcmp(listId, "List", 4) != 0)
         return false;
     int32_t numEntries = in.readIntBigEndian();
+    if (numEntries <= 0 || numEntries > kMaxReasonableChunkEntries)
+        return false;
     std::vector<ChunkEntry> entries(numEntries);
     for (int i = 0; i < numEntries; ++i)
     {
-        in.read(entries[i].id, 4);
+        if (in.read(entries[i].id, 4) != 4)
+            return false;
         entries[i].offset = in.readInt64();
         entries[i].length = in.readInt64();
+        if (entries[i].offset < 0 || entries[i].length < 0)
+            return false;
     }
 
     std::vector<uint8_t> stateData;
@@ -181,7 +188,8 @@ bool PresetManager::loadPreset(const juce::File& file)
         {
             in.setPosition(e.offset);
             stateData.resize((size_t)e.length);
-            in.read(stateData.data(), (int)e.length);
+            if (in.read(stateData.data(), (int)e.length) != (int)e.length)
+                return false;
         }
         else if (std::memcmp(e.id, PresetManager::kDscrId, 4) == 0)
         {
