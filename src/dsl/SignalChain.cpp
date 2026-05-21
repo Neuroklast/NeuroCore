@@ -429,18 +429,11 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     const size_t numSamples  = block.getNumSamples();
     const size_t numChannels = juce::jmin (block.getNumChannels(), xPrev.size());
 
-    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> simdFunc;
-    ExpressionEvaluator::SimdVarArray baseVars{};
-    size_t xIndex = ExpressionEvaluator::invalidIndex;
-    if (!eval.captureSimdState(simdFunc, baseVars, xIndex))
-        return;
-
     for (size_t ch = 0; ch < numChannels; ++ch)
     {
         auto* data   = block.getChannelPointer (ch);
         float* prevX = &xPrev[ch];
         float* prevY = &yPrev[ch];
-        auto evalVars = baseVars;
 
         auto pre = [this, prevX, prevY](size_t, ExpressionEvaluator::SimdVarArray& vars)
         {
@@ -474,7 +467,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             }
         };
 
-        eval.evaluateBlockSimdUnsafe(data, numSamples, simdFunc, evalVars, xIndex, pre, post);
+        eval.evaluateBlockSimdT(data, numSamples, pre, post);
     }
 }
 

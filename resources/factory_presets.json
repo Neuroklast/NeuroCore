@@ -336,5 +336,44 @@
     "outputGain": 0.0,
     "mix": 1.0,
     "script": "param { alias a name \"Gain\" min 0.1 max 4.0 }\nparam { alias b name \"Trim\" min 0.1 max 2.0 }\nparam { alias c name \"Soft\" min 0.0 max 1.0 }\nstage {\n    y (x * a * b) * (1.0 - c) + tanh(x * a * b) * c\n}"
+  },
+  {
+    "name": "Parallel Punch",
+    "category": "Dynamics",
+    "description": "Parallele Sättigung für mehr Dichte bei kontrollierter Transiente.",
+    "paramA": { "name": "Drive", "min": 0.5, "max": 6.0, "default": 2.4 },
+    "paramB": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.45 },
+    "paramC": { "name": "CompThr", "min": -30.0, "max": -6.0, "default": -16.0 },
+    "paramD": { "name": "CompRatio", "min": 1.5, "max": 8.0, "default": 3.5 },
+    "inputGain": 0.0,
+    "outputGain": -0.5,
+    "mix": 1.0,
+    "script": "param { alias a name \"Drive\" min 0.5 max 6.0 }\nparam { alias b name \"Blend\" min 0.0 max 1.0 }\nparam { alias c name \"CompThr\" min -30.0 max -6.0 }\nparam { alias d name \"CompRatio\" min 1.5 max 8.0 }\ncomp {\n    threshold c\n    ratio d\n    attack 4\n    release 120\n}\nstage {\n    y x * (1.0 - b) + tanh(x * a) * b\n}"
+  },
+  {
+    "name": "Wide Motion",
+    "category": "Modulation",
+    "description": "Langsamer, weiter LFO-Sweep mit sanfter Rückkopplung.",
+    "paramA": { "name": "Rate", "min": 0.05, "max": 3.0, "default": 0.45 },
+    "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 0.55 },
+    "paramC": { "name": "Feedback", "min": 0.0, "max": 0.7, "default": 0.22 },
+    "paramD": { "name": "Lowpass", "min": 700.0, "max": 12000.0, "default": 5200.0 },
+    "inputGain": 0.0,
+    "outputGain": -0.5,
+    "mix": 1.0,
+    "script": "param { alias a name \"Rate\" min 0.05 max 3.0 }\nparam { alias b name \"Depth\" min 0.0 max 1.0 }\nparam { alias c name \"Feedback\" min 0.0 max 0.7 }\nparam { alias d name \"Lowpass\" min 700.0 max 12000.0 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y tanh((x + y_prev * c) * (1.0 + osc1 * b * 0.4))\n}\nfilter {\n    type lowpass\n    cutoff d\n    resonance 0.8\n}"
+  },
+  {
+    "name": "Tight Gate",
+    "category": "Utility",
+    "description": "Schnelles Noise-Gate mit optionalem Soft-Release-Charakter.",
+    "paramA": { "name": "Threshold", "min": 0.01, "max": 0.6, "default": 0.09 },
+    "paramB": { "name": "ReleaseMix", "min": 0.0, "max": 1.0, "default": 0.35 },
+    "paramC": { "name": "Drive", "min": 0.5, "max": 2.5, "default": 1.1 },
+    "paramD": { "name": "Output", "min": 0.5, "max": 1.8, "default": 1.0 },
+    "inputGain": 0.0,
+    "outputGain": 0.0,
+    "mix": 1.0,
+    "script": "param { alias a name \"Threshold\" min 0.01 max 0.6 }\nparam { alias b name \"ReleaseMix\" min 0.0 max 1.0 }\nparam { alias c name \"Drive\" min 0.5 max 2.5 }\nparam { alias d name \"Output\" min 0.5 max 1.8 }\nstage {\n    y (x * step(a, abs(x))) * (1.0 - b) + (x + y_prev * 0.2) * b\n}\nstage {\n    y tanh(y * c) * d\n}"
   }
 ]

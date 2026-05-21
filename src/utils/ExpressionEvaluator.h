@@ -59,10 +59,6 @@ public:
                                         size_t xIndex,
                                         PreFn&& pre,
                                         PostFn&& post) const noexcept;
-    bool captureScalarState(std::function<float(const float*)>& func, VarArray& varsCopy, size_t& xIndex) const noexcept;
-    bool captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
-                          SimdVarArray& varsCopy,
-                          size_t& xIndex) const noexcept;
 
     // Sets value for variables by name.
     void setVariable(const std::string& name, float value) noexcept;
@@ -181,6 +177,10 @@ private:
     static NodePtr constantFold(NodePtr node);
     static std::string nodeKey(const Node* node);
     static NodePtr eliminateCSE(NodePtr node, std::unordered_map<std::string, NodePtr>& cache);
+    bool captureScalarState(std::function<float(const float*)>& func, VarArray& varsCopy, size_t& xIndex) const noexcept;
+    bool captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
+                          SimdVarArray& varsCopy,
+                          size_t& xIndex) const noexcept;
 
     // Parsing helpers
     class Lexer;
