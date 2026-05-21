@@ -513,7 +513,8 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             if (scriptFromState.isNotEmpty())
             {
                 juce::String err;
-                applyFormula(scriptFromState, err);
+                if (!applyFormula(scriptFromState, err))
+                    logError("Failed to restore DSL script from state: " + err);
             }
         }
     }

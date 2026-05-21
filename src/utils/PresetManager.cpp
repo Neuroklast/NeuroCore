@@ -2,7 +2,7 @@
 #include "PresetManager.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"
-#include "ExpressionEvaluator.h"
+#include "Log.h"
 #include <cstring>
 
 #ifndef JucePlugin_Name
@@ -206,7 +206,10 @@ bool PresetManager::loadPreset(const juce::File& file)
     {
         juce::String err;
         if (!processor.applyFormula(dscrScript, err))
+        {
+            logError("Failed to apply DSCR script while loading preset: " + err);
             return false;
+        }
     }
     return true;
 }
