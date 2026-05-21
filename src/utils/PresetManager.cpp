@@ -2,7 +2,7 @@
 #include "PresetManager.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"
-#include "ExpressionEvaluator.h"
+#include "Log.h"
 #include <cstring>
 
 #ifndef JucePlugin_Name
@@ -17,9 +17,14 @@ using json = nlohmann::json;
 
 namespace {
 constexpr char kMagic[4] = {'N','R','K','\0'};
-constexpr int kVersion = 1;
+constexpr int kVersion = 2;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
+constexpr int32_t kNumChunksV2 = 3;
+// NRK files currently contain very few chunks (META/STAT/DSCR in v2). 32 keeps
+// headroom for future format expansion while still rejecting malformed files
+// that try to force oversized chunk-entry allocations.
+constexpr int32_t kMaxReasonableChunkEntries = 32;
 constexpr const char* kAttrName       = "Name";
 constexpr const char* kAttrFileName   = "FileName";
 constexpr const char* kAttrPluginName = "PluginName";
@@ -86,6 +91,8 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     juce::MemoryBlock state;
     processor.getStateInformation(state);
     auto encrypted = encrypt(state);
+    const juce::String script = processor.getScript();
+    juce::MemoryBlock scriptBlock(script.toRawUTF8(), static_cast<size_t>(script.getNumBytesAsUTF8()));
 
     std::string metaStr = meta.dump();
     juce::MemoryBlock metaBlock(metaStr.data(), metaStr.size());
@@ -99,16 +106,20 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
 
     const int64_t metaOffset = sizeof(Header);
     const int64_t stateOffset = metaOffset + (int64_t)metaBlock.getSize();
-    const int64_t listOffset = stateOffset + (int64_t)encrypted.size();
+    const int64_t dscrOffset = stateOffset + (int64_t)encrypted.size();
+    const int64_t listOffset = dscrOffset + (int64_t)scriptBlock.getSize();
     header.chunkListOffset = listOffset;
 
-    ChunkEntry entries[2];
+    ChunkEntry entries[kNumChunksV2];
     std::memcpy(entries[0].id, kMetaId, 4);
     entries[0].offset = metaOffset;
     entries[0].length = (int64_t)metaBlock.getSize();
     std::memcpy(entries[1].id, kStateId, 4);
     entries[1].offset = stateOffset;
     entries[1].length = (int64_t)encrypted.size();
+    std::memcpy(entries[2].id, PresetManager::kDscrId, 4);
+    entries[2].offset = dscrOffset;
+    entries[2].length = (int64_t)scriptBlock.getSize();
 
     juce::FileOutputStream out(file);
     if (!out.openedOk())
@@ -116,8 +127,9 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     out.write(&header, sizeof(header));
     out.write(metaBlock.getData(), metaBlock.getSize());
     out.write(encrypted.data(), encrypted.size());
+    out.write(scriptBlock.getData(), scriptBlock.getSize());
     out.write(kMetaId, 4); // "List" header
-    const int32_t numEntries = 2;
+    const int32_t numEntries = kNumChunksV2;
     out.writeIntBigEndian(numEntries); // using big endian for portability
     for (auto& e : entries)
     {
@@ -148,17 +160,29 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (std::memcmp(listId, kMetaId, 4) != 0 && std::memcmp(listId, "List", 4) != 0)
         return false;
     int32_t numEntries = in.readIntBigEndian();
+    // A valid preset needs at least one chunk entry (STAT in legacy, plus DSCR
+    // in v2). Zero entries mean there is no restorable payload.
+    if (numEntries <= 0 || numEntries > kMaxReasonableChunkEntries)
+        return false;
     std::vector<ChunkEntry> entries(numEntries);
     for (int i = 0; i < numEntries; ++i)
     {
-        in.read(entries[i].id, 4);
+        if (in.read(entries[i].id, 4) != 4)
+            return false;
         entries[i].offset = in.readInt64();
         entries[i].length = in.readInt64();
+        if (entries[i].offset < 0 || entries[i].length < 0)
+            return false;
     }
 
+    const auto fileSize = in.getTotalLength();
     std::vector<uint8_t> stateData;
+    juce::String dscrScript;
     for (auto& e : entries)
     {
+        if (e.offset > fileSize || e.length > fileSize - e.offset)
+            return false;
+
         if (std::memcmp(e.id, kMetaId, 4) == 0)
         {
             in.setPosition(e.offset);
@@ -173,7 +197,16 @@ bool PresetManager::loadPreset(const juce::File& file)
         {
             in.setPosition(e.offset);
             stateData.resize((size_t)e.length);
-            in.read(stateData.data(), (int)e.length);
+            if (in.read(stateData.data(), (int)e.length) != (int)e.length)
+                return false;
+        }
+        else if (std::memcmp(e.id, PresetManager::kDscrId, 4) == 0)
+        {
+            in.setPosition(e.offset);
+            juce::MemoryBlock scriptBytes;
+            in.readIntoMemoryBlock(scriptBytes, static_cast<size_t>(e.length));
+            dscrScript = juce::String::fromUTF8(static_cast<const char*>(scriptBytes.getData()),
+                                                static_cast<int>(scriptBytes.getSize()));
         }
     }
 
@@ -185,6 +218,16 @@ bool PresetManager::loadPreset(const juce::File& file)
         return false;
 
     processor.setStateInformation(plain.getData(), (int)plain.getSize());
+
+    if (dscrScript.isNotEmpty())
+    {
+        juce::String err;
+        if (!processor.applyFormula(dscrScript, err))
+        {
+            logError("Failed to apply DSCR script while loading preset: " + err);
+            return false;
+        }
+    }
     return true;
 }
 
@@ -199,4 +242,3 @@ std::vector<juce::File> PresetManager::getAvailablePresets(const juce::File& dir
         result.push_back(iter.getFile());
     return result;
 }
-

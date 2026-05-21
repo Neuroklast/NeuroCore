@@ -101,6 +101,10 @@ float ExpressionEvaluator::FunctionNode::eval(const float* vars) const noexcept
 juce::dsp::SIMDRegister<float> ExpressionEvaluator::FunctionNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
 {
     auto v = child->evalSimd(vars);
+    if (simdFunc)
+        return simdFunc(v);
+
+    // Scalar fallback for functions without SIMD path.
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
     alignas(16) float arr[width];
     v.copyToRawArray(arr);
@@ -139,6 +143,9 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func3Node::evalSimd(const ju
     auto a = x->evalSimd(vars);
     auto b = y->evalSimd(vars);
     auto c = z->evalSimd(vars);
+    if (simdFunc)
+        return simdFunc(a, b, c);
+
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
     alignas(16) float arrA[width];
     alignas(16) float arrB[width];
@@ -375,14 +382,25 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
         return false;
     };
 
-    if (name == "sin")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastSin,  std::move(args[0])); }
-    if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastCos,  std::move(args[0])); }
+    if (name == "sin")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]), &LookupTables::fastSinSimd); }
+    if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]), &LookupTables::fastCosSimd); }
     if (name == "tan")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0])); }
-    if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastTanh, std::move(args[0])); }
+    if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]), &LookupTables::fastTanhSimd); }
     if (name == "sqrt") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0])); }
-    if (name == "abs")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::fabs), std::move(args[0])); }
+    if (name == "abs")
+    {
+        if (notEnoughArgs(1))
+            return nullptr;
+        return std::make_shared<FunctionNode>(
+            static_cast<float(*)(float)>(std::fabs),
+            std::move(args[0]),
+            [](juce::dsp::SIMDRegister<float> x)
+            {
+                return juce::dsp::SIMDRegister<float>::max(x, -x);
+            });
+    }
     if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
-    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastExp, std::move(args[0])); }
+    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastExp, std::move(args[0]), &LookupTables::fastExpSimd); }
     if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastLog, std::move(args[0])); }
     if (name == "log10") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0])); }
     if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
@@ -395,7 +413,20 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     if (name == "fmod") { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1])); }
     if (name == "mod")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1])); }
 
-    if (name == "clamp") { if (notEnoughArgs(3)) return nullptr; return std::make_shared<Func3Node>(juce::jlimit<float>, std::move(args[0]), std::move(args[1]), std::move(args[2])); }
+    if (name == "clamp")
+    {
+        if (notEnoughArgs(3))
+            return nullptr;
+        return std::make_shared<Func3Node>(
+            juce::jlimit<float>,
+            [](juce::dsp::SIMDRegister<float> v,
+               juce::dsp::SIMDRegister<float> lo,
+               juce::dsp::SIMDRegister<float> hi)
+            {
+                return juce::dsp::SIMDRegister<float>::min(juce::dsp::SIMDRegister<float>::max(v, lo), hi);
+            },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    }
 
     if (name == "map")
     {
@@ -508,102 +539,78 @@ void ExpressionEvaluator::evaluateBlock(float* samples, size_t numSamples,
                                         const std::function<void(size_t, VarArray&)>& pre,
                                         const std::function<void(size_t, float)>& post) const noexcept
 {
-    if (numSamples == 0)
-        return;
-
-    std::function<float(const float*)> func;
-    VarArray varsCopy;
-    size_t xIndex = invalidIndex;
-    {
-        const juce::SpinLock::ScopedLockType sl(lock);
-        varsCopy = variables;
-        func     = compiled;
-        auto it = varIndices.find("x");
-        if (it != varIndices.end())
-            xIndex = it->second;
-    }
-    if (!func)
-        return;
-
-    for (size_t i = 0; i < numSamples; ++i)
-    {
-        if (xIndex != invalidIndex)
-            varsCopy[xIndex] = samples[i];
-
-        if (pre)
-            pre(i, varsCopy);
-
-        float result = func(varsCopy.data());
-        result = std::isfinite(result) ? result : 0.0f;
-
-        if (post)
-            post(i, result);
-        else
-            samples[i] = result;
-    }
+    evaluateBlockT(
+        samples, numSamples,
+        [&pre](size_t i, VarArray& vars)
+        {
+            if (pre)
+                pre(i, vars);
+        },
+        [&post, samples](size_t i, float value)
+        {
+            if (post)
+                post(i, value);
+            else
+                samples[i] = value;
+        });
 }
 
 void ExpressionEvaluator::evaluateBlockSimd(float* samples, size_t numSamples,
                                             const std::function<void(size_t, SimdVarArray&)>& pre,
                                             const std::function<void(size_t, juce::dsp::SIMDRegister<float>)>& post) const noexcept
 {
-    if (numSamples == 0)
-        return;
+    evaluateBlockSimdT(
+        samples, numSamples,
+        [&pre](size_t i, SimdVarArray& vars)
+        {
+            if (pre)
+                pre(i, vars);
+        },
+        [&post, samples, numSamples](size_t i, juce::dsp::SIMDRegister<float> result)
+        {
+            if (post)
+            {
+                post(i, result);
+                return;
+            }
 
-    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> func;
-    SimdVarArray varsCopy{};
-    size_t xIndex = invalidIndex;
-    {
-        const juce::SpinLock::ScopedLockType sl(lock);
-        func = compiledSimd;
-        for (size_t i = 0; i < MaxVariables; ++i)
-            varsCopy[i] = juce::dsp::SIMDRegister<float>(variables[i]);
-        auto it = varIndices.find("x");
-        if (it != varIndices.end())
-            xIndex = it->second;
-    }
-    if (!func)
-        return;
+            constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+            alignas(16) float arr[width];
+            result.copyToRawArray(arr);
+            const size_t remaining = numSamples - i;
+            const size_t count = juce::jmin(width, remaining);
+            for (size_t k = 0; k < count; ++k)
+                samples[i + k] = arr[k];
+        });
+}
 
-    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    size_t i = 0;
-    for (; i + width <= numSamples; i += width)
-    {
-        juce::dsp::SIMDRegister<float> x = juce::dsp::SIMDRegister<float>::fromRawArray(samples + i);
-        if (xIndex != invalidIndex)
-            varsCopy[xIndex] = x;
-        if (pre)
-            pre(i, varsCopy);
-        auto result = func(varsCopy.data());
-        result.copyToRawArray(samples + i);
-        if (post)
-            post(i, result);
-    }
+bool ExpressionEvaluator::captureScalarState(std::function<float(const float*)>& func,
+                                             VarArray& varsCopy,
+                                             size_t& xIndex) const noexcept
+{
+    const juce::SpinLock::ScopedLockType sl(lock);
+    varsCopy = variables;
+    func = compiled;
+    xIndex = invalidIndex;
+    auto it = varIndices.find("x");
+    if (it != varIndices.end())
+        xIndex = it->second;
+    return static_cast<bool>(func);
+}
 
-    if (i < numSamples)
-    {
-        // process remaining samples using scalar path
-        evaluateBlock(samples + i, numSamples - i,
-                      [&](size_t idx, VarArray& svars)
-                      {
-                          if (xIndex != invalidIndex)
-                              svars[xIndex] = samples[i + idx];
-                          if (pre)
-                          {
-                              SimdVarArray simdVars;
-                              for (size_t v = 0; v < MaxVariables; ++v)
-                                  simdVars[v] = juce::dsp::SIMDRegister<float>(svars[v]);
-                              pre(i + idx, simdVars);
-                              for (size_t v = 0; v < MaxVariables; ++v)
-                                  svars[v] = simdVars[v][0];
-                          }
-                      },
-                      [&](size_t idx, float value)
-                      {
-                          if (post)
-                              post(i + idx, juce::dsp::SIMDRegister<float>(value));
-                      });
-    }
+bool ExpressionEvaluator::captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
+                                           SimdVarArray& varsCopy,
+                                           size_t& xIndex) const noexcept
+{
+    const juce::SpinLock::ScopedLockType sl(lock);
+    func = compiledSimd;
+    for (size_t i = 0; i < MaxVariables; ++i)
+        varsCopy[i] = juce::dsp::SIMDRegister<float>(variables[i]);
+    xIndex = invalidIndex;
+    auto it = varIndices.find("x");
+    if (it != varIndices.end())
+        xIndex = it->second;
+    return static_cast<bool>(func);
 }
 
 bool ExpressionEvaluator::isConstant(const Node* node) noexcept
@@ -791,4 +798,3 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::eliminateCSE(NodePtr node, std
     cache[key] = node;
     return node;
 }
-

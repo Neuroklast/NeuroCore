@@ -9,6 +9,52 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-05-21 – Review-Follow-up: Cleanup + Test-Coverage + Agent-Mandatories
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** Review-Follow-up mit Code-Optimierung, Legacy-Cleanup, Testabdeckung und Doku-/Agent-Workflow-Updates  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- Beim NRK-Chunk-Parsing sollten Entry-Zahlen, Offsets und Längen strikt validiert werden, um fehlerhafte/kaputte Preset-Dateien früh und sicher abzulehnen.
+- Ein expliziter Test auf `DSCR`-Priorität gegenüber dem aus `STAT` restaurierten Skript schützt die gewünschte v2-Semantik zuverlässig gegen Regressionen.
+- Verbindliche Abschluss-Schritte in `AGENTS.md` und `docs/AGENTS.md` reduzieren Review-Runden, weil Optimierung, Cleanup, Tests und Doku systematisch abgearbeitet werden.
+
+#### Fallstricke
+
+- In dieser Sandbox bleiben lokale Build-/Testläufe durch fehlende Linux-Dependency `x11` bereits beim CMake-Configure blockiert; deshalb CI-Status immer zusätzlich über GitHub Actions prüfen.
+- `action_required` Workflow-Runs können ohne gestartete Jobs erscheinen; die Diagnose muss dann über Run-Metadaten und spätere Reruns erfolgen.
+
+#### Empfehlungen für nächste Session
+
+1. Falls möglich CI-Jobs neu triggern/approven, damit die neuen Preset- und Parser-Checks auf allen Plattformen laufen.
+2. Zusätzlichen Negativtest ergänzen: Preset mit ungültiger Chunk-Entry-Anzahl muss `loadPreset()` sauber fehlschlagen.
+3. README-DSL-Kurzübersicht bei Gelegenheit formatieren (der bestehende Listenblock ist schwer lesbar).
+
+### 2026-05-21 – SIMD-Hotpath + NRK-DSCR-Chunk
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** Performance-Bottlenecks in `ExpressionEvaluator`/`SignalChain` reduzieren und DSL-Skript als `DSCR`-Chunk im NRK-Format speichern  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- Für JUCE-Ausdrücke lohnt sich ein optionaler SIMD-Callback direkt im AST-Knoten (`FunctionNode`), damit `sin/cos/tanh/exp` nicht auf per-Lane-Scalar-Fallback zurückfallen.
+- Template-basierte Block-Evaluierung (`evaluateBlockT` / `evaluateBlockSimdT`) entfernt unnötige `std::function`-Indirektion in Hotpaths, während die alten APIs als Wrapper kompatibel bleiben.
+- Ein zusätzlicher roher `DSCR`-Chunk im Presetformat (NRK v2) ermöglicht lesbare, nicht-escaped DSL-Skripte bei voller Rückwärtskompatibilität über den verschlüsselten `STAT`-Chunk.
+
+#### Fallstricke
+
+- `report_progress` kann Build-Artefakte committen, wenn `build/` nicht ignoriert ist; deshalb `build/` explizit in `.gitignore` eintragen.
+- In dieser Sandbox scheitert `cmake -B build -S .` weiterhin früh wegen fehlendem Systempaket `x11`; Test-Validierung kann dadurch lokal blockiert sein.
+
+#### Empfehlungen für nächste Session
+
+1. CI-Run prüfen, ob SIMD-/Preset-Änderungen auf allen Plattformen grün sind.
+2. Optional echte vektorielle Approximationskerne für LookupTables-SIMD-Funktionen evaluieren (anstatt laneweiser LUT-Auswertung).
+3. Preset-Inspector/UI um DSCR-Chunk-Anzeige ergänzen (Debugging/Diagnose).
+
 ### 2026-05-19 – Stabilitätsfixes + Agent Docs + Factory Presets
 
 **Agent:** GitHub Copilot Coding Agent  

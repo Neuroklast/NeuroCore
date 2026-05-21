@@ -1,4 +1,4 @@
-#NeuroCore
+# NeuroCore
 
 NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen über vier Parameter **a** bis **d** verwenden. Zusätzlich steht ein Sinus-Modulationssignal (*mod*) bereit.
 
@@ -66,6 +66,16 @@ cmake --build build --target NeuroCoreTests
 ctest --test-dir build
 ```
 
+## Pflicht-Workflow für Agent-Sessions
+
+Für jede Session gelten zusätzlich zu `AGENTS.md`/`docs/AGENTS.md` folgende Pflichtschritte:
+
+1. Geänderte Codepfade gezielt optimieren (wenn sicher und nachvollziehbar).
+2. Legacy-Code im geänderten Bereich bereinigen.
+3. Testabdeckung für geändertes Verhalten erhöhen.
+4. Offene Online-Review-Kommentare vollständig beantworten.
+5. Dokumentation und README bei Verhaltens-/Formatänderungen aktualisieren.
+
 ## Plug-in-Überblick
 
 Nach dem Start zeigt die Oberfläche vier Regler (Parameter *a–d*) sowie ein Eingabefeld für die Formel. Jede Formel darf die Variablen **x** (aktuelles Samplesignal), **mod** (Sinus-LFO) und die Parameter **a–d** verwenden. Beispiel:
@@ -79,6 +89,7 @@ Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das
 ## Presets laden und speichern
 
 Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren. Preset-Dateien werden beim Speichern mit Blowfish verschlüsselt.
+Das NRK-Format nutzt zusätzlich einen `DSCR`-Chunk für das rohe DSL-Skript (UTF-8) und bleibt über den `STAT`-Chunk rückwärtskompatibel.
 
 ## Lokalisierung
 

@@ -57,3 +57,15 @@ Die folgenden Schritte installieren alle benötigten Komponenten:
    ctest --test-dir build
    ```
    Sofern JUCE korrekt eingebunden ist, laufen alle Unit-Tests durch.
+
+---
+
+## Mandatory Abschluss-Schritte pro Session
+
+Diese Schritte sind verpflichtend und müssen für jede Session geprüft werden:
+
+1. **Code optimieren** in den berührten Hotpaths (nur sichere, messbare Verbesserungen).
+2. **Legacy-Code bereinigen** in den geänderten Bereichen (Duplikate/Magic Numbers/Altlasten reduzieren).
+3. **Test-Coverage erhöhen** für das geänderte Verhalten (neue oder erweiterte Unit-Tests).
+4. **Online-PR-Kommentare** vollständig bearbeiten und beantworten.
+5. **Dokumentation + README** aktualisieren, wenn Verhalten, Formate oder Workflows geändert wurden.

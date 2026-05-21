@@ -71,6 +71,13 @@ ctest --test-dir build --output-on-failure
 3. Run tests for changed areas
 4. Update `docs/DEVELOPMENT_STATUS.md` and `docs/LESSONS_LEARNED.md` in every session
 
+## Mandatory PR Completion Steps (every session)
+1. Optimize touched code paths where safe and measurable.
+2. Perform legacy cleanup in directly touched code (remove dead/duplicate logic, reduce magic numbers).
+3. Increase test coverage for touched behavior (new or extended unit tests).
+4. Resolve and answer online PR comments before handoff.
+5. Update docs and `README.md` for all behavior/format/workflow changes.
+
 ## DSL Quick Notes
 - Blocks: `param`, `stage`, `filter`, `comp`, `env`, `osc`
 - Common vars: `x`, `x_prev`, `y_prev`, `a..d`, `env1..N`, `osc1..N`, `t`, `sr`, `pi`

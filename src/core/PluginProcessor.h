@@ -185,6 +185,7 @@ private:
     juce::AudioBuffer<float>      scriptBuffer; // buffer for DSL processing
     juce::AudioBuffer<float>      oldScriptBuffer; // buffer for previous DSL processing
     juce::AudioBuffer<float>      previewBuffer; // buffer for preview processing
+    std::array<float*, Config::kMaxChannels> upChannelPtrs{};
     std::atomic<int>              inputWritePos  { 0 };
     std::atomic<int>              outputWritePos { 0 };
     InputRouter                   inputRouter;
