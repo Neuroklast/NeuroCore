@@ -119,6 +119,13 @@ namespace Config
     /// Number of invalid (NaN/Inf) samples tolerated during validation.
     inline constexpr int   kInvalidValueThreshold = 10;
 
+    /// Exponential leak applied to y_prev and x_prev in stages to prevent DC accumulation.
+    /// Slightly below 1.0 – nearly inaudible but prevents unbounded feedback growth.
+    inline constexpr float kFeedbackLeakFactor = 0.9999f;
+
+    /// Conservative tail time in seconds accounting for feedback formulas and compressor release.
+    inline constexpr double kDefaultTailTime = 2.0;
+
     //==========================================================================
     // Preset constants
     //==========================================================================

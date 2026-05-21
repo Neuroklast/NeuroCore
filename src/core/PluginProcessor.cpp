@@ -171,7 +171,8 @@ bool NeuroCoreAudioProcessor::isMidiEffect() const
 
 double NeuroCoreAudioProcessor::getTailLengthSeconds() const
 {
-    return 0.0;
+    const double chainTail = static_cast<double>(signalChain.getMaxTailTime()) + 0.5;
+    return juce::jmax(Config::kDefaultTailTime, chainTail);
 }
 
 int NeuroCoreAudioProcessor::getNumPrograms()
@@ -295,6 +296,20 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     // Process MIDI Learn CC mappings
     midiLearnManager.processMidiMessages(midiMessages, apvts);
+
+    // Update MIDI variables for DSL formulas (rt-safe: atomic loads)
+    midiVariableMapper.processMidi(midiMessages);
+    signalChain.setMidiVariables(midiVariableMapper);
+
+    // Update tempo from host play head
+    if (auto* head = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo pos;
+        if (head->getCurrentPosition(pos))
+        {
+            signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
+        }
+    }
 
     if (getSampleRate() <= 0.0) { logError("processBlock called with invalid sample rate"); buffer.clear(); return; }
     if (buffer.getNumSamples() == 0 || totalNumInputChannels == 0 || totalNumOutputChannels == 0)

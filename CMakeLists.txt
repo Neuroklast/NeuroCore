@@ -79,6 +79,7 @@ set(SOURCE_FILES
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
+    src/core/MidiVariableMapper.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -188,6 +189,7 @@ target_sources(NeuroCoreTests PRIVATE
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseManager.cpp
     src/ui/MidiLearnManager.cpp
+    src/core/MidiVariableMapper.cpp
     src/ui/WeightedLayout.cpp
 )
 

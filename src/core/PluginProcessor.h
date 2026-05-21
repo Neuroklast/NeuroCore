@@ -28,6 +28,7 @@
 #include "Config.h"
 #include "../licensing/LicenseManager.h"
 #include "../ui/MidiLearnManager.h"
+#include "../core/MidiVariableMapper.h"
 
 
 struct ValidationProgressInfo
@@ -115,6 +116,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
     MidiLearnManager midiLearnManager;
+    MidiVariableMapper midiVariableMapper;
     juce::UndoManager undoManager;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
