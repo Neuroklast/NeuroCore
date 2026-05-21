@@ -80,6 +80,9 @@ set(SOURCE_FILES
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
     src/core/MidiVariableMapper.cpp
+    src/core/WaveformCapture.cpp
+    src/core/ScriptManager.cpp
+    src/core/DspEngine.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -171,6 +174,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/WeightedLayoutTest.h
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
+    tests/NeuroCoreExtrasTest.h
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/dsp/WaveShaper.cpp
@@ -190,6 +194,9 @@ target_sources(NeuroCoreTests PRIVATE
     src/licensing/LicenseManager.cpp
     src/ui/MidiLearnManager.cpp
     src/core/MidiVariableMapper.cpp
+    src/core/WaveformCapture.cpp
+    src/core/ScriptManager.cpp
+    src/core/DspEngine.cpp
     src/ui/WeightedLayout.cpp
 )
 
