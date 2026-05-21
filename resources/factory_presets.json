@@ -340,7 +340,7 @@
   {
     "name": "Parallel Punch",
     "category": "Dynamics",
-    "description": "Parallele Sättigung für mehr Dichte bei kontrollierter Transiente.",
+    "description": "Parallel saturation for added density with controlled transients.",
     "paramA": { "name": "Drive", "min": 0.5, "max": 6.0, "default": 2.4 },
     "paramB": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.45 },
     "paramC": { "name": "CompThr", "min": -30.0, "max": -6.0, "default": -16.0 },
@@ -353,7 +353,7 @@
   {
     "name": "Wide Motion",
     "category": "Modulation",
-    "description": "Langsamer, weiter LFO-Sweep mit sanfter Rückkopplung.",
+    "description": "Slow, wide LFO sweep with gentle feedback.",
     "paramA": { "name": "Rate", "min": 0.05, "max": 3.0, "default": 0.45 },
     "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 0.55 },
     "paramC": { "name": "Feedback", "min": 0.0, "max": 0.7, "default": 0.22 },
@@ -366,7 +366,7 @@
   {
     "name": "Tight Gate",
     "category": "Utility",
-    "description": "Schnelles Noise-Gate mit optionalem Soft-Release-Charakter.",
+    "description": "Fast noise gate with optional soft-release character.",
     "paramA": { "name": "Threshold", "min": 0.01, "max": 0.6, "default": 0.09 },
     "paramB": { "name": "ReleaseMix", "min": 0.0, "max": 1.0, "default": 0.35 },
     "paramC": { "name": "Drive", "min": 0.5, "max": 2.5, "default": 1.1 },
