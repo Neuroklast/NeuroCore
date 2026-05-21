@@ -199,7 +199,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 }
                 oc->useSyncRatio = true;
                 oc->syncRatio = ratio;
-                oc->osc.setFrequency(static_cast<float>((120.0 / 60.0) * ratio));
+                oc->osc.setFrequency(static_cast<float>((Config::kDefaultTempo / 60.0) * ratio));
             }
             else
             {

@@ -40,14 +40,17 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
         return false;
 
     {
+        const juce::String textLower = text.toLowerCase();
         const juce::SpinLock::ScopedLockType sl(variableLock);
         for (int i = 0; i < 4; ++i)
         {
             auto key = juce::String::charToString(static_cast<juce_wchar>('a' + i));
             auto it  = aliases.find(key);
             variableNames[i] = it != aliases.end() ? it->second : key;
-            auto aliasName = variableNames[i];
-            parameterActive[i].store(text.containsIgnoreCase(aliasName) || text.containsIgnoreCase(key));
+            const auto& aliasName = variableNames[i];
+            const bool usedByAlias = textLower.contains(aliasName.toLowerCase());
+            const bool usedByKey   = !usedByAlias && textLower.contains(key);
+            parameterActive[i].store(usedByAlias || usedByKey);
         }
     }
 

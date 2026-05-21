@@ -193,7 +193,12 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 {
     juce::ScopedNoDenormals noDenormals;
 
-    if (getSampleRate() <= 0.0) { logError("processBlock: invalid sample rate"); buffer.clear(); return; }
+    if (getSampleRate() <= 0.0)
+    {
+        logError("processBlock: invalid sample rate");
+        buffer.clear();
+        return;
+    }
     if (buffer.getNumSamples() == 0 || getTotalNumInputChannels() == 0) return;
 
     // MIDI: Learn CC mappings + update DSL MIDI variables

@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include <atomic>
 #include <vector>
@@ -99,7 +100,7 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         bool useSyncRatio{false};   ///< When true, freq is derived from BPM
         float syncRatio{0.25f};     ///< Beat ratio (e.g. 0.25 = 1/4 note)
-        double currentBpm{120.0};
+        double currentBpm{Config::kDefaultTempo};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer);

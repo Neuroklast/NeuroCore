@@ -57,5 +57,5 @@ private:
 
     void readFromRingBuffer(juce::AudioBuffer<float>& dest,
                             const juce::AudioBuffer<float>& src,
-                            std::atomic<int>& writePos) const;
+                            const std::atomic<int>& writePos) const;
 };

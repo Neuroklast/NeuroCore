@@ -126,6 +126,9 @@ namespace Config
     /// Conservative tail time in seconds accounting for feedback formulas and compressor release.
     inline constexpr double kDefaultTailTime = 2.0;
 
+    /// Default BPM used when no host tempo information is available.
+    inline constexpr double kDefaultTempo = 120.0;
+
     //==========================================================================
     // Preset constants
     //==========================================================================

@@ -61,17 +61,32 @@ stage {
 | Variable | Beschreibung |
 |---|---|
 | `x` | Aktueller Eingabe-Sample |
-| `x_prev` | Vorheriger Eingabe-Sample |
-| `y_prev` | Ausgabe des vorherigen Samples (Feedback) |
+| `x_prev` | Vorheriger Eingabe-Sample (Leak-Faktor 0.9999 – verhindert DC-Akkumulation) |
+| `y_prev` | Ausgabe des vorherigen Samples – Feedback (Leak-Faktor 0.9999) |
+| `ch` | Aktueller Kanal: 0 = links, 1 = rechts |
 | `a` | Knob A (nach `param`-Block skaliert) |
 | `b` | Knob B |
 | `c` | Knob C |
 | `d` | Knob D |
 | `env1` … `envN` | Ausgabe eines benannten `env`-Blocks |
 | `osc1` … `oscN` | Ausgabe eines benannten `osc`-Blocks |
-| `t` | Aktuelle Zeit in Sekunden |
+| `t` | Aktuelle Zeit in Sekunden (z. B. für `sin(2 * pi * 440 * t)`) |
 | `sr` | Sample-Rate in Hz |
 | `pi` | π (3.14159…) |
+| `midi_note` | Aktuelle MIDI-Note (0–127, 0 wenn keine Note) |
+| `midi_freq` | Frequenz der MIDI-Note in Hz |
+| `midi_vel` | MIDI-Velocity (0.0–1.0) |
+| `midi_gate` | 1.0 wenn Note aktiv, 0.0 sonst |
+| `midi_bend` | Pitch Bend (-1.0 bis +1.0) |
+| `midi_mod` | CC1 Modulationsrad (0.0–1.0) |
+
+**Kanal-Routing** (optional pro Stage):
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `channel` | `left` \| `right` \| `both` | Stage wird nur auf diesen Kanal angewendet (Standard: `both`) |
+| `ms_encode` | `true` | Wandelt L/R-Buffer in Mid/Side um (vor der Formel) |
+| `ms_decode` | `true` | Wandelt Mid/Side-Buffer zurück in L/R (vor der Formel) |
 
 ---
 
@@ -140,6 +155,7 @@ env {
 | `mode` | `rms` \| `peak` | Messmethode |
 | `attack` | ms | Ansprechzeit |
 | `release` | ms | Abklingzeit |
+| `trigger` | `midi_gate` | Startet Attack-Phase bei jedem MIDI-Note-On neu |
 
 Der Ausgabewert (0.0–1.0) steht in nachfolgenden `stage`-Blöcken als `env1` usw. zur Verfügung.
 
@@ -162,8 +178,14 @@ osc {
 |---|---|---|
 | `name` | Bezeichner | Name der Output-Variable (z. B. `osc1`, `oscVib`) |
 | `shape` | `sin` \| `saw` \| `tri` \| `square` | Wellenform |
-| `freq` | Hz | Frequenz des LFOs |
+| `freq` | Hz | Frequenz des LFOs (wird ignoriert wenn `sync` gesetzt) |
 | `depth` | 0.0–1.0 | Amplitude des LFOs |
+| `sync` | Ratio | Synchronisiert die Frequenz an das DAW-Tempo (z. B. `1/4` = Viertelnote, `1/8` = Achtelnote, `1` = Takt, `2` = 2 Takte) |
+
+**Beispiel Tempo-Sync:**
+```
+osc1: shape = sin; sync = 1/4; depth = d
+```
 
 Der Ausgabewert (-1.0–+1.0) steht in nachfolgenden `stage`-Blöcken zur Verfügung.
 

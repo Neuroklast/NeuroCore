@@ -102,7 +102,7 @@ private:
             const double sr = 44100.0;
             dsl::SignalChain chain;
             juce::String err;
-            expect(chain.loadScript("stage1: y = sin(2 * pi * 440 * t / sr)", err));
+            expect(chain.loadScript("stage1: y = sin(2 * pi * 440 * t)", err));
             chain.prepare({ sr, 512, 1 });
             juce::AudioBuffer<float> buf(1, 512);
             buf.clear();

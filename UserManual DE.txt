@@ -43,8 +43,29 @@ Du kannst alle üblichen Funktionen und Operatoren nutzen:
 Eingabevariablen:
 
 x = Input der Stage
-x_prev = Vorheriger Input
-y_prev = Vorheriges Output
+x_prev = Vorheriger Input (minimaler Leak-Faktor 0.9999 für Stabilität)
+y_prev = Vorheriges Output (minimaler Leak-Faktor 0.9999 verhindert DC-Akkumulation)
+ch     = Aktueller Kanal (0 = Links, 1 = Rechts)
+t      = Zeit in Sekunden (wird pro Block aktualisiert)
+sr     = Samplerate in Hz (z. B. 44100)
+pi     = 3.14159265…
+
+MIDI-Variablen (in allen Stages verfügbar wenn MIDI aktiv):
+midi_note  = aktuelle MIDI-Note (0–127, 0 wenn keine Note aktiv)
+midi_freq  = Frequenz der aktuellen Note in Hz
+midi_vel   = Velocity (0.0–1.0)
+midi_gate  = 1.0 wenn Note aktiv, 0.0 sonst
+midi_bend  = Pitch Bend (-1.0 bis +1.0)
+midi_mod   = CC1 Modulationsrad (0.0–1.0)
+
+Kanal-Routing (optional pro Stage):
+stage1: y = tanh(x * a); channel = left    # nur linker Kanal
+stage2: y = tanh(x * b); channel = right   # nur rechter Kanal
+stage3: y = x * 2;        channel = both   # beide Kanäle (Standard)
+
+Mid/Side-Kodierung:
+stage1: ms_encode = true   # wandelt L/R in Mid/Side um
+stage2: ms_decode = true   # wandelt Mid/Side zurück in L/R
 
 3.3. Filter-Stage
 filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
@@ -68,6 +89,16 @@ osc1: shape = sine; freq = 2.0; depth = d
 Formen: sine, triangle, square, saw, noise
 
 Gibt pro Sample einen Wert aus, z. B. für Modulation in Stage oder Filter.
+
+Tempo-Sync (optional, synchronisiert den LFO zum DAW-Tempo):
+osc1: shape = sine; sync = 1/4; depth = d   # ein Zyklus pro Viertelnote
+osc1: shape = sine; sync = 1;   depth = d   # ein Zyklus pro Takt
+osc1: shape = sine; sync = 1/8; depth = d   # ein Zyklus pro Achtelnote
+Wenn `sync` angegeben ist, wird `freq` ignoriert.
+
+3.7. Envelope Follower mit MIDI-Trigger
+env1: mode = rms; attack = 1; release = 100; trigger = midi_gate
+Mit `trigger = midi_gate` wird die Hüllkurve bei jedem MIDI-Note-On neu gestartet.
 
 4. Beispiel-Preset (Marshall-Style Distortion)
 param a = inputGain

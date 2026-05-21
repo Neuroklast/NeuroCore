@@ -36,12 +36,12 @@ void WaveformCapture::pushOutput(const juce::AudioBuffer<float>& src) noexcept
 
 void WaveformCapture::getInputWaveform(juce::AudioBuffer<float>& dest) const
 {
-    readFromRingBuffer(dest, inputWaveBuffer, const_cast<std::atomic<int>&>(inputWritePos));
+    readFromRingBuffer(dest, inputWaveBuffer, inputWritePos);
 }
 
 void WaveformCapture::getOutputWaveform(juce::AudioBuffer<float>& dest) const
 {
-    readFromRingBuffer(dest, outputWaveBuffer, const_cast<std::atomic<int>&>(outputWritePos));
+    readFromRingBuffer(dest, outputWaveBuffer, outputWritePos);
 }
 
 void WaveformCapture::pushToRingBuffer(const juce::AudioBuffer<float>& src,
@@ -67,7 +67,7 @@ void WaveformCapture::pushToRingBuffer(const juce::AudioBuffer<float>& src,
 
 void WaveformCapture::readFromRingBuffer(juce::AudioBuffer<float>& dest,
                                          const juce::AudioBuffer<float>& src,
-                                         std::atomic<int>& writePos) const
+                                         const std::atomic<int>& writePos) const
 {
     const int num = dest.getNumSamples();
     const int total = src.getNumSamples();
