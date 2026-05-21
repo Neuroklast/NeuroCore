@@ -21,6 +21,8 @@ constexpr int kVersion = 2;
 constexpr char kMetaId[4] = {'M','E','T','A'};
 constexpr char kStateId[4] = {'S','T','A','T'};
 constexpr int32_t kNumChunksV2 = 3;
+// NRK files currently contain very few chunks (META/STAT/DSCR in v2). 32 is a
+// defensive hard cap to reject malformed files with absurd entry counts.
 constexpr int32_t kMaxReasonableChunkEntries = 32;
 constexpr const char* kAttrName       = "Name";
 constexpr const char* kAttrFileName   = "FileName";
@@ -170,10 +172,14 @@ bool PresetManager::loadPreset(const juce::File& file)
             return false;
     }
 
+    const auto fileSize = in.getTotalLength();
     std::vector<uint8_t> stateData;
     juce::String dscrScript;
     for (auto& e : entries)
     {
+        if (e.offset > fileSize || e.length > fileSize - e.offset)
+            return false;
+
         if (std::memcmp(e.id, kMetaId, 4) == 0)
         {
             in.setPosition(e.offset);

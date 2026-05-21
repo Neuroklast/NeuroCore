@@ -97,7 +97,12 @@ public:
     if (dscrOffset >= 0 && dscrLength == dscrOverrideLength &&
         dscrOffset + dscrLength <= static_cast<int64_t>(presetBytes.getSize()))
     {
-      std::memcpy(static_cast<char*>(presetBytes.getData()) + dscrOffset,
+      auto* presetData = static_cast<char*>(presetBytes.getData());
+      expect(presetData != nullptr);
+      if (presetData == nullptr)
+        return;
+
+      std::memcpy(presetData + dscrOffset,
                   dscrOverride.toRawUTF8(),
                   static_cast<size_t>(dscrLength));
       juce::TemporaryFile patched(".nrk");
