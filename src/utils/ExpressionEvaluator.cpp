@@ -65,7 +65,7 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const j
     alignas(16) float rf[width];
     l.copyToRawArray(lf);
     r.copyToRawArray(rf);
-    float res[width];
+    alignas(16) float res[width] = {};
 
     switch (op)
     {
@@ -89,7 +89,6 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const j
         }
     }
 
-    for (size_t i = 0; i < width; ++i) res[i] = 0.0f;
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
 }
 
@@ -127,7 +126,7 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func2Node::evalSimd(const ju
     alignas(16) float arrB[width];
     a.copyToRawArray(arrA);
     b.copyToRawArray(arrB);
-    float res[width];
+    alignas(16) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -153,7 +152,7 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func3Node::evalSimd(const ju
     a.copyToRawArray(arrA);
     b.copyToRawArray(arrB);
     c.copyToRawArray(arrC);
-    float res[width];
+    alignas(16) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i], arrC[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -178,7 +177,7 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func5Node::evalSimd(const ju
     alignas(16) float arrD[width];
     alignas(16) float arrE[width];
     av.copyToRawArray(arrA); bv.copyToRawArray(arrB); cv.copyToRawArray(arrC); dv.copyToRawArray(arrD); ev.copyToRawArray(arrE);
-    float res[width];
+    alignas(16) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i], arrC[i], arrD[i], arrE[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -396,7 +395,8 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
             std::move(args[0]),
             [](juce::dsp::SIMDRegister<float> x)
             {
-                return juce::dsp::SIMDRegister<float>::max(x, -x);
+                auto negX = x * juce::dsp::SIMDRegister<float>(-1.0f);
+                return juce::dsp::SIMDRegister<float>::max(x, negX);
             });
     }
     if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
