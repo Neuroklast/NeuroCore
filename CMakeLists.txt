@@ -15,7 +15,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 
-# Always build the helper tools (juceaide) – must be set before JUCE is added
+# Always build the helper tools (juceaide) - must be set before JUCE is added
 set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
 
 if(NOT DEFINED JUCE_DIR)
