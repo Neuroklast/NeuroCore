@@ -73,7 +73,7 @@ private:
                                                Config::kDefaultVariableNames[1],
                                                Config::kDefaultVariableNames[2],
                                                Config::kDefaultVariableNames[3] };
-    std::array<std::atomic<bool>, 4> parameterActive{ true, true, true, true };
+    std::array<std::atomic<bool>, 4> parameterActive{{ {true}, {true}, {true}, {true} }};
     juce::String dslScript;
     juce::AudioBuffer<float> previewBuffer;
 };
