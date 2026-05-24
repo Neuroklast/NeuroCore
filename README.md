@@ -45,6 +45,11 @@ cmake -B build -S .
 cmake --build build --config Release
 ```
 
+Unter Windows verwenden `build_debug.bat` und `build_release.bat` den Generator
+`Ninja Multi-Config`, um bekannte `juce::juceaide`-Probleme mit dem
+Visual-Studio-Generator zu umgehen. Standardmäßig verwenden beide Skripte
+`JUCE_DIR=D:\JUCE` (überschreibbar per Umgebungsvariable `JUCE_DIR`).
+
 Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.
 Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
 
