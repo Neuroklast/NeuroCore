@@ -1,8 +1,8 @@
 # Entwicklungsstand NeuroCore
 
 **Letzte Aktualisierung:** 2026-05-21  
-**Version:** 0.2.0  
-**Gesamtfortschritt:** ~65–70%
+**Version:** 0.2.1  
+**Gesamtfortschritt:** ~72–75%
 
 ---
 
@@ -10,11 +10,15 @@
 
 | Modul | Status | Fortschritt | Letzte Änderung |
 |---|---|---|---|
-| Core/PluginProcessor | ⚠️ God-Class, aber Undo/Redo + MIDI Learn integriert; Audio-Callback ohne chPtr-Heap-Allokation | 72% | 2026-05-21 |
-| Core/PluginEditor | ✅ Resizable (600×400 – 1600×1000), Oversampling ComboBox, Undo/Redo Shortcuts | 75% | 2026-04-01 |
-| Core/Config.h | ✅ Vollständig | 95% | 2026-04-01 |
-| DSL/DSLParser | ✅ Funktional, Tests vorhanden | 80% | 2026-04-01 |
-| DSL/SignalChain | ✅ atomic_load/store korrekt, Stage-SIMD mit externem Evaluator-Snapshot | 80% | 2026-05-21 |
+| Core/PluginProcessor | ✅ God-Class aufgelöst; delegiert an DspEngine, ScriptManager, WaveformCapture | 88% | 2026-05-21 |
+| Core/DspEngine | ✅ Neu: DSP-Chain, Oversampling, Gain, Dry/Wet, Buffers | 85% | 2026-05-21 |
+| Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
+| Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
+| Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
+| Core/PluginEditor | ✅ Resizable (600×400 – 1600×1000), Oversampling ComboBox, Undo/Redo | 75% | 2026-04-01 |
+| Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
+| DSL/DSLParser | ✅ sync, channel, ms_encode, ms_decode, trigger Parameter | 88% | 2026-05-21 |
+| DSL/SignalChain | ✅ t/sr/pi Variablen, ch Var, Feedback Leak, setTempo(), setMidiVariables(), getMaxTailTime() | 88% | 2026-05-21 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -28,9 +32,9 @@
 | Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) + robustere Chunk-Validierung | 84% | 2026-05-21 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ DSLParser-Tests + PresetManager-DSCR-Prioritäts-Test erweitert | 63% | 2026-05-21 |
+| Tests | ✅ NeuroCoreExtrasTest: MIDI-Vars, Tempo-Sync, Feedback-Leak, t/sr/pi, Channel-Routing | 72% | 2026-05-21 |
 | CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval | 80% | 2026-04-01 |
-| Dokumentation | ✅ Vollständig (docs/) | 70% | 2026-04-01 |
+| Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
 
@@ -38,26 +42,32 @@
 
 ## Aktive Checkliste
 
-### Phase 2 – Professionalität ✅
+### Phase 3 – God-Class + Musikalische Features ✅
 
-- [x] Version auf 0.2.0 erhöht
-- [x] Resizable UI: `setResizable(true, true)` mit Limits 600×400 – 1600×1000
-- [x] Oversampling ComboBox im UI (1x, 2x, 4x, 8x) an APVTS gebunden
-- [x] MIDI Learn: `MidiLearnManager` erstellt, in `processBlock()` integriert
-- [x] MIDI Learn: Rechtsklick-Menü auf ParameterComponent (Learn/Unlearn)
-- [x] MIDI Learn: State-Persistence in `getStateInformation`/`setStateInformation`
-- [x] Undo/Redo: `juce::UndoManager` + `FormulaChangeAction` implementiert
-- [x] Undo/Redo: Keyboard Shortcuts (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y)
-- [x] CI/CD: `ci.yml` mit Matrix-Build + pluginval auf allen Plattformen
-- [x] CI/CD: `msbuild.yml` entfernt (redundant)
-- [x] CI/CD: `scripts/install_linux_deps.sh` mit allen Dependencies
-- [x] `NEEDS_MIDI_INPUT TRUE` + `EDITOR_WANTS_KEYBOARD_FOCUS TRUE` in CMakeLists.txt
+- [x] `PluginProcessor` God-Class aufgelöst in DspEngine + ScriptManager + WaveformCapture
+- [x] DSL-Variable `t` (Zeit in Sekunden), `sr` (Samplerate), `pi`, `ch` implementiert
+- [x] Feedback-Schutz: `kFeedbackLeakFactor = 0.9999f` für `y_prev`/`x_prev` in Stage
+- [x] Kanal-Routing: `channel = left|right|both` pro Stage
+- [x] Mid/Side-Encoding: `ms_encode = true`, `ms_decode = true`
+- [x] MIDI-Variablen: `midi_note`, `midi_freq`, `midi_vel`, `midi_gate`, `midi_bend`, `midi_mod`
+- [x] Tempo-Sync für Osc-Blöcke: `sync = 1/4` etc.
+- [x] `getTailLengthSeconds()` delegiert an `SignalChain::getMaxTailTime()`
+- [x] MIDI-Trigger für Env-Blöcke: `trigger = midi_gate`
+- [x] `MidiVariableMapper`: Klasse mit `std::atomic<float>` (RT-safe)
+- [x] Tests für alle neuen Features in `NeuroCoreExtrasTest.h`
+- [x] UserManual EN + DE aktualisiert
+- [x] `ValidationTypes.h` extrahiert (keine zirkulären Includes)
 
 ### Nächste Schritte (Priorität)
 
-- [x] Audit: `variableLock`/`variableNames` nicht im Audio-Thread verwendet
-- [ ] `PluginProcessor` aufteilen (God-Class auflösen)
-- [x] DC-Blocker in Signalkette einbauen
+- [ ] Licensing-Backend (echter Server statt Placeholder)
+- [ ] Windows/macOS Installer
+- [ ] UI: Progressive Disclosure (Settings-Panel für Oversampling/Language)
+- [ ] UI: Immediate Feedback (Syntaxfehler inline-highlighting)
+- [ ] UI: 8pt-Grid konsequent anwenden
+- [ ] SLEEF/vDSP für echtes SIMD bei transzendenten Funktionen
+- [ ] Polyphoner Betrieb / Note-per-Channel
+- [ ] Preset Drag-and-Drop Import/Export
 - [x] `autoGainCompensate()` optimieren
 - [x] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
 - [x] AU-Format für macOS aktivieren

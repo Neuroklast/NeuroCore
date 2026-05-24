@@ -9,7 +9,36 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
-### 2026-05-21 – Review-Follow-up: Cleanup + Test-Coverage + Agent-Mandatories
+### 2026-05-21 – God-Class-Auflösung + Musikalische/DSP-Features
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** PluginProcessor God-Class auflösen (DspEngine, ScriptManager, WaveformCapture) + MIDI-Variablen, Tempo-Sync, Feedback-Schutz, Stereo-Features, Tail-Time  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- Die Auflösung einer God-Class erfordert sorgfältige Analyse der Abhängigkeiten zwischen Klassen. `DspEngine::processBlock` nimmt `signalChain` und `oldSignalChain` als Referenz-Parameter – so muss DspEngine die ScriptManager-Klasse nicht kennen.
+- `ValidationProgressInfo` muss in eine eigene Header-Datei (`ValidationTypes.h`) ausgelagert werden, um zirkuläre Includes zwischen `PluginProcessor.h` und `ScriptManager.h` zu vermeiden.
+- `signalChain` und `oldSignalChain` müssen `public` in ScriptManager bleiben, weil `DspEngine::processBlock` und `PluginProcessor::getTailLengthSeconds` direkten Zugriff benötigen.
+- Für `ms_encode`/`ms_decode` in Stage müssen L- und R-Kanal gemeinsam transformiert werden – das erfordert Zugriff auf den gesamten Stereo-Buffer, nicht nur auf einzelne Samples. Die Stage-`processBlock`-Methode muss vor der Formel-Schleife diese Transformation durchführen.
+- `std::atomic<float>` ist ideal für MIDI-Variablen im Audio-Thread (RT-safe), erfordert aber `std::atomic_init` in Konstruktoren bei älteren Compilern; `= {0.f}` Initialisierung ist sicherer.
+- Für Tempo-Sync bei Osc-Blöcken: `sync = 1/4` als String-Ratio parsen (Float-Division) und in `Osc::applyTempo(bpm)` auf `freq = bpm/60 * ratio` abbilden.
+
+#### Fallstricke
+
+- In dieser Sandbox bleiben lokale Build-/Testläufe durch fehlende Linux-Dependency `x11` bereits beim CMake-Configure blockiert; CI-Status immer über GitHub Actions prüfen.
+- `PluginProcessor::processBlock` muss `midiVariableMapper` auf BEIDEN Chains (signalChain UND oldSignalChain) aufrufen, sonst klingt der Crossfade bei Formula-Wechsel mit MIDI inkonsistent.
+- `DspEngine.prepare()` muss die neuen Buffergrößen für `upBlock` UND `scriptBuffer`/`oldScriptBuffer` korrekt berechnen – Fehler dort führen zu stillen Buffer-Overflows.
+
+#### Empfehlungen für nächste Session
+
+1. CI-Jobs neu triggern, damit alle neuen NeuroCoreExtrasTests auf allen Plattformen laufen.
+2. UI: `ValidationTypes.h` prüfen ob `ValidationContentComponent.cpp` noch `#include "ValidationTypes.h"` benötigt oder es über `PluginProcessor.h` bekommt.
+3. Negativtest für kaputte Preset-Dateien (aus vorheriger Session) noch ausstehend.
+
+---
+
+
 
 **Agent:** GitHub Copilot Coding Agent  
 **Aufgabe:** Review-Follow-up mit Code-Optimierung, Legacy-Cleanup, Testabdeckung und Doku-/Agent-Workflow-Updates  

@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "SignalChain.h"
 #include "../core/Config.h"
+#include "../core/MidiVariableMapper.h"
 #include <atomic>
 #include <cmath>
 
@@ -14,7 +15,21 @@ SignalChain::SignalChain()
     variables["x"] = 0.0f;
     variables["x_prev"] = 0.0f;
     variables["y_prev"] = 0.0f;
+    variables["y"] = 0.0f;
+    variables["ch"] = 0.0f;
+    variables["t"] = 0.0f;
     variables["a"] = variables["b"] = variables["c"] = variables["d"] = 0.0f;
+    // Global constants
+    variables["pi"] = juce::MathConstants<float>::pi;
+    // MIDI variables – initialised to 0 so formulas that reference them compile
+    variables["midi_note"] = 0.0f;
+    variables["midi_freq"] = 0.0f;
+    variables["midi_vel"]  = 0.0f;
+    variables["midi_gate"] = 0.0f;
+    variables["midi_bend"] = 0.0f;
+    variables["midi_mod"]  = 0.0f;
+    // sr is set in prepare()
+    variables["sr"] = static_cast<float>(Config::kDefaultSampleRate);
 }
 
 void SignalChain::setValueTreeState(juce::AudioProcessorValueTreeState* vts) noexcept
@@ -25,6 +40,8 @@ void SignalChain::setValueTreeState(juce::AudioProcessorValueTreeState* vts) noe
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 {
     currentSpec = spec;
+    variables["sr"] = static_cast<float>(spec.sampleRate);
+    sampleCounter = 0;
     for (auto& s : paramSmooth)
         s.reset(spec.sampleRate, Config::kSmoothingTime);
     if (valueTreeState)
@@ -133,19 +150,64 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             st->formula = d.args.at("y");
             st->varPtr = &variables;
             st->eval.parseFormula(st->formula.toStdString());
-            newChain->push_back (std::move (st));
+
+            // Channel routing
+            if (d.args.count("channel"))
+            {
+                auto ch = d.args.at("channel").trim().toLowerCase();
+                if (ch == "left" || ch == "l")
+                    st->channelMode = Stage::ChannelMode::Left;
+                else if (ch == "right" || ch == "r")
+                    st->channelMode = Stage::ChannelMode::Right;
+                else
+                    st->channelMode = Stage::ChannelMode::Both;
+            }
+
+            // Mid/Side encode/decode
+            if (d.args.count("ms_encode"))
+                st->msEncode = (d.args.at("ms_encode").trim().toLowerCase() == "true");
+            if (d.args.count("ms_decode"))
+                st->msDecode = (d.args.at("ms_decode").trim().toLowerCase() == "true");
+
+            newChain->push_back(std::move(st));
         }
         else if (d.type.startsWith("osc"))
         {
             auto oc = std::make_unique<Osc>();
             auto shape = d.args.count("shape") ? d.args.at("shape") : "sine";
             oc->osc = makeOsc(shape.toLowerCase());
-            auto freq = d.args.count("freq") ? d.args.at("freq").getFloatValue() : 1.f;
             oc->depth = d.args.count("depth") ? d.args.at("depth").getFloatValue() : 1.f;
-            oc->osc.setFrequency(freq);
             oc->varPtr = &variables;
             oc->name = d.name;
-            newChain->push_back (std::move (oc));
+
+            // Tempo-sync or fixed frequency
+            if (d.args.count("sync"))
+            {
+                auto syncStr = d.args.at("sync").trim();
+                float ratio = 0.25f;
+                auto slashPos = syncStr.indexOfChar('/');
+                if (slashPos > 0)
+                {
+                    float num = syncStr.substring(0, slashPos).trim().getFloatValue();
+                    float den = syncStr.substring(slashPos + 1).trim().getFloatValue();
+                    if (den != 0.0f)
+                        ratio = num / den;
+                }
+                else
+                {
+                    ratio = syncStr.getFloatValue();
+                }
+                oc->useSyncRatio = true;
+                oc->syncRatio = ratio;
+                oc->osc.setFrequency(static_cast<float>((Config::kDefaultTempo / 60.0) * ratio));
+            }
+            else
+            {
+                auto freq = d.args.count("freq") ? d.args.at("freq").getFloatValue() : 1.f;
+                oc->osc.setFrequency(freq);
+            }
+
+            newChain->push_back(std::move(oc));
         }
         else if (d.type.startsWith("filter"))
         {
@@ -281,6 +343,15 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 en->release.parseFormula("0.1");
             en->name = d.name;
             en->varPtr = &variables;
+
+            // MIDI gate trigger
+            if (d.args.count("trigger"))
+            {
+                auto trigStr = d.args.at("trigger").trim().toLowerCase();
+                if (trigStr == "midi_gate")
+                    en->triggerOnMidiGate = true;
+            }
+
             newChain->push_back(std::move(en));
         }
     }
@@ -309,6 +380,11 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer)
                 paramSmooth[i].setTargetValue(p->load());
     }
 
+    // Update time variable 't' before processing
+    if (currentSpec.sampleRate > 0.0)
+        variables["t"] = static_cast<float>(sampleCounter) / static_cast<float>(currentSpec.sampleRate);
+    sampleCounter += buffer.getNumSamples();
+
     auto aliasPtr = std::atomic_load (&aliases);
     if (aliasPtr)
         for (const auto& kv : *aliasPtr)
@@ -330,9 +406,16 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     if (! chainPtr)
         return;
 
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    const int numSamples = buffer.getNumSamples();
+    const int numChannels = buffer.getNumChannels();
+    const float invSr = (currentSpec.sampleRate > 0.0)
+                        ? (1.0f / static_cast<float>(currentSpec.sampleRate))
+                        : 0.0f;
+
+    for (int ch = 0; ch < numChannels; ++ch)
     {
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        variables["ch"] = static_cast<float>(ch);
+        for (int i = 0; i < numSamples; ++i)
         {
             if (params[0]) variables["a"] = params[0]->getNextValue();
             if (params[1]) variables["b"] = params[1]->getNextValue();
@@ -343,6 +426,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 for (const auto& kv : *aliasPtr)
                     variables[kv.second] = variables[kv.first];
 
+            // Update 't' per sample for the current channel pass
+            variables["t"] = static_cast<float>(sampleCounter + i) * invSr;
+
             float x = buffer.getReadPointer(ch)[i];
             variables["x"] = x;
             for (auto& b : *chainPtr)
@@ -350,6 +436,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             buffer.getWritePointer(ch)[i] = x;
         }
     }
+    sampleCounter += numSamples;
 }
 
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
@@ -364,6 +451,7 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
     idxXPrev  = eval.getVariableIndex("x_prev");
     idxYPrev  = eval.getVariableIndex("y_prev");
     idxY      = eval.getVariableIndex("y");
+    idxCh     = eval.getVariableIndex("ch");
     yPtr      = &(*varPtr)["y"];
 
     paramIndices = { eval.getVariableIndex("a"),
@@ -375,7 +463,8 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
     for (auto& kv : *varPtr)
     {
         if (kv.first == "x" || kv.first == "x_prev" || kv.first == "y_prev" || kv.first == "y" ||
-            kv.first == "a" || kv.first == "b" || kv.first == "c" || kv.first == "d")
+            kv.first == "a" || kv.first == "b" || kv.first == "c" || kv.first == "d" ||
+            kv.first == "ch")
             continue;
 
         auto idx = eval.getVariableIndex(kv.first.toStdString());
@@ -389,6 +478,10 @@ float SignalChain::Stage::process(int ch, float x)
     if (! varPtr || ch >= static_cast<int>(xPrev.size()))
         return x;
 
+    // Channel mode filter
+    if (channelMode == ChannelMode::Left  && ch != 0) return x;
+    if (channelMode == ChannelMode::Right && ch != 1) return x;
+
     using VarArray = ExpressionEvaluator::VarArray;
 
     auto pre = [this, ch, &x](size_t, VarArray& vars)
@@ -399,6 +492,8 @@ float SignalChain::Stage::process(int ch, float x)
             vars[idxYPrev] = yPrev[ch];
         if (idxX != ExpressionEvaluator::invalidIndex)
             vars[idxX] = x;
+        if (idxCh != ExpressionEvaluator::invalidIndex)
+            vars[idxCh] = static_cast<float>(ch);
         for (size_t p = 0; p < 4; ++p)
             if (paramIndices[p] != ExpressionEvaluator::invalidIndex && paramSmoothers[p])
                 vars[paramIndices[p]] = paramSmoothers[p]->getNextValue();
@@ -410,8 +505,8 @@ float SignalChain::Stage::process(int ch, float x)
     auto post = [this, ch, &y, x](size_t, float result)
     {
         y = juce::jlimit(-1.0f, 1.0f, result);
-        xPrev[ch] = x;
-        yPrev[ch] = y;
+        xPrev[ch] = x * Config::kFeedbackLeakFactor;
+        yPrev[ch] = y * Config::kFeedbackLeakFactor;
         if (yPtr)
             *yPtr = y;
     };
@@ -425,22 +520,58 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     if (! varPtr)
         return;
 
+    // Mid/Side encode: L/R -> M/S
+    if (msEncode && buffer.getNumChannels() >= 2)
+    {
+        const int numS = buffer.getNumSamples();
+        auto* l = buffer.getWritePointer(0);
+        auto* r = buffer.getWritePointer(1);
+        for (int i = 0; i < numS; ++i)
+        {
+            const float m = (l[i] + r[i]) * 0.5f;
+            const float s = (l[i] - r[i]) * 0.5f;
+            l[i] = m;
+            r[i] = s;
+        }
+    }
+
+    // Mid/Side decode: M/S -> L/R
+    if (msDecode && buffer.getNumChannels() >= 2)
+    {
+        const int numS = buffer.getNumSamples();
+        auto* m = buffer.getWritePointer(0);
+        auto* s = buffer.getWritePointer(1);
+        for (int i = 0; i < numS; ++i)
+        {
+            const float l = m[i] + s[i];
+            const float r = m[i] - s[i];
+            m[i] = l;
+            s[i] = r;
+        }
+    }
+
     juce::dsp::AudioBlock<float> block (buffer);
     const size_t numSamples  = block.getNumSamples();
-    const size_t numChannels = juce::jmin (block.getNumChannels(), xPrev.size());
 
-    for (size_t ch = 0; ch < numChannels; ++ch)
+    // Determine channel range based on channelMode
+    const size_t firstCh = (channelMode == ChannelMode::Right) ? 1 : 0;
+    const size_t lastCh  = (channelMode == ChannelMode::Left)  ? 1
+                         : juce::jmin(block.getNumChannels(), xPrev.size());
+
+    for (size_t ch = firstCh; ch < lastCh; ++ch)
     {
         auto* data   = block.getChannelPointer (ch);
         float* prevX = &xPrev[ch];
         float* prevY = &yPrev[ch];
 
-        auto pre = [this, prevX, prevY](size_t, ExpressionEvaluator::SimdVarArray& vars)
+        auto pre = [this, ch, prevX, prevY](size_t, ExpressionEvaluator::SimdVarArray& vars)
         {
             if (idxXPrev != ExpressionEvaluator::invalidIndex)
                 vars[idxXPrev] = juce::dsp::SIMDRegister<float>(*prevX);
             if (idxYPrev != ExpressionEvaluator::invalidIndex)
                 vars[idxYPrev] = juce::dsp::SIMDRegister<float>(*prevY);
+            if (idxCh != ExpressionEvaluator::invalidIndex)
+                vars[idxCh] = juce::dsp::SIMDRegister<float>(static_cast<float>(ch));
             for (size_t p = 0; p < 4; ++p)
                 if (paramIndices[p] != ExpressionEvaluator::invalidIndex && paramSmoothers[p])
                     vars[paramIndices[p]] = juce::dsp::SIMDRegister<float>(paramSmoothers[p]->getNextValue());
@@ -459,8 +590,8 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             {
                 float y = juce::jlimit(-1.0f, 1.0f, arr[k]);
                 size_t idx = i + k;
-                *prevX = data[idx];
-                *prevY = y;
+                *prevX = data[idx] * Config::kFeedbackLeakFactor;
+                *prevY = y * Config::kFeedbackLeakFactor;
                 if (yPtr)
                     *yPtr = y;
                 data[idx] = y;
@@ -501,6 +632,15 @@ void SignalChain::Osc::processBlock(juce::AudioBuffer<float>& buffer)
         for (size_t ch = 0; ch < numChannels; ++ch)
             last[ch] = v;
     }
+}
+
+void SignalChain::Osc::applyTempo(double bpm) noexcept
+{
+    if (bpm <= 0.0 || ! useSyncRatio)
+        return;
+    currentBpm = bpm;
+    const float freq = static_cast<float>((bpm / 60.0) * syncRatio);
+    osc.setFrequency(freq);
 }
 
 void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
@@ -643,6 +783,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
     value.assign(spec.numChannels, 0.0f);
+    prevMidiGate = 0.0f;
     atkTime.reset(sampleRate, Config::kSmoothingTime);
     relTime.reset(sampleRate, Config::kSmoothingTime);
     auto initAtk = juce::jlimit(0.0001f, 1.0f, attack.evaluate(0.f));
@@ -684,6 +825,18 @@ float SignalChain::Env::process(int ch, float x)
     {
         relCoeff = std::exp(-1.0f / (r * sampleRate));
         prevRel = r;
+    }
+
+    // MIDI gate trigger: reset envelope on gate rising edge (ch 0 only to avoid double-trigger)
+    if (triggerOnMidiGate && ch == 0)
+    {
+        const float currentGate = (*varPtr)["midi_gate"];
+        if (currentGate > 0.5f && prevMidiGate <= 0.5f)
+        {
+            for (auto& v : value)
+                v = 0.0f;
+        }
+        prevMidiGate = currentGate;
     }
 
     float input = mode == Rms ? x * x : std::abs(x);
@@ -728,4 +881,46 @@ void SignalChain::setParameter(size_t index, float value) noexcept
 {
     if (index < paramSmooth.size())
         paramSmooth[index].setCurrentAndTargetValue(value);
+}
+
+void SignalChain::setTempo(double bpm, double /*ppqPosition*/, bool /*isPlaying*/) noexcept
+{
+    if (bpm <= 0.0)
+        return;
+    auto chainPtr = std::atomic_load(&chain);
+    if (! chainPtr)
+        return;
+    for (auto& b : *chainPtr)
+        if (auto* oc = dynamic_cast<Osc*>(b.get()))
+            if (oc->useSyncRatio)
+                oc->applyTempo(bpm);
+}
+
+void SignalChain::setMidiVariables(const MidiVariableMapper& mapper)
+{
+    mapper.applyToVariables(variables);
+}
+
+float SignalChain::getMaxTailTime() const noexcept
+{
+    float maxTail = 0.0f;
+    auto chainPtr = std::atomic_load(&chain);
+    if (! chainPtr)
+        return maxTail;
+
+    for (const auto& b : *chainPtr)
+    {
+        if (const auto* co = dynamic_cast<const Comp*>(b.get()))
+        {
+            // release is stored as seconds (0.01..1.0 from addDefaultMap)
+            float rel = co->release.evaluate(0.f);
+            if (rel > maxTail) maxTail = rel;
+        }
+        else if (const auto* en = dynamic_cast<const Env*>(b.get()))
+        {
+            float rel = en->release.evaluate(0.f);
+            if (rel > maxTail) maxTail = rel;
+        }
+    }
+    return maxTail;
 }

@@ -15,6 +15,9 @@ if(UNIX AND NOT APPLE)
 endif()
 
 
+# Always build the helper tools (juceaide) - must be set before JUCE is added
+set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
+
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
         set(JUCE_DIR $ENV{JUCE_DIR} CACHE PATH "Path to JUCE" FORCE)
@@ -25,25 +28,18 @@ if(NOT DEFINED JUCE_DIR)
             GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
             GIT_TAG 8.0.6
         )
-        set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(juce)
         set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH "Path to JUCE" FORCE)
+        set(_JUCE_ALREADY_ADDED TRUE)
     endif()
 endif()
 
 list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
 
-# Always build the helper tools (juceaide)
-set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
-
-add_subdirectory(${JUCE_DIR} JUCE)
-
-# JUCE helper macros
-include(${JUCE_DIR}/extras/Build/CMake/JUCEModuleSupport.cmake)
-include(${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake)
-
-# Ensure the VST3 SDK is available for JUCE
-juce_set_vst3_sdk_path(${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK)
+# Only call add_subdirectory when JUCE was NOT added via FetchContent
+if(NOT _JUCE_ALREADY_ADDED)
+    add_subdirectory(${JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
+endif()
 
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
@@ -79,6 +75,10 @@ set(SOURCE_FILES
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
+    src/core/MidiVariableMapper.cpp
+    src/core/WaveformCapture.cpp
+    src/core/ScriptManager.cpp
+    src/core/DspEngine.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
 )
@@ -170,6 +170,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/WeightedLayoutTest.h
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
+    tests/NeuroCoreExtrasTest.h
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/dsp/WaveShaper.cpp
@@ -188,6 +189,10 @@ target_sources(NeuroCoreTests PRIVATE
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseManager.cpp
     src/ui/MidiLearnManager.cpp
+    src/core/MidiVariableMapper.cpp
+    src/core/WaveformCapture.cpp
+    src/core/ScriptManager.cpp
+    src/core/DspEngine.cpp
     src/ui/WeightedLayout.cpp
 )
 

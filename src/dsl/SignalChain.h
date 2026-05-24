@@ -4,10 +4,14 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include <atomic>
 #include <vector>
 #include <utility>
+
+// Forward declaration
+class MidiVariableMapper;
 
 namespace dsl
 {
@@ -24,6 +28,16 @@ public:
     void processBlock(juce::AudioBuffer<float>& buffer);
 
     void processBlockSmoothed(juce::AudioBuffer<float>& buffer, std::array<juce::SmoothedValue<float>*, 4> params);
+
+    /** Update tempo information – called each processBlock from the host play head. */
+    void setTempo(double bpm, double ppqPosition, bool isPlaying) noexcept;
+
+    /** Write MIDI variable values into the shared variables map before processing. */
+    void setMidiVariables(const MidiVariableMapper& mapper);
+
+    /** Returns the maximum tail time in seconds across all Comp and Env blocks.
+        Used by PluginProcessor::getTailLengthSeconds. */
+    float getMaxTailTime() const noexcept;
 
 private:
     struct Block
@@ -48,6 +62,9 @@ private:
 
     struct Stage : Block
     {
+        /** Which channels this stage applies to. */
+        enum class ChannelMode { Both = 0, Left, Right };
+
         ExpressionEvaluator eval;
         std::vector<float> xPrev, yPrev;
         juce::String formula;
@@ -63,7 +80,11 @@ private:
         size_t idxXPrev{ExpressionEvaluator::invalidIndex};
         size_t idxYPrev{ExpressionEvaluator::invalidIndex};
         size_t idxY{ExpressionEvaluator::invalidIndex};
+        size_t idxCh{ExpressionEvaluator::invalidIndex};
         float* yPtr{nullptr};
+        ChannelMode channelMode{ChannelMode::Both};
+        bool msEncode{false}; ///< Convert L/R to Mid/Side before formula
+        bool msDecode{false}; ///< Convert Mid/Side back to L/R before formula
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer);
@@ -77,9 +98,14 @@ private:
         std::vector<float> last;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         std::vector<std::pair<juce::String, std::string>> varNames;
+        bool useSyncRatio{false};   ///< When true, freq is derived from BPM
+        float syncRatio{0.25f};     ///< Beat ratio (e.g. 0.25 = 1/4 note)
+        double currentBpm{Config::kDefaultTempo};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer);
+        /** Update oscillator frequency from BPM and sync ratio. */
+        void applyTempo(double bpm) noexcept;
     };
 
     struct Filter : Block
@@ -126,6 +152,8 @@ private:
         std::vector<float> value;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
+        float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
@@ -147,6 +175,9 @@ private:
                                                EffectParameters::paramD };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
 
+    // Sample counter for global 't' variable (time in seconds)
+    int64_t sampleCounter{0};
+
 public:
     std::shared_ptr<AliasMap> getAliases() const { return std::atomic_load(&aliases); }
     std::shared_ptr<Chain> getChain() const { return std::atomic_load(&chain); }
@@ -159,3 +190,4 @@ public:
 } // namespace dsl
 
 #endif // SIGNALCHAIN_H
+

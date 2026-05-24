@@ -43,8 +43,35 @@ Input variables:
 
 ```
 x      = input of the stage
-x_prev = previous input
-y_prev = previous output
+x_prev = previous input (has a minimal leak factor of 0.9999 for stability)
+y_prev = previous output (has a minimal leak factor of 0.9999 to prevent DC accumulation)
+ch     = current channel index (0 = left, 1 = right)
+t      = time in seconds (updated per block)
+sr     = sample rate in Hz (e.g. 44100)
+pi     = 3.14159265…
+```
+
+MIDI variables (available in all stages when MIDI is active):
+```
+midi_note  = current MIDI note number (0–127, 0 when no note active)
+midi_freq  = frequency of the current note in Hz
+midi_vel   = velocity (0.0–1.0)
+midi_gate  = 1.0 when note active, 0.0 otherwise
+midi_bend  = pitch bend (-1.0 to +1.0)
+midi_mod   = CC1 modulation wheel (0.0–1.0)
+```
+
+Channel routing (optional per stage):
+```
+stage1: y = tanh(x * a); channel = left
+stage2: y = tanh(x * b); channel = right
+stage3: y = x * 2;        channel = both
+```
+
+Mid/Side encoding:
+```
+stage1: ms_encode = true   # converts L/R to Mid/Side
+stage2: ms_decode = true   # converts Mid/Side back to L/R
 ```
 
 3.3 Filter Stage
@@ -73,6 +100,20 @@ osc1: shape = sine; freq = 2.0; depth = d
 ```
 Shapes: sine, triangle, square, saw, noise.
 Outputs one value per sample, e.g. for modulation inside stages or filters.
+
+Tempo sync (optional, syncs oscillator frequency to DAW BPM):
+```
+osc1: shape = sine; sync = 1/4; depth = d   # one cycle per quarter note
+osc1: shape = sine; sync = 1;   depth = d   # one cycle per bar
+osc1: shape = sine; sync = 1/8; depth = d   # one cycle per eighth note
+```
+When `sync` is specified, `freq` is ignored and the oscillator locks to the DAW tempo.
+
+3.7 Envelope Follower with MIDI trigger
+```
+env1: mode = rms; attack = 1; release = 100; trigger = midi_gate
+```
+When `trigger = midi_gate` is set, the envelope resets to the attack phase every time a MIDI Note On is received.
 
 4. Example preset (Marshall-style distortion)
 ```

@@ -6,6 +6,7 @@
 #include "WeightedLayoutTest.h"
 #include "LookupTableSmootherTest.h"
 #include "DSPUtilsTest.h"
+#include "NeuroCoreExtrasTest.h"
 #include <JuceHeader.h>
 
 int main(int argc, char *argv[]) {
@@ -19,6 +20,7 @@ int main(int argc, char *argv[]) {
   WeightedLayoutTest layoutTest;         // registers itself
   LookupTableSmootherTest smootherTest;  // registers itself
   DSPUtilsTest dspUtilsTest;             // registers itself
+  NeuroCoreExtrasTest extrasTest;        // registers itself
 
   juce::UnitTestRunner runner;
   runner.runAllTests();
