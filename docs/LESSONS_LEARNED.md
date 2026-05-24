@@ -23,7 +23,7 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 #### Fallstricke
 
-- In dieser Sandbox bleibt eine vollständige lokale Build-Validierung blockiert, weil Linux-Systemabhängigkeiten (`x11`) für den CMake-Configure fehlen.
+- In der lokalen Linux-Sandbox dieser Agent-Session bleibt eine vollständige Build-Validierung blockiert, weil Systemabhängigkeiten (`x11`) für den CMake-Configure fehlen.
 
 #### Empfehlungen für nächste Session
 

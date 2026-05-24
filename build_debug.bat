@@ -9,7 +9,7 @@ if not defined JUCE_DIR (
     echo JUCE_DIR nicht gesetzt, verwende Default: D:\JUCE
     echo (bei Bedarf JUCE_DIR als Umgebungsvariable setzen oder direkt im Skript aendern)
 )
-REM Projekt-Default: JUCE liegt standardmaessig auf D:\JUCE
+REM Projekt-Default: D:\JUCE (Issue-Vorgabe; via JUCE_DIR-Umgebungsvariable ueberschreibbar)
 
 echo ===========================================
 echo  NeuroCore DEBUG Build
