@@ -7,6 +7,7 @@ REM Aendern falls JUCE woanders liegt!
 
 if not defined JUCE_DIR (
     set "JUCE_DIR=E:\JUCE"
+    echo JUCE_DIR war nicht gesetzt, verwende Default: E:\JUCE ^(bei Bedarf im Skript anpassen^)
 )
 
 echo ===========================================
