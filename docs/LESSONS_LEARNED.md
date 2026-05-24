@@ -9,6 +9,29 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-05-24 – Projucer/CMake Sync-Fix für PR #195
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** Fehlende Dateien in `NeuroCore.jucer` nachtragen, JUCE-CMake-Einbindung (`juceaide`) reparieren, Windows-Buildskripte ergänzen  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- Wenn neue Klassen nur in `CMakeLists.txt`, aber nicht in `NeuroCore.jucer` eingetragen werden, driften CMake- und Projucer-Build auseinander und Visual-Studio-Projekte aus Projucer fehlen dann komplette Units.
+- Für stabile JUCE-CMake-Integration muss `JUCE_BUILD_HELPER_TOOLS` VOR jeder JUCE-Einbindung gesetzt werden; sonst fehlt in CI der `juceaide`-Target und BinaryData/RC-Generierung bricht.
+- Das Entfernen von unnötigen Plattform-Libs (`curl` im Test-Target) reduziert plattformspezifische Build-Probleme, ohne Funktionalität zu verlieren.
+
+#### Fallstricke
+
+- In dieser Sandbox bleibt `cmake -B build -S .` weiterhin am Linux-Dependency-Check (`x11`) hängen; vollständige Build-Validierung muss daher über CI-Jobs erfolgen.
+
+#### Empfehlungen für nächste Session
+
+1. CI-Rerun von `ci.yml` prüfen, ob der `juceaide target does not exist` Fehler auf Linux/macOS/Windows verschwunden ist.
+2. Optional README um kurzen Hinweis auf `build_debug.bat` und `build_release.bat` ergänzen.
+
+---
+
 ### 2026-05-21 – God-Class-Auflösung + Musikalische/DSP-Features
 
 **Agent:** GitHub Copilot Coding Agent  
