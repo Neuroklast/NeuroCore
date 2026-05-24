@@ -19,6 +19,21 @@ echo ===========================================
 REM Ninja-Pfad aus VS2022 Build Tools
 set "VS_NINJA=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja"
 set "VS_CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
+set "VS_VCVARS=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+
+if not exist "%VS_NINJA%\ninja.exe" (
+    echo FEHLER: Ninja wurde nicht unter "%VS_NINJA%\ninja.exe" gefunden.
+    echo Passe VS_NINJA im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
+    pause
+    exit /b 1
+)
+
+if not exist "%VS_CMAKE%\cmake.exe" (
+    echo FEHLER: CMake wurde nicht unter "%VS_CMAKE%\cmake.exe" gefunden.
+    echo Passe VS_CMAKE im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
+    pause
+    exit /b 1
+)
 
 REM PATH um Ninja erweitern
 set "PATH=%VS_NINJA%;%VS_CMAKE%;%PATH%"
@@ -42,7 +57,18 @@ if exist "%BUILD_DIR%\CMakeCache.txt" (
 )
 
 REM VS2022 Developer-Umgebung aktivieren fuer cl.exe
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+if not exist "%VS_VCVARS%" (
+    echo FEHLER: vcvars64.bat nicht gefunden: %VS_VCVARS%
+    echo Passe VS_VCVARS im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
+    pause
+    exit /b 1
+)
+call "%VS_VCVARS%" >nul 2>&1
+if errorlevel 1 (
+    echo FEHLER: Konnte VS2022 Developer-Umgebung nicht initialisieren (vcvars64.bat).
+    pause
+    exit /b 1
+)
 
 REM Konfigurieren mit Ninja
 echo.
