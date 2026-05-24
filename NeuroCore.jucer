@@ -39,6 +39,15 @@
         <FILE id="d3gkUY" name="Config.h" compile="0" resource="0" file="src/core/Config.h"/>
         <FILE id="c3tDd9" name="EffectParameters.h" compile="0" resource="0"
               file="src/core/EffectParameters.h"/>
+        <FILE id="N8k2Qp1Z" name="DspEngine.cpp" compile="1" resource="0" file="src/core/DspEngine.cpp"/>
+        <FILE id="Rm4Tq7Ls" name="ScriptManager.cpp" compile="1" resource="0" file="src/core/ScriptManager.cpp"/>
+        <FILE id="Uy9Vb2Hd" name="WaveformCapture.cpp" compile="1" resource="0" file="src/core/WaveformCapture.cpp"/>
+        <FILE id="Pk6Wn3Er" name="MidiVariableMapper.cpp" compile="1" resource="0" file="src/core/MidiVariableMapper.cpp"/>
+        <FILE id="Xc5Mf8Ja" name="DspEngine.h" compile="0" resource="0" file="src/core/DspEngine.h"/>
+        <FILE id="Hn7Zd4Ku" name="ScriptManager.h" compile="0" resource="0" file="src/core/ScriptManager.h"/>
+        <FILE id="Qw2Lp9Ts" name="WaveformCapture.h" compile="0" resource="0" file="src/core/WaveformCapture.h"/>
+        <FILE id="Bg3Rx6Vm" name="MidiVariableMapper.h" compile="0" resource="0" file="src/core/MidiVariableMapper.h"/>
+        <FILE id="Tf8Ny1Pc" name="ValidationTypes.h" compile="0" resource="0" file="src/core/ValidationTypes.h"/>
         <FILE id="MXEKRH" name="PluginProcessor.cpp" compile="1" resource="0"
               file="src/core/PluginProcessor.cpp"/>
         <FILE id="UFBy2W" name="PluginProcessor.h" compile="0" resource="0"
@@ -138,6 +147,8 @@
         <FILE id="yd4xpe" name="ModalOverlay.cpp" compile="1" resource="0"
               file="src/ui/ModalOverlay.cpp"/>
         <FILE id="uc6MmY" name="ModalOverlay.h" compile="0" resource="0" file="src/ui/ModalOverlay.h"/>
+        <FILE id="Je4Ks7Wp" name="MidiLearnManager.cpp" compile="1" resource="0" file="src/ui/MidiLearnManager.cpp"/>
+        <FILE id="Ld9Qv2Xa" name="MidiLearnManager.h" compile="0" resource="0" file="src/ui/MidiLearnManager.h"/>
         <FILE id="VN1ZoS" name="PluginEditor.cpp" compile="1" resource="0"
               file="src/ui/PluginEditor.cpp"/>
         <FILE id="OaBecS" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>

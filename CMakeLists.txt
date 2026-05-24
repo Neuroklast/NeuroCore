@@ -22,7 +22,7 @@ if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})
         set(JUCE_DIR $ENV{JUCE_DIR} CACHE PATH "Path to JUCE" FORCE)
     else()
-        message(STATUS "JUCE_DIR nicht gesetzt, lade JUCE automatisch...")
+        message(STATUS "JUCE_DIR nicht gesetzt, lade JUCE via FetchContent...")
         FetchContent_Declare(
             juce
             GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
@@ -30,15 +30,12 @@ if(NOT DEFINED JUCE_DIR)
         )
         FetchContent_MakeAvailable(juce)
         set(JUCE_DIR ${juce_SOURCE_DIR} CACHE PATH "Path to JUCE" FORCE)
-        set(_JUCE_ALREADY_ADDED TRUE)
+        set(_JUCE_FETCHED TRUE)
     endif()
 endif()
 
-list(APPEND CMAKE_PREFIX_PATH "${JUCE_DIR}")
-
-# Only call add_subdirectory when JUCE was NOT added via FetchContent
-if(NOT _JUCE_ALREADY_ADDED)
-    add_subdirectory(${JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
+if(NOT _JUCE_FETCHED)
+    add_subdirectory("${JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE")
 endif()
 
 set(SOURCE_FILES
@@ -223,7 +220,6 @@ target_link_libraries(NeuroCoreTests PRIVATE
     juce::juce_cryptography
     juce::juce_opengl
     resourcesBinary
-    curl
 )
 
 enable_testing()

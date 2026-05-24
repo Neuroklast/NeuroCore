@@ -1,6 +1,6 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-05-21  
+**Letzte Aktualisierung:** 2026-05-24  
 **Version:** 0.2.1  
 **Gesamtfortschritt:** ~72–75%
 
@@ -33,7 +33,7 @@
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
 | Tests | ✅ NeuroCoreExtrasTest: MIDI-Vars, Tempo-Sync, Feedback-Leak, t/sr/pi, Channel-Routing | 72% | 2026-05-21 |
-| CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval | 80% | 2026-04-01 |
+| CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval + JUCE-Einbindungsfix für juceaide | 84% | 2026-05-24 |
 | Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
@@ -71,6 +71,10 @@
 - [x] `autoGainCompensate()` optimieren
 - [x] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
 - [x] AU-Format für macOS aktivieren
+- [x] `NeuroCore.jucer` um neue Core-/UI-Dateien aus PR #195 ergänzt (Projucer-Build wieder konsistent)
+- [x] CMake JUCE-Einbindungslogik für `juceaide` robust gemacht (`JUCE_BUILD_HELPER_TOOLS` + FetchContent/Add-Subdirectory-Pfad)
+- [x] `curl` aus `NeuroCoreTests` entfernt (Windows-Linking vermeiden)
+- [x] Windows-Buildskripte ergänzt: `build_debug.bat`, `build_release.bat`
 - [ ] Windows/macOS Installer
 - [x] NRK-Presetformat: DSCR-Chunk für rohes DSL-Skript ergänzen
 - [x] ExpressionEvaluator-Hotpath: Template-Block-Evaluierung + SIMD-Funktionspfade für sin/cos/tanh/exp/abs/clamp
