@@ -9,6 +9,29 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-05-24 – Windows Visual-Studio-Generator Build-Fix via Ninja
+
+**Agent:** GitHub Copilot Coding Agent  
+**Aufgabe:** Windows-Build mit `juce::juceaide`-Fehler stabilisieren (`build_debug.bat`, `build_release.bat`, `CMakeLists.txt`)  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- Der Visual-Studio-CMake-Generator kann bei JUCE-Custom-Commands (`binarydata`, `rcfile`) `juce::juceaide` als Literal statt als ausführbaren Pfad behandeln; `Ninja Multi-Config` umgeht dieses Problem zuverlässig.
+- Für lokale Windows-Skripte ist es robuster, Ninja/CMake aus den VS2022 Build Tools explizit in den `PATH` zu setzen und vor dem Build `vcvars64.bat` zu laden.
+- `add_subdirectory("${JUCE_DIR}" "JUCE")` hält die JUCE-Einbindung näher am stabilen Zustand vor PR #195 und vermeidet zusätzliche Pfadauflösungs-Risiken.
+
+#### Fallstricke
+
+- In dieser Sandbox bleibt eine vollständige lokale Build-Validierung blockiert, weil Linux-Systemabhängigkeiten (`x11`) für den CMake-Configure fehlen.
+
+#### Empfehlungen für nächste Session
+
+1. CI-Rerun für `ci.yml` prüfen, speziell den Windows-Job mit dem vorherigen `MSB8066`/`juce::juceaide`-Fehler.
+2. Optional README-Buildsektion um Ninja-Hinweis für Windows ergänzen.
+
+---
+
 ### 2026-05-24 – Projucer/CMake Sync-Fix für PR #195
 
 **Agent:** GitHub Copilot Coding Agent  
