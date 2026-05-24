@@ -35,7 +35,7 @@ if(NOT DEFINED JUCE_DIR)
 endif()
 
 if(NOT _JUCE_FETCHED)
-    add_subdirectory("${JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE")
+    add_subdirectory("${JUCE_DIR}" "JUCE")
 endif()
 
 set(SOURCE_FILES
