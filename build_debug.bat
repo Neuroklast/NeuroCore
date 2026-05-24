@@ -9,6 +9,7 @@ if not defined JUCE_DIR (
     echo JUCE_DIR nicht gesetzt, verwende Default: D:\JUCE
     echo (bei Bedarf JUCE_DIR als Umgebungsvariable setzen oder direkt im Skript aendern)
 )
+REM Projekt-Default: JUCE liegt standardmaessig auf D:\JUCE
 
 echo ===========================================
 echo  NeuroCore DEBUG Build
@@ -18,7 +19,6 @@ echo ===========================================
 REM Ninja-Pfad aus VS2022 Build Tools
 set "VS_NINJA=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja"
 set "VS_CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
-set "MSVC_BIN=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
 REM PATH um Ninja erweitern
 set "PATH=%VS_NINJA%;%VS_CMAKE%;%PATH%"
