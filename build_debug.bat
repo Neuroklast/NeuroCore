@@ -17,6 +17,7 @@ echo  JUCE_DIR=%JUCE_DIR%
 echo ===========================================
 
 REM Ninja-Pfad aus VS2022 Build Tools
+REM Annahme: VS2022 Build Tools sind im Standardpfad installiert.
 set "VS_NINJA=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja"
 set "VS_CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 set "VS_VCVARS=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
