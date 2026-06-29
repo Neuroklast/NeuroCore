@@ -190,3 +190,82 @@ bool DSLParser::parse(const juce::String& text,
 
     return true;
 }
+
+juce::String dsl::formatBlockSummary(const BlockDesc& block)
+{
+    auto arg = [&block](const char* key) -> juce::String
+    {
+        const auto it = block.args.find(key);
+        return it != block.args.end() ? it->second : juce::String();
+    };
+
+    if (block.type == "stage")
+    {
+        const auto formula = arg("y");
+        return formula.isNotEmpty() ? ("y = " + formula) : juce::String("stage");
+    }
+
+    if (block.type == "filter")
+    {
+        juce::StringArray parts;
+        const auto fType = arg("type");
+        if (fType.isNotEmpty())
+            parts.add(fType);
+        if (const auto cutoff = arg("cutoff"); cutoff.isNotEmpty())
+            parts.add("cutoff=" + cutoff);
+        if (const auto center = arg("center"); center.isNotEmpty())
+            parts.add("center=" + center);
+        if (const auto width = arg("width"); width.isNotEmpty())
+            parts.add("width=" + width);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "comp")
+    {
+        juce::StringArray parts;
+        if (const auto threshold = arg("threshold"); threshold.isNotEmpty())
+            parts.add("thr=" + threshold);
+        if (const auto ratio = arg("ratio"); ratio.isNotEmpty())
+            parts.add("ratio=" + ratio);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "osc")
+    {
+        juce::StringArray parts;
+        if (const auto shape = arg("shape"); shape.isNotEmpty())
+            parts.add(shape);
+        if (const auto freq = arg("freq"); freq.isNotEmpty())
+            parts.add("freq=" + freq);
+        if (const auto sync = arg("sync"); sync.isNotEmpty())
+            parts.add("sync=" + sync);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "env")
+    {
+        juce::StringArray parts;
+        if (const auto mode = arg("mode"); mode.isNotEmpty())
+            parts.add(mode);
+        if (const auto trigger = arg("trigger"); trigger.isNotEmpty())
+            parts.add("trigger=" + trigger);
+        return parts.joinIntoString(", ");
+    }
+
+    return block.type;
+}
+
+juce::String dsl::formatBlockDetails(const BlockDesc& block)
+{
+    juce::String text = "Type: " + block.type + "\nName: " + block.name;
+
+    juce::StringArray keys;
+    for (const auto& [key, value] : block.args)
+        keys.add(key);
+    keys.sort(true);
+
+    for (const auto& key : keys)
+        text += "\n" + key + " = " + block.args.at(key);
+
+    return text;
+}

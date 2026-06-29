@@ -1,8 +1,8 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-05-24  
+**Letzte Aktualisierung:** 2026-06-29  
 **Version:** 0.2.1  
-**Gesamtfortschritt:** ~72–75%
+**Gesamtfortschritt:** ~74–77%
 
 ---
 
@@ -10,15 +10,15 @@
 
 | Modul | Status | Fortschritt | Letzte Änderung |
 |---|---|---|---|
-| Core/PluginProcessor | ✅ God-Class aufgelöst; delegiert an DspEngine, ScriptManager, WaveformCapture | 88% | 2026-05-21 |
-| Core/DspEngine | ✅ Neu: DSP-Chain, Oversampling, Gain, Dry/Wet, Buffers | 85% | 2026-05-21 |
+| Core/PluginProcessor | ✅ Session-State (var names, language); ChangeBroadcaster; modFrequency entfernt | 90% | 2026-06-29 |
+| Core/DspEngine | ✅ LPF osSpec; kein RT Chain-Copy; Signalkette dokumentiert | 90% | 2026-06-29 |
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ Resizable (600×400 – 1600×1000), Oversampling ComboBox, Undo/Redo | 75% | 2026-04-01 |
+| Core/PluginEditor | ✅ Stages-Overlay, Preset-Sync, Bypass | 85% | 2026-06-29 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
 | DSL/DSLParser | ✅ sync, channel, ms_encode, ms_decode, trigger Parameter | 88% | 2026-05-21 |
-| DSL/SignalChain | ✅ t/sr/pi Variablen, ch Var, Feedback Leak, setTempo(), setMidiVariables(), getMaxTailTime() | 88% | 2026-05-21 |
+| DSL/SignalChain | ✅ Fast-Path (SIMD Stage + block Filter/Comp); Slow-Path optimiert | 94% | 2026-06-29 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -32,8 +32,8 @@
 | Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) + robustere Chunk-Validierung | 84% | 2026-05-21 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ NeuroCoreExtrasTest: MIDI-Vars, Tempo-Sync, Feedback-Leak, t/sr/pi, Channel-Routing | 72% | 2026-05-21 |
-| CI/CD | ✅ GitHub Actions ci.yml (Linux/macOS/Windows) + pluginval + JUCE-Einbindungsfix für juceaide + Ninja-Windows-Buildskripte | 86% | 2026-05-24 |
+| Tests | ✅ State-Round-Trip-Test; PresetManager var names | 80% | 2026-06-29 |
+| CI/CD | ✅ pluginval ohne `|| true` (strict fail) | 88% | 2026-06-29 |
 | Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
@@ -58,8 +58,45 @@
 - [x] UserManual EN + DE aktualisiert
 - [x] `ValidationTypes.h` extrahiert (keine zirkulären Includes)
 
+### Phase D Audit-Fixes ✅ (2026-06-29)
+
+- [x] Preset-Load → Editor-Sync (`ChangeBroadcaster` + `syncFromProcessor`)
+- [x] Session-State: `varName0`–`varName3`, `language`
+- [x] Bypass-Button: toggelt `dryWet` (0 ↔ gespeicherter Mix)
+- [x] Toten Parameter `modFrequency` entfernt
+- [x] Legacy-DSP aus Plugin-CMake entfernt (bleibt in Tests)
+- [x] CI: pluginval ohne `|| true`
+- [x] `StagesContentComponent`: Signalkette-Overlay für `stagesButton`
+
+### Phase C Performance ✅ (2026-06-29)
+
+- [x] `DspEngine`: Dry/Wet + Output-Gain blockweise (kein per-sample `getSubBlock`)
+- [x] `processBlockSmoothed` Fast-Path: SIMD `Stage::processBlock` + `Filter`/`Comp` blockweise
+- [x] `Filter`/`Comp`: `processBlock` + Coefficient-Updates nur jedes 8. Sample (Slow-Path)
+- [x] `Stage`: SIMD `x_prev` pro Lane; `usesTimeVariable`/`usesFeedback` Flags
+- [x] `LookupTables`: exp/log bei Init; erweitertes `prepareFromScript`
+
+### Phase B Audit-Fixes ✅ (2026-06-29)
+
+- [x] LPF auf `osSpec` (korrekte Cutoff nach Oversampling)
+- [x] RT: `oldSignalChain = signalChain` auf Audio-Thread entfernt
+- [x] `SignalChain::scriptLock` (TryLock im Audio-Thread, Lock in `loadScript`)
+- [x] `testFormulaStability` nutzt `processBlockSmoothed` (Production-Pfad)
+- [x] `factory_presets.json` auf Zeilen-Syntax migriert (29 Presets)
+- [x] `docs/ARCHITECTURE.md` Signalkette korrigiert
+
+### Phase A Audit-Fixes ✅ (2026-06-29)
+
+- [x] Knob-Routing: `Stage` liest `a`–`d` aus `variables` (Production-Pfad)
+- [x] `processBlockSmoothed`: Smoother-Advancement sample-major (Stereo-Smoothing-Fix)
+- [x] `docs/DSL_REFERENCE.md` auf reale Zeilen-Syntax umgeschrieben
+- [x] `tests/main.cpp`: Exit-Code bei Failures
+- [x] `PresetManagerTest` / `SignalChainTest` repariert + `processBlockSmoothed`-Test
+- [x] `Resources/` → `resources/` (Case für Linux/macOS)
+
 ### Nächste Schritte (Priorität)
 
+- [x] `stagesButton` → `StagesContentComponent` (Signalkette-Übersicht)
 - [ ] Licensing-Backend (echter Server statt Placeholder)
 - [ ] Windows/macOS Installer
 - [ ] UI: Progressive Disclosure (Settings-Panel für Oversampling/Language)
@@ -109,8 +146,9 @@
 
 | # | Problem | Datei | Priorität |
 |---|---|---|---|
-| 1 | God-Class PluginProcessor | `PluginProcessor.cpp` | 🟡 Hoch |
-| 2 | Licensing-Backend noch Placeholder (Produktionsserver fehlt) | `Config.h` / `LicenseManager.cpp` | 🟡 Hoch |
+| 1 | Licensing-Backend noch Placeholder (Produktionsserver fehlt) | `Config.h` / `LicenseManager.cpp` | 🟡 Hoch |
+| 2 | Slow-Path noch per-sample (Osc/Env/Feedback/t) | `SignalChain.cpp` | 🟡 Mittel |
+| 3 | Preset-Load aktualisiert Editor nicht | `PluginEditor.cpp` | 🟡 Mittel |
 
 Vollständige Analyse: `docs/ANALYSIS.md`
 

@@ -9,6 +9,113 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-06-29 – Stages-Button (Signalkette-Overlay)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** `stagesButton` verdrahten — Overlay mit DSL-Block-Übersicht  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- `DSLParser::parse` liefert bereits `BlockDesc`/`ParamDesc` — kein Zugriff auf interne `SignalChain` nötig.
+- `formatBlockSummary`/`formatBlockDetails` in `DSLParser` halten UI-Logik dünn und sind unit-testbar.
+- Overlay-Muster von `FunctionsContentComponent`/`PresetContentComponent` (`ModalOverlay` + `onClose`) ist konsistent wiederverwendbar.
+
+---
+
+### 2026-06-29 – Phase D Audit-Fixes (Editor-Sync, State, Bypass, Cleanup)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Phase D — Preset-Editor-Sync, Session-State, Bypass, modFrequency/Legacy-DSP entfernen, CI strict  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- `PresetManager::loadPreset` ruft nur `setStateInformation` auf — ohne `ChangeBroadcaster` bleibt die UI stale (Formel, Alias-Namen, Sprache).
+- Variable-Namen und Sprache gehören in denselben `ValueTree` wie APVTS (`varName0`…`varName3`, `language`), nicht in separate Preset-Chunks.
+- Bypass über `dryWet == 0` ist konsistent mit `DspEngine`; vorherigen Mix in `mixBeforeBypass` speichern, damit Ent-Bypass den Mix wiederherstellt.
+- Legacy `WaveShaper`/Filter/OscillatorWrapper im Plugin-Target entfernen, in `NeuroCoreTests` behalten (`WaveShaperTest`).
+
+#### Empfehlungen für nächste Session
+
+1. `stagesButton` implementieren oder UI aufräumen
+2. Slow-Path: Sub-Block-Verarbeitung für Osc/Env-Ketten
+
+---
+
+### 2026-06-29 – Phase C Performance (SIMD Fast-Path, Block-DSP)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Phase C — CPU-Optimierung: blockweise DspEngine, SIMD Production-Pfad, Filter/Comp blockweise  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- `processBlockSmoothed` kann für Chains ohne Osc/Env/Feedback/`t` den gesamten Buffer über `Block::processBlock` abarbeiten — SIMD-Stage + blockweise JUCE-Filter/Comp.
+- `canUseBlockPath()` anhand `ExpressionEvaluator::getVariableIndex` für `t`/`x_prev`/`y_prev` ist zuverlässiger als String-Suche.
+- Filter/Comp-Coefficient-Updates jedes 8. Sample im Slow-Path reduziert JUCE-API-Overhead ohne hörbar große Schritte bei typischen Smoothing-Zeiten.
+- `LookupTables::initialise()` sollte exp/log-Tabellen sofort befüllen, damit `fastExp`/`fastLog` nie auf dem Audio-Thread allokieren.
+
+#### Empfehlungen für nächste Session
+
+1. Phase D: Preset-Editor-Sync, Session-State VariableNames, Legacy-Code entfernen
+2. Slow-Path: Sample-major mit Sub-Block-Verarbeitung für Osc/Env-Ketten evaluieren
+
+---
+
+### 2026-06-29 – Phase B Audit-Fixes (LPF, RT-Safety, Stability-Pfad)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Phase B — LPF osSpec, RT-safe Chain-Swap, scriptLock, Stability-Test-Pfad, Factory-Presets  
+**Ergebnis:** ✅ Erfolgreich (lokaler Build nicht verfügbar)
+
+#### Erkenntnisse
+
+- `lowpassFilter` muss mit `osSpec` prepared werden, wenn er auf dem oversampelten `upBlock` läuft — sonst ist die effektive Cutoff-Frequenz falsch.
+- `oldSignalChain = signalChain` am Ende des Crossfades auf dem Audio-Thread ist redundant: `ScriptManager::applyFormula` snapshotet bereits auf dem Message-Thread.
+- `SpinLock` + `ScopedTryLockType` in `processBlock*` und voller Lock in `loadScript` verhindert Data-Races auf `variables` während Script-Reload ohne Audio-Thread zu blockieren.
+- `testFormulaStability` muss `processBlockSmoothed` verwenden, sonst validiert die UI einen anderen Pfad als der Host.
+
+#### Fallstricke
+
+- Bei `ScopedTryLockType`-Miss schweigt `processBlockSmoothed` — Buffer enthält dann unverarbeitetes Upsample-Signal (akzeptabel für kurze Reload-Fenster).
+- Factory-Preset-Konvertierung: `mode` → `type`, `sin` → `sine` beim Osc-Shape.
+
+#### Empfehlungen für nächste Session
+
+1. Phase C: SIMD in Production, per-sample scalar Loop ersetzen
+2. Preset-Load → Editor-Sync (Phase D)
+3. Build + ctest lokal verifizieren
+
+---
+
+### 2026-06-29 – Phase A Audit-Fixes (Parameter-Routing, Tests, DSL-Docs)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Phase A aus Plugin-Audit umsetzen — Knob-Routing, DSL-Referenz, Test-CI, Resources-Case  
+**Ergebnis:** ✅ Erfolgreich (lokaler Build in Sandbox nicht verfügbar)
+
+#### Erkenntnisse
+
+- `processBlockSmoothed` schrieb `a`–`d` in `variables`, aber `Stage::process` las über `paramSmoothers` (nur in `processBlock` aktualisiert). Einheitliche Quelle: Knob-Werte immer aus `variables` in Stage-Pre-Callbacks injizieren.
+- Smoother-Advancement muss **pro Sample, vor der Channel-Schleife** erfolgen — sonst ist Stereo-Smoothing doppelt so schnell wie Mono.
+- `tests/main.cpp` mit `return 0` macht `ctest` wertlos; `runner.getNumFailures()` auswerten ist Pflicht.
+- `PresetManagerTest` und `SignalChainTest` nutzten veraltete/ungültige DSL (`x * 2` ohne `stage1:`) — Tests müssen gültige Zeilen-Syntax und explizite Parameter (`setParameter` / `processBlockSmoothed`) verwenden.
+- Windows-Case-Rename `Resources` → `resources` erfordert Zwischenname (`resources_nc`), da das Dateisystem case-insensitive ist.
+
+#### Fallstricke
+
+- `Stage::paramSmoothers` bleibt für `prepare`/`loadScript` verdrahtet, wird aber nicht mehr in `process`/`processBlock` konsumiert — bei zukünftigem Refactoring entfernen oder dokumentieren.
+- `resources/factory_presets.json` enthält weiterhin Brace-Syntax; erst relevant wenn Factory-Preset-Loader angebunden wird.
+
+#### Empfehlungen für nächste Session
+
+1. Phase B: LPF auf `osSpec`, RT-safe `oldSignalChain`-Swap, ein kanonischer DSP-Pfad
+2. `factory_presets.json` auf Zeilen-Syntax migrieren
+3. CI/Build lokal mit `build_debug.bat` + `NeuroCoreTests` verifizieren
+
+---
+
 ### 2026-05-24 – Windows Visual-Studio-Generator Build-Fix via Ninja
 
 **Agent:** GitHub Copilot Coding Agent  

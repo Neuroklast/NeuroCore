@@ -90,17 +90,17 @@ bool ScriptManager::testFormulaStability(const juce::String& script,
     testChain.prepare({ sr, (juce::uint32) bs, 1 });
 
     juce::AudioBuffer<float> buf(1, bs);
-    std::array<float, 4> paramVals{};
+    std::array<juce::SmoothedValue<float>, 4> paramSm;
+    for (auto& s : paramSm)
+        s.reset(sr, Config::kSmoothingTime);
     int nanCount = 0;
     int infCount = 0;
     int invalid  = 0;
 
     auto run = [&](float value, int paramIndex)
     {
-        paramVals.fill(0.f);
-        paramVals[paramIndex] = value;
-        for (size_t i = 0; i < paramVals.size(); ++i)
-            testChain.setParameter(i, paramVals[i]);
+        for (size_t i = 0; i < paramSm.size(); ++i)
+            paramSm[i].setCurrentAndTargetValue(i == static_cast<size_t>(paramIndex) ? value : 0.f);
         int processed = 0;
         juce::Random rng;
         juce::String msg = "param " + juce::String::charToString((juce_wchar)('a' + paramIndex)) + "=" + juce::String(value);
@@ -115,7 +115,8 @@ bool ScriptManager::testFormulaStability(const juce::String& script,
                 s += rng.nextFloat() * 0.1f - 0.05f;
                 buf.setSample(0, i, s);
             }
-            testChain.processBlock(buf);
+            testChain.processBlockSmoothed(buf,
+                { &paramSm[0], &paramSm[1], &paramSm[2], &paramSm[3] });
             for (int i = 0; i < block; ++i)
             {
                 float v = buf.getSample(0, i);

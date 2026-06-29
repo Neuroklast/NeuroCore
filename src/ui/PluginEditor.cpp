@@ -24,6 +24,7 @@
 #include "ValidationContentComponent.h"
 #include "PresetContentComponent.h"
 #include "FunctionsContentComponent.h"
+#include "StagesContentComponent.h"
 
 
 //==============================================================================
@@ -32,6 +33,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 {
     juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
+    audioProcessor.addChangeListener(this);
 
     setResizable(true, true);
     setResizeLimits(600, 400, 1600, 1000);
@@ -63,13 +65,30 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*presetsButton);
 
     bypassButton = std::make_unique<juce::ToggleButton>(TRANS("Bypass"));
+    bypassButton->onClick = [this]
+    {
+        if (auto* p = audioProcessor.apvts.getParameter(EffectParameters::dryWet))
+        {
+            const auto& range = p->getNormalisableRange();
+            if (bypassButton->getToggleState())
+            {
+                mixBeforeBypass = (float) mixSlider->getValue();
+                p->setValueNotifyingHost(range.convertTo0to1(0.0f));
+            }
+            else
+            {
+                p->setValueNotifyingHost(range.convertTo0to1(mixBeforeBypass));
+            }
+        }
+    };
     addAndMakeVisible(*bypassButton);
 
     functionsButton = std::make_unique<juce::TextButton>(TRANS("Functions"));
     functionsButton->onClick = [this] { showFunctionsOverlay(); };
     addAndMakeVisible(*functionsButton);
 
-    stagesButton = std::make_unique<juce::TextButton>(TRANS("Stages"));
+    stagesButton = std::make_unique<juce::TextButton>(TRANS("StagesButton"));
+    stagesButton->onClick = [this] { showStagesOverlay(); };
     addAndMakeVisible(*stagesButton);
 
     languageLabel = std::make_unique<juce::Label>();
@@ -231,7 +250,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     {
         juce::String err;
         audioProcessor.setFormula(formulaInputEditor->getText(), err);
-        refreshParameterControls();
+        syncFromProcessor();
     }
 
 
@@ -410,7 +429,9 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     oversamplingAttachment.reset();
     presetOverlay.reset();
     functionsOverlay.reset();
+    stagesOverlay.reset();
     validationOverlay.reset();
+    audioProcessor.removeChangeListener(this);
     Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
 }
@@ -440,7 +461,34 @@ void NeuroCoreAudioProcessorEditor::refreshParameterControls()
         if (nameEditors[i])
             nameEditors[i]->setEnabled(active);
     }
-   
+}
+
+void NeuroCoreAudioProcessorEditor::syncFromProcessor()
+{
+    if (formulaInputEditor && ! editing)
+        formulaInputEditor->setText(audioProcessor.getScript());
+
+    refreshParameterControls();
+
+    if (languageBox)
+    {
+        const bool isDe = audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de");
+        languageBox->setSelectedId(isDe ? 2 : 1, juce::dontSendNotification);
+    }
+
+    if (bypassButton && mixSlider)
+    {
+        const float mix = (float) mixSlider->getValue();
+        const bool isBypassed = mix <= 0.001f;
+        bypassButton->setToggleState(isBypassed, juce::dontSendNotification);
+        if (! isBypassed)
+            mixBeforeBypass = mix;
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster*)
+{
+    syncFromProcessor();
 }
 
 void NeuroCoreAudioProcessorEditor::updateTranslations()
@@ -523,6 +571,18 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 
     ptr->onPresetSelected = [this](int idx)
     {
+        editing = false;
+        if (formulaInputEditor)
+        {
+            formulaInputEditor->setReadOnly(true);
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                juce::Colours::transparentBlack);
+        }
+        if (editSaveButton)
+            editSaveButton->setButtonText(TRANS("EditButton"));
+        if (errorLabel)
+            errorLabel->setText({}, juce::dontSendNotification);
+
         audioProcessor.loadPreset(idx);
         presetOverlay.reset();
     };
@@ -552,6 +612,27 @@ void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
 {
     if (functionsOverlay)
         functionsOverlay.reset();
+}
+
+void NeuroCoreAudioProcessorEditor::showStagesOverlay()
+{
+    hideStagesOverlay();
+    auto content = std::make_unique<StagesContentComponent>(audioProcessor);
+    auto* ptr = content.get();
+
+    stagesOverlay = std::make_unique<ModalOverlay>();
+    stagesOverlay->setMode(OverlayMode::Closable);
+    stagesOverlay->setTitle(TRANS("StagesTitle"));
+    stagesOverlay->setContent(std::move(content));
+    stagesOverlay->show(*this);
+
+    ptr->onClose = [this] { stagesOverlay.reset(); };
+}
+
+void NeuroCoreAudioProcessorEditor::hideStagesOverlay()
+{
+    if (stagesOverlay)
+        stagesOverlay.reset();
 }
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {

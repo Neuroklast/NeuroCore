@@ -26,6 +26,7 @@
 #include "ValidationContentComponent.h"
 #include "PresetContentComponent.h"
 #include "FunctionsContentComponent.h"
+#include "StagesContentComponent.h"
 #include "WeightedLayout.h"
 
 
@@ -49,7 +50,8 @@ public:
 /**
 */
 class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                       private Localiser::Listener
+                                       private Localiser::Listener,
+                                       private juce::ChangeListener
 {
 public:
     NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor&);
@@ -67,6 +69,8 @@ public:
 
 private:
     void refreshParameterControls();
+    void syncFromProcessor();
+    void changeListenerCallback(juce::ChangeBroadcaster*) override;
     /// Updates all text labels after language change.
     void updateTranslations();
     void languageChanged() override { updateTranslations(); }
@@ -114,6 +118,7 @@ private:
     std::unique_ptr<juce::TextButton>       editSaveButton;
     std::unique_ptr<juce::Label>            errorLabel;
     bool                                    editing { false };
+    float                                   mixBeforeBypass { 1.0f };
 
     NeuroCoreLookAndFeel lookAndFeel;
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
@@ -121,12 +126,15 @@ private:
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
     std::unique_ptr<ModalOverlay>            presetOverlay;
     std::unique_ptr<ModalOverlay>            functionsOverlay;
+    std::unique_ptr<ModalOverlay>            stagesOverlay;
     std::unique_ptr<ModalOverlay>            validationOverlay;
 
     void showPresetOverlay();
     void hidePresetOverlay();
     void showFunctionsOverlay();
     void hideFunctionsOverlay();
+    void showStagesOverlay();
+    void hideStagesOverlay();
     void validateAndOverlay(const juce::String& expr);
 
     //melatonin::Inspector inspector{ *this };

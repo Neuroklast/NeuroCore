@@ -33,6 +33,7 @@
 /**
 */
 class NeuroCoreAudioProcessor  : public juce::AudioProcessor,
+                                 public juce::ChangeBroadcaster,
                                  private juce::AudioProcessorValueTreeState::Listener,
                                  private juce::AsyncUpdater
 {

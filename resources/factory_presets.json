@@ -3,377 +3,957 @@
     "name": "Soft Overdrive",
     "category": "Distortion",
     "description": "Klassisches tanh-Waveshaping mit musikalischer Sättigung.",
-    "paramA": { "name": "Drive", "min": 0.1, "max": 4.0, "default": 1.4 },
-    "paramB": { "name": "Trim", "min": 0.5, "max": 2.0, "default": 1.0 },
-    "paramC": { "name": "Curve", "min": 0.0, "max": 1.0, "default": 0.5 },
-    "paramD": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param {\n    alias a\n    name \"Drive\"\n    min 0.1\n    max 4.0\n}\n\nstage {\n    y tanh(x * a)\n}"
+    "paramA": {
+      "name": "Drive",
+      "min": 0.1,
+      "max": 4,
+      "default": 1.4
+    },
+    "paramB": {
+      "name": "Trim",
+      "min": 0.5,
+      "max": 2,
+      "default": 1
+    },
+    "paramC": {
+      "name": "Curve",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "paramD": {
+      "name": "Blend",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = Drive [0.1, 4.0]\nstage1: y = tanh(x * a)"
   },
   {
     "name": "Hard Clipper",
     "category": "Distortion",
     "description": "Hartes Clipping mit einstellbarem Threshold.",
-    "paramA": { "name": "Threshold", "min": 0.1, "max": 1.0, "default": 0.6 },
-    "paramB": { "name": "Drive", "min": 0.5, "max": 6.0, "default": 2.0 },
-    "paramC": { "name": "Post", "min": 0.3, "max": 2.0, "default": 1.0 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
-    "outputGain": -2.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Threshold\" min 0.1 max 1.0 }\nparam { alias b name \"Drive\" min 0.5 max 6.0 }\nstage {\n    y hardclip(x * b, a)\n}"
+    "paramA": {
+      "name": "Threshold",
+      "min": 0.1,
+      "max": 1,
+      "default": 0.6
+    },
+    "paramB": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 6,
+      "default": 2
+    },
+    "paramC": {
+      "name": "Post",
+      "min": 0.3,
+      "max": 2,
+      "default": 1
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
+    "outputGain": -2,
+    "mix": 1,
+    "script": "param a = Threshold [0.1, 1.0]\nparam b = Drive [0.5, 6.0]\nstage1: y = hardclip(x * b, a)"
   },
   {
     "name": "Tube Warmth",
     "category": "Distortion",
     "description": "Weiche Röhrensättigung mit leichter Asymmetrie.",
-    "paramA": { "name": "Drive", "min": 0.2, "max": 5.0, "default": 1.8 },
-    "paramB": { "name": "Bias", "min": 0.0, "max": 0.3, "default": 0.1 },
-    "paramC": { "name": "Offset", "min": 0.0, "max": 0.2, "default": 0.05 },
-    "paramD": { "name": "Tone", "min": 200.0, "max": 12000.0, "default": 6000.0 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Drive\" min 0.2 max 5.0 }\nparam { alias b name \"Bias\" min 0.0 max 0.3 }\nparam { alias c name \"Offset\" min 0.0 max 0.2 }\nstage {\n    y tanh(x * a + b) - c\n}"
+    "paramA": {
+      "name": "Drive",
+      "min": 0.2,
+      "max": 5,
+      "default": 1.8
+    },
+    "paramB": {
+      "name": "Bias",
+      "min": 0,
+      "max": 0.3,
+      "default": 0.1
+    },
+    "paramC": {
+      "name": "Offset",
+      "min": 0,
+      "max": 0.2,
+      "default": 0.05
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 200,
+      "max": 12000,
+      "default": 6000
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = Drive [0.2, 5.0]\nparam b = Bias [0.0, 0.3]\nparam c = Offset [0.0, 0.2]\nstage1: y = tanh(x * a + b) - c"
   },
   {
     "name": "Fuzz Face",
     "category": "Distortion",
     "description": "Aggressiver Fuzz mit nachgeschaltetem Lowpass.",
-    "paramA": { "name": "Fuzz", "min": 1.0, "max": 12.0, "default": 6.0 },
-    "paramB": { "name": "Tone", "min": 400.0, "max": 8000.0, "default": 2200.0 },
-    "paramC": { "name": "Bias", "min": -0.4, "max": 0.4, "default": 0.0 },
-    "paramD": { "name": "Level", "min": 0.2, "max": 1.5, "default": 0.9 },
-    "inputGain": 2.0,
-    "outputGain": -4.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Fuzz\" min 1.0 max 12.0 }\nparam { alias b name \"Tone\" min 400.0 max 8000.0 }\nparam { alias c name \"Bias\" min -0.4 max 0.4 }\nstage {\n    y hardclip((x + c) * a, 0.6)\n}\nfilter {\n    type lowpass\n    cutoff b\n    resonance 0.7\n}"
+    "paramA": {
+      "name": "Fuzz",
+      "min": 1,
+      "max": 12,
+      "default": 6
+    },
+    "paramB": {
+      "name": "Tone",
+      "min": 400,
+      "max": 8000,
+      "default": 2200
+    },
+    "paramC": {
+      "name": "Bias",
+      "min": -0.4,
+      "max": 0.4,
+      "default": 0
+    },
+    "paramD": {
+      "name": "Level",
+      "min": 0.2,
+      "max": 1.5,
+      "default": 0.9
+    },
+    "inputGain": 2,
+    "outputGain": -4,
+    "mix": 1,
+    "script": "param a = Fuzz [1.0, 12.0]\nparam b = Tone [400.0, 8000.0]\nparam c = Bias [-0.4, 0.4]\nstage1: y = hardclip((x + c) * a, 0.6)\nfilter1: type = lowpass; cutoff = b; resonance = 0.7"
   },
   {
     "name": "Bitcrusher",
     "category": "Distortion",
     "description": "Bitreduktion plus Sample-and-Hold Charakter.",
-    "paramA": { "name": "Bits", "min": 2.0, "max": 16.0, "default": 8.0 },
-    "paramB": { "name": "Rate", "min": 200.0, "max": 8000.0, "default": 1800.0 },
-    "paramC": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.75 },
-    "paramD": { "name": "Drive", "min": 0.5, "max": 3.0, "default": 1.4 },
-    "inputGain": 0.0,
-    "outputGain": -2.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Bits\" min 2.0 max 16.0 }\nparam { alias b name \"Rate\" min 200.0 max 8000.0 }\nparam { alias d name \"Drive\" min 0.5 max 3.0 }\nosc {\n    name osc1\n    shape saw\n    freq b / sr\n    depth 1.0\n}\nstage {\n    y bitcrush(x * d + y_prev * 0.08 * step(0.0, osc1), a)\n}"
+    "paramA": {
+      "name": "Bits",
+      "min": 2,
+      "max": 16,
+      "default": 8
+    },
+    "paramB": {
+      "name": "Rate",
+      "min": 200,
+      "max": 8000,
+      "default": 1800
+    },
+    "paramC": {
+      "name": "Blend",
+      "min": 0,
+      "max": 1,
+      "default": 0.75
+    },
+    "paramD": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 3,
+      "default": 1.4
+    },
+    "inputGain": 0,
+    "outputGain": -2,
+    "mix": 1,
+    "script": "param a = Bits [2.0, 16.0]\nparam b = Rate [200.0, 8000.0]\nparam d = Drive [0.5, 3.0]\nosc1: shape = saw; freq = b; depth = 1.0\nstage1: y = bitcrush(x * d + y_prev * 0.08 * step(0.0, osc1), a)"
   },
   {
     "name": "Fold Distortion",
     "category": "Distortion",
     "description": "Fold-Waveshaper für komplexe Obertöne.",
-    "paramA": { "name": "Drive", "min": 1.0, "max": 10.0, "default": 4.0 },
-    "paramB": { "name": "FoldMin", "min": -1.0, "max": -0.1, "default": -0.7 },
-    "paramC": { "name": "FoldMax", "min": 0.1, "max": 1.0, "default": 0.7 },
-    "paramD": { "name": "Post", "min": 0.2, "max": 2.0, "default": 0.9 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Drive",
+      "min": 1,
+      "max": 10,
+      "default": 4
+    },
+    "paramB": {
+      "name": "FoldMin",
+      "min": -1,
+      "max": -0.1,
+      "default": -0.7
+    },
+    "paramC": {
+      "name": "FoldMax",
+      "min": 0.1,
+      "max": 1,
+      "default": 0.7
+    },
+    "paramD": {
+      "name": "Post",
+      "min": 0.2,
+      "max": 2,
+      "default": 0.9
+    },
+    "inputGain": 0,
     "outputGain": -2.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Drive\" min 1.0 max 10.0 }\nparam { alias b name \"FoldMin\" min -1.0 max -0.1 }\nparam { alias c name \"FoldMax\" min 0.1 max 1.0 }\nparam { alias d name \"Post\" min 0.2 max 2.0 }\nstage {\n    y fold(x * a, b, c) * d\n}"
+    "mix": 1,
+    "script": "param a = Drive [1.0, 10.0]\nparam b = FoldMin [-1.0, -0.1]\nparam c = FoldMax [0.1, 1.0]\nparam d = Post [0.2, 2.0]\nstage1: y = fold(x * a, b, c) * d"
   },
   {
     "name": "Classic Tremolo",
     "category": "Modulation",
     "description": "Sinus-LFO moduliert die Lautstärke.",
-    "paramA": { "name": "Rate", "min": 0.2, "max": 12.0, "default": 4.0 },
-    "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 0.75 },
-    "paramC": { "name": "Shape", "min": 0.0, "max": 1.0, "default": 0.5 },
-    "paramD": { "name": "Floor", "min": 0.0, "max": 1.0, "default": 0.2 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.2 max 12.0 }\nparam { alias b name \"Depth\" min 0.0 max 1.0 }\nparam { alias d name \"Floor\" min 0.0 max 1.0 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y x * (d + (1.0 - d) * (1.0 - b + b * (0.5 + 0.5 * osc1)))\n}"
+    "paramA": {
+      "name": "Rate",
+      "min": 0.2,
+      "max": 12,
+      "default": 4
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0,
+      "max": 1,
+      "default": 0.75
+    },
+    "paramC": {
+      "name": "Shape",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "paramD": {
+      "name": "Floor",
+      "min": 0,
+      "max": 1,
+      "default": 0.2
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.2, 12.0]\nparam b = Depth [0.0, 1.0]\nparam d = Floor [0.0, 1.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (d + (1.0 - d) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
   },
   {
     "name": "Vibrato",
     "category": "Modulation",
     "description": "Pitch-ähnlicher Vibrato-Effekt durch y_prev Feedback und LFO.",
-    "paramA": { "name": "Rate", "min": 0.2, "max": 8.0, "default": 3.0 },
-    "paramB": { "name": "Depth", "min": 0.0, "max": 0.95, "default": 0.35 },
-    "paramC": { "name": "Feedback", "min": 0.0, "max": 0.8, "default": 0.25 },
-    "paramD": { "name": "Tone", "min": 500.0, "max": 12000.0, "default": 6500.0 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.2 max 8.0 }\nparam { alias b name \"Depth\" min 0.0 max 0.95 }\nparam { alias c name \"Feedback\" min 0.0 max 0.8 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y x + y_prev * c + osc1 * b * 0.1\n}"
+    "paramA": {
+      "name": "Rate",
+      "min": 0.2,
+      "max": 8,
+      "default": 3
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0,
+      "max": 0.95,
+      "default": 0.35
+    },
+    "paramC": {
+      "name": "Feedback",
+      "min": 0,
+      "max": 0.8,
+      "default": 0.25
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 500,
+      "max": 12000,
+      "default": 6500
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = Rate [0.2, 8.0]\nparam b = Depth [0.0, 0.95]\nparam c = Feedback [0.0, 0.8]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x + y_prev * c + osc1 * b * 0.1"
   },
   {
     "name": "Auto-Wah",
     "category": "Modulation",
     "description": "Envelope-gesteuerter Bandpass für Wah-Charakter.",
-    "paramA": { "name": "Sensitivity", "min": 0.1, "max": 4.0, "default": 1.6 },
-    "paramB": { "name": "MinCut", "min": 200.0, "max": 1200.0, "default": 350.0 },
-    "paramC": { "name": "Sweep", "min": 500.0, "max": 6000.0, "default": 2400.0 },
-    "paramD": { "name": "Res", "min": 0.3, "max": 2.5, "default": 1.1 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Sensitivity\" min 0.1 max 4.0 }\nparam { alias b name \"MinCut\" min 200.0 max 1200.0 }\nparam { alias c name \"Sweep\" min 500.0 max 6000.0 }\nparam { alias d name \"Res\" min 0.3 max 2.5 }\nenv {\n    name env1\n    mode peak\n    attack 5\n    release 120\n}\nfilter {\n    type bandpass\n    center b + env1 * a * c\n    width 900\n}\nstage {\n    y x * 1.1\n}"
+    "paramA": {
+      "name": "Sensitivity",
+      "min": 0.1,
+      "max": 4,
+      "default": 1.6
+    },
+    "paramB": {
+      "name": "MinCut",
+      "min": 200,
+      "max": 1200,
+      "default": 350
+    },
+    "paramC": {
+      "name": "Sweep",
+      "min": 500,
+      "max": 6000,
+      "default": 2400
+    },
+    "paramD": {
+      "name": "Res",
+      "min": 0.3,
+      "max": 2.5,
+      "default": 1.1
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Sensitivity [0.1, 4.0]\nparam b = MinCut [200.0, 1200.0]\nparam c = Sweep [500.0, 6000.0]\nparam d = Res [0.3, 2.5]\nenv1: type = peak; attack = 5; release = 120\nfilter1: type = bandpass; center = b; + = env1; * = c; width = 900\nstage1: y = x * 1.1"
   },
   {
     "name": "Ring Modulator",
     "category": "Modulation",
     "description": "Multiplikative Ringmodulation mit frei einstellbarer Carrier-Frequenz.",
-    "paramA": { "name": "Freq", "min": 5.0, "max": 2000.0, "default": 220.0 },
-    "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "paramC": { "name": "Offset", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Freq",
+      "min": 5,
+      "max": 2000,
+      "default": 220
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "paramC": {
+      "name": "Offset",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
     "outputGain": -1.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Freq\" min 5.0 max 2000.0 }\nparam { alias b name \"Depth\" min 0.0 max 1.0 }\nparam { alias c name \"Offset\" min 0.0 max 1.0 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y x * (1.0 - b + b * (osc1 + c))\n}"
+    "mix": 1,
+    "script": "param a = Freq [5.0, 2000.0]\nparam b = Depth [0.0, 1.0]\nparam c = Offset [0.0, 1.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (1.0 - b + b * (osc1 + c))"
   },
   {
     "name": "Chorus-like",
     "category": "Modulation",
     "description": "Leichte Modulationsbewegung über LFO und Softshaping.",
-    "paramA": { "name": "Rate", "min": 0.1, "max": 5.0, "default": 0.8 },
-    "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 0.45 },
-    "paramC": { "name": "Detune", "min": 0.0, "max": 0.5, "default": 0.15 },
-    "paramD": { "name": "Color", "min": 0.0, "max": 1.0, "default": 0.6 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Rate",
+      "min": 0.1,
+      "max": 5,
+      "default": 0.8
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0,
+      "max": 1,
+      "default": 0.45
+    },
+    "paramC": {
+      "name": "Detune",
+      "min": 0,
+      "max": 0.5,
+      "default": 0.15
+    },
+    "paramD": {
+      "name": "Color",
+      "min": 0,
+      "max": 1,
+      "default": 0.6
+    },
+    "inputGain": 0,
     "outputGain": -0.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.1 max 5.0 }\nparam { alias b name \"Depth\" min 0.0 max 1.0 }\nparam { alias c name \"Detune\" min 0.0 max 0.5 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y tanh((x + y_prev * 0.15) * (1.0 + (osc1 + c) * b * 0.35))\n}"
+    "mix": 1,
+    "script": "param a = Rate [0.1, 5.0]\nparam b = Depth [0.0, 1.0]\nparam c = Detune [0.0, 0.5]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tanh((x + y_prev * 0.15) * (1.0 + (osc1 + c) * b * 0.35))"
   },
   {
     "name": "Phaser-like",
     "category": "Modulation",
     "description": "Sweep-Effekt über LFO-modulierten Highpass.",
-    "paramA": { "name": "Rate", "min": 0.1, "max": 6.0, "default": 1.0 },
-    "paramB": { "name": "Depth", "min": 200.0, "max": 4000.0, "default": 1500.0 },
-    "paramC": { "name": "Base", "min": 80.0, "max": 1200.0, "default": 260.0 },
-    "paramD": { "name": "Feedback", "min": 0.0, "max": 0.8, "default": 0.35 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.1 max 6.0 }\nparam { alias b name \"Depth\" min 200.0 max 4000.0 }\nparam { alias c name \"Base\" min 80.0 max 1200.0 }\nparam { alias d name \"Feedback\" min 0.0 max 0.8 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y x + y_prev * d\n}\nfilter {\n    type highpass\n    cutoff c + (0.5 + 0.5 * osc1) * b\n    resonance 0.9\n}"
+    "paramA": {
+      "name": "Rate",
+      "min": 0.1,
+      "max": 6,
+      "default": 1
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 200,
+      "max": 4000,
+      "default": 1500
+    },
+    "paramC": {
+      "name": "Base",
+      "min": 80,
+      "max": 1200,
+      "default": 260
+    },
+    "paramD": {
+      "name": "Feedback",
+      "min": 0,
+      "max": 0.8,
+      "default": 0.35
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.1, 6.0]\nparam b = Depth [200.0, 4000.0]\nparam c = Base [80.0, 1200.0]\nparam d = Feedback [0.0, 0.8]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x + y_prev * d\nfilter1: type = highpass; cutoff = c; + = 0.5; * = b; resonance = 0.9"
   },
   {
     "name": "Low Pass Sweep",
     "category": "Filter",
     "description": "LFO-gesteuerter Lowpass für rhythmische Sweeps.",
-    "paramA": { "name": "Rate", "min": 0.05, "max": 8.0, "default": 0.7 },
-    "paramB": { "name": "MinCut", "min": 120.0, "max": 1200.0, "default": 300.0 },
-    "paramC": { "name": "Depth", "min": 400.0, "max": 10000.0, "default": 3500.0 },
-    "paramD": { "name": "Res", "min": 0.3, "max": 2.0, "default": 0.8 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.05 max 8.0 }\nparam { alias b name \"MinCut\" min 120.0 max 1200.0 }\nparam { alias c name \"Depth\" min 400.0 max 10000.0 }\nparam { alias d name \"Res\" min 0.3 max 2.0 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nfilter {\n    type lowpass\n    cutoff b + (0.5 + 0.5 * osc1) * c\n    resonance d\n}"
+    "paramA": {
+      "name": "Rate",
+      "min": 0.05,
+      "max": 8,
+      "default": 0.7
+    },
+    "paramB": {
+      "name": "MinCut",
+      "min": 120,
+      "max": 1200,
+      "default": 300
+    },
+    "paramC": {
+      "name": "Depth",
+      "min": 400,
+      "max": 10000,
+      "default": 3500
+    },
+    "paramD": {
+      "name": "Res",
+      "min": 0.3,
+      "max": 2,
+      "default": 0.8
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.05, 8.0]\nparam b = MinCut [120.0, 1200.0]\nparam c = Depth [400.0, 10000.0]\nparam d = Res [0.3, 2.0]\nosc1: shape = sine; freq = a; depth = 1.0\nfilter1: type = lowpass; cutoff = b; + = 0.5; * = c; resonance = d"
   },
   {
     "name": "High Pass Gate",
     "category": "Filter",
     "description": "Envelope steuert den Hochpass für gated Bewegung.",
-    "paramA": { "name": "Floor", "min": 60.0, "max": 1200.0, "default": 140.0 },
-    "paramB": { "name": "Range", "min": 300.0, "max": 9000.0, "default": 2600.0 },
-    "paramC": { "name": "Attack", "min": 1.0, "max": 50.0, "default": 8.0 },
-    "paramD": { "name": "Release", "min": 20.0, "max": 400.0, "default": 160.0 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Floor\" min 60.0 max 1200.0 }\nparam { alias b name \"Range\" min 300.0 max 9000.0 }\nparam { alias c name \"Attack\" min 1.0 max 50.0 }\nparam { alias d name \"Release\" min 20.0 max 400.0 }\nenv {\n    name env1\n    mode peak\n    attack c\n    release d\n}\nfilter {\n    type highpass\n    cutoff a + env1 * b\n    resonance 0.7\n}"
+    "paramA": {
+      "name": "Floor",
+      "min": 60,
+      "max": 1200,
+      "default": 140
+    },
+    "paramB": {
+      "name": "Range",
+      "min": 300,
+      "max": 9000,
+      "default": 2600
+    },
+    "paramC": {
+      "name": "Attack",
+      "min": 1,
+      "max": 50,
+      "default": 8
+    },
+    "paramD": {
+      "name": "Release",
+      "min": 20,
+      "max": 400,
+      "default": 160
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Floor [60.0, 1200.0]\nparam b = Range [300.0, 9000.0]\nparam c = Attack [1.0, 50.0]\nparam d = Release [20.0, 400.0]\nenv1: type = peak; attack = c; release = d\nfilter1: type = highpass; cutoff = a; + = env1; * = b; resonance = 0.7"
   },
   {
     "name": "Vowel Filter",
     "category": "Filter",
     "description": "Zwei Bandpässe formen vokalähnliche Spektren.",
-    "paramA": { "name": "Vowel", "min": 0.0, "max": 1.0, "default": 0.35 },
-    "paramB": { "name": "Spread", "min": 200.0, "max": 2000.0, "default": 800.0 },
-    "paramC": { "name": "Res", "min": 0.5, "max": 3.0, "default": 1.5 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Vowel\" min 0.0 max 1.0 }\nparam { alias b name \"Spread\" min 200.0 max 2000.0 }\nparam { alias c name \"Res\" min 0.5 max 3.0 }\nfilter {\n    type bandpass\n    center 500 + a * 1700\n    width b\n}\nstage {\n    y x\n}\nfilter {\n    type bandpass\n    center 1100 + a * 1900\n    width b * 0.7\n}"
+    "paramA": {
+      "name": "Vowel",
+      "min": 0,
+      "max": 1,
+      "default": 0.35
+    },
+    "paramB": {
+      "name": "Spread",
+      "min": 200,
+      "max": 2000,
+      "default": 800
+    },
+    "paramC": {
+      "name": "Res",
+      "min": 0.5,
+      "max": 3,
+      "default": 1.5
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = Vowel [0.0, 1.0]\nparam b = Spread [200.0, 2000.0]\nparam c = Res [0.5, 3.0]\nfilter1: type = bandpass; center = 500; + = a; * = 1700; width = b\nstage1: y = x\nfilter2: type = bandpass; center = 1100; + = a; * = 0.7; width = b"
   },
   {
     "name": "Telephone EQ",
     "category": "Filter",
     "description": "Bandpass 300-3400 Hz für Telefoncharakter.",
-    "paramA": { "name": "LowCut", "min": 120.0, "max": 500.0, "default": 300.0 },
-    "paramB": { "name": "HighCut", "min": 2500.0, "max": 5000.0, "default": 3400.0 },
-    "paramC": { "name": "Drive", "min": 0.8, "max": 2.0, "default": 1.1 },
-    "paramD": { "name": "Res", "min": 0.3, "max": 1.2, "default": 0.6 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"LowCut\" min 120.0 max 500.0 }\nparam { alias b name \"HighCut\" min 2500.0 max 5000.0 }\nparam { alias c name \"Drive\" min 0.8 max 2.0 }\nparam { alias d name \"Res\" min 0.3 max 1.2 }\nfilter {\n    type highpass\n    cutoff a\n    resonance d\n}\nfilter {\n    type lowpass\n    cutoff b\n    resonance d\n}\nstage {\n    y tanh(x * c)\n}"
+    "paramA": {
+      "name": "LowCut",
+      "min": 120,
+      "max": 500,
+      "default": 300
+    },
+    "paramB": {
+      "name": "HighCut",
+      "min": 2500,
+      "max": 5000,
+      "default": 3400
+    },
+    "paramC": {
+      "name": "Drive",
+      "min": 0.8,
+      "max": 2,
+      "default": 1.1
+    },
+    "paramD": {
+      "name": "Res",
+      "min": 0.3,
+      "max": 1.2,
+      "default": 0.6
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = LowCut [120.0, 500.0]\nparam b = HighCut [2500.0, 5000.0]\nparam c = Drive [0.8, 2.0]\nparam d = Res [0.3, 1.2]\nfilter1: type = highpass; cutoff = a; resonance = d\nfilter2: type = lowpass; cutoff = b; resonance = d\nstage1: y = tanh(x * c)"
   },
   {
     "name": "Compressor+",
     "category": "Dynamics",
     "description": "Schneller Kompressor mit Makeup-Gain.",
-    "paramA": { "name": "Threshold", "min": -36.0, "max": -3.0, "default": -16.0 },
-    "paramB": { "name": "Ratio", "min": 1.5, "max": 12.0, "default": 4.0 },
-    "paramC": { "name": "Attack", "min": 1.0, "max": 30.0, "default": 4.0 },
-    "paramD": { "name": "Makeup", "min": 0.5, "max": 3.0, "default": 1.3 },
-    "inputGain": 0.0,
-    "outputGain": 1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Threshold\" min -36.0 max -3.0 }\nparam { alias b name \"Ratio\" min 1.5 max 12.0 }\nparam { alias c name \"Attack\" min 1.0 max 30.0 }\nparam { alias d name \"Makeup\" min 0.5 max 3.0 }\ncomp {\n    threshold a\n    ratio b\n    attack c\n    release 120\n}\nstage {\n    y x * d\n}"
+    "paramA": {
+      "name": "Threshold",
+      "min": -36,
+      "max": -3,
+      "default": -16
+    },
+    "paramB": {
+      "name": "Ratio",
+      "min": 1.5,
+      "max": 12,
+      "default": 4
+    },
+    "paramC": {
+      "name": "Attack",
+      "min": 1,
+      "max": 30,
+      "default": 4
+    },
+    "paramD": {
+      "name": "Makeup",
+      "min": 0.5,
+      "max": 3,
+      "default": 1.3
+    },
+    "inputGain": 0,
+    "outputGain": 1,
+    "mix": 1,
+    "script": "param a = Threshold [-36.0, -3.0]\nparam b = Ratio [1.5, 12.0]\nparam c = Attack [1.0, 30.0]\nparam d = Makeup [0.5, 3.0]\ncomp1: threshold = a; ratio = b; attack = c; release = 120\nstage1: y = x * d"
   },
   {
     "name": "Transient Shaper",
     "category": "Dynamics",
     "description": "Betont Attack-Anteile über Envelope-Differenz.",
-    "paramA": { "name": "AttackBoost", "min": 0.0, "max": 4.0, "default": 1.8 },
-    "paramB": { "name": "Sustain", "min": -1.0, "max": 1.0, "default": -0.25 },
-    "paramC": { "name": "EnvAtk", "min": 0.5, "max": 20.0, "default": 3.0 },
-    "paramD": { "name": "EnvRel", "min": 20.0, "max": 400.0, "default": 120.0 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"AttackBoost\" min 0.0 max 4.0 }\nparam { alias b name \"Sustain\" min -1.0 max 1.0 }\nparam { alias c name \"EnvAtk\" min 0.5 max 20.0 }\nparam { alias d name \"EnvRel\" min 20.0 max 400.0 }\nenv {\n    name env1\n    mode peak\n    attack c\n    release d\n}\nstage {\n    y x * (1.0 + env1 * a + b * (1.0 - env1))\n}"
+    "paramA": {
+      "name": "AttackBoost",
+      "min": 0,
+      "max": 4,
+      "default": 1.8
+    },
+    "paramB": {
+      "name": "Sustain",
+      "min": -1,
+      "max": 1,
+      "default": -0.25
+    },
+    "paramC": {
+      "name": "EnvAtk",
+      "min": 0.5,
+      "max": 20,
+      "default": 3
+    },
+    "paramD": {
+      "name": "EnvRel",
+      "min": 20,
+      "max": 400,
+      "default": 120
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = AttackBoost [0.0, 4.0]\nparam b = Sustain [-1.0, 1.0]\nparam c = EnvAtk [0.5, 20.0]\nparam d = EnvRel [20.0, 400.0]\nenv1: type = peak; attack = c; release = d\nstage1: y = x * (1.0 + env1 * a + b * (1.0 - env1))"
   },
   {
     "name": "Gate + Compress",
     "category": "Dynamics",
     "description": "Noise Gate vor Kompression für saubere Dynamik.",
-    "paramA": { "name": "Gate", "min": 0.01, "max": 0.5, "default": 0.08 },
-    "paramB": { "name": "Threshold", "min": -30.0, "max": -6.0, "default": -18.0 },
-    "paramC": { "name": "Ratio", "min": 1.5, "max": 10.0, "default": 3.0 },
-    "paramD": { "name": "Release", "min": 30.0, "max": 300.0, "default": 120.0 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Gate",
+      "min": 0.01,
+      "max": 0.5,
+      "default": 0.08
+    },
+    "paramB": {
+      "name": "Threshold",
+      "min": -30,
+      "max": -6,
+      "default": -18
+    },
+    "paramC": {
+      "name": "Ratio",
+      "min": 1.5,
+      "max": 10,
+      "default": 3
+    },
+    "paramD": {
+      "name": "Release",
+      "min": 30,
+      "max": 300,
+      "default": 120
+    },
+    "inputGain": 0,
     "outputGain": 0.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Gate\" min 0.01 max 0.5 }\nparam { alias b name \"Threshold\" min -30.0 max -6.0 }\nparam { alias c name \"Ratio\" min 1.5 max 10.0 }\nparam { alias d name \"Release\" min 30.0 max 300.0 }\nstage {\n    y x * step(a, abs(x))\n}\ncomp {\n    threshold b\n    ratio c\n    attack 5\n    release d\n}"
+    "mix": 1,
+    "script": "param a = Gate [0.01, 0.5]\nparam b = Threshold [-30.0, -6.0]\nparam c = Ratio [1.5, 10.0]\nparam d = Release [30.0, 300.0]\nstage1: y = x * step(a, abs(x))\ncomp1: threshold = b; ratio = c; attack = 5; release = d"
   },
   {
     "name": "Octave Fuzz",
     "category": "Creative",
     "description": "Oktavverdopplung über Vollweggleichrichtung und Sättigung.",
-    "paramA": { "name": "Drive", "min": 0.5, "max": 8.0, "default": 3.5 },
-    "paramB": { "name": "Tone", "min": 300.0, "max": 9000.0, "default": 2200.0 },
-    "paramC": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.8 },
-    "paramD": { "name": "Level", "min": 0.2, "max": 1.5, "default": 0.85 },
+    "paramA": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 8,
+      "default": 3.5
+    },
+    "paramB": {
+      "name": "Tone",
+      "min": 300,
+      "max": 9000,
+      "default": 2200
+    },
+    "paramC": {
+      "name": "Blend",
+      "min": 0,
+      "max": 1,
+      "default": 0.8
+    },
+    "paramD": {
+      "name": "Level",
+      "min": 0.2,
+      "max": 1.5,
+      "default": 0.85
+    },
     "inputGain": 2.5,
-    "outputGain": -3.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Drive\" min 0.5 max 8.0 }\nparam { alias b name \"Tone\" min 300.0 max 9000.0 }\nparam { alias d name \"Level\" min 0.2 max 1.5 }\nstage {\n    y tanh(abs(x) * a) * d\n}\nfilter {\n    type lowpass\n    cutoff b\n    resonance 0.8\n}"
+    "outputGain": -3,
+    "mix": 1,
+    "script": "param a = Drive [0.5, 8.0]\nparam b = Tone [300.0, 9000.0]\nparam d = Level [0.2, 1.5]\nstage1: y = tanh(abs(x) * a) * d\nfilter1: type = lowpass; cutoff = b; resonance = 0.8"
   },
   {
     "name": "Noise Generator",
     "category": "Creative",
     "description": "Gesteuerte Rauschzufuhr als Layer.",
-    "paramA": { "name": "Noise", "min": 0.0, "max": 1.0, "default": 0.2 },
-    "paramB": { "name": "Color", "min": 1000.0, "max": 16000.0, "default": 6000.0 },
-    "paramC": { "name": "Gate", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramD": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.4 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Noise\" min 0.0 max 1.0 }\nparam { alias d name \"Blend\" min 0.0 max 1.0 }\nstage {\n    y x * (1.0 - d) + noise(t * sr) * a * d\n}"
+    "paramA": {
+      "name": "Noise",
+      "min": 0,
+      "max": 1,
+      "default": 0.2
+    },
+    "paramB": {
+      "name": "Color",
+      "min": 1000,
+      "max": 16000,
+      "default": 6000
+    },
+    "paramC": {
+      "name": "Gate",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramD": {
+      "name": "Blend",
+      "min": 0,
+      "max": 1,
+      "default": 0.4
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Noise [0.0, 1.0]\nparam d = Blend [0.0, 1.0]\nstage1: y = x * (1.0 - d) + noise(t * sr) * a * d"
   },
   {
     "name": "Feedback Delay (einfach)",
     "category": "Creative",
     "description": "Pseudo-Delay durch y_prev Feedback.",
-    "paramA": { "name": "Feedback", "min": 0.0, "max": 0.98, "default": 0.55 },
-    "paramB": { "name": "Input", "min": 0.0, "max": 1.5, "default": 1.0 },
-    "paramC": { "name": "Damp", "min": 0.0, "max": 1.0, "default": 0.4 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 0.6 },
-    "inputGain": 0.0,
-    "outputGain": -1.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Feedback\" min 0.0 max 0.98 }\nparam { alias b name \"Input\" min 0.0 max 1.5 }\nparam { alias c name \"Damp\" min 0.0 max 1.0 }\nparam { alias d name \"Mix\" min 0.0 max 1.0 }\nstage {\n    y (x * b) * (1.0 - d) + (x + y_prev * a * (1.0 - c)) * d\n}"
+    "paramA": {
+      "name": "Feedback",
+      "min": 0,
+      "max": 0.98,
+      "default": 0.55
+    },
+    "paramB": {
+      "name": "Input",
+      "min": 0,
+      "max": 1.5,
+      "default": 1
+    },
+    "paramC": {
+      "name": "Damp",
+      "min": 0,
+      "max": 1,
+      "default": 0.4
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 0.6
+    },
+    "inputGain": 0,
+    "outputGain": -1,
+    "mix": 1,
+    "script": "param a = Feedback [0.0, 0.98]\nparam b = Input [0.0, 1.5]\nparam c = Damp [0.0, 1.0]\nparam d = Mix [0.0, 1.0]\nstage1: y = (x * b) * (1.0 - d) + (x + y_prev * a * (1.0 - c)) * d"
   },
   {
     "name": "Harmonic Exciter",
     "category": "Creative",
     "description": "Exciter-Charakter über Filter + Sättigung.",
-    "paramA": { "name": "Drive", "min": 0.5, "max": 6.0, "default": 2.2 },
-    "paramB": { "name": "HighFreq", "min": 1500.0, "max": 14000.0, "default": 5500.0 },
-    "paramC": { "name": "Amount", "min": 0.0, "max": 1.0, "default": 0.55 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 6,
+      "default": 2.2
+    },
+    "paramB": {
+      "name": "HighFreq",
+      "min": 1500,
+      "max": 14000,
+      "default": 5500
+    },
+    "paramC": {
+      "name": "Amount",
+      "min": 0,
+      "max": 1,
+      "default": 0.55
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
     "outputGain": -0.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Drive\" min 0.5 max 6.0 }\nparam { alias b name \"HighFreq\" min 1500.0 max 14000.0 }\nparam { alias c name \"Amount\" min 0.0 max 1.0 }\nfilter {\n    type highpass\n    cutoff b\n    resonance 0.8\n}\nstage {\n    y x + tanh(x * a) * c\n}\nfilter {\n    type lowpass\n    cutoff 18000\n    resonance 0.7\n}"
+    "mix": 1,
+    "script": "param a = Drive [0.5, 6.0]\nparam b = HighFreq [1500.0, 14000.0]\nparam c = Amount [0.0, 1.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.8\nstage1: y = x + tanh(x * a) * c\nfilter2: type = lowpass; cutoff = 18000; resonance = 0.7"
   },
   {
     "name": "Lo-Fi Crush",
     "category": "Creative",
     "description": "Bitcrush + Noise + Tiefpass für Lo-Fi Charakter.",
-    "paramA": { "name": "Bits", "min": 3.0, "max": 12.0, "default": 6.0 },
-    "paramB": { "name": "Noise", "min": 0.0, "max": 0.4, "default": 0.08 },
-    "paramC": { "name": "LP", "min": 600.0, "max": 8000.0, "default": 2600.0 },
-    "paramD": { "name": "Drive", "min": 0.5, "max": 4.0, "default": 1.6 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Bits",
+      "min": 3,
+      "max": 12,
+      "default": 6
+    },
+    "paramB": {
+      "name": "Noise",
+      "min": 0,
+      "max": 0.4,
+      "default": 0.08
+    },
+    "paramC": {
+      "name": "LP",
+      "min": 600,
+      "max": 8000,
+      "default": 2600
+    },
+    "paramD": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 4,
+      "default": 1.6
+    },
+    "inputGain": 0,
     "outputGain": -1.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Bits\" min 3.0 max 12.0 }\nparam { alias b name \"Noise\" min 0.0 max 0.4 }\nparam { alias c name \"LP\" min 600.0 max 8000.0 }\nparam { alias d name \"Drive\" min 0.5 max 4.0 }\nstage {\n    y bitcrush(tanh(x * d), a) + noise(t * sr * 0.5) * b\n}\nfilter {\n    type lowpass\n    cutoff c\n    resonance 0.8\n}"
+    "mix": 1,
+    "script": "param a = Bits [3.0, 12.0]\nparam b = Noise [0.0, 0.4]\nparam c = LP [600.0, 8000.0]\nparam d = Drive [0.5, 4.0]\nstage1: y = bitcrush(tanh(x * d), a) + noise(t * sr * 0.5) * b\nfilter1: type = lowpass; cutoff = c; resonance = 0.8"
   },
   {
     "name": "Bypass Clean",
     "category": "Utility",
     "description": "Reiner Durchlauf ohne Veränderung.",
-    "paramA": { "name": "A", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramB": { "name": "B", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramC": { "name": "C", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramD": { "name": "D", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "stage {\n    y x\n}"
+    "paramA": {
+      "name": "A",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramB": {
+      "name": "B",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramC": {
+      "name": "C",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramD": {
+      "name": "D",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "stage1: y = x"
   },
   {
     "name": "Gain Staging",
     "category": "Utility",
     "description": "Neutraler Gain-Block für Pegelanpassung.",
-    "paramA": { "name": "Gain", "min": 0.1, "max": 4.0, "default": 1.0 },
-    "paramB": { "name": "Trim", "min": 0.1, "max": 2.0, "default": 1.0 },
-    "paramC": { "name": "Soft", "min": 0.0, "max": 1.0, "default": 0.0 },
-    "paramD": { "name": "Mix", "min": 0.0, "max": 1.0, "default": 1.0 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Gain\" min 0.1 max 4.0 }\nparam { alias b name \"Trim\" min 0.1 max 2.0 }\nparam { alias c name \"Soft\" min 0.0 max 1.0 }\nstage {\n    y (x * a * b) * (1.0 - c) + tanh(x * a * b) * c\n}"
+    "paramA": {
+      "name": "Gain",
+      "min": 0.1,
+      "max": 4,
+      "default": 1
+    },
+    "paramB": {
+      "name": "Trim",
+      "min": 0.1,
+      "max": 2,
+      "default": 1
+    },
+    "paramC": {
+      "name": "Soft",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "paramD": {
+      "name": "Mix",
+      "min": 0,
+      "max": 1,
+      "default": 1
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Gain [0.1, 4.0]\nparam b = Trim [0.1, 2.0]\nparam c = Soft [0.0, 1.0]\nstage1: y = (x * a * b) * (1.0 - c) + tanh(x * a * b) * c"
   },
   {
     "name": "Parallel Punch",
     "category": "Dynamics",
     "description": "Parallel saturation for added density with controlled transients.",
-    "paramA": { "name": "Drive", "min": 0.5, "max": 6.0, "default": 2.4 },
-    "paramB": { "name": "Blend", "min": 0.0, "max": 1.0, "default": 0.45 },
-    "paramC": { "name": "CompThr", "min": -30.0, "max": -6.0, "default": -16.0 },
-    "paramD": { "name": "CompRatio", "min": 1.5, "max": 8.0, "default": 3.5 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 6,
+      "default": 2.4
+    },
+    "paramB": {
+      "name": "Blend",
+      "min": 0,
+      "max": 1,
+      "default": 0.45
+    },
+    "paramC": {
+      "name": "CompThr",
+      "min": -30,
+      "max": -6,
+      "default": -16
+    },
+    "paramD": {
+      "name": "CompRatio",
+      "min": 1.5,
+      "max": 8,
+      "default": 3.5
+    },
+    "inputGain": 0,
     "outputGain": -0.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Drive\" min 0.5 max 6.0 }\nparam { alias b name \"Blend\" min 0.0 max 1.0 }\nparam { alias c name \"CompThr\" min -30.0 max -6.0 }\nparam { alias d name \"CompRatio\" min 1.5 max 8.0 }\ncomp {\n    threshold c\n    ratio d\n    attack 4\n    release 120\n}\nstage {\n    y x * (1.0 - b) + tanh(x * a) * b\n}"
+    "mix": 1,
+    "script": "param a = Drive [0.5, 6.0]\nparam b = Blend [0.0, 1.0]\nparam c = CompThr [-30.0, -6.0]\nparam d = CompRatio [1.5, 8.0]\ncomp1: threshold = c; ratio = d; attack = 4; release = 120\nstage1: y = x * (1.0 - b) + tanh(x * a) * b"
   },
   {
     "name": "Wide Motion",
     "category": "Modulation",
     "description": "Slow, wide LFO sweep with gentle feedback.",
-    "paramA": { "name": "Rate", "min": 0.05, "max": 3.0, "default": 0.45 },
-    "paramB": { "name": "Depth", "min": 0.0, "max": 1.0, "default": 0.55 },
-    "paramC": { "name": "Feedback", "min": 0.0, "max": 0.7, "default": 0.22 },
-    "paramD": { "name": "Lowpass", "min": 700.0, "max": 12000.0, "default": 5200.0 },
-    "inputGain": 0.0,
+    "paramA": {
+      "name": "Rate",
+      "min": 0.05,
+      "max": 3,
+      "default": 0.45
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0,
+      "max": 1,
+      "default": 0.55
+    },
+    "paramC": {
+      "name": "Feedback",
+      "min": 0,
+      "max": 0.7,
+      "default": 0.22
+    },
+    "paramD": {
+      "name": "Lowpass",
+      "min": 700,
+      "max": 12000,
+      "default": 5200
+    },
+    "inputGain": 0,
     "outputGain": -0.5,
-    "mix": 1.0,
-    "script": "param { alias a name \"Rate\" min 0.05 max 3.0 }\nparam { alias b name \"Depth\" min 0.0 max 1.0 }\nparam { alias c name \"Feedback\" min 0.0 max 0.7 }\nparam { alias d name \"Lowpass\" min 700.0 max 12000.0 }\nosc {\n    name osc1\n    shape sin\n    freq a\n    depth 1.0\n}\nstage {\n    y tanh((x + y_prev * c) * (1.0 + osc1 * b * 0.4))\n}\nfilter {\n    type lowpass\n    cutoff d\n    resonance 0.8\n}"
+    "mix": 1,
+    "script": "param a = Rate [0.05, 3.0]\nparam b = Depth [0.0, 1.0]\nparam c = Feedback [0.0, 0.7]\nparam d = Lowpass [700.0, 12000.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tanh((x + y_prev * c) * (1.0 + osc1 * b * 0.4))\nfilter1: type = lowpass; cutoff = d; resonance = 0.8"
   },
   {
     "name": "Tight Gate",
     "category": "Utility",
     "description": "Fast noise gate with optional soft-release character.",
-    "paramA": { "name": "Threshold", "min": 0.01, "max": 0.6, "default": 0.09 },
-    "paramB": { "name": "ReleaseMix", "min": 0.0, "max": 1.0, "default": 0.35 },
-    "paramC": { "name": "Drive", "min": 0.5, "max": 2.5, "default": 1.1 },
-    "paramD": { "name": "Output", "min": 0.5, "max": 1.8, "default": 1.0 },
-    "inputGain": 0.0,
-    "outputGain": 0.0,
-    "mix": 1.0,
-    "script": "param { alias a name \"Threshold\" min 0.01 max 0.6 }\nparam { alias b name \"ReleaseMix\" min 0.0 max 1.0 }\nparam { alias c name \"Drive\" min 0.5 max 2.5 }\nparam { alias d name \"Output\" min 0.5 max 1.8 }\nstage {\n    y (x * step(a, abs(x))) * (1.0 - b) + (x + y_prev * 0.2) * b\n}\nstage {\n    y tanh(y * c) * d\n}"
+    "paramA": {
+      "name": "Threshold",
+      "min": 0.01,
+      "max": 0.6,
+      "default": 0.09
+    },
+    "paramB": {
+      "name": "ReleaseMix",
+      "min": 0,
+      "max": 1,
+      "default": 0.35
+    },
+    "paramC": {
+      "name": "Drive",
+      "min": 0.5,
+      "max": 2.5,
+      "default": 1.1
+    },
+    "paramD": {
+      "name": "Output",
+      "min": 0.5,
+      "max": 1.8,
+      "default": 1
+    },
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [0.01, 0.6]\nparam b = ReleaseMix [0.0, 1.0]\nparam c = Drive [0.5, 2.5]\nparam d = Output [0.5, 1.8]\nstage1: y = (x * step(a, abs(x))) * (1.0 - b) + (x + y_prev * 0.2) * b\nstage2: y = tanh(y * c) * d"
   }
 ]

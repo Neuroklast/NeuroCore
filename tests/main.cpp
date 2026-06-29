@@ -24,5 +24,5 @@ int main(int argc, char *argv[]) {
 
   juce::UnitTestRunner runner;
   runner.runAllTests();
-  return 0;
+  return runner.getNumFailures() > 0 ? 1 : 0;
 }

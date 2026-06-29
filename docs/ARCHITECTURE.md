@@ -5,21 +5,23 @@
 ```
 Input
   └─► InputRouter
-        └─► InputGain
-              └─► NoiseGate
-                    └─► SignalPolisher
-                          └─► [Oversampling ↑]
-                                └─► DSL SignalChain
-                                      ├── Stage   (mathematische Formel)
-                                      ├── Filter  (lowpass / highpass / bandpass)
-                                      ├── Comp    (Kompressor)
-                                      ├── Env     (Envelope Follower)
-                                      └── Osc     (LFO-Oszillator)
-                                └─► [Oversampling ↓]
-                                      └─► DryWetMixer
-                                            └─► AutoGainCompensation
-                                                  └─► OutputGain
-                                                        └─► Output
+        └─► [Oversampling ↑]
+              └─► InputGain
+                    └─► DSL SignalChain (processBlockSmoothed)
+                          ├── Stage   (mathematische Formel)
+                          ├── Filter  (lowpass / highpass / bandpass)
+                          ├── Comp    (Kompressor)
+                          ├── Env     (Envelope Follower)
+                          └── Osc     (LFO-Oszillator)
+                    └─► DC-Blocker
+                          └─► NoiseGate
+                                └─► SignalPolisher
+                                      └─► LPF (osSpec, anti-alias)
+                                            └─► [Oversampling ↓]
+                                                  └─► DryWetMixer
+                                                        └─► AutoGainCompensation
+                                                              └─► OutputGain
+                                                                    └─► Output
 ```
 
 ---
@@ -126,6 +128,7 @@ Parameter-IDs für den APVTS:
 | `ValidationContentComponent` | Formel-Validierungs-Dialog |
 | `PresetContentComponent` | Preset-Browser-Panel |
 | `FunctionsContentComponent` | DSL-Funktions-Referenz-Panel |
+| `StagesContentComponent` | Signalkette-Übersicht (parse Blocks aus aktuellem Skript) |
 | `WeightedLayout` | Flexibles Layout-System mit gewichteten Spalten/Zeilen |
 
 ---

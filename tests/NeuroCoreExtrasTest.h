@@ -11,6 +11,7 @@
 #include "../src/core/MidiVariableMapper.h"
 #include "../src/core/WaveformCapture.h"
 #include "../src/core/ScriptManager.h"
+#include "../src/core/PluginProcessor.h"
 #include <cmath>
 
 class NeuroCoreExtrasTest : public juce::UnitTest
@@ -30,6 +31,7 @@ public:
         testTailTime();
         testWaveformCapture();
         testScriptManagerDelegation();
+        testProcessorStateRoundTrip();
     }
 
 private:
@@ -492,6 +494,30 @@ private:
             const float result = mgr.evaluateFormula(0.5f);
             const float expected = std::tanh(0.5f);
             expectWithinAbsoluteError(result, expected, 0.01f);
+        }
+    }
+
+    void testProcessorStateRoundTrip()
+    {
+        beginTest("Processor state: variable names and language round-trip");
+        {
+            NeuroCoreAudioProcessor proc;
+            juce::String err;
+            expect(proc.setFormula("stage1: y = x * a", err));
+            proc.setVariableName(0, "drive");
+            proc.setVariableName(1, "tone");
+            proc.loadLanguage("de");
+
+            juce::MemoryBlock state;
+            proc.getStateInformation(state);
+
+            NeuroCoreAudioProcessor restored;
+            restored.setStateInformation(state.getData(), (int) state.getSize());
+
+            expectEquals(restored.getScript(), juce::String("stage1: y = x * a"));
+            expectEquals(restored.getVariableName(0), juce::String("drive"));
+            expectEquals(restored.getVariableName(1), juce::String("tone"));
+            expect(restored.getCurrentLanguage().startsWithIgnoreCase("de"));
         }
     }
 };

@@ -28,6 +28,12 @@
 namespace
 {
 constexpr const char* kDslScriptStateKey = "DSLScript";
+constexpr const char* kLanguageStateKey   = "language";
+
+juce::String variableNameStateKey(int index)
+{
+    return "varName" + juce::String(index);
+}
 }
 
 
@@ -262,6 +268,9 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     if (state.isValid())
     {
         state.setProperty(kDslScriptStateKey, getScript(), nullptr);
+        state.setProperty(kLanguageStateKey, currentLanguage, nullptr);
+        for (int i = 0; i < 4; ++i)
+            state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
@@ -293,6 +302,18 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 if (!applyFormula(scriptFromState, err))
                     logError("Failed to restore DSL script from state: " + err);
             }
+
+            for (int i = 0; i < 4; ++i)
+            {
+                const auto key = variableNameStateKey(i);
+                if (tree.hasProperty(key))
+                    setVariableName(i, tree.getProperty(key).toString());
+            }
+
+            if (tree.hasProperty(kLanguageStateKey))
+                loadLanguage(tree.getProperty(kLanguageStateKey).toString());
+
+            sendChangeMessage();
         }
     }
 }
@@ -351,6 +372,7 @@ bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::Stri
     if (scriptManager.applyFormula(text, error))
     {
         dspEngine.onFormulaChanged();
+        sendChangeMessage();
         return true;
     }
     return false;
@@ -370,7 +392,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     addParam ("b", "B", 0.f, 1.f, 0.f);
     addParam ("c", "C", 0.f, 1.f, 0.f);
     addParam ("d", "D", 0.f, 1.f, 0.f);
-    addParam ("modFrequency", "Mod Freq", 0.1f, 20.f, 1.f);
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
     addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);

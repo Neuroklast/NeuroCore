@@ -1,313 +1,227 @@
 # NeuroCore DSL – Sprachreferenz
 
-Die NeuroCore-DSL ist eine deklarative Skriptsprache zur Beschreibung von Audio-Signalketten.
-Jedes Skript besteht aus einer Folge von **Blöcken**, die von oben nach unten verarbeitet werden.
+Die NeuroCore-DSL beschreibt Audio-Signalketten als **zeilenbasiertes Skript**.
+Blöcke werden von oben nach unten verarbeitet.
 
 ---
 
 ## Allgemeine Syntax
 
 ```
-blocktyp {
-    schlüssel wert
-    schlüssel wert
-}
+blockname: schlüssel = wert; schlüssel = wert
 ```
 
-- Blöcke werden in geschweiften Klammern definiert
-- Schlüssel und Werte sind durch Leerzeichen getrennt
-- Kommentare: `# Kommentartext`
-- Zahlen: Ganzzahlen und Gleitkommazahlen (z. B. `0.5`, `-1.0`, `440`)
-- Formeln: mathematische Ausdrücke (z. B. `tanh(x * a)`)
+- Jede Zeile definiert einen Block: `name:` gefolgt von Argumenten
+- Argumente werden mit `;` getrennt, Schlüssel und Wert mit `=`
+- `param`-Zeilen müssen **vor** allen anderen Blöcken stehen
+- Kommentare: `# ...` oder `// ...`
+- Zahlen: Ganzzahlen und Gleitkommazahlen (`0.5`, `-1.0`, `440`)
+- Formeln in `stage`: mathematische Ausdrücke (`tanh(x * a)`)
+
+**Beispiel (Minimal):**
+
+```
+stage1: y = tanh(x * a)
+```
 
 ---
 
-## Block-Typen
+## `param` – Parameter-Alias
 
-### `param` – Parameter-Alias
-
-Weist einem der vier Knobs (a–d) einen benutzerdefinierten Namen und Wertebereich zu.
+Weist einem Knob (`a`–`d`) einen Anzeigenamen und optionalen Wertebereich zu.
 
 ```
-param {
-    alias   a
-    name    "Drive"
-    min     0.0
-    max     2.0
-}
+param a = Drive [0.0, 2.0]
+param b = Rate [0.1, 10.0]
 ```
 
-| Argument | Typ | Beschreibung |
+| Teil | Beschreibung |
+|---|---|
+| `a`–`d` | Welcher Knob konfiguriert wird |
+| `Drive` | Anzeigename im UI |
+| `[min, max]` | Optionaler Wertebereich (Standard: `[0, 1]`) |
+
+Nach dem Parsen steht der Skaliertwert weiterhin unter `a`–`d`; in Formeln kann der Alias-Name (z. B. `drive`) verwendet werden.
+
+---
+
+## `stage` – Mathematische Transformation
+
+Kernblock. Transformiert das Signal über eine Formel.
+
+```
+stage1: y = tanh(x * a * 2.0)
+stage2: channel = left; y = x * 0.5
+```
+
+| Argument | Werte | Beschreibung |
 |---|---|---|
-| `alias` | `a` \| `b` \| `c` \| `d` | Welcher Knob wird konfiguriert |
-| `name` | String | Anzeigename im UI |
-| `min` | Zahl | Minimaler Parameterwert |
-| `max` | Zahl | Maximaler Parameterwert |
+| `y` | Formel | **Pflicht.** Ausgabeformel |
+| `channel` | `left` \| `right` \| `both` | Kanal-Routing (Standard: `both`) |
+| `ms_encode` | `true` | L/R → Mid/Side vor der Formel |
+| `ms_decode` | `true` | Mid/Side → L/R vor der Formel |
 
----
-
-### `stage` – Mathematische Transformation
-
-Der Kernblock. Transformiert das Audiosignal über eine mathematische Formel.
-
-```
-stage {
-    y   tanh(x * a * 2.0)
-}
-```
-
-#### Verfügbare Variablen in der Formel (`y = ...`)
+### Variablen in `y = ...`
 
 | Variable | Beschreibung |
 |---|---|
 | `x` | Aktueller Eingabe-Sample |
-| `x_prev` | Vorheriger Eingabe-Sample (Leak-Faktor 0.9999 – verhindert DC-Akkumulation) |
-| `y_prev` | Ausgabe des vorherigen Samples – Feedback (Leak-Faktor 0.9999) |
-| `ch` | Aktueller Kanal: 0 = links, 1 = rechts |
-| `a` | Knob A (nach `param`-Block skaliert) |
-| `b` | Knob B |
-| `c` | Knob C |
-| `d` | Knob D |
-| `env1` … `envN` | Ausgabe eines benannten `env`-Blocks |
-| `osc1` … `oscN` | Ausgabe eines benannten `osc`-Blocks |
-| `t` | Aktuelle Zeit in Sekunden (z. B. für `sin(2 * pi * 440 * t)`) |
+| `x_prev` | Vorheriger Eingabe-Sample (Leak 0.9999) |
+| `y_prev` | Vorheriger Ausgabe-Sample – Feedback (Leak 0.9999) |
+| `ch` | Kanal: 0 = links, 1 = rechts |
+| `a`–`d` | Knob-Werte (ggf. über `param` skaliert) |
+| `env1` … | Ausgabe eines `env`-Blocks (Blockname) |
+| `osc1` … | Ausgabe eines `osc`-Blocks (Blockname) |
+| `t` | Zeit in Sekunden |
 | `sr` | Sample-Rate in Hz |
-| `pi` | π (3.14159…) |
-| `midi_note` | Aktuelle MIDI-Note (0–127, 0 wenn keine Note) |
+| `pi` | π |
+| `midi_note` | MIDI-Note (0–127) |
 | `midi_freq` | Frequenz der MIDI-Note in Hz |
-| `midi_vel` | MIDI-Velocity (0.0–1.0) |
-| `midi_gate` | 1.0 wenn Note aktiv, 0.0 sonst |
-| `midi_bend` | Pitch Bend (-1.0 bis +1.0) |
-| `midi_mod` | CC1 Modulationsrad (0.0–1.0) |
+| `midi_vel` | Velocity (0.0–1.0) |
+| `midi_gate` | 1.0 wenn Note aktiv |
+| `midi_bend` | Pitch Bend (-1.0 … +1.0) |
+| `midi_mod` | CC1 Mod Wheel (0.0–1.0) |
 
-**Kanal-Routing** (optional pro Stage):
+---
+
+## `filter` – Zustandsvariablen-Filter
+
+```
+filter1: type = lowpass; cutoff = 800; resonance = 0.7
+filter2: type = bandpass; center = 1000; width = 500
+```
+
+| Argument | Typ | Beschreibung |
+|---|---|---|
+| `type` | `lowpass` \| `highpass` \| `bandpass` | Filtertyp (Kurzformen: `lpf`, `hpf`, `bpf`) |
+| `cutoff` | Hz / Formel | Grenzfrequenz |
+| `resonance` | 0.1–10 | Gütefaktor |
+| `center` | Hz | Mittenfrequenz (Bandpass) |
+| `width` | Hz | Bandbreite (Bandpass) |
+| `lowcut` / `highcut` | Hz | Alternative Bandpass-Definition |
+
+Bandpass erfordert entweder `center` + `width` oder `lowcut` + `highcut`.
+
+---
+
+## `comp` – Kompressor
+
+```
+comp1: threshold = -12; ratio = 4.0; attack = 0.005; release = 0.1
+```
+
+| Argument | Beschreibung |
+|---|---|
+| `threshold` | Schwelle (dBFS oder Formel) |
+| `ratio` | Kompressionsverhältnis (≥ 1.0) |
+| `attack` | Anstiegszeit in Sekunden (oder Formel) |
+| `release` | Abklingzeit in Sekunden (oder Formel) |
+
+---
+
+## `env` – Envelope Follower
+
+```
+env1: type = rms; attack = 0.01; release = 0.2
+env2: type = peak; trigger = midi_gate
+```
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
-| `channel` | `left` \| `right` \| `both` | Stage wird nur auf diesen Kanal angewendet (Standard: `both`) |
-| `ms_encode` | `true` | Wandelt L/R-Buffer in Mid/Side um (vor der Formel) |
-| `ms_decode` | `true` | Wandelt Mid/Side-Buffer zurück in L/R (vor der Formel) |
+| `type` | `rms` \| `peak` | Messmethode |
+| `attack` | Sekunden / Formel | Anstiegszeit |
+| `release` | Sekunden / Formel | Abklingzeit |
+| `trigger` | `midi_gate` | Attack bei MIDI-Note-On neu starten |
+
+Der Blockname (`env1`) ist die Variable in nachfolgenden `stage`-Formeln. Ausgabe: 0.0–1.0.
 
 ---
 
-### `filter` – Zustandsvariablen-Filter
-
-Wendet einen digitalen Filter an (`juce::StateVariableTPTFilter`).
+## `osc` – LFO-Oszillator
 
 ```
-filter {
-    type     lowpass
-    cutoff   800
-    resonance 0.7
-}
+osc1: shape = sine; freq = 0.5; depth = 1.0
+osc2: shape = triangle; sync = 1/4; depth = d
 ```
 
-| Argument | Typ | Beschreibung |
+| Argument | Werte | Beschreibung |
 |---|---|---|
-| `type` | `lowpass` \| `highpass` \| `bandpass` | Filtertyp |
-| `cutoff` | Hz | Grenzfrequenz (auch als Formel möglich: `400 + a * 2000`) |
-| `resonance` | 0.1–10 | Gütefaktor (Q) |
-| `center` | Hz | Mittenfrequenz (für Bandpass) |
-| `width` | Hz | Bandbreite (für Bandpass) |
-| `lowcut` | Hz | Untere Grenzfrequenz (bei kombiniertem Typ) |
-| `highcut` | Hz | Obere Grenzfrequenz (bei kombiniertem Typ) |
+| `shape` | `sine` \| `saw` \| `triangle` \| `square` \| `noise` | Wellenform |
+| `freq` | Hz / Formel | Frequenz (ignoriert wenn `sync` gesetzt) |
+| `depth` | 0.0–1.0 | Amplitude |
+| `sync` | Ratio-String | Tempo-Sync (`1/4`, `1/8`, `1`, `2`, …) |
+
+Der Blockname (`osc1`) ist die Variable in Formeln. Ausgabe: ca. -1.0 … +1.0.
 
 ---
 
-### `comp` – Kompressor
-
-Dynamik-Kompressor mit einstellbaren Schwellen- und Zeitkonstanten.
-
-```
-comp {
-    threshold  -12
-    ratio       4.0
-    attack      5
-    release     100
-}
-```
-
-| Argument | Typ | Beschreibung |
-|---|---|---|
-| `threshold` | dBFS | Kompressions-Schwelle |
-| `ratio` | ≥ 1.0 | Kompressions-Verhältnis (1:1 = kein Effekt, ∞:1 = Limiter) |
-| `attack` | ms | Einschwingzeit |
-| `release` | ms | Ausschwingzeit |
-
----
-
-### `env` – Envelope Follower
-
-Verfolgt die Hüllkurve des Signals und stellt den Wert als Variable zur Verfügung.
-
-```
-env {
-    name     env1
-    mode     rms
-    attack   10
-    release  200
-}
-```
-
-| Argument | Typ | Beschreibung |
-|---|---|---|
-| `name` | Bezeichner | Name der Output-Variable (z. B. `env1`, `envDrive`) |
-| `mode` | `rms` \| `peak` | Messmethode |
-| `attack` | ms | Ansprechzeit |
-| `release` | ms | Abklingzeit |
-| `trigger` | `midi_gate` | Startet Attack-Phase bei jedem MIDI-Note-On neu |
-
-Der Ausgabewert (0.0–1.0) steht in nachfolgenden `stage`-Blöcken als `env1` usw. zur Verfügung.
-
----
-
-### `osc` – LFO-Oszillator
-
-Erzeugt ein periodisches Signal als Modulationsquelle.
-
-```
-osc {
-    name    osc1
-    shape   sin
-    freq    0.5
-    depth   1.0
-}
-```
-
-| Argument | Typ | Beschreibung |
-|---|---|---|
-| `name` | Bezeichner | Name der Output-Variable (z. B. `osc1`, `oscVib`) |
-| `shape` | `sin` \| `saw` \| `tri` \| `square` | Wellenform |
-| `freq` | Hz | Frequenz des LFOs (wird ignoriert wenn `sync` gesetzt) |
-| `depth` | 0.0–1.0 | Amplitude des LFOs |
-| `sync` | Ratio | Synchronisiert die Frequenz an das DAW-Tempo (z. B. `1/4` = Viertelnote, `1/8` = Achtelnote, `1` = Takt, `2` = 2 Takte) |
-
-**Beispiel Tempo-Sync:**
-```
-osc1: shape = sin; sync = 1/4; depth = d
-```
-
-Der Ausgabewert (-1.0–+1.0) steht in nachfolgenden `stage`-Blöcken zur Verfügung.
-
----
-
-## Verfügbare Mathematik-Funktionen
+## Mathematik-Funktionen
 
 | Funktion | Syntax | Beschreibung |
 |---|---|---|
-| `sin` | `sin(x)` | Sinus |
-| `cos` | `cos(x)` | Kosinus |
-| `tan` | `tan(x)` | Tangens |
-| `tanh` | `tanh(x)` | Hyperbolischer Tangens (Soft-Clip) |
-| `abs` | `abs(x)` | Absolutwert |
-| `sign` | `sign(x)` | Vorzeichen (-1, 0, +1) |
-| `sqrt` | `sqrt(x)` | Quadratwurzel |
-| `exp` | `exp(x)` | Exponentialfunktion (e^x) |
-| `log` | `log(x)` | Natürlicher Logarithmus |
-| `log2` | `log2(x)` | Logarithmus zur Basis 2 |
-| `pow` | `pow(x, n)` | Potenz (x^n) |
-| `min` | `min(x, y)` | Minimum zweier Werte |
-| `max` | `max(x, y)` | Maximum zweier Werte |
-| `clamp` | `clamp(x, lo, hi)` | Begrenzt x auf [lo, hi] |
-| `lerp` | `lerp(a, b, t)` | Lineare Interpolation |
-| `step` | `step(edge, x)` | Stufenfunktion (0 oder 1) |
-| `smoothstep` | `smoothstep(lo, hi, x)` | Weiche Stufenfunktion |
-| `fmod` | `fmod(x, y)` | Gleitkomma-Modulo |
-| `noise` | `noise(x)` | Pseudo-Rauschen (deterministisch) |
-| `fold` | `fold(x, lo, hi)` | Faltung/Reflektions-Waveshaping |
-| `wrap` | `wrap(x, lo, hi)` | Wrap-Around-Waveshaping |
-| `softclip` | `softclip(x)` | Sanftes Clipping |
-| `hardclip` | `hardclip(x, limit)` | Hartes Clipping |
-| `bitcrush` | `bitcrush(x, bits)` | Bit-Reduktion |
-| `quantize` | `quantize(x, steps)` | Stufenquantisierung |
+| `sin`, `cos`, `tan` | `sin(x)` | Trigonometrie |
+| `tanh` | `tanh(x)` | Soft-Clip |
+| `abs`, `sign` | `abs(x)` | Absolutwert / Vorzeichen |
+| `sqrt`, `exp`, `log`, `log2` | `sqrt(x)` | Standard-Math |
+| `pow` | `pow(x, n)` | Potenz |
+| `min`, `max`, `clamp` | `clamp(x, lo, hi)` | Begrenzung |
+| `lerp` | `lerp(a, b, t)` | Interpolation |
+| `step`, `smoothstep` | `step(edge, x)` | Stufen / weiche Stufen |
+| `fmod` | `fmod(x, y)` | Modulo |
+| `map` | `map(x, inLo, inHi, outLo, outHi)` | Wertebereich-Mapping |
+| `noise` | `noise(x)` | Deterministisches Rauschen |
+| `fold`, `wrap` | `fold(x, lo, hi)` | Waveshaping |
+| `softclip`, `hardclip` | `hardclip(x, limit)` | Clipping |
+| `bitcrush`, `quantize` | `bitcrush(x, bits)` | Lo-Fi |
 
 ---
 
 ## Beispiel-Skripte
 
-### Einfaches Soft-Clipping (Overdrive)
+### Soft Overdrive
 
 ```
-param {
-    alias  a
-    name   "Drive"
-    min    0.1
-    max    4.0
-}
-
-stage {
-    y   tanh(x * a)
-}
+param a = Drive [0.1, 4.0]
+stage1: y = tanh(x * a)
 ```
 
 ### Tremolo mit LFO
 
 ```
-param {
-    alias  b
-    name   "Rate"
-    min    0.1
-    max    10.0
-}
-
-osc {
-    name   osc1
-    shape  sin
-    freq   b
-    depth  1.0
-}
-
-stage {
-    y   x * (0.5 + 0.5 * osc1)
-}
+param b = Rate [0.1, 10.0]
+osc1: shape = sine; freq = b; depth = 1.0
+stage1: y = x * (0.5 + 0.5 * osc1)
 ```
 
-### Envelope-gesteuerter Filter + Kompressor
+### Envelope-Filter + Kompressor
 
 ```
-env {
-    name     env1
-    mode     rms
-    attack   20
-    release  300
-}
-
-filter {
-    type     lowpass
-    cutoff   200 + env1 * 4000
-    resonance 0.8
-}
-
-comp {
-    threshold  -18
-    ratio       3.0
-    attack      10
-    release     150
-}
+env1: type = rms; attack = 0.02; release = 0.3
+filter1: type = lowpass; cutoff = 200 + env1 * 4000; resonance = 0.8
+comp1: threshold = -18; ratio = 3.0; attack = 0.01; release = 0.15
+stage1: y = x
 ```
 
 ### Bitcrusher mit Feedback
 
 ```
-param {
-    alias  c
-    name   "Bits"
-    min    2.0
-    max    16.0
-}
+param c = Bits [2.0, 16.0]
+stage1: y = bitcrush(x + y_prev * 0.1, c)
+```
 
-stage {
-    y   bitcrush(x + y_prev * 0.1, c)
-}
+### Tempo-synchroner LFO
+
+```
+osc1: shape = sine; sync = 1/4; depth = d
+stage1: y = x + osc1 * 0.1
 ```
 
 ---
 
-## Hinweise und Einschränkungen
+## Hinweise
 
-- Maximale Anzahl Stages: siehe `kMaxStages` in `Config.h`
-- Maximale Formellänge: `kMaxFormulaLength` Zeichen
-- Rekursive Abhängigkeiten (z. B. zwei Stages die sich gegenseitig referenzieren) sind nicht möglich
-- Bei Verwendung von `y_prev` ohne initialen Wert: Erster Sample-Wert ist 0.0
-- `noise()` ist deterministisch und sample-positionsabhängig, kein echtes Rauschen
-- Formeln werden validiert bevor sie in die Signalkette übernommen werden (`ValidationContentComponent`)
+- Blocknamen müssen eindeutig sein
+- `stage` ohne `y = ...` ist ein Parse-Fehler
+- `y_prev` / `x_prev` starten bei 0.0
+- Formeln werden vor Übernahme über die Validierung geprüft (`testFormulaStability`)
+- Factory-Presets in `resources/factory_presets.json` verwenden Zeilen-Syntax (seit 2026-06-29)

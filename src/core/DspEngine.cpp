@@ -116,9 +116,9 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     chain.prepare(osSpec);
     chain.get<1>().setThreshold(-60.0f);
 
-    // Filters
-    lowpassFilter.prepare(currentSpec);
-    *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
+    // Filters (LPF runs on oversampled buffer — must use osSpec)
+    lowpassFilter.prepare(osSpec);
+    *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(osSpec.sampleRate, 20000.0f);
     dcBlocker.prepare(osSpec);
     *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 20.0f);
 
@@ -206,8 +206,6 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
             return juce::jlimit(0.0f, 2.0f, v);
         if (id == EffectParameters::dryWet)
             return juce::jlimit(0.0f, 1.0f, v);
-        if (id == EffectParameters::modFrequency)
-            return juce::jlimit(0.1f, 20.0f, v);
         if (id == EffectParameters::paramA || id == EffectParameters::paramB ||
             id == EffectParameters::paramC || id == EffectParameters::paramD)
             return juce::jlimit(0.0f, 1.0f, v);
@@ -287,8 +285,6 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
                 dst[i] = oldPtr[i] * (1.0f - f) + newPtr[i] * f;
             }
         }
-        if (! formulaBlend.isSmoothing())
-            oldSignalChain = signalChain;
     }
     else
     {
@@ -311,10 +307,14 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     if (! bypassActive && oversampler)
         oversampler->processSamplesDown(block);
 
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    const size_t numSamples = block.getNumSamples();
+    if (numSamples > 0)
     {
-        dryWetMixer.setWetMixProportion(wetValue.getNextValue());
-        dryWetMixer.mixWetSamples(block.getSubBlock(i, 1));
+        float wet = wetValue.getCurrentValue();
+        for (size_t i = 0; i < numSamples; ++i)
+            wet = wetValue.getNextValue();
+        dryWetMixer.setWetMixProportion(wet);
+        dryWetMixer.mixWetSamples(block);
     }
 
     auto dryBlock = juce::dsp::AudioBlock<float>(dryBuffer);
@@ -322,12 +322,14 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
 
     userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
                                        getParam(EffectParameters::outputGain)));
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    if (numSamples > 0)
     {
-        userOutputGain.setGainLinear(userGainValue.getNextValue());
-        auto slice = block.getSubBlock(i, 1);
-        juce::dsp::ProcessContextReplacing<float> outCtxSlice(slice);
-        userOutputGain.process(outCtxSlice);
+        float outGain = userGainValue.getCurrentValue();
+        for (size_t i = 0; i < numSamples; ++i)
+            outGain = userGainValue.getNextValue();
+        userOutputGain.setGainLinear(outGain);
+        juce::dsp::ProcessContextReplacing<float> outCtx(block);
+        userOutputGain.process(outCtx);
     }
 
     float rmsSum = 0.0f;

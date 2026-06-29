@@ -20,7 +20,9 @@ public:
     PresetManager mgr(proc);
 
     juce::String err;
-    proc.setFormula("x * 2", err);
+    const juce::String testScript("stage1: y = x * a");
+    expect(proc.setFormula(testScript, err));
+    expect(err.isEmpty());
 
     proc.setVariableName(0, "gain");
     if (auto *p = proc.apvts.getParameter(EffectParameters::paramA))
@@ -32,7 +34,7 @@ public:
     TestProcessor proc2;
     PresetManager mgr2(proc2);
     expect(mgr2.loadPreset(tmp.getFile()));
-    expectEquals(proc2.getScript(), juce::String("x * 2"));
+    expectEquals(proc2.getScript(), testScript);
     expectEquals(proc2.getVariableNames()[0], juce::String("gain"));
     if (auto *p2 = proc2.apvts.getParameter(EffectParameters::paramA))
       expectWithinAbsoluteError(p2->getValue(), 0.5f, 0.0001f);
@@ -86,12 +88,12 @@ public:
     }
 
     expect(foundDscr);
-    expectEquals(scriptFromDscr, juce::String("x * 2"));
+    expectEquals(scriptFromDscr, testScript);
 
     beginTest("DSCR chunk has priority over STAT script");
     juce::MemoryBlock presetBytes;
     expect(tmp.getFile().loadFileAsData(presetBytes));
-    const juce::String dscrOverride("x * 3");
+    const juce::String dscrOverride("stage1: y = x * a * 2");
     const auto dscrOverrideLength = static_cast<int64_t>(dscrOverride.getNumBytesAsUTF8());
     expectEquals(dscrLength, dscrOverrideLength);
     if (dscrOffset >= 0 && dscrLength == dscrOverrideLength &&

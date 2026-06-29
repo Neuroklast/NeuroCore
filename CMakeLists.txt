@@ -43,13 +43,8 @@ set(SOURCE_FILES
     src/dsp/InputRouter.cpp
     src/utils/PresetManager.cpp
     src/dsp/SignalPolisher.cpp
-    src/dsp/LowPassFilter.cpp
-    src/dsp/HighPassFilter.cpp
-    src/dsp/BandPassFilter.cpp
-    src/dsp/WaveShaper.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
-    src/dsp/AdvancedOscillatorWrapper.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
@@ -63,6 +58,7 @@ set(SOURCE_FILES
     src/ui/PresetTableComponent.cpp
     src/ui/PresetContentComponent.cpp
     src/ui/FunctionsContentComponent.cpp
+    src/ui/StagesContentComponent.cpp
     src/ui/ValidationContentComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp

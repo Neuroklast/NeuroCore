@@ -24,6 +24,7 @@ public:
         buffer.clear();
         buffer.setSample(0,0,1.0f);
         chain.setValueTreeState(nullptr);
+        chain.setParameter(0, 2.0f);
         chain.processBlock(buffer);
         expectWithinAbsoluteError(buffer.getSample(0,0), 2.0f, 1e-5f);
 
@@ -96,8 +97,50 @@ public:
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
             c.setValueTreeState(nullptr);
+            c.setParameter(0, 2.0f);
             c.processBlock(buf);
             expectWithinAbsoluteError(buf.getSample(0,0), 2.0f, 1e-5f);
+        }
+
+        beginTest("processBlockSmoothed knob routing");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect(c.loadScript("stage1: y = x * a", e));
+            c.prepare(spec);
+
+            juce::SmoothedValue<float> aSm;
+            aSm.reset(spec.sampleRate, Config::kSmoothingTime);
+            aSm.setCurrentAndTargetValue(2.0f);
+
+            juce::AudioBuffer<float> buf(1, 1);
+            buf.setSample(0, 0, 1.0f);
+            c.processBlockSmoothed(buf, { &aSm, nullptr, nullptr, nullptr });
+            expectWithinAbsoluteError(buf.getSample(0, 0), 2.0f, 1e-5f);
+        }
+
+        beginTest("Block path for simple stage");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect(c.loadScript("stage1: y = tanh(x * a)", e));
+            c.prepare(spec);
+
+            juce::SmoothedValue<float> aSm;
+            aSm.reset(spec.sampleRate, Config::kSmoothingTime);
+            aSm.setCurrentAndTargetValue(2.0f);
+
+            juce::AudioBuffer<float> buf(2, 16);
+            for (int i = 0; i < buf.getNumSamples(); ++i)
+            {
+                buf.setSample(0, i, 0.5f);
+                buf.setSample(1, i, 0.25f);
+            }
+
+            c.processBlockSmoothed(buf, { &aSm, nullptr, nullptr, nullptr });
+            expect(std::isfinite(buf.getSample(0, 15)));
+            expect(std::isfinite(buf.getSample(1, 15)));
+            expectGreaterThan(std::abs(buf.getSample(0, 15)), 0.4f);
         }
 
         beginTest("Filter parameter smoothing");

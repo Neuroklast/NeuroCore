@@ -29,6 +29,8 @@ public:
 
     void processBlockSmoothed(juce::AudioBuffer<float>& buffer, std::array<juce::SmoothedValue<float>*, 4> params);
 
+    static bool canUseBlockPath(const Chain& chain) noexcept;
+
     /** Update tempo information – called each processBlock from the host play head. */
     void setTempo(double bpm, double ppqPosition, bool isPlaying) noexcept;
 
@@ -85,9 +87,11 @@ private:
         ChannelMode channelMode{ChannelMode::Both};
         bool msEncode{false}; ///< Convert L/R to Mid/Side before formula
         bool msDecode{false}; ///< Convert Mid/Side back to L/R before formula
+        bool usesTimeVariable{false};
+        bool usesFeedback{false};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer);
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Osc : Block
@@ -103,7 +107,7 @@ private:
         double currentBpm{Config::kDefaultTempo};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer);
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
         /** Update oscillator frequency from BPM and sync ratio. */
         void applyTempo(double bpm) noexcept;
     };
@@ -121,10 +125,12 @@ private:
         int channels{1};
         std::vector<float> xPrev, yPrev;
         juce::SmoothedValue<float> cutoffSm, resSm;
+        uint8_t coeffPhase{0};
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Comp : Block
@@ -132,11 +138,13 @@ private:
         juce::dsp::Compressor<float> comp;
         ExpressionEvaluator threshold, ratio, attack, release;
         juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm;
+        uint8_t coeffPhase{0};
         int channels{1};
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
+        void processBlock(juce::AudioBuffer<float>& buffer) override;
     };
 
     struct Env : Block
@@ -174,6 +182,9 @@ private:
                                                EffectParameters::paramC,
                                                EffectParameters::paramD };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
+
+    /** Protects loadScript vs processBlock* on concurrent UI/audio access. */
+    mutable juce::SpinLock scriptLock;
 
     // Sample counter for global 't' variable (time in seconds)
     int64_t sampleCounter{0};

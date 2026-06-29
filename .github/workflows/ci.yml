@@ -82,19 +82,19 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           chmod +x ./pluginval
-          ./pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
+          ./pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
 
       - name: Validate VST3 (macOS)
         if: runner.os == 'macOS'
         run: |
           chmod +x ./pluginval.app/Contents/MacOS/pluginval
-          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
+          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
 
       - name: Validate VST3 (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          ./pluginval.exe --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3" || true
+          ./pluginval.exe --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
 
       - name: Upload build log
         uses: actions/upload-artifact@v4

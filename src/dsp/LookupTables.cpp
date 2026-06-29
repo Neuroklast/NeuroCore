@@ -43,8 +43,23 @@ void LookupTables::initialise (int size)
         tanhTable[i] = std::tanh (x);
     }
 
-    expTable.clear();
-    logTable.clear();
+    const float expRange = 6.0f;
+    expTable.resize (size);
+    for (int i = 0; i < size; ++i)
+    {
+        const float val = juce::jmap (static_cast<float> (i), 0.f, static_cast<float> (size - 1), -expRange, expRange);
+        expTable[i] = std::exp (val);
+    }
+
+    const float logMin = 0.0001f;
+    const float logMax = 16.0f;
+    logTable.resize (size);
+    for (int i = 0; i < size; ++i)
+    {
+        const float val = juce::jmap (static_cast<float> (i), 0.f, static_cast<float> (size - 1), logMin, logMax);
+        logTable[i] = std::log (val);
+    }
+
     powTables.clear();
 
     LookupTableSmoother::smooth(sinTable, smoothing);
@@ -226,10 +241,17 @@ juce::dsp::SIMDRegister<float> LookupTables::fastPowSimd(const juce::dsp::SIMDRe
 
 void LookupTables::prepareFromScript (const juce::String& script)
 {
-    if (script.containsIgnoreCase ("exp("))
-        (void) fastExp (0.f);
-    if (script.containsIgnoreCase ("log("))
-        (void) fastLog (1.f);
+    if (tableSize == 0)
+        initialise();
+
+    (void) fastSin (0.f);
+    (void) fastCos (0.f);
+    (void) fastTanh (0.f);
+    (void) fastExp (0.f);
+    (void) fastLog (1.f);
+
+    for (float expo : { 0.5f, 1.5f, 2.0f, 3.0f, 4.0f })
+        (void) fastPow (0.f, expo);
 
     juce::StringArray tokens;
     tokens.addTokens (script, " ,()", "");
@@ -237,9 +259,8 @@ void LookupTables::prepareFromScript (const juce::String& script)
     {
         if (tokens[i].equalsIgnoreCase ("pow"))
         {
-            float expo = tokens[i + 2].getFloatValue();
-            if (std::abs (expo - std::round (expo)) > 0.001f)
-                (void) fastPow (0.f, expo);
+            const float expo = tokens[i + 2].getFloatValue();
+            (void) fastPow (0.f, expo);
         }
     }
 }
