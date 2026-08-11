@@ -51,6 +51,13 @@ if(NOT DEFINED JUCE_DIR)
 endif()
 
 if(NOT _JUCE_FETCHED)
+    # Same juceaide MSBuild/CMake fix as FetchContent path when CI passes -DJUCE_DIR=
+    set(_juce_utils_cmake "${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake")
+    if(EXISTS "${_juce_utils_cmake}")
+        file(READ "${_juce_utils_cmake}" _juce_utils_content)
+        string(REPLACE "COMMAND juce::juceaide" "COMMAND $<TARGET_FILE:juceaide>" _juce_utils_content "${_juce_utils_content}")
+        file(WRITE "${_juce_utils_cmake}" "${_juce_utils_content}")
+    endif()
     add_subdirectory("${JUCE_DIR}" "JUCE")
     if(TARGET juceaide AND NOT TARGET juce::juceaide)
         add_executable(juce::juceaide ALIAS juceaide)
@@ -103,7 +110,8 @@ juce_add_plugin(NeuroCore
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    # FALSE: avoid failing POST_BUILD when writing to Program Files without admin
+    COPY_PLUGIN_AFTER_BUILD FALSE
     PLUGIN_MANUFACTURER_CODE NRKL
     PLUGIN_CODE NRCO
     FORMATS Standalone VST3 AU

@@ -21,11 +21,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Clone JUCE
-        shell: bash
-        run: |
-          git clone --depth 1 --branch 8.0.6 --recurse-submodules https://github.com/juce-framework/JUCE.git "${{ github.workspace }}/juce_sdk"
-
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -42,9 +37,10 @@ jobs:
             libcurl4-openssl-dev \
             pkg-config
 
+      # FetchContent pulls JUCE 8.0.6 and applies the juceaide helper-tool fix in CMakeLists.txt
       - name: Configure
         shell: bash
-        run: cmake -B build -S . -DJUCE_DIR="${{ github.workspace }}/juce_sdk" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=ON
 
       - name: Build
         shell: bash
