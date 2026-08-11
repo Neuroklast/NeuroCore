@@ -25,7 +25,7 @@ class FactoryPresetLibrary
 public:
     static FactoryPresetLibrary& getInstance();
 
-    /** Load factory_presets.json from resourcesDir (with path fallbacks). */
+    /** Load factory_presets.json from disk (with path fallbacks) or BinaryData. */
     bool loadFromResources(const juce::File& resourcesDir);
     const std::vector<FactoryPresetEntry>& getEntries() const noexcept { return entries; }
 
@@ -33,6 +33,9 @@ public:
 
     /** Resolve a resources directory that contains factory_presets.json. */
     static juce::File resolveResourcesDir(const juce::File& hint);
+
+    /** Load presets embedded in the plugin binary (works in Cubase without loose files). */
+    bool loadFromEmbedded();
 
 private:
     FactoryPresetLibrary() = default;

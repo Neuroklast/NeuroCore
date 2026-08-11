@@ -523,6 +523,15 @@ private:
             const juce::File resDir(NEUROCORE_RESOURCES_DIR);
             expect(lib.loadFromResources(resDir), "factory_presets.json missing or invalid");
 
+            // Embedded BinaryData fallback (what Cubase uses when no resources/ folder)
+            {
+                auto& lib2 = FactoryPresetLibrary::getInstance();
+                expect(lib2.loadFromEmbedded(), "embedded factory_presets.json must load");
+                expect(lib2.getEntries().size() >= 70, "embedded presets incomplete");
+            }
+            // Reload from disk for the rest of the test
+            expect(lib.loadFromResources(resDir));
+
             const auto& entries = lib.getEntries();
             expect(entries.size() >= 70, "expected at least 70 factory presets, got "
                    + juce::String((int) entries.size()));

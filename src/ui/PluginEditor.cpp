@@ -445,10 +445,34 @@ void NeuroCoreAudioProcessorEditor::refreshParameterControls()
 
 void NeuroCoreAudioProcessorEditor::syncFromProcessor()
 {
-    if (formulaInputEditor && ! editing)
+    // Always pull script after preset load (even if user was editing — preset wins)
+    if (formulaInputEditor)
+    {
         formulaInputEditor->setText(audioProcessor.getScript());
+        if (editing)
+        {
+            editing = false;
+            formulaInputEditor->setReadOnly(true);
+            if (editSaveButton)
+                editSaveButton->setButtonText(TRANS("EditButton"));
+        }
+    }
 
     refreshParameterControls();
+
+    // Force slider labels / attachments to show current APVTS values
+    if (inputGainSlider && inputGainValue)
+    {
+        const auto db = juce::Decibels::gainToDecibels((float) inputGainSlider->getValue());
+        inputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
+    }
+    if (mixSlider && mixValue)
+        mixValue->setText(juce::String(mixSlider->getValue() * 100.0, 1) + " %", juce::dontSendNotification);
+    if (outputGainSlider && outputGainValue)
+    {
+        const auto db = juce::Decibels::gainToDecibels((float) outputGainSlider->getValue());
+        outputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
+    }
 
     if (languageBox)
     {
@@ -464,6 +488,11 @@ void NeuroCoreAudioProcessorEditor::syncFromProcessor()
         if (! isBypassed)
             mixBeforeBypass = mix;
     }
+
+    if (errorLabel)
+        errorLabel->setText({}, juce::dontSendNotification);
+
+    repaint();
 }
 
 void NeuroCoreAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster*)

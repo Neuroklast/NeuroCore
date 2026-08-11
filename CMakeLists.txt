@@ -151,6 +151,8 @@ juce_add_binary_data(resourcesBinary
         resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
+        # Embedded so Cubase/hosts work without a loose resources/ folder next to the .vst3
+        resources/factory_presets.json
 )
 
 target_link_libraries(NeuroCore PRIVATE

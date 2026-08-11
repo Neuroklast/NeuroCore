@@ -54,7 +54,8 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: ctest --test-dir build --output-on-failure
+        # Multi-config (VS) needs -C; single-config (Ninja/Make) ignores it
+        run: ctest --test-dir build -C Release --output-on-failure
 
       - name: Download pluginval (Linux)
         if: runner.os == 'Linux'

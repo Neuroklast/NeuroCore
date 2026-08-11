@@ -3,6 +3,7 @@
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
 #include "../third_party/nlohmann/json.hpp"
+#include <BinaryData.h>
 
 using json = nlohmann::json;
 
@@ -39,44 +40,12 @@ void setKnobNormalized(juce::AudioProcessorValueTreeState& apvts,
         p->setValueNotifyingHost(norm);
     }
 }
-} // namespace
 
-FactoryPresetLibrary& FactoryPresetLibrary::getInstance()
+bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPresetEntry>& out)
 {
-    static FactoryPresetLibrary instance;
-    return instance;
-}
+    out.clear();
 
-juce::File FactoryPresetLibrary::resolveResourcesDir(const juce::File& hint)
-{
-    juce::Array<juce::File> candidates;
-    if (hint.isDirectory())
-        candidates.add(hint);
-
-    const auto app = juce::File::getSpecialLocation(juce::File::currentApplicationFile);
-    candidates.add(app.getSiblingFile(Config::kResourceFolder));
-    candidates.add(app.getParentDirectory().getChildFile(Config::kResourceFolder));
-    candidates.add(app.getParentDirectory().getParentDirectory().getChildFile(Config::kResourceFolder));
-    candidates.add(juce::File::getCurrentWorkingDirectory().getChildFile(Config::kResourceFolder));
-
-    for (const auto& dir : candidates)
-    {
-        if (dir.getChildFile("factory_presets.json").existsAsFile())
-            return dir;
-    }
-    return hint;
-}
-
-bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
-{
-    entries.clear();
-
-    const auto dir  = resolveResourcesDir(resourcesDir);
-    const auto file = dir.getChildFile("factory_presets.json");
-    if (! file.existsAsFile())
-        return false;
-
-    const auto parsed = json::parse(file.loadFileAsString().toStdString(), nullptr, false);
+    const auto parsed = json::parse(text.toStdString(), nullptr, false);
     if (! parsed.is_array())
         return false;
 
@@ -112,10 +81,89 @@ bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
         e.outputGainDb = item.value("outputGain", 0.f);
         e.mix          = item.value("mix", 1.f);
 
-        entries.push_back(std::move(e));
+        out.push_back(std::move(e));
     }
 
-    return ! entries.empty();
+    return ! out.empty();
+}
+} // namespace
+
+FactoryPresetLibrary& FactoryPresetLibrary::getInstance()
+{
+    static FactoryPresetLibrary instance;
+    return instance;
+}
+
+juce::File FactoryPresetLibrary::resolveResourcesDir(const juce::File& hint)
+{
+    juce::Array<juce::File> candidates;
+    if (hint.isDirectory())
+        candidates.add(hint);
+
+    // currentApplicationFile = the .vst3 module binary when hosted (e.g. Cubase)
+    const auto moduleFile = juce::File::getSpecialLocation(juce::File::currentApplicationFile);
+    const auto moduleDir  = moduleFile.getParentDirectory();
+
+    // Flat layout: <dir>/NeuroCore.vst3 + <dir>/resources/
+    candidates.add(moduleFile.getSiblingFile(Config::kResourceFolder));
+    candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
+
+    // Bundle layout: NeuroCore.vst3/Contents/x86_64-win/NeuroCore.vst3
+    // resources next to the binary, or under Contents/Resources
+    candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
+    candidates.add(moduleDir.getParentDirectory().getChildFile("Resources"));
+    candidates.add(moduleDir.getParentDirectory().getChildFile(Config::kResourceFolder));
+    candidates.add(moduleDir.getParentDirectory().getParentDirectory().getChildFile(Config::kResourceFolder));
+
+    // Common Files / plugin folder copies
+    candidates.add(moduleDir.getParentDirectory().getParentDirectory()
+                       .getChildFile(Config::kResourceFolder));
+
+    candidates.add(juce::File::getCurrentWorkingDirectory().getChildFile(Config::kResourceFolder));
+
+    // Walk a few parents looking for resources/factory_presets.json
+    auto walk = moduleDir;
+    for (int i = 0; i < 5; ++i)
+    {
+        candidates.add(walk.getChildFile(Config::kResourceFolder));
+        walk = walk.getParentDirectory();
+    }
+
+    for (const auto& dir : candidates)
+    {
+        if (dir.getChildFile("factory_presets.json").existsAsFile())
+            return dir;
+    }
+    return hint;
+}
+
+bool FactoryPresetLibrary::loadFromEmbedded()
+{
+    if (BinaryData::factory_presets_jsonSize <= 0)
+        return false;
+
+    const juce::String text = juce::String::fromUTF8(
+        BinaryData::factory_presets_json,
+        BinaryData::factory_presets_jsonSize);
+
+    return parseFactoryPresetsJson(text, entries);
+}
+
+bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
+{
+    entries.clear();
+
+    const auto dir  = resolveResourcesDir(resourcesDir);
+    const auto file = dir.getChildFile("factory_presets.json");
+    if (file.existsAsFile())
+    {
+        if (parseFactoryPresetsJson(file.loadFileAsString(), entries))
+            return true;
+    }
+
+    // Hosts (Cubase etc.) often install only the .vst3 binary without resources/.
+    // Fall back to the JSON embedded in the plugin binary.
+    return loadFromEmbedded();
 }
 
 bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
@@ -148,6 +196,12 @@ bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
         p->setValueNotifyingHost(p->getNormalisableRange().convertTo0to1(
             juce::jlimit(0.0f, 1.0f, preset.mix)));
 
-    processor.sendChangeMessage();
+    // Refresh editor (formula, knob labels). applyFormula already notified once
+    // before knobs were set — send again so UI sees final APVTS values.
+    if (juce::MessageManager::getInstance()->isThisTheMessageThread())
+        processor.sendChangeMessage();
+    else
+        juce::MessageManager::callAsync ([&processor]
+                                        { processor.sendChangeMessage(); });
     return true;
 }
