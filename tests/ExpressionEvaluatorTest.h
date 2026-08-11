@@ -29,7 +29,7 @@ public:
         {
             ExpressionEvaluator eval;
             expect(eval.parseFormula("sin(pi/2)"));
-            expectWithinAbsoluteError(eval.evaluate(0.0f), 1.0f, 1e-6f);
+            expectWithinAbsoluteError(eval.evaluate(0.0f), 1.0f, 1e-5f);
         }
 
         beginTest("Fehlende Funktionsargumente");

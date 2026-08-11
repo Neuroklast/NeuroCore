@@ -125,12 +125,52 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         return expr;
     };
 
-    auto addDefaultMap = [isNumeric, applyInlineRange](const juce::String& expr, float outMin, float outMax)
+    auto findParamDesc = [&parsedParams](const juce::String& token) -> const ParamDesc*
+    {
+        const auto t = token.trim();
+        for (const auto& pd : parsedParams)
+            if (t.equalsIgnoreCase(pd.alias) || t.equalsIgnoreCase(pd.name))
+                return &pd;
+        return nullptr;
+    };
+
+    // Knobs a–d stay 0–1 in APVTS. Bare param refs become map(alias,0,1,min,max)
+    // using the param line range when present, otherwise the block default range.
+    auto addDefaultMap = [isNumeric, applyInlineRange, findParamDesc](const juce::String& expr,
+                                                                      float outMin,
+                                                                      float outMax)
     {
         auto e = applyInlineRange(expr);
         if (e.containsIgnoreCase("map(") || isNumeric(e))
             return e;
+
+        if (const auto* pd = findParamDesc(e))
+            return juce::String("map(") + pd->alias + ",0,1,"
+                 + juce::String(pd->min) + "," + juce::String(pd->max) + ")";
+
         return juce::String("map(") + e + ",0,1," + juce::String(outMin) + "," + juce::String(outMax) + ")";
+    };
+
+    // filter: cutoff = base; + = env1; * = depth  →  base + plus * mult
+    auto withPlusStar = [&](const BlockDesc& block, const juce::String& baseExpr,
+                            float defMin, float defMax) -> juce::String
+    {
+        juce::String base = addDefaultMap(baseExpr, defMin, defMax);
+        if (! block.args.count("+") && ! block.args.count("*"))
+            return base;
+
+        juce::String plus = block.args.count("+") ? block.args.at("+").trim() : juce::String("0");
+        juce::String mult = block.args.count("*") ? block.args.at("*").trim() : juce::String("1");
+
+        if (! isNumeric(plus) && findParamDesc(plus) != nullptr)
+            plus = addDefaultMap(plus, defMin, defMax);
+        if (! isNumeric(mult) && findParamDesc(mult) != nullptr)
+            mult = addDefaultMap(mult, 0.0f, defMax);
+        else if (! isNumeric(mult) && ! mult.containsIgnoreCase("env")
+                 && ! mult.containsIgnoreCase("osc") && ! mult.containsIgnoreCase("map("))
+            mult = addDefaultMap(mult, 0.0f, defMax);
+
+        return "(" + base + ")+(" + plus + ")*(" + mult + ")";
     };
 
     auto findParam = [&newAliases](const juce::String& expr) -> juce::String
@@ -149,7 +189,47 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (d.type.startsWith("stage"))
         {
             auto st = std::make_unique<Stage>();
-            st->formula = d.args.at("y");
+            // Scale knob refs a–d via declared param ranges: a → map(a,0,1,min,max)
+            juce::String formula = d.args.at("y");
+            for (const auto& pd : parsedParams)
+            {
+                if (std::abs(pd.max - pd.min) < 1.0e-6f)
+                    continue;
+                if (pd.min == 0.0f && pd.max == 1.0f)
+                    continue;
+
+                const auto mapped = juce::String("map(") + pd.alias + ",0,1,"
+                                  + juce::String(pd.min) + "," + juce::String(pd.max) + ")";
+
+                // Avoid double-wrapping if formula already maps this alias
+                if (formula.containsIgnoreCase("map(" + pd.alias + ","))
+                    continue;
+
+                juce::String result;
+                int start = 0;
+                const auto src = formula;
+                while (start < src.length())
+                {
+                    auto pos = src.indexOfIgnoreCase(start, pd.alias);
+                    if (pos < 0)
+                    {
+                        result += src.substring(start);
+                        break;
+                    }
+                    const auto before = pos > 0 ? src[pos - 1] : (juce_wchar) 0;
+                    const auto after  = pos + pd.alias.length() < src.length()
+                                        ? src[pos + pd.alias.length()] : (juce_wchar) 0;
+                    const bool whole = ! juce::CharacterFunctions::isLetterOrDigit(before)
+                                    && before != (juce_wchar) '_'
+                                    && ! juce::CharacterFunctions::isLetterOrDigit(after)
+                                    && after != (juce_wchar) '_';
+                    result += src.substring(start, pos);
+                    result += whole ? mapped : src.substring(pos, pos + pd.alias.length());
+                    start = pos + pd.alias.length();
+                }
+                formula = result;
+            }
+            st->formula = formula;
             st->varPtr = &variables;
             st->eval.parseFormula(st->formula.toStdString());
             st->usesTimeVariable = st->eval.getVariableIndex("t") != ExpressionEvaluator::invalidIndex;
@@ -185,7 +265,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             oc->varPtr = &variables;
             oc->name = d.name;
 
-            // Tempo-sync or fixed frequency
+            // Tempo-sync or fixed / formula frequency
             if (d.args.count("sync"))
             {
                 auto syncStr = d.args.at("sync").trim();
@@ -206,10 +286,24 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 oc->syncRatio = ratio;
                 oc->osc.setFrequency(static_cast<float>((Config::kDefaultTempo / 60.0) * ratio));
             }
+            else if (d.args.count("freq"))
+            {
+                auto freqStr = d.args.at("freq").trim();
+                if (isNumeric(freqStr))
+                {
+                    oc->osc.setFrequency(freqStr.getFloatValue());
+                }
+                else
+                {
+                    oc->useFreqExpr = true;
+                    auto expr = addDefaultMap(freqStr, 0.05f, 20.0f);
+                    oc->freqExpr.parseFormula(expr.toStdString());
+                    oc->osc.setFrequency(1.0f);
+                }
+            }
             else
             {
-                auto freq = d.args.count("freq") ? d.args.at("freq").getFloatValue() : 1.f;
-                oc->osc.setFrequency(freq);
+                oc->osc.setFrequency(1.0f);
             }
 
             newChain->push_back(std::move(oc));
@@ -227,7 +321,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
                 if (fi->useCenterWidth)
                 {
-                    auto exprC = addDefaultMap(d.args.at("center"), 20.f, 20000.f);
+                    auto exprC = withPlusStar(d, d.args.at("center"), 20.f, 20000.f);
                     fi->center.parseFormula(exprC.toStdString());
                     auto pn = findParam(exprC);
                     if (pn.isNotEmpty())
@@ -261,7 +355,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             {
                 if (d.args.count("cutoff"))
                 {
-                    auto expr = addDefaultMap(d.args.at("cutoff"), 20.f, 20000.f);
+                    auto expr = withPlusStar(d, d.args.at("cutoff"), 20.f, 20000.f);
                     fi->cutoff.parseFormula(expr.toStdString());
                     auto pn = findParam(expr);
                     if (pn.isNotEmpty())
@@ -339,11 +433,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             en->mode = d.args.count("type") && d.args.at("type").toLowerCase().startsWith("peak")
                            ? Env::Peak : Env::Rms;
             if (d.args.count("attack"))
-                en->attack.parseFormula(d.args.at("attack").toStdString());
+                en->attack.parseFormula(addDefaultMap(d.args.at("attack"), 0.001f, 0.5f).toStdString());
             else
                 en->attack.parseFormula("0.01");
             if (d.args.count("release"))
-                en->release.parseFormula(d.args.at("release").toStdString());
+                en->release.parseFormula(addDefaultMap(d.args.at("release"), 0.01f, 2.0f).toStdString());
             else
                 en->release.parseFormula("0.1");
             en->name = d.name;
@@ -693,12 +787,35 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
 
 void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
 {
+    sampleRate = static_cast<float>(spec.sampleRate);
     osc.prepare({spec.sampleRate, spec.maximumBlockSize, 1});
     last.assign(spec.numChannels, 0.0f);
+    varNames.clear();
+    if (varPtr)
+    {
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back(kv.first, kv.first.toStdString());
+    }
+    updateFrequencyFromExpr();
+}
+
+void SignalChain::Osc::updateFrequencyFromExpr() noexcept
+{
+    if (! useFreqExpr || ! varPtr)
+        return;
+
+    for (const auto& n : varNames)
+        freqExpr.setVariable(n.second, (*varPtr)[n.first]);
+
+    const float f = juce::jlimit(0.001f, sampleRate * 0.45f, freqExpr.evaluate(0.0f));
+    osc.setFrequency(f);
 }
 
 float SignalChain::Osc::process(int ch, float x)
 {
+    if (ch == 0)
+        updateFrequencyFromExpr();
+
     auto v = osc.processSample(0.0f) * depth;
     if (varPtr)
         (*varPtr)[name] = v;
@@ -712,6 +829,9 @@ void SignalChain::Osc::processBlock(juce::AudioBuffer<float>& buffer)
     juce::dsp::AudioBlock<float> block(buffer);
     const size_t numSamples  = block.getNumSamples();
     const size_t numChannels = juce::jmin(block.getNumChannels(), last.size());
+
+    // Re-evaluate modulated LFO rate once per block (smooth enough for UI knobs)
+    updateFrequencyFromExpr();
 
     for (size_t i = 0; i < numSamples; ++i)
     {

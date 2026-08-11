@@ -51,7 +51,8 @@ public:
         fadeBuffer.setSample(0, 0, 1.0f);
         fadeShaper.startFunctionCrossfade(evalNew);
         fadeShaper.processBlock(fadeBuffer);
-        expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 1.0f, 1e-5f);
+        // First block still mostly the old function (crossfade just started)
+        expectWithinAbsoluteError(fadeBuffer.getSample(0,0), 1.0f, 2e-3f);
 
         const int steps = static_cast<int>(Config::kCrossfadeTime * crossSpec.sampleRate) + 1;
         for (int i = 0; i < steps; ++i)

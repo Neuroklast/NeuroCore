@@ -29,8 +29,6 @@ public:
 
     void processBlockSmoothed(juce::AudioBuffer<float>& buffer, std::array<juce::SmoothedValue<float>*, 4> params);
 
-    static bool canUseBlockPath(const Chain& chain) noexcept;
-
     /** Update tempo information – called each processBlock from the host play head. */
     void setTempo(double bpm, double ppqPosition, bool isPlaying) noexcept;
 
@@ -102,14 +100,18 @@ private:
         std::vector<float> last;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         std::vector<std::pair<juce::String, std::string>> varNames;
+        ExpressionEvaluator freqExpr;
+        bool useFreqExpr{false};    ///< When true, re-evaluate freq from expression
         bool useSyncRatio{false};   ///< When true, freq is derived from BPM
         float syncRatio{0.25f};     ///< Beat ratio (e.g. 0.25 = 1/4 note)
         double currentBpm{Config::kDefaultTempo};
+        float sampleRate{44100.0f};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         /** Update oscillator frequency from BPM and sync ratio. */
         void applyTempo(double bpm) noexcept;
+        void updateFrequencyFromExpr() noexcept;
     };
 
     struct Filter : Block
@@ -168,6 +170,8 @@ private:
     };
 
     using Chain   = std::vector<std::unique_ptr<Block>>;
+
+    static bool canUseBlockPath(const Chain& chain) noexcept;
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;

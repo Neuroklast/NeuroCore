@@ -24,9 +24,10 @@ public:
         buffer.clear();
         buffer.setSample(0,0,1.0f);
         chain.setValueTreeState(nullptr);
-        chain.setParameter(0, 2.0f);
+        // Knobs are 0–1; stage output is hard-limited to [-1, 1]
+        chain.setParameter(0, 0.5f);
         chain.processBlock(buffer);
-        expectWithinAbsoluteError(buffer.getSample(0,0), 2.0f, 1e-5f);
+        expectWithinAbsoluteError(buffer.getSample(0,0), 0.5f, 1e-5f);
 
         beginTest("Filter block with high cutoff");
         {
@@ -65,13 +66,17 @@ public:
         {
             dsl::SignalChain c;
             juce::String e;
-            juce::String sc = "stage1: y = x\ncomp1: threshold = 0.5; ratio = 2";
+            // JUCE compressor threshold is dB; drive a full-scale signal hard
+            juce::String sc = "stage1: y = x\ncomp1: threshold = -24; ratio = 8; attack = 0.001; release = 0.05";
             expect(c.loadScript(sc, e));
             c.prepare(spec);
-            juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
+            juce::AudioBuffer<float> buf(1, 256);
+            for (int i = 0; i < buf.getNumSamples(); ++i)
+                buf.setSample(0, i, 1.0f);
             c.setValueTreeState(nullptr);
-            c.processBlock(buf);
-            expectLessThan(buf.getSample(0,0), 1.0f);
+            for (int n = 0; n < 8; ++n)
+                c.processBlock(buf);
+            expectLessThan(buf.getSample(0, 255), 0.95f);
         }
 
         beginTest("Envelope follower pass-through");
@@ -97,9 +102,9 @@ public:
             c.prepare(spec);
             juce::AudioBuffer<float> buf(1,1); buf.setSample(0,0,1.0f);
             c.setValueTreeState(nullptr);
-            c.setParameter(0, 2.0f);
+            c.setParameter(0, 0.5f);
             c.processBlock(buf);
-            expectWithinAbsoluteError(buf.getSample(0,0), 2.0f, 1e-5f);
+            expectWithinAbsoluteError(buf.getSample(0,0), 0.5f, 1e-5f);
         }
 
         beginTest("processBlockSmoothed knob routing");
@@ -111,12 +116,12 @@ public:
 
             juce::SmoothedValue<float> aSm;
             aSm.reset(spec.sampleRate, Config::kSmoothingTime);
-            aSm.setCurrentAndTargetValue(2.0f);
+            aSm.setCurrentAndTargetValue(0.5f);
 
             juce::AudioBuffer<float> buf(1, 1);
             buf.setSample(0, 0, 1.0f);
             c.processBlockSmoothed(buf, { &aSm, nullptr, nullptr, nullptr });
-            expectWithinAbsoluteError(buf.getSample(0, 0), 2.0f, 1e-5f);
+            expectWithinAbsoluteError(buf.getSample(0, 0), 0.5f, 1e-5f);
         }
 
         beginTest("Block path for simple stage");

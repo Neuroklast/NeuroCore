@@ -26,9 +26,14 @@ PresetContentComponent::PresetContentComponent(NeuroCoreAudioProcessor& proc, ju
     addAndMakeVisible(closeButton);
 
     closeButton.onClick = [this]{ if(onClose) onClose(); };
-    loadButton.onClick = [this] {
+    auto loadSelected = [this] {
         auto row = table.getSelectedRow();
         if (row >= 0 && onPresetSelected)
+            onPresetSelected(row);
+    };
+    loadButton.onClick = loadSelected;
+    table.onRowActivated = [this](int row) {
+        if (onPresetSelected)
             onPresetSelected(row);
     };
     saveButton.onClick = [this] {
@@ -53,7 +58,7 @@ PresetContentComponent::PresetContentComponent(NeuroCoreAudioProcessor& proc, ju
     };
     deleteButton.onClick = [this] {
         auto row = table.getSelectedRow();
-        if (row < 0) return;
+        if (row < 0 || table.isFactoryRow(row)) return;
         auto file = table.getFileForRow(row);
         if (!file.exists()) return;
         auto* aw = new juce::AlertWindow(TRANS("Delete Preset"),
@@ -89,25 +94,28 @@ void PresetContentComponent::refreshTable()
 
 void PresetContentComponent::paint(juce::Graphics& g)
 {
-    g.setColour(juce::Colours::darkgrey);
-    g.fillRect(panel);
-    g.setColour(juce::Colours::white);
-    g.drawRect(panel);
+    const auto bounds = panel.toFloat();
+    g.setColour(NeuroCoreLookAndFeel::surface().withAlpha(0.97f));
+    g.fillRoundedRectangle(bounds, 10.f);
+    g.setColour(NeuroCoreLookAndFeel::accent().withAlpha(0.35f));
+    g.drawRoundedRectangle(bounds, 10.f, 1.5f);
 }
 
 void PresetContentComponent::resized()
 {
-    panel = getLocalBounds().withSizeKeepingCentre(getWidth()*6/10, getHeight()*6/10);
+    // Larger preset browser — easier scanning of 70+ factory presets
+    panel = getLocalBounds().withSizeKeepingCentre(juce::jmin(getWidth() - 40, 900),
+                                                   juce::jmin(getHeight() - 40, 620));
     auto box = panel;
-    auto buttonHeight = 24;
-    auto listArea = box.removeFromTop(box.getHeight() - buttonHeight - 8).reduced(4);
+    auto buttonHeight = 36;
+    auto listArea = box.removeFromTop(box.getHeight() - buttonHeight - 12).reduced(8);
     table.setBounds(listArea);
-    auto buttons = box.reduced(4);
+    auto buttons = box.reduced(8, 4);
     auto w = buttons.getWidth() / 4;
-    loadButton.setBounds(buttons.removeFromLeft(w).reduced(2));
-    saveButton.setBounds(buttons.removeFromLeft(w).reduced(2));
-    deleteButton.setBounds(buttons.removeFromLeft(w).reduced(2));
-    closeButton.setBounds(buttons.reduced(2));
+    loadButton.setBounds(buttons.removeFromLeft(w).reduced(3));
+    saveButton.setBounds(buttons.removeFromLeft(w).reduced(3));
+    deleteButton.setBounds(buttons.removeFromLeft(w).reduced(3));
+    closeButton.setBounds(buttons.reduced(3));
 }
 
 bool PresetContentComponent::keyPressed(const juce::KeyPress& kp)

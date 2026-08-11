@@ -24,19 +24,27 @@ public:
     int getNumRows() override;
     void paintRowBackground(juce::Graphics&, int, int, int, bool) override;
     void paintCell(juce::Graphics&, int, int, int, int, bool) override;
+    void cellDoubleClicked(int rowNumber, int columnId, const juce::MouseEvent&) override;
 
     void refresh();
     juce::File getFileForRow(int row) const;
+    bool isFactoryRow(int row) const;
     int getSelectedRow() const { return table.getSelectedRow(); }
     juce::TableListBox& getTable() { return table; }
+
+    /** Fired on double-click with the table row index (factory + user order). */
+    std::function<void(int)> onRowActivated;
 
 private:
     struct Entry
     {
         juce::String name;
+        juce::String category;
         juce::String author;
         juce::Time   date;
         juce::File   file;
+        bool         isFactory { false };
+        int          factoryIndex { -1 };
     };
 
     juce::TableListBox table;

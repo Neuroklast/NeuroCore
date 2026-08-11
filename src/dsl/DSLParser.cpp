@@ -50,8 +50,26 @@ bool DSLParser::parse(const juce::String& text,
             auto sym = trimLower(line.substring(5, eqPos));
             sym = sym.trim();
             auto rest = line.substring(eqPos + 1).trim();
-            auto namePart = rest.upToFirstOccurrenceOf("[", false, false).trim();
-            auto rangePart = rest.fromFirstOccurrenceOf("[", false, false).trim();
+
+            // name [min, max]  — range is optional
+            const int rangeOpen = rest.indexOfChar('[');
+            juce::String namePart;
+            juce::String rangeInner;
+            if (rangeOpen >= 0)
+            {
+                namePart = rest.substring(0, rangeOpen).trim();
+                const int rangeClose = rest.lastIndexOfChar(']');
+                if (rangeClose <= rangeOpen)
+                {
+                    error = "Invalid range on line " + juce::String(i + 1);
+                    return false;
+                }
+                rangeInner = rest.substring(rangeOpen + 1, rangeClose).trim();
+            }
+            else
+            {
+                namePart = rest.trim();
+            }
 
             if (sym.isEmpty() || namePart.isEmpty())
             {
@@ -65,23 +83,18 @@ bool DSLParser::parse(const juce::String& text,
             pd.min = 0.f;
             pd.max = 1.f;
 
-            if (rangePart.isNotEmpty())
+            if (rangeInner.isNotEmpty())
             {
-                if (! (rangePart.startsWith("[") && rangePart.endsWith("]")))
-                {
-                    error = "Invalid range on line " + juce::String(i+1);
-                    return false;
-                }
-                auto vals = rangePart.trimCharactersAtStart("[")
-                                       .trimCharactersAtEnd("]");
-                auto comma = vals.indexOfChar(',');
+                auto comma = rangeInner.indexOfChar(',');
                 if (comma < 0)
                 {
                     error = "Invalid range on line " + juce::String(i+1);
                     return false;
                 }
-                pd.min = vals.substring(0, comma).trim().getFloatValue();
-                pd.max = vals.substring(comma + 1).trim().getFloatValue();
+                pd.min = rangeInner.substring(0, comma).trim().getFloatValue();
+                pd.max = rangeInner.substring(comma + 1).trim().getFloatValue();
+                if (pd.max < pd.min)
+                    std::swap(pd.min, pd.max);
             }
 
             paramAliases[pd.alias] = pd.name.toLowerCase();

@@ -41,10 +41,12 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
     maxLabel. setJustificationType (Justification::bottomRight);
     nameLabel.setJustificationType (Justification::centred);
 
-    valueLabel.setColour (Label::textColourId, Colours::red);
-	nameLabel.setColour(Label::textColourId, Colours::red);
-	minLabel.setColour(Label::textColourId, Colours::red);
-	maxLabel.setColour(Label::textColourId, Colours::red);
+    const auto accent = Colour(0xffe8486a);
+    const auto muted  = Colour(0xff8b93a8);
+    valueLabel.setColour (Label::textColourId, accent);
+    nameLabel.setColour(Label::textColourId, Colours::white);
+    minLabel.setColour(Label::textColourId, muted);
+    maxLabel.setColour(Label::textColourId, muted);
 
     // Bindung an den ValueTreeState
     attachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(valueTreeState, paramID, slider);

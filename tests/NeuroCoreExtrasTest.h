@@ -12,7 +12,12 @@
 #include "../src/core/WaveformCapture.h"
 #include "../src/core/ScriptManager.h"
 #include "../src/core/PluginProcessor.h"
+#include "../src/utils/FactoryPresetLibrary.h"
 #include <cmath>
+
+#ifndef NEUROCORE_RESOURCES_DIR
+#define NEUROCORE_RESOURCES_DIR "resources"
+#endif
 
 class NeuroCoreExtrasTest : public juce::UnitTest
 {
@@ -32,19 +37,18 @@ public:
         testWaveformCapture();
         testScriptManagerDelegation();
         testProcessorStateRoundTrip();
+        testFactoryPresetLibrary();
     }
 
 private:
     // ------------------------------------------------------------------ //
     // Helper
     // ------------------------------------------------------------------ //
-    dsl::SignalChain makeChain(const juce::String& script, double sr = 44100.0)
+    void makeChain(const juce::String& script, dsl::SignalChain& chain, double sr = 44100.0)
     {
-        dsl::SignalChain chain;
         juce::String err;
         expect(chain.loadScript(script, err), "loadScript failed: " + err);
         chain.prepare({ sr, 512, 1 });
-        return chain;
     }
 
     // Run a stereo chain on silence and return output
@@ -63,12 +67,14 @@ private:
     {
         beginTest("Global variable: pi");
         {
-            auto chain = makeChain("stage1: y = pi");
+            dsl::SignalChain chain;
+            // Stage output is hard-limited to [-1, 1] — scale pi into range
+            makeChain("stage1: y = pi * 0.1", chain);
             juce::AudioBuffer<float> buf(1, 4);
             buf.clear();
             chain.processBlock(buf);
             expectWithinAbsoluteError(buf.getSample(0, 0),
-                                      juce::MathConstants<float>::pi, 1e-4f);
+                                      juce::MathConstants<float>::pi * 0.1f, 1e-4f);
         }
 
         beginTest("Global variable: sr");
@@ -76,12 +82,12 @@ private:
             const double sr = 48000.0;
             dsl::SignalChain chain;
             juce::String err;
-            expect(chain.loadScript("stage1: y = sr", err));
+            expect(chain.loadScript("stage1: y = sr / 48000", err));
             chain.prepare({ sr, 512, 1 });
             juce::AudioBuffer<float> buf(1, 4);
             buf.clear();
             chain.processBlock(buf);
-            expectWithinAbsoluteError(buf.getSample(0, 0), (float)sr, 1.0f);
+            expectWithinAbsoluteError(buf.getSample(0, 0), 1.0f, 1e-3f);
         }
 
         beginTest("Global variable: t advances over time");
@@ -93,10 +99,11 @@ private:
             chain.prepare({ sr, 4, 1 });
             juce::AudioBuffer<float> buf(1, 4);
             buf.clear();
-            chain.processBlock(buf);
-            // After first block t should equal blockSize/sr
+            // processBlock stamps t once per block (start of block)
+            chain.processBlock(buf); // t = 0
+            chain.processBlock(buf); // t = 4/sr
             const float expected = 4.0f / (float)sr;
-            expectWithinAbsoluteError(buf.getSample(0, 3), expected, 1e-5f);
+            expectWithinAbsoluteError(buf.getSample(0, 0), expected, 1e-5f);
         }
 
         beginTest("Oscillator: t-based sin produces non-zero output");
@@ -108,11 +115,20 @@ private:
             chain.prepare({ sr, 512, 1 });
             juce::AudioBuffer<float> buf(1, 512);
             buf.clear();
-            chain.processBlock(buf);
+            // t is constant within a block — run enough blocks to leave t=0
             float rms = 0.f;
-            for (int i = 0; i < 512; ++i)
-                rms += buf.getSample(0, i) * buf.getSample(0, i);
-            rms = std::sqrt(rms / 512.f);
+            int n = 0;
+            for (int b = 0; b < 8; ++b)
+            {
+                buf.clear();
+                chain.processBlock(buf);
+                for (int i = 0; i < 512; ++i)
+                {
+                    rms += buf.getSample(0, i) * buf.getSample(0, i);
+                    ++n;
+                }
+            }
+            rms = std::sqrt(rms / (float) n);
             expectGreaterThan(rms, 0.01f);
         }
     }
@@ -171,7 +187,7 @@ private:
             dsl::SignalChain chain;
             juce::String err;
             // stage1 only affects left channel; right channel passthrough
-            expect(chain.loadScript("stage1: y = x * 2; channel = left", err));
+            expect(chain.loadScript("stage1: y = x * 0.5; channel = left", err));
             chain.prepare({ 44100.0, 4, 2 });
             juce::AudioBuffer<float> buf(2, 4);
             for (int i = 0; i < 4; ++i)
@@ -180,7 +196,7 @@ private:
                 buf.setSample(1, i, 1.0f); // right
             }
             chain.processBlock(buf);
-            expectWithinAbsoluteError(buf.getSample(0, 0), 2.0f, 1e-4f);
+            expectWithinAbsoluteError(buf.getSample(0, 0), 0.5f, 1e-4f);
             expectWithinAbsoluteError(buf.getSample(1, 0), 1.0f, 1e-4f);
         }
 
@@ -188,7 +204,7 @@ private:
         {
             dsl::SignalChain chain;
             juce::String err;
-            expect(chain.loadScript("stage1: y = x * 3; channel = right", err));
+            expect(chain.loadScript("stage1: y = x * 0.25; channel = right", err));
             chain.prepare({ 44100.0, 4, 2 });
             juce::AudioBuffer<float> buf(2, 4);
             for (int i = 0; i < 4; ++i)
@@ -198,14 +214,14 @@ private:
             }
             chain.processBlock(buf);
             expectWithinAbsoluteError(buf.getSample(0, 0), 1.0f, 1e-4f);
-            expectWithinAbsoluteError(buf.getSample(1, 0), 3.0f, 1e-4f);
+            expectWithinAbsoluteError(buf.getSample(1, 0), 0.25f, 1e-4f);
         }
 
         beginTest("Channel routing: both (default)");
         {
             dsl::SignalChain chain;
             juce::String err;
-            expect(chain.loadScript("stage1: y = x * 2; channel = both", err));
+            expect(chain.loadScript("stage1: y = x * 0.5; channel = both", err));
             chain.prepare({ 44100.0, 4, 2 });
             juce::AudioBuffer<float> buf(2, 4);
             for (int i = 0; i < 4; ++i)
@@ -214,8 +230,8 @@ private:
                 buf.setSample(1, i, 1.0f);
             }
             chain.processBlock(buf);
-            expectWithinAbsoluteError(buf.getSample(0, 0), 2.0f, 1e-4f);
-            expectWithinAbsoluteError(buf.getSample(1, 0), 2.0f, 1e-4f);
+            expectWithinAbsoluteError(buf.getSample(0, 0), 0.5f, 1e-4f);
+            expectWithinAbsoluteError(buf.getSample(1, 0), 0.5f, 1e-4f);
         }
 
         beginTest("ch variable: left channel has ch=0");
@@ -239,7 +255,9 @@ private:
         {
             dsl::SignalChain chain;
             juce::String err;
-            expect(chain.loadScript("stage1: ms_encode = true\nstage2: ms_decode = true", err));
+            expect(chain.loadScript(
+                "stage1: ms_encode = true; y = x\nstage2: ms_decode = true; y = x", err),
+                "loadScript: " + err);
             chain.prepare({ 44100.0, 4, 2 });
             juce::AudioBuffer<float> buf(2, 4);
             for (int i = 0; i < 4; ++i)
@@ -494,6 +512,64 @@ private:
             const float result = mgr.evaluateFormula(0.5f);
             const float expected = std::tanh(0.5f);
             expectWithinAbsoluteError(result, expected, 0.01f);
+        }
+    }
+
+    void testFactoryPresetLibrary()
+    {
+        beginTest("FactoryPresetLibrary: load and apply ALL presets");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            const juce::File resDir(NEUROCORE_RESOURCES_DIR);
+            expect(lib.loadFromResources(resDir), "factory_presets.json missing or invalid");
+
+            const auto& entries = lib.getEntries();
+            expect(entries.size() >= 70, "expected at least 70 factory presets, got "
+                   + juce::String((int) entries.size()));
+
+            juce::StringArray categories;
+            juce::StringArray names;
+            for (const auto& e : entries)
+            {
+                expect(e.name.isNotEmpty());
+                expect(e.script.isNotEmpty());
+                expect(! names.contains(e.name), "duplicate factory preset name: " + e.name);
+                names.add(e.name);
+                if (! categories.contains(e.category))
+                    categories.add(e.category);
+            }
+            expect(categories.size() >= 8, "expected presets across multiple categories");
+
+            // Every script must parse/load into SignalChain
+            int scriptsOk = 0;
+            juce::String firstScriptErr;
+            for (const auto& e : entries)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (chain.loadScript(e.script, err))
+                    ++scriptsOk;
+                else if (firstScriptErr.isEmpty())
+                    firstScriptErr = e.name + ": " + err;
+            }
+            expectEquals(scriptsOk, (int) entries.size(),
+                         "all factory scripts must load, first fail: " + firstScriptErr);
+
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay(44100.0, 512);
+
+            int applied = 0;
+            juce::String firstApplyErr;
+            for (int i = 0; i < (int) entries.size(); ++i)
+            {
+                juce::String err;
+                if (lib.applyPreset(proc, i, err))
+                    ++applied;
+                else if (firstApplyErr.isEmpty())
+                    firstApplyErr = entries[(size_t) i].name + ": " + err;
+            }
+            expectEquals(applied, (int) entries.size(),
+                         "all factory presets must apply, first fail: " + firstApplyErr);
         }
     }
 

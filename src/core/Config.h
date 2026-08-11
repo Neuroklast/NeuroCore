@@ -20,11 +20,11 @@ namespace Config
     //==========================================================================
 
     /// Width of the plugin window in pixels.
-    inline constexpr int kWindowWidth        = 1600;
+    inline constexpr int kWindowWidth        = 1280;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 900;
+    inline constexpr int kWindowHeight       = 860;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 5;
+    inline constexpr int kUiPadding         = 8;
 
     /// Size of the custom parameter knobs.
 
@@ -35,11 +35,11 @@ namespace Config
  
 
     /// Height of each knob widget in pixels.
-    inline constexpr int kKnobHeight         = 80;
+    inline constexpr int kKnobHeight         = 120;
     /// Vertical spacing between knobs in pixels.
-    inline constexpr int kKnobSpacing        = 20;
+    inline constexpr int kKnobSpacing        = 12;
     /// Height of knob labels in pixels.
-    inline constexpr int kLabelHeight        = 24;
+    inline constexpr int kLabelHeight        = 22;
 
     /// Height of the text editor widget in pixels.
     inline constexpr int kEditorHeight       = 160;
@@ -57,12 +57,11 @@ namespace Config
     inline constexpr int kFontSizeLarge      = 18;
 
     /// Size of rotary knobs in pixels.
-    inline constexpr int kKnobSize          = 90;
+    inline constexpr int kKnobSize          = 110;
     /// Mindestdurchmesser aller Rotary-Slider.
-    inline constexpr int kRotaryDiameterMin = 160;
+    inline constexpr int kRotaryDiameterMin = 120;
     /// Fixed size of each ParameterComponent knob.
-
-    inline constexpr int kParameterKnobSize = 300;
+    inline constexpr int kParameterKnobSize = 160;
     /// Width of the loudness meter labels.
     inline constexpr float kLoudnessLabelWidth = 45.0f;
     /// FFT order for waveform displays (2^order samples).

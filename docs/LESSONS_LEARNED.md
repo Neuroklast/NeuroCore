@@ -9,6 +9,65 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-11 – Factory-Presets fix + UI Slider/UX (master)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Auf master: Presets ladbar machen, viele funktionierende Factory-Presets, UI-Slider/Knobs zu kurz  
+**Ergebnis:** ✅ Erfolgreich (2108 Tests grün)
+
+#### Erkenntnisse
+
+- **Factory-Presets waren nie verdrahtet:** `factory_presets.json` lag im Repo, aber `loadPreset`/`PresetTable` lasen nur User-`.nrk`. Ohne `FactoryPresetLibrary` bleibt die Liste leer.
+- **Param-Range-Parser-Bug:** `fromFirstOccurrenceOf("[", false, …)` liefert den Text *ohne* `[` → `startsWith("[")` schlug fehl → alle `param a = Drive [0.1, 4.0]`-Zeilen waren Parse-Fehler.
+- **APVTS a–d bleiben 0–1:** Ranges nicht mutieren. Defaults als normalisierte Position setzen; Stage-Formeln bekommen `map(a,0,1,min,max)` aus der `param`-Zeile.
+- **Filter-Modulation `+`/`*`:** War in JSON-Presets, wurde aber ignoriert. Jetzt: `cutoff = base + plus * mult`.
+- **Osc `freq = a`:** Früher nur `getFloatValue()` → 0 Hz. Braucht `ExpressionEvaluator` + Re-Eval pro Block.
+- **Env/Comp-Zeiten:** Presets nutzten oft ms (z. B. `release = 120`); DSL erwartet Sekunden.
+- **Stage-Output-Clamp [-1,1]:** Unit-Tests, die `y = x * 2` oder `y = pi` erwarten, müssen in den Audio-Bereich skaliert werden.
+- **DSCR nach STAT:** `applyFormula` überschreibt Knob-Namen — Labels aus State danach wiederherstellen.
+- **UI „Slider zu kurz“:** Mix-Strip mit Weight 0.1 und Rotary-Gains ~80 px hoch. Fix: höhere Weights, lineare Full-Width-Slider, dickere Tracks.
+
+#### Empfehlungen für nächste Session
+
+1. Double-Click-Preset-Load im Host manuell verifizieren
+2. Progressive Disclosure: Settings (OS/Language) einklappbar
+3. Knob-Labels: skalierte Min/Max aus `param`-Ranges statt 0–1 anzeigen
+
+---
+
+### 2026-06-29 – UI-Modernisierung + Factory-Presets (75)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Oberfläche modernisieren (Layout/Theme), viele Anwendungs-Presets entwerfen  
+**Ergebnis:** ✅ Erfolgreich
+
+#### Erkenntnisse
+
+- **MSVC Initializer-Listen:** Gemischte Komponenten-Zeiger (`DslTerminalEditor*`, `WaveformDisplayComponent*`, …) in `for (auto* x : { ... })` führen zu C3535 — explizites `juce::Component*[]` verwenden.
+- **nlohmann::json `value()`:** Default-Werte müssen `std::string` sein, nicht `juce::String` (MSVC C2672).
+- **Factory-Preset-Gains:** JSON-Werte sind dB; APVTS erwartet linear (`Decibels::decibelsToGain`).
+- **Preset-Overlay:** Factory-Zeilen haben keine Datei — Delete per `isFactoryRow()` und `file.exists()` absichern.
+- **Preset-Merge-Skript:** `scripts/merge_factory_presets.mjs` dedupliziert per Name; 29 → 75 Presets in 15 Kategorien (Guitar, Bass, Vocals, Drums, Synth, Mastering, …).
+
+---
+
+### 2026-06-29 – Windows CMake-Build (Plugin + Standalone)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Plugin und Standalone unter Windows bauen, CMake-/Build-Fehler beheben  
+**Ergebnis:** ✅ Erfolgreich (Release-Build)
+
+#### Erkenntnisse
+
+- **CMake 4.1 + Visual Studio:** `COMMAND juce::juceaide` wird in MSBuild-Schritten nicht aufgelöst (Fehlercode 123). Workaround: JUCE `JUCEUtils.cmake` patchen auf `$<TARGET_FILE:juceaide>` und `juce::juceaide`-Alias anlegen, wenn `JUCE_BUILD_HELPER_TOOLS=ON`.
+- **`juce_add_plugin` hat kein `SOURCES`-Argument** — Quelldateien müssen via `target_sources()` registriert werden; andernfalls fehlt `createPluginFilter()` beim Link.
+- **`SignalChain` ist nicht kopierbar** (`SpinLock`); Undo-Snapshot in `ScriptManager` über `loadScript(dslScript)` statt Zuweisung.
+- **`canUseBlockPath`:** Deklaration muss nach `using Chain = ...` stehen (private), sonst MSVC C4430.
+- **`warning.png`** fehlte in `juce_add_binary_data` — in BinaryData einbinden.
+- **JUCE 8 `UnitTestRunner`:** `getNumFailures()` existiert nicht; Failures über `getResult(i)->failures` summieren.
+
+---
+
 ### 2026-06-29 – Stages-Button (Signalkette-Overlay)
 
 **Agent:** Grok Coding Agent  

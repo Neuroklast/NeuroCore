@@ -7,6 +7,7 @@
 #include "../dsl/DSLParser.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
+#include "../utils/Localiser.h"
 
 ScriptManager::ScriptManager()
 {
@@ -54,7 +55,11 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
         }
     }
 
-    oldSignalChain = signalChain;
+    {
+        juce::String snapshotError;
+        const juce::SpinLock::ScopedLockType sl(variableLock);
+        oldSignalChain.loadScript(dslScript, snapshotError);
+    }
 
     const bool ok = signalChain.loadScript(text, error) && previewSignalChain.loadScript(text, error);
     if (ok)
@@ -148,7 +153,7 @@ bool ScriptManager::testFormulaStability(const juce::String& script,
         for (float val : { 0.f, 0.5f, 1.f })
             if (! run(val, param))
             {
-                warning = juce::TRANS("StabilityWarning");
+                warning = TRANS("StabilityWarning");
                 return false;
             }
 
@@ -156,7 +161,7 @@ bool ScriptManager::testFormulaStability(const juce::String& script,
     {
         ValidationProgressInfo info;
         info.progress = 1.0f;
-        info.message  = juce::TRANS("done");
+        info.message  = TRANS("done");
         info.nanCount = nanCount;
         info.infCount = infCount;
         progress(info);

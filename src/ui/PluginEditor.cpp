@@ -36,7 +36,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     audioProcessor.addChangeListener(this);
 
     setResizable(true, true);
-    setResizeLimits(600, 400, 1600, 1000);
+    setResizeLimits(960, 640, 1920, 1400);
 
 
     pluginNameLabel = std::make_unique<juce::Label>();
@@ -135,12 +135,16 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                 audioProcessor.setVariableName(i, newName);
                 paramComponents[i]->setAliasName(newName);
             };
-            addAndMakeVisible(*nameEditors[i]);
+        nameEditors[i]->setJustification(juce::Justification::centred);
+        nameEditors[i]->setFont(juce::Font(12.f));
+        nameEditors[i]->setColour(juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
+        nameEditors[i]->setColour(juce::TextEditor::textColourId, juce::Colour(0xffe8ecf4));
+        nameEditors[i]->setColour(juce::TextEditor::outlineColourId, juce::Colour(0xff2e3545));
+        addAndMakeVisible(*nameEditors[i]);
     }
 
     inputGainSlider = std::make_unique<juce::Slider>();
-    inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    inputGainSlider->setRotaryParameters(startAngle, endAngle, true);
+    inputGainSlider->setSliderStyle(juce::Slider::LinearHorizontal);
     inputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     inputGainSlider->setTooltip(TRANS("InputGainLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::inputGain, *inputGainSlider));
@@ -156,19 +160,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     mixSlider = std::make_unique<juce::Slider>();
     mixSlider->setSliderStyle(juce::Slider::LinearHorizontal);
-    mixSlider->setRotaryParameters(startAngle, endAngle, true);
-    mixSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 30);
+    mixSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     mixSlider->setRange(0.0, 1.0, 0.01);
-	mixSlider->setValue(0.5, juce::dontSendNotification);
-	mixSlider->setDoubleClickReturnValue(true, 0.5);
-	mixSlider->setSkewFactorFromMidPoint(0.5);
-	mixSlider->setScrollWheelEnabled(true);
-	
-
-
-
-	
-
+    mixSlider->setValue(1.0, juce::dontSendNotification);
+    mixSlider->setDoubleClickReturnValue(true, 1.0);
+    mixSlider->setScrollWheelEnabled(true);
     mixSlider->setTooltip(TRANS("MixLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
     mixSlider->onValueChange = [this]
@@ -179,8 +175,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*mixSlider);
 
     outputGainSlider = std::make_unique<juce::Slider>();
-    outputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    outputGainSlider->setRotaryParameters(startAngle, endAngle, true);
+    outputGainSlider->setSliderStyle(juce::Slider::LinearHorizontal);
     outputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     outputGainSlider->setTooltip(TRANS("OutputGainLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::outputGain, *outputGainSlider));
@@ -274,9 +269,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         {
             editing = true;
             formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId, Colours::black);
+            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId,
+                                                NeuroCoreLookAndFeel::surfaceHigh());
             formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::black);
+                                                NeuroCoreLookAndFeel::accent());
             editSaveButton->setButtonText(TRANS("SaveButton"));
         }
         else
@@ -289,7 +285,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     errorLabel = std::make_unique<juce::Label>();
     errorLabel->setMinimumHorizontalScale(1.0f);
-    errorLabel->setColour(juce::Label::textColourId, juce::Colours::red);
+    errorLabel->setColour(juce::Label::textColourId, juce::Colour(0xffff6b6b));
     addAndMakeVisible(*errorLabel);
 
     inputDisplay  = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Input);
@@ -301,121 +297,105 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*loudnessMeter);
 
     using namespace ui;
+    const int pad = Config::kUiPadding;
+
     layoutRoot = makeColumn();
-    layoutRoot->margin = Config::kUiPadding;
-	layoutRoot->innerMargin = Config::kUiPadding;
-	layoutRoot->aspectRatio = 1.618f; // Golden ratio for a nice layout
+    layoutRoot->margin = pad;
+    layoutRoot->innerMargin = pad;
+    layoutRoot->drawBorder = false;
 
-	layoutRoot->drawBorder = true;
+    auto toolbar = makeRow(0.07f);
+    toolbar->innerMargin = pad;
+    toolbar->addChild(makeLeaf(pluginNameLabel.get(), 2.5f));
+    toolbar->addChild(makeLeaf(presetsButton.get(), 1.f));
+    toolbar->addChild(makeLeaf(functionsButton.get(), 1.f));
+    toolbar->addChild(makeLeaf(stagesButton.get(), 1.f));
+    toolbar->addChild(makeLeaf(bypassButton.get(), 1.f));
+    toolbar->addChild(makeLeaf(helpButton.get(), 0.8f));
+    layoutRoot->addChild(std::move(toolbar));
 
+    auto settingsRow = makeRow(0.055f);
+    settingsRow->innerMargin = pad;
+    settingsRow->addChild(makeLeaf(inputLeftButton.get(), 0.7f));
+    settingsRow->addChild(makeLeaf(inputRightButton.get(), 0.7f));
+    settingsRow->addChild(makeLeaf(languageLabel.get(), 0.6f));
+    settingsRow->addChild(makeLeaf(languageBox.get(), 1.f));
+    settingsRow->addChild(makeLeaf(oversamplingLabel.get(), 0.9f));
+    settingsRow->addChild(makeLeaf(oversamplingBox.get(), 0.8f));
+    settingsRow->addChild(makeLeaf(polisherLabel.get(), 0.8f));
+    settingsRow->addChild(makeLeaf(polisherBox.get(), 1.f));
+    settingsRow->addChild(makeLeaf(blankToggle.get(), 0.7f));
+    layoutRoot->addChild(std::move(settingsRow));
 
-	auto header = makeRow(0.1f);
-	header->innerMargin = Config::kUiPadding;
-	header->margin = Config::kUiPadding;
-	header->drawBorder = false;
-	
+    // Main body: larger left panel so the four mod knobs stay usable
+    auto body = makeRow(0.56f);
+    body->innerMargin = pad;
 
-    
-    
-    header->addChild(makeLeaf(pluginNameLabel.get(), 2.0f));
-    header->addChild(makeLeaf(helpButton.get(), 1.0f));
-    header->addChild(makeLeaf(inputLeftButton.get(), 1.0f));
-    header->addChild(makeLeaf(inputRightButton.get(), 1.0f));
-    header->addChild(makeLeaf(bypassButton.get(), 1.0f));
-    header->addChild(makeLeaf(languageLabel.get(), 1.0f));
-    header->addChild(makeLeaf(languageBox.get(), 1.0f));
-    header->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
-    header->addChild(makeLeaf(oversamplingBox.get(), 1.0f));
-    layoutRoot->addChild(std::move(header));
+    auto leftPanel = makeColumn(3.6f);
+    leftPanel->innerMargin = pad;
 
+    auto knobGrid = makeColumn(3.0f);
+    knobGrid->innerMargin = pad;
+    auto knobRow1 = makeRow();
+    knobRow1->innerMargin = pad;
+    knobRow1->addChild(makeLeaf(paramComponents[0].get(), 1.f, 1.f));
+    knobRow1->addChild(makeLeaf(paramComponents[1].get(), 1.f, 1.f));
+    auto knobRow2 = makeRow();
+    knobRow2->innerMargin = pad;
+    knobRow2->addChild(makeLeaf(paramComponents[2].get(), 1.f, 1.f));
+    knobRow2->addChild(makeLeaf(paramComponents[3].get(), 1.f, 1.f));
+    knobGrid->addChild(std::move(knobRow1));
+    knobGrid->addChild(std::move(knobRow2));
 
+    auto nameRow = makeRow(0.2f);
+    nameRow->innerMargin = pad;
+    for (auto& ne : nameEditors)
+        nameRow->addChild(makeLeaf(ne.get(), 1.f));
 
-    auto body = makeRow();
-    body->innerMargin = Config::kUiPadding;
-	
-	//
-    // body->aspectRatio = 1.618f; // Golden ratio for a nice layout
+    leftPanel->addChild(std::move(knobGrid));
+    leftPanel->addChild(std::move(nameRow));
 
-	auto left = makeColumn(5.f);
-    auto editor = makeRow();
-	auto formulaEditor = makeColumn(6.f);
-    auto paramKnobs = makeColumn(1.f);
-    auto buttons = makeColumn(1.f);
-	
-    for (auto& pc : paramComponents)
-        paramKnobs->addChild(makeLeaf(pc.get(), 1.f, 1.f));
+    auto centerPanel = makeColumn(4.2f);
+    centerPanel->innerMargin = pad;
+    auto actionRow = makeRow(0.1f);
+    actionRow->innerMargin = pad;
+    actionRow->addChild(makeLeaf(editSaveButton.get(), 1.f));
+    actionRow->addChild(makeLeaf(optimizeButton.get(), 1.f));
+    centerPanel->addChild(std::move(actionRow));
+    centerPanel->addChild(makeLeaf(formulaInputEditor.get(), 1.f));
+    centerPanel->addChild(makeLeaf(errorLabel.get(), 0.08f));
 
-	buttons->innerMargin = Config::kUiPadding;
-    buttons->drawBorder = false;
-	buttons->margin = Config::kUiPadding;
-   
-    buttons->addChild(makeLeaf(editSaveButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(optimizeButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(functionsButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(stagesButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(presetsButton.get(), 0.3f, 2.f));
+    auto rightPanel = makeColumn(1.2f);
+    rightPanel->innerMargin = pad;
+    rightPanel->addChild(makeLeaf(loudnessMeter.get()));
 
-	formulaEditor->addChild(makeLeaf(formulaInputEditor.get()));
-
-    editor->addChild(std::move(paramKnobs));
-    editor->addChild(std::move(formulaEditor));
-	editor->addChild(std::move(buttons));
-
-	left->addChild(std::move(editor));
-
-
-
-
-
-    auto right = makeColumn(1.f);
-	right->innerMargin = Config::kUiPadding;
-	right->drawBorder = false;
-	right->margin = Config::kUiPadding;
-
-    right->addChild(makeLeaf(loudnessMeter.get()));
-    
-
-
-
-
-
-
-
-
-
-	auto mixKnobs = makeRow(0.2);
-	mixKnobs->addChild(makeLeaf(inputGainSlider.get()));
-	mixKnobs->addChild(makeLeaf(mixSlider.get()));
-	mixKnobs->addChild(makeLeaf(outputGainSlider.get()));
-
-
-	auto wavemeter = makeRow(0.8f, 0, true);
-	wavemeter->drawBorder = true;
-	wavemeter->innerMargin = Config::kUiPadding;
-	wavemeter->margin = Config::kUiPadding;
-    wavemeter->addChild(makeLeaf(inputDisplay.get()));
-    wavemeter->addChild(makeLeaf(outputDisplay.get()));
-
-	
-
-
-
-
-    body->addChild(std::move(left));
-
-    body->addChild(std::move(right));
-
-  
-
+    body->addChild(std::move(leftPanel));
+    body->addChild(std::move(centerPanel));
+    body->addChild(std::move(rightPanel));
     layoutRoot->addChild(std::move(body));
-	layoutRoot->addChild(std::move(mixKnobs));
-	layoutRoot->addChild(std::move(wavemeter));
 
+    // Full-width linear strips — taller so the track/thumb are easy to grab
+    auto mixStrip = makeRow(0.13f);
+    mixStrip->innerMargin = pad;
+    auto makeGainColumn = [](juce::Label* label, juce::Slider* slider, juce::Label* value)
+    {
+        auto col = makeColumn();
+        col->addChild(makeLeaf(label, 0.28f));
+        col->addChild(makeLeaf(slider, 0.44f, 1.f));
+        col->addChild(makeLeaf(value, 0.28f));
+        return col;
+    };
+    mixStrip->addChild(makeGainColumn(inputGainLabel.get(), inputGainSlider.get(), inputGainValue.get()));
+    mixStrip->addChild(makeGainColumn(mixLabel.get(), mixSlider.get(), mixValue.get()));
+    mixStrip->addChild(makeGainColumn(outputGainLabel.get(), outputGainSlider.get(), outputGainValue.get()));
+    layoutRoot->addChild(std::move(mixStrip));
+
+    auto waveRow = makeRow(0.185f);
+    waveRow->innerMargin = pad;
+    waveRow->addChild(makeLeaf(inputDisplay.get(), 1.f));
+    waveRow->addChild(makeLeaf(outputDisplay.get(), 1.f));
+    layoutRoot->addChild(std::move(waveRow));
     updateTranslations();
-
-
-    
-
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
 
@@ -501,6 +481,16 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
     inputRightButton->setButtonText(TRANS("InputRight"));
     optimizeButton->setButtonText(TRANS("OptimizeButton"));
     editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
+    if (presetsButton)
+        presetsButton->setButtonText(TRANS("Presets"));
+    if (functionsButton)
+        functionsButton->setButtonText(TRANS("Functions"));
+    if (stagesButton)
+        stagesButton->setButtonText(TRANS("StagesButton"));
+    if (bypassButton)
+        bypassButton->setButtonText(TRANS("Bypass"));
+    if (blankToggle)
+        blankToggle->setButtonText(TRANS("Blank"));
     if (polisherLabel)
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
@@ -512,10 +502,33 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
 //==============================================================================
 void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (Colours::black);
-    layoutRoot->layoutAndDraw(g, getLocalBounds());
+    const auto bg = NeuroCoreLookAndFeel::background();
+    juce::ColourGradient grad(bg.brighter(0.04f), 0.f, 0.f,
+                              bg.darker(0.12f), 0.f, (float) getHeight(), false);
+    g.setGradientFill(grad);
+    g.fillAll();
 
+    if (layoutRoot)
+        ui::performLayout(*layoutRoot, getLocalBounds());
+
+    const auto panel = NeuroCoreLookAndFeel::surface().withAlpha(0.35f);
+    const auto border = NeuroCoreLookAndFeel::surfaceHigh().withAlpha(0.5f);
+    const juce::Component* panelComponents[] = {
+        formulaInputEditor.get(),
+        loudnessMeter.get(),
+        inputDisplay.get(),
+        outputDisplay.get()
+    };
+    for (const auto* comp : panelComponents)
+    {
+        if (comp == nullptr || ! comp->isVisible())
+            continue;
+        auto r = comp->getBounds().toFloat().expanded(2.f);
+        g.setColour(panel);
+        g.fillRoundedRectangle(r, 8.f);
+        g.setColour(border);
+        g.drawRoundedRectangle(r, 8.f, 1.f);
+    }
 }
 
 void NeuroCoreAudioProcessorEditor::resized()
@@ -524,9 +537,30 @@ void NeuroCoreAudioProcessorEditor::resized()
         ui::performLayout(*layoutRoot, getLocalBounds());
     if (pluginNameLabel)
     {
-        pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
-        pluginNameLabel->setJustificationType(juce::Justification::centred);
+        pluginNameLabel->setFont(juce::Font(18.f, juce::Font::bold));
+        pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
+        pluginNameLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
     }
+    for (auto* lbl : { inputGainLabel.get(), mixLabel.get(), outputGainLabel.get(),
+                       languageLabel.get(), oversamplingLabel.get(), polisherLabel.get() })
+    {
+        if (lbl != nullptr)
+        {
+            lbl->setJustificationType(juce::Justification::centred);
+            lbl->setFont(juce::Font(12.f, juce::Font::bold));
+            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        }
+    }
+    for (auto* lbl : { inputGainValue.get(), mixValue.get(), outputGainValue.get() })
+    {
+        if (lbl != nullptr)
+        {
+            lbl->setFont(juce::Font(13.f, juce::Font::bold));
+            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+        }
+    }
+    if (errorLabel)
+        errorLabel->setJustificationType(juce::Justification::centredLeft);
 }
 
 bool NeuroCoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)

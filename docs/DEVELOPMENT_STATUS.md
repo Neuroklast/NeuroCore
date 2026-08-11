@@ -1,8 +1,8 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-06-29  
+**Letzte Aktualisierung:** 2026-08-11  
 **Version:** 0.2.1  
-**Gesamtfortschritt:** ~74–77%
+**Gesamtfortschritt:** ~78–80%
 
 ---
 
@@ -15,10 +15,10 @@
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ Stages-Overlay, Preset-Sync, Bypass | 85% | 2026-06-29 |
+| Core/PluginEditor | ✅ Layout/Knobs/Mix-Slider UX-Fix, größerer Preset-Browser, Double-Click Load | 94% | 2026-08-11 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
-| DSL/DSLParser | ✅ sync, channel, ms_encode, ms_decode, trigger Parameter | 88% | 2026-05-21 |
-| DSL/SignalChain | ✅ Fast-Path (SIMD Stage + block Filter/Comp); Slow-Path optimiert | 94% | 2026-06-29 |
+| DSL/DSLParser | ✅ param-Ranges `[min,max]` robust; sync/channel/ms/trigger | 92% | 2026-08-11 |
+| DSL/SignalChain | ✅ Param-Map in Stages; Osc-Freq-Formeln; Filter `+`/`*` Modulation | 96% | 2026-08-11 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -29,11 +29,12 @@
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
 | UI/ParameterComponent | ✅ MIDI Learn Rechtsklick-Menü | 85% | 2026-04-01 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ Funktional (Blowfish) + DSCR-Chunk im NRK-Format (v2) + robustere Chunk-Validierung | 84% | 2026-05-21 |
+| Preset-System | ✅ NRK v2 + 75 ladbare Factory-Presets (`FactoryPresetLibrary`, alle unit-getestet) | 95% | 2026-08-11 |
 | Localiser | ✅ DE/EN vorhanden | 80% | 2026-04-01 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ State-Round-Trip-Test; PresetManager var names | 80% | 2026-06-29 |
-| CI/CD | ✅ pluginval ohne `|| true` (strict fail) | 88% | 2026-06-29 |
+| Tests | ✅ 2108 Tests grün inkl. Apply aller 75 Factory-Presets | 90% | 2026-08-11 |
+| CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
+| Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
 | Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
@@ -82,7 +83,9 @@
 - [x] RT: `oldSignalChain = signalChain` auf Audio-Thread entfernt
 - [x] `SignalChain::scriptLock` (TryLock im Audio-Thread, Lock in `loadScript`)
 - [x] `testFormulaStability` nutzt `processBlockSmoothed` (Production-Pfad)
-- [x] `factory_presets.json` auf Zeilen-Syntax migriert (29 Presets)
+- [x] `factory_presets.json` auf Zeilen-Syntax migriert (75 Factory-Presets, 15 Kategorien)
+- [x] UI-Modernisierung: `NeuroCoreLookAndFeel`, WeightedLayout-Grid, Preset-Tabelle mit Kategorie-Spalte
+- [x] `FactoryPresetLibrary` + Unit-Test (Load/Apply-Sampling)
 - [x] `docs/ARCHITECTURE.md` Signalkette korrigiert
 
 ### Phase A Audit-Fixes ✅ (2026-06-29)
@@ -94,9 +97,18 @@
 - [x] `PresetManagerTest` / `SignalChainTest` repariert + `processBlockSmoothed`-Test
 - [x] `Resources/` → `resources/` (Case für Linux/macOS)
 
+### 2026-08-11 – Factory-Presets ladbar + UI/UX Slider-Fix (master)
+
+- [x] `FactoryPresetLibrary` lädt `resources/factory_presets.json` (Pfad-Fallbacks)
+- [x] 75 Factory-Presets in 16 Kategorien — alle `loadScript` + `applyPreset` grün
+- [x] DSL: param-Ranges, Stage-Map, Osc-Freq-Formeln, Filter `+`/`*` Modulation
+- [x] UI: größere Knobs, längere Mix/Gain-Slider, größerer Preset-Browser, Double-Click Load
+- [x] Unit-Test deckt alle Factory-Presets ab
+
 ### Nächste Schritte (Priorität)
 
 - [x] `stagesButton` → `StagesContentComponent` (Signalkette-Übersicht)
+- [x] Factory-Presets tatsächlich im UI laden (nicht nur JSON-Datei)
 - [ ] Licensing-Backend (echter Server statt Placeholder)
 - [ ] Windows/macOS Installer
 - [ ] UI: Progressive Disclosure (Settings-Panel für Oversampling/Language)
@@ -148,7 +160,7 @@
 |---|---|---|---|
 | 1 | Licensing-Backend noch Placeholder (Produktionsserver fehlt) | `Config.h` / `LicenseManager.cpp` | 🟡 Hoch |
 | 2 | Slow-Path noch per-sample (Osc/Env/Feedback/t) | `SignalChain.cpp` | 🟡 Mittel |
-| 3 | Preset-Load aktualisiert Editor nicht | `PluginEditor.cpp` | 🟡 Mittel |
+
 
 Vollständige Analyse: `docs/ANALYSIS.md`
 

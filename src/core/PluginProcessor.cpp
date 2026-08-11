@@ -11,6 +11,7 @@
 #include "PluginProcessor.h"
 #include "../ui/PluginEditor.h"
 #include "../utils/PresetManager.h"
+#include "../utils/FactoryPresetLibrary.h"
 #include "../utils/FormulaHelper.h"
 #include "../utils/Log.h"
 #include "../utils/Localiser.h"
@@ -70,12 +71,14 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     loadLanguage(juce::SystemStats::getUserLanguage());
 
-    // Resource directory next to the binary
-    juce::File resDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                            .getSiblingFile(Config::kResourceFolder);
+    // Resource directory next to the binary (with fallbacks for VST3/dev layouts)
+    juce::File resDir = FactoryPresetLibrary::resolveResourcesDir(
+        juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+            .getSiblingFile(Config::kResourceFolder));
 
     loadOptimizationRules(resDir.getChildFile(Config::kOptimizationFile));
     loadFormulaTemplates(resDir.getChildFile(Config::kTemplateFile));
+    FactoryPresetLibrary::getInstance().loadFromResources(resDir);
 
     auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile(Config::kUserTemplateFile);
@@ -459,6 +462,9 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
 juce::StringArray NeuroCoreAudioProcessor::getPresetNames() const
 {
     juce::StringArray result;
+    for (const auto& e : FactoryPresetLibrary::getInstance().getEntries())
+        result.add(e.name);
+
     auto base = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                     .getChildFile(Config::kUserPresetFolder);
     auto files = presetManager.getAvailablePresets(base);
@@ -469,11 +475,24 @@ juce::StringArray NeuroCoreAudioProcessor::getPresetNames() const
 
 void NeuroCoreAudioProcessor::loadPreset(int index)
 {
+    const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
+    if (juce::isPositiveAndBelow(index, (int) factory.size()))
+    {
+        juce::String err;
+        if (! FactoryPresetLibrary::getInstance().applyPreset(*this, index, err))
+            logError("Factory preset load failed: " + err);
+        return;
+    }
+
+    index -= (int) factory.size();
     auto base = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                     .getChildFile(Config::kUserPresetFolder);
     auto files = presetManager.getAvailablePresets(base);
-    if (juce::isPositiveAndBelow(index, (int)files.size()))
-        presetManager.loadPreset(files[(size_t)index]);
+    if (juce::isPositiveAndBelow(index, (int) files.size()))
+    {
+        if (presetManager.loadPreset(files[(size_t) index]))
+            sendChangeMessage();
+    }
 }
 
 void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)

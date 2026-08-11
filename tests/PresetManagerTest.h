@@ -93,10 +93,10 @@ public:
     beginTest("DSCR chunk has priority over STAT script");
     juce::MemoryBlock presetBytes;
     expect(tmp.getFile().loadFileAsData(presetBytes));
-    const juce::String dscrOverride("stage1: y = x * a * 2");
-    const auto dscrOverrideLength = static_cast<int64_t>(dscrOverride.getNumBytesAsUTF8());
-    expectEquals(dscrLength, dscrOverrideLength);
-    if (dscrOffset >= 0 && dscrLength == dscrOverrideLength &&
+    // In-place patch must keep the same byte length as the original DSCR payload
+    const juce::String dscrOverride("stage1: y = x * b"); // same length as testScript
+    expectEquals((int64_t) dscrOverride.getNumBytesAsUTF8(), dscrLength);
+    if (dscrOffset >= 0 && dscrLength == (int64_t) dscrOverride.getNumBytesAsUTF8() &&
         dscrOffset + dscrLength <= static_cast<int64_t>(presetBytes.getSize()))
     {
       auto* presetData = static_cast<char*>(presetBytes.getData());
