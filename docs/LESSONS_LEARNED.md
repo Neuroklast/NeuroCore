@@ -9,6 +9,20 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Factory names must match real delay/reverb/ms blocks
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Doubler AM + Shimmer Drive ehrlich machen; einmal `factory_presets.json` schreiben  
+**Ergebnis:** Doubler = `delay1` slap + LFO time; Shimmer = `reverb1` hall; quality 116/116
+
+#### Fallstrick
+„Doubler“/„Shimmer“ nur mit AM auf `y` klingen nach Tremolo, nicht nach Double/Hall. Engine hat keinen Pitch-Shifter — „octave shimmer“ wäre eine Lüge.
+
+#### Regel
+Time/Space-Namen brauchen echte `delay`/`reverb`/`ms` Blöcke. `y_prev` nur für Dirt. JSON nie handeditieren; Generator erst schreiben, wenn alle Script-Edits (inkl. g/h-Trim) drin sind. CTest-Name ist `NeuroCoreTests`, nicht `NeuroCoreExtrasTest`.
+
+---
+
 ### 2026-08-13 – Cinematic UI must stay off the audio thread
 
 **Agent:** Grok Coding Agent  

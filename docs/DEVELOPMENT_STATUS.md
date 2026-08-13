@@ -30,10 +30,10 @@
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 108 Factory (Delay/Reverb/MS echt); Templates mit echten delay/reverb | 99% | 2026-08-12 |
+| Preset-System | ✅ 116 Factory; knobs a–f only; Doubler=`delay`, Shimmer=`reverb`, Cinematic=`ms` | 99% | 2026-08-13 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ Suite schlank & stabil: **1057 passed / 0 failed ~0.3s** (MessageManager + AsyncUpdater-Fix; Factory sampled) | 98% | 2026-08-12 |
+| Tests | ✅ Suite schlank & stabil: **1363 passed / 0 failed**; factory honesty + quality gate 116/116 | 98% | 2026-08-13 |
 | CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
 | Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
@@ -43,6 +43,14 @@
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-13 – Factory preset honesty (`feat/factory-preset-honesty`)
+
+- [x] Honesty tests: no `param g/h`, no dummy C–F names, no “eight knob” copy
+- [x] Doubler AM = real `delay1` slap + LFO time (no AM-only fake double)
+- [x] Shimmer Drive = real `reverb1` hall (no octave pitch-shift claim)
+- [x] Cinematic Space = real `ms` after predelay/reverb
+- [x] Single `node scripts/generate_factory_presets.mjs` write → 116 presets, quality gate 116/116
 
 ### 2026-08-13 – Cinematic Cyber-UI FX (`feat/cinematic-ui-fx`)
 
