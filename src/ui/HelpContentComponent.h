@@ -28,14 +28,16 @@ public:
     void listBoxItemClicked (int row, const juce::MouseEvent&) override;
     void selectedRowsChanged (int lastRowSelected) override;
 
-    void jumpToChapter (int index);
+    void showChapter (int index);
+    juce::String getDisplayedText() const { return body.getText(); }
     int getVisibleChapterCount() const { return (int) visible.size(); }
 
 private:
     void textEditorTextChanged (juce::TextEditor&) override;
     void textEditorReturnKeyPressed (juce::TextEditor&) override;
     void rebuildVisible();
-    void jumpToQuery();
+    void showFirstVisible();
+    static juce::String readableChapter (const HelpChapter& ch);
 
     juce::String fullText;
     std::vector<HelpChapter> chapters;

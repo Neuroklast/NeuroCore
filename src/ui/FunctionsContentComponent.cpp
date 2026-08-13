@@ -348,8 +348,7 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p
 void FunctionsContentComponent::loadFunctions()
 {
     allFunctions.clear();
-    const bool de = processor.getCurrentLanguage().startsWithIgnoreCase ("de");
-    const char* fileName = de ? "functions_de.txt" : "functions_en.txt";
+    const char* fileName = "functions_en.txt";
 
     juce::String content;
     juce::Array<juce::File> candidates;
@@ -385,12 +384,7 @@ void FunctionsContentComponent::loadFunctions()
     }
 
     if (content.isEmpty())
-    {
-        if (de)
-            content = juce::String::fromUTF8 (BinaryData::functions_de_txt, BinaryData::functions_de_txtSize);
-        else
-            content = juce::String::fromUTF8 (BinaryData::functions_en_txt, BinaryData::functions_en_txtSize);
-    }
+        content = juce::String::fromUTF8 (BinaryData::functions_en_txt, BinaryData::functions_en_txtSize);
 
     auto j = json::parse (content.toStdString(), nullptr, false);
     if (! j.is_object() || ! j.contains ("functions"))

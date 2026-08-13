@@ -73,7 +73,6 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
         apvts.addParameterListener (EffectParameters::userParams[i], this);
     apvts.addParameterListener (EffectParameters::oversampling, this);
 
-    // Brand default: English (user can switch in UI; session restores last language)
     loadLanguage ("en");
 
     // Resource directory next to the binary (with fallbacks for VST3/dev layouts)
@@ -280,7 +279,7 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     if (state.isValid())
     {
         state.setProperty(kDslScriptStateKey, getScript(), nullptr);
-        state.setProperty(kLanguageStateKey, currentLanguage, nullptr);
+        state.setProperty(kLanguageStateKey, "en", nullptr);
         for (int i = 0; i < Config::kNumUserParams; ++i)
             state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
@@ -322,8 +321,7 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                     setVariableName(i, tree.getProperty(key).toString());
             }
 
-            if (tree.hasProperty(kLanguageStateKey))
-                loadLanguage(tree.getProperty(kLanguageStateKey).toString());
+            loadLanguage ("en");
 
             sendChangeMessage();
         }
@@ -549,14 +547,14 @@ void NeuroCoreAudioProcessor::loadPreset(int index)
     }
 }
 
-void NeuroCoreAudioProcessor::loadLanguage (const juce::String& lang)
+void NeuroCoreAudioProcessor::loadLanguage (const juce::String&)
 {
     auto resDir = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
                        .getSiblingFile (Config::kResourceFolder)
                        .getChildFile ("locale");
 
-    Localiser::getInstance().loadLanguage (resDir, lang);
-    currentLanguage = Localiser::getInstance().getCurrentLanguage();
+    Localiser::getInstance().loadLanguage (resDir, "en");
+    currentLanguage = "en";
 }
 
 

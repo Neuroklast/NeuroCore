@@ -2,6 +2,7 @@
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../core/Config.h"
 
 namespace
 {
@@ -46,6 +47,15 @@ bool usesSampleVars (const juce::String& expr)
 
 } // namespace
 
+class FormulaDisplayComponent::Body : public juce::Component
+{
+public:
+    explicit Body (FormulaDisplayComponent& o) : owner (o) { setOpaque (true); }
+    void paint (juce::Graphics& g) override { owner.paintBody (g); }
+private:
+    FormulaDisplayComponent& owner;
+};
+
 FormulaDisplayComponent::FormulaDisplayComponent()
 {
     for (int i = 0; i < Config::kNumUserParams; ++i)
@@ -54,6 +64,16 @@ FormulaDisplayComponent::FormulaDisplayComponent()
         varColours[(size_t) i] = knobColour (i);
     }
     setOpaque (true);
+    body = std::make_unique<Body> (*this);
+    viewport.setViewedComponent (body.get(), false);
+    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarThickness (10);
+    addAndMakeVisible (viewport);
+}
+
+FormulaDisplayComponent::~FormulaDisplayComponent()
+{
+    viewport.setViewedComponent (nullptr, false);
 }
 
 void FormulaDisplayComponent::setVariableColours (const std::array<juce::String, Config::kNumUserParams>& names,
@@ -62,6 +82,7 @@ void FormulaDisplayComponent::setVariableColours (const std::array<juce::String,
     varNames   = names;
     varColours = colours;
     layoutDirty = true;
+    refreshBodySize();
     repaint();
 }
 
@@ -72,6 +93,7 @@ void FormulaDisplayComponent::setFormula (const juce::String& text)
     formula = text;
     parseParamLines();
     layoutDirty = true;
+    refreshBodySize();
     repaint();
 }
 
@@ -90,6 +112,7 @@ void FormulaDisplayComponent::setKnobValues (const std::array<float, Config::kNu
         return;
     knobValues = values;
     layoutDirty = true;
+    refreshBodySize();
     repaint();
 }
 
@@ -97,6 +120,7 @@ void FormulaDisplayComponent::setError (const juce::String& err)
 {
     error = err;
     layoutDirty = true;
+    refreshBodySize();
     repaint();
 }
 
@@ -342,12 +366,14 @@ void FormulaDisplayComponent::setFontHeight (float heightPt)
 {
     fontHeight = juce::jlimit (Config::kMinEditorFontPt, Config::kMaxEditorFontPt, heightPt);
     layoutDirty = true;
+    refreshBodySize();
     repaint();
 }
 
 void FormulaDisplayComponent::rebuildAttributed()
 {
     cachedLayout = {};
+    cachedLayout.setLineSpacing (fontHeight * (Config::kFormulaLineHeight - 1.0f));
     // Formula live view uses embedded mono for readability (Apex is UI chrome only)
     const juce::Font font = NeuroCoreLookAndFeel::monoFont (fontHeight);
     const juce::Font mono = NeuroCoreLookAndFeel::monoFont (fontHeight);
@@ -515,15 +541,52 @@ void FormulaDisplayComponent::rebuildAttributed()
     layoutDirty = false;
 }
 
-void FormulaDisplayComponent::paint (juce::Graphics& g)
+int FormulaDisplayComponent::getContentHeight() const noexcept
 {
-    // Terminal black core
-    g.fillAll (juce::Colour (0xff000000));
+    return body != nullptr ? body->getHeight() : 0;
+}
 
+void FormulaDisplayComponent::refreshBodySize()
+{
     if (layoutDirty)
         rebuildAttributed();
 
-    auto bounds = getLocalBounds().reduced (10, 22).toFloat();
+    const int viewW = juce::jmax (1, viewport.getMaximumVisibleWidth());
+    const int textW = juce::jmax (1, viewW - 16);
+    cachedTextLayout.createLayout (cachedLayout, (float) textW);
+    const int h = (int) std::ceil (cachedTextLayout.getHeight()) + 16;
+    if (body != nullptr)
+        body->setSize (viewW, juce::jmax (h, viewport.getHeight()));
+}
+
+void FormulaDisplayComponent::resized()
+{
+    auto r = getLocalBounds();
+    r.removeFromTop (18);
+    viewport.setBounds (r.reduced (1, 0));
+    refreshBodySize();
+}
+
+void FormulaDisplayComponent::paintBody (juce::Graphics& g)
+{
+    g.fillAll (juce::Colour (0xff000000));
+    if (layoutDirty)
+        refreshBodySize();
+    cachedTextLayout.draw (g, juce::Rectangle<float> (8.f, 6.f,
+                                                      (float) juce::jmax (1, getWidth() - 16),
+                                                      cachedTextLayout.getHeight() + 4.f));
+}
+
+void FormulaDisplayComponent::paintOverChildren (juce::Graphics& g)
+{
+    g.setColour (juce::Colours::black.withAlpha (0.12f));
+    for (int y = 20; y < getHeight(); y += 3)
+        g.drawHorizontalLine (y, 0.f, (float) getWidth());
+}
+
+void FormulaDisplayComponent::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colour (0xff000000));
 
     // Header strip: formula terminal identity
     g.setColour (juce::Colour (0xff0a0000));
@@ -543,12 +606,4 @@ void FormulaDisplayComponent::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xff3a0000));
     g.drawRect (getLocalBounds().toFloat().reduced (0.5f), 1.f);
 
-    juce::TextLayout layout;
-    layout.createLayout (cachedLayout, bounds.getWidth());
-    layout.draw (g, bounds);
-
-    // CRT scanlines over text
-    g.setColour (juce::Colours::black.withAlpha (0.12f));
-    for (int y = 20; y < getHeight(); y += 3)
-        g.drawHorizontalLine (y, 0.f, (float) getWidth());
 }

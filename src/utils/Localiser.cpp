@@ -65,7 +65,7 @@ void Localiser::loadMemory(const void* data, int size,
     }
 }
 
-void Localiser::loadLanguage(const juce::File& localeDir, const juce::String& lang)
+void Localiser::loadLanguage(const juce::File& localeDir, const juce::String&)
 {
     auto fallbackFile = localeDir.getChildFile("en.txt");
     if (fallbackFile.existsAsFile())
@@ -73,19 +73,8 @@ void Localiser::loadLanguage(const juce::File& localeDir, const juce::String& la
     else
         loadMemory(BinaryData::en_txt, BinaryData::en_txtSize, english);
 
-    juce::File langFile = localeDir.getChildFile(lang + ".txt");
-    if (!langFile.existsAsFile() && lang.startsWithIgnoreCase("de"))
-        langFile = localeDir.getChildFile("de.txt");
-
-    if (langFile.existsAsFile())
-        loadFile(langFile, current);
-    else if (lang.startsWithIgnoreCase("de"))
-        loadMemory(BinaryData::de_txt, BinaryData::de_txtSize, current);
-    else
-        current = english;
-
-    currentLanguage = langFile.existsAsFile() ? langFile.getFileNameWithoutExtension()
-                                             : (lang.startsWithIgnoreCase("de") ? "de" : "en");
+    current = english;
+    currentLanguage = "en";
     listeners.call(&Listener::languageChanged);
 }
 

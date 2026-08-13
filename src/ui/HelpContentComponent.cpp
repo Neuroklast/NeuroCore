@@ -28,6 +28,13 @@ std::vector<HelpChapter> parseHelpChapters (const juce::String& markdown)
             have = true;
             cur.title = line.substring (3).trim();
             cur.startChar = pos;
+            cur.body.clear();
+        }
+        else if (! have && line.trim().isNotEmpty())
+        {
+            have = true;
+            cur.title = "Overview";
+            cur.startChar = 0;
             cur.body = line + "\n";
         }
         else if (have)
@@ -68,16 +75,18 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     body.setMultiLine (true, true);
     body.setReadOnly (true);
     body.setScrollbarsShown (true);
-    body.setCaretVisible (true);
-    body.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    body.setCaretVisible (false);
+    body.setFont (juce::Font (juce::FontOptions (16.0f)));
     body.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
     body.setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
-    body.setColour (juce::TextEditor::highlightColourId, NeuroCoreLookAndFeel::accent().withAlpha (0.35f));
-    body.setText (fullText, false);
+    body.setColour (juce::TextEditor::highlightColourId, NeuroCoreLookAndFeel::accent().withAlpha (0.28f));
     addAndMakeVisible (body);
 
     if (! visible.empty())
+    {
         chapterList.selectRow (0);
+        showChapter (visible.front());
+    }
 }
 
 HelpContentComponent::~HelpContentComponent()
@@ -104,48 +113,51 @@ void HelpContentComponent::rebuildVisible()
     chapterList.updateContent();
 }
 
-void HelpContentComponent::jumpToChapter (int index)
+juce::String HelpContentComponent::readableChapter (const HelpChapter& ch)
+{
+    auto title = ch.title.trim();
+    auto bodyText = ch.body.trim();
+    if (bodyText.startsWith ("## "))
+        bodyText = bodyText.fromFirstOccurrenceOf ("\n", false, false).trim();
+    if (title.isEmpty())
+        return bodyText;
+    return title + "\n\n" + bodyText;
+}
+
+void HelpContentComponent::showChapter (int index)
 {
     if (! juce::isPositiveAndBelow (index, (int) chapters.size()))
         return;
-    const int pos = juce::jlimit (0, fullText.length(), chapters[(size_t) index].startChar);
-    body.setCaretPosition (pos);
-    body.moveCaretToEndOfLine (true);
-    body.scrollEditorToPositionCaret (12, 12);
+    body.setText (readableChapter (chapters[(size_t) index]), false);
+    body.moveCaretToTop (false);
+    body.setCaretPosition (0);
 }
 
-void HelpContentComponent::jumpToQuery()
+void HelpContentComponent::showFirstVisible()
 {
-    const auto q = search.getText().trim();
-    if (q.isEmpty())
-        return;
-    const int pos = fullText.indexOfIgnoreCase (q);
-    if (pos >= 0)
+    if (visible.empty())
     {
-        body.setCaretPosition (pos);
-        body.moveCaretToEndOfLine (true);
-        body.scrollEditorToPositionCaret (12, 12);
+        body.setText ({}, false);
         return;
     }
-    if (! visible.empty())
-        jumpToChapter (visible.front());
+    showChapter (visible.front());
 }
 
 void HelpContentComponent::textEditorTextChanged (juce::TextEditor&)
 {
     rebuildVisible();
-    if (! visible.empty())
+    if (visible.empty())
     {
-        chapterList.selectRow (0, false, false);
-        jumpToChapter (visible.front());
+        body.setText ({}, false);
+        return;
     }
-    if (search.getText().trim().length() >= 2)
-        jumpToQuery();
+    chapterList.selectRow (0, false, false);
+    showFirstVisible();
 }
 
 void HelpContentComponent::textEditorReturnKeyPressed (juce::TextEditor&)
 {
-    jumpToQuery();
+    showFirstVisible();
 }
 
 int HelpContentComponent::getNumRows()
@@ -173,13 +185,13 @@ void HelpContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w, 
 void HelpContentComponent::listBoxItemClicked (int row, const juce::MouseEvent&)
 {
     if (juce::isPositiveAndBelow (row, (int) visible.size()))
-        jumpToChapter (visible[(size_t) row]);
+        showChapter (visible[(size_t) row]);
 }
 
 void HelpContentComponent::selectedRowsChanged (int lastRowSelected)
 {
     if (juce::isPositiveAndBelow (lastRowSelected, (int) visible.size()))
-        jumpToChapter (visible[(size_t) lastRowSelected]);
+        showChapter (visible[(size_t) lastRowSelected]);
 }
 
 void HelpContentComponent::paint (juce::Graphics& g)

@@ -165,9 +165,7 @@ juce_add_binary_data(resourcesBinary
         resources/img/nk_logo.png
         resources/fonts/apex.otf
         resources/fonts/JetBrainsMono-Regular.ttf
-        resources/locale/de.txt
         resources/locale/en.txt
-        resources/locale/functions_de.txt
         resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
@@ -209,6 +207,9 @@ if(TARGET NeuroCore_Standalone)
             ${CMAKE_CURRENT_SOURCE_DIR}/resources
             $<TARGET_FILE_DIR:NeuroCore_Standalone>/resources
     )
+    if(WIN32)
+        target_sources(NeuroCore_Standalone PRIVATE resources/img/nk_logo.rc)
+    endif()
 endif()
 if(TARGET NeuroCore_VST3)
     add_custom_command(TARGET NeuroCore_VST3 POST_BUILD

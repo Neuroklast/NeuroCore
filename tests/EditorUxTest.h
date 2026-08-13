@@ -7,6 +7,7 @@
 #include "../src/ui/DslAutocomplete.h"
 #include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
+#include "../src/ui/FormulaDisplayComponent.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -20,10 +21,28 @@ public:
             const juce::String md =
                 "# Title\n\nintro\n\n## 1. Quickstart\nDo this.\n\n## 2. Knobs\nTurn a.\n";
             const auto ch = parseHelpChapters (md);
-            expectEquals ((int) ch.size(), 2);
-            expect (ch[0].title.contains ("Quickstart"));
-            expect (ch[1].title.contains ("Knobs"));
-            expect (ch[0].body.contains ("Do this"));
+            expectEquals ((int) ch.size(), 3);
+            expect (ch[0].title.contains ("Overview"));
+            expect (ch[1].title.contains ("Quickstart"));
+            expect (ch[2].title.contains ("Knobs"));
+            expect (ch[1].body.contains ("Do this"));
+        }
+
+        beginTest ("Help click shows only that chapter");
+        {
+            const juce::String md =
+                "# Title\n\nintro\n\n## 1. Quickstart\nDo this.\n\n## 2. Knobs\nTurn a.\n";
+            HelpContentComponent help (md);
+            expect (help.getVisibleChapterCount() >= 2);
+            help.showChapter (1);
+            const auto shown = help.getDisplayedText();
+            expect (shown.contains ("Quickstart") || shown.contains ("Do this")
+                    || shown.contains ("Knobs"));
+            help.showChapter (2);
+            const auto knobs = help.getDisplayedText();
+            expect (knobs.contains ("Knobs"));
+            expect (knobs.contains ("Turn a"));
+            expect (! knobs.contains ("Do this"));
         }
 
         std::array<juce::String, Config::kNumUserParams> names {};
@@ -73,6 +92,18 @@ public:
             expect (! l && r);
             EffectParameters::flagsFromMode (EffectParameters::InputChannelMode::Both, l, r);
             expect (l && r);
+        }
+
+        beginTest ("Formula live view scrolls when taller than the panel");
+        {
+            expectEquals (Config::kFormulaLineHeight, 1.1f);
+            FormulaDisplayComponent view;
+            view.setBounds (0, 0, 420, 140);
+            juce::String script;
+            for (int i = 0; i < 40; ++i)
+                script << "stage" << i << ": y = x\n";
+            view.setFormula (script);
+            expect (view.getContentHeight() > view.getHeight());
         }
 
         beginTest ("Autocomplete send only inside a bus");

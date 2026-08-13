@@ -31,6 +31,7 @@ public:
     }
 
     FormulaDisplayComponent();
+    ~FormulaDisplayComponent() override;
 
     void setVariableColours (const std::array<juce::String, Config::kNumUserParams>& names,
                              const std::array<juce::Colour, Config::kNumUserParams>& colours);
@@ -46,10 +47,14 @@ public:
     /** Body font height for formula text (live view). */
     void setFontHeight (float heightPt);
     float getFontHeight() const noexcept { return fontHeight; }
+    int getContentHeight() const noexcept;
 
     void paint (juce::Graphics& g) override;
+    void paintOverChildren (juce::Graphics& g) override;
+    void resized() override;
 
 private:
+    class Body;
     struct ParamRange
     {
         juce::String alias; // "a".."f"
@@ -59,6 +64,8 @@ private:
     };
 
     void rebuildAttributed();
+    void refreshBodySize();
+    void paintBody (juce::Graphics& g);
     void parseParamLines();
     juce::Colour colourForToken (const juce::String& token) const;
     int knobIndexForToken (const juce::String& token) const;
@@ -74,6 +81,9 @@ private:
     std::array<float, Config::kNumUserParams> knobValues {};
     std::vector<ParamRange> paramRanges;
     juce::AttributedString cachedLayout;
+    juce::TextLayout cachedTextLayout;
+    std::unique_ptr<Body> body;
+    juce::Viewport viewport;
     bool layoutDirty = true;
     float fontHeight { 13.5f };
 };

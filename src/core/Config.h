@@ -112,6 +112,8 @@ namespace Config
     inline constexpr float kMinEditorFontPt     = 12.0f;
     inline constexpr float kMaxEditorFontPt     = 28.0f;
     inline constexpr float kEditorFontStepPt    = 2.0f;
+    /// Line box as a multiple of font height (live formula + code editor).
+    inline constexpr float kFormulaLineHeight   = 1.1f;
 
     //==========================================================================
     // Modulator constants

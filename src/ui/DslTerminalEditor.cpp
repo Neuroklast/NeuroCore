@@ -264,7 +264,7 @@ void DslTerminalEditor::setFontHeight (float heightPt)
     if (editor != nullptr)
     {
         // Embedded JetBrains Mono - never Apex (missing punctuation glyphs)
-        editor->setFont (NeuroCoreLookAndFeel::monoFont (fontHeight));
+        editor->setFont (NeuroCoreLookAndFeel::monoFont (fontHeight * Config::kFormulaLineHeight));
         editor->setLineNumbersShown (true);
         editor->setScrollbarThickness (10);
     }

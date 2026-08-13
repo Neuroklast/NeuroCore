@@ -787,7 +787,7 @@ private:
 
     void testProcessorStateRoundTrip()
     {
-        beginTest("Processor state: variable names and language round-trip");
+        beginTest("Processor state: variable names persist; language stays English");
         {
             NeuroCoreAudioProcessor proc;
             juce::String err;
@@ -805,7 +805,8 @@ private:
             expectEquals(restored.getScript(), juce::String("stage1: y = x * a"));
             expectEquals(restored.getVariableName(0), juce::String("drive"));
             expectEquals(restored.getVariableName(1), juce::String("tone"));
-            expect(restored.getCurrentLanguage().startsWithIgnoreCase("de"));
+            expectEquals(proc.getCurrentLanguage(), juce::String("en"));
+            expectEquals(restored.getCurrentLanguage(), juce::String("en"));
         }
     }
 };
