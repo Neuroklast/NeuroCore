@@ -11,13 +11,11 @@
 
 /**
     @class DslTerminalEditor
-    @brief GPU-beschleunigter Editor für die hausinterne DSL mit Terminal-Look.
-    Für Systeme ohne OpenGL wird intern ein TextEditor verwendet.
+    @brief Code editor for NeuroCore DSL with IDE-style autocomplete.
 */
 class DslTerminalEditor : public juce::Component,
                           public juce::ChangeBroadcaster,
-                          private juce::CodeDocument::Listener,
-                          private juce::OpenGLRenderer
+                          private juce::CodeDocument::Listener
 {
 public:
     explicit DslTerminalEditor(NeuroCoreAudioProcessor& proc);
@@ -31,30 +29,24 @@ public:
     void setReadOnly(bool shouldBeReadOnly);
     void setEditorColour(int colourID, juce::Colour colour);
 
+    /** DSL editor font height in points (clamped). */
+    void setFontHeight (float heightPt);
+    float getFontHeight() const noexcept { return fontHeight; }
+
     void paint(juce::Graphics& g) override;
     void resized() override;
 
-    // CodeDocument::Listener
     void codeDocumentTextInserted(const juce::String&, int) override;
     void codeDocumentTextDeleted(int, int) override;
     void insertTextAtCaret(const juce::String& text);
 
-
 private:
-    // juce::OpenGLRenderer
-    void newOpenGLContextCreated() override;
-    void renderOpenGL() override;
-    void openGLContextClosing() override;
-
-    bool useOpenGL() const noexcept;
-
     class AutoCompleteCodeEditor;
 
-    juce::OpenGLContext openGLContext;
     std::unique_ptr<juce::CodeDocument> document;
-    std::unique_ptr<AutoCompleteCodeEditor> fallbackEditor;
+    std::unique_ptr<AutoCompleteCodeEditor> editor;
     NeuroCoreAudioProcessor& processor;
+    float fontHeight { 18.0f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DslTerminalEditor)
 };
-

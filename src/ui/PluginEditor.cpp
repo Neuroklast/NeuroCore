@@ -7,6 +7,7 @@
 */
 
 #include <JuceHeader.h>
+#include <BinaryData.h>
 #include "../core/PluginProcessor.h"
 #include "PluginEditor.h"
 #include "../core/Config.h"
@@ -23,7 +24,10 @@
 #include "ModalOverlay.h"
 #include "ValidationContentComponent.h"
 #include "PresetContentComponent.h"
+#include "OptimizeContentComponent.h"
 #include "FunctionsContentComponent.h"
+#include "StagesContentComponent.h"
+#include "../utils/FormulaQuality.h"
 
 
 //==============================================================================
@@ -32,62 +36,142 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 {
     juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
     Localiser::getInstance().addListener(this);
+    audioProcessor.addChangeListener(this);
 
     setResizable(true, true);
-    setResizeLimits(600, 400, 1600, 1000);
+    setResizeLimits(960, 640, 1920, 1400);
+    setOpaque(true);
 
+    // Brand mark: NK Logo Red Bold (BinaryData)
+    nkLogoView = std::make_unique<juce::ImageComponent>("nkLogo");
+    if (lookAndFeel.getNkLogo().isValid())
+    {
+        nkLogoView->setImage(lookAndFeel.getNkLogo());
+        nkLogoView->setImagePlacement(juce::RectanglePlacement::centred
+                                      | juce::RectanglePlacement::onlyReduceInSize);
+    }
+    addAndMakeVisible(*nkLogoView);
 
     pluginNameLabel = std::make_unique<juce::Label>();
-    pluginNameLabel->setText(juce::String(PLUGIN_NAME) + " v" + PLUGIN_VERSION,
+    pluginNameLabel->setText(juce::String(PLUGIN_NAME) + "  // v" + PLUGIN_VERSION,
                              juce::dontSendNotification);
     pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
+    pluginNameLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    pluginNameLabel->setFont(NeuroCoreLookAndFeel::brandFont(16.f, true));
     addAndMakeVisible(*pluginNameLabel);
+
+    statusBarLabel = std::make_unique<juce::Label>();
+    statusBarLabel->setJustificationType(juce::Justification::centredLeft);
+    statusBarLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent().withAlpha(0.75f));
+    statusBarLabel->setFont(NeuroCoreLookAndFeel::monoFont(11.f));
+    statusBarLabel->setMinimumHorizontalScale(0.55f);
+    addAndMakeVisible(*statusBarLabel);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
     {
+        juce::String body;
+        // Prefer embedded manual (always offline), then loose resource file
+        if (BinaryData::UserManual_en_txtSize > 0)
+            body = juce::String::fromUTF8 (BinaryData::UserManual_en_txt, BinaryData::UserManual_en_txtSize);
+        if (body.isEmpty())
+        {
+            auto f = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
+                         .getSiblingFile ("resources")
+                         .getChildFile ("UserManual_en.txt");
+            if (f.existsAsFile())
+                body = f.loadFileAsString();
+        }
+        if (body.isEmpty())
+            body = "NeuroCore User Manual\n\nSee docs/USER_MANUAL.md in the repository.";
 
-            juce::String languageSuffix = audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? "DE" : "EN";
-            juce::File manual = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                .getSiblingFile("UserManual " + languageSuffix + ".txt");
+        auto viewer = std::make_unique<juce::TextEditor>();
+        viewer->setMultiLine (true, true);
+        viewer->setReadOnly (true);
+        viewer->setScrollbarsShown (true);
+        viewer->setCaretVisible (false);
+        viewer->setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+        viewer->setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
+        viewer->setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
+        viewer->setText (body, false);
 
-        manual.startAsProcess();
+        validationOverlay = std::make_unique<ModalOverlay>();
+        validationOverlay->setMode (OverlayMode::Closable);
+        validationOverlay->setTitle ("Help / User Manual");
+        validationOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 980),
+                                                    juce::jmin (getHeight() - 24, 700));
+        validationOverlay->setContent (std::move (viewer));
+        validationOverlay->show (*this);
+        validationOverlay->onClose = [this] { validationOverlay.reset(); };
     };
     addAndMakeVisible(*helpButton);
 
-    blankToggle = std::make_unique<juce::ToggleButton>(TRANS("Blank"));
-    addAndMakeVisible(*blankToggle);
+    editorFontLabel = std::make_unique<juce::Label> ("", "Text");
+    editorFontLabel->setMinimumHorizontalScale (1.0f);
+    editorFontLabel->setJustificationType (juce::Justification::centredRight);
+    addAndMakeVisible (*editorFontLabel);
+
+    editorFontMinusButton = std::make_unique<juce::TextButton> ("-");
+    editorFontPlusButton  = std::make_unique<juce::TextButton> ("+");
+    editorFontSizeLabel   = std::make_unique<juce::Label> ("", juce::String ((int) Config::kDefaultEditorFontPt));
+    editorFontSizeLabel->setJustificationType (juce::Justification::centred);
+    editorFontSizeLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::brightText());
+    editorFontMinusButton->setTooltip ("Decrease formula text size");
+    editorFontPlusButton->setTooltip ("Increase formula text size");
+    editorFontMinusButton->onClick = [this]
+    {
+        applyEditorFontSize (editorFontHeight - Config::kEditorFontStepPt);
+    };
+    editorFontPlusButton->onClick = [this]
+    {
+        applyEditorFontSize (editorFontHeight + Config::kEditorFontStepPt);
+    };
+    addAndMakeVisible (*editorFontMinusButton);
+    addAndMakeVisible (*editorFontPlusButton);
+    addAndMakeVisible (*editorFontSizeLabel);
 
     presetsButton = std::make_unique<juce::TextButton>(TRANS("Presets"));
     presetsButton->onClick = [this] { showPresetOverlay(); };
     addAndMakeVisible(*presetsButton);
 
-    bypassButton = std::make_unique<juce::ToggleButton>(TRANS("Bypass"));
+    // Cyber OS bypass — TextButton with toggle state, painted by LookAndFeel angular style
+    bypassButton = std::make_unique<juce::TextButton>("BYPASS");
+    bypassButton->setClickingTogglesState (true);
+    bypassButton->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff1a0505));
+    bypassButton->setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffff1a1a));
+    bypassButton->setColour (juce::TextButton::textColourOffId, NeuroCoreLookAndFeel::accent());
+    bypassButton->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+    bypassButton->onClick = [this]
+    {
+        if (auto* p = audioProcessor.apvts.getParameter(EffectParameters::dryWet))
+        {
+            const auto& range = p->getNormalisableRange();
+            if (bypassButton->getToggleState())
+            {
+                mixBeforeBypass = (float) mixSlider->getValue();
+                if (mixBeforeBypass < 0.001f)
+                    mixBeforeBypass = 1.0f;
+                p->setValueNotifyingHost(range.convertTo0to1(0.0f));
+                bypassButton->setButtonText ("BYPASSED");
+            }
+            else
+            {
+                p->setValueNotifyingHost(range.convertTo0to1(mixBeforeBypass));
+                bypassButton->setButtonText ("BYPASS");
+            }
+        }
+    };
     addAndMakeVisible(*bypassButton);
 
     functionsButton = std::make_unique<juce::TextButton>(TRANS("Functions"));
     functionsButton->onClick = [this] { showFunctionsOverlay(); };
     addAndMakeVisible(*functionsButton);
 
-    stagesButton = std::make_unique<juce::TextButton>(TRANS("Stages"));
+    stagesButton = std::make_unique<juce::TextButton>(TRANS("StagesButton"));
+    stagesButton->onClick = [this] { showStagesOverlay(); };
     addAndMakeVisible(*stagesButton);
 
-    languageLabel = std::make_unique<juce::Label>();
-    languageLabel->setMinimumHorizontalScale(1.0f);
-    languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
-    addAndMakeVisible(*languageLabel);
-
-    languageBox = std::make_unique<juce::ComboBox>();
-    languageBox->addItem("English", 1);
-    languageBox->addItem("Deutsch", 2);
-    languageBox->onChange = [this]
-    {
-        auto id = languageBox->getSelectedId();
-        audioProcessor.loadLanguage(id == 2 ? "de" : "en");
-    };
-    languageBox->setSelectedId(audioProcessor.getCurrentLanguage().startsWithIgnoreCase("de") ? 2 : 1, juce::dontSendNotification);
-    addAndMakeVisible(*languageBox);
-   
+    // Language fixed to English (UI switch removed — brand default)
 
 
     const float startAngle = juce::MathConstants<float>::pi * 4.0f / 3.0f;
@@ -97,6 +181,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     {
         // ID a,b,c,d
         auto paramId = juce::String::charToString(static_cast<juce_wchar>('a' + i));
+        const auto knobCol = FormulaDisplayComponent::knobColour(i);
 
         // 2.1) ParameterComponent bauen und sichtbar machen
         paramComponents[i] = std::make_unique<ui::ParameterComponent>(
@@ -104,9 +189,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             paramId,
             audioProcessor.getVariableName(i));
         paramComponents[i]->setMidiLearnManager(&audioProcessor.midiLearnManager);
+        paramComponents[i]->setAccentColour(knobCol);
         addAndMakeVisible(*paramComponents[i]);
 
-        // 2.2) TextEditor für Alias-Name
+        // 2.2) TextEditor für Alias-Name — outline matches knob colour
         nameEditors[i] = std::make_unique<juce::TextEditor>();
         nameEditors[i]->setText(audioProcessor.getVariableName(i),
             juce::dontSendNotification);
@@ -115,15 +201,29 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                 auto newName = nameEditors[i]->getText();
                 audioProcessor.setVariableName(i, newName);
                 paramComponents[i]->setAliasName(newName);
+                updateLiveFormulaView();
             };
-            addAndMakeVisible(*nameEditors[i]);
+        nameEditors[i]->setJustification(juce::Justification::centred);
+        nameEditors[i]->setFont(juce::Font(12.f));
+        nameEditors[i]->setColour(juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
+        nameEditors[i]->setColour(juce::TextEditor::textColourId, knobCol);
+        nameEditors[i]->setColour(juce::TextEditor::outlineColourId, knobCol.withAlpha(0.65f));
+        nameEditors[i]->setColour(juce::TextEditor::focusedOutlineColourId, knobCol);
+        addAndMakeVisible(*nameEditors[i]);
     }
 
+    auto setupGainSlider = [](juce::Slider& s, const juce::String& tip)
+    {
+        s.setSliderStyle(juce::Slider::LinearHorizontal);
+        s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+        s.setTooltip(tip);
+        s.setScrollWheelEnabled(true);
+        s.setMouseDragSensitivity(220);
+        s.setSliderSnapsToMousePosition(true);
+    };
+
     inputGainSlider = std::make_unique<juce::Slider>();
-    inputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    inputGainSlider->setRotaryParameters(startAngle, endAngle, true);
-    inputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    inputGainSlider->setTooltip(TRANS("InputGainLabel"));
+    setupGainSlider(*inputGainSlider, TRANS("InputGainLabel"));
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::inputGain, *inputGainSlider));
     inputGainSlider->onValueChange = [this]
     {
@@ -136,21 +236,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*inputGainSlider);
 
     mixSlider = std::make_unique<juce::Slider>();
-    mixSlider->setSliderStyle(juce::Slider::LinearHorizontal);
-    mixSlider->setRotaryParameters(startAngle, endAngle, true);
-    mixSlider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 30);
+    setupGainSlider(*mixSlider, TRANS("MixLabel"));
     mixSlider->setRange(0.0, 1.0, 0.01);
-	mixSlider->setValue(0.5, juce::dontSendNotification);
-	mixSlider->setDoubleClickReturnValue(true, 0.5);
-	mixSlider->setSkewFactorFromMidPoint(0.5);
-	mixSlider->setScrollWheelEnabled(true);
-	
-
-
-
-	
-
-    mixSlider->setTooltip(TRANS("MixLabel"));
+    mixSlider->setValue(1.0, juce::dontSendNotification);
+    mixSlider->setDoubleClickReturnValue(true, 1.0);
     attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
     mixSlider->onValueChange = [this]
     {
@@ -159,31 +248,29 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible(*mixSlider);
 
-    outputGainSlider = std::make_unique<juce::Slider>();
-    outputGainSlider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    outputGainSlider->setRotaryParameters(startAngle, endAngle, true);
-    outputGainSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    outputGainSlider->setTooltip(TRANS("OutputGainLabel"));
-    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::outputGain, *outputGainSlider));
-    outputGainSlider->onValueChange = [this]
-    {
-        if (outputGainValue)
-        {
-            auto db = juce::Decibels::gainToDecibels((float)outputGainSlider->getValue());
-            outputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
-        }
-    };
-    addAndMakeVisible(*outputGainSlider);
+    // No separate output-gain control — auto-gain + Gain (input) keep levels
+    // predictable. outputGain param stays at unity unless host-automated.
+    if (auto* p = audioProcessor.apvts.getParameter (EffectParameters::outputGain))
+        p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
 
     inputGainLabel  = std::make_unique<juce::Label>("", TRANS("InputGainLabel"));
     inputGainLabel->setMinimumHorizontalScale(1.0f);
     mixLabel        = std::make_unique<juce::Label>("", TRANS("MixLabel"));
     mixLabel->setMinimumHorizontalScale(1.0f);
-    outputGainLabel = std::make_unique<juce::Label>("", TRANS("OutputGainLabel"));
-    outputGainLabel->setMinimumHorizontalScale(1.0f);
     addAndMakeVisible(*inputGainLabel);
     addAndMakeVisible(*mixLabel);
-    addAndMakeVisible(*outputGainLabel);
+
+    currentPresetLabel = std::make_unique<juce::Label>("currentPreset", juce::String());
+    currentPresetLabel->setJustificationType (juce::Justification::centredLeft);
+    currentPresetLabel->setMinimumHorizontalScale (0.7f);
+    currentPresetLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::brightText());
+    currentPresetLabel->setColour (juce::Label::backgroundColourId,
+                                   NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+    currentPresetLabel->setColour (juce::Label::outlineColourId, NeuroCoreLookAndFeel::accent());
+    currentPresetLabel->setFont (NeuroCoreLookAndFeel::brandFont (14.f, true));
+    currentPresetLabel->setBorderSize ({ 6, 12, 6, 12 });
+    currentPresetLabel->setTooltip ("Current preset - click Presets to browse / save");
+    addAndMakeVisible (*currentPresetLabel);
 
     polisherLabel = std::make_unique<juce::Label>("", TRANS("PolisherLabel"));
     polisherLabel->setMinimumHorizontalScale(1.0f);
@@ -208,8 +295,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     inputGainValue  = std::make_unique<juce::Label>();
     mixValue        = std::make_unique<juce::Label>();
-    outputGainValue = std::make_unique<juce::Label>();
-    for (auto* l : { inputGainValue.get(), mixValue.get(), outputGainValue.get() })
+    for (auto* l : { inputGainValue.get(), mixValue.get() })
     {
         l->setJustificationType(juce::Justification::centred);
         l->setMinimumHorizontalScale(1.0f);
@@ -227,54 +313,188 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     formulaInputEditor->setText(audioProcessor.getScript());
     formulaInputEditor->setOpaque(true);
     formulaInputEditor->setReadOnly(true);
-    addAndMakeVisible(*formulaInputEditor);
+    formulaInputEditor->setVisible(false);
+    addChildComponent(*formulaInputEditor);
+
+    formulaLiveDisplay = std::make_unique<FormulaDisplayComponent>();
+    {
+        std::array<juce::String, Config::kNumUserParams> names;
+        std::array<juce::Colour, Config::kNumUserParams> colours;
+        for (int i = 0; i < Config::kNumUserParams; ++i)
+        {
+            names[(size_t) i]   = audioProcessor.getVariableName(i);
+            colours[(size_t) i] = FormulaDisplayComponent::knobColour(i);
+        }
+        formulaLiveDisplay->setVariableColours(names, colours);
+        formulaLiveDisplay->setFormula(audioProcessor.getScript());
+    }
+    addAndMakeVisible(*formulaLiveDisplay);
+    applyEditorFontSize (editorFontHeight);
+
+    // Quick templates: insert building blocks into the formula (editor is the main feature)
+    quickTemplateLabel = std::make_unique<juce::Label> ("", "Insert");
+    quickTemplateLabel->setJustificationType (juce::Justification::centredRight);
+    quickTemplateLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    addAndMakeVisible (*quickTemplateLabel);
+
+    quickTemplateBox = std::make_unique<juce::ComboBox>();
+    quickTemplateBox->setTextWhenNothingSelected ("Quick template...");
+    quickTemplateBox->addItem ("Drive softclip + LPF", 1);
+    quickTemplateBox->addItem ("Tape delay", 2);
+    quickTemplateBox->addItem ("Room reverb", 3);
+    quickTemplateBox->addItem ("Envelope duck", 4);
+    quickTemplateBox->addItem ("Hardclip + recovery LPF", 5);
+    quickTemplateBox->addItem ("Tremolo amp", 6);
+    quickTemplateBox->addItem ("Bitcrush lo-fi", 7);
+    quickTemplateBox->onChange = [this]
+    {
+        const int id = quickTemplateBox->getSelectedId();
+        if (id <= 0)
+            return;
+        juce::String frag;
+        switch (id)
+        {
+            case 1: frag = "param a = Drive [0.5, 6.0]\nparam b = Tone [800, 9000]\nstage1: y = softclip(x, a)\nfilter1: type = lowpass; cutoff = b; resonance = 0.25\n"; break;
+            case 2: frag = "param a = Time [50, 600]\nparam b = Feedback [0.1, 0.85]\nparam c = Mix [0.15, 0.8]\ndelay1: time = a; feedback = b; mix = c; damp = 4500\n"; break;
+            case 3: frag = "param a = Size [0.2, 0.95]\nparam b = Damp [0.1, 0.9]\nparam c = Mix [0.15, 0.7]\nreverb1: size = a; damping = b; mix = c\n"; break;
+            case 4: frag = "param a = Duck [0.0, 0.9]\nparam b = Attack [0.001, 0.05]\nparam c = Release [0.05, 0.4]\nenv1: type = peak; attack = b; release = c\nstage1: y = x * (1.0 - env1 * a)\n"; break;
+            case 5: frag = "param a = Limit [0.3, 1.0]\nstage1: y = hardclip(softclip(x, 1.2), a)\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.3\n"; break;
+            case 6: frag = "param a = Rate [0.5, 12]\nparam b = Depth [0.0, 1.0]\nosc1: type = sine; freq = a\nstage1: y = x * (1.0 - b * 0.5 * (1.0 + osc1))\n"; break;
+            case 7: frag = "param a = Bits [3, 12]\nparam b = Mix [0.2, 1.0]\nstage1: y = lerp(x, bitcrush(x, a), b)\n"; break;
+            default: break;
+        }
+        quickTemplateBox->setSelectedId (0, juce::dontSendNotification);
+        if (frag.isEmpty())
+            return;
+        juce::String cur = editing && formulaInputEditor != nullptr
+                               ? formulaInputEditor->getText()
+                               : audioProcessor.getScript();
+        if (cur.isNotEmpty() && ! cur.endsWithChar ('\n'))
+            cur += "\n";
+        cur += "\n// --- quick template ---\n";
+        cur += frag;
+        if (editing && formulaInputEditor != nullptr)
+        {
+            formulaInputEditor->setText (cur);
+        }
+        else
+        {
+            juce::String err;
+            if (audioProcessor.applyFormula (cur, err, false))
+            {
+                if (formulaInputEditor)
+                    formulaInputEditor->setText (cur);
+                updateLiveFormulaView();
+            }
+            else if (errorLabel)
+            {
+                errorLabel->setColour (juce::Label::textColourId, juce::Colour (0xffff6b6b));
+                errorLabel->setText ("Insert failed: " + err, juce::dontSendNotification);
+            }
+        }
+    };
+    addAndMakeVisible (*quickTemplateBox);
+
     {
         juce::String err;
         audioProcessor.setFormula(formulaInputEditor->getText(), err);
-        refreshParameterControls();
+        syncFromProcessor();
     }
-
 
     optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
     optimizeButton->onClick = [this]
     {
-        juce::String info;
-        auto text = formulaInputEditor->getText();
-        auto opt  = optimizeFormula(text, info);
-        if (opt != text)
-            formulaInputEditor->setText(opt);
-        if (info.isNotEmpty())
-            errorLabel->setText(info, juce::dontSendNotification);
+        juce::String text = editing && formulaInputEditor != nullptr
+                                ? formulaInputEditor->getText()
+                                : audioProcessor.getScript();
+        if (text.trim().isEmpty() && formulaInputEditor != nullptr)
+            text = formulaInputEditor->getText();
+
+        auto content = std::make_unique<OptimizeContentComponent> (audioProcessor, text);
+        auto* ptr = content.get();
+        // Reuse validation overlay slot for optimizer panel
+        validationOverlay = std::make_unique<ModalOverlay>();
+        validationOverlay->setMode (OverlayMode::Closable);
+        validationOverlay->setTitle ("Optimizer");
+        validationOverlay->setPreferredContentSize (juce::jmin (getWidth() - 30, 960),
+                                                    juce::jmin (getHeight() - 30, 640));
+        validationOverlay->setContent (std::move (content));
+        validationOverlay->show (*this);
+        validationOverlay->onClose = [this] { validationOverlay.reset(); };
+        ptr->onClose = [this] { validationOverlay.reset(); };
+        ptr->onApply = [this] (const juce::String& opt)
+        {
+            if (! editing)
+                setFormulaEditMode (true);
+            if (formulaInputEditor)
+            {
+                formulaInputEditor->setText (opt);
+                formulaInputEditor->setReadOnly (false);
+            }
+            juce::String err;
+            audioProcessor.applyFormula (opt, err, false);
+            updateLiveFormulaView();
+            if (errorLabel)
+            {
+                errorLabel->setColour (juce::Label::textColourId, juce::Colour (0xff7dcea0));
+                errorLabel->setText ("Optimized formula applied", juce::dontSendNotification);
+            }
+            validationOverlay.reset();
+        };
     };
     addAndMakeVisible(*optimizeButton);
+
+    // Copy works in view mode (live formula) and edit mode
+    copyFormulaButton = std::make_unique<juce::TextButton> (TRANS ("CopyButton") == "CopyButton"
+                                                                ? "Copy" : TRANS ("CopyButton"));
+    copyFormulaButton->setTooltip ("Copy formula to clipboard (works outside edit mode)");
+    copyFormulaButton->onClick = [this]
+    {
+        juce::String text;
+        if (editing && formulaInputEditor != nullptr)
+            text = formulaInputEditor->getText();
+        else
+            text = audioProcessor.getScript();
+        if (text.isEmpty() && formulaInputEditor != nullptr)
+            text = formulaInputEditor->getText();
+        juce::SystemClipboard::copyTextToClipboard (text);
+        if (errorLabel != nullptr)
+            errorLabel->setText (text.isEmpty()
+                                     ? "Nothing to copy"
+                                     : (TRANS ("CopiedToClipboard") == "CopiedToClipboard"
+                                            ? "Copied to clipboard"
+                                            : TRANS ("CopiedToClipboard")),
+                                 juce::dontSendNotification);
+    };
+    addAndMakeVisible (*copyFormulaButton);
 
     editSaveButton = std::make_unique<juce::TextButton>(TRANS("EditButton"));
     editSaveButton->onClick = [this]
     {
         if (! editing)
-        {
-            editing = true;
-            formulaInputEditor->setReadOnly(false);
-            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId, Colours::black);
-            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::black);
-            editSaveButton->setButtonText(TRANS("SaveButton"));
-        }
+            setFormulaEditMode(true);
         else
-        {
-            auto text = formulaInputEditor->getText();
-            validateAndOverlay(text);
-        }
+            validateAndOverlay(formulaInputEditor->getText());
     };
     addAndMakeVisible(*editSaveButton);
 
+    // Timer started after layout (cyber OS + live formula)
+
     errorLabel = std::make_unique<juce::Label>();
     errorLabel->setMinimumHorizontalScale(1.0f);
-    errorLabel->setColour(juce::Label::textColourId, juce::Colours::red);
+    errorLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    errorLabel->setFont (NeuroCoreLookAndFeel::monoFont (12.f));
     addAndMakeVisible(*errorLabel);
 
     inputDisplay  = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Input);
     outputDisplay = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Output);
+    // Signal path: dimmer red for input, full brand red for processed output
+    inputDisplay->lineColour  = NeuroCoreLookAndFeel::accent().withAlpha (0.85f);
+    outputDisplay->lineColour = NeuroCoreLookAndFeel::accent();
+    inputDisplay->lineThickness  = 1.4f;
+    outputDisplay->lineThickness = 1.6f;
+    inputDisplay->setOpaque (true);
+    outputDisplay->setOpaque (true);
     addAndMakeVisible(*inputDisplay);
     addAndMakeVisible(*outputDisplay);
 
@@ -282,135 +502,158 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*loudnessMeter);
 
     using namespace ui;
+    const int pad = Config::kUiPadding;
+
     layoutRoot = makeColumn();
-    layoutRoot->margin = Config::kUiPadding;
-	layoutRoot->innerMargin = Config::kUiPadding;
-	layoutRoot->aspectRatio = 1.618f; // Golden ratio for a nice layout
+    layoutRoot->margin = pad;
+    layoutRoot->innerMargin = pad;
+    layoutRoot->drawBorder = false;
 
-	layoutRoot->drawBorder = true;
+    auto toolbar = makeRow(0.07f);
+    toolbar->innerMargin = pad;
+    toolbar->addChild(makeLeaf(nkLogoView.get(), 0.55f));
+    toolbar->addChild(makeLeaf(pluginNameLabel.get(), 1.4f));
+    toolbar->addChild(makeLeaf(presetsButton.get(), 0.9f));
+    // Current preset chip next to Presets — high visibility
+    toolbar->addChild(makeLeaf(currentPresetLabel.get(), 2.4f));
+    toolbar->addChild(makeLeaf(functionsButton.get(), 0.9f));
+    toolbar->addChild(makeLeaf(stagesButton.get(), 0.9f));
+    toolbar->addChild(makeLeaf(bypassButton.get(), 0.9f));
+    toolbar->addChild(makeLeaf(helpButton.get(), 0.7f));
+    layoutRoot->addChild(std::move(toolbar));
 
+    auto settingsRow = makeRow(0.055f);
+    settingsRow->innerMargin = pad;
+    settingsRow->addChild(makeLeaf(inputLeftButton.get(), 0.8f));
+    settingsRow->addChild(makeLeaf(inputRightButton.get(), 0.8f));
+    settingsRow->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
+    settingsRow->addChild(makeLeaf(oversamplingBox.get(), 0.9f));
+    settingsRow->addChild(makeLeaf(polisherLabel.get(), 0.9f));
+    settingsRow->addChild(makeLeaf(polisherBox.get(), 1.1f));
+    settingsRow->addChild(makeLeaf(editorFontLabel.get(), 0.45f));
+    settingsRow->addChild(makeLeaf(editorFontMinusButton.get(), 0.28f));
+    settingsRow->addChild(makeLeaf(editorFontSizeLabel.get(), 0.35f));
+    settingsRow->addChild(makeLeaf(editorFontPlusButton.get(), 0.28f));
+    layoutRoot->addChild(std::move(settingsRow));
 
-	auto header = makeRow(0.1f);
-	header->innerMargin = Config::kUiPadding;
-	header->margin = Config::kUiPadding;
-	header->drawBorder = false;
-	
+    // Main body: 6 knobs (2x3) left + larger formula editor + meter
+    auto body = makeRow(0.52f);
+    body->innerMargin = pad;
 
-    
-    
-    header->addChild(makeLeaf(pluginNameLabel.get(), 2.0f));
-    header->addChild(makeLeaf(helpButton.get(), 1.0f));
-    header->addChild(makeLeaf(inputLeftButton.get(), 1.0f));
-    header->addChild(makeLeaf(inputRightButton.get(), 1.0f));
-    header->addChild(makeLeaf(bypassButton.get(), 1.0f));
-    header->addChild(makeLeaf(languageLabel.get(), 1.0f));
-    header->addChild(makeLeaf(languageBox.get(), 1.0f));
-    header->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
-    header->addChild(makeLeaf(oversamplingBox.get(), 1.0f));
-    layoutRoot->addChild(std::move(header));
+    auto leftPanel = makeColumn(2.8f);
+    leftPanel->innerMargin = pad;
 
+    auto knobGrid = makeColumn(2.6f);
+    knobGrid->innerMargin = pad;
+    // 3 rows x 2 knobs (a..f)
+    for (int row = 0; row < 3; ++row)
+    {
+        auto knobRow = makeRow();
+        knobRow->innerMargin = pad;
+        for (int col = 0; col < 2; ++col)
+        {
+            const int idx = row * 2 + col;
+            if (idx < Config::kNumUserParams)
+                knobRow->addChild (makeLeaf (paramComponents[(size_t) idx].get(), 1.f, 1.f));
+        }
+        knobGrid->addChild (std::move (knobRow));
+    }
 
+    auto nameRow = makeRow(0.14f);
+    nameRow->innerMargin = pad;
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        nameRow->addChild (makeLeaf (nameEditors[(size_t) i].get(), 1.f));
 
-    auto body = makeRow();
-    body->innerMargin = Config::kUiPadding;
-	
-	//
-    // body->aspectRatio = 1.618f; // Golden ratio for a nice layout
+    leftPanel->addChild(std::move(knobGrid));
+    leftPanel->addChild(std::move(nameRow));
 
-	auto left = makeColumn(5.f);
-    auto editor = makeRow();
-	auto formulaEditor = makeColumn(6.f);
-    auto paramKnobs = makeColumn(1.f);
-    auto buttons = makeColumn(1.f);
-	
-    for (auto& pc : paramComponents)
-        paramKnobs->addChild(makeLeaf(pc.get(), 1.f, 1.f));
+    auto centerPanel = makeColumn(5.2f);
+    centerPanel->innerMargin = pad;
+    auto actionRow = makeRow(0.09f);
+    actionRow->innerMargin = pad;
+    actionRow->addChild(makeLeaf(editSaveButton.get(), 1.f));
+    actionRow->addChild(makeLeaf(copyFormulaButton.get(), 0.85f));
+    actionRow->addChild(makeLeaf(optimizeButton.get(), 1.f));
+    centerPanel->addChild(std::move(actionRow));
 
-	buttons->innerMargin = Config::kUiPadding;
-    buttons->drawBorder = false;
-	buttons->margin = Config::kUiPadding;
-   
-    buttons->addChild(makeLeaf(editSaveButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(optimizeButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(functionsButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(stagesButton.get(), 0.3f, 2.f));
-    buttons->addChild(makeLeaf(presetsButton.get(), 0.3f, 2.f));
+    // Quick templates live next to the editor (main feature)
+    auto tplRow = makeRow(0.08f);
+    tplRow->innerMargin = pad;
+    if (quickTemplateLabel)
+        tplRow->addChild(makeLeaf(quickTemplateLabel.get(), 0.7f));
+    if (quickTemplateBox)
+        tplRow->addChild(makeLeaf(quickTemplateBox.get(), 2.4f));
+    centerPanel->addChild(std::move(tplRow));
 
-	formulaEditor->addChild(makeLeaf(formulaInputEditor.get()));
+    // Live annotated formula (default) - editor shares bounds when editing
+    centerPanel->addChild(makeLeaf(formulaLiveDisplay.get(), 1.f));
+    centerPanel->addChild(makeLeaf(errorLabel.get(), 0.08f));
 
-    editor->addChild(std::move(paramKnobs));
-    editor->addChild(std::move(formulaEditor));
-	editor->addChild(std::move(buttons));
+    auto rightPanel = makeColumn(1.15f);
+    rightPanel->innerMargin = pad;
+    rightPanel->addChild(makeLeaf(loudnessMeter.get()));
 
-	left->addChild(std::move(editor));
-
-
-
-
-
-    auto right = makeColumn(1.f);
-	right->innerMargin = Config::kUiPadding;
-	right->drawBorder = false;
-	right->margin = Config::kUiPadding;
-
-    right->addChild(makeLeaf(loudnessMeter.get()));
-    
-
-
-
-
-
-
-
-
-
-	auto mixKnobs = makeRow(0.2);
-	mixKnobs->addChild(makeLeaf(inputGainSlider.get()));
-	mixKnobs->addChild(makeLeaf(mixSlider.get()));
-	mixKnobs->addChild(makeLeaf(outputGainSlider.get()));
-
-
-	auto wavemeter = makeRow(0.8f, 0, true);
-	wavemeter->drawBorder = true;
-	wavemeter->innerMargin = Config::kUiPadding;
-	wavemeter->margin = Config::kUiPadding;
-    wavemeter->addChild(makeLeaf(inputDisplay.get()));
-    wavemeter->addChild(makeLeaf(outputDisplay.get()));
-
-	
-
-
-
-
-    body->addChild(std::move(left));
-
-    body->addChild(std::move(right));
-
-  
-
+    body->addChild(std::move(leftPanel));
+    body->addChild(std::move(centerPanel));
+    body->addChild(std::move(rightPanel));
     layoutRoot->addChild(std::move(body));
-	layoutRoot->addChild(std::move(mixKnobs));
-	layoutRoot->addChild(std::move(wavemeter));
+
+    // Full-width rows: Gain + Mix only (no Output Gain)
+    auto mixStrip = makeColumn(0.11f);
+    mixStrip->innerMargin = pad;
+    auto makeGainRow = [](juce::Label* label, juce::Slider* slider, juce::Label* value)
+    {
+        auto row = makeRow(1.f);
+        row->innerMargin = 6;
+        row->addChild(makeLeaf(label, 0.9f));
+        row->addChild(makeLeaf(slider, 5.5f, 0.f));
+        row->addChild(makeLeaf(value, 1.0f));
+        return row;
+    };
+    mixStrip->addChild(makeGainRow(inputGainLabel.get(), inputGainSlider.get(), inputGainValue.get()));
+    mixStrip->addChild(makeGainRow(mixLabel.get(), mixSlider.get(), mixValue.get()));
+    layoutRoot->addChild(std::move(mixStrip));
+
+    // Waveforms need real height — minHeight enforced so they never collapse
+    auto waveRow = makeRow(0.20f);
+    waveRow->innerMargin = pad;
+    waveRow->minHeight = 120;
+    {
+        auto inLeaf = makeLeaf(inputDisplay.get(), 1.f);
+        inLeaf->minHeight = 110;
+        auto outLeaf = makeLeaf(outputDisplay.get(), 1.f);
+        outLeaf->minHeight = 110;
+        waveRow->addChild(std::move(inLeaf));
+        waveRow->addChild(std::move(outLeaf));
+    }
+    layoutRoot->addChild(std::move(waveRow));
+
+    // Live DSP status (SR / OS / MIX / LIM / LUFS)
+    auto statusRow = makeRow(0.04f);
+    statusRow->innerMargin = pad;
+    statusRow->minHeight = 18;
+    statusRow->addChild(makeLeaf(statusBarLabel.get(), 1.f));
+    layoutRoot->addChild(std::move(statusRow));
 
     updateTranslations();
-
-
-    
-
+    updateStatusBar();
 
     setSize(Config::kWindowWidth, Config::kWindowHeight);
-
+    startTimerHz (30); // live formula values track knobs smoothly
 }
 
 NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
+    stopTimer();
     attachments.clear();
     buttonAttachments.clear();
     polisherAttachment.reset();
     oversamplingAttachment.reset();
     presetOverlay.reset();
     functionsOverlay.reset();
+    stagesOverlay.reset();
     validationOverlay.reset();
+    audioProcessor.removeChangeListener(this);
     Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
 }
@@ -424,35 +667,369 @@ void NeuroCoreAudioProcessorEditor::setFormulaText(const juce::String& text)
 {
     if (formulaInputEditor)
         formulaInputEditor->setText (text);
+    updateLiveFormulaView();
+}
+
+void NeuroCoreAudioProcessorEditor::applyEditorFontSize (float heightPt)
+{
+    editorFontHeight = juce::jlimit (Config::kMinEditorFontPt, Config::kMaxEditorFontPt, heightPt);
+    if (formulaInputEditor != nullptr)
+        formulaInputEditor->setFontHeight (editorFontHeight);
+    if (formulaLiveDisplay != nullptr)
+        formulaLiveDisplay->setFontHeight (editorFontHeight);
+    if (editorFontSizeLabel != nullptr)
+        editorFontSizeLabel->setText (juce::String ((int) std::round (editorFontHeight)),
+                                      juce::dontSendNotification);
+}
+
+void NeuroCoreAudioProcessorEditor::setFormulaEditMode(bool shouldEdit)
+{
+    editing = shouldEdit;
+    if (formulaInputEditor)
+    {
+        formulaInputEditor->setReadOnly(! shouldEdit);
+        formulaInputEditor->setVisible(shouldEdit);
+        if (shouldEdit)
+        {
+            formulaInputEditor->setEditorColour(juce::TextEditor::backgroundColourId,
+                                                NeuroCoreLookAndFeel::background());
+            formulaInputEditor->setEditorColour(juce::TextEditor::textColourId,
+                                                NeuroCoreLookAndFeel::brightText());
+            formulaInputEditor->setEditorColour(juce::TextEditor::highlightColourId,
+                                                NeuroCoreLookAndFeel::accent().withAlpha (0.35f));
+            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
+                                                NeuroCoreLookAndFeel::accent());
+            formulaInputEditor->setEditorColour(juce::TextEditor::outlineColourId,
+                                                NeuroCoreLookAndFeel::accent().withAlpha (0.5f));
+            // Editor overlays the live display bounds
+            if (formulaLiveDisplay)
+                formulaInputEditor->setBounds(formulaLiveDisplay->getBounds());
+            formulaInputEditor->toFront(true);
+        }
+    }
+    if (formulaLiveDisplay)
+        formulaLiveDisplay->setVisible(! shouldEdit);
+    if (editSaveButton)
+        editSaveButton->setButtonText(shouldEdit ? TRANS("SaveButton") : TRANS("EditButton"));
+    if (! shouldEdit)
+        updateLiveFormulaView();
+}
+
+void NeuroCoreAudioProcessorEditor::updateLiveFormulaView()
+{
+    if (formulaLiveDisplay == nullptr)
+        return;
+
+    std::array<juce::String, Config::kNumUserParams> names;
+    std::array<juce::Colour, Config::kNumUserParams> colours;
+    std::array<float, Config::kNumUserParams> values {};
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+    {
+        names[(size_t) i]   = audioProcessor.getVariableName(i);
+        colours[(size_t) i] = FormulaDisplayComponent::knobColour(i);
+        if (auto* raw = audioProcessor.apvts.getRawParameterValue(EffectParameters::userParams[i]))
+            values[(size_t) i] = raw->load();
+        else
+            values[(size_t) i] = 0.f;
+    }
+    formulaLiveDisplay->setVariableColours(names, colours);
+    formulaLiveDisplay->setKnobValues(values);
+
+    const auto script = formulaInputEditor ? formulaInputEditor->getText()
+                                           : audioProcessor.getScript();
+    formulaLiveDisplay->setFormula(script);
+}
+
+void NeuroCoreAudioProcessorEditor::timerCallback()
+{
+    if (! editing)
+        updateLiveFormulaView();
+    updateStatusBar();
+    updateCyberAnim();
+
+    // ALWAYS show live values for every parameter (knobs a..f + Gain + Mix)
+    for (auto& pc : paramComponents)
+        if (pc)
+            pc->refreshValues();
+
+    if (inputGainSlider && inputGainValue)
+    {
+        const auto db = juce::Decibels::gainToDecibels ((float) inputGainSlider->getValue(), -60.f);
+        inputGainValue->setText (juce::String (db, 1) + " dB", juce::dontSendNotification);
+    }
+    if (mixSlider && mixValue)
+        mixValue->setText (juce::String (mixSlider->getValue() * 100.0, 1) + " %", juce::dontSendNotification);
+
+    // Combo readouts: append current selection into status so OS/Polisher always visible
+    // (combo text itself already shows selection; status bar duplicates for HUD)
+}
+
+void NeuroCoreAudioProcessorEditor::updateCyberAnim()
+{
+    constexpr float dt = 1.f / 24.f; // calmer than 36 Hz full-window repaint
+    cyberTime += dt;
+
+    // Rare, soft glitch — not constant jitter
+    glitchTimer -= dt;
+    if (glitchTimer <= 0.f)
+    {
+        glitchTimer = 2.5f + cyberRng.nextFloat() * 5.0f;
+        if (cyberRng.nextFloat() < 0.18f)
+        {
+            glitchFrames = 1 + cyberRng.nextInt (2);
+            glitchStrength = 0.15f + cyberRng.nextFloat() * 0.25f;
+            lookAndFeel.glitchSeed = cyberRng.nextInt();
+        }
+    }
+    if (glitchFrames > 0)
+    {
+        --glitchFrames;
+        lookAndFeel.glitchAmount = glitchStrength;
+        if (glitchFrames == 0)
+            lookAndFeel.glitchAmount = 0.f;
+    }
+    else
+        lookAndFeel.glitchAmount *= 0.7f;
+
+    lookAndFeel.animTime = cyberTime;
+    // Smooth pulse (one-pole) from loudness — no hard steps
+    const float db = audioProcessor.getLoudnessDb();
+    const float norm = std::isfinite (db)
+                         ? juce::jlimit (0.f, 1.f, (db + 40.f) / 40.f)
+                         : 0.f;
+    lookAndFeel.peakPulse = lookAndFeel.peakPulse * 0.85f + norm * 0.15f;
+
+    // Only repaint editor chrome (children repaint on their own timers)
+    repaint();
+}
+
+void NeuroCoreAudioProcessorEditor::updateStatusBar()
+{
+    if (statusBarLabel == nullptr)
+        return;
+
+    const double sr = audioProcessor.getSampleRate();
+    const int srInt = sr > 0.0 ? (int) std::llround (sr) : 0;
+
+    int osFactor = 1;
+    if (auto* p = audioProcessor.apvts.getRawParameterValue (EffectParameters::oversampling))
+    {
+        // Combo indices: 0=1x, 1=2x, 2=4x, 3=8x
+        static constexpr int factors[] = { 1, 2, 4, 8 };
+        const int idx = juce::jlimit (0, 3, (int) std::lround (p->load()));
+        osFactor = factors[idx];
+    }
+
+    float mixPct = 100.f;
+    if (mixSlider)
+        mixPct = (float) mixSlider->getValue() * 100.f;
+
+    const bool lim = audioProcessor.isLimiterActive();
+    const float lufs = audioProcessor.getLoudnessDb();
+    const bool bypassed = bypassButton && bypassButton->getToggleState();
+    const auto preset = audioProcessor.getCurrentPresetName();
+
+    // Active knobs count — shows which of A–D are wired into the formula
+    int activeKnobs = 0;
+    for (int i = 0; i < 4; ++i)
+        if (audioProcessor.isParameterActive (i))
+            ++activeKnobs;
+
+    // Live mapped knob values A–D for the status HUD
+    juce::String knobsHud;
+    for (int i = 0; i < 4; ++i)
+    {
+        const char letter = static_cast<char> ('A' + i);
+        float norm = 0.f;
+        static constexpr const char* ids[4] = {
+            EffectParameters::paramA, EffectParameters::paramB,
+            EffectParameters::paramC, EffectParameters::paramD
+        };
+        if (auto* raw = audioProcessor.apvts.getRawParameterValue (ids[i]))
+            norm = raw->load();
+        // Prefer mapped display from paramInfo if present
+        float shown = norm;
+        const auto& info = audioProcessor.getParamInfo();
+        for (const auto& pd : info)
+        {
+            if (pd.alias.length() == 1 && (pd.alias[0] - 'a') == i)
+            {
+                shown = pd.min + norm * (pd.max - pd.min);
+                break;
+            }
+        }
+        if (i) knobsHud << " ";
+        knobsHud << letter << "=" << juce::String (shown, shown >= 100.f ? 0 : (shown >= 10.f ? 1 : 2));
+    }
+
+    juce::String polish = "None";
+    if (polisherBox)
+        polish = polisherBox->getText();
+
+    float inDb = 0.f;
+    if (inputGainSlider)
+        inDb = juce::Decibels::gainToDecibels ((float) inputGainSlider->getValue(), -60.f);
+
+    juce::String s;
+    s << "SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
+      << "  ·  OS " << osFactor << "x"
+      << "  ·  IN " << juce::String (inDb, 1) << "dB"
+      << "  ·  MIX " << juce::String (mixPct, 0) << "%"
+      << "  ·  " << knobsHud
+      << "  ·  POL " << polish
+      << "  ·  " << (bypassed ? "BYPASS" : "LIVE")
+      << "  ·  LIM " << (lim ? "ON" : "off")
+      << "  ·  LUFS " << juce::String (std::isfinite (lufs) ? lufs : -100.f, 1)
+      << "  ·  LINK " << activeKnobs << "/4";
+    if (preset.isNotEmpty())
+        s << "  ·  " << preset;
+
+    statusBarLabel->setText (s, juce::dontSendNotification);
+    // Limiter or bypass → hotter red cue (still meaningful, not decorative)
+    statusBarLabel->setColour (juce::Label::textColourId,
+                               (lim || bypassed)
+                                   ? NeuroCoreLookAndFeel::accent()
+                                   : NeuroCoreLookAndFeel::accent().withAlpha (0.72f));
 }
 
 void NeuroCoreAudioProcessorEditor::refreshParameterControls()
 {
+    // Pull mapped ranges from the live DSL param lines (a=Drive [1.2, 7] etc.)
+    const auto& paramInfo = audioProcessor.getParamInfo();
+    std::array<float, Config::kNumUserParams> mapMin {};
+    std::array<float, Config::kNumUserParams> mapMax {};
+    std::array<bool, Config::kNumUserParams>  hasMap {};
+    mapMin.fill (0.f);
+    mapMax.fill (1.f);
+    hasMap.fill (false);
+    for (const auto& pd : paramInfo)
+    {
+        if (pd.alias.length() != 1)
+            continue;
+        const int idx = pd.alias[0] - 'a';
+        if (idx < 0 || idx >= Config::kNumUserParams)
+            continue;
+        mapMin[(size_t) idx] = pd.min;
+        mapMax[(size_t) idx] = pd.max;
+        hasMap[(size_t) idx] = true;
+    }
+
     for (int i = 0; i < paramComponents.size(); ++i)
     {
+        const auto knobCol = FormulaDisplayComponent::knobColour(i);
         if (nameEditors[i])
+        {
             nameEditors[i]->setText(audioProcessor.getVariableName(i), juce::dontSendNotification);
+            nameEditors[i]->setColour(juce::TextEditor::textColourId, knobCol);
+            nameEditors[i]->setColour(juce::TextEditor::outlineColourId, knobCol.withAlpha(0.65f));
+        }
         if (paramComponents[i])
+        {
             paramComponents[i]->setAliasName(audioProcessor.getVariableName(i));
+            paramComponents[i]->setAccentColour(knobCol);
+            if (hasMap[(size_t) i])
+                paramComponents[i]->setMappedRange(mapMin[(size_t) i], mapMax[(size_t) i]);
+            else
+                paramComponents[i]->setMappedRange(0.f, 1.f);
+        }
         bool active = audioProcessor.isParameterActive(i);
         if (paramComponents[i])
             paramComponents[i]->setEnabled(active);
         if (nameEditors[i])
-            nameEditors[i]->setEnabled(active);
+        {
+            // Alias editors stay readable; write only when linked
+            nameEditors[i]->setEnabled (true);
+            nameEditors[i]->setAlpha (active ? 1.0f : 0.55f);
+            nameEditors[i]->setReadOnly (! active);
+        }
     }
-   
+    updateLiveFormulaView();
+}
+
+void NeuroCoreAudioProcessorEditor::syncFromProcessor()
+{
+    // Always pull script after preset load (even if user was editing — preset wins)
+    if (formulaInputEditor)
+    {
+        formulaInputEditor->setText(audioProcessor.getScript());
+        if (editing)
+            setFormulaEditMode(false);
+    }
+
+    refreshParameterControls();
+
+    // Force slider labels / attachments to show current APVTS values
+    if (inputGainSlider && inputGainValue)
+    {
+        const auto db = juce::Decibels::gainToDecibels((float) inputGainSlider->getValue());
+        inputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
+    }
+    if (mixSlider && mixValue)
+        mixValue->setText(juce::String(mixSlider->getValue() * 100.0, 1) + " %", juce::dontSendNotification);
+
+    if (currentPresetLabel)
+    {
+        const auto name = audioProcessor.getCurrentPresetName();
+        // ASCII only: brand font Apex lacks bullet glyphs (showed as garbage "a")
+        currentPresetLabel->setText (name.isNotEmpty() ? name : "Untitled",
+                                     juce::dontSendNotification);
+        currentPresetLabel->setColour (juce::Label::textColourId,
+                                       name.isNotEmpty() ? NeuroCoreLookAndFeel::brightText()
+                                                         : NeuroCoreLookAndFeel::mutedText());
+        currentPresetLabel->setColour (juce::Label::backgroundColourId,
+                                       NeuroCoreLookAndFeel::accent().withAlpha (
+                                           name.isNotEmpty() ? 0.22f : 0.10f));
+    }
+
+    if (bypassButton && mixSlider)
+    {
+        const float mix = (float) mixSlider->getValue();
+        const bool isBypassed = mix <= 0.001f;
+        bypassButton->setToggleState(isBypassed, juce::dontSendNotification);
+        bypassButton->setButtonText (isBypassed ? "BYPASSED" : "BYPASS");
+        if (! isBypassed)
+            mixBeforeBypass = mix;
+    }
+
+    if (errorLabel)
+        errorLabel->setText({}, juce::dontSendNotification);
+
+    updateStatusBar();
+    repaint();
+}
+
+void NeuroCoreAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster*)
+{
+    syncFromProcessor();
 }
 
 void NeuroCoreAudioProcessorEditor::updateTranslations()
 {
-    languageLabel->setText(TRANS("LanguageLabel"), juce::dontSendNotification);
     inputGainLabel->setText(TRANS("InputGainLabel"), juce::dontSendNotification);
     mixLabel->setText(TRANS("MixLabel"), juce::dontSendNotification);
-    outputGainLabel->setText(TRANS("OutputGainLabel"), juce::dontSendNotification);
+    if (currentPresetLabel)
+    {
+        const auto name = audioProcessor.getCurrentPresetName();
+        currentPresetLabel->setText (name.isNotEmpty() ? name : "Untitled",
+                                     juce::dontSendNotification);
+    }
     inputLeftButton->setButtonText(TRANS("InputLeft"));
     inputRightButton->setButtonText(TRANS("InputRight"));
     optimizeButton->setButtonText(TRANS("OptimizeButton"));
+    if (copyFormulaButton)
+        copyFormulaButton->setButtonText (TRANS ("CopyButton") == "CopyButton"
+                                              ? "Copy" : TRANS ("CopyButton"));
     editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
+    if (presetsButton)
+        presetsButton->setButtonText(TRANS("Presets"));
+    if (functionsButton)
+        functionsButton->setButtonText(TRANS("Functions"));
+    if (stagesButton)
+        stagesButton->setButtonText(TRANS("StagesButton"));
+    if (bypassButton)
+        bypassButton->setButtonText (bypassButton->getToggleState() ? "BYPASSED" : "BYPASS");
+    if (editorFontLabel)
+        editorFontLabel->setText ("Text", juce::dontSendNotification);
     if (polisherLabel)
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
@@ -462,22 +1039,222 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
 }
 
 //==============================================================================
+void NeuroCoreAudioProcessorEditor::paintCyberBackground (juce::Graphics& g)
+{
+    const float W = (float) getWidth();
+    const float H = (float) getHeight();
+
+    // Deep void + vignette
+    g.fillAll (juce::Colours::black);
+    juce::ColourGradient vig (juce::Colour (0xff1a0000), W * 0.5f, 0.f,
+                              juce::Colours::black, W * 0.5f, H, false);
+    g.setGradientFill (vig);
+    g.fillAll();
+
+    // Perspective grid floor (cyber city floor)
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.07f + 0.04f * lookAndFeel.peakPulse));
+    const float horizon = H * 0.42f;
+    const float scroll = std::fmod (cyberTime * 28.f, 36.f);
+    for (int i = 0; i < 18; ++i)
+    {
+        const float t = (float) i / 17.f;
+        const float y = horizon + (H - horizon) * t * t + scroll * (1.f - t) * 0.15f;
+        if (y > H) continue;
+        g.drawHorizontalLine ((int) y, 0.f, W);
+    }
+    for (int i = -12; i <= 12; ++i)
+    {
+        const float x0 = W * 0.5f + (float) i * 48.f;
+        g.drawLine (x0, horizon, W * 0.5f + (float) i * 160.f, H, 1.f);
+    }
+
+    // Vertical data columns (hex stream) — left/right edges
+    g.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+    const int cols = 6;
+    for (int c = 0; c < cols; ++c)
+    {
+        const float x = 4.f + c * 11.f;
+        const int seed = lookAndFeel.glitchSeed + c * 97 + (int) (cyberTime * 7.f);
+        for (int row = 0; row < 40; ++row)
+        {
+            const float y = std::fmod (cyberTime * 40.f + (float) row * 14.f + (float) (seed % 50), H);
+            const int v = (seed * 1103515245 + row * 12345) & 0xff;
+            if ((v & 3) == 0)
+                g.drawSingleLineText (juce::String::toHexString (v).paddedLeft ('0', 2),
+                                      (int) x, (int) y, juce::Justification::left);
+        }
+        const float xr = W - 14.f - c * 11.f;
+        for (int row = 0; row < 40; ++row)
+        {
+            const float y = std::fmod (cyberTime * 35.f + (float) row * 16.f + (float) ((seed + 3) % 40), H);
+            const int v = (seed * 1664525 + row * 1013904223) & 0xff;
+            if ((v & 3) == 0)
+                g.drawSingleLineText (juce::String::toHexString (v).paddedLeft ('0', 2),
+                                      (int) xr, (int) y, juce::Justification::left);
+        }
+    }
+
+    // CRT scanlines
+    g.setColour (juce::Colours::black.withAlpha (0.18f));
+    const float scanOff = std::fmod (cyberTime * 60.f, 4.f);
+    for (float y = scanOff; y < H; y += 3.f)
+        g.drawHorizontalLine ((int) y, 0.f, W);
+
+    // Moving scan beam
+    {
+        const float beamY = std::fmod (cyberTime * 90.f, H + 40.f) - 20.f;
+        juce::ColourGradient beam (juce::Colours::transparentBlack, 0, beamY - 12.f,
+                                   NeuroCoreLookAndFeel::accent().withAlpha (0.12f), 0, beamY, false);
+        g.setGradientFill (beam);
+        g.fillRect (0.f, beamY - 12.f, W, 24.f);
+    }
+
+    // Glitch RGB split / slice
+    if (lookAndFeel.glitchAmount > 0.05f)
+    {
+        const float a = lookAndFeel.glitchAmount;
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.08f * a));
+        const int sliceY = (lookAndFeel.glitchSeed % juce::jmax (1, getHeight() - 40)) + 20;
+        const int sliceH = 8 + (lookAndFeel.glitchSeed % 28);
+        g.fillRect (0, sliceY, getWidth(), sliceH);
+        g.setColour (juce::Colour (0x44ff0044));
+        g.fillRect ((int) (a * 6.f), sliceY + 2, getWidth(), 2);
+        g.setColour (juce::Colour (0x4400ffff));
+        g.fillRect ((int) (-a * 5.f), sliceY + 5, getWidth(), 2);
+    }
+
+    // Top OS header bar
+    g.setColour (juce::Colour (0xff0a0000));
+    g.fillRect (0, 0, getWidth(), 22);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
+    g.fillRect (0, 0, getWidth(), 2);
+    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroCoreLookAndFeel::accent());
+    const bool blink = ((int) (cyberTime * 2.f) % 2) == 0;
+    juce::String hdr = "NEUROCORE  //  NETRUNNER OS  //  LINK ";
+    hdr << (blink ? "ACTIVE" : "active");
+    g.drawText (hdr, 10, 4, getWidth() - 20, 16, juce::Justification::centredLeft, false);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.drawText (juce::String::formatted ("T+%.1f", cyberTime),
+                10, 4, getWidth() - 20, 16, juce::Justification::centredRight, false);
+}
+
+void NeuroCoreAudioProcessorEditor::paintHudChrome (juce::Graphics& g)
+{
+    // Frame panels with HUD corners ONLY — never fill opaque over OpenGL children
+    struct PanelTag { const juce::Component* c; const char* tag; bool fill; };
+    const PanelTag panels[] = {
+        { formulaLiveDisplay.get(),  "DSP CORE", true },
+        { formulaInputEditor.get(),  "EDIT", true },
+        { loudnessMeter.get(),       "LOUDNESS", false },
+        { inputDisplay.get(),        "IN // PRE", false },
+        { outputDisplay.get(),       "OUT // POST", false },
+    };
+
+    for (const auto& p : panels)
+    {
+        if (p.c == nullptr || ! p.c->isVisible() || p.c->getWidth() < 4)
+            continue;
+        auto r = p.c->getBounds().toFloat().expanded (2.f);
+        if (p.fill)
+        {
+            g.setColour (juce::Colour (0xcc050505));
+            g.fillRect (r);
+        }
+        // Animated corner pulse
+        const float pulse = 0.45f + 0.55f * std::sin (cyberTime * 5.f
+                                                       + r.getX() * 0.01f);
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.35f + 0.45f * pulse));
+        NeuroCoreLookAndFeel::drawHudFrame (g, r, p.tag);
+
+        // Live LED on frame corner
+        const bool hot = p.c == outputDisplay.get()
+                             ? audioProcessor.isLimiterActive()
+                             : (lookAndFeel.peakPulse > 0.15f);
+        g.setColour (hot ? NeuroCoreLookAndFeel::accent()
+                         : NeuroCoreLookAndFeel::accent().withAlpha (0.25f));
+        g.fillEllipse (r.getRight() - 10.f, r.getY() + 4.f, 5.f, 5.f);
+    }
+
+    // Bottom threat / link strip
+    g.setColour (juce::Colour (0xff080000));
+    g.fillRect (0, getHeight() - 3, getWidth(), 3);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.5f + 0.5f * lookAndFeel.peakPulse));
+    const int barW = (int) (getWidth() * juce::jlimit (0.05f, 1.f, lookAndFeel.peakPulse));
+    g.fillRect (0, getHeight() - 3, barW, 3);
+}
+
 void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (Colours::black);
-    layoutRoot->layoutAndDraw(g, getLocalBounds());
+    paintCyberBackground (g);
 
+    if (layoutRoot)
+        ui::performLayout (*layoutRoot, getLocalBounds());
+
+    paintHudChrome (g);
 }
 
 void NeuroCoreAudioProcessorEditor::resized()
 {
     if (layoutRoot)
         ui::performLayout(*layoutRoot, getLocalBounds());
+
+    // Keep the code editor stacked on the live formula panel when editing
+    if (formulaInputEditor && formulaLiveDisplay)
+        formulaInputEditor->setBounds(formulaLiveDisplay->getBounds());
+
     if (pluginNameLabel)
     {
-        pluginNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
-        pluginNameLabel->setJustificationType(juce::Justification::centred);
+        pluginNameLabel->setFont(NeuroCoreLookAndFeel::brandFont(16.f, true));
+        pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
+        pluginNameLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    }
+    if (statusBarLabel)
+    {
+        statusBarLabel->setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+        statusBarLabel->setColour (juce::Label::textColourId,
+                                   NeuroCoreLookAndFeel::accent().withAlpha (0.72f));
+    }
+    for (auto* lbl : { inputGainLabel.get(), mixLabel.get() })
+    {
+        if (lbl != nullptr)
+        {
+            lbl->setJustificationType(juce::Justification::centredLeft);
+            lbl->setFont(NeuroCoreLookAndFeel::brandFont(11.f, true));
+            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        }
+    }
+    for (auto* lbl : { oversamplingLabel.get(), polisherLabel.get() })
+    {
+        if (lbl != nullptr)
+        {
+            lbl->setJustificationType(juce::Justification::centred);
+            lbl->setFont(NeuroCoreLookAndFeel::brandFont(11.f, true));
+            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        }
+    }
+    for (auto* lbl : { inputGainValue.get(), mixValue.get() })
+    {
+        if (lbl != nullptr)
+        {
+            lbl->setJustificationType(juce::Justification::centredRight);
+            lbl->setFont(NeuroCoreLookAndFeel::monoFont(12.f));
+            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+        }
+    }
+    if (currentPresetLabel)
+    {
+        currentPresetLabel->setFont (NeuroCoreLookAndFeel::brandFont (14.f, true));
+        currentPresetLabel->setColour (juce::Label::backgroundColourId,
+                                       NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+        currentPresetLabel->setJustificationType (juce::Justification::centredLeft);
+    }
+    if (errorLabel)
+    {
+        errorLabel->setJustificationType(juce::Justification::centredLeft);
+        errorLabel->setFont (NeuroCoreLookAndFeel::monoFont (12.f));
+        errorLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
     }
 }
 
@@ -517,15 +1294,42 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 
     presetOverlay = std::make_unique<ModalOverlay>();
     presetOverlay->setMode(OverlayMode::Closable);
-    presetOverlay->setTitle(TRANS("Presets"));
+    presetOverlay->setTitle ("Preset Explorer");
+    presetOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 1100),
+                                            juce::jmin (getHeight() - 24, 700));
     presetOverlay->setContent(std::move(content));
     presetOverlay->show(*this);
+    presetOverlay->onClose = [this] { presetOverlay.reset(); };
 
-    ptr->onPresetSelected = [this](int idx)
+    auto refreshAfterPreset = [this]
     {
-        audioProcessor.loadPreset(idx);
-        presetOverlay.reset();
+        setFormulaEditMode (false);
+        if (formulaInputEditor)
+            formulaInputEditor->setText (audioProcessor.getScript());
+        updateLiveFormulaView();
+        syncFromProcessor();
+
+        const auto q = audioProcessor.analyseFormulaQuality (audioProcessor.getScript());
+        if (errorLabel)
+        {
+            errorLabel->setColour (juce::Label::textColourId,
+                                   q.ok ? (q.warnings.isEmpty() ? juce::Colour (0xff7dcea0)
+                                                                : juce::Colour (0xfff4d03f))
+                                        : juce::Colour (0xffff6b6b));
+            errorLabel->setText (q.summary()
+                                     + (q.errors.isEmpty()
+                                            ? juce::String()
+                                            : ("  ·  " + q.errors[0])),
+                                 juce::dontSendNotification);
+        }
     };
+
+    ptr->onLoaded = [this, refreshAfterPreset]
+    {
+        presetOverlay.reset();
+        refreshAfterPreset();
+    };
+    ptr->onSaved = [this] { syncFromProcessor(); };
     ptr->onClose = [this] { presetOverlay.reset(); };
 }
 
@@ -538,20 +1342,48 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
     functionsOverlay = std::make_unique<ModalOverlay>();
     functionsOverlay->setMode(OverlayMode::Closable);
     functionsOverlay->setTitle(TRANS("Functions"));
+    functionsOverlay->setPreferredContentSize (juce::jmin (getWidth() - 16, 1080),
+                                               juce::jmin (getHeight() - 16, 740));
     functionsOverlay->setContent(std::move(content));
     functionsOverlay->show(*this);
 
     ptr->onInsert = [this](const juce::String& text)
     {
-        formulaInputEditor->insertTextAtCaret(text);
+        if (formulaInputEditor)
+            formulaInputEditor->insertTextAtCaret(text);
     };
     ptr->onClose = [this]{ functionsOverlay.reset(); };
+    functionsOverlay->onClose = [this]{ functionsOverlay.reset(); };
 }
 
 void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
 {
     if (functionsOverlay)
         functionsOverlay.reset();
+}
+
+void NeuroCoreAudioProcessorEditor::showStagesOverlay()
+{
+    hideStagesOverlay();
+    auto content = std::make_unique<StagesContentComponent>(audioProcessor);
+    auto* ptr = content.get();
+
+    stagesOverlay = std::make_unique<ModalOverlay>();
+    stagesOverlay->setMode(OverlayMode::Closable);
+    stagesOverlay->setTitle(TRANS("StagesTitle"));
+    stagesOverlay->setPreferredContentSize (juce::jmin (getWidth() - 40, 880),
+                                            juce::jmin (getHeight() - 40, 520));
+    stagesOverlay->setContent(std::move(content));
+    stagesOverlay->show(*this);
+
+    ptr->onClose = [this] { stagesOverlay.reset(); };
+    stagesOverlay->onClose = [this] { stagesOverlay.reset(); };
+}
+
+void NeuroCoreAudioProcessorEditor::hideStagesOverlay()
+{
+    if (stagesOverlay)
+        stagesOverlay.reset();
 }
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
@@ -575,20 +1407,39 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     ptr->onResult = [this, expr](bool stable)
     {
         validationOverlay.reset();
+
+        // Always compute quality metric for the editor status line
+        const auto q = audioProcessor.analyseFormulaQuality (expr);
+        const auto qualityHint = q.summary()
+            + (q.warnings.isEmpty() ? juce::String()
+                                    : ("  |  " + q.warnings[0]));
+
         juce::String err;
-        if (audioProcessor.setFormula(expr, err))
+        if (stable && q.ok && audioProcessor.setFormula (expr, err))
         {
-            formulaInputEditor->setReadOnly(true);
-            formulaInputEditor->setEditorColour(juce::CaretComponent::caretColourId,
-                                              juce::Colours::transparentBlack);
-            editSaveButton->setButtonText(TRANS("EditButton"));
-            editing = false;
-            errorLabel->setText({}, juce::dontSendNotification);
+            setFormulaEditMode (false);
+            errorLabel->setColour (juce::Label::textColourId,
+                                   q.warnings.isEmpty() ? juce::Colour (0xff7dcea0)
+                                                        : juce::Colour (0xfff4d03f));
+            errorLabel->setText (qualityHint, juce::dontSendNotification);
             refreshParameterControls();
+        }
+        else if (stable && ! q.ok)
+        {
+            // Stability OK but quality gate failed — still refuse apply
+            errorLabel->setColour (juce::Label::textColourId, juce::Colour (0xffff6b6b));
+            errorLabel->setText (qualityHint + "  -  "
+                                 + q.errors.joinIntoString ("; "),
+                                 juce::dontSendNotification);
         }
         else
         {
-            errorLabel->setText(err, juce::dontSendNotification);
+            errorLabel->setColour (juce::Label::textColourId, juce::Colour (0xffff6b6b));
+            if (err.isNotEmpty())
+                errorLabel->setText (err, juce::dontSendNotification);
+            else
+                errorLabel->setText (qualityHint + "  -  validation failed",
+                                     juce::dontSendNotification);
         }
     };
 }

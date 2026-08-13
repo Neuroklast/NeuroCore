@@ -13,8 +13,21 @@ void Localiser::loadFile(const juce::File& file,
     dest.clear();
     if (auto in = file.createInputStream())
     {
+        // Always decode as UTF-8 — Windows system codepage otherwise corrupts ü/ä/ö/ß
+        juce::MemoryBlock mb;
+        in->readIntoMemoryBlock (mb);
+        const auto* raw = static_cast<const char*> (mb.getData());
+        const int n = (int) mb.getSize();
+        // Skip UTF-8 BOM if present
+        int off = 0;
+        if (n >= 3
+            && (unsigned char) raw[0] == 0xEF
+            && (unsigned char) raw[1] == 0xBB
+            && (unsigned char) raw[2] == 0xBF)
+            off = 3;
+
         juce::StringArray lines;
-        lines.addLines(in->readEntireStreamAsString());
+        lines.addLines (juce::String::fromUTF8 (raw + off, n - off));
         for (auto& line : lines)
         {
             auto trimmed = line.trim();

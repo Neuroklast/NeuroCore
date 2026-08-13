@@ -34,6 +34,12 @@ public:
                juce::String& error);
 };
 
+/** One-line summary for stage/filter/comp/osc/env list items. */
+juce::String formatBlockSummary(const BlockDesc& block);
+
+/** Multi-line detail text with all block arguments. */
+juce::String formatBlockDetails(const BlockDesc& block);
+
 } // namespace dsl
 
 #endif // DSLPARSER_H

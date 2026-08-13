@@ -50,8 +50,26 @@ bool DSLParser::parse(const juce::String& text,
             auto sym = trimLower(line.substring(5, eqPos));
             sym = sym.trim();
             auto rest = line.substring(eqPos + 1).trim();
-            auto namePart = rest.upToFirstOccurrenceOf("[", false, false).trim();
-            auto rangePart = rest.fromFirstOccurrenceOf("[", false, false).trim();
+
+            // name [min, max]  — range is optional
+            const int rangeOpen = rest.indexOfChar('[');
+            juce::String namePart;
+            juce::String rangeInner;
+            if (rangeOpen >= 0)
+            {
+                namePart = rest.substring(0, rangeOpen).trim();
+                const int rangeClose = rest.lastIndexOfChar(']');
+                if (rangeClose <= rangeOpen)
+                {
+                    error = "Invalid range on line " + juce::String(i + 1);
+                    return false;
+                }
+                rangeInner = rest.substring(rangeOpen + 1, rangeClose).trim();
+            }
+            else
+            {
+                namePart = rest.trim();
+            }
 
             if (sym.isEmpty() || namePart.isEmpty())
             {
@@ -65,23 +83,18 @@ bool DSLParser::parse(const juce::String& text,
             pd.min = 0.f;
             pd.max = 1.f;
 
-            if (rangePart.isNotEmpty())
+            if (rangeInner.isNotEmpty())
             {
-                if (! (rangePart.startsWith("[") && rangePart.endsWith("]")))
-                {
-                    error = "Invalid range on line " + juce::String(i+1);
-                    return false;
-                }
-                auto vals = rangePart.trimCharactersAtStart("[")
-                                       .trimCharactersAtEnd("]");
-                auto comma = vals.indexOfChar(',');
+                auto comma = rangeInner.indexOfChar(',');
                 if (comma < 0)
                 {
                     error = "Invalid range on line " + juce::String(i+1);
                     return false;
                 }
-                pd.min = vals.substring(0, comma).trim().getFloatValue();
-                pd.max = vals.substring(comma + 1).trim().getFloatValue();
+                pd.min = rangeInner.substring(0, comma).trim().getFloatValue();
+                pd.max = rangeInner.substring(comma + 1).trim().getFloatValue();
+                if (pd.max < pd.min)
+                    std::swap(pd.min, pd.max);
             }
 
             paramAliases[pd.alias] = pd.name.toLowerCase();
@@ -127,8 +140,15 @@ bool DSLParser::parse(const juce::String& text,
         }
         seen.add(id);
 
+        // delay/reverb/ms/verb aliases
+        if (desc.type == "verb")
+            desc.type = "reverb";
+        if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
+            desc.type = "ms";
+
         if (desc.type != "stage" && desc.type != "filter" &&
-            desc.type != "comp"  && desc.type != "osc" && desc.type != "env")
+            desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
+            desc.type != "delay" && desc.type != "reverb" && desc.type != "ms")
         {
             error = "Unknown block type on line " + juce::String(i+1);
             return false;
@@ -185,8 +205,140 @@ bool DSLParser::parse(const juce::String& text,
             error = "Error on line " + juce::String(i+1) + ": compressor missing threshold/ratio.";
             return false;
         }
+        if (desc.type == "delay")
+        {
+            // Need either time/time_ms or sync
+            if (desc.args.count ("time") == 0 && desc.args.count ("time_ms") == 0
+                && desc.args.count ("sync") == 0)
+            {
+                // default time applied in SignalChain
+            }
+        }
+        if (desc.type == "ms")
+        {
+            // mode defaults to encode in SignalChain
+        }
         blocks.push_back(std::move(desc));
     }
 
     return true;
+}
+
+juce::String dsl::formatBlockSummary(const BlockDesc& block)
+{
+    auto arg = [&block](const char* key) -> juce::String
+    {
+        const auto it = block.args.find(key);
+        return it != block.args.end() ? it->second : juce::String();
+    };
+
+    if (block.type == "stage")
+    {
+        const auto formula = arg("y");
+        return formula.isNotEmpty() ? ("y = " + formula) : juce::String("stage");
+    }
+
+    if (block.type == "filter")
+    {
+        juce::StringArray parts;
+        const auto fType = arg("type");
+        if (fType.isNotEmpty())
+            parts.add(fType);
+        if (const auto cutoff = arg("cutoff"); cutoff.isNotEmpty())
+            parts.add("cutoff=" + cutoff);
+        if (const auto center = arg("center"); center.isNotEmpty())
+            parts.add("center=" + center);
+        if (const auto width = arg("width"); width.isNotEmpty())
+            parts.add("width=" + width);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "comp")
+    {
+        juce::StringArray parts;
+        if (const auto threshold = arg("threshold"); threshold.isNotEmpty())
+            parts.add("thr=" + threshold);
+        if (const auto ratio = arg("ratio"); ratio.isNotEmpty())
+            parts.add("ratio=" + ratio);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "osc")
+    {
+        juce::StringArray parts;
+        if (const auto shape = arg("shape"); shape.isNotEmpty())
+            parts.add(shape);
+        if (const auto freq = arg("freq"); freq.isNotEmpty())
+            parts.add("freq=" + freq);
+        if (const auto sync = arg("sync"); sync.isNotEmpty())
+            parts.add("sync=" + sync);
+        return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "delay")
+    {
+        juce::StringArray parts;
+        if (const auto t = arg ("time"); t.isNotEmpty())
+            parts.add ("time=" + t + "ms");
+        if (const auto t = arg ("time_ms"); t.isNotEmpty())
+            parts.add ("time=" + t + "ms");
+        if (const auto s = arg ("sync"); s.isNotEmpty())
+            parts.add ("sync=" + s);
+        if (const auto f = arg ("feedback"); f.isNotEmpty())
+            parts.add ("fb=" + f);
+        else if (const auto f = arg ("fb"); f.isNotEmpty())
+            parts.add ("fb=" + f);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto p = arg ("pingpong"); p.isNotEmpty())
+            parts.add ("pingpong");
+        return parts.isEmpty() ? juce::String ("delay") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "reverb")
+    {
+        juce::StringArray parts;
+        if (const auto s = arg ("size"); s.isNotEmpty())
+            parts.add ("size=" + s);
+        if (const auto d = arg ("decay"); d.isNotEmpty())
+            parts.add ("decay=" + d);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto w = arg ("width"); w.isNotEmpty())
+            parts.add ("width=" + w);
+        return parts.isEmpty() ? juce::String ("reverb") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "ms")
+    {
+        const auto mode = arg ("mode");
+        return mode.isNotEmpty() ? ("ms " + mode) : juce::String ("ms encode");
+    }
+
+    if (block.type == "env")
+    {
+        juce::StringArray parts;
+        if (const auto mode = arg("mode"); mode.isNotEmpty())
+            parts.add(mode);
+        if (const auto trigger = arg("trigger"); trigger.isNotEmpty())
+            parts.add("trigger=" + trigger);
+        return parts.joinIntoString(", ");
+    }
+
+    return block.type;
+}
+
+juce::String dsl::formatBlockDetails(const BlockDesc& block)
+{
+    juce::String text = "Type: " + block.type + "\nName: " + block.name;
+
+    juce::StringArray keys;
+    for (const auto& [key, value] : block.args)
+        keys.add(key);
+    keys.sort(true);
+
+    for (const auto& key : keys)
+        text += "\n" + key + " = " + block.args.at(key);
+
+    return text;
 }

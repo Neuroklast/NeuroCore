@@ -140,23 +140,51 @@ namespace DSPUtils
                                    static_cast<size_t>(block.getNumSamples()));
     }
 
-    // Apply RMS based gain compensation on the mixed output block
+    /**
+        Architecture: loudness match only — never mute, never residual-gate.
+
+        Residual silence is OutputSanitizer's sole responsibility.
+
+        Contract: `dry` MUST be latency-aligned with `mixed` (LatencyAlignedSidechain).
+        @param strength01  0 = off (unity), 1 = full mild match.
+    */
     template <typename FloatType>
     static inline void autoGainCompensate(const juce::dsp::AudioBlock<FloatType>& dry,
                                           juce::dsp::AudioBlock<FloatType>& mixed,
                                           juce::SmoothedValue<FloatType>& smoothed,
-                                          juce::dsp::Gain<FloatType>& gain)
+                                          juce::dsp::Gain<FloatType>& gain,
+                                          FloatType strength01 = FloatType(1))
     {
         juce::ignoreUnused(gain);
+
+        const auto strength = juce::jlimit(FloatType(0), FloatType(1), strength01);
 
         const auto inRms  = static_cast<FloatType>(rms(dry, 0));
         auto       outRms = static_cast<FloatType>(rms(mixed, 0));
 
-        if (! std::isfinite(outRms) || outRms <= FloatType(0))
-            outRms = FloatType(1e-6);
+        if (! std::isfinite(outRms) || outRms < FloatType(1.0e-12))
+            outRms = FloatType(1.0e-12);
 
-        auto correction = juce::jlimit<FloatType>(FloatType(0.25), FloatType(2.0), inRms / outRms);
-        smoothed.setTargetValue(correction);
+        if (strength <= FloatType(1.0e-6)
+            || ! std::isfinite(inRms) || inRms < FloatType(1.0e-12))
+        {
+            smoothed.setTargetValue(FloatType(1));
+        }
+        else
+        {
+            auto full = inRms / outRms;
+            if (! std::isfinite(full))
+                full = FloatType(1);
+
+            const FloatType blend = (full >= FloatType(1))
+                                        ? FloatType(0.25)
+                                        : FloatType(0.08);
+            auto correction = FloatType(1) + (full - FloatType(1)) * blend * strength;
+            correction = juce::jlimit<FloatType>(FloatType(0.75), FloatType(1.6), correction);
+            // When strength < 1, pull correction toward unity
+            correction = FloatType(1) + (correction - FloatType(1)) * strength;
+            smoothed.setTargetValue(correction);
+        }
 
         const auto numSamples  = mixed.getNumSamples();
         const auto numChannels = mixed.getNumChannels();
@@ -166,6 +194,56 @@ namespace DSPUtils
             for (size_t ch = 0; ch < numChannels; ++ch)
                 mixed.getChannelPointer(ch)[i] *= g;
         }
+    }
+
+    /**
+        Sample-accurate dry/wet crossfade (linear rule).
+        dry and wet must share timeline (latency-aligned). wetInOut is overwritten.
+        wStart/wEnd are proportions at first/last sample of the block.
+    */
+    template <typename FloatType>
+    static inline void mixDryWetContinuous(const juce::AudioBuffer<FloatType>& dry,
+                                           juce::AudioBuffer<FloatType>& wetInOut,
+                                           FloatType wStart,
+                                           FloatType wEnd) noexcept
+    {
+        const int nS  = wetInOut.getNumSamples();
+        const int nCh = juce::jmin (dry.getNumChannels(), wetInOut.getNumChannels());
+        if (nS <= 0 || nCh <= 0)
+            return;
+
+        const FloatType denom = nS > 1 ? FloatType(nS - 1) : FloatType(1);
+        for (int i = 0; i < nS; ++i)
+        {
+            const FloatType t = FloatType(i) / denom;
+            const FloatType w = juce::jlimit(FloatType(0), FloatType(1),
+                                             wStart + (wEnd - wStart) * t);
+            const FloatType dG = FloatType(1) - w;
+            for (int ch = 0; ch < nCh; ++ch)
+            {
+                const FloatType d = dry.getSample (ch, i);
+                const FloatType v = wetInOut.getSample (ch, i);
+                wetInOut.setSample (ch, i, d * dG + v * w);
+            }
+        }
+    }
+
+    /** Buffer form for tests: write into separate out. */
+    template <typename FloatType>
+    static inline void mixDryWetContinuous(const juce::AudioBuffer<FloatType>& dry,
+                                           const juce::AudioBuffer<FloatType>& wet,
+                                           juce::AudioBuffer<FloatType>& out,
+                                           FloatType wStart,
+                                           FloatType wEnd) noexcept
+    {
+        const int nS  = juce::jmin (out.getNumSamples(), wet.getNumSamples());
+        const int nCh = juce::jmin (out.getNumChannels(),
+                                    juce::jmin (dry.getNumChannels(), wet.getNumChannels()));
+        if (nS <= 0 || nCh <= 0)
+            return;
+        for (int ch = 0; ch < nCh; ++ch)
+            out.copyFrom (ch, 0, wet, ch, 0, nS);
+        mixDryWetContinuous (dry, out, wStart, wEnd);
     }
 
     // Perform FFT analysis on a single channel. Magnitudes will contain fftSize/2 values.

@@ -7,10 +7,7 @@
 #include "../dsp/DSPUtils.h"
 #include "../utils/Log.h"
 
-DspEngine::DspEngine()
-{
-    upChannelPtrs.fill(nullptr);
-}
+DspEngine::DspEngine() = default;
 
 void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
                         juce::AudioProcessorValueTreeState& vts,
@@ -42,10 +39,11 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     int    latency  = 0;
     if (oversamplingStages > 0)
     {
+        // FIR equiripple half-band: stronger image rejection than polyphase IIR
         oversampler = std::make_unique<juce::dsp::Oversampling<float>>(
             (size_t)channels,
             (size_t)oversamplingStages,
-            juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR);
+            juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
         oversampler->initProcessing(currentSpec.maximumBlockSize);
         oversampler->setUsingIntegerLatency(true);
         oversampler->reset();
@@ -57,16 +55,6 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
         oversampler.reset();
     }
 
-    if (dryWetLatency != latency)
-    {
-        dryWetMixer  = juce::dsp::DryWetMixer<float>(latency);
-        dryWetLatency = latency;
-    }
-    dryWetMixer.prepare(currentSpec);
-    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::balanced);
-    dryWetMixer.setWetLatency(latency);
-
-    // Dry buffer
     if (dryBuffer.getNumChannels() != (int)currentSpec.numChannels
         || dryBuffer.getNumSamples() < (int)currentSpec.maximumBlockSize)
     {
@@ -75,56 +63,66 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
                           false, true, true);
     }
     dryBuffer.clear();
+    drySidechain.prepare ((int) currentSpec.numChannels,
+                          (int) currentSpec.maximumBlockSize,
+                          latency);
 
-    // Script buffers
     const int scriptSamples = (int)(currentSpec.maximumBlockSize * osFactor);
     if (scriptBuffer.getNumChannels() != (int)currentSpec.numChannels
         || scriptBuffer.getNumSamples() < scriptSamples)
     {
         scriptBuffer.setSize((int)currentSpec.numChannels, scriptSamples, false, true, true);
-        oldScriptBuffer.setSize((int)currentSpec.numChannels, scriptSamples, false, true, true);
     }
     scriptBuffer.clear();
-    oldScriptBuffer.clear();
 
-    // Gain setup
-    gainCompValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
-    gainCompValue.setCurrentAndTargetValue(1.0f);
     outputGain.prepare(currentSpec);
     outputGain.setGainLinear(1.0f);
     userOutputGain.prepare(currentSpec);
     userOutputGain.setGainLinear(1.0f);
     userGainValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
     userGainValue.setCurrentAndTargetValue(1.0f);
+    gainCompValue.reset(currentSpec.sampleRate, 0.85);
+    gainCompValue.setCurrentAndTargetValue(1.0f);
     wetValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue(1.0f);
 
-    // Smoothed parameters for a/b/c/d
+    outputSanitizer.prepare(currentSpec);
+
     for (auto& s : smoothedParams)
     {
         s.reset(currentSpec.sampleRate * osFactor, Config::kSmoothingTime);
         s.setCurrentAndTargetValue(0.f);
     }
 
-    // Input router
     inputRouter.prepare(currentSpec);
 
-    // DSP chain
     juce::dsp::ProcessSpec osSpec{ currentSpec.sampleRate * osFactor,
                                    currentSpec.maximumBlockSize * (juce::uint32)osFactor,
                                    currentSpec.numChannels };
     chain.prepare(osSpec);
-    chain.get<1>().setThreshold(-60.0f);
 
-    // Filters
-    lowpassFilter.prepare(currentSpec);
-    *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSpec.sampleRate, 20000.0f);
+    lowpassFilter.prepare(osSpec);
+    {
+        const double hostNyquist = currentSpec.sampleRate * 0.5;
+        const double osNyquist   = osSpec.sampleRate * 0.5;
+        const double aaHz = juce::jlimit (1000.0, osNyquist * 0.49, hostNyquist * 0.92);
+        *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass (
+            osSpec.sampleRate, aaHz);
+    }
     dcBlocker.prepare(osSpec);
-    *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 20.0f);
+    *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 12.0f);
 
-    // Formula blend
-    formulaBlend.reset(currentSpec.sampleRate, Config::kCrossfadeTime);
-    formulaBlend.setCurrentAndTargetValue(1.f);
+    postDslLastGood.fill (0.0f);
+    diagLastIn.fill (0.0f);
+    diagLastPost.fill (0.0f);
+    diagLastOut.fill (0.0f);
+
+    diagnostics.setEnabled (Config::kAudioDiagnosticsEnabled);
+    diagnostics.ensureLogReady();
+
+    switchRamp.reset(currentSpec.sampleRate, Config::kSwitchRampTime);
+    switchRamp.setCurrentAndTargetValue(0.f);
+    switchRamp.setTargetValue(1.f);
 }
 
 void DspEngine::reset(double sampleRate, int blockSize)
@@ -138,9 +136,9 @@ void DspEngine::reset(double sampleRate, int blockSize)
         oversampler->reset();
     lowpassFilter.reset();
     dcBlocker.reset();
-    dryWetMixer.reset();
-    formulaBlend.reset(currentSpec.sampleRate, Config::kCrossfadeTime);
-    formulaBlend.setCurrentAndTargetValue(1.f);
+    outputSanitizer.reset();
+    drySidechain.reset();
+    postDslLastGood.fill (0.0f);
 }
 
 void DspEngine::release()
@@ -150,13 +148,19 @@ void DspEngine::release()
 
 void DspEngine::onFormulaChanged()
 {
+    // Soft-engage new chain only — no dual-chain audio path.
     if (currentSpec.sampleRate > 0.0)
-        formulaBlend.reset(currentSpec.sampleRate, Config::kCrossfadeTime);
-    formulaBlend.setCurrentAndTargetValue(0.f);
-    formulaBlend.setTargetValue(1.f);
-    lowpassFilter.reset();
-    if (oversampler)
-        oversampler->reset();
+        switchRamp.reset (currentSpec.sampleRate, Config::kSwitchRampTime);
+
+    switchRamp.setCurrentAndTargetValue (0.f);
+    switchRamp.setTargetValue (1.f);
+
+    outputSanitizer.reset();
+    postDslLastGood.fill (0.0f);
+    gainCompValue.setCurrentAndTargetValue (1.0f);
+    diagLastIn.fill (0.0f);
+    diagLastPost.fill (0.0f);
+    diagLastOut.fill (0.0f);
 }
 
 size_t DspEngine::getOversamplingFactor() const noexcept
@@ -183,8 +187,7 @@ void DspEngine::setValidationBypass(bool enable)
 }
 
 void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
-                             dsl::SignalChain& signalChain,
-                             dsl::SignalChain& oldSignalChain)
+                             dsl::SignalChain& signalChain)
 {
     jassert(apvts != nullptr);
     if (! apvts)
@@ -204,139 +207,375 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     {
         if (id == EffectParameters::inputGain || id == EffectParameters::outputGain)
             return juce::jlimit(0.0f, 2.0f, v);
-        if (id == EffectParameters::dryWet)
+        if (id == EffectParameters::dryWet || id == EffectParameters::autoGain)
             return juce::jlimit(0.0f, 1.0f, v);
-        if (id == EffectParameters::modFrequency)
-            return juce::jlimit(0.1f, 20.0f, v);
-        if (id == EffectParameters::paramA || id == EffectParameters::paramB ||
-            id == EffectParameters::paramC || id == EffectParameters::paramD)
-            return juce::jlimit(0.0f, 1.0f, v);
+        for (int i = 0; i < Config::kNumUserParams; ++i)
+            if (id == EffectParameters::userParams[i])
+                return juce::jlimit(0.0f, 1.0f, v);
         return v;
     };
 
-    smoothedParams[0].setTargetValue(clamp(EffectParameters::paramA,    getParam(EffectParameters::paramA)));
-    smoothedParams[1].setTargetValue(clamp(EffectParameters::paramB,    getParam(EffectParameters::paramB)));
-    smoothedParams[2].setTargetValue(clamp(EffectParameters::paramC,    getParam(EffectParameters::paramC)));
-    smoothedParams[3].setTargetValue(clamp(EffectParameters::paramD,    getParam(EffectParameters::paramD)));
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        smoothedParams[(size_t) i].setTargetValue (
+            clamp (EffectParameters::userParams[i], getParam (EffectParameters::userParams[i])));
 
     inputRouter.setUseLeft (getParam(EffectParameters::useInputLeft)  > 0.5f);
     inputRouter.setUseRight(getParam(EffectParameters::useInputRight) > 0.5f);
 
     chain.get<0>().setParameter(EffectParameters::inputGain,
                                 clamp(EffectParameters::inputGain, getParam(EffectParameters::inputGain)));
-    chain.get<2>().setParameter(EffectParameters::polisherMode,
-                                clamp(EffectParameters::polisherMode, getParam(EffectParameters::polisherMode)));
+    const float polisherParam = clamp(EffectParameters::polisherMode,
+                                      getParam(EffectParameters::polisherMode));
+    chain.get<1>().setParameter(EffectParameters::polisherMode, polisherParam);
+    // Single peak boundary: sanitizer peaking only when polisher is None
+    outputSanitizer.setPeakSafetyEnabled (polisherParam < 0.5f);
 
     const float dryWet = clamp(EffectParameters::dryWet, getParam(EffectParameters::dryWet));
     wetValue.setTargetValue(dryWet);
 
-    bool currentBypass = (dryWet == 0.0f);
-    if (currentBypass && ! bypassActive)
-    {
-        lowpassFilter.reset();
-        if (oversampler)
-            oversampler->reset();
-    }
-    bypassActive = currentBypass;
+    // Pure dry only when mix target AND smoother are fully at 0.
+    // Architecture: never run wet DSL into the buffer when user wants dry-only
+    // (previous bug: mix 0% still processed DSL → crackle / wrong signal).
+    const bool wetNeeded = dryWet > 1.0e-5f
+                        || wetValue.isSmoothing()
+                        || wetValue.getCurrentValue() > 1.0e-5f;
+    bypassActive = ! wetNeeded;
 
     for (int i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
     inputRouter.processBlock(buffer);
 
+    // Input Gain BEFORE dry split
+    chain.get<0>().processBlock(buffer);
+
     auto block = juce::dsp::AudioBlock<float>(buffer);
 
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
-    dryWetMixer.pushDrySamples(block);
-
-    auto upBlock = block;
-    if (! bypassActive && oversampler)
-        upBlock = oversampler->processSamplesUp(block);
-
-    const size_t upChannels = juce::jmin(upBlock.getNumChannels(), upChannelPtrs.size());
-    for (size_t ch = 0; ch < upChannels; ++ch)
-        upChannelPtrs[ch] = upBlock.getChannelPointer(ch);
-
-    juce::AudioBuffer<float> upBuffer(upChannelPtrs.data(), (int)upChannels,
-                                      (int)upBlock.getNumSamples());
-    chain.get<0>().processBlock(upBuffer);
-
-    upBlock.copyTo(scriptBuffer);
-    signalChain.processBlockSmoothed(
-        scriptBuffer,
-        { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] });
-
-    if (formulaBlend.isSmoothing())
+    uint16_t inputJumpCount = 0;
+    float    inputPeak = 0.f;
+    if (diagnostics.isEnabled())
     {
-        upBlock.copyTo(oldScriptBuffer);
-        oldSignalChain.processBlockSmoothed(
-            oldScriptBuffer,
-            { &smoothedParams[0], &smoothedParams[1], &smoothedParams[2], &smoothedParams[3] });
-        const size_t numSamples = upBlock.getNumSamples();
-        const auto   numChans   = upBlock.getNumChannels();
-        for (size_t i = 0; i < numSamples; ++i)
+        const float inG  = clamp(EffectParameters::inputGain, getParam(EffectParameters::inputGain));
+        const float mix  = dryWet;
+        const float outG = clamp(EffectParameters::outputGain, getParam(EffectParameters::outputGain));
+        diagnostics.setLiveParams (
+            smoothedParams[0].getCurrentValue(), smoothedParams[1].getCurrentValue(),
+            smoothedParams[2].getCurrentValue(), smoothedParams[3].getCurrentValue(),
+            inG, mix, outG,
+            (float) currentSpec.sampleRate, buffer.getNumSamples(),
+            (int) getOversamplingFactor(),
+            false,
+            switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f,
+            limiterActive.load (std::memory_order_relaxed),
+            getParam(EffectParameters::useInputLeft)  > 0.5f,
+            getParam(EffectParameters::useInputRight) > 0.5f);
+        diagnostics.beginBlock (buffer.getNumSamples());
+
+        const int nCh = juce::jmin (totalNumOutputChannels, Config::kMaxChannels);
+        std::array<const float*, Config::kMaxChannels> inPtrs {};
+        for (int ch = 0; ch < nCh; ++ch)
+            inPtrs[(size_t) ch] = dryBuffer.getReadPointer (ch);
+        auto inScan = AudioDiagnostics::scan (
+            inPtrs.data(), nCh, buffer.getNumSamples(),
+            Config::kAudioDiagJumpThreshold, Config::kAudioDiagCrackleJumpMin,
+            diagLastIn.data(), Config::kMaxChannels);
+        inputJumpCount = inScan.jumpCount;
+        inputPeak = inScan.peak;
+        diagnostics.report (AudioDiagnostics::Stage::Input, inScan, 0, inputPeak, inputPeak);
+    }
+
+    const size_t numSamplesEarly = block.getNumSamples();
+
+    // ---- Pure dry path: buffer already holds post-input dry; no DSL/OS ----
+    if (bypassActive)
+    {
+        // Advance knob smoothers at host rate so automation stays continuous
+        for (size_t i = 0; i < numSamplesEarly; ++i)
+            for (int p = 0; p < Config::kNumUserParams; ++p)
+                smoothedParams[(size_t) p].getNextValue();
+        for (size_t i = 0; i < numSamplesEarly; ++i)
+            wetValue.getNextValue();
+
+        gainCompValue.setTargetValue (1.0f);
+        for (size_t i = 0; i < numSamplesEarly; ++i)
+            gainCompValue.getNextValue();
+
+        userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
+                                           getParam(EffectParameters::outputGain)));
+        if (numSamplesEarly > 0)
         {
-            auto f = formulaBlend.getNextValue();
-            for (size_t ch = 0; ch < numChans; ++ch)
+            float outGain = userGainValue.getCurrentValue();
+            for (size_t i = 0; i < numSamplesEarly; ++i)
+                outGain = userGainValue.getNextValue();
+            if (std::abs (outGain - 1.0f) > 1.0e-4f || userGainValue.isSmoothing())
             {
-                auto* dst    = upBlock.getChannelPointer(ch);
-                auto* newPtr = scriptBuffer.getReadPointer((int)ch);
-                auto* oldPtr = oldScriptBuffer.getReadPointer((int)ch);
-                dst[i] = oldPtr[i] * (1.0f - f) + newPtr[i] * f;
+                userOutputGain.setGainLinear(outGain);
+                juce::dsp::ProcessContextReplacing<float> outCtx(block);
+                userOutputGain.process(outCtx);
             }
         }
-        if (! formulaBlend.isSmoothing())
-            oldSignalChain = signalChain;
+
+        // Light safety on dry-only (NaN hold + peak)
+        if (numSamplesEarly > 0)
+        {
+            auto dryConst = juce::dsp::AudioBlock<const float> (dryBuffer)
+                                .getSubBlock (0, numSamplesEarly);
+            auto mixed    = block.getSubBlock (0, numSamplesEarly);
+            const bool peakWas = outputSanitizer.isPeakSafetyEnabled();
+            outputSanitizer.setPeakSafetyEnabled (true);
+            outputSanitizer.process (dryConst, mixed);
+            outputSanitizer.setPeakSafetyEnabled (peakWas);
+        }
+
+        if (numSamplesEarly > 0 && (switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f))
+        {
+            for (size_t i = 0; i < numSamplesEarly; ++i)
+            {
+                const float g = switchRamp.getNextValue();
+                for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+                    block.getChannelPointer(ch)[i] *= g;
+            }
+        }
+
+        float peak = 0.0f;
+        float rmsSum = 0.0f;
+        int badSamples = 0;
+        for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+        {
+            auto* d = block.getChannelPointer(ch);
+            double acc = 0.0;
+            for (size_t i = 0; i < numSamplesEarly; ++i)
+            {
+                float v = d[i];
+                if (! std::isfinite(v)) { v = 0.f; d[i] = 0.f; ++badSamples; }
+                peak = juce::jmax(peak, std::abs(v));
+                acc += (double) v * (double) v;
+            }
+            const double meanSq = acc / (double) juce::jmax<size_t>(1, numSamplesEarly);
+            rmsSum += (float) (std::isfinite(meanSq) ? std::sqrt(juce::jmax(0.0, meanSq)) : 0.0);
+        }
+        rmsSum /= juce::jmax(1u, static_cast<unsigned int>(block.getNumChannels()));
+        if (! std::isfinite(rmsSum) || rmsSum < 1.0e-12f) rmsSum = 1.0e-12f;
+        float db = (float) DSPUtils::linearToDb((double) rmsSum);
+        if (! std::isfinite(db) || db < -100.0f) db = -100.0f;
+        lastLoudness.store(juce::jlimit(-100.0f, 12.0f, db), std::memory_order_relaxed);
+        limiterActive.store (false, std::memory_order_relaxed);
+        if (badSamples >= 4)
+            invalidFlag.store(true, std::memory_order_relaxed);
+
+        if (diagnostics.isEnabled() && numSamplesEarly > 0)
+        {
+            const int nCh = juce::jmin ((int) block.getNumChannels(), Config::kMaxChannels);
+            std::array<const float*, Config::kMaxChannels> outPtrs {};
+            for (int ch = 0; ch < nCh; ++ch)
+                outPtrs[(size_t) ch] = block.getChannelPointer ((size_t) ch);
+            auto outScan = AudioDiagnostics::scan (
+                outPtrs.data(), nCh, (int) numSamplesEarly,
+                Config::kAudioDiagJumpThreshold, Config::kAudioDiagCrackleJumpMin,
+                diagLastOut.data(), Config::kMaxChannels);
+            diagnostics.report (AudioDiagnostics::Stage::FinalOut, outScan, inputJumpCount,
+                                inputPeak, outScan.peak > 0.f ? outScan.peak : peak);
+        }
+        return;
     }
-    else
+
+    auto upBlock = block;
+    if (oversampler)
+        upBlock = oversampler->processSamplesUp(block);
+
+    // Process DSL via scriptBuffer (OS domain)
+    upBlock.copyTo(scriptBuffer);
     {
-        upBlock.copyFrom(scriptBuffer);
+        std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs {};
+        for (int p = 0; p < Config::kNumUserParams; ++p)
+            knobPtrs[(size_t) p] = &smoothedParams[(size_t) p];
+        signalChain.processBlockSmoothed (scriptBuffer, knobPtrs);
+    }
+    upBlock.copyFrom(scriptBuffer);
+
+    // Post-DSL: NaN/Inf hold only
+    {
+        const auto nCh = juce::jmin ((size_t) Config::kMaxChannels, upBlock.getNumChannels());
+        const auto nS  = upBlock.getNumSamples();
+        uint16_t postNan = 0;
+        for (size_t ch = 0; ch < nCh; ++ch)
+        {
+            auto* d = upBlock.getChannelPointer (ch);
+            float last = postDslLastGood[ch];
+            for (size_t i = 0; i < nS; ++i)
+            {
+                float v = d[i];
+                if (! std::isfinite (v))
+                {
+                    invalidFlag.store (true, std::memory_order_relaxed);
+                    ++postNan;
+                    v = last;
+                }
+                last = v;
+                d[i] = v;
+            }
+            postDslLastGood[ch] = last;
+        }
+
+        if (diagnostics.isEnabled() && nS > 0 && nCh > 0)
+        {
+            std::array<const float*, Config::kMaxChannels> postPtrs {};
+            for (size_t ch = 0; ch < nCh; ++ch)
+                postPtrs[ch] = upBlock.getChannelPointer (ch);
+            auto postScan = AudioDiagnostics::scan (
+                postPtrs.data(), (int) nCh, (int) nS,
+                Config::kAudioDiagJumpThreshold, Config::kAudioDiagCrackleJumpMin,
+                diagLastPost.data(), Config::kMaxChannels);
+            if (postNan > postScan.nanCount)
+                postScan.nanCount = postNan;
+            diagnostics.report (AudioDiagnostics::Stage::PostDsl, postScan, inputJumpCount,
+                                inputPeak, postScan.peak);
+        }
     }
 
     juce::dsp::ProcessContextReplacing<float> ctxDC(upBlock);
     dcBlocker.process(ctxDC);
-    juce::dsp::ProcessContextReplacing<float> ctxGate(upBlock);
-    chain.get<1>().process(ctxGate);
     juce::dsp::ProcessContextReplacing<float> ctxPolish(upBlock);
-    chain.get<2>().process(ctxPolish);
+    chain.get<1>().process(ctxPolish);
 
-    if (! bypassActive)
     {
         juce::dsp::ProcessContextReplacing<float> ctxFilter(upBlock);
         lowpassFilter.process(ctxFilter);
     }
 
-    if (! bypassActive && oversampler)
+    if (oversampler)
         oversampler->processSamplesDown(block);
 
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    const size_t numSamples = block.getNumSamples();
+    if (numSamples > 0)
     {
-        dryWetMixer.setWetMixProportion(wetValue.getNextValue());
-        dryWetMixer.mixWetSamples(block.getSubBlock(i, 1));
+        const float wetStart = wetValue.getCurrentValue();
+        float wetEnd = wetStart;
+        for (size_t i = 0; i < numSamples; ++i)
+            wetEnd = wetValue.getNextValue();
+
+        // Align dry to wet timeline (OS latency), continuous dry/wet
+        drySidechain.pushAndRead (dryBuffer, (int) numSamples);
+        DSPUtils::mixDryWetContinuous (drySidechain.getAligned(), buffer, wetStart, wetEnd);
     }
 
-    auto dryBlock = juce::dsp::AudioBlock<float>(dryBuffer);
-    DSPUtils::autoGainCompensate(dryBlock, block, gainCompValue, outputGain);
+    // AutoGain strength from APVTS (default 0 = off) — skip work when off and not smoothing
+    const float agStrength = clamp (EffectParameters::autoGain, getParam (EffectParameters::autoGain));
+    if (numSamples > 0)
+    {
+        if (agStrength > 1.0e-6f || gainCompValue.isSmoothing()
+            || std::abs (gainCompValue.getCurrentValue() - 1.0f) > 1.0e-4f)
+        {
+            auto dryAligned = juce::dsp::AudioBlock<float> (drySidechain.getAligned())
+                                  .getSubBlock (0, numSamples);
+            DSPUtils::autoGainCompensate (dryAligned, block, gainCompValue, outputGain, agStrength);
+        }
+        else
+        {
+            gainCompValue.setCurrentAndTargetValue (1.0f);
+        }
+    }
 
     userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
                                        getParam(EffectParameters::outputGain)));
-    for (size_t i = 0; i < block.getNumSamples(); ++i)
+    if (numSamples > 0)
     {
-        userOutputGain.setGainLinear(userGainValue.getNextValue());
-        auto slice = block.getSubBlock(i, 1);
-        juce::dsp::ProcessContextReplacing<float> outCtxSlice(slice);
-        userOutputGain.process(outCtxSlice);
+        float outGain = userGainValue.getCurrentValue();
+        for (size_t i = 0; i < numSamples; ++i)
+            outGain = userGainValue.getNextValue();
+        if (std::abs (outGain - 1.0f) > 1.0e-4f || userGainValue.isSmoothing())
+        {
+            userOutputGain.setGainLinear(outGain);
+            juce::dsp::ProcessContextReplacing<float> outCtx(block);
+            userOutputGain.process(outCtx);
+        }
     }
 
-    float rmsSum = 0.0f;
-    for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
-        rmsSum += static_cast<float>(DSPUtils::rms(block, static_cast<int>(ch)));
-    rmsSum /= juce::jmax(1u, static_cast<unsigned int>(block.getNumChannels()));
+    if (numSamples > 0)
+    {
+        auto dryConst = juce::dsp::AudioBlock<const float> (drySidechain.getAligned())
+                            .getSubBlock (0, numSamples);
+        auto mixed    = block.getSubBlock(0, numSamples);
+        outputSanitizer.process(dryConst, mixed);
+    }
 
-    lastLoudness.store(static_cast<float>(DSPUtils::linearToDb(rmsSum)));
-    limiterActive.store(chain.get<2>().wasLimiterHit());
-    if (chain.get<2>().wasInvalidSample())
-        invalidFlag.store(true);
+    if (numSamples > 0 && (switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f))
+    {
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            const float g = switchRamp.getNextValue();
+            for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+                block.getChannelPointer(ch)[i] *= g;
+        }
+    }
+
+    float peak = 0.0f;
+    float rmsSum = 0.0f;
+    int badSamples = 0;
+    for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+    {
+        auto* d = block.getChannelPointer(ch);
+        double acc = 0.0;
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            float v = d[i];
+            if (! std::isfinite(v))
+            {
+                v = 0.0f;
+                d[i] = 0.0f;
+                ++badSamples;
+            }
+            peak = juce::jmax(peak, std::abs(v));
+            acc += (double) v * (double) v;
+        }
+        const double meanSq = acc / (double) juce::jmax<size_t>(1, numSamples);
+        rmsSum += (float) (std::isfinite(meanSq) ? std::sqrt(juce::jmax(0.0, meanSq)) : 0.0);
+    }
+    rmsSum /= juce::jmax(1u, static_cast<unsigned int>(block.getNumChannels()));
+    if (! std::isfinite(rmsSum) || rmsSum < 1.0e-12f)
+        rmsSum = 1.0e-12f;
+
+    float db = (float) DSPUtils::linearToDb((double) rmsSum);
+    if (! std::isfinite(db) || db < -100.0f)
+        db = -100.0f;
+    db = juce::jlimit(-100.0f, 12.0f, db);
+    lastLoudness.store(db, std::memory_order_relaxed);
+
+    const bool limHitNow = chain.get<1>().wasLimiterHit()
+                        || outputSanitizer.consumeLimiterHit()
+                        || peak >= 0.99f;
+    if (limHitNow)
+        limiterHoldBlocks = 24;
+    else if (limiterHoldBlocks > 0 && peak < 0.92f)
+        --limiterHoldBlocks;
+    else if (peak >= 0.92f && limiterHoldBlocks > 0)
+        ;
+    else
+        limiterHoldBlocks = 0;
+    limiterActive.store (limiterHoldBlocks > 0, std::memory_order_relaxed);
+
+    const bool polisherBad = chain.get<1>().wasInvalidSample();
+    const bool sanitBad    = outputSanitizer.consumeInvalid();
+    if (polisherBad || sanitBad || badSamples >= 4)
+        invalidFlag.store(true, std::memory_order_relaxed);
+
+    if (diagnostics.isEnabled() && numSamples > 0)
+    {
+        const int nCh = juce::jmin ((int) block.getNumChannels(), Config::kMaxChannels);
+        std::array<const float*, Config::kMaxChannels> outPtrs {};
+        for (int ch = 0; ch < nCh; ++ch)
+            outPtrs[(size_t) ch] = block.getChannelPointer ((size_t) ch);
+        auto outScan = AudioDiagnostics::scan (
+            outPtrs.data(), nCh, (int) numSamples,
+            Config::kAudioDiagJumpThreshold, Config::kAudioDiagCrackleJumpMin,
+            diagLastOut.data(), Config::kMaxChannels);
+        if (badSamples > 0)
+            outScan.nanCount = static_cast<uint16_t> (
+                juce::jmax ((int) outScan.nanCount, badSamples));
+        diagnostics.report (AudioDiagnostics::Stage::FinalOut, outScan, inputJumpCount,
+                            inputPeak, outScan.peak > 0.f ? outScan.peak : peak);
+    }
 }

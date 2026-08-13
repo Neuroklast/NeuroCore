@@ -1,0 +1,189 @@
+# NeuroCore User Manual (English)
+
+**NeuroCore** is a programmable real-time audio effect: you write a short **DSL formula** (stages, filters, delay, reverb, compressors, envelopes, oscillators) and map host knobs **a–f** into it. The plugin is built for guitar, bass, vocals, synths, sound design, and creative FX sends.
+
+This manual is available:
+
+- In the repository as `docs/USER_MANUAL.md`
+- Inside the plugin via **Help** (embedded offline copy)
+
+---
+
+## 1. Quickstart
+
+1. Insert **NeuroCore** as an insert FX (or send return).
+2. Click **Presets** and load a factory preset (e.g. an amp drive or delay).
+3. Play audio. Adjust **Gain** (input) and **Mix**.
+4. Tweak knobs **a–f** — names/ranges come from the formula (`param a = Drive [0.5, 6]`).
+5. Click **Edit**, change the formula, then **Save** to compile.
+6. Use **Insert → Quick template…** to append building blocks (delay, reverb, clip+LPF, etc.).
+7. **Save As…** in Presets stores a **user preset** with your **Author** name (artist packs).
+
+If the formula fails to parse, the error line under the editor explains why.
+
+---
+
+## 2. Main UI map
+
+| Area | Purpose |
+|------|---------|
+| **Presets** | Factory + user library (search, category, scope) |
+| **Current preset chip** | Name of the loaded preset (or Untitled) |
+| **Functions** | Function reference insert helper |
+| **Stages** | Parsed block list / param overview |
+| **Bypass** | Dry only (Mix → 0), restores previous Mix when off |
+| **Help** | This manual (offline) |
+| **Oversampling** | 1× / 2× / 4× / 8× (default 2×) |
+| **Polisher** | None / Hard Clip / Limiter after the formula |
+| **Text − / +** | Formula editor font size (default **18**) |
+| **Knobs a–f** | Six host-automatable parameters (2 columns × 3 rows) |
+| **Name chips** under knobs | Rename mapping labels |
+| **Edit / Copy / Optimize** | Edit formula, copy text, safe rewrites |
+| **Insert / Quick template** | Append common DSL snippets into the formula |
+| **Formula view / editor** | Live annotated formula or code editor (monospace) |
+| **Gain / Mix** | Input gain and dry/wet |
+| **IN / OUT scopes** | Time-aligned waveforms |
+| **Meter** | Loudness / limiter cue |
+
+### Formula fonts
+
+- **Formula editor and live formula** use embedded **JetBrains Mono** (readable code).
+- **UI chrome** (buttons, titles) uses brand **Apex**.
+- Avoid relying on fancy Unicode punctuation in chrome; the brand face is limited.
+
+---
+
+## 3. Knobs a–f
+
+There are **six** knobs: **a, b, c, d, e, f**.
+
+Declare them in the script:
+
+```text
+param a = Drive [0.5, 6.0]
+param b = Tone [800, 9000]
+stage1: y = softclip(x, a)
+filter1: type = lowpass; cutoff = b; resonance = 0.3
+```
+
+- Host/APVTS stores knobs as **0–1**.
+- The DSL maps them into `[min, max]` via `param` declarations.
+- Bare letter **`e`** is knob **e**, not Euler’s number. Use `exp(1)` for e ≈ 2.718.
+
+---
+
+## 4. Formula editor
+
+1. **Edit** → unlock the monospace editor (autocomplete with Ctrl/Cmd+Space).
+2. Write stages / filters / delay / reverb / etc.
+3. **Save** → parse + load (audio engine swaps formula safely under lock).
+4. **Copy** → clipboard.
+5. **Optimize** → safe algebraic rewrites with quality gate.
+6. **Insert** quick templates when you want blocks without browsing the Preset Explorer.
+
+Live view shows colour-coded knobs and evaluated values in brackets.
+
+---
+
+## 5. Presets and artist packs
+
+### Factory
+
+- Shipped in `factory_presets.json` (also embedded in the binary).
+- Author: **NEUROKLAST**.
+
+### User presets / artist packs
+
+1. Open **Presets**.
+2. **Save As…**
+3. Enter:
+   - **Name**
+   - **Author** (your name or artist alias — stored for packs)
+   - **Category** (e.g. Guitar, Delay, Vocal)
+4. Files live under the OS app-data user preset folder (`.nrk`).
+
+The explorer lists **Name / Category / Source / Author**. No “Assemble” panel — building formulas is done in the **editor** (Quick templates + Edit).
+
+### Load
+
+- Double-click a row or select + **Load**.
+- **New Blank** starts a simple softclip formula.
+
+---
+
+## 6. DSL overview
+
+See also `docs/DSL_REFERENCE.md` for full syntax.
+
+Common blocks:
+
+| Block | Role |
+|-------|------|
+| `param a = Name [min, max]` | Knob declaration |
+| `stageN: y = …` | Waveshape / math |
+| `filterN: type = lowpass; cutoff = …` | Filters |
+| `compN: threshold = …; ratio = …` | Compressor |
+| `envN: type = peak; attack = …; release = …` | Envelope follower |
+| `oscN: type = sine; freq = …` | LFO / modulator |
+| `delayN: time = …; feedback = …; mix = …` | Delay line |
+| `reverbN: size = …; mix = …` | Reverb |
+
+Tips:
+
+- After **hardclip**, add a recovery **lowpass** (~6–12 kHz).
+- Prefer `softclip` / `tube` for amp-like grit with less aliasing (ADAA paths).
+- Delay feedback is capped for stability; damp darkens repeats.
+- Mix **0%** is pure dry (no wet path).
+
+---
+
+## 7. Tips and tricks
+
+- **Send FX**: load a delay/reverb, set Mix high, use host send level.
+- **Amp sims**: Drive + LPF + softclip; Polisher = None for dynamics.
+- **Oversampling**: raise to 4×/8× for heavy nonlinearities if CPU allows.
+- **Undo**: Ctrl/Cmd+Z (formula history).
+- **MIDI Learn**: right-click a knob → MIDI Learn.
+- **Artist packs**: agree on Author + Category conventions; share `.nrk` files.
+
+---
+
+## 8. Troubleshooting
+
+| Issue | What to try |
+|-------|-------------|
+| Cubase “plugin unstable” | Update to latest build; delay formula swaps are locked vs audio. Save project, reload plugin. Avoid editing huge delay scripts while recording without a save. |
+| Crackles / clicks | Check feedback/regen stages; reduce Feedback; add LPF after hardclip; try 2× OS. |
+| Silent output | Formula error? Mix at 0? Both Input L/R off? Bypass on? |
+| Knob does nothing | Not referenced in script, or inactive mapping. |
+| Weird characters (à) in UI | Fixed in current builds: chrome uses ASCII; formula uses embedded mono. |
+| Preset won’t load | User file corrupt; re-Save As. Factory always embedded. |
+| High CPU | Lower oversampling; simplify multi-stage + long delays. |
+
+Crash dumps (Cubase): typically under Documents/Steinberg/CrashDumps — include build date when reporting.
+
+---
+
+## 9. Glossary
+
+| Term | Meaning |
+|------|---------|
+| **DSL** | Domain-specific language for NeuroCore signal chains |
+| **Stage** | Sample-wise formula `y = f(x, …)` |
+| **APVTS** | JUCE parameter tree (host automation) |
+| **ADAA** | Anti-derivative anti-aliasing for nonlinearities |
+| **Dry/Wet (Mix)** | Blend of unprocessed and processed signal |
+| **Polisher** | Optional peak shaper after formula |
+| **Factory preset** | Built-in preset from NEUROKLAST |
+| **User preset** | Your `.nrk` with Author metadata |
+| **Quick template** | Snippet inserted into the current formula from the editor |
+
+---
+
+## 10. Legal / support
+
+NeuroCore © NEUROKLAST. For product support, contact the vendor with host version, OS, plugin build, and steps to reproduce.
+
+---
+
+*End of manual.*

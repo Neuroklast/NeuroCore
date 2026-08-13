@@ -167,6 +167,4 @@ void WaveShaper::setParameter (const std::string& id, float v)
     else if (id == EffectParameters::paramB)    paramTargets[1] = juce::jlimit(0.0f, 1.0f, v);
     else if (id == EffectParameters::paramC)    paramTargets[2] = juce::jlimit(0.0f, 1.0f, v);
     else if (id == EffectParameters::paramD)    paramTargets[3] = juce::jlimit(0.0f, 1.0f, v);
-    else if (id == EffectParameters::modFrequency)
-        modFreqTarget = juce::jlimit(0.1f, 20.0f, v);
 }

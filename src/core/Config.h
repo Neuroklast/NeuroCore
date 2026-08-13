@@ -20,11 +20,11 @@ namespace Config
     //==========================================================================
 
     /// Width of the plugin window in pixels.
-    inline constexpr int kWindowWidth        = 1600;
+    inline constexpr int kWindowWidth        = 1280;
     /// Height of the plugin window in pixels.
-    inline constexpr int kWindowHeight       = 900;
+    inline constexpr int kWindowHeight       = 860;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 5;
+    inline constexpr int kUiPadding         = 8;
 
     /// Size of the custom parameter knobs.
 
@@ -35,11 +35,11 @@ namespace Config
  
 
     /// Height of each knob widget in pixels.
-    inline constexpr int kKnobHeight         = 80;
+    inline constexpr int kKnobHeight         = 120;
     /// Vertical spacing between knobs in pixels.
-    inline constexpr int kKnobSpacing        = 20;
+    inline constexpr int kKnobSpacing        = 12;
     /// Height of knob labels in pixels.
-    inline constexpr int kLabelHeight        = 24;
+    inline constexpr int kLabelHeight        = 22;
 
     /// Height of the text editor widget in pixels.
     inline constexpr int kEditorHeight       = 160;
@@ -57,12 +57,11 @@ namespace Config
     inline constexpr int kFontSizeLarge      = 18;
 
     /// Size of rotary knobs in pixels.
-    inline constexpr int kKnobSize          = 90;
+    inline constexpr int kKnobSize          = 110;
     /// Mindestdurchmesser aller Rotary-Slider.
-    inline constexpr int kRotaryDiameterMin = 160;
+    inline constexpr int kRotaryDiameterMin = 120;
     /// Fixed size of each ParameterComponent knob.
-
-    inline constexpr int kParameterKnobSize = 300;
+    inline constexpr int kParameterKnobSize = 160;
     /// Width of the loudness meter labels.
     inline constexpr float kLoudnessLabelWidth = 45.0f;
     /// FFT order for waveform displays (2^order samples).
@@ -91,15 +90,26 @@ namespace Config
     /// Fallback sample rate used during resets.
     inline constexpr double kDefaultSampleRate = 44100.0;
 
-    /// Duration of function crossfades in seconds.
-    inline constexpr double kCrossfadeTime     = 0.15;
+    /// Duration of formula crossfades in seconds (short — dual-chain is expensive).
+    inline constexpr double kCrossfadeTime     = 0.035;
+    /// Output ramp after formula / oversampling reconfigure (avoids loudness spike).
+    inline constexpr double kSwitchRampTime    = 0.040;
 
     //==========================================================================
     // Parser / Interpreter constants
     //==========================================================================
 
+    /// Number of host-automatable formula knobs (a..f). Max 6 for readable UI.
+    inline constexpr int kNumUserParams = 6;
     /// Default variable names mapped to the parameter knobs.
-    inline constexpr const char* kDefaultVariableNames[4] = { "a", "b", "c", "d" };
+    inline constexpr const char* kDefaultVariableNames[6] = {
+        "a", "b", "c", "d", "e", "f"
+    };
+    /// Default formula editor / live view font height (points).
+    inline constexpr float kDefaultEditorFontPt = 18.0f;
+    inline constexpr float kMinEditorFontPt     = 12.0f;
+    inline constexpr float kMaxEditorFontPt     = 28.0f;
+    inline constexpr float kEditorFontStepPt    = 2.0f;
 
     //==========================================================================
     // Modulator constants
@@ -119,9 +129,29 @@ namespace Config
     /// Number of invalid (NaN/Inf) samples tolerated during validation.
     inline constexpr int   kInvalidValueThreshold = 10;
 
+    //==========================================================================
+    // Audio diagnostics (NaN / click / crackle logging)
+    //==========================================================================
+
+    /// Master switch for runtime anomaly logging (file under AppData/NEUROKLAST/NeuroCore).
+    /// Default off in product builds — enable explicitly when diagnosing.
+    inline constexpr bool  kAudioDiagnosticsEnabled     = false;
+
+    /// Default oversampling choice index: 0=1×, 1=2×, 2=4×, 3=8×.
+    inline constexpr int   kDefaultOversamplingIndex    = 1; // 2× — lower latency/CPU
+    /// |sample[n]-sample[n-1]| above this → hard jump (audible click).
+    inline constexpr float kAudioDiagJumpThreshold      = 0.28f;
+    /// Softer Δ used when counting crackle clusters inside a block.
+    inline constexpr float kAudioDiagCrackleJumpMin     = 0.12f;
+
     /// Exponential leak applied to y_prev and x_prev in stages to prevent DC accumulation.
     /// Slightly below 1.0 – nearly inaudible but prevents unbounded feedback growth.
+    /// Applied only when the stage actually references x_prev/y_prev.
     inline constexpr float kFeedbackLeakFactor = 0.9999f;
+    /// Extra leak when input is near silence on feedback stages (kills self-osc hang).
+    inline constexpr float kFeedbackSilenceLeak = 0.94f;
+    /// |x| below this is treated as silence for feedback leak (not residual mute).
+    inline constexpr float kFeedbackSilenceFloor = 1.0e-4f;
 
     /// Conservative tail time in seconds accounting for feedback formulas and compressor release.
     inline constexpr double kDefaultTailTime = 2.0;
@@ -170,7 +200,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NeuroCore"
-#define PLUGIN_VERSION    "0.1.0"
+#define PLUGIN_VERSION    "0.2.2"
 #define PLUGIN_VENDOR     "NEUROKLAST"
 #define PLUGIN_ID         "nrco01"
 #define PLUGIN_BUILD_DATE __DATE__

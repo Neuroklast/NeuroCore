@@ -230,6 +230,23 @@ public:
             expectEquals((int)blocks.size(), 1);
             expectEquals(blocks[0].type, juce::String("stage"));
         }
+
+        beginTest("formatBlockSummary for stage and filter");
+        {
+            dsl::BlockDesc stage;
+            stage.type = "stage";
+            stage.name = "stage1";
+            stage.args["y"] = "tanh(x * a)";
+            expectEquals(dsl::formatBlockSummary(stage), juce::String("y = tanh(x * a)"));
+
+            dsl::BlockDesc filter;
+            filter.type = "filter";
+            filter.name = "filter1";
+            filter.args["type"] = "lowpass";
+            filter.args["cutoff"] = "1000";
+            expect(dsl::formatBlockSummary(filter).contains("lowpass"));
+            expect(dsl::formatBlockSummary(filter).contains("cutoff=1000"));
+        }
     }
 };
 
