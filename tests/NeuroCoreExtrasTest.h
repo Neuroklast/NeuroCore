@@ -730,6 +730,20 @@ private:
             requireBlock ("Cinematic Space", "ms");
         }
 
+        beginTest ("Bitcrush lo-fi quick template has recovery LPF");
+        {
+            const juce::String frag =
+                "param a = Bits [3, 12]\n"
+                "param b = Mix [0.2, 1.0]\n"
+                "stage1: y = lerp(x, bitcrush(x, a), b)\n"
+                "filter1: type = lowpass; cutoff = 8000; resonance = 0.3\n";
+            const auto q = FormulaQualityAnalyzer::analyse (frag);
+            expect (FormulaQualityAnalyzer::passesFactoryGate (q, 55.f),
+                    "bitcrush quick template must pass factory gate: " + q.summary());
+            expect (! q.errors.joinIntoString (" ").containsIgnoreCase ("recovery"),
+                    "bitcrush fragment must include recovery LPF");
+        }
+
         beginTest ("FormulaQuality: detects silent y=0 style bug");
         {
             // Without seeding y from input this would be silent; with fix it should pass.

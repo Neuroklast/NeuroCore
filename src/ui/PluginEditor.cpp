@@ -361,7 +361,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
             case 4: frag = "param a = Duck [0.0, 0.9]\nparam b = Attack [0.001, 0.05]\nparam c = Release [0.05, 0.4]\nenv1: type = peak; attack = b; release = c\nstage1: y = x * (1.0 - env1 * a)\n"; break;
             case 5: frag = "param a = Limit [0.3, 1.0]\nstage1: y = hardclip(softclip(x, 1.2), a)\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.3\n"; break;
             case 6: frag = "param a = Rate [0.5, 12]\nparam b = Depth [0.0, 1.0]\nosc1: type = sine; freq = a\nstage1: y = x * (1.0 - b * 0.5 * (1.0 + osc1))\n"; break;
-            case 7: frag = "param a = Bits [3, 12]\nparam b = Mix [0.2, 1.0]\nstage1: y = lerp(x, bitcrush(x, a), b)\n"; break;
+            case 7: frag = "param a = Bits [3, 12]\nparam b = Mix [0.2, 1.0]\nstage1: y = lerp(x, bitcrush(x, a), b)\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.3\n"; break;
             default: break;
         }
         quickTemplateBox->setSelectedId (0, juce::dontSendNotification);
