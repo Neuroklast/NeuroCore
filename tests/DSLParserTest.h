@@ -247,6 +247,117 @@ public:
             expect(dsl::formatBlockSummary(filter).contains("lowpass"));
             expect(dsl::formatBlockSummary(filter).contains("cutoff=1000"));
         }
+
+        beginTest("top-level stage belongs to main");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse ("stage1: y = x * 2", blocks, aliases, params, error));
+            expect (error.isEmpty());
+            expectEquals ((int) blocks.size(), 1);
+            expectEquals (blocks[0].busName, juce::String ("main"));
+        }
+
+        beginTest("bus section assigns following stage");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            const juce::String script =
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "stage2: y = tube(x, a)\n";
+            expect (parser.parse (script, blocks, aliases, params, error), error);
+            expect (error.isEmpty());
+            expectEquals ((int) blocks.size(), 3);
+            expectEquals (blocks[0].type, juce::String ("stage"));
+            expectEquals (blocks[0].busName, juce::String ("main"));
+            expectEquals (blocks[1].type, juce::String ("bus"));
+            expectEquals (blocks[1].name, juce::String ("dirt"));
+            expectEquals (blocks[2].type, juce::String ("stage"));
+            expectEquals (blocks[2].busName, juce::String ("dirt"));
+        }
+
+        beginTest("send and out parse args");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            const juce::String script =
+                "bus dirt:\n"
+                "send: in = 1; main = 0.35\n"
+                "stage1: y = x\n"
+                "out: main = 1; dirt = c\n";
+            expect (parser.parse (script, blocks, aliases, params, error), error);
+            expect (error.isEmpty());
+            expectEquals ((int) blocks.size(), 4);
+            expectEquals (blocks[1].type, juce::String ("send"));
+            expectEquals (blocks[1].busName, juce::String ("dirt"));
+            expectEquals (blocks[1].args["in"], juce::String ("1"));
+            expectEquals (blocks[1].args["main"], juce::String ("0.35"));
+            expectEquals (blocks[3].type, juce::String ("out"));
+            expectEquals (blocks[3].args["main"], juce::String ("1"));
+            expectEquals (blocks[3].args["dirt"], juce::String ("c"));
+        }
+
+        beginTest("send at top level is an error");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (! parser.parse ("send: in = 1\nstage1: y = x", blocks, aliases, params, error));
+            expect (error.containsIgnoreCase ("send"));
+        }
+
+        beginTest("reserved bus names rejected");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (! parser.parse ("bus main:\nstage1: y = x", blocks, aliases, params, error));
+            expect (error.isNotEmpty());
+            expect (! parser.parse ("bus in:\nstage1: y = x", blocks, aliases, params, error));
+            expect (error.isNotEmpty());
+        }
+
+        beginTest("fifth named bus rejected");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            const juce::String script =
+                "bus a1:\nstage1: y = x\n"
+                "bus a2:\nstage2: y = x\n"
+                "bus a3:\nstage3: y = x\n"
+                "bus a4:\nstage4: y = x\n"
+                "bus a5:\nstage5: y = x\n";
+            expect (! parser.parse (script, blocks, aliases, params, error));
+            expect (error.containsIgnoreCase ("bus"));
+        }
+
+        beginTest("block after out is an error");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (! parser.parse ("stage1: y = x\nout: main = 1\nstage2: y = x", blocks, aliases, params, error));
+            expect (error.containsIgnoreCase ("out"));
+        }
     }
 };
 

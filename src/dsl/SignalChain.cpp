@@ -11,6 +11,8 @@ SignalChain::SignalChain()
 {
     chain   = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
+    busGraph = std::make_shared<BusGraph>();
+    busGraph->buses.push_back (BusDef { "main", {}, {} });
     paramInfo.clear();
     variables["x"] = 0.0f;
     variables["x_prev"] = 0.0f;
@@ -244,6 +246,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     for (const auto& d : desc)
     {
+        if (d.type == "bus" || d.type == "send" || d.type == "out")
+            continue;
+
         if (d.type.startsWith("stage"))
         {
             auto st = std::make_unique<Stage>();
@@ -792,6 +797,26 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         }
     }
 
+    {
+        BusGraph newGraph;
+        juce::String graphErr;
+        if (! buildBusGraph (desc, newGraph, graphErr))
+        {
+            error = graphErr;
+            return false;
+        }
+        int ci = 0;
+        for (const auto& d : desc)
+        {
+            if (d.type == "bus" || d.type == "send" || d.type == "out")
+                continue;
+            if (ci < (int) newChain->size())
+                (*newChain)[(size_t) ci]->busName = d.busName.isNotEmpty() ? d.busName : juce::String ("main");
+            ++ci;
+        }
+        std::atomic_store (&busGraph, std::make_shared<BusGraph> (std::move (newGraph)));
+    }
+
     // Drop stale modulation vars (osc1, env1, …) from previous script so they
     // cannot keep feeding stages after switching away from an oscillator preset.
     {
@@ -836,6 +861,183 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     return true;
 }
 
+void SignalChain::ensureBusBuffers (int numChannels, int numSamples)
+{
+    const int ch = juce::jmax (1, numChannels);
+    const int sm = juce::jmax (1, numSamples);
+    if (inSnapshot.getNumChannels() != ch || inSnapshot.getNumSamples() < sm)
+        inSnapshot.setSize (ch, sm, false, false, true);
+    for (auto& b : busScratch)
+        if (b.getNumChannels() != ch || b.getNumSamples() < sm)
+            b.setSize (ch, sm, false, false, true);
+}
+
+bool SignalChain::isNumericGain (const juce::String& expr) const noexcept
+{
+    const auto e = expr.trim();
+    if (e.isEmpty())
+        return true;
+    return e.retainCharacters ("0123456789.+-").length() == e.length();
+}
+
+float SignalChain::resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept
+{
+    auto e = expr.trim();
+    if (e.isEmpty())
+        return 1.0f;
+
+    bool complement = false;
+    const auto lower = e.toLowerCase();
+    if (lower.startsWith ("1-"))
+    {
+        complement = true;
+        e = e.substring (2).trim();
+    }
+    else if (lower.startsWith ("1 -"))
+    {
+        complement = true;
+        e = e.substring (3).trim();
+    }
+
+    auto finish = [complement] (float g) -> float
+    {
+        if (complement)
+            g = 1.0f - g;
+        return juce::jlimit (0.0f, 2.0f, g);
+    };
+
+    if (isNumericGain (e))
+        return finish (e.getFloatValue());
+
+    auto readKnob = [this, sampleIndex] (int idx) -> float
+    {
+        if (idx < 0 || idx >= Config::kNumUserParams)
+            return 0.0f;
+        if (sampleIndex >= 0 && (int) knobLanes[(size_t) idx].size() > sampleIndex)
+            return knobLanes[(size_t) idx][(size_t) sampleIndex];
+        return paramSmooth[(size_t) idx].getCurrentValue();
+    };
+
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        if (e.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
+            return finish (readKnob (i));
+
+    if (auto al = std::atomic_load (&aliases))
+    {
+        for (const auto& kv : *al)
+        {
+            if (! e.equalsIgnoreCase (kv.second) && ! e.equalsIgnoreCase (kv.first))
+                continue;
+            for (int i = 0; i < Config::kNumUserParams; ++i)
+                if (kv.first.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
+                    return finish (readKnob (i));
+        }
+    }
+    return finish (e.getFloatValue());
+}
+
+void SignalChain::applyBusSends (int busIndex, int numChannels, int numSamples)
+{
+    auto graphPtr = std::atomic_load (&busGraph);
+    if (! graphPtr || busIndex <= 0 || busIndex >= (int) graphPtr->buses.size())
+        return;
+
+    auto& dest = busScratch[(size_t) busIndex];
+    dest.clear();
+    const auto& sends = graphPtr->buses[(size_t) busIndex].sends;
+    const int chUse = juce::jmin (numChannels, dest.getNumChannels());
+    const int smUse = juce::jmin (numSamples, dest.getNumSamples());
+
+    for (const auto& s : sends)
+    {
+        const juce::AudioBuffer<float>* src = nullptr;
+        if (s.sourceIndex == kReservedBusIn)
+            src = &inSnapshot;
+        else if (s.sourceIndex >= 0 && s.sourceIndex < (int) busScratch.size())
+            src = &busScratch[(size_t) s.sourceIndex];
+        if (src == nullptr)
+            continue;
+
+        const int srcCh = juce::jmin (chUse, src->getNumChannels());
+        const int srcSm = juce::jmin (smUse, src->getNumSamples());
+        if (isNumericGain (s.gainExpr))
+        {
+            dest.addFrom (0, 0, *src, 0, 0, srcSm, resolveBusGain (s.gainExpr, 0));
+            for (int ch = 1; ch < srcCh; ++ch)
+                dest.addFrom (ch, 0, *src, ch, 0, srcSm, resolveBusGain (s.gainExpr, 0));
+        }
+        else
+        {
+            for (int i = 0; i < srcSm; ++i)
+            {
+                const float g = resolveBusGain (s.gainExpr, i);
+                for (int ch = 0; ch < srcCh; ++ch)
+                    dest.addSample (ch, i, src->getSample (ch, i) * g);
+            }
+        }
+    }
+}
+
+void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels, int numSamples)
+{
+    auto graphPtr = std::atomic_load (&busGraph);
+    if (! graphPtr)
+        return;
+
+    const int chUse = juce::jmin (numChannels, dest.getNumChannels());
+    const int smUse = juce::jmin (numSamples, dest.getNumSamples());
+
+    if (! graphPtr->hasExplicitOut())
+    {
+        const int srcCh = juce::jmin (chUse, busScratch[0].getNumChannels());
+        const int srcSm = juce::jmin (smUse, busScratch[0].getNumSamples());
+        dest.clear();
+        for (int ch = 0; ch < srcCh; ++ch)
+            dest.copyFrom (ch, 0, busScratch[0], ch, 0, srcSm);
+        return;
+    }
+
+    dest.clear();
+    bool varying = false;
+    for (const auto& t : graphPtr->outTaps)
+        if (! isNumericGain (t.gainExpr))
+            varying = true;
+
+    if (! varying)
+    {
+        std::vector<juce::AudioBuffer<float>*> srcs;
+        std::vector<float> gains;
+        srcs.reserve (graphPtr->outTaps.size());
+        gains.reserve (graphPtr->outTaps.size());
+        for (const auto& t : graphPtr->outTaps)
+        {
+            if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
+                continue;
+            srcs.push_back (&busScratch[(size_t) t.busIndex]);
+            gains.push_back (resolveBusGain (t.gainExpr, 0));
+        }
+        juce::AudioBuffer<float> mixed (chUse, smUse);
+        mixdown (mixed, srcs, gains);
+        for (int ch = 0; ch < chUse; ++ch)
+            dest.copyFrom (ch, 0, mixed, ch, 0, smUse);
+        return;
+    }
+
+    for (int i = 0; i < smUse; ++i)
+    {
+        for (const auto& t : graphPtr->outTaps)
+        {
+            if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
+                continue;
+            const float g = resolveBusGain (t.gainExpr, i);
+            auto& src = busScratch[(size_t) t.busIndex];
+            const int srcCh = juce::jmin (chUse, src.getNumChannels());
+            for (int ch = 0; ch < srcCh; ++ch)
+                dest.addSample (ch, i, src.getSample (ch, i) * g);
+        }
+    }
+}
+
 void SignalChain::processBlock(juce::AudioBuffer<float>& buffer)
 {
     // Prefer try-lock for knobs; never skip the whole block (use published chain).
@@ -878,11 +1080,41 @@ void SignalChain::processBlock(juce::AudioBuffer<float>& buffer)
     sampleCounter += numSamples;
 
     auto chainPtr = std::atomic_load (&chain);
+    auto graphPtr = std::atomic_load (&busGraph);
     if (! chainPtr)
         return;
 
+    const bool multi = graphPtr != nullptr
+                    && (graphPtr->buses.size() > 1 || graphPtr->hasExplicitOut());
+    if (! multi)
+    {
+        for (auto& b : *chainPtr)
+            b->processBlock(buffer);
+        return;
+    }
+
+    const int nCh = buffer.getNumChannels();
+    const int nSm = buffer.getNumSamples();
+    ensureBusBuffers (nCh, nSm);
+    for (int ch = 0; ch < nCh; ++ch)
+        inSnapshot.copyFrom (ch, 0, buffer, ch, 0, nSm);
+    for (int ch = 0; ch < nCh; ++ch)
+        busScratch[0].copyFrom (ch, 0, inSnapshot, ch, 0, nSm);
+
     for (auto& b : *chainPtr)
-        b->processBlock(buffer);
+        if (b->busName.equalsIgnoreCase ("main"))
+            b->processBlock (busScratch[0]);
+
+    for (int bi = 1; bi < (int) graphPtr->buses.size(); ++bi)
+    {
+        applyBusSends (bi, nCh, nSm);
+        const auto& name = graphPtr->buses[(size_t) bi].name;
+        for (auto& b : *chainPtr)
+            if (b->busName.equalsIgnoreCase (name))
+                b->processBlock (busScratch[(size_t) bi]);
+    }
+
+    writeMixdown (buffer, nCh, nSm);
 }
 
 bool SignalChain::canUseBlockPath(const Chain&) noexcept
@@ -994,127 +1226,170 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     for (int i = 0; i < nOsc; ++i)
         oscs[i]->renderModBlock (numSamples);
 
-    const float* envL = buffer.getReadPointer (0);
-    const float* envR = numChannels > 1 ? buffer.getReadPointer (1) : nullptr;
-    for (int i = 0; i < nEnv; ++i)
-        envs[i]->renderModBlock (envL, envR, numSamples);
+    auto graphPtr = std::atomic_load (&busGraph);
+    const bool multi = graphPtr != nullptr
+                    && (graphPtr->buses.size() > 1 || graphPtr->hasExplicitOut());
 
-    // Publish last mod values for any block-path stage that only needs a static snap
-    for (int i = 0; i < nOsc; ++i)
-        if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
-            (*oscs[i]->varPtr)[oscs[i]->name] = oscs[i]->modLane[(size_t) numSamples - 1];
-    for (int i = 0; i < nEnv; ++i)
-        if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
-            (*envs[i]->varPtr)[envs[i]->name] = envs[i]->modLane[(size_t) numSamples - 1];
-
-    // ---- Process audio blocks in script order ----
-    // Osc/Env skip (already rendered). Filters/comps stay on fast block path.
-    // Stages that need mod/feedback/nonlinear run a LOCAL sample loop only.
-    for (auto& b : *chainPtr)
+    auto renderEnvsFor = [&] (juce::AudioBuffer<float>& work, const juce::String& onlyBus)
     {
-        if (dynamic_cast<Osc*> (b.get()) != nullptr
-            || dynamic_cast<Env*> (b.get()) != nullptr)
-            continue;
-
-        if (auto* st = dynamic_cast<Stage*> (b.get()))
+        const float* envL = work.getNumChannels() > 0 ? work.getReadPointer (0) : nullptr;
+        const float* envR = work.getNumChannels() > 1 ? work.getReadPointer (1) : nullptr;
+        if (envL == nullptr)
+            return;
+        for (int i = 0; i < nEnv; ++i)
         {
-            // Mid/Side pre/post (same as Stage::processBlock)
-            if (st->msEncode && numChannels >= 2)
+            if (onlyBus.isNotEmpty() && ! envs[i]->busName.equalsIgnoreCase (onlyBus))
+                continue;
+            envs[i]->renderModBlock (envL, envR, numSamples);
+        }
+    };
+
+    auto processOn = [&] (juce::AudioBuffer<float>& work, const juce::String& onlyBus)
+    {
+        const int workCh = work.getNumChannels();
+        for (auto& b : *chainPtr)
+        {
+            if (onlyBus.isNotEmpty() && ! b->busName.equalsIgnoreCase (onlyBus))
+                continue;
+            if (dynamic_cast<Osc*> (b.get()) != nullptr
+                || dynamic_cast<Env*> (b.get()) != nullptr)
+                continue;
+
+            if (auto* st = dynamic_cast<Stage*> (b.get()))
             {
-                auto* l = buffer.getWritePointer (0);
-                auto* r = buffer.getWritePointer (1);
-                for (int i = 0; i < numSamples; ++i)
+                if (st->msEncode && workCh >= 2)
                 {
-                    const float m = (l[i] + r[i]) * 0.5f;
-                    const float s = (l[i] - r[i]) * 0.5f;
-                    l[i] = m;
-                    r[i] = s;
+                    auto* l = work.getWritePointer (0);
+                    auto* r = work.getWritePointer (1);
+                    for (int i = 0; i < numSamples; ++i)
+                    {
+                        const float m = (l[i] + r[i]) * 0.5f;
+                        const float s = (l[i] - r[i]) * 0.5f;
+                        l[i] = m;
+                        r[i] = s;
+                    }
                 }
+
+                if (st->needsSampleLoop())
+                {
+                    const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
+                    const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
+                                               ? 1
+                                               : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
+
+                    for (int i = 0; i < numSamples; ++i)
+                    {
+                        injectKnobsAt (i);
+
+                        if (st->usesModulation)
+                        {
+                            for (int o = 0; o < nOsc; ++o)
+                                if ((int) oscs[o]->modLane.size() > i)
+                                    variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
+                            for (int e = 0; e < nEnv; ++e)
+                                if ((int) envs[e]->modLane.size() > i)
+                                    variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
+                        }
+
+                        for (size_t ch = firstCh; ch < lastCh; ++ch)
+                        {
+                            ExpressionEvaluator::setProcessingChannel ((int) ch);
+                            auto* data = work.getWritePointer ((int) ch);
+                            data[i] = st->process ((int) ch, data[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    st->processBlock (work);
+                }
+
+                if (st->msDecode && workCh >= 2)
+                {
+                    auto* m = work.getWritePointer (0);
+                    auto* s = work.getWritePointer (1);
+                    for (int i = 0; i < numSamples; ++i)
+                    {
+                        const float l = m[i] + s[i];
+                        const float r = m[i] - s[i];
+                        m[i] = l;
+                        s[i] = r;
+                    }
+                }
+                continue;
             }
 
-            if (st->needsSampleLoop())
+            if (auto* fi = dynamic_cast<Filter*> (b.get()))
             {
-                const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
-                const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
-                                           ? 1
-                                           : (size_t) juce::jmin (numChannels, (int) st->xPrev.size());
-
-                // Sample-major for multi-channel: one time step, all channels, continuous
-                // knobs + mod. Channel-major with per-call smoother advance caused stereo
-                // rate errors and smp=0 discontinuities under nonlinear stages.
-                for (int i = 0; i < numSamples; ++i)
+                if (fi->modulated)
                 {
-                    injectKnobsAt (i);
-
-                    if (st->usesModulation)
+                    for (int i = 0; i < numSamples; ++i)
                     {
+                        injectKnobsAt (i);
                         for (int o = 0; o < nOsc; ++o)
                             if ((int) oscs[o]->modLane.size() > i)
                                 variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
                         for (int e = 0; e < nEnv; ++e)
                             if ((int) envs[e]->modLane.size() > i)
                                 variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
-                    }
 
-                    for (size_t ch = firstCh; ch < lastCh; ++ch)
-                    {
-                        ExpressionEvaluator::setProcessingChannel ((int) ch);
-                        auto* data = buffer.getWritePointer ((int) ch);
-                        data[i] = st->process ((int) ch, data[i]);
+                        fi->advanceCoeffsOnce();
+                        for (int ch = 0; ch < workCh; ++ch)
+                        {
+                            auto* data = work.getWritePointer (ch);
+                            data[i] = fi->processSampleOnly (ch, data[i]);
+                        }
                     }
                 }
-            }
-            else
-            {
-                st->processBlock (buffer);
-            }
-
-            if (st->msDecode && numChannels >= 2)
-            {
-                auto* m = buffer.getWritePointer (0);
-                auto* s = buffer.getWritePointer (1);
-                for (int i = 0; i < numSamples; ++i)
+                else
                 {
-                    const float l = m[i] + s[i];
-                    const float r = m[i] - s[i];
-                    m[i] = l;
-                    s[i] = r;
+                    fi->processBlock (work);
                 }
+                continue;
             }
-            continue;
-        }
 
-        if (auto* fi = dynamic_cast<Filter*> (b.get()))
+            b->processBlock (work);
+        }
+    };
+
+    if (! multi)
+    {
+        renderEnvsFor (buffer, {});
+        for (int i = 0; i < nOsc; ++i)
+            if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
+                (*oscs[i]->varPtr)[oscs[i]->name] = oscs[i]->modLane[(size_t) numSamples - 1];
+        for (int i = 0; i < nEnv; ++i)
+            if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
+                (*envs[i]->varPtr)[envs[i]->name] = envs[i]->modLane[(size_t) numSamples - 1];
+        processOn (buffer, {});
+    }
+    else
+    {
+        ensureBusBuffers (numChannels, numSamples);
+        for (int ch = 0; ch < numChannels; ++ch)
+            inSnapshot.copyFrom (ch, 0, buffer, ch, 0, numSamples);
+        for (int ch = 0; ch < numChannels; ++ch)
+            busScratch[0].copyFrom (ch, 0, inSnapshot, ch, 0, numSamples);
+
+        renderEnvsFor (busScratch[0], "main");
+        processOn (busScratch[0], "main");
+
+        for (int bi = 1; bi < (int) graphPtr->buses.size(); ++bi)
         {
-            if (fi->modulated)
-            {
-                // One coeff advance per sample, then all channels — never 2× stereo rate
-                for (int i = 0; i < numSamples; ++i)
-                {
-                    injectKnobsAt (i);
-                    for (int o = 0; o < nOsc; ++o)
-                        if ((int) oscs[o]->modLane.size() > i)
-                            variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
-                    for (int e = 0; e < nEnv; ++e)
-                        if ((int) envs[e]->modLane.size() > i)
-                            variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
-
-                    fi->advanceCoeffsOnce();
-                    for (int ch = 0; ch < numChannels; ++ch)
-                    {
-                        auto* data = buffer.getWritePointer (ch);
-                        data[i] = fi->processSampleOnly (ch, data[i]);
-                    }
-                }
-            }
-            else
-            {
-                fi->processBlock (buffer);
-            }
-            continue;
+            applyBusSends (bi, numChannels, numSamples);
+            const auto& name = graphPtr->buses[(size_t) bi].name;
+            renderEnvsFor (busScratch[(size_t) bi], name);
+            processOn (busScratch[(size_t) bi], name);
         }
 
-        b->processBlock (buffer);
+        for (int i = 0; i < nOsc; ++i)
+            if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
+                (*oscs[i]->varPtr)[oscs[i]->name] = oscs[i]->modLane[(size_t) numSamples - 1];
+        for (int i = 0; i < nEnv; ++i)
+            if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
+                (*envs[i]->varPtr)[envs[i]->name] = envs[i]->modLane[(size_t) numSamples - 1];
+
+        writeMixdown (buffer, numChannels, numSamples);
     }
 
     sampleCounter += numSamples;

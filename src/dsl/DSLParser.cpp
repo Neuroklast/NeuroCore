@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "../core/Config.h"
 
 using namespace dsl;
 
@@ -24,6 +25,23 @@ bool DSLParser::parse(const juce::String& text,
 
     juce::StringArray seen;
     bool parsingParams = true;
+    juce::String currentBus { "main" };
+    int namedBusCount = 0;
+    bool seenOut = false;
+    const juce::StringArray reservedBuses { "in", "main", "out", "bus", "send" };
+
+    auto isIdent = [] (const juce::String& s) -> bool
+    {
+        if (s.isEmpty())
+            return false;
+        if (! juce::CharacterFunctions::isLetter (s[0]) && s[0] != '_')
+            return false;
+        for (int c = 1; c < s.length(); ++c)
+            if (! juce::CharacterFunctions::isLetterOrDigit (s[c]) && s[c] != '_')
+                return false;
+        return true;
+    };
+
     for (int i = 0; i < lines.size(); ++i)
     {
         auto line = lines[i].trim();
@@ -112,46 +130,131 @@ bool DSLParser::parse(const juce::String& text,
         }
         auto id = trimLower(line.substring(0, colon));
         auto rest = line.substring(colon + 1).trim();
+
+        juce::StringArray idTok;
+        idTok.addTokens (id, " \t", {});
+        idTok.trim();
+        idTok.removeEmptyStrings();
+        const juce::String head = idTok.size() > 0 ? idTok[0] : juce::String();
+
         BlockDesc desc;
         desc.name = id;
         desc.type = id.retainCharacters("abcdefghijklmnopqrstuvwxyz");
 
-        // allow shorthand block names for common filters
-        if (desc.type == "hpf" || desc.type == "hp" || desc.type == "highpass")
+        if (head == "bus")
         {
-            desc.type = "filter";
-            desc.args["type"] = "highpass";
-        }
-        else if (desc.type == "bpf" || desc.type == "bp" || desc.type == "bandpass")
-        {
-            desc.type = "filter";
-            desc.args["type"] = "bandpass";
-        }
-        else if (desc.type == "lpf" || desc.type == "lp" || desc.type == "lowpass")
-        {
-            desc.type = "filter";
-            desc.args["type"] = "lowpass";
+            if (idTok.size() != 2)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": bus needs a name (bus dirt:).";
+                return false;
+            }
+            const auto busId = idTok[1];
+            if (! isIdent (busId) || reservedBuses.contains (busId))
+            {
+                error = "Error on line " + juce::String (i + 1) + ": reserved or invalid bus name '" + busId + "'.";
+                return false;
+            }
+            if (namedBusCount >= Config::kMaxNamedBuses)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": too many named buses (max "
+                      + juce::String (Config::kMaxNamedBuses) + ").";
+                return false;
+            }
+            if (seen.contains (busId))
+            {
+                error = "Error on line " + juce::String (i + 1) + ": '" + busId + "' is already defined.";
+                return false;
+            }
+            if (seenOut)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": out must be last.";
+                return false;
+            }
+            seen.add (busId);
+            ++namedBusCount;
+            desc.type = "bus";
+            desc.name = busId;
+            desc.busName.clear();
+            currentBus = busId;
+            blocks.push_back (std::move (desc));
+            continue;
         }
 
-        if (seen.contains(id))
+        if (head == "send")
         {
-            error = "Error on line " + juce::String(i+1) + ": '" + id + "' is already defined.";
-            return false;
+            if (currentBus == "main")
+            {
+                error = "Error on line " + juce::String (i + 1) + ": send is only allowed inside a named bus.";
+                return false;
+            }
+            if (seenOut)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": out must be last.";
+                return false;
+            }
+            desc.type = "send";
+            desc.name = "send";
+            desc.busName = currentBus;
         }
-        seen.add(id);
-
-        // delay/reverb/ms/verb aliases
-        if (desc.type == "verb")
-            desc.type = "reverb";
-        if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
-            desc.type = "ms";
-
-        if (desc.type != "stage" && desc.type != "filter" &&
-            desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
-            desc.type != "delay" && desc.type != "reverb" && desc.type != "ms")
+        else if (head == "out")
         {
-            error = "Unknown block type on line " + juce::String(i+1);
-            return false;
+            if (seenOut)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": only one out block is allowed.";
+                return false;
+            }
+            seenOut = true;
+            desc.type = "out";
+            desc.name = "out";
+            desc.busName.clear();
+        }
+        else
+        {
+            // allow shorthand block names for common filters
+            if (desc.type == "hpf" || desc.type == "hp" || desc.type == "highpass")
+            {
+                desc.type = "filter";
+                desc.args["type"] = "highpass";
+            }
+            else if (desc.type == "bpf" || desc.type == "bp" || desc.type == "bandpass")
+            {
+                desc.type = "filter";
+                desc.args["type"] = "bandpass";
+            }
+            else if (desc.type == "lpf" || desc.type == "lp" || desc.type == "lowpass")
+            {
+                desc.type = "filter";
+                desc.args["type"] = "lowpass";
+            }
+
+            if (seen.contains(id))
+            {
+                error = "Error on line " + juce::String(i+1) + ": '" + id + "' is already defined.";
+                return false;
+            }
+            seen.add(id);
+
+            // delay/reverb/ms/verb aliases
+            if (desc.type == "verb")
+                desc.type = "reverb";
+            if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
+                desc.type = "ms";
+
+            if (desc.type != "stage" && desc.type != "filter" &&
+                desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
+                desc.type != "delay" && desc.type != "reverb" && desc.type != "ms")
+            {
+                error = "Unknown block type on line " + juce::String(i+1);
+                return false;
+            }
+
+            if (seenOut)
+            {
+                error = "Error on line " + juce::String (i + 1) + ": out must be last.";
+                return false;
+            }
+
+            desc.busName = currentBus;
         }
 
         juce::StringArray argPairs;
@@ -323,6 +426,27 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         if (const auto trigger = arg("trigger"); trigger.isNotEmpty())
             parts.add("trigger=" + trigger);
         return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "bus")
+        return "bus " + block.name;
+
+    if (block.type == "send")
+    {
+        juce::StringArray parts;
+        for (const auto& [key, value] : block.args)
+            parts.add (key + "=" + value);
+        parts.sort (true);
+        return parts.isEmpty() ? juce::String ("send") : ("send " + parts.joinIntoString (", "));
+    }
+
+    if (block.type == "out")
+    {
+        juce::StringArray parts;
+        for (const auto& [key, value] : block.args)
+            parts.add (key + "=" + value);
+        parts.sort (true);
+        return parts.isEmpty() ? juce::String ("out") : ("out " + parts.joinIntoString (", "));
     }
 
     return block.type;

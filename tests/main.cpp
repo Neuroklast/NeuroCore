@@ -13,6 +13,7 @@
 #include "DelayReverbTest.h"
 #include "CrackleFixesTest.h"
 #include "ArchitectureHardeningTest.h"
+#include "BusGraphTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -39,6 +40,7 @@ int main (int argc, char* argv[])
   DelayReverbTest delayReverbTest;
   CrackleFixesTest crackleFixesTest;
   ArchitectureHardeningTest architectureHardeningTest;
+  BusGraphTest busGraphTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

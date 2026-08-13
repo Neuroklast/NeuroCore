@@ -13,6 +13,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **Kontinuierliche Control-Rate** | knob lanes + `mixDryWetContinuous` | Knobs und Dry/Wet sample-rate, nicht block-constant. |
 | **Filter-Timebase** | `advanceCoeffsOnce` + `processSample(ch)` | Coeff 1×/Sample; pro Kanal eigener SVF-State. |
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
+| **DSL Multi-Bus** | `BusGraph` + `SignalChain` | Max. 4 Named Buses + `in`/`main`. Send nur rückwärts (DAG). Mixdown **in** der DSL, eine Engine-Timeline. |
 | **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
 
 Defaults: OS **2×** (`Config::kDefaultOversamplingIndex = 1`), Diagnostics **off**, AutoGain **off**.
@@ -28,6 +29,7 @@ Input
               ├─► dryBuffer ──► LatencyAlignedSidechain ──┐
               └─► [Oversampling ↑] (wenn Mix > 0)
                     └─► DSL SignalChain (nur current; kein Dual-Run)
+                          optional: in-snapshot → main + named buses (Send-DAG) → out mixdown
                           └─► Post-DSL NaN-hold only
                                 └─► DC-Blocker
                                       └─► SignalPolisher (optional musical ceiling)

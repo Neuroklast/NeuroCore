@@ -1,6 +1,6 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-08-12  
+**Letzte Aktualisierung:** 2026-08-13  
 **Version:** 0.2.3  
 **Gesamtfortschritt:** ~88–90%
 
@@ -17,8 +17,8 @@
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
 | Core/PluginEditor | ✅ Gain+Mix only; Current-Preset Label; Live-Formel A–D; Knob-Farbringe | 97% | 2026-08-11 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
-| DSL/DSLParser | ✅ + delay / reverb / ms Block-Typen | 96% | 2026-08-12 |
-| DSL/SignalChain | ✅ echte Delay-Line + Freeverb-Reverb + Ms-Block; Filter channel=mid/side | 99% | 2026-08-12 |
+| DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out | 97% | 2026-08-13 |
+| DSL/SignalChain | ✅ Delay/Reverb/MS + Send-DAG Multi-Bus (max 4) | 99% | 2026-08-13 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -43,6 +43,15 @@
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-13 – DSL Multi-Bus (Send-DAG)
+
+- [x] Parser: `bus name:` / `send:` / `out:`; implicit `main`; reserved names
+- [x] `BusGraph` DAG (kein Forward-Send)
+- [x] `SignalChain` per-bus Buffer + Mixdown; serial Fast-Path
+- [x] Stages-Tag + Autocomplete-Snippet
+- [x] Docs: DSL_REFERENCE + ARCHITECTURE
+- [ ] Mixer-UI / Feedback-Matrix / N>4 — bewusst nicht in v1
 
 ### 2026-08-12 – Crackle-Fixes (Signal Chain)
 

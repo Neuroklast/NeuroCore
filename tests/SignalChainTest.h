@@ -302,6 +302,112 @@ public:
                 expect(std::isfinite(buf.getSample(0,i)));
             }
         }
+
+        beginTest("serial passthrough y=x");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript ("stage1: y = x", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 1.0f, 1.0e-4f);
+        }
+
+        beginTest("parallel dirt mixes with main");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.5\n"
+                "out: main = 1; dirt = 1\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 1.5f, 1.0e-4f);
+        }
+
+        beginTest("send from processed main");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "stage1: y = x * 0.5\n"
+                "bus aux:\n"
+                "send: main = 1\n"
+                "stage2: y = x\n"
+                "out: main = 0; aux = 1\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 0.5f, 1.0e-4f);
+        }
+
+        beginTest("no out ignores named bus");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "stage1: y = x * 0.25\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = 0\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 0.25f, 1.0e-4f);
+        }
+
+        beginTest("complementary out 1-c crossfade");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "param c = Blend [0, 1]\n"
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = 0\n"
+                "out: main = 1-c; dirt = c\n", e), e);
+            c.prepare (spec);
+            c.setParameter (2, 0.5f); // c
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 0.5f, 1.0e-4f);
+        }
+
+        beginTest("band split sum");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "bus low:\n"
+                "send: in = 1\n"
+                "stage1: y = x * 0.5\n"
+                "bus high:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.5\n"
+                "out: low = 1; high = 1\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 4);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            c.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 1.0f, 1.0e-4f);
+        }
     }
 };
 

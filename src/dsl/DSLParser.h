@@ -10,8 +10,9 @@ namespace dsl
 
 struct BlockDesc
 {
-    juce::String type;   // stage, filter, comp, env, osc
-    juce::String name;   // stage1 etc
+    juce::String type;    // stage, filter, comp, env, osc, bus, send, out
+    juce::String name;    // stage1 / dirt / send / out
+    juce::String busName; // "main" or named bus; empty for bus/out headers
     std::unordered_map<juce::String, juce::String> args; // raw arguments
 };
 

@@ -57,9 +57,14 @@ param b = Bright [0.0, 0.85]
 param c = Level [0.55, 1.45]
 filter1: type = highpass; cutoff = 45; resonance = 0.22
 stage1: y = tube(x, a * 0.5)
-stage2: y = softclip(x * (1.0 + b * 0.7), 0.9) * 0.4 + y * 0.6
-stage3: y = softclip(y, 0.75) * c
-filter2: type = lowpass; cutoff = 9500; resonance = 0.25`,
+stage2: y = softclip(y, 0.75) * c
+filter2: type = lowpass; cutoff = 9500; resonance = 0.25
+bus bright:
+  send: in = 1
+  filter3: type = highpass; cutoff = 45; resonance = 0.22
+  stage3: y = softclip(x * (1.0 + b * 0.7), 0.9) * c
+  filter4: type = lowpass; cutoff = 9500; resonance = 0.25
+out: main = 0.6; bright = 0.4`,
   { a: p("Drive", 0.5, 2.8, 1.1), b: p("Bright", 0, 0.85, 0.42), c: p("Level", 0.55, 1.45, 1.1), outG: 0 }
 );
 
@@ -133,9 +138,13 @@ add(
   `param a = Drive [0.8, 8.0]
 param b = Blend [0.2, 0.95]
 param c = Level [0.4, 1.3]
-filter1: type = highpass; cutoff = 90; resonance = 0.3
-stage1: y = lerp(x, diode(x, a), b) * c
-filter2: type = lowpass; cutoff = 9000; resonance = 0.3`,
+stage1: y = x * c
+bus dirt:
+  send: in = 1
+  filter1: type = highpass; cutoff = 90; resonance = 0.3
+  stage2: y = diode(x, a) * c
+  filter2: type = lowpass; cutoff = 9000; resonance = 0.3
+out: main = 1-b; dirt = b`,
   { a: p("Drive", 0.8, 8, 3.0), b: p("Blend", 0.2, 0.95, 0.62), c: p("Level", 0.4, 1.3, 0.9), outG: 0 }
 );
 
@@ -308,10 +317,13 @@ param b = Center [300, 1600]
 param c = Depth [200, 2200]
 param d = Mix [0.25, 0.9]
 osc1: shape = sine; freq = a; depth = 1.0
-filter1: type = highpass; cutoff = b; + = osc1; * = c; resonance = 0.55
-filter2: type = lowpass; cutoff = b; + = osc1; * = c * 0.7; resonance = 0.45
-stage1: y = lerp(x, softclip(x, 1.12), d)
-filter3: type = lowpass; cutoff = 12000; resonance = 0.25`,
+bus wet:
+  send: in = 1
+  filter1: type = highpass; cutoff = b; + = osc1; * = c; resonance = 0.55
+  filter2: type = lowpass; cutoff = b; + = osc1; * = c * 0.7; resonance = 0.45
+  stage1: y = softclip(x, 1.12)
+  filter3: type = lowpass; cutoff = 12000; resonance = 0.25
+out: main = 1-d; wet = d`,
   {
     a: p("Rate", 0.08, 3, 0.45),
     b: p("Center", 300, 1600, 520),
@@ -435,8 +447,12 @@ add(
   `param a = Drive [1.5, 10.0]
 param b = Blend [0.25, 0.9]
 param c = Level [0.45, 1.2]
-stage1: y = lerp(x, hardclip(softclip(tube(x, a), 1.15), 0.65), b) * c
-filter1: type = lowpass; cutoff = 10000; resonance = 0.3`,
+stage1: y = x * c
+bus crush:
+  send: in = 1
+  stage2: y = hardclip(softclip(tube(x, a), 1.15), 0.65) * c
+  filter1: type = lowpass; cutoff = 10000; resonance = 0.3
+out: main = 1-b; crush = b`,
   { a: p("Drive", 1.5, 10, 4.5), b: p("Blend", 0.25, 0.9, 0.58), c: p("Level", 0.45, 1.2, 0.85), outG: 0 }
 );
 
@@ -551,8 +567,12 @@ add(
 param b = Blend [0.25, 0.85]
 param c = Level [0.45, 1.25]
 filter1: type = highpass; cutoff = 35; resonance = 0.25
-stage1: y = lerp(x, tube(x, a), b) * c
-filter2: type = lowpass; cutoff = 7000; resonance = 0.35`,
+stage1: y = x * c
+bus dirt:
+  send: main = 1
+  stage2: y = tube(x, a)
+  filter2: type = lowpass; cutoff = 7000; resonance = 0.35
+out: main = 1-b; dirt = b`,
   { a: p("Drive", 1.3, 7, 3.2), b: p("Blend", 0.25, 0.85, 0.55), c: p("Level", 0.45, 1.25, 0.9), outG: 0 }
 );
 
@@ -563,9 +583,13 @@ add(
   `param a = Drive [1.8, 10.0]
 param b = Fold [0.25, 0.8]
 param c = Mix [0.25, 0.85]
-stage1: y = lerp(x, fold(x * a, -b, b), c)
-stage2: y = softclip(diode(y, 1.2), 1.05)
-filter1: type = lowpass; cutoff = 5500; resonance = 0.4`,
+stage1: y = x
+bus fold:
+  send: in = 1
+  stage2: y = fold(x * a, -b, b)
+  stage3: y = softclip(diode(y, 1.2), 1.05)
+  filter1: type = lowpass; cutoff = 5500; resonance = 0.4
+out: main = 1-c; fold = c`,
   { a: p("Drive", 1.8, 10, 4.5), b: p("Fold", 0.25, 0.8, 0.5), c: p("Mix", 0.25, 0.85, 0.6), outG: 0 }
 );
 
@@ -817,8 +841,12 @@ add(
   `param a = Drive [1.0, 3.2]
 param b = Blend [0.3, 0.9]
 param c = HF [5000, 16000]
-stage1: y = lerp(x, tube(x, a), b)
-filter1: type = lowpass; cutoff = c; resonance = 0.3`,
+stage1: y = x
+bus tape:
+  send: in = 1
+  stage2: y = tube(x, a)
+  filter1: type = lowpass; cutoff = c; resonance = 0.3
+out: main = 1-b; tape = b`,
   { a: p("Drive", 1, 3.2, 1.85), b: p("Blend", 0.3, 0.9, 0.58), c: p("HF", 5000, 16000, 11000), outG: 0 }
 );
 
@@ -841,9 +869,12 @@ add(
   `param a = Drive [1.2, 3.5]
 param b = Freq [2500, 9000]
 param c = Blend [0.2, 0.65]
-filter1: type = highpass; cutoff = b; resonance = 0.35
-stage1: y = lerp(x, softclip(x, a), c)
-filter2: type = lowpass; cutoff = 16000; resonance = 0.22`,
+bus air:
+  send: in = 1
+  filter1: type = highpass; cutoff = b; resonance = 0.35
+  stage1: y = softclip(x, a)
+  filter2: type = lowpass; cutoff = 16000; resonance = 0.22
+out: main = 1-c; air = c`,
   { a: p("Drive", 1.2, 3.5, 2.0), b: p("Freq", 2500, 9000, 4800), c: p("Blend", 0.2, 0.65, 0.4), outG: 0 }
 );
 
@@ -1005,9 +1036,12 @@ add(
   `param a = Freq [1800, 10000]
 param b = Drive [1.2, 3.8]
 param c = Blend [0.25, 0.75]
-filter1: type = highpass; cutoff = a; resonance = 0.5
-stage1: y = lerp(x, softclip(x, b), c)
-filter2: type = lowpass; cutoff = 15000; resonance = 0.22`,
+bus air:
+  send: in = 1
+  filter1: type = highpass; cutoff = a; resonance = 0.5
+  stage1: y = softclip(x, b)
+  filter2: type = lowpass; cutoff = 15000; resonance = 0.22
+out: main = 1-c; air = c`,
   { a: p("Freq", 1800, 10000, 4200), b: p("Drive", 1.2, 3.8, 2.2), c: p("Blend", 0.25, 0.75, 0.5), outG: 0 }
 );
 
@@ -1688,8 +1722,12 @@ add(
   `param a = Drive [1.0, 5.0]
 param b = Blend [0.15, 0.9]
 param c = Level [0.6, 1.15]
-stage1: y = lerp(x, softclip(x, a), b) * c
-filter1: type = lowpass; cutoff = 14000; resonance = 0.25`,
+stage1: y = x * c
+bus clip:
+  send: in = 1
+  stage2: y = softclip(x, a) * c
+  filter1: type = lowpass; cutoff = 14000; resonance = 0.25
+out: main = 1-b; clip = b`,
   { a: p("Drive", 1, 5, 2.2), b: p("Blend", 0.15, 0.9, 0.55), c: p("Level", 0.6, 1.15, 0.95), outG: 0 }
 );
 
@@ -1766,12 +1804,23 @@ param c = Blend [0.2, 0.9]
 param d = Scoop [0.3, 1.4]
 param e = Cab [2500, 8000]
 param f = Level [0.35, 1.15]
-filter1: type = highpass; cutoff = 70; resonance = 0.35
-stage1: y = lerp(tube(x, a), tube(x, b), c)
-filter2: type = bandpass; center = 900; width = 2200
-stage2: y = softclip(x * d, 1.2)
-filter3: type = lowpass; cutoff = e; resonance = 0.4
-stage3: y = softclip(y, 1.1) * f`,
+bus clean:
+  send: in = 1
+  filter1: type = highpass; cutoff = 70; resonance = 0.35
+  stage1: y = tube(x, a)
+  filter2: type = bandpass; center = 900; width = 2200
+  stage2: y = softclip(x * d, 1.2)
+  filter3: type = lowpass; cutoff = e; resonance = 0.4
+  stage3: y = softclip(y, 1.1) * f
+bus hot:
+  send: in = 1
+  filter4: type = highpass; cutoff = 70; resonance = 0.35
+  stage4: y = tube(x, b)
+  filter5: type = bandpass; center = 900; width = 2200
+  stage5: y = softclip(x * d, 1.2)
+  filter6: type = lowpass; cutoff = e; resonance = 0.4
+  stage6: y = softclip(y, 1.1) * f
+out: clean = 1-c; hot = c`,
   {
     a: p("Clean", 0.6, 2.5, 1.2),
     b: p("Hot", 2, 9, 4.5),
@@ -1853,10 +1902,13 @@ param e = Mix [0.25, 0.95]
 param f = Resonance [0.4, 2.2]
 param g = Level [0.5, 1.2]
 osc1: type = sine; freq = a
-filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f
-stage1: y = softclip(x + y_prev * d, 1.2)
-stage2: y = lerp(x, y, e) * g
-filter2: type = lowpass; cutoff = 12000; resonance = 0.28`,
+stage1: y = x * g
+bus swirl:
+  send: main = 1
+  filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f
+  stage2: y = softclip(x + y_prev * d, 1.2)
+  filter2: type = lowpass; cutoff = 12000; resonance = 0.28
+out: main = 1-e; swirl = e`,
   {
     a: p("Rate", 0.05, 6, 0.35),
     b: p("Depth", 200, 2500, 900),

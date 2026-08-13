@@ -169,6 +169,10 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
         {
             // modulators alone are fine if later stages use them
         }
+        else if (b.type == "bus" || b.type == "send" || b.type == "out")
+        {
+            // routing; audio lives on the following/named bus stages
+        }
     }
 
     // Hard NL / feedback dirt without any later lowpass recovery
