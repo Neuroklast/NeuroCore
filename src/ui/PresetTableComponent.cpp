@@ -5,6 +5,7 @@
 #include "../utils/PresetManager.h"
 #include "../utils/FactoryPresetLibrary.h"
 #include "../utils/PresetSearch.h"
+#include "../utils/PresetRatings.h"
 #include "../third_party/nlohmann/json.hpp"
 
 using json = nlohmann::json;
@@ -28,10 +29,11 @@ PresetTableComponent::PresetTableComponent (NeuroCoreAudioProcessor& proc)
 {
     addAndMakeVisible (table);
     table.setModel (this);
-    table.getHeader().addColumn ("Name",     1, 220, 80, 500, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Category", 2, 110, 60, 220, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Source",   3, 80, 50, 140, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Author",   4, 120, 50, 220, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Name",     1, 200, 80, 500, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Category", 2, 100, 60, 220, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Source",   3, 70, 50, 140, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Author",   4, 100, 50, 220, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Rating",   5, 90, 70, 120, juce::TableHeaderComponent::defaultFlags);
     table.setMultipleSelectionEnabled (false);
     table.setRowHeight (26);
     refresh();
@@ -98,6 +100,11 @@ void PresetTableComponent::rebuildFiltered()
                     if (cmp == 0) cmp = a.name.compareNatural (b.name);
                     break;
                 case 4: cmp = a.author.compareNatural (b.author); break;
+                case 5:
+                    cmp = PresetRatings::getInstance().get (a.name)
+                        - PresetRatings::getInstance().get (b.name);
+                    if (cmp == 0) cmp = a.name.compareNatural (b.name);
+                    break;
                 default: cmp = ia - ib; break;
             }
             if (cmp == 0) cmp = ia - ib;
@@ -301,6 +308,26 @@ void PresetTableComponent::paintCell (juce::Graphics& g, int row, int columnId,
     if (e == nullptr)
         return;
 
+    if (columnId == 5)
+    {
+        const int r = PresetRatings::getInstance().get (e->name);
+        const float cell = juce::jmin (12.f, (float) height - 8.f);
+        const float gap = 3.f;
+        const float total = 5.f * cell + 4.f * gap;
+        float x = 6.f + juce::jmax (0.f, ((float) width - total) * 0.5f);
+        const float y = ((float) height - cell) * 0.5f;
+        for (int i = 1; i <= 5; ++i)
+        {
+            g.setColour (i <= r ? NeuroCoreLookAndFeel::accent()
+                                : NeuroCoreLookAndFeel::mutedText().withAlpha (0.35f));
+            juce::Path p;
+            p.addStar ({ x + cell * 0.5f, y + cell * 0.5f }, 5, cell * 0.22f, cell * 0.48f, -0.5f);
+            g.fillPath (p);
+            x += cell + gap;
+        }
+        return;
+    }
+
     juce::String text;
     if (columnId == 1)      text = e->name;
     else if (columnId == 2) text = e->category;
@@ -372,6 +399,29 @@ juce::StringArray PresetTableComponent::getTagsForRow (int row) const
     if (const auto* e = entryAt (row))
         return e->tags;
     return {};
+}
+
+int PresetTableComponent::getRatingForRow (int row) const
+{
+    if (const auto* e = entryAt (row))
+        return PresetRatings::getInstance().get (e->name);
+    return 0;
+}
+
+void PresetTableComponent::cellClicked (int rowNumber, int columnId, const juce::MouseEvent& e)
+{
+    if (columnId != 5)
+        return;
+    const auto* ent = entryAt (rowNumber);
+    if (ent == nullptr)
+        return;
+    const int star = juce::jlimit (1, 5, 1 + e.x * 5 / juce::jmax (1, table.getHeader().getColumnWidth (5)));
+    auto& ratings = PresetRatings::getInstance();
+    if (ratings.get (ent->name) == star)
+        ratings.set (ent->name, 0);
+    else
+        ratings.set (ent->name, star);
+    table.repaintRow (rowNumber);
 }
 
 void PresetTableComponent::cellDoubleClicked (int rowNumber, int, const juce::MouseEvent&)

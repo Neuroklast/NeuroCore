@@ -10,7 +10,9 @@
 #include "../src/ui/FormulaDisplayComponent.h"
 #include "../src/ui/PluginLookAndFeel.h"
 #include "../src/ui/custom/BrandLockup.h"
+#include "../src/ui/LoudnessMeterComponent.h"
 #include "../src/utils/PresetSearch.h"
+#include "../src/utils/PresetRatings.h"
 #include "../src/utils/FactoryPresetLibrary.h"
 
 class EditorUxTest : public juce::UnitTest
@@ -33,6 +35,34 @@ public:
             const juce::String banner (Config::kOsBanner);
             expect (banner.containsIgnoreCase ("neuroklast"));
             expect (! banner.containsIgnoreCase ("netrunner"));
+        }
+
+        beginTest ("preset ratings clamp to 1-5 and clear at 0");
+        {
+            auto& r = PresetRatings::getInstance();
+            const juce::String key ("__unit_test_rating__");
+            r.set (key, 9);
+            expectEquals (r.get (key), 5);
+            r.set (key, 3);
+            expectEquals (r.get (key), 3);
+            r.set (key, 0);
+            expectEquals (r.get (key), 0);
+        }
+
+        beginTest ("editor column is wider than the knob column");
+        {
+            expect (Config::kBodyEditorWeight > Config::kBodyKnobsWeight);
+            expect (Config::kBodyKnobsWeight < 2.4f);
+        }
+
+        beginTest ("meter pixel bands stay fine at idle and chunk at the top");
+        {
+            expectEquals (LoudnessMeterComponent::bandHeightPx (0.f, 0.f), 2);
+            expect (LoudnessMeterComponent::bandHeightPx (0.3f, 0.3f)
+                    < LoudnessMeterComponent::bandHeightPx (0.3f, 1.f));
+            expect (LoudnessMeterComponent::bandHeightPx (0.5f, 1.f)
+                    < LoudnessMeterComponent::bandHeightPx (1.f, 1.f));
+            expect (LoudnessMeterComponent::bandHeightPx (1.f, 1.f) >= 6);
         }
 
         beginTest ("NK lockup stays smaller than the HUD strip");

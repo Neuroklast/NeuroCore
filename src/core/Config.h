@@ -30,6 +30,11 @@ namespace Config
     inline constexpr const char* kOsBanner  = "NEUROCORE // NEUROKLAST OS";
     /// Shared height for settings-row chrome (L/BOTH/R, combos look).
     inline constexpr int kChromeControlHeight = 32;
+    /// Main body column weights: knobs / formula module / meter.
+    /// Knobs are square — a fat left column only pads the gap between a/b.
+    inline constexpr float kBodyKnobsWeight  = 2.05f;
+    inline constexpr float kBodyEditorWeight = 6.40f;
+    inline constexpr float kBodyMeterWeight  = 1.05f;
 
     /// Size of the custom parameter knobs.
 

@@ -112,8 +112,6 @@ private:
     std::unique_ptr<juce::TextButton>    editorFontPlusButton;
     std::unique_ptr<juce::Label>         editorFontSizeLabel;
     std::unique_ptr<juce::TextButton>    presetsButton;
-    std::unique_ptr<juce::ComboBox>      quickTemplateBox;
-    std::unique_ptr<juce::Label>         quickTemplateLabel;
     std::unique_ptr<juce::TextButton>    bypassButton; // cyber toggle (text button styled)
     std::unique_ptr<juce::TextButton>    functionsButton;
     std::unique_ptr<juce::TextButton>    stagesButton;

@@ -50,7 +50,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     brandLockup = std::make_unique<BrandLockup> (
         lookAndFeel.getNkLogo(),
-        juce::String (PLUGIN_NAME) + "  // v" + PLUGIN_VERSION);
+        juce::String (PLUGIN_NAME),
+        juce::String ("v") + PLUGIN_VERSION);
     logoGlitch.director = &cyberDirector;
     brandLockup->addMouseListener (&logoGlitch, false);
     addAndMakeVisible (*brandLockup);
@@ -294,76 +295,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     }
     addAndMakeVisible(*formulaLiveDisplay);
     applyEditorFontSize (editorFontHeight);
-
-    // Quick templates: insert building blocks into the formula (editor is the main feature)
-    quickTemplateLabel = std::make_unique<juce::Label> ("", "Insert");
-    quickTemplateLabel->setJustificationType (juce::Justification::centredRight);
-    quickTemplateLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    addAndMakeVisible (*quickTemplateLabel);
-
-    quickTemplateBox = std::make_unique<juce::ComboBox>();
-    quickTemplateBox->setTextWhenNothingSelected ("Quick template...");
-    quickTemplateBox->addItem ("Drive softclip + LPF", 1);
-    quickTemplateBox->addItem ("Tape delay", 2);
-    quickTemplateBox->addItem ("Room reverb", 3);
-    quickTemplateBox->addItem ("Envelope duck", 4);
-    quickTemplateBox->addItem ("Hardclip + recovery LPF", 5);
-    quickTemplateBox->addItem ("Tremolo amp", 6);
-    quickTemplateBox->addItem ("Bitcrush lo-fi", 7);
-    quickTemplateBox->onChange = [this]
-    {
-        const int id = quickTemplateBox->getSelectedId();
-        if (id <= 0)
-            return;
-        juce::String frag;
-        switch (id)
-        {
-            case 1: frag = "param a = Drive [0.5, 6.0]\nparam b = Tone [800, 9000]\nstage1: y = softclip(x, a)\nfilter1: type = lowpass; cutoff = b; resonance = 0.25\n"; break;
-            case 2: frag = "param a = Time [50, 600]\nparam b = Feedback [0.1, 0.85]\nparam c = Mix [0.15, 0.8]\ndelay1: time = a; feedback = b; mix = c; damp = 4500\n"; break;
-            case 3: frag = "param a = Size [0.2, 0.95]\nparam b = Damp [0.1, 0.9]\nparam c = Mix [0.15, 0.7]\nreverb1: size = a; damping = b; mix = c\n"; break;
-            case 4: frag = "param a = Duck [0.0, 0.9]\nparam b = Attack [0.001, 0.05]\nparam c = Release [0.05, 0.4]\nenv1: type = peak; attack = b; release = c\nstage1: y = x * (1.0 - env1 * a)\n"; break;
-            case 5: frag = "param a = Limit [0.3, 1.0]\nstage1: y = hardclip(softclip(x, 1.2), a)\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.3\n"; break;
-            case 6: frag = "param a = Rate [0.5, 12]\nparam b = Depth [0.0, 1.0]\nosc1: type = sine; freq = a\nstage1: y = x * (1.0 - b * 0.5 * (1.0 + osc1))\n"; break;
-            case 7: frag = "param a = Bits [3, 12]\nparam b = Mix [0.2, 1.0]\nstage1: y = lerp(x, bitcrush(x, a), b)\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.3\n"; break;
-            default: break;
-        }
-        quickTemplateBox->setSelectedId (0, juce::dontSendNotification);
-        if (frag.isEmpty())
-            return;
-        juce::String cur = editing && formulaInputEditor != nullptr
-                               ? formulaInputEditor->getText()
-                               : audioProcessor.getScript();
-        if (cur.isNotEmpty() && ! cur.endsWithChar ('\n'))
-            cur += "\n";
-        cur += "\n// --- quick template ---\n";
-        cur += frag;
-        if (editing && formulaInputEditor != nullptr)
-        {
-            formulaInputEditor->setText (cur);
-        }
-        else
-        {
-            juce::String err;
-            if (audioProcessor.applyFormula (cur, err, false))
-            {
-                if (formulaInputEditor)
-                    formulaInputEditor->setText (cur);
-                updateLiveFormulaView();
-            }
-            else if (errorLabel)
-            {
-                errorLabel->setColour (juce::Label::textColourId, juce::Colour (0xffff6b6b));
-                errorLabel->setText ("Insert failed: " + err, juce::dontSendNotification);
-            }
-        }
-    };
-    addAndMakeVisible (*quickTemplateBox);
-
-    {
-        juce::String err;
-        audioProcessor.setFormula(formulaInputEditor->getText(), err);
-        syncFromProcessor();
-    }
+    syncFromProcessor();
 
     optimizeButton = std::make_unique<juce::TextButton>(TRANS("OptimizeButton"));
     optimizeButton->onClick = [this]
@@ -488,37 +420,47 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto settingsRow = makeRow(0.055f);
     settingsRow->innerMargin = pad;
-    auto addChrome = [&] (juce::Component* c, float w)
+    auto addChrome = [&] (ui::LayoutNode& parent, juce::Component* c, float w)
     {
         auto n = makeLeaf (c, w);
         n->maxHeight = Config::kChromeControlHeight;
-        settingsRow->addChild (std::move (n));
+        parent.addChild (std::move (n));
     };
-    addChrome (inputChannelSwitch.get(), 1.35f);
-    settingsRow->addChild (makeLeaf (oversamplingLabel.get(), 1.0f));
-    addChrome (oversamplingBox.get(), 0.9f);
-    settingsRow->addChild (makeLeaf (polisherLabel.get(), 0.9f));
-    addChrome (polisherBox.get(), 1.1f);
-    settingsRow->addChild (makeLeaf (editorFontLabel.get(), 0.45f));
-    addChrome (editorFontMinusButton.get(), 0.28f);
-    settingsRow->addChild (makeLeaf (editorFontSizeLabel.get(), 0.35f));
-    addChrome (editorFontPlusButton.get(), 0.28f);
+    // Same column weights as knobs / editor / meter so L/BOTH/R and Text-/+
+    // sit on those gutters.
+    addChrome (*settingsRow, inputChannelSwitch.get(), Config::kBodyKnobsWeight);
+
+    auto midChrome = makeRow (Config::kBodyEditorWeight);
+    midChrome->innerMargin = pad;
+    midChrome->addChild (makeLeaf (oversamplingLabel.get(), 1.0f));
+    addChrome (*midChrome, oversamplingBox.get(), 0.9f);
+    midChrome->addChild (makeLeaf (polisherLabel.get(), 0.9f));
+    addChrome (*midChrome, polisherBox.get(), 1.1f);
+    settingsRow->addChild (std::move (midChrome));
+
+    auto fontChrome = makeRow (Config::kBodyMeterWeight);
+    fontChrome->innerMargin = 3;
+    fontChrome->addChild (makeLeaf (editorFontLabel.get(), 0.9f));
+    addChrome (*fontChrome, editorFontMinusButton.get(), 0.55f);
+    fontChrome->addChild (makeLeaf (editorFontSizeLabel.get(), 0.7f));
+    addChrome (*fontChrome, editorFontPlusButton.get(), 0.55f);
+    settingsRow->addChild (std::move (fontChrome));
     layoutRoot->addChild(std::move(settingsRow));
 
     // Main body: 6 knobs (2x3) left + larger formula editor + meter
     auto body = makeRow(0.52f);
     body->innerMargin = pad;
 
-    auto leftPanel = makeColumn(2.8f);
+    auto leftPanel = makeColumn(Config::kBodyKnobsWeight);
     leftPanel->innerMargin = pad;
 
     auto knobGrid = makeColumn(2.6f);
-    knobGrid->innerMargin = pad;
-    // 3 rows x 2 knobs (a..f)
+    knobGrid->innerMargin = 4;
+    // 3 rows x 2 knobs (a..f) — tight gap so leftover width goes to the editor
     for (int row = 0; row < 3; ++row)
     {
         auto knobRow = makeRow();
-        knobRow->innerMargin = pad;
+        knobRow->innerMargin = 4;
         for (int col = 0; col < 2; ++col)
         {
             const int idx = row * 2 + col;
@@ -536,7 +478,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     leftPanel->addChild(std::move(knobGrid));
     leftPanel->addChild(std::move(nameRow));
 
-    auto centerPanel = makeColumn(5.2f);
+    auto centerPanel = makeColumn(Config::kBodyEditorWeight);
     centerPanel->innerMargin = pad;
     auto actionRow = makeRow(0.09f);
     actionRow->innerMargin = pad;
@@ -545,20 +487,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     actionRow->addChild(makeLeaf(optimizeButton.get(), 1.f));
     centerPanel->addChild(std::move(actionRow));
 
-    // Quick templates live next to the editor (main feature)
-    auto tplRow = makeRow(0.08f);
-    tplRow->innerMargin = pad;
-    if (quickTemplateLabel)
-        tplRow->addChild(makeLeaf(quickTemplateLabel.get(), 0.7f));
-    if (quickTemplateBox)
-        tplRow->addChild(makeLeaf(quickTemplateBox.get(), 2.4f));
-    centerPanel->addChild(std::move(tplRow));
-
     // Live annotated formula (default) - editor shares bounds when editing
     centerPanel->addChild(makeLeaf(formulaLiveDisplay.get(), 1.f));
     centerPanel->addChild(makeLeaf(errorLabel.get(), 0.08f));
 
-    auto rightPanel = makeColumn(1.15f);
+    auto rightPanel = makeColumn(Config::kBodyMeterWeight);
     rightPanel->innerMargin = pad;
     rightPanel->addChild(makeLeaf(loudnessMeter.get()));
 

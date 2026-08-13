@@ -1,4 +1,5 @@
 #include <JuceHeader.h>
+#include <cmath>
 #include "LoudnessMeterComponent.h"
 #include "PluginLookAndFeel.h"
 #include "../dsp/DSPUtils.h"
@@ -42,6 +43,11 @@ void LoudnessMeterComponent::timerCallback()
     {
         blink = false;
     }
+
+    const float fillNorm = juce::jlimit (0.f, 1.f, (loudness + 60.f) / 60.f);
+    if (fillNorm > 0.08f && rng.nextFloat() < 0.25f + 0.45f * fillNorm)
+        glitchSeed = rng.nextInt();
+
     repaint();
 }
 
@@ -101,6 +107,72 @@ void LoudnessMeterComponent::mouseDown(const juce::MouseEvent& e)
         showContextMenu();
 }
 
+int LoudnessMeterComponent::bandHeightPx (float fillNorm, float heightFromBottom01) noexcept
+{
+    const float h = juce::jlimit (0.f, 1.f, heightFromBottom01);
+    const float f = juce::jlimit (0.f, 1.f, fillNorm);
+    const float intensity = std::pow (h, 1.35f) * (0.25f + 0.75f * f);
+    return juce::jmax (2, (int) std::lround (2.f + intensity * 7.f));
+}
+
+void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
+                                               juce::Rectangle<float> meterArea,
+                                               float fillTop,
+                                               float fillNorm) noexcept
+{
+    const juce::Colour topC = limiter ? juce::Colour (0xffff4a22) : NeuroCoreLookAndFeel::accent();
+    const juce::Colour botC = limiter ? juce::Colour (0xffff1a1a)
+                                      : NeuroCoreLookAndFeel::accentDim();
+    const float fill = juce::jlimit (0.f, 1.f, fillNorm);
+
+    juce::Random px (glitchSeed);
+    float y = meterArea.getBottom();
+    const float hMeter = juce::jmax (1.f, meterArea.getHeight());
+
+    while (y > fillTop + 0.4f)
+    {
+        const float height01 = (meterArea.getBottom() - y) / hMeter;
+        const float intensity = std::pow (juce::jlimit (0.f, 1.f, height01), 1.35f)
+                              * (0.25f + 0.75f * fill);
+        const int band = bandHeightPx (fillNorm, height01);
+        const float y0 = juce::jmax (fillTop, y - (float) band);
+        const float h = y - y0;
+        const auto c = botC.interpolatedWith (topC, juce::jlimit (0.f, 1.f, height01));
+
+        const int cols = 1 + (int) std::lround (intensity * 6.f);
+        const float cw = meterArea.getWidth() / (float) juce::jmax (1, cols);
+        const float gap = intensity * 0.9f;
+        for (int col = 0; col < cols; ++col)
+        {
+            if (px.nextFloat() < 0.06f * intensity)
+                continue;
+            const float bri = 1.f - intensity * 0.08f + px.nextFloat() * 0.22f * intensity;
+            g.setColour (c.withMultipliedBrightness (bri));
+            g.fillRect (meterArea.getX() + (float) col * cw + gap * 0.5f, y0,
+                        juce::jmax (1.f, cw - gap), h);
+        }
+        y = y0;
+    }
+
+    const float sliceAmt = std::pow (fill, 1.2f);
+    if (sliceAmt > 0.04f)
+    {
+        const int n = (int) std::lround (sliceAmt * 5.f);
+        for (int i = 0; i < n; ++i)
+        {
+            const float span = juce::jmax (4.f, meterArea.getBottom() - fillTop);
+            const float ySlice = fillTop + px.nextFloat() * span;
+            const float sh = 1.f + px.nextFloat() * (1.2f + 3.2f * sliceAmt);
+            const float dx = (px.nextFloat() - 0.5f) * 8.f * sliceAmt;
+            const auto sliceC = (i % 3 == 0 ? juce::Colours::cyan
+                                            : (i % 3 == 1 ? juce::Colours::magenta
+                                                          : NeuroCoreLookAndFeel::accent()));
+            g.setColour (sliceC.withAlpha (0.08f + 0.32f * sliceAmt));
+            g.fillRect (meterArea.getX() + dx, ySlice, meterArea.getWidth(), sh);
+        }
+    }
+}
+
 juce::Path LoudnessMeterComponent::makeHull (juce::Rectangle<float> r) const
 {
     const float cut = juce::jmin (7.f, r.getWidth() * 0.28f);
@@ -137,18 +209,13 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
 
     const float yLevel = valueToY (shown, meterArea);
     const float fillTop = juce::jlimit (meterArea.getY(), meterArea.getBottom(), yLevel);
-    auto fillR = juce::Rectangle<float> (meterArea.getX(), fillTop,
-                                         meterArea.getWidth(),
-                                         meterArea.getBottom() - fillTop);
-    juce::Colour topC = limiter ? juce::Colour (0xffff4a22) : NeuroCoreLookAndFeel::accent();
-    juce::Colour botC = limiter ? juce::Colour (0xffff1a1a)
-                                : NeuroCoreLookAndFeel::accentDim();
-    juce::ColourGradient grad (topC, fillR.getX(), fillR.getY(),
-                               botC, fillR.getX(), fillR.getBottom(), false);
+    const float shownForNorm = (scale == Scale::KSystem) ? shown + 20.f : shown;
+    const float fillNorm = juce::jlimit (0.f, 1.f,
+                                         (shownForNorm - info.minDb) / (info.maxDb - info.minDb));
+
     g.saveState();
     g.reduceClipRegion (hull);
-    g.setGradientFill (grad);
-    g.fillRect (fillR);
+    drawOverloadFill (g, meterArea, fillTop, fillNorm);
 
     g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
     for (int i = 1; i < 10; ++i)

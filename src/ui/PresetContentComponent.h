@@ -50,5 +50,8 @@ private:
     juce::TextButton saveButton { "Save As..." };
     juce::TextButton deleteButton { "Delete" };
     juce::TextButton newBlankButton { "New Blank" };
+    juce::TextButton exportButton { "Export" };
+    juce::TextButton importButton { "Import" };
     juce::TextButton closeButton { "Close" };
+    std::unique_ptr<juce::FileChooser> fileChooser;
 };

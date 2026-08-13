@@ -15,6 +15,7 @@ public:
     int getNumRows() override;
     void paintRowBackground (juce::Graphics&, int, int, int, bool) override;
     void paintCell (juce::Graphics&, int, int, int, int, bool) override;
+    void cellClicked (int rowNumber, int columnId, const juce::MouseEvent&) override;
     void cellDoubleClicked (int rowNumber, int columnId, const juce::MouseEvent&) override;
     void selectedRowsChanged (int lastRowSelected) override;
     void sortOrderChanged (int newSortColumnId, bool isForwards) override;
@@ -34,6 +35,7 @@ public:
     juce::String getDescriptionForRow (int row) const;
     juce::String getAuthorForRow (int row) const;
     juce::StringArray getTagsForRow (int row) const;
+    int getRatingForRow (int row) const;
     juce::StringArray getAllCategories() const;
 
     juce::TableListBox& getTable() { return table; }

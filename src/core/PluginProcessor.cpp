@@ -7,6 +7,7 @@
 */
 
 #include <JuceHeader.h>
+#include <cmath>
 #include <vector>
 #include "PluginProcessor.h"
 #include "../ui/PluginEditor.h"
@@ -265,14 +266,6 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
 
-    // OS rebuild: silence — do not pass dry at full level into a device restart.
-    if (osRebuildMute.load (std::memory_order_acquire))
-    {
-        buffer.clear();
-        waveformCapture.pushOutput (buffer);
-        return;
-    }
-
     // Capture input waveform (pre-processing)
     waveformCapture.pushInput(buffer);
 
@@ -343,6 +336,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         const double budget = (sr > 0.0) ? ((double) nSamp / sr) : 0.005;
         cpuProtect.observe (used, budget);
     }
+
+    float g = osOutGain.load (std::memory_order_relaxed);
+    const float tgt = osOutGainTarget.load (std::memory_order_relaxed);
+    g += (tgt - g) * 0.28f;
+    if (std::abs (g - tgt) < 0.002f)
+        g = tgt;
+    osOutGain.store (g, std::memory_order_relaxed);
+    if (g < 0.999f)
+        buffer.applyGain (juce::jlimit (0.f, 1.f, g));
 
     waveformCapture.pushOutput(buffer);
 }
@@ -579,25 +581,32 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 
 void NeuroCoreAudioProcessor::handleAsyncUpdate()
 {
-    // Never suspendProcessing here — Standalone stops the audio device and
-    // pops the speakers. Mute + processLock: audio thread outputs silence.
-    osRebuildMute.store (true, std::memory_order_release);
+    // Fade out, swap OS under lock, fade in. Never suspend the audio device.
+    osOutGainTarget.store (0.f, std::memory_order_release);
+    for (int i = 0; i < 40; ++i)
+    {
+        if (osOutGain.load (std::memory_order_acquire) < 0.04f)
+            break;
+        juce::Thread::sleep (1);
+    }
     {
         const juce::ScopedLock pl (scriptManager.getProcessLock());
         updateProcessingSpec (getSampleRate(), getBlockSize());
+        osOutGain.store (0.f, std::memory_order_relaxed);
     }
-    osRebuildMute.store (false, std::memory_order_release);
+    osOutGainTarget.store (1.f, std::memory_order_release);
 }
 
 void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float /*newValue*/)
 {
     if (parameterID == EffectParameters::oversampling)
     {
-        // Must use choice index — newValue is often normalised 0..1 (bug: cast to int → always 0/1)
-        int idx = 1;
+        int idx = Config::kDefaultOversamplingIndex;
         if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
                 apvts.getParameter (EffectParameters::oversampling)))
             idx = juce::jlimit (0, 3, choice->getIndex());
+        if (idx == dspEngine.getOversamplingIndex())
+            return;
         dspEngine.setOversamplingIndex (idx);
         cpuProtect.clear();
         triggerAsyncUpdate();

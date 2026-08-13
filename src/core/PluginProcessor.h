@@ -222,7 +222,8 @@ private:
     bool           isLicensed  { false };
     double         demoStartMs { 0.0 };
 
-    std::atomic<bool> osRebuildMute { false };
+    std::atomic<float> osOutGain { 1.f };
+    std::atomic<float> osOutGainTarget { 1.f };
 
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;

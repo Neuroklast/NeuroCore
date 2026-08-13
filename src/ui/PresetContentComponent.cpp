@@ -92,7 +92,8 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
         b.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
         b.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
     };
-    for (auto* b : { &loadButton, &saveButton, &deleteButton, &newBlankButton, &closeButton })
+    for (auto* b : { &loadButton, &saveButton, &deleteButton, &newBlankButton,
+                     &exportButton, &importButton, &closeButton })
     {
         styleBtn (*b);
         addAndMakeVisible (*b);
@@ -136,6 +137,69 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
         processor.setCurrentPresetName ("Untitled");
         if (onSaved) onSaved();
         if (onClose) onClose();
+    };
+    exportButton.onClick = [this]
+    {
+        const int row = table.getSelectedRow();
+        if (row < 0)
+            return;
+        const auto name = table.getNameForRow (row);
+        auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                         .getChildFile (name + Config::kPresetFileExtension);
+        fileChooser = std::make_unique<juce::FileChooser> (
+            "Export preset", start, "*" + juce::String (Config::kPresetFileExtension));
+        constexpr int flags = juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::canSelectFiles
+                            | juce::FileBrowserComponent::warnAboutOverwriting;
+        fileChooser->launchAsync (flags, [this, row] (const juce::FileChooser& fc)
+        {
+            auto dest = fc.getResult();
+            if (dest == juce::File())
+                return;
+            if (! dest.hasFileExtension (Config::kPresetFileExtension))
+                dest = dest.withFileExtension (Config::kPresetFileExtension);
+            bool ok = false;
+            if (table.isFactoryRow (row))
+            {
+                ok = processor.presetManager.savePreset (
+                    dest, table.getNameForRow (row), table.getAuthorForRow (row),
+                    table.getCategoryForRow (row),
+                    table.getTagsForRow (row).joinIntoString (","));
+            }
+            else
+            {
+                auto src = table.getFileForRow (row);
+                ok = src.existsAsFile() && src.copyFileTo (dest);
+            }
+            juce::ignoreUnused (ok);
+        });
+    };
+    importButton.onClick = [this]
+    {
+        auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+        fileChooser = std::make_unique<juce::FileChooser> (
+            "Import preset", start, "*" + juce::String (Config::kPresetFileExtension));
+        constexpr int flags = juce::FileBrowserComponent::openMode
+                            | juce::FileBrowserComponent::canSelectFiles;
+        fileChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
+        {
+            auto src = fc.getResult();
+            if (! src.existsAsFile())
+                return;
+            auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                           .getChildFile (Config::kUserPresetFolder);
+            dir.createDirectory();
+            auto dest = dir.getChildFile (src.getFileName());
+            int n = 2;
+            while (dest.existsAsFile())
+            {
+                dest = dir.getChildFile (src.getFileNameWithoutExtension()
+                                         + " (" + juce::String (n++) + ")"
+                                         + Config::kPresetFileExtension);
+            }
+            if (src.copyFileTo (dest))
+                refreshTable();
+        });
     };
     deleteButton.onClick = [this]
     {
@@ -327,12 +391,14 @@ void PresetContentComponent::resized()
     scopeBox.setBounds (row2.reduced (4, 2));
 
     auto bottom = r.removeFromBottom (44);
-    const int bw = bottom.getWidth() / 5;
-    loadButton.setBounds (bottom.removeFromLeft (bw).reduced (3));
-    saveButton.setBounds (bottom.removeFromLeft (bw).reduced (3));
-    newBlankButton.setBounds (bottom.removeFromLeft (bw).reduced (3));
-    deleteButton.setBounds (bottom.removeFromLeft (bw).reduced (3));
-    closeButton.setBounds (bottom.reduced (3));
+    const int bw = bottom.getWidth() / 7;
+    loadButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    saveButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    newBlankButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    deleteButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    exportButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    importButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
+    closeButton.setBounds (bottom.reduced (2));
 
     r.removeFromBottom (6);
     auto detail = r.removeFromBottom (118);

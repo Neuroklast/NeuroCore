@@ -27,7 +27,7 @@
 | UI/DslTerminalEditor | ✅ Edit-Modus; View-Modus = FormulaDisplay mit Live-Werten | 85% | 2026-08-11 |
 | UI/FormulaDisplayComponent | ✅ A/B/C/D-Farben + Live-Eval in eckigen Klammern | 90% | 2026-08-11 |
 | UI/WaveformDisplay | ✅ Funktional | 70% | 2026-04-01 |
-| UI/LoudnessMeter | ✅ Schnelle Ballistik + Cyber-Hull (wie Mix); kein OpenGL | 95% | 2026-08-13 |
+| UI/LoudnessMeter | ✅ Cyber-Hull + Overload-Pixel/Glitch je höher der Pegel | 96% | 2026-08-13 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
 | Preset-System | ✅ 141 Factory; jedes Script mit Operator-Kommentaren (Was / Params / Stages) | 99% | 2026-08-13 |
@@ -51,6 +51,9 @@
 - [x] Acid Line: Filter-Coeffs alle 8 Samples; Q-Default 1.8 (max 2.6)
 - [x] AUDIO-Button nur `isStandaloneApp()` (Cubase/VST nie)
 - [x] OS-Wechsel ohne Device-Suspend; Factory-Kommentare aus BinaryData
+- [x] Quick-Template-Insert entfernt
+- [x] Preset-Sterne 1–5 + Export/Import `.nrk`
+- [x] Kein Copy nach Common Files
 - [x] Loudness-Meter: schnellere VU + angular Hull wie Mix-Slider
 - [x] CpuProtect Dry-Pfad + SAFE in der Statuszeile
 - [x] SAFE: Overrun-Schwelle + Auto-Retry (kein Dauer-Dry)

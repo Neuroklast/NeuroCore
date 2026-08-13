@@ -9,6 +9,39 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Settings chrome must share body column weights
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** L/BOTH/R = Knobbreite; Text-/+ = Meterbreite; Logo mittig zweizeilig; Glitch smooth  
+**Ergebnis:** Settings-Row nutzt dieselben Weights wie Body. Lockup: Logo + NeuroCore / vX.Y.Z. Meter-Pixel über die ganze Höhe, nicht ab 50 %.
+
+#### Regel
+Spalten-Align nur, wenn Settings und Body dieselben drei Weights und denselben innerMargin haben.
+
+---
+
+### 2026-08-13 – Do not copy a VST3 bundle into Common Files
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Cubase sah keine UI-Änderung; Copy nach Common Files war falsch  
+**Ergebnis:** Kein Auto-Copy mehr. Host lädt das installierte Plugin, nicht den Build-Ordner.
+
+#### Regel
+Niemals nach `Program Files\\Common Files\\VST3` kopieren. Cubase-Pfad selbst setzen oder die Datei `NeuroCore.vst3` aus `Contents/x86_64-win/` nutzen. Editor-Ctor darf nicht `setFormula` nochmal feuern — das resettet den Oversampler beim Fenster auf und knackt, und ein Combo-Sync kann OS auf 1× ziehen.
+
+---
+
+### 2026-08-13 – Square knobs waste width between columns
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Editor breiter; Meter oben pixelig/glitchy  
+**Ergebnis:** `kBodyEditorWeight` 6.4 vs Knobs 2.05; Meter-Bänder wachsen mit Pegel
+
+#### Regel
+Zwei quadratische Knobs in einer zu breiten Spalte erzeugen nur Lücke. Die Breite gehört dem Formel-Modul. Overload-Look nur oben im Balken, unten sauber.
+
+---
+
 ### 2026-08-13 – Standalone OS switch: never suspendProcessing
 
 **Agent:** Grok Coding Agent  
