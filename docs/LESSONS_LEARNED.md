@@ -9,6 +9,25 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – DSL Multi-Bus (Send-DAG)
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Parallele Stages / Signal-Split als echter Multi-Bus  
+**Ergebnis:** Ansatz A — scoped `bus`/`send`/`out` in einer `SignalChain`, eigene Branch
+
+#### Entscheidungen
+- Kein freier Graph, kein Feedback. Send nur von `in` / `main` / bereits verarbeiteten Bussen.
+- Serial-Skript ohne `bus`/`out` bleibt Fast-Path auf dem Eingangsbuffer (keine Extra-Kopie).
+- Env folgt dem Bus-Audio **nach** Sends; Osc bleibt global.
+- Max. 4 Named Buses. Indentation ist nicht signifikant.
+
+#### Fallstricke
+- `send:` mehrfach erlaubt — nicht über die globale `seen`-ID sperren.
+- `bus dirt:` ist `id = "bus dirt"` vor dem Doppelpunkt, nicht ein neuer Blocktyp `busdirt`.
+- Mixdown bleibt **in** der DSL; Plugin-Dry/Wet und OS-Latenz bleiben eine Timeline.
+
+---
+
 ### 2026-08-12 – UI encoding, 6 knobs, Cubase delay crash
 
 **Agent:** Grok Coding Agent  

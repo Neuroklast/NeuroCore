@@ -206,7 +206,7 @@ namespace DslAutocomplete
         {
             addAll (items, {
                 "param", "stage", "filter", "comp", "osc", "env",
-                "delay", "reverb", "ms"
+                "delay", "reverb", "ms", "bus", "send", "out", "in", "main"
             }, Kind::Block, "block", prefix);
 
             // Snippets for common blocks
@@ -233,6 +233,15 @@ namespace DslAutocomplete
                 Item sn;
                 sn.label = "param a = Name [min, max]";
                 sn.insertText = "param a = Name [0.0, 1.0]";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("bus").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "bus dirt + send in";
+                sn.insertText = "bus dirt:\nsend: in = 1\nstage2: y = x\nout: main = 1; dirt = 1";
                 sn.detail = "snippet";
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);

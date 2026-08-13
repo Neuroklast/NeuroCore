@@ -571,21 +571,10 @@ private:
             expectEquals (parseOk, (int) entries.size(),
                           "all factory scripts must parse, first fail: " + firstParseErr);
 
-            // Heavy path (loadScript / apply / quality): sparse sample for suite speed
-            auto isSample = [&] (int i) noexcept
-            {
-                return i == 0
-                    || i == (int) entries.size() / 2
-                    || i == (int) entries.size() - 1
-                    || (i % 20) == 0;
-            };
-
-            int loadOk = 0, loadTried = 0;
+            int loadOk = 0;
             juce::String firstLoadErr;
             for (int i = 0; i < (int) entries.size(); ++i)
             {
-                if (! isSample (i)) continue;
-                ++loadTried;
                 dsl::SignalChain chain;
                 juce::String err;
                 if (chain.loadScript (entries[(size_t) i].script, err))
@@ -593,25 +582,59 @@ private:
                 else if (firstLoadErr.isEmpty())
                     firstLoadErr = entries[(size_t) i].name + ": " + err;
             }
-            expectEquals (loadOk, loadTried,
-                          "sampled factory scripts must load, first fail: " + firstLoadErr);
+            expectEquals (loadOk, (int) entries.size(),
+                          "all factory scripts must load, first fail: " + firstLoadErr);
+
+            int processOk = 0;
+            juce::String firstProcErr;
+            juce::dsp::ProcessSpec spec { 44100.0, 256, 1 };
+            for (int i = 0; i < (int) entries.size(); ++i)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (entries[(size_t) i].script, err))
+                    continue;
+                chain.prepare (spec);
+                juce::AudioBuffer<float> buf (1, 256);
+                for (int n = 0; n < 256; ++n)
+                    buf.setSample (0, n, 0.35f * std::sin (2.0f * juce::MathConstants<float>::pi
+                                                           * 220.0f * (float) n / 44100.0f));
+                chain.processBlock (buf);
+                buf.setSample (0, 0, 1.0f);
+                chain.processBlock (buf);
+                int bad = 0;
+                float peak = 0.f;
+                for (int n = 0; n < 256; ++n)
+                {
+                    const float v = buf.getSample (0, n);
+                    if (! std::isfinite (v))
+                        ++bad;
+                    peak = juce::jmax (peak, std::abs (v));
+                }
+                if (bad == 0 && peak < 8.0f)
+                    ++processOk;
+                else if (firstProcErr.isEmpty())
+                    firstProcErr = entries[(size_t) i].name
+                        + " bad=" + juce::String (bad)
+                        + " peak=" + juce::String (peak, 3);
+            }
+            expectEquals (processOk, (int) entries.size(),
+                          "all factory presets must process finite, first fail: " + firstProcErr);
 
             NeuroCoreAudioProcessor proc;
             proc.prepareToPlay (44100.0, 256);
-            int applied = 0, applyTried = 0;
+            int applied = 0;
             juce::String firstApplyErr;
             for (int i = 0; i < (int) entries.size(); ++i)
             {
-                if (! isSample (i)) continue;
-                ++applyTried;
                 juce::String err;
                 if (lib.applyPreset (proc, i, err))
                     ++applied;
                 else if (firstApplyErr.isEmpty())
                     firstApplyErr = entries[(size_t) i].name + ": " + err;
             }
-            expectEquals (applied, applyTried,
-                          "sampled factory presets must apply, first fail: " + firstApplyErr);
+            expectEquals (applied, (int) entries.size(),
+                          "all factory presets must apply, first fail: " + firstApplyErr);
 
             // Gold-standard static: hardclip needs recovery LPF
             {
@@ -628,12 +651,10 @@ private:
             }
 
             const auto qopt = TestHelpers::fastQualityOptions();
-            int qualityPass = 0, qualityTried = 0;
+            int qualityPass = 0;
             juce::String firstQualityFail;
             for (int i = 0; i < (int) entries.size(); ++i)
             {
-                if (! isSample (i)) continue;
-                ++qualityTried;
                 const auto& e = entries[(size_t) i];
                 const auto q = FormulaQualityAnalyzer::analyse (e.script, qopt);
                 if (FormulaQualityAnalyzer::passesFactoryGate (q, 55.f))
@@ -645,8 +666,8 @@ private:
                         + " rms=" + juce::String (q.rms, 5);
                 }
             }
-            expectEquals (qualityPass, qualityTried,
-                          "sampled factory presets must pass quality gate, first fail: "
+            expectEquals (qualityPass, (int) entries.size(),
+                          "all factory presets must pass quality gate, first fail: "
                               + firstQualityFail);
         }
 

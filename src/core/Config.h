@@ -101,6 +101,8 @@ namespace Config
 
     /// Number of host-automatable formula knobs (a..f). Max 6 for readable UI.
     inline constexpr int kNumUserParams = 6;
+    /// Named DSL buses in addition to reserved `in` and `main`.
+    inline constexpr int kMaxNamedBuses = 4;
     /// Default variable names mapped to the parameter knobs.
     inline constexpr const char* kDefaultVariableNames[6] = {
         "a", "b", "c", "d", "e", "f"

@@ -196,6 +196,38 @@ Filter unterstützen ebenfalls `channel = mid|side` (z. B. Side-HPF).
 
 ---
 
+## Multi-Bus (`bus` / `send` / `out`)
+
+Send-DAG: Input splitten, getrennte Pfade, Mixdown. Keine Feedback-Loops.
+
+```
+stage1: y = softclip(x, 1.2)
+
+bus dirt:
+  send: in = 1
+  stage2: y = tube(x, a)
+
+bus verb:
+  send: main = 0.35
+  delay1: time = 350; mix = 1
+
+out: main = 1; dirt = c; verb = d
+```
+
+| Konstrukt | Bedeutung |
+|---|---|
+| `in` | Read-only Kopie des Ketten-Eingangs |
+| `main` | Impliziter Bus. Alle Blöcke vor dem ersten `bus`/`out`. Startet als Kopie von `in` |
+| `bus name:` | Öffnet einen benannten Bus (max. 4). Folgende Blöcke gehören dazu |
+| `send: src = gain` | `busInput += gain * src` (`src` = `in`, `main` oder ein **früherer** Bus) |
+| `out: name = gain; …` | Gewichtete Summe. Ohne `out:` ist der Output `main` |
+
+Reservierte Namen: `in`, `main`, `out`, `bus`, `send`.  
+`send` nur **in** einem benannten Bus. Einrückung ist optional (wird getrimmt).  
+Gains: Zahl, Knob `a`–`f`, oder Komplement `1-c` / `1 - c` (0…2). So bleibt Blend ein Crossfade, keine Summe. Alte Skripte ohne `bus`/`out` bleiben seriell auf `main`.
+
+---
+
 ## `osc` – LFO-Oszillator
 
 ```

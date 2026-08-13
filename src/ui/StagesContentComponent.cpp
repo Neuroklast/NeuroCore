@@ -119,7 +119,11 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
         g.fillAll (NeuroCoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
 
     const auto& block = blocks[(size_t) row];
-    const auto summary = dsl::formatBlockSummary (block);
+    auto summary = dsl::formatBlockSummary (block);
+    if (block.busName.isNotEmpty()
+        && block.type != "bus" && block.type != "out"
+        && ! block.busName.equalsIgnoreCase ("main"))
+        summary = "[" + block.busName + "] " + summary;
 
     // Type badge colour
     juce::Colour badge = NeuroCoreLookAndFeel::mutedText();
@@ -139,6 +143,8 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
         badge = juce::Colour (0xff7e57c2);
     else if (block.type == "ms" || block.type.startsWith ("mid"))
         badge = juce::Colour (0xffec407a);
+    else if (block.type == "bus" || block.type == "send" || block.type == "out")
+        badge = juce::Colour (0xff90a4ae);
 
     g.setColour (badge.withAlpha (0.85f));
     g.fillRoundedRectangle (6.f, (float) height * 0.25f, 4.f, (float) height * 0.5f, 2.f);

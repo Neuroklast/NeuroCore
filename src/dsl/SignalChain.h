@@ -3,6 +3,7 @@
 
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "BusGraph.h"
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
@@ -52,6 +53,7 @@ public:
 private:
     struct Block
     {
+        juce::String busName { "main" };
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
         virtual float process(int ch, float x) = 0;
@@ -372,7 +374,17 @@ private:
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
+    std::shared_ptr<BusGraph> busGraph;
     std::vector<ParamDesc> paramInfo;
+
+    juce::AudioBuffer<float> inSnapshot;
+    std::array<juce::AudioBuffer<float>, Config::kMaxNamedBuses + 1> busScratch;
+
+    void ensureBusBuffers (int numChannels, int numSamples);
+    float resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept;
+    bool isNumericGain (const juce::String& expr) const noexcept;
+    void applyBusSends (int busIndex, int numChannels, int numSamples);
+    void writeMixdown (juce::AudioBuffer<float>& dest, int numChannels, int numSamples);
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
