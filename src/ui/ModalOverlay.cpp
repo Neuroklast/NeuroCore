@@ -1,6 +1,7 @@
 #include "ModalOverlay.h"
 #include "PluginLookAndFeel.h"
 #include "fx/DecodeText.h"
+#include "fx/CyberChrome.h"
 
 ModalOverlay::ModalOverlay()
 {
@@ -165,10 +166,11 @@ void ModalOverlay::applyContentVisibility()
     backButton.setVisible (showKids && mode == OverlayMode::Decision);
     closeButton.setVisible (showKids && (mode == OverlayMode::Closable || mode == OverlayMode::Decision));
 
-    if (showKids && sequence.getPhase() == OverlayPhase::EnterReveal)
+    const auto phase = sequence.getPhase();
+    if (showKids && (phase == OverlayPhase::EnterReveal || phase == OverlayPhase::EnterGlitch))
     {
-        const int revealed = (int) std::round (a * (float) rawTitle.length());
-        titleLabel.setText (decodeGlitchText (rawTitle, revealed, rng),
+        const int revealed = (int) std::round (sequence.timeline01() * (float) rawTitle.length());
+        titleLabel.setText (decodeGlitchText (rawTitle, juce::jmax (0, revealed - 2), rng),
                             juce::dontSendNotification);
     }
     else if (showKids)
@@ -179,32 +181,67 @@ void ModalOverlay::applyContentVisibility()
 
 void ModalOverlay::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::black.withAlpha (sequence.scrimAlpha()));
-
+    const auto bounds = getLocalBounds();
+    const float t01 = sequence.timeline01();
     const float slice = sequence.sliceAmount();
-    if (slice > 0.05f)
-    {
-        const int y = (int) (sequence.wipeY01() * (float) juce::jmax (1, getHeight() - 24));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.16f * slice));
-        g.fillRect (0, y, getWidth(), 12);
-        g.setColour (juce::Colour (0x44ff0044));
-        g.fillRect (3, y + 2, getWidth(), 2);
-        g.setColour (juce::Colour (0x4400ffff));
-        g.fillRect (-3, y + 6, getWidth(), 2);
-    }
+    const float contentA = sequence.contentAlpha();
+    const auto phase = sequence.getPhase();
+    const bool exiting = phase == OverlayPhase::ExitGlitch || phase == OverlayPhase::ExitScrim;
 
-    if (sequence.contentAlpha() <= 0.02f
-        && sequence.getPhase() != OverlayPhase::Shown)
+    g.fillAll (juce::Colours::black.withAlpha (sequence.scrimAlpha()));
+    CyberChrome::drawVignette (g, bounds, sequence.scrimAlpha());
+    CyberChrome::drawScanlines (g, bounds, t01 * 8.f, 0.55f + 0.45f * sequence.scrimAlpha());
+    CyberChrome::drawNoise (g, bounds, 0.08f + 0.22f * slice, rng.nextInt());
+    CyberChrome::drawChromaticInset (g, bounds, 0.25f + 0.75f * slice);
+    CyberChrome::drawGlitchSlices (g, bounds, slice,
+                                    (int) (t01 * 997.f) ^ (int) (slice * 4096.f),
+                                    kMaxGlitchSlices);
+
+    const float wipe = exiting ? (1.f - sequence.wipeY01())
+                               : (phase == OverlayPhase::EnterGlitch ? sequence.wipeY01()
+                                                                     : juce::jmax (sequence.wipeY01(), contentA));
+    CyberChrome::drawScanBeam (g, bounds, wipe, 0.45f + 0.55f * slice);
+
+    const float build = exiting ? contentA : (phase == OverlayPhase::Shown ? 1.f
+                                              : (phase == OverlayPhase::EnterReveal ? contentA
+                                                                                    : wipe * 0.35f));
+    if (build <= 0.01f)
         return;
 
-    const auto r = panel.toFloat();
-    g.setColour (NeuroCoreLookAndFeel::background().withAlpha (sequence.contentAlpha()));
-    g.fillRect (r);
+    auto r = panel.toFloat();
+    if (exiting)
+        r = r.withHeight (r.getHeight() * juce::jmax (0.08f, contentA));
+    else if (phase == OverlayPhase::EnterGlitch)
+        r = r.withHeight (juce::jmax (8.f, r.getHeight() * wipe * 0.22f));
+    else if (phase == OverlayPhase::EnterReveal)
+        r = r.withHeight (r.getHeight() * juce::jmax (0.22f, contentA));
+
+    {
+        juce::Graphics::ScopedSaveState clip (g);
+        g.reduceClipRegion (r.toNearestInt());
+        g.setColour (NeuroCoreLookAndFeel::background().withAlpha (0.55f + 0.45f * build));
+        g.fillRect (r);
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f * build));
+        g.fillRect (r.getX(), r.getY(), r.getWidth(), 2.f);
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.28f * build));
+        g.fillRect (r.getX() + 10.f, r.getY() + 40.f, r.getWidth() - 20.f, 1.f);
+        CyberChrome::drawScanlines (g, r.toNearestInt(), t01 * 12.f, 0.35f * build);
+    }
+
     NeuroCoreLookAndFeel::drawHudFrame (g, r.reduced (0.5f), {});
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f * sequence.contentAlpha()));
-    g.fillRect (panel.getX(), panel.getY(), panel.getWidth(), 2);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.3f * sequence.contentAlpha()));
-    g.fillRect (panel.getX() + 10, panel.getY() + 40, panel.getWidth() - 20, 1);
+    CyberChrome::drawHudCorners (g, r.expanded (3.f), build, 2.2f);
+
+    auto meta = juce::Rectangle<int> (panel.getX() + 14,
+                                      panel.getBottom() + 8,
+                                      panel.getWidth() - 28,
+                                      36);
+    if (meta.getBottom() > getHeight() - 8)
+        meta.setY (panel.getY() - 42);
+    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.7f * juce::jmax (build, slice)));
+    g.drawText (CyberChrome::statusForProgress (exiting ? (1.f - t01) : t01),
+                meta.removeFromTop (16), juce::Justification::centredLeft, false);
+    CyberChrome::drawHexMeta (g, meta, exiting ? (1.f - t01) : t01);
 }
 
 void ModalOverlay::resized()

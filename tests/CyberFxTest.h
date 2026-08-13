@@ -53,11 +53,11 @@ public:
             expect (s[3] != juce::juce_wchar ('C'));
         }
 
-        beginTest ("Enter sequence reaches Shown at 400ms");
+        beginTest ("Enter sequence reaches Shown at 900ms");
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.40f);
+            seq.tick (0.90f);
             expect (seq.getPhase() == OverlayPhase::Shown);
             expectWithinAbsoluteError (seq.contentAlpha(), 1.f, 0.001f);
         }
@@ -66,9 +66,9 @@ public:
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.40f);
+            seq.tick (0.90f);
             seq.playExit();
-            seq.tick (0.28f);
+            seq.tick (0.52f);
             expect (seq.consumeFinished());
             expect (! seq.consumeFinished());
         }

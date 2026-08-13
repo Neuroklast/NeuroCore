@@ -105,6 +105,7 @@ set(SOURCE_FILES
     src/ui/fx/CyberSequence.cpp
     src/ui/fx/CyberBackdropCache.cpp
     src/ui/fx/CyberBackdropComponent.cpp
+    src/ui/fx/CyberChrome.cpp
     src/ui/fx/BootSequenceOverlay.cpp
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp

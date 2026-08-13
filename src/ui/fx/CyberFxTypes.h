@@ -37,15 +37,15 @@ struct CyberFxConfig
     float pulseSmooth = 0.15f;
 };
 
-inline constexpr float kEnterScrimEnd  = 0.080f;
-inline constexpr float kEnterGlitchEnd = 0.220f;
-inline constexpr float kEnterRevealEnd = 0.400f;
-inline constexpr float kExitGlitchEnd  = 0.120f;
-inline constexpr float kExitScrimEnd   = 0.280f;
-inline constexpr float kScrimMax       = 0.72f;
-inline constexpr int   kMaxGlitchSlices = 2;
+inline constexpr float kEnterScrimEnd  = 0.140f;
+inline constexpr float kEnterGlitchEnd = 0.420f;
+inline constexpr float kEnterRevealEnd = 0.900f;
+inline constexpr float kExitGlitchEnd  = 0.220f;
+inline constexpr float kExitScrimEnd   = 0.520f;
+inline constexpr float kScrimMax       = 0.82f;
+inline constexpr int   kMaxGlitchSlices = 4;
 inline constexpr float kGlitchPaintMin = 0.05f;
-inline constexpr float kBootMaxSec     = 0.700f;
+inline constexpr float kBootMaxSec     = 1.350f;
 
 inline bool shouldPlayBoot (CyberMotion motion, bool alreadyShown) noexcept
 {

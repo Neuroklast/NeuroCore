@@ -1,5 +1,6 @@
 #include "BootSequenceOverlay.h"
 #include "DecodeText.h"
+#include "CyberChrome.h"
 #include "../PluginLookAndFeel.h"
 
 BootSequenceOverlay::BootSequenceOverlay()
@@ -60,37 +61,49 @@ void BootSequenceOverlay::finish()
 
 void BootSequenceOverlay::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::black.withAlpha (juce::jmax (sequence.scrimAlpha(), 0.88f)));
+    const auto bounds = getLocalBounds();
+    const float p = juce::jlimit (0.f, 1.f, elapsed / kBootMaxSec);
+    const float slice = juce::jmax (sequence.sliceAmount(), p < 0.92f ? 0.35f : 0.08f);
 
-    const auto slice = sequence.sliceAmount();
-    if (slice > 0.05f)
-    {
-        const int y = (int) (sequence.wipeY01() * (float) juce::jmax (1, getHeight() - 20));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f * slice));
-        g.fillRect (0, y, getWidth(), 10);
-        g.setColour (juce::Colour (0x44ff0044));
-        g.fillRect (4, y + 2, getWidth(), 2);
-        g.setColour (juce::Colour (0x4400ffff));
-        g.fillRect (-3, y + 6, getWidth(), 2);
-    }
+    g.fillAll (juce::Colours::black);
+    CyberChrome::drawVignette (g, bounds, 0.85f);
+    CyberChrome::drawScanlines (g, bounds, elapsed * 10.f, 0.75f);
+    CyberChrome::drawNoise (g, bounds, 0.12f + 0.18f * slice, rng.nextInt());
+    CyberChrome::drawChromaticInset (g, bounds, 0.4f + 0.6f * (1.f - p));
+    CyberChrome::drawGlitchSlices (g, bounds, slice, rng.nextInt(), 5);
+    CyberChrome::drawScanBeam (g, bounds, std::fmod (elapsed * 0.85f, 1.f), 0.7f);
 
-    const float revealT = juce::jlimit (0.f, 1.f, elapsed / 0.45f);
-    const char* lines[] = {
-        "NEUROCORE // NETRUNNER OS",
-        "> LINK",
-        "> DSP CORE",
-        "> ACCESS"
-    };
+    auto frame = bounds.withSizeKeepingCentre (juce::jmin (640, getWidth() - 48), 280).toFloat();
+    CyberChrome::drawHudCorners (g, frame, juce::jmin (1.f, p * 1.6f), 2.4f);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+    g.drawRect (frame, 1.f);
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (18.f));
-    auto area = getLocalBounds().reduced (40).withSizeKeepingCentre (juce::jmin (720, getWidth() - 80), 160);
-    for (int i = 0; i < 4; ++i)
-    {
-        const int revealed = (int) std::round (revealT * (float) juce::String (lines[i]).length());
-        const auto text = decodeGlitchText (lines[i], revealed, rng);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f + 0.45f * sequence.contentAlpha()));
-        g.drawText (text, area.removeFromTop (32), juce::Justification::centredLeft, false);
-    }
+    auto area = frame.reduced (28.f, 22.f).toNearestInt();
+    const juce::String title = "NEUROCORE // NETRUNNER OS";
+    const int revealed = (int) std::round (juce::jlimit (0.f, 1.f, p / 0.45f) * (float) title.length());
+    g.setFont (NeuroCoreLookAndFeel::monoFont (22.f));
+    g.setColour (NeuroCoreLookAndFeel::accent());
+    g.drawText (decodeGlitchText (title, revealed, rng),
+                area.removeFromTop (32), juce::Justification::centredLeft, false);
+
+    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroCoreLookAndFeel::mutedText());
+    g.drawText ("// BOOT SEQUENCE", area.removeFromTop (18), juce::Justification::centredLeft, false);
+
+    CyberChrome::drawBlockBar (g, area.removeFromTop (22), p);
+    area.removeFromTop (10);
+
+    g.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+    g.drawText (CyberChrome::statusForProgress (p),
+                area.removeFromTop (20), juce::Justification::centredLeft, false);
+
+    area.removeFromTop (8);
+    CyberChrome::drawHexMeta (g, area.removeFromTop (16), p);
+
+    g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.4f));
+    g.drawText ("ESC SKIP", area.removeFromBottom (16), juce::Justification::centredRight, false);
 }
 
 void BootSequenceOverlay::resized()

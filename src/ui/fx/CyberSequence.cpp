@@ -140,6 +140,19 @@ float CyberSequence::sliceAmount() const noexcept
 {
     if (phase == OverlayPhase::EnterGlitch || phase == OverlayPhase::ExitGlitch)
         return 1.f;
+    if (phase == OverlayPhase::EnterReveal)
+        return 0.35f * (1.f - contentAlpha());
+    return 0.f;
+}
+
+float CyberSequence::timeline01() const noexcept
+{
+    if (mode == Mode::Enter)
+        return juce::jlimit (0.f, 1.f, t / kEnterRevealEnd);
+    if (mode == Mode::Exit)
+        return juce::jlimit (0.f, 1.f, t / kExitScrimEnd);
+    if (phase == OverlayPhase::Shown)
+        return 1.f;
     return 0.f;
 }
 

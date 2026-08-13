@@ -112,20 +112,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible(*helpButton);
 
-    fxButton = std::make_unique<juce::TextButton> ("FX");
-    fxButton->setClickingTogglesState (true);
-    fxButton->setToggleState (true, juce::dontSendNotification);
-    fxButton->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff1a0505));
-    fxButton->setColour (juce::TextButton::buttonOnColourId, NeuroCoreLookAndFeel::accent());
-    fxButton->setColour (juce::TextButton::textColourOffId, NeuroCoreLookAndFeel::accent());
-    fxButton->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
-    fxButton->onClick = [this]
-    {
-        cyberDirector.setMotion (fxButton->getToggleState() ? CyberMotion::Full
-                                                            : CyberMotion::Reduced);
-    };
-    addAndMakeVisible (*fxButton);
-
     editorFontLabel = std::make_unique<juce::Label> ("", "Text");
     editorFontLabel->setMinimumHorizontalScale (1.0f);
     editorFontLabel->setJustificationType (juce::Justification::centredRight);
@@ -554,7 +540,6 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     settingsRow->addChild(makeLeaf(editorFontMinusButton.get(), 0.28f));
     settingsRow->addChild(makeLeaf(editorFontSizeLabel.get(), 0.35f));
     settingsRow->addChild(makeLeaf(editorFontPlusButton.get(), 0.28f));
-    settingsRow->addChild(makeLeaf(fxButton.get(), 0.35f));
     layoutRoot->addChild(std::move(settingsRow));
 
     // Main body: 6 knobs (2x3) left + larger formula editor + meter
@@ -1030,8 +1015,6 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         helpButton->setButtonText(TRANS("HelpButton"));
     if (oversamplingLabel)
         oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
-    if (fxButton)
-        fxButton->setButtonText (TRANS("FxButton"));
 }
 
 void NeuroCoreAudioProcessorEditor::paintHudChrome (juce::Graphics& g)

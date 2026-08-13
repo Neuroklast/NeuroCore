@@ -15,6 +15,7 @@ public:
     float contentAlpha() const noexcept;
     float wipeY01() const noexcept;
     float sliceAmount() const noexcept;
+    float timeline01() const noexcept;
     bool  isBusy() const noexcept;
     bool  consumeFinished();
 

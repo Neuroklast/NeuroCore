@@ -49,7 +49,7 @@
 - [x] `CyberFxDirector` / `CyberSequence` / `decodeGlitchText` + Unit-Tests
 - [x] Cached Backdrop (kein 480× Hex-Text pro Frame)
 - [x] Modal enter/exit via VBlank, kein Host-Fokus-Diebstahl
-- [x] Skippbarer Boot (Esc/Click), FX-Toggle (Session-only)
+- [x] Skippbarer Boot (Esc/Click) — kein FX-Toggle in der UI
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)

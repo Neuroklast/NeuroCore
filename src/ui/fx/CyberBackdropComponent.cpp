@@ -1,4 +1,5 @@
 #include "CyberBackdropComponent.h"
+#include "CyberChrome.h"
 #include "../PluginLookAndFeel.h"
 #include <cmath>
 
@@ -45,15 +46,8 @@ void CyberBackdropComponent::paint (juce::Graphics& g)
 
     if (s.glitch > kGlitchPaintMin)
     {
-        const float a = s.glitch;
-        const int sliceY = (std::abs (s.glitchSeed) % juce::jmax (1, getHeight() - 40)) + 20;
-        const int sliceH = 8 + (std::abs (s.glitchSeed) % 28);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.08f * a));
-        g.fillRect (0, sliceY, getWidth(), sliceH);
-        g.setColour (juce::Colour (0x44ff0044));
-        g.fillRect ((int) (a * 6.f), sliceY + 2, getWidth(), 2);
-        g.setColour (juce::Colour (0x4400ffff));
-        g.fillRect ((int) (-a * 5.f), sliceY + 5, getWidth(), 2);
+        CyberChrome::drawChromaticInset (g, getLocalBounds(), s.glitch);
+        CyberChrome::drawGlitchSlices (g, getLocalBounds(), s.glitch, s.glitchSeed, 4);
     }
 
     g.setColour (juce::Colour (0xff0a0000));

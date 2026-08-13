@@ -98,7 +98,6 @@ private:
     std::unique_ptr<juce::Label>         pluginNameLabel;
     std::unique_ptr<juce::Label>         statusBarLabel; // live SR / OS / MIX / LIM
     std::unique_ptr<juce::TextButton>    helpButton;
-    std::unique_ptr<juce::TextButton>    fxButton;
     std::unique_ptr<juce::Label>         editorFontLabel;
     std::unique_ptr<juce::TextButton>    editorFontMinusButton;
     std::unique_ptr<juce::TextButton>    editorFontPlusButton;
