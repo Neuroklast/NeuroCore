@@ -155,6 +155,13 @@ void DspEngine::onFormulaChanged()
     switchRamp.setCurrentAndTargetValue (0.f);
     switchRamp.setTargetValue (1.f);
 
+    // Delay/reverb formulas can leave OS/DC/sidechain ringing. Reset so the
+    // next preset (even a dry one) does not keep crackling.
+    if (oversampler)
+        oversampler->reset();
+    lowpassFilter.reset();
+    dcBlocker.reset();
+    drySidechain.reset();
     outputSanitizer.reset();
     postDslLastGood.fill (0.0f);
     gainCompValue.setCurrentAndTargetValue (1.0f);

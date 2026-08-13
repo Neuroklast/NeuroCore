@@ -5,6 +5,7 @@
 #include "../src/dsp/OutputSanitizer.h"
 #include "../src/dsp/LatencyAlignedSidechain.h"
 #include "../src/utils/ExpressionEvaluator.h"
+#include "../src/core/PluginProcessor.h"
 #include "TestHelpers.h"
 #include <cmath>
 #include <vector>
@@ -222,6 +223,50 @@ public:
                 bad += TestHelpers::countNonFinite (buf);
             }
             expectEquals (bad, 0);
+        }
+
+        beginTest ("delay formula then dry formula stays finite");
+        {
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 256);
+            juce::String err;
+            expect (proc.applyFormula (
+                "param a = Time [40, 400]\n"
+                "delay1: time = a; feedback = 0.82; mix = 0.65; damp = 3500; pingpong = true\n"
+                "filter1: type = lowpass; cutoff = 9000; resonance = 0.3", err), err);
+
+            juce::AudioBuffer<float> buf (2, 256);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 16; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = ((i % 32) < 2) ? 0.7f : 0.f;
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s * 0.8f);
+                }
+                proc.processBlock (buf, midi);
+            }
+
+            expect (proc.applyFormula ("stage1: y = x * 0.5", err), err);
+            int bad = 0;
+            float peak = 0.f;
+            for (int b = 0; b < 16; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = 0.25f * std::sin (i * 0.04f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                bad += TestHelpers::countNonFinite (buf);
+                for (int i = 0; i < 256; ++i)
+                    peak = juce::jmax (peak, std::abs (buf.getSample (0, i)));
+            }
+            expectEquals (bad, 0);
+            expect (peak < 4.0f);
+            proc.releaseResources();
         }
 
         // ---- Timeline contracts (architecture, not thresholds) ----
