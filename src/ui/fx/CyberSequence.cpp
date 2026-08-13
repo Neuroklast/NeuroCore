@@ -114,17 +114,11 @@ float CyberSequence::scrimAlpha() const noexcept
 
 float CyberSequence::contentAlpha() const noexcept
 {
-    switch (phase)
-    {
-        case OverlayPhase::EnterReveal:
-            return smoothstep ((t - kEnterGlitchEnd) / (kEnterRevealEnd - kEnterGlitchEnd));
-        case OverlayPhase::Shown:
-            return 1.f;
-        case OverlayPhase::ExitGlitch:
-            return 1.f - smoothstep (t / kExitGlitchEnd);
-        default:
-            return 0.f;
-    }
+    if (phase == OverlayPhase::Shown)
+        return 1.f;
+    if (phase == OverlayPhase::Idle || phase == OverlayPhase::Closed)
+        return 0.f;
+    return clipProgress() > 0.06f ? 1.f : 0.f;
 }
 
 float CyberSequence::wipeY01() const noexcept
@@ -138,10 +132,10 @@ float CyberSequence::wipeY01() const noexcept
 
 float CyberSequence::sliceAmount() const noexcept
 {
-    if (phase == OverlayPhase::EnterGlitch || phase == OverlayPhase::ExitGlitch)
-        return 1.f;
-    if (phase == OverlayPhase::EnterReveal)
-        return 0.35f * (1.f - contentAlpha());
+    if (mode == Mode::Enter)
+        return t < 0.11f ? 1.f - t / 0.11f : 0.f;
+    if (mode == Mode::Exit)
+        return t < 0.10f ? 1.f - t / 0.10f : 0.f;
     return 0.f;
 }
 
@@ -151,6 +145,17 @@ float CyberSequence::timeline01() const noexcept
         return juce::jlimit (0.f, 1.f, t / kEnterRevealEnd);
     if (mode == Mode::Exit)
         return juce::jlimit (0.f, 1.f, t / kExitScrimEnd);
+    if (phase == OverlayPhase::Shown)
+        return 1.f;
+    return 0.f;
+}
+
+float CyberSequence::clipProgress() const noexcept
+{
+    if (mode == Mode::Enter)
+        return smoothstep (t / kEnterRevealEnd);
+    if (mode == Mode::Exit)
+        return 1.f - smoothstep (t / kExitScrimEnd);
     if (phase == OverlayPhase::Shown)
         return 1.f;
     return 0.f;

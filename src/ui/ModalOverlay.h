@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "fx/CyberFxTypes.h"
 #include "fx/CyberSequence.h"
+#include "fx/CyberClip.h"
 
 enum class OverlayMode { Blocking, Closable, Decision };
 
@@ -54,6 +55,8 @@ private:
     juce::TextButton backButton { "Back" };
     juce::TextButton closeButton { "X" };
     juce::Rectangle<int> panel;
+    juce::Rectangle<int> targetPanel;
+    ClipReveal clipType { ClipReveal::SystemBoot };
     int preferredW { 0 };
     int preferredH { 0 };
     double lastStamp { 0.0 };
@@ -61,6 +64,7 @@ private:
 
     void updateButtonVisibility();
     void applyContentVisibility();
+    void applyClipLayout();
     void onVBlank (double nowSec);
     void finishIfClosed();
     void startVBlank();

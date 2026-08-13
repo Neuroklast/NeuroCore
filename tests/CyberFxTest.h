@@ -6,6 +6,7 @@
 #include "../src/ui/fx/DecodeText.h"
 #include "../src/ui/fx/CyberSequence.h"
 #include "../src/ui/fx/CyberBackdropCache.h"
+#include "../src/ui/fx/CyberClip.h"
 
 class CyberFxTest : public juce::UnitTest
 {
@@ -53,24 +54,39 @@ public:
             expect (s[3] != juce::juce_wchar ('C'));
         }
 
-        beginTest ("Enter sequence reaches Shown at 900ms");
+        beginTest ("Enter sequence reaches Shown at 360ms");
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.90f);
+            seq.tick (0.36f);
             expect (seq.getPhase() == OverlayPhase::Shown);
-            expectWithinAbsoluteError (seq.contentAlpha(), 1.f, 0.001f);
+            expectWithinAbsoluteError (seq.clipProgress(), 1.f, 0.001f);
         }
 
         beginTest ("Exit consumeFinished is one-shot");
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.90f);
+            seq.tick (0.36f);
             seq.playExit();
-            seq.tick (0.52f);
+            seq.tick (0.26f);
             expect (seq.consumeFinished());
             expect (! seq.consumeFinished());
+        }
+
+        beginTest ("Clip reveal grows window not scanline");
+        {
+            const juce::Rectangle<int> full { 10, 20, 200, 100 };
+            const auto boot0 = revealBounds (full, ClipReveal::SystemBoot, 0.f);
+            const auto boot1 = revealBounds (full, ClipReveal::SystemBoot, 1.f);
+            expect (boot0.getHeight() < full.getHeight());
+            expectEquals (boot0.getY(), full.getY());
+            expect (boot1 == full);
+
+            const auto mid = revealBounds (full, ClipReveal::RingLink, 0.5f);
+            expect (mid.getHeight() < full.getHeight());
+            expect (mid.getCentreY() >= full.getCentreY() - 2);
+            expect (mid.getCentreY() <= full.getCentreY() + 2);
         }
 
         beginTest ("Reduced skipToEnd is instant");

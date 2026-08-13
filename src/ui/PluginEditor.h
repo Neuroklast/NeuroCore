@@ -30,7 +30,7 @@
 #include "WeightedLayout.h"
 #include "fx/CyberFxDirector.h"
 #include "fx/CyberBackdropComponent.h"
-#include "fx/BootSequenceOverlay.h"
+#include "fx/CyberClip.h"
 
 
 class ParameterSlider : public juce::Slider
@@ -80,6 +80,10 @@ private:
     void paintHudChrome (juce::Graphics& g);
     void applyOverlayMotion (ModalOverlay& overlay);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
+    void startWindowAssemble();
+    void captureAssembleTargets();
+    void applyWindowAssemble();
+    void onAssembleVBlank (double nowSec);
     void setFormulaEditMode(bool shouldEdit);
     void applyEditorFontSize (float heightPt);
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
@@ -138,8 +142,20 @@ private:
     NeuroCoreLookAndFeel lookAndFeel;
     CyberFxDirector cyberDirector;
     std::unique_ptr<CyberBackdropComponent> backdrop;
-    std::unique_ptr<BootSequenceOverlay>    bootOverlay;
-    bool bootPlayed { false };
+    struct WindowAssemble
+    {
+        juce::Component* c = nullptr;
+        juce::Rectangle<int> target;
+        ClipReveal type = ClipReveal::SystemBoot;
+        float delaySec = 0.f;
+    };
+    std::vector<WindowAssemble> assembleSlots;
+    bool assemblingWindows { false };
+    bool assemblePlayed { false };
+    float assembleElapsed { 0.f };
+    double assembleStamp { 0.0 };
+    juce::VBlankAttachment assembleVblank;
+    juce::Random assembleRng { 0x41535345 };
     class LogoGlitchListener : public juce::MouseListener
     {
     public:

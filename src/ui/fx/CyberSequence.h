@@ -16,6 +16,7 @@ public:
     float wipeY01() const noexcept;
     float sliceAmount() const noexcept;
     float timeline01() const noexcept;
+    float clipProgress() const noexcept;
     bool  isBusy() const noexcept;
     bool  consumeFinished();
 

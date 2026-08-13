@@ -29,6 +29,7 @@
 #include "StagesContentComponent.h"
 #include "../utils/FormulaQuality.h"
 #include "fx/CyberFxTypes.h"
+#include "fx/CyberClip.h"
 
 
 //==============================================================================
@@ -655,7 +656,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     buttonAttachments.clear();
     polisherAttachment.reset();
     oversamplingAttachment.reset();
-    bootOverlay.reset();
+    assembleVblank = {};
     presetOverlay.reset();
     functionsOverlay.reset();
     stagesOverlay.reset();
@@ -1076,6 +1077,8 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 
     if (layoutRoot)
         ui::performLayout (*layoutRoot, getLocalBounds());
+    if (assemblingWindows)
+        applyWindowAssemble();
 
     paintHudChrome (g);
 }
@@ -1083,13 +1086,8 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 void NeuroCoreAudioProcessorEditor::visibilityChanged()
 {
     cyberDirector.setVisible (isShowing());
-    if (isShowing() && shouldPlayBoot (cyberDirector.getState().motion, bootPlayed))
-    {
-        bootPlayed = true;
-        bootOverlay = std::make_unique<BootSequenceOverlay>();
-        bootOverlay->onFinished = [this] { bootOverlay.reset(); };
-        bootOverlay->startOn (*this);
-    }
+    if (isShowing())
+        startWindowAssemble();
 }
 
 void NeuroCoreAudioProcessorEditor::applyOverlayMotion (ModalOverlay& overlay)
@@ -1105,15 +1103,107 @@ void NeuroCoreAudioProcessorEditor::dismissOverlayNow (std::unique_ptr<ModalOver
     overlay.reset();
 }
 
+void NeuroCoreAudioProcessorEditor::startWindowAssemble()
+{
+    if (assemblePlayed || assemblingWindows)
+        return;
+
+    assemblePlayed = true;
+    assemblingWindows = true;
+    assembleElapsed = 0.f;
+    assembleStamp = 0.0;
+    if (layoutRoot)
+        ui::performLayout (*layoutRoot, getLocalBounds());
+    captureAssembleTargets();
+    if (assembleSlots.empty())
+    {
+        assemblingWindows = false;
+        assemblePlayed = false;
+        return;
+    }
+    applyWindowAssemble();
+    assembleVblank = juce::VBlankAttachment { this, [this] (double now) { onAssembleVBlank (now); } };
+}
+
+void NeuroCoreAudioProcessorEditor::captureAssembleTargets()
+{
+    assembleSlots.clear();
+    auto add = [this] (juce::Component* c, float delay)
+    {
+        if (c == nullptr || ! c->isVisible() || c->getWidth() < 8 || c->getHeight() < 8)
+            return;
+        assembleSlots.push_back ({ c, c->getBounds(), randomClipReveal (assembleRng), delay });
+    };
+
+    add (formulaLiveDisplay.get(), 0.00f);
+    add (loudnessMeter.get(),      0.04f);
+    add (inputDisplay.get(),       0.07f);
+    add (outputDisplay.get(),      0.10f);
+    for (size_t i = 0; i < paramComponents.size(); ++i)
+        add (paramComponents[i].get(), 0.02f + 0.025f * (float) i);
+}
+
+void NeuroCoreAudioProcessorEditor::applyWindowAssemble()
+{
+    for (auto& slot : assembleSlots)
+    {
+        if (slot.c == nullptr)
+            continue;
+        const float local = (assembleElapsed - slot.delaySec) / kClipRevealSec;
+        if (local <= 0.f)
+        {
+            slot.c->setVisible (false);
+            continue;
+        }
+        slot.c->setVisible (true);
+        slot.c->setBounds (revealBounds (slot.target, slot.type, juce::jlimit (0.f, 1.f, local)));
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::onAssembleVBlank (double nowSec)
+{
+    if (! assemblingWindows)
+        return;
+    if (assembleStamp <= 0.0)
+        assembleStamp = nowSec;
+    const float dt = juce::jlimit (0.f, 0.05f, (float) (nowSec - assembleStamp));
+    assembleStamp = nowSec;
+    assembleElapsed += dt;
+    applyWindowAssemble();
+    repaint();
+
+    float last = 0.f;
+    for (const auto& slot : assembleSlots)
+        last = juce::jmax (last, slot.delaySec);
+    if (assembleElapsed >= last + kClipRevealSec)
+    {
+        assemblingWindows = false;
+        assembleVblank = {};
+        if (layoutRoot)
+            ui::performLayout (*layoutRoot, getLocalBounds());
+        if (formulaInputEditor && formulaLiveDisplay)
+            formulaInputEditor->setBounds (formulaLiveDisplay->getBounds());
+        setFormulaEditMode (editing);
+        repaint();
+    }
+}
+
 void NeuroCoreAudioProcessorEditor::resized()
 {
     if (backdrop != nullptr)
         backdrop->setBounds (getLocalBounds());
-    if (bootOverlay != nullptr)
-        bootOverlay->setBounds (getLocalBounds());
 
     if (layoutRoot)
         ui::performLayout(*layoutRoot, getLocalBounds());
+    if (assemblingWindows)
+    {
+        captureAssembleTargets();
+        applyWindowAssemble();
+    }
+    else if (isShowing() && ! assemblePlayed)
+    {
+        startWindowAssemble();
+    }
 
     // Keep the code editor stacked on the live formula panel when editing
     if (formulaInputEditor && formulaLiveDisplay)
