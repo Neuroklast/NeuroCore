@@ -70,6 +70,12 @@
 - [x] Formel-Live-View scrollbar; Zeilenabstand 1.1
 - [x] NK Red Bold Logo als App-Icon (Standalone ICON_BIG/SMALL + in-plugin `nk_logo.png`)
 - [x] Hilfe zeigt nur das gewählte Kapitel (kein Sprung im Volltext)
+- [x] Hilfe-Body ohne Roh-Markdown (** / ### / ---)
+- [x] Gain-Slider entfernt; Mix cyber-Slider mit Drag-Glitch
+- [x] Preset-Kategorie/Scope bleibt beim Schliessen erhalten
+- [x] Factory + leere User-Author = NEUROKLAST
+- [x] Status: LIVE/BYPASS + LAT smp/ms + AUDIO (Standalone SR)
+- [x] Delay-Preset-Wechsel: OS/DC/Sidechain reset (kein klebendes Knacken)
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)

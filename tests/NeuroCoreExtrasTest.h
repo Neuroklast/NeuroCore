@@ -808,5 +808,14 @@ private:
             expectEquals(proc.getCurrentLanguage(), juce::String("en"));
             expectEquals(restored.getCurrentLanguage(), juce::String("en"));
         }
+
+        beginTest ("Preset browser remembers category and scope");
+        {
+            NeuroCoreAudioProcessor proc;
+            proc.setLastPresetBrowserCategory ("Delay");
+            proc.setLastPresetBrowserScope (2);
+            expectEquals (proc.getLastPresetBrowserCategory(), juce::String ("Delay"));
+            expectEquals (proc.getLastPresetBrowserScope(), 2);
+        }
     }
 };

@@ -30,6 +30,7 @@ public:
 private:
     void refreshTable();
     void refreshCategories();
+    void restoreBrowserFilters();
     void updateDetail (int row);
     void textEditorTextChanged (juce::TextEditor&) override;
     void comboBoxChanged (juce::ComboBox*) override;

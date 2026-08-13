@@ -174,7 +174,7 @@ void PresetTableComponent::refresh()
                 if (j.contains ("Category"))    category = j["Category"].get<std::string>();
             }
         }
-        Entry e { name, category, author.isNotEmpty() ? author : "User",
+        Entry e { name, category, author.isNotEmpty() ? author : "NEUROKLAST",
                   desc, f.getLastModificationTime(), f, false, -1 };
         allEntries.add (e);
     }
@@ -257,7 +257,7 @@ void PresetTableComponent::paintCell (juce::Graphics& g, int row, int columnId,
     if (columnId == 1)      text = e->name;
     else if (columnId == 2) text = e->category;
     else if (columnId == 3) text = e->isFactory ? "Factory" : "User";
-    else if (columnId == 4) text = e->author.isNotEmpty() ? e->author : (e->isFactory ? "NEUROKLAST" : "User");
+    else if (columnId == 4) text = e->author.isNotEmpty() ? e->author : "NEUROKLAST";
 
     const bool isCurrent = e->name == processor.getCurrentPresetName()
                         && processor.getCurrentPresetName().isNotEmpty();

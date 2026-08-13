@@ -10,6 +10,8 @@ struct HelpChapter
 };
 
 std::vector<HelpChapter> parseHelpChapters (const juce::String& markdown);
+/** Drop markdown markers so Help shows prose, not **stars** or ### headings. */
+juce::String stripMarkdownToPlain (const juce::String& markdown);
 
 class HelpContentComponent : public juce::Component,
                              private juce::ListBoxModel,

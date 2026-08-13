@@ -28,6 +28,7 @@
 #include "FunctionsContentComponent.h"
 #include "StagesContentComponent.h"
 #include "HelpContentComponent.h"
+#include "StandaloneAudioSettings.h"
 #include "../utils/FormulaQuality.h"
 #include "fx/CyberFxTypes.h"
 #include "fx/CyberClip.h"
@@ -73,6 +74,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     statusBarLabel->setFont(NeuroCoreLookAndFeel::monoFont(11.f));
     statusBarLabel->setMinimumHorizontalScale(0.55f);
     addAndMakeVisible(*statusBarLabel);
+
+    audioSettingsButton = std::make_unique<juce::TextButton> ("AUDIO");
+    audioSettingsButton->setTooltip ("Sample rate / device (Standalone). Host plugins follow the DAW.");
+    audioSettingsButton->onClick = [] { tryOpenStandaloneAudioSettings(); };
+    addAndMakeVisible (*audioSettingsButton);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
@@ -213,53 +219,28 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible(*nameEditors[i]);
     }
 
-    auto setupGainSlider = [](juce::Slider& s, const juce::String& tip)
+    mixSlider = std::make_unique<CyberMixSlider>();
+    mixSlider->setValue (1.0, juce::dontSendNotification);
+    mixSlider->onGlitchPulse = [this] (float strength, int seed)
     {
-        s.setSliderStyle(juce::Slider::LinearHorizontal);
-        s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-        s.setTooltip(tip);
-        s.setScrollWheelEnabled(true);
-        s.setMouseDragSensitivity(220);
-        s.setSliderSnapsToMousePosition(true);
+        cyberDirector.triggerGlitch (strength, seed);
     };
-
-    inputGainSlider = std::make_unique<juce::Slider>();
-    setupGainSlider(*inputGainSlider, TRANS("InputGainLabel"));
-    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::inputGain, *inputGainSlider));
-    inputGainSlider->onValueChange = [this]
-    {
-        if (inputGainValue)
-        {
-            auto db = juce::Decibels::gainToDecibels((float)inputGainSlider->getValue());
-            inputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
-        }
-    };
-    addAndMakeVisible(*inputGainSlider);
-
-    mixSlider = std::make_unique<juce::Slider>();
-    setupGainSlider(*mixSlider, TRANS("MixLabel"));
-    mixSlider->setRange(0.0, 1.0, 0.01);
-    mixSlider->setValue(1.0, juce::dontSendNotification);
-    mixSlider->setDoubleClickReturnValue(true, 1.0);
-    attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
+    attachments.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        audioProcessor.apvts, EffectParameters::dryWet, *mixSlider));
     mixSlider->onValueChange = [this]
     {
         if (mixValue)
-            mixValue->setText(juce::String(mixSlider->getValue() * 100.0f, 1) + " %", juce::dontSendNotification);
+            mixValue->setText (juce::String (mixSlider->getValue() * 100.0f, 0) + "%",
+                               juce::dontSendNotification);
     };
-    addAndMakeVisible(*mixSlider);
+    addAndMakeVisible (*mixSlider);
 
-    // No separate output-gain control — auto-gain + Gain (input) keep levels
-    // predictable. outputGain param stays at unity unless host-automated.
     if (auto* p = audioProcessor.apvts.getParameter (EffectParameters::outputGain))
         p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
 
-    inputGainLabel  = std::make_unique<juce::Label>("", TRANS("InputGainLabel"));
-    inputGainLabel->setMinimumHorizontalScale(1.0f);
-    mixLabel        = std::make_unique<juce::Label>("", TRANS("MixLabel"));
-    mixLabel->setMinimumHorizontalScale(1.0f);
-    addAndMakeVisible(*inputGainLabel);
-    addAndMakeVisible(*mixLabel);
+    mixLabel = std::make_unique<juce::Label> ("", "MIX");
+    mixLabel->setMinimumHorizontalScale (1.0f);
+    addAndMakeVisible (*mixLabel);
 
     currentPresetLabel = std::make_unique<juce::Label>("currentPreset", juce::String());
     currentPresetLabel->setJustificationType (juce::Justification::centredLeft);
@@ -294,14 +275,10 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*oversamplingBox);
 
 
-    inputGainValue  = std::make_unique<juce::Label>();
-    mixValue        = std::make_unique<juce::Label>();
-    for (auto* l : { inputGainValue.get(), mixValue.get() })
-    {
-        l->setJustificationType(juce::Justification::centred);
-        l->setMinimumHorizontalScale(1.0f);
-        addAndMakeVisible(*l);
-    }
+    mixValue = std::make_unique<juce::Label>();
+    mixValue->setJustificationType (juce::Justification::centred);
+    mixValue->setMinimumHorizontalScale (1.0f);
+    addAndMakeVisible (*mixValue);
 
     inputChannelSwitch = std::make_unique<InputChannelSwitch> (audioProcessor.apvts);
     addAndMakeVisible (*inputChannelSwitch);
@@ -595,21 +572,13 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     body->addChild(std::move(rightPanel));
     layoutRoot->addChild(std::move(body));
 
-    // Full-width rows: Gain + Mix only (no Output Gain)
-    auto mixStrip = makeColumn(0.11f);
+    auto mixStrip = makeRow (0.07f);
     mixStrip->innerMargin = pad;
-    auto makeGainRow = [](juce::Label* label, juce::Slider* slider, juce::Label* value)
-    {
-        auto row = makeRow(1.f);
-        row->innerMargin = 6;
-        row->addChild(makeLeaf(label, 0.9f));
-        row->addChild(makeLeaf(slider, 5.5f, 0.f));
-        row->addChild(makeLeaf(value, 1.0f));
-        return row;
-    };
-    mixStrip->addChild(makeGainRow(inputGainLabel.get(), inputGainSlider.get(), inputGainValue.get()));
-    mixStrip->addChild(makeGainRow(mixLabel.get(), mixSlider.get(), mixValue.get()));
-    layoutRoot->addChild(std::move(mixStrip));
+    mixStrip->minHeight = 36;
+    mixStrip->addChild (makeLeaf (mixLabel.get(), 0.7f));
+    mixStrip->addChild (makeLeaf (mixSlider.get(), 6.2f, 0.f));
+    mixStrip->addChild (makeLeaf (mixValue.get(), 0.8f));
+    layoutRoot->addChild (std::move (mixStrip));
 
     // Waveforms need real height — minHeight enforced so they never collapse
     auto waveRow = makeRow(0.20f);
@@ -626,10 +595,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     layoutRoot->addChild(std::move(waveRow));
 
     // Live DSP status (SR / OS / MIX / LIM / LUFS)
-    auto statusRow = makeRow(0.04f);
+    auto statusRow = makeRow(0.045f);
     statusRow->innerMargin = pad;
-    statusRow->minHeight = 18;
-    statusRow->addChild(makeLeaf(statusBarLabel.get(), 1.f));
+    statusRow->minHeight = 22;
+    statusRow->addChild(makeLeaf(audioSettingsButton.get(), 0.7f));
+    statusRow->addChild(makeLeaf(statusBarLabel.get(), 5.5f));
     layoutRoot->addChild(std::move(statusRow));
 
     updateTranslations();
@@ -755,18 +725,16 @@ void NeuroCoreAudioProcessorEditor::timerCallback()
             repaint();
     }
 
-    // ALWAYS show live values for every parameter (knobs a..f + Gain + Mix)
+    if (mixSlider)
+        mixSlider->tick (1.f / 30.f);
+
     for (auto& pc : paramComponents)
         if (pc)
             pc->refreshValues();
 
-    if (inputGainSlider && inputGainValue)
-    {
-        const auto db = juce::Decibels::gainToDecibels ((float) inputGainSlider->getValue(), -60.f);
-        inputGainValue->setText (juce::String (db, 1) + " dB", juce::dontSendNotification);
-    }
     if (mixSlider && mixValue)
-        mixValue->setText (juce::String (mixSlider->getValue() * 100.0, 1) + " %", juce::dontSendNotification);
+        mixValue->setText (juce::String (mixSlider->getValue() * 100.0, 0) + "%",
+                           juce::dontSendNotification);
 
     // Combo readouts: append current selection into status so OS/Polisher always visible
     // (combo text itself already shows selection; status bar duplicates for HUD)
@@ -794,15 +762,8 @@ void NeuroCoreAudioProcessorEditor::updateStatusBar()
         mixPct = (float) mixSlider->getValue() * 100.f;
 
     const bool lim = audioProcessor.isLimiterActive();
-    const float lufs = audioProcessor.getLoudnessDb();
     const bool bypassed = bypassButton && bypassButton->getToggleState();
     const auto preset = audioProcessor.getCurrentPresetName();
-
-    // Active knobs count — shows which of A–D are wired into the formula
-    int activeKnobs = 0;
-    for (int i = 0; i < 4; ++i)
-        if (audioProcessor.isParameterActive (i))
-            ++activeKnobs;
 
     // Live mapped knob values A–D for the status HUD
     juce::String knobsHud;
@@ -835,21 +796,18 @@ void NeuroCoreAudioProcessorEditor::updateStatusBar()
     if (polisherBox)
         polish = polisherBox->getText();
 
-    float inDb = 0.f;
-    if (inputGainSlider)
-        inDb = juce::Decibels::gainToDecibels ((float) inputGainSlider->getValue(), -60.f);
+    const int latSm = audioProcessor.getLatencySamples();
+    const float latMs = (srInt > 0) ? (1000.f * (float) latSm / (float) srInt) : 0.f;
 
     juce::String s;
-    s << "SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
+    s << (bypassed ? "BYPASS" : "LIVE")
+      << "  ·  LAT " << latSm << "smp / " << juce::String (latMs, 2) << "ms"
+      << "  ·  SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
       << "  ·  OS " << osFactor << "x"
-      << "  ·  IN " << juce::String (inDb, 1) << "dB"
       << "  ·  MIX " << juce::String (mixPct, 0) << "%"
       << "  ·  " << knobsHud
       << "  ·  POL " << polish
-      << "  ·  " << (bypassed ? "BYPASS" : "LIVE")
-      << "  ·  LIM " << (lim ? "ON" : "off")
-      << "  ·  LUFS " << juce::String (std::isfinite (lufs) ? lufs : -100.f, 1)
-      << "  ·  LINK " << activeKnobs << "/4";
+      << "  ·  LIM " << (lim ? "ON" : "off");
     if (preset.isNotEmpty())
         s << "  ·  " << preset;
 
@@ -927,14 +885,9 @@ void NeuroCoreAudioProcessorEditor::syncFromProcessor()
 
     refreshParameterControls();
 
-    // Force slider labels / attachments to show current APVTS values
-    if (inputGainSlider && inputGainValue)
-    {
-        const auto db = juce::Decibels::gainToDecibels((float) inputGainSlider->getValue());
-        inputGainValue->setText(juce::String(db, 1) + " dB", juce::dontSendNotification);
-    }
     if (mixSlider && mixValue)
-        mixValue->setText(juce::String(mixSlider->getValue() * 100.0, 1) + " %", juce::dontSendNotification);
+        mixValue->setText (juce::String (mixSlider->getValue() * 100.0, 0) + "%",
+                           juce::dontSendNotification);
 
     if (currentPresetLabel)
     {
@@ -974,8 +927,8 @@ void NeuroCoreAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcast
 
 void NeuroCoreAudioProcessorEditor::updateTranslations()
 {
-    inputGainLabel->setText(TRANS("InputGainLabel"), juce::dontSendNotification);
-    mixLabel->setText(TRANS("MixLabel"), juce::dontSendNotification);
+    if (mixLabel)
+        mixLabel->setText ("MIX", juce::dontSendNotification);
     if (currentPresetLabel)
     {
         const auto name = audioProcessor.getCurrentPresetName();
@@ -1223,14 +1176,16 @@ void NeuroCoreAudioProcessorEditor::resized()
         statusBarLabel->setColour (juce::Label::textColourId,
                                    NeuroCoreLookAndFeel::accent().withAlpha (0.72f));
     }
-    for (auto* lbl : { inputGainLabel.get(), mixLabel.get() })
+    if (audioSettingsButton)
     {
-        if (lbl != nullptr)
-        {
-            lbl->setJustificationType(juce::Justification::centredLeft);
-            lbl->setFont(NeuroCoreLookAndFeel::brandFont(11.f, true));
-            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-        }
+        audioSettingsButton->setColour (juce::TextButton::textColourOffId,
+                                        NeuroCoreLookAndFeel::accent());
+    }
+    if (mixLabel)
+    {
+        mixLabel->setJustificationType (juce::Justification::centredLeft);
+        mixLabel->setFont (NeuroCoreLookAndFeel::monoFont (12.f));
+        mixLabel->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
     }
     for (auto* lbl : { oversamplingLabel.get(), polisherLabel.get() })
     {
@@ -1241,14 +1196,11 @@ void NeuroCoreAudioProcessorEditor::resized()
             lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
         }
     }
-    for (auto* lbl : { inputGainValue.get(), mixValue.get() })
+    if (mixValue)
     {
-        if (lbl != nullptr)
-        {
-            lbl->setJustificationType(juce::Justification::centredRight);
-            lbl->setFont(NeuroCoreLookAndFeel::monoFont(12.f));
-            lbl->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
-        }
+        mixValue->setJustificationType (juce::Justification::centredRight);
+        mixValue->setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+        mixValue->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
     }
     if (currentPresetLabel)
     {

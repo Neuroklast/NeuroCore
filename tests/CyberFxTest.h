@@ -7,6 +7,7 @@
 #include "../src/ui/fx/CyberSequence.h"
 #include "../src/ui/fx/CyberBackdropCache.h"
 #include "../src/ui/fx/CyberClip.h"
+#include "../src/ui/custom/CyberMixSlider.h"
 
 class CyberFxTest : public juce::UnitTest
 {
@@ -15,6 +16,15 @@ public:
 
     void runTest() override
     {
+        beginTest ("Mix slider starts with no glitch");
+        {
+            CyberMixSlider mix;
+            mix.setSize (200, 28);
+            expectEquals (mix.getGlitch(), 0.f);
+            mix.tick (0.05f);
+            expectEquals (mix.getGlitch(), 0.f);
+        }
+
         beginTest ("Director hidden stops glitch");
         {
             CyberFxDirector d;

@@ -160,6 +160,7 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
     };
 
     refreshCategories();
+    restoreBrowserFilters();
     refreshTable();
     updateDetail (table.getSelectedRow());
 }
@@ -175,6 +176,26 @@ void PresetContentComponent::refreshTable()
 {
     table.refresh();
     refreshCategories();
+}
+
+void PresetContentComponent::restoreBrowserFilters()
+{
+    const auto cat = processor.getLastPresetBrowserCategory();
+    int pick = 1;
+    if (cat.isNotEmpty())
+    {
+        for (int i = 0; i < categoryBox.getNumItems(); ++i)
+            if (categoryBox.getItemText (i).equalsIgnoreCase (cat))
+                pick = categoryBox.getItemId (i);
+    }
+    categoryBox.setSelectedId (pick, juce::dontSendNotification);
+    table.setCategory (pick == 1 ? juce::String() : categoryBox.getText());
+
+    const int scopeId = processor.getLastPresetBrowserScope();
+    scopeBox.setSelectedId (scopeId, juce::dontSendNotification);
+    table.setScope (scopeId == 2 ? PresetTableComponent::Scope::Factory
+                  : scopeId == 3 ? PresetTableComponent::Scope::User
+                                 : PresetTableComponent::Scope::All);
 }
 
 void PresetContentComponent::refreshCategories()
@@ -224,7 +245,9 @@ void PresetContentComponent::comboBoxChanged (juce::ComboBox* box)
     if (box == &categoryBox)
     {
         const auto t = categoryBox.getText();
-        table.setCategory (t.startsWithIgnoreCase ("All") ? juce::String() : t);
+        const auto cat = t.startsWithIgnoreCase ("All") ? juce::String() : t;
+        table.setCategory (cat);
+        processor.setLastPresetBrowserCategory (cat);
     }
     else if (box == &scopeBox)
     {
@@ -232,6 +255,7 @@ void PresetContentComponent::comboBoxChanged (juce::ComboBox* box)
         table.setScope (id == 2 ? PresetTableComponent::Scope::Factory
                       : id == 3 ? PresetTableComponent::Scope::User
                                 : PresetTableComponent::Scope::All);
+        processor.setLastPresetBrowserScope (id);
     }
 }
 
@@ -245,7 +269,7 @@ void PresetContentComponent::saveCurrentAs()
                                    : "My Preset",
                        "Name");
     const auto prevAuthor = lastAuthorPreference();
-    aw->addTextEditor ("author", prevAuthor.isNotEmpty() ? prevAuthor : "Artist",
+    aw->addTextEditor ("author", prevAuthor.isNotEmpty() ? prevAuthor : "NEUROKLAST",
                        "Author");
     aw->addTextEditor ("category", "User", "Category");
     aw->addButton ("OK", 1);
@@ -261,7 +285,7 @@ void PresetContentComponent::saveCurrentAs()
         if (name.isEmpty())
             name = "My Preset";
         if (author.isEmpty())
-            author = "Artist";
+            author = "NEUROKLAST";
         if (category.isEmpty())
             category = "User";
         storeAuthorPreference (author);

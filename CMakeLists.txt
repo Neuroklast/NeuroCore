@@ -138,7 +138,10 @@ juce_add_plugin(NeuroCore
     VST3_AUTO_MANIFEST FALSE
 )
 
-target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
+target_sources(NeuroCore PRIVATE
+    ${SOURCE_FILES}
+    src/ui/StandaloneAudioSettings.cpp
+)
 
 juce_generate_juce_header(NeuroCore)
 
@@ -236,6 +239,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/CyberFxTest.h
     tests/EditorUxTest.h
     ${SOURCE_FILES}
+    src/ui/StandaloneAudioSettings.cpp
     src/dsp/WaveShaper.cpp
     src/dsp/LowPassFilter.cpp
     src/dsp/HighPassFilter.cpp

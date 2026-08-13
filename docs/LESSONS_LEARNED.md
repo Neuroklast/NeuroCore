@@ -20,6 +20,42 @@ Kein MIT/GPL für NeuroCore-Code. Third-party (JUCE, VST3 SDK) bleibt deren Lize
 
 ---
 
+### 2026-08-13 – Delay preset crackle survives the next load
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Delay-Presets knistern, auch nach erneutem Wechsel  
+**Ergebnis:** `onFormulaChanged` resettet Oversampler, DC-Block, Sidechain, LPF — nicht nur den Sanitizer
+
+#### Root Cause
+`clearRuntimeState` leert Delay-Ringe der *neuen* Kette. Oversampler/DC/Sidechain im DspEngine behielten aber den Ring vom Delay-Burst. Nächstes Preset lief durch denselben OS-State.
+
+#### Regel
+Formel-Swap = Engine-Filterstate resetten. Delay-Ringe allein reichen nicht.
+
+---
+
+### 2026-08-13 – Mix is chrome, Gain is not a UI knob
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Gain-Slider raus; Mix cyberpunk + gelegentlicher Drag-Glitch  
+**Ergebnis:** `CyberMixSlider` (angular track, tick marks, RGB slices); APVTS `inputGain` bleibt host-automatable
+
+#### Regel
+Input-Gain nicht als zweiter Strip. Mix darf Backdrop-Glitch triggern (`CyberFxDirector::triggerGlitch`), aber nur beim Drag, nicht dauernd.
+
+---
+
+### 2026-08-13 – Help must not show raw markdown
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hilfe ohne Sterne/`###`/`---` lesbar machen  
+**Ergebnis:** `stripMarkdownToPlain` zieht Emphasis, Headings, Fences, Tabellen, HR raus
+
+#### Regel
+Help-Body ist Prosa. Markdown bleibt nur die Quellform im Manual, nicht die Anzeige.
+
+---
+
 ### 2026-08-13 – Help is one chapter at a time
 
 **Agent:** Grok Coding Agent  

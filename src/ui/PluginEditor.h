@@ -22,6 +22,7 @@
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
 #include "custom/InputChannelSwitch.h"
+#include "custom/CyberMixSlider.h"
 #include "../utils/Localiser.h"
 #include "ModalOverlay.h"
 #include "ValidationContentComponent.h"
@@ -102,7 +103,8 @@ private:
     std::array<std::unique_ptr<juce::TextEditor>, Config::kNumUserParams>        nameEditors;
     std::unique_ptr<juce::ImageComponent> nkLogoView;
     std::unique_ptr<juce::Label>         pluginNameLabel;
-    std::unique_ptr<juce::Label>         statusBarLabel; // live SR / OS / MIX / LIM
+    std::unique_ptr<juce::Label>         statusBarLabel; // LAT / SR / LIVE
+    std::unique_ptr<juce::TextButton>    audioSettingsButton;
     std::unique_ptr<juce::TextButton>    helpButton;
     std::unique_ptr<juce::Label>         editorFontLabel;
     std::unique_ptr<juce::TextButton>    editorFontMinusButton;
@@ -114,11 +116,8 @@ private:
     std::unique_ptr<juce::TextButton>    bypassButton; // cyber toggle (text button styled)
     std::unique_ptr<juce::TextButton>    functionsButton;
     std::unique_ptr<juce::TextButton>    stagesButton;
-    std::unique_ptr<juce::Slider>        inputGainSlider;
-    std::unique_ptr<juce::Slider>        mixSlider;
-    std::unique_ptr<juce::Label>         inputGainLabel;
+    std::unique_ptr<CyberMixSlider>      mixSlider;
     std::unique_ptr<juce::Label>         mixLabel;
-    std::unique_ptr<juce::Label>         inputGainValue;
     std::unique_ptr<juce::Label>         mixValue;
     std::unique_ptr<juce::Label>         currentPresetLabel;
     std::unique_ptr<InputChannelSwitch>  inputChannelSwitch;

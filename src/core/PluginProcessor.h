@@ -169,6 +169,18 @@ public:
         return lastPresetBrowserName.isNotEmpty() ? lastPresetBrowserName : currentPresetName;
     }
 
+    void setLastPresetBrowserCategory (const juce::String& category)
+    {
+        lastPresetBrowserCategory = category.trim();
+    }
+    juce::String getLastPresetBrowserCategory() const { return lastPresetBrowserCategory; }
+
+    void setLastPresetBrowserScope (int scopeId)
+    {
+        lastPresetBrowserScope = juce::jlimit (1, 3, scopeId);
+    }
+    int getLastPresetBrowserScope() const noexcept { return lastPresetBrowserScope; }
+
     float getLoudnessDb()      const noexcept { return dspEngine.getLoudnessDb(); }
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
@@ -193,6 +205,8 @@ private:
     juce::String currentLanguage;
     juce::String currentPresetName;
     juce::String lastPresetBrowserName;
+    juce::String lastPresetBrowserCategory;
+    int lastPresetBrowserScope { 1 };
 
     /** Rising zero-cross index from the input scope — shared so OUT stays time-locked to IN. */
     std::atomic<int> waveformAlignOffset { 0 };

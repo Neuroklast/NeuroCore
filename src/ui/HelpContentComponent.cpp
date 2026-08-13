@@ -1,6 +1,151 @@
 #include "HelpContentComponent.h"
 #include "PluginLookAndFeel.h"
 
+namespace
+{
+juce::String unwrapMarker (juce::String s, const juce::String& marker)
+{
+    juce::String out;
+    int i = 0;
+    const int n = marker.length();
+    while (i < s.length())
+    {
+        const int open = s.indexOf (i, marker);
+        if (open < 0)
+        {
+            out += s.substring (i);
+            break;
+        }
+        const int close = s.indexOf (open + n, marker);
+        if (close < 0)
+        {
+            out += s.substring (i);
+            break;
+        }
+        out += s.substring (i, open);
+        out += s.substring (open + n, close);
+        i = close + n;
+    }
+    return out;
+}
+
+juce::String unwrapInlineCode (juce::String s)
+{
+    return unwrapMarker (std::move (s), "`");
+}
+
+juce::String unwrapEmphasis (juce::String s)
+{
+    s = unwrapMarker (s, "**");
+    s = unwrapMarker (s, "__");
+    s = unwrapMarker (s, "*");
+    return s;
+}
+
+juce::String unwrapLinks (juce::String s)
+{
+    juce::String out;
+    int i = 0;
+    while (i < s.length())
+    {
+        const int open = s.indexOf (i, "[");
+        const int mid = open >= 0 ? s.indexOf (open, "](") : -1;
+        const int close = mid >= 0 ? s.indexOf (mid + 2, ")") : -1;
+        if (open < 0 || mid < 0 || close < 0)
+        {
+            out += s.substring (i);
+            break;
+        }
+        out += s.substring (i, open);
+        out += s.substring (open + 1, mid);
+        i = close + 1;
+    }
+    return out;
+}
+
+bool isRuleLine (const juce::String& t)
+{
+    const auto s = t.trim();
+    if (s.length() < 3)
+        return false;
+    return s == "---" || s == "***" || s == "___"
+        || (s.containsOnly ("-") && s.length() >= 3)
+        || (s.containsOnly ("*") && s.length() >= 3);
+}
+
+bool isTableSep (const juce::String& t)
+{
+    const auto s = t.trim();
+    return s.startsWithChar ('|') && s.containsOnly ("|:- ");
+}
+
+juce::String tableRowToPlain (const juce::String& line)
+{
+    auto cells = juce::StringArray::fromTokens (line.trim().trimCharactersAtStart ("|")
+                                                    .trimCharactersAtEnd ("|"),
+                                                "|", "");
+    juce::StringArray clean;
+    for (auto c : cells)
+    {
+        auto t = unwrapEmphasis (unwrapInlineCode (c.trim()));
+        if (t.isNotEmpty())
+            clean.add (t);
+    }
+    return clean.joinIntoString ("  —  ");
+}
+} // namespace
+
+juce::String stripMarkdownToPlain (const juce::String& markdown)
+{
+    juce::StringArray lines;
+    lines.addLines (markdown);
+    juce::String out;
+    bool inFence = false;
+
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        auto line = lines.getReference (i);
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("```"))
+        {
+            inFence = ! inFence;
+            continue;
+        }
+        if (inFence)
+        {
+            out += line + "\n";
+            continue;
+        }
+        if (isRuleLine (trimmed) || isTableSep (trimmed))
+        {
+            if (! out.endsWithChar ('\n'))
+                out += "\n";
+            continue;
+        }
+        if (trimmed.startsWithChar ('|') && trimmed.endsWithChar ('|'))
+        {
+            out += tableRowToPlain (trimmed) + "\n";
+            continue;
+        }
+
+        auto t = trimmed;
+        while (t.startsWithChar ('#'))
+            t = t.substring (1);
+        t = t.trim();
+
+        if (t.startsWith ("- ") || t.startsWith ("* "))
+            t = juce::String::charToString ((juce_wchar) 0x2022) + " " + t.substring (2);
+
+        t = unwrapLinks (unwrapEmphasis (unwrapInlineCode (t)));
+        out += t + "\n";
+    }
+
+    while (out.contains ("\n\n\n"))
+        out = out.replace ("\n\n\n", "\n\n");
+    return out.trim();
+}
+
 std::vector<HelpChapter> parseHelpChapters (const juce::String& markdown)
 {
     std::vector<HelpChapter> out;
@@ -115,11 +260,11 @@ void HelpContentComponent::rebuildVisible()
 
 juce::String HelpContentComponent::readableChapter (const HelpChapter& ch)
 {
-    auto title = ch.title.trim();
-    auto bodyText = ch.body.trim();
-    if (bodyText.startsWith ("## "))
-        bodyText = bodyText.fromFirstOccurrenceOf ("\n", false, false).trim();
+    auto title = unwrapEmphasis (ch.title.trim());
+    auto bodyText = stripMarkdownToPlain (ch.body);
     if (title.isEmpty())
+        return bodyText;
+    if (bodyText.startsWith (title))
         return bodyText;
     return title + "\n\n" + bodyText;
 }

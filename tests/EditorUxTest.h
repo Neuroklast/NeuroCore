@@ -28,6 +28,23 @@ public:
             expect (ch[1].body.contains ("Do this"));
         }
 
+        beginTest ("Help markdown strips stars headings and rules");
+        {
+            const juce::String md =
+                "### Factory\n\n"
+                "- Author: **NEUROKLAST**.\n\n"
+                "---\n\n"
+                "Shipped in `factory_presets.json`.\n";
+            const auto plain = stripMarkdownToPlain (md);
+            expect (! plain.contains ("**"));
+            expect (! plain.contains ("###"));
+            expect (! plain.contains ("---"));
+            expect (! plain.contains ("`"));
+            expect (plain.contains ("NEUROKLAST"));
+            expect (plain.contains ("factory_presets.json"));
+            expect (plain.contains ("Factory"));
+        }
+
         beginTest ("Help click shows only that chapter");
         {
             const juce::String md =

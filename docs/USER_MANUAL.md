@@ -13,7 +13,7 @@ This manual is available:
 
 1. Insert **NeuroCore** as an insert FX (or send return).
 2. Click **Presets** and load a factory preset (e.g. an amp drive or delay).
-3. Play audio. Adjust **Gain** (input) and **Mix**.
+3. Play audio. Adjust **Mix** (dry/wet).
 4. Tweak knobs **a–f** — names/ranges come from the formula (`param a = Drive [0.5, 6]`).
 5. Click **Edit**, change the formula, then **Save** to compile.
 6. Use **Insert → Quick template…** to append building blocks (delay, reverb, clip+LPF, etc.).
@@ -41,7 +41,8 @@ If the formula fails to parse, the error line under the editor explains why.
 | **Edit / Copy / Optimize** | Edit formula, copy text, safe rewrites |
 | **Insert / Quick template** | Append common DSL snippets into the formula |
 | **Formula view / editor** | Live annotated formula or code editor (monospace) |
-| **Gain / Mix** | Input gain and dry/wet |
+| **Mix** | Dry/wet (cyber slider; drag may glitch the chrome) |
+| **AUDIO / status** | LIVE or BYPASS, plugin latency (samples + ms), sample rate. **AUDIO** opens device/SR settings in Standalone. |
 | **IN / OUT scopes** | Time-aligned waveforms |
 | **Meter** | Loudness / limiter cue |
 
