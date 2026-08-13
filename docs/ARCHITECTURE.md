@@ -68,7 +68,7 @@ Zentrale Konfigurationskonstanten in anonymen Namespaces:
 | DSP | `kDefaultSampleRate`, `kMaxBlockSize`, `kOversamplingFactor` |
 | Parser | `kMaxFormulaLength`, `kMaxStages` |
 | Presets | `kPresetFileExtension`, `kEncryptionKey` |
-| Licensing | `kEnableLicensing`, `kLicenseServerUrl` ← Placeholder! |
+| Licensing | `kEnableLicensing`, `kDemoDurationSeconds` (20 min, Mix=0) |
 
 ### `EffectParameters` (`src/core/EffectParameters.h`)
 Parameter-IDs für den APVTS:
@@ -178,9 +178,9 @@ Cyber-UI-Regeln: kein Audio-Thread, kein WebView, kein Vollfenster-`repaint()` o
 
 ## Licensing (`src/licensing/`)
 
-### `LicenseManager`
-- Online-Aktivierung via HTTP-Request (blocking!) → ⚠️ friert UI ein
-- Offline-Aktivierung via Lizenzdatei
-- `HardwareFingerprint` – eindeutige Geräte-ID
-- ❌ `kLicenseServerUrl = "https://licensing.example.com/activate"` ist ein Placeholder
-- Für Dev-Builds: `kEnableLicensing = false` in `Config.h` setzen
+### Offline `.lic`
+- Issuer `NeuroCoreIssuer`: E-Mail eintragen, signierte Datei speichern
+- Plugin prüft RSA-Signatur mit dem Public Key
+- Private Key nur in `tools/license_issuer/LicensePrivateKey.h`
+- Unlizenziert: nach 20 Minuten Mix = 0 (dry). Import über den License-Button
+- Unit-Tests schalten die Sperre mit `NEUROCORE_SKIP_LICENSE_ENFORCEMENT` aus

@@ -16,6 +16,7 @@
 #include <JuceHeader.h>
 #include <cmath>
 #include <array>
+#include <atomic>
 #include <memory>
 #include "../utils/PresetManager.h"
 #include "../core/Config.h"
@@ -190,6 +191,13 @@ public:
     float getCpuLoad()         const noexcept { return cpuProtect.getLastLoad(); }
     void  clearCpuProtect()          noexcept { cpuProtect.clear(); }
 
+    bool          isProductLicensed() const noexcept { return isLicensed.load(); }
+    bool          isDemoMixLocked() const noexcept;
+    int           demoSecondsRemaining() const noexcept;
+    juce::String  licensedEmail() const { return licenseManager.licensedEmail(); }
+    juce::String  licenseError() const { return licenseManager.lastError(); }
+    bool          importProductLicense (const juce::File& file);
+
     /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroCore). */
     AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }
     juce::File getAudioDiagnosticsLogFile() const { return dspEngine.getDiagnostics().getLogFile(); }
@@ -218,9 +226,9 @@ private:
     std::atomic<int> waveformAlignOffset { 0 };
 
     // Licensing
-    LicenseManager licenseManager;
-    bool           isLicensed  { false };
-    double         demoStartMs { 0.0 };
+    LicenseManager     licenseManager;
+    std::atomic<bool>  isLicensed { false };
+    double             demoStartMs { 0.0 };
 
     std::atomic<float> osOutGain { 1.f };
     std::atomic<float> osOutGainTarget { 1.f };

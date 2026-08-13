@@ -52,6 +52,7 @@ Top bar
 - Functions: look up formula words and insert them.
 - Stages: the blocks in the current formula, and which knobs they use.
 - Bypass: forces Mix to 0 (dry). Turn it off and the previous Mix comes back.
+- License: import the signed .lic file you were sent.
 - Help: this guide, one chapter at a time.
 
 Settings
@@ -251,7 +252,22 @@ High CPU
 
 ---
 
-## 9. Glossary
+## 9. License
+
+Without a license NeuroCore is a 20-minute demo. After that Mix is forced to 0 (dry). Your formula stays loaded.
+
+Activate
+1. You receive a .lic file for your email.
+2. Click License in the top bar.
+3. Choose the file. Status shows LIC and the email.
+
+The file is stored under your user AppData (NEUROKLAST / NeuroCore). Same file works on the machines you use for the test.
+
+If import fails, the file was edited or is not a NeuroCore license. Ask for a new file. Do not change the text.
+
+---
+
+## 10. Glossary
 
 Formula
     The text that describes the sound: stages, filters, delay, and so on.

@@ -107,6 +107,8 @@ private:
     std::unique_ptr<juce::Label>         statusBarLabel; // LAT / SR / LIVE
     std::unique_ptr<juce::TextButton>    audioSettingsButton;
     std::unique_ptr<juce::TextButton>    helpButton;
+    std::unique_ptr<juce::TextButton>    licenseButton;
+    std::unique_ptr<juce::FileChooser>   licenseChooser;
     std::unique_ptr<juce::Label>         editorFontLabel;
     std::unique_ptr<juce::TextButton>    editorFontMinusButton;
     std::unique_ptr<juce::TextButton>    editorFontPlusButton;

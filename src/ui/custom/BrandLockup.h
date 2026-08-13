@@ -2,12 +2,14 @@
 #include <JuceHeader.h>
 #include "../PluginLookAndFeel.h"
 
-/** NK mark + wordmark + version. Fills the toolbar cell with margin, no stretch. */
+/** NK mark + two-line wordmark. Logo is capped so it can never cover the HUD. */
 class BrandLockup : public juce::Component,
                     public juce::SettableTooltipClient
 {
 public:
     static constexpr const char* kWebsiteUrl = "https://neuroklast.net";
+    /// Hard cap. Must stay below Config::kHudHeaderHeight (22). Never raise this.
+    static constexpr float kMaxLogoHeight = 20.f;
 
     BrandLockup (juce::Image logoImage, juce::String titleText, juce::String versionText)
         : logo (std::move (logoImage)),
@@ -16,6 +18,7 @@ public:
     {
         setInterceptsMouseClicks (true, false);
         setOpaque (false);
+        setPaintingIsUnclipped (false);
         setMouseCursor (juce::MouseCursor::PointingHandCursor);
         setTooltip ("neuroklast.net");
     }
@@ -39,22 +42,23 @@ public:
             return;
 
         const float h = r.getHeight();
-        const float logoH = juce::jmax (12.f, h);
-        float logoW = logoH;
-        if (logo.isValid() && logo.getHeight() > 0)
-            logoW = logoH * (float) logo.getWidth() / (float) logo.getHeight();
-        logoW = juce::jmin (logoW, r.getWidth() * 0.42f);
-
-        const float titleH = juce::jlimit (11.f, 16.f, h * 0.42f);
-        const float verH   = juce::jlimit (9.f, 12.f, h * 0.30f);
+        const float titleH = juce::jlimit (11.f, 15.f, h * 0.36f);
+        const float verH   = juce::jlimit (9.f, 11.f, h * 0.24f);
         auto titleFont = NeuroCoreLookAndFeel::brandFont (titleH, true);
         auto verFont   = NeuroCoreLookAndFeel::monoFont (verH);
 
         const float titleW = (float) titleFont.getStringWidth (title);
         const float verW   = (float) verFont.getStringWidth (version);
         const float textW  = juce::jmax (titleW, verW);
-        const float gap    = juce::jmax (8.f, h * 0.12f);
+        const float gap    = 8.f;
         const float stackH = titleH + 2.f + verH;
+        // Track the wordmark, never the toolbar cell, never the HUD strip.
+        const float logoH = juce::jmin (stackH, kMaxLogoHeight, h);
+        float logoW = logoH;
+        if (logo.isValid() && logo.getHeight() > 0)
+            logoW = logoH * (float) logo.getWidth() / (float) logo.getHeight();
+        logoW = juce::jmin (logoW, r.getWidth() * 0.28f);
+
         const float groupW = logoW + gap + textW;
         const float groupH = juce::jmax (logoH, stackH);
 

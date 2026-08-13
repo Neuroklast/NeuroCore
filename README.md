@@ -50,4 +50,6 @@ See `AGENTS.md` and `docs/AGENT_WORKFLOW.md`. Every coding session: plan first, 
 
 **Proprietary.** Copyright (c) 2024–2026 NEUROKLAST. All rights reserved.
 
+Testers get a signed `.lic` file. Build `NeuroCoreIssuer`, type the email, save the file. In the plugin click **License** and pick that file. Without a license, Mix drops to 0 after 20 minutes (audio stays dry).
+
 See [LICENSE](LICENSE). You may not copy, modify, or distribute this software without a written agreement from NEUROKLAST. JUCE and the VST3 SDK remain under their own licenses.

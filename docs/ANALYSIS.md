@@ -17,16 +17,7 @@ NeuroCore ist ein innovatives Audio-Plugin mit einem einzigartigen DSL-basierten
 ## 1. Kritische Bugs
 
 ### Bug 1: Licensing-Server ist ein Placeholder
-**Datei:** `src/core/Config.h`  
-**Zeile:** ~152
-
-```cpp
-inline constexpr const char* kLicenseServerUrl = "https://licensing.example.com/activate";
-```
-
-**Problem:** `kEnableLicensing = true` ist gesetzt, aber der Server-URL zeigt auf einen nicht existierenden Placeholder. Im Produktions-Build fällt das Plugin sofort in den Demo-Modus, da alle Aktivierungsversuche scheitern.
-
-**Lösung:** Entweder echten Lizenzserver implementieren oder `kEnableLicensing = false` für alle Nicht-Produktions-Builds.
+**Status:** behoben 2026-08-13. Offline RSA-`.lic` + `NeuroCoreIssuer`. Kein Activation-Server mehr.
 
 ---
 

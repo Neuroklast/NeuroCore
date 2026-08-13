@@ -16,6 +16,7 @@
 #include "BusGraphTest.h"
 #include "CyberFxTest.h"
 #include "EditorUxTest.h"
+#include "LicenseTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -45,6 +46,7 @@ int main (int argc, char* argv[])
   BusGraphTest busGraphTest;
   CyberFxTest cyberFxTest;
   EditorUxTest editorUxTest;
+  LicenseTest licenseTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

@@ -29,9 +29,9 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 - [ ] Oversampling UI-Control implementieren (Dropdown im Editor)
 
 ### Licensing
-- [ ] `kEnableLicensing = false` für alle Dev/Test-Builds
-- [ ] Blockierenden HTTP-Call in `LicenseManager` durch async Thread ersetzen
-- [ ] Echten Lizenzserver implementieren ODER Placeholder dokumentieren
+- [x] Offline RSA-`.lic` + `NeuroCoreIssuer` (E-Mail → Datei)
+- [x] Demo: Mix = 0 nach 20 Minuten
+- [ ] Optional später: Online-Widerruf / Maschinenbindung
 
 ---
 

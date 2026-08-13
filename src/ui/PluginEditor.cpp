@@ -104,6 +104,37 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     };
     addAndMakeVisible(*helpButton);
 
+    licenseButton = std::make_unique<juce::TextButton> ("License");
+    licenseButton->setTooltip ("Import a signed .lic file");
+    licenseButton->onClick = [this]
+    {
+        auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+        licenseChooser = std::make_unique<juce::FileChooser> (
+            "Import NeuroCore license", start, "*.lic");
+        constexpr int flags = juce::FileBrowserComponent::openMode
+                            | juce::FileBrowserComponent::canSelectFiles;
+        licenseChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
+        {
+            const auto src = fc.getResult();
+            if (! src.existsAsFile())
+                return;
+            if (audioProcessor.importProductLicense (src))
+            {
+                if (errorLabel != nullptr)
+                    errorLabel->setText ("Licensed: " + audioProcessor.licensedEmail(),
+                                         juce::dontSendNotification);
+            }
+            else if (errorLabel != nullptr)
+            {
+                auto msg = audioProcessor.licenseError();
+                if (msg.isEmpty())
+                    msg = "License file was rejected.";
+                errorLabel->setText (msg, juce::dontSendNotification);
+            }
+        });
+    };
+    addAndMakeVisible (*licenseButton);
+
     editorFontLabel = std::make_unique<juce::Label> ("", "Text");
     editorFontLabel->setMinimumHorizontalScale (1.0f);
     editorFontLabel->setJustificationType (juce::Justification::centredRight);
@@ -415,6 +446,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     toolbar->addChild(makeLeaf(functionsButton.get(), 0.9f));
     toolbar->addChild(makeLeaf(stagesButton.get(), 0.9f));
     toolbar->addChild(makeLeaf(bypassButton.get(), 0.9f));
+    toolbar->addChild(makeLeaf(licenseButton.get(), 0.75f));
     toolbar->addChild(makeLeaf(helpButton.get(), 0.7f));
     layoutRoot->addChild(std::move(toolbar));
 
@@ -657,6 +689,13 @@ void NeuroCoreAudioProcessorEditor::timerCallback()
     if (mixSlider)
         mixSlider->tick (1.f / 30.f);
 
+#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+    if (Config::kEnableLicensing && audioProcessor.isDemoMixLocked())
+        if (auto* dry = audioProcessor.apvts.getParameter (EffectParameters::dryWet))
+            if (dry->getValue() > 0.f)
+                dry->setValueNotifyingHost (0.f);
+#endif
+
     for (auto& pc : paramComponents)
         if (pc)
             pc->refreshValues();
@@ -742,6 +781,19 @@ void NeuroCoreAudioProcessorEditor::updateStatusBar()
       << "  ·  LIM " << (lim ? "ON" : "off");
     if (preset.isNotEmpty())
         s << "  ·  " << preset;
+    if (Config::kEnableLicensing)
+    {
+        if (audioProcessor.isProductLicensed())
+            s << "  ·  LIC " << audioProcessor.licensedEmail();
+        else if (audioProcessor.isDemoMixLocked())
+            s << "  ·  DEMO MIX 0";
+        else
+        {
+            const int left = audioProcessor.demoSecondsRemaining();
+            s << "  ·  DEMO " << juce::String (left / 60) << ":"
+              << juce::String (left % 60).paddedLeft ('0', 2);
+        }
+    }
 
     statusBarLabel->setText (s, juce::dontSendNotification);
     // Limiter or bypass → hotter red cue (still meaningful, not decorative)
@@ -897,6 +949,8 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
         helpButton->setButtonText(TRANS("HelpButton"));
+    if (licenseButton)
+        licenseButton->setButtonText ("License");
     if (oversamplingLabel)
         oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
 }
@@ -958,8 +1012,8 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
         g.fillAll (juce::Colours::black);
     }
 
-    if (layoutRoot)
-        ui::performLayout (*layoutRoot, getLocalBounds());
+    // Never layout here. paint() used to call performLayout(getLocalBounds()),
+    // which parked the lockup on top of the HUD and covered the OS banner.
     if (assemblingWindows)
         applyWindowAssemble();
 
@@ -1076,7 +1130,7 @@ void NeuroCoreAudioProcessorEditor::onAssembleVBlank (double nowSec)
         assemblingWindows = false;
         assembleVblank = {};
         if (layoutRoot)
-            ui::performLayout (*layoutRoot, getLocalBounds());
+            ui::performLayout (*layoutRoot, chromeBounds());
         if (formulaInputEditor && formulaLiveDisplay)
             formulaInputEditor->setBounds (formulaLiveDisplay->getBounds());
         setFormulaEditMode (editing);

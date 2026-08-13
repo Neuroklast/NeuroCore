@@ -68,7 +68,8 @@ public:
         beginTest ("NK lockup stays smaller than the HUD strip");
         {
             expect (Config::kHudHeaderHeight == 22);
-            expect (26.f <= (float) Config::kHudHeaderHeight + 6.f);
+            expect (BrandLockup::kMaxLogoHeight <= 20.f);
+            expect (BrandLockup::kMaxLogoHeight < (float) Config::kHudHeaderHeight);
         }
 
         beginTest ("NK lockup opens the Neuroklast site");

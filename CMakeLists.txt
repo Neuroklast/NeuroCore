@@ -84,6 +84,7 @@ set(SOURCE_FILES
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
+    src/licensing/LicenseCrypto.cpp
     src/licensing/LicenseManager.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
@@ -238,6 +239,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/NeuroCoreExtrasTest.h
     tests/CyberFxTest.h
     tests/EditorUxTest.h
+    tests/LicenseTest.h
     ${SOURCE_FILES}
     src/ui/StandaloneAudioSettings.cpp
     src/dsp/WaveShaper.cpp
@@ -259,6 +261,7 @@ target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)
 
 target_compile_definitions(NeuroCoreTests PRIVATE
     NEUROCORE_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
+    NEUROCORE_SKIP_LICENSE_ENFORCEMENT=1
 )
 
 target_link_libraries(NeuroCoreTests PRIVATE
@@ -281,3 +284,32 @@ target_link_libraries(NeuroCoreTests PRIVATE
 
 enable_testing()
 add_test(NAME NeuroCoreTests COMMAND NeuroCoreTests)
+
+# Operator-only issuer: email in, signed .lic out. Private key is not in the plugin.
+juce_add_gui_app(NeuroCoreIssuer
+    COMPANY_NAME "NEUROKLAST"
+    PRODUCT_NAME "NeuroCoreIssuer"
+)
+juce_generate_juce_header(NeuroCoreIssuer)
+target_sources(NeuroCoreIssuer PRIVATE
+    tools/license_issuer/Main.cpp
+    src/licensing/LicenseCrypto.cpp
+)
+target_include_directories(NeuroCoreIssuer PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/licensing
+    ${PROJECT_SOURCE_DIR}/tools/license_issuer
+)
+target_compile_features(NeuroCoreIssuer PRIVATE cxx_std_17)
+target_compile_definitions(NeuroCoreIssuer PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+target_link_libraries(NeuroCoreIssuer PRIVATE
+    juce::juce_gui_extra
+    juce::juce_gui_basics
+    juce::juce_graphics
+    juce::juce_events
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_cryptography
+)

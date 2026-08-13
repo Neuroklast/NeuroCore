@@ -32,8 +32,8 @@
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
 | Preset-System | ✅ 141 Factory; jedes Script mit Operator-Kommentaren (Was / Params / Stages) | 99% | 2026-08-13 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
-| Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ Suite schlank & stabil: **1852 passed / 0 failed**; factory honesty + quality gate 141/141 | 98% | 2026-08-13 |
+| Licensing | ✅ Offline RSA-.lic + Issuer (E-Mail → Datei); Demo Mix=0 nach 20 min | 90% | 2026-08-13 |
+| Tests | ✅ Suite schlank & stabil: **1887 passed / 0 failed**; factory honesty + quality gate 141/141 | 98% | 2026-08-13 |
 | CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
 | Dokumentation | ✅ Help EN, Mono, operator-only (kein JUCE/Build im Fenster) | 93% | 2026-08-13 |
@@ -59,6 +59,13 @@
 - [x] SAFE: Overrun-Schwelle + Auto-Retry (kein Dauer-Dry)
 - [x] Factory-Scripts: `#` Kommentar pro Preset / Param / Block (Generator)
 - [ ] Manuell: OS 2×→4×→8×→1× ohne Dauerknacken; Acid Line ohne Haken
+
+### 2026-08-13 – Offline license + HUD lockup
+
+- [x] NK-Logo hart auf 20 px; Layout nie über die HUD-Zeile
+- [x] RSA-signierte `.lic` Datei; Issuer-App nur E-Mail
+- [x] Unlizenziert: Mix nach 20 min auf 0 (Signal bleibt dry)
+- [x] License-Button importiert die Datei nach AppData
 
 ### 2026-08-13 – Factory preset honesty (a–f)
 
@@ -308,7 +315,7 @@
 
 - [x] `stagesButton` → `StagesContentComponent` (Signalkette-Übersicht)
 - [x] Factory-Presets tatsächlich im UI laden (nicht nur JSON-Datei)
-- [ ] Licensing-Backend (echter Server statt Placeholder)
+- [x] Licensing: Offline RSA-.lic + Issuer (kein Server in der Testphase)
 - [ ] Windows/macOS Installer
 - [ ] UI: Progressive Disclosure (Settings-Panel für Oversampling/Language)
 - [ ] UI: Immediate Feedback (Syntaxfehler inline-highlighting)

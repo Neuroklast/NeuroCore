@@ -116,9 +116,49 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     if (Config::kEnableLicensing)
     {
-        isLicensed = licenseManager.verifyLicense();
-        demoStartMs = juce::Time::getMillisecondCounterHiRes();
+        isLicensed.store (licenseManager.verifyLicense());
+#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+        demoStartMs = 0.0;
+        const auto stamp = LicenseManager::getDemoStampFile();
+        if (stamp.existsAsFile())
+            demoStartMs = stamp.loadFileAsString().trim().getDoubleValue();
+        if (demoStartMs <= 0.0)
+        {
+            demoStartMs = (double) juce::Time::currentTimeMillis();
+            stamp.getParentDirectory().createDirectory();
+            stamp.replaceWithText (juce::String (demoStartMs, 0));
+        }
+#else
+        demoStartMs = (double) juce::Time::currentTimeMillis();
+#endif
     }
+}
+
+bool NeuroCoreAudioProcessor::isDemoMixLocked() const noexcept
+{
+#if defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+    return false;
+#else
+    if (! Config::kEnableLicensing || isLicensed.load())
+        return false;
+    return demoSecondsRemaining() <= 0;
+#endif
+}
+
+int NeuroCoreAudioProcessor::demoSecondsRemaining() const noexcept
+{
+    if (! Config::kEnableLicensing || isLicensed.load())
+        return 0;
+    const double elapsed = ((double) juce::Time::currentTimeMillis() - demoStartMs) / 1000.0;
+    return juce::jmax (0, (int) std::ceil (Config::kDemoDurationSeconds - elapsed));
+}
+
+bool NeuroCoreAudioProcessor::importProductLicense (const juce::File& file)
+{
+    if (! licenseManager.importLicenseFile (file))
+        return false;
+    isLicensed.store (true);
+    return true;
 }
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
@@ -250,22 +290,6 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     midiLearnManager.processMidiMessages(midiMessages, apvts);
     midiVariableMapper.processMidi(midiMessages);
 
-    // License enforcement
-    if (Config::kEnableLicensing)
-    {
-        if (! isLicensed)
-            isLicensed = licenseManager.verifyLicense();
-        if (! isLicensed)
-        {
-            double elapsed = (juce::Time::getMillisecondCounterHiRes() - demoStartMs) / 1000.0;
-            if (elapsed > Config::kDemoDurationSeconds)
-            {
-                buffer.clear();
-                return;
-            }
-        }
-    }
-
     // Capture input waveform (pre-processing)
     waveformCapture.pushInput(buffer);
 
@@ -274,6 +298,10 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float mix = 1.f;
     if (auto* p = apvts.getRawParameterValue (EffectParameters::dryWet))
         mix = p->load();
+#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+    if (Config::kEnableLicensing && isDemoMixLocked())
+        mix = 0.f;
+#endif
 
     // User dry: never take the formula lock.
     // CPU trip: stay dry until the watchdog allows a wet probe.

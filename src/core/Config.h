@@ -219,12 +219,10 @@ namespace Config
     //==========================================================================
     // Licensing
     //==========================================================================
-    /// Enable licensing checks (set to true when real license server is deployed).
-    inline constexpr bool  kEnableLicensing      = false;
-    /// Activation server URL used for license validation.
-    inline constexpr const char* kLicenseServerUrl = "https://licensing.example.com/activate";
-    /// Duration in seconds for the built-in demo mode.
-    inline constexpr double kDemoDurationSeconds = 30.0 * 60.0; // 30 minutes
+    /// Offline RSA license + 20-minute demo (Mix forced to 0). Tests compile this off.
+    inline constexpr bool  kEnableLicensing      = true;
+    /// Duration in seconds for the unlicensed demo window.
+    inline constexpr double kDemoDurationSeconds = 20.0 * 60.0;
 
 } // namespace Config
 

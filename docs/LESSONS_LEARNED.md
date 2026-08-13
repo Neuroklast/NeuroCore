@@ -9,6 +9,28 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – NK logo must never use toolbar height
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Screenshot 174706: NK deckt NEUROCORE // NEUROKLAST OS  
+**Ergebnis:** `paint()` hat jedes Frame `performLayout(getLocalBounds())` gemacht und das Lockup auf y=0 über die HUD gelegt. Dazu war `logoH` die volle Zellenhöhe.
+
+#### Regel
+Lockup-Logo bleibt unter 20 px (unter der 22 px HUD). Chrome-Layout nur in `resized()` / Assemble über `chromeBounds()`. `paint()` legt kein Layout.
+
+---
+
+### 2026-08-13 – Offline license is a signed file, not a server
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Testphase: sicheres Offline-Lizenzmodell, Demo Mix=0 nach 20 min, Issuer nur E-Mail  
+**Ergebnis:** RSA-Signatur. Private Key nur in `NeuroCoreIssuer`. Plugin prüft mit Public Key. Ohne gültige `.lic` geht Mix nach 20 min auf 0, Audio bleibt dry.
+
+#### Regel
+Keinen Placeholder-Server einschalten. Tests mit `NEUROCORE_SKIP_LICENSE_ENFORCEMENT`, sonst läuft die Suite nach Ablauf der Demo trocken. JUCE-`RSAKey` String ist `exponent,modulus` — nicht PKCS `#n,e`. Schlüssel nur mit `RSAKey::createKeyPair` erzeugen.
+
+---
+
 ### 2026-08-13 – Settings chrome must share body column weights
 
 **Agent:** Grok Coding Agent  
