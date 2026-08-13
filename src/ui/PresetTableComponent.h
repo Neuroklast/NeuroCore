@@ -17,6 +17,7 @@ public:
     void paintCell (juce::Graphics&, int, int, int, int, bool) override;
     void cellDoubleClicked (int rowNumber, int columnId, const juce::MouseEvent&) override;
     void selectedRowsChanged (int lastRowSelected) override;
+    void sortOrderChanged (int newSortColumnId, bool isForwards) override;
 
     void refresh();
     void selectAndRevealName (const juce::String& name);
@@ -32,6 +33,7 @@ public:
     juce::String getCategoryForRow (int row) const;
     juce::String getDescriptionForRow (int row) const;
     juce::String getAuthorForRow (int row) const;
+    juce::StringArray getTagsForRow (int row) const;
     juce::StringArray getAllCategories() const;
 
     juce::TableListBox& getTable() { return table; }
@@ -46,6 +48,8 @@ private:
         juce::String category;
         juce::String author;
         juce::String description;
+        juce::String script;
+        juce::StringArray tags;
         juce::Time   date;
         juce::File   file;
         bool         isFactory { false };
@@ -61,5 +65,7 @@ private:
     juce::String searchQuery;
     juce::String categoryFilter;
     Scope scope { Scope::All };
+    int  sortColumn { 0 };
+    bool sortForwards { true };
     NeuroCoreAudioProcessor& processor;
 };

@@ -1,8 +1,10 @@
 #include <JuceHeader.h>
+#include <algorithm>
 #include "PresetTableComponent.h"
 #include "PluginLookAndFeel.h"
 #include "../utils/PresetManager.h"
 #include "../utils/FactoryPresetLibrary.h"
+#include "../utils/PresetSearch.h"
 #include "../third_party/nlohmann/json.hpp"
 
 using json = nlohmann::json;
@@ -33,6 +35,13 @@ PresetTableComponent::PresetTableComponent (NeuroCoreAudioProcessor& proc)
     table.setMultipleSelectionEnabled (false);
     table.setRowHeight (26);
     refresh();
+}
+
+void PresetTableComponent::sortOrderChanged (int newSortColumnId, bool isForwards)
+{
+    sortColumn = newSortColumnId;
+    sortForwards = isForwards;
+    rebuildFiltered();
 }
 
 void PresetTableComponent::setSearch (const juce::String& query)
@@ -66,12 +75,34 @@ void PresetTableComponent::rebuildFiltered()
             continue;
         if (q.isNotEmpty())
         {
-            const auto hay = (e.name + " " + e.category + " " + e.description
-                              + " " + e.author).toLowerCase();
-            if (! hay.contains (q))
+            const auto hay = PresetSearch::buildHaystack (e.name, e.category, e.description,
+                                                          e.author, e.tags, e.script);
+            if (! PresetSearch::matches (hay, searchQuery))
                 continue;
         }
         filtered.add (i);
+    }
+    if (sortColumn > 0)
+    {
+        std::sort (filtered.begin(), filtered.end(), [this] (int ia, int ib)
+        {
+            const auto& a = allEntries.getReference (ia);
+            const auto& b = allEntries.getReference (ib);
+            int cmp = 0;
+            switch (sortColumn)
+            {
+                case 1: cmp = a.name.compareNatural (b.name); break;
+                case 2: cmp = a.category.compareNatural (b.category); break;
+                case 3:
+                    cmp = (int) a.isFactory - (int) b.isFactory;
+                    if (cmp == 0) cmp = a.name.compareNatural (b.name);
+                    break;
+                case 4: cmp = a.author.compareNatural (b.author); break;
+                default: cmp = ia - ib; break;
+            }
+            if (cmp == 0) cmp = ia - ib;
+            return sortForwards ? cmp < 0 : cmp > 0;
+        });
     }
     table.updateContent();
     const auto keep = processor.getLastPresetBrowserName();
@@ -123,6 +154,8 @@ void PresetTableComponent::refresh()
         e.category     = fp.category;
         e.author       = "NEUROKLAST";
         e.description  = fp.description;
+        e.script       = fp.script;
+        e.tags         = fp.tags;
         e.isFactory    = true;
         e.factoryIndex = i;
         if (fp.name == processor.getCurrentPresetName())
@@ -148,19 +181,21 @@ void PresetTableComponent::refresh()
         if (in.read (listId, 4) != 4)
             continue;
         int32_t numEntries = in.readIntBigEndian();
-        ChunkEntry meta {};
-        bool found = false;
+        ChunkEntry meta {}, dscr {};
+        bool foundMeta = false, foundDscr = false;
         for (int i = 0; i < numEntries; ++i)
         {
             ChunkEntry ce {};
             in.read (ce.id, 4);
             ce.offset = in.readInt64();
             ce.length = in.readInt64();
-            if (std::memcmp (ce.id, "META", 4) == 0) { meta = ce; found = true; }
+            if (std::memcmp (ce.id, "META", 4) == 0) { meta = ce; foundMeta = true; }
+            if (std::memcmp (ce.id, "DSCR", 4) == 0) { dscr = ce; foundDscr = true; }
         }
         juce::String name = f.getFileNameWithoutExtension();
-        juce::String author, desc, category = "User";
-        if (found)
+        juce::String author, desc, category = "User", script;
+        juce::StringArray tags;
+        if (foundMeta)
         {
             in.setPosition (meta.offset);
             juce::MemoryBlock mb;
@@ -172,10 +207,23 @@ void PresetTableComponent::refresh()
                 if (j.contains ("Author"))      author = j["Author"].get<std::string>();
                 if (j.contains ("Description")) desc = j["Description"].get<std::string>();
                 if (j.contains ("Category"))    category = j["Category"].get<std::string>();
+                if (j.contains ("Tags") && j["Tags"].is_array())
+                    for (const auto& t : j["Tags"])
+                        if (t.is_string())
+                            PresetSearch::addTag (tags, t.get<std::string>());
             }
         }
+        if (foundDscr && dscr.length > 0)
+        {
+            in.setPosition (dscr.offset);
+            juce::MemoryBlock sb;
+            in.readIntoMemoryBlock (sb, (size_t) dscr.length);
+            script = juce::String::fromUTF8 (static_cast<const char*> (sb.getData()),
+                                             (int) sb.getSize());
+        }
+        tags = PresetSearch::mergeTags (tags, PresetSearch::inferTags (script, name, category, desc));
         Entry e { name, category, author.isNotEmpty() ? author : "NEUROKLAST",
-                  desc, f.getLastModificationTime(), f, false, -1 };
+                  desc, script, tags, f.getLastModificationTime(), f, false, -1 };
         allEntries.add (e);
     }
 
@@ -316,6 +364,13 @@ juce::String PresetTableComponent::getAuthorForRow (int row) const
 {
     if (const auto* e = entryAt (row))
         return e->author;
+    return {};
+}
+
+juce::StringArray PresetTableComponent::getTagsForRow (int row) const
+{
+    if (const auto* e = entryAt (row))
+        return e->tags;
     return {};
 }
 

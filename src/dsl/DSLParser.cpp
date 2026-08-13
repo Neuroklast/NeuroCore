@@ -49,6 +49,16 @@ bool DSLParser::parse(const juce::String& text,
             continue;
         if (line.startsWithChar('#') || line.startsWith("//"))
             continue;
+        {
+            const int sl = line.indexOf ("//");
+            if (sl >= 0)
+                line = line.substring (0, sl).trim();
+            const int hash = line.indexOfChar ('#');
+            if (hash >= 0)
+                line = line.substring (0, hash).trim();
+            if (line.isEmpty())
+                continue;
+        }
 
         if (line.startsWithIgnoreCase("param"))
         {

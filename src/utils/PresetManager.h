@@ -26,7 +26,8 @@ public:
     bool savePreset(const juce::File& file,
                     const juce::String& name,
                     const juce::String& author = {},
-                    const juce::String& category = {});
+                    const juce::String& category = {},
+                    const juce::String& tagsCsv = {});
     bool loadPreset(const juce::File& file);
 
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;

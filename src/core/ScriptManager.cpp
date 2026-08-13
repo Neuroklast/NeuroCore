@@ -27,6 +27,10 @@ void ScriptManager::prepare(const juce::dsp::ProcessSpec& spec)
     const juce::ScopedLock pl (processLock);
     signalChain.prepare(spec);
     previewSignalChain.prepare({ spec.sampleRate, spec.maximumBlockSize, 1 });
+    // OS factor changes the internal sample rate. Stale delay/reverb/y_prev
+    // rings sized for the previous rate crackle until the user switches back.
+    signalChain.clearRuntimeState();
+    previewSignalChain.clearRuntimeState();
 }
 
 namespace

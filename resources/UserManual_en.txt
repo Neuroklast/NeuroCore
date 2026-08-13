@@ -1,189 +1,292 @@
-# NeuroCore User Manual (English)
+# NeuroCore
 
-**NeuroCore** is a programmable real-time audio effect: you write a short **DSL formula** (stages, filters, delay, reverb, compressors, envelopes, oscillators) and map host knobs **a–f** into it. The plugin is built for guitar, bass, vocals, synths, sound design, and creative FX sends.
+NeuroCore is an insert or send effect you can program. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, envelope, oscillator).
 
-This manual is available:
+30-second path
+1. Click Presets and double-click a factory row (amp, delay, reverb, vocal).
+2. Play audio. Raise Mix until you hear the effect.
+3. Turn knobs a-f. Names and ranges come from the formula.
+4. Want your own sound? Click Edit, change the formula, then Save.
 
-- In the repository as `docs/USER_MANUAL.md`
-- Inside the plugin via **Help** (embedded offline copy)
+This Help is offline. Pick a chapter on the left. Search filters titles and text.
 
 ---
 
 ## 1. Quickstart
 
-1. Insert **NeuroCore** as an insert FX (or send return).
-2. Click **Presets** and load a factory preset (e.g. an amp drive or delay).
-3. Play audio. Adjust **Mix** (dry/wet).
-4. Tweak knobs **a–f** — names/ranges come from the formula (`param a = Drive [0.5, 6]`).
-5. Click **Edit**, change the formula, then **Save** to compile.
-6. Use **Insert → Quick template…** to append building blocks (delay, reverb, clip+LPF, etc.).
-7. **Save As…** in Presets stores a **user preset** with your **Author** name (artist packs).
+Put NeuroCore on a track, or on a send return.
 
-If the formula fails to parse, the error line under the editor explains why.
+Load a preset
+- Click Presets in the top bar.
+- Leave Scope on All or Factory.
+- Double-click a row, or select it and press Load.
+- The chip next to Presets shows the name.
+
+Hear it
+- Mix at 0% is dry (untouched input).
+- Raise Mix. On an insert, start around 40-70%. On a send, push Mix high and use the host send level.
+- L / BOTH / R chooses which input channel the formula hears. BOTH is the default.
+
+Change the sound
+- Knobs a-f can be automated from the host.
+- If a knob does nothing, that letter is not used in the current formula.
+
+Edit the formula
+- Edit opens the formula editor. Ctrl/Cmd+Space suggests the next word.
+- Save applies the formula. A red line under the editor explains errors.
+- Copy puts the formula on the clipboard.
+- Insert / Quick template adds a ready block (delay, reverb, clip, ...).
+
+Save your own
+- Presets -> Save As...
+- Give it a Name, Author, and Category.
 
 ---
 
 ## 2. Main UI map
 
-| Area | Purpose |
-|------|---------|
-| **Presets** | Factory + user library (search, category, scope) |
-| **Current preset chip** | Name of the loaded preset (or Untitled) |
-| **Functions** | Function reference insert helper |
-| **Stages** | Parsed block list / param overview |
-| **Bypass** | Dry only (Mix → 0), restores previous Mix when off |
-| **Help** | This manual (offline) |
-| **Oversampling** | 1× / 2× / 4× / 8× (default 2×) |
-| **Polisher** | None / Hard Clip / Limiter after the formula |
-| **Text − / +** | Formula editor font size (default **18**) |
-| **Knobs a–f** | Six host-automatable parameters (2 columns × 3 rows) |
-| **Name chips** under knobs | Rename mapping labels |
-| **Edit / Copy / Optimize** | Edit formula, copy text, safe rewrites |
-| **Insert / Quick template** | Append common DSL snippets into the formula |
-| **Formula view / editor** | Live annotated formula or code editor (monospace) |
-| **Mix** | Dry/wet (cyber slider; drag may glitch the chrome) |
-| **IN / OUT scopes** | Time-aligned waveforms |
-| **Meter** | Loudness / limiter cue |
+Top bar
+- NK + version: product mark. Click it to open neuroklast.net.
+- Presets: factory and your own sounds. The last category stays selected when you reopen.
+- Current chip: loaded preset name, or Untitled.
+- Functions: look up formula words and insert them.
+- Stages: the blocks in the current formula, and which knobs they use.
+- Bypass: forces Mix to 0 (dry). Turn it off and the previous Mix comes back.
+- Help: this guide, one chapter at a time.
 
-### Formula fonts
+Settings
+- L / BOTH / R: which input channel feeds the formula. Click a third.
+- Oversampling: 1x / 2x / 4x / 8x. Default 2x. Raise it if heavy drive or clip sounds harsh and the computer can take it.
+- Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
+- Text - / +: size of the formula text.
 
-- **Formula editor and live formula** use embedded **JetBrains Mono** (readable code).
-- **UI chrome** (buttons, titles) uses brand **Apex**.
-- Avoid relying on fancy Unicode punctuation in chrome; the brand face is limited.
+Knobs
+- Six knobs in two columns: a b / c d / e f.
+- The name chips under the knobs are labels only. They do not change the formula.
+- Right-click a knob for MIDI Learn.
+
+Formula area
+- When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
+- Edit, then Save to apply.
+- Optimize: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
+- Insert / Quick template: drop in a common block.
+
+Bottom
+- Mix: dry / wet. Drag may flash the background.
+- AUDIO (Standalone only): pick the audio device and sample rate. In a DAW the host owns the sample rate.
+- Status: LIVE or BYPASS, how late the plugin is (samples and ms), current sample rate.
+- IN / OUT: input and output waveforms.
+- Meter: level, plus a limiter cue.
 
 ---
 
-## 3. Knobs a–f
+## 3. Knobs a-f
 
-There are **six** knobs: **a, b, c, d, e, f**.
+There are six knobs: a, b, c, d, e, f.
 
-Declare them in the script:
+Declare them in the formula:
 
-```text
+```
 param a = Drive [0.5, 6.0]
 param b = Tone [800, 9000]
 stage1: y = softclip(x, a)
 filter1: type = lowpass; cutoff = b; resonance = 0.3
 ```
 
-- Host/APVTS stores knobs as **0–1**.
-- The DSL maps them into `[min, max]` via `param` declarations.
-- Bare letter **`e`** is knob **e**, not Euler’s number. Use `exp(1)` for e ≈ 2.718.
+How they work
+- The host sees each knob as 0-1.
+- `param a = Name [min, max]` turns that 0-1 into the range you wrote.
+- Use the letter in the formula (`softclip(x, a)`). If you never mention `a`, the knob does nothing.
+
+Watch out
+- A lone `e` is knob e, not the number 2.718. Write `exp(1)` for that.
+- Renaming the chip under a knob does not rename it in the formula.
 
 ---
 
 ## 4. Formula editor
 
-1. **Edit** → unlock the monospace editor (autocomplete with Ctrl/Cmd+Space).
-2. Write stages / filters / delay / reverb / etc.
-3. **Save** → parse + load (audio engine swaps formula safely under lock).
-4. **Copy** → clipboard.
-5. **Optimize** → safe algebraic rewrites with quality gate.
-6. **Insert** quick templates when you want blocks without browsing the Preset Explorer.
+1. Click Edit. The live view becomes an editor.
+2. Write stages, filters, delay, reverb, compressors, envelopes, oscillators.
+3. Ctrl/Cmd+Space opens suggestions. After `type =` on a filter you only get filter types.
+4. Click Save. NeuroCore checks the formula and starts using it.
+5. If Save fails, read the red line under the editor.
 
-Live view shows colour-coded knobs and evaluated values in brackets.
+Other buttons
+- Copy: clipboard only, does not apply.
+- Optimize: safer, simpler math. Watch the overlay for status.
+- Insert / Quick template: delay, reverb, clip plus a darkening filter, and similar blocks.
 
----
+Live view
+- Colours match the knob rings.
+- Values in [brackets] update while you play.
+- You can scroll even when you are not editing.
 
-## 5. Presets and artist packs
-
-### Factory
-
-- Shipped in `factory_presets.json` (also embedded in the binary).
-- Author: **NEUROKLAST**.
-
-### User presets / artist packs
-
-1. Open **Presets**.
-2. **Save As…**
-3. Enter:
-   - **Name**
-   - **Author** (your name or artist alias — stored for packs)
-   - **Category** (e.g. Guitar, Delay, Vocal)
-4. Files live under the OS app-data user preset folder (`.nrk`).
-
-The explorer lists **Name / Category / Source / Author**. No “Assemble” panel — building formulas is done in the **editor** (Quick templates + Edit).
-
-### Load
-
-- Double-click a row or select + **Load**.
-- **New Blank** starts a simple softclip formula.
+Undo
+- Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z walk formula history.
 
 ---
 
-## 6. DSL overview
+## 5. Presets
 
-See also `docs/DSL_REFERENCE.md` for full syntax.
+Factory
+- Built into the plugin. Author is NEUROKLAST.
+- The category you last picked stays selected when you reopen Presets.
 
-Common blocks:
+Load
+- Double-click a row, or select + Load.
+- New Blank starts a simple softclip formula.
 
-| Block | Role |
-|-------|------|
-| `param a = Name [min, max]` | Knob declaration |
-| `stageN: y = …` | Waveshape / math |
-| `filterN: type = lowpass; cutoff = …` | Filters |
-| `compN: threshold = …; ratio = …` | Compressor |
-| `envN: type = peak; attack = …; release = …` | Envelope follower |
-| `oscN: type = sine; freq = …` | LFO / modulator |
-| `delayN: time = …; feedback = …; mix = …` | Delay line |
-| `reverbN: size = …; mix = …` | Reverb |
+Save your own
+1. Open Presets.
+2. Save As...
+3. Name, Author (your name or alias), Category (Guitar, Delay, Vocal, ...).
+   Optional tags (comma-separated) make the sound easier to find later.
 
-Tips:
+The list shows Name / Category / Source / Author.
+Search looks at the name, tags, description, and the formula itself.
+Type "delay", "reverb", "mid side", "tape", or "crunch" to find matching sounds.
 
-- After **hardclip**, add a recovery **lowpass** (~6–12 kHz).
-- Prefer `softclip` / `tube` for amp-like grit with less aliasing (ADAA paths).
-- Delay feedback is capped for stability; damp darkens repeats.
-- Mix **0%** is pure dry (no wet path).
+There is no separate builder panel. Write formulas in the editor (templates + Edit).
+
+Share packs by copying your saved preset files and agreeing on Author and Category names.
+
+Useful factory sounds
+These are mix tools, not a full mastering suite.
+
+- Side Delay / Side Hall: delay or reverb on the sides only. The center stays dry.
+- Mono Below: lows become mono; the top stays wide.
+- MS Imager / MS Mix Desk: width, cleaner sides, a bit of mid glue.
+- Vocal Send: dry vocal plus slap and a small room.
+- NY Drum Bus / Parallel Tape: dry plus a smashed or tape-like path. Blend is the mix.
+- Plate Send / Width Delay / Slap Double: dry in the middle, wet on a side path.
+- Haas Width / Loudness Curve / Missing Bass / Speech Band: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
+- Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed: score, FX, and dialogue processing. Not a trailer sample pack.
 
 ---
 
-## 7. Tips and tricks
+## 6. Formula language
 
-- **Send FX**: load a delay/reverb, set Mix high, use host send level.
-- **Amp sims**: Drive + LPF + softclip; Polisher = None for dynamics.
-- **Oversampling**: raise to 4×/8× for heavy nonlinearities if CPU allows.
-- **Undo**: Ctrl/Cmd+Z (formula history).
-- **MIDI Learn**: right-click a knob → MIDI Learn.
-- **Artist packs**: agree on Author + Category conventions; share `.nrk` files.
+Everyday blocks:
+
+param a = Name [min, max]
+    Declares knob a and its range.
+
+stageN: y = ...
+    Per-sample math. `x` is the incoming sample. Example: `y = softclip(x, a)`.
+
+filterN: type = lowpass; cutoff = ...; resonance = ...
+    lowpass / highpass / bandpass / notch / ...
+
+compN: threshold = ...; ratio = ...
+    Compressor.
+
+envN: type = peak; attack = ...; release = ...
+    Envelope follower. Use the name (env1) later in the formula.
+
+oscN: type = sine; freq = ...
+    Slow oscillator / LFO.
+
+delayN: time = ...; feedback = ...; mix = ...
+    Delay. Feedback is limited so it cannot run away. damp darkens repeats.
+
+reverbN: size = ...; mix = ...
+    Room / hall.
+
+Good habits
+- After hardclip, fold, or bitcrush, add a lowpass around 6-12 kHz so it does not get brittle.
+- softclip and tube are usually smoother than hardclip for amp-like grit.
+- Mix 0% is fully dry. Bypass does the same and remembers your Mix.
+
+---
+
+## 7. Tips
+
+Send effect
+- Load a delay or reverb, set Mix high, ride the host send.
+
+Amp-like
+- Drive + softclip + lowpass. Leave Polisher on None so hits still breathe.
+
+Harsh digital
+- Raise oversampling to 4x or 8x. Add a lowpass after clip or fold.
+
+A/B
+- Bypass is dry without losing your Mix value.
+
+MIDI
+- Right-click a knob -> MIDI Learn. Move a controller.
+
+Latency
+- Status shows how late the plugin is, not the delay-effect time.
+- Oversampling and some blocks add a little latency. The host is told the amount.
+
+Standalone sample rate
+- Click AUDIO and pick the device / sample rate. In a DAW, follow the host.
 
 ---
 
 ## 8. Troubleshooting
 
-| Issue | What to try |
-|-------|-------------|
-| Cubase “plugin unstable” | Update to latest build; delay formula swaps are locked vs audio. Save project, reload plugin. Avoid editing huge delay scripts while recording without a save. |
-| Crackles / clicks | Check feedback/regen stages; reduce Feedback; add LPF after hardclip; try 2× OS. |
-| Silent output | Formula error? Mix at 0? Both Input L/R off? Bypass on? |
-| Knob does nothing | Not referenced in script, or inactive mapping. |
-| Weird characters (à) in UI | Fixed in current builds: chrome uses ASCII; formula uses embedded mono. |
-| Preset won’t load | User file corrupt; re-Save As. Factory always embedded. |
-| High CPU | Lower oversampling; simplify multi-stage + long delays. |
+No sound
+    Mix at 0? Bypass on? Red error under the editor? Input on the empty channel? Try BOTH and raise Mix.
 
-Crash dumps (Cubase): typically under Documents/Steinberg/CrashDumps — include build date when reporting.
+Crackles / clicks
+    Feedback too high. Lower the Feedback knob. Add a lowpass after hardclip. A short click when changing oversampling is the fade-in; it must not keep going.
+
+Plugin hitches / SAFE in the status bar
+    The formula briefly overran the audio buffer. Wet processing pauses, then retries on its own. Lower oversampling if SAFE keeps returning. BYPASS always stays dry.
+
+Host says the plugin is unstable
+    Save the project and reload the plugin. Avoid rewriting a huge delay formula while recording.
+
+Knob does nothing
+    That letter is not in the formula. Open Stages to see which knobs are live.
+
+Preset will not load
+    Your saved file may be damaged. Save As again. Factory sounds are always available.
+
+High CPU
+    Lower oversampling. Use fewer stages and shorter delays.
 
 ---
 
 ## 9. Glossary
 
-| Term | Meaning |
-|------|---------|
-| **DSL** | Domain-specific language for NeuroCore signal chains |
-| **Stage** | Sample-wise formula `y = f(x, …)` |
-| **APVTS** | JUCE parameter tree (host automation) |
-| **ADAA** | Anti-derivative anti-aliasing for nonlinearities |
-| **Dry/Wet (Mix)** | Blend of unprocessed and processed signal |
-| **Polisher** | Optional peak shaper after formula |
-| **Factory preset** | Built-in preset from NEUROKLAST |
-| **User preset** | Your `.nrk` with Author metadata |
-| **Quick template** | Snippet inserted into the current formula from the editor |
+Formula
+    The text that describes the sound: stages, filters, delay, and so on.
+
+Stage
+    One line of per-sample math: `y = ...`.
+
+Mix
+    Blend of dry input and the processed sound.
+
+Polisher
+    Optional Hard Clip or Limiter after the formula.
+
+Factory preset
+    A built-in sound from NEUROKLAST.
+
+User preset
+    A sound you saved, with Name / Author / Category.
+
+Quick template
+    A ready snippet inserted into the current formula.
+
+Latency (status)
+    How late the plugin is, not the audible delay-effect time.
+
+LIVE
+    Processing is on. BYPASS means Mix is forced dry.
+
+Mid / Side
+    Center of the stereo image vs left-minus-right width.
 
 ---
 
-## 10. Legal / support
+## 10. Support
 
-NeuroCore © NEUROKLAST. For product support, contact the vendor with host version, OS, plugin build, and steps to reproduce.
+NeuroCore (c) NEUROKLAST. All rights reserved.
 
----
-
-*End of manual.*
+For support, send the host and version, the operating system, the plugin version, the preset or formula, and the steps to reproduce.

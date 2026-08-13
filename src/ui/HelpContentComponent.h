@@ -33,12 +33,14 @@ public:
     void showChapter (int index);
     juce::String getDisplayedText() const { return body.getText(); }
     int getVisibleChapterCount() const { return (int) visible.size(); }
+    juce::String getBodyTypefaceName() const { return body.getFont().getTypefaceName(); }
 
 private:
     void textEditorTextChanged (juce::TextEditor&) override;
     void textEditorReturnKeyPressed (juce::TextEditor&) override;
     void rebuildVisible();
     void showFirstVisible();
+    void applyBodyFont();
     static juce::String readableChapter (const HelpChapter& ch);
 
     juce::String fullText;

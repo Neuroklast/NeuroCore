@@ -9,6 +9,189 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Standalone OS switch: never suspendProcessing
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Standalone knallt beim OS-Wechsel  
+**Ergebnis:** Kein `suspendProcessing`; Mute + processLock; 2×/4×/8×-Bank vorbereitet
+
+#### Root Cause
+`suspendProcessing(true)` stoppt im Standalone das Audio-Device. Resume = Lautsprecher-Pop. Gleichzeitig Dry bei vollem Pegel, dann switchRamp 0 = zweiter Knacks.
+
+#### Regel
+Device laufen lassen. Audio-Thread auf Stille halten, OS umlegen, einblenden.
+
+---
+
+### 2026-08-13 – Cubase comments: disk JSON beats the binary
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kommentare fehlen in Cubase trotz Reload  
+**Ergebnis:** Factory immer aus BinaryData; Session restored Factory-Script wenn DSP gleich
+
+#### Regel
+Installierte `resources/factory_presets.json` ist oft alt. Embedded JSON = diese Build. Session speichert den alten Text — Preset-Name merken und kommentiertes Factory nachziehen.
+
+---
+
+### 2026-08-13 – 8× then 4×: leftover scriptBuffer is a periodic glitch
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Nach 2×→8×→4× regelmäßige Glitches  
+**Ergebnis:** `scriptBuffer.setSize` immer auf die aktuelle OS-Länge; process nur `upBlock` Samples
+
+#### Root Cause
+`setSize` nur wenn der Buffer *wachsen* musste. 8× legt 8·N Samples an. 4× ließ `getNumSamples()==8N`. `processBlockSmoothed` lief über den ganzen Buffer — die zweite Hälfte Nullen, jeder Host-Block, bei 4×-Samplerate. Klang wie ein Takt-Glitch.
+
+#### Regel
+Working-Buffer logische Länge = aktueller Block, nicht all-time max. OS runterschalten muss die Sample-Zahl kürzen.
+
+---
+
+### 2026-08-13 – SAFE at 85% of the host buffer is a mute, not a guard
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Safeguard bleibt, knistert in Stille, klingt alles schlecht  
+**Ergebnis:** Trip erst bei echtem Overrun (1.15×, 8 Hits); Warmup; Auto-Retry; Filter wieder per-sample bei Modulation
+
+#### Root Cause
+`kCpuTripRatio = 0.85` ist das Host-Callback-Budget, nicht "dieses Plugin darf 85% nutzen". Kleiner Buffer + 2× OS + Filter reicht. Trip dauerte ewig, weil Dry `observe()` nie mehr sah → Mix 100% klang nach Dry. 8-Sample Filter-Stride knisterte in der Stille.
+
+#### Regel
+CPU-Guard nur bei Overrun. Nach Trip automatisch wieder nass testen. Modulation nicht in Coeff-Blöcken stufen.
+
+---
+
+### 2026-08-13 – OS switch crackles until you revert the factor
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Oversampling-Wechsel knackt dauerhaft, bis der alte Faktor wieder gewählt wird  
+**Ergebnis:** `useIntegerLatency` im Oversampler-Ctor; Latenz `roundToInt` und in `osLatencySamples` gespeichert; IIR nach Coeff-Set reset; `ScriptManager::prepare` leert Delay/Reverb/y_prev
+
+#### Root Cause
+`setUsingIntegerLatency(true)` nach `initProcessing` macht `getLatencyInSamples` ganzzahlig, das Thiran-Pad war aber für den alten Flag-Stand gebaut. `static_cast<int>(latency)` kürzt 26.999 auf 26. Dry-Sidechain und Wet laufen dann einen Sample versetzt — permanenter Kamm, faktorabhängig. Zurück auf 2× (oft schon integer FIR) „heilt“ es.
+
+#### Regel
+Integer-Latency im Oversampler-Ctor. Dieselbe gerundete Latenz für Host-PDC und Dry-Align. OS-Wechsel = neue interne Samplerate → DSL-Ringe leeren.
+
+---
+
+### 2026-08-13 – Acid Line hitch is per-sample TPT coeff rebuild
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Acid Line laggt wie Glitch Laboratory  
+**Ergebnis:** `setCutoffFrequency` nur noch jedes 8. Sample (Smoother weiter per Sample); Filter/Env setzen nur Knob/Osc/Env-Variablen; Res-Default 1.8
+
+#### Regel
+Modulierter SVF mit `+ = env` darf nicht jedes Sample `tan()` rechnen. Env-Release ist 160 ms — 8-Sample-Stride reicht. `varNames` nicht die ganze Variable-Map.
+
+---
+
+### 2026-08-13 – Header click does nothing without sortOrderChanged
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Preset-Sortierung, L/BOTH/R + NK aligned, NETRUNNER → Neuroklast OS  
+**Ergebnis:** Table sortiert filtered-Indizes; Settings-Chrome 32 px mittig; Layout immer unter HUD (auch Assemble); Banner Neuroklast OS
+
+#### Regel
+`TableListBox` ist erst sortierbar, wenn das Model `sortOrderChanged` implementiert. Assemble darf nicht `getLocalBounds()` ohne HUD-Trim layouten. Settings-Zeile: Combos und L/BOTH/R dieselbe Hoehe, scharfe Rechtecke.
+
+---
+
+### 2026-08-13 – Cropped NK logo will eat the HUD if the toolbar starts at y=8
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** NK-Logo zu gross, ueberdeckt NETRUNNER OS  
+**Ergebnis:** Chrome unter `kHudHeaderHeight`; Logo max 26 px / 56% der Toolbar
+
+#### Regel
+HUD-Zeile ist 22 px. Layout-Margin 8 schiebt die Toolbar in diese Zeile. Zugeschnittenes Logo darf die Zeile nicht fuellen — erst unter den Header, dann klein halten.
+
+---
+
+### 2026-08-13 – Cinematic presets process picture audio, they are not trailer WAV packs
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Psychoakkustik + Cinematic Factory fuer Blockbuster-Arbeit  
+**Ergebnis:** +11 Presets (Haas, Loudness Curve, Missing Bass, Speech Band, Trailer Impact, Score Hall, Dialogue Seat, Far Plane, Boom Tail, Wide Canvas, Tension Bed)
+
+#### Regel
+Kein "Avengers Mode". NeuroCore bearbeitet Signal; es liefert keine Impacts als Samples. Beschreibungen sagen, was die Kette tut (Haas-Delay, implied bass, score send). Osc-Shape ist `shape`, nicht `type`.
+
+---
+
+### 2026-08-13 – NK lockup is a link, not only a mark
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Klick auf NK-Logo oeffnet neuroklast.net  
+**Ergebnis:** `BrandLockup::mouseUp` + `URL::launchInDefaultBrowser`; Hover-Glitch bleibt
+
+#### Regel
+Marke ist klickbar. `mouseWasClicked()` statt mouseDown, damit ein Drag nicht die Seite oeffnet.
+
+---
+
+### 2026-08-13 – Preset search is tags + formula, not just the name
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Presets mit Tags; Schnellsuche nach DSL (tape, crunch, mid side)  
+**Ergebnis:** `PresetSearch` inferiert Tags aus Script/Name; Factory-JSON `tags`; Suche tokenisiert (AND + Phrase); User-Save speichert Tags
+
+#### Regel
+Preset-Suche muss Name, Tags, Beschreibung und die Formel sehen. Kurze Tokens (`ms`) nur als Wort, nicht als Substring. Tags im Generator schreiben, in C++ trotzdem nochmal inferieren (alte JSON / User-Presets).
+
+---
+
+### 2026-08-13 – In-plugin Help is for operators, not the build
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hilfe nur auf das Plugin / den Nutzer beziehen  
+**Ergebnis:** `UserManual_en.txt` ohne JUCE, CMake, Repo-Pfade, APVTS/ADAA. Fallback-Text ebenfalls nutzerseitig.
+
+#### Regel
+Hilfe erklaert Klicks, Klang, Presets, Formel. Build, Framework, Dateinamen im Repo gehoeren in `docs/ARCHITECTURE.md` / `DSL_REFERENCE.md`, nicht ins Help-Fenster.
+
+---
+
+### 2026-08-13 – Loudness meter twitched because GL ticked a 30 Hz smoother
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Rechtes Loudness-Meter smoother, nicht zucken  
+**Ergebnis:** VU-Ballistik im DSP (`smoothMeterDb`); UI nur Timer; OpenGL nicht mehr continuous
+
+#### Root Cause
+`lastLoudness` war Roh-RMS pro Block (~5 ms). `SmoothedValue` war auf 30 Hz / 100 ms gesetzt, `getNextValue()` lief aber in `renderOpenGL` bei VSync. Die Rampe war nach 1–2 Frames fertig, dann Stillstand bis zum nächsten Timer-Target — klassisches Snap-Hold.
+
+#### Regel
+Meter-Ballistik im DSP (Attack schnell, Release langsam). UI nur nachziehen, nie `getNextValue` in OpenGL. Continuous-Repaint fuer ein 30-Hz-Meter aus.
+
+---
+
+### 2026-08-13 – Factory mix-desk presets: honest MS/bus, not a mastering suite
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Weitere Factory-Presets mit Mid/Side und Bus, realistisch  
+**Ergebnis:** +14 Mix-Desk-Presets (130 total). Side Delay/Hall, Vocal Send, NY Drum Bus, Mono Below, MS Imager, …
+
+#### Regel
+Keine „unverzichtbar für Top-Produzenten“-Claims im Preset-Text. NeuroCore hat echtes MS und einen Send-DAG, aber keinen linearphasigen MS-EQ, kein Convolution, kein Multiband-Imager. Reverb hat kein `channel` — Side-Hall mutet Mid auf einem Bus. Comp hat kein `channel` — Mid-only über Stages nach `ms encode`. Generator-only, nie `factory_presets.json` per Hand.
+
+---
+
+### 2026-08-13 – Help default Font is Apex (ALL CAPS); logo PNG is a padded square
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hilfe lesbar + hilfreich; NK-Logo / Version / L-BOTH-R gerade wie PRESETS  
+**Ergebnis:** Help-Body `monoFont` + `applyFontToAllText`; Tabellen als Definitionen; BrandLockup mit `cropOpaqueContent`; Input-Switch angular
+
+#### Root Cause
+`LookAndFeel::getTypefaceForFont` mappt leeren/Default-Sans-Namen auf Apex. `TextEditor::setFont(Font(16))` ohne Typeface-Namen wird damit ALL-CAPS. `setText` setzt die Runs zurueck — ohne `applyFontToAllText` nach jedem Setzen gewinnt Apex wieder. Das Logo-PNG hat viel schwarzen Rand; `ImageComponent` + `onlyReduceInSize` schrumpft das ganze Quadrat, NK sitzt klein und hoch.
+
+#### Regel
+Help-Body immer `NeuroCoreLookAndFeel::monoFont` + `applyFontToAllText` nach `setText`. Apex nur fuer Chrome. Logo vor dem Draw auf die rote Tinte croppen und mit Version als ein Lockup vertikal zentrieren. L/BOTH/R dieselbe eckige Platte wie `drawButtonBackground`, keine Pill.
+
+---
+
 ### 2026-08-13 – Product is proprietary, README is not an OSS template
 
 **Agent:** Grok Coding Agent  
@@ -63,7 +246,7 @@ Help-Body ist Prosa. Markdown bleibt nur die Quellform im Manual, nicht die Anze
 **Ergebnis:** `showChapter` setzt den Body auf Titel + Text; kein `scrollEditorToPositionCaret`
 
 #### Regel
-Kapitel-Liste ist Navigation, nicht ein Anker im ganzen Manual. Body-Font lesbar (Brand 15pt), nicht Terminal-Mono.
+Kapitel-Liste ist Navigation, nicht ein Anker im ganzen Manual. Body-Font ist JetBrains Mono (nicht Apex) — Apex ist Caps-only und macht die Hilfe unlesbar.
 
 ---
 

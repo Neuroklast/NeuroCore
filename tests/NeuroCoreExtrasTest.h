@@ -728,6 +728,32 @@ private:
             requireBlock ("Doubler AM", "delay");
             requireBlock ("Shimmer Drive", "reverb");
             requireBlock ("Cinematic Space", "ms");
+            requireBlock ("Side Delay", "ms");
+            requireBlock ("Side Delay", "delay");
+            requireBlock ("Side Hall", "ms");
+            requireBlock ("Side Hall", "reverb");
+            requireBlock ("Side Hall", "bus");
+            requireBlock ("Vocal Send", "delay");
+            requireBlock ("Vocal Send", "reverb");
+            requireBlock ("Vocal Send", "bus");
+            requireBlock ("NY Drum Bus", "bus");
+            requireBlock ("Mono Below", "ms");
+            requireBlock ("MS Mix Desk", "ms");
+            requireBlock ("MS Imager", "ms");
+            requireBlock ("Plate Send", "delay");
+            requireBlock ("Plate Send", "reverb");
+            requireBlock ("Width Delay", "pingpong");
+            requireBlock ("Haas Width", "delay");
+            requireBlock ("Trailer Impact", "reverb");
+            requireBlock ("Trailer Impact", "delay");
+            requireBlock ("Score Hall", "reverb");
+            requireBlock ("Score Hall", "ms");
+            requireBlock ("Dialogue Seat", "reverb");
+            requireBlock ("Far Plane", "reverb");
+            requireBlock ("Boom Tail", "reverb");
+            requireBlock ("Wide Canvas", "ms");
+            requireBlock ("Wide Canvas", "reverb");
+            requireBlock ("Tension Bed", "reverb");
         }
 
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");

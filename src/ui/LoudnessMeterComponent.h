@@ -3,26 +3,24 @@
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
 
+/** Vertical loudness bar — same angular hull / accent gradient as the Mix slider. */
 class LoudnessMeterComponent : public juce::Component,
-                               private juce::OpenGLRenderer,
                                private juce::Timer
 {
 public:
     explicit LoudnessMeterComponent(NeuroCoreAudioProcessor& proc);
-    ~LoudnessMeterComponent() override;
+    ~LoudnessMeterComponent() override = default;
 
     void paint(juce::Graphics& g) override;
     void resized() override {}
     void mouseDown(const juce::MouseEvent& e) override;
-    /** OpenGL sits above JUCE siblings — detach while a modal covers the editor. */
+    /** Hide while a modal covers the editor (OpenGL used to sit above siblings). */
     void setCoveredByOverlay (bool covered);
 
 private:
     void timerCallback() override;
     void drawLed(juce::Graphics& g, juce::Rectangle<float> area, bool on);
-    void newOpenGLContextCreated() override;
-    void renderOpenGL() override;
-    void openGLContextClosing() override {}
+    juce::Path makeHull (juce::Rectangle<float> r) const;
 
     enum class Scale { dBFS, LUFS, KSystem };
     struct ScaleInfo { const char* name; float minDb; float maxDb; float step; };
@@ -32,13 +30,10 @@ private:
 
     NeuroCoreAudioProcessor& processor;
     float loudness { -100.0f };
-    juce::SmoothedValue<float> smoothedLoudness;
     bool  limiter { false };
     bool  blink   { false };
     int   blinkCount { 0 };
 
     Scale scale { Scale::dBFS };
-    juce::OpenGLContext openGLContext;
     bool coveredByOverlay { false };
 };
-

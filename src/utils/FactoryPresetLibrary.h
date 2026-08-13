@@ -11,6 +11,7 @@ struct FactoryPresetEntry
     juce::String category;
     juce::String description;
     juce::String script;
+    juce::StringArray tags;
     juce::String paramNames[8];
     float paramMin[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
     float paramMax[8]  { 1, 1, 1, 1, 1, 1, 1, 1 };
@@ -36,6 +37,8 @@ public:
 
     /** Load presets embedded in the plugin binary (works in Cubase without loose files). */
     bool loadFromEmbedded();
+
+    const FactoryPresetEntry* findByName (const juce::String& name) const noexcept;
 
 private:
     FactoryPresetLibrary() = default;

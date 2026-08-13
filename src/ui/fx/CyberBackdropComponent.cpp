@@ -1,6 +1,7 @@
 #include "CyberBackdropComponent.h"
 #include "CyberChrome.h"
 #include "../PluginLookAndFeel.h"
+#include "../../core/Config.h"
 #include <cmath>
 
 CyberBackdropComponent::CyberBackdropComponent (CyberFxDirector& directorIn)
@@ -51,16 +52,18 @@ void CyberBackdropComponent::paint (juce::Graphics& g)
     }
 
     g.setColour (juce::Colour (0xff0a0000));
-    g.fillRect (0, 0, getWidth(), 22);
+    g.fillRect (0, 0, getWidth(), Config::kHudHeaderHeight);
     g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
     g.fillRect (0, 0, getWidth(), 2);
     g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
     g.setColour (NeuroCoreLookAndFeel::accent());
     const bool blink = ((int) (s.timeSec * 2.f) % 2) == 0;
-    juce::String hdr = "NEUROCORE  //  NETRUNNER OS  //  LINK ";
+    juce::String hdr = juce::String (Config::kOsBanner) + "  //  LINK ";
     hdr << (blink ? "ACTIVE" : "active");
-    g.drawText (hdr, 10, 4, getWidth() - 20, 16, juce::Justification::centredLeft, false);
+    g.drawText (hdr, 10, 4, getWidth() - 20, Config::kHudHeaderHeight - 6,
+                juce::Justification::centredLeft, false);
     g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
     g.drawText (juce::String::formatted ("T+%.1f", s.timeSec),
-                10, 4, getWidth() - 20, 16, juce::Justification::centredRight, false);
+                10, 4, getWidth() - 20, Config::kHudHeaderHeight - 6,
+                juce::Justification::centredRight, false);
 }

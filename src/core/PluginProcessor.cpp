@@ -30,6 +30,27 @@ namespace
 {
 constexpr const char* kDslScriptStateKey = "DSLScript";
 constexpr const char* kLanguageStateKey   = "language";
+constexpr const char* kPresetNameStateKey = "CurrentPresetName";
+
+juce::String stripDslComments (const juce::String& script)
+{
+    juce::StringArray lines;
+    lines.addLines (script);
+    juce::StringArray kept;
+    for (auto line : lines)
+    {
+        auto t = line.trim();
+        if (t.isEmpty() || t.startsWithChar ('#') || t.startsWith ("//"))
+            continue;
+        const int sl = t.indexOf ("//");
+        if (sl >= 0) t = t.substring (0, sl).trim();
+        const int hash = t.indexOfChar ('#');
+        if (hash >= 0) t = t.substring (0, hash).trim();
+        if (t.isNotEmpty())
+            kept.add (t);
+    }
+    return kept.joinIntoString ("\n");
+}
 
 juce::String variableNameStateKey(int index)
 {
@@ -72,6 +93,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.addParameterListener (EffectParameters::userParams[i], this);
     apvts.addParameterListener (EffectParameters::oversampling, this);
+    apvts.addParameterListener (EffectParameters::dryWet, this);
 
     loadLanguage ("en");
 
@@ -108,6 +130,7 @@ NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.removeParameterListener (EffectParameters::userParams[i], this);
     apvts.removeParameterListener (EffectParameters::oversampling, this);
+    apvts.removeParameterListener (EffectParameters::dryWet, this);
 }
 
 //==============================================================================
@@ -171,6 +194,7 @@ void NeuroCoreAudioProcessor::changeProgramName (int, const juce::String&) {}
 //==============================================================================
 void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    cpuProtect.reset();
     updateProcessingSpec(sampleRate, samplesPerBlock);
 }
 
@@ -182,6 +206,7 @@ void NeuroCoreAudioProcessor::releaseResources()
 
 void NeuroCoreAudioProcessor::reset()
 {
+    cpuProtect.reset();
     dspEngine.reset(getSampleRate(), getBlockSize());
     waveformCapture.reset();
 }
@@ -240,24 +265,85 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
 
+    // OS rebuild: silence — do not pass dry at full level into a device restart.
+    if (osRebuildMute.load (std::memory_order_acquire))
+    {
+        buffer.clear();
+        waveformCapture.pushOutput (buffer);
+        return;
+    }
+
     // Capture input waveform (pre-processing)
     waveformCapture.pushInput(buffer);
 
-    // Lock chain for the whole audio path so applyFormula cannot reallocate
-    // delay/reverb buffers mid-block (Cubase crash with delay presets).
+    const int nSamp = buffer.getNumSamples();
+    const double sr = getSampleRate();
+    float mix = 1.f;
+    if (auto* p = apvts.getRawParameterValue (EffectParameters::dryWet))
+        mix = p->load();
+
+    // User dry: never take the formula lock.
+    // CPU trip: stay dry until the watchdog allows a wet probe.
+    const bool cpuHold = cpuProtect.isTripped()
+                      && ! cpuProtect.shouldProbeWet (nSamp, sr);
+    if (cpuHold || mix <= 1.0e-5f)
     {
-        const juce::ScopedLock pl (scriptManager.getProcessLock());
-        scriptManager.signalChain.setMidiVariables(midiVariableMapper);
-        if (auto* head = getPlayHead())
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         {
-            juce::AudioPlayHead::CurrentPositionInfo pos;
-            if (head->getCurrentPosition(pos))
-                scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
+            auto* d = buffer.getWritePointer (ch);
+            for (int i = 0; i < nSamp; ++i)
+                if (! std::isfinite (d[i]))
+                    d[i] = 0.f;
         }
-        dspEngine.processBlock(buffer, scriptManager.signalChain);
+        waveformCapture.pushOutput (buffer);
+        return;
     }
 
-    // Capture output waveform (post-processing)
+    const juce::int64 t0 = juce::Time::getHighResolutionTicks();
+    bool ranWet = false;
+    {
+        struct TryLock
+        {
+            juce::CriticalSection& c;
+            bool held;
+            explicit TryLock (juce::CriticalSection& cs) : c (cs), held (cs.tryEnter()) {}
+            ~TryLock() { if (held) c.exit(); }
+        };
+
+        TryLock lock (scriptManager.getProcessLock());
+        if (lock.held)
+        {
+            scriptManager.signalChain.setMidiVariables(midiVariableMapper);
+            if (auto* head = getPlayHead())
+            {
+                juce::AudioPlayHead::CurrentPositionInfo pos;
+                if (head->getCurrentPosition(pos))
+                    scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
+            }
+            dspEngine.processBlock(buffer, scriptManager.signalChain);
+            ranWet = true;
+        }
+        else
+        {
+            // Formula swap in progress — stay dry this block, do not wait.
+            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+            {
+                auto* d = buffer.getWritePointer (ch);
+                for (int i = 0; i < nSamp; ++i)
+                    if (! std::isfinite (d[i]))
+                        d[i] = 0.f;
+            }
+        }
+    }
+
+    if (ranWet)
+    {
+        const double used = juce::Time::highResolutionTicksToSeconds (
+            juce::Time::getHighResolutionTicks() - t0);
+        const double budget = (sr > 0.0) ? ((double) nSamp / sr) : 0.005;
+        cpuProtect.observe (used, budget);
+    }
+
     waveformCapture.pushOutput(buffer);
 }
 
@@ -280,6 +366,8 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     {
         state.setProperty(kDslScriptStateKey, getScript(), nullptr);
         state.setProperty(kLanguageStateKey, "en", nullptr);
+        if (currentPresetName.isNotEmpty())
+            state.setProperty (kPresetNameStateKey, currentPresetName, nullptr);
         for (int i = 0; i < Config::kNumUserParams; ++i)
             state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
@@ -296,7 +384,22 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
         if (xmlState->hasTagName (apvts.state.getType()))
         {
             auto tree = juce::ValueTree::fromXml (*xmlState);
-            const auto scriptFromState = tree.getProperty(kDslScriptStateKey).toString();
+            auto scriptFromState = tree.getProperty(kDslScriptStateKey).toString();
+            if (tree.hasProperty (kPresetNameStateKey))
+                currentPresetName = tree.getProperty (kPresetNameStateKey).toString();
+
+            if (currentPresetName.isNotEmpty())
+            {
+                const auto& fac = FactoryPresetLibrary::getInstance();
+                for (const auto& e : fac.getEntries())
+                {
+                    if (e.name != currentPresetName)
+                        continue;
+                    if (stripDslComments (e.script) == stripDslComments (scriptFromState))
+                        scriptFromState = e.script;
+                    break;
+                }
+            }
 
             auto midiState = tree.getChildWithName("MidiLearnMappings");
             if (midiState.isValid())
@@ -390,6 +493,7 @@ bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::Stri
         if (clearPresetName)
             currentPresetName.clear();
         dspEngine.onFormulaChanged();
+        cpuProtect.clear();
         dspEngine.getDiagnostics().setPresetName (
             currentPresetName.isNotEmpty() ? currentPresetName : juce::String ("(custom)"));
         dspEngine.getDiagnostics().setFormulaHead (text);
@@ -475,9 +579,14 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
 
 void NeuroCoreAudioProcessor::handleAsyncUpdate()
 {
-    suspendProcessing (true);
-    updateProcessingSpec (getSampleRate(), getBlockSize());
-    suspendProcessing (false);
+    // Never suspendProcessing here — Standalone stops the audio device and
+    // pops the speakers. Mute + processLock: audio thread outputs silence.
+    osRebuildMute.store (true, std::memory_order_release);
+    {
+        const juce::ScopedLock pl (scriptManager.getProcessLock());
+        updateProcessingSpec (getSampleRate(), getBlockSize());
+    }
+    osRebuildMute.store (false, std::memory_order_release);
 }
 
 void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float /*newValue*/)
@@ -490,7 +599,12 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
                 apvts.getParameter (EffectParameters::oversampling)))
             idx = juce::jlimit (0, 3, choice->getIndex());
         dspEngine.setOversamplingIndex (idx);
+        cpuProtect.clear();
         triggerAsyncUpdate();
+    }
+    else if (parameterID == EffectParameters::dryWet)
+    {
+        cpuProtect.clear();
     }
 }
 

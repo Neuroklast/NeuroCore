@@ -161,8 +161,8 @@ public:
                                                BinaryData::overknob_pngSize);
     knobLights = juce::ImageCache::getFromMemory(BinaryData::knob_lights_png,
                                                  BinaryData::knob_lights_pngSize);
-    nkLogo = juce::ImageCache::getFromMemory(BinaryData::nk_logo_png,
-                                             BinaryData::nk_logo_pngSize);
+    nkLogo = cropOpaqueContent (juce::ImageCache::getFromMemory (BinaryData::nk_logo_png,
+                                                                 BinaryData::nk_logo_pngSize));
   }
 
   ~NeuroCoreLookAndFeel() override = default;
@@ -406,6 +406,43 @@ public:
           g.drawText (tag, r.getX() + 6.f, r.getY() + 2.f, 80.f, 14.f,
                       juce::Justification::centredLeft, false);
       }
+  }
+
+  /** Trim black/empty padding so the NK mark fills toolbar height. */
+  static juce::Image cropOpaqueContent (const juce::Image& src, juce::uint8 threshold = 18)
+  {
+      if (! src.isValid() || src.getWidth() <= 0 || src.getHeight() <= 0)
+          return src;
+
+      const int w = src.getWidth();
+      const int h = src.getHeight();
+      int minX = w, minY = h, maxX = -1, maxY = -1;
+
+      for (int y = 0; y < h; ++y)
+      {
+          for (int x = 0; x < w; ++x)
+          {
+              const auto c = src.getPixelAt (x, y);
+              if (c.getAlpha() > threshold
+                  && (c.getRed() > threshold || c.getGreen() > threshold || c.getBlue() > threshold))
+              {
+                  minX = juce::jmin (minX, x);
+                  minY = juce::jmin (minY, y);
+                  maxX = juce::jmax (maxX, x);
+                  maxY = juce::jmax (maxY, y);
+              }
+          }
+      }
+
+      if (maxX < minX)
+          return src;
+
+      const int pad = 1;
+      minX = juce::jmax (0, minX - pad);
+      minY = juce::jmax (0, minY - pad);
+      maxX = juce::jmin (w - 1, maxX + pad);
+      maxY = juce::jmin (h - 1, maxY + pad);
+      return src.getClippedImage ({ minX, minY, maxX - minX + 1, maxY - minY + 1 }).createCopy();
   }
 
   juce::Image& getNkLogo() noexcept { return nkLogo; }

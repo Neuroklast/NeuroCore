@@ -6,6 +6,8 @@
 #include "../src/dsp/LatencyAlignedSidechain.h"
 #include "../src/utils/ExpressionEvaluator.h"
 #include "../src/core/PluginProcessor.h"
+#include "../src/core/CpuProtect.h"
+#include "../src/core/EffectParameters.h"
 #include "TestHelpers.h"
 #include <cmath>
 #include <vector>
@@ -366,6 +368,151 @@ public:
             }
             expectEquals (bad, 0);
             expect (maxLRDiff < 1.0e-5f);
+        }
+
+        beginTest ("CpuProtect trips on consecutive over-budget blocks");
+        {
+            CpuProtect g;
+            expect (! g.isTripped());
+            // Warmup blocks must not trip
+            for (int i = 0; i < Config::kCpuWarmupBlocks; ++i)
+                g.observe (0.010, 0.002);
+            expect (! g.isTripped());
+
+            g.observe (0.001, 0.002); // 50 %
+            expect (! g.isTripped());
+            for (int i = 0; i < Config::kCpuTripHits - 1; ++i)
+                g.observe (0.003, 0.002); // 150 %
+            expect (! g.isTripped());
+            g.observe (0.003, 0.002);
+            expect (g.isTripped());
+
+            // Sticky until cooldown, then a cheap probe recovers
+            expect (! g.shouldProbeWet (64, 48000.0));
+            const int need = (int) std::ceil (Config::kCpuRetrySec * 48000.0 / 64.0) + 1;
+            bool probed = false;
+            for (int i = 0; i < need; ++i)
+                probed = g.shouldProbeWet (64, 48000.0);
+            expect (probed);
+            g.observe (0.001, 0.002);
+            expect (! g.isTripped());
+
+            g.clear();
+            expect (! g.isTripped());
+            for (int i = 0; i < Config::kCpuWarmupBlocks; ++i)
+                g.observe (0.0, 0.002);
+            g.observe (0.010, 0.002); // 5x = hard trip
+            expect (g.isTripped());
+        }
+
+        beginTest ("8x then 4x oversampling does not process leftover silence");
+        {
+            // Grow-only scriptBuffer used to keep the 8× length after dropping to 4×.
+            // DSL then ran an extra half-block of zeros every callback → periodic glitch.
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x", err), err);
+
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            auto fillSine = [&] (int phase0)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float s = 0.5f * std::sin ((phase0 + i) * 0.11f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+            };
+
+            choice->setValueNotifyingHost (choice->convertTo0to1 (3.f)); // 8×
+            proc.prepareToPlay (48000.0, 64);
+            for (int b = 0; b < 12; ++b)
+            {
+                fillSine (b * 64);
+                proc.processBlock (buf, midi);
+            }
+
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f)); // 4×
+            proc.prepareToPlay (48000.0, 64);
+            float maxJump = 0.f;
+            float last = 0.f;
+            bool have = false;
+            int bad = 0;
+            for (int b = 0; b < 24; ++b)
+            {
+                fillSine (12 * 64 + b * 64);
+                proc.processBlock (buf, midi);
+                bad += TestHelpers::countNonFinite (buf);
+                // Skip the first few blocks (switch ramp / OS FIR fill)
+                if (b < 6)
+                    continue;
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    if (have)
+                        maxJump = juce::jmax (maxJump, std::abs (y - last));
+                    last = y;
+                    have = true;
+                }
+            }
+            expectEquals (bad, 0);
+            // A 0.5 sine at this step has |Δ| << 0.2; leftover-zero blocks spike near 0.5
+            expect (maxJump < 0.22f);
+            proc.releaseResources();
+        }
+
+        beginTest ("oversampling change stays finite (no sticky crackle)");
+        {
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 128);
+            juce::String err;
+            expect (proc.applyFormula (
+                "env1: type = peak; attack = 0.002; release = 0.16\n"
+                "filter1: type = lowpass; cutoff = 180; + = env1; * = 2400; resonance = 1.8\n"
+                "stage1: y = diode(x, 2.0)", err), err);
+
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            int bad = 0;
+            int lastLat = -1;
+            for (int idx : { 1, 2, 3, 0, 1 })
+            {
+                choice->setValueNotifyingHost (choice->convertTo0to1 ((float) idx));
+                // AsyncUpdater is a private base — re-prepare reads the new choice index
+                // the same way handleAsyncUpdate / prepareToPlay does in the host.
+                proc.prepareToPlay (48000.0, 128);
+                const int lat = proc.getLatencySamples();
+                expect (lat >= 0);
+                if (idx == 0)
+                    expectEquals (lat, 0);
+                else
+                    expect (lat > 0);
+                lastLat = lat;
+                for (int b = 0; b < 8; ++b)
+                {
+                    for (int i = 0; i < 128; ++i)
+                    {
+                        const float s = 0.4f * std::sin (i * 0.07f);
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    proc.processBlock (buf, midi);
+                    bad += TestHelpers::countNonFinite (buf);
+                }
+            }
+            expectEquals (bad, 0);
+            expect (lastLat >= 0);
+            proc.releaseResources();
         }
     }
 };

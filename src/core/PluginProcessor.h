@@ -19,6 +19,7 @@
 #include <memory>
 #include "../utils/PresetManager.h"
 #include "../core/Config.h"
+#include "../core/CpuProtect.h"
 #include "../core/EffectParameters.h"
 #include "../core/ValidationTypes.h"
 #include "../utils/FormulaQuality.h"
@@ -185,6 +186,10 @@ public:
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
 
+    bool  isCpuProtectActive() const noexcept { return cpuProtect.isTripped(); }
+    float getCpuLoad()         const noexcept { return cpuProtect.getLastLoad(); }
+    void  clearCpuProtect()          noexcept { cpuProtect.clear(); }
+
     /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroCore). */
     AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }
     juce::File getAudioDiagnosticsLogFile() const { return dspEngine.getDiagnostics().getLogFile(); }
@@ -199,6 +204,7 @@ private:
     // Sub-components (extracted from the God-Class)
     DspEngine       dspEngine;
     ScriptManager   scriptManager;
+    CpuProtect      cpuProtect;
     WaveformCapture waveformCapture;
     MidiVariableMapper midiVariableMapper;
 
@@ -215,6 +221,8 @@ private:
     LicenseManager licenseManager;
     bool           isLicensed  { false };
     double         demoStartMs { 0.0 };
+
+    std::atomic<bool> osRebuildMute { false };
 
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;

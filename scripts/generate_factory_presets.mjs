@@ -21,7 +21,122 @@
 import fs from "fs";
 
 const p = (name, min, max, def) => ({ name, min, max, default: def });
+
+const inferTags = (script, name, description, category, extra = []) => {
+  const blob = `${script}\n${name}\n${description}\n${category}`.toLowerCase();
+  const tags = new Set((extra || []).map((t) => String(t).toLowerCase().trim()).filter(Boolean));
+  if (category) tags.add(String(category).toLowerCase());
+  const addIf = (re, ...ts) => {
+    if (re.test(blob)) ts.forEach((t) => tags.add(t));
+  };
+  addIf(/delay/, "delay");
+  addIf(/reverb|verb\d+\s*:/, "reverb", "space");
+  addIf(/ms\d+\s*:|mode\s*=\s*encode|channel\s*=\s*(mid|side)|ms_encode|ms_decode/,
+        "mid-side", "midside", "ms", "mid", "side");
+  addIf(/\bbus\b|send:|out:/, "bus", "parallel");
+  addIf(/tube/, "tube");
+  addIf(/softclip|hardclip/, "clip");
+  addIf(/hardclip/, "hardclip");
+  addIf(/bitcrush/, "bitcrush", "lo-fi");
+  addIf(/fold/, "fold");
+  addIf(/diode/, "diode");
+  addIf(/comp\d*\s*:/, "compressor");
+  addIf(/filter/, "filter");
+  addIf(/lowpass/, "lowpass");
+  addIf(/highpass/, "highpass");
+  addIf(/pingpong/, "pingpong", "stereo");
+  addIf(/osc\d*\s*:/, "modulation", "lfo");
+  addIf(/env\d*\s*:/, "envelope");
+  const word = (w) => new RegExp("(^|[^a-z0-9])" + w + "([^a-z0-9]|$)", "i").test(blob);
+  for (const w of [
+    "tape", "crunch", "vocal", "drum", "kick", "snare", "hat", "bass", "guitar",
+    "amp", "fuzz", "overdrive", "chorus", "phaser", "tremolo", "shimmer", "hall",
+    "plate", "slap", "glue", "air", "width", "mono", "room", "master", "crush",
+    "lofi", "edm", "synth", "pad", "lead", "send", "drive", "saturate", "clipper",
+    "haas", "cinematic", "trailer", "score", "dialogue", "boom", "impact",
+  ]) {
+    if (word(w)) tags.add(w);
+  }
+  return [...tags].sort();
+};
+
+/** One-line note for a DSL block so the operator can read the formula. */
+const describeBlock = (line) => {
+  const t = line.trim();
+  const m = t.match(/^([a-zA-Z_][\w]*)\s*:/);
+  if (!m) return null;
+  const id = m[1];
+  const low = id.toLowerCase();
+  if (low.startsWith("param")) return null;
+  if (low.startsWith("stage")) {
+    if (/tube/.test(t)) return `${id}: tube saturation`;
+    if (/diode/.test(t)) return `${id}: diode clip`;
+    if (/softclip/.test(t)) return `${id}: soft clip`;
+    if (/hardclip/.test(t)) return `${id}: hard clip`;
+    if (/bitcrush/.test(t)) return `${id}: bitcrush`;
+    if (/fold/.test(t)) return `${id}: wavefold`;
+    if (/lerp/.test(t)) return `${id}: dry/wet blend`;
+    if (/\*\s*0\.0|\*\s*0\b/.test(t)) return `${id}: mute this channel`;
+    return `${id}: waveshape / mix`;
+  }
+  if (low.startsWith("filter")) {
+    if (/highpass/.test(t)) return `${id}: highpass`;
+    if (/lowpass/.test(t)) return `${id}: lowpass`;
+    if (/bandpass/.test(t)) return `${id}: bandpass`;
+    return `${id}: filter`;
+  }
+  if (low.startsWith("delay")) return `${id}: delay line`;
+  if (low.startsWith("reverb") || low.startsWith("verb")) return `${id}: reverb`;
+  if (low.startsWith("env")) return `${id}: envelope follower`;
+  if (low.startsWith("osc")) return `${id}: LFO`;
+  if (low.startsWith("comp")) return `${id}: compressor`;
+  if (low.startsWith("ms"))
+    return /decode/.test(t) ? `${id}: mid/side decode` : `${id}: mid/side encode`;
+  if (low === "bus") {
+    const rest = t.split(":")[1]?.trim() || "";
+    return rest ? `bus ${rest}: parallel path` : "bus: parallel path";
+  }
+  if (low === "send") return "send: feed this bus from the input";
+  if (low === "out") return "out: mix buses back to the output";
+  return null;
+};
+
+const annotateScript = (name, description, script, opts = {}) => {
+  const header = [`# ${name}: ${description}`];
+  for (const [k, v] of [
+    ["a", opts.a],
+    ["b", opts.b],
+    ["c", opts.c],
+    ["d", opts.d],
+    ["e", opts.e],
+    ["f", opts.f],
+  ]) {
+    if (v && v.name)
+      header.push(`# ${k} ${v.name}: ${v.min} to ${v.max}, default ${v.default}`);
+  }
+  const body = [];
+  for (const raw of script.split(/\r?\n/)) {
+    if (raw.trim().startsWith("#") || raw.trim().startsWith("//")) {
+      body.push(raw);
+      continue;
+    }
+    const note = describeBlock(raw);
+    if (note && !/^\s*param\b/i.test(raw)) {
+      const short = note.replace(/^[^:]+:\s*/, "");
+      const base = raw.replace(/\s+$/, "");
+      if (base.includes("#") || base.includes("//"))
+        body.push(raw);
+      else
+        body.push(`${base}  # ${short}`);
+    } else {
+      body.push(raw);
+    }
+  }
+  return [...header, "", ...body].join("\n");
+};
+
 const preset = (name, category, description, script, opts = {}) => {
+  const trimmed = script.trim();
   const out = {
     name,
     category,
@@ -29,7 +144,8 @@ const preset = (name, category, description, script, opts = {}) => {
     inputGain: opts.inG ?? 0,
     outputGain: opts.outG ?? 0,
     mix: opts.mix ?? 1,
-    script: script.trim(),
+    script: annotateScript(name, description, trimmed, opts),
+    tags: inferTags(trimmed, name, description, category, opts.tags || []),
   };
   if (opts.a) out.paramA = opts.a;
   if (opts.b) out.paramB = opts.b;
@@ -1993,26 +2109,746 @@ stage3: y = softclip(x * f, 1.08)`,
 add(
   "Glitch Laboratory",
   "Creative",
-  "Bitcrush + fold + delay ping-pong + LFO LPF + mix. Chaotic but band-limited.",
-  `param a = Bits [3.0, 12.0]
-param b = Fold [0.2, 0.85]
+  "Bitcrush + fold + delay ping-pong + LFO LPF + mix. Band-limited; keep OS at 2x.",
+  `param a = Bits [4.0, 12.0]
+param b = Fold [0.2, 0.7]
 param c = Time [40, 320]
-param d = Feedback [0.1, 0.75]
-param e = Rate [0.1, 8.0]
-param f = Cutoff [400, 9000]
-osc1: type = sine; freq = e
-stage1: y = bitcrush(softclip(x, 1.5), a)
+param d = Feedback [0.1, 0.65]
+param e = Rate [0.1, 4.0]
+param f = Cutoff [600, 8000]
+osc1: shape = sine; freq = e
+stage1: y = bitcrush(softclip(x, 1.35), a)
 stage2: y = fold(y, -b, b)
-delay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true
-filter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55
-stage3: y = lerp(x, softclip(y, 1.1), 1.0) * 1.0`,
+delay1: time = c; feedback = d; mix = 0.45; damp = 5000; pingpong = true
+filter1: type = lowpass; cutoff = f; + = osc1; * = 0.22; resonance = 0.4
+stage3: y = lerp(x, softclip(y, 1.08), 0.85)`,
   {
-    a: p("Bits", 3, 12, 7),
-    b: p("Fold", 0.2, 0.85, 0.45),
+    a: p("Bits", 4, 12, 8),
+    b: p("Fold", 0.2, 0.7, 0.38),
     c: p("Time", 40, 320, 140),
-    d: p("Feedback", 0.1, 0.75, 0.4),
-    e: p("Rate", 0.1, 8, 1.2),
-    f: p("Cutoff", 400, 9000, 3500),
+    d: p("Feedback", 0.1, 0.65, 0.35),
+    e: p("Rate", 0.1, 4, 0.8),
+    f: p("Cutoff", 600, 8000, 3200),
+    outG: 0,
+  }
+);
+
+// =============================================================================
+// MIX DESK — MS + BUS (honest utilities, not a mastering suite)
+// These cover jobs a desk actually does: side-only time, mono-below,
+// parallel smash, vocal send, mid grit / side air. They do not replace a
+// linear-phase MS EQ, convolution verb, or a dedicated imager.
+// =============================================================================
+add(
+  "Side Delay",
+  "Delay",
+  "MS encode, delay only on the side, decode. Center stays dry — width without smearing a vocal or kick.",
+  `param a = Time [90, 420]
+param b = Feedback [0.12, 0.62]
+param c = Mix [0.15, 0.7]
+param d = Damp [900, 7000]
+param e = Mid [0.7, 1.15]
+param f = Level [0.75, 1.15]
+ms1: mode = encode
+stage1: channel = mid; y = x * e
+delay1: time = a; feedback = b; mix = c; damp = d; channel = side
+ms2: mode = decode
+stage2: y = softclip(x * f, 1.06)`,
+  {
+    a: p("Time", 90, 420, 220),
+    b: p("Feedback", 0.12, 0.62, 0.32),
+    c: p("Mix", 0.15, 0.7, 0.38),
+    d: p("Damp", 900, 7000, 3800),
+    e: p("Mid", 0.7, 1.15, 1.0),
+    f: p("Level", 0.75, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Side Hall",
+  "Reverb",
+  "Dry stays on main. A bus mutes mid, keeps side, then halls it. Center image stays put.",
+  `param a = Size [0.28, 0.82]
+param b = Decay [0.28, 0.8]
+param c = Send [0.12, 0.62]
+param d = Damp [0.25, 0.8]
+param e = Tone [3500, 10000]
+param f = Level [0.75, 1.15]
+stage1: y = x * f
+bus sides:
+  send: in = 1
+  ms1: mode = encode
+  stage2: channel = mid; y = x * 0.0
+  stage3: channel = side; y = x
+  ms2: mode = decode
+  reverb1: size = a; decay = b; damp = d; mix = 1; width = 1.0
+  filter1: type = lowpass; cutoff = e; resonance = 0.25
+out: main = 1-c; sides = c`,
+  {
+    a: p("Size", 0.28, 0.82, 0.52),
+    b: p("Decay", 0.28, 0.8, 0.5),
+    c: p("Send", 0.12, 0.62, 0.32),
+    d: p("Damp", 0.25, 0.8, 0.48),
+    e: p("Tone", 3500, 10000, 7200),
+    f: p("Level", 0.75, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Vocal Send",
+  "Vocals",
+  "Insert or send: dry vocal on main, slap delay bus + small room bus. Two real time blocks, one Send each.",
+  `param a = Slap [70, 170]
+param b = Size [0.2, 0.62]
+param c = Decay [0.16, 0.58]
+param d = SlapMix [0.08, 0.42]
+param e = RoomMix [0.1, 0.52]
+param f = Tone [3000, 10000]
+stage1: y = x
+bus slap:
+  send: in = 1
+  delay1: time = a; feedback = 0.14; mix = 1; damp = 5500
+  filter1: type = lowpass; cutoff = f; resonance = 0.25
+bus room:
+  send: in = 1
+  reverb1: size = b; decay = c; damp = 0.5; mix = 1; width = 0.82
+  filter2: type = lowpass; cutoff = f; resonance = 0.25
+out: main = 1; slap = d; room = e`,
+  {
+    a: p("Slap", 70, 170, 112),
+    b: p("Size", 0.2, 0.62, 0.38),
+    c: p("Decay", 0.16, 0.58, 0.34),
+    d: p("SlapMix", 0.08, 0.42, 0.18),
+    e: p("RoomMix", 0.1, 0.52, 0.24),
+    f: p("Tone", 3000, 10000, 6800),
+    mix: 1,
+    outG: 0,
+  }
+);
+
+add(
+  "NY Drum Bus",
+  "Drums",
+  "Classic parallel smash: dry kit on main, bus is fast comp + tube + tone LPF. Blend is the mix.",
+  `param a = Thresh [-28.0, -8.0]
+param b = Ratio [2.0, 8.0]
+param c = Drive [1.1, 4.0]
+param d = Blend [0.15, 0.75]
+param e = Tone [4000, 12000]
+param f = Level [0.55, 1.2]
+stage1: y = x * f
+bus smash:
+  send: in = 1
+  comp1: threshold = a; ratio = b; attack = 0.004; release = 0.09
+  stage2: y = tube(x, c)
+  filter1: type = lowpass; cutoff = e; resonance = 0.28
+  stage3: y = softclip(y * f, 1.08)
+out: main = 1-d; smash = d`,
+  {
+    a: p("Thresh", -28, -8, -16),
+    b: p("Ratio", 2, 8, 4.2),
+    c: p("Drive", 1.1, 4, 2.1),
+    d: p("Blend", 0.15, 0.75, 0.42),
+    e: p("Tone", 4000, 12000, 7800),
+    f: p("Level", 0.55, 1.2, 0.95),
+    outG: 0,
+  }
+);
+
+add(
+  "MS Mix Desk",
+  "Mastering",
+  "MS encode: mid gets optional tube glue, side gets HPF + gain, decode, air LPF. A mix-bus habit, not Ozone.",
+  `param a = MidDrive [0.8, 2.4]
+param b = SideHPF [90, 420]
+param c = Side [0.7, 1.35]
+param d = Glue [0.0, 0.7]
+param e = Air [6000, 14000]
+param f = Level [0.75, 1.2]
+ms1: mode = encode
+stage1: channel = mid; y = lerp(x, tube(x, a), d)
+filter1: type = highpass; cutoff = b; resonance = 0.3; channel = side
+stage2: channel = side; y = softclip(x * c, 1.05)
+ms2: mode = decode
+filter2: type = lowpass; cutoff = e; resonance = 0.22
+stage3: y = softclip(x * f, 1.06)`,
+  {
+    a: p("MidDrive", 0.8, 2.4, 1.25),
+    b: p("SideHPF", 90, 420, 180),
+    c: p("Side", 0.7, 1.35, 1.05),
+    d: p("Glue", 0, 0.7, 0.28),
+    e: p("Air", 6000, 14000, 11000),
+    f: p("Level", 0.75, 1.2, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Mono Below",
+  "Mastering",
+  "MS encode, high-pass the side at the crossover, decode. Lows collapse to mono; tops keep width.",
+  `param a = Crossover [70, 280]
+param b = Side [0.5, 1.3]
+param c = Mid [0.85, 1.15]
+param d = Level [0.8, 1.15]
+ms1: mode = encode
+stage1: channel = mid; y = x * c
+filter1: type = highpass; cutoff = a; resonance = 0.28; channel = side
+stage2: channel = side; y = softclip(x * b, 1.05)
+ms2: mode = decode
+stage3: y = x * d`,
+  {
+    a: p("Crossover", 70, 280, 140),
+    b: p("Side", 0.5, 1.3, 1.0),
+    c: p("Mid", 0.85, 1.15, 1.0),
+    d: p("Level", 0.8, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Slap Double",
+  "Vocals",
+  "Dry on main, 18-42 ms slap on a bus. Thickness without a chorus LFO.",
+  `param a = Time [16, 48]
+param b = Feedback [0.0, 0.28]
+param c = Blend [0.12, 0.55]
+param d = Tone [2500, 9000]
+param e = Drive [0.8, 2.2]
+param f = Level [0.75, 1.15]
+stage1: y = x * f
+bus slap:
+  send: in = 1
+  delay1: time = a; feedback = b; mix = 1; damp = 6500
+  stage2: y = softclip(x, e)
+  filter1: type = lowpass; cutoff = d; resonance = 0.25
+out: main = 1-c; slap = c`,
+  {
+    a: p("Time", 16, 48, 26),
+    b: p("Feedback", 0, 0.28, 0.08),
+    c: p("Blend", 0.12, 0.55, 0.28),
+    d: p("Tone", 2500, 9000, 6200),
+    e: p("Drive", 0.8, 2.2, 1.15),
+    f: p("Level", 0.75, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "MS Guitar Spread",
+  "Guitar",
+  "MS: mid stays the riff (mild tube), side gets a short delay. Rhythm stays centered, edges bloom.",
+  `param a = Drive [0.9, 3.2]
+param b = Time [12, 55]
+param c = Side [0.15, 0.65]
+param d = Tone [2000, 8000]
+param e = Mid [0.75, 1.2]
+param f = Level [0.55, 1.15]
+ms1: mode = encode
+stage1: channel = mid; y = tube(x, a) * e
+delay1: time = b; feedback = 0.12; mix = c; damp = d; channel = side
+ms2: mode = decode
+filter1: type = lowpass; cutoff = d; resonance = 0.28
+stage2: y = softclip(x * f, 1.08)`,
+  {
+    a: p("Drive", 0.9, 3.2, 1.6),
+    b: p("Time", 12, 55, 28),
+    c: p("Side", 0.15, 0.65, 0.34),
+    d: p("Tone", 2000, 8000, 4800),
+    e: p("Mid", 0.75, 1.2, 1.0),
+    f: p("Level", 0.55, 1.15, 0.9),
+    outG: 0,
+  }
+);
+
+add(
+  "MS Imager",
+  "Mastering",
+  "True MS width + side HPF + mid level. Same idea as a simple imager; not linear-phase, not multiband.",
+  `param a = Width [0.0, 1.6]
+param b = SideHPF [80, 500]
+param c = Mid [0.7, 1.25]
+param d = Level [0.75, 1.2]
+ms1: mode = encode
+stage1: channel = mid; y = x * c
+filter1: type = highpass; cutoff = b; resonance = 0.28; channel = side
+stage2: channel = side; y = x * a
+ms2: mode = decode
+stage3: y = softclip(x * d, 1.05)`,
+  {
+    a: p("Width", 0, 1.6, 1.05),
+    b: p("SideHPF", 80, 500, 160),
+    c: p("Mid", 0.7, 1.25, 1.0),
+    d: p("Level", 0.75, 1.2, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Plate Send",
+  "Reverb",
+  "Dry on main. Bus is a short pre-delay into a plate-ish room. Use as insert with Send, or on an FX return.",
+  `param a = Predelay [12, 90]
+param b = Size [0.18, 0.55]
+param c = Decay [0.18, 0.62]
+param d = Send [0.12, 0.7]
+param e = Damp [0.3, 0.85]
+param f = Tone [2800, 9500]
+stage1: y = x
+bus plate:
+  send: in = 1
+  delay1: time = a; feedback = 0.04; mix = 1; damp = 7000
+  reverb1: size = b; decay = c; damp = e; mix = 1; width = 0.9
+  filter1: type = lowpass; cutoff = f; resonance = 0.25
+out: main = 1-d; plate = d`,
+  {
+    a: p("Predelay", 12, 90, 32),
+    b: p("Size", 0.18, 0.55, 0.34),
+    c: p("Decay", 0.18, 0.62, 0.38),
+    d: p("Send", 0.12, 0.7, 0.32),
+    e: p("Damp", 0.3, 0.85, 0.55),
+    f: p("Tone", 2800, 9500, 6200),
+    outG: 0,
+  }
+);
+
+add(
+  "MS Kit Punch",
+  "Drums",
+  "MS encode: mid gets tube punch, side stays open with a light HPF. Kit stays in the middle.",
+  `param a = Punch [1.0, 3.5]
+param b = SideHPF [100, 450]
+param c = Side [0.75, 1.3]
+param d = Mid [0.75, 1.25]
+param e = Tone [5000, 13000]
+param f = Level [0.6, 1.2]
+ms1: mode = encode
+stage1: channel = mid; y = tube(x, a) * d
+filter1: type = highpass; cutoff = b; resonance = 0.28; channel = side
+stage2: channel = side; y = softclip(x * c, 1.05)
+ms2: mode = decode
+filter2: type = lowpass; cutoff = e; resonance = 0.24
+stage3: y = softclip(x * f, 1.07)`,
+  {
+    a: p("Punch", 1, 3.5, 1.7),
+    b: p("SideHPF", 100, 450, 200),
+    c: p("Side", 0.75, 1.3, 1.05),
+    d: p("Mid", 0.75, 1.25, 1.0),
+    e: p("Tone", 5000, 13000, 9000),
+    f: p("Level", 0.6, 1.2, 0.95),
+    outG: 0,
+  }
+);
+
+add(
+  "Parallel Tape",
+  "Mastering",
+  "Dry main + tape-ish bus (tube + HF roll). Blend in the weight; it is not a Studer model.",
+  `param a = Drive [0.9, 3.2]
+param b = Blend [0.15, 0.75]
+param c = Dull [4000, 12000]
+param d = Level [0.7, 1.2]
+stage1: y = x * d
+bus tape:
+  send: in = 1
+  stage2: y = tube(x, a)
+  filter1: type = lowpass; cutoff = c; resonance = 0.28
+  stage3: y = softclip(y * d, 1.06)
+out: main = 1-b; tape = b`,
+  {
+    a: p("Drive", 0.9, 3.2, 1.55),
+    b: p("Blend", 0.15, 0.75, 0.4),
+    c: p("Dull", 4000, 12000, 7200),
+    d: p("Level", 0.7, 1.2, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "MS Presence",
+  "Vocals",
+  "MS: mid HPF + side HPF, then a parallel presence bus (bandpass mid only) blended back. Does not replace a de-esser.",
+  `param a = Presence [1800, 5200]
+param b = Amount [0.12, 0.55]
+param c = SideHPF [140, 600]
+param d = Side [0.7, 1.25]
+param e = LowCut [70, 200]
+param f = Level [0.75, 1.15]
+ms1: mode = encode
+filter1: type = highpass; cutoff = e; resonance = 0.3; channel = mid
+stage1: channel = mid; y = x * f
+filter2: type = highpass; cutoff = c; resonance = 0.3; channel = side
+stage2: channel = side; y = softclip(x * d, 1.04)
+ms2: mode = decode
+bus air:
+  send: in = 1
+  ms3: mode = encode
+  filter3: type = bandpass; center = a; width = 1400; channel = mid
+  stage3: channel = mid; y = softclip(x, 1.18)
+  stage4: channel = side; y = x * 0.0
+  ms4: mode = decode
+  filter4: type = lowpass; cutoff = 12000; resonance = 0.22
+out: main = 1; air = b`,
+  {
+    a: p("Presence", 1800, 5200, 3200),
+    b: p("Amount", 0.12, 0.55, 0.28),
+    c: p("SideHPF", 140, 600, 260),
+    d: p("Side", 0.7, 1.25, 1.0),
+    e: p("LowCut", 70, 200, 110),
+    f: p("Level", 0.75, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+add(
+  "Width Delay",
+  "Delay",
+  "Dry on main, ping-pong delay on a bus. Stereo movement without washing the center.",
+  `param a = Time [120, 480]
+param b = Feedback [0.15, 0.6]
+param c = Send [0.12, 0.62]
+param d = Damp [800, 6500]
+param e = Drive [0.8, 2.4]
+param f = Level [0.75, 1.15]
+stage1: y = x * f
+bus ping:
+  send: in = 1
+  delay1: time = a; feedback = b; mix = 1; damp = d; pingpong = true
+  stage2: y = softclip(x, e)
+  filter1: type = lowpass; cutoff = 9000; resonance = 0.25
+out: main = 1-c; ping = c`,
+  {
+    a: p("Time", 120, 480, 240),
+    b: p("Feedback", 0.15, 0.6, 0.36),
+    c: p("Send", 0.12, 0.62, 0.3),
+    d: p("Damp", 800, 6500, 3600),
+    e: p("Drive", 0.8, 2.4, 1.2),
+    f: p("Level", 0.75, 1.15, 1.0),
+    outG: 0,
+  }
+);
+
+// =============================================================================
+// PSYCHOACOUSTIC — mix tricks the ear, not a hearing-lab suite
+// =============================================================================
+add(
+  "Haas Width",
+  "Psychoacoustic",
+  "Precedence: left stays put, right is a short delay (6-40 ms). Width without a chorus. Not a true stereoizer.",
+  `param a = Time [6, 40]
+param b = Mix [0.2, 0.75]
+param c = Tone [3500, 12000]
+param d = Level [0.75, 1.15]
+stage1: channel = left; y = x * d
+delay1: time = a; feedback = 0.04; mix = b; damp = c; channel = right
+filter1: type = lowpass; cutoff = c; resonance = 0.22
+stage2: y = softclip(x, 1.04)`,
+  {
+    a: p("Time", 6, 40, 18),
+    b: p("Mix", 0.2, 0.75, 0.42),
+    c: p("Tone", 3500, 12000, 8000),
+    d: p("Level", 0.75, 1.15, 1.0),
+    tags: ["haas", "width", "psychoacoustic"],
+    outG: 0,
+  }
+);
+
+add(
+  "Loudness Curve",
+  "Psychoacoustic",
+  "Rough equal-loudness habit: keep the body, add a 3 kHz presence bus. Not K-weighting, not a loudness meter.",
+  `param a = Contour [0.12, 0.65]
+param b = Presence [2200, 4500]
+param c = Air [7000, 14000]
+param d = Rumble [35, 100]
+param e = Level [0.7, 1.2]
+filter1: type = highpass; cutoff = d; resonance = 0.24
+stage1: y = x * e
+bus curve:
+  send: in = 1
+  filter2: type = bandpass; center = b; width = 1600
+  stage2: y = softclip(x, 1.1)
+  filter3: type = lowpass; cutoff = c; resonance = 0.22
+out: main = 1-a; curve = a`,
+  {
+    a: p("Contour", 0.12, 0.65, 0.32),
+    b: p("Presence", 2200, 4500, 3200),
+    c: p("Air", 7000, 14000, 11000),
+    d: p("Rumble", 35, 100, 55),
+    e: p("Level", 0.7, 1.2, 1.0),
+    tags: ["psychoacoustic", "presence", "loudness"],
+    outG: 0,
+  }
+);
+
+add(
+  "Missing Bass",
+  "Psychoacoustic",
+  "High-pass the main path, add tube harmonics of the lows. Small speakers still imply the fundamental.",
+  `param a = Cross [70, 180]
+param b = Harm [1.2, 4.0]
+param c = Blend [0.15, 0.6]
+param d = Level [0.7, 1.2]
+filter1: type = highpass; cutoff = a; resonance = 0.22
+stage1: y = x * d
+bus harm:
+  send: in = 1
+  filter2: type = lowpass; cutoff = a; resonance = 0.26
+  stage2: y = tube(x, b)
+  filter3: type = lowpass; cutoff = 3200; resonance = 0.28
+out: main = 1-c; harm = c`,
+  {
+    a: p("Cross", 70, 180, 110),
+    b: p("Harm", 1.2, 4, 2.2),
+    c: p("Blend", 0.15, 0.6, 0.34),
+    d: p("Level", 0.7, 1.2, 1.0),
+    tags: ["psychoacoustic", "bass", "harmonics"],
+    outG: 0,
+  }
+);
+
+add(
+  "Speech Band",
+  "Psychoacoustic",
+  "Parallel 2-4 kHz bump so dialogue and lead lines cut. Use on a bus, not as a full mix EQ.",
+  `param a = Band [1800, 4200]
+param b = Amount [0.12, 0.55]
+param c = LowCut [70, 180]
+param d = Air [7000, 13000]
+param e = Level [0.75, 1.15]
+filter1: type = highpass; cutoff = c; resonance = 0.28
+stage1: y = x * e
+bus talk:
+  send: in = 1
+  filter2: type = bandpass; center = a; width = 1400
+  stage2: y = softclip(x, 1.12)
+  filter3: type = lowpass; cutoff = d; resonance = 0.22
+out: main = 1-b; talk = b`,
+  {
+    a: p("Band", 1800, 4200, 2800),
+    b: p("Amount", 0.12, 0.55, 0.28),
+    c: p("LowCut", 70, 180, 100),
+    d: p("Air", 7000, 13000, 10000),
+    e: p("Level", 0.75, 1.15, 1.0),
+    tags: ["psychoacoustic", "dialogue", "presence"],
+    outG: 0,
+  }
+);
+
+// =============================================================================
+// CINEMATIC — score / FX / dialogue processing, not a trailer sample pack
+// =============================================================================
+add(
+  "Trailer Impact",
+  "Cinematic",
+  "Dry hit on main. Bus is tube smash + short pre-delay into a tight chamber. For impacts, not music.",
+  `param a = Drive [1.2, 4.5]
+param b = Size [0.16, 0.48]
+param c = Decay [0.12, 0.42]
+param d = Blend [0.18, 0.68]
+param e = Predelay [8, 48]
+param f = Tone [2500, 8000]
+stage1: y = x
+bus smash:
+  send: in = 1
+  stage2: y = tube(x, a)
+  delay1: time = e; feedback = 0.04; mix = 1; damp = 5500
+  reverb1: size = b; decay = c; damp = 0.58; mix = 1; width = 0.65
+  filter1: type = lowpass; cutoff = f; resonance = 0.28
+  stage3: y = softclip(y, 1.08)
+out: main = 1-d; smash = d`,
+  {
+    a: p("Drive", 1.2, 4.5, 2.4),
+    b: p("Size", 0.16, 0.48, 0.3),
+    c: p("Decay", 0.12, 0.42, 0.24),
+    d: p("Blend", 0.18, 0.68, 0.4),
+    e: p("Predelay", 8, 48, 22),
+    f: p("Tone", 2500, 8000, 4800),
+    tags: ["cinematic", "trailer", "impact"],
+    outG: 0,
+  }
+);
+
+add(
+  "Score Hall",
+  "Cinematic",
+  "Predelay into a large dark hall, then MS width. Orchestral / score send. Algorithmic, not convolution.",
+  `param a = Predelay [24, 140]
+param b = Size [0.48, 0.95]
+param c = Decay [0.42, 0.88]
+param d = Mix [0.18, 0.62]
+param e = Damp [0.28, 0.82]
+param f = Width [0.65, 1.5]
+delay1: time = a; feedback = 0.04; mix = 0.28; damp = 6500
+reverb1: size = b; decay = c; damp = e; mix = d; width = 0.92
+ms1: mode = encode
+stage1: channel = mid; y = x
+stage2: channel = side; y = x * f
+ms2: mode = decode
+filter1: type = lowpass; cutoff = 9200; resonance = 0.24
+stage3: y = softclip(x, 1.05)`,
+  {
+    a: p("Predelay", 24, 140, 68),
+    b: p("Size", 0.48, 0.95, 0.78),
+    c: p("Decay", 0.42, 0.88, 0.7),
+    d: p("Mix", 0.18, 0.62, 0.36),
+    e: p("Damp", 0.28, 0.82, 0.52),
+    f: p("Width", 0.65, 1.5, 1.05),
+    tags: ["cinematic", "score", "hall"],
+    outG: 0,
+  }
+);
+
+add(
+  "Dialogue Seat",
+  "Cinematic",
+  "Chair-level speech: low cut, light glue, parallel presence, tiny room. For ADR and production dialogue.",
+  `param a = LowCut [80, 200]
+param b = Presence [1800, 4000]
+param c = Amount [0.12, 0.5]
+param d = Room [0.06, 0.32]
+param e = Thresh [-22.0, -8.0]
+param f = Air [6000, 12000]
+filter1: type = highpass; cutoff = a; resonance = 0.3
+stage1: y = x
+comp1: threshold = e; ratio = 2.6; attack = 0.006; release = 0.11
+bus talk:
+  send: in = 1
+  filter2: type = bandpass; center = b; width = 1300
+  stage2: y = softclip(x, 1.1)
+  filter3: type = lowpass; cutoff = f; resonance = 0.22
+bus room:
+  send: in = 1
+  reverb1: size = 0.22; decay = 0.22; damp = 0.62; mix = 1; width = 0.45
+  filter4: type = lowpass; cutoff = f; resonance = 0.24
+out: main = 1; talk = c; room = d`,
+  {
+    a: p("LowCut", 80, 200, 110),
+    b: p("Presence", 1800, 4000, 2700),
+    c: p("Amount", 0.12, 0.5, 0.26),
+    d: p("Room", 0.06, 0.32, 0.14),
+    e: p("Thresh", -22, -8, -14),
+    f: p("Air", 6000, 12000, 9500),
+    tags: ["cinematic", "dialogue"],
+    outG: 0,
+  }
+);
+
+add(
+  "Far Plane",
+  "Cinematic",
+  "Push a layer back: high-pass, long predelay, dark hall. Distance cue, not a worldizer.",
+  `param a = Near [140, 520]
+param b = Predelay [45, 180]
+param c = Size [0.42, 0.9]
+param d = Mix [0.28, 0.75]
+param e = Damp [0.42, 0.88]
+param f = Level [0.6, 1.1]
+filter1: type = highpass; cutoff = a; resonance = 0.26
+delay1: time = b; feedback = 0.05; mix = 0.38; damp = 5000
+reverb1: size = c; decay = 0.72; damp = e; mix = d; width = 0.88
+filter2: type = lowpass; cutoff = 6800; resonance = 0.24
+stage1: y = softclip(x * f, 1.05)`,
+  {
+    a: p("Near", 140, 520, 260),
+    b: p("Predelay", 45, 180, 95),
+    c: p("Size", 0.42, 0.9, 0.68),
+    d: p("Mix", 0.28, 0.75, 0.48),
+    e: p("Damp", 0.42, 0.88, 0.62),
+    f: p("Level", 0.6, 1.1, 0.92),
+    tags: ["cinematic", "distance"],
+    outG: 0,
+  }
+);
+
+add(
+  "Boom Tail",
+  "Cinematic",
+  "Sub-safe boom: rumble cut, tube weight, long dark tail. Park on an impact or drone send.",
+  `param a = Drive [1.3, 4.0]
+param b = Size [0.52, 0.95]
+param c = Decay [0.48, 0.9]
+param d = Mix [0.2, 0.68]
+param e = Sub [40, 110]
+param f = Tone [1800, 6500]
+filter1: type = highpass; cutoff = e; resonance = 0.24
+stage1: y = tube(x, a)
+reverb1: size = b; decay = c; damp = 0.7; mix = d; width = 0.8
+filter2: type = lowpass; cutoff = f; resonance = 0.26
+stage2: y = softclip(x, 1.06)`,
+  {
+    a: p("Drive", 1.3, 4, 2.2),
+    b: p("Size", 0.52, 0.95, 0.78),
+    c: p("Decay", 0.48, 0.9, 0.72),
+    d: p("Mix", 0.2, 0.68, 0.4),
+    e: p("Sub", 40, 110, 62),
+    f: p("Tone", 1800, 6500, 3800),
+    tags: ["cinematic", "boom", "trailer"],
+    outG: 0,
+  }
+);
+
+add(
+  "Wide Canvas",
+  "Cinematic",
+  "Picture-wide sides: dry stays on main, a bus halls the side only. Big screen width, center locked.",
+  `param a = Size [0.35, 0.85]
+param b = Decay [0.3, 0.75]
+param c = Send [0.14, 0.58]
+param d = Damp [0.28, 0.78]
+param e = Mid [0.75, 1.2]
+param f = Tone [3200, 9500]
+stage1: y = x
+ms1: mode = encode
+stage2: channel = mid; y = x * e
+ms2: mode = decode
+bus sides:
+  send: in = 1
+  ms3: mode = encode
+  stage3: channel = mid; y = x * 0.0
+  stage4: channel = side; y = x
+  ms4: mode = decode
+  reverb1: size = a; decay = b; damp = d; mix = 1; width = 1.0
+  filter1: type = lowpass; cutoff = f; resonance = 0.24
+out: main = 1-c; sides = c`,
+  {
+    a: p("Size", 0.35, 0.85, 0.58),
+    b: p("Decay", 0.3, 0.75, 0.5),
+    c: p("Send", 0.14, 0.58, 0.32),
+    d: p("Damp", 0.28, 0.78, 0.48),
+    e: p("Mid", 0.75, 1.2, 1.0),
+    f: p("Tone", 3200, 9500, 6800),
+    tags: ["cinematic", "width", "mid-side"],
+    outG: 0,
+  }
+);
+
+add(
+  "Tension Bed",
+  "Cinematic",
+  "Slow pulse on a dark hall over mild tube. Underscore bed, not a riser sample.",
+  `param a = Drive [0.9, 2.8]
+param b = Size [0.4, 0.88]
+param c = Mix [0.22, 0.7]
+param d = Rate [0.05, 0.8]
+param e = Depth [0.12, 0.5]
+param f = Tone [2500, 8000]
+osc1: shape = sine; freq = d
+stage1: y = tube(x, a)
+reverb1: size = b; decay = 0.7; damp = 0.62; mix = 1; width = 0.85
+stage2: y = y * (1.0 - e + e * (0.5 + 0.5 * osc1))
+filter1: type = lowpass; cutoff = f; resonance = 0.25
+stage3: y = lerp(x, softclip(y, 1.06), c)`,
+  {
+    a: p("Drive", 0.9, 2.8, 1.5),
+    b: p("Size", 0.4, 0.88, 0.64),
+    c: p("Mix", 0.22, 0.7, 0.42),
+    d: p("Rate", 0.05, 0.8, 0.16),
+    e: p("Depth", 0.12, 0.5, 0.28),
+    f: p("Tone", 2500, 8000, 4800),
+    tags: ["cinematic", "score", "tension"],
     outG: 0,
   }
 );

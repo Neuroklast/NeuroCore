@@ -1,4 +1,5 @@
 #include "FactoryPresetLibrary.h"
+#include "PresetSearch.h"
 #include "../core/PluginProcessor.h"
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
@@ -58,6 +59,16 @@ bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPreset
         e.category    = item.value("category", std::string{"Factory"});
         e.description = item.value("description", std::string{});
         e.script      = item.value("script", std::string{});
+
+        if (item.contains ("tags") && item["tags"].is_array())
+        {
+            for (const auto& t : item["tags"])
+                if (t.is_string())
+                    PresetSearch::addTag (e.tags, t.get<std::string>());
+        }
+        e.tags = PresetSearch::mergeTags (e.tags,
+                                          PresetSearch::inferTags (e.script, e.name,
+                                                                   e.category, e.description));
 
         if (e.name.isEmpty() || e.script.isEmpty())
             continue;
@@ -136,6 +147,14 @@ juce::File FactoryPresetLibrary::resolveResourcesDir(const juce::File& hint)
     return hint;
 }
 
+const FactoryPresetEntry* FactoryPresetLibrary::findByName (const juce::String& name) const noexcept
+{
+    for (const auto& e : entries)
+        if (e.name == name)
+            return &e;
+    return nullptr;
+}
+
 bool FactoryPresetLibrary::loadFromEmbedded()
 {
     if (BinaryData::factory_presets_jsonSize <= 0)
@@ -151,6 +170,11 @@ bool FactoryPresetLibrary::loadFromEmbedded()
 bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
 {
     entries.clear();
+
+    // Embedded JSON matches this binary. A leftover resources/ folder next to
+    // an installed VST3 is often stale (no comments) and must not win.
+    if (loadFromEmbedded())
+        return true;
 
     const auto dir  = resolveResourcesDir(resourcesDir);
     const auto file = dir.getChildFile("factory_presets.json");

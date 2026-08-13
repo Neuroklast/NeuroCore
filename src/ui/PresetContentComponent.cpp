@@ -53,7 +53,7 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
         addAndMakeVisible (*l);
     }
 
-    searchBox.setTextToShowWhenEmpty ("Search name, category, description...",
+    searchBox.setTextToShowWhenEmpty ("Search name, tags, formula (delay, mid side, tape)...",
                                       NeuroCoreLookAndFeel::mutedText());
     searchBox.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
     searchBox.setColour (juce::TextEditor::textColourId, juce::Colours::white);
@@ -231,6 +231,9 @@ void PresetContentComponent::updateDetail (int row)
     auto desc = table.getDescriptionForRow (row);
     if (desc.isEmpty())
         desc = "No description.";
+    const auto tags = table.getTagsForRow (row);
+    if (tags.size() > 0)
+        desc = "Tags: " + tags.joinIntoString ("  ") + "\n\n" + desc;
     detailBody.setText (desc, juce::dontSendNotification);
 }
 
@@ -272,6 +275,7 @@ void PresetContentComponent::saveCurrentAs()
     aw->addTextEditor ("author", prevAuthor.isNotEmpty() ? prevAuthor : "NEUROKLAST",
                        "Author");
     aw->addTextEditor ("category", "User", "Category");
+    aw->addTextEditor ("tags", {}, "Tags (comma: tape, vocal, send)");
     aw->addButton ("OK", 1);
     aw->addButton ("Cancel", 0);
     aw->enterModalState (true, new ModalCallback ([this, aw] (int result)
@@ -282,6 +286,7 @@ void PresetContentComponent::saveCurrentAs()
         auto name = aw->getTextEditorContents ("name").trim();
         auto author = aw->getTextEditorContents ("author").trim();
         auto category = aw->getTextEditorContents ("category").trim();
+        auto tags = aw->getTextEditorContents ("tags").trim();
         if (name.isEmpty())
             name = "My Preset";
         if (author.isEmpty())
@@ -293,7 +298,7 @@ void PresetContentComponent::saveCurrentAs()
                        .getChildFile (Config::kUserPresetFolder);
         dir.createDirectory();
         auto file = dir.getChildFile (name).withFileExtension (Config::kPresetFileExtension);
-        if (processor.presetManager.savePreset (file, name, author, category))
+        if (processor.presetManager.savePreset (file, name, author, category, tags))
         {
             processor.setCurrentPresetName (name);
             refreshTable();
@@ -330,7 +335,7 @@ void PresetContentComponent::resized()
     closeButton.setBounds (bottom.reduced (3));
 
     r.removeFromBottom (6);
-    auto detail = r.removeFromBottom (100);
+    auto detail = r.removeFromBottom (118);
     detailTitle.setBounds (detail.removeFromTop (24));
     detailBody.setBounds (detail);
     r.removeFromBottom (6);

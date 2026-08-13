@@ -2,6 +2,7 @@
 #include "DecodeText.h"
 #include "CyberChrome.h"
 #include "../PluginLookAndFeel.h"
+#include "../../core/Config.h"
 
 BootSequenceOverlay::BootSequenceOverlay()
 {
@@ -79,7 +80,7 @@ void BootSequenceOverlay::paint (juce::Graphics& g)
     g.drawRect (frame, 1.f);
 
     auto area = frame.reduced (28.f, 22.f).toNearestInt();
-    const juce::String title = "NEUROCORE // NETRUNNER OS";
+    const juce::String title = Config::kOsBanner;
     const int revealed = (int) std::round (juce::jlimit (0.f, 1.f, p / 0.45f) * (float) title.length());
     g.setFont (NeuroCoreLookAndFeel::monoFont (22.f));
     g.setColour (NeuroCoreLookAndFeel::accent());

@@ -79,7 +79,7 @@ bool isTableSep (const juce::String& t)
     return s.startsWithChar ('|') && s.containsOnly ("|:- ");
 }
 
-juce::String tableRowToPlain (const juce::String& line)
+juce::StringArray tableCells (const juce::String& line)
 {
     auto cells = juce::StringArray::fromTokens (line.trim().trimCharactersAtStart ("|")
                                                     .trimCharactersAtEnd ("|"),
@@ -91,7 +91,68 @@ juce::String tableRowToPlain (const juce::String& line)
         if (t.isNotEmpty())
             clean.add (t);
     }
-    return clean.joinIntoString ("  —  ");
+    return clean;
+}
+
+bool isGenericTableHeader (const juce::String& key, const juce::String& val)
+{
+    auto norm = [] (juce::String s)
+    {
+        return s.trim().toLowerCase();
+    };
+    const auto k = norm (key);
+    const auto v = norm (val);
+    const auto isHead = [] (const juce::String& s)
+    {
+        return s == "area" || s == "purpose" || s == "issue" || s == "what to try"
+            || s == "term" || s == "meaning" || s == "block" || s == "role"
+            || s == "control" || s == "does";
+    };
+    return isHead (k) && (v.isEmpty() || isHead (v));
+}
+
+juce::String formatTableBlock (const juce::StringArray& rows)
+{
+    struct Row { juce::String key, val; };
+    std::vector<Row> parsed;
+    for (const auto& line : rows)
+    {
+        if (isTableSep (line))
+            continue;
+        const auto cells = tableCells (line);
+        if (cells.isEmpty())
+            continue;
+        juce::String val;
+        for (int i = 1; i < cells.size(); ++i)
+        {
+            if (val.isNotEmpty())
+                val += "  ";
+            val += cells[i];
+        }
+        parsed.push_back ({ cells[0], val });
+    }
+    if (parsed.empty())
+        return {};
+
+    size_t start = 0;
+    if (parsed.size() >= 2 && isGenericTableHeader (parsed[0].key, parsed[0].val))
+        start = 1;
+
+    int keyW = 0;
+    for (size_t i = start; i < parsed.size(); ++i)
+        keyW = juce::jmax (keyW, parsed[i].key.length());
+    keyW = juce::jmin (keyW, 22);
+
+    juce::String out;
+    for (size_t i = start; i < parsed.size(); ++i)
+    {
+        out += parsed[i].key + "\n";
+        if (parsed[i].val.isNotEmpty())
+            out += "    " + parsed[i].val + "\n";
+        out += "\n";
+    }
+    juce::ignoreUnused (keyW);
+    return out;
 }
 } // namespace
 
@@ -125,11 +186,25 @@ juce::String stripMarkdownToPlain (const juce::String& markdown)
         }
         if (trimmed.startsWithChar ('|') && trimmed.endsWithChar ('|'))
         {
-            out += tableRowToPlain (trimmed) + "\n";
+            juce::StringArray block;
+            int j = i;
+            while (j < lines.size())
+            {
+                const auto row = lines.getReference (j).trim();
+                if (! (row.startsWithChar ('|') && row.endsWithChar ('|')))
+                    break;
+                block.add (row);
+                ++j;
+            }
+            if (! out.endsWith ("\n\n"))
+                out += "\n";
+            out += formatTableBlock (block);
+            i = j - 1;
             continue;
         }
 
         auto t = trimmed;
+        const bool heading = t.startsWithChar ('#');
         while (t.startsWithChar ('#'))
             t = t.substring (1);
         t = t.trim();
@@ -138,7 +213,16 @@ juce::String stripMarkdownToPlain (const juce::String& markdown)
             t = juce::String::charToString ((juce_wchar) 0x2022) + " " + t.substring (2);
 
         t = unwrapLinks (unwrapEmphasis (unwrapInlineCode (t)));
-        out += t + "\n";
+        if (heading)
+        {
+            if (! out.endsWith ("\n\n") && out.isNotEmpty())
+                out += "\n";
+            out += t + "\n\n";
+        }
+        else
+        {
+            out += t + "\n";
+        }
     }
 
     while (out.contains ("\n\n\n"))
@@ -200,10 +284,11 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
 
     searchLabel.setText ("Search", juce::dontSendNotification);
     searchLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    searchLabel.setFont (NeuroCoreLookAndFeel::brandFont (11.f));
+    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
     addAndMakeVisible (searchLabel);
 
-    search.setTextToShowWhenEmpty ("Quick search chapters and text...",
+    search.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    search.setTextToShowWhenEmpty ("Filter chapters and text...",
                                    NeuroCoreLookAndFeel::mutedText());
     search.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
     search.setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
@@ -221,7 +306,10 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     body.setReadOnly (true);
     body.setScrollbarsShown (true);
     body.setCaretVisible (false);
-    body.setFont (juce::Font (juce::FontOptions (16.0f)));
+    body.setIndents (12, 10);
+    const auto helpFont = NeuroCoreLookAndFeel::monoFont (14.5f);
+    body.setFont (helpFont);
+    body.applyFontToAllText (helpFont);
     body.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
     body.setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
     body.setColour (juce::TextEditor::highlightColourId, NeuroCoreLookAndFeel::accent().withAlpha (0.28f));
@@ -269,11 +357,19 @@ juce::String HelpContentComponent::readableChapter (const HelpChapter& ch)
     return title + "\n\n" + bodyText;
 }
 
+void HelpContentComponent::applyBodyFont()
+{
+    const auto helpFont = NeuroCoreLookAndFeel::monoFont (14.5f);
+    body.setFont (helpFont);
+    body.applyFontToAllText (helpFont);
+}
+
 void HelpContentComponent::showChapter (int index)
 {
     if (! juce::isPositiveAndBelow (index, (int) chapters.size()))
         return;
     body.setText (readableChapter (chapters[(size_t) index]), false);
+    applyBodyFont();
     body.moveCaretToTop (false);
     body.setCaretPosition (0);
 }
@@ -283,6 +379,7 @@ void HelpContentComponent::showFirstVisible()
     if (visible.empty())
     {
         body.setText ({}, false);
+        applyBodyFont();
         return;
     }
     showChapter (visible.front());
@@ -294,6 +391,7 @@ void HelpContentComponent::textEditorTextChanged (juce::TextEditor&)
     if (visible.empty())
     {
         body.setText ({}, false);
+        applyBodyFont();
         return;
     }
     chapterList.selectRow (0, false, false);
@@ -322,7 +420,7 @@ void HelpContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w, 
         g.fillAll (NeuroCoreLookAndFeel::surface());
 
     const auto& ch = chapters[(size_t) visible[(size_t) row]];
-    g.setFont (NeuroCoreLookAndFeel::brandFont (12.f));
+    g.setFont (NeuroCoreLookAndFeel::monoFont (12.5f));
     g.setColour (selected ? NeuroCoreLookAndFeel::accent() : NeuroCoreLookAndFeel::brightText());
     g.drawText (ch.title, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }

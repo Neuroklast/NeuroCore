@@ -8,6 +8,10 @@
 #include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
 #include "../src/ui/FormulaDisplayComponent.h"
+#include "../src/ui/PluginLookAndFeel.h"
+#include "../src/ui/custom/BrandLockup.h"
+#include "../src/utils/PresetSearch.h"
+#include "../src/utils/FactoryPresetLibrary.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -16,6 +20,98 @@ public:
 
     void runTest() override
     {
+        beginTest ("Preset names sort naturally by column");
+        {
+            juce::StringArray names { "Haas Width", "Amp Crunch", "Score Hall" };
+            names.sortNatural();
+            expectEquals (names[0], juce::String ("Amp Crunch"));
+            expectEquals (names[2], juce::String ("Score Hall"));
+        }
+
+        beginTest ("OS banner is Neuroklast OS");
+        {
+            const juce::String banner (Config::kOsBanner);
+            expect (banner.containsIgnoreCase ("neuroklast"));
+            expect (! banner.containsIgnoreCase ("netrunner"));
+        }
+
+        beginTest ("NK lockup stays smaller than the HUD strip");
+        {
+            expect (Config::kHudHeaderHeight == 22);
+            expect (26.f <= (float) Config::kHudHeaderHeight + 6.f);
+        }
+
+        beginTest ("NK lockup opens the Neuroklast site");
+        {
+            expect (juce::String (BrandLockup::kWebsiteUrl)
+                        == "https://neuroklast.net");
+            expect (juce::URL (BrandLockup::kWebsiteUrl).isWellFormed());
+        }
+
+        beginTest ("Preset search matches tags and DSL tokens");
+        {
+            const juce::String script =
+                "ms1: mode = encode\n"
+                "stage1: channel = mid; y = x\n"
+                "delay1: time = 220; channel = side\n"
+                "ms2: mode = decode\n";
+            const auto tags = PresetSearch::inferTags (script, "Side Delay", "Delay",
+                                                       "MS delay on the side");
+            expect (tags.contains ("delay", true));
+            expect (tags.contains ("mid-side", true) || tags.contains ("ms", true));
+            const auto hay = PresetSearch::buildHaystack ("Side Delay", "Delay", "width",
+                                                          "NEUROKLAST", tags, script);
+            expect (PresetSearch::matches (hay, "mid side"));
+            expect (PresetSearch::matches (hay, "delay"));
+            expect (PresetSearch::matches (hay, "MS"));
+            expect (! PresetSearch::matches (hay, "bitcrush vocal"));
+        }
+
+        beginTest ("factory scripts carry operator comments");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROCORE_RESOURCES_DIR)));
+            int withHeader = 0;
+            bool acidCommented = false;
+            for (const auto& e : lib.getEntries())
+            {
+                if (e.script.contains ("# " + e.name))
+                    ++withHeader;
+                if (e.name == "Acid Line")
+                    acidCommented = e.script.contains ("# Acid Line")
+                                 && (e.script.containsIgnoreCase ("# a ")
+                                     || e.script.contains ("# diode")
+                                     || e.script.contains ("# lowpass"));
+            }
+            expectEquals (withHeader, (int) lib.getEntries().size());
+            expect (acidCommented);
+        }
+
+        beginTest ("Factory library is searchable by tape and mid side");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROCORE_RESOURCES_DIR)));
+            bool foundMs = false, foundTape = false, sideDelayOk = false;
+            for (const auto& e : lib.getEntries())
+            {
+                const auto hay = PresetSearch::buildHaystack (e.name, e.category, e.description,
+                                                              "NEUROKLAST", e.tags, e.script);
+                if (e.name == "Side Delay")
+                    sideDelayOk = PresetSearch::matches (hay, "mid side")
+                               && PresetSearch::matches (hay, "delay");
+                if (PresetSearch::matches (hay, "tape"))
+                    foundTape = true;
+                if (PresetSearch::matches (hay, "mid side"))
+                    foundMs = true;
+                expect (e.tags.size() > 0, e.name + " should carry tags");
+            }
+            expect (sideDelayOk, "Side Delay must match mid side + delay");
+            expect (foundMs);
+            expect (foundTape);
+        }
+
         beginTest ("Help parser splits ## chapters");
         {
             const juce::String md =
@@ -43,6 +139,66 @@ public:
             expect (plain.contains ("NEUROKLAST"));
             expect (plain.contains ("factory_presets.json"));
             expect (plain.contains ("Factory"));
+        }
+
+        beginTest ("Help tables stack as definitions not em-dash walls");
+        {
+            const juce::String md =
+                "| Area | Purpose |\n"
+                "|------|---------|\n"
+                "| **Presets** | Open the library |\n"
+                "| Mix | Dry/wet blend |\n";
+            const auto plain = stripMarkdownToPlain (md);
+            expect (! plain.contains ("—"));
+            expect (! plain.contains ("Area  —  Purpose"));
+            expect (plain.contains ("Presets"));
+            expect (plain.contains ("Open the library"));
+            expect (plain.contains ("Mix"));
+            expect (plain.contains ("Dry/wet blend"));
+        }
+
+        beginTest ("In-plugin Help stays user-facing");
+        {
+            const auto f = juce::File (NEUROCORE_RESOURCES_DIR).getChildFile ("UserManual_en.txt");
+            expect (f.existsAsFile(), "UserManual_en.txt must exist");
+            const auto body = f.loadFileAsString().toLowerCase();
+            expect (body.isNotEmpty());
+            const char* banned[] = {
+                "juce", "cmake", "apvts", "adaa", "factory_presets.json",
+                "dsl_reference", "jetbrains", "apex", "under lock",
+                "send dag", "cse", "compile the", "repository"
+            };
+            for (auto* word : banned)
+                expect (! body.contains (word),
+                        juce::String ("Help still mentions engineering term: ") + word);
+            expect (body.contains ("presets"));
+            expect (body.contains ("mix"));
+        }
+
+        beginTest ("Help body uses JetBrains Mono not Apex");
+        {
+            HelpContentComponent help ("# Title\n\nintro\n\n## 1. Quickstart\nDo this.\n");
+            help.showChapter (1);
+            const auto face = help.getBodyTypefaceName();
+            expect (face.containsIgnoreCase ("Mono") || face.containsIgnoreCase ("JetBrains"),
+                    "Help body must use embedded mono, got: " + face);
+            expect (! face.containsIgnoreCase ("Apex"));
+        }
+
+        beginTest ("NK logo crop drops black padding");
+        {
+            juce::Image src (juce::Image::ARGB, 40, 40, true);
+            src.clear (src.getBounds(), juce::Colours::black);
+            {
+                juce::Graphics g (src);
+                g.setColour (juce::Colour (0xffff1a1a));
+                g.fillRect (10, 12, 16, 10);
+            }
+            const auto cropped = NeuroCoreLookAndFeel::cropOpaqueContent (src);
+            expect (cropped.getWidth() < 40);
+            expect (cropped.getHeight() < 40);
+            expect (cropped.getWidth() >= 16);
+            expect (cropped.getHeight() >= 10);
         }
 
         beginTest ("Help click shows only that chapter");

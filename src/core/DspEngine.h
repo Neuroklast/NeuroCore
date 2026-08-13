@@ -70,7 +70,7 @@ public:
     size_t getOversamplingFactor() const noexcept;
 
     /** Returns the latency introduced by oversampling in samples. */
-    int getOversamplingLatency() const noexcept;
+    int getOversamplingLatency() const noexcept { return osLatencySamples; }
 
     /** Returns the current processing spec (before oversampling). */
     juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return currentSpec; }
@@ -126,8 +126,14 @@ private:
     LatencyAlignedSidechain drySidechain;
     juce::AudioBuffer<float> scriptBuffer;
 
-    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    /** [1]=2× [2]=4× [3]=8× — built once per host spec so OS switches do not realloc. */
+    std::unique_ptr<juce::dsp::Oversampling<float>> osBank[4];
+    juce::dsp::Oversampling<float>* oversampler { nullptr };
     std::atomic<int> oversamplingIndex { Config::kDefaultOversamplingIndex };
+    /** Integer OS latency used by the dry sidechain and setLatencySamples. */
+    int osLatencySamples { 0 };
+    juce::uint32 lastOsBankBlock { 0 };
+    juce::uint32 lastOsBankCh { 0 };
 
     /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
     juce::SmoothedValue<float> switchRamp;
@@ -145,4 +151,6 @@ private:
     std::array<float, Config::kMaxChannels> diagLastIn  {};
     std::array<float, Config::kMaxChannels> diagLastPost {};
     std::array<float, Config::kMaxChannels> diagLastOut {};
+
+    void publishLoudness (float instantDb, int numSamples) noexcept;
 };

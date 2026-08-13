@@ -1847,8 +1847,7 @@ void SignalChain::Filter::advanceCoeffsOnce() noexcept
     resSm.setTargetValue (res);
     const float fcSm = cutoffSm.getNextValue();
     const float rqSm = resSm.getNextValue();
-    // Update hardware coeffs every sample for modulated paths (continuous)
-    // Static block path still uses processBlock with sparse updates.
+    // Modulated: every sample. An 8-sample stride zippered into silence crackle.
     if (modulated || (coeffPhase++ & 7) == 0)
     {
         filter.setCutoffFrequency (fcSm);

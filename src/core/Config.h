@@ -25,6 +25,11 @@ namespace Config
     inline constexpr int kWindowHeight       = 860;
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 8;
+    /// Top HUD strip (Neuroklast OS line). Chrome must start below this.
+    inline constexpr int kHudHeaderHeight   = 22;
+    inline constexpr const char* kOsBanner  = "NEUROCORE // NEUROKLAST OS";
+    /// Shared height for settings-row chrome (L/BOTH/R, combos look).
+    inline constexpr int kChromeControlHeight = 32;
 
     /// Size of the custom parameter knobs.
 
@@ -64,6 +69,14 @@ namespace Config
     inline constexpr int kParameterKnobSize = 160;
     /// Width of the loudness meter labels.
     inline constexpr float kLoudnessLabelWidth = 45.0f;
+    /// One-pole rise time for the published loudness (dB domain).
+    inline constexpr float kMeterAttackSec = 0.012f;
+    /// One-pole fall time — still damped, but tracks transients.
+    inline constexpr float kMeterReleaseSec = 0.090f;
+    /// Extra UI polish on top of the published meter (timer tick).
+    inline constexpr float kMeterUiAttackSec = 0.008f;
+    inline constexpr float kMeterUiReleaseSec = 0.050f;
+    inline constexpr int   kMeterUiHz = 45;
     /// FFT order for waveform displays (2^order samples).
     inline constexpr int kWaveformFftOrder = 11;
 
@@ -93,7 +106,7 @@ namespace Config
     /// Duration of formula crossfades in seconds (short — dual-chain is expensive).
     inline constexpr double kCrossfadeTime     = 0.035;
     /// Output ramp after formula / oversampling reconfigure (avoids loudness spike).
-    inline constexpr double kSwitchRampTime    = 0.040;
+    inline constexpr double kSwitchRampTime    = 0.080;
 
     //==========================================================================
     // Parser / Interpreter constants
@@ -143,6 +156,17 @@ namespace Config
 
     /// Default oversampling choice index: 0=1×, 1=2×, 2=4×, 3=8×.
     inline constexpr int   kDefaultOversamplingIndex    = 1; // 2× — lower latency/CPU
+    /// Trip only when we actually overrun the host callback (not "busy but OK").
+    inline constexpr float kCpuTripRatio     = 1.15f;
+    /// A single block this far over budget trips immediately.
+    inline constexpr float kCpuTripHardRatio = 2.50f;
+    inline constexpr int   kCpuTripHits      = 8;
+    /// After a trip, stay dry this long then probe wet again.
+    inline constexpr float kCpuRetrySec      = 0.75f;
+    /// Probe recovers if load is under this (hysteresis below trip).
+    inline constexpr float kCpuRecoverRatio  = 0.95f;
+    /// Ignore this many blocks after prepare/clear (cold caches, OS rebuild).
+    inline constexpr int   kCpuWarmupBlocks  = 48;
     /// |sample[n]-sample[n-1]| above this → hard jump (audible click).
     inline constexpr float kAudioDiagJumpThreshold      = 0.28f;
     /// Softer Δ used when counting crackle clusters inside a block.

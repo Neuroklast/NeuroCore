@@ -17,6 +17,8 @@ public:
 
     EffectParameters::InputChannelMode getMode() const noexcept { return mode; }
 
+    juce::Rectangle<float> plateBounds() const noexcept;
+
 private:
     void parameterChanged (const juce::String&, float) override;
     void syncFromParams();

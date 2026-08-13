@@ -20,6 +20,24 @@ namespace DSPUtils
         return lin > 0.0 ? 20.0 * std::log10(lin) : -std::numeric_limits<double>::infinity();
     }
 
+    /** VU-style one-pole in dB. Attack is faster than release so peaks show, falls don't twitch. */
+    static inline float smoothMeterDb (float previous, float instant,
+                                       float dtSec, float attackSec, float releaseSec) noexcept
+    {
+        if (! std::isfinite (instant))
+            instant = -100.f;
+        instant = juce::jlimit (-100.f, 12.f, instant);
+        if (! std::isfinite (previous))
+            previous = instant;
+
+        dtSec = juce::jmax (1.0e-6f, dtSec);
+        const float tau = (instant > previous)
+                            ? juce::jmax (1.0e-4f, attackSec)
+                            : juce::jmax (1.0e-4f, releaseSec);
+        const float coeff = 1.f - std::exp (-dtSec / tau);
+        return previous + (instant - previous) * coeff;
+    }
+
     // Kahan summation for improved precision
     template <typename T>
     static inline double sumSquaresKahan(const T* data, size_t numSamples) noexcept

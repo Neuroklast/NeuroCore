@@ -35,44 +35,51 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
 
     oversamplingIndex.store(oversamplingStages);
 
-    size_t osFactor = 1;
-    int    latency  = 0;
-    if (oversamplingStages > 0)
+    const bool bankStale = osBank[1] == nullptr
+        || lastOsBankBlock != currentSpec.maximumBlockSize
+        || lastOsBankCh != currentSpec.numChannels;
+    if (bankStale)
     {
-        // FIR equiripple half-band: stronger image rejection than polyphase IIR
-        oversampler = std::make_unique<juce::dsp::Oversampling<float>>(
-            (size_t)channels,
-            (size_t)oversamplingStages,
-            juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
-        oversampler->initProcessing(currentSpec.maximumBlockSize);
-        oversampler->setUsingIntegerLatency(true);
-        oversampler->reset();
-        osFactor = oversampler->getOversamplingFactor();
-        latency  = static_cast<int>(oversampler->getLatencyInSamples());
-    }
-    else
-    {
-        oversampler.reset();
+        for (int stages = 1; stages <= 3; ++stages)
+        {
+            osBank[stages] = std::make_unique<juce::dsp::Oversampling<float>>(
+                (size_t) channels,
+                (size_t) stages,
+                juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple,
+                true,
+                true);
+            osBank[stages]->initProcessing (currentSpec.maximumBlockSize);
+            osBank[stages]->reset();
+        }
+        lastOsBankBlock = currentSpec.maximumBlockSize;
+        lastOsBankCh = currentSpec.numChannels;
     }
 
-    if (dryBuffer.getNumChannels() != (int)currentSpec.numChannels
-        || dryBuffer.getNumSamples() < (int)currentSpec.maximumBlockSize)
-    {
-        dryBuffer.setSize((int)currentSpec.numChannels,
-                          (int)currentSpec.maximumBlockSize,
-                          false, true, true);
-    }
+    oversampler = (oversamplingStages >= 1 && oversamplingStages <= 3)
+                    ? osBank[oversamplingStages].get()
+                    : nullptr;
+    if (oversampler)
+        oversampler->reset();
+
+    const size_t osFactor = oversampler ? oversampler->getOversamplingFactor() : 1;
+    osLatencySamples = oversampler
+        ? juce::roundToInt (oversampler->getLatencyInSamples())
+        : 0;
+
+    // Always set the logical size (capacity may stay large). Growing-only left
+    // getNumSamples() at the 8× length after 8×→4×, so the DSL processed a
+    // silent extra half-block every callback — regular glitches.
+    dryBuffer.setSize((int)currentSpec.numChannels,
+                      (int)currentSpec.maximumBlockSize,
+                      false, true, true);
     dryBuffer.clear();
     drySidechain.prepare ((int) currentSpec.numChannels,
                           (int) currentSpec.maximumBlockSize,
-                          latency);
+                          osLatencySamples);
+    drySidechain.reset();
 
     const int scriptSamples = (int)(currentSpec.maximumBlockSize * osFactor);
-    if (scriptBuffer.getNumChannels() != (int)currentSpec.numChannels
-        || scriptBuffer.getNumSamples() < scriptSamples)
-    {
-        scriptBuffer.setSize((int)currentSpec.numChannels, scriptSamples, false, true, true);
-    }
+    scriptBuffer.setSize((int)currentSpec.numChannels, scriptSamples, false, true, true);
     scriptBuffer.clear();
 
     outputGain.prepare(currentSpec);
@@ -111,6 +118,10 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     }
     dcBlocker.prepare(osSpec);
     *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 12.0f);
+    lowpassFilter.reset();
+    dcBlocker.reset();
+
+    lastLoudness.store (-100.0f, std::memory_order_relaxed);
 
     postDslLastGood.fill (0.0f);
     diagLastIn.fill (0.0f);
@@ -143,7 +154,11 @@ void DspEngine::reset(double sampleRate, int blockSize)
 
 void DspEngine::release()
 {
-    oversampler.reset();
+    oversampler = nullptr;
+    for (auto& slot : osBank)
+        slot.reset();
+    lastOsBankBlock = 0;
+    lastOsBankCh = 0;
 }
 
 void DspEngine::onFormulaChanged()
@@ -173,11 +188,6 @@ void DspEngine::onFormulaChanged()
 size_t DspEngine::getOversamplingFactor() const noexcept
 {
     return oversampler ? oversampler->getOversamplingFactor() : 1;
-}
-
-int DspEngine::getOversamplingLatency() const noexcept
-{
-    return oversampler ? static_cast<int>(oversampler->getLatencyInSamples()) : 0;
 }
 
 void DspEngine::setValidationBypass(bool enable)
@@ -368,7 +378,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         if (! std::isfinite(rmsSum) || rmsSum < 1.0e-12f) rmsSum = 1.0e-12f;
         float db = (float) DSPUtils::linearToDb((double) rmsSum);
         if (! std::isfinite(db) || db < -100.0f) db = -100.0f;
-        lastLoudness.store(juce::jlimit(-100.0f, 12.0f, db), std::memory_order_relaxed);
+        publishLoudness (db, (int) numSamplesEarly);
         limiterActive.store (false, std::memory_order_relaxed);
         if (badSamples >= 4)
             invalidFlag.store(true, std::memory_order_relaxed);
@@ -393,15 +403,24 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     if (oversampler)
         upBlock = oversampler->processSamplesUp(block);
 
-    // Process DSL via scriptBuffer (OS domain)
-    upBlock.copyTo(scriptBuffer);
+    // Process DSL via scriptBuffer (OS domain) — never the leftover capacity.
+    const int osN = (int) upBlock.getNumSamples();
+    if (scriptBuffer.getNumChannels() != (int) upBlock.getNumChannels()
+        || scriptBuffer.getNumSamples() < osN)
+        scriptBuffer.setSize ((int) upBlock.getNumChannels(), osN, false, true, true);
+
+    upBlock.copyTo (scriptBuffer);
     {
         std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs {};
         for (int p = 0; p < Config::kNumUserParams; ++p)
             knobPtrs[(size_t) p] = &smoothedParams[(size_t) p];
-        signalChain.processBlockSmoothed (scriptBuffer, knobPtrs);
+        juce::AudioBuffer<float> osWork (scriptBuffer.getArrayOfWritePointers(),
+                                         juce::jmin (scriptBuffer.getNumChannels(),
+                                                     (int) upBlock.getNumChannels()),
+                                         osN);
+        signalChain.processBlockSmoothed (osWork, knobPtrs);
     }
-    upBlock.copyFrom(scriptBuffer);
+    upBlock.copyFrom (scriptBuffer);
 
     // Post-DSL: NaN/Inf hold only
     {
@@ -548,8 +567,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     float db = (float) DSPUtils::linearToDb((double) rmsSum);
     if (! std::isfinite(db) || db < -100.0f)
         db = -100.0f;
-    db = juce::jlimit(-100.0f, 12.0f, db);
-    lastLoudness.store(db, std::memory_order_relaxed);
+    publishLoudness (db, (int) numSamples);
 
     const bool limHitNow = chain.get<1>().wasLimiterHit()
                         || outputSanitizer.consumeLimiterHit()
@@ -585,4 +603,15 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         diagnostics.report (AudioDiagnostics::Stage::FinalOut, outScan, inputJumpCount,
                             inputPeak, outScan.peak > 0.f ? outScan.peak : peak);
     }
+}
+
+void DspEngine::publishLoudness (float instantDb, int numSamples) noexcept
+{
+    const float sr = (float) juce::jmax (1.0, currentSpec.sampleRate);
+    const float dt = (float) juce::jmax (1, numSamples) / sr;
+    const float prev = lastLoudness.load (std::memory_order_relaxed);
+    const float next = DSPUtils::smoothMeterDb (prev, instantDb, dt,
+                                                Config::kMeterAttackSec,
+                                                Config::kMeterReleaseSec);
+    lastLoudness.store (next, std::memory_order_relaxed);
 }

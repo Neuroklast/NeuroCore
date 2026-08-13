@@ -394,11 +394,34 @@ void FormulaDisplayComponent::rebuildAttributed()
     if (lines.isEmpty())
         lines.add ("// empty formula");
 
+    const auto commentCol = juce::Colour (0xff5a8a5a);
+
     for (int li = 0; li < lines.size(); ++li)
     {
         auto line = lines[li];
         if (li > 0)
             cachedLayout.append ("\n", mono, textCol);
+
+        const auto trimmed = line.trimStart();
+        if (trimmed.startsWithChar ('#') || trimmed.startsWith ("//"))
+        {
+            cachedLayout.append (line, mono, commentCol);
+            continue;
+        }
+
+        int cut = -1;
+        const int sl = line.indexOf ("//");
+        const int hash = line.indexOfChar ('#');
+        if (sl >= 0 && (hash < 0 || sl < hash))
+            cut = sl;
+        else if (hash >= 0)
+            cut = hash;
+        juce::String trail;
+        if (cut >= 0)
+        {
+            trail = line.substring (cut);
+            line  = line.substring (0, cut);
+        }
 
         // Split by ';' for per-assignment annotations while preserving structure
         juce::StringArray segments;
@@ -536,6 +559,8 @@ void FormulaDisplayComponent::rebuildAttributed()
                 }
             }
         }
+        if (trail.isNotEmpty())
+            cachedLayout.append (trail, mono, commentCol);
     }
 
     layoutDirty = false;

@@ -23,6 +23,7 @@
 #include "custom/ParameterComponent.h"
 #include "custom/InputChannelSwitch.h"
 #include "custom/CyberMixSlider.h"
+#include "custom/BrandLockup.h"
 #include "../utils/Localiser.h"
 #include "ModalOverlay.h"
 #include "ValidationContentComponent.h"
@@ -83,6 +84,7 @@ private:
     void applyOverlayMotion (ModalOverlay& overlay);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
     void syncGlCover();
+    juce::Rectangle<int> chromeBounds() const;
     void startWindowAssemble();
     void captureAssembleTargets();
     void applyWindowAssemble();
@@ -101,8 +103,7 @@ private:
 
     std::array<std::unique_ptr<ui::ParameterComponent>, Config::kNumUserParams> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, Config::kNumUserParams>        nameEditors;
-    std::unique_ptr<juce::ImageComponent> nkLogoView;
-    std::unique_ptr<juce::Label>         pluginNameLabel;
+    std::unique_ptr<BrandLockup>         brandLockup;
     std::unique_ptr<juce::Label>         statusBarLabel; // LAT / SR / LIVE
     std::unique_ptr<juce::TextButton>    audioSettingsButton;
     std::unique_ptr<juce::TextButton>    helpButton;

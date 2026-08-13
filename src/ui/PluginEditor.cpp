@@ -48,25 +48,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     backdrop = std::make_unique<CyberBackdropComponent> (cyberDirector);
 
-    // Brand mark: NK Logo Red Bold (BinaryData)
-    nkLogoView = std::make_unique<juce::ImageComponent>("nkLogo");
-    if (lookAndFeel.getNkLogo().isValid())
-    {
-        nkLogoView->setImage(lookAndFeel.getNkLogo());
-        nkLogoView->setImagePlacement(juce::RectanglePlacement::centred
-                                      | juce::RectanglePlacement::onlyReduceInSize);
-    }
+    brandLockup = std::make_unique<BrandLockup> (
+        lookAndFeel.getNkLogo(),
+        juce::String (PLUGIN_NAME) + "  // v" + PLUGIN_VERSION);
     logoGlitch.director = &cyberDirector;
-    nkLogoView->addMouseListener (&logoGlitch, false);
-    addAndMakeVisible(*nkLogoView);
-
-    pluginNameLabel = std::make_unique<juce::Label>();
-    pluginNameLabel->setText(juce::String(PLUGIN_NAME) + "  // v" + PLUGIN_VERSION,
-                             juce::dontSendNotification);
-    pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
-    pluginNameLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
-    pluginNameLabel->setFont(NeuroCoreLookAndFeel::brandFont(16.f, true));
-    addAndMakeVisible(*pluginNameLabel);
+    brandLockup->addMouseListener (&logoGlitch, false);
+    addAndMakeVisible (*brandLockup);
 
     statusBarLabel = std::make_unique<juce::Label>();
     statusBarLabel->setJustificationType(juce::Justification::centredLeft);
@@ -75,10 +62,13 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     statusBarLabel->setMinimumHorizontalScale(0.55f);
     addAndMakeVisible(*statusBarLabel);
 
-    audioSettingsButton = std::make_unique<juce::TextButton> ("AUDIO");
-    audioSettingsButton->setTooltip ("Sample rate / device (Standalone). Host plugins follow the DAW.");
-    audioSettingsButton->onClick = [] { tryOpenStandaloneAudioSettings(); };
-    addAndMakeVisible (*audioSettingsButton);
+    if (juce::JUCEApplicationBase::isStandaloneApp())
+    {
+        audioSettingsButton = std::make_unique<juce::TextButton> ("AUDIO");
+        audioSettingsButton->setTooltip ("Sample rate / device (Standalone). Host plugins follow the DAW.");
+        audioSettingsButton->onClick = [] { tryOpenStandaloneAudioSettings(); };
+        addAndMakeVisible (*audioSettingsButton);
+    }
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
@@ -96,7 +86,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                 body = f.loadFileAsString();
         }
         if (body.isEmpty())
-            body = "NeuroCore User Manual\n\nSee docs/USER_MANUAL.md in the repository.";
+            body = "NeuroCore Help\n\nThe manual could not be loaded. Try closing Help and opening it again.";
 
         auto viewer = std::make_unique<HelpContentComponent> (body);
 
@@ -486,8 +476,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto toolbar = makeRow(0.07f);
     toolbar->innerMargin = pad;
-    toolbar->addChild(makeLeaf(nkLogoView.get(), 0.55f));
-    toolbar->addChild(makeLeaf(pluginNameLabel.get(), 1.4f));
+    toolbar->addChild(makeLeaf(brandLockup.get(), 1.85f));
     toolbar->addChild(makeLeaf(presetsButton.get(), 0.9f));
     // Current preset chip next to Presets — high visibility
     toolbar->addChild(makeLeaf(currentPresetLabel.get(), 2.4f));
@@ -499,15 +488,21 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto settingsRow = makeRow(0.055f);
     settingsRow->innerMargin = pad;
-    settingsRow->addChild(makeLeaf(inputChannelSwitch.get(), 1.6f));
-    settingsRow->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
-    settingsRow->addChild(makeLeaf(oversamplingBox.get(), 0.9f));
-    settingsRow->addChild(makeLeaf(polisherLabel.get(), 0.9f));
-    settingsRow->addChild(makeLeaf(polisherBox.get(), 1.1f));
-    settingsRow->addChild(makeLeaf(editorFontLabel.get(), 0.45f));
-    settingsRow->addChild(makeLeaf(editorFontMinusButton.get(), 0.28f));
-    settingsRow->addChild(makeLeaf(editorFontSizeLabel.get(), 0.35f));
-    settingsRow->addChild(makeLeaf(editorFontPlusButton.get(), 0.28f));
+    auto addChrome = [&] (juce::Component* c, float w)
+    {
+        auto n = makeLeaf (c, w);
+        n->maxHeight = Config::kChromeControlHeight;
+        settingsRow->addChild (std::move (n));
+    };
+    addChrome (inputChannelSwitch.get(), 1.35f);
+    settingsRow->addChild (makeLeaf (oversamplingLabel.get(), 1.0f));
+    addChrome (oversamplingBox.get(), 0.9f);
+    settingsRow->addChild (makeLeaf (polisherLabel.get(), 0.9f));
+    addChrome (polisherBox.get(), 1.1f);
+    settingsRow->addChild (makeLeaf (editorFontLabel.get(), 0.45f));
+    addChrome (editorFontMinusButton.get(), 0.28f);
+    settingsRow->addChild (makeLeaf (editorFontSizeLabel.get(), 0.35f));
+    addChrome (editorFontPlusButton.get(), 0.28f);
     layoutRoot->addChild(std::move(settingsRow));
 
     // Main body: 6 knobs (2x3) left + larger formula editor + meter
@@ -598,7 +593,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     auto statusRow = makeRow(0.045f);
     statusRow->innerMargin = pad;
     statusRow->minHeight = 22;
-    statusRow->addChild(makeLeaf(audioSettingsButton.get(), 0.7f));
+    if (audioSettingsButton)
+        statusRow->addChild(makeLeaf(audioSettingsButton.get(), 0.7f));
     statusRow->addChild(makeLeaf(statusBarLabel.get(), 5.5f));
     layoutRoot->addChild(std::move(statusRow));
 
@@ -799,8 +795,11 @@ void NeuroCoreAudioProcessorEditor::updateStatusBar()
     const int latSm = audioProcessor.getLatencySamples();
     const float latMs = (srInt > 0) ? (1000.f * (float) latSm / (float) srInt) : 0.f;
 
+    const bool cpuSafe = audioProcessor.isCpuProtectActive();
+    const float cpuLoad = audioProcessor.getCpuLoad();
     juce::String s;
-    s << (bypassed ? "BYPASS" : "LIVE")
+    s << (cpuSafe ? "SAFE" : (bypassed ? "BYPASS" : "LIVE"))
+      << "  ·  CPU " << juce::String (cpuLoad * 100.f, 0) << "%"
       << "  ·  LAT " << latSm << "smp / " << juce::String (latMs, 2) << "ms"
       << "  ·  SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
       << "  ·  OS " << osFactor << "x"
@@ -814,9 +813,19 @@ void NeuroCoreAudioProcessorEditor::updateStatusBar()
     statusBarLabel->setText (s, juce::dontSendNotification);
     // Limiter or bypass → hotter red cue (still meaningful, not decorative)
     statusBarLabel->setColour (juce::Label::textColourId,
-                               (lim || bypassed)
+                               (lim || bypassed || cpuSafe)
                                    ? NeuroCoreLookAndFeel::accent()
                                    : NeuroCoreLookAndFeel::accent().withAlpha (0.72f));
+
+    if (errorLabel != nullptr)
+    {
+        if (cpuSafe)
+            errorLabel->setText ("CPU overload — wet path paused. Retrying automatically. "
+                                 "Lower oversampling if it keeps coming back.",
+                                 juce::dontSendNotification);
+        else if (errorLabel->getText().startsWith ("CPU overload"))
+            errorLabel->setText ({}, juce::dontSendNotification);
+    }
 }
 
 void NeuroCoreAudioProcessorEditor::refreshParameterControls()
@@ -1066,7 +1075,7 @@ void NeuroCoreAudioProcessorEditor::startWindowAssemble()
     assembleElapsed = 0.f;
     assembleStamp = 0.0;
     if (layoutRoot)
-        ui::performLayout (*layoutRoot, getLocalBounds());
+        ui::performLayout (*layoutRoot, chromeBounds());
     captureAssembleTargets();
     if (assembleSlots.empty())
     {
@@ -1143,13 +1152,20 @@ void NeuroCoreAudioProcessorEditor::onAssembleVBlank (double nowSec)
     }
 }
 
+juce::Rectangle<int> NeuroCoreAudioProcessorEditor::chromeBounds() const
+{
+    auto r = getLocalBounds();
+    r.removeFromTop (Config::kHudHeaderHeight);
+    return r;
+}
+
 void NeuroCoreAudioProcessorEditor::resized()
 {
     if (backdrop != nullptr)
         backdrop->setBounds (getLocalBounds());
 
     if (layoutRoot)
-        ui::performLayout(*layoutRoot, getLocalBounds());
+        ui::performLayout (*layoutRoot, chromeBounds());
     if (assemblingWindows)
     {
         captureAssembleTargets();
@@ -1164,12 +1180,6 @@ void NeuroCoreAudioProcessorEditor::resized()
     if (formulaInputEditor && formulaLiveDisplay)
         formulaInputEditor->setBounds(formulaLiveDisplay->getBounds());
 
-    if (pluginNameLabel)
-    {
-        pluginNameLabel->setFont(NeuroCoreLookAndFeel::brandFont(16.f, true));
-        pluginNameLabel->setJustificationType(juce::Justification::centredLeft);
-        pluginNameLabel->setColour(juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
-    }
     if (statusBarLabel)
     {
         statusBarLabel->setFont (NeuroCoreLookAndFeel::monoFont (11.f));

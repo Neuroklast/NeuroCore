@@ -3,6 +3,7 @@
 
 #include <JuceHeader.h>
 #include "../src/dsp/DSPUtils.h"
+#include "../src/core/Config.h"
 
 class DSPUtilsTest : public juce::UnitTest
 {
@@ -91,6 +92,33 @@ public:
         DSPUtils::autoGainCompensate(d0, wT, sm3, gain);
         for (int i = 0; i < 8; ++i)
             expectWithinAbsoluteError(wetTiny.getSample(0, i), 1.0e-6f, 1.0e-9f);
+
+        beginTest ("meter ballistics: attack faster than release");
+        {
+            const float dt = 0.010f;
+            const float up = DSPUtils::smoothMeterDb (-60.f, 0.f, dt,
+                                                      Config::kMeterAttackSec,
+                                                      Config::kMeterReleaseSec);
+            const float down = DSPUtils::smoothMeterDb (0.f, -60.f, dt,
+                                                        Config::kMeterAttackSec,
+                                                        Config::kMeterReleaseSec);
+            expectGreaterThan (up - (-60.f), 0.f - down);
+            expect (up < -1.f); // 10 ms is not a full rise
+            expect (down > -20.f); // 10 ms is not a full fall
+        }
+
+        beginTest ("meter ballistics: approaches target and sanitizes NaN");
+        {
+            float v = -60.f;
+            for (int i = 0; i < 80; ++i)
+                v = DSPUtils::smoothMeterDb (v, 0.f, 0.020f, 0.040f, 0.300f);
+            expectWithinAbsoluteError (v, 0.f, 0.5f);
+
+            const float nanIn = DSPUtils::smoothMeterDb (0.f,
+                                                         std::numeric_limits<float>::quiet_NaN(),
+                                                         0.020f, 0.040f, 0.300f);
+            expect (nanIn < -5.f); // NaN treated as silence floor
+        }
     }
 };
 

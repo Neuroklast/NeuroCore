@@ -231,6 +231,21 @@ public:
             expectEquals(blocks[0].type, juce::String("stage"));
         }
 
+        beginTest("inline hash comments are stripped");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse (
+                "stage1: y = tanh(x)  # tube-ish\n"
+                "filter1: type = lowpass; cutoff = 1000  // cab\n",
+                blocks, aliases, params, error), error);
+            expectEquals ((int) blocks.size(), 2);
+            expectEquals (blocks[0].args["y"], juce::String ("tanh(x)"));
+        }
+
         beginTest("formatBlockSummary for stage and filter");
         {
             dsl::BlockDesc stage;

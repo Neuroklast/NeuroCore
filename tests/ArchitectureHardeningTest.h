@@ -76,6 +76,13 @@ public:
             expectEquals (Config::kDefaultOversamplingIndex, 1);
         }
 
+        beginTest ("meter ballistics are fast enough for the UI");
+        {
+            expect (Config::kMeterAttackSec <= 0.020f);
+            expect (Config::kMeterReleaseSec <= 0.120f);
+            expect (Config::kMeterUiHz >= 40);
+        }
+
         // ---- A5: single peak boundary ----
         beginTest ("sanitizer applies soft peak when peak safety enabled");
         {

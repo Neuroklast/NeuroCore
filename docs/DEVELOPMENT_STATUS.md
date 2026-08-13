@@ -11,11 +11,11 @@
 | Modul | Status | Fortschritt | Letzte Änderung |
 |---|---|---|---|
 | Core/PluginProcessor | ✅ Session-State (var names, language); ChangeBroadcaster; modFrequency entfernt | 90% | 2026-06-29 |
-| Core/DspEngine | ✅ + AudioDiagnostics (NaN/Jump/Crackle Log mit Preset-Kontext) | 98% | 2026-08-12 |
+| Core/DspEngine | ✅ OS integer-latency im Ctor; OS-Wechsel resettet Sidechain/IIR | 99% | 2026-08-13 |
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ Gain+Mix only; Current-Preset Label; Live-Formel A–D; Knob-Farbringe | 97% | 2026-08-11 |
+| Core/PluginEditor | ✅ Brand-Lockup (NK+Version) + angular L/BOTH/R; Mix cyber; Live-Formel | 98% | 2026-08-13 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
 | DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out | 97% | 2026-08-13 |
 | DSL/SignalChain | ✅ Delay/Reverb/MS + Send-DAG Multi-Bus (max 4) | 99% | 2026-08-13 |
@@ -27,22 +27,35 @@
 | UI/DslTerminalEditor | ✅ Edit-Modus; View-Modus = FormulaDisplay mit Live-Werten | 85% | 2026-08-11 |
 | UI/FormulaDisplayComponent | ✅ A/B/C/D-Farben + Live-Eval in eckigen Klammern | 90% | 2026-08-11 |
 | UI/WaveformDisplay | ✅ Funktional | 70% | 2026-04-01 |
-| UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
+| UI/LoudnessMeter | ✅ Schnelle Ballistik + Cyber-Hull (wie Mix); kein OpenGL | 95% | 2026-08-13 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 116 Factory (Delay/Reverb/MS echt; knobs a–f only) | 99% | 2026-08-13 |
+| Preset-System | ✅ 141 Factory; jedes Script mit Operator-Kommentaren (Was / Params / Stages) | 99% | 2026-08-13 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
-| Tests | ✅ Suite schlank & stabil: **1363 passed / 0 failed**; factory honesty + quality gate 116/116 | 98% | 2026-08-13 |
+| Tests | ✅ Suite schlank & stabil: **1852 passed / 0 failed**; factory honesty + quality gate 141/141 | 98% | 2026-08-13 |
 | CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
-| Dokumentation | ✅ README current; proprietary LICENSE; Help EN | 88% | 2026-08-13 |
+| Dokumentation | ✅ Help EN, Mono, operator-only (kein JUCE/Build im Fenster) | 93% | 2026-08-13 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
 
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-13 – OS crackle / Acid Line / AUDIO / Meter / comments
+
+- [x] Oversampling: integer latency im JUCE-Ctor, `roundToInt`, Sidechain+IIR+DSL-Ringe reset
+- [x] 8×→4×: scriptBuffer logische Länge kürzt (kein Silent-Half-Block-Glitch)
+- [x] Acid Line: Filter-Coeffs alle 8 Samples; Q-Default 1.8 (max 2.6)
+- [x] AUDIO-Button nur `isStandaloneApp()` (Cubase/VST nie)
+- [x] OS-Wechsel ohne Device-Suspend; Factory-Kommentare aus BinaryData
+- [x] Loudness-Meter: schnellere VU + angular Hull wie Mix-Slider
+- [x] CpuProtect Dry-Pfad + SAFE in der Statuszeile
+- [x] SAFE: Overrun-Schwelle + Auto-Retry (kein Dauer-Dry)
+- [x] Factory-Scripts: `#` Kommentar pro Preset / Param / Block (Generator)
+- [ ] Manuell: OS 2×→4×→8×→1× ohne Dauerknacken; Acid Line ohne Haken
 
 ### 2026-08-13 – Factory preset honesty (a–f)
 
@@ -53,6 +66,16 @@
 - [x] Cinematic Space gets ms encode/decode
 - [x] templates.json drop 7–8 knob names
 - [x] Bitcrush lo-fi quick template recovery LPF
+- [x] +14 Mix-Desk Presets (Side Delay/Hall, Vocal Send, NY Drum Bus, Mono Below, MS Imager, …)
+- [x] Loudness-Meter: VU attack/release, kein OpenGL-VSync-Zucken
+- [x] Hilfe: nur Bedienung, keine Build-/Framework-Details
+- [x] Preset-Tags + Suche nach Formel/Tags (delay, mid side, tape)
+- [x] NK-Logo klickt zu https://neuroklast.net
+- [x] +11 Psychoacoustic / Cinematic Factory (Haas, Score Hall, Trailer Impact, …)
+- [x] NK-Logo unter HUD, kleiner; Assemble nutzt chromeBounds
+- [x] Preset-Spalten sortierbar (Name/Category/Source/Author)
+- [x] L/BOTH/R + Combos 32 px mittig, gleiche Platte
+- [x] HUD/Boot: Neuroklast OS (kein Netrunner)
 
 ### 2026-08-13 – Cinematic Cyber-UI FX (`feat/cinematic-ui-fx`)
 
@@ -76,6 +99,11 @@
 - [x] Factory + leere User-Author = NEUROKLAST
 - [x] Status: LIVE/BYPASS + LAT smp/ms + AUDIO (Standalone SR)
 - [x] Delay-Preset-Wechsel: OS/DC/Sidechain reset (kein klebendes Knacken)
+- [x] Hilfe-Body: JetBrains Mono + `applyFontToAllText` (kein Apex-ALL-CAPS)
+- [x] Hilfe-Tabellen als Definitionen, nicht `AREA — PURPOSE`-Wand
+- [x] Hilfe-Text operator-tauglich (Quickstart / UI-Map / Troubleshooting)
+- [x] NK-Logo crop + BrandLockup optisch mittig mit PRESETS
+- [x] L/BOTH/R angular wie die anderen Chrome-Buttons
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)
