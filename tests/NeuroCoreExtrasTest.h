@@ -669,6 +669,64 @@ private:
             expectEquals (qualityPass, (int) entries.size(),
                           "all factory presets must pass quality gate, first fail: "
                               + firstQualityFail);
+
+            int deadLetter = 0;
+            juce::String firstDeadLetter;
+            int dummyMeta = 0;
+            juce::String firstDummyMeta;
+            for (const auto& e : entries)
+            {
+                if (e.script.contains ("param g") || e.script.contains ("param h"))
+                {
+                    ++deadLetter;
+                    if (firstDeadLetter.isEmpty())
+                        firstDeadLetter = e.name;
+                }
+
+                const juce::String descLower = e.description.toLowerCase();
+                expect (! descLower.contains ("eight knob")
+                            && ! descLower.contains ("eight control"),
+                        e.name + " description still claims 8 knobs");
+
+                for (int i = 0; i < Config::kNumUserParams; ++i)
+                {
+                    const juce::String letter = juce::String::charToString (
+                        static_cast<juce::juce_wchar> ('A' + i));
+                    if (e.paramNames[i] == letter)
+                    {
+                        const juce::String decl = "param " + letter.toLowerCase();
+                        if (! e.script.contains (decl))
+                        {
+                            ++dummyMeta;
+                            if (firstDummyMeta.isEmpty())
+                                firstDummyMeta = e.name + " param" + letter;
+                        }
+                    }
+                }
+            }
+            expectEquals (deadLetter, 0,
+                          "factory scripts must not declare param g/h (engine binds a–f only): "
+                              + firstDeadLetter);
+            expectEquals (dummyMeta, 0,
+                          "factory metadata must not emit unused dummy C/D names: "
+                              + firstDummyMeta);
+
+            auto requireBlock = [&] (const juce::String& name, const juce::String& needle)
+            {
+                for (const auto& e : entries)
+                {
+                    if (e.name == name)
+                    {
+                        expect (e.script.contains (needle),
+                                name + " must contain " + needle);
+                        return;
+                    }
+                }
+                expect (false, "missing factory preset: " + name);
+            };
+            requireBlock ("Doubler AM", "delay");
+            requireBlock ("Shimmer Drive", "reverb");
+            requireBlock ("Cinematic Space", "ms");
         }
 
         beginTest ("FormulaQuality: detects silent y=0 style bug");
