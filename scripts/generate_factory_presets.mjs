@@ -26,19 +26,17 @@ const preset = (name, category, description, script, opts = {}) => {
     name,
     category,
     description,
-    paramA: opts.a || p("A", 0, 1, 0.5),
-    paramB: opts.b || p("B", 0, 1, 0.5),
-    paramC: opts.c || p("C", 0, 1, 0.5),
-    paramD: opts.d || p("D", 0, 1, 0.5),
     inputGain: opts.inG ?? 0,
     outputGain: opts.outG ?? 0,
     mix: opts.mix ?? 1,
     script: script.trim(),
   };
+  if (opts.a) out.paramA = opts.a;
+  if (opts.b) out.paramB = opts.b;
+  if (opts.c) out.paramC = opts.c;
+  if (opts.d) out.paramD = opts.d;
   if (opts.e) out.paramE = opts.e;
   if (opts.f) out.paramF = opts.f;
-  if (opts.g) out.paramG = opts.g;
-  if (opts.h) out.paramH = opts.h;
   return out;
 };
 
@@ -2019,6 +2017,13 @@ for (const e of list) {
   if (names.has(e.name)) throw new Error("duplicate: " + e.name);
   names.add(e.name);
   if (!e.script.includes(":")) throw new Error("bad script " + e.name);
+  if (/\bparam\s+[gh]\b/.test(e.script))
+    throw new Error("dead knob g/h in " + e.name + " (host only binds a–f)");
+  for (const letter of ["C", "D", "E", "F"]) {
+    const key = "param" + letter;
+    if (e[key] && e[key].name === letter && !e.script.includes("param " + letter.toLowerCase()))
+      throw new Error("dummy metadata " + key + " on " + e.name);
+  }
 }
 
 const cats = {};
