@@ -1,124 +1,53 @@
 # NeuroCore
 
-NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen über vier Parameter **a** bis **d** verwenden. Zusätzlich steht ein Sinus-Modulationssignal (*mod*) bereit.
+Programmable real-time audio effect by **NEUROKLAST**. You write a short DSL formula (stages, filters, delay, reverb, compressors, envelopes, oscillators) and map six host knobs **a–f** into it.
 
-## Voraussetzungen
+The UI is English-only. Formats: Standalone, VST3, AU.
 
-- **JUCE 8.0.6** oder neuer. Der Pfad zu den JUCE-Modulen muss im Projucer unter *Global Paths* eingetragen sein, beispielsweise `D:\JUCE\modules` oder `~/JUCE/modules`. Stellen Sie sicher, dass die VST3‑SDK unter `juce_audio_processors/format_types/VST3_SDK` vorhanden ist.
-- **IDE**: Visual Studio 2022 (andere IDEs mit JUCE-Projucer/CMake sind möglich).
+## Build
 
-## Abhängigkeiten einrichten
-
-1. JUCE inklusive Untermodulen klonen:
-   ```bash
-   git clone --recurse-submodules https://github.com/juce-framework/JUCE.git <JUCE>
-   ```
-2. Den Pfad `<JUCE>/modules` im Projucer unter *Global Paths → JUCE Modules* eintragen oder als Umgebungsvariable `JUCE_PATH` bereitstellen. Die Variable kann
-   unter Windows mit `set JUCE_PATH=C:\JUCE` oder auf Linux/macOS mit `export JUCE_PATH=/path/zu/JUCE` gesetzt werden. Der Projucer liest diese Variable
-   automatisch, wenn kein fester Pfad hinterlegt ist.
-3. Sicherstellen, dass die VST3-SDK im Ordner `<JUCE>/modules/juce_audio_processors/format_types/VST3_SDK` liegt.
-4. Unter Linux die systemweiten Bibliotheken installieren. Ein Skript im Ordner
-   `scripts` automatisiert diesen Schritt:
-   ```bash
-   ./scripts/install_linux_deps.sh
-   ```
-   Das Skript installiert unter anderem `libx11-dev`, `libxrandr-dev`,
-   `libgl1-mesa-dev`, `libgtk-3-dev` sowie `libwebkit2gtk-4.1-dev` (unter
-   älteren Distributionen `libwebkit2gtk-4.0-dev`).
-
-## Build-Schritte
-
-1. Projektdatei `NeuroCore.jucer` im Projucer öffnen. Sofern `JUCE_PATH` gesetzt ist, wird der Pfad automatisch verwendet. Andernfalls kann er unter
-   *Global Paths → JUCE Modules* eingetragen werden. Anschließend über *File → Export Project* die gewünschten Exporter generieren.
-2. Für die **Standalone-Version** das Projekt `NeuroCore_StandalonePlugin` in der IDE öffnen und übersetzen. Die erzeugte Anwendung verhält sich wie ein eigenständiger Effekt.
-3. Für die **VST3-Version** das Projekt `NeuroCore_VST3` kompilieren. Die entstandene *.vst3*-Datei kann in kompatiblen Hosts geladen werden.
-
-### CMake-Build
-
-Alternativ lässt sich das Plug-in per CMake erzeugen. Ist `JUCE_DIR` nicht
-gesetzt, lädt CMake die benötigte JUCE-Version automatisch herunter. Die
-VST3-SDK muss sich unter `${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK`
-befinden.
+Needs JUCE 8.0.6+ (set `JUCE_DIR` or CMake will fetch it) and a VST3 SDK under `juce_audio_processors/format_types/VST3_SDK`.
 
 ```bash
 cmake -B build -S .
-cmake --build build --config Release
-```
-
-Unter Windows verwenden `build_debug.bat` und `build_release.bat` den Generator
-`Ninja Multi-Config`, um bekannte `juce::juceaide`-Probleme mit dem
-Visual-Studio-Generator zu umgehen. Standardmäßig verwenden beide Skripte
-`JUCE_DIR=D:\JUCE` (überschreibbar per Umgebungsvariable `JUCE_DIR`).
-
-Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.
-Die benötigten Ressourcen werden automatisch in den Ausgabepfad kopiert.
-
-### Docker-Umgebung
-
-Eine vorbereitete `Dockerfile` befindet sich im Projektstamm. Sie enthält alle
-benötigten Pakete und baut die Tests automatisch. Ein Image kann mit
-
-```bash
-docker build -t neurocore .
-```
-
-erstellt werden.
-
-### Tests ausführen
-
-```bash
+cmake --build build --config Release --target NeuroCore_Standalone
+cmake --build build --config Release --target NeuroCore_VST3
 cmake --build build --target NeuroCoreTests
 ctest --test-dir build
 ```
 
-## Pflicht-Workflow für Agent-Sessions
+Artefacts land in `build/NeuroCore_artefacts/Release/` (`Standalone/NeuroCore.exe`, `VST3/NeuroCore.vst3`). Resources are copied next to each binary.
 
-Für jede Session gelten zusätzlich zu `AGENTS.md`/`docs/AGENTS.md` folgende Pflichtschritte:
+On Windows, `build_debug.bat` / `build_release.bat` use Ninja Multi-Config if you prefer that over the Visual Studio generator.
 
-1. Geänderte Codepfade gezielt optimieren (wenn sicher und nachvollziehbar).
-2. Legacy-Code im geänderten Bereich bereinigen.
-3. Testabdeckung für geändertes Verhalten erhöhen.
-4. Offene Online-Review-Kommentare vollständig beantworten.
-5. Dokumentation und README bei Verhaltens-/Formatänderungen aktualisieren.
+## Using it
 
-## Plug-in-Überblick
+1. Load the Standalone or the VST3 in a host.
+2. Open **Presets** and pick a factory preset (amp, delay, vocal chain, …).
+3. Tweak knobs **a–f**. Names and ranges come from `param` lines in the formula.
+4. Click **Edit** to change the DSL, **Check** to validate, **Save** to apply.
 
-Nach dem Start zeigt die Oberfläche vier Regler (Parameter *a–d*) sowie ein Eingabefeld für die Formel. Jede Formel darf die Variablen **x** (aktuelles Samplesignal), **mod** (Sinus-LFO) und die Parameter **a–d** verwenden. Beispiel:
+Example:
 
 ```
-clamp(tanh(x * a + mod * b), -c, d)
+param a = Drive [0.5, 6.0]
+param b = Tone [800, 9000]
+stage1: y = softclip(x, a)
+filter1: type = lowpass; cutoff = b; resonance = 0.25
 ```
 
-Diese Formel wendet eine Tangens-Hyperbolicus-Transformation an und begrenzt das Ergebnis mithilfe der Parameter *c* und *d*.
+Full language notes: in-plugin **Help**, `docs/USER_MANUAL.md`, `docs/DSL_REFERENCE.md`.
 
-## Presets laden und speichern
+## Factory content
 
-Um die Parameter- und Formeldaten zu sichern, kann die JUCE-eigene `AudioProcessorValueTreeState` verwendet werden. Beispiele finden sich in den Methoden `getStateInformation()` und `setStateInformation()` des Plug-ins. Dort lässt sich ein `ValueTree` oder XML-Dokument erzeugen und in `destData` speichern bzw. beim Laden daraus rekonstruieren. Preset-Dateien werden beim Speichern mit Blowfish verschlüsselt.
-Das NRK-Format nutzt zusätzlich einen `DSCR`-Chunk für das rohe DSL-Skript (UTF-8) und bleibt über den `STAT`-Chunk rückwärtskompatibel.
+116 factory presets (generated by `scripts/generate_factory_presets.mjs` — do not hand-edit `resources/factory_presets.json`). Templates live in `resources/templates.json`. User presets store author + category.
 
-## Lokalisierung
+## Agent workflow
 
-Sprachressourcen liegen im Ordner `resources` in einfachen Textdateien. Beim Start lädt das Plug-in automatisch die Datei `de.txt` oder `en.txt` abhängig von der Systemsprache. Weitere Sprachen können durch zusätzliche Dateien im gleichen Format ergänzt werden.
+See `AGENTS.md` and `docs/AGENT_WORKFLOW.md`. Every coding session: plan first, small changes, tests, update `docs/DEVELOPMENT_STATUS.md` and `docs/LESSONS_LEARNED.md`.
 
-Optimierungsregeln für Formeln stehen in `resources/optimizations.txt`. Jede Zeile enthält Muster, Ersatz und den Übersetzungsschlüssel. Beim Laden werden diese Regeln eingelesen und bei Klick auf *Optimieren* angewendet.
+## License
 
-Vorlagen für Formeln befinden sich in `resources/templates.json`. Beim Start werden diese Einträge geladen und dienen als Basis für Template-Vorschläge.
+**Proprietary.** Copyright (c) 2024–2026 NEUROKLAST. All rights reserved.
 
-Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroCoreUserTemplates.txt` gespeichert und beim Start geladen.
-
-## DSL-Handbücher
-
-Eine ausführliche Beschreibung der internen Skriptsprache befindet sich in
-`UserManual DE.txt`. Für internationale Nutzer gibt es eine Übersetzung in
-`UserManual EN.txt`.
-
-### Kurzübersicht
-
-- `stage`: mathematische Formel, Pflichtargument `y`
-- `filter`: Typ `lowpass`, `highpass` oder `bandpass`;
-  bei Bandpass entweder `center`/`width` oder `lowcut`/`highcut`, sonst `cutoff` Pflicht, `resonance` optional - `comp`: Kompressor mit `threshold`, `ratio`,
-    optional `attack` und `release` - `env`: Envelope - Follower in den Modi `rms` oder `peak` - `osc`: LFO mit `shape`, `freq` und
-                                                                                                                                 optional `depth` - `param`
-    : weist den Buchstaben `a`–`d` Aliasnamen zu
-
-          Die Blöcke werden strikt von oben nach unten abgearbeitet.
+See [LICENSE](LICENSE). You may not copy, modify, or distribute this software without a written agreement from NEUROKLAST. JUCE and the VST3 SDK remain under their own licenses.

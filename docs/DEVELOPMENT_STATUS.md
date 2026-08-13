@@ -36,7 +36,7 @@
 | Tests | ✅ Suite schlank & stabil: **1363 passed / 0 failed**; factory honesty + quality gate 116/116 | 98% | 2026-08-13 |
 | CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
-| Dokumentation | ✅ UserManual EN+DE: Neue Features dokumentiert | 82% | 2026-05-21 |
+| Dokumentation | ✅ README current; proprietary LICENSE; Help EN | 88% | 2026-08-13 |
 | Installer | ❌ Fehlt | 0% | — |
 | AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
 
@@ -66,6 +66,10 @@
 - [x] Formel-Check haelt Overlay sichtbar (min. 1.2s) mit Live-Status
 - [x] Input L/BOTH/R Dreier-Switch statt zweier Toggles
 - [x] Formel-Check bricht bei NaN/Inf ab
+- [x] UI English-only (kein Language-Switch, kein de.txt)
+- [x] Formel-Live-View scrollbar; Zeilenabstand 1.1
+- [x] NK Red Bold Logo als App-Icon (Standalone ICON_BIG/SMALL + in-plugin `nk_logo.png`)
+- [x] Hilfe zeigt nur das gewählte Kapitel (kein Sprung im Volltext)
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)

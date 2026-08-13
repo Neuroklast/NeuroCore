@@ -9,6 +9,42 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Product is proprietary, README is not an OSS template
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** README aktualisieren; proprietäre Lizenz  
+**Ergebnis:** `LICENSE` All rights reserved (NEUROKLAST); README auf aktuellen Stand (a–f, CMake, EN-only)
+
+#### Regel
+Kein MIT/GPL für NeuroCore-Code. Third-party (JUCE, VST3 SDK) bleibt deren Lizenz.
+
+---
+
+### 2026-08-13 – Help is one chapter at a time
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hilfe lesbar; Klick auf Kapitel zeigt nur diesen Abschnitt  
+**Ergebnis:** `showChapter` setzt den Body auf Titel + Text; kein `scrollEditorToPositionCaret`
+
+#### Regel
+Kapitel-Liste ist Navigation, nicht ein Anker im ganzen Manual. Body-Font lesbar (Brand 15pt), nicht Terminal-Mono.
+
+---
+
+### 2026-08-13 – English-only UI; live formula must scroll
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Deutsch raus, kein Language-Switch; View-Modus scrollbar; Zeilen 1.1  
+**Ergebnis:** Localiser lädt nur en; Live-View in Viewport; extra Line-Spacing 0.1×Font
+
+#### Fallstrick
+`FormulaDisplay` hat nur `TextLayout.draw` gemacht — lange Scripts wurden unten abgeschnitten, Scroll ging nur im Edit-Mode.
+
+#### Regel
+Read-only View braucht denselben Scroll wie der Code-Editor. `kFormulaLineHeight = 1.1`. Sprache nicht im Plugin-State wiederherstellen.
+
+---
+
 ### 2026-08-13 – Input L/BOTH/R is one control, not two toggles
 
 **Agent:** Grok Coding Agent  
