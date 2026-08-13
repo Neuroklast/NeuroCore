@@ -1763,22 +1763,20 @@ filter2: type = lowpass; cutoff = b; resonance = 0.35`,
 add(
   "Studio Channel Strip",
   "Mastering",
-  "Full strip: HPF → soft drive → 3-band serial EQ → glue comp → air LPF → soft ceiling. Eight knobs.",
+  "Full strip: HPF → soft drive → mid EQ → air LPF → glue comp → soft ceiling.",
   `param a = Drive [0.8, 3.5]
 param b = LowCut [30, 180]
 param c = Mid [400, 3500]
 param d = MidGain [0.45, 2.0]
 param e = High [4000, 14000]
 param f = Thresh [-28.0, -6.0]
-param g = Ratio [1.5, 6.0]
-param h = Level [0.55, 1.25]
 filter1: type = highpass; cutoff = b; resonance = 0.32
 stage1: y = softclip(x, a)
 filter2: type = bandpass; center = c; width = c * 0.5
 stage2: y = softclip(x * d, 1.12)
 filter3: type = lowpass; cutoff = e; resonance = 0.28
-comp1: threshold = f; ratio = g; attack = 0.008; release = 0.15
-stage3: y = softclip(x * h, 1.08)`,
+comp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15
+stage3: y = softclip(x * 1.0, 1.08)`,
   {
     a: p("Drive", 0.8, 3.5, 1.35),
     b: p("LowCut", 30, 180, 55),
@@ -1786,8 +1784,6 @@ stage3: y = softclip(x * h, 1.08)`,
     d: p("MidGain", 0.45, 2.0, 1.1),
     e: p("High", 4000, 14000, 9000),
     f: p("Thresh", -28, -6, -16),
-    g: p("Ratio", 1.5, 6, 2.8),
-    h: p("Level", 0.55, 1.25, 0.95),
     outG: 0,
   }
 );
@@ -1840,9 +1836,7 @@ param c = Mix [0.2, 0.75]
 param d = Damp [800, 9000]
 param e = Duck [0.0, 0.9]
 param f = Drive [0.8, 4.0]
-param g = Attack [0.001, 0.05]
-param h = Release [0.05, 0.4]
-env1: type = peak; attack = g; release = h
+env1: type = peak; attack = 0.008; release = 0.12
 delay1: time = a; feedback = b; mix = 1.0; damp = d
 stage1: y = softclip(x * (1.0 + f * 0.35), 1.15)
 stage2: y = lerp(x, y, c * (1.0 - env1 * e))`,
@@ -1853,8 +1847,6 @@ stage2: y = lerp(x, y, c * (1.0 - env1 * e))`,
     d: p("Damp", 800, 9000, 4200),
     e: p("Duck", 0, 0.9, 0.45),
     f: p("Drive", 0.8, 4, 1.6),
-    g: p("Attack", 0.001, 0.05, 0.008),
-    h: p("Release", 0.05, 0.4, 0.12),
     outG: 0,
   }
 );
@@ -1898,9 +1890,8 @@ param c = Center [400, 4000]
 param d = Feedback [0.05, 0.55]
 param e = Mix [0.25, 0.95]
 param f = Resonance [0.4, 2.2]
-param g = Level [0.5, 1.2]
 osc1: type = sine; freq = a
-stage1: y = x * g
+stage1: y = x
 bus swirl:
   send: main = 1
   filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f
@@ -1914,7 +1905,6 @@ out: main = 1-e; swirl = e`,
     d: p("Feedback", 0.05, 0.55, 0.28),
     e: p("Mix", 0.25, 0.95, 0.7),
     f: p("Resonance", 0.4, 2.2, 1.1),
-    g: p("Level", 0.5, 1.2, 0.95),
     outG: 0,
   }
 );
@@ -1929,16 +1919,14 @@ param c = Presence [1800, 5500]
 param d = Amount [0.2, 0.85]
 param e = Thresh [-24.0, -8.0]
 param f = Air [5000, 14000]
-param g = DeEss [4000, 10000]
-param h = Level [0.55, 1.25]
 filter1: type = highpass; cutoff = a; resonance = 0.35
 stage1: y = tube(x, b)
 filter2: type = bandpass; center = c; width = 1400
 stage2: y = lerp(x, softclip(x, 1.25), d)
 comp1: threshold = e; ratio = 3.5; attack = 0.006; release = 0.12
 filter3: type = lowpass; cutoff = f; resonance = 0.28
-filter4: type = lowpass; cutoff = g; resonance = 0.45
-stage3: y = softclip(x * h, 1.08)`,
+filter4: type = lowpass; cutoff = 7000; resonance = 0.45
+stage3: y = softclip(x * 0.95, 1.08)`,
   {
     a: p("LowCut", 60, 220, 110),
     b: p("Drive", 0.9, 3.5, 1.6),
@@ -1946,8 +1934,6 @@ stage3: y = softclip(x * h, 1.08)`,
     d: p("Amount", 0.2, 0.85, 0.48),
     e: p("Thresh", -24, -8, -14),
     f: p("Air", 5000, 14000, 10000),
-    g: p("DeEss", 4000, 10000, 7000),
-    h: p("Level", 0.55, 1.25, 0.95),
     outG: 0,
   }
 );
@@ -1990,14 +1976,12 @@ param c = Time [40, 320]
 param d = Feedback [0.1, 0.75]
 param e = Rate [0.1, 8.0]
 param f = Cutoff [400, 9000]
-param g = Mix [0.3, 1.0]
-param h = Level [0.35, 1.1]
 osc1: type = sine; freq = e
 stage1: y = bitcrush(softclip(x, 1.5), a)
 stage2: y = fold(y, -b, b)
 delay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true
 filter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55
-stage3: y = lerp(x, softclip(y, 1.1), g) * h`,
+stage3: y = lerp(x, softclip(y, 1.1), 1.0) * 1.0`,
   {
     a: p("Bits", 3, 12, 7),
     b: p("Fold", 0.2, 0.85, 0.45),
@@ -2005,8 +1989,6 @@ stage3: y = lerp(x, softclip(y, 1.1), g) * h`,
     d: p("Feedback", 0.1, 0.75, 0.4),
     e: p("Rate", 0.1, 8, 1.2),
     f: p("Cutoff", 400, 9000, 3500),
-    g: p("Mix", 0.3, 1, 0.7),
-    h: p("Level", 0.35, 1.1, 0.8),
     outG: 0,
   }
 );
