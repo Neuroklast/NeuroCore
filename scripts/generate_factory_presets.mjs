@@ -1854,28 +1854,28 @@ stage2: y = lerp(x, y, c * (1.0 - env1 * e))`,
 add(
   "Cinematic Space",
   "Reverb",
-  "Pre-delay → reverb → MS width + high shelf LPF + soft tail ceiling. Eight controls for film/post.",
+  "Pre-delay → reverb → MS width + air LPF + soft tail ceiling.",
   `param a = Predelay [20, 180]
 param b = Size [0.25, 0.95]
 param c = Decay [0.35, 0.92]
 param d = Damp [0.15, 0.85]
 param e = Mix [0.2, 0.85]
-param f = Width [0.4, 1.0]
-param g = Air [3000, 12000]
-param h = Level [0.5, 1.2]
+param f = Width [0.4, 1.6]
 delay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000
-reverb1: size = b; decay = c; damp = d; mix = e; width = f
-filter1: type = lowpass; cutoff = g; resonance = 0.25
-stage1: y = softclip(x * h, 1.08)`,
+reverb1: size = b; decay = c; damp = d; mix = e; width = 0.95
+filter1: type = lowpass; cutoff = 8000; resonance = 0.25
+ms1: mode = encode
+stage1: channel = mid; y = x
+stage2: channel = side; y = x * f
+ms2: mode = decode
+stage3: y = softclip(x, 1.08)`,
   {
     a: p("Predelay", 20, 180, 65),
     b: p("Size", 0.25, 0.95, 0.72),
     c: p("Decay", 0.35, 0.92, 0.7),
     d: p("Damp", 0.15, 0.85, 0.45),
     e: p("Mix", 0.2, 0.85, 0.48),
-    f: p("Width", 0.4, 1.0, 0.88),
-    g: p("Air", 3000, 12000, 7500),
-    h: p("Level", 0.5, 1.2, 0.95),
+    f: p("Width", 0.4, 1.6, 1.0),
     outG: 0,
   }
 );
