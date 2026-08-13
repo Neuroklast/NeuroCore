@@ -161,7 +161,7 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
 
     refreshCategories();
     refreshTable();
-    updateDetail (-1);
+    updateDetail (table.getSelectedRow());
 }
 
 PresetContentComponent::~PresetContentComponent()

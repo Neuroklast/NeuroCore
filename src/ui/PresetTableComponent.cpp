@@ -74,9 +74,29 @@ void PresetTableComponent::rebuildFiltered()
         filtered.add (i);
     }
     table.updateContent();
-    table.deselectAllRows();
-    if (onSelectionChanged)
-        onSelectionChanged (-1);
+    const auto keep = processor.getLastPresetBrowserName();
+    int keepRow = -1;
+    if (keep.isNotEmpty())
+    {
+        for (int r = 0; r < filtered.size(); ++r)
+            if (const auto* e = entryAt (r))
+                if (e->name == keep)
+                {
+                    keepRow = r;
+                    break;
+                }
+    }
+    if (keepRow >= 0)
+    {
+        table.selectRow (keepRow);
+        table.scrollToEnsureRowIsOnscreen (keepRow);
+    }
+    else
+    {
+        table.deselectAllRows();
+        if (onSelectionChanged)
+            onSelectionChanged (-1);
+    }
 }
 
 const PresetTableComponent::Entry* PresetTableComponent::entryAt (int filteredRow) const
@@ -160,21 +180,27 @@ void PresetTableComponent::refresh()
     }
 
     rebuildFiltered();
-
-    // Re-select current preset if visible
-    if (processor.getCurrentPresetName().isNotEmpty())
-    {
-        for (int r = 0; r < filtered.size(); ++r)
-        {
-            if (const auto* e = entryAt (r))
-                if (e->name == processor.getCurrentPresetName())
-                {
-                    table.selectRow (r);
-                    break;
-                }
-        }
-    }
+    const auto want = processor.getLastPresetBrowserName().isNotEmpty()
+                          ? processor.getLastPresetBrowserName()
+                          : processor.getCurrentPresetName();
+    selectAndRevealName (want);
     juce::ignoreUnused (currentFiltered);
+}
+
+void PresetTableComponent::selectAndRevealName (const juce::String& name)
+{
+    if (name.isEmpty())
+        return;
+    for (int r = 0; r < filtered.size(); ++r)
+    {
+        if (const auto* e = entryAt (r))
+            if (e->name == name)
+            {
+                table.selectRow (r);
+                table.scrollToEnsureRowIsOnscreen (r);
+                return;
+            }
+    }
 }
 
 juce::StringArray PresetTableComponent::getAllCategories() const
@@ -301,6 +327,8 @@ void PresetTableComponent::cellDoubleClicked (int rowNumber, int, const juce::Mo
 
 void PresetTableComponent::selectedRowsChanged (int lastRowSelected)
 {
+    if (const auto* e = entryAt (lastRowSelected))
+        processor.setLastPresetBrowserName (e->name);
     if (onSelectionChanged)
         onSelectionChanged (lastRowSelected);
 }
@@ -308,4 +336,7 @@ void PresetTableComponent::selectedRowsChanged (int lastRowSelected)
 void PresetTableComponent::resized()
 {
     table.setBoundsInset (juce::BorderSize<int> (4));
+    const int row = table.getSelectedRow();
+    if (row >= 0)
+        table.scrollToEnsureRowIsOnscreen (row);
 }

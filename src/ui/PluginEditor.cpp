@@ -27,6 +27,7 @@
 #include "OptimizeContentComponent.h"
 #include "FunctionsContentComponent.h"
 #include "StagesContentComponent.h"
+#include "HelpContentComponent.h"
 #include "../utils/FormulaQuality.h"
 #include "fx/CyberFxTypes.h"
 #include "fx/CyberClip.h"
@@ -91,21 +92,13 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         if (body.isEmpty())
             body = "NeuroCore User Manual\n\nSee docs/USER_MANUAL.md in the repository.";
 
-        auto viewer = std::make_unique<juce::TextEditor>();
-        viewer->setMultiLine (true, true);
-        viewer->setReadOnly (true);
-        viewer->setScrollbarsShown (true);
-        viewer->setCaretVisible (false);
-        viewer->setFont (NeuroCoreLookAndFeel::monoFont (13.f));
-        viewer->setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
-        viewer->setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
-        viewer->setText (body, false);
+        auto viewer = std::make_unique<HelpContentComponent> (body);
 
         validationOverlay = std::make_unique<ModalOverlay>();
         validationOverlay->setMode (OverlayMode::Closable);
         validationOverlay->setTitle ("Help / User Manual");
-        validationOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 980),
-                                                    juce::jmin (getHeight() - 24, 700));
+        validationOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 1100),
+                                                    juce::jmin (getHeight() - 24, 740));
         validationOverlay->setContent (std::move (viewer));
         applyOverlayMotion (*validationOverlay);
         validationOverlay->show (*this);
@@ -1434,6 +1427,12 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->onClose = [this] { validationOverlay.reset(); syncGlCover(); };
     validationOverlay->show(*this);
     syncGlCover();
+
+    ptr->onProgress = [this] (const juce::String& line)
+    {
+        if (validationOverlay != nullptr)
+            validationOverlay->setLiveStatus (line);
+    };
 
     ptr->onResult = [this, expr](bool stable)
     {

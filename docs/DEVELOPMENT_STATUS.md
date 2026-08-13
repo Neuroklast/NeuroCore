@@ -50,6 +50,10 @@
 - [x] Cached Backdrop (kein 480× Hex-Text pro Frame)
 - [x] Modal enter/exit via VBlank, kein Host-Fokus-Diebstahl
 - [x] Fenster-Assemble wie Neuroklast-Modals (Clip-Reveal ~340 ms), kein Scanline-Boot
+- [x] Help: Kapitel-Liste + Schnellsuche
+- [x] Preset-Browser merkt Auswahl und scrollt hin
+- [x] Autocomplete nur kontext-sichere Vorschlaege
+- [x] Formel-Check haelt Overlay sichtbar (min. 1.2s) mit Live-Status
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)

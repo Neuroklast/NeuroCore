@@ -18,6 +18,7 @@ public:
     void setMode (OverlayMode newMode);
     void setContent (std::unique_ptr<juce::Component> newContent);
     void setTitle (const juce::String& text);
+    void setLiveStatus (const juce::String& text);
     void setMotion (CyberMotion motion);
 
     /** Cover @parent and show. Parent must outlive the overlay. */
@@ -61,6 +62,7 @@ private:
     int preferredH { 0 };
     double lastStamp { 0.0 };
     juce::String rawTitle;
+    juce::String liveStatus;
 
     void updateButtonVisibility();
     void applyContentVisibility();

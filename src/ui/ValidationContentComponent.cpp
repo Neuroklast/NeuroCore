@@ -22,6 +22,7 @@ ValidationContentComponent::ValidationContentComponent(NeuroCoreAudioProcessor& 
     statsLabel.setColour(juce::Label::textColourId, juce::Colours::white);
 
     startTimerHz(30);
+    openedMs = juce::Time::getMillisecondCounter();
     startTest();
 }
 
@@ -77,11 +78,17 @@ void ValidationContentComponent::startTest()
         juce::MessageManager::callAsync ([cb = onResult, ok, detail, qualityLine, warnLine, quality, this]() mutable {
             if (ok)
             {
-                // Store quality line for editor via warningString even on success
                 warningString = qualityLine;
                 if (warnLine.isNotEmpty())
-                    warningString << "  ⚠ " << warnLine;
-                if (cb) cb (true);
+                    warningString << "  | " << warnLine;
+                messageLabel.setText ("FORMULA STABLE", juce::dontSendNotification);
+                statsLabel.setText (qualityLine
+                                    + "  NaN: " + juce::String (quality.nanCount)
+                                    + " Inf: " + juce::String (quality.infCount),
+                                    juce::dontSendNotification);
+                progressBar.setProgress (1.f);
+                finishSuccess();
+                juce::ignoreUnused (cb);
             }
             else
             {
@@ -151,5 +158,23 @@ void ValidationContentComponent::timerCallback()
                            " Inf: " + juce::String(infCount.load()),
                            juce::dontSendNotification);
         messageLabel.setText(txt, juce::dontSendNotification);
+        if (onProgress)
+            onProgress ("NaN " + juce::String (nanCount.load())
+                        + "  Inf " + juce::String (infCount.load())
+                        + (txt.isNotEmpty() ? ("  |  " + txt) : juce::String()));
     }
+}
+
+void ValidationContentComponent::finishSuccess()
+{
+    const int elapsed = (int) (juce::Time::getMillisecondCounter() - openedMs);
+    const int wait = juce::jmax (0, 1200 - elapsed);
+    juce::Component::SafePointer<ValidationContentComponent> safe (this);
+    juce::Timer::callAfterDelay (wait, [safe]()
+    {
+        if (safe == nullptr)
+            return;
+        if (safe->onResult)
+            safe->onResult (true);
+    });
 }

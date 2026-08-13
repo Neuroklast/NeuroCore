@@ -63,6 +63,12 @@ void ModalOverlay::setTitle (const juce::String& text)
     resized();
 }
 
+void ModalOverlay::setLiveStatus (const juce::String& text)
+{
+    liveStatus = text;
+    repaint();
+}
+
 void ModalOverlay::setPreferredContentSize (int w, int h)
 {
     preferredW = w;
@@ -221,6 +227,13 @@ void ModalOverlay::paint (juce::Graphics& g)
         CyberChrome::drawOverlayLoader (g, inner, sequence.timeSec(),
                                         sequence.timeline01(),
                                         (int) clipType, rng.nextInt(), teardown);
+        if (liveStatus.isNotEmpty())
+        {
+            g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+            g.drawText (liveStatus, inner.removeFromBottom (18).reduced (12, 0),
+                        juce::Justification::centredLeft, false);
+        }
     }
 
     if (burst > 0.04f)

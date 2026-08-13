@@ -11,6 +11,7 @@
 #include "../core/Config.h"
 #include <vector>
 #include <algorithm>
+#include <array>
 
 namespace DslAutocomplete
 {
@@ -99,6 +100,84 @@ namespace DslAutocomplete
             || head.containsOnly ("abcdefghijklmnopqrstuvwxyz0123456789_");
     }
 
+    inline juce::String lineBlockKind (const juce::String& head)
+    {
+        auto first = head.upToFirstOccurrenceOf (":", false, false).trim().toLowerCase();
+        if (first.startsWith ("filter") || first == "lpf" || first == "hpf" || first == "bpf"
+            || first == "lp" || first == "hp" || first == "bp"
+            || first == "lowpass" || first == "highpass" || first == "bandpass")
+            return "filter";
+        if (first.startsWith ("comp")) return "comp";
+        if (first.startsWith ("delay")) return "delay";
+        if (first.startsWith ("reverb") || first.startsWith ("verb")) return "reverb";
+        if (first.startsWith ("osc")) return "osc";
+        if (first.startsWith ("env")) return "env";
+        if (first.startsWith ("ms") || first.startsWith ("midside")) return "ms";
+        if (first.startsWith ("stage")) return "stage";
+        if (first.startsWith ("param")) return "param";
+        if (first.startsWith ("bus")) return "bus";
+        if (first == "send") return "send";
+        if (first == "out") return "out";
+        return {};
+    }
+
+    inline bool canSuggestSend (const juce::String& text, int caret)
+    {
+        const auto before = text.substring (0, juce::jlimit (0, text.length(), caret));
+        int lastBus = before.lastIndexOfIgnoreCase ("\nbus ");
+        if (before.startsWithIgnoreCase ("bus "))
+            lastBus = 0;
+        const int lastOut = before.lastIndexOfIgnoreCase ("\nout");
+        return lastBus >= 0 && lastBus > lastOut;
+    }
+
+    inline bool canSuggestOut (const juce::String& text, int caret)
+    {
+        const auto before = text.substring (0, juce::jlimit (0, text.length(), caret));
+        return ! before.containsIgnoreCase ("\nout:") && ! before.startsWithIgnoreCase ("out:");
+    }
+
+    inline std::vector<Item> uniqueSorted (std::vector<Item> items,
+                                           const juce::String& prefix,
+                                           bool forceAll,
+                                           const juce::String& ctx,
+                                           bool inBlockProps)
+    {
+        std::sort (items.begin(), items.end(),
+                   [] (const Item& a, const Item& b)
+                   {
+                       if (a.score != b.score) return a.score > b.score;
+                       return a.label < b.label;
+                   });
+        std::vector<Item> unique;
+        unique.reserve (items.size());
+        for (auto& it : items)
+        {
+            bool dup = false;
+            for (auto& u : unique)
+                if (u.label.equalsIgnoreCase (it.label))
+                {
+                    dup = true;
+                    break;
+                }
+            if (! dup)
+                unique.push_back (std::move (it));
+            if ((int) unique.size() >= 24)
+                break;
+        }
+
+        if (prefix.isEmpty() && ! forceAll && unique.size() > 12)
+            unique.resize (12);
+
+        if (prefix.isEmpty() && ! forceAll
+            && ! ctx.contains ("type") && ! ctx.contains ("channel")
+            && ! ctx.contains ("mode") && ! inBlockProps)
+        {
+            return {};
+        }
+        return unique;
+    }
+
     inline void addCand (std::vector<Item>& out, Item item, const juce::String& prefix)
     {
         const auto p = prefix.toLowerCase();
@@ -151,65 +230,81 @@ namespace DslAutocomplete
         const auto head = lineHead (text, start);
         std::vector<Item> items;
 
-        // --- Context: type = ...
-        if (ctx == "type" || ctx.endsWithIgnoreCase ("type=") || ctx == "=")
+        const auto kind = lineBlockKind (head);
+        const bool afterType = head.contains ("type") && (ctx == "=" || ctx.contains ("type"));
+        const bool afterChannel = head.contains ("channel") && (ctx == "=" || ctx.contains ("channel"));
+        const bool afterMode = head.contains ("mode") && (ctx == "=" || ctx.contains ("mode"));
+        const bool afterPingpong = head.contains ("pingpong") && (ctx == "=" || ctx.contains ("pingpong"));
+        const bool afterEquals = ctx == "=" || head.contains ("=");
+        const bool inBlockProps = head.contains (":") && ! head.contains ("y =") && ! head.contains ("y=");
+
+        if (afterType)
         {
-            // Narrow: only when previous word is type or line has "type"
-            const bool afterType = head.contains ("type") || ctx.contains ("type");
-            if (afterType)
-            {
-                addAll (items, { "lowpass", "highpass", "bandpass",
-                                 "sine", "saw", "triangle", "square",
-                                 "peak", "rms", "encode", "decode" },
-                        Kind::Value, "type value", prefix);
-            }
+            if (kind == "filter")
+                addAll (items, { "lowpass", "highpass", "bandpass" }, Kind::Value, "filter type", prefix);
+            else if (kind == "osc")
+                addAll (items, { "sine", "saw", "triangle", "square" }, Kind::Value, "osc type", prefix);
+            else if (kind == "env")
+                addAll (items, { "peak", "rms" }, Kind::Value, "env type", prefix);
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
         }
 
-        if (head.contains ("channel") || ctx == "channel" || ctx.contains ("channel="))
-            addAll (items, { "left", "right", "both", "mid", "side" },
-                    Kind::Value, "channel", prefix);
+        if (afterChannel)
+        {
+            addAll (items, { "left", "right", "both", "mid", "side" }, Kind::Value, "channel", prefix);
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
+        }
 
-        if (head.contains ("mode") || ctx == "mode" || ctx.contains ("mode="))
+        if (afterMode)
+        {
             addAll (items, { "encode", "decode" }, Kind::Value, "ms mode", prefix);
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
+        }
 
-        if (head.contains ("pingpong") || ctx == "pingpong")
+        if (afterPingpong)
+        {
             addAll (items, { "true", "false" }, Kind::Value, "bool", prefix);
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
+        }
 
-        // --- After block name "filter1:" properties
-        const bool inBlockProps = head.contains (":") && ! head.contains ("y =") && ! head.contains ("y=");
-        if (inBlockProps || forceAll)
+        if (inBlockProps && ! afterEquals)
         {
             juce::StringArray props;
-            if (head.startsWith ("filter") || head.contains ("filter") || forceAll)
+            if (kind == "filter")
                 props.addArray ({ "type", "cutoff", "resonance", "center", "width",
                                   "lowcut", "highcut", "channel" });
-            if (head.startsWith ("comp") || forceAll)
+            else if (kind == "comp")
                 props.addArray ({ "threshold", "ratio", "attack", "release" });
-            if (head.startsWith ("delay") || forceAll)
+            else if (kind == "delay")
                 props.addArray ({ "time", "feedback", "mix", "damp", "sync", "pingpong" });
-            if (head.startsWith ("reverb") || forceAll)
+            else if (kind == "reverb")
                 props.addArray ({ "size", "decay", "damp", "mix", "width" });
-            if (head.startsWith ("osc") || forceAll)
+            else if (kind == "osc")
                 props.addArray ({ "type", "freq", "sync" });
-            if (head.startsWith ("env") || forceAll)
+            else if (kind == "env")
                 props.addArray ({ "type", "attack", "release" });
-            if (head.startsWith ("ms") || forceAll)
+            else if (kind == "ms")
                 props.addArray ({ "mode" });
-            if (head.startsWith ("stage") || forceAll)
+            else if (kind == "stage")
                 props.addArray ({ "channel", "y" });
-            props.removeDuplicates (false);
+            else if (kind == "send")
+                props.addArray ({ "in" });
+            else if (kind == "out")
+                props.addArray ({ "main" });
             addAll (items, props, Kind::Property, "property", prefix, " = ");
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
         }
 
-        // --- Line-start block / keyword
-        if (isIdentStartLine (head) || forceAll)
+        if (isIdentStartLine (head))
         {
-            addAll (items, {
-                "param", "stage", "filter", "comp", "osc", "env",
-                "delay", "reverb", "ms", "bus", "send", "out", "in", "main"
-            }, Kind::Block, "block", prefix);
+            juce::StringArray blocks { "param", "stage", "filter", "comp", "osc", "env",
+                                       "delay", "reverb", "ms", "bus" };
+            if (canSuggestSend (text, start))
+                blocks.add ("send");
+            if (canSuggestOut (text, start))
+                blocks.add ("out");
+            addAll (items, blocks, Kind::Block, "block", prefix);
 
-            // Snippets for common blocks
             if (prefix.isEmpty() || juce::String ("stage").startsWithIgnoreCase (prefix))
             {
                 Item sn;
@@ -237,7 +332,8 @@ namespace DslAutocomplete
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);
             }
-            if (prefix.isEmpty() || juce::String ("bus").startsWithIgnoreCase (prefix))
+            if ((prefix.isEmpty() || juce::String ("bus").startsWithIgnoreCase (prefix))
+                && canSuggestSend (text, start) == false)
             {
                 Item sn;
                 sn.label = "bus dirt + send in";
@@ -246,15 +342,14 @@ namespace DslAutocomplete
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);
             }
+            return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
         }
 
-        // --- Expression context (stage y = ...): functions + knobs + globals
         const bool inExpr = head.contains ("y =") || head.contains ("y=")
-                         || head.contains ("cutoff") || head.contains ("freq")
-                         || head.contains ("(") || forceAll
-                         || (! inBlockProps && ! isIdentStartLine (head) && prefix.isNotEmpty());
+                         || afterEquals
+                         || head.contains ("(");
 
-        if (inExpr || prefix.isNotEmpty() || forceAll)
+        if (inExpr)
         {
             for (const auto& f : builtinFunctions)
             {
@@ -282,8 +377,8 @@ namespace DslAutocomplete
                 {
                     Item al;
                     al.label = varNames[(size_t) i];
-                    al.insertText = letter; // insert canonical knob letter
-                    al.detail = "alias → " + letter;
+                    al.insertText = letter;
+                    al.detail = "alias -> " + letter;
                     al.kind = Kind::Variable;
                     addCand (items, std::move (al), prefix);
                 }
@@ -293,47 +388,8 @@ namespace DslAutocomplete
                 "x", "y", "x_prev", "y_prev", "t", "sr", "pi", "ch",
                 "midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod"
             }, Kind::Variable, "signal", prefix);
-
-            addAll (items, { "map", "lerp", "softclip", "hardclip", "tube", "diode" },
-                    Kind::Function, "common", prefix, "(");
         }
 
-        // Deduplicate by label (keep best score)
-        std::sort (items.begin(), items.end(),
-                   [] (const Item& a, const Item& b)
-                   {
-                       if (a.score != b.score) return a.score > b.score;
-                       return a.label < b.label;
-                   });
-        std::vector<Item> unique;
-        unique.reserve (items.size());
-        for (auto& it : items)
-        {
-            bool dup = false;
-            for (auto& u : unique)
-                if (u.label.equalsIgnoreCase (it.label))
-                {
-                    dup = true;
-                    break;
-                }
-            if (! dup)
-                unique.push_back (std::move (it));
-            if ((int) unique.size() >= 24)
-                break;
-        }
-
-        // Don't show list with empty prefix unless forced or strong context
-        if (prefix.isEmpty() && ! forceAll && unique.size() > 12)
-            unique.resize (12);
-
-        if (prefix.isEmpty() && ! forceAll
-            && ! ctx.contains ("type") && ! ctx.contains ("channel")
-            && ! ctx.contains ("mode") && ! inBlockProps)
-        {
-            // Free typing: only show if user already started a word
-            return {};
-        }
-
-        return unique;
+        return uniqueSorted (std::move (items), prefix, forceAll, ctx, inBlockProps);
     }
 }

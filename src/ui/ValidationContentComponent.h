@@ -13,6 +13,7 @@ public:
     ~ValidationContentComponent() override;
 
     std::function<void(bool)> onResult; // true if stable
+    std::function<void(const juce::String&)> onProgress;
 
     void paint(juce::Graphics&) override;
     void resized() override;
@@ -40,7 +41,9 @@ private:
     juce::Label messageLabel;
     juce::TextButton okButton{"OK"};
     juce::Rectangle<int> panel;
+    juce::uint32 openedMs { 0 };
 
     void startTest();
+    void finishSuccess();
     void timerCallback() override;
 };

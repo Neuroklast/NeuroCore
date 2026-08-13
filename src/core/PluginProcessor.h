@@ -159,6 +159,16 @@ public:
     juce::String getCurrentPresetName() const { return currentPresetName; }
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
 
+    void setLastPresetBrowserName (const juce::String& name)
+    {
+        if (name.isNotEmpty())
+            lastPresetBrowserName = name;
+    }
+    juce::String getLastPresetBrowserName() const
+    {
+        return lastPresetBrowserName.isNotEmpty() ? lastPresetBrowserName : currentPresetName;
+    }
+
     float getLoudnessDb()      const noexcept { return dspEngine.getLoudnessDb(); }
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
@@ -182,6 +192,7 @@ private:
 
     juce::String currentLanguage;
     juce::String currentPresetName;
+    juce::String lastPresetBrowserName;
 
     /** Rising zero-cross index from the input scope — shared so OUT stays time-locked to IN. */
     std::atomic<int> waveformAlignOffset { 0 };

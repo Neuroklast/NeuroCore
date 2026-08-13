@@ -19,6 +19,7 @@ public:
     void selectedRowsChanged (int lastRowSelected) override;
 
     void refresh();
+    void selectAndRevealName (const juce::String& name);
     void setSearch (const juce::String& query);
     void setCategory (const juce::String& category); // empty = all
     void setScope (Scope s);

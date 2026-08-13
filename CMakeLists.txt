@@ -95,6 +95,7 @@ set(SOURCE_FILES
     src/ui/FunctionsContentComponent.cpp
     src/ui/StagesContentComponent.cpp
     src/ui/ValidationContentComponent.cpp
+    src/ui/HelpContentComponent.cpp
     src/ui/WaveformDisplayComponent.cpp
     src/ui/LoudnessMeterComponent.cpp
     src/ui/WeightedLayout.cpp
@@ -231,6 +232,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/PresetManagerTest.h
     tests/NeuroCoreExtrasTest.h
     tests/CyberFxTest.h
+    tests/EditorUxTest.h
     ${SOURCE_FILES}
     src/dsp/WaveShaper.cpp
     src/dsp/LowPassFilter.cpp

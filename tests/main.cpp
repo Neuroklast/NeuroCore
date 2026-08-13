@@ -15,6 +15,7 @@
 #include "ArchitectureHardeningTest.h"
 #include "BusGraphTest.h"
 #include "CyberFxTest.h"
+#include "EditorUxTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -43,6 +44,7 @@ int main (int argc, char* argv[])
   ArchitectureHardeningTest architectureHardeningTest;
   BusGraphTest busGraphTest;
   CyberFxTest cyberFxTest;
+  EditorUxTest editorUxTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {
