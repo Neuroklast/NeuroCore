@@ -30,7 +30,7 @@
 | UI/LoudnessMeter | ✅ Funktional | 70% | 2026-04-01 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 116 Factory; knobs a–f only; Doubler=`delay`, Shimmer=`reverb`, Cinematic=`ms` | 99% | 2026-08-13 |
+| Preset-System | ✅ 116 Factory (Delay/Reverb/MS echt; knobs a–f only) | 99% | 2026-08-13 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ⚠️ Async-API implementiert, Server weiterhin Placeholder | 45% | 2026-05-19 |
 | Tests | ✅ Suite schlank & stabil: **1363 passed / 0 failed**; factory honesty + quality gate 116/116 | 98% | 2026-08-13 |
@@ -44,13 +44,15 @@
 
 ## Aktive Checkliste
 
-### 2026-08-13 – Factory preset honesty (`feat/factory-preset-honesty`)
+### 2026-08-13 – Factory preset honesty (a–f)
 
-- [x] Honesty tests: no `param g/h`, no dummy C–F names, no “eight knob” copy
-- [x] Doubler AM = real `delay1` slap + LFO time (no AM-only fake double)
-- [x] Shimmer Drive = real `reverb1` hall (no octave pitch-shift claim)
-- [x] Cinematic Space = real `ms` after predelay/reverb
-- [x] Single `node scripts/generate_factory_presets.mjs` write → 116 presets, quality gate 116/116
+- [x] Audit: 116 factory all pass quality gate; 6 scripts still declare g/h
+- [x] Trim Studio Channel Strip / Rhythmic Gate Delay / Cinematic Space / Phaser Lab / Vocal Chain Pro / Glitch Laboratory to a–f
+- [x] Dummy paramC/paramD metadata stop
+- [x] Doubler AM + Shimmer Drive get real delay/reverb
+- [x] Cinematic Space gets ms encode/decode
+- [x] templates.json drop 7–8 knob names
+- [x] Bitcrush lo-fi quick template recovery LPF
 
 ### 2026-08-13 – Cinematic Cyber-UI FX (`feat/cinematic-ui-fx`)
 
@@ -102,7 +104,7 @@
 ### 2026-08-12 – Mix0 / 8 Knobs / Content
 
 - [x] Mix 0%: pure dry early-out (kein DSL/OS auf Dry-Path)
-- [x] 8 User-Params a–h (Engine, APVTS, UI 4×2, Formula colors)
+- [x] 8 User-Params a–h (historical Mix0 peak: Engine, APVTS, UI 4×2, Formula colors); later cut to 6 (`kNumUserParams=6`)
 - [x] Bare `e` = Knob (nicht Euler); Factory 116 + complex Templates
 - [x] Functions-Docs: param a–h, lerp, clip→LPF, MS
 

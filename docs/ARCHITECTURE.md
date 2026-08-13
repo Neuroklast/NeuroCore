@@ -142,7 +142,7 @@ Parameter-IDs für den APVTS:
 | `WaveformDisplayComponent` | Input/Output-Wellenform-Anzeige |
 | `LoudnessMeterComponent` | Echtzeit-Loudness-Meter |
 | `FormulaDisplayComponent` | Formel-Vorschau-Wellenform |
-| `ParameterComponent` | Custom-Knob-Widgets (a–d) |
+| `ParameterComponent` | Custom-Knob-Widgets (a–f) |
 | `ModalOverlay` | Overlay-Container für Dialoge |
 | `ValidationContentComponent` | Formel-Validierungs-Dialog |
 | `PresetContentComponent` | Preset-Browser-Panel |

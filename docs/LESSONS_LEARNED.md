@@ -9,6 +9,17 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Factory SoTA is honesty, not more DAG
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Alle Factory-Presets + Templates auf State of the Art prüfen  
+**Ergebnis:** 116/116 am Quality-Gate; tote g/h, Dummy-C/D, zwei AM-only Time/Space-Namen
+
+#### Regel
+Nicht mehr Knobs bauen. `kNumUserParams = 6`. Extra Werte hardcoden wie die Templates. Namen, die Delay/Reverb/MS versprechen, müssen den Block enthalten. `factory_presets.json` nie per Hand editieren.
+
+---
+
 ### 2026-08-13 – Factory names must match real delay/reverb/ms blocks
 
 **Agent:** Grok Coding Agent  
