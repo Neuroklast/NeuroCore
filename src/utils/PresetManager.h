@@ -22,7 +22,11 @@ class PresetManager
 public:
     explicit PresetManager(NeuroCoreAudioProcessor& proc);
 
-    bool savePreset(const juce::File& file, const juce::String& name);
+    /** Save current processor state. Author/category for artist packs (META JSON). */
+    bool savePreset(const juce::File& file,
+                    const juce::String& name,
+                    const juce::String& author = {},
+                    const juce::String& category = {});
     bool loadPreset(const juce::File& file);
 
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;

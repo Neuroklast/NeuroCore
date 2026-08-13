@@ -78,7 +78,10 @@ bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock&
     return true;
 }
 
-bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
+bool PresetManager::savePreset(const juce::File& file,
+                               const juce::String& name,
+                               const juce::String& author,
+                               const juce::String& category)
 {
     json meta;
 
@@ -86,7 +89,9 @@ bool PresetManager::savePreset(const juce::File& file, const juce::String& name)
     meta[kAttrFileName] = file.getFileName().toStdString();
     meta[kAttrPluginName] = JucePlugin_Name;
 
-    meta["Author"] = JucePlugin_Manufacturer;
+    meta["Author"] = (author.isNotEmpty() ? author : juce::String (JucePlugin_Manufacturer)).toStdString();
+    if (category.isNotEmpty())
+        meta["Category"] = category.toStdString();
 
     juce::MemoryBlock state;
     processor.getStateInformation(state);

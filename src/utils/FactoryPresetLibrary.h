@@ -11,10 +11,10 @@ struct FactoryPresetEntry
     juce::String category;
     juce::String description;
     juce::String script;
-    juce::String paramNames[4];
-    float paramMin[4]  { 0, 0, 0, 0 };
-    float paramMax[4]  { 1, 1, 1, 1 };
-    float paramDefault[4] { 0, 0, 0, 0 };
+    juce::String paramNames[8];
+    float paramMin[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
+    float paramMax[8]  { 1, 1, 1, 1, 1, 1, 1, 1 };
+    float paramDefault[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
     float inputGainDb  { 0.f };
     float outputGainDb { 0.f };
     float mix          { 1.f };

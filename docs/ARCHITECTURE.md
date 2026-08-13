@@ -1,27 +1,44 @@
 # NeuroCore – Architektur-Übersicht
 
+## RT-Verträge (Crackle → Timeline/State, nicht Thresholds)
+
+Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Workarounds.
+
+| Vertrag | Owner | Regel |
+|--------|--------|--------|
+| **Eine Timeline** | `LatencyAlignedSidechain` | Dry-Sidechain-Delay == OS-Wet-Latenz. AutoGain/Sanitizer/Mix vergleichen nie raw Dry mit delayed Wet. |
+| **Eine Residual-Policy** | `OutputSanitizer` | Nur hier Residual-Mute. AutoGain **nie** muten. Kein NoiseGate in der Chain. |
+| **Eine Peak-Safety** | `OutputSanitizer` wenn Polisher=None | Polisher Limiter/HardClip → Sanitizer Peak **aus** (`setPeakSafetyEnabled`). |
+| **AutoGain optional** | APVTS `autoGain` 0…1 | Default **0** (off). Strength skaliert mildes RMS-Match. |
+| **Kontinuierliche Control-Rate** | knob lanes + `mixDryWetContinuous` | Knobs und Dry/Wet sample-rate, nicht block-constant. |
+| **Filter-Timebase** | `advanceCoeffsOnce` + `processSample(ch)` | Coeff 1×/Sample; pro Kanal eigener SVF-State. |
+| **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
+| **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
+
+Defaults: OS **2×** (`Config::kDefaultOversamplingIndex = 1`), Diagnostics **off**, AutoGain **off**.
+
+Diagnose-Heuristik: Crackle an `smp≈latency` → Timeline. `smp=0` → Control-Rate/State.
+
 ## Signalkette
 
 ```
 Input
   └─► InputRouter
-        └─► [Oversampling ↑]
-              └─► InputGain
-                    └─► DSL SignalChain (processBlockSmoothed)
-                          ├── Stage   (mathematische Formel)
-                          ├── Filter  (lowpass / highpass / bandpass)
-                          ├── Comp    (Kompressor)
-                          ├── Env     (Envelope Follower)
-                          └── Osc     (LFO-Oszillator)
-                    └─► DC-Blocker
-                          └─► NoiseGate
-                                └─► SignalPolisher
-                                      └─► LPF (osSpec, anti-alias)
-                                            └─► [Oversampling ↓]
-                                                  └─► DryWetMixer
-                                                        └─► AutoGainCompensation
-                                                              └─► OutputGain
-                                                                    └─► Output
+        └─► InputGain (host rate, vor Dry-Split)
+              ├─► dryBuffer ──► LatencyAlignedSidechain ──┐
+              └─► [Oversampling ↑] (wenn Mix > 0)
+                    └─► DSL SignalChain (nur current; kein Dual-Run)
+                          └─► Post-DSL NaN-hold only
+                                └─► DC-Blocker
+                                      └─► SignalPolisher (optional musical ceiling)
+                                            └─► LPF anti-alias
+                                                  └─► [Oversampling ↓]
+                                                        └─► mixDryWetContinuous (aligned dry × wet)
+                                                              └─► AutoGain (strength, default off)
+                                                                    └─► OutputGain
+                                                                          └─► OutputSanitizer (aligned dry)
+                                                                                └─► switchRamp
+                                                                                      └─► Output
 ```
 
 ---

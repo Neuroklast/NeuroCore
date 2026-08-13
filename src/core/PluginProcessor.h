@@ -21,6 +21,7 @@
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../core/ValidationTypes.h"
+#include "../utils/FormulaQuality.h"
 #include "../core/DspEngine.h"
 #include "../core/ScriptManager.h"
 #include "../core/WaveformCapture.h"
@@ -81,6 +82,8 @@ public:
 
     /** Apply a formula without undo tracking (used by undo/redo actions). */
     bool applyFormula (const juce::String& text, juce::String& error);
+    /** @param clearPresetName  false when loading a named factory/user preset */
+    bool applyFormula (const juce::String& text, juce::String& error, bool clearPresetName);
 
     juce::String getScript() const { return scriptManager.getScript(); }
 
@@ -91,10 +94,19 @@ public:
 
     void setVariableName(int index, const juce::String& name) { scriptManager.setVariableName(index, name); }
     juce::String getVariableName(int index) const noexcept     { return scriptManager.getVariableName(index); }
-    std::array<juce::String, 4> getVariableNames() const       { return scriptManager.getVariableNames(); }
+    std::array<juce::String, Config::kNumUserParams> getVariableNames() const
+    {
+        return scriptManager.getVariableNames();
+    }
     bool isParameterActive(int index) const noexcept           { return scriptManager.isParameterActive(index); }
 
     juce::StringArray getParameterMappings(int index) const    { return scriptManager.getParameterMappings(index); }
+
+    /** DSL param a–d ranges/names from the currently loaded script. */
+    const std::vector<dsl::ParamDesc>& getParamInfo() const noexcept
+    {
+        return scriptManager.signalChain.getParamInfo();
+    }
 
     void loadLanguage(const juce::String& lang);
     juce::String getCurrentLanguage() const noexcept { return currentLanguage; }
@@ -116,11 +128,26 @@ public:
         return scriptManager.testFormulaStability(script, warning, progress);
     }
 
+    FormulaQualityReport analyseFormulaQuality (const juce::String& script) const
+    {
+        return scriptManager.analyseFormulaQuality (script);
+    }
+
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable) { dspEngine.setValidationBypass(enable); }
 
     void getInputWaveform(juce::AudioBuffer<float>& dest)  { waveformCapture.getInputWaveform(dest); }
     void getOutputWaveform(juce::AudioBuffer<float>& dest) { waveformCapture.getOutputWaveform(dest); }
+
+    /** Shared scope align offset (samples). IN writes it; OUT reads it for true before/after. */
+    void setWaveformAlignOffset (int samples) noexcept
+    {
+        waveformAlignOffset.store (juce::jmax (0, samples), std::memory_order_relaxed);
+    }
+    int getWaveformAlignOffset() const noexcept
+    {
+        return waveformAlignOffset.load (std::memory_order_relaxed);
+    }
 
     /** Returns the names of all available user presets. */
     juce::StringArray getPresetNames() const;
@@ -128,9 +155,17 @@ public:
     /** Loads the preset at the given index from the user preset folder. */
     void loadPreset(int index);
 
+    /** Currently loaded preset name (empty if none / custom formula). */
+    juce::String getCurrentPresetName() const { return currentPresetName; }
+    void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
+
     float getLoudnessDb()      const noexcept { return dspEngine.getLoudnessDb(); }
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
+
+    /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroCore). */
+    AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }
+    juce::File getAudioDiagnosticsLogFile() const { return dspEngine.getDiagnostics().getLogFile(); }
 
     // juce::AudioProcessorValueTreeState::Listener implementation
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -146,6 +181,10 @@ private:
     MidiVariableMapper midiVariableMapper;
 
     juce::String currentLanguage;
+    juce::String currentPresetName;
+
+    /** Rising zero-cross index from the input scope — shared so OUT stays time-locked to IN. */
+    std::atomic<int> waveformAlignOffset { 0 };
 
     // Licensing
     LicenseManager licenseManager;

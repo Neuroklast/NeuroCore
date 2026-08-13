@@ -9,11 +9,10 @@ using json = nlohmann::json;
 
 namespace
 {
-constexpr const char* kParamKeys[4] = { "paramA", "paramB", "paramC", "paramD" };
-constexpr const char* kParamIds[4]  = { EffectParameters::paramA,
-                                        EffectParameters::paramB,
-                                        EffectParameters::paramC,
-                                        EffectParameters::paramD };
+constexpr const char* kParamKeys[8] = {
+    "paramA", "paramB", "paramC", "paramD",
+    "paramE", "paramF", "paramG", "paramH"
+};
 
 void setLinearGainDb(juce::AudioProcessorValueTreeState& apvts,
                      const char* id,
@@ -63,7 +62,7 @@ bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPreset
         if (e.name.isEmpty() || e.script.isEmpty())
             continue;
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < Config::kNumUserParams; ++i)
         {
             const auto key = kParamKeys[i];
             if (! item.contains(key) || ! item[key].is_object())
@@ -157,8 +156,21 @@ bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
     const auto file = dir.getChildFile("factory_presets.json");
     if (file.existsAsFile())
     {
-        if (parseFactoryPresetsJson(file.loadFileAsString(), entries))
+        // Always UTF-8 — Windows system codepage would corrupt the JSON
+        juce::MemoryBlock mb;
+        juce::String text;
+        if (file.loadFileAsData (mb) && mb.getSize() > 0)
+        {
+            auto* raw = static_cast<const char*> (mb.getData());
+            int n = (int) mb.getSize();
+            int off = 0;
+            if (n >= 3 && (uint8_t) raw[0] == 0xEF && (uint8_t) raw[1] == 0xBB && (uint8_t) raw[2] == 0xBF)
+                off = 3;
+            text = juce::String::fromUTF8 (raw + off, n - off);
+        }
+        if (text.isNotEmpty() && parseFactoryPresetsJson (text, entries) && ! entries.empty())
             return true;
+        entries.clear();
     }
 
     // Hosts (Cubase etc.) often install only the .vst3 binary without resources/.
@@ -178,30 +190,35 @@ bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
 
     const auto& preset = entries[(size_t) index];
 
-    if (! processor.applyFormula(preset.script, error))
+    // Keep preset name: applyFormula(clear=false) must not wipe the active label
+    if (! processor.applyFormula (preset.script, error, false))
         return false;
 
+    processor.setCurrentPresetName (preset.name);
+
     auto& apvts = processor.apvts;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < Config::kNumUserParams; ++i)
     {
-        processor.setVariableName(i, preset.paramNames[i]);
-        setKnobNormalized(apvts, kParamIds[i],
+        if (preset.paramNames[i].isNotEmpty())
+            processor.setVariableName(i, preset.paramNames[i]);
+        setKnobNormalized(apvts, EffectParameters::userParams[i],
                           preset.paramMin[i], preset.paramMax[i], preset.paramDefault[i]);
     }
 
     setLinearGainDb(apvts, EffectParameters::inputGain,  preset.inputGainDb);
-    setLinearGainDb(apvts, EffectParameters::outputGain, preset.outputGainDb);
+    // Output gain is no longer a user control — always unity. Loudness is
+    // handled by auto-gain + the single Gain (input) knobs partially.
+    setLinearGainDb(apvts, EffectParameters::outputGain, 0.0f);
 
     if (auto* p = apvts.getParameter(EffectParameters::dryWet))
         p->setValueNotifyingHost(p->getNormalisableRange().convertTo0to1(
             juce::jlimit(0.0f, 1.0f, preset.mix)));
 
-    // Refresh editor (formula, knob labels). applyFormula already notified once
-    // before knobs were set — send again so UI sees final APVTS values.
-    if (juce::MessageManager::getInstance()->isThisTheMessageThread())
-        processor.sendChangeMessage();
-    else
-        juce::MessageManager::callAsync ([&processor]
-                                        { processor.sendChangeMessage(); });
+    // Refresh editor (formula, knob labels, current preset name).
+    // Only notify synchronously on the message thread — never post a raw
+    // stack/reference capture (processor may be destroyed before delivery).
+    if (auto* mm = juce::MessageManager::getInstanceWithoutCreating())
+        if (mm->isThisTheMessageThread())
+            processor.sendChangeMessage();
     return true;
 }

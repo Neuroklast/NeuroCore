@@ -140,8 +140,15 @@ bool DSLParser::parse(const juce::String& text,
         }
         seen.add(id);
 
+        // delay/reverb/ms/verb aliases
+        if (desc.type == "verb")
+            desc.type = "reverb";
+        if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
+            desc.type = "ms";
+
         if (desc.type != "stage" && desc.type != "filter" &&
-            desc.type != "comp"  && desc.type != "osc" && desc.type != "env")
+            desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
+            desc.type != "delay" && desc.type != "reverb" && desc.type != "ms")
         {
             error = "Unknown block type on line " + juce::String(i+1);
             return false;
@@ -198,6 +205,19 @@ bool DSLParser::parse(const juce::String& text,
             error = "Error on line " + juce::String(i+1) + ": compressor missing threshold/ratio.";
             return false;
         }
+        if (desc.type == "delay")
+        {
+            // Need either time/time_ms or sync
+            if (desc.args.count ("time") == 0 && desc.args.count ("time_ms") == 0
+                && desc.args.count ("sync") == 0)
+            {
+                // default time applied in SignalChain
+            }
+        }
+        if (desc.type == "ms")
+        {
+            // mode defaults to encode in SignalChain
+        }
         blocks.push_back(std::move(desc));
     }
 
@@ -253,6 +273,46 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         if (const auto sync = arg("sync"); sync.isNotEmpty())
             parts.add("sync=" + sync);
         return parts.joinIntoString(", ");
+    }
+
+    if (block.type == "delay")
+    {
+        juce::StringArray parts;
+        if (const auto t = arg ("time"); t.isNotEmpty())
+            parts.add ("time=" + t + "ms");
+        if (const auto t = arg ("time_ms"); t.isNotEmpty())
+            parts.add ("time=" + t + "ms");
+        if (const auto s = arg ("sync"); s.isNotEmpty())
+            parts.add ("sync=" + s);
+        if (const auto f = arg ("feedback"); f.isNotEmpty())
+            parts.add ("fb=" + f);
+        else if (const auto f = arg ("fb"); f.isNotEmpty())
+            parts.add ("fb=" + f);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto p = arg ("pingpong"); p.isNotEmpty())
+            parts.add ("pingpong");
+        return parts.isEmpty() ? juce::String ("delay") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "reverb")
+    {
+        juce::StringArray parts;
+        if (const auto s = arg ("size"); s.isNotEmpty())
+            parts.add ("size=" + s);
+        if (const auto d = arg ("decay"); d.isNotEmpty())
+            parts.add ("decay=" + d);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto w = arg ("width"); w.isNotEmpty())
+            parts.add ("width=" + w);
+        return parts.isEmpty() ? juce::String ("reverb") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "ms")
+    {
+        const auto mode = arg ("mode");
+        return mode.isNotEmpty() ? ("ms " + mode) : juce::String ("ms encode");
     }
 
     if (block.type == "env")

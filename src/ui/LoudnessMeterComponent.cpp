@@ -22,14 +22,22 @@ LoudnessMeterComponent::~LoudnessMeterComponent()
 
 void LoudnessMeterComponent::timerCallback()
 {
-    smoothedLoudness.setTargetValue(processor.getLoudnessDb());
+    float db = processor.getLoudnessDb();
+    // Hard-sanitize: NaN/Inf/out-of-range must never reach the bar or text
+    if (! std::isfinite (db))
+        db = -100.0f;
+    db = juce::jlimit (-100.0f, 12.0f, db);
+    smoothedLoudness.setTargetValue (db);
     limiter  = processor.isLimiterActive();
+
+    // Red LED only for real DSP invalid events (debounced — no single-frame strobe)
     if (processor.consumeInvalidFlag())
-        blinkCount = 6; // roughly 200 ms at 30 Hz
+        blinkCount = juce::jmax (blinkCount, 10); // ~330 ms at 30 Hz, non-retrigger spam
 
     if (blinkCount > 0)
     {
-        blink = !blink;
+        // Solid-ish flash: on for 2 frames, off for 1 — less epileptic than toggle every tick
+        blink = ((blinkCount / 2) % 2) == 0;
         --blinkCount;
     }
     else
@@ -42,8 +50,14 @@ void LoudnessMeterComponent::timerCallback()
 void LoudnessMeterComponent::drawLed(juce::Graphics& g,
                                      juce::Rectangle<float> area, bool on)
 {
-    g.setColour(on ? juce::Colours::yellow : juce::Colours::darkgrey);
+    // Invalid/NaN blink = signal red; idle = dark well
+    g.setColour(on ? juce::Colour (0xffff1a1a) : juce::Colour (0xff2a0000));
     g.fillEllipse(area);
+    if (on)
+    {
+        g.setColour (juce::Colour (0xffff1a1a).withAlpha (0.45f));
+        g.drawEllipse (area.expanded (2.f), 1.5f);
+    }
 }
 
 LoudnessMeterComponent::ScaleInfo LoudnessMeterComponent::currentScaleInfo() const noexcept
@@ -119,8 +133,8 @@ void LoudnessMeterComponent::renderOpenGL()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    // meter background
-    glColor3f(0.2f, 0.2f, 0.2f);
+    // meter well (near-black)
+    glColor3f(0.05f, 0.02f, 0.02f);
     glBegin(GL_QUADS);
     glVertex2f(meterArea.getX(), meterArea.getY());
     glVertex2f(meterArea.getRight(), meterArea.getY());
@@ -128,10 +142,19 @@ void LoudnessMeterComponent::renderOpenGL()
     glVertex2f(meterArea.getX(), meterArea.getBottom());
     glEnd();
 
-    // filled level
+    // filled level — brand red; brighter when limiter engaged (real GR cue)
     loudness = smoothedLoudness.getNextValue();
+    if (! std::isfinite (loudness))
+        loudness = -100.0f;
+    loudness = juce::jlimit (-100.0f, 12.0f, loudness);
     float yLevel = valueToY(loudness, meterArea);
-    glColor3f(limiter ? 1.0f : 0.0f, limiter ? 0.0f : 1.0f, 0.0f);
+    if (! std::isfinite (yLevel))
+        yLevel = meterArea.getBottom();
+    yLevel = juce::jlimit (meterArea.getY(), meterArea.getBottom(), yLevel);
+    if (limiter)
+        glColor3f(1.0f, 0.25f, 0.1f);
+    else
+        glColor3f(1.0f, 0.1f, 0.1f);
     glBegin(GL_QUADS);
     glVertex2f(meterArea.getX(), yLevel);
     glVertex2f(meterArea.getRight(), yLevel);
@@ -139,8 +162,8 @@ void LoudnessMeterComponent::renderOpenGL()
     glVertex2f(meterArea.getX(), meterArea.getBottom());
     glEnd();
 
-    // grid lines
-    glColor3f(0.6f, 0.6f, 0.6f);
+    // grid lines (dim red)
+    glColor3f(0.45f, 0.08f, 0.08f);
     glLineWidth(1.0f);
     for (float db = info.minDb; db <= info.maxDb; db += info.step)
     {
@@ -157,7 +180,12 @@ void LoudnessMeterComponent::renderOpenGL()
 
 void LoudnessMeterComponent::paint(juce::Graphics& g)
 {
-    loudness = smoothedLoudness.getNextValue();
+    // paint() must NOT advance the smoother again (OpenGL already did) — sample current
+    loudness = smoothedLoudness.getCurrentValue();
+    if (! std::isfinite (loudness))
+        loudness = -100.0f;
+    loudness = juce::jlimit (-100.0f, 12.0f, loudness);
+
     auto bounds = getLocalBounds().toFloat();
     constexpr float labelWidth = Config::kLoudnessLabelWidth;
     auto area = bounds.reduced(10.0f, 20.0f);
@@ -165,15 +193,16 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
     auto meterArea = area;
     auto info = currentScaleInfo();
 
-    g.setColour(juce::Colours::white);
-    g.drawRect(meterArea);
+    g.setColour(juce::Colour (0xffff1a1a).withAlpha (0.7f));
+    g.drawRect(meterArea, 1.0f);
 
     for (float db = info.minDb; db <= info.maxDb; db += info.step)
     {
         float y = valueToY(db, meterArea);
-        g.setColour(juce::Colours::darkgrey);
+        g.setColour(juce::Colour (0xff3a0000));
         g.drawLine(meterArea.getX(), y, meterArea.getRight(), y);
-        g.setColour(juce::Colours::white);
+        g.setColour(juce::Colour (0xffc0c0c0));
+        g.setFont (juce::Font (juce::Font::getDefaultMonospacedFontName(), 11.f, juce::Font::plain));
         g.drawFittedText(juce::String(db, 0),
                          (int)labelArea.getX(),
                          (int)y - 7,
@@ -183,11 +212,18 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
                          1);
     }
 
+    // LED = invalid (NaN/Inf) only. Limiter is shown via brighter bar fill, not red strobe.
     auto ledArea = juce::Rectangle<float>(bounds.getWidth() - 15.0f, 5.0f, 10.0f, 10.0f);
     drawLed(g, ledArea, blink);
 
-    g.setColour(juce::Colours::white);
-    g.drawFittedText(info.name, meterArea.toNearestInt(), juce::Justification::centredBottom, 1);
-    g.drawFittedText(juce::String(loudness, 1) + " dB", meterArea.toNearestInt().translated(0, -15), juce::Justification::centredBottom, 1);
+    g.setColour(juce::Colour (0xffff1a1a));
+    g.setFont (juce::Font (juce::Font::getDefaultMonospacedFontName(), 11.f, juce::Font::bold));
+    juce::String scaleName = info.name;
+    if (limiter)
+        scaleName += "  LIM";
+    g.drawFittedText(scaleName, meterArea.toNearestInt(), juce::Justification::centredBottom, 1);
+    g.drawFittedText(juce::String(loudness, 1) + " dB",
+                     meterArea.toNearestInt().translated(0, -15),
+                     juce::Justification::centredBottom, 1);
 }
 

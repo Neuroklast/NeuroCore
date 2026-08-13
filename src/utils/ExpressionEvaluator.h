@@ -76,6 +76,15 @@ public:
     juce::String getLastError() const noexcept { return errorMessage; }
     std::string getFormula() const noexcept { return input; }
 
+    /** Reset ADAA / waveshaper runtime state (call on formula load / prepare, NOT every block). */
+    void resetRuntimeState() const noexcept;
+
+    /**
+        Select ADAA state bank for multi-channel streaming (0 = left/mid, 1 = right/side).
+        Call once before processing a channel's samples; do NOT resetRuntime between blocks.
+    */
+    static void setProcessingChannel (int channel) noexcept;
+
 private:
     struct Node;
     using NodePtr = std::shared_ptr<Node>;
@@ -85,6 +94,8 @@ private:
         virtual ~Node() = default;
         virtual float eval(const float* vars) const noexcept = 0;
         virtual juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept = 0;
+        /** Reset per-channel ADAA / runtime state (call once per channel before a block). */
+        virtual void resetRuntime() const noexcept {}
     };
 
     struct ValueNode : Node
@@ -109,6 +120,7 @@ private:
         UnaryNode(Type t, NodePtr c) : op(t), child(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override { if (child) child->resetRuntime(); }
         Type op;
         NodePtr child;
     };
@@ -119,6 +131,11 @@ private:
         BinaryNode(Type t, NodePtr l, NodePtr r) : op(t), left(std::move(l)), right(std::move(r)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override
+        {
+            if (left) left->resetRuntime();
+            if (right) right->resetRuntime();
+        }
         Type op;
         NodePtr left, right;
     };
@@ -130,6 +147,7 @@ private:
         FunctionNode(Func f, NodePtr c, SimdFunc sf = {}) : func(std::move(f)), simdFunc(std::move(sf)), child(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override { if (child) child->resetRuntime(); }
         Func func;
         SimdFunc simdFunc;
         NodePtr child;
@@ -141,8 +159,44 @@ private:
         Func2Node(Func f, NodePtr a, NodePtr b) : func(std::move(f)), left(std::move(a)), right(std::move(b)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override
+        {
+            if (left) left->resetRuntime();
+            if (right) right->resetRuntime();
+        }
         Func func;
         NodePtr left, right;
+    };
+
+    /** 1st-order anti-derivative anti-aliasing wrapper for 2-arg waveshapers. */
+    struct AdaaFunc2Node : Node
+    {
+        static constexpr int kAdaaChannels = 2; // L/R (or mid/side)
+
+        using F = std::function<float(float, float)>;   // f(x, p)
+        using AF = std::function<float(float, float)>;  // F antiderivative w.r.t x
+        AdaaFunc2Node (F ff, AF aF, NodePtr xNode, NodePtr pNode)
+            : f (std::move (ff)), Fint (std::move (aF)), x (std::move (xNode)), p (std::move (pNode)) {}
+        float eval (const float* vars) const noexcept override;
+        juce::dsp::SIMDRegister<float> evalSimd (const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override
+        {
+            for (int c = 0; c < kAdaaChannels; ++c)
+            {
+                xPrev[c] = 0.f;
+                FPrev[c] = 0.f;
+                primed[c] = false;
+            }
+            if (x) x->resetRuntime();
+            if (p) p->resetRuntime();
+        }
+        F f;
+        AF Fint;
+        NodePtr x, p;
+        // Per-channel state — survives block boundaries (reset only on formula load)
+        mutable float xPrev[kAdaaChannels] {};
+        mutable float FPrev[kAdaaChannels] {};
+        mutable bool  primed[kAdaaChannels] {};
     };
 
     struct Func3Node : Node
@@ -157,6 +211,12 @@ private:
             : func(std::move(f)), simdFunc(std::move(sf)), x(std::move(a)), y(std::move(b)), z(std::move(c)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override
+        {
+            if (x) x->resetRuntime();
+            if (y) y->resetRuntime();
+            if (z) z->resetRuntime();
+        }
         Func func;
         SimdFunc simdFunc;
         NodePtr x, y, z;
@@ -169,6 +229,14 @@ private:
             : func(std::move(f)), a(std::move(a)), b(std::move(b)), c(std::move(c)), d(std::move(d)), e(std::move(e)) {}
         float eval(const float* vars) const noexcept override;
         juce::dsp::SIMDRegister<float> evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept override;
+        void resetRuntime() const noexcept override
+        {
+            if (a) a->resetRuntime();
+            if (b) b->resetRuntime();
+            if (c) c->resetRuntime();
+            if (d) d->resetRuntime();
+            if (e) e->resetRuntime();
+        }
         Func func;
         NodePtr a, b, c, d, e;
     };
@@ -225,8 +293,9 @@ inline void ExpressionEvaluator::evaluateBlockT(float* samples, size_t numSample
 
         pre(i, varsCopy);
 
-        float result = func(varsCopy.data());
-        post(i, std::isfinite(result) ? result : 0.0f);
+        // Pass raw result (incl. non-finite) so callers can hold last-good sample
+        // instead of hard-zero (hard-zero causes clicks/crackles).
+        post(i, func(varsCopy.data()));
     }
 }
 

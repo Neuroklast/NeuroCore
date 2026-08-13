@@ -1,120 +1,145 @@
 #include <JuceHeader.h>
 #include "WaveformDisplayComponent.h"
 #include <algorithm>
+#include <cmath>
 #include "../dsp/DSPUtils.h"
 #include "../utils/Localiser.h"
-#include <juce_opengl/juce_opengl.h>
-#if JUCE_WINDOWS
-#include <GL/gl.h>
-#elif JUCE_MAC
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
+#include "PluginLookAndFeel.h"
 
-WaveformDisplayComponent::WaveformDisplayComponent(NeuroCoreAudioProcessor& proc, Type t)
-    : processor(proc), type(t)
+WaveformDisplayComponent::WaveformDisplayComponent (NeuroCoreAudioProcessor& proc, Type t)
+    : processor (proc), type (t)
 {
-    setOpaque(false);
-    auto& displays = juce::Desktop::getInstance().getDisplays();
-    if (auto* display = displays.getPrimaryDisplay())
-    {
-        const int rate = display->verticalFrequencyHz.has_value()
-                            ? static_cast<int>(*display->verticalFrequencyHz)
-                            : 60;
-        startTimerHz(rate);
-    }
-    else
-    {
-        startTimerHz(60);
-    }
-
-    openGLContext.setRenderer(this);
-    openGLContext.setContinuousRepainting(true);
-    openGLContext.setComponentPaintingEnabled(true);
-    openGLContext.attachTo(*this);
-    
-
-    const double rate = 60.0;
-    smoothedData.resize(buffer.getNumSamples());
-    for (auto& s : smoothedData)
-        s.reset(rate, 0.1);
-    smoothedFft.resize(static_cast<size_t>(1u << (fftOrder - 1)));
-    for (auto& s : smoothedFft)
-        s.reset(rate, 0.1);
+    setOpaque (true);
+    displayData.assign ((size_t) Config::kWaveformDisplaySamples, 0.f);
+    monoScratch.assign ((size_t) Config::kWaveformDisplaySamples, 0.f);
+    startTimerHz (30);
 }
 
 WaveformDisplayComponent::~WaveformDisplayComponent()
 {
-    openGLContext.detach();
+    stopTimer();
+}
+
+juce::Rectangle<float> WaveformDisplayComponent::plotArea() const
+{
+    return getLocalBounds().toFloat()
+        .withTrimmedLeft (48.0f)
+        .withTrimmedRight (12.0f)
+        .withTrimmedTop (18.0f)
+        .withTrimmedBottom (36.0f);
+}
+
+void WaveformDisplayComponent::fillMonoFromBuffer (std::vector<float>& dest) const
+{
+    const int num = buffer.getNumSamples();
+    const int nCh = buffer.getNumChannels();
+    if (num <= 0 || nCh <= 0)
+        return;
+
+    if ((int) dest.size() != num)
+        dest.assign ((size_t) num, 0.f);
+
+    const float* L = buffer.getReadPointer (0);
+    const float* R = nCh > 1 ? buffer.getReadPointer (1) : nullptr;
+
+    if (R == nullptr)
+    {
+        for (int i = 0; i < num; ++i)
+            dest[(size_t) i] = L[i];
+        return;
+    }
+
+    // Energy-weighted mono: if one side is silent (input router L/R only), still show signal.
+    // Pure average would look "half height" on mono sources in one channel.
+    for (int i = 0; i < num; ++i)
+    {
+        const float l = L[i];
+        const float r = R[i];
+        const float al = std::abs (l);
+        const float ar = std::abs (r);
+        if (al < 1.0e-6f && ar < 1.0e-6f)
+            dest[(size_t) i] = 0.f;
+        else if (al >= ar * 4.0f)
+            dest[(size_t) i] = l; // L dominates
+        else if (ar >= al * 4.0f)
+            dest[(size_t) i] = r; // R dominates
+        else
+            dest[(size_t) i] = 0.5f * (l + r);
+    }
 }
 
 void WaveformDisplayComponent::timerCallback()
 {
     if (type == Type::Input)
-        processor.getInputWaveform(buffer);
+        processor.getInputWaveform (buffer);
     else
-        processor.getOutputWaveform(buffer);
+        processor.getOutputWaveform (buffer);
 
-    const auto* data = buffer.getReadPointer(0);
-    const int num    = buffer.getNumSamples();
+    const int num = buffer.getNumSamples();
+    if (num <= 0)
+        return;
 
+    fillMonoFromBuffer (monoScratch);
+
+    if ((int) displayData.size() != num)
+        displayData.assign ((size_t) num, 0.f);
+
+    // Time alignment: IN discovers rising zero-cross; OUT reuses the same offset so
+    // both scopes show the same window of the ring buffer (true before/after).
+    int align = 0;
     if (fixedWave)
     {
-        int zeroIndex = 0;
-        for (int i = 1; i < num; ++i)
+        if (type == Type::Input)
         {
-            if (data[i - 1] < 0.0f && data[i] >= 0.0f)
+            for (int i = 1; i < num; ++i)
             {
-                zeroIndex = i;
-                break;
+                if (monoScratch[(size_t) (i - 1)] < 0.0f && monoScratch[(size_t) i] >= 0.0f)
+                {
+                    align = i;
+                    break;
+                }
             }
+            processor.setWaveformAlignOffset (align);
         }
-
-        if (zeroIndex > 0)
+        else
         {
-            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-            {
-                auto* dst = buffer.getWritePointer(ch);
-                std::rotate(dst, dst + zeroIndex, dst + num);
-            }
+            align = processor.getWaveformAlignOffset() % juce::jmax (1, num);
         }
     }
 
+    // Light IIR toward new ring data (stable, no SmoothedValue drain)
     for (int i = 0; i < num; ++i)
-        smoothedData[(size_t)i].setTargetValue(buffer.getSample(0, i));
+    {
+        const float s = monoScratch[(size_t) ((i + align) % num)];
+        displayData[(size_t) i] = displayData[(size_t) i] * 0.65f + s * 0.35f;
+    }
 
     if (xScale == XScale::Frequency)
     {
-        juce::dsp::AudioBlock<float> block(buffer);
-        DSPUtils::analyseFFT(block, 0, fftMagnitudes, fftOrder);
-        if (smoothedFft.size() != fftMagnitudes.size())
-        {
-            smoothedFft.resize(fftMagnitudes.size());
-            const double rate = 60.0;
-            for (auto& s : smoothedFft)
-                s.reset(rate, 0.1);
-        }
-        for (size_t i = 0; i < fftMagnitudes.size(); ++i)
-            smoothedFft[i].setTargetValue(fftMagnitudes[i]);
+        // FFT on aligned mono window
+        juce::AudioBuffer<float> monoBuf (1, num);
+        for (int i = 0; i < num; ++i)
+            monoBuf.setSample (0, i, monoScratch[(size_t) ((i + align) % num)]);
+        juce::dsp::AudioBlock<float> block (monoBuf);
+        DSPUtils::analyseFFT (block, 0, fftMagnitudes, fftOrder);
     }
 
     repaint();
 }
 
-float WaveformDisplayComponent::indexToX(int i, int total, juce::Rectangle<float> area) const
+float WaveformDisplayComponent::indexToX (int i, int total, juce::Rectangle<float> area) const
 {
-    auto norm = static_cast<float>(i) / static_cast<float>(juce::jmax(1, total - 1));
+    const auto norm = static_cast<float> (i) / static_cast<float> (juce::jmax (1, total - 1));
     return area.getX() + norm * area.getWidth();
 }
 
-float WaveformDisplayComponent::valueToY(float v, juce::Rectangle<float> area) const
+float WaveformDisplayComponent::valueToY (float v, juce::Rectangle<float> area) const
 {
-    float scaled = juce::jlimit(-1.0f, 1.0f, v);
+    float scaled = juce::jlimit (-1.0f, 1.0f, v);
     if (yScale == YScale::Decibel)
     {
-        const float db = 20.0f * std::log10(juce::jmax(1.0e-6f, std::abs(scaled)));
-        scaled = juce::jlimit(-60.0f, 0.0f, db) / 60.0f;
+        const float db = 20.0f * std::log10 (juce::jmax (1.0e-6f, std::abs (scaled)));
+        scaled = juce::jlimit (-60.0f, 0.0f, db) / 60.0f;
         if (v < 0.0f)
             scaled = -scaled;
     }
@@ -124,241 +149,216 @@ float WaveformDisplayComponent::valueToY(float v, juce::Rectangle<float> area) c
     return area.getY() + norm * area.getHeight();
 }
 
-void WaveformDisplayComponent::updateTooltip(juce::Point<int> pos,
-    juce::Rectangle<float> area)
+void WaveformDisplayComponent::drawAxes (juce::Graphics& g, juce::Rectangle<float> plot)
 {
-    // 1) Total Samples bzw. FFT-Bins ermitteln
-    const int total = (xScale == XScale::Frequency && !fftMagnitudes.empty())
-        ? static_cast<int>(fftMagnitudes.size())
-        : buffer.getNumSamples();
+    // Depth well
+    juce::ColourGradient well (juce::Colour (0xff120202), plot.getCentreX(), plot.getY(),
+                               juce::Colour (0xff000000), plot.getCentreX(), plot.getBottom(), false);
+    g.setGradientFill (well);
+    g.fillRect (plot);
 
-    // 2) Wie viele Punkte angezeigt werden
-    const int num = juce::jlimit(1, total, static_cast<int>(total / zoom));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.drawRect (plot, 1.0f);
 
-    // 3) Index anhand der Maus-X-Position, geklammert auf [0..num-1]
-    const int index = juce::jlimit(0, num - 1,
-        static_cast<int>((pos.x - area.getX())
-            / area.getWidth()
-            * num));
+    const int totalSamples = (int) displayData.size();
+    const int visibleSamples = juce::jlimit (1, totalSamples, static_cast<int> (totalSamples / zoom));
+    const int xTicks = 8;
+    const int yTicks = 4;
 
-    // 4) Wert aus dem richtigen Glätter-Array
-    float value;
-    if (xScale == XScale::Frequency && !smoothedFft.empty())
-        value = smoothedFft[(size_t)index].getCurrentValue();
-    else
-        value = smoothedData[(size_t)index].getCurrentValue();
-
-    // 5) X-Label
-    juce::String xStr;
-    if (xScale == XScale::Frequency)
-    {
-        float freq = (index / static_cast<float>(fftMagnitudes.size()))
-            * (processor.getSampleRate() / 2.0f);
-        xStr = juce::String(freq, 1) + " Hz";
-    }
-    else if (xScale == XScale::Time)
-    {
-        xStr = juce::String((index / processor.getSampleRate()) * 1000.0, 2)
-            + " ms";
-    }
-    else  // Samples
-    {
-        xStr = juce::String(index);
-    }
-
-    // 6) Y-Label (linear vs. Dezibel)
-    juce::String yStr;
-    if (yScale == YScale::Decibel)
-    {
-        float db = 20.0f * std::log10(juce::jmax(1.0e-6f, std::abs(value)));
-        yStr = juce::String(db, 1) + " dB";
-    }
-    else
-    {
-        yStr = juce::String(value, 2);
-    }
-
-    setTooltip(xStr + ", " + yStr);
-}
-
-
-void WaveformDisplayComponent::mouseMove(const juce::MouseEvent& e)
-{
-    auto area = getLocalBounds().toFloat()
-                    .withTrimmedLeft(40.0f)
-                    .withTrimmedRight(20.0f)
-                    .withTrimmedTop(20.0f)
-                    .withTrimmedBottom(40.0f);
-    updateTooltip(e.position.toInt(), area);
-}
-
-void WaveformDisplayComponent::mouseDown(const juce::MouseEvent& e)
-{
-    if (e.mods.isRightButtonDown())
-    {
-        juce::PopupMenu menu;
-        juce::PopupMenu xMenu, yMenu;
-        xMenu.addItem(1, TRANS("ScaleSamples"), true, xScale == XScale::Samples);
-        xMenu.addItem(2, TRANS("ScaleTime"), true, xScale == XScale::Time);
-        xMenu.addItem(3, TRANS("ScaleFrequency"), true, xScale == XScale::Frequency);
-        yMenu.addItem(4, TRANS("ScaleLinear"), true, yScale == YScale::Linear);
-        yMenu.addItem(5, TRANS("ScaleDecibel"), true, yScale == YScale::Decibel);
-        menu.addSubMenu(TRANS("XAxis"), xMenu);
-        menu.addSubMenu(TRANS("YAxis"), yMenu);
-        menu.addItem(6, TRANS("ToggleGrid"), true, showGrid);
-        menu.addItem(7, TRANS("ToggleInvertY"), true, invertY);
-        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
-            [this](int res)
-            {
-                switch (res)
-                {
-                    case 1: xScale = XScale::Samples; break;
-                    case 2: xScale = XScale::Time; break;
-                    case 3: xScale = XScale::Frequency; break;
-                    case 4: yScale = YScale::Linear; break;
-                    case 5: yScale = YScale::Decibel; break;
-                    case 6: showGrid = !showGrid; break;
-                    case 7: invertY = !invertY; break;
-                    default: break;
-                }
-                repaint();
-            });
-    }
-}
-
-void WaveformDisplayComponent::newOpenGLContextCreated()
-{
-	using namespace juce::gl;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, getWidth(), getHeight(), 0.0, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_DEBUG_OUTPUT);
-
-
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-}
-
-void WaveformDisplayComponent::renderOpenGL()
-{
-    juce::OpenGLHelpers::clear(juce::Colours::transparentBlack);
-    auto area = getLocalBounds().toFloat()
-                    .withTrimmedLeft(60.0f)
-                    .withTrimmedRight(20.0f)
-                    .withTrimmedTop(20.0f)
-                    .withTrimmedBottom(50.0f);
-
-    auto scale = openGLContext.getRenderingScale();
-    using namespace juce::gl;
-    glViewport(0, 0, juce::roundToInt(getWidth() * scale), juce::roundToInt(getHeight() * scale));
-
-    glLineWidth(lineThickness);
-    glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), 0.7f);
-
-    int total = (xScale == XScale::Frequency && !fftMagnitudes.empty()) ? static_cast<int>(fftMagnitudes.size()) : buffer.getNumSamples();
-    int num   = juce::jlimit(1, total, static_cast<int>(total / zoom));
-
-    for (int pass = 1; pass >= 0; --pass)
-    {
-        float alpha = 0.2f + 0.2f * pass;
-        glLineWidth(lineThickness + static_cast<float>(pass));
-        glColor4f(lineColour.getFloatRed(), lineColour.getFloatGreen(), lineColour.getFloatBlue(), alpha);
-        glBegin(GL_LINE_STRIP);
-        for (int i = 0; i < num; ++i)
-        {
-            float value = 0.0f;
-            if (xScale == XScale::Frequency && !fftMagnitudes.empty())
-                value = smoothedFft[(size_t)i].getNextValue();
-            else
-                value = smoothedData[(size_t)i].getNextValue();
-
-            float x = indexToX(i, num, area);
-            float y = valueToY(value, area);
-            glVertex2f(x, y);
-        }
-        glEnd();
-    }
-}
-
-void WaveformDisplayComponent::drawAxes(juce::Graphics& g)
-{
-    auto bounds = getLocalBounds().toFloat();
-    auto plot = bounds
-                    .withTrimmedLeft(60.0f)
-                    .withTrimmedRight(20.0f)
-                    .withTrimmedTop(20.0f)
-                    .withTrimmedBottom(50.0f);
-
-    g.setColour(juce::Colours::white);
-    g.drawRect(plot);
-
-    int xTicks = 10;
-    int yTicks = 4;
-    int totalSamples = buffer.getNumSamples();
-    int visibleSamples = juce::jlimit(1, totalSamples, static_cast<int>(totalSamples / zoom));
+    g.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
 
     for (int i = 0; i <= xTicks; ++i)
     {
-        float alpha = i == 0 || i == xTicks ? 1.0f : 0.5f;
-        float x = plot.getX() + (plot.getWidth() / xTicks) * i;
+        const float x = plot.getX() + (plot.getWidth() / (float) xTicks) * (float) i;
         if (showGrid)
         {
-            g.setColour(juce::Colours::darkgrey.withAlpha(alpha));
-            g.drawLine(x, plot.getY(), x, plot.getBottom(), 0.5f);
+            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (i == 0 || i == xTicks ? 0.35f : 0.12f));
+            g.drawLine (x, plot.getY(), x, plot.getBottom(), 0.6f);
         }
-        g.setColour(juce::Colours::white);
-        g.drawLine(x, plot.getBottom(), x, plot.getBottom() + 4.0f);
+        g.setColour (juce::Colour (0xff888888));
         double value = 0.0;
         switch (xScale)
         {
-            case XScale::Samples: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, static_cast<double>(visibleSamples - 1)); break;
-            case XScale::Time: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, (visibleSamples - 1) / processor.getSampleRate()); value *= 1000.0; break;
-            case XScale::Frequency: value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(xTicks), 0.0, processor.getSampleRate() / 2.0); break;
+            case XScale::Samples:
+                value = juce::jmap ((double) i, 0.0, (double) xTicks, 0.0, (double) (visibleSamples - 1));
+                g.drawFittedText (juce::String ((int) value), (int) x - 24, (int) plot.getBottom() + 2, 48, 12,
+                                  juce::Justification::centred, 1);
+                break;
+            case XScale::Time:
+                value = juce::jmap ((double) i, 0.0, (double) xTicks, 0.0,
+                                    (visibleSamples - 1) / juce::jmax (1.0, processor.getSampleRate())) * 1000.0;
+                g.drawFittedText (juce::String (value, 0) + "ms", (int) x - 24, (int) plot.getBottom() + 2, 48, 12,
+                                  juce::Justification::centred, 1);
+                break;
+            case XScale::Frequency:
+                value = juce::jmap ((double) i, 0.0, (double) xTicks, 0.0, processor.getSampleRate() / 2.0);
+                g.drawFittedText (juce::String (value, 0), (int) x - 24, (int) plot.getBottom() + 2, 48, 12,
+                                  juce::Justification::centred, 1);
+                break;
         }
-        juce::String label;
-        if (xScale == XScale::Samples) label = juce::String(static_cast<int>(value));
-        else if (xScale == XScale::Time) label = juce::String(value, 0) + " ms";
-        else label = juce::String(value, 0) + " Hz";
-        g.drawFittedText(label, (int)x - 30, (int)plot.getBottom() + 6, 60, 20, juce::Justification::centred, 1);
     }
 
     for (int i = 0; i <= yTicks; ++i)
     {
-        float y = plot.getY() + (plot.getHeight() / yTicks) * i;
+        const float y = plot.getY() + (plot.getHeight() / (float) yTicks) * (float) i;
         if (showGrid)
         {
-            g.setColour(juce::Colours::darkgrey.withAlpha(0.5f));
-            g.drawLine(plot.getX(), y, plot.getRight(), y, 0.5f);
+            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.12f));
+            g.drawLine (plot.getX(), y, plot.getRight(), y, 0.6f);
         }
-        g.setColour(juce::Colours::white);
-        g.drawLine(plot.getX() - 4.0f, y, plot.getX(), y);
-        double value = juce::jmap(static_cast<double>(i), 0.0, static_cast<double>(yTicks), 1.0, -1.0);
-        if (yScale == YScale::Decibel)
-        {
-            value *= 60.0;
-            g.drawFittedText(juce::String(value, 0) + " dB", (int)plot.getX() - 50, (int)y - 10, 45, 20, juce::Justification::centredRight, 1);
-        }
-        else
-        {
-            g.drawFittedText(juce::String(value, 2), (int)plot.getX() - 50, (int)y - 10, 45, 20, juce::Justification::centredRight, 1);
-        }
+        g.setColour (juce::Colour (0xff888888));
+        const double value = juce::jmap ((double) i, 0.0, (double) yTicks, 1.0, -1.0);
+        g.drawFittedText (juce::String (value, 1), (int) plot.getX() - 44, (int) y - 7, 40, 14,
+                          juce::Justification::centredRight, 1);
     }
 
-    g.drawFittedText(xScale == XScale::Samples ? TRANS("ScaleSamples") : (xScale == XScale::Time ? TRANS("ScaleTime") : TRANS("ScaleFrequency")),
-                    (int)plot.getX(), (int)plot.getBottom() + 26,
-                    (int)plot.getWidth(), 20,
-                    juce::Justification::centred, 1);
-    g.addTransform(juce::AffineTransform::rotation(-juce::MathConstants<float>::halfPi,
-                                                   plot.getX() - 30.0f,
-                                                   plot.getCentreY()));
-    g.drawFittedText(yScale == YScale::Linear ? TRANS("AxisAmplitude") : TRANS("AxisAmplitudeDb"),
-                    (int)plot.getX() - 70, (int)plot.getY() - 15,
-                    60, (int)plot.getHeight(), juce::Justification::centredRight, 1);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.75f));
+    g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+    // PRE = host buffer before DSP, POST = after full chain (true before/after)
+    g.drawText (type == Type::Input ? "IN // PRE" : "OUT // POST",
+                plot.getX() + 4.f, plot.getY() + 2.f, 96.f, 12.f,
+                juce::Justification::centredLeft, false);
 }
 
-void WaveformDisplayComponent::paint(juce::Graphics& g)
+void WaveformDisplayComponent::drawScope (juce::Graphics& g, juce::Rectangle<float> plot)
 {
-    drawAxes(g);
+    const int total = (xScale == XScale::Frequency && ! fftMagnitudes.empty())
+                        ? (int) fftMagnitudes.size()
+                        : (int) displayData.size();
+    if (total < 2 || plot.getWidth() < 4.f || plot.getHeight() < 4.f)
+        return;
+
+    const int num = juce::jlimit (2, total, (int) (total / zoom));
+
+    juce::Path path;
+    bool started = false;
+    for (int i = 0; i < num; ++i)
+    {
+        float value = 0.f;
+        if (xScale == XScale::Frequency && ! fftMagnitudes.empty())
+            value = fftMagnitudes[(size_t) juce::jmin (i, (int) fftMagnitudes.size() - 1)];
+        else
+            value = displayData[(size_t) i];
+
+        if (! std::isfinite (value))
+            value = 0.f;
+
+        const float x = indexToX (i, num, plot);
+        const float y = valueToY (value, plot);
+        if (! started)
+        {
+            path.startNewSubPath (x, y);
+            started = true;
+        }
+        else
+            path.lineTo (x, y);
+    }
+
+    // Soft glow underlay (depth / bloom)
+    g.setColour (lineColour.withAlpha (0.12f));
+    g.strokePath (path, juce::PathStrokeType (lineThickness + 6.f,
+                                              juce::PathStrokeType::curved,
+                                              juce::PathStrokeType::rounded));
+    g.setColour (lineColour.withAlpha (0.28f));
+    g.strokePath (path, juce::PathStrokeType (lineThickness + 3.f,
+                                              juce::PathStrokeType::curved,
+                                              juce::PathStrokeType::rounded));
+    // Core trace
+    g.setColour (lineColour.withAlpha (0.95f));
+    g.strokePath (path, juce::PathStrokeType (lineThickness,
+                                              juce::PathStrokeType::curved,
+                                              juce::PathStrokeType::rounded));
+    // Hot white core
+    g.setColour (juce::Colours::white.withAlpha (0.35f));
+    g.strokePath (path, juce::PathStrokeType (juce::jmax (0.6f, lineThickness * 0.35f),
+                                              juce::PathStrokeType::curved,
+                                              juce::PathStrokeType::rounded));
+}
+
+void WaveformDisplayComponent::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colours::black);
+
+    // Subtle radial depth behind plot
+    auto full = getLocalBounds().toFloat();
+    juce::ColourGradient vignette (juce::Colour (0xff1a0505), full.getCentreX(), full.getCentreY(),
+                                   juce::Colours::black, full.getCentreX(), full.getBottom(), true);
+    g.setGradientFill (vignette);
+    g.fillRect (full);
+
+    const auto plot = plotArea();
+    if (plot.getWidth() < 8.f || plot.getHeight() < 8.f)
+        return;
+
+    drawAxes (g, plot);
+    drawScope (g, plot);
+
+    // Soft CRT scanlines (low alpha — depth, not noise)
+    g.setColour (juce::Colours::black.withAlpha (0.08f));
+    for (float y = plot.getY(); y < plot.getBottom(); y += 3.f)
+        g.drawHorizontalLine ((int) y, plot.getX(), plot.getRight());
+}
+
+void WaveformDisplayComponent::updateTooltip (juce::Point<int> pos, juce::Rectangle<float> area)
+{
+    const int total = (xScale == XScale::Frequency && ! fftMagnitudes.empty())
+                        ? (int) fftMagnitudes.size()
+                        : (int) displayData.size();
+    const int num = juce::jlimit (1, juce::jmax (1, total), (int) (total / zoom));
+    const int index = juce::jlimit (0, num - 1,
+        (int) ((pos.x - area.getX()) / juce::jmax (1.f, area.getWidth()) * (float) num));
+
+    float value = 0.f;
+    if (xScale == XScale::Frequency && ! fftMagnitudes.empty())
+        value = fftMagnitudes[(size_t) juce::jmin (index, (int) fftMagnitudes.size() - 1)];
+    else if (! displayData.empty())
+        value = displayData[(size_t) juce::jmin (index, (int) displayData.size() - 1)];
+
+    juce::String xStr = juce::String (index);
+    if (xScale == XScale::Time && processor.getSampleRate() > 0)
+        xStr = juce::String ((index / processor.getSampleRate()) * 1000.0, 2) + " ms";
+    else if (xScale == XScale::Frequency)
+        xStr = juce::String ((index / (float) juce::jmax (1, (int) fftMagnitudes.size()))
+                             * (float) (processor.getSampleRate() * 0.5), 1) + " Hz";
+
+    setTooltip (xStr + ", " + juce::String (value, 3));
+}
+
+void WaveformDisplayComponent::mouseMove (const juce::MouseEvent& e)
+{
+    updateTooltip (e.position.toInt(), plotArea());
+}
+
+void WaveformDisplayComponent::mouseDown (const juce::MouseEvent& e)
+{
+    if (! e.mods.isRightButtonDown())
+        return;
+
+    juce::PopupMenu menu;
+    juce::PopupMenu xMenu, yMenu;
+    xMenu.addItem (1, TRANS ("ScaleSamples"), true, xScale == XScale::Samples);
+    xMenu.addItem (2, TRANS ("ScaleTime"), true, xScale == XScale::Time);
+    xMenu.addItem (3, TRANS ("ScaleFrequency"), true, xScale == XScale::Frequency);
+    yMenu.addItem (4, TRANS ("ScaleLinear"), true, yScale == YScale::Linear);
+    yMenu.addItem (5, TRANS ("ScaleDecibel"), true, yScale == YScale::Decibel);
+    menu.addSubMenu (TRANS ("XAxis"), xMenu);
+    menu.addSubMenu (TRANS ("YAxis"), yMenu);
+    menu.addItem (6, TRANS ("ToggleGrid"), true, showGrid);
+    menu.addItem (7, TRANS ("ToggleInvertY"), true, invertY);
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
+        [this] (int res)
+        {
+            switch (res)
+            {
+                case 1: xScale = XScale::Samples; break;
+                case 2: xScale = XScale::Time; break;
+                case 3: xScale = XScale::Frequency; break;
+                case 4: yScale = YScale::Linear; break;
+                case 5: yScale = YScale::Decibel; break;
+                case 6: showGrid = ! showGrid; break;
+                case 7: invertY = ! invertY; break;
+                default: break;
+            }
+            repaint();
+        });
 }

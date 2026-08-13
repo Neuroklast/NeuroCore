@@ -49,25 +49,52 @@ void ValidationContentComponent::startTest()
             }
             return !abortRequested.load();
         };
-        bool ok = processor.testFormulaStability(text, warn, progressFn);
+
+        // 1) Fast quality metric (static + dynamic probes)
+        const auto quality = processor.analyseFormulaQuality (text);
+
+        // 2) Existing long stability sweep
+        bool stable = processor.testFormulaStability(text, warn, progressFn);
         if (abortRequested.load())
             return;
-        juce::MessageManager::callAsync([cb = onResult, ok, warn, this]() mutable {
+
+        const bool ok = stable && quality.ok;
+        juce::String detail = warn;
+        if (! quality.ok)
+        {
+            detail = quality.errors.joinIntoString ("; ");
+            if (detail.isEmpty())
+                detail = "Formula quality check failed";
+        }
+        else if (quality.warnings.size() > 0)
+        {
+            // Pass but surface warnings in stats
+        }
+
+        const auto qualityLine = quality.summary();
+        const auto warnLine = quality.warnings.joinIntoString (" | ");
+
+        juce::MessageManager::callAsync ([cb = onResult, ok, detail, qualityLine, warnLine, quality, this]() mutable {
             if (ok)
             {
-                if (cb) cb(true);
+                // Store quality line for editor via warningString even on success
+                warningString = qualityLine;
+                if (warnLine.isNotEmpty())
+                    warningString << "  ⚠ " << warnLine;
+                if (cb) cb (true);
             }
             else
             {
                 state = State::warning;
-                warningString = warn;
-                progressBar.setVisible(false);
-                okButton.setVisible(true);
-                icon.setVisible(true);
-                messageLabel.setText(warn, juce::dontSendNotification);
-                statsLabel.setText("NaN: " + juce::String(nanCount.load()) +
-                                     " Inf: " + juce::String(infCount.load()),
-                                     juce::dontSendNotification);
+                warningString = detail;
+                progressBar.setVisible (false);
+                okButton.setVisible (true);
+                icon.setVisible (true);
+                messageLabel.setText (detail, juce::dontSendNotification);
+                statsLabel.setText (qualityLine
+                                    + "  NaN: " + juce::String (quality.nanCount)
+                                    + " Inf: " + juce::String (quality.infCount),
+                                    juce::dontSendNotification);
                 grabKeyboardFocus();
                 resized();
                 repaint();

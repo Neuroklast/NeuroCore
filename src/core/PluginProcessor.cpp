@@ -62,14 +62,19 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     scriptManager.setValueTreeState(&apvts);
     juce::String err;
     scriptManager.applyFormula("stage1: y = tanh(x)", err);
+    dspEngine.getDiagnostics().setEnabled (Config::kAudioDiagnosticsEnabled);
+    dspEngine.getDiagnostics().setPresetName ("(init)");
+    dspEngine.getDiagnostics().setFormulaHead ("stage1: y = tanh(x)");
+    // Only open the diagnostics log when the feature is enabled (avoids file I/O in tests/product default).
+    if (Config::kAudioDiagnosticsEnabled)
+        dspEngine.getDiagnostics().ensureLogReady();
 
-    apvts.addParameterListener (EffectParameters::paramA,      this);
-    apvts.addParameterListener (EffectParameters::paramB,      this);
-    apvts.addParameterListener (EffectParameters::paramC,      this);
-    apvts.addParameterListener (EffectParameters::paramD,      this);
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        apvts.addParameterListener (EffectParameters::userParams[i], this);
     apvts.addParameterListener (EffectParameters::oversampling, this);
 
-    loadLanguage(juce::SystemStats::getUserLanguage());
+    // Brand default: English (user can switch in UI; session restores last language)
+    loadLanguage ("en");
 
     // Resource directory next to the binary (with fallbacks for VST3/dev layouts)
     juce::File resDir = FactoryPresetLibrary::resolveResourcesDir(
@@ -78,7 +83,10 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     loadOptimizationRules(resDir.getChildFile(Config::kOptimizationFile));
     loadFormulaTemplates(resDir.getChildFile(Config::kTemplateFile));
-    FactoryPresetLibrary::getInstance().loadFromResources(resDir);
+    // Singleton: skip re-parse when another processor instance already loaded the library.
+    auto& factory = FactoryPresetLibrary::getInstance();
+    if (factory.getEntries().empty())
+        factory.loadFromResources(resDir);
 
     auto userFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile(Config::kUserTemplateFile);
@@ -93,10 +101,13 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
 NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 {
-    apvts.removeParameterListener (EffectParameters::paramA,      this);
-    apvts.removeParameterListener (EffectParameters::paramB,      this);
-    apvts.removeParameterListener (EffectParameters::paramC,      this);
-    apvts.removeParameterListener (EffectParameters::paramD,      this);
+    // Drop any pending prepare-on-message-thread work before tearing down members.
+    // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
+    // destroyed processor → access violation after setValueNotifyingHost / OS changes.
+    cancelPendingUpdate();
+
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        apvts.removeParameterListener (EffectParameters::userParams[i], this);
     apvts.removeParameterListener (EffectParameters::oversampling, this);
 }
 
@@ -213,19 +224,6 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // MIDI: Learn CC mappings + update DSL MIDI variables
     midiLearnManager.processMidiMessages(midiMessages, apvts);
     midiVariableMapper.processMidi(midiMessages);
-    scriptManager.signalChain.setMidiVariables(midiVariableMapper);
-    scriptManager.oldSignalChain.setMidiVariables(midiVariableMapper);
-
-    // Tempo sync from host play head
-    if (auto* head = getPlayHead())
-    {
-        juce::AudioPlayHead::CurrentPositionInfo pos;
-        if (head->getCurrentPosition(pos))
-        {
-            scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
-            scriptManager.oldSignalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
-        }
-    }
 
     // License enforcement
     if (Config::kEnableLicensing)
@@ -246,8 +244,19 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Capture input waveform (pre-processing)
     waveformCapture.pushInput(buffer);
 
-    // Delegate all DSP processing to DspEngine
-    dspEngine.processBlock(buffer, scriptManager.signalChain, scriptManager.oldSignalChain);
+    // Lock chain for the whole audio path so applyFormula cannot reallocate
+    // delay/reverb buffers mid-block (Cubase crash with delay presets).
+    {
+        const juce::ScopedLock pl (scriptManager.getProcessLock());
+        scriptManager.signalChain.setMidiVariables(midiVariableMapper);
+        if (auto* head = getPlayHead())
+        {
+            juce::AudioPlayHead::CurrentPositionInfo pos;
+            if (head->getCurrentPosition(pos))
+                scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
+        }
+        dspEngine.processBlock(buffer, scriptManager.signalChain);
+    }
 
     // Capture output waveform (post-processing)
     waveformCapture.pushOutput(buffer);
@@ -272,7 +281,7 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     {
         state.setProperty(kDslScriptStateKey, getScript(), nullptr);
         state.setProperty(kLanguageStateKey, currentLanguage, nullptr);
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < Config::kNumUserParams; ++i)
             state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
@@ -306,7 +315,7 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                     logError("Failed to restore DSL script from state: " + err);
             }
 
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < Config::kNumUserParams; ++i)
             {
                 const auto key = variableNameStateKey(i);
                 if (tree.hasProperty(key))
@@ -372,9 +381,20 @@ bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String
 
 bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error)
 {
+    return applyFormula (text, error, true);
+}
+
+bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error, bool clearPresetName)
+{
     if (scriptManager.applyFormula(text, error))
     {
+        // Manual edits clear the named-preset association; factory/user load keeps it.
+        if (clearPresetName)
+            currentPresetName.clear();
         dspEngine.onFormulaChanged();
+        dspEngine.getDiagnostics().setPresetName (
+            currentPresetName.isNotEmpty() ? currentPresetName : juce::String ("(custom)"));
+        dspEngine.getDiagnostics().setFormulaHead (text);
         sendChangeMessage();
         return true;
     }
@@ -391,19 +411,25 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
                                                                       juce::NormalisableRange<float> { min, max }, def));
     };
 
-    addParam ("a", "A", 0.f, 1.f, 0.f);
-    addParam ("b", "B", 0.f, 1.f, 0.f);
-    addParam ("c", "C", 0.f, 1.f, 0.f);
-    addParam ("d", "D", 0.f, 1.f, 0.f);
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        addParam (EffectParameters::userParams[i],
+                  juce::String (Config::kDefaultVariableNames[i]).toUpperCase(),
+                  0.f, 1.f, 0.f);
     addParam ("inputGain", "Input Gain", 0.f, 2.f, 1.f);
     addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
-    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 1));
+    // Default None — Limiter flattened every preset's dynamics ("pressed" amp sims)
+    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 0));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
-    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", false));
+    // Stereo hosts: process both channels by default
+    params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
+    // Default 2× — lower latency/CPU; user/host may select 4×/8× for HQ NL
     params.push_back (std::make_unique<juce::AudioParameterChoice> (EffectParameters::oversampling,
                                                                    "Oversampling",
-                                                                   juce::StringArray { "1x", "2x", "4x", "8x" }, 1));
+                                                                   juce::StringArray { "1x", "2x", "4x", "8x" },
+                                                                   Config::kDefaultOversamplingIndex));
+    // AutoGain strength: 0 = off (character), 1 = full mild match. No UI widget.
+    addParam (EffectParameters::autoGain, "Auto Gain", 0.f, 1.f, 0.f);
 
     return { params.begin(), params.end() };
 }
@@ -429,7 +455,13 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                   static_cast<juce::uint32>(blockSize),
                                   static_cast<juce::uint32>(channels) };
 
-    const int osStages = dspEngine.getOversamplingIndex();
+    // AudioParameterChoice::parameterChanged may pass normalised 0..1 — always
+    // read the discrete index from the choice parameter itself.
+    int osStages = dspEngine.getOversamplingIndex();
+    if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+            apvts.getParameter (EffectParameters::oversampling)))
+        osStages = juce::jlimit (0, 3, choice->getIndex());
+    dspEngine.setOversamplingIndex (osStages);
     dspEngine.prepare(spec, apvts, osStages);
 
     setLatencySamples(dspEngine.getOversamplingLatency());
@@ -450,11 +482,16 @@ void NeuroCoreAudioProcessor::handleAsyncUpdate()
     suspendProcessing (false);
 }
 
-void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float /*newValue*/)
 {
     if (parameterID == EffectParameters::oversampling)
     {
-        dspEngine.setOversamplingIndex(static_cast<int>(newValue));
+        // Must use choice index — newValue is often normalised 0..1 (bug: cast to int → always 0/1)
+        int idx = 1;
+        if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                apvts.getParameter (EffectParameters::oversampling)))
+            idx = juce::jlimit (0, 3, choice->getIndex());
+        dspEngine.setOversamplingIndex (idx);
         triggerAsyncUpdate();
     }
 }
@@ -480,7 +517,17 @@ void NeuroCoreAudioProcessor::loadPreset(int index)
     {
         juce::String err;
         if (! FactoryPresetLibrary::getInstance().applyPreset(*this, index, err))
+        {
             logError("Factory preset load failed: " + err);
+            return;
+        }
+        currentPresetName = factory[(size_t) index].name;
+        // UI only exposes Gain + Mix — keep output at unity regardless of preset meta
+        if (auto* p = apvts.getParameter (EffectParameters::outputGain))
+            p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
+        dspEngine.getDiagnostics().setPresetName (currentPresetName);
+        dspEngine.getDiagnostics().setFormulaHead (getScript());
+        sendChangeMessage();
         return;
     }
 
@@ -491,7 +538,14 @@ void NeuroCoreAudioProcessor::loadPreset(int index)
     if (juce::isPositiveAndBelow(index, (int) files.size()))
     {
         if (presetManager.loadPreset(files[(size_t) index]))
+        {
+            currentPresetName = files[(size_t) index].getFileNameWithoutExtension();
+            if (auto* p = apvts.getParameter (EffectParameters::outputGain))
+                p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
+            dspEngine.getDiagnostics().setPresetName (currentPresetName);
+            dspEngine.getDiagnostics().setFormulaHead (getScript());
             sendChangeMessage();
+        }
     }
 }
 

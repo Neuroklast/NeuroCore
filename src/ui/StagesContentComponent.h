@@ -32,9 +32,9 @@ private:
     juce::Label detailsLabel;
     juce::Label errorLabel;
     juce::TextButton closeButton;
+    juce::TextButton refreshButton;
 
     std::vector<dsl::BlockDesc> blocks;
     std::vector<dsl::ParamDesc> params;
     int currentIndex { -1 };
-    juce::Rectangle<int> panel;
 };

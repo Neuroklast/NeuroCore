@@ -41,19 +41,268 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::UnaryNode::evalSimd(const ju
     return op == plus ? v : v * juce::dsp::SIMDRegister<float>(-1.0f);
 }
 
+namespace
+{
+/** Always return a finite sample — never propagate NaN/Inf into the audio path. */
+inline float finiteOrZero (float v) noexcept
+{
+    return std::isfinite (v) ? v : 0.0f;
+}
+
+/**
+    Hard ceiling at ±L without brickwall HF (was: piecewise knee → alias/crackle).
+
+    Smooth algebraic clip: y = L * t / (1+|t|^n)^(1/n), n≈5
+      - C∞, true asymptote ±L
+      - near-linear for |x| << L
+      - no kink → far less alias than smootherstep brick
+*/
+inline float hardClipSoftKnee (float x, float limit) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    const float L = juce::jmax (1.0e-6f, std::abs (limit));
+    const float t = x / L;
+    const float absT = std::abs (t);
+    // n=5: fairly hard knee, still smooth. Lower n = softer.
+    constexpr float n = 5.0f;
+    // (1 + |t|^n)^(1/n)
+    const float den = std::pow (1.0f + std::pow (absT, n), 1.0f / n);
+    if (! std::isfinite (den) || den < 1.0e-12f)
+        return 0.0f;
+    const float y = L * (t / den);
+    return std::isfinite (y) ? y : 0.0f;
+}
+
+/**
+    Low-alias soft saturator (replaces old x/√(1+x²) which sprayed HF → crackle).
+
+    y = (2/π) * atan((π/2) * x)
+      - C∞, unity small-signal gain
+      - asymptotes ±1
+      - fewer high harmonics than algebraic softclip / hard tanh at same loudness
+
+    softclip(x, drive): same with x → drive*x (drive capped — extreme drive only
+    creates ultrasonic trash that aliases on the way down).
+*/
+inline float softClipSmooth (float x) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    constexpr float k = 1.5707963267948966f; // π/2
+    constexpr float s = 0.6366197723675814f; // 2/π
+    const float t = juce::jlimit (-80.0f, 80.0f, x);
+    return s * std::atan (k * t);
+}
+
+inline float softClipDriven (float x, float drive) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    // Cap 8: high drive still has character; extreme 10+ made ultrasonic trash/crackle
+    const float d = juce::jlimit (0.25f, 8.0f, finiteOrZero (drive));
+    return softClipSmooth (x * d);
+}
+
+/**
+    Exact antiderivative for ADAA.
+    ∫ (2/π) atan(a x) dx = (2/π) [ x atan(a x) - (1/(2a)) ln(1+(a x)²) ]
+    with a = π/2 for softClipSmooth; for driven: a = (π/2)*d, scale accordingly.
+*/
+inline float softClipIntegral (float x) noexcept
+{
+    // F for y = (2/π) atan((π/2) x)
+    constexpr float a = 1.5707963267948966f; // π/2
+    constexpr float s = 0.6366197723675814f; // 2/π
+    const float t = juce::jlimit (-80.0f, 80.0f, x);
+    const float at = std::atan (a * t);
+    const float logTerm = 0.5f * std::log1p ((a * t) * (a * t));
+    return s * (t * at - logTerm / a);
+}
+
+/** ∫ softClipDriven(x,d) dx = softClipIntegral(d*x) / d */
+inline float softClipDrivenIntegral (float x, float drive) noexcept
+{
+    const float d = juce::jlimit (0.25f, 8.0f, finiteOrZero (drive));
+    if (d < 1.0e-6f)
+        return 0.0f;
+    return softClipIntegral (x * d) / d;
+}
+
+/**
+    12AX7-style asymmetric transfer — drive-capped to reduce HF hash.
+    Always finite, DC-nulled at x=0.
+*/
+inline float tubeTransfer (float x, float drive) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    // Cap drive hard: >12 mostly adds ultrasonic trash that aliases as crackle
+    const float d = juce::jlimit (0.5f, 12.0f, finiteOrZero (drive));
+    const float u = juce::jlimit (-12.0f, 12.0f, x * d);
+    constexpr float bias = 0.12f;
+    const float cold = std::tanh (u + bias);
+    const float hot  = std::tanh (u * 1.08f - bias * 0.3f);
+    float y = 0.7f * cold + 0.3f * hot;
+    y -= 0.7f * std::tanh (bias) + 0.3f * std::tanh (-bias * 0.3f);
+    return finiteOrZero (y);
+}
+
+/** Antideriv of tube ≈ mix of log(cosh) terms (∫ tanh(ax+b) = log(cosh(ax+b))/a). */
+inline float tubeIntegral (float x, float drive) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    const float d = juce::jlimit (0.5f, 12.0f, finiteOrZero (drive));
+    constexpr float bias = 0.12f;
+    const float u = juce::jlimit (-12.0f, 12.0f, x * d);
+    // d/dx tanh(d x + b) = d * sech² → ∫ tanh(d x + b) dx = log(cosh(d x + b))/d
+    auto logCosh = [] (float z) noexcept
+    {
+        const float az = std::abs (z);
+        // log(cosh(z)) = az + log(1+exp(-2az)) - log(2)  (stable)
+        return az + std::log1p (std::exp (-2.0f * az)) - 0.69314718f;
+    };
+    const float Fcold = logCosh (u + bias) / d;
+    const float Fhot  = logCosh (u * 1.08f - bias * 0.3f) / (d * 1.08f);
+    const float dc = 0.7f * std::tanh (bias) + 0.3f * std::tanh (-bias * 0.3f);
+    return 0.7f * Fcold + 0.3f * Fhot - dc * x;
+}
+
+/** Soft diode-pair clipper via asinh (C∞, no hard corner). */
+inline float diodeTransfer (float x, float drive) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    const float d = juce::jlimit (0.5f, 16.0f, finiteOrZero (drive));
+    const float u = juce::jlimit (-40.0f, 40.0f, x * d);
+    const float den = std::asinh (d);
+    if (den < 1.0e-6f)
+        return 0.0f;
+    return finiteOrZero (std::asinh (u) / den);
+}
+
+/** ∫ asinh(d x)/asinh(d) dx */
+inline float diodeIntegral (float x, float drive) noexcept
+{
+    if (! std::isfinite (x))
+        return 0.0f;
+    const float d = juce::jlimit (0.5f, 16.0f, finiteOrZero (drive));
+    const float den = std::asinh (d);
+    if (den < 1.0e-6f || d < 1.0e-6f)
+        return 0.0f;
+    const float u = juce::jlimit (-40.0f, 40.0f, x * d);
+    // ∫ asinh(u) du = u asinh(u) - sqrt(u²+1); u=dx → /d
+    return (u * std::asinh (u) - std::sqrt (u * u + 1.0f)) / (d * den);
+}
+
+/**
+    1st-order ADAA step with stability guards.
+    - Larger dx epsilon avoids blow-ups at zero-crossings
+    - Blend toward f(x) when the ADAA estimate is extreme (bad integral / param jump)
+*/
+inline float adaaStep (float x, float Fx, float& xPrev, float& FPrev, bool& primed,
+                       float fNow) noexcept
+{
+    if (! primed)
+    {
+        primed = true;
+        xPrev = x;
+        FPrev = Fx;
+        return fNow;
+    }
+    const float dx = x - xPrev;
+    float y;
+    if (std::abs (dx) < 1.0e-4f)
+    {
+        y = fNow;
+    }
+    else
+    {
+        y = (Fx - FPrev) / dx;
+        // If ADAA disagrees wildly with f (param change / bad F), fall back
+        if (! std::isfinite (y) || std::abs (y - fNow) > 2.0f + 2.0f * std::abs (fNow))
+            y = fNow;
+    }
+    xPrev = x;
+    FPrev = Fx;
+    if (! std::isfinite (y))
+        y = fNow;
+    return y;
+}
+} // namespace
+
+namespace
+{
+// Selected by Stage before streaming a channel — must NOT reset ADAA every block
+// (that caused audible clicks at every host buffer boundary on softclip/tube/diode).
+thread_local int gAdaaChannel = 0;
+} // namespace
+
+void ExpressionEvaluator::setProcessingChannel (int channel) noexcept
+{
+    gAdaaChannel = juce::jlimit (0, AdaaFunc2Node::kAdaaChannels - 1, channel);
+}
+
+void ExpressionEvaluator::resetRuntimeState() const noexcept
+{
+    if (root)
+        root->resetRuntime();
+}
+
+float ExpressionEvaluator::AdaaFunc2Node::eval (const float* vars) const noexcept
+{
+    const float xx = x ? x->eval (vars) : 0.0f;
+    const float pp = p ? p->eval (vars) : 1.0f;
+    const float fn = f (xx, pp);
+    const float Fn = Fint (xx, pp);
+    const int c = juce::jlimit (0, kAdaaChannels - 1, gAdaaChannel);
+    return adaaStep (xx, Fn, xPrev[c], FPrev[c], primed[c], fn);
+}
+
+juce::dsp::SIMDRegister<float> ExpressionEvaluator::AdaaFunc2Node::evalSimd (
+    const juce::dsp::SIMDRegister<float>* vars) const noexcept
+{
+    // ADAA is sequential — scalar fallback per lane using active channel bank
+    constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    alignas (16) float res[width];
+    auto xv = x ? x->evalSimd (vars) : juce::dsp::SIMDRegister<float> (0.0f);
+    auto pv = p ? p->evalSimd (vars) : juce::dsp::SIMDRegister<float> (1.0f);
+    alignas (16) float xa[width], pa[width];
+    xv.copyToRawArray (xa);
+    pv.copyToRawArray (pa);
+    const int c = juce::jlimit (0, kAdaaChannels - 1, gAdaaChannel);
+    for (size_t i = 0; i < width; ++i)
+    {
+        const float fn = f (xa[i], pa[i]);
+        const float Fn = Fint (xa[i], pa[i]);
+        res[i] = adaaStep (xa[i], Fn, xPrev[c], FPrev[c], primed[c], fn);
+    }
+    return juce::dsp::SIMDRegister<float>::fromRawArray (res);
+}
+
 float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
 {
     float l = left->eval(vars);
     float r = right->eval(vars);
+    if (! std::isfinite (l)) l = 0.0f;
+    if (! std::isfinite (r)) r = 0.0f;
+    float out = 0.0f;
     switch (op)
     {
-        case add: return l + r;
-        case sub: return l - r;
-        case mul: return l * r;
-        case div: return r != 0.0f ? l / r : 0.0f;
-        case pow: return std::pow(l, r);
+        case add: out = l + r; break;
+        case sub: out = l - r; break;
+        case mul: out = l * r; break;
+        case div: out = (std::abs (r) > 1.0e-12f) ? (l / r) : 0.0f; break;
+        case pow:
+            // Guard domain: negative base with non-integer exp → NaN
+            if (l < 0.0f && std::abs (r - std::round (r)) > 1.0e-6f)
+                out = 0.0f;
+            else
+                out = std::pow (std::abs (l) < 1.0e-30f && r < 0.0f ? 1.0e-30f : l, r);
+            break;
     }
-    return 0.0f;
+    return finiteOrZero (out);
 }
 
 juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
@@ -78,14 +327,33 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const j
         case div:
         {
             for (size_t i = 0; i < width; ++i)
-                res[i] = rf[i] != 0.0f ? lf[i] / rf[i] : 0.0f;
+            {
+                const float a = std::isfinite (lf[i]) ? lf[i] : 0.0f;
+                const float b = std::isfinite (rf[i]) ? rf[i] : 0.0f;
+                res[i] = (std::abs (b) > 1.0e-12f) ? (a / b) : 0.0f;
+                if (! std::isfinite (res[i]))
+                    res[i] = 0.0f;
+            }
             return juce::dsp::SIMDRegister<float>::fromRawArray(res);
         }
         case pow:
         {
-            juce::dsp::SIMDRegister<float> logL = LookupTables::fastLogSimd(l);
-            juce::dsp::SIMDRegister<float> mult = logL * r;
-            return LookupTables::fastExpSimd(mult);
+            for (size_t i = 0; i < width; ++i)
+            {
+                float a = std::isfinite (lf[i]) ? lf[i] : 0.0f;
+                float b = std::isfinite (rf[i]) ? rf[i] : 0.0f;
+                if (a < 0.0f && std::abs (b - std::round (b)) > 1.0e-6f)
+                    res[i] = 0.0f;
+                else
+                {
+                    if (std::abs (a) < 1.0e-30f && b < 0.0f)
+                        a = 1.0e-30f;
+                    res[i] = std::pow (a, b);
+                }
+                if (! std::isfinite (res[i]))
+                    res[i] = 0.0f;
+            }
+            return juce::dsp::SIMDRegister<float>::fromRawArray(res);
         }
     }
 
@@ -94,7 +362,8 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const j
 
 float ExpressionEvaluator::FunctionNode::eval(const float* vars) const noexcept
 {
-    return func(child->eval(vars));
+    const float v = func (child->eval (vars));
+    return std::isfinite (v) ? v : 0.0f;
 }
 
 juce::dsp::SIMDRegister<float> ExpressionEvaluator::FunctionNode::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
@@ -114,7 +383,8 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::FunctionNode::evalSimd(const
 
 float ExpressionEvaluator::Func2Node::eval(const float* vars) const noexcept
 {
-    return func(left->eval(vars), right->eval(vars));
+    const float v = func (left->eval (vars), right->eval (vars));
+    return std::isfinite (v) ? v : 0.0f;
 }
 
 juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func2Node::evalSimd(const juce::dsp::SIMDRegister<float>* vars) const noexcept
@@ -227,8 +497,8 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parsePrimary()
 
         if (name == "pi")
             return std::make_shared<ValueNode>(MathConstants<float>::pi);
-        if (name == "e")
-            return std::make_shared<ValueNode>(MathConstants<float>::euler);
+        // Note: bare "e" is a user knob/variable (a…h), not Euler's number.
+        // Use exp(1) when the constant is needed.
 
         auto it = varIndices.find(name);
         if (it == varIndices.end())
@@ -385,7 +655,16 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]), &LookupTables::fastCosSimd); }
     if (name == "tan")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0])); }
     if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]), &LookupTables::fastTanhSimd); }
-    if (name == "sqrt") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::sqrt), std::move(args[0])); }
+    if (name == "sqrt")
+    {
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float v)
+        {
+            if (! std::isfinite (v) || v < 0.0f)
+                return 0.0f;
+            return finiteOrZero (std::sqrt (v));
+        }, std::move(args[0]));
+    }
     if (name == "abs")
     {
         if (notEnoughArgs(1))
@@ -401,17 +680,79 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
     }
     if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
     if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastExp, std::move(args[0]), &LookupTables::fastExpSimd); }
-    if (name == "log")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastLog, std::move(args[0])); }
-    if (name == "log10") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::log10), std::move(args[0])); }
+    if (name == "log")
+    {
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float v)
+        {
+            // Domain-safe log: never NaN/Inf into the audio path
+            return LookupTables::fastLog (juce::jmax (1.0e-12f, v));
+        }, std::move(args[0]));
+    }
+    if (name == "log10")
+    {
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float v)
+        {
+            return std::log10 (juce::jmax (1.0e-12f, v));
+        }, std::move(args[0]));
+    }
     if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
     if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])); }
     if (name == "round") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])); }
 
-    if (name == "pow")  { if (notEnoughArgs(2)) return nullptr; if (auto* val = dynamic_cast<ValueNode*>(args[1].get())) return std::make_shared<FunctionNode>([exp = val->value](float x){ return LookupTables::fastPow(x, exp); }, std::move(args[0])); return std::make_shared<Func2Node>(static_cast<float(*)(float,float)>(std::pow), std::move(args[0]), std::move(args[1])); }
+    if (name == "pow")
+    {
+        if (notEnoughArgs(2)) return nullptr;
+        if (auto* val = dynamic_cast<ValueNode*>(args[1].get()))
+        {
+            const float exp = val->value;
+            return std::make_shared<FunctionNode>([exp](float x)
+            {
+                if (! std::isfinite (x))
+                    return 0.0f;
+                if (x < 0.0f && std::abs (exp - std::round (exp)) > 1.0e-6f)
+                    return 0.0f;
+                return finiteOrZero (LookupTables::fastPow (x, exp));
+            }, std::move(args[0]));
+        }
+        return std::make_shared<Func2Node>(
+            [](float x, float e)
+            {
+                if (! std::isfinite (x) || ! std::isfinite (e))
+                    return 0.0f;
+                if (x < 0.0f && std::abs (e - std::round (e)) > 1.0e-6f)
+                    return 0.0f;
+                return finiteOrZero (std::pow (x, e));
+            },
+            std::move(args[0]), std::move(args[1]));
+    }
     if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])); }
     if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])); }
-    if (name == "fmod") { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(std::fmod), std::move(args[0]), std::move(args[1])); }
-    if (name == "mod")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>([](float a, float b) { return std::fmod(a, b); }, std::move(args[0]), std::move(args[1])); }
+    if (name == "fmod")
+    {
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [](float a, float b)
+            {
+                if (! std::isfinite (a) || ! std::isfinite (b) || std::abs (b) < 1.0e-12f)
+                    return 0.0f;
+                return finiteOrZero (std::fmod (a, b));
+            },
+            std::move(args[0]), std::move(args[1]));
+    }
+    if (name == "mod")
+    {
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [](float a, float b)
+            {
+                if (! std::isfinite (a) || ! std::isfinite (b) || std::abs (b) < 1.0e-12f)
+                    return 0.0f;
+                return finiteOrZero (std::fmod (a, b));
+            },
+            std::move(args[0]), std::move(args[1]));
+    }
 
     if (name == "clamp")
     {
@@ -436,6 +777,189 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
             [](float v, float in0, float in1, float out0, float out1)
             { return juce::jmap(v, in0, in1, out0, out1); },
             std::move(args[0]), std::move(args[1]), std::move(args[2]), std::move(args[3]), std::move(args[4]));
+    }
+
+    // --- Waveshaping / pro modeling (were documented but missing) ---
+    if (name == "atan")
+    {
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::atan), std::move(args[0]));
+    }
+    if (name == "asinh")
+    {
+        // Smooth analog-style saturation: asinh(x) grows slower than tanh at extremes
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float v)
+        {
+            if (! std::isfinite (v))
+                return 0.0f;
+            return finiteOrZero (std::asinh (juce::jlimit (-1.0e6f, 1.0e6f, v)));
+        }, std::move(args[0]));
+    }
+    if (name == "hardclip")
+    {
+        // hardclip(x, limit) — wide soft-knee, NO ADAA (piecewise F was unstable)
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [] (float x, float lim) { return hardClipSoftKnee (x, lim); },
+            std::move (args[0]), std::move (args[1]));
+    }
+    if (name == "softclip")
+    {
+        // softclip(x) / softclip(x, drive) — atan soft-sat + exact 1st-order ADAA
+        if (args.size() == 1)
+        {
+            return std::make_shared<AdaaFunc2Node>(
+                [] (float x, float) { return softClipSmooth (x); },
+                [] (float x, float) { return softClipIntegral (x); },
+                std::move (args[0]), std::make_shared<ValueNode> (1.0f));
+        }
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<AdaaFunc2Node>(
+            [] (float x, float drive) { return softClipDriven (x, drive); },
+            [] (float x, float drive) { return softClipDrivenIntegral (x, drive); },
+            std::move (args[0]), std::move (args[1]));
+    }
+    if (name == "tube")
+    {
+        // tube(x, drive) — 12AX7-ish + ADAA (kills the harsh crackle on high gain)
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<AdaaFunc2Node>(
+            [] (float x, float drive) { return tubeTransfer (x, drive); },
+            [] (float x, float drive) { return tubeIntegral (x, drive); },
+            std::move (args[0]), std::move (args[1]));
+    }
+    if (name == "diode")
+    {
+        // diode(x, drive) — asinh soft clip + ADAA
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<AdaaFunc2Node>(
+            [] (float x, float drive) { return diodeTransfer (x, drive); },
+            [] (float x, float drive) { return diodeIntegral (x, drive); },
+            std::move (args[0]), std::move (args[1]));
+    }
+    if (name == "fold")
+    {
+        // fold(x, lo, hi) — triangular wavefolding between lo and hi
+        if (notEnoughArgs(3)) return nullptr;
+        return std::make_shared<Func3Node>(
+            [](float x, float lo, float hi)
+            {
+                float a = juce::jmin(lo, hi);
+                float b = juce::jmax(lo, hi);
+                if (b - a < 1.0e-6f)
+                    return juce::jlimit(a, b, x);
+                // Reflect into [a,b]
+                float range = b - a;
+                float y = x;
+                for (int i = 0; i < 8; ++i)
+                {
+                    if (y > b)      y = b - (y - b);
+                    else if (y < a) y = a + (a - y);
+                    else break;
+                }
+                return juce::jlimit(a, b, y);
+            },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    }
+    if (name == "wrap")
+    {
+        if (notEnoughArgs(3)) return nullptr;
+        return std::make_shared<Func3Node>(
+            [](float x, float lo, float hi)
+            {
+                float a = juce::jmin(lo, hi);
+                float b = juce::jmax(lo, hi);
+                float r = b - a;
+                if (r < 1.0e-6f) return a;
+                float y = std::fmod(x - a, r);
+                if (y < 0.0f) y += r;
+                return y + a;
+            },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    }
+    if (name == "bitcrush")
+    {
+        // bitcrush(x, bits) — mid-riser quantizer, bits in [1..24]
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [](float x, float bits)
+            {
+                const float b = juce::jlimit(1.0f, 24.0f, bits);
+                const float levels = std::pow(2.0f, b - 1.0f);
+                const float xn = juce::jlimit(-1.0f, 1.0f, x);
+                return std::round(xn * levels) / levels;
+            },
+            std::move(args[0]), std::move(args[1]));
+    }
+    if (name == "quantize")
+    {
+        // quantize(x, steps) — steps quantization levels across [-1,1]
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [](float x, float steps)
+            {
+                const float s = juce::jmax(1.0f, steps);
+                const float xn = juce::jlimit(-1.0f, 1.0f, x);
+                return std::round(xn * s) / s;
+            },
+            std::move(args[0]), std::move(args[1]));
+    }
+    if (name == "lerp")
+    {
+        if (notEnoughArgs(3)) return nullptr;
+        return std::make_shared<Func3Node>(
+            [](float a, float b, float t)
+            {
+                return a + (b - a) * t;
+            },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    }
+    if (name == "step")
+    {
+        // step(edge, x) — Heaviside
+        if (notEnoughArgs(2)) return nullptr;
+        return std::make_shared<Func2Node>(
+            [](float edge, float x) { return x < edge ? 0.0f : 1.0f; },
+            std::move(args[0]), std::move(args[1]));
+    }
+    if (name == "smoothstep")
+    {
+        // smoothstep(edge0, edge1, x)
+        if (notEnoughArgs(3)) return nullptr;
+        return std::make_shared<Func3Node>(
+            [](float e0, float e1, float x)
+            {
+                if (e0 == e1) return x < e0 ? 0.0f : 1.0f;
+                float t = juce::jlimit(0.0f, 1.0f, (x - e0) / (e1 - e0));
+                return t * t * (3.0f - 2.0f * t);
+            },
+            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+    }
+    if (name == "noise")
+    {
+        // noise(x) — deterministic hash noise in [-1,1] (stable for same x)
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float x)
+        {
+            // Integer hash of float bits
+            union { float f; uint32_t u; } bits { x };
+            uint32_t h = bits.u * 747796405u + 2891336453u;
+            h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+            h = (h >> 22u) ^ h;
+            // map to [-1,1]
+            return (static_cast<float>(h) / 2147483648.0f) - 1.0f;
+        }, std::move(args[0]));
+    }
+    if (name == "log2")
+    {
+        if (notEnoughArgs(1)) return nullptr;
+        return std::make_shared<FunctionNode>([](float v)
+        {
+            if (! std::isfinite (v) || v <= 0.0f)
+                return 0.0f;
+            return finiteOrZero (std::log2 (v));
+        }, std::move(args[0]));
     }
 
     return nullptr;
@@ -521,6 +1045,10 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
     auto it = varIndices.find("x");
     if (it != varIndices.end())
         varsCopy[it->second] = xValue;
+
+    // Single-shot API: reset ADAA so sequential evaluate() calls don't bleed state
+    // (audio block path resets once per channel, then streams samples).
+    localRoot->resetRuntime();
     auto result = localRoot->eval(varsCopy.data());
 
     if (std::isfinite (result))

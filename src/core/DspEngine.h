@@ -9,31 +9,29 @@
     @file DspEngine.h
     @brief Manages all real-time DSP processing for NeuroCore.
 
-    Extracted from PluginProcessor to separate the DSP signal path
-    from plugin infrastructure (APVTS, presets, MIDI learn, etc.).
-
     Owns:
     - Oversampling (juce::dsp::Oversampling)
-    - ProcessorChain: InputGain → NoiseGate → SignalPolisher
+    - InputGain (host rate, before dry split)
+    - SignalPolisher (post-DSL, oversampled)
     - InputRouter
-    - DC-blocker and output low-pass filter
-    - DryWetMixer
-    - Output gain stages (auto-compensation + user gain)
-    - Working buffers: dryBuffer, scriptBuffer, oldScriptBuffer
-    - upChannelPtrs (pre-allocated, no heap in audio callback)
-    - Smoothed parameters for a/b/c/d knobs
-    - formulaBlend (for cross-fade between old and new formula)
-    - bypassActive flag
-    - Loudness / limiter / invalid-sample status (atomic)
+    - DC-blocker and anti-alias LPF (oversampled)
+    - LatencyAlignedSidechain dry (timeline == OS wet latency)
+    - Continuous dry/wet mix
+    - AutoGain (strength from APVTS, default off)
+    - OutputSanitizer (sole peak safety when polisher is None)
+    - Working buffers + switchRamp
 */
 
 #include <JuceHeader.h>
 #include "../dsp/InputGain.h"
 #include "../dsp/InputRouter.h"
 #include "../dsp/SignalPolisher.h"
+#include "../dsp/OutputSanitizer.h"
+#include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../dsl/SignalChain.h"
+#include "../utils/AudioDiagnostics.h"
 #include <atomic>
 #include <array>
 #include <memory>
@@ -60,15 +58,12 @@ public:
     /** Main audio processing call.
         Reads parameters from the APVTS stored during prepare().
         @param buffer         In/out audio buffer.
-        @param signalChain    Current DSL signal chain.
-        @param oldSignalChain Previous DSL signal chain (used during cross-fade). */
+        @param signalChain    Current DSL signal chain. */
     void processBlock(juce::AudioBuffer<float>& buffer,
-                      dsl::SignalChain& signalChain,
-                      dsl::SignalChain& oldSignalChain);
+                      dsl::SignalChain& signalChain);
 
-    /** Called after a new formula is successfully loaded so the engine can
-        start the cross-fade from oldSignalChain to the new signalChain.
-        Also resets low-pass filter and oversampler state. */
+    /** Called after a new formula is successfully loaded.
+        Soft-engages the new chain (switchRamp); does not dual-run an old chain. */
     void onFormulaChanged();
 
     /** Returns current oversampling factor (1 = no oversampling). */
@@ -92,11 +87,13 @@ public:
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable);
 
-    // Accessors to individual DSP chain elements (used by PluginProcessor delegation)
+    /** NaN / jump / crackle logger (RT-safe ring + file flush). */
+    AudioDiagnostics& getDiagnostics() noexcept { return diagnostics; }
+    const AudioDiagnostics& getDiagnostics() const noexcept { return diagnostics; }
+
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
-    juce::dsp::NoiseGate<float>& getNoiseGate() noexcept { return chain.get<1>(); }
-    SignalPolisher& getPolisher()       noexcept { return chain.get<2>(); }
+    SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
 
 private:
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
@@ -105,46 +102,47 @@ private:
 
     juce::AudioProcessorValueTreeState* apvts { nullptr };
 
-    // DSP chain: InputGain → NoiseGate → SignalPolisher
-    juce::dsp::ProcessorChain<InputGain, juce::dsp::NoiseGate<float>, SignalPolisher> chain;
+    // ProcessorChain: [0] InputGain, [1] SignalPolisher
+    juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     InputRouter inputRouter;
 
-    // Filters
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                    juce::dsp::IIR::Coefficients<float>> lowpassFilter;
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                    juce::dsp::IIR::Coefficients<float>> dcBlocker;
 
-    // Dry/Wet mixing
-    juce::dsp::DryWetMixer<float> dryWetMixer;
-    int dryWetLatency { 0 };
     juce::SmoothedValue<float> wetValue;
 
-    // Gain stages
     juce::SmoothedValue<float> gainCompValue;
     juce::dsp::Gain<float>     outputGain;
     juce::dsp::Gain<float>     userOutputGain;
     juce::SmoothedValue<float> userGainValue;
 
-    // Working buffers
+    OutputSanitizer outputSanitizer;
+
+    std::array<float, Config::kMaxChannels> postDslLastGood {};
+
     juce::AudioBuffer<float> dryBuffer;
+    LatencyAlignedSidechain drySidechain;
     juce::AudioBuffer<float> scriptBuffer;
-    juce::AudioBuffer<float> oldScriptBuffer;
-    std::array<float*, Config::kMaxChannels> upChannelPtrs{};
 
-    // Oversampling
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
-    std::atomic<int> oversamplingIndex { 1 }; // default 2× (index 1)
+    std::atomic<int> oversamplingIndex { Config::kDefaultOversamplingIndex };
 
-    // Formula cross-fade
-    juce::SmoothedValue<float> formulaBlend;
+    /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
+    juce::SmoothedValue<float> switchRamp;
     bool bypassActive { false };
 
-    // Smoothed parameters for DSL a/b/c/d knobs
-    std::array<juce::SmoothedValue<float>, 4> smoothedParams;
+    std::array<juce::SmoothedValue<float>, Config::kNumUserParams> smoothedParams;
 
-    // Status
     std::atomic<float> lastLoudness  { -100.0f };
     std::atomic<bool>  limiterActive { false };
     std::atomic<bool>  invalidFlag   { false };
+
+    int limiterHoldBlocks { 0 };
+
+    AudioDiagnostics diagnostics;
+    std::array<float, Config::kMaxChannels> diagLastIn  {};
+    std::array<float, Config::kMaxChannels> diagLastPost {};
+    std::array<float, Config::kMaxChannels> diagLastOut {};
 };

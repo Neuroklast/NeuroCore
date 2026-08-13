@@ -15,7 +15,13 @@
         "performance": "Very cheap, no lookup table needed"
       },
       "example": "y = sin(x)",
-      "keywords": ["smooth", "round", "warm", "gentle", "musical"]
+      "keywords": [
+        "smooth",
+        "round",
+        "warm",
+        "gentle",
+        "musical"
+      ]
     },
     {
       "name": "cos",
@@ -32,7 +38,13 @@
         "performance": "Very cheap"
       },
       "example": "y = cos(x)",
-      "keywords": ["smooth", "warm", "organic", "round", "soft"]
+      "keywords": [
+        "smooth",
+        "warm",
+        "organic",
+        "round",
+        "soft"
+      ]
     },
     {
       "name": "tan",
@@ -49,7 +61,13 @@
         "performance": "Cheap, lookup table can improve stability"
       },
       "example": "y = tan(x)",
-      "keywords": ["edgy", "harsh", "piercing", "screechy", "aggressive"]
+      "keywords": [
+        "edgy",
+        "harsh",
+        "piercing",
+        "screechy",
+        "aggressive"
+      ]
     },
     {
       "name": "tanh",
@@ -66,7 +84,13 @@
         "performance": "Expensive, lookup table strongly recommended"
       },
       "example": "y = tanh(x)",
-      "keywords": ["soft", "tube", "warm", "saturated", "smooth"]
+      "keywords": [
+        "soft",
+        "tube",
+        "warm",
+        "saturated",
+        "smooth"
+      ]
     },
     {
       "name": "sqrt",
@@ -83,7 +107,13 @@
         "performance": "Medium, small lookup table possible"
       },
       "example": "y = sqrt(x)",
-      "keywords": ["crunchy", "punchy", "asymmetrical", "dynamic", "softbite"]
+      "keywords": [
+        "crunchy",
+        "punchy",
+        "asymmetrical",
+        "dynamic",
+        "softbite"
+      ]
     },
     {
       "name": "abs",
@@ -100,7 +130,13 @@
         "performance": "Very cheap"
       },
       "example": "y = abs(x)",
-      "keywords": ["percussive", "raspy", "harsh", "rectified", "edgy"]
+      "keywords": [
+        "percussive",
+        "raspy",
+        "harsh",
+        "rectified",
+        "edgy"
+      ]
     },
     {
       "name": "sign",
@@ -117,7 +153,13 @@
         "performance": "Cheap"
       },
       "example": "y = sign(x)",
-      "keywords": ["digital", "hard", "aggressive", "glitchy", "harsh"]
+      "keywords": [
+        "digital",
+        "hard",
+        "aggressive",
+        "glitchy",
+        "harsh"
+      ]
     },
     {
       "name": "exp",
@@ -134,7 +176,13 @@
         "performance": "Expensive, lookup table required"
       },
       "example": "y = exp(x)",
-      "keywords": ["punchy", "asymmetrical", "dynamic", "explosive", "rich"]
+      "keywords": [
+        "punchy",
+        "asymmetrical",
+        "dynamic",
+        "explosive",
+        "rich"
+      ]
     },
     {
       "name": "log",
@@ -151,7 +199,13 @@
         "performance": "Medium"
       },
       "example": "y = log(x)",
-      "keywords": ["soft", "analog", "warm", "compressive", "smooth"]
+      "keywords": [
+        "soft",
+        "analog",
+        "warm",
+        "compressive",
+        "smooth"
+      ]
     },
     {
       "name": "log10",
@@ -168,7 +222,13 @@
         "performance": "Medium"
       },
       "example": "y = log10(x)",
-      "keywords": ["precise", "metering", "analytic", "clean", "transparent"]
+      "keywords": [
+        "precise",
+        "metering",
+        "analytic",
+        "clean",
+        "transparent"
+      ]
     },
     {
       "name": "floor",
@@ -184,7 +244,13 @@
         "performance": "Cheap"
       },
       "example": "y = floor(x)",
-      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+      "keywords": [
+        "lo-fi",
+        "steppy",
+        "crushed",
+        "digital",
+        "gritty"
+      ]
     },
     {
       "name": "ceil",
@@ -200,7 +266,13 @@
         "performance": "Cheap"
       },
       "example": "y = ceil(x)",
-      "keywords": ["lo-fi", "steppy", "crushed", "digital", "gritty"]
+      "keywords": [
+        "lo-fi",
+        "steppy",
+        "crushed",
+        "digital",
+        "gritty"
+      ]
     },
     {
       "name": "round",
@@ -216,7 +288,13 @@
         "performance": "Cheap"
       },
       "example": "y = round(x)",
-      "keywords": ["quantized", "digital", "gated", "clean", "steppy"]
+      "keywords": [
+        "quantized",
+        "digital",
+        "gated",
+        "clean",
+        "steppy"
+      ]
     },
     {
       "name": "pow",
@@ -233,7 +311,13 @@
         "performance": "Very expensive, lookup table recommended"
       },
       "example": "y = pow(x, y)",
-      "keywords": ["flexible", "dynamic", "custom", "warm", "punchy"]
+      "keywords": [
+        "flexible",
+        "dynamic",
+        "custom",
+        "warm",
+        "punchy"
+      ]
     },
     {
       "name": "min",
@@ -249,7 +333,13 @@
         "performance": "Very cheap"
       },
       "example": "y = min(a, b)",
-      "keywords": ["clamped", "limited", "controlled", "smooth", "precise"]
+      "keywords": [
+        "clamped",
+        "limited",
+        "controlled",
+        "smooth",
+        "precise"
+      ]
     },
     {
       "name": "max",
@@ -265,7 +355,13 @@
         "performance": "Very cheap"
       },
       "example": "y = max(a, b)",
-      "keywords": ["clamped", "limited", "hard", "precise", "sharp"]
+      "keywords": [
+        "clamped",
+        "limited",
+        "hard",
+        "precise",
+        "sharp"
+      ]
     },
     {
       "name": "fmod",
@@ -281,7 +377,13 @@
         "performance": "Medium"
       },
       "example": "y = fmod(x, y)",
-      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+      "keywords": [
+        "cyclic",
+        "repetitive",
+        "metallic",
+        "ringmod",
+        "robotic"
+      ]
     },
     {
       "name": "mod",
@@ -297,7 +399,13 @@
         "performance": "Medium"
       },
       "example": "y = mod(x, y)",
-      "keywords": ["cyclic", "repetitive", "metallic", "ringmod", "robotic"]
+      "keywords": [
+        "cyclic",
+        "repetitive",
+        "metallic",
+        "ringmod",
+        "robotic"
+      ]
     },
     {
       "name": "clamp",
@@ -313,7 +421,434 @@
         "performance": "Very cheap"
       },
       "example": "y = clamp(x, low, high)",
-      "keywords": ["controlled", "safe", "clipped", "limited", "precise"]
+      "keywords": [
+        "controlled",
+        "safe",
+        "clipped",
+        "limited",
+        "precise"
+      ]
+    },
+    {
+      "name": "atan",
+      "description": "Arctangent soft saturator, slower growth than tanh at extremes.",
+      "soundCharacter": "Smooth soft saturation, less compressed than tanh.",
+      "useCases": [
+        "Gentle limiting",
+        "Analog-ish soft clip",
+        "Parallel sat"
+      ],
+      "dangersAndLimits": {
+        "domain": "all reals",
+        "aliasing": "Low; 2x OS enough",
+        "performance": "Cheap"
+      },
+      "example": "y = atan(x * a) / 1.5708",
+      "keywords": [
+        "soft",
+        "smooth",
+        "analog",
+        "gentle"
+      ]
+    },
+    {
+      "name": "asinh",
+      "description": "Inverse hyperbolic sine — diode-like soft knee.",
+      "soundCharacter": "Open soft clip, natural highs.",
+      "useCases": [
+        "Diode simulation",
+        "Transparent OD"
+      ],
+      "dangersAndLimits": {
+        "domain": "all reals",
+        "aliasing": "Low with softclip/diode helpers",
+        "performance": "Medium"
+      },
+      "example": "y = asinh(x * a) / asinh(a)",
+      "keywords": [
+        "diode",
+        "soft",
+        "open",
+        "natural"
+      ]
+    },
+    {
+      "name": "log2",
+      "description": "Base-2 logarithm (x > 0). Domain-guarded in engine.",
+      "soundCharacter": "Compresses dynamics heavily.",
+      "useCases": [
+        "Creative warp",
+        "Level mapping"
+      ],
+      "dangersAndLimits": {
+        "domain": "x > 0 (else 0)",
+        "aliasing": "n/a",
+        "performance": "Cheap"
+      },
+      "example": "y = log2(abs(x) + 1e-6)",
+      "keywords": [
+        "warp",
+        "map",
+        "creative"
+      ]
+    },
+    {
+      "name": "lerp",
+      "description": "Linear interpolate: lerp(a,b,t) = a*(1-t)+b*t.",
+      "soundCharacter": "Dry/wet blend control.",
+      "useCases": [
+        "Parallel distortion",
+        "Morph paths"
+      ],
+      "dangersAndLimits": {
+        "domain": "t usually 0..1",
+        "aliasing": "none",
+        "performance": "Cheap"
+      },
+      "example": "y = lerp(x, softclip(x, a), b)",
+      "keywords": [
+        "blend",
+        "mix",
+        "parallel",
+        "drywet"
+      ]
+    },
+    {
+      "name": "map",
+      "description": "Remap x from [inLo,inHi] to [outLo,outHi].",
+      "soundCharacter": "Utility, not a sound.",
+      "useCases": [
+        "Knob ranges",
+        "Normalize signals"
+      ],
+      "dangersAndLimits": {
+        "domain": "inHi != inLo",
+        "aliasing": "n/a",
+        "performance": "Cheap"
+      },
+      "example": "map(a,0,1,100,8000)",
+      "keywords": [
+        "utility",
+        "range",
+        "normalize"
+      ]
+    },
+    {
+      "name": "step",
+      "description": "Heaviside step: 0 if x < edge else 1.",
+      "soundCharacter": "Hard gate edges.",
+      "useCases": [
+        "Noise gate",
+        "Rhythmic chop"
+      ],
+      "dangersAndLimits": {
+        "domain": "any",
+        "aliasing": "Can click — soften with smoothstep",
+        "performance": "Cheap"
+      },
+      "example": "y = x * step(a, abs(x))",
+      "keywords": [
+        "gate",
+        "chop",
+        "hard"
+      ]
+    },
+    {
+      "name": "smoothstep",
+      "description": "Hermite smooth step between edges.",
+      "soundCharacter": "Soft transitions.",
+      "useCases": [
+        "Soft gates",
+        "Crossfades"
+      ],
+      "dangersAndLimits": {
+        "domain": "edge0 < edge1",
+        "aliasing": "Low",
+        "performance": "Cheap"
+      },
+      "example": "smoothstep(0,1,abs(x))",
+      "keywords": [
+        "smooth",
+        "soft",
+        "fade"
+      ]
+    },
+    {
+      "name": "noise",
+      "description": "Deterministic hash noise in [-1,1] from seed x.",
+      "soundCharacter": "Static/grain.",
+      "useCases": [
+        "Dither",
+        "Texture"
+      ],
+      "dangersAndLimits": {
+        "domain": "any seed",
+        "aliasing": "Bright — LPF after",
+        "performance": "Cheap"
+      },
+      "example": "y = x + noise(t * sr) * 0.02",
+      "keywords": [
+        "noise",
+        "dither",
+        "lofi"
+      ]
+    },
+    {
+      "name": "softclip",
+      "description": "Atan soft saturator (2/pi)*atan((pi/2)*drive*x) with ADAA. Much less HF crackle than old algebraic softclip.",
+      "soundCharacter": "Smooth OD, open dynamics, low harsh treble.",
+      "useCases": [
+        "Overdrive",
+        "Peak taming",
+        "Always prefer over clamp"
+      ],
+      "dangersAndLimits": {
+        "domain": "drive ~0.25..6",
+        "aliasing": "Low–medium; still use 4x OS on heavy drive",
+        "performance": "Medium (ADAA)"
+      },
+      "example": "y = softclip(x, a)",
+      "keywords": [
+        "soft",
+        "od",
+        "clip",
+        "alias-safe",
+        "adaa"
+      ]
+    },
+    {
+      "name": "hardclip",
+      "description": "Soft-knee ceiling at ±limit (~18% knee). Not a pure brickwall.",
+      "soundCharacter": "Harder than softclip, still softer than clamp.",
+      "useCases": [
+        "Peak ceiling",
+        "RAT-style dirt with soft-pre"
+      ],
+      "dangersAndLimits": {
+        "domain": "limit > 0",
+        "aliasing": "ALWAYS lowpass after; prefer hardclip(softclip(x,d),L)",
+        "performance": "Cheap"
+      },
+      "example": "y = hardclip(softclip(x, a), b)",
+      "keywords": [
+        "hard",
+        "ceiling",
+        "peak",
+        "knee"
+      ]
+    },
+    {
+      "name": "tube",
+      "description": "Asymmetric 12AX7-ish saturation with ADAA.",
+      "soundCharacter": "Warm even harmonics, amp-like.",
+      "useCases": [
+        "Amp preamp",
+        "Warmth",
+        "Multi-stage stacks"
+      ],
+      "dangersAndLimits": {
+        "domain": "drive ~0.5..12",
+        "aliasing": "4x OS recommended; LPF as cab",
+        "performance": "Medium (ADAA)"
+      },
+      "example": "y = tube(x, a)",
+      "keywords": [
+        "tube",
+        "amp",
+        "warm",
+        "even"
+      ]
+    },
+    {
+      "name": "diode",
+      "description": "asinh diode-pair soft clip with ADAA.",
+      "soundCharacter": "Open soft OD.",
+      "useCases": [
+        "Pedal OD",
+        "Polish after tube"
+      ],
+      "dangersAndLimits": {
+        "domain": "drive ~0.5..16",
+        "aliasing": "Low–medium",
+        "performance": "Medium"
+      },
+      "example": "y = diode(x, a)",
+      "keywords": [
+        "diode",
+        "soft",
+        "pedal",
+        "open"
+      ]
+    },
+    {
+      "name": "fold",
+      "description": "Wavefold between lo and hi (west-coast).",
+      "soundCharacter": "Metallic/harsh harmonics.",
+      "useCases": [
+        "Synth fold",
+        "Bass growls with LPF"
+      ],
+      "dangersAndLimits": {
+        "domain": "lo < hi",
+        "aliasing": "HIGH — always LPF after + 4–8x OS",
+        "performance": "Cheap loop"
+      },
+      "example": "y = fold(x * a, -b, b)",
+      "keywords": [
+        "fold",
+        "harsh",
+        "synth",
+        "metallic"
+      ]
+    },
+    {
+      "name": "wrap",
+      "description": "Wrap x into [lo,hi) modular.",
+      "soundCharacter": "Digital glitch wrap.",
+      "useCases": [
+        "Glitch",
+        "Bitcrush companion"
+      ],
+      "dangersAndLimits": {
+        "domain": "lo < hi",
+        "aliasing": "HIGH — LPF after",
+        "performance": "Cheap"
+      },
+      "example": "y = wrap(x * a, -1, 1)",
+      "keywords": [
+        "wrap",
+        "glitch",
+        "digital"
+      ]
+    },
+    {
+      "name": "bitcrush",
+      "description": "Mid-riser bit reduction.",
+      "soundCharacter": "Lo-fi grit, stair-step.",
+      "useCases": [
+        "Lo-fi",
+        "Game audio"
+      ],
+      "dangersAndLimits": {
+        "domain": "bits ~1..24",
+        "aliasing": "HIGH — softclip pre + LPF after",
+        "performance": "Cheap"
+      },
+      "example": "y = bitcrush(softclip(x, b), a)",
+      "keywords": [
+        "lofi",
+        "bits",
+        "crush",
+        "grit"
+      ]
+    },
+    {
+      "name": "quantize",
+      "description": "Quantize to N levels across [-1,1].",
+      "soundCharacter": "Similar to bitcrush.",
+      "useCases": [
+        "Lo-fi",
+        "Creative"
+      ],
+      "dangersAndLimits": {
+        "domain": "steps >= 2",
+        "aliasing": "HIGH — LPF after",
+        "performance": "Cheap"
+      },
+      "example": "y = quantize(x, a)",
+      "keywords": [
+        "quantize",
+        "lofi",
+        "steps"
+      ]
+    },
+    {
+      "name": "param a…h",
+      "description": "Eight host-automatable knobs. Declare ranges with `param x = Name [min, max]`. Bare `e` is a knob, not Euler (use exp(1)).",
+      "soundCharacter": "Maps 0–1 host values into musical ranges via map().",
+      "useCases": [
+        "Complex multi-control presets",
+        "Studio channel strips",
+        "Send FX with duck/drive/time"
+      ],
+      "dangersAndLimits": {
+        "domain": "aliases a–h only",
+        "aliasing": "n/a",
+        "performance": "Smoothed per sample"
+      },
+      "example": "param e = Extra [0, 1]\nstage1: y = x * e",
+      "keywords": [
+        "knobs",
+        "params",
+        "automation",
+        "map"
+      ]
+    },
+    {
+      "name": "lerp (parallel blend)",
+      "description": "lerp(dry, wet, amount) for transparent parallel paths (amps, clip, grit).",
+      "soundCharacter": "Keeps body of dry while adding wet harmonics.",
+      "useCases": [
+        "Parallel distortion",
+        "NY compression style blends",
+        "Dual amp stacks"
+      ],
+      "dangersAndLimits": {
+        "domain": "amount in [0,1]",
+        "aliasing": "Depends on wet path",
+        "performance": "Cheap"
+      },
+      "example": "y = lerp(x, tube(x, a), b)",
+      "keywords": [
+        "parallel",
+        "blend",
+        "drywet",
+        "mix"
+      ]
+    },
+    {
+      "name": "chain: clip → LPF",
+      "description": "Design rule: after hardclip/bitcrush/fold always recover with lowpass.",
+      "soundCharacter": "Removes harsh alias; cab-like tone.",
+      "useCases": [
+        "All heavy clip presets",
+        "Lo-fi crush",
+        "Amp cab simulation"
+      ],
+      "dangersAndLimits": {
+        "domain": "cutoff < Nyquist",
+        "aliasing": "LPF reduces residual images",
+        "performance": "One filter"
+      },
+      "example": "stage1: y = hardclip(softclip(x, a), b)\nfilter1: type = lowpass; cutoff = c",
+      "keywords": [
+        "antialias",
+        "cab",
+        "recovery",
+        "design"
+      ]
+    },
+    {
+      "name": "ms encode/decode",
+      "description": "Mid/side processing: encode → process mid and/or side → decode.",
+      "soundCharacter": "Stereo width and center focus without mono collapse.",
+      "useCases": [
+        "Mastering glue on mid",
+        "Side air / HPF",
+        "Width control"
+      ],
+      "dangersAndLimits": {
+        "domain": "stereo only",
+        "aliasing": "n/a",
+        "performance": "Cheap"
+      },
+      "example": "ms1: mode = encode\nstage1: channel = mid; y = softclip(x, a)\nms2: mode = decode",
+      "keywords": [
+        "stereo",
+        "midside",
+        "width",
+        "mastering"
+      ]
     }
   ]
 }

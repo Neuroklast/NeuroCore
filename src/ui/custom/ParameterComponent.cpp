@@ -3,12 +3,12 @@
 #include "../../core/Config.h"
 #include "../../utils/Localiser.h"
 #include "../MidiLearnManager.h"
+#include "../PluginLookAndFeel.h"
 
 using namespace juce;
 
 namespace ui
 {
-bool ParameterComponent::infoMode = true;
 
 ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
                                         const String& id,
@@ -17,9 +17,9 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
       paramID        (id),
       aliasName      (alias)
 {
-    // Optional: Default-Größe (kann vom Parent überschrieben werden)
+    // Default size: room for name above + rotary + min/max below
     setSize (Config::kParameterKnobSize,
-             Config::kParameterKnobSize);
+             Config::kParameterKnobSize + 22);
 
     // Slider als großer Knob über gesamten Bereich
     slider.setSliderStyle      (Slider::RotaryHorizontalVerticalDrag);
@@ -37,16 +37,25 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
     }
 
     valueLabel.setJustificationType (Justification::centred);
-    minLabel. setJustificationType (Justification::bottomLeft);
-    maxLabel. setJustificationType (Justification::bottomRight);
+    minLabel.setJustificationType (Justification::centredLeft);
+    maxLabel.setJustificationType (Justification::centredRight);
     nameLabel.setJustificationType (Justification::centred);
 
-    const auto accent = Colour(0xffe8486a);
-    const auto muted  = Colour(0xff8b93a8);
-    valueLabel.setColour (Label::textColourId, accent);
-    nameLabel.setColour(Label::textColourId, Colours::white);
+    const auto muted  = Colour(0xffb0b0b0); // readable min/max
+    valueLabel.setColour (Label::textColourId, accentColour);
+    valueLabel.setFont (NeuroCoreLookAndFeel::monoFont (17.f));
+    valueLabel.setJustificationType (Justification::centred);
+    nameLabel.setColour(Label::textColourId, Colour (0xfffff5f5));
+    nameLabel.setFont (NeuroCoreLookAndFeel::brandFont (13.f, true));
     minLabel.setColour(Label::textColourId, muted);
     maxLabel.setColour(Label::textColourId, muted);
+    minLabel.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    maxLabel.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    // Values always painted above knob art
+    valueLabel.setAlwaysOnTop (true);
+    nameLabel.setAlwaysOnTop (true);
+    slider.setColour (Slider::rotarySliderOutlineColourId, accentColour.withAlpha (0.75f));
+    slider.setColour (Slider::thumbColourId, accentColour);
 
     // Bindung an den ValueTreeState
     attachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(valueTreeState, paramID, slider);
@@ -72,55 +81,100 @@ void ParameterComponent::setAliasName (const String& name)
     updateLabel();
 }
 
+void ParameterComponent::setAccentColour (Colour colour)
+{
+    accentColour = colour;
+    valueLabel.setColour (Label::textColourId, accentColour);
+    nameLabel.setColour (Label::textColourId, accentColour.brighter (0.15f));
+    slider.setColour (Slider::rotarySliderOutlineColourId, accentColour.withAlpha (0.75f));
+    slider.setColour (Slider::thumbColourId, accentColour);
+    repaint();
+}
+
+void ParameterComponent::setMappedRange (float minVal, float maxVal)
+{
+    if (maxVal < minVal)
+        std::swap (minVal, maxVal);
+    mappedMin = minVal;
+    mappedMax = maxVal;
+    hasMappedRange = std::abs (maxVal - minVal) > 1.0e-9f;
+    updateLabel();
+}
+
 void ParameterComponent::paint (Graphics& g)
 {
     g.fillAll (Colours::transparentBlack);
+
+    auto bounds = getLocalBounds().toFloat().reduced (1.f);
+    const bool on = isEnabled();
+
+    // Cyber panel under knob
+    g.setColour (Colour (0xff050505).withAlpha (on ? 0.85f : 0.4f));
+    g.fillRect (bounds);
+    g.setColour (accentColour.withAlpha (on ? 0.65f : 0.18f));
+    // cut corners
+    Path frame;
+    const float cut = 8.f;
+    frame.startNewSubPath (bounds.getX() + cut, bounds.getY());
+    frame.lineTo (bounds.getRight(), bounds.getY());
+    frame.lineTo (bounds.getRight(), bounds.getBottom() - cut);
+    frame.lineTo (bounds.getRight() - cut, bounds.getBottom());
+    frame.lineTo (bounds.getX(), bounds.getBottom());
+    frame.lineTo (bounds.getX(), bounds.getY() + cut);
+    frame.closeSubPath();
+    g.strokePath (frame, PathStrokeType (1.2f));
+
+    // Corner ticks
+    g.setColour (accentColour.withAlpha (on ? 0.9f : 0.2f));
+    g.drawLine (bounds.getX(), bounds.getY() + cut, bounds.getX(), bounds.getY(), 1.5f);
+    g.drawLine (bounds.getX(), bounds.getY(), bounds.getX() + cut, bounds.getY(), 1.5f);
+
+    if (! on)
+    {
+        g.setColour (Colour (0x66ff1a1a));
+        g.setFont (Font (Font::getDefaultMonospacedFontName(), 10.f, Font::bold));
+        g.drawText ("// NO LINK", bounds.removeFromTop (14.f), Justification::centred, false);
+    }
 }
 
 void ParameterComponent::resized()
 {
-    // Slider füllt den gesamten Komponent-Bereich
-    auto bounds = getLocalBounds();
-    slider.setBounds (bounds);
+    auto bounds = getLocalBounds().reduced (2);
 
-    // Label-Größen und Abstände
-    const int labelH  = 16;
-    const int margin  = 2;
-    const int labelW  = jmin (bounds.getWidth() / 2, 40);
+    // Name sits ABOVE the knob (own row) — not painted over the rotary.
+    const int nameH = 18;
+    nameLabel.setBounds (bounds.removeFromTop (nameH));
+    nameLabel.setJustificationType (Justification::centred);
 
-    // nameLabel oben zentriert
-    nameLabel.setBounds (bounds.getX(),
-                         bounds.getY() + margin,
-                         bounds.getWidth(),
-                         labelH);
+    // Remaining area = knob + min/max + centre value
+    const int rangeH = 14;
+    auto rangeRow = bounds.removeFromBottom (rangeH);
+    const int labelW = jmax (28, rangeRow.getWidth() / 3);
+    minLabel.setBounds (rangeRow.removeFromLeft (labelW));
+    maxLabel.setBounds (rangeRow.removeFromRight (labelW));
+    minLabel.setJustificationType (Justification::centredLeft);
+    maxLabel.setJustificationType (Justification::centredRight);
 
-    // minLabel unten links
-    minLabel.setBounds (bounds.getX()     + margin,
-                        bounds.getBottom() - labelH - margin,
-                        labelW,
-                        labelH);
+    // Rotary fills the middle; value sits in the centre of that disc
+    auto knobArea = bounds.reduced (2);
+    // Keep rotary roughly square and centred
+    const int side = jmin (knobArea.getWidth(), knobArea.getHeight());
+    auto rotary = juce::Rectangle<int> (0, 0, side, side)
+                      .withCentre (knobArea.getCentre());
+    slider.setBounds (rotary);
 
-    // maxLabel unten rechts
-    maxLabel.setBounds (bounds.getRight() - labelW - margin,
-                        bounds.getBottom() - labelH - margin,
-                        labelW,
-                        labelH);
-
-    // valueLabel deckt den ganzen Knob (zentriert roten Wert)
-    valueLabel.setBounds (bounds);
+    // Value text over the knob centre only (not the name row)
+    const int valueH = jmax (16, (int) (side * 0.22f));
+    valueLabel.setBounds (rotary.withSizeKeepingCentre (rotary.getWidth() - 8, valueH));
+    valueLabel.setJustificationType (Justification::centred);
 }
 
 void ParameterComponent::paintOverChildren (Graphics& g)
 {
-    // steuert, ob die Labels gezeichnet werden
-    nameLabel .setVisible (infoMode);
-    valueLabel.setVisible (infoMode);
-    minLabel  .setVisible (infoMode);
-    maxLabel  .setVisible (infoMode);
-
+    // Dim unlinked knobs lightly but keep text readable
     if (! isEnabled())
     {
-        g.setColour (Colours::black.withAlpha (0.5f));
+        g.setColour (Colours::black.withAlpha (0.28f));
         g.fillRect (getLocalBounds());
     }
 }
@@ -132,20 +186,46 @@ void ParameterComponent::parameterChanged (const String& id, float)
         MessageManager::callAsync ([this] { updateLabel(); });
 }
 
-// Labeltexte setzen
+// Labeltexte setzen — ALWAYS show live value (even when knob is unlinked)
 void ParameterComponent::updateLabel()
 {
+    // Prefer raw APVTS so display stays correct when slider is disabled
+    float norm = 0.f;
+    if (auto* raw = valueTreeState.getRawParameterValue (paramID))
+        norm = juce::jlimit (0.f, 1.f, raw->load());
+    else
+        norm = (float) slider.getValue();
+
     if (auto* p = valueTreeState.getParameter (paramID))
+        nameLabel.setText (aliasName.isNotEmpty() ? aliasName : p->getName (64),
+                           dontSendNotification);
+    else if (aliasName.isNotEmpty())
+        nameLabel.setText (aliasName, dontSendNotification);
+
+    if (hasMappedRange)
     {
-        nameLabel .setText (aliasName.isNotEmpty() ? aliasName : p->getName (64),
-                            dontSendNotification);
-        valueLabel.setText (String (slider.getValue(), 2),
-                            dontSendNotification);
-        minLabel  .setText (String (slider.getMinimum(), 2),
-                            dontSendNotification);
-        maxLabel  .setText (String (slider.getMaximum(), 2),
-                            dontSendNotification);
+        const float mapped = mappedMin + norm * (mappedMax - mappedMin);
+        const float av = std::abs (mapped);
+        String txt;
+        if (av >= 1000.f)      txt = String (mapped, 0);
+        else if (av >= 100.f)  txt = String (mapped, 1);
+        else if (av >= 10.f)   txt = String (mapped, 2);
+        else                   txt = String (mapped, 3);
+        valueLabel.setText (txt, dontSendNotification);
+        minLabel.setText (String (mappedMin, av >= 100.f ? 0 : 2), dontSendNotification);
+        maxLabel.setText (String (mappedMax, av >= 100.f ? 0 : 2), dontSendNotification);
     }
+    else
+    {
+        valueLabel.setText (String (norm, 3), dontSendNotification);
+        minLabel  .setText ("0", dontSendNotification);
+        maxLabel  .setText ("1", dontSendNotification);
+    }
+
+    // Keep value high-contrast even when component alpha is reduced
+    valueLabel.setColour (Label::textColourId, accentColour.brighter (0.15f));
+    valueLabel.setFont (NeuroCoreLookAndFeel::monoFont (17.f));
+    nameLabel.setFont (NeuroCoreLookAndFeel::brandFont (13.f, true));
 }
 
 void ParameterComponent::mouseUp (const MouseEvent& e)
@@ -228,19 +308,26 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
 
 void ParameterComponent::setEnabled (bool shouldBeEnabled)
 {
-    Component::setEnabled (shouldBeEnabled);
-    slider.setEnabled   (shouldBeEnabled);
-    if (! shouldBeEnabled)
-    {
-        // Keep the parameter value but hide it visually
-        slider.setValue (0.0f, dontSendNotification);
-    }
-    else
-    {
-        // Sync the slider with the parameter when re-enabled
-        if (auto* v = valueTreeState.getRawParameterValue (paramID))
-            slider.setValue (v->load(), dontSendNotification);
-        updateLabel();
-    }
+    // Only the slider is interactive when unlinked — labels always enabled so values stay readable
+    Component::setEnabled (true); // keep component graph receiving paint
+    slider.setEnabled (shouldBeEnabled);
+    nameLabel.setEnabled (true);
+    valueLabel.setEnabled (true);
+    minLabel.setEnabled (true);
+    maxLabel.setEnabled (true);
+
+    // Dim the dial when unlinked, but NEVER hide the numeric value
+    setAlpha (shouldBeEnabled ? 1.0f : 0.72f);
+    slider.setAlpha (shouldBeEnabled ? 1.0f : 0.4f);
+    valueLabel.setAlpha (1.0f);
+    nameLabel.setAlpha (1.0f);
+    slider.setInterceptsMouseClicks (shouldBeEnabled, shouldBeEnabled);
+
+    // Sync slider thumb to APVTS even when not interactive
+    if (auto* v = valueTreeState.getRawParameterValue (paramID))
+        slider.setValue (v->load(), dontSendNotification);
+
+    updateLabel(); // always show current mapped/norm value
+    repaint();
 }
 } // namespace ui

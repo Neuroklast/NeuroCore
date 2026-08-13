@@ -32,6 +32,44 @@ public:
             expectWithinAbsoluteError(eval.evaluate(0.0f), 1.0f, 1e-5f);
         }
 
+        beginTest("Pro waveshapers: hardclip softclip tube diode bitcrush fold");
+        {
+            ExpressionEvaluator eval;
+            expect(eval.parseFormula("hardclip(x, 0.5)"));
+            // Algebraic hardclip asymptotes to ±L (not a pure brick) — less HF/crackle
+            expectWithinAbsoluteError(eval.evaluate(2.0f), 0.5f, 2e-3f);
+            expect (std::abs (eval.evaluate (2.0f)) <= 0.5f + 1e-4f);
+            expect(std::abs(eval.evaluate(0.1f) - 0.1f) < 1e-5f); // pass-through below knee
+            expect(eval.parseFormula("softclip(x, 2.0)"));
+            expect(std::isfinite(eval.evaluate(0.5f)));
+            expect(std::abs(eval.evaluate(10.0f)) <= 1.0f + 1e-3f); // peak-normed
+            expect(eval.parseFormula("tube(x, 3.0)"));
+            expect(std::abs(eval.evaluate(0.0f)) < 0.05f); // near-zero DC
+            expect(std::isfinite(eval.evaluate(1.0e6f)));   // extreme input stays finite
+            expect(eval.parseFormula("diode(x, 2.0)"));
+            expectWithinAbsoluteError(eval.evaluate(0.0f), 0.0f, 1e-5f);
+            expect(std::isfinite(eval.evaluate(100.0f)));
+            expect(eval.parseFormula("bitcrush(x, 4.0)"));
+            expect(std::isfinite(eval.evaluate(0.3f)));
+            expect(eval.parseFormula("fold(x, -0.5, 0.5)"));
+            expect(std::abs(eval.evaluate(0.9f)) <= 0.5f + 1e-4f);
+            expect(eval.parseFormula("lerp(0.0, 1.0, 0.5)"));
+            expectWithinAbsoluteError(eval.evaluate(0.0f), 0.5f, 1e-5f);
+        }
+
+        beginTest("Waveshapers never emit NaN/Inf on domain edges");
+        {
+            ExpressionEvaluator eval;
+            expect(eval.parseFormula("log(x)"));
+            expect(std::isfinite(eval.evaluate(-1.0f)));
+            expect(eval.parseFormula("sqrt(x)"));
+            expect(std::isfinite(eval.evaluate(-4.0f)));
+            expect(eval.parseFormula("1/x"));
+            expect(std::isfinite(eval.evaluate(0.0f)));
+            expect(eval.parseFormula("pow(x, 0.5)"));
+            expect(std::isfinite(eval.evaluate(-2.0f))); // negative base, non-int exp
+        }
+
         beginTest("Fehlende Funktionsargumente");
         {
             ExpressionEvaluator eval;

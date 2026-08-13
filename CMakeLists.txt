@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroCore VERSION 0.2.0 LANGUAGES C CXX)
+project(NeuroCore VERSION 0.2.2 LANGUAGES C CXX)
+
+# MSVC defaults to the system code page for string literals. Our sources are
+# UTF-8 (em dash, ·, ✕, German comments). Without /utf-8 the UI shows mojibake
+# like "â" instead of "—". Force UTF-8 source + execution charset.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
 
 if(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
@@ -69,6 +76,8 @@ set(SOURCE_FILES
     src/dsp/InputRouter.cpp
     src/utils/PresetManager.cpp
     src/utils/FactoryPresetLibrary.cpp
+    src/utils/FormulaQuality.cpp
+    src/utils/AudioDiagnostics.cpp
     src/dsp/SignalPolisher.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
@@ -78,12 +87,11 @@ set(SOURCE_FILES
     src/licensing/LicenseManager.cpp
     src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
-    src/ui/FormulaWaveComponent.cpp
     src/ui/DslTerminalEditor.cpp
-    src/ui/InlineAutocompleteEditor.cpp
     src/ui/ModalOverlay.cpp
     src/ui/PresetTableComponent.cpp
     src/ui/PresetContentComponent.cpp
+    src/ui/OptimizeContentComponent.cpp
     src/ui/FunctionsContentComponent.cpp
     src/ui/StagesContentComponent.cpp
     src/ui/ValidationContentComponent.cpp
@@ -145,12 +153,16 @@ juce_add_binary_data(resourcesBinary
         resources/img/overknob.png
         resources/img/knob_lights.png
         resources/img/warning.png
+        resources/img/nk_logo.png
+        resources/fonts/apex.otf
+        resources/fonts/JetBrainsMono-Regular.ttf
         resources/locale/de.txt
         resources/locale/en.txt
         resources/locale/functions_de.txt
         resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
+        resources/UserManual_en.txt
         # Embedded so Cubase/hosts work without a loose resources/ folder next to the .vst3
         resources/factory_presets.json
 )
