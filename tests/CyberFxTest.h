@@ -54,22 +54,26 @@ public:
             expect (s[3] != juce::juce_wchar ('C'));
         }
 
-        beginTest ("Enter sequence reaches Shown at 360ms");
+        beginTest ("Enter sequence reaches Shown after loader");
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.36f);
+            seq.tick (0.40f);
+            expect (seq.isLoaderVisible());
+            expect (seq.contentAlpha() < 0.5f);
+            seq.tick (0.40f);
             expect (seq.getPhase() == OverlayPhase::Shown);
             expectWithinAbsoluteError (seq.clipProgress(), 1.f, 0.001f);
+            expect (! seq.isLoaderVisible());
         }
 
         beginTest ("Exit consumeFinished is one-shot");
         {
             CyberSequence seq;
             seq.playEnter();
-            seq.tick (0.36f);
+            seq.tick (0.72f);
             seq.playExit();
-            seq.tick (0.26f);
+            seq.tick (0.50f);
             expect (seq.consumeFinished());
             expect (! seq.consumeFinished());
         }

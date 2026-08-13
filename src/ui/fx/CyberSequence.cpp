@@ -116,9 +116,11 @@ float CyberSequence::contentAlpha() const noexcept
 {
     if (phase == OverlayPhase::Shown)
         return 1.f;
-    if (phase == OverlayPhase::Idle || phase == OverlayPhase::Closed)
-        return 0.f;
-    return clipProgress() > 0.06f ? 1.f : 0.f;
+    if (mode == Mode::Enter)
+        return t >= kEnterRevealEnd ? 1.f : 0.f;
+    if (mode == Mode::Exit)
+        return t < 0.07f ? 1.f - t / 0.07f : 0.f;
+    return 0.f;
 }
 
 float CyberSequence::wipeY01() const noexcept
@@ -152,13 +154,28 @@ float CyberSequence::timeline01() const noexcept
 
 float CyberSequence::clipProgress() const noexcept
 {
-    if (mode == Mode::Enter)
-        return smoothstep (t / kEnterRevealEnd);
-    if (mode == Mode::Exit)
-        return 1.f - smoothstep (t / kExitScrimEnd);
     if (phase == OverlayPhase::Shown)
         return 1.f;
+    if (mode == Mode::Enter)
+        return smoothstep (t / 0.36f);
+    if (mode == Mode::Exit)
+    {
+        if (t < kExitGlitchEnd)
+            return 1.f;
+        return 1.f - smoothstep ((t - kExitGlitchEnd) / (kExitScrimEnd - kExitGlitchEnd));
+    }
     return 0.f;
+}
+
+bool CyberSequence::isLoaderVisible() const noexcept
+{
+    if (clipProgress() < 0.12f)
+        return false;
+    if (mode == Mode::Enter)
+        return t < kEnterRevealEnd;
+    if (mode == Mode::Exit)
+        return t < kExitGlitchEnd + 0.06f;
+    return false;
 }
 
 bool CyberSequence::isBusy() const noexcept

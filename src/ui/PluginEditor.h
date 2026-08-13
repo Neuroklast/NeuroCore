@@ -80,6 +80,7 @@ private:
     void paintHudChrome (juce::Graphics& g);
     void applyOverlayMotion (ModalOverlay& overlay);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
+    void syncGlCover();
     void startWindowAssemble();
     void captureAssembleTargets();
     void applyWindowAssemble();

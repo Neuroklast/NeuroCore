@@ -11,12 +11,14 @@ public:
     void tick (float dtSec);
 
     OverlayPhase getPhase() const noexcept { return phase; }
+    float timeSec() const noexcept { return t; }
     float scrimAlpha() const noexcept;
     float contentAlpha() const noexcept;
     float wipeY01() const noexcept;
     float sliceAmount() const noexcept;
     float timeline01() const noexcept;
     float clipProgress() const noexcept;
+    bool  isLoaderVisible() const noexcept;
     bool  isBusy() const noexcept;
     bool  consumeFinished();
 

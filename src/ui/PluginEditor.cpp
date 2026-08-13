@@ -109,7 +109,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         validationOverlay->setContent (std::move (viewer));
         applyOverlayMotion (*validationOverlay);
         validationOverlay->show (*this);
-        validationOverlay->onClose = [this] { validationOverlay.reset(); };
+        syncGlCover();
+        validationOverlay->onClose = [this] { validationOverlay.reset(); syncGlCover(); };
     };
     addAndMakeVisible(*helpButton);
 
@@ -427,7 +428,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
                                                     juce::jmin (getHeight() - 30, 640));
         validationOverlay->setContent (std::move (content));
         validationOverlay->show (*this);
-        validationOverlay->onClose = [this] { validationOverlay.reset(); };
+        syncGlCover();
+        validationOverlay->onClose = [this] { validationOverlay.reset(); syncGlCover(); };
         ptr->onClose = [this] { validationOverlay.reset(); };
         ptr->onApply = [this] (const juce::String& opt)
         {
@@ -1101,6 +1103,18 @@ void NeuroCoreAudioProcessorEditor::dismissOverlayNow (std::unique_ptr<ModalOver
         return;
     overlay->skipToEnd();
     overlay.reset();
+    syncGlCover();
+}
+
+void NeuroCoreAudioProcessorEditor::syncGlCover()
+{
+    const bool cover =
+        (presetOverlay != nullptr && presetOverlay->isShowing())
+        || (functionsOverlay != nullptr && functionsOverlay->isShowing())
+        || (stagesOverlay != nullptr && stagesOverlay->isShowing())
+        || (validationOverlay != nullptr && validationOverlay->isShowing());
+    if (loudnessMeter != nullptr)
+        loudnessMeter->setCoveredByOverlay (cover);
 }
 
 void NeuroCoreAudioProcessorEditor::startWindowAssemble()
@@ -1158,6 +1172,7 @@ void NeuroCoreAudioProcessorEditor::applyWindowAssemble()
         slot.c->setVisible (true);
         slot.c->setBounds (revealBounds (slot.target, slot.type, juce::jlimit (0.f, 1.f, local)));
     }
+    syncGlCover();
 }
 
 void NeuroCoreAudioProcessorEditor::onAssembleVBlank (double nowSec)
@@ -1184,6 +1199,7 @@ void NeuroCoreAudioProcessorEditor::onAssembleVBlank (double nowSec)
         if (formulaInputEditor && formulaLiveDisplay)
             formulaInputEditor->setBounds (formulaLiveDisplay->getBounds());
         setFormulaEditMode (editing);
+        syncGlCover();
         repaint();
     }
 }
@@ -1305,7 +1321,8 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     presetOverlay->setContent(std::move(content));
     applyOverlayMotion (*presetOverlay);
     presetOverlay->show(*this);
-    presetOverlay->onClose = [this] { presetOverlay.reset(); };
+    syncGlCover();
+    presetOverlay->onClose = [this] { presetOverlay.reset(); syncGlCover(); };
 
     auto refreshAfterPreset = [this]
     {
@@ -1337,7 +1354,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
         refreshAfterPreset();
     };
     ptr->onSaved = [this] { syncFromProcessor(); };
-    ptr->onClose = [this] { presetOverlay.reset(); };
+    ptr->onClose = [this] { presetOverlay.reset(); syncGlCover(); };
 }
 
 void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
@@ -1354,14 +1371,15 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
     functionsOverlay->setContent(std::move(content));
     applyOverlayMotion (*functionsOverlay);
     functionsOverlay->show(*this);
+    syncGlCover();
 
     ptr->onInsert = [this](const juce::String& text)
     {
         if (formulaInputEditor)
             formulaInputEditor->insertTextAtCaret(text);
     };
-    ptr->onClose = [this]{ functionsOverlay.reset(); };
-    functionsOverlay->onClose = [this]{ functionsOverlay.reset(); };
+    ptr->onClose = [this]{ functionsOverlay.reset(); syncGlCover(); };
+    functionsOverlay->onClose = [this]{ functionsOverlay.reset(); syncGlCover(); };
 }
 
 void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
@@ -1384,9 +1402,10 @@ void NeuroCoreAudioProcessorEditor::showStagesOverlay()
     stagesOverlay->setContent(std::move(content));
     applyOverlayMotion (*stagesOverlay);
     stagesOverlay->show(*this);
+    syncGlCover();
 
-    ptr->onClose = [this] { stagesOverlay.reset(); };
-    stagesOverlay->onClose = [this] { stagesOverlay.reset(); };
+    ptr->onClose = [this] { stagesOverlay.reset(); syncGlCover(); };
+    stagesOverlay->onClose = [this] { stagesOverlay.reset(); syncGlCover(); };
 }
 
 void NeuroCoreAudioProcessorEditor::hideStagesOverlay()
@@ -1412,8 +1431,9 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->setTitle("Validating Script...");
     validationOverlay->setContent(std::move(content));
     applyOverlayMotion (*validationOverlay);
-    validationOverlay->onClose = [this] { validationOverlay.reset(); };
+    validationOverlay->onClose = [this] { validationOverlay.reset(); syncGlCover(); };
     validationOverlay->show(*this);
+    syncGlCover();
 
     ptr->onResult = [this, expr](bool stable)
     {

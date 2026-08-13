@@ -163,4 +163,104 @@ namespace CyberChrome
         if (progress01 < 0.90f) return "> SYNC DSP CORE";
         return "> ACCESS GRANTED";
     }
+
+    juce::String loaderLabelForClip (int clipTypeIndex)
+    {
+        switch (clipTypeIndex)
+        {
+            case 0:  return "CIRCUIT LINK";
+            case 1:  return "BOOTING SYSTEM";
+            case 2:  return "SCANNING SECTORS";
+            case 3:  return "BUFFERING STREAM";
+            case 4:  return "DECODING MATRIX";
+            default: return "ESTABLISHING LINK";
+        }
+    }
+
+    juce::String loadingTextAt (float tSec, bool teardown)
+    {
+        static const char* up[] = {
+            "ACCESSING DATABASE...",
+            "DECRYPTING PAYLOAD...",
+            "VERIFYING CLEARANCE...",
+            "LOADING ASSETS...",
+            "SYNCHRONIZING..."
+        };
+        static const char* down[] = {
+            "FLUSH WRITE CACHE...",
+            "UNLINK HANDLE...",
+            "DROP SESSION...",
+            "WIPE SCRATCH...",
+            "DISCONNECT..."
+        };
+        const int idx = juce::jlimit (0, 4, (int) (tSec / 0.14f));
+        return teardown ? down[idx] : up[idx];
+    }
+
+    void drawOverlayLoader (juce::Graphics& g,
+                            juce::Rectangle<int> inner,
+                            float tSec,
+                            float bar01,
+                            int clipTypeIndex,
+                            int seed,
+                            bool teardown)
+    {
+        if (inner.getWidth() < 80 || inner.getHeight() < 80)
+            return;
+
+        auto area = inner.reduced (18, 16);
+        g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+        g.drawText (loaderLabelForClip (clipTypeIndex),
+                    area.removeFromTop (16), juce::Justification::centred, false);
+
+        g.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+        g.setColour (NeuroCoreLookAndFeel::accent());
+        g.drawText (loadingTextAt (tSec, teardown),
+                    area.removeFromTop (22), juce::Justification::centred, false);
+
+        area.removeFromTop (6);
+        drawBlockBar (g, area.removeFromTop (18).reduced (12, 0),
+                      teardown ? (1.f - bar01) : bar01);
+
+        area.removeFromTop (10);
+        drawHexMeta (g, area.removeFromTop (16).reduced (8, 0),
+                     teardown ? (1.f - bar01) : bar01);
+
+        const int crc = (seed * 1103515245 + (int) (tSec * 4093.f)) & 0xffff;
+        g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+        g.drawText ("CRC 0x" + juce::String::toHexString (crc).paddedLeft ('0', 4).toUpperCase()
+                        + "   SEQ " + juce::String ((int) (tSec * 240.f)).paddedLeft ('0', 3)
+                        + "   CH " + juce::String (8 + (seed & 7)),
+                    area.removeFromTop (16).reduced (8, 0),
+                    juce::Justification::centredLeft, false);
+
+        area.removeFromTop (8);
+        static const char* upLines[] = {
+            "> AUTH handshake",
+            "> map sector table",
+            "> inflate payload",
+            "> verify signature",
+            "> mount viewport"
+        };
+        static const char* downLines[] = {
+            "> freeze draw list",
+            "> flush write cache",
+            "> unlink handle",
+            "> drop session",
+            "> release viewport"
+        };
+        const int shown = juce::jlimit (1, 5, 1 + (int) (tSec / 0.11f));
+        g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+        for (int i = 0; i < shown; ++i)
+        {
+            const bool hot = (i == shown - 1);
+            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (hot ? 0.95f : 0.40f));
+            juce::String line = teardown ? downLines[i] : upLines[i];
+            if (hot)
+                line += (((int) (tSec * 8.f) % 2) == 0 ? " _" : "  ");
+            g.drawText (line, area.removeFromTop (16), juce::Justification::centredLeft, false);
+        }
+    }
 }

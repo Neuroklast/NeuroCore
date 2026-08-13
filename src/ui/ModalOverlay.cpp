@@ -156,26 +156,26 @@ void ModalOverlay::applyContentVisibility()
     const float a = sequence.contentAlpha();
     const bool showKids = a > 0.02f
                        || sequence.getPhase() == OverlayPhase::Shown;
+    const bool showChrome = sequence.clipProgress() > 0.22f;
 
     if (content)
     {
         content->setVisible (showKids);
         content->setAlpha (a);
     }
-    titleLabel.setVisible (showKids);
-    titleLabel.setAlpha (a);
+    titleLabel.setVisible (showChrome);
+    titleLabel.setAlpha (1.f);
     okButton.setVisible (showKids && mode == OverlayMode::Decision);
     backButton.setVisible (showKids && mode == OverlayMode::Decision);
-    closeButton.setVisible (showKids && (mode == OverlayMode::Closable || mode == OverlayMode::Decision));
+    closeButton.setVisible (showChrome && (mode == OverlayMode::Closable || mode == OverlayMode::Decision));
 
-    const auto phase = sequence.getPhase();
-    if (showKids && (phase == OverlayPhase::EnterReveal || phase == OverlayPhase::EnterGlitch))
+    if (showChrome && sequence.isLoaderVisible())
     {
-        const int revealed = (int) std::round (sequence.timeline01() * (float) rawTitle.length());
-        titleLabel.setText (decodeGlitchText (rawTitle, juce::jmax (0, revealed - 2), rng),
+        const int revealed = (int) std::round (sequence.clipProgress() * (float) rawTitle.length());
+        titleLabel.setText (decodeGlitchText (rawTitle, revealed, rng),
                             juce::dontSendNotification);
     }
-    else if (showKids)
+    else if (showChrome)
     {
         titleLabel.setText (rawTitle, juce::dontSendNotification);
     }
@@ -188,7 +188,7 @@ void ModalOverlay::paint (juce::Graphics& g)
     const float burst = sequence.sliceAmount();
     if (burst > 0.04f)
         CyberChrome::drawGlitchSlices (g, getLocalBounds(), burst,
-                                        (int) (sequence.timeline01() * 997.f),
+                                        (int) (sequence.timeSec() * 997.f),
                                         kMaxGlitchSlices);
 
     if (sequence.clipProgress() <= 0.02f)
@@ -197,16 +197,34 @@ void ModalOverlay::paint (juce::Graphics& g)
     const auto r = panel.toFloat();
     g.setColour (NeuroCoreLookAndFeel::background());
     g.fillRect (r);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.40f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
     g.drawRect (r, 1.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.14f));
     g.fillRect (r.getX(), r.getY(), r.getWidth(), 40.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.90f));
     g.fillRect (r.getX(), r.getY(), r.getWidth(), 2.f);
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.30f));
+    g.fillRect (r.getX() + 10.f, r.getY() + 40.f, r.getWidth() - 20.f, 1.f);
     CyberChrome::drawHudCorners (g, r.expanded (2.f), sequence.clipProgress(), 2.4f);
 
+    const bool blink = ((int) (sequence.timeSec() * 6.f) % 2) == 0;
+    g.setColour (blink ? NeuroCoreLookAndFeel::accent()
+                       : NeuroCoreLookAndFeel::accent().withAlpha (0.25f));
+    g.fillEllipse (r.getX() + 10.f, r.getY() + 14.f, 6.f, 6.f);
+
+    if (sequence.isLoaderVisible())
+    {
+        auto inner = panel.reduced (8, 46);
+        inner.removeFromBottom (8);
+        const bool teardown = sequence.getPhase() == OverlayPhase::ExitGlitch
+                           || sequence.getPhase() == OverlayPhase::ExitScrim;
+        CyberChrome::drawOverlayLoader (g, inner, sequence.timeSec(),
+                                        sequence.timeline01(),
+                                        (int) clipType, rng.nextInt(), teardown);
+    }
+
     if (burst > 0.04f)
-        CyberChrome::drawGlitchSlices (g, panel, burst * 0.8f,
+        CyberChrome::drawGlitchSlices (g, panel, burst * 0.7f,
                                         (int) (sequence.clipProgress() * 4093.f), 4);
 }
 
@@ -219,6 +237,7 @@ void ModalOverlay::applyClipLayout()
 
     auto area = panel.reduced (14, 12);
     auto header = area.removeFromTop (32);
+    header.removeFromLeft (16);
     closeButton.setBounds (header.removeFromRight (36).reduced (2));
     if (mode == OverlayMode::Decision)
     {

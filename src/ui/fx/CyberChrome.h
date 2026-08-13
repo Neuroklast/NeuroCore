@@ -16,4 +16,15 @@ namespace CyberChrome
     void drawHexMeta (juce::Graphics& g, juce::Rectangle<int> r, float progress01);
 
     juce::String statusForProgress (float progress01);
+    juce::String loaderLabelForClip (int clipTypeIndex);
+    juce::String loadingTextAt (float tSec, bool teardown);
+
+    /** Interior of the assembling modal: bar, hex, console, checksum. */
+    void drawOverlayLoader (juce::Graphics& g,
+                            juce::Rectangle<int> inner,
+                            float tSec,
+                            float bar01,
+                            int clipTypeIndex,
+                            int seed,
+                            bool teardown);
 }

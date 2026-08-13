@@ -20,6 +20,25 @@ LoudnessMeterComponent::~LoudnessMeterComponent()
     openGLContext.detach();
 }
 
+void LoudnessMeterComponent::setCoveredByOverlay (bool covered)
+{
+    if (coveredByOverlay == covered)
+        return;
+    coveredByOverlay = covered;
+    if (covered)
+    {
+        if (openGLContext.isAttached())
+            openGLContext.detach();
+        setVisible (false);
+    }
+    else
+    {
+        setVisible (true);
+        if (! openGLContext.isAttached())
+            openGLContext.attachTo (*this);
+    }
+}
+
 void LoudnessMeterComponent::timerCallback()
 {
     float db = processor.getLoudnessDb();

@@ -14,6 +14,8 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override {}
     void mouseDown(const juce::MouseEvent& e) override;
+    /** OpenGL sits above JUCE siblings — detach while a modal covers the editor. */
+    void setCoveredByOverlay (bool covered);
 
 private:
     void timerCallback() override;
@@ -37,5 +39,6 @@ private:
 
     Scale scale { Scale::dBFS };
     juce::OpenGLContext openGLContext;
+    bool coveredByOverlay { false };
 };
 

@@ -37,11 +37,11 @@ struct CyberFxConfig
     float pulseSmooth = 0.15f;
 };
 
-inline constexpr float kEnterScrimEnd  = 0.120f;
-inline constexpr float kEnterGlitchEnd = 0.120f;
-inline constexpr float kEnterRevealEnd = 0.360f;
-inline constexpr float kExitGlitchEnd  = 0.100f;
-inline constexpr float kExitScrimEnd   = 0.260f;
+inline constexpr float kEnterScrimEnd  = 0.140f;
+inline constexpr float kEnterGlitchEnd = 0.480f;
+inline constexpr float kEnterRevealEnd = 0.720f;
+inline constexpr float kExitGlitchEnd  = 0.240f;
+inline constexpr float kExitScrimEnd   = 0.500f;
 inline constexpr float kScrimMax       = 0.88f;
 inline constexpr int   kMaxGlitchSlices = 8;
 inline constexpr float kGlitchPaintMin = 0.05f;
