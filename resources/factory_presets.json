@@ -3,6 +3,10 @@
     "name": "Fender Clean",
     "category": "Distortion",
     "description": "Blackface clean: soft single tube, bright sparkle path, open cab 9 kHz — airy, not mid-crush.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.5, 2.8]\nparam b = Bright [0.0, 0.85]\nparam c = Level [0.55, 1.45]\nfilter1: type = highpass; cutoff = 45; resonance = 0.22\nstage1: y = tube(x, a * 0.5)\nstage2: y = softclip(y, 0.75) * c\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.25\nbus bright:\n  send: in = 1\n  filter3: type = highpass; cutoff = 45; resonance = 0.22\n  stage3: y = softclip(x * (1.0 + b * 0.7), 0.9) * c\n  filter4: type = lowpass; cutoff = 9500; resonance = 0.25\nout: main = 0.6; bright = 0.4",
     "paramA": {
       "name": "Drive",
       "min": 0.5,
@@ -20,22 +24,16 @@
       "min": 0.55,
       "max": 1.45,
       "default": 1.1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.5, 2.8]\nparam b = Bright [0.0, 0.85]\nparam c = Level [0.55, 1.45]\nfilter1: type = highpass; cutoff = 45; resonance = 0.22\nstage1: y = tube(x, a * 0.5)\nstage2: y = softclip(y, 0.75) * c\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.25\nbus bright:\n  send: in = 1\n  filter3: type = highpass; cutoff = 45; resonance = 0.22\n  stage3: y = softclip(x * (1.0 + b * 0.7), 0.9) * c\n  filter4: type = lowpass; cutoff = 9500; resonance = 0.25\nout: main = 0.6; bright = 0.4"
+    }
   },
   {
     "name": "Marshall Crunch",
     "category": "Distortion",
     "description": "Plexi bark: dual tube, strong mid hump (bandpass), hotter presence — mid-forward crunch.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.4, 7.5]\nparam b = Presence [2000, 7000]\nparam c = Level [0.38, 1.15]\nfilter1: type = highpass; cutoff = 100; resonance = 0.38\nstage1: y = tube(x, a * 0.6)\nstage2: y = tube(y, a * 0.7)\nfilter2: type = bandpass; center = 750; width = 1200\nstage3: y = softclip(y * 1.45, 1.55) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.42",
     "paramA": {
       "name": "Drive",
       "min": 1.4,
@@ -53,22 +51,16 @@
       "min": 0.38,
       "max": 1.15,
       "default": 0.72
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.4, 7.5]\nparam b = Presence [2000, 7000]\nparam c = Level [0.38, 1.15]\nfilter1: type = highpass; cutoff = 100; resonance = 0.38\nstage1: y = tube(x, a * 0.6)\nstage2: y = tube(y, a * 0.7)\nfilter2: type = bandpass; center = 750; width = 1200\nstage3: y = softclip(y * 1.45, 1.55) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.42"
+    }
   },
   {
     "name": "Mesa High Gain",
     "category": "Distortion",
     "description": "Rectifier wall: tight HPF, triple tube, hard soft-knee ceiling, dark cab — densest amp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Gain [3.5, 12.0]\nparam b = Tight [45, 200]\nparam c = Level [0.25, 0.9]\nfilter1: type = highpass; cutoff = b; resonance = 0.6\nstage1: y = tube(x, a * 0.5)\nstage2: y = tube(y, a * 0.6)\nstage3: y = tube(y, a * 0.45)\nstage4: y = hardclip(softclip(y, 1.55), 0.68)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.58\nstage5: y = diode(y, 1.6) * c",
     "paramA": {
       "name": "Gain",
       "min": 3.5,
@@ -86,22 +78,16 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.42
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Gain [3.5, 12.0]\nparam b = Tight [45, 200]\nparam c = Level [0.25, 0.9]\nfilter1: type = highpass; cutoff = b; resonance = 0.6\nstage1: y = tube(x, a * 0.5)\nstage2: y = tube(y, a * 0.6)\nstage3: y = tube(y, a * 0.45)\nstage4: y = hardclip(softclip(y, 1.55), 0.68)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.58\nstage5: y = diode(y, 1.6) * c"
+    }
   },
   {
     "name": "Vox Top Boost",
     "category": "Distortion",
     "description": "AC chime: aggressive bass cut, upper-mid band, glassy softclip — brightest of the amps.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 6.5]\nparam b = Cut [280, 1400]\nparam c = Level [0.45, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.5\nstage1: y = tube(x, a * 0.85)\nfilter2: type = bandpass; center = 1800; width = 2200\nstage2: y = softclip(y * 1.2, 1.6) * c\nfilter3: type = lowpass; cutoff = 8200; resonance = 0.32",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -119,22 +105,16 @@
       "min": 0.45,
       "max": 1.25,
       "default": 0.92
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 6.5]\nparam b = Cut [280, 1400]\nparam c = Level [0.45, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.5\nstage1: y = tube(x, a * 0.85)\nfilter2: type = bandpass; center = 1800; width = 2200\nstage2: y = softclip(y * 1.2, 1.6) * c\nfilter3: type = lowpass; cutoff = 8200; resonance = 0.32"
+    }
   },
   {
     "name": "Tube Screamer",
     "category": "Distortion",
     "description": "TS808: high HPF into softclip, narrow mid hump, diode polish — classic mid-focused pedal.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 780; resonance = 0.28\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = 720; width = 420\nstage2: y = diode(y * 1.25, 1.35) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.48",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -152,22 +132,16 @@
       "min": 0.28,
       "max": 1.15,
       "default": 0.7
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 780; resonance = 0.28\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = 720; width = 420\nstage2: y = diode(y * 1.25, 1.35) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.48"
+    }
   },
   {
     "name": "Klon Centaur",
     "category": "Distortion",
     "description": "Transparent OD: clean path blend + soft diode clip (Klon-style clean blend).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.8, 8.0]\nparam b = Blend [0.2, 0.95]\nparam c = Level [0.4, 1.3]\nstage1: y = x * c\nbus dirt:\n  send: in = 1\n  filter1: type = highpass; cutoff = 90; resonance = 0.3\n  stage2: y = diode(x, a) * c\n  filter2: type = lowpass; cutoff = 9000; resonance = 0.3\nout: main = 1-b; dirt = b",
     "paramA": {
       "name": "Drive",
       "min": 0.8,
@@ -185,22 +159,16 @@
       "min": 0.4,
       "max": 1.3,
       "default": 0.9
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.8, 8.0]\nparam b = Blend [0.2, 0.95]\nparam c = Level [0.4, 1.3]\nstage1: y = x * c\nbus dirt:\n  send: in = 1\n  filter1: type = highpass; cutoff = 90; resonance = 0.3\n  stage2: y = diode(x, a) * c\n  filter2: type = lowpass; cutoff = 9000; resonance = 0.3\nout: main = 1-b; dirt = b"
+    }
   },
   {
     "name": "ProCo RAT",
     "category": "Distortion",
     "description": "RAT: soft-pre hard ceiling + steep LPF tone (classic filter-after-clip, low alias).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Dist [2.0, 12.0]\nparam b = Filter [300, 6500]\nparam c = Level [0.25, 1.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = hardclip(softclip(x, a * 0.55), 0.55)\nfilter2: type = lowpass; cutoff = b; resonance = 0.6\nstage2: y = y * c",
     "paramA": {
       "name": "Dist",
       "min": 2,
@@ -218,22 +186,16 @@
       "min": 0.25,
       "max": 1,
       "default": 0.58
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Dist [2.0, 12.0]\nparam b = Filter [300, 6500]\nparam c = Level [0.25, 1.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = hardclip(softclip(x, a * 0.55), 0.55)\nfilter2: type = lowpass; cutoff = b; resonance = 0.6\nstage2: y = y * c"
+    }
   },
   {
     "name": "Fuzz Face",
     "category": "Distortion",
     "description": "Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).",
+    "inputGain": 1.5,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\nfilter1: type = highpass; cutoff = 45; resonance = 0.3\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = tube(y, 1.4) * c",
     "paramA": {
       "name": "Fuzz",
       "min": 3,
@@ -251,22 +213,16 @@
       "min": 0.15,
       "max": 0.85,
       "default": 0.42
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 1.5,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\nfilter1: type = highpass; cutoff = 45; resonance = 0.3\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = tube(y, 1.4) * c"
+    }
   },
   {
     "name": "Soft Overdrive",
     "category": "Distortion",
     "description": "Open softclip OD: gentle HPF, pure softclip (no mid hump), wide tone LPF — cleanest dirt.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.6, 6.0]\nparam b = Tone [800, 11000]\nparam c = Level [0.45, 1.35]\nfilter1: type = highpass; cutoff = 50; resonance = 0.22\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.32\nstage2: y = y * c",
     "paramA": {
       "name": "Drive",
       "min": 0.6,
@@ -284,22 +240,16 @@
       "min": 0.45,
       "max": 1.35,
       "default": 0.95
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.6, 6.0]\nparam b = Tone [800, 11000]\nparam c = Level [0.45, 1.35]\nfilter1: type = highpass; cutoff = 50; resonance = 0.22\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.32\nstage2: y = y * c"
+    }
   },
   {
     "name": "Bitcrusher",
     "category": "Distortion",
     "description": "Soft-pre bit reduction + anti-alias LPF after quantize (never bitcrush without LPF).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Bits [3.0, 12.0]\nparam b = Drive [0.8, 4.0]\nparam c = LPF [600, 10000]\nparam d = Level [0.4, 1.2]\nstage1: y = bitcrush(softclip(x, b), a) * d\nfilter1: type = lowpass; cutoff = c; resonance = 0.45",
     "paramA": {
       "name": "Bits",
       "min": 3,
@@ -323,16 +273,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.8
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Bits [3.0, 12.0]\nparam b = Drive [0.8, 4.0]\nparam c = LPF [600, 10000]\nparam d = Level [0.4, 1.2]\nstage1: y = bitcrush(softclip(x, b), a) * d\nfilter1: type = lowpass; cutoff = c; resonance = 0.45"
+    }
   },
   {
     "name": "Wave Folder",
     "category": "Distortion",
     "description": "West-coast fold â†’ diode recovery â†’ LPF (fold is harsh; always band-limit after).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Level [0.25, 1.0]\nstage1: y = fold(x * a, -b, b)\nstage2: y = softclip(diode(y, 1.3), 1.1) * c\nfilter1: type = lowpass; cutoff = 7500; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -350,22 +300,16 @@
       "min": 0.25,
       "max": 1,
       "default": 0.62
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Level [0.25, 1.0]\nstage1: y = fold(x * a, -b, b)\nstage2: y = softclip(diode(y, 1.3), 1.1) * c\nfilter1: type = lowpass; cutoff = 7500; resonance = 0.35"
+    }
   },
   {
     "name": "Classic Tremolo",
     "category": "Modulation",
     "description": "Opto-style sine tremolo. Use Div for host-tempo note rates (1/1..1/32).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Div [0.0, 1.0]\nparam b = Depth [0.2, 0.85]\nparam c = Floor [0.2, 0.7]\nosc1: shape = sine; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))",
     "paramA": {
       "name": "Div",
       "min": 0,
@@ -383,22 +327,16 @@
       "min": 0.2,
       "max": 0.7,
       "default": 0.4
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Div [0.0, 1.0]\nparam b = Depth [0.2, 0.85]\nparam c = Floor [0.2, 0.7]\nosc1: shape = sine; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
+    }
   },
   {
     "name": "Tremolo Free",
     "category": "Modulation",
     "description": "Sine tremolo with free Hz rate.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.2, 10.0]\nparam b = Depth [0.2, 0.85]\nparam c = Floor [0.2, 0.7]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))",
     "paramA": {
       "name": "Rate",
       "min": 0.2,
@@ -416,22 +354,16 @@
       "min": 0.2,
       "max": 0.7,
       "default": 0.4
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.2, 10.0]\nparam b = Depth [0.2, 0.85]\nparam c = Floor [0.2, 0.7]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
+    }
   },
   {
     "name": "Chopper",
     "category": "Modulation",
     "description": "Soft-square trem chopper. Div knob = host tempo note rate (1/1..1/32). Dynamics preserved (floor).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Div [0.0, 1.0]\nparam b = Depth [0.25, 0.85]\nparam c = Floor [0.15, 0.55]\nosc1: shape = softsquare; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))",
     "paramA": {
       "name": "Div",
       "min": 0,
@@ -449,22 +381,16 @@
       "min": 0.15,
       "max": 0.55,
       "default": 0.28
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Div [0.0, 1.0]\nparam b = Depth [0.25, 0.85]\nparam c = Floor [0.15, 0.55]\nosc1: shape = softsquare; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
+    }
   },
   {
     "name": "Chopper Free",
     "category": "Modulation",
     "description": "Same soft chopper with free Hz rate (not tempo-locked).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.5, 12.0]\nparam b = Depth [0.25, 0.85]\nparam c = Floor [0.15, 0.55]\nosc1: shape = softsquare; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))",
     "paramA": {
       "name": "Rate",
       "min": 0.5,
@@ -482,22 +408,16 @@
       "min": 0.15,
       "max": 0.55,
       "default": 0.28
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.5, 12.0]\nparam b = Depth [0.25, 0.85]\nparam c = Floor [0.15, 0.55]\nosc1: shape = softsquare; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
+    }
   },
   {
     "name": "Ring Modulator",
     "category": "Modulation",
     "description": "Four-quadrant ring mod (carrier * signal).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Freq [15.0, 1500.0]\nparam b = Depth [0.35, 1.0]\nparam c = Level [0.4, 1.2]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (1.0 - b + b * osc1) * c\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.3",
     "paramA": {
       "name": "Freq",
       "min": 15,
@@ -515,22 +435,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.85
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Freq [15.0, 1500.0]\nparam b = Depth [0.35, 1.0]\nparam c = Level [0.4, 1.2]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (1.0 - b + b * osc1) * c\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.3"
+    }
   },
   {
     "name": "Uni-Vibe AM",
     "category": "Modulation",
     "description": "Vibe-ish: dual path AM with slow LFO and soft saturation.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.15, 6.0]\nparam b = Depth [0.2, 0.85]\nparam c = Drive [1.0, 3.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))",
     "paramA": {
       "name": "Rate",
       "min": 0.15,
@@ -548,22 +462,16 @@
       "min": 1,
       "max": 3,
       "default": 1.6
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.15, 6.0]\nparam b = Depth [0.2, 0.85]\nparam c = Drive [1.0, 3.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))"
+    }
   },
   {
     "name": "Auto-Wah",
     "category": "Modulation",
     "description": "Envelope follower â†’ resonant bandpass + softclip polish + AA LPF (Res on LPF kept moderate).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Sens [0.8, 5.0]\nparam b = Min [180, 700]\nparam c = Range [800, 4500]\nparam d = Res [0.8, 2.8]\nenv1: type = peak; attack = 0.004; release = 0.11\nfilter1: type = bandpass; center = b; + = env1; * = c; width = 650\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = 8500; resonance = d",
     "paramA": {
       "name": "Sens",
       "min": 0.8,
@@ -587,16 +495,16 @@
       "min": 0.8,
       "max": 2.8,
       "default": 1.4
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Sens [0.8, 5.0]\nparam b = Min [180, 700]\nparam c = Range [800, 4500]\nparam d = Res [0.8, 2.8]\nenv1: type = peak; attack = 0.004; release = 0.11\nfilter1: type = bandpass; center = b; + = env1; * = c; width = 650\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = 8500; resonance = d"
+    }
   },
   {
     "name": "Phaser Sweep",
     "category": "Modulation",
     "description": "Stable phaser-ish: dual LFO-mod filters (low Q), dry/wet blend — no self-osc hang.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.08, 3.0]\nparam b = Center [300, 1600]\nparam c = Depth [200, 2200]\nparam d = Mix [0.25, 0.9]\nosc1: shape = sine; freq = a; depth = 1.0\nbus wet:\n  send: in = 1\n  filter1: type = highpass; cutoff = b; + = osc1; * = c; resonance = 0.55\n  filter2: type = lowpass; cutoff = b; + = osc1; * = c * 0.7; resonance = 0.45\n  stage1: y = softclip(x, 1.12)\n  filter3: type = lowpass; cutoff = 12000; resonance = 0.25\nout: main = 1-d; wet = d",
     "paramA": {
       "name": "Rate",
       "min": 0.08,
@@ -620,16 +528,16 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.55
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.08, 3.0]\nparam b = Center [300, 1600]\nparam c = Depth [200, 2200]\nparam d = Mix [0.25, 0.9]\nosc1: shape = sine; freq = a; depth = 1.0\nbus wet:\n  send: in = 1\n  filter1: type = highpass; cutoff = b; + = osc1; * = c; resonance = 0.55\n  filter2: type = lowpass; cutoff = b; + = osc1; * = c * 0.7; resonance = 0.45\n  stage1: y = softclip(x, 1.12)\n  filter3: type = lowpass; cutoff = 12000; resonance = 0.25\nout: main = 1-d; wet = d"
+    }
   },
   {
     "name": "Chorus Delay",
     "category": "Modulation",
     "description": "Real short delay chorus + dual-rate LFO thickness — not fake AM-only chorus.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.25, 3.5]\nparam b = Depth [0.12, 0.5]\nparam c = Time [8, 32]\nparam d = Mix [0.18, 0.55]\nosc1: shape = sine; freq = a; depth = 1.0\nosc2: shape = sine; freq = a * 1.31; depth = 1.0\nstage1: y = tube(x, 1.35)\ndelay1: time = c; feedback = 0.14; mix = d; damp = 9500\nstage2: y = softclip(y * (1.0 - b + b * 0.5 * ((0.5 + 0.5 * osc1) + (0.5 + 0.5 * osc2))), 1.08)",
     "paramA": {
       "name": "Rate",
       "min": 0.25,
@@ -653,16 +561,16 @@
       "min": 0.18,
       "max": 0.55,
       "default": 0.34
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.25, 3.5]\nparam b = Depth [0.12, 0.5]\nparam c = Time [8, 32]\nparam d = Mix [0.18, 0.55]\nosc1: shape = sine; freq = a; depth = 1.0\nosc2: shape = sine; freq = a * 1.31; depth = 1.0\nstage1: y = tube(x, 1.35)\ndelay1: time = c; feedback = 0.14; mix = d; damp = 9500\nstage2: y = softclip(y * (1.0 - b + b * 0.5 * ((0.5 + 0.5 * osc1) + (0.5 + 0.5 * osc2))), 1.08)"
+    }
   },
   {
     "name": "Low Pass Sweep",
     "category": "Filter",
     "description": "Musical LFO lowpass: Min + osc*Depth, restrained Q.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.05, 6.0]\nparam b = Min [100, 700]\nparam c = Depth [400, 7000]\nparam d = Res [0.4, 3.0]\nosc1: shape = sine; freq = a; depth = 1.0\nfilter1: type = lowpass; cutoff = b; + = osc1; * = c; resonance = d\nstage1: y = diode(x, 1.05)",
     "paramA": {
       "name": "Rate",
       "min": 0.05,
@@ -686,16 +594,16 @@
       "min": 0.4,
       "max": 3,
       "default": 1.4
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.05, 6.0]\nparam b = Min [100, 700]\nparam c = Depth [400, 7000]\nparam d = Res [0.4, 3.0]\nosc1: shape = sine; freq = a; depth = 1.0\nfilter1: type = lowpass; cutoff = b; + = osc1; * = c; resonance = d\nstage1: y = diode(x, 1.05)"
+    }
   },
   {
     "name": "High Pass Gate",
     "category": "Filter",
     "description": "Envelope opens HPF for rhythmic filtering + softclip ceiling + mild AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Floor [50, 350]\nparam b = Range [400, 7000]\nparam c = Attack [0.001, 0.04]\nparam d = Release [0.04, 0.35]\nenv1: type = peak; attack = c; release = d\nfilter1: type = highpass; cutoff = a; + = env1; * = b; resonance = 1.0\nstage1: y = softclip(x, 1.2)\nfilter2: type = lowpass; cutoff = 11000; resonance = 0.3",
     "paramA": {
       "name": "Floor",
       "min": 50,
@@ -719,16 +627,16 @@
       "min": 0.04,
       "max": 0.35,
       "default": 0.14
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Floor [50, 350]\nparam b = Range [400, 7000]\nparam c = Attack [0.001, 0.04]\nparam d = Release [0.04, 0.35]\nenv1: type = peak; attack = c; release = d\nfilter1: type = highpass; cutoff = a; + = env1; * = b; resonance = 1.0\nstage1: y = softclip(x, 1.2)\nfilter2: type = lowpass; cutoff = 11000; resonance = 0.3"
+    }
   },
   {
     "name": "Reso Peak",
     "category": "Filter",
     "description": "Resonant peak filter â€” Q limited for stability.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Cutoff [150, 5000]\nparam b = Res [0.6, 3.5]\nparam c = Drive [1.0, 3.5]\nfilter1: type = lowpass; cutoff = a; resonance = b\nstage1: y = tube(x, c)",
     "paramA": {
       "name": "Cutoff",
       "min": 150,
@@ -746,22 +654,16 @@
       "min": 1,
       "max": 3.5,
       "default": 1.8
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Cutoff [150, 5000]\nparam b = Res [0.6, 3.5]\nparam c = Drive [1.0, 3.5]\nfilter1: type = lowpass; cutoff = a; resonance = b\nstage1: y = tube(x, c)"
+    }
   },
   {
     "name": "Bandpass Vocal",
     "category": "Filter",
     "description": "Formant-ish bandpass for vocal/synth body.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Center [350, 2800]\nparam b = Width [100, 1000]\nparam c = Drive [0.9, 2.8]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = diode(x, c)",
     "paramA": {
       "name": "Center",
       "min": 350,
@@ -779,22 +681,16 @@
       "min": 0.9,
       "max": 2.8,
       "default": 1.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Center [350, 2800]\nparam b = Width [100, 1000]\nparam c = Drive [0.9, 2.8]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = diode(x, c)"
+    }
   },
   {
     "name": "Heavy Comp",
     "category": "Dynamics",
     "description": "FET-ish compressor + softclip makeup ceiling + mild AA LPF (no bare hard peaks).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-36.0, -8.0]\nparam b = Ratio [2.5, 12.0]\nparam c = Attack [0.001, 0.03]\nparam d = Makeup [1.0, 3.5]\ncomp1: threshold = a; ratio = b; attack = c; release = 0.11\nstage1: y = softclip(x * d, 1.1)\nfilter1: type = lowpass; cutoff = 14000; resonance = 0.25",
     "paramA": {
       "name": "Threshold",
       "min": -36,
@@ -818,16 +714,16 @@
       "min": 1,
       "max": 3.5,
       "default": 1.9
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-36.0, -8.0]\nparam b = Ratio [2.5, 12.0]\nparam c = Attack [0.001, 0.03]\nparam d = Makeup [1.0, 3.5]\ncomp1: threshold = a; ratio = b; attack = c; release = 0.11\nstage1: y = softclip(x * d, 1.1)\nfilter1: type = lowpass; cutoff = 14000; resonance = 0.25"
+    }
   },
   {
     "name": "Optical Comp",
     "category": "Dynamics",
     "description": "Slower opto-style attack/release, gentle ratio.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-28.0, -6.0]\nparam b = Ratio [1.8, 6.0]\nparam c = Makeup [1.0, 2.5]\ncomp1: threshold = a; ratio = b; attack = 0.02; release = 0.28\nstage1: y = diode(x * c, 1.05)",
     "paramA": {
       "name": "Threshold",
       "min": -28,
@@ -845,22 +741,16 @@
       "min": 1,
       "max": 2.5,
       "default": 1.45
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-28.0, -6.0]\nparam b = Ratio [1.8, 6.0]\nparam c = Makeup [1.0, 2.5]\ncomp1: threshold = a; ratio = b; attack = 0.02; release = 0.28\nstage1: y = diode(x * c, 1.05)"
+    }
   },
   {
     "name": "Parallel Crush",
     "category": "Dynamics",
     "description": "NY parallel: dry + soft-pre hard crush + LPF recovery (transparent peaks).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 10.0]\nparam b = Blend [0.25, 0.9]\nparam c = Level [0.45, 1.2]\nstage1: y = x * c\nbus crush:\n  send: in = 1\n  stage2: y = hardclip(softclip(tube(x, a), 1.15), 0.65) * c\n  filter1: type = lowpass; cutoff = 10000; resonance = 0.3\nout: main = 1-b; crush = b",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -878,22 +768,16 @@
       "min": 0.45,
       "max": 1.2,
       "default": 0.85
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 10.0]\nparam b = Blend [0.25, 0.9]\nparam c = Level [0.45, 1.2]\nstage1: y = x * c\nbus crush:\n  send: in = 1\n  stage2: y = hardclip(softclip(tube(x, a), 1.15), 0.65) * c\n  filter1: type = lowpass; cutoff = 10000; resonance = 0.3\nout: main = 1-b; crush = b"
+    }
   },
   {
     "name": "Transient Bite",
     "category": "Dynamics",
     "description": "Peak envelope boosts softclip drive on attacks + mild AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 6.0]\nparam b = Attack [0.001, 0.015]\nparam c = Release [0.02, 0.2]\nparam d = Amount [0.25, 0.95]\nenv1: type = peak; attack = b; release = c\nstage1: y = softclip(x * (a + env1 * a * d), 1.0)\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.28",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -917,16 +801,16 @@
       "min": 0.25,
       "max": 0.95,
       "default": 0.65
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 6.0]\nparam b = Attack [0.001, 0.015]\nparam c = Release [0.02, 0.2]\nparam d = Amount [0.25, 0.95]\nenv1: type = peak; attack = b; release = c\nstage1: y = softclip(x * (a + env1 * a * d), 1.0)\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.28"
+    }
   },
   {
     "name": "Amp Crunch",
     "category": "Guitar",
     "description": "Edge-of-breakup: mild tube, mid shelf via bandpass, open cab — between clean and Marshall.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.9, 5.5]\nparam b = Tone [900, 7000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 70; resonance = 0.3\nstage1: y = tube(x, a * 0.7)\nfilter2: type = bandpass; center = 1100; width = 2800\nstage2: y = softclip(y, 1.05) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.38",
     "paramA": {
       "name": "Drive",
       "min": 0.9,
@@ -944,22 +828,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.88
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.9, 5.5]\nparam b = Tone [900, 7000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 70; resonance = 0.3\nstage1: y = tube(x, a * 0.7)\nfilter2: type = bandpass; center = 1100; width = 2800\nstage2: y = softclip(y, 1.05) * c\nfilter3: type = lowpass; cutoff = b; resonance = 0.38"
+    }
   },
   {
     "name": "Metal Gate",
     "category": "Guitar",
     "description": "Tight metal: HPF â†’ tube cascade â†’ soft-pre hard knee â†’ cab LPF (filter after clip).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nfilter1: type = highpass; cutoff = b; resonance = 0.5\nstage1: y = tube(x, a * 0.45)\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6\nstage3: y = y * c",
     "paramA": {
       "name": "Drive",
       "min": 4,
@@ -977,22 +855,16 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.45
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nfilter1: type = highpass; cutoff = b; resonance = 0.5\nstage1: y = tube(x, a * 0.45)\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6\nstage3: y = y * c"
+    }
   },
   {
     "name": "Blues Breakup",
     "category": "Guitar",
     "description": "Touch-sensitive blues OD with bias.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 5.5]\nparam b = Bias [0.0, 0.22]\nparam c = Level [0.5, 1.25]\nstage1: y = tube(x + b * 0.5, a) * c\nfilter1: type = lowpass; cutoff = 5500; resonance = 0.4",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -1010,22 +882,16 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.95
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 5.5]\nparam b = Bias [0.0, 0.22]\nparam c = Level [0.5, 1.25]\nstage1: y = tube(x + b * 0.5, a) * c\nfilter1: type = lowpass; cutoff = 5500; resonance = 0.4"
+    }
   },
   {
     "name": "Lead Boost",
     "category": "Guitar",
     "description": "Lead boost into saturated power stage + presence.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Boost [1.5, 7.0]\nparam b = Presence [1200, 7000]\nparam c = Level [0.4, 1.15]\nfilter1: type = highpass; cutoff = 100; resonance = 0.35\nstage1: y = tube(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = diode(y, 1.35) * c",
     "paramA": {
       "name": "Boost",
       "min": 1.5,
@@ -1043,22 +909,16 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.8
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Boost [1.5, 7.0]\nparam b = Presence [1200, 7000]\nparam c = Level [0.4, 1.15]\nfilter1: type = highpass; cutoff = 100; resonance = 0.35\nstage1: y = tube(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = diode(y, 1.35) * c"
+    }
   },
   {
     "name": "Pedal OD",
     "category": "Guitar",
     "description": "Asymmetric diode pedal: soft pre + diode stack + dark tone — different grit than softclip-only OD.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 9.5]\nparam b = Tone [400, 4200]\nparam c = Level [0.28, 1.1]\nfilter1: type = highpass; cutoff = 85; resonance = 0.32\nstage1: y = softclip(x, a * 0.55)\nstage2: y = diode(y, a * 0.5)\nfilter2: type = lowpass; cutoff = b; resonance = 0.5\nstage3: y = softclip(y, 1.1) * c",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -1076,22 +936,16 @@
       "min": 0.28,
       "max": 1.1,
       "default": 0.68
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 9.5]\nparam b = Tone [400, 4200]\nparam c = Level [0.28, 1.1]\nfilter1: type = highpass; cutoff = 85; resonance = 0.32\nstage1: y = softclip(x, a * 0.55)\nstage2: y = diode(y, a * 0.5)\nfilter2: type = lowpass; cutoff = b; resonance = 0.5\nstage3: y = softclip(y, 1.1) * c"
+    }
   },
   {
     "name": "Riff Saturate",
     "category": "Guitar",
     "description": "Comp into tube for tight riff saturation.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.4, 6.5]\nparam b = Ratio [2.0, 7.0]\nparam c = Level [0.5, 1.3]\ncomp1: threshold = -15; ratio = b; attack = 0.007; release = 0.14\nstage1: y = tube(x, a) * c",
     "paramA": {
       "name": "Drive",
       "min": 1.4,
@@ -1109,22 +963,16 @@
       "min": 0.5,
       "max": 1.3,
       "default": 0.92
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.4, 6.5]\nparam b = Ratio [2.0, 7.0]\nparam c = Level [0.5, 1.3]\ncomp1: threshold = -15; ratio = b; attack = 0.007; release = 0.14\nstage1: y = tube(x, a) * c"
+    }
   },
   {
     "name": "Bass Growl",
     "category": "Bass",
     "description": "Parallel clean + tube dirt, keep low end.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.3, 7.0]\nparam b = Blend [0.25, 0.85]\nparam c = Level [0.45, 1.25]\nfilter1: type = highpass; cutoff = 35; resonance = 0.25\nstage1: y = x * c\nbus dirt:\n  send: main = 1\n  stage2: y = tube(x, a)\n  filter2: type = lowpass; cutoff = 7000; resonance = 0.35\nout: main = 1-b; dirt = b",
     "paramA": {
       "name": "Drive",
       "min": 1.3,
@@ -1142,22 +990,16 @@
       "min": 0.45,
       "max": 1.25,
       "default": 0.9
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.3, 7.0]\nparam b = Blend [0.25, 0.85]\nparam c = Level [0.45, 1.25]\nfilter1: type = highpass; cutoff = 35; resonance = 0.25\nstage1: y = x * c\nbus dirt:\n  send: main = 1\n  stage2: y = tube(x, a)\n  filter2: type = lowpass; cutoff = 7000; resonance = 0.35\nout: main = 1-b; dirt = b"
+    }
   },
   {
     "name": "Bass Folder",
     "category": "Bass",
     "description": "Parallel fold for bass harmonics + diode + LPF (fold always band-limited).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.8, 10.0]\nparam b = Fold [0.25, 0.8]\nparam c = Mix [0.25, 0.85]\nstage1: y = x\nbus fold:\n  send: in = 1\n  stage2: y = fold(x * a, -b, b)\n  stage3: y = softclip(diode(y, 1.2), 1.05)\n  filter1: type = lowpass; cutoff = 5500; resonance = 0.4\nout: main = 1-c; fold = c",
     "paramA": {
       "name": "Drive",
       "min": 1.8,
@@ -1175,22 +1017,16 @@
       "min": 0.25,
       "max": 0.85,
       "default": 0.6
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.8, 10.0]\nparam b = Fold [0.25, 0.8]\nparam c = Mix [0.25, 0.85]\nstage1: y = x\nbus fold:\n  send: in = 1\n  stage2: y = fold(x * a, -b, b)\n  stage3: y = softclip(diode(y, 1.2), 1.05)\n  filter1: type = lowpass; cutoff = 5500; resonance = 0.4\nout: main = 1-c; fold = c"
+    }
   },
   {
     "name": "Sub Push",
     "category": "Bass",
     "description": "Sub-safe mild tube with gentle HPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 4.0]\nparam b = HPF [25, 100]\nparam c = Level [0.6, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.25\nstage1: y = tube(x, a) * c",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -1208,22 +1044,16 @@
       "min": 0.6,
       "max": 1.35,
       "default": 1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 4.0]\nparam b = HPF [25, 100]\nparam c = Level [0.6, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.25\nstage1: y = tube(x, a) * c"
+    }
   },
   {
     "name": "Bass Comp Drive",
     "category": "Bass",
     "description": "Compress then tube â€” thick DI bass.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-26.0, -8.0]\nparam b = Drive [1.3, 5.0]\nparam c = Level [0.5, 1.25]\ncomp1: threshold = a; ratio = 4.5; attack = 0.012; release = 0.2\nstage1: y = tube(x, b) * c",
     "paramA": {
       "name": "Threshold",
       "min": -26,
@@ -1241,22 +1071,16 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.95
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-26.0, -8.0]\nparam b = Drive [1.3, 5.0]\nparam c = Level [0.5, 1.25]\ncomp1: threshold = a; ratio = 4.5; attack = 0.012; release = 0.2\nstage1: y = tube(x, b) * c"
+    }
   },
   {
     "name": "Vocal Grit",
     "category": "Vocals",
     "description": "Broadcast grit: HPF, tube, air LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 5.5]\nparam b = LowCut [80, 280]\nparam c = Air [2500, 11000]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.35\nstage1: y = tube(x, a) * d\nfilter2: type = lowpass; cutoff = c; resonance = 0.4",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -1280,16 +1104,16 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.92
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 5.5]\nparam b = LowCut [80, 280]\nparam c = Air [2500, 11000]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.35\nstage1: y = tube(x, a) * d\nfilter2: type = lowpass; cutoff = c; resonance = 0.4"
+    }
   },
   {
     "name": "Radio Voice",
     "category": "Vocals",
     "description": "AM radio bandpass + softclip + light bitcrush + LPF (quantize always filtered).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Center [500, 2200]\nparam b = Width [180, 900]\nparam c = Drive [1.2, 4.0]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = softclip(x, c)\nstage2: y = bitcrush(y, 10)\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.4",
     "paramA": {
       "name": "Center",
       "min": 500,
@@ -1307,22 +1131,16 @@
       "min": 1.2,
       "max": 4,
       "default": 2.2
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Center [500, 2200]\nparam b = Width [180, 900]\nparam c = Drive [1.2, 4.0]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = softclip(x, c)\nstage2: y = bitcrush(y, 10)\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.4"
+    }
   },
   {
     "name": "Vocal Comp",
     "category": "Vocals",
     "description": "Vocal bus compressor + soft ceiling.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-28.0, -8.0]\nparam b = Ratio [2.5, 10.0]\nparam c = Drive [1.0, 2.5]\ncomp1: threshold = a; ratio = b; attack = 0.005; release = 0.12\nstage1: y = diode(x, c)",
     "paramA": {
       "name": "Threshold",
       "min": -28,
@@ -1340,22 +1158,16 @@
       "min": 1,
       "max": 2.5,
       "default": 1.35
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-28.0, -8.0]\nparam b = Ratio [2.5, 10.0]\nparam c = Drive [1.0, 2.5]\ncomp1: threshold = a; ratio = b; attack = 0.005; release = 0.12\nstage1: y = diode(x, c)"
+    }
   },
   {
     "name": "Whisper Edge",
     "category": "Vocals",
     "description": "Airy HPF into soft tube.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 3.5]\nparam b = HPF [250, 1100]\nparam c = Level [0.55, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.55\nstage1: y = tube(x, a) * c",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -1373,33 +1185,27 @@
       "min": 0.55,
       "max": 1.35,
       "default": 1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 3.5]\nparam b = HPF [250, 1100]\nparam c = Level [0.55, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.55\nstage1: y = tube(x, a) * c"
+    }
   },
   {
     "name": "Doubler AM",
     "category": "Vocals",
-    "description": "Subtle doubles via dual-phase AM.",
+    "description": "Short slap double with mild AM on delay time + diode grit.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [12, 42]\nparam b = Mix [0.18, 0.55]\nparam c = Drive [1.0, 2.2]\nparam d = Rate [0.2, 4.0]\nosc1: shape = sine; freq = d; depth = 1.0\nstage1: y = diode(x, c)\ndelay1: time = a + osc1 * 4; feedback = 0.08; mix = 1.0; damp = 7000\nstage2: y = lerp(x, y, b)\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.25",
     "paramA": {
-      "name": "Rate",
-      "min": 2.5,
-      "max": 8,
-      "default": 5
+      "name": "Time",
+      "min": 12,
+      "max": 42,
+      "default": 22
     },
     "paramB": {
-      "name": "Depth",
-      "min": 0.12,
-      "max": 0.45,
-      "default": 0.28
+      "name": "Mix",
+      "min": 0.18,
+      "max": 0.55,
+      "default": 0.32
     },
     "paramC": {
       "name": "Drive",
@@ -1408,20 +1214,20 @@
       "default": 1.3
     },
     "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [2.5, 8.0]\nparam b = Depth [0.12, 0.45]\nparam c = Drive [1.0, 2.2]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = diode(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))"
+      "name": "Rate",
+      "min": 0.2,
+      "max": 4,
+      "default": 1.4
+    }
   },
   {
     "name": "Drum Smash",
     "category": "Drums",
     "description": "Drum bus: tube â†’ soft-pre hard ceiling â†’ glue comp â†’ diode + mild LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 9.0]\nparam b = Threshold [-26.0, -6.0]\nparam c = Level [0.4, 1.15]\nstage1: y = hardclip(softclip(tube(x, a), 1.15), 0.7)\ncomp1: threshold = b; ratio = 5.5; attack = 0.002; release = 0.08\nstage2: y = diode(y, 1.15) * c\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -1439,22 +1245,16 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.75
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 9.0]\nparam b = Threshold [-26.0, -6.0]\nparam c = Level [0.4, 1.15]\nstage1: y = hardclip(softclip(tube(x, a), 1.15), 0.7)\ncomp1: threshold = b; ratio = 5.5; attack = 0.002; release = 0.08\nstage2: y = diode(y, 1.15) * c\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3"
+    }
   },
   {
     "name": "Kick Punch",
     "category": "Drums",
     "description": "Kick: LPF body, tube punch, fast comp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.3, 6.0]\nparam b = Tone [90, 700]\nparam c = Punch [2.0, 8.0]\nfilter1: type = lowpass; cutoff = b; resonance = 0.7\nstage1: y = tube(x, a)\ncomp1: threshold = -11; ratio = c; attack = 0.002; release = 0.055",
     "paramA": {
       "name": "Drive",
       "min": 1.3,
@@ -1472,22 +1272,16 @@
       "min": 2,
       "max": 8,
       "default": 4.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.3, 6.0]\nparam b = Tone [90, 700]\nparam c = Punch [2.0, 8.0]\nfilter1: type = lowpass; cutoff = b; resonance = 0.7\nstage1: y = tube(x, a)\ncomp1: threshold = -11; ratio = c; attack = 0.002; release = 0.055"
+    }
   },
   {
     "name": "Snare Crack",
     "category": "Drums",
     "description": "Snare crack: HPF â†’ soft-pre hard ceiling â†’ body LPF (filter after clip).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Crack [1.5, 8.0]\nparam b = HPF [140, 550]\nparam c = Level [0.4, 1.15]\nfilter1: type = highpass; cutoff = b; resonance = 0.55\nstage1: y = hardclip(softclip(x, a), 0.75) * c\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.35",
     "paramA": {
       "name": "Crack",
       "min": 1.5,
@@ -1505,22 +1299,16 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.8
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Crack [1.5, 8.0]\nparam b = HPF [140, 550]\nparam c = Level [0.4, 1.15]\nfilter1: type = highpass; cutoff = b; resonance = 0.55\nstage1: y = hardclip(softclip(x, a), 0.75) * c\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.35"
+    }
   },
   {
     "name": "Room Crush",
     "category": "Drums",
     "description": "Drum room: tube crush into real small-room reverb + tone LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 8.0]\nparam b = Room [0.2, 0.7]\nparam c = Mix [0.15, 0.55]\nparam d = Tone [2000, 12000]\nstage1: y = tube(x, a)\nreverb1: size = b; decay = 0.42; damp = 0.55; mix = c; width = 0.8\nfilter1: type = lowpass; cutoff = d; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -1544,16 +1332,16 @@
       "min": 2000,
       "max": 12000,
       "default": 7000
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 8.0]\nparam b = Room [0.2, 0.7]\nparam c = Mix [0.15, 0.55]\nparam d = Tone [2000, 12000]\nstage1: y = tube(x, a)\nreverb1: size = b; decay = 0.42; damp = 0.55; mix = c; width = 0.8\nfilter1: type = lowpass; cutoff = d; resonance = 0.35"
+    }
   },
   {
     "name": "Hat Sizzle",
     "category": "Drums",
     "description": "Cymbal sizzle: steep HPF + softclip (drive capped; soft only â€” no hardclip on air).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 3.5]\nparam b = HPF [2500, 9000]\nparam c = Level [0.55, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.65\nstage1: y = softclip(x, a) * c\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.25",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -1571,22 +1359,16 @@
       "min": 0.55,
       "max": 1.35,
       "default": 1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 3.5]\nparam b = HPF [2500, 9000]\nparam c = Level [0.55, 1.35]\nfilter1: type = highpass; cutoff = b; resonance = 0.65\nstage1: y = softclip(x, a) * c\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.25"
+    }
   },
   {
     "name": "Acid Line",
     "category": "Synth",
     "description": "303-ish: env opens LPF with musical Q, then diode.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Res [0.8, 3.4]\nparam b = Min [90, 500]\nparam c = Range [500, 4500]\nparam d = Drive [1.1, 4.0]\nenv1: type = peak; attack = 0.002; release = 0.16\nfilter1: type = lowpass; cutoff = b; + = env1; * = c; resonance = a\nstage1: y = diode(x, d)",
     "paramA": {
       "name": "Res",
       "min": 0.8,
@@ -1610,16 +1392,16 @@
       "min": 1.1,
       "max": 4,
       "default": 2
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Res [0.8, 3.4]\nparam b = Min [90, 500]\nparam c = Range [500, 4500]\nparam d = Drive [1.1, 4.0]\nenv1: type = peak; attack = 0.002; release = 0.16\nfilter1: type = lowpass; cutoff = b; + = env1; * = c; resonance = a\nstage1: y = diode(x, d)"
+    }
   },
   {
     "name": "Pad Swell",
     "category": "Synth",
     "description": "Slow tremolo pad with gentle tube.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.05, 1.8]\nparam b = Depth [0.2, 0.8]\nparam c = Drive [1.0, 2.8]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))",
     "paramA": {
       "name": "Rate",
       "min": 0.05,
@@ -1637,22 +1419,16 @@
       "min": 1,
       "max": 2.8,
       "default": 1.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.05, 1.8]\nparam b = Depth [0.2, 0.8]\nparam c = Drive [1.0, 2.8]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))"
+    }
   },
   {
     "name": "Lead Scream",
     "category": "Synth",
     "description": "Lead: tube â†’ restrained LPF â†’ softclip ceiling (clip after filter = less alias).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.8, 9.0]\nparam b = Cutoff [500, 7000]\nparam c = Res [0.6, 2.8]\nstage1: y = tube(x, a)\nfilter1: type = lowpass; cutoff = b; resonance = c\nstage2: y = softclip(y, 1.25)",
     "paramA": {
       "name": "Drive",
       "min": 1.8,
@@ -1670,22 +1446,16 @@
       "min": 0.6,
       "max": 2.8,
       "default": 1.6
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.8, 9.0]\nparam b = Cutoff [500, 7000]\nparam c = Res [0.6, 2.8]\nstage1: y = tube(x, a)\nfilter1: type = lowpass; cutoff = b; resonance = c\nstage2: y = softclip(y, 1.25)"
+    }
   },
   {
     "name": "PWM Texture",
     "category": "Synth",
     "description": "Saw LFO AM texture on tube core.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.4, 11.0]\nparam b = Depth [0.25, 0.9]\nparam c = Drive [1.0, 3.5]\nosc1: shape = saw; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))",
     "paramA": {
       "name": "Rate",
       "min": 0.4,
@@ -1703,22 +1473,16 @@
       "min": 1,
       "max": 3.5,
       "default": 1.8
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.4, 11.0]\nparam b = Depth [0.25, 0.9]\nparam c = Drive [1.0, 3.5]\nosc1: shape = saw; freq = a; depth = 1.0\nstage1: y = tube(x, c)\nstage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))"
+    }
   },
   {
     "name": "Supersaw Dirt",
     "category": "Synth",
     "description": "Softclip dirt + slow AM + LPF recovery (always band-limit after softclip drive).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.4, 7.0]\nparam b = Rate [0.15, 3.5]\nparam c = Depth [0.1, 0.45]\nosc1: shape = sine; freq = b; depth = 1.0\nstage1: y = softclip(x, a)\nstage2: y = y * (1.0 - c + c * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1.4,
@@ -1736,22 +1500,16 @@
       "min": 0.1,
       "max": 0.45,
       "default": 0.22
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.4, 7.0]\nparam b = Rate [0.15, 3.5]\nparam c = Depth [0.1, 0.45]\nosc1: shape = sine; freq = b; depth = 1.0\nstage1: y = softclip(x, a)\nstage2: y = y * (1.0 - c + c * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.35"
+    }
   },
   {
     "name": "Tape Saturate",
     "category": "Mastering",
     "description": "Tape-ish: soft magnetic saturation + HF roll-off.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 3.2]\nparam b = Blend [0.3, 0.9]\nparam c = HF [5000, 16000]\nstage1: y = x\nbus tape:\n  send: in = 1\n  stage2: y = tube(x, a)\n  filter1: type = lowpass; cutoff = c; resonance = 0.3\nout: main = 1-b; tape = b",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -1769,22 +1527,16 @@
       "min": 5000,
       "max": 16000,
       "default": 11000
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 3.2]\nparam b = Blend [0.3, 0.9]\nparam c = HF [5000, 16000]\nstage1: y = x\nbus tape:\n  send: in = 1\n  stage2: y = tube(x, a)\n  filter1: type = lowpass; cutoff = c; resonance = 0.3\nout: main = 1-b; tape = b"
+    }
   },
   {
     "name": "Bus Glue",
     "category": "Mastering",
     "description": "Mix-bus glue: gentle ratio, soft makeup.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-20.0, -6.0]\nparam b = Ratio [1.4, 4.0]\nparam c = Makeup [1.0, 2.0]\ncomp1: threshold = a; ratio = b; attack = 0.018; release = 0.25\nstage1: y = diode(x * c, 1.02)",
     "paramA": {
       "name": "Threshold",
       "min": -20,
@@ -1802,22 +1554,16 @@
       "min": 1,
       "max": 2,
       "default": 1.35
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-20.0, -6.0]\nparam b = Ratio [1.4, 4.0]\nparam c = Makeup [1.0, 2.0]\ncomp1: threshold = a; ratio = b; attack = 0.018; release = 0.25\nstage1: y = diode(x * c, 1.02)"
+    }
   },
   {
     "name": "Air Exciter",
     "category": "Mastering",
     "description": "HF excite: HPF â†’ softclip (low drive) â†’ blend â€” soft only, no hardclip on air.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 3.5]\nparam b = Freq [2500, 9000]\nparam c = Blend [0.2, 0.65]\nbus air:\n  send: in = 1\n  filter1: type = highpass; cutoff = b; resonance = 0.35\n  stage1: y = softclip(x, a)\n  filter2: type = lowpass; cutoff = 16000; resonance = 0.22\nout: main = 1-c; air = c",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -1835,22 +1581,16 @@
       "min": 0.2,
       "max": 0.65,
       "default": 0.4
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 3.5]\nparam b = Freq [2500, 9000]\nparam c = Blend [0.2, 0.65]\nbus air:\n  send: in = 1\n  filter1: type = highpass; cutoff = b; resonance = 0.35\n  stage1: y = softclip(x, a)\n  filter2: type = lowpass; cutoff = 16000; resonance = 0.22\nout: main = 1-c; air = c"
+    }
   },
   {
     "name": "Loudness Clip",
     "category": "Mastering",
     "description": "Peak clipper best-practice: softclip â†’ soft-knee hard ceiling â†’ gentle AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Ceiling [0.55, 0.98]\nparam b = Drive [1.0, 2.2]\nparam c = Level [0.75, 1.15]\nstage1: y = hardclip(softclip(x, b), a) * c\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.22",
     "paramA": {
       "name": "Ceiling",
       "min": 0.55,
@@ -1868,22 +1608,16 @@
       "min": 0.75,
       "max": 1.15,
       "default": 0.95
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Ceiling [0.55, 0.98]\nparam b = Drive [1.0, 2.2]\nparam c = Level [0.75, 1.15]\nstage1: y = hardclip(softclip(x, b), a) * c\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.22"
+    }
   },
   {
     "name": "Lo-Fi Crush",
     "category": "Lo-Fi",
     "description": "Soft-pre bitcrush + post LPF (quantize always filtered to tame HF trash).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Bits [3.0, 11.0]\nparam b = Drive [1.0, 3.5]\nparam c = LPF [500, 7000]\nstage1: y = bitcrush(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.5",
     "paramA": {
       "name": "Bits",
       "min": 3,
@@ -1901,22 +1635,16 @@
       "min": 500,
       "max": 7000,
       "default": 2800
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Bits [3.0, 11.0]\nparam b = Drive [1.0, 3.5]\nparam c = LPF [500, 7000]\nstage1: y = bitcrush(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.5"
+    }
   },
   {
     "name": "Cassette",
     "category": "Lo-Fi",
     "description": "Wobble AM + tube + muted LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.25, 3.5]\nparam b = Depth [0.08, 0.4]\nparam c = Drive [1.1, 3.2]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x * (1.0 + osc1 * b), c)\nfilter1: type = lowpass; cutoff = 4800; resonance = 0.45",
     "paramA": {
       "name": "Rate",
       "min": 0.25,
@@ -1934,22 +1662,16 @@
       "min": 1.1,
       "max": 3.2,
       "default": 1.9
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.25, 3.5]\nparam b = Depth [0.08, 0.4]\nparam c = Drive [1.1, 3.2]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x * (1.0 + osc1 * b), c)\nfilter1: type = lowpass; cutoff = 4800; resonance = 0.45"
+    }
   },
   {
     "name": "Phone Line",
     "category": "Lo-Fi",
     "description": "Telephone band + soft-pre bitcrush + LPF (band-limit after quantize).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Center [600, 1800]\nparam b = Width [200, 800]\nparam c = Bits [4.0, 11.0]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = bitcrush(softclip(x, 1.5), c)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.4",
     "paramA": {
       "name": "Center",
       "min": 600,
@@ -1967,22 +1689,16 @@
       "min": 4,
       "max": 11,
       "default": 7
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Center [600, 1800]\nparam b = Width [200, 800]\nparam c = Bits [4.0, 11.0]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = bitcrush(softclip(x, 1.5), c)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.4"
+    }
   },
   {
     "name": "Vinyl Dirt",
     "category": "Lo-Fi",
     "description": "Gentle feedback dirt + roll-off (stable fb).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 3.5]\nparam b = Dirt [0.04, 0.28]\nparam c = LPF [1500, 8000]\nstage1: y = tube(x + y_prev * b, a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.5",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -2000,22 +1716,16 @@
       "min": 1500,
       "max": 8000,
       "default": 3800
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 3.5]\nparam b = Dirt [0.04, 0.28]\nparam c = LPF [1500, 8000]\nstage1: y = tube(x + y_prev * b, a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.5"
+    }
   },
   {
     "name": "Sidechain Pump",
     "category": "EDM",
     "description": "Sine ducking envelope (sidechain pump).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.5, 8.0]\nparam b = Depth [0.4, 1.0]\nparam c = Floor [0.0, 0.35]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))",
     "paramA": {
       "name": "Rate",
       "min": 0.5,
@@ -2033,22 +1743,16 @@
       "min": 0,
       "max": 0.35,
       "default": 0.08
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.5, 8.0]\nparam b = Depth [0.4, 1.0]\nparam c = Floor [0.0, 0.35]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))"
+    }
   },
   {
     "name": "Dubstep Growl",
     "category": "EDM",
     "description": "LFO filter growl + soft-pre hard ceiling + recovery LPF (Q restrained).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.5, 9.0]\nparam b = Min [80, 350]\nparam c = Depth [400, 4200]\nparam d = Drive [1.8, 8.0]\nosc1: shape = sine; freq = a; depth = 1.0\nfilter1: type = lowpass; cutoff = b; + = osc1; * = c; resonance = 2.0\nstage1: y = hardclip(softclip(tube(x, d), 1.2), 0.55)\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.4",
     "paramA": {
       "name": "Rate",
       "min": 0.5,
@@ -2072,16 +1776,16 @@
       "min": 1.8,
       "max": 8,
       "default": 4.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.5, 9.0]\nparam b = Min [80, 350]\nparam c = Depth [400, 4200]\nparam d = Drive [1.8, 8.0]\nosc1: shape = sine; freq = a; depth = 1.0\nfilter1: type = lowpass; cutoff = b; + = osc1; * = c; resonance = 2.0\nstage1: y = hardclip(softclip(tube(x, d), 1.2), 0.55)\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.4"
+    }
   },
   {
     "name": "Riser Noise",
     "category": "EDM",
     "description": "HPF riser + softclip + saw AM + mild AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Cutoff [250, 7500]\nparam b = Rate [0.2, 5.0]\nparam c = Drive [1.0, 3.2]\nosc1: shape = saw; freq = b; depth = 1.0\nfilter1: type = highpass; cutoff = a; resonance = 0.75\nstage1: y = softclip(x, c) * (0.55 + 0.45 * (0.5 + 0.5 * osc1))\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.3",
     "paramA": {
       "name": "Cutoff",
       "min": 250,
@@ -2099,22 +1803,16 @@
       "min": 1,
       "max": 3.2,
       "default": 1.7
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Cutoff [250, 7500]\nparam b = Rate [0.2, 5.0]\nparam c = Drive [1.0, 3.2]\nosc1: shape = saw; freq = b; depth = 1.0\nfilter1: type = highpass; cutoff = a; resonance = 0.75\nstage1: y = softclip(x, c) * (0.55 + 0.45 * (0.5 + 0.5 * osc1))\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.3"
+    }
   },
   {
     "name": "Club Clip",
     "category": "EDM",
     "description": "Club loudness: softclip â†’ hard ceiling â†’ AA LPF (same recipe as Loudness Clip, lower ceiling).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 4.5]\nparam b = Ceiling [0.4, 0.9]\nparam c = Level [0.5, 1.05]\nstage1: y = hardclip(softclip(x, a), b) * c\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.28",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -2132,22 +1830,16 @@
       "min": 0.5,
       "max": 1.05,
       "default": 0.78
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 4.5]\nparam b = Ceiling [0.4, 0.9]\nparam c = Level [0.5, 1.05]\nstage1: y = hardclip(softclip(x, a), b) * c\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.28"
+    }
   },
   {
     "name": "Shimmer Drive",
     "category": "Ambient",
-    "description": "Slow shimmer AM + soft tube.",
+    "description": "Tube drive into a bright high-passed hall; slow AM on the tail.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 3.2]\nparam b = Size [0.35, 0.9]\nparam c = Mix [0.2, 0.7]\nparam d = Rate [0.05, 1.2]\nparam e = Depth [0.12, 0.5]\nparam f = Damp [0.15, 0.65]\nosc1: shape = sine; freq = d; depth = 1.0\nstage1: y = tube(x, a)\nreverb1: size = b; decay = 0.78; damp = f; mix = 1.0; width = 0.95\nstage2: y = y * (1.0 - e + e * (0.5 + 0.5 * osc1))\nfilter1: type = highpass; cutoff = 1800; resonance = 0.25\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.25\nstage3: y = lerp(x, y, c)",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -2155,32 +1847,44 @@
       "default": 1.7
     },
     "paramB": {
+      "name": "Size",
+      "min": 0.35,
+      "max": 0.9,
+      "default": 0.62
+    },
+    "paramC": {
+      "name": "Mix",
+      "min": 0.2,
+      "max": 0.7,
+      "default": 0.42
+    },
+    "paramD": {
       "name": "Rate",
       "min": 0.05,
       "max": 1.2,
       "default": 0.18
     },
-    "paramC": {
+    "paramE": {
       "name": "Depth",
       "min": 0.12,
-      "max": 0.6,
-      "default": 0.35
+      "max": 0.5,
+      "default": 0.32
     },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 3.2]\nparam b = Rate [0.05, 1.2]\nparam c = Depth [0.12, 0.6]\nosc1: shape = sine; freq = b; depth = 1.0\nstage1: y = tube(x, a)\nstage2: y = y * (1.0 - c + c * (0.5 + 0.5 * osc1))"
+    "paramF": {
+      "name": "Damp",
+      "min": 0.15,
+      "max": 0.65,
+      "default": 0.38
+    }
   },
   {
     "name": "Drone Layer",
     "category": "Ambient",
     "description": "Stable feedback drone with LFO level (fb < 0.55) + recovery LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 3.0]\nparam b = Feedback [0.08, 0.52]\nparam c = Rate [0.05, 1.5]\nosc1: shape = sine; freq = c; depth = 1.0\nstage1: y = tube(x + y_prev * b, a)\nstage2: y = y * (0.75 + 0.25 * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.3",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -2198,22 +1902,16 @@
       "min": 0.05,
       "max": 1.5,
       "default": 0.12
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 3.0]\nparam b = Feedback [0.08, 0.52]\nparam c = Rate [0.05, 1.5]\nosc1: shape = sine; freq = c; depth = 1.0\nstage1: y = tube(x + y_prev * b, a)\nstage2: y = y * (0.75 + 0.25 * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.3"
+    }
   },
   {
     "name": "Crystal Edge",
     "category": "Ambient",
     "description": "Air crystal: HPF â†’ softclip blend (soft only) + mild AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Freq [1800, 10000]\nparam b = Drive [1.2, 3.8]\nparam c = Blend [0.25, 0.75]\nbus air:\n  send: in = 1\n  filter1: type = highpass; cutoff = a; resonance = 0.5\n  stage1: y = softclip(x, b)\n  filter2: type = lowpass; cutoff = 15000; resonance = 0.22\nout: main = 1-c; air = c",
     "paramA": {
       "name": "Freq",
       "min": 1800,
@@ -2231,22 +1929,16 @@
       "min": 0.25,
       "max": 0.75,
       "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Freq [1800, 10000]\nparam b = Drive [1.2, 3.8]\nparam c = Blend [0.25, 0.75]\nbus air:\n  send: in = 1\n  filter1: type = highpass; cutoff = a; resonance = 0.5\n  stage1: y = softclip(x, b)\n  filter2: type = lowpass; cutoff = 15000; resonance = 0.22\nout: main = 1-c; air = c"
+    }
   },
   {
     "name": "Wide Motion",
     "category": "Ambient",
     "description": "Opposite-phase AM L/R for width.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.08, 2.5]\nparam b = Depth [0.15, 0.7]\nparam c = Drive [1.0, 2.6]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: channel = left; y = tube(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))\nstage2: channel = right; y = tube(x, c) * (1.0 - b + b * (0.5 - 0.5 * osc1))",
     "paramA": {
       "name": "Rate",
       "min": 0.08,
@@ -2264,22 +1956,16 @@
       "min": 1,
       "max": 2.6,
       "default": 1.45
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.08, 2.5]\nparam b = Depth [0.15, 0.7]\nparam c = Drive [1.0, 2.6]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: channel = left; y = tube(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))\nstage2: channel = right; y = tube(x, c) * (1.0 - b + b * (0.5 - 0.5 * osc1))"
+    }
   },
   {
     "name": "Glitch Gate",
     "category": "Creative",
     "description": "Fast square gate + softclip + mild LPF (gate edges need soft ceiling).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [5.0, 28.0]\nparam b = Depth [0.65, 1.0]\nparam c = Drive [1.0, 3.0]\nosc1: shape = square; freq = a; depth = 1.0\nstage1: y = softclip(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3",
     "paramA": {
       "name": "Rate",
       "min": 5,
@@ -2297,22 +1983,16 @@
       "min": 1,
       "max": 3,
       "default": 1.6
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [5.0, 28.0]\nparam b = Depth [0.65, 1.0]\nparam c = Drive [1.0, 3.0]\nosc1: shape = square; freq = a; depth = 1.0\nstage1: y = softclip(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3"
+    }
   },
   {
     "name": "Feedback Screamer",
     "category": "Creative",
     "description": "Controlled feedback (fb capped) â†’ LPF â†’ softclip ceiling (filter before/around clip).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.3, 6.0]\nparam b = Feedback [0.15, 0.55]\nparam c = LPF [700, 7000]\nstage1: y = tube(x + y_prev * b, a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.95\nstage2: y = softclip(y, 1.2)",
     "paramA": {
       "name": "Drive",
       "min": 1.3,
@@ -2330,22 +2010,16 @@
       "min": 700,
       "max": 7000,
       "default": 2800
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.3, 6.0]\nparam b = Feedback [0.15, 0.55]\nparam c = LPF [700, 7000]\nstage1: y = tube(x + y_prev * b, a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.95\nstage2: y = softclip(y, 1.2)"
+    }
   },
   {
     "name": "Fold Universe",
     "category": "Creative",
     "description": "Deep fold â†’ softclip recovery â†’ lower LPF (fold is HF-heavy; band-limit hard).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [2.5, 12.0]\nparam b = Fold [0.15, 0.7]\nparam c = Level [0.25, 0.9]\nstage1: y = fold(x * a, -b, b)\nstage2: y = softclip(y, 1.35) * c\nfilter1: type = lowpass; cutoff = 7000; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 2.5,
@@ -2363,22 +2037,16 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.55
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [2.5, 12.0]\nparam b = Fold [0.15, 0.7]\nparam c = Level [0.25, 0.9]\nstage1: y = fold(x * a, -b, b)\nstage2: y = softclip(y, 1.35) * c\nfilter1: type = lowpass; cutoff = 7000; resonance = 0.35"
+    }
   },
   {
     "name": "Noise Blow",
     "category": "Sound Design",
     "description": "Env HPF blast into diode sat.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Floor [120, 900]\nparam b = Range [800, 10000]\nparam c = Drive [1.3, 5.5]\nenv1: type = peak; attack = 0.002; release = 0.18\nfilter1: type = highpass; cutoff = a; + = env1; * = b; resonance = 1.2\nstage1: y = diode(x, c)",
     "paramA": {
       "name": "Floor",
       "min": 120,
@@ -2396,22 +2064,16 @@
       "min": 1.3,
       "max": 5.5,
       "default": 2.8
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Floor [120, 900]\nparam b = Range [800, 10000]\nparam c = Drive [1.3, 5.5]\nenv1: type = peak; attack = 0.002; release = 0.18\nfilter1: type = highpass; cutoff = a; + = env1; * = b; resonance = 1.2\nstage1: y = diode(x, c)"
+    }
   },
   {
     "name": "Formant Crush",
     "category": "Sound Design",
     "description": "Dual formant peaks + softclip + mild LPF (clip between formants stays band-limited).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = F1 [320, 1100]\nparam b = F2 [1000, 2800]\nparam c = Drive [1.3, 4.5]\nfilter1: type = bandpass; center = a; width = 220\nstage1: y = softclip(x, c)\nfilter2: type = bandpass; center = b; width = 320\nfilter3: type = lowpass; cutoff = 9000; resonance = 0.3",
     "paramA": {
       "name": "F1",
       "min": 320,
@@ -2429,22 +2091,16 @@
       "min": 1.3,
       "max": 4.5,
       "default": 2.4
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = F1 [320, 1100]\nparam b = F2 [1000, 2800]\nparam c = Drive [1.3, 4.5]\nfilter1: type = bandpass; center = a; width = 220\nstage1: y = softclip(x, c)\nfilter2: type = bandpass; center = b; width = 320\nfilter3: type = lowpass; cutoff = 9000; resonance = 0.3"
+    }
   },
   {
     "name": "Alien Ring",
     "category": "Sound Design",
     "description": "Low-frequency ring mod + tube.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Freq [8.0, 160.0]\nparam b = Depth [0.45, 1.0]\nparam c = Drive [1.1, 4.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x * (1.0 - b + b * osc1), c)",
     "paramA": {
       "name": "Freq",
       "min": 8,
@@ -2462,22 +2118,16 @@
       "min": 1.1,
       "max": 4,
       "default": 2.1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Freq [8.0, 160.0]\nparam b = Depth [0.45, 1.0]\nparam c = Drive [1.1, 4.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = tube(x * (1.0 - b + b * osc1), c)"
+    }
   },
   {
     "name": "Stutter Gate",
     "category": "Sound Design",
     "description": "Extreme square stutter.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [6.0, 36.0]\nparam b = Depth [0.75, 1.0]\nosc1: shape = square; freq = a; depth = 1.0\nstage1: y = x * (1.0 - b + b * (0.5 + 0.5 * osc1))",
     "paramA": {
       "name": "Rate",
       "min": 6,
@@ -2489,28 +2139,16 @@
       "min": 0.75,
       "max": 1,
       "default": 1
-    },
-    "paramC": {
-      "name": "C",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [6.0, 36.0]\nparam b = Depth [0.75, 1.0]\nosc1: shape = square; freq = a; depth = 1.0\nstage1: y = x * (1.0 - b + b * (0.5 + 0.5 * osc1))"
+    }
   },
   {
     "name": "Comb Taste",
     "category": "Sound Design",
     "description": "Metallic comb via very short delay + high feedback (true delay line, not y_prev).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [3, 28]\nparam b = Feedback [0.55, 0.9]\nparam c = Mix [0.25, 0.85]\nparam d = Drive [1.0, 2.8]\nstage1: y = tube(x, d)\ndelay1: time = a; feedback = b; mix = c; damp = 7000\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.4",
     "paramA": {
       "name": "Time",
       "min": 3,
@@ -2534,16 +2172,16 @@
       "min": 1,
       "max": 2.8,
       "default": 1.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Time [3, 28]\nparam b = Feedback [0.55, 0.9]\nparam c = Mix [0.25, 0.85]\nparam d = Drive [1.0, 2.8]\nstage1: y = tube(x, d)\ndelay1: time = a; feedback = b; mix = c; damp = 7000\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.4"
+    }
   },
   {
     "name": "Preamp Regen Stack",
     "category": "Guitar",
     "description": "HPF -> tube (SIMD) -> ONE y_prev regen stage -> cab LPF -> soft power (SIMD). Fast multi-stage.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 7.0]\nparam b = Regen [0.08, 0.48]\nparam c = Tone [800, 6500]\nparam d = Level [0.35, 1.15]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.4)\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage3: y = softclip(y, 1.15) * d",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -2567,16 +2205,16 @@
       "min": 0.35,
       "max": 1.15,
       "default": 0.8
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 7.0]\nparam b = Regen [0.08, 0.48]\nparam c = Tone [800, 6500]\nparam d = Level [0.35, 1.15]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.4)\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage3: y = softclip(y, 1.15) * d"
+    }
   },
   {
     "name": "Slapback Drive",
     "category": "Guitar",
     "description": "Touch-sensitive OD into a real short delay slap (80–140 ms), damped feedback, diode polish.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 6.5]\nparam b = Time [60, 160]\nparam c = Mix [0.12, 0.45]\nparam d = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.3\nstage1: y = softclip(x, a * 0.75)\ndelay1: time = b; feedback = 0.18; mix = c; damp = 4200\nstage2: y = diode(y, 1.15) * d\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -2600,16 +2238,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.88
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 6.5]\nparam b = Time [60, 160]\nparam c = Mix [0.12, 0.45]\nparam d = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.3\nstage1: y = softclip(x, a * 0.75)\ndelay1: time = b; feedback = 0.18; mix = c; damp = 4200\nstage2: y = diode(y, 1.15) * d\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.35"
+    }
   },
   {
     "name": "Cascade Loop Dirt",
     "category": "Distortion",
     "description": "3-stage dirt: softclip -> feedback tube (only prev stage) -> diode polish + LPF. One scalar stage.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 9.0]\nparam b = Loop [0.1, 0.5]\nparam c = Tone [500, 6000]\nparam d = Level [0.3, 1.05]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = softclip(x, a * 0.45)\nstage2: y = tube(x + y_prev * b, a * 0.5)\nstage3: y = diode(y, 1.35)\nfilter2: type = lowpass; cutoff = c; resonance = 0.5\nstage4: y = softclip(y, 1.05) * d",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -2633,16 +2271,16 @@
       "min": 0.3,
       "max": 1.05,
       "default": 0.7
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 9.0]\nparam b = Loop [0.1, 0.5]\nparam c = Tone [500, 6000]\nparam d = Level [0.3, 1.05]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = softclip(x, a * 0.45)\nstage2: y = tube(x + y_prev * b, a * 0.5)\nstage3: y = diode(y, 1.35)\nfilter2: type = lowpass; cutoff = c; resonance = 0.5\nstage4: y = softclip(y, 1.05) * d"
+    }
   },
   {
     "name": "Bass Regen Growl",
     "category": "Bass",
     "description": "Keep lows: tube pre (SIMD) + single y_prev regen blend + LPF. Low CPU, thick DI.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 6.0]\nparam b = Regen [0.06, 0.4]\nparam c = Blend [0.2, 0.85]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25\nstage1: y = tube(x, a * 0.5)\nstage2: y = lerp(x, softclip(x + y_prev * b, 1.3), c) * d\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -2666,16 +2304,16 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.95
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 6.0]\nparam b = Regen [0.06, 0.4]\nparam c = Blend [0.2, 0.85]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25\nstage1: y = tube(x, a * 0.5)\nstage2: y = lerp(x, softclip(x + y_prev * b, 1.3), c) * d\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.35"
+    }
   },
   {
     "name": "Vocal Warm Loop",
     "category": "Vocals",
     "description": "Broadcast grit with tiny regen for body. HPF -> tube -> mild y_prev softclip -> air LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 4.5]\nparam b = Body [0.04, 0.32]\nparam c = Air [3000, 12000]\nparam d = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = 100; resonance = 0.3\nstage1: y = tube(x, a)\nstage2: y = softclip(x + y_prev * b, 1.1)\nfilter2: type = lowpass; cutoff = c; resonance = 0.35\nstage3: y = diode(y, 1.05) * d",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -2699,16 +2337,16 @@
       "min": 0.55,
       "max": 1.25,
       "default": 0.95
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 4.5]\nparam b = Body [0.04, 0.32]\nparam c = Air [3000, 12000]\nparam d = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = 100; resonance = 0.3\nstage1: y = tube(x, a)\nstage2: y = softclip(x + y_prev * b, 1.1)\nfilter2: type = lowpass; cutoff = c; resonance = 0.35\nstage3: y = diode(y, 1.05) * d"
+    }
   },
   {
     "name": "Drum Bus Regen",
     "category": "Drums",
     "description": "Bus glue dirt: softclip smash -> controlled y_prev heat -> LPF. One feedback stage only.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.3, 7.0]\nparam b = Heat [0.08, 0.45]\nparam c = Glue [1200, 10000]\nparam d = Level [0.4, 1.1]\nstage1: y = softclip(x, a * 0.6)\nstage2: y = hardclip(softclip(x + y_prev * b, 1.2), 0.85)\nfilter1: type = lowpass; cutoff = c; resonance = 0.35\nstage3: y = diode(y, 1.1) * d",
     "paramA": {
       "name": "Drive",
       "min": 1.3,
@@ -2732,16 +2370,16 @@
       "min": 0.4,
       "max": 1.1,
       "default": 0.78
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.3, 7.0]\nparam b = Heat [0.08, 0.45]\nparam c = Glue [1200, 10000]\nparam d = Level [0.4, 1.1]\nstage1: y = softclip(x, a * 0.6)\nstage2: y = hardclip(softclip(x + y_prev * b, 1.2), 0.85)\nfilter1: type = lowpass; cutoff = c; resonance = 0.35\nstage3: y = diode(y, 1.1) * d"
+    }
   },
   {
     "name": "Synth Feedback Lead",
     "category": "Synth",
     "description": "Lead stack: tube pre -> y_prev scream (capped) -> tone LPF -> soft ceiling. No Osc = max speed.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.5, 8.0]\nparam b = Feed [0.12, 0.52]\nparam c = Cutoff [600, 7000]\nparam d = Level [0.3, 1.0]\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.45)\nfilter1: type = lowpass; cutoff = c; resonance = 0.55\nstage3: y = softclip(y, 1.2) * d",
     "paramA": {
       "name": "Drive",
       "min": 1.5,
@@ -2765,16 +2403,16 @@
       "min": 0.3,
       "max": 1,
       "default": 0.7
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.5, 8.0]\nparam b = Feed [0.12, 0.52]\nparam c = Cutoff [600, 7000]\nparam d = Level [0.3, 1.0]\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.45)\nfilter1: type = lowpass; cutoff = c; resonance = 0.55\nstage3: y = softclip(y, 1.2) * d"
+    }
   },
   {
     "name": "Dual Path Regen",
     "category": "Creative",
     "description": "Pre softclip (SIMD) + y_prev path blended in ONE stage. Teaches: prev in a single stage only.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.2, 6.5]\nparam b = Regen [0.1, 0.5]\nparam c = Blend [0.2, 0.9]\nparam d = Tone [1000, 9000]\nstage1: y = softclip(x, a * 0.4)\nstage2: y = lerp(x, softclip(x + y_prev * b, a * 0.55), c)\nfilter1: type = lowpass; cutoff = d; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1.2,
@@ -2798,16 +2436,16 @@
       "min": 1000,
       "max": 9000,
       "default": 5000
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.2, 6.5]\nparam b = Regen [0.1, 0.5]\nparam c = Blend [0.2, 0.9]\nparam d = Tone [1000, 9000]\nstage1: y = softclip(x, a * 0.4)\nstage2: y = lerp(x, softclip(x + y_prev * b, a * 0.55), c)\nfilter1: type = lowpass; cutoff = d; resonance = 0.35"
+    }
   },
   {
     "name": "Tight Metal Regen",
     "category": "Guitar",
     "description": "Tight metal: HPF -> dual tube (SIMD) -> ONE hard-knee regen -> cab LPF. High gain, still hybrid-fast.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Gain [4.0, 14.0]\nparam b = Regen [0.05, 0.35]\nparam c = LowCut [80, 300]\nparam d = Level [0.2, 0.85]\nfilter1: type = highpass; cutoff = c; resonance = 0.5\nstage1: y = tube(x, a * 0.4)\nstage2: y = tube(y, a * 0.45)\nstage3: y = hardclip(softclip(x + y_prev * b, 1.15), 0.55)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.55\nstage4: y = y * d",
     "paramA": {
       "name": "Gain",
       "min": 4,
@@ -2831,16 +2469,16 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.48
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Gain [4.0, 14.0]\nparam b = Regen [0.05, 0.35]\nparam c = LowCut [80, 300]\nparam d = Level [0.2, 0.85]\nfilter1: type = highpass; cutoff = c; resonance = 0.5\nstage1: y = tube(x, a * 0.4)\nstage2: y = tube(y, a * 0.45)\nstage3: y = hardclip(softclip(x + y_prev * b, 1.15), 0.55)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.55\nstage4: y = y * d"
+    }
   },
   {
     "name": "Tape Echo Dirt",
     "category": "Lo-Fi",
     "description": "Real tape-style echo: tube preamp, medium delay, high feedback, dark damp, soft ceiling.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 4.0]\nparam b = Time [180, 520]\nparam c = Feedback [0.25, 0.72]\nparam d = Age [800, 5500]\nstage1: y = tube(x, a)\ndelay1: time = b; feedback = c; mix = 0.42; damp = d\nstage2: y = softclip(y, 1.12)\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -2864,16 +2502,16 @@
       "min": 800,
       "max": 5500,
       "default": 2800
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 4.0]\nparam b = Time [180, 520]\nparam c = Feedback [0.25, 0.72]\nparam d = Age [800, 5500]\nstage1: y = tube(x, a)\ndelay1: time = b; feedback = c; mix = 0.42; damp = d\nstage2: y = softclip(y, 1.12)\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.3"
+    }
   },
   {
     "name": "Slap Echo",
     "category": "Delay",
     "description": "Classic slapback: 70–150 ms, low feedback, bright-ish damp — vocals/guitar.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [70, 150]\nparam b = Feedback [0.0, 0.35]\nparam c = Mix [0.15, 0.5]\nparam d = Damp [2500, 12000]\nstage1: y = softclip(x, 1.08)\ndelay1: time = a; feedback = b; mix = c; damp = d",
     "paramA": {
       "name": "Time",
       "min": 70,
@@ -2897,16 +2535,16 @@
       "min": 2500,
       "max": 12000,
       "default": 7000
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Time [70, 150]\nparam b = Feedback [0.0, 0.35]\nparam c = Mix [0.15, 0.5]\nparam d = Damp [2500, 12000]\nstage1: y = softclip(x, 1.08)\ndelay1: time = a; feedback = b; mix = c; damp = d"
+    }
   },
   {
     "name": "Eighth Note Echo",
     "category": "Delay",
     "description": "Tempo-synced 1/8 delay, moderate feedback, ping-pong stereo.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Feedback [0.2, 0.65]\nparam b = Mix [0.18, 0.55]\nparam c = Damp [1000, 10000]\nparam d = Drive [1.0, 2.2]\nstage1: y = softclip(x, d)\ndelay1: sync = 1/8; feedback = a; mix = b; damp = c; pingpong = true",
     "paramA": {
       "name": "Feedback",
       "min": 0.2,
@@ -2930,16 +2568,16 @@
       "min": 1,
       "max": 2.2,
       "default": 1.2
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Feedback [0.2, 0.65]\nparam b = Mix [0.18, 0.55]\nparam c = Damp [1000, 10000]\nparam d = Drive [1.0, 2.2]\nstage1: y = softclip(x, d)\ndelay1: sync = 1/8; feedback = a; mix = b; damp = c; pingpong = true"
+    }
   },
   {
     "name": "Quarter Dub",
     "category": "Delay",
     "description": "Tempo 1/4 dub delay: dark damp, long feedback for rhythmic trails.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Feedback [0.4, 0.85]\nparam b = Mix [0.2, 0.55]\nparam c = Damp [400, 4000]\nparam d = Drive [1.0, 3.0]\nstage1: y = tube(x, d)\ndelay1: sync = 1/4; feedback = a; mix = b; damp = c\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.28",
     "paramA": {
       "name": "Feedback",
       "min": 0.4,
@@ -2963,16 +2601,16 @@
       "min": 1,
       "max": 3,
       "default": 1.55
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Feedback [0.4, 0.85]\nparam b = Mix [0.2, 0.55]\nparam c = Damp [400, 4000]\nparam d = Drive [1.0, 3.0]\nstage1: y = tube(x, d)\ndelay1: sync = 1/4; feedback = a; mix = b; damp = c\nfilter1: type = lowpass; cutoff = 11000; resonance = 0.28"
+    }
   },
   {
     "name": "Analog Delay",
     "category": "Delay",
     "description": "Free-time analog-style delay with tube pre and age damp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [120, 700]\nparam b = Feedback [0.2, 0.75]\nparam c = Mix [0.2, 0.55]\nparam d = Age [600, 7000]\nstage1: y = tube(x, 1.6)\ndelay1: time = a; feedback = b; mix = c; damp = d\nstage2: y = softclip(y, 1.1)",
     "paramA": {
       "name": "Time",
       "min": 120,
@@ -2996,16 +2634,16 @@
       "min": 600,
       "max": 7000,
       "default": 3200
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Time [120, 700]\nparam b = Feedback [0.2, 0.75]\nparam c = Mix [0.2, 0.55]\nparam d = Age [600, 7000]\nstage1: y = tube(x, 1.6)\ndelay1: time = a; feedback = b; mix = c; damp = d\nstage2: y = softclip(y, 1.1)"
+    }
   },
   {
     "name": "Ping Pong Wide",
     "category": "Delay",
     "description": "Wide stereo ping-pong at dotted-ish free time with soft pre.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [180, 480]\nparam b = Feedback [0.25, 0.7]\nparam c = Mix [0.2, 0.5]\nparam d = Damp [1500, 9000]\nstage1: y = softclip(x, 1.1)\ndelay1: time = a; feedback = b; mix = c; damp = d; pingpong = true",
     "paramA": {
       "name": "Time",
       "min": 180,
@@ -3029,16 +2667,16 @@
       "min": 1500,
       "max": 9000,
       "default": 5000
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Time [180, 480]\nparam b = Feedback [0.25, 0.7]\nparam c = Mix [0.2, 0.5]\nparam d = Damp [1500, 9000]\nstage1: y = softclip(x, 1.1)\ndelay1: time = a; feedback = b; mix = c; damp = d; pingpong = true"
+    }
   },
   {
     "name": "Studio Room",
     "category": "Reverb",
     "description": "Tight recording-room reverb — small size, short decay, musical damp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Size [0.12, 0.55]\nparam b = Decay [0.15, 0.55]\nparam c = Damp [0.25, 0.75]\nparam d = Mix [0.1, 0.45]\nreverb1: size = a; decay = b; damp = c; mix = d; width = 0.75",
     "paramA": {
       "name": "Size",
       "min": 0.12,
@@ -3062,16 +2700,16 @@
       "min": 0.1,
       "max": 0.45,
       "default": 0.28
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Size [0.12, 0.55]\nparam b = Decay [0.15, 0.55]\nparam c = Damp [0.25, 0.75]\nparam d = Mix [0.1, 0.45]\nreverb1: size = a; decay = b; damp = c; mix = d; width = 0.75"
+    }
   },
   {
     "name": "Concert Hall",
     "category": "Reverb",
     "description": "Large hall: high size/decay, moderate damp, full width.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Size [0.5, 1.0]\nparam b = Decay [0.45, 0.9]\nparam c = Mix [0.15, 0.5]\nparam d = Width [0.6, 1.0]\nstage1: y = softclip(x, 1.05)\nreverb1: size = a; decay = b; damp = 0.32; mix = c; width = d",
     "paramA": {
       "name": "Size",
       "min": 0.5,
@@ -3095,16 +2733,16 @@
       "min": 0.6,
       "max": 1,
       "default": 0.95
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Size [0.5, 1.0]\nparam b = Decay [0.45, 0.9]\nparam c = Mix [0.15, 0.5]\nparam d = Width [0.6, 1.0]\nstage1: y = softclip(x, 1.05)\nreverb1: size = a; decay = b; damp = 0.32; mix = c; width = d"
+    }
   },
   {
     "name": "Bright Plate",
     "category": "Reverb",
     "description": "Plate-ish: HPF pre, medium room, low damp for air and sheen.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Size [0.3, 0.75]\nparam b = Decay [0.35, 0.8]\nparam c = Mix [0.15, 0.55]\nparam d = Damp [0.05, 0.4]\nfilter1: type = highpass; cutoff = 180; resonance = 0.28\nreverb1: size = a; decay = b; damp = d; mix = c; width = 1.0",
     "paramA": {
       "name": "Size",
       "min": 0.3,
@@ -3128,16 +2766,16 @@
       "min": 0.05,
       "max": 0.4,
       "default": 0.18
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Size [0.3, 0.75]\nparam b = Decay [0.35, 0.8]\nparam c = Mix [0.15, 0.55]\nparam d = Damp [0.05, 0.4]\nfilter1: type = highpass; cutoff = 180; resonance = 0.28\nreverb1: size = a; decay = b; damp = d; mix = c; width = 1.0"
+    }
   },
   {
     "name": "Dark Ambient Verb",
     "category": "Reverb",
     "description": "Slow dark pad space: large size, high decay, heavy damp, soft pre.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Size [0.55, 1.0]\nparam b = Decay [0.55, 0.92]\nparam c = Mix [0.2, 0.6]\nparam d = Damp [0.45, 0.9]\nstage1: y = tube(x, 1.25)\nreverb1: size = a; decay = b; damp = d; mix = c; width = 0.9\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.3",
     "paramA": {
       "name": "Size",
       "min": 0.55,
@@ -3161,16 +2799,16 @@
       "min": 0.45,
       "max": 0.9,
       "default": 0.65
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Size [0.55, 1.0]\nparam b = Decay [0.55, 0.92]\nparam c = Mix [0.2, 0.6]\nparam d = Damp [0.45, 0.9]\nstage1: y = tube(x, 1.25)\nreverb1: size = a; decay = b; damp = d; mix = c; width = 0.9\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.3"
+    }
   },
   {
     "name": "Drum Chamber",
     "category": "Reverb",
     "description": "Punchy drum chamber: small-medium room, short decay, width for kit.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Size [0.2, 0.6]\nparam b = Decay [0.15, 0.5]\nparam c = Mix [0.12, 0.45]\nparam d = Width [0.5, 1.0]\nstage1: y = softclip(x, 1.12)\nreverb1: size = a; decay = b; damp = 0.5; mix = c; width = d",
     "paramA": {
       "name": "Size",
       "min": 0.2,
@@ -3194,16 +2832,16 @@
       "min": 0.5,
       "max": 1,
       "default": 0.85
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Size [0.2, 0.6]\nparam b = Decay [0.15, 0.5]\nparam c = Mix [0.12, 0.45]\nparam d = Width [0.5, 1.0]\nstage1: y = softclip(x, 1.12)\nreverb1: size = a; decay = b; damp = 0.5; mix = c; width = d"
+    }
   },
   {
     "name": "MS Width",
     "category": "Mastering",
     "description": "True mid/side stereo width: encode, scale side, decode.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Width [0.0, 1.6]\nparam b = Level [0.7, 1.2]\nms1: mode = encode\nstage1: channel = mid; y = x * b\nstage2: channel = side; y = x * a * b\nms2: mode = decode",
     "paramA": {
       "name": "Width",
       "min": 0,
@@ -3215,28 +2853,16 @@
       "min": 0.7,
       "max": 1.2,
       "default": 1
-    },
-    "paramC": {
-      "name": "C",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Width [0.0, 1.6]\nparam b = Level [0.7, 1.2]\nms1: mode = encode\nstage1: channel = mid; y = x * b\nstage2: channel = side; y = x * a * b\nms2: mode = decode"
+    }
   },
   {
     "name": "MS Mid Focus",
     "category": "Mastering",
     "description": "Compress the mid, leave side open — focused center with width.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Threshold [-30.0, -8.0]\nparam b = Ratio [1.5, 6.0]\nparam c = Side [0.7, 1.35]\nparam d = Makeup [0.9, 1.4]\nms1: mode = encode\nstage1: channel = mid; y = x\ncomp1: threshold = a; ratio = b; attack = 0.012; release = 0.16\nstage2: channel = mid; y = softclip(x * d, 1.08)\nstage3: channel = side; y = softclip(x * c, 1.05)\nms2: mode = decode",
     "paramA": {
       "name": "Threshold",
       "min": -30,
@@ -3260,16 +2886,16 @@
       "min": 0.9,
       "max": 1.4,
       "default": 1.1
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Threshold [-30.0, -8.0]\nparam b = Ratio [1.5, 6.0]\nparam c = Side [0.7, 1.35]\nparam d = Makeup [0.9, 1.4]\nms1: mode = encode\nstage1: channel = mid; y = x\ncomp1: threshold = a; ratio = b; attack = 0.012; release = 0.16\nstage2: channel = mid; y = softclip(x * d, 1.08)\nstage3: channel = side; y = softclip(x * c, 1.05)\nms2: mode = decode"
+    }
   },
   {
     "name": "MS Side Air",
     "category": "Mastering",
     "description": "HPF the side channel only (channel=side filter) for airy width without muddy mids.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = SideHPF [120, 800]\nparam b = SideGain [0.6, 1.4]\nparam c = Level [0.8, 1.15]\nms1: mode = encode\nstage1: channel = mid; y = x * c\nfilter1: type = highpass; cutoff = a; resonance = 0.35; channel = side\nstage2: channel = side; y = softclip(x * b, 1.05)\nms2: mode = decode",
     "paramA": {
       "name": "SideHPF",
       "min": 120,
@@ -3287,22 +2913,16 @@
       "min": 0.8,
       "max": 1.15,
       "default": 1
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = SideHPF [120, 800]\nparam b = SideGain [0.6, 1.4]\nparam c = Level [0.8, 1.15]\nms1: mode = encode\nstage1: channel = mid; y = x * c\nfilter1: type = highpass; cutoff = a; resonance = 0.35; channel = side\nstage2: channel = side; y = softclip(x * b, 1.05)\nms2: mode = decode"
+    }
   },
   {
     "name": "Clean Boost",
     "category": "Utility",
     "description": "Clean boost with optional soft ceiling (lerp dry gain vs softclip).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Gain [1.0, 4.5]\nparam b = Soft [0.0, 0.85]\nstage1: y = lerp(x * a, softclip(x, a), b)\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2",
     "paramA": {
       "name": "Gain",
       "min": 1,
@@ -3314,28 +2934,16 @@
       "min": 0,
       "max": 0.85,
       "default": 0.25
-    },
-    "paramC": {
-      "name": "C",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Gain [1.0, 4.5]\nparam b = Soft [0.0, 0.85]\nstage1: y = lerp(x * a, softclip(x, a), b)\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2"
+    }
   },
   {
     "name": "Mono Punch",
     "category": "Utility",
     "description": "Stereo-safe mild tube punch + gentle ceiling LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.1, 4.0]\nparam b = Level [0.55, 1.3]\nstage1: y = tube(x, a) * b\nfilter1: type = lowpass; cutoff = 14000; resonance = 0.25",
     "paramA": {
       "name": "Drive",
       "min": 1.1,
@@ -3347,28 +2955,16 @@
       "min": 0.55,
       "max": 1.3,
       "default": 0.95
-    },
-    "paramC": {
-      "name": "C",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.1, 4.0]\nparam b = Level [0.55, 1.3]\nstage1: y = tube(x, a) * b\nfilter1: type = lowpass; cutoff = 14000; resonance = 0.25"
+    }
   },
   {
     "name": "Safety Clip",
     "category": "Utility",
     "description": "Safety peak clip: softclip â†’ hard ceiling â†’ high AA LPF (never bare clamp).",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Ceiling [0.5, 1.0]\nparam b = Drive [1.0, 1.8]\nstage1: y = hardclip(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2",
     "paramA": {
       "name": "Ceiling",
       "min": 0.5,
@@ -3380,28 +2976,16 @@
       "min": 1,
       "max": 1.8,
       "default": 1.08
-    },
-    "paramC": {
-      "name": "C",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Ceiling [0.5, 1.0]\nparam b = Drive [1.0, 1.8]\nstage1: y = hardclip(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2"
+    }
   },
   {
     "name": "Soft Clip Tone",
     "category": "Utility",
     "description": "Canonical softclip recipe: HPF â†’ softclip(drive) â†’ tone LPF â†’ level.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.8, 8.0]\nparam b = Tone [800, 9000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 55; resonance = 0.3\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.4\nstage2: y = y * c",
     "paramA": {
       "name": "Drive",
       "min": 0.8,
@@ -3419,22 +3003,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.85
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.8, 8.0]\nparam b = Tone [800, 9000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 55; resonance = 0.3\nstage1: y = softclip(x, a)\nfilter2: type = lowpass; cutoff = b; resonance = 0.4\nstage2: y = y * c"
+    }
   },
   {
     "name": "Soft-Knee Ceiling",
     "category": "Utility",
     "description": "Mastering-style peak clip: softclip then hardclip ceiling; gentle AA LPF.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Ceiling [0.6, 0.99]\nparam b = Drive [1.0, 2.5]\nparam c = Air [8000, 18000]\nstage1: y = hardclip(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.22",
     "paramA": {
       "name": "Ceiling",
       "min": 0.6,
@@ -3452,22 +3030,16 @@
       "min": 8000,
       "max": 18000,
       "default": 14000
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Ceiling [0.6, 0.99]\nparam b = Drive [1.0, 2.5]\nparam c = Air [8000, 18000]\nstage1: y = hardclip(softclip(x, b), a)\nfilter1: type = lowpass; cutoff = c; resonance = 0.22"
+    }
   },
   {
     "name": "Parallel Soft Clip",
     "category": "Utility",
     "description": "Transparent peaks: lerp(dry, softclip) â€” best when you need control without dirt.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 5.0]\nparam b = Blend [0.15, 0.9]\nparam c = Level [0.6, 1.15]\nstage1: y = x * c\nbus clip:\n  send: in = 1\n  stage2: y = softclip(x, a) * c\n  filter1: type = lowpass; cutoff = 14000; resonance = 0.25\nout: main = 1-b; clip = b",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -3485,22 +3057,16 @@
       "min": 0.6,
       "max": 1.15,
       "default": 0.95
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 5.0]\nparam b = Blend [0.15, 0.9]\nparam c = Level [0.6, 1.15]\nstage1: y = x * c\nbus clip:\n  send: in = 1\n  stage2: y = softclip(x, a) * c\n  filter1: type = lowpass; cutoff = 14000; resonance = 0.25\nout: main = 1-b; clip = b"
+    }
   },
   {
     "name": "Hard Clip Pedal",
     "category": "Utility",
     "description": "RAT-style hard character WITHOUT crackle: soft-pre hardclip + tone LPF after.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Dist [1.5, 10.0]\nparam b = Tone [400, 7000]\nparam c = Level [0.3, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = hardclip(softclip(x, a * 0.5), 0.55)\nfilter2: type = lowpass; cutoff = b; resonance = 0.55\nstage2: y = y * c",
     "paramA": {
       "name": "Dist",
       "min": 1.5,
@@ -3518,22 +3084,16 @@
       "min": 0.3,
       "max": 1,
       "default": 0.65
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Dist [1.5, 10.0]\nparam b = Tone [400, 7000]\nparam c = Level [0.3, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = hardclip(softclip(x, a * 0.5), 0.55)\nfilter2: type = lowpass; cutoff = b; resonance = 0.55\nstage2: y = y * c"
+    }
   },
   {
     "name": "Diode Clip Stack",
     "category": "Utility",
     "description": "Diode soft-knee (asinh) + optional soft ceiling + LPF â€” smooth analog-ish clip.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [1.0, 8.0]\nparam b = Tone [1000, 10000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 50; resonance = 0.28\nstage1: y = diode(x, a)\nstage2: y = softclip(y, 1.05) * c\nfilter2: type = lowpass; cutoff = b; resonance = 0.35",
     "paramA": {
       "name": "Drive",
       "min": 1,
@@ -3551,22 +3111,16 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.88
-    },
-    "paramD": {
-      "name": "D",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
-    },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [1.0, 8.0]\nparam b = Tone [1000, 10000]\nparam c = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 50; resonance = 0.28\nstage1: y = diode(x, a)\nstage2: y = softclip(y, 1.05) * c\nfilter2: type = lowpass; cutoff = b; resonance = 0.35"
+    }
   },
   {
     "name": "Studio Channel Strip",
     "category": "Mastering",
-    "description": "Full strip: HPF → soft drive → 3-band serial EQ → glue comp → air LPF → soft ceiling. Eight knobs.",
+    "description": "Full strip: HPF → soft drive → mid EQ → air LPF → glue comp → soft ceiling.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [0.45, 2.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.32\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = c; width = c * 0.5\nstage2: y = softclip(x * d, 1.12)\nfilter3: type = lowpass; cutoff = e; resonance = 0.28\ncomp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15\nstage3: y = softclip(x * 1.0, 1.08)",
     "paramA": {
       "name": "Drive",
       "min": 0.8,
@@ -3591,10 +3145,6 @@
       "max": 2,
       "default": 1.1
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [0.45, 2.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nparam g = Ratio [1.5, 6.0]\nparam h = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.32\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = c; width = c * 0.5\nstage2: y = softclip(x * d, 1.12)\nfilter3: type = lowpass; cutoff = e; resonance = 0.28\ncomp1: threshold = f; ratio = g; attack = 0.008; release = 0.15\nstage3: y = softclip(x * h, 1.08)",
     "paramE": {
       "name": "High",
       "min": 4000,
@@ -3606,24 +3156,16 @@
       "min": -28,
       "max": -6,
       "default": -16
-    },
-    "paramG": {
-      "name": "Ratio",
-      "min": 1.5,
-      "max": 6,
-      "default": 2.8
-    },
-    "paramH": {
-      "name": "Level",
-      "min": 0.55,
-      "max": 1.25,
-      "default": 0.95
     }
   },
   {
     "name": "Dual Amp Stack",
     "category": "Distortion",
     "description": "Parallel clean tube + hot tube, mid scoop, cab LPF, presence, level, blend — six-knob dual path.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Clean [0.6, 2.5]\nparam b = Hot [2.0, 9.0]\nparam c = Blend [0.2, 0.9]\nparam d = Scoop [0.3, 1.4]\nparam e = Cab [2500, 8000]\nparam f = Level [0.35, 1.15]\nbus clean:\n  send: in = 1\n  filter1: type = highpass; cutoff = 70; resonance = 0.35\n  stage1: y = tube(x, a)\n  filter2: type = bandpass; center = 900; width = 2200\n  stage2: y = softclip(x * d, 1.2)\n  filter3: type = lowpass; cutoff = e; resonance = 0.4\n  stage3: y = softclip(y, 1.1) * f\nbus hot:\n  send: in = 1\n  filter4: type = highpass; cutoff = 70; resonance = 0.35\n  stage4: y = tube(x, b)\n  filter5: type = bandpass; center = 900; width = 2200\n  stage5: y = softclip(x * d, 1.2)\n  filter6: type = lowpass; cutoff = e; resonance = 0.4\n  stage6: y = softclip(y, 1.1) * f\nout: clean = 1-c; hot = c",
     "paramA": {
       "name": "Clean",
       "min": 0.6,
@@ -3648,10 +3190,6 @@
       "max": 1.4,
       "default": 0.85
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Clean [0.6, 2.5]\nparam b = Hot [2.0, 9.0]\nparam c = Blend [0.2, 0.9]\nparam d = Scoop [0.3, 1.4]\nparam e = Cab [2500, 8000]\nparam f = Level [0.35, 1.15]\nbus clean:\n  send: in = 1\n  filter1: type = highpass; cutoff = 70; resonance = 0.35\n  stage1: y = tube(x, a)\n  filter2: type = bandpass; center = 900; width = 2200\n  stage2: y = softclip(x * d, 1.2)\n  filter3: type = lowpass; cutoff = e; resonance = 0.4\n  stage3: y = softclip(y, 1.1) * f\nbus hot:\n  send: in = 1\n  filter4: type = highpass; cutoff = 70; resonance = 0.35\n  stage4: y = tube(x, b)\n  filter5: type = bandpass; center = 900; width = 2200\n  stage5: y = softclip(x * d, 1.2)\n  filter6: type = lowpass; cutoff = e; resonance = 0.4\n  stage6: y = softclip(y, 1.1) * f\nout: clean = 1-c; hot = c",
     "paramE": {
       "name": "Cab",
       "min": 2500,
@@ -3669,6 +3207,10 @@
     "name": "Rhythmic Gate Delay",
     "category": "Delay",
     "description": "Tempo-synced delay + envelope duck + feedback damp + drive on repeats. Complex send FX.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Time [80, 480]\nparam b = Feedback [0.15, 0.88]\nparam c = Mix [0.2, 0.75]\nparam d = Damp [800, 9000]\nparam e = Duck [0.0, 0.9]\nparam f = Drive [0.8, 4.0]\nenv1: type = peak; attack = 0.008; release = 0.12\ndelay1: time = a; feedback = b; mix = 1.0; damp = d\nstage1: y = softclip(x * (1.0 + f * 0.35), 1.15)\nstage2: y = lerp(x, y, c * (1.0 - env1 * e))",
     "paramA": {
       "name": "Time",
       "min": 80,
@@ -3693,10 +3235,6 @@
       "max": 9000,
       "default": 4200
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Time [80, 480]\nparam b = Feedback [0.15, 0.88]\nparam c = Mix [0.2, 0.75]\nparam d = Damp [800, 9000]\nparam e = Duck [0.0, 0.9]\nparam f = Drive [0.8, 4.0]\nparam g = Attack [0.001, 0.05]\nparam h = Release [0.05, 0.4]\nenv1: type = peak; attack = g; release = h\ndelay1: time = a; feedback = b; mix = 1.0; damp = d\nstage1: y = softclip(x * (1.0 + f * 0.35), 1.15)\nstage2: y = lerp(x, y, c * (1.0 - env1 * e))",
     "paramE": {
       "name": "Duck",
       "min": 0,
@@ -3708,24 +3246,16 @@
       "min": 0.8,
       "max": 4,
       "default": 1.6
-    },
-    "paramG": {
-      "name": "Attack",
-      "min": 0.001,
-      "max": 0.05,
-      "default": 0.008
-    },
-    "paramH": {
-      "name": "Release",
-      "min": 0.05,
-      "max": 0.4,
-      "default": 0.12
     }
   },
   {
     "name": "Cinematic Space",
     "category": "Reverb",
-    "description": "Pre-delay → reverb → MS width + high shelf LPF + soft tail ceiling. Eight controls for film/post.",
+    "description": "Pre-delay → reverb → MS width + air LPF + soft tail ceiling.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Predelay [20, 180]\nparam b = Size [0.25, 0.95]\nparam c = Decay [0.35, 0.92]\nparam d = Damp [0.15, 0.85]\nparam e = Mix [0.2, 0.85]\nparam f = Width [0.4, 1.6]\ndelay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000\nreverb1: size = b; decay = c; damp = d; mix = e; width = 0.95\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.25\nms1: mode = encode\nstage1: channel = mid; y = x\nstage2: channel = side; y = x * f\nms2: mode = decode\nstage3: y = softclip(x, 1.08)",
     "paramA": {
       "name": "Predelay",
       "min": 20,
@@ -3750,10 +3280,6 @@
       "max": 0.85,
       "default": 0.45
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Predelay [20, 180]\nparam b = Size [0.25, 0.95]\nparam c = Decay [0.35, 0.92]\nparam d = Damp [0.15, 0.85]\nparam e = Mix [0.2, 0.85]\nparam f = Width [0.4, 1.0]\nparam g = Air [3000, 12000]\nparam h = Level [0.5, 1.2]\ndelay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000\nreverb1: size = b; decay = c; damp = d; mix = e; width = f\nfilter1: type = lowpass; cutoff = g; resonance = 0.25\nstage1: y = softclip(x * h, 1.08)",
     "paramE": {
       "name": "Mix",
       "min": 0.2,
@@ -3763,26 +3289,18 @@
     "paramF": {
       "name": "Width",
       "min": 0.4,
-      "max": 1,
-      "default": 0.88
-    },
-    "paramG": {
-      "name": "Air",
-      "min": 3000,
-      "max": 12000,
-      "default": 7500
-    },
-    "paramH": {
-      "name": "Level",
-      "min": 0.5,
-      "max": 1.2,
-      "default": 0.95
+      "max": 1.6,
+      "default": 1
     }
   },
   {
     "name": "Phaser Lab",
     "category": "Modulation",
     "description": "LFO-modulated multi-notch cascade with feedback, depth, rate, center, and wet. Advanced swirl.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Feedback [0.05, 0.55]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.4, 2.2]\nosc1: type = sine; freq = a\nstage1: y = x\nbus swirl:\n  send: main = 1\n  filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f\n  stage2: y = softclip(x + y_prev * d, 1.2)\n  filter2: type = lowpass; cutoff = 12000; resonance = 0.28\nout: main = 1-e; swirl = e",
     "paramA": {
       "name": "Rate",
       "min": 0.05,
@@ -3807,10 +3325,6 @@
       "max": 0.55,
       "default": 0.28
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Feedback [0.05, 0.55]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.4, 2.2]\nparam g = Level [0.5, 1.2]\nosc1: type = sine; freq = a\nstage1: y = x * g\nbus swirl:\n  send: main = 1\n  filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f\n  stage2: y = softclip(x + y_prev * d, 1.2)\n  filter2: type = lowpass; cutoff = 12000; resonance = 0.28\nout: main = 1-e; swirl = e",
     "paramE": {
       "name": "Mix",
       "min": 0.25,
@@ -3822,18 +3336,16 @@
       "min": 0.4,
       "max": 2.2,
       "default": 1.1
-    },
-    "paramG": {
-      "name": "Level",
-      "min": 0.5,
-      "max": 1.2,
-      "default": 0.95
     }
   },
   {
     "name": "Vocal Chain Pro",
     "category": "Vocals",
     "description": "Broadcast vocal: de-mud HPF, mild tube, presence BPF, comp, air, de-ess LPF, level.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = LowCut [60, 220]\nparam b = Drive [0.9, 3.5]\nparam c = Presence [1800, 5500]\nparam d = Amount [0.2, 0.85]\nparam e = Thresh [-24.0, -8.0]\nparam f = Air [5000, 14000]\nfilter1: type = highpass; cutoff = a; resonance = 0.35\nstage1: y = tube(x, b)\nfilter2: type = bandpass; center = c; width = 1400\nstage2: y = lerp(x, softclip(x, 1.25), d)\ncomp1: threshold = e; ratio = 3.5; attack = 0.006; release = 0.12\nfilter3: type = lowpass; cutoff = f; resonance = 0.28\nfilter4: type = lowpass; cutoff = 7000; resonance = 0.45\nstage3: y = softclip(x * 0.95, 1.08)",
     "paramA": {
       "name": "LowCut",
       "min": 60,
@@ -3858,10 +3370,6 @@
       "max": 0.85,
       "default": 0.48
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = LowCut [60, 220]\nparam b = Drive [0.9, 3.5]\nparam c = Presence [1800, 5500]\nparam d = Amount [0.2, 0.85]\nparam e = Thresh [-24.0, -8.0]\nparam f = Air [5000, 14000]\nparam g = DeEss [4000, 10000]\nparam h = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = a; resonance = 0.35\nstage1: y = tube(x, b)\nfilter2: type = bandpass; center = c; width = 1400\nstage2: y = lerp(x, softclip(x, 1.25), d)\ncomp1: threshold = e; ratio = 3.5; attack = 0.006; release = 0.12\nfilter3: type = lowpass; cutoff = f; resonance = 0.28\nfilter4: type = lowpass; cutoff = g; resonance = 0.45\nstage3: y = softclip(x * h, 1.08)",
     "paramE": {
       "name": "Thresh",
       "min": -24,
@@ -3873,24 +3381,16 @@
       "min": 5000,
       "max": 14000,
       "default": 10000
-    },
-    "paramG": {
-      "name": "DeEss",
-      "min": 4000,
-      "max": 10000,
-      "default": 7000
-    },
-    "paramH": {
-      "name": "Level",
-      "min": 0.55,
-      "max": 1.25,
-      "default": 0.95
     }
   },
   {
     "name": "Bass Architect",
     "category": "Bass",
     "description": "Sub-safe: HPF, parallel grit, mid focus, comp, low LPF, level. Six knobs for DI design.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = HPF [25, 90]\nparam b = Drive [1.2, 6.0]\nparam c = Blend [0.2, 0.8]\nparam d = Mid [200, 1200]\nparam e = Thresh [-22.0, -8.0]\nparam f = Level [0.5, 1.3]\nfilter1: type = highpass; cutoff = a; resonance = 0.25\nstage1: y = lerp(x, tube(x, b), c)\nfilter2: type = bandpass; center = d; width = d * 0.8\nstage2: y = softclip(x * 1.15, 1.1)\ncomp1: threshold = e; ratio = 4.0; attack = 0.015; release = 0.22\nfilter3: type = lowpass; cutoff = 6500; resonance = 0.3\nstage3: y = softclip(x * f, 1.08)",
     "paramA": {
       "name": "HPF",
       "min": 25,
@@ -3915,10 +3415,6 @@
       "max": 1200,
       "default": 550
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = HPF [25, 90]\nparam b = Drive [1.2, 6.0]\nparam c = Blend [0.2, 0.8]\nparam d = Mid [200, 1200]\nparam e = Thresh [-22.0, -8.0]\nparam f = Level [0.5, 1.3]\nfilter1: type = highpass; cutoff = a; resonance = 0.25\nstage1: y = lerp(x, tube(x, b), c)\nfilter2: type = bandpass; center = d; width = d * 0.8\nstage2: y = softclip(x * 1.15, 1.1)\ncomp1: threshold = e; ratio = 4.0; attack = 0.015; release = 0.22\nfilter3: type = lowpass; cutoff = 6500; resonance = 0.3\nstage3: y = softclip(x * f, 1.08)",
     "paramE": {
       "name": "Thresh",
       "min": -22,
@@ -3936,6 +3432,10 @@
     "name": "Glitch Laboratory",
     "category": "Creative",
     "description": "Bitcrush + fold + delay ping-pong + LFO LPF + mix. Chaotic but band-limited.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "param a = Bits [3.0, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Time [40, 320]\nparam d = Feedback [0.1, 0.75]\nparam e = Rate [0.1, 8.0]\nparam f = Cutoff [400, 9000]\nosc1: type = sine; freq = e\nstage1: y = bitcrush(softclip(x, 1.5), a)\nstage2: y = fold(y, -b, b)\ndelay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true\nfilter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55\nstage3: y = lerp(x, softclip(y, 1.1), 1.0) * 1.0",
     "paramA": {
       "name": "Bits",
       "min": 3,
@@ -3960,10 +3460,6 @@
       "max": 0.75,
       "default": 0.4
     },
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "param a = Bits [3.0, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Time [40, 320]\nparam d = Feedback [0.1, 0.75]\nparam e = Rate [0.1, 8.0]\nparam f = Cutoff [400, 9000]\nparam g = Mix [0.3, 1.0]\nparam h = Level [0.35, 1.1]\nosc1: type = sine; freq = e\nstage1: y = bitcrush(softclip(x, 1.5), a)\nstage2: y = fold(y, -b, b)\ndelay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true\nfilter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55\nstage3: y = lerp(x, softclip(y, 1.1), g) * h",
     "paramE": {
       "name": "Rate",
       "min": 0.1,
@@ -3975,18 +3471,6 @@
       "min": 400,
       "max": 9000,
       "default": 3500
-    },
-    "paramG": {
-      "name": "Mix",
-      "min": 0.3,
-      "max": 1,
-      "default": 0.7
-    },
-    "paramH": {
-      "name": "Level",
-      "min": 0.35,
-      "max": 1.1,
-      "default": 0.8
     }
   }
 ]

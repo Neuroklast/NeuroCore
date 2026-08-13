@@ -673,14 +673,23 @@ stage1: y = tube(x, a) * c`,
 add(
   "Doubler AM",
   "Vocals",
-  "Subtle doubles via dual-phase AM.",
-  `param a = Rate [2.5, 8.0]
-param b = Depth [0.12, 0.45]
+  "Short slap double with mild AM on delay time + diode grit.",
+  `param a = Time [12, 42]
+param b = Mix [0.18, 0.55]
 param c = Drive [1.0, 2.2]
-osc1: shape = sine; freq = a; depth = 1.0
+param d = Rate [0.2, 4.0]
+osc1: shape = sine; freq = d; depth = 1.0
 stage1: y = diode(x, c)
-stage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))`,
-  { a: p("Rate", 2.5, 8, 5), b: p("Depth", 0.12, 0.45, 0.28), c: p("Drive", 1, 2.2, 1.3), outG: 0 }
+delay1: time = a + osc1 * 4; feedback = 0.08; mix = 1.0; damp = 7000
+stage2: y = lerp(x, y, b)
+filter1: type = lowpass; cutoff = 12000; resonance = 0.25`,
+  {
+    a: p("Time", 12, 42, 22),
+    b: p("Mix", 0.18, 0.55, 0.32),
+    c: p("Drive", 1, 2.2, 1.3),
+    d: p("Rate", 0.2, 4, 1.4),
+    outG: 0,
+  }
 );
 
 // =============================================================================
@@ -1003,14 +1012,29 @@ filter1: type = lowpass; cutoff = 12000; resonance = 0.28`,
 add(
   "Shimmer Drive",
   "Ambient",
-  "Slow shimmer AM + soft tube.",
+  "Tube drive into a bright high-passed hall; slow AM on the tail.",
   `param a = Drive [1.0, 3.2]
-param b = Rate [0.05, 1.2]
-param c = Depth [0.12, 0.6]
-osc1: shape = sine; freq = b; depth = 1.0
+param b = Size [0.35, 0.9]
+param c = Mix [0.2, 0.7]
+param d = Rate [0.05, 1.2]
+param e = Depth [0.12, 0.5]
+param f = Damp [0.15, 0.65]
+osc1: shape = sine; freq = d; depth = 1.0
 stage1: y = tube(x, a)
-stage2: y = y * (1.0 - c + c * (0.5 + 0.5 * osc1))`,
-  { a: p("Drive", 1, 3.2, 1.7), b: p("Rate", 0.05, 1.2, 0.18), c: p("Depth", 0.12, 0.6, 0.35), outG: 0 }
+reverb1: size = b; decay = 0.78; damp = f; mix = 1.0; width = 0.95
+stage2: y = y * (1.0 - e + e * (0.5 + 0.5 * osc1))
+filter1: type = highpass; cutoff = 1800; resonance = 0.25
+filter2: type = lowpass; cutoff = 12000; resonance = 0.25
+stage3: y = lerp(x, y, c)`,
+  {
+    a: p("Drive", 1, 3.2, 1.7),
+    b: p("Size", 0.35, 0.9, 0.62),
+    c: p("Mix", 0.2, 0.7, 0.42),
+    d: p("Rate", 0.05, 1.2, 0.18),
+    e: p("Depth", 0.12, 0.5, 0.32),
+    f: p("Damp", 0.15, 0.65, 0.38),
+    outG: 0,
+  }
 );
 
 add(
