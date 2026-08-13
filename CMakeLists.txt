@@ -100,6 +100,12 @@ set(SOURCE_FILES
     src/ui/WeightedLayout.cpp
     src/ui/custom/ParameterComponent.cpp
     src/ui/custom/ProgressBarComponent.cpp
+    src/ui/fx/CyberFxDirector.cpp
+    src/ui/fx/DecodeText.cpp
+    src/ui/fx/CyberSequence.cpp
+    src/ui/fx/CyberBackdropCache.cpp
+    src/ui/fx/CyberBackdropComponent.cpp
+    src/ui/fx/BootSequenceOverlay.cpp
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
@@ -223,6 +229,7 @@ target_sources(NeuroCoreTests PRIVATE
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
     tests/NeuroCoreExtrasTest.h
+    tests/CyberFxTest.h
     ${SOURCE_FILES}
     src/dsp/WaveShaper.cpp
     src/dsp/LowPassFilter.cpp

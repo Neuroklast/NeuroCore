@@ -149,6 +149,12 @@ Parameter-IDs für den APVTS:
 | `FunctionsContentComponent` | DSL-Funktions-Referenz-Panel |
 | `StagesContentComponent` | Signalkette-Übersicht (parse Blocks aus aktuellem Skript) |
 | `WeightedLayout` | Flexibles Layout-System mit gewichteten Spalten/Zeilen |
+| `CyberFxDirector` | Message-Thread-only FX-State (Glitch, Pulse, Visibility, Reduced-Motion) |
+| `CyberSequence` | Overlay Auf-/Abbau (Scrim → Slice → Reveal, umgekehrt) |
+| `CyberBackdropCache` | Grid/Scanlines/Hex-Streifen, Rebuild nur bei Resize |
+| `BootSequenceOverlay` | Skippbarer Erst-Open-Boot, Kind des Editors |
+
+Cyber-UI-Regeln: kein Audio-Thread, kein WebView, kein Vollfenster-`repaint()` ohne Dirty-Flag. Ambient-Paint ist ein Image-Blit plus wenige Rects. Overlays bleiben Editor-Kinder (kein Desktop-Peer).
 
 ---
 

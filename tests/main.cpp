@@ -14,6 +14,7 @@
 #include "CrackleFixesTest.h"
 #include "ArchitectureHardeningTest.h"
 #include "BusGraphTest.h"
+#include "CyberFxTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -41,6 +42,7 @@ int main (int argc, char* argv[])
   CrackleFixesTest crackleFixesTest;
   ArchitectureHardeningTest architectureHardeningTest;
   BusGraphTest busGraphTest;
+  CyberFxTest cyberFxTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

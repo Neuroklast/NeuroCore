@@ -28,6 +28,7 @@
 #include "FunctionsContentComponent.h"
 #include "StagesContentComponent.h"
 #include "../utils/FormulaQuality.h"
+#include "fx/CyberFxTypes.h"
 
 
 //==============================================================================
@@ -42,6 +43,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     setResizeLimits(960, 640, 1920, 1400);
     setOpaque(true);
 
+    backdrop = std::make_unique<CyberBackdropComponent> (cyberDirector);
+
     // Brand mark: NK Logo Red Bold (BinaryData)
     nkLogoView = std::make_unique<juce::ImageComponent>("nkLogo");
     if (lookAndFeel.getNkLogo().isValid())
@@ -50,6 +53,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         nkLogoView->setImagePlacement(juce::RectanglePlacement::centred
                                       | juce::RectanglePlacement::onlyReduceInSize);
     }
+    logoGlitch.director = &cyberDirector;
+    nkLogoView->addMouseListener (&logoGlitch, false);
     addAndMakeVisible(*nkLogoView);
 
     pluginNameLabel = std::make_unique<juce::Label>();
@@ -101,10 +106,25 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         validationOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 980),
                                                     juce::jmin (getHeight() - 24, 700));
         validationOverlay->setContent (std::move (viewer));
+        applyOverlayMotion (*validationOverlay);
         validationOverlay->show (*this);
         validationOverlay->onClose = [this] { validationOverlay.reset(); };
     };
     addAndMakeVisible(*helpButton);
+
+    fxButton = std::make_unique<juce::TextButton> ("FX");
+    fxButton->setClickingTogglesState (true);
+    fxButton->setToggleState (true, juce::dontSendNotification);
+    fxButton->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff1a0505));
+    fxButton->setColour (juce::TextButton::buttonOnColourId, NeuroCoreLookAndFeel::accent());
+    fxButton->setColour (juce::TextButton::textColourOffId, NeuroCoreLookAndFeel::accent());
+    fxButton->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+    fxButton->onClick = [this]
+    {
+        cyberDirector.setMotion (fxButton->getToggleState() ? CyberMotion::Full
+                                                            : CyberMotion::Reduced);
+    };
+    addAndMakeVisible (*fxButton);
 
     editorFontLabel = std::make_unique<juce::Label> ("", "Text");
     editorFontLabel->setMinimumHorizontalScale (1.0f);
@@ -534,6 +554,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     settingsRow->addChild(makeLeaf(editorFontMinusButton.get(), 0.28f));
     settingsRow->addChild(makeLeaf(editorFontSizeLabel.get(), 0.35f));
     settingsRow->addChild(makeLeaf(editorFontPlusButton.get(), 0.28f));
+    settingsRow->addChild(makeLeaf(fxButton.get(), 0.35f));
     layoutRoot->addChild(std::move(settingsRow));
 
     // Main body: 6 knobs (2x3) left + larger formula editor + meter
@@ -649,6 +670,7 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     buttonAttachments.clear();
     polisherAttachment.reset();
     oversamplingAttachment.reset();
+    bootOverlay.reset();
     presetOverlay.reset();
     functionsOverlay.reset();
     stagesOverlay.reset();
@@ -745,7 +767,18 @@ void NeuroCoreAudioProcessorEditor::timerCallback()
     if (! editing)
         updateLiveFormulaView();
     updateStatusBar();
-    updateCyberAnim();
+    if (backdrop)
+    {
+        backdrop->setPeakFromDb (audioProcessor.getLoudnessDb());
+        backdrop->advance (1.f / 24.f);
+        const auto& s = cyberDirector.getState();
+        lookAndFeel.animTime     = s.timeSec;
+        lookAndFeel.glitchAmount = s.glitch;
+        lookAndFeel.glitchSeed   = s.glitchSeed;
+        lookAndFeel.peakPulse    = s.peakPulse;
+        if (cyberDirector.needsAmbientRepaint())
+            repaint();
+    }
 
     // ALWAYS show live values for every parameter (knobs a..f + Gain + Mix)
     for (auto& pc : paramComponents)
@@ -762,45 +795,6 @@ void NeuroCoreAudioProcessorEditor::timerCallback()
 
     // Combo readouts: append current selection into status so OS/Polisher always visible
     // (combo text itself already shows selection; status bar duplicates for HUD)
-}
-
-void NeuroCoreAudioProcessorEditor::updateCyberAnim()
-{
-    constexpr float dt = 1.f / 24.f; // calmer than 36 Hz full-window repaint
-    cyberTime += dt;
-
-    // Rare, soft glitch — not constant jitter
-    glitchTimer -= dt;
-    if (glitchTimer <= 0.f)
-    {
-        glitchTimer = 2.5f + cyberRng.nextFloat() * 5.0f;
-        if (cyberRng.nextFloat() < 0.18f)
-        {
-            glitchFrames = 1 + cyberRng.nextInt (2);
-            glitchStrength = 0.15f + cyberRng.nextFloat() * 0.25f;
-            lookAndFeel.glitchSeed = cyberRng.nextInt();
-        }
-    }
-    if (glitchFrames > 0)
-    {
-        --glitchFrames;
-        lookAndFeel.glitchAmount = glitchStrength;
-        if (glitchFrames == 0)
-            lookAndFeel.glitchAmount = 0.f;
-    }
-    else
-        lookAndFeel.glitchAmount *= 0.7f;
-
-    lookAndFeel.animTime = cyberTime;
-    // Smooth pulse (one-pole) from loudness — no hard steps
-    const float db = audioProcessor.getLoudnessDb();
-    const float norm = std::isfinite (db)
-                         ? juce::jlimit (0.f, 1.f, (db + 40.f) / 40.f)
-                         : 0.f;
-    lookAndFeel.peakPulse = lookAndFeel.peakPulse * 0.85f + norm * 0.15f;
-
-    // Only repaint editor chrome (children repaint on their own timers)
-    repaint();
 }
 
 void NeuroCoreAudioProcessorEditor::updateStatusBar()
@@ -1036,108 +1030,8 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         helpButton->setButtonText(TRANS("HelpButton"));
     if (oversamplingLabel)
         oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
-}
-
-//==============================================================================
-void NeuroCoreAudioProcessorEditor::paintCyberBackground (juce::Graphics& g)
-{
-    const float W = (float) getWidth();
-    const float H = (float) getHeight();
-
-    // Deep void + vignette
-    g.fillAll (juce::Colours::black);
-    juce::ColourGradient vig (juce::Colour (0xff1a0000), W * 0.5f, 0.f,
-                              juce::Colours::black, W * 0.5f, H, false);
-    g.setGradientFill (vig);
-    g.fillAll();
-
-    // Perspective grid floor (cyber city floor)
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.07f + 0.04f * lookAndFeel.peakPulse));
-    const float horizon = H * 0.42f;
-    const float scroll = std::fmod (cyberTime * 28.f, 36.f);
-    for (int i = 0; i < 18; ++i)
-    {
-        const float t = (float) i / 17.f;
-        const float y = horizon + (H - horizon) * t * t + scroll * (1.f - t) * 0.15f;
-        if (y > H) continue;
-        g.drawHorizontalLine ((int) y, 0.f, W);
-    }
-    for (int i = -12; i <= 12; ++i)
-    {
-        const float x0 = W * 0.5f + (float) i * 48.f;
-        g.drawLine (x0, horizon, W * 0.5f + (float) i * 160.f, H, 1.f);
-    }
-
-    // Vertical data columns (hex stream) — left/right edges
-    g.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
-    const int cols = 6;
-    for (int c = 0; c < cols; ++c)
-    {
-        const float x = 4.f + c * 11.f;
-        const int seed = lookAndFeel.glitchSeed + c * 97 + (int) (cyberTime * 7.f);
-        for (int row = 0; row < 40; ++row)
-        {
-            const float y = std::fmod (cyberTime * 40.f + (float) row * 14.f + (float) (seed % 50), H);
-            const int v = (seed * 1103515245 + row * 12345) & 0xff;
-            if ((v & 3) == 0)
-                g.drawSingleLineText (juce::String::toHexString (v).paddedLeft ('0', 2),
-                                      (int) x, (int) y, juce::Justification::left);
-        }
-        const float xr = W - 14.f - c * 11.f;
-        for (int row = 0; row < 40; ++row)
-        {
-            const float y = std::fmod (cyberTime * 35.f + (float) row * 16.f + (float) ((seed + 3) % 40), H);
-            const int v = (seed * 1664525 + row * 1013904223) & 0xff;
-            if ((v & 3) == 0)
-                g.drawSingleLineText (juce::String::toHexString (v).paddedLeft ('0', 2),
-                                      (int) xr, (int) y, juce::Justification::left);
-        }
-    }
-
-    // CRT scanlines
-    g.setColour (juce::Colours::black.withAlpha (0.18f));
-    const float scanOff = std::fmod (cyberTime * 60.f, 4.f);
-    for (float y = scanOff; y < H; y += 3.f)
-        g.drawHorizontalLine ((int) y, 0.f, W);
-
-    // Moving scan beam
-    {
-        const float beamY = std::fmod (cyberTime * 90.f, H + 40.f) - 20.f;
-        juce::ColourGradient beam (juce::Colours::transparentBlack, 0, beamY - 12.f,
-                                   NeuroCoreLookAndFeel::accent().withAlpha (0.12f), 0, beamY, false);
-        g.setGradientFill (beam);
-        g.fillRect (0.f, beamY - 12.f, W, 24.f);
-    }
-
-    // Glitch RGB split / slice
-    if (lookAndFeel.glitchAmount > 0.05f)
-    {
-        const float a = lookAndFeel.glitchAmount;
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.08f * a));
-        const int sliceY = (lookAndFeel.glitchSeed % juce::jmax (1, getHeight() - 40)) + 20;
-        const int sliceH = 8 + (lookAndFeel.glitchSeed % 28);
-        g.fillRect (0, sliceY, getWidth(), sliceH);
-        g.setColour (juce::Colour (0x44ff0044));
-        g.fillRect ((int) (a * 6.f), sliceY + 2, getWidth(), 2);
-        g.setColour (juce::Colour (0x4400ffff));
-        g.fillRect ((int) (-a * 5.f), sliceY + 5, getWidth(), 2);
-    }
-
-    // Top OS header bar
-    g.setColour (juce::Colour (0xff0a0000));
-    g.fillRect (0, 0, getWidth(), 22);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
-    g.fillRect (0, 0, getWidth(), 2);
-    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
-    g.setColour (NeuroCoreLookAndFeel::accent());
-    const bool blink = ((int) (cyberTime * 2.f) % 2) == 0;
-    juce::String hdr = "NEUROCORE  //  NETRUNNER OS  //  LINK ";
-    hdr << (blink ? "ACTIVE" : "active");
-    g.drawText (hdr, 10, 4, getWidth() - 20, 16, juce::Justification::centredLeft, false);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
-    g.drawText (juce::String::formatted ("T+%.1f", cyberTime),
-                10, 4, getWidth() - 20, 16, juce::Justification::centredRight, false);
+    if (fxButton)
+        fxButton->setButtonText (TRANS("FxButton"));
 }
 
 void NeuroCoreAudioProcessorEditor::paintHudChrome (juce::Graphics& g)
@@ -1163,7 +1057,7 @@ void NeuroCoreAudioProcessorEditor::paintHudChrome (juce::Graphics& g)
             g.fillRect (r);
         }
         // Animated corner pulse
-        const float pulse = 0.45f + 0.55f * std::sin (cyberTime * 5.f
+        const float pulse = 0.45f + 0.55f * std::sin (lookAndFeel.animTime * 5.f
                                                        + r.getX() * 0.01f);
         g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.35f + 0.45f * pulse));
         NeuroCoreLookAndFeel::drawHudFrame (g, r, p.tag);
@@ -1187,7 +1081,15 @@ void NeuroCoreAudioProcessorEditor::paintHudChrome (juce::Graphics& g)
 
 void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    paintCyberBackground (g);
+    if (backdrop != nullptr)
+    {
+        backdrop->setBounds (getLocalBounds());
+        backdrop->paint (g);
+    }
+    else
+    {
+        g.fillAll (juce::Colours::black);
+    }
 
     if (layoutRoot)
         ui::performLayout (*layoutRoot, getLocalBounds());
@@ -1195,8 +1097,38 @@ void NeuroCoreAudioProcessorEditor::paint (juce::Graphics& g)
     paintHudChrome (g);
 }
 
+void NeuroCoreAudioProcessorEditor::visibilityChanged()
+{
+    cyberDirector.setVisible (isShowing());
+    if (isShowing() && shouldPlayBoot (cyberDirector.getState().motion, bootPlayed))
+    {
+        bootPlayed = true;
+        bootOverlay = std::make_unique<BootSequenceOverlay>();
+        bootOverlay->onFinished = [this] { bootOverlay.reset(); };
+        bootOverlay->startOn (*this);
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::applyOverlayMotion (ModalOverlay& overlay)
+{
+    overlay.setMotion (cyberDirector.getState().motion);
+}
+
+void NeuroCoreAudioProcessorEditor::dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay)
+{
+    if (overlay == nullptr)
+        return;
+    overlay->skipToEnd();
+    overlay.reset();
+}
+
 void NeuroCoreAudioProcessorEditor::resized()
 {
+    if (backdrop != nullptr)
+        backdrop->setBounds (getLocalBounds());
+    if (bootOverlay != nullptr)
+        bootOverlay->setBounds (getLocalBounds());
+
     if (layoutRoot)
         ui::performLayout(*layoutRoot, getLocalBounds());
 
@@ -1288,7 +1220,7 @@ bool NeuroCoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)
 
 void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 {
-    hidePresetOverlay();
+    dismissOverlayNow (presetOverlay);
     auto content = std::make_unique<PresetContentComponent>(audioProcessor, lookAndFeel);
     auto* ptr = content.get();
 
@@ -1298,6 +1230,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     presetOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 1100),
                                             juce::jmin (getHeight() - 24, 700));
     presetOverlay->setContent(std::move(content));
+    applyOverlayMotion (*presetOverlay);
     presetOverlay->show(*this);
     presetOverlay->onClose = [this] { presetOverlay.reset(); };
 
@@ -1326,7 +1259,8 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 
     ptr->onLoaded = [this, refreshAfterPreset]
     {
-        presetOverlay.reset();
+        if (presetOverlay != nullptr)
+            presetOverlay->requestClose();
         refreshAfterPreset();
     };
     ptr->onSaved = [this] { syncFromProcessor(); };
@@ -1335,7 +1269,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
 
 void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
 {
-    hideFunctionsOverlay();
+    dismissOverlayNow (functionsOverlay);
     auto content = std::make_unique<FunctionsContentComponent>(audioProcessor);
     auto* ptr = content.get();
 
@@ -1345,6 +1279,7 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
     functionsOverlay->setPreferredContentSize (juce::jmin (getWidth() - 16, 1080),
                                                juce::jmin (getHeight() - 16, 740));
     functionsOverlay->setContent(std::move(content));
+    applyOverlayMotion (*functionsOverlay);
     functionsOverlay->show(*this);
 
     ptr->onInsert = [this](const juce::String& text)
@@ -1359,12 +1294,12 @@ void NeuroCoreAudioProcessorEditor::showFunctionsOverlay()
 void NeuroCoreAudioProcessorEditor::hideFunctionsOverlay()
 {
     if (functionsOverlay)
-        functionsOverlay.reset();
+        functionsOverlay->requestClose();
 }
 
 void NeuroCoreAudioProcessorEditor::showStagesOverlay()
 {
-    hideStagesOverlay();
+    dismissOverlayNow (stagesOverlay);
     auto content = std::make_unique<StagesContentComponent>(audioProcessor);
     auto* ptr = content.get();
 
@@ -1374,6 +1309,7 @@ void NeuroCoreAudioProcessorEditor::showStagesOverlay()
     stagesOverlay->setPreferredContentSize (juce::jmin (getWidth() - 40, 880),
                                             juce::jmin (getHeight() - 40, 520));
     stagesOverlay->setContent(std::move(content));
+    applyOverlayMotion (*stagesOverlay);
     stagesOverlay->show(*this);
 
     ptr->onClose = [this] { stagesOverlay.reset(); };
@@ -1383,17 +1319,17 @@ void NeuroCoreAudioProcessorEditor::showStagesOverlay()
 void NeuroCoreAudioProcessorEditor::hideStagesOverlay()
 {
     if (stagesOverlay)
-        stagesOverlay.reset();
+        stagesOverlay->requestClose();
 }
 void NeuroCoreAudioProcessorEditor::hidePresetOverlay()
 {
     if (presetOverlay)
-        presetOverlay.reset();
+        presetOverlay->requestClose();
 }
 
 void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
 {
-    validationOverlay.reset();
+    dismissOverlayNow (validationOverlay);
 
     auto content = std::make_unique<ValidationContentComponent>(audioProcessor, expr);
     auto* ptr = content.get();
@@ -1402,11 +1338,14 @@ void NeuroCoreAudioProcessorEditor::validateAndOverlay(const juce::String& expr)
     validationOverlay->setMode(OverlayMode::Blocking);
     validationOverlay->setTitle("Validating Script...");
     validationOverlay->setContent(std::move(content));
+    applyOverlayMotion (*validationOverlay);
+    validationOverlay->onClose = [this] { validationOverlay.reset(); };
     validationOverlay->show(*this);
 
     ptr->onResult = [this, expr](bool stable)
     {
-        validationOverlay.reset();
+        if (validationOverlay != nullptr)
+            validationOverlay->requestClose();
 
         // Always compute quality metric for the editor status line
         const auto q = audioProcessor.analyseFormulaQuality (expr);

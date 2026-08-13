@@ -50,6 +50,7 @@ MeterScaleKsys=K-System
 AxisAmplitude=Amplitude
 AxisAmplitudeDb=Amplitude (dB)
 HelpButton=Hilfe
+FxButton=FX
 StabilityCheckTitle=Stabilitätsprüfung
 StabilityTesting=Stabilitätsprüfung läuft...
 StabilityWarning=Achtung: Die aktuelle Eingabe ist instabil und erzeugt hörbare Fehler.

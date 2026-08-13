@@ -362,3 +362,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Isolated git worktrees (never commit checkout contents)
+.worktrees/

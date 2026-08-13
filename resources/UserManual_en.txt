@@ -32,6 +32,7 @@ If the formula fails to parse, the error line under the editor explains why.
 | **Functions** | Function reference insert helper |
 | **Stages** | Parsed block list / param overview |
 | **Bypass** | Dry only (Mix → 0), restores previous Mix when off |
+| **FX** | Motion on/off (glitch, overlay build/teardown, boot). Off = instant UI. Not a host parameter. |
 | **Help** | This manual (offline) |
 | **Oversampling** | 1× / 2× / 4× / 8× (default 2×) |
 | **Polisher** | None / Hard Clip / Limiter after the formula |

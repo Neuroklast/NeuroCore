@@ -9,6 +9,20 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Cinematic UI must stay off the audio thread
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Glitch / Scan / Overlay-Sequenzen wie Band-Sites, performant, eigener Branch  
+**Ergebnis:** Native JUCE-FX-Schicht auf `feat/cinematic-ui-fx`
+
+#### Fallstrick
+Der alte Cyber-Look hat bei 30 Hz das ganze Editor-Fenster `repaint()`t und ~480 Hex-Strings gezeichnet. Mehr Effekte darauf zu stapeln waere in der DAW sichtbar geruckelt.
+
+#### Regel
+Ambient-Look cachen (Grid/Scan/Hex als Image). Sequenzen nur waehrend ~400 ms per `VBlankAttachment` auf dem Overlay. Director ist reiner State, unit-testbar ohne `PluginEditor`. WebView/Framer nicht ins VST.
+
+---
+
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)
 
 **Agent:** Grok Coding Agent  

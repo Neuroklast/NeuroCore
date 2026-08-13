@@ -28,6 +28,9 @@
 #include "FunctionsContentComponent.h"
 #include "StagesContentComponent.h"
 #include "WeightedLayout.h"
+#include "fx/CyberFxDirector.h"
+#include "fx/CyberBackdropComponent.h"
+#include "fx/BootSequenceOverlay.h"
 
 
 class ParameterSlider : public juce::Slider
@@ -65,6 +68,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& key) override;
+    void visibilityChanged() override;
 
 
 
@@ -73,9 +77,9 @@ private:
     void syncFromProcessor();
     void updateLiveFormulaView();
     void updateStatusBar();
-    void updateCyberAnim();
-    void paintCyberBackground (juce::Graphics& g);
     void paintHudChrome (juce::Graphics& g);
+    void applyOverlayMotion (ModalOverlay& overlay);
+    void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
     void setFormulaEditMode(bool shouldEdit);
     void applyEditorFontSize (float heightPt);
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
@@ -94,6 +98,7 @@ private:
     std::unique_ptr<juce::Label>         pluginNameLabel;
     std::unique_ptr<juce::Label>         statusBarLabel; // live SR / OS / MIX / LIM
     std::unique_ptr<juce::TextButton>    helpButton;
+    std::unique_ptr<juce::TextButton>    fxButton;
     std::unique_ptr<juce::Label>         editorFontLabel;
     std::unique_ptr<juce::TextButton>    editorFontMinusButton;
     std::unique_ptr<juce::TextButton>    editorFontPlusButton;
@@ -132,15 +137,25 @@ private:
     float                                   mixBeforeBypass { 1.0f };
 
     NeuroCoreLookAndFeel lookAndFeel;
+    CyberFxDirector cyberDirector;
+    std::unique_ptr<CyberBackdropComponent> backdrop;
+    std::unique_ptr<BootSequenceOverlay>    bootOverlay;
+    bool bootPlayed { false };
+    class LogoGlitchListener : public juce::MouseListener
+    {
+    public:
+        CyberFxDirector* director = nullptr;
+        juce::Random rng { 0x4c4f474f };
+        void mouseEnter (const juce::MouseEvent&) override
+        {
+            if (director != nullptr)
+                director->triggerGlitch (0.35f, rng.nextInt());
+        }
+    };
+    LogoGlitchListener logoGlitch;
     std::unique_ptr<WaveformDisplayComponent> inputDisplay;
     std::unique_ptr<WaveformDisplayComponent> outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
-    // Cyber OS animation state
-    float cyberTime { 0.f };
-    float glitchTimer { 0.f };
-    float glitchStrength { 0.f };
-    int   glitchFrames { 0 };
-    juce::Random cyberRng;
     std::unique_ptr<ModalOverlay>            presetOverlay;
     std::unique_ptr<ModalOverlay>            functionsOverlay;
     std::unique_ptr<ModalOverlay>            stagesOverlay;
