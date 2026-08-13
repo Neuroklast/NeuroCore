@@ -344,9 +344,9 @@
     "formula": "// rectify\n// Formulas: abs(x) · LPF\nparam a = Tone [400, 6000]\nstage1: y = abs(x)\nfilter1: type = lowpass; cutoff = a; resonance = 0.4"
   },
   {
-    "name": "studio channel strip (8 knobs)",
+    "name": "studio channel strip",
     "category": "mastering",
-    "description": "HPF → drive → mid EQ → air LPF → glue comp → level. Uses a–h.",
+    "description": "HPF → drive → mid EQ → air LPF → glue comp. Six knobs a–f; ratio and level are fixed.",
     "formulas": [
       "filter highpass",
       "softclip",
@@ -354,7 +354,7 @@
       "comp",
       "filter lowpass"
     ],
-    "formula": "// studio channel strip (8 knobs)\nparam a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [0.45, 2.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.32\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = c; width = c * 0.5\nstage2: y = softclip(x * d, 1.12)\nfilter3: type = lowpass; cutoff = e; resonance = 0.28\ncomp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15\nstage3: y = softclip(x * 1.0, 1.08)"
+    "formula": "// studio channel strip\nparam a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [0.45, 2.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.32\nstage1: y = softclip(x, a)\nfilter2: type = bandpass; center = c; width = c * 0.5\nstage2: y = softclip(x * d, 1.12)\nfilter3: type = lowpass; cutoff = e; resonance = 0.28\ncomp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15\nstage3: y = softclip(x * 1.0, 1.08)"
   },
   {
     "name": "dual amp parallel (6 knobs)",
@@ -369,45 +369,45 @@
     "formula": "// dual amp parallel (6 knobs)\nparam a = Clean [0.6, 2.5]\nparam b = Hot [2.0, 9.0]\nparam c = Blend [0.2, 0.9]\nparam d = Scoop [0.3, 1.4]\nparam e = Cab [2500, 8000]\nparam f = Level [0.35, 1.15]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = lerp(tube(x, a), tube(x, b), c)\nfilter2: type = bandpass; center = 900; width = 2200\nstage2: y = softclip(x * d, 1.2)\nfilter3: type = lowpass; cutoff = e; resonance = 0.4\nstage3: y = softclip(y, 1.1) * f"
   },
   {
-    "name": "rhythmic delay duck (8 knobs)",
+    "name": "rhythmic delay duck",
     "category": "delay",
-    "description": "Delay + env duck + drive on wet. Full send FX rack.",
+    "description": "Delay + envelope duck + damp + drive on repeats. Six knobs a–f; env times are fixed.",
     "formulas": [
       "env",
       "delay",
       "softclip",
       "lerp"
     ],
-    "formula": "// rhythmic delay duck (8 knobs)\nparam a = Time [80, 480]\nparam b = Feedback [0.15, 0.88]\nparam c = Mix [0.2, 0.75]\nparam d = Damp [800, 9000]\nparam e = Duck [0.0, 0.9]\nparam f = Drive [0.8, 4.0]\nenv1: type = peak; attack = 0.008; release = 0.12\ndelay1: time = a; feedback = b; mix = 1.0; damp = d\nstage1: y = softclip(x * (1.0 + f * 0.35), 1.15)\nstage2: y = lerp(x, y, c * (1.0 - env1 * e))"
+    "formula": "// rhythmic delay duck\nparam a = Time [80, 480]\nparam b = Feedback [0.15, 0.88]\nparam c = Mix [0.2, 0.75]\nparam d = Damp [800, 9000]\nparam e = Duck [0.0, 0.9]\nparam f = Drive [0.8, 4.0]\nenv1: type = peak; attack = 0.008; release = 0.12\ndelay1: time = a; feedback = b; mix = 1.0; damp = d\nstage1: y = softclip(x * (1.0 + f * 0.35), 1.15)\nstage2: y = lerp(x, y, c * (1.0 - env1 * e))"
   },
   {
-    "name": "cinematic reverb (8 knobs)",
+    "name": "cinematic reverb",
     "category": "reverb",
-    "description": "Predelay + reverb + width + air LPF + level.",
+    "description": "Predelay → reverb → air LPF. Six knobs a–f.",
     "formulas": [
       "delay",
       "reverb",
       "lowpass",
       "softclip"
     ],
-    "formula": "// cinematic reverb (8 knobs)\nparam a = Predelay [20, 180]\nparam b = Size [0.25, 0.95]\nparam c = Decay [0.35, 0.92]\nparam d = Damp [0.15, 0.85]\nparam e = Mix [0.2, 0.85]\nparam f = Width [0.4, 1.0]\ndelay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000\nreverb1: size = b; decay = c; damp = d; mix = e; width = f\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.25\nstage1: y = softclip(x * 1.0, 1.08)"
+    "formula": "// cinematic reverb\nparam a = Predelay [20, 180]\nparam b = Size [0.25, 0.95]\nparam c = Decay [0.35, 0.92]\nparam d = Damp [0.15, 0.85]\nparam e = Mix [0.2, 0.85]\nparam f = Width [0.4, 1.0]\ndelay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000\nreverb1: size = b; decay = c; damp = d; mix = e; width = f\nfilter1: type = lowpass; cutoff = 8000; resonance = 0.25\nstage1: y = softclip(x * 1.0, 1.08)"
   },
   {
-    "name": "phaser lab (7 knobs)",
+    "name": "phaser lab",
     "category": "modulation",
-    "description": "LFO bandpass + feedback stage + wet mix.",
+    "description": "LFO bandpass swirl with feedback and mix. Six knobs a–f.",
     "formulas": [
       "osc",
       "bandpass",
       "y_prev",
       "lerp"
     ],
-    "formula": "// phaser lab (7 knobs)\nparam a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Feedback [0.05, 0.55]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.4, 2.2]\nosc1: type = sine; freq = a\nfilter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f\nstage1: y = softclip(x + y_prev * d, 1.2)\nstage2: y = lerp(x, y, e) * 1.0\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.28"
+    "formula": "// phaser lab\nparam a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Feedback [0.05, 0.55]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.4, 2.2]\nosc1: type = sine; freq = a\nfilter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f\nstage1: y = softclip(x + y_prev * d, 1.2)\nstage2: y = lerp(x, y, e) * 1.0\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.28"
   },
   {
-    "name": "glitch lab (8 knobs)",
+    "name": "glitch lab",
     "category": "creative",
-    "description": "Bitcrush + fold + delay + LFO LPF. Always band-limit quantize/fold.",
+    "description": "Bitcrush + fold + delay ping-pong + LFO LPF. Always band-limit quantize/fold.",
     "formulas": [
       "bitcrush",
       "fold",
@@ -416,6 +416,6 @@
       "lowpass",
       "lerp"
     ],
-    "formula": "// glitch lab (8 knobs)\nparam a = Bits [3.0, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Time [40, 320]\nparam d = Feedback [0.1, 0.75]\nparam e = Rate [0.1, 8.0]\nparam f = Cutoff [400, 9000]\nosc1: type = sine; freq = e\nstage1: y = bitcrush(softclip(x, 1.5), a)\nstage2: y = fold(y, -b, b)\ndelay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true\nfilter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55\nstage3: y = lerp(x, softclip(y, 1.1), 1.0) * 1.0"
+    "formula": "// glitch lab\nparam a = Bits [3.0, 12.0]\nparam b = Fold [0.2, 0.85]\nparam c = Time [40, 320]\nparam d = Feedback [0.1, 0.75]\nparam e = Rate [0.1, 8.0]\nparam f = Cutoff [400, 9000]\nosc1: type = sine; freq = e\nstage1: y = bitcrush(softclip(x, 1.5), a)\nstage2: y = fold(y, -b, b)\ndelay1: time = c; feedback = d; mix = 0.55; damp = 5000; pingpong = true\nfilter1: type = lowpass; cutoff = f + osc1 * f * 0.35; resonance = 0.55\nstage3: y = lerp(x, softclip(y, 1.1), 1.0) * 1.0"
   }
 ]

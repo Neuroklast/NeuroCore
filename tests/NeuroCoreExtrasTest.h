@@ -41,6 +41,7 @@ public:
         testScriptManagerDelegation();
         testProcessorStateRoundTrip();
         testFactoryPresetLibrary();
+        testFormulaTemplatesHonesty();
     }
 
 private:
@@ -740,6 +741,33 @@ private:
             const auto good = FormulaQualityAnalyzer::analyse ("stage1: y = tanh(x * 2)");
             expect (FormulaQualityAnalyzer::passesFactoryGate (good, 55.f),
                     "tanh stage should pass quality: " + good.summary());
+        }
+    }
+
+    void testFormulaTemplatesHonesty()
+    {
+        beginTest ("templates.json names stay on six knobs");
+        {
+            const juce::File file (juce::String (NEUROCORE_RESOURCES_DIR)
+                                       + "/templates.json");
+            expect (file.existsAsFile(), "templates.json missing");
+            const auto parsed = juce::JSON::parse (file);
+            expect (parsed.isArray());
+            for (int i = 0; i < parsed.size(); ++i)
+            {
+                const auto obj = parsed[i];
+                const auto name = obj.getProperty ("name", {}).toString();
+                const auto desc = obj.getProperty ("description", {}).toString();
+                const auto formula = obj.getProperty ("formula", {}).toString();
+                expect (! name.contains ("8 knob") && ! name.contains ("7 knob"),
+                        name + " still claims extra knobs");
+                expect (! desc.containsIgnoreCase ("a–h")
+                            && ! desc.containsIgnoreCase ("a-h")
+                            && ! desc.containsIgnoreCase ("uses a-h"),
+                        name + " description still mentions a-h");
+                expect (! formula.contains ("param g") && ! formula.contains ("param h"),
+                        name + " formula still declares g/h");
+            }
         }
     }
 
