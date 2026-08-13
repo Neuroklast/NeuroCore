@@ -283,7 +283,7 @@ bool DSLParser::parse(const juce::String& text,
                 const bool hasLH = desc.args.count("lowcut") && desc.args.count("highcut");
                 if (! hasCW && ! hasLH)
                 {
-                    error = "Bitte entweder lowcut/highcut oder center/width angeben!";
+                    error = "Bandpass needs either lowcut/highcut or center/width.";
                     return false;
                 }
                 if (hasCW && ! hasLH)

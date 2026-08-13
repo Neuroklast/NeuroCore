@@ -101,6 +101,7 @@ set(SOURCE_FILES
     src/ui/WeightedLayout.cpp
     src/ui/custom/ParameterComponent.cpp
     src/ui/custom/ProgressBarComponent.cpp
+    src/ui/custom/InputChannelSwitch.cpp
     src/ui/fx/CyberFxDirector.cpp
     src/ui/fx/DecodeText.cpp
     src/ui/fx/CyberSequence.cpp

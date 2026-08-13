@@ -6,6 +6,7 @@
 #include "../src/ui/HelpContentComponent.h"
 #include "../src/ui/DslAutocomplete.h"
 #include "../src/core/Config.h"
+#include "../src/core/EffectParameters.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -53,6 +54,25 @@ public:
                 expect (it.label != "in");
                 expect (it.label != "main");
             }
+        }
+
+        beginTest ("Input channel switch maps L / Both / R");
+        {
+            bool l = true, r = true;
+            expect (EffectParameters::modeFromFlags (true, true)
+                    == EffectParameters::InputChannelMode::Both);
+            expect (EffectParameters::modeFromFlags (true, false)
+                    == EffectParameters::InputChannelMode::Left);
+            expect (EffectParameters::modeFromFlags (false, true)
+                    == EffectParameters::InputChannelMode::Right);
+            expect (EffectParameters::modeFromFlags (false, false)
+                    == EffectParameters::InputChannelMode::Both);
+            EffectParameters::flagsFromMode (EffectParameters::InputChannelMode::Left, l, r);
+            expect (l && ! r);
+            EffectParameters::flagsFromMode (EffectParameters::InputChannelMode::Right, l, r);
+            expect (! l && r);
+            EffectParameters::flagsFromMode (EffectParameters::InputChannelMode::Both, l, r);
+            expect (l && r);
         }
 
         beginTest ("Autocomplete send only inside a bus");

@@ -41,7 +41,7 @@ namespace ui
         Rectangle<float> bar(area.withWidth(area.getWidth() * progressDisplay));
         g.fillRoundedRectangle(bar, 3.0f);
 
-        g.setColour(barColour.contrasting());
+        g.setColour(juce::Colours::white);
         g.drawText(juce::String(juce::roundToInt(progressDisplay * 100.0f)) + "%",
                    getLocalBounds(), juce::Justification::centred);
     }

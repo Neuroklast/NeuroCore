@@ -26,8 +26,8 @@ namespace ui
     private:
         std::atomic<float> progress { 0.0f };
         float progressDisplay { 0.0f };
-        juce::Colour barColour { juce::Colours::deepskyblue };
-        juce::Colour backgroundColour { juce::Colours::darkgrey };
+        juce::Colour barColour { juce::Colour (0xffff1a1a) };
+        juce::Colour backgroundColour { juce::Colour (0xff1a0505) };
 
         void timerCallback() override;
     };

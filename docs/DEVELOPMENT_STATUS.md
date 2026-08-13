@@ -64,6 +64,8 @@
 - [x] Preset-Browser merkt Auswahl und scrollt hin
 - [x] Autocomplete nur kontext-sichere Vorschlaege
 - [x] Formel-Check haelt Overlay sichtbar (min. 1.2s) mit Live-Status
+- [x] Input L/BOTH/R Dreier-Switch statt zweier Toggles
+- [x] Formel-Check bricht bei NaN/Inf ab
 - [ ] Manuell in Standalone: Boot, Preset auf/zu, FX aus
 
 ### 2026-08-13 – DSL Multi-Bus (Send-DAG)

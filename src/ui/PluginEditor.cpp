@@ -303,12 +303,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
         addAndMakeVisible(*l);
     }
 
-    inputLeftButton  = std::make_unique<juce::ToggleButton>(TRANS("InputLeft"));
-    inputRightButton = std::make_unique<juce::ToggleButton>(TRANS("InputRight"));
-    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputLeft, *inputLeftButton));
-    buttonAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, EffectParameters::useInputRight, *inputRightButton));
-    addAndMakeVisible(*inputLeftButton);
-    addAndMakeVisible(*inputRightButton);
+    inputChannelSwitch = std::make_unique<InputChannelSwitch> (audioProcessor.apvts);
+    addAndMakeVisible (*inputChannelSwitch);
 
     formulaInputEditor = std::make_unique<DslTerminalEditor>(audioProcessor);
     formulaInputEditor->setText(audioProcessor.getScript());
@@ -526,8 +522,7 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     auto settingsRow = makeRow(0.055f);
     settingsRow->innerMargin = pad;
-    settingsRow->addChild(makeLeaf(inputLeftButton.get(), 0.8f));
-    settingsRow->addChild(makeLeaf(inputRightButton.get(), 0.8f));
+    settingsRow->addChild(makeLeaf(inputChannelSwitch.get(), 1.6f));
     settingsRow->addChild(makeLeaf(oversamplingLabel.get(), 1.0f));
     settingsRow->addChild(makeLeaf(oversamplingBox.get(), 0.9f));
     settingsRow->addChild(makeLeaf(polisherLabel.get(), 0.9f));
@@ -648,7 +643,6 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
 {
     stopTimer();
     attachments.clear();
-    buttonAttachments.clear();
     polisherAttachment.reset();
     oversamplingAttachment.reset();
     assembleVblank = {};
@@ -988,8 +982,7 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         currentPresetLabel->setText (name.isNotEmpty() ? name : "Untitled",
                                      juce::dontSendNotification);
     }
-    inputLeftButton->setButtonText(TRANS("InputLeft"));
-    inputRightButton->setButtonText(TRANS("InputRight"));
+
     optimizeButton->setButtonText(TRANS("OptimizeButton"));
     if (copyFormulaButton)
         copyFormulaButton->setButtonText (TRANS ("CopyButton") == "CopyButton"

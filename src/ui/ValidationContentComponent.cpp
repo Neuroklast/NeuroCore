@@ -5,6 +5,7 @@ ValidationContentComponent::ValidationContentComponent(NeuroCoreAudioProcessor& 
     : processor(proc), script(expr)
 {
     setWantsKeyboardFocus(true);
+    progressBar.setColours (juce::Colour (0xffff1a1a), juce::Colour (0xff1a0505));
     addAndMakeVisible(progressBar);
     addAndMakeVisible(messageLabel);
     addAndMakeVisible(statsLabel);
@@ -53,9 +54,61 @@ void ValidationContentComponent::startTest()
 
         // 1) Fast quality metric (static + dynamic probes)
         const auto quality = processor.analyseFormulaQuality (text);
+        if (quality.nanCount > 0 || quality.infCount > 0 || ! quality.ok)
+        {
+            juce::MessageManager::callAsync ([this, quality]()
+            {
+                state = State::warning;
+                warningString = quality.errors.isEmpty()
+                                    ? "Invalid output (NaN / Inf / unsafe)."
+                                    : quality.errors.joinIntoString ("; ");
+                progressBar.setVisible (false);
+                okButton.setVisible (true);
+                icon.setVisible (true);
+                messageLabel.setText (warningString, juce::dontSendNotification);
+                statsLabel.setText (quality.summary()
+                                    + "  NaN: " + juce::String (quality.nanCount)
+                                    + " Inf: " + juce::String (quality.infCount),
+                                    juce::dontSendNotification);
+                grabKeyboardFocus();
+                resized();
+                repaint();
+            });
+            return;
+        }
 
-        // 2) Existing long stability sweep
-        bool stable = processor.testFormulaStability(text, warn, progressFn);
+        auto gatedProgress = [this, progressFn] (const ValidationProgressInfo& info)
+        {
+            if (info.nanCount > 0 || info.infCount > 0)
+            {
+                abortRequested.store (true);
+                nanCount.store (info.nanCount);
+                infCount.store (info.infCount);
+                return false;
+            }
+            return progressFn (info);
+        };
+
+        bool stable = processor.testFormulaStability(text, warn, gatedProgress);
+        if (abortRequested.load() && (nanCount.load() > 0 || infCount.load() > 0))
+        {
+            juce::MessageManager::callAsync ([this]()
+            {
+                state = State::warning;
+                warningString = "Invalid output detected (NaN / Inf).";
+                progressBar.setVisible (false);
+                okButton.setVisible (true);
+                icon.setVisible (true);
+                messageLabel.setText (warningString, juce::dontSendNotification);
+                statsLabel.setText ("NaN: " + juce::String (nanCount.load())
+                                    + " Inf: " + juce::String (infCount.load()),
+                                    juce::dontSendNotification);
+                grabKeyboardFocus();
+                resized();
+                repaint();
+            });
+            return;
+        }
         if (abortRequested.load())
             return;
 

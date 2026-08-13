@@ -9,6 +9,20 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-13 – Input L/BOTH/R is one control, not two toggles
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Cinematic WIP (Input-Switch + Formel-Check) auf master ziehen  
+**Ergebnis:** Dreier-Switch auf APVTS `useInputLeft`/`useInputRight`; Check bricht bei NaN/Inf ab
+
+#### Fallstrick
+Zwei Toggles lassen L+R=aus zu. `modeFromFlags` mappt das auf Both — der Switch darf keinen vierten Zustand zeigen.
+
+#### Regel
+Ein Widget, drei Positionen. Parameter-Listener nur Message-Thread (`callAsync` + SafePointer). Stash-WIP nicht auf einem anderen Feature-Branch liegen lassen.
+
+---
+
 ### 2026-08-13 – Factory SoTA is honesty, not more DAG
 
 **Agent:** Grok Coding Agent  

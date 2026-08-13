@@ -21,6 +21,7 @@
 #include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
+#include "custom/InputChannelSwitch.h"
 #include "../utils/Localiser.h"
 #include "ModalOverlay.h"
 #include "ValidationContentComponent.h"
@@ -120,13 +121,12 @@ private:
     std::unique_ptr<juce::Label>         inputGainValue;
     std::unique_ptr<juce::Label>         mixValue;
     std::unique_ptr<juce::Label>         currentPresetLabel;
-    std::unique_ptr<juce::ToggleButton>  inputLeftButton;
-    std::unique_ptr<juce::ToggleButton>  inputRightButton;
+    std::unique_ptr<InputChannelSwitch>  inputChannelSwitch;
     std::unique_ptr<juce::ComboBox>      polisherBox;
     std::unique_ptr<juce::Label>         polisherLabel;
     std::unique_ptr<juce::ComboBox>      oversamplingBox;
     std::unique_ptr<juce::Label>         oversamplingLabel;
-    std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
+
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       polisherAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>       oversamplingAttachment;
 

@@ -23,6 +23,21 @@ namespace EffectParameters
     inline constexpr const char* outputGain   = "outputGain";
     inline constexpr const char* useInputLeft  = "useInputLeft";
     inline constexpr const char* useInputRight = "useInputRight";
+
+    enum class InputChannelMode : int { Left = 0, Both = 1, Right = 2 };
+
+    inline InputChannelMode modeFromFlags (bool left, bool right) noexcept
+    {
+        if (left && ! right) return InputChannelMode::Left;
+        if (! left && right) return InputChannelMode::Right;
+        return InputChannelMode::Both;
+    }
+
+    inline void flagsFromMode (InputChannelMode mode, bool& left, bool& right) noexcept
+    {
+        left  = mode != InputChannelMode::Right;
+        right = mode != InputChannelMode::Left;
+    }
     inline constexpr const char* oversampling  = "oversampling";
     /// 0 = off (unity), 1 = full mild loudness match. No UI required; host-automatable.
     inline constexpr const char* autoGain      = "autoGain";
