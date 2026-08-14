@@ -3,6 +3,8 @@
 
 #include <JuceHeader.h>
 #include "../src/dsl/DSLParser.h"
+#include "../src/dsl/NoteValues.h"
+#include "../src/core/Config.h"
 
 class DSLParserTest : public juce::UnitTest
 {
@@ -38,6 +40,42 @@ public:
             expectEquals((int)params.size(), 1);
             expectEquals(params[0].alias, juce::String("a"));
             expectEquals(params[0].name, juce::String("gain"));
+        }
+
+        beginTest("param note range 1/1 to 1/16 snaps through in-between steps");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse ("param a = Time [1/1, 1/16]", blocks, aliases, params, error), error);
+            expectEquals ((int) params.size(), 1);
+            expect (params[0].isNote);
+            expect (params[0].noteLabels.size() >= 5);
+            expectEquals (params[0].noteLabels.front(), juce::String ("1/1"));
+            expectEquals (params[0].noteLabels.back(), juce::String ("1/16"));
+            bool has8 = false, has4 = false, hasDot = false, hasTrip = false;
+            for (const auto& l : params[0].noteLabels)
+            {
+                has8   = has8   || l == "1/8";
+                has4   = has4   || l == "1/4";
+                hasDot = hasDot || l == "1/8.";
+                hasTrip = hasTrip || l == "1/6";
+            }
+            expect (has8 && has4 && hasDot && hasTrip);
+
+            const auto grid = dsl::NoteValues::makeGrid (1.f, 0.0625f);
+            expectEquals (grid.labelFromNorm (0.f), juce::String ("1/1"));
+            expectEquals (grid.labelFromNorm (1.f), juce::String ("1/16"));
+            const float qMs = grid.msFromNorm (0.f, 120.0);
+            // 1/1 at 120 bpm = 4 beats = 2000 ms
+            expectWithinAbsoluteError (qMs, 2000.f, 0.5f);
+            float whole = 0.f;
+            expect (dsl::NoteValues::parseToken ("1/8.", whole));
+            expectWithinAbsoluteError (whole, 0.1875f, 1.0e-4f);
+            expect (dsl::NoteValues::parseToken ("1/8t", whole));
+            expectWithinAbsoluteError (whole, 1.f / 12.f, 1.0e-4f);
         }
 
         beginTest("Einzelner stage Block");
@@ -346,21 +384,35 @@ public:
             expect (error.isNotEmpty());
         }
 
-        beginTest("fifth named bus rejected");
+        beginTest("thirteenth named bus rejected");
         {
             dsl::DSLParser parser;
             std::vector<dsl::BlockDesc> blocks;
             std::unordered_map<juce::String, juce::String> aliases;
             std::vector<dsl::ParamDesc> params;
             juce::String error;
-            const juce::String script =
-                "bus a1:\nstage1: y = x\n"
-                "bus a2:\nstage2: y = x\n"
-                "bus a3:\nstage3: y = x\n"
-                "bus a4:\nstage4: y = x\n"
-                "bus a5:\nstage5: y = x\n";
+            juce::String script;
+            for (int i = 1; i <= 13; ++i)
+                script << "bus a" << juce::String (i) << ":\nstage" << juce::String (i) << ": y = x\n";
             expect (! parser.parse (script, blocks, aliases, params, error));
             expect (error.containsIgnoreCase ("bus"));
+        }
+
+        beginTest("octaver and vocoder blocks parse");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse (
+                "octaver1: sub = 0.6; up = 0.2; mix = 0.7; tone = 400\n"
+                "vocoder1: bands = 8; mix = 0.8; q = 2; formant = 1; dry = 0.2\n",
+                blocks, aliases, params, error), error);
+            expectEquals ((int) blocks.size(), 2);
+            expectEquals (blocks[0].type, juce::String ("octaver"));
+            expectEquals (blocks[1].type, juce::String ("vocoder"));
+            expectEquals (blocks[1].args.at ("bands"), juce::String ("8"));
         }
 
         beginTest("block after out is an error");

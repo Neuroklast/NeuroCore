@@ -20,8 +20,11 @@ struct ParamDesc
 {
     juce::String alias;      ///< Single letter alias (a,b,c,...)
     juce::String name;       ///< Human readable name
-    float min { 0.f };       ///< Minimum value
-    float max { 1.f };       ///< Maximum value
+    float min { 0.f };       ///< Minimum value (linear) or first whole-note (note)
+    float max { 1.f };       ///< Maximum value (linear) or last whole-note (note)
+    bool  isNote { false };  ///< Range is musical divisions (1/1 .. 1/16)
+    std::vector<float> noteWholes;
+    std::vector<juce::String> noteLabels;
 };
 
 class DSLParser

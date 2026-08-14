@@ -33,15 +33,17 @@ Weist einem Knob (`a`–`d`) einen Anzeigenamen und optionalen Wertebereich zu.
 ```
 param a = Drive [0.0, 2.0]
 param b = Rate [0.1, 10.0]
+param c = Time [1/1, 1/16]
 ```
 
 | Teil | Beschreibung |
 |---|---|
-| `a`–`d` | Welcher Knob konfiguriert wird |
+| `a`–`f` | Welcher Knob konfiguriert wird |
 | `Drive` | Anzeigename im UI |
 | `[min, max]` | Optionaler Wertebereich (Standard: `[0, 1]`) |
+| `[1/1, 1/16]` | Zählzeiten. Der Knob rastet auf 1/1, 1/2., 1/2, 1/4., 1/3, 1/4, 1/8., 1/6, 1/8, 1/16., 1/12, 1/16. In der Formel ist der Wert **Millisekunden** bei Host-Tempo (für `delay` / `time`). **Ausnahme:** `osc freq` / `osc sync` auf einem Note-Knob = ein Zyklus pro Note (1/4 bei 120 BPM = 2 Hz), nicht 500 Hz. |
 
-Nach dem Parsen steht der Skaliertwert weiterhin unter `a`–`d`; in Formeln kann der Alias-Name (z. B. `drive`) verwendet werden.
+Nach dem Parsen steht der Skaliertwert weiterhin unter `a`–`f`; in Formeln kann der Alias-Name (z. B. `drive`) verwendet werden.
 
 ---
 
@@ -53,6 +55,15 @@ Kernblock. Transformiert das Signal über eine Formel.
 stage1: y = tanh(x * a * 2.0)
 stage2: channel = left; y = x * 0.5
 ```
+
+Zwei DI-Takes unabhängig verzerren (Factory: **Stereo Guitar Wall**):
+
+```
+stage1: channel = left;  y = tube(x, a)
+stage2: channel = right; y = tube(x, b)
+```
+
+`x` auf dem rechten Kanal bleibt der trockene Take, solange vorherige Stages `channel = left` haben.
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
@@ -105,18 +116,160 @@ Bandpass erfordert entweder `center` + `width` oder `lowcut` + `highcut`.
 
 ---
 
+## `eq` – Parametrischer EQ
+
+```
+eq1: type = peak; freq = 1000; q = 1.2; gain = 3
+eq2: type = notch; freq = a; q = 8
+eq3: type = highcut; freq = 12000; q = 0.707
+```
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `type` | `peak` \| `notch` \| `lowcut` \| `highcut` \| `lowshelf` \| `highshelf` | Bandtyp. `cut` = highcut. |
+| `freq` | Hz / Formel | Mitten- oder Grenzfrequenz (`frequency` / `cutoff` gehen auch) |
+| `q` | 0.1–12 | Güte (`resonance` geht auch) |
+| `gain` | dB | Anhebung/Absenkung für peak und shelf |
+| `channel` | `left`/`mid` \| `right`/`side` \| `both` | Nur diesen Kanal |
+
+---
+
+## `octaver` – Tracking-Oktav
+
+```
+octaver1: sub = 0.65; up = 0.2; mix = 0.72; tone = 420; thresh = 0.04
+```
+
+Schmitt-Tracker auf der Periode, Sinus bei −1 und +1 Oktave mal Hüllkurve. Bei Akkorden/Verlust analoger Flip-Flop-Fallback.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `sub` | 0–1.5 | Pegel der Unteroktave |
+| `up` | 0–1.5 | Pegel der Oberoktave |
+| `mix` | 0–1 | Nassanteil |
+| `tone` | Hz | Tiefpass nach der Summe |
+| `thresh` | 0.01–0.25 | Tracker-Hysterese (höher = stabiler, langsamer) |
+
+---
+
+## `vocoder` – Analog-Vocoder
+
+```
+vocoder1: bands = 8; mix = 0.85; q = 2.2; formant = 1; dry = 0.15
+```
+
+Carrier = dieser Insert. Stimme = **Sidechain**-Pin. Ohne Pin self-vocodet der Carrier sich selbst.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `bands` | 3–8 | Anzahl der Bandpass-Kanäle |
+| `mix` | 0–1 | Nassanteil der Bandsumme |
+| `q` | 0.7–8 | Güte der Bänder |
+| `formant` | 0.5–2 | Verschiebt alle Bandmitten |
+| `dry` | 0–1 | Direktsignal |
+
+---
+
+## Sidechain (externer Eingang)
+
+Das Plugin hat einen optionalen Stereo-Eingang **Sidechain**. Im Host als zweiten Input / Sidechain-Pin zuweisen.
+
+Im Formelcode:
+
+| Variable | Bedeutung |
+|---|---|
+| `sc` / `sidechain` | Mono-Mix des Sidechain-Inputs |
+| `sc_l` | Left (oder Mono) |
+| `sc_r` | Right (oder Kopie von Left) |
+
+Envelope vom Sidechain:
+
+```
+env1: type = peak; source = sidechain; attack = 0.01; release = 0.2
+stage1: y = x * (1 - env1 * a)
+```
+
+---
+
+## `gate` – Noise Gate
+
+```
+gate1: threshold = -42; hyst = 3; attack = 0.001; hold = 0.04; release = 0.08; range = -70
+gate1: source = sidechain
+```
+
+Stereo-verkoppelt. Öffnet bei `threshold`, schließt bei `threshold - hyst`. `range` ist die geschlossene Verstärkung in dB.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `threshold` / `thresh` | dB | Öffnungsschwelle |
+| `hyst` / `hysteresis` | dB | Hysterese (Standard 3) |
+| `attack` | s | Öffnungszeit |
+| `hold` | s | Mindest-Offenzeit |
+| `release` | s | Schließzeit |
+| `range` | dB | Pegel wenn zu (Standard −80) |
+| `source` | `sidechain` | Detektor vom Sidechain-Pin |
+
+---
+
+## `limit` – Brickwall-Limiter
+
+```
+limit1: ceiling = -0.3; release = 0.08
+```
+
+In der Kette, **nicht** der Polisher danach. Instant Attack, kein Lookahead (keine Extra-Latenz). Alias: `limiter1`.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `ceiling` / `threshold` | dB | Maximalpegel (Standard −0.3) |
+| `release` | s | Rückstellzeit (Standard 0.08) |
+
+---
+
+## `xover` – Linkwitz-Riley Crossover
+
+```
+xover1: f1 = 120
+xover1: f1 = 120; f2 = 2500
+out: low = 1; mid = 1; high = 1
+```
+
+24 dB/oct. `f1` allein → Buses `low` / `high`. Mit `f2` zusätzlich `mid`. Die Summe der Bänder ist flach. Main bleibt unangetastet.
+
+---
+
+## `ir` – Convolution / Impulsantwort
+
+```
+ir1: mix = 1; gain = 0
+ir2: mix = 0.35
+```
+
+Mehrere Slots (`ir1`, `ir2`, …). Die Datei steht **nicht** in der Formel. Im Formel-Editor erscheint unter jeder `ir`-Zeile ein Button über die volle Breite: Drop / Change / Clear. WAV/AIFF, max. 2 s. Leerer Slot = dry.
+
+---
+
 ## `comp` – Kompressor
 
 ```
 comp1: threshold = -12; ratio = 4.0; attack = 0.005; release = 0.1
+comp1: threshold = -16; ratio = 4; attack = 0.003; release = 0.22; knee = 6; makeup = 4; hpf = 90
+comp1: source = sidechain
 ```
+
+Alte Skripte (nur threshold/ratio/attack/release) bleiben gültig. Attack-Floor **1 ms**.
 
 | Argument | Beschreibung |
 |---|---|
 | `threshold` | Schwelle (dBFS oder Formel) |
-| `ratio` | Kompressionsverhältnis (≥ 1.0) |
-| `attack` | Anstiegszeit in Sekunden (oder Formel) |
-| `release` | Abklingzeit in Sekunden (oder Formel) |
+| `ratio` | Kompressionsverhältnis (≥ 1) |
+| `attack` | Anstiegszeit in Sekunden (min. 1 ms) |
+| `release` | Abklingzeit in Sekunden |
+| `knee` | Soft-Knee in dB (0 = hart, optional) |
+| `makeup` / `gain` | Ausgangs-Anhebung in dB (optional) |
+| `hpf` | Detektor-Hochpass in Hz, 0 = aus (optional) |
+| `source` | `sidechain` duckt vom Extra-Input (optional) |
 
 ---
 
@@ -238,9 +391,9 @@ osc2: shape = triangle; sync = 1/4; depth = d
 | Argument | Werte | Beschreibung |
 |---|---|---|
 | `shape` | `sine` \| `saw` \| `triangle` \| `square` \| `noise` | Wellenform |
-| `freq` | Hz / Formel | Frequenz (ignoriert wenn `sync` gesetzt) |
+| `freq` | Hz / Formel | Frequenz (ignoriert wenn `sync` gesetzt). Note-Knob → `1000/ms` (ein Zyklus pro Note). |
 | `depth` | 0.0–1.0 | Amplitude |
-| `sync` | Ratio-String | Tempo-Sync (`1/4`, `1/8`, `1`, `2`, …) |
+| `sync` | Ratio-String / Knob | Tempo-Sync: `1/4`, `1/8`, oder Note-Param (`param a = Rate [1/1, 1/16]`). Ein Zyklus pro Note. |
 
 Der Blockname (`osc1`) ist die Variable in Formeln. Ausgabe: ca. -1.0 … +1.0.
 
@@ -310,7 +463,7 @@ Nur Stages, die `y_prev` / `x_prev` lesen, laufen sample-weise — und **nur die
 | Feedback-Gain ≤ ~0.5 | Engine-Leak + musikalischer Kopfraum |
 | Kein `osc` + multi-regen-Stack | Osc ist ok (modLane), aber unnötig teuer für „Echo-Feeling“ |
 
-Factory-Beispiele: **Preamp Regen Stack**, **Slapback Drive**, **Cascade Loop Dirt**, **Dual Path Regen**, **Tight Metal Regen**, …
+Factory-Beispiele: **Preamp Regen Stack**, **Slapback Drive**, **Cascade Loop Dirt**, **Dual Path Regen**, **Tight Metal Regen**, **Stereo Guitar Wall**, **Cyberpunk Drive**, …
 
 ---
 

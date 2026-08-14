@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <vector>
 
 class MidiLearnManager;
 
@@ -31,6 +32,9 @@ namespace ui
         */
         void setMappedRange(float minVal, float maxVal);
 
+        /** Snap the knob to musical note labels (1/1 .. 1/16). Empty clears snap. */
+        void setNoteGrid (std::vector<juce::String> labels);
+
         void parameterChanged(const juce::String& id, float newValue) override;
         void setEnabled(bool shouldBeEnabled);
 
@@ -52,6 +56,7 @@ namespace ui
         float                               mappedMin { 0.f };
         float                               mappedMax { 1.f };
         bool                                hasMappedRange { false };
+        std::vector<juce::String>           noteLabels;
 
         juce::Slider slider;
         juce::Label  nameLabel;

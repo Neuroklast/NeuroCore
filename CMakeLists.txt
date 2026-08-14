@@ -88,6 +88,12 @@ set(SOURCE_FILES
     src/dsp/SignalPolisher.cpp
     src/dsl/DSLParser.cpp
     src/dsl/SignalChain.cpp
+    src/dsl/blocks/GateBlock.cpp
+    src/dsl/blocks/CompBlock.cpp
+    src/dsl/blocks/LimitBlock.cpp
+    src/dsl/blocks/XoverBlock.cpp
+    src/dsl/blocks/IrBlock.cpp
+    src/ui/IrPanelComponent.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
@@ -270,6 +276,9 @@ target_sources(NeuroCoreTests PRIVATE
     tests/CyberFxTest.h
     tests/EditorUxTest.h
     tests/LicenseTest.h
+    tests/EqSidechainTest.h
+    tests/DynamicsBlocksTest.h
+    tests/IrXoverTest.h
     ${SOURCE_FILES}
     src/ui/StandaloneAudioSettings.cpp
     src/dsp/WaveShaper.cpp

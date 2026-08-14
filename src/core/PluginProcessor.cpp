@@ -67,6 +67,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), false)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
@@ -268,6 +269,15 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
         return false;
    #endif
 
+    if (layouts.inputBuses.size() >= 2)
+    {
+        const auto sc = layouts.getChannelSet (true, 1);
+        if (! sc.isDisabled()
+            && sc != juce::AudioChannelSet::mono()
+            && sc != juce::AudioChannelSet::stereo())
+            return false;
+    }
+
     return true;
   #endif
 }
@@ -286,14 +296,35 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
     if (buffer.getNumSamples() == 0 || getTotalNumInputChannels() == 0) return;
 
+    auto main = getBusCount (true) > 0 ? getBusBuffer (buffer, true, 0) : buffer;
+    const float* scL = nullptr;
+    const float* scR = nullptr;
+    int scN = 0;
+    if (getBusCount (true) > 1)
+    {
+        if (auto* bus = getBus (true, 1))
+        {
+            if (bus->isEnabled())
+            {
+                auto sc = getBusBuffer (buffer, true, 1);
+                if (sc.getNumSamples() > 0 && sc.getNumChannels() > 0)
+                {
+                    scL = sc.getReadPointer (0);
+                    scR = sc.getNumChannels() > 1 ? sc.getReadPointer (1) : scL;
+                    scN = sc.getNumSamples();
+                }
+            }
+        }
+    }
+
     // MIDI: Learn CC mappings + update DSL MIDI variables
     midiLearnManager.processMidiMessages(midiMessages, apvts);
     midiVariableMapper.processMidi(midiMessages);
 
     // Capture input waveform (pre-processing)
-    waveformCapture.pushInput(buffer);
+    waveformCapture.pushInput(main);
 
-    const int nSamp = buffer.getNumSamples();
+    const int nSamp = main.getNumSamples();
     const double sr = getSampleRate();
     float mix = 1.f;
     if (auto* p = apvts.getRawParameterValue (EffectParameters::dryWet))
@@ -309,14 +340,15 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                       && ! cpuProtect.shouldProbeWet (nSamp, sr);
     if (cpuHold || mix <= 1.0e-5f)
     {
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        for (int ch = 0; ch < main.getNumChannels(); ++ch)
         {
-            auto* d = buffer.getWritePointer (ch);
+            auto* d = main.getWritePointer (ch);
             for (int i = 0; i < nSamp; ++i)
                 if (! std::isfinite (d[i]))
                     d[i] = 0.f;
         }
-        waveformCapture.pushOutput (buffer);
+        dspEngine.publishOutputMeter (main);
+        waveformCapture.pushOutput (main);
         return;
     }
 
@@ -341,19 +373,21 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 if (head->getCurrentPosition(pos))
                     scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
             }
-            dspEngine.processBlock(buffer, scriptManager.signalChain);
+            dspEngine.setHostSidechain (scL, scR, scN);
+            dspEngine.processBlock (main, scriptManager.signalChain);
             ranWet = true;
         }
         else
         {
             // Formula swap in progress — stay dry this block, do not wait.
-            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+            for (int ch = 0; ch < main.getNumChannels(); ++ch)
             {
-                auto* d = buffer.getWritePointer (ch);
+                auto* d = main.getWritePointer (ch);
                 for (int i = 0; i < nSamp; ++i)
                     if (! std::isfinite (d[i]))
                         d[i] = 0.f;
             }
+            dspEngine.publishOutputMeter (main);
         }
     }
 
@@ -372,9 +406,9 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         g = tgt;
     osOutGain.store (g, std::memory_order_relaxed);
     if (g < 0.999f)
-        buffer.applyGain (juce::jlimit (0.f, 1.f, g));
+        main.applyGain (juce::jlimit (0.f, 1.f, g));
 
-    waveformCapture.pushOutput(buffer);
+    waveformCapture.pushOutput (main);
 }
 
 //==============================================================================
@@ -401,6 +435,27 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         for (int i = 0; i < Config::kNumUserParams; ++i)
             state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
+        for (const auto& kv : irBank)
+        {
+            juce::ValueTree ir ("IrSlot");
+            ir.setProperty ("id", kv.first, nullptr);
+            ir.setProperty ("name", kv.second.fileName, nullptr);
+            ir.setProperty ("sr", kv.second.sr, nullptr);
+            ir.setProperty ("ch", kv.second.samples.getNumChannels(), nullptr);
+            ir.setProperty ("n", kv.second.samples.getNumSamples(), nullptr);
+            if (kv.second.samples.getNumSamples() > 0)
+            {
+                juce::MemoryBlock raw ((size_t) kv.second.samples.getNumChannels()
+                                       * (size_t) kv.second.samples.getNumSamples() * sizeof (float));
+                auto* dst = static_cast<float*> (raw.getData());
+                int w = 0;
+                for (int c = 0; c < kv.second.samples.getNumChannels(); ++c)
+                    for (int i = 0; i < kv.second.samples.getNumSamples(); ++i)
+                        dst[w++] = kv.second.samples.getSample (c, i);
+                ir.setProperty ("data", juce::var (raw), nullptr);
+            }
+            state.addChild (ir, -1, nullptr);
+        }
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
     }
@@ -437,6 +492,31 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 midiLearnManager.setState(midiState);
                 tree.removeChild(midiState, nullptr);
             }
+            irBank.clear();
+            for (int i = tree.getNumChildren(); --i >= 0;)
+            {
+                auto irState = tree.getChild (i);
+                if (irState.getType() != juce::Identifier ("IrSlot"))
+                    continue;
+                const auto id = irState.getProperty ("id", "ir1").toString().toLowerCase();
+                IrAsset asset;
+                asset.fileName = irState.getProperty ("name").toString();
+                asset.sr = (double) irState.getProperty ("sr", 44100.0);
+                const int ch = juce::jmax (1, (int) irState.getProperty ("ch", 1));
+                const int n  = juce::jmax (0, (int) irState.getProperty ("n", 0));
+                asset.samples.setSize (ch, n, false, true, false);
+                if (auto* mb = irState.getProperty ("data").getBinaryData())
+                {
+                    const auto* src = static_cast<const float*> (mb->getData());
+                    const int count = (int) (mb->getSize() / sizeof (float));
+                    int w = 0;
+                    for (int c = 0; c < ch && w < count; ++c)
+                        for (int s = 0; s < n && w < count; ++s)
+                            asset.samples.setSample (c, s, src[w++]);
+                }
+                irBank[id] = std::move (asset);
+                tree.removeChild (i, nullptr);
+            }
 
             apvts.replaceState (tree);
 
@@ -446,6 +526,10 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 if (!applyFormula(scriptFromState, err))
                     logError("Failed to restore DSL script from state: " + err);
             }
+            for (const auto& kv : irBank)
+                if (kv.second.samples.getNumSamples() > 0)
+                    scriptManager.signalChain.loadImpulseResponse (kv.first, kv.second.samples, kv.second.sr);
+            refreshReportedLatency();
 
             for (int i = 0; i < Config::kNumUserParams; ++i)
             {
@@ -459,6 +543,80 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             sendChangeMessage();
         }
     }
+}
+
+void NeuroCoreAudioProcessor::refreshReportedLatency()
+{
+    setLatencySamples (dspEngine.getOversamplingLatency()
+                       + scriptManager.signalChain.getIrLatencySamples());
+}
+
+juce::String NeuroCoreAudioProcessor::getIrName (const juce::String& slot) const
+{
+    auto it = irBank.find (slot.trim().toLowerCase());
+    return it != irBank.end() ? it->second.fileName : juce::String();
+}
+
+int NeuroCoreAudioProcessor::getIrNumSamples (const juce::String& slot) const noexcept
+{
+    auto it = irBank.find (slot.trim().toLowerCase());
+    return it != irBank.end() ? it->second.samples.getNumSamples() : 0;
+}
+
+int NeuroCoreAudioProcessor::getIrNumChannels (const juce::String& slot) const noexcept
+{
+    auto it = irBank.find (slot.trim().toLowerCase());
+    return it != irBank.end() ? it->second.samples.getNumChannels() : 0;
+}
+
+double NeuroCoreAudioProcessor::getIrSampleRate (const juce::String& slot) const noexcept
+{
+    auto it = irBank.find (slot.trim().toLowerCase());
+    return it != irBank.end() ? it->second.sr : 44100.0;
+}
+
+const juce::AudioBuffer<float>* NeuroCoreAudioProcessor::getIrBuffer (const juce::String& slot) const noexcept
+{
+    auto it = irBank.find (slot.trim().toLowerCase());
+    return it != irBank.end() ? &it->second.samples : nullptr;
+}
+
+bool NeuroCoreAudioProcessor::loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error)
+{
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader (fm.createReaderFor (file));
+    if (reader == nullptr)
+    {
+        error = "Could not read IR file.";
+        return false;
+    }
+
+    const int srcN = (int) reader->lengthInSamples;
+    const int ch = juce::jlimit (1, 2, (int) reader->numChannels);
+    const int maxN = juce::jmax (1, (int) std::lround (reader->sampleRate * (double) Config::kIrMaxSeconds));
+    const int n = juce::jmin (srcN, maxN);
+    juce::AudioBuffer<float> buf (ch, n);
+    reader->read (&buf, 0, n, 0, true, ch > 1);
+    IrAsset asset;
+    asset.fileName = file.getFileName();
+    asset.sr = reader->sampleRate;
+    asset.samples = std::move (buf);
+    const auto key = slot.trim().toLowerCase();
+    irBank[key] = std::move (asset);
+    scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
+    refreshReportedLatency();
+    sendChangeMessage();
+    return true;
+}
+
+void NeuroCoreAudioProcessor::clearIr (const juce::String& slot)
+{
+    const auto key = slot.trim().toLowerCase();
+    irBank.erase (key);
+    scriptManager.signalChain.clearImpulseResponse (key);
+    refreshReportedLatency();
+    sendChangeMessage();
 }
 
 // UndoableAction for formula changes
@@ -596,13 +754,12 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     dspEngine.setOversamplingIndex (osStages);
     dspEngine.prepare(spec, apvts, osStages);
 
-    setLatencySamples(dspEngine.getOversamplingLatency());
-
     const size_t osFactor = dspEngine.getOversamplingFactor();
     juce::dsp::ProcessSpec dslSpec { sampleRate * osFactor,
                                      static_cast<juce::uint32>(blockSize * (int)osFactor),
                                      static_cast<juce::uint32>(channels) };
     scriptManager.prepare(dslSpec);
+    refreshReportedLatency();
 
     waveformCapture.prepare(channels, Config::kWaveformDisplaySamples);
 }

@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "DslTerminalEditor.h"
 #include "DslAutocomplete.h"
+#include "IrSlotUi.h"
 #include "PluginLookAndFeel.h"
 #include "../utils/FormulaHelper.h"
 #include "../core/Config.h"
@@ -59,13 +60,6 @@ public:
                 return true;
             }
         }
-        else if (key == KeyPress::tabKey && ! items.empty())
-        {
-            // Ghost-only: Tab accepts top match
-            selected = 0;
-            acceptSelected();
-            return true;
-        }
 
         return CodeEditorComponent::keyPressed (key);
     }
@@ -97,18 +91,38 @@ public:
     void caretPositionMoved() override
     {
         CodeEditorComponent::caretPositionMoved();
-        updateSuggestion (false);
+        if (showPopup)
+            updateSuggestion (false);
     }
 
-    void codeDocumentTextInserted (const String&, int) override { updateSuggestion (false); }
-    void codeDocumentTextDeleted (int, int) override { updateSuggestion (false); }
+    void editorViewportPositionChanged() override
+    {
+        CodeEditorComponent::editorViewportPositionChanged();
+        if (onViewportMoved)
+            onViewportMoved();
+    }
+
+    std::function<void()> onViewportMoved;
+
+    void codeDocumentTextInserted (const String&, int) override
+    {
+        if (showPopup)
+            updateSuggestion (false);
+    }
+    void codeDocumentTextDeleted (int, int) override
+    {
+        if (showPopup)
+            updateSuggestion (false);
+        else
+            clearPopup();
+    }
 
     void paintOverChildren (Graphics& g) override
     {
         CodeEditorComponent::paintOverChildren (g);
 
-        // Ghost text for selected / top completion
-        if (! items.empty() && juce::isPositiveAndBelow (selected, (int) items.size()))
+        // Ghost suffix only while the Ctrl+Space list is open
+        if (popupVisible() && juce::isPositiveAndBelow (selected, (int) items.size()))
         {
             const auto& it = items[(size_t) selected];
             const auto caret = getCharacterBounds (getCaretPos());
@@ -166,6 +180,8 @@ public:
             g.drawText (it.detail, row, Justification::centredRight, true);
         }
     }
+
+    bool isPopupOpen() const noexcept { return popupVisible(); }
 
 private:
     bool popupVisible() const noexcept { return ! items.empty() && showPopup; }
@@ -228,16 +244,12 @@ private:
         const auto text = getDocument().getAllContent();
         const int caret = getCaretPos().getPosition();
         auto names = processor.getVariableNames();
-        items = DslAutocomplete::complete (text, caret, names, force);
+        items = DslAutocomplete::complete (text, caret, names, force || showPopup);
         selected = 0;
-        // Ghost for single match; list when multiple / forced / empty-prefix context
-        int ws = 0;
-        juce::String pref;
-        DslAutocomplete::wordAt (text, caret, ws, pref);
-        showPopup = ! items.empty()
-                 && (force || (int) items.size() > 1 || pref.isEmpty());
-        if ((int) items.size() == 1 && ! force && pref.isNotEmpty())
-            showPopup = false; // typing unique prefix → ghost only
+        // List only after Ctrl/Cmd+Space. Further typing filters that list.
+        showPopup = ! items.empty() && (force || showPopup);
+        if (items.empty())
+            showPopup = false;
         repaint();
     }
 
@@ -253,6 +265,7 @@ DslTerminalEditor::DslTerminalEditor (NeuroCoreAudioProcessor& proc)
 {
     document = std::make_unique<CodeDocument>();
     editor = std::make_unique<AutoCompleteCodeEditor> (*document, nullptr, processor);
+    editor->onViewportMoved = [this] { syncIrButtons(); };
     document->addListener (this);
     addAndMakeVisible (*editor);
     setFontHeight (Config::kDefaultEditorFontPt);
@@ -322,15 +335,66 @@ void DslTerminalEditor::resized()
 {
     if (editor)
         editor->setBounds (getLocalBounds());
+    syncIrButtons();
+}
+
+void DslTerminalEditor::syncIrButtons()
+{
+    if (syncingIrButtons || editor == nullptr || document == nullptr)
+        return;
+
+    juce::ScopedValueSetter<bool> guard (syncingIrButtons, true);
+
+    std::vector<juce::String> slots;
+    std::vector<int> lines;
+    IrSlotUi::collectSlots (document->getAllContent(), slots, lines);
+
+    irButtonSlots.clear();
+    while ((int) irButtons.size() > (int) slots.size())
+        irButtons.pop_back();
+    while (irButtons.size() < slots.size())
+    {
+        auto b = std::make_unique<juce::TextButton> ("IR");
+        IrSlotUi::styleButton (*b);
+        addAndMakeVisible (*b);
+        irButtons.push_back (std::move (b));
+    }
+
+    for (size_t i = 0; i < slots.size(); ++i)
+    {
+        auto& btn = *irButtons[i];
+        IrSlotUi::styleButton (btn);
+        const auto cap = irCaptionForSlot ? irCaptionForSlot (slots[i]) : juce::String();
+        btn.setButtonText (IrSlotUi::buttonText (slots[i], cap));
+        const auto slot = slots[i];
+        irButtonSlots.add (slot);
+        btn.onClick = [this, slot]
+        {
+            if (onOpenIrSlot)
+                onOpenIrSlot (slot);
+        };
+        juce::CodeDocument::Position pos (*document, lines[i], 0);
+        const auto r = editor->getCharacterBounds (pos);
+        const int x = juce::jmax (0, r.getX());
+        const int h = juce::jmax (20, r.getHeight());
+        const int y = r.getY();
+        const int w = juce::jmax (80, getWidth() - x - 8);
+        const bool onScreen = (y + h) > 0 && y < getHeight();
+        btn.setVisible (onScreen);
+        btn.setBounds (x, y, w, h);
+        btn.toFront (false);
+    }
 }
 
 void DslTerminalEditor::codeDocumentTextInserted (const juce::String&, int)
 {
+    syncIrButtons();
     sendChangeMessage();
 }
 
 void DslTerminalEditor::codeDocumentTextDeleted (int, int)
 {
+    syncIrButtons();
     sendChangeMessage();
 }
 
@@ -338,4 +402,9 @@ void DslTerminalEditor::insertTextAtCaret (const juce::String& text)
 {
     if (editor)
         editor->insertTextAtCaret (text);
+}
+
+bool DslTerminalEditor::isSuggestionPopupVisible() const
+{
+    return editor != nullptr && editor->isPopupOpen();
 }

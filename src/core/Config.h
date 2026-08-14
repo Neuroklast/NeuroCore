@@ -120,11 +120,15 @@ namespace Config
     /// Number of host-automatable formula knobs (a..f). Max 6 for readable UI.
     inline constexpr int kNumUserParams = 6;
     /// Named DSL buses in addition to reserved `in` and `main`.
-    inline constexpr int kMaxNamedBuses = 4;
+    inline constexpr int kMaxNamedBuses = 12;
+    /// Max IR length stored in plugin state (seconds). Longer files are truncated.
+    inline constexpr float kIrMaxSeconds = 2.0f;
     /// Default variable names mapped to the parameter knobs.
     inline constexpr const char* kDefaultVariableNames[6] = {
         "a", "b", "c", "d", "e", "f"
     };
+    /// Preset name chip in the toolbar (must fill the button row, not shrink).
+    inline constexpr float kPresetChipFontPt = 28.0f;
     /// Default formula editor / live view font height (points).
     inline constexpr float kDefaultEditorFontPt = 18.0f;
     inline constexpr float kMinEditorFontPt     = 12.0f;
@@ -132,6 +136,9 @@ namespace Config
     inline constexpr float kEditorFontStepPt    = 2.0f;
     /// Line box as a multiple of font height (live formula + code editor).
     inline constexpr float kFormulaLineHeight   = 1.1f;
+    /// In-plugin Help body / chapter list (slightly larger than 14.5 for reading).
+    inline constexpr float kHelpBodyFontPt      = 16.0f;
+    inline constexpr float kHelpListFontPt      = 13.5f;
 
     //==========================================================================
     // Modulator constants

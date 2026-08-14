@@ -127,7 +127,8 @@ inline juce::StringArray inferTags (const juce::String& script,
         "tremolo", "shimmer", "hall", "plate", "slap", "glue", "air",
         "width", "mono", "room", "master", "crush", "lofi", "edm",
         "synth", "pad", "lead", "send", "drive", "saturate", "clipper",
-        "haas", "cinematic", "trailer", "score", "dialogue", "boom", "impact"
+        "haas", "cinematic", "trailer", "score", "dialogue", "boom", "impact",
+        "octaver", "vocoder"
     };
     for (auto* w : kWords)
         if (hasWord (w))

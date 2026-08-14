@@ -1,5 +1,6 @@
 #include "HelpContentComponent.h"
 #include "PluginLookAndFeel.h"
+#include "../core/Config.h"
 
 namespace
 {
@@ -284,10 +285,10 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
 
     searchLabel.setText ("Search", juce::dontSendNotification);
     searchLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
+    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
     addAndMakeVisible (searchLabel);
 
-    search.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    search.setFont (NeuroCoreLookAndFeel::monoFont (14.5f));
     search.setTextToShowWhenEmpty ("Filter chapters and text...",
                                    NeuroCoreLookAndFeel::mutedText());
     search.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
@@ -307,7 +308,7 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     body.setScrollbarsShown (true);
     body.setCaretVisible (false);
     body.setIndents (12, 10);
-    const auto helpFont = NeuroCoreLookAndFeel::monoFont (14.5f);
+    const auto helpFont = NeuroCoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
     body.setFont (helpFont);
     body.applyFontToAllText (helpFont);
     body.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
@@ -359,7 +360,7 @@ juce::String HelpContentComponent::readableChapter (const HelpChapter& ch)
 
 void HelpContentComponent::applyBodyFont()
 {
-    const auto helpFont = NeuroCoreLookAndFeel::monoFont (14.5f);
+    const auto helpFont = NeuroCoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
     body.setFont (helpFont);
     body.applyFontToAllText (helpFont);
 }
@@ -420,7 +421,7 @@ void HelpContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w, 
         g.fillAll (NeuroCoreLookAndFeel::surface());
 
     const auto& ch = chapters[(size_t) visible[(size_t) row]];
-    g.setFont (NeuroCoreLookAndFeel::monoFont (12.5f));
+    g.setFont (NeuroCoreLookAndFeel::monoFont (Config::kHelpListFontPt));
     g.setColour (selected ? NeuroCoreLookAndFeel::accent() : NeuroCoreLookAndFeel::brightText());
     g.drawText (ch.title, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }

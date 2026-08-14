@@ -34,6 +34,7 @@
 #include "fx/CyberFxDirector.h"
 #include "fx/CyberBackdropComponent.h"
 #include "fx/CyberClip.h"
+#include "IrPanelComponent.h"
 
 
 class ParameterSlider : public juce::Slider
@@ -121,6 +122,7 @@ private:
     std::unique_ptr<juce::Label>         mixLabel;
     std::unique_ptr<juce::Label>         mixValue;
     std::unique_ptr<juce::Label>         currentPresetLabel;
+    juce::TooltipWindow                  tooltipWindow { this, 450 };
     std::unique_ptr<InputChannelSwitch>  inputChannelSwitch;
     std::unique_ptr<juce::ComboBox>      polisherBox;
     std::unique_ptr<juce::Label>         polisherLabel;
@@ -139,6 +141,7 @@ private:
     std::unique_ptr<juce::Label>            errorLabel;
     bool                                    editing { false };
     float                                   mixBeforeBypass { 1.0f };
+    void applyBypassMixLock() noexcept;
 
     NeuroCoreLookAndFeel lookAndFeel;
     CyberFxDirector cyberDirector;
@@ -176,6 +179,10 @@ private:
     std::unique_ptr<ModalOverlay>            functionsOverlay;
     std::unique_ptr<ModalOverlay>            stagesOverlay;
     std::unique_ptr<ModalOverlay>            validationOverlay;
+    std::unique_ptr<ModalOverlay>            irOverlay;
+
+    void showIrOverlay (const juce::String& slot);
+    void hideIrOverlay();
 
     void showPresetOverlay();
     void hidePresetOverlay();

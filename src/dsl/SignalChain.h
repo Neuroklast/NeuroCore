@@ -3,11 +3,15 @@
 
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "NoteValues.h"
 #include "BusGraph.h"
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
+#include <array>
 #include <atomic>
+#include <map>
+#include <string>
 #include <vector>
 #include <utility>
 
@@ -37,12 +41,20 @@ public:
     /** Write MIDI variable values into the shared variables map before processing. */
     void setMidiVariables(const MidiVariableMapper& mapper);
 
+    /** Host-rate or OS-rate extra input. Null pointers = silence. */
+    void setExternalSidechain (const float* left, const float* right, int numSamples) noexcept;
+
     /** Returns the maximum tail time in seconds across all Comp and Env blocks.
         Used by PluginProcessor::getTailLengthSeconds. */
     float getMaxTailTime() const noexcept;
 
     /** Current param a–h descriptors (alias, name, min, max) from last loadScript. */
     const std::vector<ParamDesc>& getParamInfo() const noexcept { return paramInfo; }
+    bool hasIrBlock() const noexcept;
+    juce::StringArray getIrSlotNames() const;
+    int getIrLatencySamples() const noexcept;
+    void loadImpulseResponse (const juce::String& slot, const juce::AudioBuffer<float>& ir, double irSr);
+    void clearImpulseResponse (const juce::String& slot);
 
     /**
         Zero delay/reverb rings, y_prev/x_prev, filter history, ADAA.
@@ -132,6 +144,8 @@ private:
         bool useFreqExpr{false};    ///< When true, re-evaluate freq from expression
         bool useSyncRatio{false};   ///< When true, freq is derived from BPM
         bool useSyncExpr{false};    ///< When true, sync ratio is a live expression (knob → note div)
+        bool syncExprIsPeriodMs{false}; ///< Note-range knob: expr is period in ms, not cycles/quarter
+        bool freqExprIsPeriodMs{false}; ///< Note-range knob on freq: evaluate ms, then Hz = 1000/ms
         float syncRatio{0.25f};     ///< Beat ratio (e.g. 0.25 = 1/4 note → 1 cycle per quarter)
         double currentBpm{Config::kDefaultTempo};
         float sampleRate{44100.0f};
@@ -176,19 +190,137 @@ private:
         float processSampleOnly (int ch, float x) noexcept;
     };
 
-    struct Comp : Block
+    /** Parametric EQ band: peak / notch / shelf / cut with freq, Q, gain. */
+    struct Eq : Block
     {
-        juce::dsp::Compressor<float> comp;
-        ExpressionEvaluator threshold, ratio, attack, release;
-        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm;
-        uint8_t coeffPhase{0};
-        int channels{1};
+        enum class Type { Peak, Notch, LowShelf, HighShelf, LowCut, HighCut };
+
+        Type type { Type::Peak };
+        ExpressionEvaluator freq, q, gainDb;
+        bool modulated { false };
+        Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
+        float sampleRate { 44100.f };
+        juce::SmoothedValue<float> freqSm, qSm, gainSm;
+        uint8_t coeffPhase { 0 };
+        juce::dsp::IIR::Filter<float> filtL, filtR;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
-        void prepare(const juce::dsp::ProcessSpec& spec) override;
-        float process(int ch, float x) override;
-        void processBlock(juce::AudioBuffer<float>& buffer) override;
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        void applyCoeffs (float fHz, float qVal, float gDb) noexcept;
+    };
+
+    struct Comp : Block
+    {
+        ExpressionEvaluator threshold, ratio, attack, release;
+        ExpressionEvaluator kneeDb, makeupDb, hpfHz;
+        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm, kneeSm, makeupSm, hpfSm;
+        bool followSidechain { false };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float envDb { 0.f };
+        float hpfLpL { 0.f }, hpfLpR { 0.f };
+        float hpfLpL2 { 0.f }, hpfLpR2 { 0.f };
+        const float* scL { nullptr };
+        const float* scR { nullptr };
+        int scN { 0 };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        float computeGrDb (float levelDb, float thrDb, float ratio, float knee) const noexcept;
+    };
+
+    /** Peak noise gate, stereo-linked. Closed gain = range (dB). */
+    struct Gate : Block
+    {
+        ExpressionEvaluator thresholdDb, hystDb, attack, hold, release, rangeDb;
+        juce::SmoothedValue<float> thrSm, hystSm, atkSm, holdSm, relSm, rangeSm;
+        bool followSidechain { false };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float env { 0.f };
+        float gain { 0.f };
+        float holdLeft { 0.f };
+        bool open { false };
+        const float* scL { nullptr };
+        const float* scR { nullptr };
+        int scN { 0 };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** In-chain peak limiter. Instant attack, no lookahead. Distinct from Polisher. */
+    struct Limit : Block
+    {
+        ExpressionEvaluator ceilingDb, release;
+        juce::SmoothedValue<float> ceilSm, relSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float gain { 1.f };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::unordered_map<juce::String, float>* varPtr = nullptr;
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Linkwitz-Riley 24 dB/oct split. Writes dest buses; does not rewrite main. */
+    struct Xover : Block
+    {
+        ExpressionEvaluator f1Hz, f2Hz;
+        juce::SmoothedValue<float> f1Sm, f2Sm;
+        bool threeBand { false };
+        float sampleRate { 44100.f };
+        float lastF1 { -1.f }, lastF2 { -1.f };
+        juce::AudioBuffer<float>* lowOut { nullptr };
+        juce::AudioBuffer<float>* midOut { nullptr };
+        juce::AudioBuffer<float>* highOut { nullptr };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+
+        struct Path
+        {
+            juce::dsp::IIR::Filter<float> lp1a, lp1b, hp1a, hp1b;
+            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b;
+        };
+        Path ch[2];
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void applyCoeffs (float f1, float f2) noexcept;
+    };
+
+    /** Convolution IR slot. File lives in plugin state, not in the formula. */
+    struct Ir : Block
+    {
+        juce::String slotName;
+        ExpressionEvaluator mixExpr, gainDb;
+        juce::SmoothedValue<float> mixSm, gainSm;
+        juce::dsp::Convolution conv;
+        bool hasIr { false };
+        float sampleRate { 44100.f };
+        int latencySamples { 0 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void loadImpulse (const juce::AudioBuffer<float>& ir, double irSr);
+        void clearImpulse();
     };
 
     struct Env : Block
@@ -207,6 +339,7 @@ private:
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
+        bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
@@ -370,6 +503,77 @@ private:
         void processBlock (juce::AudioBuffer<float>& buffer) override;
     };
 
+    /**
+        Tracking octaver: Schmitt period lock, sine at f/2 and 2f * envelope.
+        Falls back to analog flip-flop * env when tracking is lost (chords).
+    */
+    struct Octaver : Block
+    {
+        ExpressionEvaluator subExpr, upExpr, mixExpr, toneExpr, threshExpr;
+        float sampleRate { 44100.f };
+        juce::SmoothedValue<float> subSm, upSm, mixSm, toneSm, thrSm;
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+
+        struct Chan
+        {
+            float hpX { 0.f }, hpY { 0.f };
+            float env { 0.f };
+            float flip { 1.f };
+            float flip2 { 1.f };
+            int polarity { 1 };
+            bool armed { true };
+            int age { 0 };
+            float period { 0.f };
+            float phSub { 0.f }, phUp { 0.f };
+            float outLp { 0.f };
+        };
+        Chan ch[2];
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        float processChan (Chan& c, float x,
+                           float subAmt, float upAmt, float mixAmt,
+                           float toneHz, float thr) noexcept;
+    };
+
+    /**
+        Analog-style vocoder. Carrier = this insert. Modulator = Sidechain
+        when pinned, otherwise the carrier (self-vocode).
+    */
+    struct Vocoder : Block
+    {
+        static constexpr int kMaxBands = 8;
+
+        ExpressionEvaluator mixExpr, qExpr, formantExpr, dryExpr;
+        int numBands { 8 };
+        float sampleRate { 44100.f };
+        juce::SmoothedValue<float> mixSm, qSm, formSm, drySm;
+        float lastQ { -1.f }, lastForm { -1.f };
+        uint8_t coeffPhase { 0 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+
+        const float* scL { nullptr };
+        const float* scR { nullptr };
+        int scN { 0 };
+
+        struct Band
+        {
+            juce::dsp::IIR::Filter<float> modL, modR, carL, carR;
+            float envL { 0.f }, envR { 0.f };
+        };
+        std::array<Band, kMaxBands> bands {};
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void applyBands (float q, float formant) noexcept;
+    };
+
     using Chain   = std::vector<std::unique_ptr<Block>>;
 
     std::shared_ptr<Chain>   chain;
@@ -389,8 +593,22 @@ private:
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
     std::array<juce::SmoothedValue<float>, Config::kNumUserParams> paramSmooth;
+    std::array<bool, Config::kNumUserParams> knobIsNote {};
+    std::array<NoteValues::Grid, Config::kNumUserParams> knobNotes {};
+    double hostBpm { Config::kDefaultTempo };
     juce::AudioProcessorValueTreeState* valueTreeState { nullptr };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
+    struct StoredIr
+    {
+        std::shared_ptr<juce::AudioBuffer<float>> audio;
+        double sr { 44100.0 };
+    };
+    std::map<juce::String, StoredIr> storedIrs;
+
+    void ensureGraphBus (BusGraph& g, const juce::String& name);
+    void bindXoverDestinations (Chain& c, BusGraph& g) noexcept;
+
+    float publishedKnobValue (int index, float norm01) const noexcept;
 
     /** Protects loadScript vs processBlock* on concurrent UI/audio access. */
     mutable juce::SpinLock scriptLock;
@@ -400,6 +618,12 @@ private:
 
     /** Per-block knob lanes (sample-rate continuous). Avoids block-constant steps. */
     std::array<std::vector<float>, Config::kNumUserParams> knobLanes {};
+
+    const float* extScL { nullptr };
+    const float* extScR { nullptr };
+    int extScN { 0 };
+
+    void publishSidechainSample (int sampleIndex) noexcept;
 
 public:
     /** Always true — hybrid path keeps filters/comps on block processing.

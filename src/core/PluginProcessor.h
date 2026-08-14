@@ -18,6 +18,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <map>
 #include "../utils/PresetManager.h"
 #include "../core/Config.h"
 #include "../core/CpuProtect.h"
@@ -202,6 +203,17 @@ public:
     AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }
     juce::File getAudioDiagnosticsLogFile() const { return dspEngine.getDiagnostics().getLogFile(); }
 
+    bool hasIrBlock() const noexcept { return scriptManager.signalChain.hasIrBlock(); }
+    juce::StringArray getIrSlotNames() const { return scriptManager.signalChain.getIrSlotNames(); }
+    juce::String getIrName (const juce::String& slot) const;
+    int getIrNumSamples (const juce::String& slot) const noexcept;
+    int getIrNumChannels (const juce::String& slot) const noexcept;
+    double getIrSampleRate (const juce::String& slot) const noexcept;
+    const juce::AudioBuffer<float>* getIrBuffer (const juce::String& slot) const noexcept;
+    bool loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error);
+    void clearIr (const juce::String& slot);
+    void refreshReportedLatency();
+
     // juce::AudioProcessorValueTreeState::Listener implementation
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
@@ -232,6 +244,14 @@ private:
 
     std::atomic<float> osOutGain { 1.f };
     std::atomic<float> osOutGainTarget { 1.f };
+
+    struct IrAsset
+    {
+        juce::String fileName;
+        double sr { 44100.0 };
+        juce::AudioBuffer<float> samples;
+    };
+    std::map<juce::String, IrAsset> irBank;
 
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;

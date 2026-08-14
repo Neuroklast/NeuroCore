@@ -61,7 +61,6 @@ private:
     */
     bool fixedWave { true };
     float zoom { 1.0f };
-    juce::TooltipWindow tooltipWindow { this };
 
     /** Display samples (snapshotted, not SmoothedValue — avoids drain/jitter) */
     std::vector<float> displayData;

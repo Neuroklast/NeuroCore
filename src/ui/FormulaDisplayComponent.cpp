@@ -1,7 +1,9 @@
 #include <JuceHeader.h>
 #include "FormulaDisplayComponent.h"
 #include "PluginLookAndFeel.h"
+#include "IrSlotUi.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../dsl/NoteValues.h"
 #include "../core/Config.h"
 
 namespace
@@ -162,10 +164,25 @@ void FormulaDisplayComponent::parseParamLines()
                 auto comma = inner.indexOfChar (',');
                 if (comma > 0)
                 {
-                    pr.min = inner.substring (0, comma).trim().getFloatValue();
-                    pr.max = inner.substring (comma + 1).trim().getFloatValue();
-                    if (pr.max < pr.min)
-                        std::swap (pr.min, pr.max);
+                    const auto left  = inner.substring (0, comma).trim();
+                    const auto right = inner.substring (comma + 1).trim();
+                    float w0 = 0.f, w1 = 0.f;
+                    if (dsl::NoteValues::parseToken (left, w0)
+                        && dsl::NoteValues::parseToken (right, w1))
+                    {
+                        pr.isNote = true;
+                        pr.min = w0;
+                        pr.max = w1;
+                        auto grid = dsl::NoteValues::makeGrid (w0, w1);
+                        pr.noteLabels = std::move (grid.labels);
+                    }
+                    else
+                    {
+                        pr.min = left.getFloatValue();
+                        pr.max = right.getFloatValue();
+                        if (pr.max < pr.min)
+                            std::swap (pr.min, pr.max);
+                    }
                 }
             }
         }
@@ -208,7 +225,14 @@ float FormulaDisplayComponent::mappedKnobValue (int knobIndex) const noexcept
     for (const auto& p : paramRanges)
     {
         if (p.alias.length() == 1 && p.alias[0] == letter)
+        {
+            if (p.isNote && p.noteLabels.size() >= 2)
+            {
+                const auto grid = dsl::NoteValues::makeGrid (p.min, p.max);
+                return grid.msFromNorm (norm, Config::kDefaultTempo);
+            }
             return p.min + norm * (p.max - p.min);
+        }
     }
     return norm;
 }
@@ -337,13 +361,14 @@ bool FormulaDisplayComponent::tryEvalPureExpr (const juce::String& expr, float& 
         if (eval.getVariableIndex (blocked) != ExpressionEvaluator::invalidIndex)
             return false;
 
-    // Inject 0–1 knob positions (map() expands ranges)
+    // Inject 0–1 knob positions (map() expands ranges). Note params are milliseconds.
     for (int i = 0; i < Config::kNumUserParams; ++i)
     {
         const char letter = static_cast<char> ('a' + i);
-        eval.setVariable (std::string (1, letter), knobValues[(size_t) i]);
+        const float v = mappedKnobValue (i);
+        eval.setVariable (std::string (1, letter), v);
         if (varNames[(size_t) i].isNotEmpty())
-            eval.setVariable (varNames[(size_t) i].toStdString(), knobValues[(size_t) i]);
+            eval.setVariable (varNames[(size_t) i].toStdString(), v);
     }
     for (const auto& p : paramRanges)
     {
@@ -534,7 +559,18 @@ void FormulaDisplayComponent::rebuildAttributed()
                         const int ki = letter[0] - 'a';
                         const auto col = varColours[(size_t) ki];
                         cachedLayout.append ("  => ", mono, mutedCol);
-                        cachedLayout.append (formatValue (mappedKnobValue (ki)), mono, col);
+                        juce::String shown = formatValue (mappedKnobValue (ki));
+                        for (const auto& p : paramRanges)
+                            if (p.isNote && p.alias.length() == 1 && p.alias[0] == letter[0]
+                                && p.noteLabels.size() >= 2)
+                            {
+                                const int last = (int) p.noteLabels.size() - 1;
+                                const float nrm = juce::jlimit (0.f, 1.f, knobValues[(size_t) ki]);
+                                const int idx = juce::jlimit (0, last,
+                                    (int) std::lround (nrm * (float) last));
+                                shown = p.noteLabels[(size_t) idx];
+                            }
+                        cachedLayout.append (shown, mono, col);
                     }
                 }
                 else
@@ -561,6 +597,9 @@ void FormulaDisplayComponent::rebuildAttributed()
         }
         if (trail.isNotEmpty())
             cachedLayout.append (trail, mono, commentCol);
+
+        if (irSlotFromLine (trimmed).isNotEmpty())
+            cachedLayout.append ("\n", mono, textCol);
     }
 
     layoutDirty = false;
@@ -569,6 +608,79 @@ void FormulaDisplayComponent::rebuildAttributed()
 int FormulaDisplayComponent::getContentHeight() const noexcept
 {
     return body != nullptr ? body->getHeight() : 0;
+}
+
+juce::String FormulaDisplayComponent::irSlotFromLine (const juce::String& line)
+{
+    return IrSlotUi::slotFromLine (line);
+}
+
+void FormulaDisplayComponent::refreshIrButtons()
+{
+    syncIrButtons();
+}
+
+void FormulaDisplayComponent::syncIrButtons()
+{
+    if (body == nullptr)
+        return;
+
+    juce::StringArray lines;
+    lines.addLines (formula);
+    struct Hit { juce::String slot; int layoutLine; };
+    std::vector<Hit> hits;
+    int layoutLine = 0;
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        const auto slot = irSlotFromLine (lines[i]);
+        if (slot.isNotEmpty())
+        {
+            hits.push_back ({ slot, layoutLine + 1 });
+            layoutLine += 2;
+        }
+        else
+        {
+            ++layoutLine;
+        }
+    }
+
+    irButtonSlots.clear();
+    while ((int) irButtons.size() > (int) hits.size())
+        irButtons.pop_back();
+    while (irButtons.size() < hits.size())
+    {
+        auto b = std::make_unique<juce::TextButton> ("IR");
+        IrSlotUi::styleButton (*b);
+        body->addAndMakeVisible (*b);
+        irButtons.push_back (std::move (b));
+    }
+
+    const int nLines = cachedTextLayout.getNumLines();
+    for (size_t i = 0; i < hits.size(); ++i)
+    {
+        auto& btn = *irButtons[i];
+        IrSlotUi::styleButton (btn);
+        const auto cap = irCaptionForSlot ? irCaptionForSlot (hits[i].slot)
+                                          : juce::String();
+        btn.setButtonText (IrSlotUi::buttonText (hits[i].slot, cap));
+        const auto slot = hits[i].slot;
+        irButtonSlots.add (slot);
+        btn.onClick = [this, slot]
+        {
+            if (onOpenIrSlot)
+                onOpenIrSlot (slot);
+        };
+        juce::Rectangle<float> lineBounds (8.f, 6.f,
+                                           (float) juce::jmax (1, body->getWidth() - 16),
+                                           fontHeight);
+        if (juce::isPositiveAndBelow (hits[i].layoutLine, nLines))
+            lineBounds = cachedTextLayout.getLine (hits[i].layoutLine).getLineBounds()
+                             .translated (8.f, 6.f);
+        btn.setBounds (8, (int) lineBounds.getY() - 2,
+                       juce::jmax (80, body->getWidth() - 16),
+                       juce::jmax (22, (int) fontHeight + 8));
+        btn.toFront (false);
+    }
 }
 
 void FormulaDisplayComponent::refreshBodySize()
@@ -582,6 +694,7 @@ void FormulaDisplayComponent::refreshBodySize()
     const int h = (int) std::ceil (cachedTextLayout.getHeight()) + 16;
     if (body != nullptr)
         body->setSize (viewW, juce::jmax (h, viewport.getHeight()));
+    syncIrButtons();
 }
 
 void FormulaDisplayComponent::resized()

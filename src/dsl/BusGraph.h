@@ -101,6 +101,35 @@ inline bool buildBusGraph (const std::vector<BlockDesc>& desc, BusGraph& out, ju
     main.name = "main";
     out.buses.push_back (std::move (main));
 
+    // xover writes these buses; out taps are validated here, so they must exist first.
+    bool xoverThreeBand = false;
+    bool sawXover = false;
+    for (const auto& d : desc)
+    {
+        if (d.type != "xover" && d.type != "crossover")
+            continue;
+        sawXover = true;
+        if (d.args.count ("f2") || d.args.count ("high"))
+            xoverThreeBand = true;
+    }
+    if (sawXover)
+    {
+        auto addXoverBus = [&out] (const char* name)
+        {
+            if (findBusIndex (out, name) >= 0)
+                return;
+            if ((int) out.buses.size() - 1 >= Config::kMaxNamedBuses)
+                return;
+            BusDef b;
+            b.name = name;
+            out.buses.push_back (std::move (b));
+        };
+        addXoverBus ("low");
+        addXoverBus ("high");
+        if (xoverThreeBand)
+            addXoverBus ("mid");
+    }
+
     int current = kReservedBusMain;
     bool afterOut = false;
 

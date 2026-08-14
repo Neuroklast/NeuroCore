@@ -1,6 +1,6 @@
 # Entwicklungsstand NeuroCore
 
-**Letzte Aktualisierung:** 2026-08-13  
+**Letzte Aktualisierung:** 2026-08-14  
 **Version:** 0.2.3  
 **Gesamtfortschritt:** ~88–90%
 
@@ -17,32 +17,71 @@
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
 | Core/PluginEditor | ✅ Brand-Lockup (NK+Version) + angular L/BOTH/R; Mix cyber; Live-Formel | 98% | 2026-08-13 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
-| DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out | 97% | 2026-08-13 |
-| DSL/SignalChain | ✅ Delay/Reverb/MS + Send-DAG Multi-Bus (max 4) | 99% | 2026-08-13 |
+| DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate | 99% | 2026-08-14 |
+| DSL/SignalChain | ✅ + Gate (hyst/hold/range, optional sidechain) | 99% | 2026-08-14 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
 | DSP/SignalPolisher | ✅ Funktional + DC-Blocker nach DSL integriert | 82% | 2026-05-19 |
 | DSP/DSPUtils | ✅ autoGainCompensate optimiert (direkte Sample-Multiplikation) | 85% | 2026-05-19 |
-| UI/DslTerminalEditor | ✅ Edit-Modus; View-Modus = FormulaDisplay mit Live-Werten | 85% | 2026-08-11 |
-| UI/FormulaDisplayComponent | ✅ A/B/C/D-Farben + Live-Eval in eckigen Klammern | 90% | 2026-08-11 |
+| UI/DslTerminalEditor | ✅ Edit-Modus; zeilenbreiter IR-Button pro `irN` | 90% | 2026-08-14 |
+| UI/FormulaDisplayComponent | ✅ Live-Eval + Extra-Zeile mit IR-Drop-Button | 94% | 2026-08-14 |
 | UI/WaveformDisplay | ✅ Funktional | 70% | 2026-04-01 |
-| UI/LoudnessMeter | ✅ Cyber-Hull + Overload-Pixel/Glitch je höher der Pegel | 96% | 2026-08-13 |
+| UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; unten ruhig | 99% | 2026-08-13 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 141 Factory; jedes Script mit Operator-Kommentaren (Was / Params / Stages) | 99% | 2026-08-13 |
+| Preset-System | ✅ 178 Factory; Dual-DI Metal Wall + Cyberpunk Drive; Glitch Laboratory Level | 99% | 2026-08-14 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic + Issuer (E-Mail → Datei); Demo Mix=0 nach 20 min | 90% | 2026-08-13 |
-| Tests | ✅ Suite schlank & stabil: **1887 passed / 0 failed**; factory honesty + quality gate 141/141 | 98% | 2026-08-13 |
-| CI/CD | ✅ pluginval ohne `|| true` (strict fail); VS2022 + CMake 4.x Workaround | 90% | 2026-06-29 |
+| Tests | ✅ 2755 passed / 0 failed | 99% | 2026-08-14 |
+| CI/CD | ✅ Windows Tests+pluginval; macOS-Job baut AU + auval | 95% | 2026-08-14 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
 | Dokumentation | ✅ Help EN, Mono, operator-only (kein JUCE/Build im Fenster) | 93% | 2026-08-13 |
 | Installer | ❌ Fehlt | 0% | — |
-| AU-Format | ✅ Aktiviert (Standalone + VST3 + AU) | 100% | 2026-05-19 |
+| AU-Format | ✅ AUv2 `aumf`; CI-Job `AU (macOS)` liefert `.component` | 100% | 2026-08-14 |
 
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-14 – DSL gate + dynamics plan
+
+- [x] `gate1:` stereo-linked, hyst/hold/range, optional `source = sidechain`
+- [x] `comp` knee / makeup / hpf / sidechain
+- [x] `limit1:` in-chain peak limiter, no lookahead
+- [x] `xover1:` LR4 → buses low/mid/high
+- [x] several `irN` slots; full-width editor button → drop / change / clear
+- [x] IR panel: Load (file chooser) + drop + Clear, one window per slot
+
+### 2026-08-14 – Note-range LFO + AMS RMX knackt
+
+- [x] `osc freq` / `osc sync` auf Note-Knob = ein Zyklus pro Note (nicht ms als Hz)
+- [x] Sidechain Pump: `Rate [1/1, 1/16]` + `sync = a`
+- [x] AMS RMX Nonlin: feste Size, dunkleres Damp, Recovery-LPF; min sizeScale 0.50
+- [ ] Manuell: Pump auf 1/4 bei 120 BPM; Snare durch AMS ohne Knacken
+
+### 2026-08-14 – Stereo Guitar Wall + Cyberpunk Drive
+
+- [x] Factory: `Stereo Guitar Wall` — Mesa L / 5150 R, two DI takes, `channel = left|right`
+- [x] Factory: `Cyberpunk Drive` — guitar chain with bitcrush/fold/metal comb + Level
+- [x] `Glitch Laboratory` rewritten: HPF, shorter delay, makeup Level (was quiet wet-delay)
+- [x] Tests: requireBlock + stereo independence + loudness
+- [ ] Manuell: zwei DI-Takes hard-pan in BOTH, Cyberpunk Drive vs. alte Glitch-Klage
+
+### 2026-08-14 – AU ohne lokalen Mac (GitHub Actions)
+
+- [x] Job `AU (macOS)`: `NeuroCore_AU`, ad-hoc codesign, Install nach Components
+- [x] `auval -v aumf NRCO NRKL` + pluginval auf dem `.component`
+- [x] Artifact `NeuroCore-AU-macOS`; `workflow_dispatch` für manuellen Lauf
+- [ ] Ersten CI-Lauf auf `macos-latest` prüfen (juceaide/auval/UI)
+
+### 2026-08-14 – AU plugin (Logic / GarageBand)
+
+- [x] CMake: `FORMATS … AU`, `AU_MAIN_TYPE kAudioUnitType_MusicEffect`, `AU_SANDBOX_SAFE`
+- [x] Projucer: `buildAU` + `aumf` + MIDI in; kein `{2,2}` Channel-Lock (Sidechain-Bus)
+- [x] macOS: Copy nach `~/Library/Audio/Plug-Ins/Components/` + resources am AU-Target
+- [x] Tests: Stereo/Mono + optionale Sidechain, `acceptsMidi()`
+- [ ] Manuell auf einem Mac: Artifact in Logic laden
 
 ### 2026-08-13 – OS crackle / Acid Line / AUDIO / Meter / comments
 
@@ -66,6 +105,45 @@
 - [x] RSA-signierte `.lic` Datei; Issuer-App nur E-Mail
 - [x] Unlizenziert: Mix nach 20 min auf 0 (Signal bleibt dry)
 - [x] License-Button importiert die Datei nach AppData
+
+### 2026-08-13 – Meter hang, note knobs, status columns
+
+- [x] Loudness-Meter: Dry/SAFE/Lock-Miss rufen `publishOutputMeter`
+- [x] `param a = Time [1/1, 1/16]` rastet auf Zählzeiten; Formelwert = ms
+- [x] Statuszeile: feste Feldbreiten (CPU/MIX/LAT/SR/Mode), kein Schieben
+
+### 2026-08-13 – EQ + external sidechain
+
+- [x] `eq1:` peak / notch / lowcut / highcut / lowshelf / highshelf (freq, Q, gain)
+- [x] Optionaler Stereo-Eingang Sidechain; DSL `sc` / `sc_l` / `sc_r`
+- [x] `env1: source = sidechain` folgt dem Extra-Input
+
+### 2026-08-13 – Tooltip / preset type / meter / amps
+
+- [x] Ein TooltipWindow am Editor (Scopes ohne eigenes)
+- [x] Preset-Chip 28 pt, zentriert
+- [x] Meter-Glitch cubisch ab ca. −36 dBFS, unten ruhig
+- [x] Native `octaver` / `vocoder` Blöcke
+- [x] +16 Factory: JCM/SLO/Orange/AC30/5150/Deluxe, SVT/Porta/Glass/Bassman/B15/Trace, Octaver, Vocoder
+
+### 2026-08-13 – EQ retrofit + hardware comps/rooms
+
+- [x] Bandpass-as-EQ in TS/Plexi/Vox/Bass Architect/Vocal Chain/Studio Strip → peak/shelf/notch
+- [x] Multiband Glue + Envelope Shaper
+- [x] 1176 / All-In / LA-2A / SSL / Fairchild / dbx 160 / CL-1B / Neve / Distressor
+- [x] Space Echo, Memory Man, Echoplex, 2290 grid, EMT 140, Lexicon hall, AMS Nonlin, Spring
+- [x] Rhythmic Gate Delay: Dry+Echo-Bus, Duck nur nass (kein lerp nach mix=1)
+
+### 2026-08-13 – Preset table tags + default sort
+
+- [x] Default-Sort Name A–Z (Header-Pfeil)
+- [x] Spalte Tags zwischen Category und Source
+
+### 2026-08-13 – Editor autocomplete, Help, Bypass Mix lock
+
+- [x] Autocomplete nur Ctrl/Cmd+Space
+- [x] Help-Schrift 16 pt, Kapitel + Tutorials (Drive, Delay, Duck, Sidechain, Vocoder, Amp)
+- [x] Bypass sperrt den Mix-Slider und hält Mix auf 0
 
 ### 2026-08-13 – Factory preset honesty (a–f)
 

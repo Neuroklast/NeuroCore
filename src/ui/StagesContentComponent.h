@@ -12,6 +12,7 @@ public:
     ~StagesContentComponent() override = default;
 
     std::function<void()> onClose;
+    std::function<void (juce::String slot)> onOpenIr;
 
     void paint(juce::Graphics& g) override;
     void resized() override;

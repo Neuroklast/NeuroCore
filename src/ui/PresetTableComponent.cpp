@@ -29,14 +29,18 @@ PresetTableComponent::PresetTableComponent (NeuroCoreAudioProcessor& proc)
 {
     addAndMakeVisible (table);
     table.setModel (this);
-    table.getHeader().addColumn ("Name",     1, 200, 80, 500, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Category", 2, 100, 60, 220, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Name",     1, 180, 80, 500, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Category", 2, 90, 60, 200, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Tags",     6, 180, 80, 420, juce::TableHeaderComponent::defaultFlags);
     table.getHeader().addColumn ("Source",   3, 70, 50, 140, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Author",   4, 100, 50, 220, juce::TableHeaderComponent::defaultFlags);
-    table.getHeader().addColumn ("Rating",   5, 90, 70, 120, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Author",   4, 90, 50, 200, juce::TableHeaderComponent::defaultFlags);
+    table.getHeader().addColumn ("Rating",   5, 86, 70, 120, juce::TableHeaderComponent::defaultFlags);
     table.setMultipleSelectionEnabled (false);
     table.setRowHeight (26);
+    sortColumn = 1;
+    sortForwards = true;
     refresh();
+    table.getHeader().setSortColumnId (1, true);
 }
 
 void PresetTableComponent::sortOrderChanged (int newSortColumnId, bool isForwards)
@@ -84,7 +88,8 @@ void PresetTableComponent::rebuildFiltered()
         }
         filtered.add (i);
     }
-    if (sortColumn > 0)
+    if (sortColumn <= 0)
+        sortColumn = 1;
     {
         std::sort (filtered.begin(), filtered.end(), [this] (int ia, int ib)
         {
@@ -94,7 +99,10 @@ void PresetTableComponent::rebuildFiltered()
             switch (sortColumn)
             {
                 case 1: cmp = a.name.compareNatural (b.name); break;
-                case 2: cmp = a.category.compareNatural (b.category); break;
+                case 2:
+                    cmp = a.category.compareNatural (b.category);
+                    if (cmp == 0) cmp = a.name.compareNatural (b.name);
+                    break;
                 case 3:
                     cmp = (int) a.isFactory - (int) b.isFactory;
                     if (cmp == 0) cmp = a.name.compareNatural (b.name);
@@ -105,9 +113,14 @@ void PresetTableComponent::rebuildFiltered()
                         - PresetRatings::getInstance().get (b.name);
                     if (cmp == 0) cmp = a.name.compareNatural (b.name);
                     break;
-                default: cmp = ia - ib; break;
+                case 6:
+                    cmp = a.tags.joinIntoString (", ").compareNatural (
+                        b.tags.joinIntoString (", "));
+                    if (cmp == 0) cmp = a.name.compareNatural (b.name);
+                    break;
+                default: cmp = a.name.compareNatural (b.name); break;
             }
-            if (cmp == 0) cmp = ia - ib;
+            if (cmp == 0) cmp = a.name.compareNatural (b.name);
             return sortForwards ? cmp < 0 : cmp > 0;
         });
     }
@@ -333,13 +346,14 @@ void PresetTableComponent::paintCell (juce::Graphics& g, int row, int columnId,
     else if (columnId == 2) text = e->category;
     else if (columnId == 3) text = e->isFactory ? "Factory" : "User";
     else if (columnId == 4) text = e->author.isNotEmpty() ? e->author : "NEUROKLAST";
+    else if (columnId == 6) text = e->tags.joinIntoString ("  ·  ");
 
     const bool isCurrent = e->name == processor.getCurrentPresetName()
                         && processor.getCurrentPresetName().isNotEmpty();
 
     g.setColour (isCurrent && columnId == 1
                      ? NeuroCoreLookAndFeel::accent()
-                     : (columnId == 2 || columnId == 3
+                     : (columnId == 2 || columnId == 3 || columnId == 6
                             ? NeuroCoreLookAndFeel::mutedText()
                             : juce::Colour (0xffe8ecf4)));
     g.drawText (text, 6, 0, width - 8, height, juce::Justification::centredLeft, true);

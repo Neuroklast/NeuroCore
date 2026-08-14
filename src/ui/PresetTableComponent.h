@@ -67,7 +67,7 @@ private:
     juce::String searchQuery;
     juce::String categoryFilter;
     Scope scope { Scope::All };
-    int  sortColumn { 0 };
+    int  sortColumn { 1 }; ///< Default: Name A–Z
     bool sortForwards { true };
     NeuroCoreAudioProcessor& processor;
 };

@@ -197,28 +197,41 @@ public:
             expect (std::isfinite (buf.getRMSLevel (0, 0, 128)));
         }
 
-        beginTest ("rhythmic gate delay style env+delay loads and stays finite");
+        beginTest ("rhythmic gate delay keeps dry and does not replace the input");
         {
             dsl::SignalChain chain;
             chain.prepare (spec);
             juce::String err;
             const char* script =
                 "param a = Time [80, 480]\n"
-                "param b = Feedback [0.15, 0.88]\n"
-                "param c = Mix [0.2, 0.75]\n"
+                "param b = Feedback [0.12, 0.72]\n"
+                "param c = Mix [0.15, 0.7]\n"
                 "param d = Damp [800, 9000]\n"
-                "param e = Duck [0.0, 0.9]\n"
-                "param f = Drive [0.8, 4.0]\n"
-                "env1: type = peak; attack = 0.008; release = 0.12\n"
-                "delay1: time = a; feedback = b; mix = 1.0; damp = d\n"
-                "stage1: y = softclip(x * (1.0 + f * 0.35), 1.15)\n"
-                "stage2: y = lerp(x, y, c * (1.0 - env1 * e))";
+                "param e = Duck [0.0, 0.85]\n"
+                "param f = Drive [0.8, 2.8]\n"
+                "env1: type = peak; attack = 0.006; release = 0.16\n"
+                "stage1: y = x\n"
+                "bus echo:\n"
+                "  send: in = 1\n"
+                "  delay1: time = a; feedback = b; mix = 1; damp = d\n"
+                "  stage2: y = softclip(x * (1.0 + f * 0.22), 1.08)\n"
+                "  stage3: y = x * (1.0 - env1 * e)\n"
+                "out: main = 1; echo = c";
             expect (chain.loadScript (script, err), err);
-            // Rapid reload stress (message-thread style reconfigure)
-            for (int r = 0; r < 8; ++r)
+            expect (! juce::String (script).contains ("lerp(x, y"));
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            // Dry must survive sample 0. mix=1 delay + lerp(x,y) used to wipe it.
+            expect (std::abs (buf.getSample (0, 0)) > 0.5f);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+
+            for (int r = 0; r < 6; ++r)
                 expect (chain.loadScript (script, err), err);
 
-            juce::AudioBuffer<float> buf (2, 256);
             std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobs {};
             juce::SmoothedValue<float> sm[Config::kNumUserParams];
             for (int p = 0; p < Config::kNumUserParams; ++p)
@@ -229,9 +242,9 @@ public:
             }
             for (int b = 0; b < 20; ++b)
             {
-                for (int i = 0; i < 256; ++i)
+                for (int i = 0; i < 512; ++i)
                 {
-                    const float s = 0.3f * std::sin (0.1f * (float) (b * 256 + i));
+                    const float s = 0.3f * std::sin (0.1f * (float) (b * 512 + i));
                     buf.setSample (0, i, s);
                     buf.setSample (1, i, s * 0.8f);
                 }

@@ -73,8 +73,12 @@ void StagesContentComponent::refreshFromScript()
     {
         juce::StringArray lines;
         for (const auto& p : params)
-            lines.add ("param " + p.alias + " = " + p.name
-                       + "  [" + juce::String (p.min, 2) + " ... " + juce::String (p.max, 2) + "]");
+            if (p.isNote && p.noteLabels.size() >= 2)
+                lines.add ("param " + p.alias + " = " + p.name
+                           + "  [" + p.noteLabels.front() + " ... " + p.noteLabels.back() + "]");
+            else
+                lines.add ("param " + p.alias + " = " + p.name
+                           + "  [" + juce::String (p.min, 2) + " ... " + juce::String (p.max, 2) + "]");
         paramsLabel.setText (TRANS ("StagesParams") + ":\n" + lines.joinIntoString ("\n"),
                              juce::dontSendNotification);
     }
@@ -129,8 +133,12 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
     juce::Colour badge = NeuroCoreLookAndFeel::mutedText();
     if (block.type.startsWith ("stage"))
         badge = NeuroCoreLookAndFeel::accent();
-    else if (block.type.startsWith ("filter"))
+    else if (block.type.startsWith ("filter") || block.type.startsWith ("eq"))
         badge = juce::Colour (0xff5dade2);
+    else if (block.type.startsWith ("octaver") || block.type == "octave")
+        badge = juce::Colour (0xffff8a65);
+    else if (block.type.startsWith ("vocoder"))
+        badge = juce::Colour (0xff4dd0e1);
     else if (block.type.startsWith ("comp"))
         badge = juce::Colour (0xff58d68d);
     else if (block.type.startsWith ("osc"))
@@ -160,7 +168,12 @@ void StagesContentComponent::selectedRowsChanged (int row)
 {
     currentIndex = row;
     if (juce::isPositiveAndBelow (row, (int) blocks.size()))
+    {
         updateDetails (row);
+        const auto t = blocks[(size_t) row].type.toLowerCase();
+        if ((t == "ir" || t == "convolve") && onOpenIr)
+            onOpenIr (blocks[(size_t) row].name);
+    }
 }
 
 void StagesContentComponent::paint (juce::Graphics&)

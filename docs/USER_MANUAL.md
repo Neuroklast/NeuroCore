@@ -21,7 +21,7 @@ This Help is offline. Pick a chapter on the left. Search filters titles and text
 
 ## 1. Quickstart
 
-Put NeuroCore on a track, or on a send return.
+Put NeuroCore on a track, or on a send return. On Mac it is an Audio Unit and a VST3; on Windows and Linux it is VST3 or the Standalone app.
 
 ### Load a preset
 
@@ -43,10 +43,9 @@ Put NeuroCore on a track, or on a send return.
 
 ### Edit the formula
 
-- **Edit** opens the formula editor. Ctrl/Cmd+Space suggests the next word.
+- **Edit** opens the formula editor. Suggestions stay closed until you press **Ctrl+Space** (Cmd+Space on Mac).
 - **Save** applies the formula. A red line under the editor explains errors.
 - **Copy** puts the formula on the clipboard.
-- **Insert / Quick template** adds a ready block (delay, reverb, clip, …).
 
 ### Save your own
 
@@ -64,7 +63,7 @@ Put NeuroCore on a track, or on a send return.
 - **Current chip**: loaded preset name, or Untitled.
 - **Functions**: look up formula words and insert them.
 - **Stages**: the blocks in the current formula, and which knobs they use.
-- **Bypass**: forces Mix to 0 (dry). Turn it off and the previous Mix comes back.
+- **Bypass**: forces Mix to 0 (dry) and locks the Mix slider. Turn it off and the previous Mix comes back.
 - **License**: import the signed `.lic` file you were sent.
 - **Help**: this guide, one chapter at a time.
 
@@ -107,14 +106,17 @@ Declare them in the formula:
 ```text
 param a = Drive [0.5, 6.0]
 param b = Tone [800, 9000]
+param c = Time [1/1, 1/16]
 stage1: y = softclip(x, a)
 filter1: type = lowpass; cutoff = b; resonance = 0.3
+delay1: time = c
 ```
 
 ### How they work
 
 - The host sees each knob as 0–1.
 - `param a = Name [min, max]` turns that 0–1 into the range you wrote.
+- `param c = Time [1/1, 1/16]` is musical note lengths. The knob snaps to 1/1, 1/2, 1/4, 1/8, 1/16 and the dotted/triplet steps in between. In the formula `c` is milliseconds at the host tempo, so `delay1: time = c` works.
 - Use the letter in the formula (`softclip(x, a)`). If you never mention `a`, the knob does nothing.
 
 ### Watch out
@@ -167,7 +169,8 @@ filter1: type = lowpass; cutoff = b; resonance = 0.3
 3. Name, Author (your name or alias), Category (Guitar, Delay, Vocal, …).
    Optional tags (comma-separated) make the sound easier to find later.
 
-The list shows **Name / Category / Source / Author**.
+The list shows **Name / Category / Tags / Source / Author / Rating**.
+It opens sorted by **Name**. Click a header to change the sort.
 Search looks at the name, tags, description, and the formula itself.
 Type `delay`, `reverb`, `mid side`, `tape`, or `crunch` to find matching sounds.
 
@@ -187,6 +190,9 @@ These are mix tools, not a full mastering suite.
 - **Plate Send / Width Delay / Slap Double**: dry in the middle, wet on a side path.
 - **Haas Width / Loudness Curve / Missing Bass / Speech Band**: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
 - **Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed**: score, FX, and dialogue processing. Not a trailer sample pack.
+- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right). Needs stereo in and **BOTH**. Not a fake double of one take.
+- **Cyberpunk Drive**: guitar-shaped digital dirt (crush + fold + short metal comb). Use this instead of the old quiet Glitch Laboratory.
+- **Glitch Laboratory**: louder smash + short ping-pong + Level makeup. Still a glitch toy, not an amp.
 
 ---
 
@@ -198,12 +204,20 @@ Everyday blocks:
 |-------|----------------|
 | `param a = Name [min, max]` | Declares knob a and its range |
 | `stageN: y = …` | Per-sample math (`x` in, `y` out) |
-| `filterN: type = lowpass; cutoff = …` | Filters |
-| `compN: threshold = …; ratio = …` | Compressor |
-| `envN: type = peak; attack = …; release = …` | Envelope follower |
+| `filterN: type = lowpass; cutoff = …` | SVF lowpass / highpass / bandpass |
+| `eqN: type = peak; freq = …; q = …; gain = …` | Peak, notch, lowcut, highcut, shelves |
+| `octaverN: sub = …; up = …; mix = …; tone = …` | Tracking −1 / +1 octave |
+| `vocoderN: bands = 8; mix = …; q = …` | Vocoder; voice on the Sidechain pin |
+| `compN: threshold = …; ratio = …` | Compressor; optional `knee`, `makeup`, `hpf`, `source = sidechain` |
+| `gateN: threshold = …; hyst = …` | Noise gate (hysteresis + hold) |
+| `limitN: ceiling = …; release = …` | In-chain limiter (not the Polisher) |
+| `xoverN: f1 = …; f2 = …` | Crossover into `low` / `mid` / `high` buses |
+| `irN: mix = …` | Convolution slot. Each `ir` line gets its own full-width button (drop / change / clear) |
+| `envN: type = peak; source = sidechain` | Envelope; `source = sidechain` follows the extra input |
 | `oscN: type = sine; freq = …` | Slow oscillator / LFO |
 | `delayN: time = …; feedback = …; mix = …` | Delay |
 | `reverbN: size = …; mix = …` | Room / hall |
+| `sc` / `sc_l` / `sc_r` | External Sidechain input in the formula |
 
 ### Good habits
 
@@ -217,6 +231,10 @@ Everyday blocks:
 
 - **Send effect**: load a delay or reverb, set Mix high, ride the host send.
 - **Amp-like**: Drive + softclip + lowpass. Leave Polisher on None so hits still breathe.
+- **Two guitar DIs**: `Stereo Guitar Wall`, L/BOTH/R on BOTH, hard-pan the two takes into this insert.
+- **Hardware comps**: `1176 FET`, `LA-2A Opto`, `SSL Bus Comp` — attack cannot go below 1 ms (engine floor).
+- **Note knobs** `[1/1, 1/16]`: delay time is milliseconds. On an oscillator (`freq` or `sync`) it is one cycle per note — `Sidechain Pump` Rate is 1/4, not a 500 Hz scream.
+- **Rooms**: `EMT 140 Plate` is bright and short; `Lexicon 480 Hall` is long and even; `AMS RMX Nonlin` is the 80s snare burst.
 - **Harsh digital**: raise oversampling to 4×/8×. Add a lowpass after clip or fold.
 - **A/B**: Bypass is dry without losing your Mix value.
 - **MIDI**: right-click a knob → MIDI Learn.

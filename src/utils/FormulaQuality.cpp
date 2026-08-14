@@ -142,13 +142,19 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
             else if (softHeavy && usesYPrev)
                 pendingHardNl.addIfNotAlreadyThere (b.name); // feedback dirt also wants LPF
         }
-        else if (b.type.startsWith ("filter") || b.type.startsWith ("comp"))
+        else if (b.type.startsWith ("filter") || b.type.startsWith ("comp")
+                 || b.type.startsWith ("eq") || b.type.startsWith ("octaver")
+                 || b.type == "octave" || b.type.startsWith ("vocoder")
+                 || b.type.startsWith ("gate") || b.type.startsWith ("limit")
+                 || b.type.startsWith ("xover") || b.type.startsWith ("crossover")
+                 || b.type.startsWith ("ir") || b.type.startsWith ("convolve"))
         {
             hasAudioPath = true;
             const auto typeStr = b.args.count ("type") ? b.args.at ("type").toLowerCase()
                                                        : juce::String ("lowpass"); // engine default
             // Only lowpass recovery clears aliasing debt (HPF alone does not)
-            if (typeStr.contains ("lowpass"))
+            if (typeStr.contains ("lowpass") || typeStr.contains ("highcut")
+                || typeStr == "cut")
                 pendingHardNl.clear();
             if (b.args.count ("resonance"))
             {
@@ -206,7 +212,7 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
     }
 
     if (! hasAudioPath)
-        r.errors.add ("No stage/filter/comp — script cannot process audio");
+        r.errors.add ("No stage/filter/comp/eq/octaver/vocoder/gate/limit — script cannot process audio");
 }
 
 void FormulaQualityAnalyzer::accumulateBufferStats (const juce::AudioBuffer<float>& buf,
@@ -272,6 +278,11 @@ void FormulaQualityAnalyzer::runDynamicChecks (const juce::String& script,
             {
                 const int idx = pd.alias[0] - 'a';
                 if (idx < 0 || idx >= Config::kNumUserParams) continue;
+                if (pd.isNote)
+                {
+                    knobs[(size_t) idx].setCurrentAndTargetValue (0.55f);
+                    continue;
+                }
                 const float denom = juce::jmax (1.0e-6f, pd.max - pd.min);
                 // Use midpoint of range as "typical" if we don't store default in ParamDesc
                 // ParamDesc has min/max only — use 0.55 into range as musically open

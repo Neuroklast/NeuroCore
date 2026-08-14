@@ -6,6 +6,7 @@
 */
 
 #include <JuceHeader.h>
+#include <vector>
 #include "../core/PluginProcessor.h"
 #include "../utils/FormulaHelper.h"
 
@@ -33,12 +34,20 @@ public:
     void setFontHeight (float heightPt);
     float getFontHeight() const noexcept { return fontHeight; }
 
+    std::function<void (juce::String slot)> onOpenIrSlot;
+    std::function<juce::String (juce::String slot)> irCaptionForSlot;
+
+    void refreshIrButtons() { syncIrButtons(); }
+    juce::StringArray getIrButtonSlots() const { return irButtonSlots; }
+
     void paint(juce::Graphics& g) override;
     void resized() override;
 
     void codeDocumentTextInserted(const juce::String&, int) override;
     void codeDocumentTextDeleted(int, int) override;
     void insertTextAtCaret(const juce::String& text);
+    /** True only while the Ctrl/Cmd+Space list is open. */
+    bool isSuggestionPopupVisible() const;
 
 private:
     class AutoCompleteCodeEditor;
@@ -47,6 +56,10 @@ private:
     std::unique_ptr<AutoCompleteCodeEditor> editor;
     NeuroCoreAudioProcessor& processor;
     float fontHeight { 18.0f };
+    std::vector<std::unique_ptr<juce::TextButton>> irButtons;
+    juce::StringArray irButtonSlots;
+    bool syncingIrButtons { false };
+    void syncIrButtons();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DslTerminalEditor)
 };

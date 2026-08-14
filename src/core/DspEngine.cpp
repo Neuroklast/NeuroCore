@@ -203,6 +203,13 @@ void DspEngine::setValidationBypass(bool enable)
     }
 }
 
+void DspEngine::setHostSidechain (const float* left, const float* right, int numSamples) noexcept
+{
+    hostScL = left;
+    hostScR = right;
+    hostScN = (left != nullptr && numSamples > 0) ? numSamples : 0;
+}
+
 void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
                              dsl::SignalChain& signalChain)
 {
@@ -411,6 +418,26 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
 
     upBlock.copyTo (scriptBuffer);
     {
+        if (hostScN > 0 && hostScL != nullptr)
+        {
+            scOsBuffer.setSize (2, osN, false, false, true);
+            const int hn = hostScN;
+            for (int i = 0; i < osN; ++i)
+            {
+                const int src = juce::jlimit (0, hn - 1, (int) ((int64_t) i * hn / juce::jmax (1, osN)));
+                const float sl = hostScL[src];
+                const float sr = hostScR != nullptr ? hostScR[src] : sl;
+                scOsBuffer.setSample (0, i, sl);
+                scOsBuffer.setSample (1, i, sr);
+            }
+            signalChain.setExternalSidechain (scOsBuffer.getReadPointer (0),
+                                              scOsBuffer.getReadPointer (1), osN);
+        }
+        else
+        {
+            signalChain.setExternalSidechain (nullptr, nullptr, 0);
+        }
+
         std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs {};
         for (int p = 0; p < Config::kNumUserParams; ++p)
             knobPtrs[(size_t) p] = &smoothedParams[(size_t) p];
@@ -603,6 +630,42 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         diagnostics.report (AudioDiagnostics::Stage::FinalOut, outScan, inputJumpCount,
                             inputPeak, outScan.peak > 0.f ? outScan.peak : peak);
     }
+}
+
+void DspEngine::publishOutputMeter (const juce::AudioBuffer<float>& buffer) noexcept
+{
+    const int nCh = buffer.getNumChannels();
+    const int n = buffer.getNumSamples();
+    if (n <= 0 || nCh <= 0)
+    {
+        publishLoudness (-100.f, juce::jmax (1, (int) currentSpec.maximumBlockSize));
+        limiterActive.store (false, std::memory_order_relaxed);
+        limiterHoldBlocks = 0;
+        return;
+    }
+
+    float rmsSum = 0.f;
+    for (int ch = 0; ch < nCh; ++ch)
+    {
+        const float* d = buffer.getReadPointer (ch);
+        double acc = 0.0;
+        for (int i = 0; i < n; ++i)
+        {
+            const float v = d[i];
+            if (std::isfinite (v))
+                acc += (double) v * (double) v;
+        }
+        rmsSum += (float) std::sqrt (juce::jmax (0.0, acc / (double) n));
+    }
+    rmsSum /= (float) nCh;
+    if (! std::isfinite (rmsSum) || rmsSum < 1.0e-12f)
+        rmsSum = 1.0e-12f;
+    float db = (float) DSPUtils::linearToDb ((double) rmsSum);
+    if (! std::isfinite (db) || db < -100.f)
+        db = -100.f;
+    publishLoudness (db, n);
+    limiterActive.store (false, std::memory_order_relaxed);
+    limiterHoldBlocks = 0;
 }
 
 void DspEngine::publishLoudness (float instantDb, int numSamples) noexcept

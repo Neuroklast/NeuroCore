@@ -62,6 +62,9 @@ public:
     void processBlock(juce::AudioBuffer<float>& buffer,
                       dsl::SignalChain& signalChain);
 
+    /** Extra input (host rate). Copied/held into the oversampled block. */
+    void setHostSidechain (const float* left, const float* right, int numSamples) noexcept;
+
     /** Called after a new formula is successfully loaded.
         Soft-engages the new chain (switchRamp); does not dual-run an old chain. */
     void onFormulaChanged();
@@ -83,6 +86,9 @@ public:
     float getLoudnessDb()     const noexcept { return lastLoudness.load(); }
     bool  isLimiterActive()   const noexcept { return limiterActive.load(); }
     bool  consumeInvalidFlag() noexcept      { return invalidFlag.exchange(false); }
+
+    /** RMS of the audible output. Used when processBlock is skipped (dry / SAFE). */
+    void publishOutputMeter (const juce::AudioBuffer<float>& buffer) noexcept;
 
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable);
@@ -123,6 +129,10 @@ private:
     std::array<float, Config::kMaxChannels> postDslLastGood {};
 
     juce::AudioBuffer<float> dryBuffer;
+    juce::AudioBuffer<float> scOsBuffer;
+    const float* hostScL { nullptr };
+    const float* hostScR { nullptr };
+    int hostScN { 0 };
     LatencyAlignedSidechain drySidechain;
     juce::AudioBuffer<float> scriptBuffer;
 

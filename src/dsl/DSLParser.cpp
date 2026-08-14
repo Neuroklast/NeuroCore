@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "NoteValues.h"
 #include "../core/Config.h"
 
 using namespace dsl;
@@ -119,10 +120,25 @@ bool DSLParser::parse(const juce::String& text,
                     error = "Invalid range on line " + juce::String(i+1);
                     return false;
                 }
-                pd.min = rangeInner.substring(0, comma).trim().getFloatValue();
-                pd.max = rangeInner.substring(comma + 1).trim().getFloatValue();
-                if (pd.max < pd.min)
-                    std::swap(pd.min, pd.max);
+                const auto left  = rangeInner.substring(0, comma).trim();
+                const auto right = rangeInner.substring(comma + 1).trim();
+                float w0 = 0.f, w1 = 0.f;
+                if (NoteValues::parseToken (left, w0) && NoteValues::parseToken (right, w1))
+                {
+                    pd.isNote = true;
+                    pd.min = w0;
+                    pd.max = w1;
+                    auto grid = NoteValues::makeGrid (w0, w1);
+                    pd.noteWholes = std::move (grid.wholes);
+                    pd.noteLabels = std::move (grid.labels);
+                }
+                else
+                {
+                    pd.min = left.getFloatValue();
+                    pd.max = right.getFloatValue();
+                    if (pd.max < pd.min)
+                        std::swap(pd.min, pd.max);
+                }
             }
 
             paramAliases[pd.alias] = pd.name.toLowerCase();
@@ -250,9 +266,13 @@ bool DSLParser::parse(const juce::String& text,
             if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
                 desc.type = "ms";
 
-            if (desc.type != "stage" && desc.type != "filter" &&
+            if (desc.type != "stage" && desc.type != "filter" && desc.type != "eq" &&
                 desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
-                desc.type != "delay" && desc.type != "reverb" && desc.type != "ms")
+                desc.type != "delay" && desc.type != "reverb" && desc.type != "ms" &&
+                desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
+                desc.type != "gate" && desc.type != "limit" && desc.type != "limiter" &&
+                desc.type != "xover" && desc.type != "crossover" &&
+                desc.type != "ir" && desc.type != "convolve")
             {
                 error = "Unknown block type on line " + juce::String(i+1);
                 return false;
@@ -366,6 +386,24 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         return parts.joinIntoString(", ");
     }
 
+    if (block.type == "eq")
+    {
+        juce::StringArray parts;
+        const auto t = arg ("type");
+        parts.add (t.isNotEmpty() ? t : juce::String ("peak"));
+        if (const auto f = arg ("freq"); f.isNotEmpty())
+            parts.add ("freq=" + f);
+        else if (const auto f = arg ("cutoff"); f.isNotEmpty())
+            parts.add ("freq=" + f);
+        if (const auto q = arg ("q"); q.isNotEmpty())
+            parts.add ("q=" + q);
+        else if (const auto q = arg ("resonance"); q.isNotEmpty())
+            parts.add ("q=" + q);
+        if (const auto g = arg ("gain"); g.isNotEmpty())
+            parts.add ("gain=" + g);
+        return parts.joinIntoString (", ");
+    }
+
     if (block.type == "comp")
     {
         juce::StringArray parts;
@@ -373,6 +411,12 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
             parts.add("thr=" + threshold);
         if (const auto ratio = arg("ratio"); ratio.isNotEmpty())
             parts.add("ratio=" + ratio);
+        if (const auto k = arg("knee"); k.isNotEmpty())
+            parts.add("knee=" + k);
+        if (const auto m = arg("makeup"); m.isNotEmpty())
+            parts.add("makeup=" + m);
+        if (const auto h = arg("hpf"); h.isNotEmpty())
+            parts.add("hpf=" + h);
         return parts.joinIntoString(", ");
     }
 
@@ -420,6 +464,78 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         if (const auto w = arg ("width"); w.isNotEmpty())
             parts.add ("width=" + w);
         return parts.isEmpty() ? juce::String ("reverb") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "octaver" || block.type == "octave")
+    {
+        juce::StringArray parts;
+        if (const auto s = arg ("sub"); s.isNotEmpty())
+            parts.add ("sub=" + s);
+        if (const auto u = arg ("up"); u.isNotEmpty())
+            parts.add ("up=" + u);
+        if (const auto t = arg ("tone"); t.isNotEmpty())
+            parts.add ("tone=" + t);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        return parts.isEmpty() ? juce::String ("octaver") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "vocoder")
+    {
+        juce::StringArray parts;
+        if (const auto b = arg ("bands"); b.isNotEmpty())
+            parts.add ("bands=" + b);
+        if (const auto q = arg ("q"); q.isNotEmpty())
+            parts.add ("q=" + q);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto f = arg ("formant"); f.isNotEmpty())
+            parts.add ("formant=" + f);
+        return parts.isEmpty() ? juce::String ("vocoder") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "gate")
+    {
+        juce::StringArray parts;
+        if (const auto t = arg ("threshold"); t.isNotEmpty())
+            parts.add ("thr=" + t);
+        if (const auto h = arg ("hyst"); h.isNotEmpty())
+            parts.add ("hyst=" + h);
+        if (const auto r = arg ("range"); r.isNotEmpty())
+            parts.add ("range=" + r);
+        return parts.isEmpty() ? juce::String ("gate") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "limit" || block.type == "limiter")
+    {
+        juce::StringArray parts;
+        if (const auto c = arg ("ceiling"); c.isNotEmpty())
+            parts.add ("ceiling=" + c);
+        else if (const auto t = arg ("threshold"); t.isNotEmpty())
+            parts.add ("ceiling=" + t);
+        if (const auto r = arg ("release"); r.isNotEmpty())
+            parts.add ("release=" + r);
+        return parts.isEmpty() ? juce::String ("limit") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "xover" || block.type == "crossover")
+    {
+        juce::StringArray parts;
+        if (const auto a = arg ("f1"); a.isNotEmpty())
+            parts.add ("f1=" + a);
+        if (const auto b = arg ("f2"); b.isNotEmpty())
+            parts.add ("f2=" + b);
+        return parts.isEmpty() ? juce::String ("xover") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "ir" || block.type == "convolve")
+    {
+        juce::StringArray parts;
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto g = arg ("gain"); g.isNotEmpty())
+            parts.add ("gain=" + g);
+        return parts.isEmpty() ? juce::String ("ir") : parts.joinIntoString (", ");
     }
 
     if (block.type == "ms")

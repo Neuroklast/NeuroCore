@@ -45,7 +45,8 @@ void LoudnessMeterComponent::timerCallback()
     }
 
     const float fillNorm = juce::jlimit (0.f, 1.f, (loudness + 60.f) / 60.f);
-    if (fillNorm > 0.08f && rng.nextFloat() < 0.25f + 0.45f * fillNorm)
+    const float gAmt = glitchAmount (fillNorm);
+    if (gAmt > 0.04f && rng.nextFloat() < 0.08f + 0.55f * gAmt)
         glitchSeed = rng.nextInt();
 
     repaint();
@@ -107,12 +108,18 @@ void LoudnessMeterComponent::mouseDown(const juce::MouseEvent& e)
         showContextMenu();
 }
 
+float LoudnessMeterComponent::glitchAmount (float fillNorm) noexcept
+{
+    // Below ~-36 dBFS (fill 0.40) stay solid. Ramp hard toward 0 dBFS.
+    const float t = juce::jlimit (0.f, 1.f, (fillNorm - 0.40f) / 0.60f);
+    return t * t * t;
+}
+
 int LoudnessMeterComponent::bandHeightPx (float fillNorm, float heightFromBottom01) noexcept
 {
     const float h = juce::jlimit (0.f, 1.f, heightFromBottom01);
-    const float f = juce::jlimit (0.f, 1.f, fillNorm);
-    const float intensity = std::pow (h, 1.35f) * (0.25f + 0.75f * f);
-    return juce::jmax (2, (int) std::lround (2.f + intensity * 7.f));
+    const float intensity = std::pow (h, 1.6f) * glitchAmount (fillNorm);
+    return juce::jmax (2, (int) std::lround (2.f + intensity * 8.f));
 }
 
 void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
@@ -132,8 +139,8 @@ void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
     while (y > fillTop + 0.4f)
     {
         const float height01 = (meterArea.getBottom() - y) / hMeter;
-        const float intensity = std::pow (juce::jlimit (0.f, 1.f, height01), 1.35f)
-                              * (0.25f + 0.75f * fill);
+        const float intensity = std::pow (juce::jlimit (0.f, 1.f, height01), 1.6f)
+                              * glitchAmount (fill);
         const int band = bandHeightPx (fillNorm, height01);
         const float y0 = juce::jmax (fillTop, y - (float) band);
         const float h = y - y0;
@@ -154,8 +161,8 @@ void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
         y = y0;
     }
 
-    const float sliceAmt = std::pow (fill, 1.2f);
-    if (sliceAmt > 0.04f)
+    const float sliceAmt = glitchAmount (fill);
+    if (sliceAmt > 0.18f)
     {
         const int n = (int) std::lround (sliceAmt * 5.f);
         for (int i = 0; i < n; ++i)

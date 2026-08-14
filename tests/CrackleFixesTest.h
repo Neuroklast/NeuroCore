@@ -514,5 +514,36 @@ public:
             expect (lastLat >= 0);
             proc.releaseResources();
         }
+
+        beginTest ("loudness meter falls on silence when mix is dry");
+        {
+            NeuroCoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.f);
+
+            juce::MidiBuffer midi;
+            juce::AudioBuffer<float> buf (2, 128);
+            for (int b = 0; b < 80; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    buf.setSample (0, i, 0.8f);
+                    buf.setSample (1, i, 0.8f);
+                }
+                proc.processBlock (buf, midi);
+            }
+            const float loud = proc.getLoudnessDb();
+            expect (loud > -12.f);
+
+            for (int b = 0; b < 80; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            expect (proc.getLoudnessDb() < loud - 12.f);
+            proc.releaseResources();
+        }
     }
 };

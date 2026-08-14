@@ -9,6 +9,83 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-14 – xover buses must exist before `out` is parsed
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** `out: low = 1` nach `xover1`  
+**Ergebnis:** `buildBusGraph` prüft Out-Taps, bevor `ensureGraphBus` in `loadScript` läuft. Ohne Vorab-Registrierung von `low`/`high`/`mid` ist `out: low` ein Parse-Fehler.
+
+#### Regel
+Xover-Ziele im BusGraph anlegen, bevor `out` validiert wird — nicht erst danach.
+
+---
+
+### 2026-08-14 – IR button sits on the line; captions refresh without a script change
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Mehrere IRs, zeilenbreiter Editor-Button, Drop/Change/Clear  
+**Ergebnis:** Live-View bekommt nach jeder `irN`-Zeile eine Extra-Zeile für den Button. Im Code-Editor liegt der Button **auf** der IR-Zeile (JUCE `CodeEditorComponent` hat kein `setLineSpacing` — unter der Zeile würde die nächste Codezeile überdeckt). `setFormula` bricht bei gleichem Text ab, deshalb `refreshIrButtons()` nach Load/Clear. Scroll: `editorViewportPositionChanged`. Slot-ID nur `ir`/`ir`+Ziffern, nicht `iron:`.
+
+#### Regel
+Kein Dateipfad in der DSL. Ein Button pro Slot, nicht ein globaler Chip. Caption-Refresh unabhängig vom Formeltext.
+
+---
+
+### 2026-08-14 – limit is in-chain; Polisher stays last
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Native `limit` Block  
+**Ergebnis:** Instant-attack, stereo-linked, Ceiling + Release. Kein Lookahead, damit die Host-Latenz nicht steigt. Polisher-Limiter bleibt der Sicherheits-Clip danach.
+
+#### Regel
+`limit1` ist ein Ketten-Block. Polisher ist nicht dasselbe. `limiter1` ist nur ein Alias.
+
+---
+
+### 2026-08-14 – Sidechain comp must not fall back to the input
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Comp knee/makeup/hpf/sidechain  
+**Ergebnis:** `source = sidechain` ohne Pin darf nicht den Insert als Detektor nehmen — sonst duckt der Comp sich selbst.
+
+#### Regel
+Fehlender Sidechain = Detektor 0 (kein GR). Makeup/HPF/Knee sind optional; Attack bleibt ≥ 1 ms.
+
+---
+
+### 2026-08-14 – Gate smoothers must snap on prepare
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Native `gate` Block  
+**Ergebnis:** `SmoothedValue` startet bei 0. `range` 0 dB = „zu“ ist trotzdem unity. Attack-Test sah aus wie Fade-out.
+
+#### Regel
+Neue Dynamics-Blöcke: in `prepare` `setCurrentAndTargetValue(expr)` für jede Zeit/dB-Größe. Sonst ist der erste Block ein Ramp vom Default 0.
+
+---
+
+### 2026-08-14 – Note knobs are ms; osc freq must invert them
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Taktlängen als Osc-Rate + AMS RMX knackt  
+**Ergebnis:** `param a = Rate [1/1, 1/16]` published milliseconds (1/4 @ 120 = 500). `osc1: freq = a` wurde 500 Hz. AMS Nonlin hatte live Size 0.16–0.34 (Comb-Längen springen) plus helles Damp 0.12 und Delay-Mix 0.35.
+
+#### Regel
+Note-Knob in `delay time` = ms. Note-Knob in `osc freq` / `osc sync` = ein Zyklus pro Note (`1000/ms` bzw. `1/beats`). Tiny live `reverb size` nicht als Knob — Comb-Längenwechsel knackt.
+
+---
+
+### 2026-08-14 – Dual-DI wall is channel=left/right, not Haas
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Metal-Wall + Cyberpunk-Distortion Factory  
+**Ergebnis:** Zwei echte DI-Takes brauchen getrennte Amp-Ketten auf L und R. Haas auf einer Mono-Spur ist kein Double-Tracking. `Glitch Laboratory` war leise, weil `lerp(..., 0.85)` plus Delay-Mix 0.45 die Energie wegdrückte.
+
+#### Regel
+Stereo-Wall: `channel = left` / `channel = right`, jeweils eigene Tube/Cab-Kette. Cyber-Dirt wie ein Amp bauen (HPF → Crush/Fold → kurzer Comb → LPF → Level), nicht wie ein Delay-Labor. Makeup-Level ist Pflicht nach bitcrush/fold.
+
+---
+
 ### 2026-08-14 – macOS CI cannot FORCE juceaide as a later target
 
 **Agent:** Grok Coding Agent  

@@ -14,6 +14,10 @@
 #include "../src/utils/PresetSearch.h"
 #include "../src/utils/PresetRatings.h"
 #include "../src/utils/FactoryPresetLibrary.h"
+#include "../src/ui/PresetTableComponent.h"
+#include "../src/ui/DslTerminalEditor.h"
+#include "../src/ui/IrSlotUi.h"
+#include "../src/core/PluginProcessor.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -28,6 +32,32 @@ public:
             names.sortNatural();
             expectEquals (names[0], juce::String ("Amp Crunch"));
             expectEquals (names[2], juce::String ("Score Hall"));
+        }
+
+        beginTest ("preset table defaults to name sort and shows a tags column");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROCORE_RESOURCES_DIR)));
+            NeuroCoreAudioProcessor proc;
+            PresetTableComponent table (proc);
+            auto& header = table.getTable().getHeader();
+            expectEquals (header.getSortColumnId(), 1);
+            expect (header.isSortedForwards());
+            expect (header.getNumColumns (true) >= 6);
+            expect (header.getColumnName (6).containsIgnoreCase ("tag"));
+            expect (table.getNumRows() > 0);
+            if (table.getNumRows() >= 2)
+            {
+                const auto a = table.getNameForRow (0);
+                const auto b = table.getNameForRow (1);
+                expect (a.compareNatural (b) <= 0, a + " should sort before " + b);
+            }
+            bool sawTags = false;
+            for (int r = 0; r < juce::jmin (40, table.getNumRows()); ++r)
+                if (table.getTagsForRow (r).size() > 0)
+                    sawTags = true;
+            expect (sawTags, "factory rows should expose tags in the table");
         }
 
         beginTest ("OS banner is Neuroklast OS");
@@ -58,11 +88,35 @@ public:
         beginTest ("meter pixel bands stay fine at idle and chunk at the top");
         {
             expectEquals (LoudnessMeterComponent::bandHeightPx (0.f, 0.f), 2);
-            expect (LoudnessMeterComponent::bandHeightPx (0.3f, 0.3f)
-                    < LoudnessMeterComponent::bandHeightPx (0.3f, 1.f));
+            expectEquals (LoudnessMeterComponent::bandHeightPx (0.f, 1.f), 2);
+            expect (LoudnessMeterComponent::glitchAmount (0.2f) < 0.02f);
+            expect (LoudnessMeterComponent::glitchAmount (0.35f) < 0.02f);
+            expect (LoudnessMeterComponent::glitchAmount (1.f)
+                    > LoudnessMeterComponent::glitchAmount (0.7f));
+            expect (LoudnessMeterComponent::bandHeightPx (0.25f, 1.f)
+                    < LoudnessMeterComponent::bandHeightPx (0.85f, 1.f));
             expect (LoudnessMeterComponent::bandHeightPx (0.5f, 1.f)
                     < LoudnessMeterComponent::bandHeightPx (1.f, 1.f));
             expect (LoudnessMeterComponent::bandHeightPx (1.f, 1.f) >= 6);
+        }
+
+        beginTest ("preset chip uses a large brand font");
+        {
+            expect (Config::kPresetChipFontPt >= 26.f);
+        }
+
+        beginTest ("status numeric fields keep a fixed character width");
+        {
+            const auto cpuLo = juce::String (3).paddedLeft (' ', 3);
+            const auto cpuHi = juce::String (100).paddedLeft (' ', 3);
+            expectEquals (cpuLo.length(), cpuHi.length());
+            expectEquals (cpuLo.length(), 3);
+            const auto mixLo = juce::String (5).paddedLeft (' ', 3);
+            const auto mixHi = juce::String (100).paddedLeft (' ', 3);
+            expectEquals (mixLo.length(), mixHi.length());
+            const auto modeA = juce::String ("LIVE").paddedRight (' ', 6);
+            const auto modeB = juce::String ("BYPASS").paddedRight (' ', 6);
+            expectEquals (modeA.length(), modeB.length());
         }
 
         beginTest ("NK lockup stays smaller than the HUD strip");
@@ -96,6 +150,39 @@ public:
             expect (PresetSearch::matches (hay, "delay"));
             expect (PresetSearch::matches (hay, "MS"));
             expect (! PresetSearch::matches (hay, "bitcrush vocal"));
+        }
+
+        beginTest ("factory library has hardware dynamics and rooms");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROCORE_RESOURCES_DIR)));
+            juce::StringArray need {
+                "Multiband Glue", "Envelope Shaper", "1176 FET", "1176 All In",
+                "LA-2A Opto", "SSL Bus Comp", "Fairchild Mu", "dbx 160 VCA",
+                "CL-1B Vocal", "Neve Diode Bus", "Space Echo RE-201",
+                "Memory Man BBD", "Echoplex EP-3", "TC 2290 Grid",
+                "EMT 140 Plate", "Lexicon 480 Hall", "AMS RMX Nonlin", "Spring Tank"
+            };
+            juce::StringArray have;
+            for (const auto& e : lib.getEntries())
+                have.add (e.name);
+            for (const auto& n : need)
+                expect (have.contains (n), "missing factory preset: " + n);
+            bool tubeScreamerHasPeak = false;
+            bool bassKeepsPeak = false;
+            for (const auto& e : lib.getEntries())
+            {
+                if (e.name == "Tube Screamer")
+                    tubeScreamerHasPeak = e.script.containsIgnoreCase ("eq")
+                                       && e.script.containsIgnoreCase ("peak")
+                                       && ! e.script.contains ("type = bandpass");
+                if (e.name == "Bass Architect")
+                    bassKeepsPeak = e.script.containsIgnoreCase ("eq")
+                                 && e.script.containsIgnoreCase ("peak");
+            }
+            expect (tubeScreamerHasPeak, "Tube Screamer must use a mid peak, not a bandpass");
+            expect (bassKeepsPeak, "Bass Architect mid must be a peak so the sub stays");
         }
 
         beginTest ("factory scripts carry operator comments");
@@ -204,6 +291,64 @@ public:
                         juce::String ("Help still mentions engineering term: ") + word);
             expect (body.contains ("presets"));
             expect (body.contains ("mix"));
+            expect (body.contains ("tutorial"));
+            expect (body.contains ("eq"));
+            expect (body.contains ("octaver"));
+            expect (body.contains ("vocoder"));
+            expect (body.contains ("ctrl+space") || body.contains ("ctrl + space"));
+            expect (body.contains ("locked while bypass") || body.contains ("locks the mix"));
+        }
+
+        beginTest ("Help body font is large enough to read");
+        {
+            expect (Config::kHelpBodyFontPt >= 16.f);
+            HelpContentComponent help ("# Title\n\nintro\n\n## 1. Quickstart\nDo this.\n");
+            help.showChapter (1);
+            expect (help.getBodyFontHeight() >= 15.5f);
+        }
+
+        beginTest ("formula editor keeps autocomplete closed until Ctrl+Space");
+        {
+            NeuroCoreAudioProcessor proc;
+            DslTerminalEditor ed (proc);
+            ed.setText ("filter1: type = ");
+            ed.setCaretPosition (ed.getText().length());
+            expect (! ed.isSuggestionPopupVisible());
+        }
+
+        beginTest ("IR slot ids are detected per DSL line");
+        {
+            expectEquals (IrSlotUi::slotFromLine ("ir1: mix = 1"), juce::String ("ir1"));
+            expectEquals (IrSlotUi::slotFromLine ("  ir2: mix = 0.5"), juce::String ("ir2"));
+            expectEquals (IrSlotUi::slotFromLine ("convolve: mix = 1"), juce::String ("convolve"));
+            expect (IrSlotUi::slotFromLine ("iron: y = x").isEmpty());
+            expect (IrSlotUi::slotFromLine ("stage1: y = x").isEmpty());
+            expect (IrSlotUi::slotFromLine ("# ir1: mix = 1").isEmpty());
+            expect (IrSlotUi::slotFromLine ("// ir2: mix = 1").isEmpty());
+        }
+
+        beginTest ("formula display adds one full-width IR button per slot");
+        {
+            FormulaDisplayComponent d;
+            d.setSize (400, 300);
+            d.setFormula ("ir1: mix = 1\nstage1: y = x\nir2: mix = 0.5\n");
+            expectEquals (d.getIrButtonSlots().size(), 2);
+            expectEquals (d.getIrButtonSlots()[0], juce::String ("ir1"));
+            expectEquals (d.getIrButtonSlots()[1], juce::String ("ir2"));
+            d.setFormula ("stage1: y = x\n");
+            expectEquals (d.getIrButtonSlots().size(), 0);
+        }
+
+        beginTest ("code editor adds one IR button per irN line");
+        {
+            NeuroCoreAudioProcessor proc;
+            DslTerminalEditor ed (proc);
+            ed.setSize (400, 300);
+            ed.setText ("ir1: mix = 1\nstage1: y = x\nir2: mix = 0.4\n");
+            ed.refreshIrButtons();
+            expectEquals (ed.getIrButtonSlots().size(), 2);
+            expectEquals (ed.getIrButtonSlots()[0], juce::String ("ir1"));
+            expectEquals (ed.getIrButtonSlots()[1], juce::String ("ir2"));
         }
 
         beginTest ("Help body uses JetBrains Mono not Apex");

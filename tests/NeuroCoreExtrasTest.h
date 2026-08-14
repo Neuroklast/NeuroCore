@@ -360,6 +360,81 @@ private:
             // but it should produce some output after setTempo
             expect(std::isfinite(peak), "Tempo sync osc produced non-finite output");
         }
+
+        beginTest ("note-range param as osc freq is one cycle per note, not milliseconds-as-Hz");
+        {
+            // 1/4 at 120 BPM = 500 ms → 2 Hz. Feeding 500 into freq used to scream.
+            const auto grid = dsl::NoteValues::makeGrid (1.f, 0.0625f);
+            int qIdx = 0;
+            for (int i = 0; i < grid.size(); ++i)
+                if (std::abs (grid.wholes[(size_t) i] - 0.25f) < 1.0e-4f)
+                    qIdx = i;
+            const float quarterNorm = (grid.size() > 1)
+                ? (float) qIdx / (float) (grid.size() - 1) : 0.5f;
+
+            auto countZeroX = [&] (const juce::String& script) -> int
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                expect (chain.loadScript (script, err), err);
+                chain.prepare ({ 44100.0, 512, 1 });
+                chain.setTempo (120.0, 0.0, true);
+
+                std::array<juce::SmoothedValue<float>, Config::kNumUserParams> sm;
+                for (auto& s : sm)
+                {
+                    s.reset (44100.0, 0.0);
+                    s.setCurrentAndTargetValue (quarterNorm);
+                }
+                std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> kp {};
+                for (int i = 0; i < Config::kNumUserParams; ++i)
+                    kp[(size_t) i] = &sm[i];
+
+                // Host-sized blocks. Skip 200 ms so the LFO is settled, then 0.5 s.
+                juce::AudioBuffer<float> buf (1, 512);
+                for (int b = 0; b < 18; ++b)
+                {
+                    buf.clear();
+                    chain.processBlockSmoothed (buf, kp);
+                }
+
+                int zx = 0;
+                float prev = 0.f;
+                bool havePrev = false;
+                for (int b = 0; b < 44; ++b)
+                {
+                    buf.clear();
+                    chain.processBlockSmoothed (buf, kp);
+                    for (int i = 0; i < 512; ++i)
+                    {
+                        const float v = buf.getSample (0, i);
+                        if (havePrev && ((prev <= 0.f && v > 0.f) || (prev >= 0.f && v < 0.f)))
+                            ++zx;
+                        prev = v;
+                        havePrev = true;
+                    }
+                }
+                return zx;
+            };
+
+            const int zxFreq = countZeroX (
+                "param a = Rate [1/1, 1/16]\n"
+                "osc1: shape = sine; freq = a; depth = 1.0\n"
+                "stage1: y = osc1");
+            // 2 Hz sine → ~4 zero crossings / second. Milliseconds-as-Hz would be ~1000.
+            // 0.5 s of 2 Hz → one cycle → two zero-crossings.
+            expect (zxFreq >= 2 && zxFreq <= 6,
+                    "freq = note-param should be ~2 Hz at 1/4 120 BPM, zx="
+                        + juce::String (zxFreq));
+
+            const int zxSync = countZeroX (
+                "param a = Rate [1/1, 1/16]\n"
+                "osc1: shape = sine; sync = a; depth = 1.0\n"
+                "stage1: y = osc1");
+            expect (zxSync >= 2 && zxSync <= 6,
+                    "sync = note-param should be ~2 Hz at 1/4 120 BPM, zx="
+                        + juce::String (zxSync));
+        }
     }
 
     void testEnvMidiTrigger()
@@ -755,6 +830,90 @@ private:
             requireBlock ("Wide Canvas", "ms");
             requireBlock ("Wide Canvas", "reverb");
             requireBlock ("Tension Bed", "reverb");
+            requireBlock ("Stereo Guitar Wall", "channel = left");
+            requireBlock ("Stereo Guitar Wall", "channel = right");
+            requireBlock ("Stereo Guitar Wall", "tube");
+            requireBlock ("Cyberpunk Drive", "bitcrush");
+            requireBlock ("Cyberpunk Drive", "fold");
+            requireBlock ("Cyberpunk Drive", "lowpass");
+            requireBlock ("Cyberpunk Drive", "Level");
+            requireBlock ("Glitch Laboratory", "Level");
+            requireBlock ("AMS RMX Nonlin", "lowpass");
+            requireBlock ("Sidechain Pump", "[1/1, 1/16]");
+        }
+
+        beginTest ("Stereo Guitar Wall: two DIs keep independent L/R amps");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            const auto* wall = lib.findByName ("Stereo Guitar Wall");
+            expect (wall != nullptr, "missing Stereo Guitar Wall");
+            if (wall == nullptr)
+                return;
+
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (wall->script, err), err);
+            chain.prepare ({ 44100.0, 256, 2 });
+
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int n = 0; n < 256; ++n)
+            {
+                const float t = (float) n / 44100.0f;
+                const float twoPi = 2.0f * juce::MathConstants<float>::pi;
+                buf.setSample (0, n, 0.45f * std::sin (twoPi * 220.0f * t));
+                buf.setSample (1, n, 0.45f * std::sin (twoPi * 1100.0f * t));
+            }
+            chain.processBlock (buf);
+
+            float peakL = 0.f, peakR = 0.f, diff = 0.f;
+            for (int n = 0; n < 256; ++n)
+            {
+                const float l = buf.getSample (0, n);
+                const float r = buf.getSample (1, n);
+                expect (std::isfinite (l) && std::isfinite (r));
+                peakL = juce::jmax (peakL, std::abs (l));
+                peakR = juce::jmax (peakR, std::abs (r));
+                diff += std::abs (l - r);
+            }
+            expect (peakL > 0.05f, "left Mesa-style amp silent");
+            expect (peakR > 0.05f, "right 5150-style amp silent");
+            expect (diff > 0.5f, "L/R too similar for a dual-DI wall");
+        }
+
+        beginTest ("Cyberpunk Drive: digital guitar dirt stays loud");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            const auto* cyber = lib.findByName ("Cyberpunk Drive");
+            expect (cyber != nullptr, "missing Cyberpunk Drive");
+            if (cyber == nullptr)
+                return;
+
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (cyber->script, err), err);
+            chain.prepare ({ 44100.0, 256, 2 });
+
+            juce::AudioBuffer<float> buf (2, 256);
+            double sumSq = 0.0;
+            for (int n = 0; n < 256; ++n)
+            {
+                const float t = (float) n / 44100.0f;
+                const float s = 0.4f * std::sin (2.0f * juce::MathConstants<float>::pi * 440.0f * t);
+                buf.setSample (0, n, s);
+                buf.setSample (1, n, s);
+            }
+            chain.processBlock (buf);
+            float peak = 0.f;
+            for (int n = 0; n < 256; ++n)
+            {
+                const float v = buf.getSample (0, n);
+                expect (std::isfinite (v));
+                peak = juce::jmax (peak, std::abs (v));
+                sumSq += (double) v * (double) v;
+            }
+            const float rms = (float) std::sqrt (sumSq / 256.0);
+            expect (peak > 0.10f, "Cyberpunk Drive peak too low: " + juce::String (peak, 3));
+            expect (rms > 0.04f, "Cyberpunk Drive too quiet: rms=" + juce::String (rms, 4));
         }
 
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");

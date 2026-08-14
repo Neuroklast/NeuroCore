@@ -17,6 +17,9 @@
 #include "CyberFxTest.h"
 #include "EditorUxTest.h"
 #include "LicenseTest.h"
+#include "EqSidechainTest.h"
+#include "DynamicsBlocksTest.h"
+#include "IrXoverTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -47,6 +50,9 @@ int main (int argc, char* argv[])
   CyberFxTest cyberFxTest;
   EditorUxTest editorUxTest;
   LicenseTest licenseTest;
+  EqSidechainTest eqSidechainTest;
+  DynamicsBlocksTest dynamicsBlocksTest;
+  IrXoverTest irXoverTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

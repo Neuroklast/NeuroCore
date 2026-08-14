@@ -101,6 +101,17 @@ void ParameterComponent::setMappedRange (float minVal, float maxVal)
     updateLabel();
 }
 
+void ParameterComponent::setNoteGrid (std::vector<juce::String> labels)
+{
+    noteLabels = std::move (labels);
+    const int n = (int) noteLabels.size();
+    if (n >= 2)
+        slider.setRange (0.0, 1.0, 1.0 / (double) (n - 1));
+    else
+        slider.setRange (0.0, 1.0, 0.0);
+    updateLabel();
+}
+
 void ParameterComponent::paint (Graphics& g)
 {
     g.fillAll (Colours::transparentBlack);
@@ -202,7 +213,15 @@ void ParameterComponent::updateLabel()
     else if (aliasName.isNotEmpty())
         nameLabel.setText (aliasName, dontSendNotification);
 
-    if (hasMappedRange)
+    if (noteLabels.size() >= 2)
+    {
+        const int last = (int) noteLabels.size() - 1;
+        const int idx = juce::jlimit (0, last, (int) std::lround (norm * (float) last));
+        valueLabel.setText (noteLabels[(size_t) idx], dontSendNotification);
+        minLabel.setText (noteLabels.front(), dontSendNotification);
+        maxLabel.setText (noteLabels.back(), dontSendNotification);
+    }
+    else if (hasMappedRange)
     {
         const float mapped = mappedMin + norm * (mappedMax - mappedMin);
         const float av = std::abs (mapped);

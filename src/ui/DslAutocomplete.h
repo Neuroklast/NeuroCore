@@ -103,11 +103,18 @@ namespace DslAutocomplete
     inline juce::String lineBlockKind (const juce::String& head)
     {
         auto first = head.upToFirstOccurrenceOf (":", false, false).trim().toLowerCase();
+        if (first.startsWith ("eq")) return "eq";
+        if (first.startsWith ("octaver") || first == "octave") return "octaver";
+        if (first.startsWith ("vocoder")) return "vocoder";
         if (first.startsWith ("filter") || first == "lpf" || first == "hpf" || first == "bpf"
             || first == "lp" || first == "hp" || first == "bp"
             || first == "lowpass" || first == "highpass" || first == "bandpass")
             return "filter";
         if (first.startsWith ("comp")) return "comp";
+        if (first.startsWith ("gate")) return "gate";
+        if (first.startsWith ("limit")) return "limit";
+        if (first.startsWith ("xover") || first.startsWith ("crossover")) return "xover";
+        if (first.startsWith ("ir") || first.startsWith ("convolve")) return "ir";
         if (first.startsWith ("delay")) return "delay";
         if (first.startsWith ("reverb") || first.startsWith ("verb")) return "reverb";
         if (first.startsWith ("osc")) return "osc";
@@ -242,6 +249,9 @@ namespace DslAutocomplete
         {
             if (kind == "filter")
                 addAll (items, { "lowpass", "highpass", "bandpass" }, Kind::Value, "filter type", prefix);
+            else if (kind == "eq")
+                addAll (items, { "peak", "notch", "lowcut", "highcut", "lowshelf", "highshelf" },
+                        Kind::Value, "eq type", prefix);
             else if (kind == "osc")
                 addAll (items, { "sine", "saw", "triangle", "square" }, Kind::Value, "osc type", prefix);
             else if (kind == "env")
@@ -273,16 +283,31 @@ namespace DslAutocomplete
             if (kind == "filter")
                 props.addArray ({ "type", "cutoff", "resonance", "center", "width",
                                   "lowcut", "highcut", "channel" });
+            else if (kind == "eq")
+                props.addArray ({ "type", "freq", "q", "gain", "channel" });
+            else if (kind == "octaver")
+                props.addArray ({ "sub", "up", "mix", "tone", "thresh" });
+            else if (kind == "vocoder")
+                props.addArray ({ "bands", "mix", "q", "formant", "dry" });
             else if (kind == "comp")
-                props.addArray ({ "threshold", "ratio", "attack", "release" });
+                props.addArray ({ "threshold", "ratio", "attack", "release",
+                                  "knee", "makeup", "hpf", "source" });
+            else if (kind == "gate")
+                props.addArray ({ "threshold", "hyst", "attack", "hold", "release", "range", "source" });
+            else if (kind == "limit")
+                props.addArray ({ "ceiling", "release" });
+            else if (kind == "xover")
+                props.addArray ({ "f1", "f2" });
+            else if (kind == "ir")
+                props.addArray ({ "mix", "gain" });
+            else if (kind == "env")
+                props.addArray ({ "type", "attack", "release", "source", "trigger" });
             else if (kind == "delay")
                 props.addArray ({ "time", "feedback", "mix", "damp", "sync", "pingpong" });
             else if (kind == "reverb")
                 props.addArray ({ "size", "decay", "damp", "mix", "width" });
             else if (kind == "osc")
                 props.addArray ({ "type", "freq", "sync" });
-            else if (kind == "env")
-                props.addArray ({ "type", "attack", "release" });
             else if (kind == "ms")
                 props.addArray ({ "mode" });
             else if (kind == "stage")
@@ -297,8 +322,8 @@ namespace DslAutocomplete
 
         if (isIdentStartLine (head))
         {
-            juce::StringArray blocks { "param", "stage", "filter", "comp", "osc", "env",
-                                       "delay", "reverb", "ms", "bus" };
+            juce::StringArray blocks { "param", "stage", "filter", "eq", "comp", "gate", "limit", "osc", "env",
+                                       "delay", "reverb", "ms", "octaver", "vocoder", "xover", "ir", "bus" };
             if (canSuggestSend (text, start))
                 blocks.add ("send");
             if (canSuggestOut (text, start))
@@ -323,6 +348,69 @@ namespace DslAutocomplete
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);
             }
+            if (prefix.isEmpty() || juce::String ("eq").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "eq peak/notch/cut";
+                sn.insertText = "eq1: type = peak; freq = 1000; q = 1.2; gain = 3";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("octaver").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "octaver sub/up";
+                sn.insertText = "octaver1: sub = 0.65; up = 0.2; mix = 0.72; tone = 420";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("vocoder").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "vocoder (sidechain = voice)";
+                sn.insertText = "vocoder1: bands = 8; mix = 0.85; q = 2.2; formant = 1; dry = 0.15";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("gate").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "gate (hysteresis)";
+                sn.insertText = "gate1: threshold = -42; hyst = 3; attack = 0.001; hold = 0.04; release = 0.08; range = -70";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("limit").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "limit (ceiling)";
+                sn.insertText = "limit1: ceiling = -0.3; release = 0.08";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("xover").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "xover 3-band";
+                sn.insertText = "xover1: f1 = 120; f2 = 2500";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("ir").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "ir (cab / room)";
+                sn.insertText = "ir1: mix = 1; gain = 0";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
             if (prefix.isEmpty() || juce::String ("param").startsWithIgnoreCase (prefix))
             {
                 Item sn;
@@ -331,6 +419,13 @@ namespace DslAutocomplete
                 sn.detail = "snippet";
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);
+
+                Item note;
+                note.label = "param a = Time [1/1, 1/16]";
+                note.insertText = "param a = Time [1/1, 1/16]";
+                note.detail = "snippet";
+                note.kind = Kind::Snippet;
+                addCand (items, std::move (note), prefix);
             }
             if ((prefix.isEmpty() || juce::String ("bus").startsWithIgnoreCase (prefix))
                 && canSuggestSend (text, start) == false)
@@ -386,7 +481,8 @@ namespace DslAutocomplete
 
             addAll (items, {
                 "x", "y", "x_prev", "y_prev", "t", "sr", "pi", "ch",
-                "midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod"
+                "midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod",
+                "sc", "sc_l", "sc_r", "sidechain"
             }, Kind::Variable, "signal", prefix);
         }
 

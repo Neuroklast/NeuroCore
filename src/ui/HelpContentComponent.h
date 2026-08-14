@@ -34,6 +34,7 @@ public:
     juce::String getDisplayedText() const { return body.getText(); }
     int getVisibleChapterCount() const { return (int) visible.size(); }
     juce::String getBodyTypefaceName() const { return body.getFont().getTypefaceName(); }
+    float getBodyFontHeight() const { return body.getFont().getHeight(); }
 
 private:
     void textEditorTextChanged (juce::TextEditor&) override;

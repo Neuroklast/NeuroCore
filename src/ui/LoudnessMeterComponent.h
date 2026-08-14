@@ -17,6 +17,8 @@ public:
     /** Hide while a modal covers the editor (OpenGL used to sit above siblings). */
     void setCoveredByOverlay (bool covered);
 
+    /** 0 at idle / low level, 1 at full scale. Cubic so the bottom stays calm. */
+    static float glitchAmount (float fillNorm) noexcept;
     /** Band height in px: quiet = 2, high + near the top of the bar = chunky. */
     static int bandHeightPx (float fillNorm, float heightFromBottom01) noexcept;
 
