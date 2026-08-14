@@ -83,6 +83,11 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
 
     const float invSr = 1.f / sampleRate;
 
+    float* out[2] {};
+    const int useCh = juce::jmin (nCh, 2);
+    for (int c = 0; c < useCh; ++c)
+        out[c] = buffer.getWritePointer (c);
+
     for (int i = 0; i < nS; ++i)
     {
         const float thrDb = juce::jlimit (-90.f, 0.f, thrSm.getNextValue());
@@ -91,6 +96,29 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         const float holdS = juce::jlimit (0.f, 1.f, holdSm.getNextValue());
         const float relS  = juce::jlimit (0.002f, 1.f, relSm.getNextValue());
         const float rngDb = juce::jlimit (-90.f, 0.f, rangeSm.getNextValue());
+
+        if (std::abs (atkS - cachedAtk) > 1.0e-7f)
+        {
+            cachedAtk = atkS;
+            atkC = 1.f - std::exp (-1.f / juce::jmax (1.f, atkS * sampleRate));
+        }
+        if (std::abs (relS - cachedRel) > 1.0e-7f)
+        {
+            cachedRel = relS;
+            relC = 1.f - std::exp (-1.f / juce::jmax (1.f, relS * sampleRate));
+        }
+        if (std::abs (thrDb - cachedThr) > 1.0e-4f || std::abs (hyst - cachedHyst) > 1.0e-4f)
+        {
+            cachedThr = thrDb;
+            cachedHyst = hyst;
+            openLin = juce::Decibels::decibelsToGain (thrDb);
+            closeLin = juce::Decibels::decibelsToGain (thrDb - hyst);
+        }
+        if (std::abs (rngDb - cachedRange) > 1.0e-4f)
+        {
+            cachedRange = rngDb;
+            rangeLin = juce::Decibels::decibelsToGain (rngDb);
+        }
 
         float det = 0.f;
         if (followSidechain && scL != nullptr && scN > 0)
@@ -102,18 +130,13 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         }
         else
         {
-            for (int c = 0; c < nCh; ++c)
-                det = juce::jmax (det, std::abs (buffer.getSample (c, i)));
+            for (int c = 0; c < useCh; ++c)
+                det = juce::jmax (det, std::abs (out[c][i]));
         }
 
-        const float atkC = 1.f - std::exp (-1.f / juce::jmax (1.f, atkS * sampleRate));
-        const float relC = 1.f - std::exp (-1.f / juce::jmax (1.f, relS * sampleRate));
         env += ((det > env) ? atkC : relC) * (det - env);
         if (! std::isfinite (env))
             env = 0.f;
-
-        const float openLin  = juce::Decibels::decibelsToGain (thrDb);
-        const float closeLin = juce::Decibels::decibelsToGain (thrDb - hyst);
 
         if (env >= openLin)
         {
@@ -129,14 +152,14 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
             open = false;
         }
 
-        const float target = open ? 1.f : juce::Decibels::decibelsToGain (rngDb);
+        const float target = open ? 1.f : rangeLin;
         const float gC = open ? atkC : relC;
         gain += gC * (target - gain);
         if (! std::isfinite (gain))
             gain = target;
         gain = juce::jlimit (0.f, 1.f, gain);
 
-        for (int c = 0; c < nCh; ++c)
-            buffer.setSample (c, i, buffer.getSample (c, i) * gain);
+        for (int c = 0; c < useCh; ++c)
+            out[c][i] *= gain;
     }
 }

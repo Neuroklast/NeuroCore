@@ -467,6 +467,48 @@ public:
             proc.releaseResources();
         }
 
+        beginTest ("switch up to 8x stays finite");
+        {
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = softclip(x, 2.2)", err), err);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (1.f));
+            proc.prepareToPlay (48000.0, 64);
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 4; ++b)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float s = 0.4f * std::sin (i * 0.2f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+            }
+            choice->setValueNotifyingHost (choice->convertTo0to1 (3.f));
+            proc.prepareToPlay (48000.0, 64);
+            int bad = 0;
+            for (int b = 0; b < 16; ++b)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float s = 0.4f * std::sin ((b * 64 + i) * 0.2f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                bad += TestHelpers::countNonFinite (buf);
+            }
+            expectEquals (bad, 0);
+            expect (proc.getLatencySamples() > 0);
+            proc.releaseResources();
+        }
+
         beginTest ("oversampling change stays finite (no sticky crackle)");
         {
             NeuroCoreAudioProcessor proc;

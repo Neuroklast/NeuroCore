@@ -1,8 +1,8 @@
-# Entwicklungsstand NeuroCore
+# Entwicklungsstand NEUROKORE
 
-**Letzte Aktualisierung:** 2026-08-14  
-**Version:** 0.2.3  
-**Gesamtfortschritt:** ~88–90%
+**Letzte Aktualisierung:** 2026-08-15  
+**Version:** 0.9.0  
+**Gesamtfortschritt:** ~90%
 
 ---
 
@@ -15,10 +15,10 @@
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ Brand-Lockup (NK+Version) + angular L/BOTH/R; Mix cyber; Live-Formel | 98% | 2026-08-13 |
+| Core/PluginEditor | ✅ Brand NEUROKORE by Neuroklast; compact toolbar + cropped NK | 99% | 2026-08-14 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
 | DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate | 99% | 2026-08-14 |
-| DSL/SignalChain | ✅ + Gate (hyst/hold/range, optional sidechain) | 99% | 2026-08-14 |
+| DSL/SignalChain | ✅ Delay Lagrange-6 + 2-Pol-Damp; Reverb 6 AP + Stereo-In | 99% | 2026-08-15 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -26,23 +26,120 @@
 | DSP/DSPUtils | ✅ autoGainCompensate optimiert (direkte Sample-Multiplikation) | 85% | 2026-05-19 |
 | UI/DslTerminalEditor | ✅ Edit-Modus; zeilenbreiter IR-Button pro `irN` | 90% | 2026-08-14 |
 | UI/FormulaDisplayComponent | ✅ Live-Eval + Extra-Zeile mit IR-Drop-Button | 94% | 2026-08-14 |
-| UI/WaveformDisplay | ✅ Funktional | 70% | 2026-04-01 |
-| UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; unten ruhig | 99% | 2026-08-13 |
+| UI/WaveformDisplay | ✅ ScopeDeck: Wave + Field + I/O-Loudness, einklappbar | 90% | 2026-08-14 |
+| UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; plus kompakte IN/OUT-Balken | 99% | 2026-08-14 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 178 Factory; Dual-DI Metal Wall + Cyberpunk Drive; Glitch Laboratory Level | 99% | 2026-08-14 |
+| Preset-System | ✅ 189 Factory; Club/Cyber; Explorer-Sidebar; Glitch Lab ohne Ping-Pong | 99% | 2026-08-14 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
-| Licensing | ✅ Offline RSA-.lic + Issuer (E-Mail → Datei); Demo Mix=0 nach 20 min | 90% | 2026-08-13 |
-| Tests | ✅ 2755 passed / 0 failed | 99% | 2026-08-14 |
+| Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
+| Tests | ✅ 2940 passed / 0 failed | 99% | 2026-08-14 |
 | CI/CD | ✅ Windows Tests+pluginval; macOS-Job baut AU + auval | 95% | 2026-08-14 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
-| Dokumentation | ✅ Help EN, Mono, operator-only (kein JUCE/Build im Fenster) | 93% | 2026-08-13 |
-| Installer | ❌ Fehlt | 0% | — |
+| Dokumentation | ✅ Help 20 pt; IR / License / gate / limit / xover | 96% | 2026-08-14 |
+| Installer | ✅ Kit `NEUROKORE-0.9.0/` im Repo-Root (VST3, Standalone, EULA, Docs) | 90% | 2026-08-15 |
 | AU-Format | ✅ AUv2 `aumf`; CI-Job `AU (macOS)` liefert `.component` | 100% | 2026-08-14 |
 
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-15 – Gold blocks + 4× OS + release kit
+
+- [x] Delay: 6-Punkt-Lagrange, 2-Pol-Dämpfer, 8 % Stereo-Crossfeed
+- [x] Reverb: 6 Allpass, Stereo-In statt Mono-Summe
+- [x] hardclip n=24; Default-OS **4×**
+- [x] `NEUROKORE-0.9.0/` mit VST3, Standalone, EULA, Docs, optional Setup.exe
+- [ ] Manuell: Inno Setup kompilieren wenn ISCC fehlt; 4× CPU in der DAW
+
+### 2026-08-14 – Club split (no hidden post-EQ)
+
+- [x] Main = Click+Mids (HPF ~90, Dip 320 Hz, Air-Shelf)
+- [x] Scream höher (2–7 kHz), Body enger (LPF ~130–145)
+- [ ] Manuell: Kick Rumble auf 909 — Click getrennt vom Floor
+
+### 2026-08-14 – Transient fidelity (Serum-knackig)
+
+- [x] hardclip n=5 → n=16 (am Ceiling ~96 % statt ~87 %)
+- [x] Env/osc-Filter + EQ: 0.8 ms Smoothing statt 20 ms
+- [x] Extra-IIR-AA nur noch ohne Oversampling (FIR macht den Rest)
+- [ ] Manuell: Kick Rumble @ 2× vs 4× OS, Click gegen Serum 2
+
+### 2026-08-14 – Club from hardcore one-shot refs
+
+- [x] Refs: Disorder / Noitification / Wow — 375 ms @ 160, crest ~1.4, held clipped sine + sub
+- [x] Kick/Warehouse/Hardcore/Gabber: wow-LPF + tuned delay + octaver, no hall duck
+- [x] Scream-Bus + env-Drive auf dem Hit (helle Distortion + Dynamik bleiben)
+- [ ] Manuell: Kick Rumble Tune ~15 ms auf eine 909, vergleich Wow/Disorder
+
+### 2026-08-14 – Club ballern pass
+
+- [x] Alle 8 Club-Presets: Defaults sitzen oben im Range (Drive 11–14, Clip-Ceiling 0.24–0.58)
+- [x] Kick / Warehouse: Dry-Brick + Punch-EQ + Rumble-Send ~1.1 + Duck 0.8+
+- [x] Gabber: env-Drive `a*(1.05+e*env)`, Ceiling 0.24, Sub-Default 1.05
+- [ ] Manuell: Kick Rumble / Gabber auf eine 909 — muss sofort knallen
+
+### 2026-08-14 – Club rumble rewrite
+
+- [x] Kick / Warehouse: distort + dark reverb + duck
+- [x] Gabber: env-Drive auf den Mids + Sub-Bus
+- [x] 8×: Buffer auf 8× vorreserviert; Index erst in prepare
+- [ ] Manuell: Gabber-Kick, Sub/Dyn; 2×→8× ohne Knack
+
+### 2026-08-14 – 8x / gabber
+
+- [x] Gabber Drive: dynamic clip + sub
+- [x] OS bank never shrink; no audio-thread grow on 8×
+
+### 2026-08-14 – Explorer type + rust comments + sound line
+
+- [x] Preset-Ordner 16.5 pt / 30 px Zeile
+- [x] Formel-Kommentare rostrot (`comment()`), nicht Grün
+- [x] Jedes Factory-Skript: `# How it sounds:`
+
+### 2026-08-14 – IN scopes follow L/BOTH/R
+
+- [x] `pushInput` nach `InputRouter` (nicht mehr der rohe Host)
+- [x] Mix 0 bleibt ungeroutet
+- [x] Help: L/R → senkrechter Stereo-Strich
+
+### 2026-08-14 – Overlay follows editor resize
+
+- [x] `resized()` legt offene Overlays auf `getLocalBounds()` (schwarzer Scrim)
+- [x] Preset Explorer: Panel füllt das Fenster minus 24 px und wächst mit
+- [x] Andere Overlays: Scrim wächst, Panel bleibt am gesetzten Max
+
+### 2026-08-14 – Full identity NEUROKORE 0.9.0
+
+- [x] Plugin-Code `NRKO`, Bundle `com.NEUROKLAST.NeuroKore`, PLUGIN_ID `nrko01`
+- [x] AppData `NEUROKLAST/NeuroKore`, Datei `neurokore.lic`
+- [x] CMake: `NeuroKore` / `NeuroKoreTests` / `NeuroKoreIssuer`
+- [x] Version 0.9.0 (Tester-Stand, 1.0 ist Verkauf)
+- [x] Alte NeuroCore-.lic werden beim Import noch akzeptiert
+- [ ] Manuell: Lizenz neu importieren (neuer Ordner); DAW-Scan auf NEUROKORE / NRKO
+
+### 2026-08-14 – Club presets + explorer
+
+- [x] Glitch Laboratory: kein Ping-Pong, kein LFO-Filter, Note-Grid Delay
+- [x] +11 Club/Cyber: Neon Clip, Chrome Fold, Data Mosher, Kick/Warehouse Rumble, Hardcore, Gabber, Acid Hash, Tekno Comb, Industrial Gate, Hoover Dirt
+- [x] Preset-Explorer: Folder-Liste + All/Factory/User-Chips + Trefferzahl
+- [ ] Manuell: Club-Ordner, Kick Rumble auf eine 909, Fold weitet die Wave nicht (anderes Feature)
+
+### 2026-08-14 – IN/OUT stereo field + loudness
+
+- [x] ScopeDeck: Wave + Goniometer + L/R-Loudness, gleiche Zeilenhöhe
+- [x] Wave schmaler wenn Extras offen; `<<` / `>>` klappt Field+Loudness ein
+- [x] Stats aus WaveformCapture (kein Audio-Thread-Alloc)
+- [x] Help: Bottom-Zeile beschreibt Field / LU / Fold
+- [ ] Manuell: IN/OUT Field folgt Width-Presets; Fold weitet die Wave wieder
+
+### 2026-08-14 – Compact header + edge-cropped NK
+
+- [x] `resources/img/nk_logo.png` = `screenshots/NK Logo Red Bold.png` (1495×774, edge-cropped)
+- [x] Toolbar `0.09` → `0.045`, clamped 32–38 px (half of ~72 px)
+- [x] BrandLockup: logo 26 px, wordmark 11–15 / 9–11.5, tight inset
+- [x] Preset-Chip 28 pt → 15 pt
+- [ ] Manuell: NK sitzt in der Button-Zeile, HUD bleibt frei
 
 ### 2026-08-14 – DSL gate + dynamics plan
 
@@ -394,7 +491,7 @@
 - [x] `stagesButton` → `StagesContentComponent` (Signalkette-Übersicht)
 - [x] Factory-Presets tatsächlich im UI laden (nicht nur JSON-Datei)
 - [x] Licensing: Offline RSA-.lic + Issuer (kein Server in der Testphase)
-- [ ] Windows/macOS Installer
+- [x] Windows installer (Inno Setup) + zip; macOS .pkg still open
 - [ ] UI: Progressive Disclosure (Settings-Panel für Oversampling/Language)
 - [ ] UI: Immediate Feedback (Syntaxfehler inline-highlighting)
 - [ ] UI: 8pt-Grid konsequent anwenden
@@ -409,7 +506,7 @@
 - [x] `curl` aus `NeuroCoreTests` entfernt (Windows-Linking vermeiden)
 - [x] Windows-Buildskripte ergänzt: `build_debug.bat`, `build_release.bat`
 - [x] Windows-Buildskripte auf Ninja Multi-Config umgestellt (VS-Generator `juce::juceaide` Custom-Command-Bug umgangen)
-- [ ] Windows/macOS Installer
+- [x] Windows installer (Inno Setup) + zip; macOS .pkg still open
 - [x] NRK-Presetformat: DSCR-Chunk für rohes DSL-Skript ergänzen
 - [x] ExpressionEvaluator-Hotpath: Template-Block-Evaluierung + SIMD-Funktionspfade für sin/cos/tanh/exp/abs/clamp
 

@@ -49,11 +49,11 @@ Die folgenden Schritte installieren alle benötigten Komponenten:
    cmake --build build --config Release
    ```
    Diese Befehle laden JUCE (falls notwendig) und erstellen alle Artefakte im
-   Ordner `build/NeuroCore_artefacts`.
+   Ordner `build/NeuroKore_artefacts`.
 
 4. **Tests ausführen**
    ```bash
-   cmake --build build --target NeuroCoreTests
+   cmake --build build --target NeuroKoreTests
    ctest --test-dir build
    ```
    Sofern JUCE korrekt eingebunden ist, laufen alle Unit-Tests durch.

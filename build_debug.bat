@@ -81,8 +81,8 @@ if errorlevel 1 (
 
 REM Bauen
 echo.
-echo [2/2] Baue NeuroCore Debug...
-cmake --build "%BUILD_DIR%" --config Debug --target NeuroCore
+echo [2/2] Baue NEUROKORE Debug...
+cmake --build "%BUILD_DIR%" --config Debug --target NeuroKore
 if errorlevel 1 (
     echo FEHLER: Build fehlgeschlagen!
     pause
@@ -92,6 +92,6 @@ if errorlevel 1 (
 echo.
 echo ===========================================
 echo  Build erfolgreich!
-echo  VST3: %BUILD_DIR%\NeuroCore_artefacts\Debug\VST3\NeuroCore.vst3
+echo  VST3: %BUILD_DIR%\NeuroKore_artefacts\Debug\VST3\NEUROKORE.vst3
 echo ===========================================
 pause

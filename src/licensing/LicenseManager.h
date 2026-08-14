@@ -12,6 +12,7 @@ public:
     bool importLicenseFile (const juce::File& file);
     bool verifyLicense() const;
     juce::String licensedEmail() const;
+    juce::String licensedIssued() const;
     juce::String lastError() const { return lastErrorText; }
 
     static juce::File getLicenseFile();

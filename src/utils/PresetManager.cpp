@@ -6,7 +6,7 @@
 #include <cstring>
 
 #ifndef JucePlugin_Name
-#define JucePlugin_Name "NeuroCore"
+#define JucePlugin_Name "NEUROKORE"
 #endif
 #ifndef JucePlugin_Manufacturer
 #define JucePlugin_Manufacturer "NEUROKLAST"
@@ -276,7 +276,7 @@ std::vector<juce::File> PresetManager::getAvailablePresets(const juce::File& dir
     std::vector<juce::File> result;
     if (!dir.exists())
         return result;
-    juce::DirectoryIterator iter(dir, false, juce::String("*") + Config::kPresetFileExtension,
+    juce::DirectoryIterator iter(dir, true, juce::String("*") + Config::kPresetFileExtension,
                                  juce::File::TypesOfFileToFind::findFiles);
     while (iter.next())
         result.push_back(iter.getFile());

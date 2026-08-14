@@ -365,3 +365,11 @@ FodyWeavers.xsd
 
 # Isolated git worktrees (never commit checkout contents)
 .worktrees/
+
+# Agent / local scratch (never ship)
+build-test/
+mcps/
+terminals/
+docs/superpowers/
+*.afphoto
+build/package/

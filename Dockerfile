@@ -11,7 +11,7 @@ WORKDIR /app
 COPY . /app
 
 RUN cmake -B build -S . && \
-    cmake --build build --config Release --target NeuroCoreTests
+    cmake --build build --config Release --target NeuroKoreTests
 
 CMD ["bash"]
 

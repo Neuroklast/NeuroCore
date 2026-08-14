@@ -76,6 +76,25 @@ void ModalOverlay::setPreferredContentSize (int w, int h)
     resized();
 }
 
+juce::Rectangle<int> ModalOverlay::panelSizeFor (int hostW, int hostH,
+                                                 int prefW, int prefH) noexcept
+{
+    constexpr int kMargin = 24;
+    const int availW = juce::jmax (1, hostW - kMargin);
+    const int availH = juce::jmax (1, hostH - kMargin);
+    int pw = prefW > 0 ? juce::jmin (availW, prefW) : availW;
+    int ph = prefH > 0 ? juce::jmin (availH, prefH) : availH;
+    pw = juce::jmax (pw, juce::jmin (availW, 320));
+    ph = juce::jmax (ph, juce::jmin (availH, 240));
+    return { 0, 0, pw, ph };
+}
+
+void ModalOverlay::fitToParent()
+{
+    if (auto* p = getParentComponent())
+        setBounds (p->getLocalBounds());
+}
+
 void ModalOverlay::show (juce::Component& parent)
 {
     parent.addAndMakeVisible (this);
@@ -243,9 +262,8 @@ void ModalOverlay::paint (juce::Graphics& g)
 
 void ModalOverlay::applyClipLayout()
 {
-    const int pw = preferredW > 0 ? preferredW : juce::jmin (getWidth() - 48, (int) (getWidth() * 0.82f));
-    const int ph = preferredH > 0 ? preferredH : juce::jmin (getHeight() - 48, (int) (getHeight() * 0.78f));
-    targetPanel = getLocalBounds().withSizeKeepingCentre (pw, ph);
+    const auto sz = panelSizeFor (getWidth(), getHeight(), preferredW, preferredH);
+    targetPanel = getLocalBounds().withSizeKeepingCentre (sz.getWidth(), sz.getHeight());
     panel = revealBounds (targetPanel, clipType, sequence.clipProgress());
 
     auto area = panel.reduced (14, 12);

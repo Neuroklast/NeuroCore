@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "../core/Config.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <unordered_map>
 
@@ -54,7 +55,7 @@ private:
     {
         auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                        .getChildFile ("NEUROKLAST")
-                       .getChildFile ("NeuroCore");
+                       .getChildFile (Config::kAppDataFolder);
         dir.createDirectory();
         return dir.getChildFile ("preset_ratings.json");
     }

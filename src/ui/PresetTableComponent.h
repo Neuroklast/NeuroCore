@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <vector>
 #include "../core/PluginProcessor.h"
 #include "../core/Config.h"
 
@@ -37,6 +38,11 @@ public:
     juce::StringArray getTagsForRow (int row) const;
     int getRatingForRow (int row) const;
     juce::StringArray getAllCategories() const;
+    /** Category → count, honouring the current scope (not search / category). */
+    juce::StringArray getCategoryNames() const { return getAllCategories(); }
+    int countInScope (const juce::String& category) const; // empty = all in scope
+    int getFilteredCount() const { return filtered.size(); }
+    std::vector<juce::File> getVisibleUserFiles() const;
 
     juce::TableListBox& getTable() { return table; }
 

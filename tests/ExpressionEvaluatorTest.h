@@ -40,6 +40,8 @@ public:
             expectWithinAbsoluteError(eval.evaluate(2.0f), 0.5f, 2e-3f);
             expect (std::abs (eval.evaluate (2.0f)) <= 0.5f + 1e-4f);
             expect(std::abs(eval.evaluate(0.1f) - 0.1f) < 1e-5f); // pass-through below knee
+            // n=16: at the limit stay within ~5% (n=5 sat at ~13% and sounded soft)
+            expect (std::abs (eval.evaluate (0.5f) - 0.5f) < 0.03f);
             expect(eval.parseFormula("softclip(x, 2.0)"));
             expect(std::isfinite(eval.evaluate(0.5f)));
             expect(std::abs(eval.evaluate(10.0f)) <= 1.0f + 1e-3f); // peak-normed

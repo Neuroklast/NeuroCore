@@ -2238,8 +2238,9 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     channels = static_cast<int> (spec.numChannels);
     xPrev.assign(spec.numChannels, 0.0f);
     yPrev.assign(spec.numChannels, 0.0f);
-    cutoffSm.reset(sampleRate, Config::kSmoothingTime);
-    resSm.reset(sampleRate, Config::kSmoothingTime);
+    const double filtSm = modulated ? Config::kModSmoothingTime : Config::kSmoothingTime;
+    cutoffSm.reset(sampleRate, filtSm);
+    resSm.reset(sampleRate, filtSm);
     cutoffSm.setCurrentAndTargetValue(cutoff.evaluate(0.f));
     resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
     varNames.clear();
@@ -2452,9 +2453,10 @@ void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
     filtR.prepare (mono);
     filtL.reset();
     filtR.reset();
-    freqSm.reset (sampleRate, Config::kSmoothingTime);
-    qSm.reset (sampleRate, Config::kSmoothingTime);
-    gainSm.reset (sampleRate, Config::kSmoothingTime);
+    const double eqSm = modulated ? Config::kModSmoothingTime : Config::kSmoothingTime;
+    freqSm.reset (sampleRate, eqSm);
+    qSm.reset (sampleRate, eqSm);
+    gainSm.reset (sampleRate, eqSm);
     const float f0 = freq.evaluate (0.f);
     const float q0 = q.evaluate (0.f);
     const float g0 = gainDb.evaluate (0.f);
@@ -2795,31 +2797,36 @@ float SignalChain::getMaxTailTime() const noexcept
 
 namespace
 {
-/** 4-point Hermite fractional delay read — far less zipper/crackle than linear. */
-inline float hermiteRead (const std::vector<float>& buf, float pos, int N) noexcept
+/** 6-point Lagrange fractional delay — less imaging than 4-point Hermite. */
+inline float fracDelayRead (const std::vector<float>& buf, float pos, int N) noexcept
 {
-    if (N < 4 || buf.size() < (size_t) N)
+    if (N < 8 || buf.size() < (size_t) N)
         return 0.f;
-    // Wrap into [0, N)
     float p = std::fmod (pos, (float) N);
     if (p < 0.f)
         p += (float) N;
-    int i1 = (int) p;
-    if (i1 >= N) i1 = 0;
-    if (i1 < 0) i1 = 0;
-    const float f = p - (float) i1;
-    const int i0 = (i1 - 1 + N) % N;
-    const int i2 = (i1 + 1) % N;
-    const int i3 = (i1 + 2) % N;
-    const float y0 = buf[(size_t) i0];
-    const float y1 = buf[(size_t) i1];
-    const float y2 = buf[(size_t) i2];
-    const float y3 = buf[(size_t) i3];
-    const float c0 = y1;
-    const float c1 = 0.5f * (y2 - y0);
-    const float c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3;
-    const float c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
-    return ((c3 * f + c2) * f + c1) * f + c0;
+    int i0 = (int) p;
+    if (i0 >= N) i0 = 0;
+    if (i0 < 0) i0 = 0;
+    const float x = p - (float) i0;
+    auto at = [ &buf, N, i0 ] (int k) noexcept -> float
+    {
+        int i = i0 + k;
+        i %= N;
+        if (i < 0) i += N;
+        return buf[(size_t) i];
+    };
+    const float ym2 = at (-2), ym1 = at (-1), y0 = at (0);
+    const float y1  = at (1),  y2  = at (2),  y3 = at (3);
+    const float xm2 = x + 2.f, xm1 = x + 1.f, x0 = x;
+    const float x1  = x - 1.f, x2  = x - 2.f, x3 = x - 3.f;
+    const float l0 = (xm1 * x0 * x1 * x2 * x3) * (-1.f / 120.f);
+    const float l1 = (xm2 * x0 * x1 * x2 * x3) * (-1.f / 24.f);
+    const float l2 = (xm2 * xm1 * x1 * x2 * x3) * (-1.f / 12.f);
+    const float l3 = (xm2 * xm1 * x0 * x2 * x3) * ( 1.f / 12.f);
+    const float l4 = (xm2 * xm1 * x0 * x1 * x3) * (-1.f / 24.f);
+    const float l5 = (xm2 * xm1 * x0 * x1 * x2) * ( 1.f / 120.f);
+    return ym2 * l0 + ym1 * l1 + y0 * l2 + y1 * l3 + y2 * l4 + y3 * l5;
 }
 } // namespace
 
@@ -2830,7 +2837,7 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     bufL.assign ((size_t) maxDelaySamples, 0.f);
     bufR.assign ((size_t) maxDelaySamples, 0.f);
     writePos = 0;
-    dampStateL = dampStateR = 0.f;
+    dampStateL = dampStateR = dampStateL2 = dampStateR2 = 0.f;
     dcBlockL = dcBlockR = 0.f;
     lastDelaySamples = -1.f;
 
@@ -2860,7 +2867,7 @@ void SignalChain::Delay::clearRuntimeState() noexcept
     std::fill (bufL.begin(), bufL.end(), 0.f);
     std::fill (bufR.begin(), bufR.end(), 0.f);
     writePos = 0;
-    dampStateL = dampStateR = 0.f;
+    dampStateL = dampStateR = dampStateL2 = dampStateR2 = 0.f;
     dcBlockL = dcBlockR = 0.f;
     lastDelaySamples = -1.f;
 }
@@ -2938,7 +2945,7 @@ float SignalChain::Delay::process (int ch, float x)
 
     float readPos = (float) writePos - dSamps;
     auto& buf = (ch == 1 && ! bufR.empty()) ? bufR : bufL;
-    float delayed = hermiteRead (buf, readPos, maxDelaySamples);
+    float delayed = fracDelayRead (buf, readPos, maxDelaySamples);
     if (! std::isfinite (delayed))
         delayed = 0.f;
 
@@ -2947,8 +2954,10 @@ float SignalChain::Delay::process (int ch, float x)
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi
                                   * juce::jlimit (200.f, sampleRate * 0.45f, dampHzV) / sampleRate);
     float& dState = (ch == 1) ? dampStateR : dampStateL;
+    float& dState2 = (ch == 1) ? dampStateR2 : dampStateL2;
     dState = dampA * dState + (1.f - dampA) * delayed;
-    float w = x + dState * fb;
+    dState2 = dampA * dState2 + (1.f - dampA) * dState;
+    float w = x + dState2 * fb;
     if (! std::isfinite (w)) w = 0.f;
     else if (std::abs (w) > 1.5f) w = 1.5f * std::tanh (w / 1.5f);
     buf[(size_t) writePos] = w;
@@ -3031,8 +3040,8 @@ void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
 
         // Hermite fractional read (linear interp was a major crackle source on sync delays)
         float readPos = (float) writePos - dSamps;
-        float wetL = hermiteRead (bufL, readPos, maxDelaySamples);
-        float wetR = hermiteRead (bufR, readPos, maxDelaySamples);
+        float wetL = fracDelayRead (bufL, readPos, maxDelaySamples);
+        float wetR = fracDelayRead (bufR, readPos, maxDelaySamples);
         if (! std::isfinite (wetL)) wetL = 0.f;
         if (! std::isfinite (wetR)) wetR = 0.f;
 
@@ -3056,11 +3065,16 @@ void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
 
         dampStateL = dampA_ * dampStateL + (1.f - dampA_) * hpL;
         dampStateR = dampA_ * dampStateR + (1.f - dampA_) * hpR;
-        if (std::abs (dampStateL) < 1.0e-15f) dampStateL = 0.f;
-        if (std::abs (dampStateR) < 1.0e-15f) dampStateR = 0.f;
+        dampStateL2 = dampA_ * dampStateL2 + (1.f - dampA_) * dampStateL;
+        dampStateR2 = dampA_ * dampStateR2 + (1.f - dampA_) * dampStateR;
+        if (std::abs (dampStateL2) < 1.0e-15f) dampStateL2 = 0.f;
+        if (std::abs (dampStateR2) < 1.0e-15f) dampStateR2 = 0.f;
 
-        float wL = inL + dampStateL * fbk;
-        float wR = inR + dampStateR * fbk;
+        const float xfeed = 0.08f;
+        const float fbL = dampStateL2 * (1.f - xfeed) + dampStateR2 * xfeed;
+        const float fbR = dampStateR2 * (1.f - xfeed) + dampStateL2 * xfeed;
+        float wL = inL + fbL * fbk;
+        float wR = inR + fbR * fbk;
         if (! std::isfinite (wL)) wL = 0.f;
         if (! std::isfinite (wR)) wR = 0.f;
         if (std::abs (wL) > 1.5f) wL = 1.5f * std::tanh (wL / 1.5f);
@@ -3112,7 +3126,7 @@ void SignalChain::Reverb::allocateMaxBuffers() noexcept
 {
     // Freeverb base @ 44.1 kHz; allocate for max size scale at current SR
     static constexpr int combBase[kNumCombs] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225 };
+    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225, 186, 155 };
     static constexpr int stereoSpread = 23;
     const float srScale = sampleRate / 44100.0f;
     const float maxSizeScale = 1.15f;
@@ -3137,7 +3151,7 @@ void SignalChain::Reverb::applySize (float size01) noexcept
 {
     // Only change delay *lengths* — never clear rings (that was a hard click).
     static constexpr int combBase[kNumCombs] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225 };
+    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225, 186, 155 };
     static constexpr int stereoSpread = 23;
     const float srScale = sampleRate / 44100.0f;
     const float sizeScale = juce::jmap (juce::jlimit (0.05f, 1.0f, size01), 0.05f, 1.0f, 0.50f, 1.15f);
@@ -3282,14 +3296,14 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float inL = L[i];
         const float inR = R != nullptr ? R[i] : inL;
-        // Mono sum into combs (classic Freeverb input)
-        const float input = (inL + inR) * 0.5f;
+        const float inCrossL = inL * 0.92f + inR * 0.08f;
+        const float inCrossR = inR * 0.92f + inL * 0.08f;
 
         float outL = 0.f, outR = 0.f;
         for (int c = 0; c < kNumCombs; ++c)
         {
-            outL += combL[(size_t) c].process (input, feedback, dampAmt);
-            outR += combR[(size_t) c].process (input, feedback, dampAmt);
+            outL += combL[(size_t) c].process (inCrossL, feedback, dampAmt);
+            outR += combR[(size_t) c].process (inCrossR, feedback, dampAmt);
         }
         outL *= (1.0f / (float) kNumCombs);
         outR *= (1.0f / (float) kNumCombs);
@@ -3636,25 +3650,33 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     const float atk = 1.f - std::exp (-1.f / (0.008f * sampleRate));
     const float rel = 1.f - std::exp (-1.f / (0.055f * sampleRate));
     const float makeup = 2.4f / std::sqrt ((float) nb);
+    const bool scAvail = (scL != nullptr && scN > 0);
+    const int useCh = juce::jmin (nCh, 2);
+    float* dst[2] {};
+    for (int c = 0; c < useCh; ++c)
+        dst[c] = buffer.getWritePointer (c);
+
+    const float q0 = qSm.getNextValue();
+    const float form0 = formSm.getNextValue();
+    if (std::abs (q0 - lastQ) > 0.08f || std::abs (form0 - lastForm) > 0.02f)
+        applyBands (q0, form0);
+    if (n > 1)
+    {
+        qSm.skip (n - 1);
+        formSm.skip (n - 1);
+    }
 
     for (int i = 0; i < n; ++i)
     {
         const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
-        const float qv  = qSm.getNextValue();
-        const float form = formSm.getNextValue();
         const float dry = juce::jlimit (0.f, 1.f, drySm.getNextValue());
-        if ((coeffPhase++ & 15) == 0 || std::abs (qv - lastQ) > 0.08f
-            || std::abs (form - lastForm) > 0.02f)
-            applyBands (qv, form);
+        const int si = scAvail ? juce::jlimit (0, scN - 1, i) : 0;
 
-        const float scAvail = (scL != nullptr && scN > 0) ? 1.f : 0.f;
-        const int si = (scN > 0) ? juce::jlimit (0, scN - 1, i) : 0;
-
-        for (int c = 0; c < nCh; ++c)
+        for (int c = 0; c < useCh; ++c)
         {
-            const float car = buffer.getSample (c, i);
+            const float car = dst[c][i];
             float mod = car;
-            if (scAvail > 0.f)
+            if (scAvail)
             {
                 const float* src = (c != 0 && scR != nullptr) ? scR : scL;
                 mod = src[si];
@@ -3679,7 +3701,7 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
             float y = car * dry + sum * mix * makeup;
             if (! std::isfinite (y))
                 y = car * dry;
-            buffer.setSample (c, i, y);
+            dst[c][i] = y;
         }
     }
 }

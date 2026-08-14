@@ -285,10 +285,10 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
 
     searchLabel.setText ("Search", juce::dontSendNotification);
     searchLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
     addAndMakeVisible (searchLabel);
 
-    search.setFont (NeuroCoreLookAndFeel::monoFont (14.5f));
+    search.setFont (NeuroCoreLookAndFeel::monoFont (17.5f));
     search.setTextToShowWhenEmpty ("Filter chapters and text...",
                                    NeuroCoreLookAndFeel::mutedText());
     search.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
@@ -298,7 +298,7 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     addAndMakeVisible (search);
 
     chapterList.setModel (this);
-    chapterList.setRowHeight (28);
+    chapterList.setRowHeight (36);
     chapterList.setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
     chapterList.setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
     addAndMakeVisible (chapterList);
@@ -307,7 +307,7 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     body.setReadOnly (true);
     body.setScrollbarsShown (true);
     body.setCaretVisible (false);
-    body.setIndents (12, 10);
+    body.setIndents (16, 12);
     const auto helpFont = NeuroCoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
     body.setFont (helpFont);
     body.applyFontToAllText (helpFont);

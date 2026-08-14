@@ -196,6 +196,7 @@ public:
     bool          isDemoMixLocked() const noexcept;
     int           demoSecondsRemaining() const noexcept;
     juce::String  licensedEmail() const { return licenseManager.licensedEmail(); }
+    juce::String  licensedIssued() const { return licenseManager.licensedIssued(); }
     juce::String  licenseError() const { return licenseManager.lastError(); }
     bool          importProductLicense (const juce::File& file);
 

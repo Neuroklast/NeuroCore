@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" jucerFormatVersion="1"
-              version="0.0.1" companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
+<JUCERPROJECT id="wui1EH" name="NEUROKORE" projectType="audioplug" jucerFormatVersion="1"
+              version="0.9.0" companyName="Neuroklast" companyWebsite="https://neuroklast.net"
               companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3,buildAU"
-              pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginVST3Category="Fx"
+              pluginManufacturerCode="NRKL" pluginCode="NRKO" pluginVST3Category="Fx"
               pluginAUMainType="aumf" pluginAUIsSandboxSafe="1" pluginWantsMidiIn="1"
               pluginEditorRequiresKeys="1" cppLanguageStandard="20">
   <MAINGROUP id="GyblaO" name="NeuroCore">

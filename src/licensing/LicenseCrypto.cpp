@@ -86,9 +86,9 @@ bool LicenseCrypto::parse (const juce::String& text,
     payload = {};
     sigHex.clear();
 
-    if (! text.contains (kHeaderLine))
+    if (! text.contains (kHeaderLine) && ! text.contains (kLegacyHeaderLine))
     {
-        error = "Not a NeuroCore license file";
+        error = "Not a NEUROKORE license file";
         return false;
     }
 
@@ -120,9 +120,9 @@ bool LicenseCrypto::parse (const juce::String& text,
         error = "Unsupported license version";
         return false;
     }
-    if (payload.product != kProductName)
+    if (! isAcceptedProduct (payload.product))
     {
-        error = "License is not for NeuroCore";
+        error = "License is not for NEUROKORE";
         return false;
     }
     if (! looksLikeEmail (payload.email))

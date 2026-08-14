@@ -5,6 +5,7 @@
 #include "../src/core/EffectParameters.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/utils/PresetManager.h"
+#include "../src/utils/PresetLibrary.h"
 #include <JuceHeader.h>
 #include <cstring>
 
@@ -113,6 +114,74 @@ public:
       expectEquals(proc3.getScript(), dscrOverride);
     }
 
+    beginTest ("pack import installs a folder of nrk files");
+    {
+      TestProcessor proc;
+      PresetManager mgr (proc);
+      juce::String err;
+      expect (proc.setFormula ("stage1: y = x", err));
+      auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                      .getChildFile ("nc-pack-src-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+      auto dest = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                      .getChildFile ("nc-pack-dst-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+      work.deleteRecursively();
+      dest.deleteRecursively();
+      work.createDirectory();
+      expect (mgr.savePreset (work.getChildFile ("A.nrk"), "A", "Zardonic", "Bass"));
+      expect (mgr.savePreset (work.getChildFile ("B.nrk"), "B", "Zardonic", "Bass"));
+      work.getChildFile ("pack.json").replaceWithText ("{ \"name\": \"Zardonic Metal Bass\" }");
+
+      const auto r = PresetLibrary::importPathsInto ({ work.getFullPathName() }, dest);
+      expectEquals (r.imported, 2);
+      expectEquals (r.packName, juce::String ("Zardonic Metal Bass"));
+      expect (dest.getChildFile ("Packs").getChildFile ("Zardonic Metal Bass")
+                  .getChildFile ("A.nrk").existsAsFile());
+      expect (dest.getChildFile ("Packs").getChildFile ("Zardonic Metal Bass")
+                  .getChildFile ("B.nrk").existsAsFile());
+
+      const auto zip = dest.getChildFile ("out.zip");
+      std::vector<juce::File> files {
+          dest.getChildFile ("Packs").getChildFile ("Zardonic Metal Bass").getChildFile ("A.nrk"),
+          dest.getChildFile ("Packs").getChildFile ("Zardonic Metal Bass").getChildFile ("B.nrk")
+      };
+      expect (PresetLibrary::exportPack (files, zip, "Zardonic Metal Bass", "Zardonic"));
+      expect (zip.existsAsFile());
+
+      auto dest2 = dest.getChildFile ("roundtrip");
+      dest2.createDirectory();
+      const auto r2 = PresetLibrary::importPathsInto ({ zip.getFullPathName() }, dest2);
+      expectEquals (r2.imported, 2);
+      expect (r2.packName.containsIgnoreCase ("Zardonic"));
+
+      work.deleteRecursively();
+      dest.deleteRecursively();
+    }
+
+    beginTest ("single nrk import stays in the library root");
+    {
+      TestProcessor proc;
+      PresetManager mgr (proc);
+      juce::String err;
+      expect (proc.setFormula ("stage1: y = x", err));
+      auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                      .getChildFile ("nc-one-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+      work.deleteRecursively();
+      work.createDirectory();
+      const auto src = work.getChildFile ("Solo.nrk");
+      expect (mgr.savePreset (src, "Solo"));
+      const auto r = PresetLibrary::importPathsInto ({ src.getFullPathName() }, work.getChildFile ("lib"));
+      expectEquals (r.imported, 1);
+      expect (r.packName.isEmpty());
+      expect (work.getChildFile ("lib").getChildFile ("Solo.nrk").existsAsFile());
+      work.deleteRecursively();
+    }
+
+    beginTest ("sanitize pack names drop path characters");
+    {
+      expectEquals (PresetLibrary::sanitizePackName ("Zardonic / Metal"),
+                    juce::String ("Zardonic Metal"));
+      expectEquals (PresetLibrary::sanitizePackName ("   "), juce::String ("Pack"));
+    }
   }
 };
 

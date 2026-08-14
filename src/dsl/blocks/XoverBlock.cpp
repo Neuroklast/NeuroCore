@@ -90,14 +90,13 @@ void SignalChain::Xover::processBlock (juce::AudioBuffer<float>& buffer)
     f2Sm.setTargetValue (ev (f2Hz, 2500.f));
     const float f1 = f1Sm.getNextValue();
     const float f2 = f2Sm.getNextValue();
+    if (nS > 1)
+    {
+        f1Sm.skip (nS - 1);
+        f2Sm.skip (nS - 1);
+    }
     if (std::abs (f1 - lastF1) > 0.8f || std::abs (f2 - lastF2) > 0.8f)
         applyCoeffs (f1, f2);
-
-    for (int i = 1; i < nS; ++i)
-    {
-        f1Sm.getNextValue();
-        f2Sm.getNextValue();
-    }
 
     const int useCh = juce::jmin (nCh, 2);
     for (int c = 0; c < useCh; ++c)

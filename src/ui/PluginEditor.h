@@ -18,6 +18,7 @@
 #include "../utils/FormulaHelper.h"
 #include "FormulaDisplayComponent.h"
 #include "WaveformDisplayComponent.h"
+#include "ScopeDeck.h"
 #include "DslTerminalEditor.h"
 #include "LoudnessMeterComponent.h"
 #include "custom/ParameterComponent.h"
@@ -84,6 +85,7 @@ private:
     void paintHudChrome (juce::Graphics& g);
     void applyOverlayMotion (ModalOverlay& overlay);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
+    void layoutOpenOverlays();
     void syncGlCover();
     juce::Rectangle<int> chromeBounds() const;
     void startWindowAssemble();
@@ -172,17 +174,22 @@ private:
         }
     };
     LogoGlitchListener logoGlitch;
-    std::unique_ptr<WaveformDisplayComponent> inputDisplay;
-    std::unique_ptr<WaveformDisplayComponent> outputDisplay;
+    std::unique_ptr<ScopeDeck>                inputDisplay;
+    std::unique_ptr<ScopeDeck>                outputDisplay;
     std::unique_ptr<LoudnessMeterComponent>   loudnessMeter;
     std::unique_ptr<ModalOverlay>            presetOverlay;
     std::unique_ptr<ModalOverlay>            functionsOverlay;
     std::unique_ptr<ModalOverlay>            stagesOverlay;
     std::unique_ptr<ModalOverlay>            validationOverlay;
     std::unique_ptr<ModalOverlay>            irOverlay;
+    std::unique_ptr<ModalOverlay>            licenseOverlay;
 
     void showIrOverlay (const juce::String& slot);
     void hideIrOverlay();
+    void promptImportLicense();
+    void showLicenseInfoOverlay();
+    void hideLicenseOverlay();
+    void refreshLicenseButton();
 
     void showPresetOverlay();
     void hidePresetOverlay();

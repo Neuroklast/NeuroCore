@@ -36,7 +36,7 @@ PresetTableComponent::PresetTableComponent (NeuroCoreAudioProcessor& proc)
     table.getHeader().addColumn ("Author",   4, 90, 50, 200, juce::TableHeaderComponent::defaultFlags);
     table.getHeader().addColumn ("Rating",   5, 86, 70, 120, juce::TableHeaderComponent::defaultFlags);
     table.setMultipleSelectionEnabled (false);
-    table.setRowHeight (26);
+    table.setRowHeight (28);
     sortColumn = 1;
     sortForwards = true;
     refresh();
@@ -279,6 +279,30 @@ juce::StringArray PresetTableComponent::getAllCategories() const
             cats.addIfNotAlreadyThere (e.category);
     cats.sort (true);
     return cats;
+}
+
+int PresetTableComponent::countInScope (const juce::String& category) const
+{
+    int n = 0;
+    for (const auto& e : allEntries)
+    {
+        if (scope == Scope::Factory && ! e.isFactory) continue;
+        if (scope == Scope::User && e.isFactory) continue;
+        if (category.isNotEmpty() && ! e.category.equalsIgnoreCase (category))
+            continue;
+        ++n;
+    }
+    return n;
+}
+
+std::vector<juce::File> PresetTableComponent::getVisibleUserFiles() const
+{
+    std::vector<juce::File> files;
+    for (int r = 0; r < filtered.size(); ++r)
+        if (const auto* e = entryAt (r))
+            if (! e->isFactory && e->file.existsAsFile())
+                files.push_back (e->file);
+    return files;
 }
 
 int PresetTableComponent::getNumRows()

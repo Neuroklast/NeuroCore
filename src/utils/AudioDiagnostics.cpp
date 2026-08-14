@@ -65,7 +65,7 @@ void AudioDiagnostics::ensureLogReady()
 
     auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                    .getChildFile ("NEUROKLAST")
-                   .getChildFile ("NeuroCore");
+                   .getChildFile (Config::kAppDataFolder);
     if (! dir.exists())
         dir.createDirectory();
 

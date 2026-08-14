@@ -50,12 +50,12 @@ inline float finiteOrZero (float v) noexcept
 }
 
 /**
-    Hard ceiling at ±L without brickwall HF (was: piecewise knee → alias/crackle).
+    Hard ceiling at ±L without a kink (was: piecewise knee → alias/crackle).
 
-    Smooth algebraic clip: y = L * t / (1+|t|^n)^(1/n), n≈5
+    Smooth algebraic clip: y = L * t / (1+|t|^n)^(1/n)
       - C∞, true asymptote ±L
       - near-linear for |x| << L
-      - no kink → far less alias than smootherstep brick
+      - n=24: at |x|=L output is ~97% of L (tight ceiling, still C∞)
 */
 inline float hardClipSoftKnee (float x, float limit) noexcept
 {
@@ -64,8 +64,7 @@ inline float hardClipSoftKnee (float x, float limit) noexcept
     const float L = juce::jmax (1.0e-6f, std::abs (limit));
     const float t = x / L;
     const float absT = std::abs (t);
-    // n=5: fairly hard knee, still smooth. Lower n = softer.
-    constexpr float n = 5.0f;
+    constexpr float n = 24.0f;
     // (1 + |t|^n)^(1/n)
     const float den = std::pow (1.0f + std::pow (absT, n), 1.0f / n);
     if (! std::isfinite (den) || den < 1.0e-12f)

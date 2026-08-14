@@ -28,6 +28,8 @@
 #include "../dsp/SignalPolisher.h"
 #include "../dsp/OutputSanitizer.h"
 #include "../dsp/LatencyAlignedSidechain.h"
+
+class WaveformCapture;
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../dsl/SignalChain.h"
@@ -97,6 +99,9 @@ public:
     AudioDiagnostics& getDiagnostics() noexcept { return diagnostics; }
     const AudioDiagnostics& getDiagnostics() const noexcept { return diagnostics; }
 
+    /** IN scopes tap here (after L/BOTH/R, before gain / formula). */
+    void setInputWaveformTap (class WaveformCapture* tap) noexcept { inputWaveTap = tap; }
+
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
     SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
@@ -111,6 +116,7 @@ private:
     // ProcessorChain: [0] InputGain, [1] SignalPolisher
     juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
     InputRouter inputRouter;
+    WaveformCapture* inputWaveTap { nullptr };
 
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                    juce::dsp::IIR::Coefficients<float>> lowpassFilter;
@@ -144,6 +150,8 @@ private:
     int osLatencySamples { 0 };
     juce::uint32 lastOsBankBlock { 0 };
     juce::uint32 lastOsBankCh { 0 };
+    bool preparedOnce { false };
+    static constexpr int kMaxOsFactor = 8;
 
     /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
     juce::SmoothedValue<float> switchRamp;

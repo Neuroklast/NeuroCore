@@ -4,6 +4,7 @@
 */
 
 #include "DspEngine.h"
+#include "WaveformCapture.h"
 #include "../dsp/DSPUtils.h"
 #include "../utils/Log.h"
 
@@ -35,8 +36,12 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
 
     oversamplingIndex.store(oversamplingStages);
 
+    // Never init OS smaller than 1024, never shrink the bank — 8× first
+    // callback after a tiny prepare used to alloc / overflow.
+    const juce::uint32 osHostBlock = juce::jmax (currentSpec.maximumBlockSize,
+                                                 (juce::uint32) 1024);
     const bool bankStale = osBank[1] == nullptr
-        || lastOsBankBlock != currentSpec.maximumBlockSize
+        || lastOsBankBlock < osHostBlock
         || lastOsBankCh != currentSpec.numChannels;
     if (bankStale)
     {
@@ -48,10 +53,10 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
                 juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple,
                 true,
                 true);
-            osBank[stages]->initProcessing (currentSpec.maximumBlockSize);
+            osBank[stages]->initProcessing (osHostBlock);
             osBank[stages]->reset();
         }
-        lastOsBankBlock = currentSpec.maximumBlockSize;
+        lastOsBankBlock = osHostBlock;
         lastOsBankCh = currentSpec.numChannels;
     }
 
@@ -69,18 +74,17 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     // Always set the logical size (capacity may stay large). Growing-only left
     // getNumSamples() at the 8× length after 8×→4×, so the DSL processed a
     // silent extra half-block every callback — regular glitches.
-    dryBuffer.setSize((int)currentSpec.numChannels,
-                      (int)currentSpec.maximumBlockSize,
-                      false, true, true);
+    const int maxOsN = (int) osHostBlock * kMaxOsFactor;
+    dryBuffer.setSize ((int) currentSpec.numChannels,
+                       (int) currentSpec.maximumBlockSize,
+                       false, true, true);
     dryBuffer.clear();
+    scriptBuffer.setSize ((int) currentSpec.numChannels, maxOsN, false, true, true);
+    scOsBuffer.setSize (2, maxOsN, false, false, true);
     drySidechain.prepare ((int) currentSpec.numChannels,
                           (int) currentSpec.maximumBlockSize,
                           osLatencySamples);
     drySidechain.reset();
-
-    const int scriptSamples = (int)(currentSpec.maximumBlockSize * osFactor);
-    scriptBuffer.setSize((int)currentSpec.numChannels, scriptSamples, false, true, true);
-    scriptBuffer.clear();
 
     outputGain.prepare(currentSpec);
     outputGain.setGainLinear(1.0f);
@@ -104,7 +108,7 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     inputRouter.prepare(currentSpec);
 
     juce::dsp::ProcessSpec osSpec{ currentSpec.sampleRate * osFactor,
-                                   currentSpec.maximumBlockSize * (juce::uint32)osFactor,
+                                   osHostBlock * (juce::uint32) osFactor,
                                    currentSpec.numChannels };
     chain.prepare(osSpec);
 
@@ -129,7 +133,11 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     diagLastOut.fill (0.0f);
 
     diagnostics.setEnabled (Config::kAudioDiagnosticsEnabled);
-    diagnostics.ensureLogReady();
+    if (! preparedOnce)
+    {
+        diagnostics.ensureLogReady();
+        preparedOnce = true;
+    }
 
     switchRamp.reset(currentSpec.sampleRate, Config::kSwitchRampTime);
     switchRamp.setCurrentAndTargetValue(0.f);
@@ -269,6 +277,8 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         buffer.clear(i, 0, buffer.getNumSamples());
 
     inputRouter.processBlock(buffer);
+    if (inputWaveTap != nullptr)
+        inputWaveTap->pushInput (buffer);
 
     // Input Gain BEFORE dry split
     chain.get<0>().processBlock(buffer);
@@ -420,7 +430,8 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     {
         if (hostScN > 0 && hostScL != nullptr)
         {
-            scOsBuffer.setSize (2, osN, false, false, true);
+            if (scOsBuffer.getNumSamples() < osN)
+                scOsBuffer.setSize (2, osN, false, false, true);
             const int hn = hostScN;
             for (int i = 0; i < osN; ++i)
             {
@@ -494,6 +505,9 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     juce::dsp::ProcessContextReplacing<float> ctxPolish(upBlock);
     chain.get<1>().process(ctxPolish);
 
+    // FIR half-band already anti-aliases on the way down. An extra IIR on
+    // top smears the click. Keep the gentle LPF only when OS is off.
+    if (oversampler == nullptr)
     {
         juce::dsp::ProcessContextReplacing<float> ctxFilter(upBlock);
         lowpassFilter.process(ctxFilter);

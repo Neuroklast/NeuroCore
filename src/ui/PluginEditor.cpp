@@ -28,6 +28,7 @@
 #include "FunctionsContentComponent.h"
 #include "StagesContentComponent.h"
 #include "HelpContentComponent.h"
+#include "LicenseInfoComponent.h"
 #include "StandaloneAudioSettings.h"
 #include "../utils/FormulaQuality.h"
 #include "fx/CyberFxTypes.h"
@@ -50,8 +51,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
 
     brandLockup = std::make_unique<BrandLockup> (
         lookAndFeel.getNkLogo(),
-        juce::String (PLUGIN_NAME),
-        juce::String ("v") + PLUGIN_VERSION);
+        juce::String (Config::kProductName),
+        juce::String (Config::kBrandByline) + "  v" + PLUGIN_VERSION);
     logoGlitch.director = &cyberDirector;
     brandLockup->addMouseListener (&logoGlitch, false);
     addAndMakeVisible (*brandLockup);
@@ -105,35 +106,15 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     addAndMakeVisible(*helpButton);
 
     licenseButton = std::make_unique<juce::TextButton> ("License");
-    licenseButton->setTooltip ("Import a signed .lic file");
     licenseButton->onClick = [this]
     {
-        auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
-        licenseChooser = std::make_unique<juce::FileChooser> (
-            "Import NeuroCore license", start, "*.lic");
-        constexpr int flags = juce::FileBrowserComponent::openMode
-                            | juce::FileBrowserComponent::canSelectFiles;
-        licenseChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
-        {
-            const auto src = fc.getResult();
-            if (! src.existsAsFile())
-                return;
-            if (audioProcessor.importProductLicense (src))
-            {
-                if (errorLabel != nullptr)
-                    errorLabel->setText ("Licensed: " + audioProcessor.licensedEmail(),
-                                         juce::dontSendNotification);
-            }
-            else if (errorLabel != nullptr)
-            {
-                auto msg = audioProcessor.licenseError();
-                if (msg.isEmpty())
-                    msg = "License file was rejected.";
-                errorLabel->setText (msg, juce::dontSendNotification);
-            }
-        });
+        if (audioProcessor.isProductLicensed())
+            showLicenseInfoOverlay();
+        else
+            promptImportLicense();
     };
     addAndMakeVisible (*licenseButton);
+    refreshLicenseButton();
 
     editorFontLabel = std::make_unique<juce::Label> ("", "Text");
     editorFontLabel->setMinimumHorizontalScale (1.0f);
@@ -436,15 +417,8 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     errorLabel->setFont (NeuroCoreLookAndFeel::monoFont (12.f));
     addAndMakeVisible(*errorLabel);
 
-    inputDisplay  = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Input);
-    outputDisplay = std::make_unique<WaveformDisplayComponent>(audioProcessor, WaveformDisplayComponent::Type::Output);
-    // Signal path: dimmer red for input, full brand red for processed output
-    inputDisplay->lineColour  = NeuroCoreLookAndFeel::accent().withAlpha (0.85f);
-    outputDisplay->lineColour = NeuroCoreLookAndFeel::accent();
-    inputDisplay->lineThickness  = 1.4f;
-    outputDisplay->lineThickness = 1.6f;
-    inputDisplay->setOpaque (true);
-    outputDisplay->setOpaque (true);
+    inputDisplay  = std::make_unique<ScopeDeck>(audioProcessor, WaveformDisplayComponent::Type::Input);
+    outputDisplay = std::make_unique<ScopeDeck>(audioProcessor, WaveformDisplayComponent::Type::Output);
     addAndMakeVisible(*inputDisplay);
     addAndMakeVisible(*outputDisplay);
 
@@ -459,9 +433,11 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     layoutRoot->innerMargin = pad;
     layoutRoot->drawBorder = false;
 
-    auto toolbar = makeRow(0.07f);
+    auto toolbar = makeRow(Config::kToolbarRowWeight);
     toolbar->innerMargin = pad;
-    toolbar->addChild(makeLeaf(brandLockup.get(), 1.85f));
+    toolbar->minHeight = Config::kToolbarRowMinHeight;
+    toolbar->maxHeight = Config::kToolbarRowMaxHeight;
+    toolbar->addChild(makeLeaf(brandLockup.get(), 2.15f));
     toolbar->addChild(makeLeaf(presetsButton.get(), 0.9f));
     // Current preset chip next to Presets — high visibility
     toolbar->addChild(makeLeaf(currentPresetLabel.get(), 2.4f));
@@ -603,6 +579,8 @@ NeuroCoreAudioProcessorEditor::~NeuroCoreAudioProcessorEditor()
     functionsOverlay.reset();
     stagesOverlay.reset();
     validationOverlay.reset();
+    irOverlay.reset();
+    licenseOverlay.reset();
     audioProcessor.removeChangeListener(this);
     Localiser::getInstance().removeListener(this);
     setLookAndFeel (nullptr);
@@ -715,7 +693,7 @@ void NeuroCoreAudioProcessorEditor::timerCallback()
         mixSlider->tick (1.f / 30.f);
     applyBypassMixLock();
 
-#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+#if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
     if (Config::kEnableLicensing && audioProcessor.isDemoMixLocked())
         if (auto* dry = audioProcessor.apvts.getParameter (EffectParameters::dryWet))
             if (dry->getValue() > 0.f)
@@ -959,6 +937,7 @@ void NeuroCoreAudioProcessorEditor::syncFromProcessor()
     if (errorLabel)
         errorLabel->setText({}, juce::dontSendNotification);
 
+    refreshLicenseButton();
     updateStatusBar();
     repaint();
 }
@@ -1019,8 +998,7 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
         polisherLabel->setText(TRANS("PolisherLabel"), juce::dontSendNotification);
     if (helpButton)
         helpButton->setButtonText(TRANS("HelpButton"));
-    if (licenseButton)
-        licenseButton->setButtonText ("License");
+    refreshLicenseButton();
     if (oversamplingLabel)
         oversamplingLabel->setText(TRANS("OversamplingLabel"), juce::dontSendNotification);
 }
@@ -1109,6 +1087,21 @@ void NeuroCoreAudioProcessorEditor::dismissOverlayNow (std::unique_ptr<ModalOver
     overlay->skipToEnd();
     overlay.reset();
     syncGlCover();
+}
+
+void NeuroCoreAudioProcessorEditor::layoutOpenOverlays()
+{
+    auto fit = [] (std::unique_ptr<ModalOverlay>& o)
+    {
+        if (o != nullptr && o->isShowing())
+            o->fitToParent();
+    };
+    fit (presetOverlay);
+    fit (functionsOverlay);
+    fit (stagesOverlay);
+    fit (validationOverlay);
+    fit (irOverlay);
+    fit (licenseOverlay);
 }
 
 void NeuroCoreAudioProcessorEditor::syncGlCover()
@@ -1237,6 +1230,8 @@ void NeuroCoreAudioProcessorEditor::resized()
     if (formulaInputEditor && formulaLiveDisplay)
         formulaInputEditor->setBounds(formulaLiveDisplay->getBounds());
 
+    layoutOpenOverlays();
+
     if (statusBarLabel)
     {
         statusBarLabel->setFont (NeuroCoreLookAndFeel::monoFont (11.f));
@@ -1321,8 +1316,7 @@ void NeuroCoreAudioProcessorEditor::showPresetOverlay()
     presetOverlay = std::make_unique<ModalOverlay>();
     presetOverlay->setMode(OverlayMode::Closable);
     presetOverlay->setTitle ("Preset Explorer");
-    presetOverlay->setPreferredContentSize (juce::jmin (getWidth() - 24, 1100),
-                                            juce::jmin (getHeight() - 24, 700));
+    presetOverlay->setPreferredContentSize (0, 0);
     presetOverlay->setContent(std::move(content));
     applyOverlayMotion (*presetOverlay);
     presetOverlay->show(*this);
@@ -1460,6 +1454,92 @@ void NeuroCoreAudioProcessorEditor::hideIrOverlay()
 {
     if (irOverlay)
         irOverlay->requestClose();
+}
+
+void NeuroCoreAudioProcessorEditor::refreshLicenseButton()
+{
+    if (licenseButton == nullptr)
+        return;
+    licenseButton->setButtonText ("License");
+    if (audioProcessor.isProductLicensed())
+    {
+        const auto who = audioProcessor.licensedEmail();
+        licenseButton->setTooltip (who.isNotEmpty()
+            ? ("Licensed to " + who)
+            : "Licensed — click for details");
+    }
+    else
+    {
+        licenseButton->setTooltip ("Import a signed .lic file");
+    }
+}
+
+void NeuroCoreAudioProcessorEditor::promptImportLicense()
+{
+    auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+    licenseChooser = std::make_unique<juce::FileChooser> (
+        "Import NeuroCore license", start, "*.lic");
+    constexpr int flags = juce::FileBrowserComponent::openMode
+                        | juce::FileBrowserComponent::canSelectFiles;
+    licenseChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
+    {
+        const auto src = fc.getResult();
+        if (! src.existsAsFile())
+            return;
+        if (audioProcessor.importProductLicense (src))
+        {
+            refreshLicenseButton();
+            if (errorLabel != nullptr)
+                errorLabel->setText ("Licensed: " + audioProcessor.licensedEmail(),
+                                     juce::dontSendNotification);
+        }
+        else if (errorLabel != nullptr)
+        {
+            auto msg = audioProcessor.licenseError();
+            if (msg.isEmpty())
+                msg = "License file was rejected.";
+            errorLabel->setText (msg, juce::dontSendNotification);
+        }
+    });
+}
+
+void NeuroCoreAudioProcessorEditor::showLicenseInfoOverlay()
+{
+    dismissOverlayNow (licenseOverlay);
+    auto content = std::make_unique<LicenseInfoComponent> (
+        audioProcessor.licensedEmail(), audioProcessor.licensedIssued());
+    auto* ptr = content.get();
+    licenseOverlay = std::make_unique<ModalOverlay>();
+    licenseOverlay->setMode (OverlayMode::Closable);
+    licenseOverlay->setTitle ("License");
+    licenseOverlay->setPreferredContentSize (juce::jmin (getWidth() - 40, 520),
+                                             juce::jmin (getHeight() - 40, 260));
+    licenseOverlay->setContent (std::move (content));
+    applyOverlayMotion (*licenseOverlay);
+    licenseOverlay->show (*this);
+    syncGlCover();
+    ptr->onClose = [this]
+    {
+        licenseOverlay.reset();
+        syncGlCover();
+    };
+    ptr->onReplace = [this]
+    {
+        licenseOverlay.reset();
+        syncGlCover();
+        promptImportLicense();
+    };
+    licenseOverlay->onClose = [this]
+    {
+        licenseOverlay.reset();
+        syncGlCover();
+    };
+}
+
+void NeuroCoreAudioProcessorEditor::hideLicenseOverlay()
+{
+    if (licenseOverlay)
+        licenseOverlay->requestClose();
 }
 
 void NeuroCoreAudioProcessorEditor::hideStagesOverlay()

@@ -20,6 +20,7 @@
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
+#include "FactoryLoudnessTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -53,6 +54,7 @@ int main (int argc, char* argv[])
   EqSidechainTest eqSidechainTest;
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
+  FactoryLoudnessTest factoryLoudnessTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

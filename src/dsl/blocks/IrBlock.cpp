@@ -40,6 +40,9 @@ void SignalChain::Ir::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
     conv.prepare (spec);
+    dryScratch.setSize ((int) juce::jmax ((juce::uint32) 1, spec.numChannels),
+                        (int) juce::jmax ((juce::uint32) 1, spec.maximumBlockSize),
+                        false, false, true);
     mixSm.reset (sampleRate, Config::kSmoothingTime);
     gainSm.reset (sampleRate, Config::kSmoothingTime);
     const float m = mixExpr.evaluate (0.f);
@@ -79,34 +82,62 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
 
     if (! hasIr)
     {
-        for (int i = 0; i < nS; ++i)
-        {
-            mixSm.getNextValue();
-            gainSm.getNextValue();
-        }
+        mixSm.skip (nS);
+        gainSm.skip (nS);
         return;
     }
 
-    juce::AudioBuffer<float> dry (nCh, nS);
+    if (dryScratch.getNumChannels() < nCh || dryScratch.getNumSamples() < nS)
+        dryScratch.setSize (nCh, nS, false, false, true);
     for (int c = 0; c < nCh; ++c)
-        dry.copyFrom (c, 0, buffer, c, 0, nS);
+        dryScratch.copyFrom (c, 0, buffer, c, 0, nS);
 
     juce::dsp::AudioBlock<float> block (buffer);
     juce::dsp::ProcessContextReplacing<float> ctx (block);
     conv.process (ctx);
 
+    const bool staticMix = ! mixSm.isSmoothing() && ! gainSm.isSmoothing();
+    const float mix0 = juce::jlimit (0.f, 1.f, mixSm.getCurrentValue());
+    const float g0 = juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 24.f, gainSm.getCurrentValue()));
+    if (staticMix && mix0 <= 1.0e-4f)
+    {
+        for (int c = 0; c < nCh; ++c)
+            buffer.copyFrom (c, 0, dryScratch, c, 0, nS);
+        mixSm.skip (nS);
+        gainSm.skip (nS);
+        return;
+    }
+    if (staticMix && mix0 >= 0.999f)
+    {
+        if (std::abs (g0 - 1.f) > 1.0e-5f)
+            buffer.applyGain (g0);
+        mixSm.skip (nS);
+        gainSm.skip (nS);
+        return;
+    }
+
+    float* chOut[2] {};
+    const float* chDry[2] {};
+    const int useCh = juce::jmin (nCh, 2);
+    for (int c = 0; c < useCh; ++c)
+    {
+        chOut[c] = buffer.getWritePointer (c);
+        chDry[c] = dryScratch.getReadPointer (c);
+    }
+
     for (int i = 0; i < nS; ++i)
     {
         const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
         const float g = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 24.f, gainSm.getNextValue()));
-        for (int c = 0; c < nCh; ++c)
+        const float dryG = 1.f - mix;
+        for (int c = 0; c < useCh; ++c)
         {
-            const float w = buffer.getSample (c, i) * g;
-            const float d = dry.getSample (c, i);
-            float y = d * (1.f - mix) + w * mix;
+            const float d = chDry[c][i];
+            float y = d * dryG + chOut[c][i] * g * mix;
             if (! std::isfinite (y))
                 y = d;
-            buffer.setSample (c, i, y);
+            chOut[c][i] = y;
         }
     }
 }

@@ -1,12 +1,12 @@
-# NeuroCore User Manual
+# NEUROKORE User Manual
 
 This is the same text the plugin shows under **Help** (`resources/UserManual_en.txt`). It is written for people using the plugin, not for building it. Engine and DSL details live in `docs/DSL_REFERENCE.md` and `docs/ARCHITECTURE.md`.
 
 ---
 
-# NeuroCore
+# NEUROKORE
 
-NeuroCore is an insert or send effect you can program. Load a factory sound, turn knobs a–f, or write a short formula (drive, filter, delay, reverb, compressor, envelope, oscillator).
+NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a–f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, crossover, envelope, oscillator).
 
 30-second path
 
@@ -21,7 +21,7 @@ This Help is offline. Pick a chapter on the left. Search filters titles and text
 
 ## 1. Quickstart
 
-Put NeuroCore on a track, or on a send return. On Mac it is an Audio Unit and a VST3; on Windows and Linux it is VST3 or the Standalone app.
+Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a VST3; on Windows and Linux it is VST3 or the Standalone app.
 
 ### Load a preset
 
@@ -58,19 +58,19 @@ Put NeuroCore on a track, or on a send return. On Mac it is an Audio Unit and a 
 
 ### Top bar
 
-- **NK + version**: product mark. Click it to open neuroklast.net.
+- **NK + NEUROKORE + by Neuroklast + version**: product mark. Click it to open neuroklast.net.
 - **Presets**: factory and your own sounds. The last category stays selected when you reopen.
 - **Current chip**: loaded preset name, or Untitled.
 - **Functions**: look up formula words and insert them.
-- **Stages**: the blocks in the current formula, and which knobs they use.
+- **Stages**: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
 - **Bypass**: forces Mix to 0 (dry) and locks the Mix slider. Turn it off and the previous Mix comes back.
-- **License**: import the signed `.lic` file you were sent.
-- **Help**: this guide, one chapter at a time.
+- **License**: import a signed `.lic` file. After activation, License shows who this copy is licensed to. **Replace license** loads a new file.
+- **Help**: this guide, one chapter at a time. Text is large so you can read it from the chair.
 
 ### Settings
 
-- **L / BOTH / R**: which input channel feeds the formula. Click a third.
-- **Oversampling**: 1× / 2× / 4× / 8×. Default 2×. Raise it if heavy drive or clip sounds harsh and the computer can take it.
+- **L / BOTH / R**: which input channel feeds the formula. Click a third. L or R copies that side onto both channels — the stereo field becomes a vertical line.
+- **Oversampling**: 1× / 2× / 4× / 8×. Default **4×**. Drop to 2× or 1× if the computer is struggling.
 - **Polisher**: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
 - **Text − / +**: size of the formula text.
 
@@ -83,6 +83,7 @@ Put NeuroCore on a track, or on a send return. On Mac it is an Audio Unit and a 
 ### Formula area
 
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
+- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Empty slot is dry.
 - **Edit**, then **Save** to apply.
 - **Optimize**: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
 - **Insert / Quick template**: drop in a common block.
@@ -92,8 +93,8 @@ Put NeuroCore on a track, or on a send return. On Mac it is an Audio Unit and a 
 - **Mix**: dry / wet. Drag may flash the background.
 - **AUDIO** (Standalone only): pick the audio device and sample rate. In a DAW the host owns the sample rate.
 - **Status**: LIVE or BYPASS, how late the plugin is (samples and ms), current sample rate.
-- **IN / OUT**: input and output waveforms.
-- **Meter**: level, plus a limiter cue.
+- **IN / OUT**: input and output waveforms. Next to each wave sits a stereo field (how left and right sit together) and a loudness meter for that side. The wave is a bit narrower so all three share the same height. Click **<<** on that row to hide field and loudness and widen the wave again; click **>>** to bring them back.
+- **Meter**: the tall level meter on the right, plus a limiter cue.
 
 ---
 
@@ -131,7 +132,7 @@ delay1: time = c
 1. Click **Edit**. The live view becomes an editor.
 2. Write stages, filters, delay, reverb, compressors, envelopes, oscillators.
 3. Ctrl/Cmd+Space opens suggestions. After `type =` on a filter you only get filter types.
-4. Click **Save**. NeuroCore checks the formula and starts using it.
+4. Click **Save**. NEUROKORE checks the formula and starts using it.
 5. If Save fails, read the red line under the editor.
 
 ### Other buttons
@@ -155,7 +156,14 @@ delay1: time = c
 ### Factory
 
 - Built into the plugin. Author is **NEUROKLAST**.
-- The category you last picked stays selected when you reopen Presets.
+- The folder you last picked stays selected when you reopen Presets.
+
+### The Presets window is an explorer
+
+- Left: folders (All, Distortion, Club, Delay, …) with a count.
+- Top: search, plus All / Factory / User.
+- Middle: the list. Bottom: name, tags, and what the sound does.
+- The number at the top right is how many rows match.
 
 ### Load
 
@@ -166,17 +174,17 @@ delay1: time = c
 
 1. Open **Presets**.
 2. **Save As…**
-3. Name, Author (your name or alias), Category (Guitar, Delay, Vocal, …).
+3. Name, Author (your name or alias), Category (Guitar, Delay, Vocal, Club, …).
    Optional tags (comma-separated) make the sound easier to find later.
 
 The list shows **Name / Category / Tags / Source / Author / Rating**.
 It opens sorted by **Name**. Click a header to change the sort.
 Search looks at the name, tags, description, and the formula itself.
-Type `delay`, `reverb`, `mid side`, `tape`, or `crunch` to find matching sounds.
+Type `delay`, `kick`, `techno`, `cyberpunk`, or `tape` to find matching sounds.
 
 There is no separate builder panel. Write formulas in the editor (templates + Edit).
 
-Share packs by copying your saved preset files and agreeing on Author and Category names.
+Share packs by exporting a `.zip` (visible user presets) or by sending a folder of `.nrk` files. Import accepts one `.nrk`, several files, a folder, or a `.zip`. Packs land under your user library in `Packs / pack name` and never overwrite factory sounds.
 
 ### Useful factory sounds
 
@@ -190,7 +198,11 @@ These are mix tools, not a full mastering suite.
 - **Plate Send / Width Delay / Slap Double**: dry in the middle, wet on a side path.
 - **Haas Width / Loudness Curve / Missing Bass / Speech Band**: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
 - **Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed**: score, FX, and dialogue processing. Not a trailer sample pack.
-- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right). Needs stereo in and **BOTH**. Not a fake double of one take.
+- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, empty IR slot. Needs stereo in and **BOTH**. Drop a cab on the `ir1` button.
+- **Glitch Laboratory**: digital smash without ping-pong or an LFO on the filter — light on the computer.
+- **Neon Clip / Chrome Fold / Data Mosher / Cyberpunk Drive**: digital dirt.
+- **Kick Rumble / Warehouse Rumble**: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit. Body = tight sine+sub. Tune ≈ 15 ms is the resonator. Insert on the kick, Mix 100.
+- **Hardcore Clip / Gabber Drive**: same split, more mid bark, 320 Hz scooped so it stays crisp. Acid Hash / Tekno Comb / Industrial Gate / Hoover Dirt: more club tools.
 - **Cyberpunk Drive**: guitar-shaped digital dirt (crush + fold + short metal comb). Use this instead of the old quiet Glitch Laboratory.
 - **Glitch Laboratory**: louder smash + short ping-pong + Level makeup. Still a glitch toy, not an amp.
 
@@ -208,11 +220,11 @@ Everyday blocks:
 | `eqN: type = peak; freq = …; q = …; gain = …` | Peak, notch, lowcut, highcut, shelves |
 | `octaverN: sub = …; up = …; mix = …; tone = …` | Tracking −1 / +1 octave |
 | `vocoderN: bands = 8; mix = …; q = …` | Vocoder; voice on the Sidechain pin |
-| `compN: threshold = …; ratio = …` | Compressor; optional `knee`, `makeup`, `hpf`, `source = sidechain` |
+| `compN: threshold = …; ratio = …` | Compressor; optional `knee`, `makeup`, `hpf`, `source = sidechain` (no pin = no duck) |
 | `gateN: threshold = …; hyst = …` | Noise gate (hysteresis + hold) |
 | `limitN: ceiling = …; release = …` | In-chain limiter (not the Polisher) |
-| `xoverN: f1 = …; f2 = …` | Crossover into `low` / `mid` / `high` buses |
-| `irN: mix = …` | Convolution slot. Each `ir` line gets its own full-width button (drop / change / clear) |
+| `xoverN: f1 = …; f2 = …` | Crossover into `low` / `mid` / `high`; mix with `out: low = 1; high = 1` |
+| `irN: mix = …` | Cab / room slot. Button on that line: drop WAV/AIFF, Load, waveform, Clear. Several slots. Empty = dry |
 | `envN: type = peak; source = sidechain` | Envelope; `source = sidechain` follows the extra input |
 | `oscN: type = sine; freq = …` | Slow oscillator / LFO |
 | `delayN: time = …; feedback = …; mix = …` | Delay |
@@ -259,13 +271,15 @@ Everyday blocks:
 
 ## 9. License
 
-Without a license NeuroCore is a 20-minute demo. After that Mix is forced to 0 (dry). Your formula stays loaded.
+Without a license NEUROKORE is a 20-minute demo. After that Mix is forced to 0 (dry). Your formula stays loaded.
 
 1. You receive a `.lic` file for your email.
 2. Click **License** in the top bar.
 3. Choose the file. Status shows `LIC` and the email.
+4. After activation, **License** opens a window: Licensed to, your email, and the issue date if the file has one.
+5. **Replace license** in that window loads a different file.
 
-The file is stored under your user AppData (`NEUROKLAST / NeuroCore`). If import fails, the file was edited or is not a NeuroCore license.
+The file is stored under your user AppData (`NEUROKLAST / NeuroKore`). If import fails, the file was edited or is not a NEUROKORE license.
 
 ---
 
@@ -283,11 +297,45 @@ The file is stored under your user AppData (`NEUROKLAST / NeuroCore`). If import
 | **Latency (status)** | How late the plugin is, not the audible delay-effect time |
 | **LIVE** | Processing on. **BYPASS** = Mix forced dry |
 | **Mid / Side** | Center of the stereo image vs left-minus-right width |
+| **IR slot** | A cab or room impulse. The file is not written into the formula. Click the `ir` line. |
+| **Limit vs Polisher** | `limit1` is a block in the chain. Polisher Limiter is the last safety clip. |
 
 ---
 
-## 10. Support
+## 11. Tutorial: gate then limit
 
-NeuroCore © NEUROKLAST. All rights reserved.
+1. Edit:
+
+```text
+param a = Thresh [-50, -12]
+param b = Ceiling [-3, 0]
+gate1: threshold = a; hyst = 6; hold = 0.04; range = -80
+limit1: ceiling = b; release = 0.08
+```
+
+2. Save. Gate closes the hiss between notes. Limit is the chain ceiling, not the Polisher.
+
+---
+
+## 12. Tutorial: IR cab
+
+1. Edit:
+
+```text
+param a = Drive [0.8, 6.0]
+param b = Mix [0.4, 1.0]
+stage1: y = tube(x, a)
+ir1: mix = b; gain = 0
+```
+
+2. Save. Click the full-width **ir1** button under that line.
+3. Drop a WAV or AIFF cab, or click **Load**. **Clear** empties the slot (dry).
+4. Need two cabs? Add `ir2: mix = 1` and click its own button.
+
+---
+
+## 13. Support
+
+NEUROKORE © NEUROKLAST. All rights reserved.
 
 For support, send the host and version, the operating system, the plugin version, the preset or formula, and the steps to reproduce.

@@ -20,7 +20,7 @@
 #include "../core/Config.h"
 
 #ifndef JucePlugin_Name
-#define JucePlugin_Name "NeuroCore"
+#define JucePlugin_Name "NEUROKORE"
 #endif
 #ifndef JucePlugin_Manufacturer
 #define JucePlugin_Manufacturer "NEUROKLAST"
@@ -83,6 +83,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
     // Load initial script into ScriptManager
     scriptManager.setValueTreeState(&apvts);
+    dspEngine.setInputWaveformTap (&waveformCapture);
     juce::String err;
     scriptManager.applyFormula("stage1: y = tanh(x)", err);
     dspEngine.getDiagnostics().setEnabled (Config::kAudioDiagnosticsEnabled);
@@ -118,7 +119,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     if (Config::kEnableLicensing)
     {
         isLicensed.store (licenseManager.verifyLicense());
-#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+#if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
         demoStartMs = 0.0;
         const auto stamp = LicenseManager::getDemoStampFile();
         if (stamp.existsAsFile())
@@ -137,7 +138,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
 
 bool NeuroCoreAudioProcessor::isDemoMixLocked() const noexcept
 {
-#if defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+#if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
     return false;
 #else
     if (! Config::kEnableLicensing || isLicensed.load())
@@ -321,15 +322,12 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     midiLearnManager.processMidiMessages(midiMessages, apvts);
     midiVariableMapper.processMidi(midiMessages);
 
-    // Capture input waveform (pre-processing)
-    waveformCapture.pushInput(main);
-
     const int nSamp = main.getNumSamples();
     const double sr = getSampleRate();
     float mix = 1.f;
     if (auto* p = apvts.getRawParameterValue (EffectParameters::dryWet))
         mix = p->load();
-#if ! defined (NEUROCORE_SKIP_LICENSE_ENFORCEMENT)
+#if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
     if (Config::kEnableLicensing && isDemoMixLocked())
         mix = 0.f;
 #endif
@@ -347,6 +345,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 if (! std::isfinite (d[i]))
                     d[i] = 0.f;
         }
+        waveformCapture.pushInput (main);
         dspEngine.publishOutputMeter (main);
         waveformCapture.pushOutput (main);
         return;
@@ -387,6 +386,7 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                     if (! std::isfinite (d[i]))
                         d[i] = 0.f;
             }
+            waveformCapture.pushInput (main);
             dspEngine.publishOutputMeter (main);
         }
     }
@@ -713,7 +713,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
     // Stereo hosts: process both channels by default
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
-    // Default 2× — lower latency/CPU; user/host may select 4×/8× for HQ NL
+    // Default 4× — HQ clip/filter; user may drop to 2×/1× if CPU is tight
     params.push_back (std::make_unique<juce::AudioParameterChoice> (EffectParameters::oversampling,
                                                                    "Oversampling",
                                                                    juce::StringArray { "1x", "2x", "4x", "8x" },
@@ -777,6 +777,7 @@ void NeuroCoreAudioProcessor::handleAsyncUpdate()
     {
         const juce::ScopedLock pl (scriptManager.getProcessLock());
         updateProcessingSpec (getSampleRate(), getBlockSize());
+        cpuProtect.reset();
         osOutGain.store (0.f, std::memory_order_relaxed);
     }
     osOutGainTarget.store (1.f, std::memory_order_release);
@@ -792,7 +793,6 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
             idx = juce::jlimit (0, 3, choice->getIndex());
         if (idx == dspEngine.getOversamplingIndex())
             return;
-        dspEngine.setOversamplingIndex (idx);
         cpuProtect.clear();
         triggerAsyncUpdate();
     }

@@ -97,6 +97,11 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     makeupSm.setTargetValue (ev (makeupDb, 0.f));
     hpfSm.setTargetValue (ev (hpfHz, 0.f));
 
+    float* out[2] {};
+    const int useCh = juce::jmin (nCh, 2);
+    for (int c = 0; c < useCh; ++c)
+        out[c] = buffer.getWritePointer (c);
+
     for (int i = 0; i < nS; ++i)
     {
         const float thr = juce::jlimit (-80.f, 0.f, thrSm.getNextValue());
@@ -106,6 +111,29 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         const float knee = juce::jlimit (0.f, 24.f, kneeSm.getNextValue());
         const float makeup = juce::jlimit (-24.f, 24.f, makeupSm.getNextValue());
         const float hpf = juce::jlimit (0.f, 800.f, hpfSm.getNextValue());
+
+        if (std::abs (atk - cachedAtk) > 1.0e-6f)
+        {
+            cachedAtk = atk;
+            atkC = 1.f - std::exp (-1.f / (atk * sampleRate));
+        }
+        if (std::abs (rel - cachedRel) > 1.0e-6f)
+        {
+            cachedRel = rel;
+            relC = 1.f - std::exp (-1.f / (rel * sampleRate));
+        }
+        if (std::abs (hpf - cachedHpf) > 1.0e-3f)
+        {
+            cachedHpf = hpf;
+            hpfA = (hpf > 8.f)
+                ? std::exp (-2.f * juce::MathConstants<float>::pi * hpf / sampleRate)
+                : 0.f;
+        }
+        if (std::abs (makeup - cachedMakeup) > 1.0e-4f)
+        {
+            cachedMakeup = makeup;
+            makeupLin = juce::Decibels::decibelsToGain (makeup);
+        }
 
         float detL = 0.f, detR = 0.f;
         if (followSidechain)
@@ -119,13 +147,13 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         }
         else
         {
-            detL = buffer.getSample (0, i);
-            detR = nCh > 1 ? buffer.getSample (1, i) : detL;
+            detL = out[0][i];
+            detR = useCh > 1 ? out[1][i] : detL;
         }
 
         if (hpf > 8.f)
         {
-            const float a = std::exp (-2.f * juce::MathConstants<float>::pi * hpf / sampleRate);
+            const float a = hpfA;
             hpfLpL = a * hpfLpL + (1.f - a) * detL;
             hpfLpR = a * hpfLpR + (1.f - a) * detR;
             detL -= hpfLpL;
@@ -140,16 +168,14 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         const float levelDb = juce::Decibels::gainToDecibels (det, -100.f);
         const float grDb = computeGrDb (levelDb, thr, rat, knee);
 
-        const float atkC = 1.f - std::exp (-1.f / (atk * sampleRate));
-        const float relC = 1.f - std::exp (-1.f / (rel * sampleRate));
         envDb += ((grDb > envDb) ? atkC : relC) * (grDb - envDb);
         if (! std::isfinite (envDb))
             envDb = 0.f;
         envDb = juce::jlimit (0.f, 60.f, envDb);
 
-        const float g = juce::Decibels::decibelsToGain (-envDb + makeup);
-        for (int c = 0; c < nCh; ++c)
-            buffer.setSample (c, i, buffer.getSample (c, i) * g);
+        const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
+        for (int c = 0; c < useCh; ++c)
+            out[c][i] *= g;
     }
 
     if (varPtr != nullptr)

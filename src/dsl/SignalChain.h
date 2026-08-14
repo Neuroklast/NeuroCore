@@ -224,6 +224,8 @@ private:
         float envDb { 0.f };
         float hpfLpL { 0.f }, hpfLpR { 0.f };
         float hpfLpL2 { 0.f }, hpfLpR2 { 0.f };
+        float cachedAtk { -1.f }, cachedRel { -1.f }, cachedHpf { -1.f }, cachedMakeup { 1.0e9f };
+        float atkC { 0.f }, relC { 0.f }, hpfA { 0.f }, makeupLin { 1.f };
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
@@ -248,6 +250,9 @@ private:
         float gain { 0.f };
         float holdLeft { 0.f };
         bool open { false };
+        float cachedAtk { -1.f }, cachedRel { -1.f }, cachedThr { 1.0e9f };
+        float cachedHyst { -1.f }, cachedRange { 1.0e9f };
+        float atkC { 0.f }, relC { 0.f }, openLin { 0.f }, closeLin { 0.f }, rangeLin { 0.f };
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
@@ -267,6 +272,8 @@ private:
         float sampleRate { 44100.f };
         int channels { 1 };
         float gain { 1.f };
+        float cachedCeil { 1.0e9f }, cachedRel { -1.f };
+        float ceilLin { 1.f }, relC { 0.f };
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -310,6 +317,7 @@ private:
         ExpressionEvaluator mixExpr, gainDb;
         juce::SmoothedValue<float> mixSm, gainSm;
         juce::dsp::Convolution conv;
+        juce::AudioBuffer<float> dryScratch;
         bool hasIr { false };
         float sampleRate { 44100.f };
         int latencySamples { 0 };
@@ -370,6 +378,7 @@ private:
 
         std::vector<float> bufL, bufR;
         float dampStateL { 0.f }, dampStateR { 0.f };
+        float dampStateL2 { 0.f }, dampStateR2 { 0.f };
         float dcBlockL { 0.f }, dcBlockR { 0.f }; ///< Feedback HPF state (stability in loop)
         float lastDelaySamples { -1.f };           ///< Slew limit state for delay time
         juce::SmoothedValue<float> delaySm, fbSm, mixSm, dampCoeffSm;
@@ -397,7 +406,7 @@ private:
 
         float sampleRate { 44100.0f };
         static constexpr int kNumCombs = 8;
-        static constexpr int kNumAllpass = 4;
+        static constexpr int kNumAllpass = 6;
 
         /** Fixed-max ring; delay length is variable (no realloc/clear on size change). */
         struct Comb
@@ -423,7 +432,7 @@ private:
                     return 0.f;
                 int readPos = writePos - delayLen;
                 const int N = (int) buf.size();
-                while (readPos < 0)
+                if (readPos < 0)
                     readPos += N;
                 const float y = buf[(size_t) readPos];
                 filterStore = y * (1.f - damp) + filterStore * damp;
@@ -462,7 +471,7 @@ private:
                 constexpr float g = 0.5f;
                 int readPos = writePos - delayLen;
                 const int N = (int) buf.size();
-                while (readPos < 0)
+                if (readPos < 0)
                     readPos += N;
                 const float bufOut = buf[(size_t) readPos];
                 float y = -input + bufOut;
@@ -552,7 +561,6 @@ private:
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> mixSm, qSm, formSm, drySm;
         float lastQ { -1.f }, lastForm { -1.f };
-        uint8_t coeffPhase { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<juce::String, std::string>> varNames;
 

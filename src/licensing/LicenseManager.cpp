@@ -1,4 +1,5 @@
 #include "LicenseManager.h"
+#include "../core/Config.h"
 
 LicenseManager::LicenseManager()
 {
@@ -11,12 +12,12 @@ juce::File LicenseManager::getDataDirectory()
 {
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
         .getChildFile ("NEUROKLAST")
-        .getChildFile ("NeuroCore");
+        .getChildFile (Config::kAppDataFolder);
 }
 
 juce::File LicenseManager::getLicenseFile()
 {
-    return getDataDirectory().getChildFile ("neurocore.lic");
+    return getDataDirectory().getChildFile ("neurokore.lic");
 }
 
 juce::File LicenseManager::getDemoStampFile()
@@ -72,4 +73,13 @@ juce::String LicenseManager::licensedEmail() const
     if (! LicenseCrypto::parse (licenseText, payload, sig, error))
         return {};
     return payload.email;
+}
+
+juce::String LicenseManager::licensedIssued() const
+{
+    LicensePayload payload;
+    juce::String sig, error;
+    if (! LicenseCrypto::parse (licenseText, payload, sig, error))
+        return {};
+    return payload.issued;
 }

@@ -4,6 +4,7 @@
 #include "../core/Config.h"
 #include "../utils/Localiser.h"
 #include "../utils/FactoryPresetLibrary.h"
+#include "../utils/PresetLibrary.h"
 #include "../core/EffectParameters.h"
 
 namespace {
@@ -20,7 +21,7 @@ juce::String lastAuthorPreference()
 {
     auto f = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                  .getChildFile ("NEUROKLAST")
-                 .getChildFile ("NeuroCore")
+                 .getChildFile (Config::kAppDataFolder)
                  .getChildFile ("last_author.txt");
     if (f.existsAsFile())
         return f.loadFileAsString().trim();
@@ -31,11 +32,79 @@ void storeAuthorPreference (const juce::String& author)
 {
     auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                    .getChildFile ("NEUROKLAST")
-                   .getChildFile ("NeuroCore");
+                   .getChildFile (Config::kAppDataFolder);
     dir.createDirectory();
     dir.getChildFile ("last_author.txt").replaceWithText (author.trim());
 }
 } // namespace
+
+class PresetContentComponent::CategoryNav : public juce::ListBox,
+                                            public juce::ListBoxModel
+{
+public:
+    struct Row { juce::String name; int count { 0 }; };
+
+    CategoryNav()
+    {
+        setModel (this);
+        setRowHeight (PresetContentComponent::kCategoryRowHeight);
+        setOutlineThickness (0);
+        setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
+        setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+    }
+
+    void setRows (juce::Array<Row> next, const juce::String& selectedName)
+    {
+        rows = std::move (next);
+        int pick = 0;
+        for (int i = 0; i < rows.size(); ++i)
+            if (rows.getReference (i).name.equalsIgnoreCase (selectedName))
+                pick = i;
+        updateContent();
+        selectRow (pick);
+    }
+
+    juce::String selectedCategory() const
+    {
+        const int r = getSelectedRow();
+        if (! juce::isPositiveAndBelow (r, rows.size()))
+            return {};
+        return rows.getReference (r).name;
+    }
+
+    std::function<void(juce::String)> onPick;
+
+    int getNumRows() override { return rows.size(); }
+
+    void paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected) override
+    {
+        if (! juce::isPositiveAndBelow (row, rows.size()))
+            return;
+        const auto& item = rows.getReference (row);
+        if (selected)
+            g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+        else if (row % 2)
+            g.fillAll (NeuroCoreLookAndFeel::surfaceHigh());
+
+        g.setColour (selected ? NeuroCoreLookAndFeel::accent() : juce::Colour (0xffe8ecf4));
+        g.setFont (NeuroCoreLookAndFeel::brandFont (PresetContentComponent::kCategoryNameFontPt, selected));
+        const auto label = item.name.isEmpty() ? juce::String ("All") : item.name;
+        g.drawText (label, 10, 0, w - 52, h, juce::Justification::centredLeft, true);
+        g.setColour (NeuroCoreLookAndFeel::mutedText());
+        g.setFont (NeuroCoreLookAndFeel::monoFont (PresetContentComponent::kCategoryCountFontPt));
+        g.drawText (juce::String (item.count), 0, 0, w - 10, h,
+                    juce::Justification::centredRight, false);
+    }
+
+    void selectedRowsChanged (int) override
+    {
+        if (onPick)
+            onPick (selectedCategory());
+    }
+
+private:
+    juce::Array<Row> rows;
+};
 
 PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
     : table (proc), processor (proc), lookAndFeel (lf)
@@ -44,16 +113,17 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
     setWantsKeyboardFocus (true);
 
     searchLabel.setText ("Search", juce::dontSendNotification);
-    categoryLabel.setText ("Category", juce::dontSendNotification);
-    scopeLabel.setText ("Scope", juce::dontSendNotification);
-    for (auto* l : { &searchLabel, &categoryLabel, &scopeLabel })
+    folderLabel.setText ("Folders", juce::dontSendNotification);
+    countLabel.setText ({}, juce::dontSendNotification);
+    countLabel.setJustificationType (juce::Justification::centredRight);
+    for (auto* l : { &searchLabel, &folderLabel, &countLabel })
     {
         l->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
         l->setFont (NeuroCoreLookAndFeel::brandFont (11.f));
         addAndMakeVisible (*l);
     }
 
-    searchBox.setTextToShowWhenEmpty ("Search name, tags, formula (delay, mid side, tape)...",
+    searchBox.setTextToShowWhenEmpty ("Search name, tags, formula (delay, kick, techno)...",
                                       NeuroCoreLookAndFeel::mutedText());
     searchBox.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
     searchBox.setColour (juce::TextEditor::textColourId, juce::Colours::white);
@@ -61,27 +131,48 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
     searchBox.addListener (this);
     addAndMakeVisible (searchBox);
 
-    categoryBox.addItem ("All categories", 1);
-    categoryBox.setSelectedId (1, juce::dontSendNotification);
-    categoryBox.addListener (this);
-    addAndMakeVisible (categoryBox);
+    auto styleChip = [] (juce::TextButton& b)
+    {
+        b.setClickingTogglesState (true);
+        b.setRadioGroupId (0x50524553);
+        b.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
+        b.setColour (juce::TextButton::buttonOnColourId, NeuroCoreLookAndFeel::accent());
+        b.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
+        b.setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+    };
+    styleChip (scopeAll);
+    styleChip (scopeFactory);
+    styleChip (scopeUser);
+    scopeAll.setToggleState (true, juce::dontSendNotification);
+    scopeAll.onClick = [this] { applyScope (1); };
+    scopeFactory.onClick = [this] { applyScope (2); };
+    scopeUser.onClick = [this] { applyScope (3); };
+    addAndMakeVisible (scopeAll);
+    addAndMakeVisible (scopeFactory);
+    addAndMakeVisible (scopeUser);
 
-    scopeBox.addItem ("All", 1);
-    scopeBox.addItem ("Factory", 2);
-    scopeBox.addItem ("User", 3);
-    scopeBox.setSelectedId (1, juce::dontSendNotification);
-    scopeBox.addListener (this);
-    addAndMakeVisible (scopeBox);
+    folderNav = std::make_unique<CategoryNav>();
+    folderNav->onPick = [this] (const juce::String& cat) { applyCategory (cat); };
+    addAndMakeVisible (*folderNav);
 
     addAndMakeVisible (table);
-    table.onSelectionChanged = [this] (int row) { updateDetail (row); };
+    table.onSelectionChanged = [this] (int row)
+    {
+        updateDetail (row);
+        updateCountLabel();
+    };
 
-    detailTitle.setFont (NeuroCoreLookAndFeel::brandFont (16.f, true));
+    detailTitle.setFont (NeuroCoreLookAndFeel::brandFont (18.f, true));
     detailTitle.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
     detailTitle.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (detailTitle);
 
-    detailBody.setFont (NeuroCoreLookAndFeel::monoFont (12.5f));
+    detailMeta.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
+    detailMeta.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    detailMeta.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (detailMeta);
+
+    detailBody.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
     detailBody.setColour (juce::Label::textColourId, juce::Colour (0xffd0d4dc));
     detailBody.setJustificationType (juce::Justification::topLeft);
     detailBody.setMinimumHorizontalScale (0.8f);
@@ -147,7 +238,8 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
         auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
                          .getChildFile (name + Config::kPresetFileExtension);
         fileChooser = std::make_unique<juce::FileChooser> (
-            "Export preset", start, "*" + juce::String (Config::kPresetFileExtension));
+            "Export preset or pack", start,
+            "*" + juce::String (Config::kPresetFileExtension) + ";*.zip");
         constexpr int flags = juce::FileBrowserComponent::saveMode
                             | juce::FileBrowserComponent::canSelectFiles
                             | juce::FileBrowserComponent::warnAboutOverwriting;
@@ -156,12 +248,26 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
             auto dest = fc.getResult();
             if (dest == juce::File())
                 return;
+            if (dest.hasFileExtension (".zip"))
+            {
+                auto files = table.getVisibleUserFiles();
+                if (files.empty())
+                {
+                    detailBody.setText ("A .zip pack needs visible user presets. Filter Scope to User first.",
+                                        juce::dontSendNotification);
+                    return;
+                }
+                const auto packName = dest.getFileNameWithoutExtension();
+                if (PresetLibrary::exportPack (files, dest, packName, lastAuthorPreference()))
+                    detailBody.setText ("Exported pack (" + juce::String ((int) files.size())
+                                        + " presets).", juce::dontSendNotification);
+                return;
+            }
             if (! dest.hasFileExtension (Config::kPresetFileExtension))
                 dest = dest.withFileExtension (Config::kPresetFileExtension);
-            bool ok = false;
             if (table.isFactoryRow (row))
             {
-                ok = processor.presetManager.savePreset (
+                processor.presetManager.savePreset (
                     dest, table.getNameForRow (row), table.getAuthorForRow (row),
                     table.getCategoryForRow (row),
                     table.getTagsForRow (row).joinIntoString (","));
@@ -169,36 +275,28 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
             else
             {
                 auto src = table.getFileForRow (row);
-                ok = src.existsAsFile() && src.copyFileTo (dest);
+                if (src.existsAsFile())
+                    src.copyFileTo (dest);
             }
-            juce::ignoreUnused (ok);
         });
     };
+    importButton.setTooltip ("Import .nrk, a folder, or a .zip pack");
     importButton.onClick = [this]
     {
         auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
         fileChooser = std::make_unique<juce::FileChooser> (
-            "Import preset", start, "*" + juce::String (Config::kPresetFileExtension));
+            "Import presets or pack", start,
+            "*" + juce::String (Config::kPresetFileExtension) + ";*.zip");
         constexpr int flags = juce::FileBrowserComponent::openMode
-                            | juce::FileBrowserComponent::canSelectFiles;
+                            | juce::FileBrowserComponent::canSelectFiles
+                            | juce::FileBrowserComponent::canSelectDirectories
+                            | juce::FileBrowserComponent::canSelectMultipleItems;
         fileChooser->launchAsync (flags, [this] (const juce::FileChooser& fc)
         {
-            auto src = fc.getResult();
-            if (! src.existsAsFile())
-                return;
-            auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                           .getChildFile (Config::kUserPresetFolder);
-            dir.createDirectory();
-            auto dest = dir.getChildFile (src.getFileName());
-            int n = 2;
-            while (dest.existsAsFile())
-            {
-                dest = dir.getChildFile (src.getFileNameWithoutExtension()
-                                         + " (" + juce::String (n++) + ")"
-                                         + Config::kPresetFileExtension);
-            }
-            if (src.copyFileTo (dest))
-                refreshTable();
+            juce::StringArray paths;
+            for (const auto& f : fc.getResults())
+                paths.add (f.getFullPathName());
+            importFromPaths (paths);
         });
     };
     deleteButton.onClick = [this]
@@ -232,8 +330,8 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
 PresetContentComponent::~PresetContentComponent()
 {
     searchBox.removeListener (this);
-    categoryBox.removeListener (this);
-    scopeBox.removeListener (this);
+    if (folderNav)
+        folderNav->onPick = nullptr;
 }
 
 void PresetContentComponent::refreshTable()
@@ -244,37 +342,59 @@ void PresetContentComponent::refreshTable()
 
 void PresetContentComponent::restoreBrowserFilters()
 {
-    const auto cat = processor.getLastPresetBrowserCategory();
-    int pick = 1;
-    if (cat.isNotEmpty())
-    {
-        for (int i = 0; i < categoryBox.getNumItems(); ++i)
-            if (categoryBox.getItemText (i).equalsIgnoreCase (cat))
-                pick = categoryBox.getItemId (i);
-    }
-    categoryBox.setSelectedId (pick, juce::dontSendNotification);
-    table.setCategory (pick == 1 ? juce::String() : categoryBox.getText());
-
     const int scopeId = processor.getLastPresetBrowserScope();
-    scopeBox.setSelectedId (scopeId, juce::dontSendNotification);
-    table.setScope (scopeId == 2 ? PresetTableComponent::Scope::Factory
-                  : scopeId == 3 ? PresetTableComponent::Scope::User
-                                 : PresetTableComponent::Scope::All);
+    const int id = (scopeId >= 1 && scopeId <= 3) ? scopeId : 1;
+    scopeAll.setToggleState (id == 1, juce::dontSendNotification);
+    scopeFactory.setToggleState (id == 2, juce::dontSendNotification);
+    scopeUser.setToggleState (id == 3, juce::dontSendNotification);
+    table.setScope (id == 2 ? PresetTableComponent::Scope::Factory
+                  : id == 3 ? PresetTableComponent::Scope::User
+                            : PresetTableComponent::Scope::All);
+    table.setCategory (processor.getLastPresetBrowserCategory());
 }
 
 void PresetContentComponent::refreshCategories()
 {
-    const auto selected = categoryBox.getText();
-    categoryBox.clear (juce::dontSendNotification);
-    categoryBox.addItem ("All categories", 1);
-    int id = 2;
+    if (folderNav == nullptr)
+        return;
+    juce::Array<CategoryNav::Row> rows;
+    rows.add ({ {}, table.countInScope ({}) });
     for (auto& c : table.getAllCategories())
-        categoryBox.addItem (c, id++);
-    int pick = 1;
-    for (int i = 0; i < categoryBox.getNumItems(); ++i)
-        if (categoryBox.getItemText (i) == selected)
-            pick = categoryBox.getItemId (i);
-    categoryBox.setSelectedId (pick, juce::dontSendNotification);
+    {
+        const int n = table.countInScope (c);
+        if (n > 0)
+            rows.add ({ c, n });
+    }
+    const auto keep = processor.getLastPresetBrowserCategory();
+    folderNav->onPick = nullptr;
+    folderNav->setRows (rows, keep);
+    folderNav->onPick = [this] (const juce::String& cat) { applyCategory (cat); };
+    updateCountLabel();
+}
+
+void PresetContentComponent::applyScope (int id)
+{
+    table.setScope (id == 2 ? PresetTableComponent::Scope::Factory
+                  : id == 3 ? PresetTableComponent::Scope::User
+                            : PresetTableComponent::Scope::All);
+    processor.setLastPresetBrowserScope (id);
+    refreshCategories();
+    updateDetail (table.getSelectedRow());
+}
+
+void PresetContentComponent::applyCategory (const juce::String& cat)
+{
+    table.setCategory (cat);
+    processor.setLastPresetBrowserCategory (cat);
+    updateCountLabel();
+    updateDetail (table.getSelectedRow());
+}
+
+void PresetContentComponent::updateCountLabel()
+{
+    countLabel.setText (juce::String (table.getFilteredCount())
+                            + " of " + juce::String (table.countInScope ({})),
+                        juce::dontSendNotification);
 }
 
 void PresetContentComponent::updateDetail (int row)
@@ -282,47 +402,35 @@ void PresetContentComponent::updateDetail (int row)
     if (row < 0)
     {
         detailTitle.setText ("Select a preset", juce::dontSendNotification);
-        detailBody.setText ("Double-click or press Load. Save As... stores Name + Author for artist packs.",
+        detailMeta.setText ("Folders on the left. Double-click or press Load.",
+                            juce::dontSendNotification);
+        detailBody.setText ("Import accepts .nrk, a folder, or a .zip pack.",
                             juce::dontSendNotification);
         return;
     }
+    detailTitle.setText (table.getNameForRow (row), juce::dontSendNotification);
     const auto author = table.getAuthorForRow (row);
-    detailTitle.setText (table.getNameForRow (row)
-                             + "  |  " + table.getCategoryForRow (row)
-                             + (table.isFactoryRow (row) ? "  |  Factory" : "  |  User")
-                             + (author.isNotEmpty() ? ("  |  " + author) : juce::String()),
-                         juce::dontSendNotification);
+    juce::String meta = table.getCategoryForRow (row);
+    meta += table.isFactoryRow (row) ? "   ·   Factory" : "   ·   User";
+    if (author.isNotEmpty())
+        meta += "   ·   " + author;
+    const auto tags = table.getTagsForRow (row);
+    if (tags.size() > 0)
+        meta += "   ·   " + tags.joinIntoString ("  ");
+    detailMeta.setText (meta, juce::dontSendNotification);
     auto desc = table.getDescriptionForRow (row);
     if (desc.isEmpty())
         desc = "No description.";
-    const auto tags = table.getTagsForRow (row);
-    if (tags.size() > 0)
-        desc = "Tags: " + tags.joinIntoString ("  ") + "\n\n" + desc;
     detailBody.setText (desc, juce::dontSendNotification);
 }
 
 void PresetContentComponent::textEditorTextChanged (juce::TextEditor& ed)
 {
     if (&ed == &searchBox)
+    {
         table.setSearch (searchBox.getText());
-}
-
-void PresetContentComponent::comboBoxChanged (juce::ComboBox* box)
-{
-    if (box == &categoryBox)
-    {
-        const auto t = categoryBox.getText();
-        const auto cat = t.startsWithIgnoreCase ("All") ? juce::String() : t;
-        table.setCategory (cat);
-        processor.setLastPresetBrowserCategory (cat);
-    }
-    else if (box == &scopeBox)
-    {
-        const int id = scopeBox.getSelectedId();
-        table.setScope (id == 2 ? PresetTableComponent::Scope::Factory
-                      : id == 3 ? PresetTableComponent::Scope::User
-                                : PresetTableComponent::Scope::All);
-        processor.setLastPresetBrowserScope (id);
+        updateCountLabel();
+        updateDetail (table.getSelectedRow());
     }
 }
 
@@ -372,25 +480,84 @@ void PresetContentComponent::saveCurrentAs()
     }));
 }
 
-void PresetContentComponent::paint (juce::Graphics&)
+void PresetContentComponent::importFromPaths (const juce::StringArray& paths)
 {
+    if (paths.isEmpty())
+        return;
+    const auto r = PresetLibrary::importPaths (paths);
+    refreshTable();
+    juce::String msg = "Imported " + juce::String (r.imported);
+    if (r.packName.isNotEmpty())
+        msg += " into pack \"" + r.packName + "\"";
+    msg += ".";
+    if (r.skipped > 0)
+        msg += " Skipped " + juce::String (r.skipped) + ".";
+    if (r.errors.size() > 0)
+        msg += " " + r.errors[0];
+    detailBody.setText (msg, juce::dontSendNotification);
+    if (r.packName.isNotEmpty())
+        table.setCategory ({});
+}
+
+bool PresetContentComponent::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (const auto& p : files)
+    {
+        const juce::File f (p);
+        if (f.isDirectory() || PresetLibrary::isNrkFile (f) || PresetLibrary::isPackArchive (f))
+            return true;
+    }
+    return false;
+}
+
+void PresetContentComponent::fileDragEnter (const juce::StringArray&, int, int)
+{
+    fileDragActive = true;
+    repaint();
+}
+
+void PresetContentComponent::fileDragExit (const juce::StringArray&)
+{
+    fileDragActive = false;
+    repaint();
+}
+
+void PresetContentComponent::filesDropped (const juce::StringArray& files, int, int)
+{
+    fileDragActive = false;
+    repaint();
+    importFromPaths (files);
+}
+
+void PresetContentComponent::paint (juce::Graphics& g)
+{
+    if (! fileDragActive)
+        return;
+    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+    g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (4.f), 6.f);
+    g.setColour (NeuroCoreLookAndFeel::accent());
+    g.setFont (NeuroCoreLookAndFeel::brandFont (16.f, true));
+    g.drawFittedText ("Drop .nrk, a folder, or a .zip pack",
+                      getLocalBounds(), juce::Justification::centred, 1);
 }
 
 void PresetContentComponent::resized()
 {
-    auto r = getLocalBounds().reduced (6);
-    auto top = r.removeFromTop (52);
-    auto labH = 14;
-    auto row1 = top.removeFromTop (labH);
-    searchLabel.setBounds (row1.removeFromLeft (top.getWidth() / 2));
-    categoryLabel.setBounds (row1.removeFromLeft (top.getWidth() / 4));
-    scopeLabel.setBounds (row1);
-    auto row2 = top;
-    searchBox.setBounds (row2.removeFromLeft (getWidth() / 2 - 20).reduced (0, 2));
-    categoryBox.setBounds (row2.removeFromLeft (getWidth() / 4 - 10).reduced (4, 2));
-    scopeBox.setBounds (row2.reduced (4, 2));
+    auto r = getLocalBounds().reduced (8);
+    auto top = r.removeFromTop (50);
+    auto lab = top.removeFromTop (14);
+    searchLabel.setBounds (lab.removeFromLeft (lab.getWidth() / 2));
+    countLabel.setBounds (lab);
 
-    auto bottom = r.removeFromBottom (44);
+    auto tools = top;
+    auto chips = tools.removeFromRight (juce::jmin (280, tools.getWidth() / 3));
+    const int cw = chips.getWidth() / 3;
+    scopeAll.setBounds (chips.removeFromLeft (cw).reduced (2, 2));
+    scopeFactory.setBounds (chips.removeFromLeft (cw).reduced (2, 2));
+    scopeUser.setBounds (chips.reduced (2, 2));
+    searchBox.setBounds (tools.reduced (0, 2));
+
+    auto bottom = r.removeFromBottom (40);
     const int bw = bottom.getWidth() / 7;
     loadButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
     saveButton.setBounds (bottom.removeFromLeft (bw).reduced (2));
@@ -401,10 +568,17 @@ void PresetContentComponent::resized()
     closeButton.setBounds (bottom.reduced (2));
 
     r.removeFromBottom (6);
-    auto detail = r.removeFromBottom (118);
-    detailTitle.setBounds (detail.removeFromTop (24));
+    auto detail = r.removeFromBottom (112);
+    detailTitle.setBounds (detail.removeFromTop (22));
+    detailMeta.setBounds (detail.removeFromTop (18));
     detailBody.setBounds (detail);
     r.removeFromBottom (6);
+
+    auto side = r.removeFromLeft (kExplorerSidebarWidth);
+    folderLabel.setBounds (side.removeFromTop (16));
+    if (folderNav)
+        folderNav->setBounds (side);
+    r.removeFromLeft (8);
     table.setBounds (r);
 }
 

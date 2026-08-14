@@ -36,12 +36,16 @@ public:
             payload.email = "tester@example.com";
             payload.issued = "2026-08-13";
             const auto text = LicenseCrypto::issue (payload, priv);
-            expect (text.contains ("NEUROCORE LICENSE"));
+            expect (text.contains ("NEUROKORE LICENSE"));
+            expect (LicenseCrypto::isAcceptedProduct ("NEUROKORE"));
+            expect (LicenseCrypto::isAcceptedProduct ("NeuroCore"));
+            expect (! LicenseCrypto::isAcceptedProduct ("OtherPlugin"));
 
             LicensePayload loaded;
             juce::String error;
             expect (LicenseCrypto::parseAndVerify (text, pub, loaded, error), error);
             expectEquals (loaded.email, juce::String ("tester@example.com"));
+            expectEquals (loaded.issued, juce::String ("2026-08-13"));
 
             auto tweaked = text.replace ("tester@example.com", "other@example.com");
             expect (! LicenseCrypto::parseAndVerify (tweaked, pub, loaded, error));

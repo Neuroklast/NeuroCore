@@ -8,8 +8,8 @@ class BrandLockup : public juce::Component,
 {
 public:
     static constexpr const char* kWebsiteUrl = "https://neuroklast.net";
-    /// Hard cap. Must stay below Config::kHudHeaderHeight (22). Never raise this.
-    static constexpr float kMaxLogoHeight = 20.f;
+    /// Edge-cropped NK mark fills the compact toolbar; stays under the HUD strip.
+    static constexpr float kMaxLogoHeight = 26.f;
 
     BrandLockup (juce::Image logoImage, juce::String titleText, juce::String versionText)
         : logo (std::move (logoImage)),
@@ -37,13 +37,13 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        auto r = getLocalBounds().toFloat().reduced (6.f, 4.f);
+        auto r = getLocalBounds().toFloat().reduced (2.f, 1.f);
         if (r.isEmpty())
             return;
 
         const float h = r.getHeight();
-        const float titleH = juce::jlimit (11.f, 15.f, h * 0.36f);
-        const float verH   = juce::jlimit (9.f, 11.f, h * 0.24f);
+        const float titleH = juce::jlimit (11.f, 15.f, h * 0.50f);
+        const float verH   = juce::jlimit (9.f, 11.5f, h * 0.34f);
         auto titleFont = NeuroCoreLookAndFeel::brandFont (titleH, true);
         auto verFont   = NeuroCoreLookAndFeel::monoFont (verH);
 
@@ -51,13 +51,13 @@ public:
         const float verW   = (float) verFont.getStringWidth (version);
         const float textW  = juce::jmax (titleW, verW);
         const float gap    = 8.f;
-        const float stackH = titleH + 2.f + verH;
-        // Track the wordmark, never the toolbar cell, never the HUD strip.
+        const float stackH = titleH + 1.f + verH;
+        // Edge-cropped mark tracks the wordmark, never the HUD strip.
         const float logoH = juce::jmin (stackH, kMaxLogoHeight, h);
         float logoW = logoH;
         if (logo.isValid() && logo.getHeight() > 0)
             logoW = logoH * (float) logo.getWidth() / (float) logo.getHeight();
-        logoW = juce::jmin (logoW, r.getWidth() * 0.28f);
+        logoW = juce::jmin (logoW, r.getWidth() * 0.42f);
 
         const float groupW = logoW + gap + textW;
         const float groupH = juce::jmax (logoH, stackH);
@@ -81,7 +81,7 @@ public:
         const float tx = logoArea.getRight() + gap;
         auto titleArea = juce::Rectangle<float> (tx, group.getCentreY() - stackH * 0.5f,
                                                  textW, titleH);
-        auto verArea   = juce::Rectangle<float> (tx, titleArea.getBottom() + 2.f,
+        auto verArea   = juce::Rectangle<float> (tx, titleArea.getBottom() + 1.f,
                                                  textW, verH);
 
         g.setColour (NeuroCoreLookAndFeel::accent());

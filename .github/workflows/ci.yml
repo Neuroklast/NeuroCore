@@ -51,7 +51,7 @@ jobs:
 
       - name: Build tests
         shell: bash
-        run: cmake --build build --target NeuroCoreTests --config Release
+        run: cmake --build build --target NeuroKoreTests --config Release
 
       - name: Run tests
         shell: bash
@@ -81,19 +81,19 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           chmod +x ./pluginval
-          ./pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
+          ./pluginval --validate-in-process --strictness-level 5 "build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3"
 
       - name: Validate VST3 (macOS)
         if: runner.os == 'macOS'
         run: |
           chmod +x ./pluginval.app/Contents/MacOS/pluginval
-          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
+          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 "build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3"
 
       - name: Validate VST3 (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          ./pluginval.exe --validate-in-process --strictness-level 5 "build/NeuroCore_artefacts/Release/VST3/NeuroCore.vst3"
+          ./pluginval.exe --validate-in-process --strictness-level 5 "build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3"
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
@@ -104,10 +104,10 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: NeuroCore-${{ matrix.os }}
-          path: build/NeuroCore_artefacts
+          name: NEUROKORE-${{ matrix.os }}
+          path: build/NeuroKore_artefacts
 
-  # Audio Units are Apple-only. This job is how we ship NeuroCore.component
+  # Audio Units are Apple-only. This job is how we ship NEUROKORE.component
   # without a local Mac. Windows remains the unit-test gate.
   au:
     name: AU (macOS)
@@ -123,7 +123,7 @@ jobs:
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 
       - name: Build AU
-        run: cmake --build build --config Release --target NeuroCore_AU --parallel
+        run: cmake --build build --config Release --target NeuroKore_AU --parallel
 
       - name: Locate, sign, and install AU
         id: au
@@ -131,8 +131,8 @@ jobs:
           set -euo pipefail
           AU=""
           for candidate in \
-            build/NeuroCore_artefacts/Release/AU/NeuroCore.component \
-            build/NeuroCore_artefacts/AU/NeuroCore.component
+            build/NeuroKore_artefacts/Release/AU/NEUROKORE.component \
+            build/NeuroKore_artefacts/AU/NEUROKORE.component
           do
             if [ -d "$candidate" ]; then
               AU="$candidate"
@@ -140,16 +140,16 @@ jobs:
             fi
           done
           if [ -z "$AU" ]; then
-            echo "NeuroCore.component not found under build/NeuroCore_artefacts"
-            ls -laR build/NeuroCore_artefacts || true
+            echo "NEUROKORE.component not found under build/NeuroKore_artefacts"
+            ls -laR build/NeuroKore_artefacts || true
             exit 1
           fi
           echo "Found $AU"
           codesign --force --deep --sign - "$AU"
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
-          rm -rf "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
-          cp -R "$AU" "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
-          codesign --force --deep --sign - "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+          rm -rf "$HOME/Library/Audio/Plug-Ins/Components/NEUROKORE.component"
+          cp -R "$AU" "$HOME/Library/Audio/Plug-Ins/Components/NEUROKORE.component"
+          codesign --force --deep --sign - "$HOME/Library/Audio/Plug-Ins/Components/NEUROKORE.component"
           killall -9 AudioComponentRegistrar 2>/dev/null || true
           sleep 2
           echo "bundle=$AU" >> "$GITHUB_OUTPUT"
@@ -157,8 +157,8 @@ jobs:
       - name: Validate AU with auval
         timeout-minutes: 10
         run: |
-          auval -a | grep -i -e NeuroCore -e NRCO || true
-          auval -v aumf NRCO NRKL
+          auval -a | grep -i -e NEUROKORE -e NeuroKore -e NRKO || true
+          auval -v aumf NRKO NRKL
 
       - name: Download pluginval (macOS)
         run: |
@@ -170,15 +170,15 @@ jobs:
         run: |
           chmod +x ./pluginval.app/Contents/MacOS/pluginval
           ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 \
-            "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+            "$HOME/Library/Audio/Plug-Ins/Components/NEUROKORE.component"
 
       - name: Upload AU
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: NeuroCore-AU-macOS
+          name: NEUROKORE-AU-macOS
           path: |
-            build/NeuroCore_artefacts/Release/AU/
-            build/NeuroCore_artefacts/AU/
+            build/NeuroKore_artefacts/Release/AU/
+            build/NeuroKore_artefacts/AU/
           if-no-files-found: warn
           retention-days: 30

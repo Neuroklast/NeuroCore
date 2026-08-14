@@ -37,7 +37,7 @@ Alle Regeln müssen eingehalten werden, um Qualität und Nachvollziehbarkeit zu 
 
 9. Bestehende Tests ausführen:
    ```bash
-   cmake --build build --target NeuroCoreTests
+   cmake --build build --target NeuroKoreTests
    ctest --test-dir build
    ```
 10. Neue Tests für geänderten Code schreiben
@@ -119,12 +119,12 @@ cmake -B build -S .
 cmake --build build --config Release
 
 # Nur Tests bauen und ausführen
-cmake --build build --target NeuroCoreTests
+cmake --build build --target NeuroKoreTests
 ctest --test-dir build --output-on-failure
 
 # Mit Sanitizern (empfohlen für Development)
 cmake -B build-asan -S . -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
-cmake --build build-asan --target NeuroCoreTests
+cmake --build build-asan --target NeuroKoreTests
 ```
 
 ---

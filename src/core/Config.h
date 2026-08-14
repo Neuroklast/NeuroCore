@@ -27,7 +27,14 @@ namespace Config
     inline constexpr int kUiPadding         = 8;
     /// Top HUD strip (Neuroklast OS line). Chrome must start below this.
     inline constexpr int kHudHeaderHeight   = 22;
-    inline constexpr const char* kOsBanner  = "NEUROCORE // NEUROKLAST OS";
+    inline constexpr const char* kProductName   = "NEUROKORE";
+    inline constexpr const char* kCompanyName   = "Neuroklast";
+    inline constexpr const char* kBrandByline   = "by Neuroklast";
+    inline constexpr const char* kOsBanner      = "NEUROKORE // NEUROKLAST OS";
+    /// Brand + chrome button row. Half of the previous 0.09 weight (~72 px → ~36 px).
+    inline constexpr float kToolbarRowWeight    = 0.045f;
+    inline constexpr int   kToolbarRowMinHeight = 32;
+    inline constexpr int   kToolbarRowMaxHeight = 38;
     /// Shared height for settings-row chrome (L/BOTH/R, combos look).
     inline constexpr int kChromeControlHeight = 32;
     /// Main body column weights: knobs / formula module / meter.
@@ -84,6 +91,10 @@ namespace Config
     inline constexpr int   kMeterUiHz = 45;
     /// FFT order for waveform displays (2^order samples).
     inline constexpr int kWaveformFftOrder = 11;
+    /// Compact extras next to each IN/OUT scope (same row height).
+    inline constexpr int kScopeFoldWidth      = 18;
+    inline constexpr int kScopeLoudnessWidth  = 48;
+    inline constexpr int kScopeFieldMinWidth  = 80;
 
 
 
@@ -101,8 +112,10 @@ namespace Config
     inline constexpr float kMaxInputValue      = 1.0f;
     /// Default output gain in decibels.
     inline constexpr float kDefaultGainOutDb   = 0.0f;
-    /// Time in seconds used for parameter smoothing.
+    /// Time in seconds used for parameter smoothing (knobs, static filters).
     inline constexpr float kSmoothingTime      = 0.02f;
+    /// Faster ramp for env/osc-modulated cutoff/EQ so the click stays tight.
+    inline constexpr float kModSmoothingTime   = 0.0008f;
 
 
     /// Fallback sample rate used during resets.
@@ -127,8 +140,8 @@ namespace Config
     inline constexpr const char* kDefaultVariableNames[6] = {
         "a", "b", "c", "d", "e", "f"
     };
-    /// Preset name chip in the toolbar (must fill the button row, not shrink).
-    inline constexpr float kPresetChipFontPt = 28.0f;
+    /// Preset name chip in the compact toolbar (fills the 32–38 px row).
+    inline constexpr float kPresetChipFontPt = 15.0f;
     /// Default formula editor / live view font height (points).
     inline constexpr float kDefaultEditorFontPt = 18.0f;
     inline constexpr float kMinEditorFontPt     = 12.0f;
@@ -136,9 +149,9 @@ namespace Config
     inline constexpr float kEditorFontStepPt    = 2.0f;
     /// Line box as a multiple of font height (live formula + code editor).
     inline constexpr float kFormulaLineHeight   = 1.1f;
-    /// In-plugin Help body / chapter list (slightly larger than 14.5 for reading).
-    inline constexpr float kHelpBodyFontPt      = 16.0f;
-    inline constexpr float kHelpListFontPt      = 13.5f;
+    /// In-plugin Help body / chapter list (readable at a glance).
+    inline constexpr float kHelpBodyFontPt      = 20.0f;
+    inline constexpr float kHelpListFontPt      = 16.5f;
 
     //==========================================================================
     // Modulator constants
@@ -167,7 +180,7 @@ namespace Config
     inline constexpr bool  kAudioDiagnosticsEnabled     = false;
 
     /// Default oversampling choice index: 0=1×, 1=2×, 2=4×, 3=8×.
-    inline constexpr int   kDefaultOversamplingIndex    = 1; // 2× — lower latency/CPU
+    inline constexpr int   kDefaultOversamplingIndex    = 2; // 4× — gold-standard clip/filter HQ
     /// Trip only when we actually overrun the host callback (not "busy but OK").
     inline constexpr float kCpuTripRatio     = 1.15f;
     /// A single block this far over budget trips immediately.
@@ -218,8 +231,10 @@ namespace Config
     inline constexpr const char* kOptimizationFile   = "optimizations.txt";
     /// Name of the formula template file.
     inline constexpr const char* kTemplateFile       = "templates.json";
+    /// AppData folder under NEUROKLAST (licenses, ratings, last author).
+    inline constexpr const char* kAppDataFolder      = "NeuroKore";
     /// Name of the user template file.
-    inline constexpr const char* kUserTemplateFile   = "NeuroCoreUserTemplates.txt";
+    inline constexpr const char* kUserTemplateFile   = "NeuroKoreUserTemplates.txt";
     /// Name of the resources directory next to the executable.
     inline constexpr const char* kResourceFolder     = "resources";
 
@@ -237,10 +252,10 @@ namespace Config
 // Version information
 //==============================================================================
 
-#define PLUGIN_NAME       "NeuroCore"
-#define PLUGIN_VERSION    "0.2.2"
-#define PLUGIN_VENDOR     "NEUROKLAST"
-#define PLUGIN_ID         "nrco01"
+#define PLUGIN_NAME       "NEUROKORE"
+#define PLUGIN_VERSION    "0.9.0"
+#define PLUGIN_VENDOR     "Neuroklast"
+#define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__
 #define PLUGIN_BUILD_TIME __TIME__
 

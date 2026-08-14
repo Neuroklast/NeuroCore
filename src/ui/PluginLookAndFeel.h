@@ -33,6 +33,8 @@ public:
   static juce::Colour background()   { return juce::Colour (0xff000000); }
   static juce::Colour mutedText()    { return juce::Colour (0xff8a8a8a); }
   static juce::Colour brightText()   { return juce::Colour (0xfffff5f5); }
+  /// Formula comments: rust, sits with the red chrome (not editor-green).
+  static juce::Colour comment()      { return juce::Colour (0xffc4786a); }
   static juce::Colour panelBorder()  { return juce::Colour (0xff3a0000); }
   static juce::Colour gridLine()     { return juce::Colour (0x22ff1a1a); }
 

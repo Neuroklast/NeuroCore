@@ -18,8 +18,8 @@
 #include "TestHelpers.h"
 #include <cmath>
 
-#ifndef NEUROCORE_RESOURCES_DIR
-#define NEUROCORE_RESOURCES_DIR "resources"
+#ifndef NEUROKORE_RESOURCES_DIR
+#define NEUROKORE_RESOURCES_DIR "resources"
 #endif
 
 class NeuroCoreExtrasTest : public juce::UnitTest
@@ -599,7 +599,7 @@ private:
         beginTest("FactoryPresetLibrary: load and apply ALL presets");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
-            const juce::File resDir(NEUROCORE_RESOURCES_DIR);
+            const juce::File resDir(NEUROKORE_RESOURCES_DIR);
             expect(lib.loadFromResources(resDir), "factory_presets.json missing or invalid");
 
             // Embedded BinaryData fallback (what Cubase uses when no resources/ folder)
@@ -838,8 +838,42 @@ private:
             requireBlock ("Cyberpunk Drive", "lowpass");
             requireBlock ("Cyberpunk Drive", "Level");
             requireBlock ("Glitch Laboratory", "Level");
+            requireBlock ("Glitch Laboratory", "delay");
+            requireBlock ("Kick Rumble", "bus");
+            requireBlock ("Kick Rumble", "octaver");
+            requireBlock ("Kick Rumble", "delay");
+            requireBlock ("Kick Rumble", "env1");
+            requireBlock ("Kick Rumble", "320");
+            requireBlock ("Warehouse Rumble", "octaver");
+            requireBlock ("Warehouse Rumble", "delay");
+            requireBlock ("Warehouse Rumble", "env1");
+            requireBlock ("Hardcore Clip", "hardclip");
+            requireBlock ("Hardcore Clip", "octaver");
+            requireBlock ("Gabber Drive", "hardclip");
+            requireBlock ("Gabber Drive", "env1");
+            requireBlock ("Gabber Drive", "sub");
+            requireBlock ("Gabber Drive", "tube");
+            requireBlock ("Gabber Drive", "octaver");
+            requireBlock ("Acid Hash", "lowpass");
+            requireBlock ("Neon Clip", "hardclip");
+            requireBlock ("Industrial Gate", "gate1");
+            requireBlock ("Hoover Dirt", "fold");
+            requireBlock ("Tekno Comb", "delay");
+            requireBlock ("Data Mosher", "bitcrush");
+            requireBlock ("Chrome Fold", "fold");
             requireBlock ("AMS RMX Nonlin", "lowpass");
             requireBlock ("Sidechain Pump", "[1/1, 1/16]");
+            requireBlock ("Classic Tremolo", "[1/1, 1/16]");
+            requireBlock ("Chopper", "[1/1, 1/16]");
+            requireBlock ("Low Pass Sweep", "[1/1, 1/16]");
+            requireBlock ("Stereo Guitar Wall", "gate1");
+            requireBlock ("Stereo Guitar Wall", "ir1");
+            requireBlock ("5150 Lead", "gate1");
+            requireBlock ("5150 Lead", "ir1");
+            requireBlock ("JCM Hot Lead", "ir1");
+            requireBlock ("Tube Screamer", "ir1");
+            requireBlock ("1176 FET", "makeup");
+            requireBlock ("LA-2A Opto", "knee");
         }
 
         beginTest ("Stereo Guitar Wall: two DIs keep independent L/R amps");
@@ -916,6 +950,24 @@ private:
             expect (rms > 0.04f, "Cyberpunk Drive too quiet: rms=" + juce::String (rms, 4));
         }
 
+        beginTest ("Glitch Laboratory stays light: no ping-pong, no LFO filter");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            const auto* gl = lib.findByName ("Glitch Laboratory");
+            expect (gl != nullptr, "missing Glitch Laboratory");
+            if (gl == nullptr)
+                return;
+            expect (! gl->script.containsIgnoreCase ("pingpong"));
+            expect (! gl->script.containsIgnoreCase ("osc1"));
+            expect (gl->script.containsIgnoreCase ("delay1"));
+            expect (gl->script.containsIgnoreCase ("Level"));
+            expect (lib.findByName ("Kick Rumble") != nullptr);
+            expect (lib.findByName ("Hardcore Clip") != nullptr);
+            expect (lib.findByName ("Gabber Drive") != nullptr);
+            expect (lib.findByName ("Acid Hash") != nullptr);
+            expect (lib.getEntries().size() >= 189);
+        }
+
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");
         {
             const juce::String frag =
@@ -948,7 +1000,7 @@ private:
     {
         beginTest ("templates.json names stay on six knobs");
         {
-            const juce::File file (juce::String (NEUROCORE_RESOURCES_DIR)
+            const juce::File file (juce::String (NEUROKORE_RESOURCES_DIR)
                                        + "/templates.json");
             expect (file.existsAsFile(), "templates.json missing");
             const auto parsed = juce::JSON::parse (file);

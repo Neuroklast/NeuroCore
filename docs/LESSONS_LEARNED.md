@@ -9,6 +9,215 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-14 – Knackig is a hard clip + fast env, not more drive
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Klangqualität näher an Serum 2 (knackig)  
+**Ergebnis:** `hardclip` n=5 lieferte bei |x|=L nur ~87 % — klingt nach Softclip. Extra-IIR nach FIR-OS schmiert den Click. Env-Filter mit 20 ms Smoothing ziehen den Transient nach. Jetzt: n=16, Mod-Smoothing 0.8 ms, Extra-LPF nur noch ohne OS.
+
+#### Regel
+„Knackig“ kommt vom Click, nicht von mehr Drive. Algebraisches Clip muss am Ceiling sitzen. Env-Cutoff nicht mit Knob-Smoothing (20 ms) fahren.
+
+---
+
+### 2026-08-15 – Gold blocks, not a secret EQ
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Delay/Reverb/Clip auf Hochglanz, Default-OS 4×, Release-Kit im Repo-Root  
+**Ergebnis:** Delay interpoliert Lagrange-6 + 2-Pol-Damp. Reverb speist L/R getrennt und hat 6 Allpässe. hardclip n=24. OS-Default Index 2. Portable Kit `NEUROKORE-0.9.0/`.
+
+#### Regel
+Klangqualität sitzt in den Blöcken, nicht hinter der DSL. Default-OS 4× ist der Gold-Pfad; 2× bleibt wählbar. Release-Kit gehört ins Repo-Root, nicht nur nach `build/package`.
+
+---
+
+### 2026-08-14 – Hardcore rumble is a held sine, not a hall
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** User-Refs `sound examples/hardcore techno kicks` (Disorder, Noitification, Wow)  
+**Ergebnis:** 375 ms = 1 Beat @ 160. Peak +3 dB, RMS ≈ 0 dB, Crest 1.4, 43–55 % Samples über 0.95. Nach 80 ms sitzt 55–80 % der Energie unter 120 Hz und bleibt laut. Spektrum: Click → Wow-Sweep → gehaltener Clipped-Sine + Sub-Oktave. Kein Hall, kein Duck. Rumble = Delay 12–18 ms (≈ 55–80 Hz) + Feedback + Octaver + Hardclip.
+
+#### Regel
+Club-Kick-Rumble nicht mit dunklem Reverb+Duck bauen. Das macht Matsch. Gehaltener Body: Resonator auf der Kick-Periode, dann zubrickwallen. Helle Distortion und Dynamik gehören auf einen eigenen Scream-Bus (`drive * (1 + env)`), nicht in den Sub.
+
+---
+
+### 2026-08-14 – Club defaults must sit in the slam zone
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Techno-Presets zu zaghaft — muss ballern  
+**Ergebnis:** Dry-Clip-Ceiling 0.9 klingt nach sauberem Kick. Rumble-Send 0.46 und Drive 3.8 sind Demo-Werte. Club sitzt jetzt bei Drive 11–14, Ceiling 0.24–0.58, Rumble-Send ~1.1, Duck 0.8+. JSON nur über `node scripts/generate_factory_presets.mjs` — der vorherige Punch-up lag nur im `.mjs`.
+
+#### Regel
+Club-Defaults gehören in die obere Hälfte des Ranges. Ein 0.9-Ceiling ist kein Brick. Generator laufen lassen, sonst hört der User die alten Presets. Letzter `hardclip`/`fold` braucht danach einen Recovery-LPF, sonst fällt das Quality-Gate.
+
+---
+
+### 2026-08-14 – 8× switch must reserve 8× buffers first
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** 8×-Wechsel knackt wieder; Gabber braucht Dyn + Sub  
+**Ergebnis:** OS-Bank und `scriptBuffer`/`scOsBuffer` immer auf 8×-Kapazität. Index erst in `prepare`. Nach dem Swap `cpuProtect.reset`. Gabber: `env1` skaliert den Clip, eigener Sub-Bus.
+
+#### Regel
+Nicht den OS-Index setzen, bevor `prepare` den Pointer umlegt. Kein `setSize` im ersten 8×-Audio-Block.
+
+---
+
+### 2026-08-14 – Rumble is room + drive + duck, not a low sat bus
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kick/Warehouse/Gabber klangen nicht nach Rumble  
+**Ergebnis:** Sat-Low-Bus ist nur extra Bass. Echter Rumble: Low-Pfad verzerren, dunkles Reverb (`damp` hoch), mit `env1` vom Dry-Kick ducken.
+
+#### Regel
+Rumble-Presets folgen Rhythmic Gate Delay: `env` auf main, Wet auf einem Bus, `y * (1 - env * duck)`. `reverb damp` ist 0–1, nicht Hz.
+
+---
+
+### 2026-08-14 – Comments are rust, not editor-green
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kommentarfarbe + größere Explorer-Ordner + Klang-Kommentar  
+**Ergebnis:** `LookAndFeel::comment()` = Rost `#c4786a`. Generator schreibt `# How it sounds:` in jedes Factory-Skript.
+
+#### Regel
+Kommentare nicht in Keyword-Grün. Explorer-Ordner mindestens 16 pt.
+
+---
+
+### 2026-08-14 – R-only input makes a vertical goniometer line
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Output-Feld wurde zum Strich bei Input = R, Input-Feld nicht  
+**Ergebnis:** Router legt R auf L und R. OUT war korrekt mono. IN tapte den Host vor dem Router. IN-Tap sitzt jetzt hinter L/BOTH/R.
+
+#### Regel
+IN-Scopes zeigen, was die Formel hört, nicht den rohen Host. Mix 0 bleibt ungeroutet (dry = Host).
+
+---
+
+### 2026-08-14 – Overlay children do not auto-resize
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Preset-Fenster + schwarzer Hintergrund beim Ziehen des Plugin-Fensters  
+**Ergebnis:** `addAndMakeVisible` setzt einmal Bounds. Parent-`resized()` muss `fitToParent()` rufen. Preferred 0 = Panel füllt mit 24 px Rand.
+
+#### Regel
+Jedes Kind-Overlay in `resized()` neu legen. Preferred-Größe ist ein Maximum, nicht die feste Öffnungsgröße.
+
+---
+
+### 2026-08-14 – Full ID rename + version 0.9.0
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Alles umbenennen inkl. ID und App-Ordner; Versionsnummer  
+**Ergebnis:** `NRKO`, AppData `NeuroKore`, CMake-Target `NeuroKore`. Version **0.9.0** — Feature-Stand ist weit über 0.2, 1.0 bleibt der Verkaufs-Cut. C++-Klassen (`NeuroCoreAudioProcessor`) intern gelassen.
+
+#### Regel
+In der Testphase dürfen CID und AppData wechseln. 0.9 heisst: testers-ready, nicht shop-ready.
+
+---
+
+### 2026-08-14 – Rebrand display, keep the CID
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Rebrand zu NEUROKORE by Neuroklast  
+**Ergebnis:** Host-Name, HUD, Help, Installer. `NRCO`/`NRKL`, AppData `NEUROKLAST/NeuroCore`, CMake-Target `NeuroCore` bleiben. Lizenz akzeptiert `NeuroCore` und `NEUROKORE`.
+
+#### Regel
+Produktname in der UI ist nicht der CMake-Target-Name. License-`product=` steht in der Signatur — alte Dateien nicht ungültig machen.
+
+---
+
+### 2026-08-14 – Glitch Lab lag was ping-pong + LFO-cutoff
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Glitch Lab neu, Club-Presets, Preset-Explorer  
+**Ergebnis:** Ping-Pong-Delay und `filter + = osc1` waren teuer und klangen unruhig. Neue Lab-Kette: crush → fold → ein Delay auf dem Notenraster → LPF. Kick-Rumble ist ein Low-Bus unter Dry, kein zweiter Kick-Synth. Explorer = Folder-Liste, keine zweite Combo.
+
+#### Regel
+Kein Ping-Pong und kein per-Sample-Filter-LFO in „Creative“-Smash-Presets. Rumble addiert auf `main = 1`, sonst wird der Kick leise. JSON nur über den Generator.
+
+---
+
+### 2026-08-14 – Scope extras read the ring, not a second meter tap
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Stereo-Feld + Loudness neben IN/OUT, gleiche Höhe, einklappbar  
+**Ergebnis:** `ScopeDeck` staucht die Wave horizontal. Field/LU kommen aus `WaveformCapture` (UI-Timer), nicht aus einem zweiten Audio-Tap. Fold ist ein 18-px-Streifen, kein extra Layout-Gewicht.
+
+#### Regel
+Kein zweiter Ring-Buffer für Meter. Correlation/Width im Header testen (Mono=1, Invert=−1). Help sagt "stereo field", nicht Goniometer.
+
+---
+
+### 2026-08-14 – Edge-cropped NK lets the toolbar shrink
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** NK-Logo aus `screenshots` (randscharf), Header halb so hoch  
+**Ergebnis:** Quadratisches `nk_logo.png` hatte viel Schwarz. Die +50%-Lockup + Toolbar `0.09` wurden ~72 px. Das Screenshot-Asset ist 1495×774 und schon an den Kanten. Toolbar jetzt `0.045` mit `maxHeight` 38.
+
+#### Regel
+Logo-Datei in `resources/img/nk_logo.png` ersetzen (gleicher BinaryData-Name). Nur das Gewicht reicht nicht — grosse Fenster wachsen sonst wieder. `maxHeight` hält die Chrome-Zeile flach.
+
+---
+
+### 2026-08-14 – Measure all 178 factory inserts; only six were quiet
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Jedes Factory-Preset messen; Inserts nachregeln; neue Blöcke einsetzen  
+**Ergebnis:** Send/Delay/Reverb ausgenommen. Nur Low Pass Sweep war tot (`Min + osc*Depth` geht auf Min−Depth). Tremolo/Chopper `Div [0,1]` war kein Note-Grid. Amp-Presets: `gate1` + leeres `ir1` + `limit1`. JSON nur über den Generator.
+
+#### Regel
+Lautstärke über `applyPreset` messen, nicht am nackten Skript. Filter-Sweeps nie als `min + bipolar*depth` schreiben.
+
+---
+
+### 2026-08-14 – Pack import + Windows installer; repo scratch ignored
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Serum-artige Packs, Installer, Repo aufräumen  
+**Ergebnis:** `.nrk` bleibt die Einheit. Ordner/Zip mit mehreren Dateien → `UserPresets/Packs/<name>/`. `getAvailablePresets` rekursiv. Installer kopiert das VST3-Bundle nach `Common Files\VST3`. `build-test/`, `mcps/`, `terminals/` in `.gitignore`.
+
+#### Regel
+Kein zweites Preset-Format. Pack = Hülle. Installer ist nur der letzte Meter zum Host-Scan-Pfad.
+
+---
+
+### 2026-08-14 – CPU hotpath: no alloc, cache exp, skip dead work
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** CPU-schwere Blöcke schneller, ohne Klangänderung  
+**Ergebnis:** IR-Dry-Buffer nicht mehr pro Block alloziert; mix=0/1 ohne Sample-Schleife. Comp/Gate/Limit cachen `exp`/`dB` solange der Wert steht. Vocoder ruft `applyBands` nur bei Q/Formant-Änderung (kein Heap alle 16 Samples). Xover `SmoothedValue::skip`. Comb-Wrap ohne while.
+
+#### Regel
+Kein `new`/`AudioBuffer` im Audio-Thread. `exp` nicht jedes Sample, wenn Attack/Release stillstehen. Coeff-Updates nur bei echter Parameteränderung.
+
+---
+
+### 2026-08-14 – Help text larger; manual covers IR / license / dynamics
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hilfe aktualisieren und Schrift vergrößern  
+**Ergebnis:** Body 16→20 pt, Liste 13.5→16.5, höhere Chapter-Zeilen. `UserManual_en.txt` beschreibt IR-Buttons, License-Inhaber, gate/limit/xover. Help bleibt operator-only.
+
+#### Regel
+Plugin-Help ist `resources/UserManual_en.txt`. Schrift in `Config::kHelpBodyFontPt` halten, nicht hart im Component.
+
+---
+
+### 2026-08-14 – Licensed License button shows the holder; lockup +50%
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** License-Klick nach Aktivierung + größeres NK-Lockup  
+**Ergebnis:** Unlizenziert bleibt der File-Chooser. Lizenziert öffnet ein Overlay mit E-Mail (und Issued). Replace bleibt möglich. BrandLockup 20→30 px und Schrift 1.5×; sitzt in der Toolbar, nicht in der 22 px HUD-Leiste.
+
+#### Regel
+Lizenz-Import nicht nochmal aufzwingen, wenn schon aktiviert. Logo-Cap ist Toolbar, nicht HUD-Höhe.
+
+---
+
 ### 2026-08-14 – xover buses must exist before `out` is parsed
 
 **Agent:** Grok Coding Agent  

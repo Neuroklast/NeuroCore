@@ -356,8 +356,8 @@ void FunctionsContentComponent::loadFunctions()
     candidates.add (app.getSiblingFile (Config::kResourceFolder).getChildFile ("locale").getChildFile (fileName));
     candidates.add (app.getParentDirectory().getChildFile (Config::kResourceFolder)
                        .getChildFile ("locale").getChildFile (fileName));
-   #ifdef NEUROCORE_RESOURCES_DIR
-    candidates.add (juce::File (NEUROCORE_RESOURCES_DIR).getChildFile ("locale").getChildFile (fileName));
+   #ifdef NEUROKORE_RESOURCES_DIR
+    candidates.add (juce::File (NEUROKORE_RESOURCES_DIR).getChildFile ("locale").getChildFile (fileName));
    #endif
     auto dir = juce::File::getCurrentWorkingDirectory();
     for (int i = 0; i < 5; ++i)

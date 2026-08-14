@@ -69,11 +69,10 @@ public:
                     expectWithinAbsoluteError (wet.getSample (ch, i), 0.625f, 1.0e-4f);
         }
 
-        // ---- A3: OS default index is 2x (choice index 1) ----
-        beginTest ("oversampling default choice index is 2x (1)");
+        // ---- A3: OS default index is 4x (choice index 2) ----
+        beginTest ("oversampling default choice index is 4x (2)");
         {
-            // Contract: default stage index must be 1 (= 2×), not 2 (= 4×)
-            expectEquals (Config::kDefaultOversamplingIndex, 1);
+            expectEquals (Config::kDefaultOversamplingIndex, 2);
         }
 
         beginTest ("meter ballistics are fast enough for the UI");

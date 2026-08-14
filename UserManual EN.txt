@@ -1,6 +1,6 @@
-NeuroCore DSL – User Manual
-1. What is the NeuroCore DSL?
-The NeuroCore DSL is a text based language that lets you describe complex audio effect chains
+NEUROKORE DSL – User Manual
+1. What is the NEUROKORE DSL?
+The NEUROKORE DSL is a text based language that lets you describe complex audio effect chains
 (waveshaping, filters, compressors, LFOs, envelopes, etc.) inside a single text field.
 You have full control over the signal flow and can use your own formulas in realtime with four macro knobs.
 

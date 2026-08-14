@@ -111,6 +111,36 @@ public:
             expect (chain.getMaxTailTime() > 0.5f);
         }
 
+        beginTest ("reverb keeps stereo when fed L-only vs R-only");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "reverb1: size = 0.55; decay = 0.5; damp = 0.4; mix = 1.0; width = 1.0", err), err);
+
+            juce::AudioBuffer<float> left (2, 512);
+            left.clear();
+            left.setSample (0, 0, 1.0f);
+            for (int b = 0; b < 6; ++b)
+                chain.processBlockSmoothed (left, TestHelpers::nullKnobs());
+            const float lOnL = TestHelpers::peakAbs (left);
+
+            chain.prepare (spec);
+            expect (chain.loadScript (
+                "reverb1: size = 0.55; decay = 0.5; damp = 0.4; mix = 1.0; width = 1.0", err), err);
+            juce::AudioBuffer<float> right (2, 512);
+            right.clear();
+            right.setSample (1, 0, 1.0f);
+            for (int b = 0; b < 6; ++b)
+                chain.processBlockSmoothed (right, TestHelpers::nullKnobs());
+            expect (lOnL > 1.0e-4f);
+            expect (std::abs (right.getSample (1, 80)) + std::abs (right.getSample (1, 160)) > 0.f
+                    || TestHelpers::peakAbs (right) > 1.0e-4f);
+            expectEquals (TestHelpers::countNonFinite (left), 0);
+            expectEquals (TestHelpers::countNonFinite (right), 0);
+        }
+
         beginTest ("ms encode/decode roundtrip");
         {
             dsl::SignalChain chain;

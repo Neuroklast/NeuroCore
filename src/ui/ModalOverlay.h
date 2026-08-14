@@ -30,8 +30,15 @@ public:
     /** Jump to end of the current sequence (re-open / editor teardown). */
     void skipToEnd();
 
-    /** Optional preferred content size (default ~80% of parent). */
+    /** Optional max content size. 0 = fill the host minus a margin. */
     void setPreferredContentSize (int w, int h);
+
+    /** Cover the parent again (call from the editor's resized()). */
+    void fitToParent();
+
+    /** Panel size for a host window. pref 0 = fill with margin. */
+    static juce::Rectangle<int> panelSizeFor (int hostW, int hostH,
+                                              int prefW, int prefH) noexcept;
 
     juce::Component* getContentComponent() const noexcept { return content.get(); }
 

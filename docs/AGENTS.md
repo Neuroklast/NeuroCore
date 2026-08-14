@@ -1,7 +1,7 @@
-# NeuroCore – Agent Guidelines
+# NEUROKORE – Agent Guidelines
 
 ## Project Overview
-- Product: NeuroCore audio effect plugin
+- Product: NEUROKORE by Neuroklast (code targets stay NeuroCore)
 - Stack: JUCE 8.0.6, C++17, CMake
 - Formats: VST3, AU, Standalone
 - Core idea: runtime-programmable DSL signal chain ("ShaderToy for audio")
@@ -63,7 +63,7 @@ cmake -B build -S .
 cmake --build build --config Release
 
 # Tests
-cmake --build build --target NeuroCoreTests
+cmake --build build --target NeuroKoreTests
 ctest --test-dir build --output-on-failure
 ```
 

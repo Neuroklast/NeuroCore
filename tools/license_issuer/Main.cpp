@@ -94,7 +94,7 @@ int runCli (const juce::StringArray& args)
     {
         const auto slug = LicenseCrypto::normalizeEmail (email).replaceCharacters ("@.", "__");
         dest = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                   .getChildFile ("NeuroCore-" + slug + ".lic");
+                   .getChildFile ("NEUROKORE-" + slug + ".lic");
     }
 
     juce::String error;
@@ -114,7 +114,7 @@ class IssuerComponent : public juce::Component
 public:
     IssuerComponent()
     {
-        title.setText ("NeuroCore License", juce::dontSendNotification);
+        title.setText ("NEUROKORE License", juce::dontSendNotification);
         title.setFont (juce::FontOptions (22.0f, juce::Font::bold));
         title.setColour (juce::Label::textColourId, juce::Colour (0xffff2a2a));
         title.setJustificationType (juce::Justification::centredLeft);
@@ -172,7 +172,7 @@ private:
 
         const auto slug = address.replaceCharacters ("@.", "__");
         const auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                               .getChildFile ("NeuroCore-" + slug + ".lic");
+                               .getChildFile ("NEUROKORE-" + slug + ".lic");
         chooser = std::make_unique<juce::FileChooser> ("Save license", start, "*.lic");
         constexpr int flags = juce::FileBrowserComponent::saveMode
                             | juce::FileBrowserComponent::canSelectFiles
@@ -199,7 +199,7 @@ class IssuerWindow : public juce::DocumentWindow
 {
 public:
     IssuerWindow()
-        : DocumentWindow ("NeuroCore License Issuer",
+        : DocumentWindow ("NEUROKORE License Issuer",
                           juce::Colour (0xff0a0000),
                           DocumentWindow::closeButton | DocumentWindow::minimiseButton)
     {
@@ -219,7 +219,7 @@ public:
 class IssuerApp : public juce::JUCEApplication
 {
 public:
-    const juce::String getApplicationName() override    { return "NeuroCoreIssuer"; }
+    const juce::String getApplicationName() override    { return "NeuroKoreIssuer"; }
     const juce::String getApplicationVersion() override { return "1.0"; }
 
     void initialise (const juce::String&) override

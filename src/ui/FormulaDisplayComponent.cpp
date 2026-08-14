@@ -419,7 +419,7 @@ void FormulaDisplayComponent::rebuildAttributed()
     if (lines.isEmpty())
         lines.add ("// empty formula");
 
-    const auto commentCol = juce::Colour (0xff5a8a5a);
+    const auto commentCol = NeuroCoreLookAndFeel::comment();
 
     for (int li = 0; li < lines.size(); ++li)
     {

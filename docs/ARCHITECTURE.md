@@ -16,7 +16,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **DSL Multi-Bus** | `BusGraph` + `SignalChain` | Max. 4 Named Buses + `in`/`main`. Send nur rückwärts (DAG). Mixdown **in** der DSL, eine Engine-Timeline. |
 | **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
 
-Defaults: OS **2×** (`Config::kDefaultOversamplingIndex = 1`), Diagnostics **off**, AutoGain **off**.
+Defaults: OS **4×** (`Config::kDefaultOversamplingIndex = 2`), Diagnostics **off**, AutoGain **off**.
 
 Diagnose-Heuristik: Crackle an `smp≈latency` → Timeline. `smp=0` → Control-Rate/State.
 
