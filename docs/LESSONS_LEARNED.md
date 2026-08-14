@@ -9,6 +9,17 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-14 – macOS CI cannot FORCE juceaide as a later target
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** AU-Job auf GitHub Actions  
+**Ergebnis:** `juceaide was imported, but it doesn't exist!` — `JUCE_BUILD_HELPER_TOOLS=ON` macht nur ein Build-Target. `juce_add_plugin` ruft juceaide aber schon beim Configure für AU-Plists auf.
+
+#### Regel
+Windows: `JUCE_BUILD_HELPER_TOOLS=ON`. Apple/Linux: OFF, JUCE bootstrapt juceaide während Configure.
+
+---
+
 ### 2026-08-14 – AU without a Mac is a GitHub macos runner
 
 **Agent:** Grok Coding Agent  

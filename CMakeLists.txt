@@ -22,8 +22,15 @@ if(UNIX AND NOT APPLE)
 endif()
 
 
-# Always build the helper tools (juceaide) - must be set before JUCE is added
-set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
+# juceaide must exist at configure time on Apple (AU/app Info.plist).
+# JUCE bootstraps a host binary when JUCE_BUILD_HELPER_TOOLS is OFF.
+# On Windows/VS we keep it ON so juceaide is a real target and our
+# JUCEUtils patch ($<TARGET_FILE:juceaide>) can resolve at build time.
+if(WIN32)
+    set(JUCE_BUILD_HELPER_TOOLS ON CACHE BOOL "" FORCE)
+else()
+    set(JUCE_BUILD_HELPER_TOOLS OFF CACHE BOOL "" FORCE)
+endif()
 
 if(NOT DEFINED JUCE_DIR)
     if(DEFINED ENV{JUCE_DIR})

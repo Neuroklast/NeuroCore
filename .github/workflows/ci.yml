@@ -120,7 +120,7 @@ jobs:
           submodules: recursive
 
       - name: Configure
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=ON
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 
       - name: Build AU
         run: cmake --build build --config Release --target NeuroCore_AU --parallel
