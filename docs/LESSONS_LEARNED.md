@@ -9,6 +9,127 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-14 – AU without a Mac is a GitHub macos runner
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** AU bauen ohne lokalen Mac  
+**Ergebnis:** Kein Cross-Compile von Windows. Eigener CI-Job `AU (macOS)` baut `NeuroCore_AU`, ad-hoc-signiert, kopiert nach `~/Library/Audio/Plug-Ins/Components/`, dann `auval -v aumf NRCO NRKL`.
+
+#### Regel
+AU nur mit Apple-Toolchain. Ohne Mac: `macos-latest` + Artifact. Vor `auval` Registrar killen und das Bundle signieren, sonst sieht Logic/auval das Component nicht.
+
+---
+
+### 2026-08-14 – AU is Apple-only and must be a MusicEffect
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** AU-Plugin neben VST3 + Standalone  
+**Ergebnis:** `FORMATS … AU` stand schon in CMake, erzeugt auf Windows aber kein Target. Projucer baute nur Standalone+VST3. `kAudioUnitType_Effect` (`aufx`) bekommt in Logic kein MIDI.
+
+#### Regel
+AU nur auf macOS (`NeuroCore.component`). Typ `kAudioUnitType_MusicEffect` (`aumf`) wenn das Plugin MIDI will (Learn, `midi_note`). Kein `pluginChannelConfigs={2,2}` — das wirft den Sidechain-Bus weg.
+
+---
+
+### 2026-08-13 – Bypass must lock Mix or Mix undoes Bypass
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Mix im Bypass nicht verstellbar  
+**Ergebnis:** Bypass setzt Mix auf 0. Der Slider blieb aktiv, also ging das Signal wieder nass, während BYPASSED stand.
+
+#### Regel
+Bypass ist der Schalter. Solange er an ist: Mix-Slider aus, Parameter auf 0 halten, gespeicherten Mix erst beim Ausschalten zurück.
+
+---
+
+### 2026-08-13 – Autocomplete only on Ctrl+Space
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Autocomplete nur per Shortcut  
+**Ergebnis:** Caret- und Document-Listener haben die Liste bei jedem Tastendruck geöffnet.
+
+#### Regel
+Liste nur nach Ctrl/Cmd+Space. Weitere Tasten filtern die offene Liste. Kein Ghost-Text ohne Popup.
+
+---
+
+### 2026-08-13 – Preset table default sort is Name, not factory order
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Presets default sortieren + Tag-Spalte  
+**Ergebnis:** `sortColumn == 0` hat die Generator-Reihenfolge gelassen. Default ist Name (natural). Tags sind eigene Spalte (id 6), Rating bleibt id 5 (Klick-Sterne).
+
+#### Regel
+Neue Tabellenspalten hinten an die IDs hängen, visuell per `addColumn`-Reihenfolge legen. Rating-Klicks an der festen Column-ID festmachen.
+
+---
+
+### 2026-08-13 – mix=1 delay plus lerp(x, y) is a wet loop
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Rhythmic Gate Delay periodische Artefakte  
+**Ergebnis:** `delay mix = 1` ersetzt das Dry. In der nächsten Stage sind `x` und `y` dasselbe nasse Sample, `lerp(x, y, duck)` ist eine No-Op. Man hört nur den Delay-Kreislauf alle `Time` ms. Duck und Mix greifen nicht.
+
+#### Regel
+Send-Delay: Dry auf `main`, Echo auf einem Bus, Duck nur den Nass-Pfad (`y = x * (1 - env * duck)`), `out: main = 1; echo = mix`. Niemals `lerp(x, y)` nach einem Block mit Mix 1.
+
+---
+
+### 2026-08-13 – Bandpass is not a mid EQ
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Bestehende Presets nur bei Mehrwert anfassen; Hardware-Comp/Delay/Reverb ergänzen  
+**Ergebnis:** Ein SVF-Bandpass als „Mid-Hump“ löscht Sub und Air. Peak/Notch/Shelf hält das Spektrum und formt nur das Band. `lerp(x, y, mix)` nach einer Stage mischt nicht Dry — `x` und `y` sind dann schon nass. Hardware-Kompressoren haben kein Mix-Poti.
+
+#### Regel
+Bandpass nur für Wah/Formant/Radio. Ton-EQ immer `eq`. Dry/Wet nach einer Kette über `bus` + `out` oder in **einer** Stage gegen das ursprüngliche `x`. Kompressor-Presets an Panel-Zeiten halten (Attack-Boden 1 ms).
+
+---
+
+### 2026-08-13 – Scope banners were a second TooltipWindow, not a painted title
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Screenshot 220518: Tooltip zweimal, Preset-Schrift, Meter-Glitch, Amps/Octaver/Vocoder  
+**Ergebnis:** Jeder Scope hatte ein Kind-`TooltipWindow`. Beide haben denselben Tip (Preset-Chip) als Banner gemalt. Ein Window am Editor reicht. Meter-Glitch muss cubisch mit dem Pegel kommen, sonst pixelts schon bei −18 dB. Octaver/Vocoder als echte Blöcke, nicht als 12-Bus-DSL.
+
+#### Regel
+Genau ein `TooltipWindow` am Editor. Scopes nur `SettableTooltipClient`. Factory-Octaver nie über `y_prev`/`step` — Tracker gehört in C++. Vocoder ohne Sidechain self-vocodet, sonst fällt das Quality-Gate auf Stille.
+
+---
+
+### 2026-08-13 – Two TooltipWindows paint the same tip twice
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Screenshot 220518: Tooltip auf IN und OUT  
+**Ergebnis:** Jeder Scope hatte ein eigenes `TooltipWindow`. Beide haben den Preset-Chip-Text als Banner gezeichnet.
+
+#### Regel
+Genau ein `TooltipWindow` am Editor. Scopes bleiben `SettableTooltipClient`.
+
+---
+
+### 2026-08-13 – EQ is not the SVF filter; sidechain is a second bus
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Equalizer mit Q/Freq/Typ plus externes Sidechain-Audio im DSL  
+**Ergebnis:** Neuer `eq`-Block (IIR: peak/notch/cut/shelf). Zweiter Input-Bus „Sidechain“. Im Code `sc`, `sc_l`, `sc_r`. Env kann `source = sidechain`. processBlock arbeitet nur auf dem Main-Bus, sonst würde der Sidechain als Extra-Kanal mitverarbeitet.
+
+#### Regel
+Zusätzlicher Input-Bus immer über `getBusBuffer` vom Main trennen. Sidechain auf OS-Länge holen (Hold), bevor die Formel ihn sampleweise liest.
+
+---
+
+### 2026-08-13 – Meter, note knobs, status columns
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Loudness hängt; Zählzeiten 1/1–1/16 einrasten; Statuszeile darf nicht schieben  
+**Ergebnis:** Dry-Pfad schreibt den Ausgangspegel. `param … [1/1, 1/16]` rastet auf Raster inkl. Punkt/Triole; Wert in der Formel ist ms. Status nutzt Mono-Padding fester Breite.
+
+#### Regel
+Mix 0 / SAFE darf den Meter nicht einfrieren — immer den hörbaren Buffer messen. HUD-Zahlen in einer Mono-Zeile nur mit fester Zeichenbreite.
+
+---
+
 ### 2026-08-13 – NK logo must never use toolbar height
 
 **Agent:** Grok Coding Agent  

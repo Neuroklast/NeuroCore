@@ -121,22 +121,38 @@ set(SOURCE_FILES
     src/ui/PluginEditor.cpp
 )
 
+# AU (.component) is generated only on Apple. JUCE silently drops it elsewhere.
+# Copy after build only on macOS: Windows Program Files is not writable without admin.
+if(APPLE)
+    set(_nc_copy_plugin_after_build TRUE)
+    message(STATUS "Plugin formats: Standalone, VST3, AU (NeuroCore.component)")
+else()
+    set(_nc_copy_plugin_after_build FALSE)
+    message(STATUS "Plugin formats: Standalone, VST3 (AU is macOS-only and skipped here)")
+endif()
+
 juce_add_plugin(NeuroCore
     COMPANY_NAME "NEUROKLAST"
+    BUNDLE_ID com.NEUROKLAST.NeuroCore
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    # FALSE: avoid failing POST_BUILD when writing to Program Files without admin
-    COPY_PLUGIN_AFTER_BUILD FALSE
+    COPY_PLUGIN_AFTER_BUILD ${_nc_copy_plugin_after_build}
     PLUGIN_MANUFACTURER_CODE NRKL
     PLUGIN_CODE NRCO
     FORMATS Standalone VST3 AU
-    AU_MAIN_TYPE "kAudioUnitType_Effect"
+    # MusicEffect (aumf): Logic/hosts route MIDI (Learn + midi_note/vel/gate).
+    # kAudioUnitType_Effect (aufx) is audio-only and drops MIDI.
+    AU_MAIN_TYPE kAudioUnitType_MusicEffect
+    AU_EXPORT_PREFIX NeuroCoreAU
+    AU_SANDBOX_SAFE TRUE
     PRODUCT_NAME "NeuroCore"
     VST3_CATEGORIES "Fx|Distortion"
     VST3_AUTO_MANIFEST FALSE
+    MICROPHONE_PERMISSION_ENABLED TRUE
+    MICROPHONE_PERMISSION_TEXT "NeuroCore needs microphone access to process live audio in the standalone app."
 )
 
 target_sources(NeuroCore PRIVATE
@@ -220,6 +236,13 @@ if(TARGET NeuroCore_VST3)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/resources
             $<TARGET_FILE_DIR:NeuroCore_VST3>/resources
+    )
+endif()
+if(TARGET NeuroCore_AU)
+    add_custom_command(TARGET NeuroCore_AU POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources
+            $<TARGET_FILE_DIR:NeuroCore_AU>/resources
     )
 endif()
 

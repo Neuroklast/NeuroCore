@@ -6,6 +6,7 @@ on:
     branches: [master]
   pull_request:
     # Run CI on all pull requests
+  workflow_dispatch:
 
 jobs:
   build:
@@ -105,3 +106,79 @@ jobs:
         with:
           name: NeuroCore-${{ matrix.os }}
           path: build/NeuroCore_artefacts
+
+  # Audio Units are Apple-only. This job is how we ship NeuroCore.component
+  # without a local Mac. Windows remains the unit-test gate.
+  au:
+    name: AU (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DJUCE_BUILD_HELPER_TOOLS=ON
+
+      - name: Build AU
+        run: cmake --build build --config Release --target NeuroCore_AU --parallel
+
+      - name: Locate, sign, and install AU
+        id: au
+        run: |
+          set -euo pipefail
+          AU=""
+          for candidate in \
+            build/NeuroCore_artefacts/Release/AU/NeuroCore.component \
+            build/NeuroCore_artefacts/AU/NeuroCore.component
+          do
+            if [ -d "$candidate" ]; then
+              AU="$candidate"
+              break
+            fi
+          done
+          if [ -z "$AU" ]; then
+            echo "NeuroCore.component not found under build/NeuroCore_artefacts"
+            ls -laR build/NeuroCore_artefacts || true
+            exit 1
+          fi
+          echo "Found $AU"
+          codesign --force --deep --sign - "$AU"
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          rm -rf "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+          cp -R "$AU" "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+          codesign --force --deep --sign - "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 2
+          echo "bundle=$AU" >> "$GITHUB_OUTPUT"
+
+      - name: Validate AU with auval
+        timeout-minutes: 10
+        run: |
+          auval -a | grep -i -e NeuroCore -e NRCO || true
+          auval -v aumf NRCO NRKL
+
+      - name: Download pluginval (macOS)
+        run: |
+          curl -fsSL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip -o pluginval.zip
+          unzip -o pluginval.zip
+
+      - name: Validate AU with pluginval
+        timeout-minutes: 15
+        run: |
+          chmod +x ./pluginval.app/Contents/MacOS/pluginval
+          ./pluginval.app/Contents/MacOS/pluginval --validate-in-process --strictness-level 5 \
+            "$HOME/Library/Audio/Plug-Ins/Components/NeuroCore.component"
+
+      - name: Upload AU
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeuroCore-AU-macOS
+          path: |
+            build/NeuroCore_artefacts/Release/AU/
+            build/NeuroCore_artefacts/AU/
+          if-no-files-found: warn
+          retention-days: 30

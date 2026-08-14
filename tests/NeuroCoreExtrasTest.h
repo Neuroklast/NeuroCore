@@ -42,6 +42,7 @@ public:
         testProcessorStateRoundTrip();
         testFactoryPresetLibrary();
         testFormulaTemplatesHonesty();
+        testAuHostBusLayout();
     }
 
 private:
@@ -842,6 +843,45 @@ private:
             proc.setLastPresetBrowserScope (2);
             expectEquals (proc.getLastPresetBrowserCategory(), juce::String ("Delay"));
             expectEquals (proc.getLastPresetBrowserScope(), 2);
+        }
+    }
+
+    // Logic/AU hosts need a declared sidechain bus. Plugin MIDI macros live on
+    // the NeuroCore target, not this console test app.
+    void testAuHostBusLayout()
+    {
+        beginTest ("AU host: stereo I/O plus optional stereo sidechain");
+        {
+            NeuroCoreAudioProcessor proc;
+
+            expect (! proc.producesMidi());
+            expect (! proc.isMidiEffect());
+            expectEquals (proc.getBusCount (true), 2);
+            expectEquals (proc.getBusCount (false), 1);
+
+            const auto* mainIn = proc.getBus (true, 0);
+            const auto* sidechain = proc.getBus (true, 1);
+            const auto* mainOut = proc.getBus (false, 0);
+            expect (mainIn != nullptr && mainIn->isEnabled());
+            expect (sidechain != nullptr && ! sidechain->isEnabledByDefault());
+            expect (mainOut != nullptr && mainOut->isEnabled());
+            expectEquals (sidechain->getName(), juce::String ("Sidechain"));
+
+            juce::AudioProcessor::BusesLayout stereo;
+            stereo.inputBuses.add (juce::AudioChannelSet::stereo());
+            stereo.inputBuses.add (juce::AudioChannelSet::disabled());
+            stereo.outputBuses.add (juce::AudioChannelSet::stereo());
+            expect (proc.checkBusesLayoutSupported (stereo));
+
+            juce::AudioProcessor::BusesLayout stereoWithSc = stereo;
+            stereoWithSc.inputBuses.getReference (1) = juce::AudioChannelSet::stereo();
+            expect (proc.checkBusesLayoutSupported (stereoWithSc));
+
+            juce::AudioProcessor::BusesLayout mono;
+            mono.inputBuses.add (juce::AudioChannelSet::mono());
+            mono.inputBuses.add (juce::AudioChannelSet::disabled());
+            mono.outputBuses.add (juce::AudioChannelSet::mono());
+            expect (proc.checkBusesLayoutSupported (mono));
         }
     }
 };

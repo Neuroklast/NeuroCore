@@ -2,9 +2,10 @@
 
 <JUCERPROJECT id="wui1EH" name="NeuroCore" projectType="audioplug" jucerFormatVersion="1"
               version="0.0.1" companyName="NEUROKLAST" companyWebsite="http://neuroklast.net"
-              companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3"
+              companyEmail="info@neuroklast.net" pluginFormats="buildStandalone,buildVST3,buildAU"
               pluginManufacturerCode="NRKL" pluginCode="NRCO" pluginVST3Category="Fx"
-              cppLanguageStandard="20" pluginChannelConfigs="{2,2}">
+              pluginAUMainType="aumf" pluginAUIsSandboxSafe="1" pluginWantsMidiIn="1"
+              pluginEditorRequiresKeys="1" cppLanguageStandard="20">
   <MAINGROUP id="GyblaO" name="NeuroCore">
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
     <GROUP id="{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}" name="resources">

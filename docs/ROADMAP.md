@@ -40,7 +40,7 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 Diese Phase bringt NeuroCore auf den Stand eines professionell vertriebenen Plugins.
 
 ### Format-Support
-- [ ] AU-Format für macOS aktivieren (JUCE `FORMATS AU`)
+- [x] AU-Format für macOS aktivieren (JUCE `FORMATS AU`, `aumf` MusicEffect)
 - [ ] CLAP-Format vorbereiten (Community-Wrapper evaluieren)
 - [ ] AAX-Format für Pro Tools (Avid-Zertifizierung erforderlich)
 

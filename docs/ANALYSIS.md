@@ -209,12 +209,12 @@ for (size_t i = 0; i < numSamples; ++i)
 
 | Feature | Priorität | Status |
 |---|---|---|
-| AU-Format (macOS) | 🔴 Hoch | Nur VST3 + Standalone |
+| AU-Format (macOS) | 🟢 Erledigt | CMake `aumf`; CI-Job `AU (macOS)` liefert `.component` |
 | AAX-Format | 🟡 Mittel | Kein Pro-Tools-Support |
 | CLAP-Format | 🟢 Nice | Wachsendes Ökosystem |
 | Installer | 🔴 Hoch | Kein NSIS/WiX/pkgbuild |
 | Code-Signing | 🔴 Hoch | Gatekeeper/SmartScreen blockieren |
-| CI/CD | 🟡 Mittel | Dockerfile vorhanden, kein GitHub Actions |
+| CI/CD | 🟢 Da | Windows Tests+pluginval; macOS-Job für AU |
 
 ---
 

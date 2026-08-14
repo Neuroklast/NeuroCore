@@ -2,7 +2,7 @@
 
 Programmable real-time audio effect by **NEUROKLAST**. You write a short DSL formula (stages, filters, delay, reverb, compressors, envelopes, oscillators) and map six host knobs **a–f** into it.
 
-The UI is English-only. Formats: Standalone, VST3, AU.
+The UI is English-only. Formats: Standalone, VST3, and on macOS an Audio Unit (`.component`).
 
 ## Build
 
@@ -16,13 +16,23 @@ cmake --build build --target NeuroCoreTests
 ctest --test-dir build
 ```
 
-Artefacts land in `build/NeuroCore_artefacts/Release/` (`Standalone/NeuroCore.exe`, `VST3/NeuroCore.vst3`). Resources are copied next to each binary.
+On **macOS** also build the AU (Logic, GarageBand, Ableton AU slot):
+
+```bash
+cmake --build build --config Release --target NeuroCore_AU
+```
+
+Artefacts land in `build/NeuroCore_artefacts/Release/` (`Standalone/`, `VST3/NeuroCore.vst3`, and on macOS `AU/NeuroCore.component`). Resources are copied next to each binary. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
+
+Audio Units are an Apple format: a Windows or Linux CMake run still lists `AU` in `FORMATS`, but JUCE skips the target. You cannot produce a `.component` on Windows.
+
+Without a Mac, use GitHub Actions: the **AU (macOS)** job builds, signs, runs `auval -v aumf NRCO NRKL`, and uploads `NeuroCore-AU-macOS`. Trigger it with a push/PR or **Actions → Build → Run workflow**. Download the artifact, then copy `NeuroCore.component` to `~/Library/Audio/Plug-Ins/Components/` on the Mac that will load it.
 
 On Windows, `build_debug.bat` / `build_release.bat` use Ninja Multi-Config if you prefer that over the Visual Studio generator.
 
 ## Using it
 
-1. Load the Standalone or the VST3 in a host.
+1. Load the Standalone, the VST3, or on macOS the AU (`NeuroCore.component`) in a host.
 2. Open **Presets** and pick a factory preset (amp, delay, vocal chain, …).
 3. Tweak knobs **a–f**. Names and ranges come from `param` lines in the formula.
 4. Click **Edit** to change the DSL, **Check** to validate, **Save** to apply.

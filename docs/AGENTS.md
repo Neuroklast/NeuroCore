@@ -49,7 +49,9 @@
 - Per-sample heavy object creation in DSP hot paths
 - Missing latency reporting after oversampling changes
 - Missing wet-path latency compensation for dry/wet mix
-- Missing AU format in CMake plugin formats
+- AU listed in CMake `FORMATS` but built only on Apple (JUCE drops it on Windows/Linux)
+- AU type must stay `kAudioUnitType_MusicEffect` (`aumf`) so Logic routes MIDI
+- AU binaries come from the `AU (macOS)` GitHub Actions job, not from a Windows build
 
 ## Build & Test
 ```bash
