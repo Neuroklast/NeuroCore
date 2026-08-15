@@ -211,6 +211,10 @@ juce_add_binary_data(resourcesBinary
         resources/UserManual_en.txt
         # Embedded so Cubase/hosts work without a loose resources/ folder next to the .vst3
         resources/factory_presets.json
+        "resources/irs/American IR 01.wav"
+        "resources/irs/British IR 01.wav"
+        "resources/irs/Medium IR 01.wav"
+        "resources/irs/Vintage IR 01.wav"
 )
 
 target_link_libraries(NeuroKore PRIVATE

@@ -215,7 +215,10 @@ public:
     double getIrSampleRate (const juce::String& slot) const noexcept;
     const juce::AudioBuffer<float>* getIrBuffer (const juce::String& slot) const noexcept;
     bool loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error);
+    bool loadIrFromMemory (const juce::String& slot, const void* data, int size,
+                           const juce::String& displayName, juce::String& error);
     void clearIr (const juce::String& slot);
+    void clearAllIrs();
     void refreshReportedLatency();
 
     // juce::AudioProcessorValueTreeState::Listener implementation
@@ -257,6 +260,8 @@ private:
     };
     std::map<juce::String, IrAsset> irBank;
 
+    bool installIr (const juce::String& slot, juce::AudioFormatReader& reader,
+                    const juce::String& displayName, juce::String& error);
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)

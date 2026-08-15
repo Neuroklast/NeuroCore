@@ -282,6 +282,8 @@ ir2: mix = 0.35
 
 Mehrere Slots (`ir1`, `ir2`, …). Die Datei steht **nicht** in der Formel. Im Formel-Editor erscheint unter jeder `ir`-Zeile ein Button über die volle Breite: Drop / Change / Clear. WAV/AIFF, max. 2 s. Leerer Slot = dry.
 
+Amp-Factory-Presets (Mesa, 5150, JCM, AC30, Tube Screamer, Fuzz Face, Metal Gate, Stereo Guitar Wall) laden beim Apply eine Cab-WAV aus `resources/irs/` (auch in BinaryData). Die Zuordnung steht im Factory-JSON unter `irs`, nicht in der DSL.
+
 ---
 
 ## `comp` – Kompressor

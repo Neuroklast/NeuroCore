@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <map>
 #include <vector>
 
 class NeuroCoreAudioProcessor;
@@ -12,6 +13,8 @@ struct FactoryPresetEntry
     juce::String description;
     juce::String script;
     juce::StringArray tags;
+    /** Slot id ("ir1") -> original WAV filename. Audio is not in the formula. */
+    std::map<juce::String, juce::String> irs;
     juce::String paramNames[8];
     float paramMin[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
     float paramMax[8]  { 1, 1, 1, 1, 1, 1, 1, 1 };

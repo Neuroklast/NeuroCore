@@ -373,3 +373,7 @@ terminals/
 docs/superpowers/
 *.afphoto
 build/package/
+
+# Third-party IR dumps. Shipped cabs live in resources/irs/ with their license.
+/IR/
+/Origin Effects - IR-Cab Library V3/

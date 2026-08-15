@@ -30,7 +30,7 @@
 | UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; plus kompakte IN/OUT-Balken | 99% | 2026-08-14 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 191 Factory; OTT Smash; Mono to Stereo; Explorer-Pfeile | 99% | 2026-08-15 |
+| Preset-System | ✅ 191 Factory; Amp-IRs preloaded (Neuroklast British/Vintage) | 99% | 2026-08-15 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
 | Tests | ✅ 2940 passed / 0 failed | 99% | 2026-08-14 |
@@ -43,6 +43,14 @@
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-15 – Factory cabinet IRs
+
+- [x] Acht Amp-Presets mit `ir1` mappen auf American / British / Medium / Vintage
+- [x] WAV in `resources/irs/`; BinaryData; keine Dritt-Lizenz
+- [x] `applyPreset` lädt IR nach der Formel, räumt fremde Slots weg
+- [x] Formel bleibt ohne Dateipfad
+- [ ] Manuell: Mesa / TS / JCM / AC30 in der DAW — Cab hörbar, Clear macht dry
 
 ### 2026-08-15 – Functions folders + docs
 

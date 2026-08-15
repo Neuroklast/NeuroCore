@@ -91,10 +91,81 @@ bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPreset
         e.outputGainDb = item.value("outputGain", 0.f);
         e.mix          = item.value("mix", 1.f);
 
+        if (item.contains ("irs") && item["irs"].is_object())
+        {
+            for (auto it = item["irs"].begin(); it != item["irs"].end(); ++it)
+            {
+                if (! it.value().is_string())
+                    continue;
+                const auto slot = juce::String (it.key()).trim().toLowerCase();
+                const auto file = juce::String (it.value().get<std::string>()).trim();
+                if (slot.isNotEmpty() && file.isNotEmpty())
+                    e.irs[slot] = file;
+            }
+        }
+
         out.push_back(std::move(e));
     }
 
     return ! out.empty();
+}
+
+bool namedBinaryResource (const juce::String& fileName, const char*& data, int& size)
+{
+    for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+    {
+        const juce::String orig (BinaryData::originalFilenames[i]);
+        if (orig == fileName || juce::File (orig).getFileName() == fileName)
+        {
+            data = BinaryData::getNamedResource (BinaryData::namedResourceList[i], size);
+            return data != nullptr && size > 0;
+        }
+    }
+    return false;
+}
+
+juce::File findLooseFactoryIr (const juce::String& fileName)
+{
+    juce::Array<juce::File> dirs;
+    const auto res = FactoryPresetLibrary::resolveResourcesDir ({});
+    dirs.add (res.getChildFile ("irs"));
+    dirs.add (res.getSiblingFile ("IR"));
+    dirs.add (juce::File::getCurrentWorkingDirectory().getChildFile ("resources").getChildFile ("irs"));
+    dirs.add (juce::File::getCurrentWorkingDirectory().getChildFile ("IR"));
+
+    auto walk = juce::File::getCurrentWorkingDirectory();
+    for (int i = 0; i < 6; ++i)
+    {
+        dirs.add (walk.getChildFile ("resources").getChildFile ("irs"));
+        dirs.add (walk.getChildFile ("IR"));
+        walk = walk.getParentDirectory();
+    }
+
+    for (const auto& dir : dirs)
+    {
+        const auto f = dir.getChildFile (fileName);
+        if (f.existsAsFile())
+            return f;
+    }
+    return {};
+}
+
+bool loadFactoryIrInto (NeuroCoreAudioProcessor& processor,
+                        const juce::String& slot,
+                        const juce::String& fileName,
+                        juce::String& error)
+{
+    const char* data = nullptr;
+    int size = 0;
+    if (namedBinaryResource (fileName, data, size))
+        return processor.loadIrFromMemory (slot, data, size, fileName, error);
+
+    const auto loose = findLooseFactoryIr (fileName);
+    if (loose.existsAsFile())
+        return processor.loadIrFromFile (slot, loose, error);
+
+    error = "Factory IR not found: " + fileName;
+    return false;
 }
 } // namespace
 
@@ -214,9 +285,17 @@ bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
 
     const auto& preset = entries[(size_t) index];
 
+    processor.clearAllIrs();
+
     // Keep preset name: applyFormula(clear=false) must not wipe the active label
     if (! processor.applyFormula (preset.script, error, false))
         return false;
+
+    for (const auto& kv : preset.irs)
+    {
+        juce::String irErr;
+        loadFactoryIrInto (processor, kv.first, kv.second, irErr);
+    }
 
     processor.setCurrentPresetName (preset.name);
 

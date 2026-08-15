@@ -897,6 +897,69 @@ private:
             requireBlock ("LA-2A Opto", "knee");
         }
 
+        beginTest ("Factory amp presets preload matching cabinet IRs");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+
+            const struct { const char* name; const char* wav; } expected[] = {
+                { "Mesa High Gain",       "American IR 01.wav" },
+                { "Tube Screamer",        "Vintage IR 01.wav" },
+                { "Fuzz Face",            "Vintage IR 01.wav" },
+                { "Metal Gate",           "Medium IR 01.wav" },
+                { "Stereo Guitar Wall",   "American IR 01.wav" },
+                { "JCM Hot Lead",         "British IR 01.wav" },
+                { "AC30 Chime",           "Vintage IR 01.wav" },
+                { "5150 Lead",            "American IR 01.wav" },
+            };
+
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (44100.0, 256);
+
+            for (const auto& row : expected)
+            {
+                const auto* e = lib.findByName (row.name);
+                expect (e != nullptr, juce::String ("missing ") + row.name);
+                if (e == nullptr)
+                    continue;
+                const auto it = e->irs.find ("ir1");
+                expect (it != e->irs.end() && it->second == row.wav,
+                        juce::String (row.name) + " must map ir1 -> " + row.wav);
+                expect (e->script.containsIgnoreCase ("ir1"),
+                        juce::String (row.name) + " formula must keep ir1 (no path)");
+                expect (! e->script.containsIgnoreCase (".wav"),
+                        juce::String (row.name) + " formula must not contain a WAV path");
+            }
+
+            auto indexOf = [&lib] (const juce::String& name) -> int
+            {
+                const auto& all = lib.getEntries();
+                for (int i = 0; i < (int) all.size(); ++i)
+                    if (all[(size_t) i].name == name)
+                        return i;
+                return -1;
+            };
+
+            juce::String err;
+            const int mesa = indexOf ("Mesa High Gain");
+            expect (mesa >= 0);
+            expect (lib.applyPreset (proc, mesa, err), err);
+            expect (proc.getIrNumSamples ("ir1") > 0, "Mesa High Gain must preload a cabinet IR");
+            expectEquals (proc.getIrName ("ir1"), juce::String ("American IR 01.wav"));
+
+            const int fender = indexOf ("Fender Clean");
+            expect (fender >= 0);
+            expect (lib.applyPreset (proc, fender, err), err);
+            expectEquals (proc.getIrNumSamples ("ir1"), 0, "non-IR factory preset must clear leftover cab");
+
+            const int ts = indexOf ("Tube Screamer");
+            expect (ts >= 0);
+            expect (lib.applyPreset (proc, ts, err), err);
+            expect (proc.getIrNumSamples ("ir1") > 0, "Tube Screamer must preload N1");
+            expectEquals (proc.getIrName ("ir1"), juce::String ("Vintage IR 01.wav"));
+        }
+
         beginTest ("Stereo Guitar Wall: two DIs keep independent L/R amps");
         {
             auto& lib = FactoryPresetLibrary::getInstance();

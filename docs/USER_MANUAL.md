@@ -83,7 +83,7 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 ### Formula area
 
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
-- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Empty slot is dry.
+- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - **Edit**, then **Save** to apply.
 - **Optimize**: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
 - **Insert / Quick template**: drop in a common block.
@@ -200,7 +200,7 @@ These are mix tools, not a full mastering suite.
 - **Haas Width / Loudness Curve / Missing Bass / Speech Band**: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
 - **Mono to Stereo**: allpass + Haas stereoizer. Mid stays the original so the mix still collapses clean.
 - **Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed**: score, FX, and dialogue processing. Not a trailer sample pack.
-- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, empty IR slot. Needs stereo in and **BOTH**. Drop a cab on the `ir1` button.
+- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, cabinet IR preloaded. Needs stereo in and **BOTH**. Swap the cab on the `ir1` button if you want.
 - **Glitch Laboratory**: digital smash without ping-pong or an LFO on the filter — light on the computer.
 - **Neon Clip / Chrome Fold / Data Mosher / Cyberpunk Drive**: digital dirt.
 - **Kick Rumble / Warehouse Rumble**: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit. Body = tight sine+sub. Tune ≈ 15 ms is the resonator. Insert on the kick, Mix 100.
@@ -334,8 +334,10 @@ ir1: mix = b; gain = 0
 ```
 
 2. Save. Click the full-width **ir1** button under that line.
-3. Drop a WAV or AIFF cab, or click **Load**. **Clear** empties the slot (dry).
+3. Amp factory presets (Mesa, 5150, JCM, AC30, Tube Screamer, Fuzz Face, Metal Gate, Stereo Guitar Wall) already load a matching cabinet. Drop a WAV or AIFF to replace it, or click **Load**. **Clear** empties the slot (dry).
 4. Need two cabs? Add `ir2: mix = 1` and click its own button.
+
+The formula never contains a file path.
 
 ---
 

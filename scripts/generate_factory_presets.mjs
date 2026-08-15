@@ -186,6 +186,8 @@ const preset = (name, category, description, script, opts = {}) => {
   if (opts.d) out.paramD = opts.d;
   if (opts.e) out.paramE = opts.e;
   if (opts.f) out.paramF = opts.f;
+  if (opts.irs && typeof opts.irs === "object")
+    out.irs = opts.irs;
   return out;
 };
 
@@ -244,7 +246,7 @@ filter2: type = lowpass; cutoff = 4500; resonance = 0.58
 stage5: y = diode(y, 1.6) * c
 ir1: mix = 0.45; gain = 0
 limit1: ceiling = -0.3; release = 0.08`,
-  { a: p("Gain", 3.5, 12, 7.8), b: p("Tight", 45, 200, 85), c: p("Level", 0.25, 0.9, 0.42), tags: ["amp", "gate", "ir"], outG: 0 }
+  { a: p("Gain", 3.5, 12, 7.8), b: p("Tight", 45, 200, 85), c: p("Level", 0.25, 0.9, 0.42), tags: ["amp", "gate", "ir"], outG: 0, irs: { ir1: "American IR 01.wav" } }
 );
 
 add(
@@ -274,8 +276,8 @@ stage1: y = softclip(x, a)
 eq1: type = peak; freq = 720; q = 1.65; gain = 6
 stage2: y = diode(y * 1.15, 1.3) * c
 filter2: type = lowpass; cutoff = b; resonance = 0.48
-ir1: mix = 0.4; gain = 0`,
-  { a: p("Drive", 1.2, 11, 5.2), b: p("Tone", 350, 4500, 1800), c: p("Level", 0.28, 1.15, 0.7), tags: ["ir"], outG: 0 }
+ir1: mix = 0.4; gain = 6`,
+  { a: p("Drive", 1.2, 11, 5.2), b: p("Tone", 350, 4500, 1800), c: p("Level", 0.28, 1.15, 0.7), tags: ["ir"], outG: 0, irs: { ir1: "Vintage IR 01.wav" } }
 );
 
 add(
@@ -322,9 +324,9 @@ filter1: type = highpass; cutoff = 45; resonance = 0.3
 stage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)
 filter2: type = lowpass; cutoff = b; resonance = 0.7
 stage2: y = tube(y, 1.4) * c
-ir1: mix = 0.35; gain = 0
+ir1: mix = 0.35; gain = 8
 limit1: ceiling = -0.4; release = 0.1`,
-  { a: p("Fuzz", 3, 16, 9), b: p("Tone", 250, 4500, 1400), c: p("Level", 0.15, 0.85, 0.42), inG: 1.5, tags: ["gate", "ir"], outG: 0 }
+  { a: p("Fuzz", 3, 16, 9), b: p("Tone", 250, 4500, 1400), c: p("Level", 0.15, 0.85, 0.42), inG: 1.5, tags: ["gate", "ir"], outG: 0, irs: { ir1: "Vintage IR 01.wav" } }
 );
 
 add(
@@ -708,7 +710,7 @@ filter2: type = lowpass; cutoff = 4800; resonance = 0.6
 stage3: y = y * c
 ir1: mix = 0.5; gain = 0
 limit1: ceiling = -0.3; release = 0.08`,
-  { a: p("Drive", 4, 14, 8.5), b: p("LowCut", 70, 350, 140), c: p("Level", 0.2, 0.85, 0.45), tags: ["gate", "ir"], outG: 0 }
+  { a: p("Drive", 4, 14, 8.5), b: p("LowCut", 70, 350, 140), c: p("Level", 0.2, 0.85, 0.45), tags: ["gate", "ir"], outG: 0, irs: { ir1: "Medium IR 01.wav" } }
 );
 
 add(
@@ -1637,6 +1639,7 @@ limit1: ceiling = -0.3; release = 0.08`,
     e: p("Level", 0.28, 0.95, 0.52),
     tags: ["metal", "guitar", "amp", "stereo", "gate", "ir"],
     outG: 0,
+    irs: { ir1: "American IR 01.wav" },
   }
 );
 
@@ -3390,6 +3393,7 @@ limit1: ceiling = -0.3; release = 0.08`,
     d: p("Level", 0.28, 0.95, 0.52),
     tags: ["amp", "guitar", "lead", "crunch", "gate", "ir"],
     outG: 0,
+    irs: { ir1: "British IR 01.wav" },
   }
 );
 
@@ -3640,6 +3644,7 @@ ir1: mix = 0.35; gain = 0`,
     d: p("Level", 0.4, 1.15, 0.82),
     tags: ["amp", "guitar", "clean", "chime", "ir"],
     outG: 0,
+    irs: { ir1: "Vintage IR 01.wav" },
   }
 );
 
@@ -3669,6 +3674,7 @@ limit1: ceiling = -0.3; release = 0.08`,
     d: p("Level", 0.2, 0.8, 0.38),
     tags: ["amp", "guitar", "high-gain", "lead", "gate", "ir"],
     outG: 0,
+    irs: { ir1: "American IR 01.wav" },
   }
 );
 

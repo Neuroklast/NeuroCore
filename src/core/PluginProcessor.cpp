@@ -581,6 +581,33 @@ const juce::AudioBuffer<float>* NeuroCoreAudioProcessor::getIrBuffer (const juce
     return it != irBank.end() ? &it->second.samples : nullptr;
 }
 
+bool NeuroCoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFormatReader& reader,
+                                         const juce::String& displayName, juce::String& error)
+{
+    const int srcN = (int) reader.lengthInSamples;
+    const int ch = juce::jlimit (1, 2, (int) reader.numChannels);
+    const int maxN = juce::jmax (1, (int) std::lround (reader.sampleRate * (double) Config::kIrMaxSeconds));
+    const int n = juce::jmin (srcN, maxN);
+    if (n <= 0)
+    {
+        error = "IR is empty.";
+        return false;
+    }
+
+    juce::AudioBuffer<float> buf (ch, n);
+    reader.read (&buf, 0, n, 0, true, ch > 1);
+    IrAsset asset;
+    asset.fileName = displayName;
+    asset.sr = reader.sampleRate;
+    asset.samples = std::move (buf);
+    const auto key = slot.trim().toLowerCase();
+    irBank[key] = std::move (asset);
+    scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
+    refreshReportedLatency();
+    sendChangeMessage();
+    return true;
+}
+
 bool NeuroCoreAudioProcessor::loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error)
 {
     juce::AudioFormatManager fm;
@@ -591,23 +618,28 @@ bool NeuroCoreAudioProcessor::loadIrFromFile (const juce::String& slot, const ju
         error = "Could not read IR file.";
         return false;
     }
+    return installIr (slot, *reader, file.getFileName(), error);
+}
 
-    const int srcN = (int) reader->lengthInSamples;
-    const int ch = juce::jlimit (1, 2, (int) reader->numChannels);
-    const int maxN = juce::jmax (1, (int) std::lround (reader->sampleRate * (double) Config::kIrMaxSeconds));
-    const int n = juce::jmin (srcN, maxN);
-    juce::AudioBuffer<float> buf (ch, n);
-    reader->read (&buf, 0, n, 0, true, ch > 1);
-    IrAsset asset;
-    asset.fileName = file.getFileName();
-    asset.sr = reader->sampleRate;
-    asset.samples = std::move (buf);
-    const auto key = slot.trim().toLowerCase();
-    irBank[key] = std::move (asset);
-    scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
-    refreshReportedLatency();
-    sendChangeMessage();
-    return true;
+bool NeuroCoreAudioProcessor::loadIrFromMemory (const juce::String& slot, const void* data, int size,
+                                                const juce::String& displayName, juce::String& error)
+{
+    if (data == nullptr || size <= 0)
+    {
+        error = "Empty IR data.";
+        return false;
+    }
+
+    juce::WavAudioFormat wav;
+    auto* stream = new juce::MemoryInputStream (data, (size_t) size, false);
+    std::unique_ptr<juce::AudioFormatReader> reader (wav.createReaderFor (stream, true));
+    if (reader == nullptr)
+    {
+        error = "Could not read IR data.";
+        return false;
+    }
+    return installIr (slot, *reader,
+                      displayName.isNotEmpty() ? displayName : "factory.wav", error);
 }
 
 void NeuroCoreAudioProcessor::clearIr (const juce::String& slot)
@@ -617,6 +649,15 @@ void NeuroCoreAudioProcessor::clearIr (const juce::String& slot)
     scriptManager.signalChain.clearImpulseResponse (key);
     refreshReportedLatency();
     sendChangeMessage();
+}
+
+void NeuroCoreAudioProcessor::clearAllIrs()
+{
+    juce::StringArray keys;
+    for (const auto& kv : irBank)
+        keys.add (kv.first);
+    for (const auto& key : keys)
+        clearIr (key);
 }
 
 // UndoableAction for formula changes

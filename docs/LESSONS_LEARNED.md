@@ -9,6 +9,17 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-15 – Factory IRs are names plus shipped WAVs, never paths in the formula
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Royalty-free Cabs in alle Presets mit IR-Slot vorladen  
+**Ergebnis:** Eigene Cabs American / British / Medium / Vintage nach `resources/irs/`. Factory-JSON hat `irs: { ir1: "American IR 01.wav" }`. `applyPreset` lädt aus BinaryData oder `resources/irs/`. Fremde Packs bleiben außen vor. Herkunft nicht ins README.
+
+#### Regel
+IR-Audio nie in die DSL schreiben. Nur IRs einbetten, die euch gehören. Fremde Origin-/Voxengo-WAVs nicht committen.
+
+---
+
 ### 2026-08-15 – Functions need folders like presets
 
 **Agent:** Grok Coding Agent  

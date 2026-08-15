@@ -117,6 +117,9 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.42
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {
@@ -165,7 +168,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tube Screamer\n# How it sounds: TS808: ~720 Hz HPF into clipper, then a real 720 Hz mid peak (not a bandpass), tone LPF.\n# a Drive: 1.2 to 11, default 5.2\n# b Tone: 350 to 4500, default 1800\n# c Level: 0.28 to 1.15, default 0.7\n\nparam a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 720; resonance = 0.28  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = 720; q = 1.65; gain = 6  # peak EQ\nstage2: y = diode(y * 1.15, 1.3) * c  # diode clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.48  # lowpass\nir1: mix = 0.4; gain = 0  # impulse response",
+    "script": "# Tube Screamer\n# How it sounds: TS808: ~720 Hz HPF into clipper, then a real 720 Hz mid peak (not a bandpass), tone LPF.\n# a Drive: 1.2 to 11, default 5.2\n# b Tone: 350 to 4500, default 1800\n# c Level: 0.28 to 1.15, default 0.7\n\nparam a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 720; resonance = 0.28  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = 720; q = 1.65; gain = 6  # peak EQ\nstage2: y = diode(y * 1.15, 1.3) * c  # diode clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.48  # lowpass\nir1: mix = 0.4; gain = 6  # impulse response",
     "tags": [
       "cabinet",
       "clip",
@@ -198,6 +201,9 @@
       "min": 0.28,
       "max": 1.15,
       "default": 0.7
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -282,7 +288,7 @@
     "inputGain": 1.5,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Fuzz Face\n# How it sounds: Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n# a Fuzz: 3 to 16, default 9\n# b Tone: 250 to 4500, default 1400\n# c Level: 0.15 to 0.85, default 0.42\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80  # noise gate\nfilter1: type = highpass; cutoff = 45; resonance = 0.3  # highpass\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)  # soft clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.7  # lowpass\nstage2: y = tube(y, 1.4) * c  # tube saturation\nir1: mix = 0.35; gain = 0  # impulse response\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
+    "script": "# Fuzz Face\n# How it sounds: Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n# a Fuzz: 3 to 16, default 9\n# b Tone: 250 to 4500, default 1400\n# c Level: 0.15 to 0.85, default 0.42\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80  # noise gate\nfilter1: type = highpass; cutoff = 45; resonance = 0.3  # highpass\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)  # soft clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.7  # lowpass\nstage2: y = tube(y, 1.4) * c  # tube saturation\nir1: mix = 0.35; gain = 8  # impulse response\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
     "tags": [
       "cabinet",
       "clip",
@@ -314,6 +320,9 @@
       "min": 0.15,
       "max": 0.85,
       "default": 0.42
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -1251,6 +1260,9 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.45
+    },
+    "irs": {
+      "ir1": "Medium IR 01.wav"
     }
   },
   {
@@ -3455,6 +3467,9 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {
@@ -6899,6 +6914,9 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
+    },
+    "irs": {
+      "ir1": "British IR 01.wav"
     }
   },
   {
@@ -7388,6 +7406,9 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.82
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -7441,6 +7462,9 @@
       "min": 0.2,
       "max": 0.8,
       "default": 0.38
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {
