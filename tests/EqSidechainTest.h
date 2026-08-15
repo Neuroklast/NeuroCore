@@ -92,6 +92,72 @@ public:
             expect (rms > 0.02f);
         }
 
+        beginTest ("octaver stereo both channels stay finite");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "octaver1: sub = 0.9; up = 0.2; mix = 0.8; tone = 380; thresh = 0.04",
+                err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            juce::AudioBuffer<float> buf (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                const float s = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 110.f * (float) i / 48000.f);
+                buf.setSample (0, i, s);
+                buf.setSample (1, i, s * 0.85f);
+            }
+            for (int w = 0; w < 6; ++w)
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expect (std::abs (buf.getSample (0, 400)) > 1.0e-4f);
+            expect (std::abs (buf.getSample (1, 400)) > 1.0e-4f);
+        }
+
+        beginTest ("octaver sub on a 110 Hz sine is near 55 Hz and L/R lock");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "octaver1: sub = 1.0; up = 0; mix = 1.0; tone = 280; thresh = 0.04",
+                err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            juce::AudioBuffer<float> buf (2, 512);
+            const float w = 2.f * juce::MathConstants<float>::pi * 110.f / 48000.f;
+            int zx = 0;
+            float prev = 0.f;
+            bool havePrev = false;
+            double corr = 0.0, eL = 0.0, eR = 0.0;
+            for (int blk = 0; blk < 16; ++blk)
+            {
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float s = 0.4f * std::sin (w * (float) (blk * 512 + i));
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s * 0.9f);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                if (blk < 6)
+                    continue;
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float l = buf.getSample (0, i);
+                    const float r = buf.getSample (1, i);
+                    if (havePrev && prev < 0.f && l >= 0.f)
+                        ++zx;
+                    prev = l;
+                    havePrev = true;
+                    corr += (double) l * (double) r;
+                    eL += (double) l * (double) l;
+                    eR += (double) r * (double) r;
+                }
+            }
+            expect (zx >= 4 && zx <= 16, "sub should sit near 55 Hz, zx=" + juce::String (zx));
+            const float den = (float) std::sqrt (eL * eR);
+            expect (den > 1.0e-8f && (float) corr / den > 0.92f, "sub must be mono-locked");
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+        }
+
         beginTest ("vocoder self-vocodes without sidechain");
         {
             dsl::SignalChain chain;
@@ -140,7 +206,21 @@ public:
             float peak = 0.f;
             for (int i = 0; i < 256; ++i)
                 peak = juce::jmax (peak, std::abs (main.getSample (0, i)));
-            expect (peak > 0.01f);
+            expect (peak > 0.04f, "sidechain vocoder should imprint, peak="
+                    + juce::String (peak, 3));
+
+            juce::AudioBuffer<float> silent (2, 256);
+            silent.clear();
+            for (int i = 0; i < 256; ++i)
+            {
+                const float car = 0.35f * std::sin (i * 0.31f);
+                main.setSample (0, i, car);
+                main.setSample (1, i, car);
+            }
+            chain.setExternalSidechain (silent.getReadPointer (0), silent.getReadPointer (1), 256);
+            chain.processBlockSmoothed (main, TestHelpers::nullKnobs());
+            expect (TestHelpers::peakAbs (main) > 0.02f,
+                    "empty sidechain must fall back to self-vocode, not mute");
         }
     }
 

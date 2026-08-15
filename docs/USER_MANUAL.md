@@ -28,7 +28,7 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 - Click **Presets** in the top bar.
 - Leave Scope on All or Factory.
 - Double-click a row, or select it and press **Load**.
-- The chip next to Presets shows the name.
+- The chip next to Presets shows the name. Use the **<** and **>** buttons on either side to step through the library.
 
 ### Hear it
 
@@ -60,8 +60,8 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 
 - **NK + NEUROKORE + by Neuroklast + version**: product mark. Click it to open neuroklast.net.
 - **Presets**: factory and your own sounds. The last category stays selected when you reopen.
-- **Current chip**: loaded preset name, or Untitled.
-- **Functions**: look up formula words and insert them.
+- **Current chip**: loaded preset name, or Untitled. **<** / **>** step through factory, then user presets.
+- **Functions**: look up formula words and insert them. Folders on the left: **Core** (math), **Drive** (tube, diode, clip), **Crush** (fold, bitcrush), **Blocks** (ott, widen, vocoder, octaver, ms).
 - **Stages**: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
 - **Bypass**: forces Mix to 0 (dry) and locks the Mix slider. Turn it off and the previous Mix comes back.
 - **License**: import a signed `.lic` file. After activation, License shows who this copy is licensed to. **Replace license** loads a new file.
@@ -168,6 +168,7 @@ delay1: time = c
 ### Load
 
 - Double-click a row, or select + **Load**.
+- Or stay in the editor: **<** / **>** beside the preset name steps through factory, then user presets. Wraps at both ends.
 - **New Blank** starts a simple softclip formula.
 
 ### Save your own
@@ -197,6 +198,7 @@ These are mix tools, not a full mastering suite.
 - **NY Drum Bus / Parallel Tape**: dry plus a smashed or tape-like path. Blend is the mix.
 - **Plate Send / Width Delay / Slap Double**: dry in the middle, wet on a side path.
 - **Haas Width / Loudness Curve / Missing Bass / Speech Band**: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
+- **Mono to Stereo**: allpass + Haas stereoizer. Mid stays the original so the mix still collapses clean.
 - **Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed**: score, FX, and dialogue processing. Not a trailer sample pack.
 - **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, empty IR slot. Needs stereo in and **BOTH**. Drop a cab on the `ir1` button.
 - **Glitch Laboratory**: digital smash without ping-pong or an LFO on the filter — light on the computer.
@@ -218,12 +220,14 @@ Everyday blocks:
 | `stageN: y = …` | Per-sample math (`x` in, `y` out) |
 | `filterN: type = lowpass; cutoff = …` | SVF lowpass / highpass / bandpass |
 | `eqN: type = peak; freq = …; q = …; gain = …` | Peak, notch, lowcut, highcut, shelves |
-| `octaverN: sub = …; up = …; mix = …; tone = …` | Tracking −1 / +1 octave |
-| `vocoderN: bands = 8; mix = …; q = …` | Vocoder; voice on the Sidechain pin |
+| `octaverN: sub = …; up = …; mix = …; tone = …` | Analog −1 divider / +1 rectifier |
+| `vocoderN: bands = 8; mix = …; q = …` | Vocoder. Insert on a synth/pad (carrier). Pin the **voice** on Sidechain. Empty pin self-vocodes. |
 | `compN: threshold = …; ratio = …` | Compressor; optional `knee`, `makeup`, `hpf`, `source = sidechain` (no pin = no duck) |
 | `gateN: threshold = …; hyst = …` | Noise gate (hysteresis + hold) |
 | `limitN: ceiling = …; release = …` | In-chain limiter (not the Polisher) |
 | `xoverN: f1 = …; f2 = …` | Crossover into `low` / `mid` / `high`; mix with `out: low = 1; high = 1` |
+| `ottN: depth = …; time = …` | 3-band upward + downward compressor (OTT). `in`, `low`, `mid`, `high` optional |
+| `widenN: width = …; delay = …; bass = …` | Mono to stereo. Mid stays put, side is allpass + Haas. Bass stays mono. |
 | `irN: mix = …` | Cab / room slot. Button on that line: drop WAV/AIFF, Load, waveform, Clear. Several slots. Empty = dry |
 | `envN: type = peak; source = sidechain` | Envelope; `source = sidechain` follows the extra input |
 | `oscN: type = sine; freq = …` | Slow oscillator / LFO |
@@ -241,6 +245,7 @@ Everyday blocks:
 
 ## 7. Tips
 
+- **Functions catalog**: open **Functions**. Pick a folder, then a word, then **Insert**. Core is `sin` / `lerp` / `map`. Drive is `tube` / `diode` / `softclip`. Blocks is `ott1` / `widen1` / `vocoder1`.
 - **Send effect**: load a delay or reverb, set Mix high, ride the host send.
 - **Amp-like**: Drive + softclip + lowpass. Leave Polisher on None so hits still breathe.
 - **Two guitar DIs**: `Stereo Guitar Wall`, L/BOTH/R on BOTH, hard-pan the two takes into this insert.

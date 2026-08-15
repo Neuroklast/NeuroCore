@@ -158,6 +158,9 @@ public:
     /** Loads the preset at the given index from the user preset folder. */
     void loadPreset(int index);
 
+    /** Step through factory then user presets. Wraps. Empty name starts at 0 (next) or last (prev). */
+    void stepPreset (int delta);
+
     /** Currently loaded preset name (empty if none / custom formula). */
     juce::String getCurrentPresetName() const { return currentPresetName; }
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }

@@ -29,6 +29,23 @@ public:
                     + juce::String (low, 4) + " high=" + juce::String (high, 4));
         }
 
+        beginTest ("xover 3-band puts 1 kHz in mid");
+        {
+            dsl::SignalChain midChain, highChain;
+            juce::String err;
+            expect (midChain.loadScript (
+                "xover1: f1 = 250; f2 = 2500\nout: low = 0; mid = 1; high = 0", err), err);
+            midChain.prepare ({ 48000.0, 512, 1 });
+            expect (highChain.loadScript (
+                "xover1: f1 = 250; f2 = 2500\nout: low = 0; mid = 0; high = 1", err), err);
+            highChain.prepare ({ 48000.0, 512, 1 });
+            const float mid = toneRms (midChain, 1000.f, 0.5f);
+            const float high = toneRms (highChain, 1000.f, 0.5f);
+            expect (mid > high * 1.5f, "1 kHz should live in mid, mid="
+                    + juce::String (mid, 4) + " high=" + juce::String (high, 4));
+            expect (std::isfinite (mid) && std::isfinite (high));
+        }
+
         beginTest ("two ir blocks both parse");
         {
             dsl::DSLParser parser;

@@ -118,6 +118,36 @@ public:
             expectEquals(blocks[0].type, juce::String("filter"));
         }
 
+        beginTest("widen and stereo alias parse");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect(parser.parse("widen1: width = 0.7; delay = 14; bass = 140", blocks, aliases, params, error));
+            expect(error.isEmpty());
+            expectEquals((int)blocks.size(), 1);
+            expectEquals(blocks[0].type, juce::String("widen"));
+            blocks.clear();
+            expect(parser.parse("stereo1: width = 0.5", blocks, aliases, params, error));
+            expect(error.isEmpty());
+            expectEquals(blocks[0].type, juce::String("widen"));
+        }
+
+        beginTest("ott block parses");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect(parser.parse("ott1: depth = 0.5; time = 0.3", blocks, aliases, params, error));
+            expect(error.isEmpty());
+            expectEquals((int)blocks.size(), 1);
+            expectEquals(blocks[0].type, juce::String("ott"));
+        }
+
         beginTest("Einzelner comp Block");
         {
             dsl::DSLParser parser;

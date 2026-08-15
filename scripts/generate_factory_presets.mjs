@@ -41,6 +41,8 @@ const inferTags = (script, name, description, category, extra = []) => {
   addIf(/fold/, "fold");
   addIf(/diode/, "diode");
   addIf(/comp\d*\s*:/, "compressor");
+  addIf(/ott\d*\s*:/, "ott", "compressor", "multiband");
+  addIf(/widen\d*\s*:|stereo\d*\s*:/, "widen", "stereo", "width");
   addIf(/gate\d*\s*:/, "gate");
   addIf(/limit\d*\s*:/, "limiter");
   addIf(/ir\d*\s*:|convolve/, "ir", "cabinet");
@@ -64,6 +66,7 @@ const inferTags = (script, name, description, category, extra = []) => {
     "haas", "cinematic", "trailer", "score", "dialogue", "boom", "impact",
     "octaver", "vocoder", "svt", "jcm", "metal", "cyberpunk", "digital", "stereo",
     "techno", "hardcore", "gabber", "rumble", "acid", "industrial", "glitch",
+    "ott", "multiband",
   ]) {
     if (word(w)) tags.add(w);
   }
@@ -100,6 +103,8 @@ const describeBlock = (line) => {
   if (low.startsWith("env")) return `${id}: envelope follower`;
   if (low.startsWith("osc")) return `${id}: LFO`;
   if (low.startsWith("comp")) return `${id}: compressor`;
+  if (low.startsWith("ott")) return `${id}: OTT (3-band up+down)`;
+  if (low.startsWith("widen") || low.startsWith("stereo")) return `${id}: mono to stereo`;
   if (low.startsWith("eq")) {
     if (/notch/.test(t)) return `${id}: notch`;
     if (/lowcut|highpass/.test(t)) return `${id}: low cut`;
@@ -108,7 +113,7 @@ const describeBlock = (line) => {
     if (/highshelf/.test(t)) return `${id}: high shelf`;
     return `${id}: peak EQ`;
   }
-  if (low.startsWith("octaver") || low === "octave") return `${id}: tracking octaver`;
+  if (low.startsWith("octaver") || low === "octave") return `${id}: analog octaver`;
   if (low.startsWith("vocoder")) return `${id}: vocoder (voice on Sidechain)`;
   if (low.startsWith("gate")) return `${id}: noise gate`;
   if (low.startsWith("limit")) return `${id}: limiter`;
@@ -644,6 +649,30 @@ env1: type = peak; attack = b; release = c
 stage1: y = softclip(x * (a + env1 * a * d), 1.0)
 filter1: type = lowpass; cutoff = 12000; resonance = 0.28`,
   { a: p("Drive", 1.2, 6, 2.8), b: p("Attack", 0.001, 0.015, 0.003), c: p("Release", 0.02, 0.2, 0.07), d: p("Amount", 0.25, 0.95, 0.65), outG: 0 }
+);
+
+add(
+  "OTT Smash",
+  "Dynamics",
+  "Xfer-style 3-band upward + downward compressor. Depth is the smash. Time is the envelope. Insert on a bus or a group.",
+  `param a = Depth [0.18, 1.0]
+param b = Time [0.06, 0.82]
+param c = Input [0.7, 2.8]
+param d = Low [0.4, 1.2]
+param e = Mid [0.4, 1.2]
+param f = High [0.4, 1.2]
+ott1: depth = a; time = b; in = c; low = d; mid = e; high = f
+limit1: ceiling = -0.4; release = 0.05`,
+  {
+    a: p("Depth", 0.18, 1.0, 0.52),
+    b: p("Time", 0.06, 0.82, 0.3),
+    c: p("Input", 0.7, 2.8, 1.15),
+    d: p("Low", 0.4, 1.2, 1.0),
+    e: p("Mid", 0.4, 1.2, 0.92),
+    f: p("High", 0.4, 1.2, 1.05),
+    tags: ["ott", "edm", "glue", "multiband", "compressor"],
+    outG: 0,
+  }
 );
 
 // =============================================================================
@@ -3021,6 +3050,23 @@ stage2: y = softclip(x, 1.04)`,
 );
 
 add(
+  "Mono to Stereo",
+  "Psychoacoustic",
+  "True stereoizer: mid stays the source, side is allpass + Haas above the bass. Mono sum stays the original. Works on a mono send or a collapsed DI.",
+  `param a = Width [0.2, 1.15]
+param b = Haas [8, 28]
+param c = Bass [80, 240]
+widen1: width = a; delay = b; bass = c`,
+  {
+    a: p("Width", 0.2, 1.15, 0.72),
+    b: p("Haas", 8, 28, 14),
+    c: p("Bass", 80, 240, 130),
+    tags: ["widen", "stereo", "width", "mono", "psychoacoustic"],
+    outG: 0,
+  }
+);
+
+add(
   "Loudness Curve",
   "Psychoacoustic",
   "Rough equal-loudness habit: keep the body, add a 3 kHz presence peak. Not K-weighting, not a loudness meter.",
@@ -3473,25 +3519,25 @@ out: main = 1-b; grit = b`,
 add(
   "Precision Octaver",
   "Pitch",
-  "Tracking octaver: Schmitt lock, sine at -1 / +1 octave times the envelope, analog fallback on chords.",
+  "OC-style analog octaver: mid-clocked divider on −1, rectifier on +1. Track the dry string, then warm the blend.",
   `param a = Sub [0.0, 1.2]
-param b = Up [0.0, 1.0]
-param c = Tone [160, 1400]
-param d = Mix [0.2, 1.0]
-param e = Track [0.02, 0.16]
-param f = Level [0.55, 1.2]
-filter1: type = highpass; cutoff = 38; resonance = 0.2
-stage1: y = tube(x, 1.05) * f
+param b = Up [0.0, 0.7]
+param c = Tone [120, 800]
+param d = Mix [0.18, 0.82]
+param e = Track [0.02, 0.12]
+param f = Level [0.7, 1.15]
+filter1: type = highpass; cutoff = 42; resonance = 0.16
 octaver1: sub = a; up = b; mix = d; tone = c; thresh = e
-filter2: type = lowpass; cutoff = 7200; resonance = 0.22
-stage2: y = softclip(y, 1.06)`,
+stage1: y = tube(x, 1.04) * f
+filter2: type = lowpass; cutoff = 6200; resonance = 0.2
+stage2: y = softclip(y, 1.04)`,
   {
-    a: p("Sub", 0, 1.2, 0.68),
-    b: p("Up", 0, 1, 0.18),
-    c: p("Tone", 160, 1400, 380),
-    d: p("Mix", 0.2, 1, 0.74),
-    e: p("Track", 0.02, 0.16, 0.045),
-    f: p("Level", 0.55, 1.2, 0.96),
+    a: p("Sub", 0, 1.2, 0.84),
+    b: p("Up", 0, 0.7, 0.1),
+    c: p("Tone", 120, 800, 240),
+    d: p("Mix", 0.18, 0.82, 0.52),
+    e: p("Track", 0.02, 0.12, 0.05),
+    f: p("Level", 0.7, 1.15, 1.0),
     tags: ["octaver", "pitch", "bass", "guitar"],
     outG: 0,
   }
@@ -3500,21 +3546,21 @@ stage2: y = softclip(y, 1.06)`,
 add(
   "Bass Sub Octave",
   "Bass",
-  "Sub-only tracking octaver for bass: deep tone, no up-octave, blend with dry.",
+  "Sub-only analog divider for bass. Clean track, then a little tube on the blend.",
   `param a = Sub [0.25, 1.15]
-param b = Tone [80, 320]
-param c = Mix [0.25, 0.95]
-param d = Level [0.6, 1.25]
-filter1: type = highpass; cutoff = 28; resonance = 0.18
-stage1: y = tube(x, 1.08) * d
-octaver1: sub = a; up = 0; mix = c; tone = b; thresh = 0.035
-filter2: type = lowpass; cutoff = 4800; resonance = 0.22
-stage2: y = softclip(y, 1.04)`,
+param b = Tone [80, 280]
+param c = Mix [0.22, 0.78]
+param d = Level [0.7, 1.2]
+filter1: type = highpass; cutoff = 30; resonance = 0.16
+octaver1: sub = a; up = 0; mix = c; tone = b; thresh = 0.04
+stage1: y = tube(x, 1.05) * d
+filter2: type = lowpass; cutoff = 4200; resonance = 0.2
+stage2: y = softclip(y, 1.03)`,
   {
-    a: p("Sub", 0.25, 1.15, 0.62),
-    b: p("Tone", 80, 320, 150),
-    c: p("Mix", 0.25, 0.95, 0.58),
-    d: p("Level", 0.6, 1.25, 1.0),
+    a: p("Sub", 0.25, 1.15, 0.8),
+    b: p("Tone", 80, 280, 140),
+    c: p("Mix", 0.22, 0.78, 0.48),
+    d: p("Level", 0.7, 1.2, 1.0),
     tags: ["octaver", "bass", "sub"],
     outG: 0,
   }
@@ -3523,25 +3569,25 @@ stage2: y = softclip(y, 1.04)`,
 add(
   "Vocoder Bank",
   "Vocals",
-  "8-band analog vocoder. Carrier = this insert. Voice = Sidechain pin. Self-vocodes if no pin.",
-  `param a = Mix [0.25, 1.0]
-param b = Q [1.2, 5.5]
-param c = Dry [0.05, 0.55]
+  "8-band analog vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain. Empty sidechain self-vocodes.",
+  `param a = Mix [0.35, 1.0]
+param b = Q [0.8, 4.0]
+param c = Dry [0.0, 0.4]
 param d = Formant [0.72, 1.4]
 param e = CarrierHP [60, 280]
-param f = Level [0.55, 1.2]
-filter1: type = highpass; cutoff = e; resonance = 0.2
-stage1: y = tube(x, 1.04) * f
+param f = Level [0.7, 1.35]
+filter1: type = highpass; cutoff = e; resonance = 0.18
+stage1: y = x * f
 vocoder1: bands = 8; mix = a; q = b; formant = d; dry = c
-filter2: type = lowpass; cutoff = 9000; resonance = 0.22
-stage2: y = softclip(y, 1.08)`,
+filter2: type = lowpass; cutoff = 8500; resonance = 0.2
+stage2: y = softclip(y, 1.12)`,
   {
-    a: p("Mix", 0.25, 1, 0.84),
-    b: p("Q", 1.2, 5.5, 2.3),
-    c: p("Dry", 0.05, 0.55, 0.28),
+    a: p("Mix", 0.35, 1, 0.92),
+    b: p("Q", 0.8, 4.0, 1.35),
+    c: p("Dry", 0, 0.4, 0.12),
     d: p("Formant", 0.72, 1.4, 1.0),
-    e: p("CarrierHP", 60, 280, 120),
-    f: p("Level", 0.55, 1.2, 1.12),
+    e: p("CarrierHP", 60, 280, 90),
+    f: p("Level", 0.7, 1.35, 1.08),
     tags: ["vocoder", "sidechain", "vocal"],
     outG: 0,
   }

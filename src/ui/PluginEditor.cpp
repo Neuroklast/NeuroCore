@@ -264,8 +264,31 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     currentPresetLabel->setColour (juce::Label::outlineColourId, NeuroCoreLookAndFeel::accent());
     currentPresetLabel->setFont (NeuroCoreLookAndFeel::brandFont (Config::kPresetChipFontPt, true));
     currentPresetLabel->setBorderSize ({ 2, 8, 2, 8 });
-    currentPresetLabel->setTooltip ("Current preset - click Presets to browse / save");
+    currentPresetLabel->setTooltip ("Current preset — arrows step through the library");
     addAndMakeVisible (*currentPresetLabel);
+
+    auto stylePresetArrow = [] (juce::TextButton& b)
+    {
+        b.setColour (juce::TextButton::buttonColourId,
+                     NeuroCoreLookAndFeel::accent().withAlpha (0.16f));
+        b.setColour (juce::TextButton::buttonOnColourId,
+                     NeuroCoreLookAndFeel::accent().withAlpha (0.35f));
+        b.setColour (juce::TextButton::textColourOffId, NeuroCoreLookAndFeel::brightText());
+        b.setColour (juce::TextButton::textColourOnId, NeuroCoreLookAndFeel::brightText());
+    };
+    presetPrevButton = std::make_unique<juce::TextButton> ("<");
+    presetPrevButton->setName ("presetPrev");
+    presetPrevButton->setTooltip ("Previous preset");
+    presetPrevButton->onClick = [this] { audioProcessor.stepPreset (-1); };
+    stylePresetArrow (*presetPrevButton);
+    addAndMakeVisible (*presetPrevButton);
+
+    presetNextButton = std::make_unique<juce::TextButton> (">");
+    presetNextButton->setName ("presetNext");
+    presetNextButton->setTooltip ("Next preset");
+    presetNextButton->onClick = [this] { audioProcessor.stepPreset (1); };
+    stylePresetArrow (*presetNextButton);
+    addAndMakeVisible (*presetNextButton);
 
     polisherLabel = std::make_unique<juce::Label>("", TRANS("PolisherLabel"));
     polisherLabel->setMinimumHorizontalScale(1.0f);
@@ -439,8 +462,12 @@ NeuroCoreAudioProcessorEditor::NeuroCoreAudioProcessorEditor (NeuroCoreAudioProc
     toolbar->maxHeight = Config::kToolbarRowMaxHeight;
     toolbar->addChild(makeLeaf(brandLockup.get(), 2.15f));
     toolbar->addChild(makeLeaf(presetsButton.get(), 0.9f));
-    // Current preset chip next to Presets — high visibility
-    toolbar->addChild(makeLeaf(currentPresetLabel.get(), 2.4f));
+    auto presetNav = makeRow (2.7f);
+    presetNav->innerMargin = 2;
+    presetNav->addChild (makeLeaf (presetPrevButton.get(), 0.34f));
+    presetNav->addChild (makeLeaf (currentPresetLabel.get(), 2.02f));
+    presetNav->addChild (makeLeaf (presetNextButton.get(), 0.34f));
+    toolbar->addChild (std::move (presetNav));
     toolbar->addChild(makeLeaf(functionsButton.get(), 0.9f));
     toolbar->addChild(makeLeaf(stagesButton.get(), 0.9f));
     toolbar->addChild(makeLeaf(bypassButton.get(), 0.9f));
@@ -986,6 +1013,10 @@ void NeuroCoreAudioProcessorEditor::updateTranslations()
     editSaveButton->setButtonText(editing ? TRANS("SaveButton") : TRANS("EditButton"));
     if (presetsButton)
         presetsButton->setButtonText(TRANS("Presets"));
+    if (presetPrevButton)
+        presetPrevButton->setTooltip ("Previous preset");
+    if (presetNextButton)
+        presetNextButton->setTooltip ("Next preset");
     if (functionsButton)
         functionsButton->setButtonText(TRANS("Functions"));
     if (stagesButton)

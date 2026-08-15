@@ -18,7 +18,7 @@
 | Core/PluginEditor | ✅ Brand NEUROKORE by Neuroklast; compact toolbar + cropped NK | 99% | 2026-08-14 |
 | Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
 | DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate | 99% | 2026-08-14 |
-| DSL/SignalChain | ✅ Delay Lagrange-6 + 2-Pol-Damp; Reverb 6 AP + Stereo-In | 99% | 2026-08-15 |
+| DSL/SignalChain | ✅ Alle Effekt-Blöcke gehärtet: Hermite-4 Delay, Mono-Freeverb, Coeff-Skip, Denorm | 99% | 2026-08-15 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
@@ -30,7 +30,7 @@
 | UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; plus kompakte IN/OUT-Balken | 99% | 2026-08-14 |
 | UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 189 Factory; Club/Cyber; Explorer-Sidebar; Glitch Lab ohne Ping-Pong | 99% | 2026-08-14 |
+| Preset-System | ✅ 191 Factory; OTT Smash; Mono to Stereo; Explorer-Pfeile | 99% | 2026-08-15 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
 | Tests | ✅ 2940 passed / 0 failed | 99% | 2026-08-14 |
@@ -44,10 +44,56 @@
 
 ## Aktive Checkliste
 
+### 2026-08-15 – Functions folders + docs
+
+- [x] Functions-Sidebar wie Presets: All / Core / Drive / Crush / Blocks
+- [x] README, USER_MANUAL, Help (`UserManual_en.txt`)
+- [x] Catalog: ott, widen, vocoder, octaver
+
+### 2026-08-15 – Widen + vocoder + OTT
+
+- [x] `widen` Block: Allpass + Haas, Bass bleibt mono, Mid = Original
+- [x] Factory **Mono to Stereo**
+- [x] Vocoder: breitere Bänder, leere Sidechain fällt auf Self-Vocode, Bus default an
+- [x] `ott` Block + Factory **OTT Smash**
+- [ ] Manuell: Mono-DI → Stereo; Vocoder mit Voice-Pin; OTT auf einem Bus
+
+### 2026-08-15 – Preset chip prev/next
+
+- [x] `<` / `>` links und rechts vom Preset-Namen
+- [x] `stepPreset` wrappt Factory, dann User
+- [ ] Manuell: Chip durchklicken, Name und Formel wechseln
+
+### 2026-08-15 – Analog octaver
+
+- [x] Mid-Clock + Flip-Flop −1 (Pitch = Zero-Cross, kein freier Sinus)
+- [x] Detector 28–650 Hz, Periode nur 22–700 Hz
+- [x] +1 = Gleichrichter; Sub mono; 12 dB Tone
+- [x] Precision Octaver / Bass Sub: Track vor Tube
+- [ ] Manuell: Bass/Gitarre gegen OC-2 — kein Wobble
+
+### 2026-08-15 – Effect-block artifact harden
+
+- [x] Delay: Hermite-4, min 4 Samples vom Write-Head, kein Crossfeed, Denorm-Flush
+- [x] Reverb: Mono-Summe ins Freeverb, 4 Allpässe, Comb-Denorm
+- [x] Filter/EQ: Coeff nur bei echter Änderung, kein Dummy-Smoother-Burn
+- [x] Comp/Gate/Limit: Denorm, Limit mit 80 µs Attack statt Instant-Slam
+- [x] Xover 3-Band: High = HP(f2)² von HP(f1)²
+- [x] Octaver/Vocoder: Coeffs hoisten, Pointer-Loop, Denorm
+- [x] hardclip: pow() nur ab |x| ≥ 0.8 L
+- [ ] Manuell: Delay/Reverb ohne Tick; Gabber/Hardcore ohne Haken
+
+### 2026-08-15 – Hotpath + stereo wall
+
+- [x] Clip-Stages: Functor einmal binden, kein Inject ohne Env/t
+- [x] Mod-Filter: setCutoff nur bei merklicher Änderung
+- [x] Mono-IR → Stereo; Stage/SVF immer 2 Kanäle
+- [ ] Manuell: Gabber/Hardcore ohne Haken; Guitar Wall L+R
+
 ### 2026-08-15 – Gold blocks + 4× OS + release kit
 
-- [x] Delay: 6-Punkt-Lagrange, 2-Pol-Dämpfer, 8 % Stereo-Crossfeed
-- [x] Reverb: 6 Allpass, Stereo-In statt Mono-Summe
+- [x] Delay: Hermite-4 (Lagrange-6 klingelte), 1-Pol-Dämpfer, kein Crossfeed
+- [x] Reverb: 4 Allpass, Mono-Summe ins Freeverb (Stereo-In kämmte bei 520 Hz)
 - [x] hardclip n=24; Default-OS **4×**
 - [x] `NEUROKORE-0.9.0/` mit VST3, Standalone, EULA, Docs, optional Setup.exe
 - [ ] Manuell: Inno Setup kompilieren wenn ISCC fehlt; 4× CPU in der DAW

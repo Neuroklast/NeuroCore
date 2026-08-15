@@ -9,6 +9,61 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-15 – Functions need folders like presets
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Functions-Kategorien links; README/Help/Manual  
+**Ergebnis:** Core vs Drive vs Crush vs Blocks. `tube`/`diode` nicht neben `sin`. Catalog-JSON kann `category` setzen, sonst `categoryForName`.
+
+#### Regel
+Ein flacher Function-Browser mischt Sprache und Sound. Ordner wie im Preset-Explorer.
+
+---
+
+### 2026-08-15 – Empty sidechain is not “no pin”
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Vocoder tot, auch mit Sidechain; Stereoizer  
+**Ergebnis:** Viele Hosts liefern einen stillen Sidechain-Buffer. `scN > 0` allein schaltet Self-Vocode aus → nur Dry. Jetzt: Energie-Hold 60 ms, sonst Self-Vocode. BP-Q war 2–8 (Löcher). Sidechain-Bus default an. Stereoizer ist ein Block (`widen`), nicht Haas-only.
+
+#### Regel
+Optionaler Aux-Buffer gilt erst als Sidechain, wenn er pegelt. Mono→Stereo: Mid unangetastet, Side hochpass + Dekorrelation.
+
+---
+
+### 2026-08-15 – Preset chip needs its own stepper
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Pfeile links/rechts vom Preset-Namen  
+**Ergebnis:** `getPresetNames` + `loadPreset` gab es schon. Editor ruft `stepPreset(±1)` auf. Leerer Name startet bei 0 (next) bzw. wrappt aufs letzte (prev).
+
+#### Regel
+Preset-Navigation gehört an den Chip, nicht nur in den Explorer. Index-Arithmetik immer `((i % n) + n) % n`.
+
+---
+
+### 2026-08-15 – Octaver wobble is a free oscillator
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Precision Octaver klingt wobbly  
+**Ergebnis:** Sub war ein freier Sinus aus einer Schmitt-Periode (28 % Update, L/R getrennt, min-age 8 Samples = 6 kHz). Tube vor dem Tracker erzeugt Extra-Zero-Crossings. Jetzt: eine Mid-Clock, Flip-Flop wie OC-2, Detector-LPF 650 Hz, Periode nur 22–700 Hz, +1 = Gleichrichter, Sub mono.
+
+#### Regel
+Oktav-Pitch kommt von Nulldurchgängen, nicht von einer geschätzten Frequenz. Tracker nie mit Distortion füttern. L/R nicht getrennt tracken.
+
+---
+
+### 2026-08-15 – Every effect block can tick on its own
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Alle Effekt-Blöcke härten — keine Artefakte, höhere Qualität und CPU  
+**Ergebnis:** Delay-Write-Head näher als 4 Samples = Hermite liest den Write → Tick jede Periode. Filter hat den Smoother im Dummy-Loop verbrannt und den Endwert als Stufe gesetzt. EQ hat IIR-Coeffs jedes Sample allokiert. Limit-Instant-Slam klickt. 3-Band-Xover speiste High aus x statt HP(f1). Denormals in Comb/Env/Comp nach Stille. Delay/Reverb-Smoother starteten auf 0.35/0.55 statt Skriptwert → Ghost-Echo beim ersten Block. `y = sc` ohne `t` bekam nie per-Sample Sidechain.
+
+#### Regel
+Interpolation braucht Abstand zum Write-Head. Coeffs nur bei echter Änderung, nie allokieren im Sample-Loop. Smoother nicht vor dem Block leerziehen. Instant Gain-Slam ist ein Click. Nach Stille Denormals flushen.
+
+---
+
 ### 2026-08-14 – Knackig is a hard clip + fast env, not more drive
 
 **Agent:** Grok Coding Agent  
@@ -17,6 +72,28 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 #### Regel
 „Knackig“ kommt vom Click, nicht von mehr Drive. Algebraisches Clip muss am Ceiling sitzen. Env-Cutoff nicht mit Knob-Smoothing (20 ms) fahren.
+
+---
+
+### 2026-08-15 – Delay Lagrange and stereo reverb combs tick
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Delay/Reverb periodische Artefakte  
+**Ergebnis:** 6-Punkt-Lagrange klingelt jede Delay-Periode. 8 %-Crossfeed hämmert im Delay-Takt. Getrennte L/R-Combs (Spread 23) = Kamm bei ~520 Hz. Zurück: Hermite-4, kein Crossfeed, Mono-Summe ins Freeverb, 4 Allpässe.
+
+#### Regel
+Delay-Interpolation muss nicht „höhergradig“ sein. Reverb-Eingang bleibt eine Mono-Summe; Stereo entsteht über versetzte Comb-Längen, nicht über getrennte Feeds.
+
+---
+
+### 2026-08-15 – Clip stages copied std::function every sample
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Hardcore/Gabber haken bei jedem OS; Stereo Guitar Wall nur links  
+**Ergebnis:** `usesNonlinear` zwang jede Clip-Stage in `evaluateBlockT(1)` inkl. `std::function`-Kopie + Lock pro Sample. Jetzt: Functor einmal binden, Env nur wenn nötig. Mono-IR wird auf L+R kopiert; SVF/Stage immer 2 Kanäle.
+
+#### Regel
+ADAA braucht Sample-Reihenfolge, nicht Knob-Inject. `std::function` nicht pro Sample kopieren. Channel=right braucht 2-Kanal-State, sonst ist lastCh leer.
 
 ---
 

@@ -17,6 +17,143 @@ public:
     {
         juce::dsp::ProcessSpec spec { 48000.0, 512, 2 };
 
+        beginTest ("delay impulse has one echo, not a periodic tick");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 10; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+
+            int peaks = 0;
+            float peakPos = 0.f, peakVal = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                const float a = std::abs (buf.getSample (0, i));
+                if (a > peakVal)
+                {
+                    peakVal = a;
+                    peakPos = (float) i;
+                }
+                if (a > 0.15f)
+                    ++peaks;
+            }
+            expect (peakVal > 0.3f);
+            expect (peakPos > 400.f && peakPos < 520.f, "echo should sit near 10 ms (480 samples)");
+            expect (peaks < 12, "Lagrange ringing / wrap ticks: too many peaks");
+        }
+
+        beginTest ("delay silence after one impulse has no wrap ticks");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 10; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+
+            float laterPeak = 0.f;
+            for (int b = 0; b < 8; ++b)
+            {
+                buf.clear();
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                laterPeak = juce::jmax (laterPeak, TestHelpers::peakAbs (buf));
+            }
+            // fb=0: after the 10 ms echo the line is silence. A write-head wrap
+            // would replay the impulse (~0.5+) every period.
+            expect (laterPeak < 0.08f, "wrap/write-head tick after the echo, peak="
+                    + juce::String (laterPeak, 4));
+        }
+
+        beginTest ("static filter cutoff jump stays finite");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "filter1: type = lowpass; cutoff = 400; resonance = 0.7", err), err);
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                const float s = 0.4f * std::sin (i * 0.12f);
+                buf.setSample (0, i, s);
+                buf.setSample (1, i, s);
+            }
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expect (chain.loadScript (
+                "filter1: type = lowpass; cutoff = 8000; resonance = 0.35", err), err);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expect (TestHelpers::peakAbs (buf) < 8.f);
+        }
+
+        beginTest ("eq freq sweep stays finite");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "param a = Freq [200, 8000]\n"
+                "eq1: type = peak; freq = a; q = 1.4; gain = 6", err), err);
+            juce::SmoothedValue<float> sm[Config::kNumUserParams];
+            std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobs {};
+            for (int p = 0; p < Config::kNumUserParams; ++p)
+            {
+                sm[p].reset (48000.0, 0.01);
+                sm[p].setCurrentAndTargetValue (0.2f);
+                knobs[(size_t) p] = &sm[p];
+            }
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int b = 0; b < 12; ++b)
+            {
+                sm[0].setTargetValue (0.1f + 0.07f * (float) b);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = 0.3f * std::sin (i * 0.09f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, knobs);
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+            }
+        }
+
+        beginTest ("reverb plus delay long run stays finite");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 18; feedback = 0.45; mix = 0.35; damp = 6000\n"
+                "reverb1: size = 0.55; decay = 0.6; damp = 0.4; mix = 0.4; width = 1",
+                err), err);
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int b = 0; b < 40; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = (b < 4) ? 0.5f * std::sin (i * 0.2f) : 0.f;
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s * 0.8f);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+            }
+            expect (TestHelpers::peakAbs (buf) < 8.f);
+        }
+
         beginTest ("delay block parses and delays impulse");
         {
             dsl::SignalChain chain;
@@ -30,17 +167,15 @@ public:
             buf.setSample (0, 0, 1.0f);
             buf.setSample (1, 0, 1.0f);
 
-            // Process enough blocks so 10ms (~480 samples) can emerge
-            for (int b = 0; b < 2; ++b)
-                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
 
-            // At mix=1 dry is gone; delayed impulse should appear near sample 480 of first block
-            // After 2 blocks write advanced — check energy exists and first sample is near dry-less
+            // mix=1: dry is gone; the 10 ms echo sits near sample 480 of this block
             float energy = 0.f;
             for (int i = 0; i < buf.getNumSamples(); ++i)
                 energy += std::abs (buf.getSample (0, i));
             expect (energy > 0.1f);
             expect (std::isfinite (energy));
+            expect (std::abs (buf.getSample (0, 0)) < 0.05f);
         }
 
         beginTest ("eighth-note sync pingpong stays finite under tempo");
@@ -139,6 +274,35 @@ public:
                     || TestHelpers::peakAbs (right) > 1.0e-4f);
             expectEquals (TestHelpers::countNonFinite (left), 0);
             expectEquals (TestHelpers::countNonFinite (right), 0);
+        }
+
+        beginTest ("widen turns mono into L/R and keeps the mid");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "widen1: width = 0.85; delay = 16; bass = 120", err), err);
+            juce::AudioBuffer<float> buf (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                const float s = 0.4f * std::sin (i * 0.11f);
+                buf.setSample (0, i, s);
+                buf.setSample (1, i, s);
+            }
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            float maxDiff = 0.f, midErr = 0.f;
+            for (int i = 64; i < 512; ++i)
+            {
+                const float l = buf.getSample (0, i);
+                const float r = buf.getSample (1, i);
+                const float src = 0.4f * std::sin (i * 0.11f);
+                maxDiff = juce::jmax (maxDiff, std::abs (l - r));
+                midErr = juce::jmax (midErr, std::abs (0.5f * (l + r) - src));
+            }
+            expect (maxDiff > 0.02f, "L and R must differ, diff=" + juce::String (maxDiff, 4));
+            expect (midErr < 0.06f, "mono sum should stay the source, err=" + juce::String (midErr, 4));
         }
 
         beginTest ("ms encode/decode roundtrip");

@@ -42,7 +42,7 @@ namespace TestHelpers
     {
         FormulaQualityAnalyzer::Options o;
         o.blockSize = 128;
-        o.numBlocks = 4;
+        o.numBlocks = 8;
         o.alsoProbeSilence = false;
         o.alsoProbeImpulse = true;  // cheap one-block
         o.alsoProbeNoise = false;

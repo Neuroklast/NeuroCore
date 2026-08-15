@@ -8,6 +8,7 @@
 #include "../utils/ExpressionEvaluator.h"
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <map>
@@ -127,6 +128,18 @@ private:
         {
             return usesFeedback || usesTimeVariable || usesModulation || usesNonlinear;
         }
+        /** Env/t change every sample — caller must poke varPtr before processPrepared. */
+        bool needsPerSampleInject() const noexcept
+        {
+            return usesFeedback || usesTimeVariable || usesModulation;
+        }
+        void prepareBlockEval() noexcept;
+        float processPrepared (int ch, float x) noexcept;
+
+        std::function<float (const float*)> blockFn;
+        ExpressionEvaluator::VarArray blockVars {};
+        size_t blockXIndex { ExpressionEvaluator::invalidIndex };
+        bool blockEvalReady { false };
     };
 
     struct Osc : Block
@@ -177,6 +190,8 @@ private:
         std::vector<float> xPrev, yPrev;
         juce::SmoothedValue<float> cutoffSm, resSm;
         uint8_t coeffPhase{0};
+        float lastAppliedFc { -1.f };
+        float lastAppliedRes { -1.f };
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
@@ -202,6 +217,7 @@ private:
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> freqSm, qSm, gainSm;
         uint8_t coeffPhase { 0 };
+        float lastAppliedF { -1.f }, lastAppliedQ { -1.f }, lastAppliedG { 1.0e9f };
         juce::dsp::IIR::Filter<float> filtL, filtR;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
@@ -273,7 +289,7 @@ private:
         int channels { 1 };
         float gain { 1.f };
         float cachedCeil { 1.0e9f }, cachedRel { -1.f };
-        float ceilLin { 1.f }, relC { 0.f };
+        float ceilLin { 1.f }, relC { 0.f }, atkC { 1.f };
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -308,6 +324,96 @@ private:
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyCoeffs (float f1, float f2) noexcept;
+    };
+
+    /**
+        Xfer-style 3-band upward + downward compressor.
+        Depth = wet; Time scales attack/release; low/mid/high = per-band process amount.
+    */
+    struct Ott : Block
+    {
+        ExpressionEvaluator depthExpr, timeExpr, inExpr;
+        ExpressionEvaluator lowExpr, midExpr, highExpr, f1Expr, f2Expr;
+        juce::SmoothedValue<float> depthSm, timeSm, inSm, lowSm, midSm, highSm, f1Sm, f2Sm;
+        float sampleRate { 44100.f };
+        float lastF1 { -1.f }, lastF2 { -1.f };
+        float cachedTime { -1.f }, atkC { 0.f }, relC { 0.f };
+        float envDb[3] { -80.f, -80.f, -80.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+
+        struct Path
+        {
+            juce::dsp::IIR::Filter<float> lp1a, lp1b, hp1a, hp1b;
+            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b;
+        };
+        Path ch[2];
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void applyCoeffs (float f1, float f2) noexcept;
+        float tailSeconds() const noexcept;
+    };
+
+    /**
+        Mono-compatible stereoizer. Mid stays the source; side is allpass + Haas,
+        highs only (bass stays mono).
+    */
+    struct Widen : Block
+    {
+        static constexpr int kNumAp = 3;
+        static constexpr float kMaxHaasSec = 0.045f;
+
+        ExpressionEvaluator widthExpr, delayMs, bassHz;
+        juce::SmoothedValue<float> widthSm, delaySm, bassSm;
+        float sampleRate { 44100.f };
+        float bassA { 0.f }, lastBass { -1.f };
+        float hpX { 0.f }, hpY { 0.f };
+        int writePos { 0 };
+        int maxDelayN { 0 };
+        std::vector<float> haasBuf;
+
+        struct Ap
+        {
+            std::vector<float> buf;
+            int writePos { 0 };
+            int delayLen { 2 };
+            void allocate (int n)
+            {
+                buf.assign ((size_t) juce::jmax (4, n), 0.f);
+                writePos = 0;
+                delayLen = juce::jmin (delayLen, (int) buf.size() - 1);
+            }
+            float process (float input) noexcept
+            {
+                if (buf.empty())
+                    return input;
+                constexpr float g = 0.55f;
+                int rp = writePos - delayLen;
+                const int N = (int) buf.size();
+                if (rp < 0) rp += N;
+                const float y = buf[(size_t) rp];
+                buf[(size_t) writePos] = input + y * g;
+                if (++writePos >= N) writePos = 0;
+                return -input * g + y;
+            }
+            void clear() noexcept
+            {
+                std::fill (buf.begin(), buf.end(), 0.f);
+                writePos = 0;
+            }
+        };
+        Ap apL[kNumAp] {}, apR[kNumAp] {};
+
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
     };
 
     /** Convolution IR slot. File lives in plugin state, not in the formula. */
@@ -378,7 +484,6 @@ private:
 
         std::vector<float> bufL, bufR;
         float dampStateL { 0.f }, dampStateR { 0.f };
-        float dampStateL2 { 0.f }, dampStateR2 { 0.f };
         float dcBlockL { 0.f }, dcBlockR { 0.f }; ///< Feedback HPF state (stability in loop)
         float lastDelaySamples { -1.f };           ///< Slew limit state for delay time
         juce::SmoothedValue<float> delaySm, fbSm, mixSm, dampCoeffSm;
@@ -406,7 +511,7 @@ private:
 
         float sampleRate { 44100.0f };
         static constexpr int kNumCombs = 8;
-        static constexpr int kNumAllpass = 6;
+        static constexpr int kNumAllpass = 4;
 
         /** Fixed-max ring; delay length is variable (no realloc/clear on size change). */
         struct Comb
@@ -436,6 +541,8 @@ private:
                     readPos += N;
                 const float y = buf[(size_t) readPos];
                 filterStore = y * (1.f - damp) + filterStore * damp;
+                if (std::abs (filterStore) < 1.0e-20f)
+                    filterStore = 0.f;
                 // Soft write clamp — hard runaway was a crackle source
                 float w = input + filterStore * feedback;
                 if (! std::isfinite (w))
@@ -513,29 +620,39 @@ private:
     };
 
     /**
-        Tracking octaver: Schmitt period lock, sine at f/2 and 2f * envelope.
-        Falls back to analog flip-flop * env when tracking is lost (chords).
+        Analog octaver: mid-clocked flip-flop sub (OC-2), rectifier +1.
+        Pitch comes from zero-crossings, not a free-running oscillator.
     */
     struct Octaver : Block
     {
         ExpressionEvaluator subExpr, upExpr, mixExpr, toneExpr, threshExpr;
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> subSm, upSm, mixSm, toneSm, thrSm;
+        float hpR { 0.f }, detLpA { 0.f }, envAtk { 0.f }, envRel { 0.f };
+        float lastToneHz { -1.f }, toneA { 0.f };
+        int minAge { 32 }, maxAge { 2000 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<juce::String, std::string>> varNames;
 
-        struct Chan
+        struct Detector
         {
-            float hpX { 0.f }, hpY { 0.f };
-            float env { 0.f };
-            float flip { 1.f };
-            float flip2 { 1.f };
+            float hpX { 0.f }, hpY { 0.f }, lp { 0.f }, env { 0.f };
+            int age { 0 };
             int polarity { 1 };
             bool armed { true };
-            int age { 0 };
             float period { 0.f };
-            float phSub { 0.f }, phUp { 0.f };
-            float outLp { 0.f };
+            float flip { 1.f };
+            float lock { 0.f };
+            float phSub { 0.f };
+        };
+        Detector det {};
+
+        struct Chan
+        {
+            float env { 0.f };
+            float fwrDc { 0.f };
+            float fwrLp { 0.f };
+            float tone1 { 0.f }, tone2 { 0.f };
         };
         Chan ch[2];
 
@@ -543,6 +660,9 @@ private:
         float process (int channel, float x) override;
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        void tickDetector (float mid, float thr) noexcept;
+        float renderSub() noexcept;
+        float renderUp (Chan& c, float x) noexcept;
         float processChan (Chan& c, float x,
                            float subAmt, float upAmt, float mixAmt,
                            float toneHz, float thr) noexcept;
@@ -561,6 +681,9 @@ private:
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> mixSm, qSm, formSm, drySm;
         float lastQ { -1.f }, lastForm { -1.f };
+        float modHpX { 0.f }, modHpY { 0.f };
+        float hpR { 0.f };
+        int scHold { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<juce::String, std::string>> varNames;
 
@@ -571,7 +694,7 @@ private:
         struct Band
         {
             juce::dsp::IIR::Filter<float> modL, modR, carL, carR;
-            float envL { 0.f }, envR { 0.f };
+            float env { 0.f };
         };
         std::array<Band, kMaxBands> bands {};
 

@@ -1036,6 +1036,55 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             xo->varPtr = &variables;
             newChain->push_back (std::move (xo));
         }
+        else if (d.type.startsWith ("ott"))
+        {
+            auto ot = std::make_unique<Ott>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("depth", "mix", 0.f, 1.f, "0.5", ot->depthExpr, "depth [0..1]");
+            parseAmt ("time", nullptr, 0.f, 1.f, "0.35", ot->timeExpr, "time [0..1]");
+            parseAmt ("in", "input", 0.25f, 6.f, "1.0", ot->inExpr, "in [0.25..6]");
+            parseAmt ("low", nullptr, 0.f, 1.4f, "1.0", ot->lowExpr, "low [0..1.4]");
+            parseAmt ("mid", nullptr, 0.f, 1.4f, "1.0", ot->midExpr, "mid [0..1.4]");
+            parseAmt ("high", nullptr, 0.f, 1.4f, "1.0", ot->highExpr, "high [0..1.4]");
+            parseAmt ("f1", nullptr, 40.f, 400.f, "90", ot->f1Expr, "f1 [Hz]");
+            parseAmt ("f2", nullptr, 800.f, 8000.f, "3200", ot->f2Expr, "f2 [Hz]");
+            ot->varPtr = &variables;
+            newChain->push_back (std::move (ot));
+        }
+        else if (d.type.startsWith ("widen") || d.type.startsWith ("stereo"))
+        {
+            auto wd = std::make_unique<Widen>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("width", "amount", 0.f, 1.4f, "0.7", wd->widthExpr, "width [0..1.4]");
+            parseAmt ("delay", "haas", 0.5f, 40.f, "14", wd->delayMs, "delay [ms]");
+            parseAmt ("bass", "mono", 60.f, 400.f, "140", wd->bassHz, "bass [Hz]");
+            wd->varPtr = &variables;
+            newChain->push_back (std::move (wd));
+        }
         else if (d.type.startsWith ("ir") || d.type.startsWith ("convolve"))
         {
             auto irb = std::make_unique<Ir>();
@@ -1709,30 +1758,47 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 if (st->needsSampleLoop())
                 {
-                    const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
-                    const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
-                                               ? 1
-                                               : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
-
-                    for (int i = 0; i < numSamples; ++i)
+                    if (! st->needsPerSampleInject())
                     {
-                        injectKnobsAt (i);
+                        st->processBlock (work);
+                    }
+                    else
+                    {
+                        st->prepareBlockEval();
+                        const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
+                        const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
+                                                   ? 1
+                                                   : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
 
-                        if (st->usesModulation)
+                        for (int i = 0; i < numSamples; ++i)
                         {
-                            for (int o = 0; o < nOsc; ++o)
-                                if ((int) oscs[o]->modLane.size() > i)
-                                    variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
-                            for (int e = 0; e < nEnv; ++e)
-                                if ((int) envs[e]->modLane.size() > i)
-                                    variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
-                        }
+                            if (st->usesTimeVariable)
+                                injectKnobsAt (i);
+                            else
+                            {
+                                for (int p = 0; p < Config::kNumUserParams; ++p)
+                                    variables[Config::kDefaultVariableNames[p]]
+                                        = knobLanes[(size_t) p][(size_t) i];
+                                if (st->usesModulation)
+                                    publishSidechainSample (i);
+                            }
 
-                        for (size_t ch = firstCh; ch < lastCh; ++ch)
-                        {
-                            ExpressionEvaluator::setProcessingChannel ((int) ch);
-                            auto* data = work.getWritePointer ((int) ch);
-                            data[i] = st->process ((int) ch, data[i]);
+                            if (st->usesModulation)
+                            {
+                                for (int o = 0; o < nOsc; ++o)
+                                    if ((int) oscs[o]->modLane.size() > i)
+                                        variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
+                                for (int e = 0; e < nEnv; ++e)
+                                    if ((int) envs[e]->modLane.size() > i)
+                                        variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
+                            }
+
+                            for (size_t ch = firstCh; ch < lastCh; ++ch)
+                            {
+                                ExpressionEvaluator::setProcessingChannel ((int) ch);
+                                auto* data = work.getWritePointer ((int) ch);
+                                data[i] = st->processPrepared ((int) ch, data[i]);
+                            }
                         }
                     }
                 }
@@ -1762,7 +1828,10 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 {
                     for (int i = 0; i < numSamples; ++i)
                     {
-                        injectKnobsAt (i);
+                        for (int p = 0; p < Config::kNumUserParams; ++p)
+                            variables[Config::kDefaultVariableNames[p]]
+                                = knobLanes[(size_t) p][(size_t) i];
+                        publishSidechainSample (i);
                         for (int o = 0; o < nOsc; ++o)
                             if ((int) oscs[o]->modLane.size() > i)
                                 variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
@@ -1845,8 +1914,9 @@ void SignalChain::Stage::clearRuntimeState() noexcept
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float>(spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
-    xPrev.assign(spec.numChannels, 0.0f);
-    yPrev.assign(spec.numChannels, 0.0f);
+    const int stageCh = juce::jmax (2, (int) spec.numChannels);
+    xPrev.assign ((size_t) stageCh, 0.0f);
+    yPrev.assign ((size_t) stageCh, 0.0f);
     // Fresh formula / prepare: clear ADAA so we don't blend old shaper state
     eval.resetRuntimeState();
 
@@ -1944,6 +2014,56 @@ float SignalChain::Stage::process(int ch, float x)
     return y;
 }
 
+void SignalChain::Stage::prepareBlockEval() noexcept
+{
+    blockEvalReady = eval.bindCompiledUnlocked (blockFn, blockVars, blockXIndex);
+}
+
+float SignalChain::Stage::processPrepared (int ch, float x) noexcept
+{
+    if (! blockEvalReady || ! varPtr || ch >= static_cast<int>(xPrev.size()))
+        return process (ch, x);
+
+    if (channelMode == ChannelMode::Left  && ch != 0) return x;
+    if (channelMode == ChannelMode::Right && ch != 1) return x;
+
+    ExpressionEvaluator::setProcessingChannel (ch);
+
+    if (blockXIndex != ExpressionEvaluator::invalidIndex)
+        blockVars[blockXIndex] = x;
+    if (idxXPrev != ExpressionEvaluator::invalidIndex)
+        blockVars[idxXPrev] = xPrev[(size_t) ch];
+    if (idxYPrev != ExpressionEvaluator::invalidIndex)
+        blockVars[idxYPrev] = yPrev[(size_t) ch];
+    if (idxX != ExpressionEvaluator::invalidIndex)
+        blockVars[idxX] = x;
+    if (idxY != ExpressionEvaluator::invalidIndex)
+        blockVars[idxY] = x;
+    if (idxCh != ExpressionEvaluator::invalidIndex)
+        blockVars[idxCh] = static_cast<float>(ch);
+    for (int p = 0; p < Config::kNumUserParams; ++p)
+        if (paramIndices[(size_t) p] != ExpressionEvaluator::invalidIndex)
+            blockVars[paramIndices[(size_t) p]] = (*varPtr)[Config::kDefaultVariableNames[p]];
+    for (auto& vr : varRefs)
+        blockVars[vr.index] = *vr.value;
+
+    float result = blockFn (blockVars.data());
+    if (! std::isfinite (result))
+        result = yPrev[(size_t) ch];
+    float leak = 1.0f;
+    if (usesFeedback)
+    {
+        const float silenceLeak = (std::abs (x) < Config::kFeedbackSilenceFloor)
+                                      ? Config::kFeedbackSilenceLeak : 1.0f;
+        leak = Config::kFeedbackLeakFactor * silenceLeak;
+    }
+    xPrev[(size_t) ch] = x * leak;
+    yPrev[(size_t) ch] = result * leak;
+    if (yPtr)
+        *yPtr = result;
+    return result;
+}
+
 void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
 {
     if (! varPtr)
@@ -1979,8 +2099,8 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     {
         const float invSr = (sampleRate > 0.0f) ? (1.0f / sampleRate) : (1.0f / 44100.0f);
         const float t0 = varPtr ? (*varPtr)["t"] : 0.0f;
+        prepareBlockEval();
 
-        // Per-channel ADAA bank; continuity across blocks (no reset here)
         for (size_t ch = firstCh; ch < lastCh; ++ch)
         {
             ExpressionEvaluator::setProcessingChannel ((int) ch);
@@ -1989,7 +2109,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             {
                 if (usesTimeVariable && varPtr)
                     (*varPtr)["t"] = t0 + static_cast<float>(i) * invSr;
-                data[i] = process (static_cast<int>(ch), data[i]);
+                data[i] = processPrepared (static_cast<int>(ch), data[i]);
             }
         }
 
@@ -2227,22 +2347,28 @@ void SignalChain::Filter::clearRuntimeState() noexcept
     filter.reset();
     std::fill (xPrev.begin(), xPrev.end(), 0.f);
     std::fill (yPrev.begin(), yPrev.end(), 0.f);
+    lastAppliedFc = -1.f;
+    lastAppliedRes = -1.f;
 }
 
 void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
 {
     filter.reset();
-    filter.prepare(spec);
+    juce::dsp::ProcessSpec filtSpec = spec;
+    filtSpec.numChannels = juce::jmax (spec.numChannels, (juce::uint32) 2);
+    filter.prepare(filtSpec);
     sampleRate = spec.sampleRate;
     filter.setType(type);
-    channels = static_cast<int> (spec.numChannels);
-    xPrev.assign(spec.numChannels, 0.0f);
-    yPrev.assign(spec.numChannels, 0.0f);
+    channels = juce::jmax (2, (int) spec.numChannels);
+    xPrev.assign ((size_t) channels, 0.0f);
+    yPrev.assign ((size_t) channels, 0.0f);
     const double filtSm = modulated ? Config::kModSmoothingTime : Config::kSmoothingTime;
     cutoffSm.reset(sampleRate, filtSm);
     resSm.reset(sampleRate, filtSm);
     cutoffSm.setCurrentAndTargetValue(cutoff.evaluate(0.f));
     resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
+    lastAppliedFc = -1.f;
+    lastAppliedRes = -1.f;
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
@@ -2307,11 +2433,15 @@ void SignalChain::Filter::advanceCoeffsOnce() noexcept
     resSm.setTargetValue (res);
     const float fcSm = cutoffSm.getNextValue();
     const float rqSm = resSm.getNextValue();
-    // Modulated: every sample. An 8-sample stride zippered into silence crackle.
-    if (modulated || (coeffPhase++ & 7) == 0)
+    const bool jumped = lastAppliedFc < 0.f
+                     || std::abs (fcSm - lastAppliedFc) > 0.18f
+                     || std::abs (rqSm - lastAppliedRes) > 0.004f;
+    if (jumped || (! modulated && (coeffPhase++ & 7) == 0))
     {
         filter.setCutoffFrequency (fcSm);
         filter.setResonance (rqSm);
+        lastAppliedFc = fcSm;
+        lastAppliedRes = rqSm;
     }
 }
 
@@ -2404,26 +2534,44 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
 
     cutoffSm.setTargetValue(fc);
     resSm.setTargetValue(res);
-    float fcSm = cutoffSm.getCurrentValue();
-    float rqSm = resSm.getCurrentValue();
-    for (int s = 0; s < numSamples; ++s)
+    // Mid-block snapshot — dummy-advancing the smoother then applying the end
+    // value made every knob move a single step (zipper) and burned CPU.
+    if (numSamples > 1)
     {
-        fcSm = cutoffSm.getNextValue();
-        rqSm = resSm.getNextValue();
+        cutoffSm.skip (numSamples / 2);
+        resSm.skip (numSamples / 2);
     }
-    filter.setCutoffFrequency(fcSm);
-    filter.setResonance(rqSm);
+    const float fcSm = cutoffSm.getCurrentValue();
+    const float rqSm = resSm.getCurrentValue();
+    if (lastAppliedFc < 0.f
+        || std::abs (fcSm - lastAppliedFc) > 0.18f
+        || std::abs (rqSm - lastAppliedRes) > 0.004f)
+    {
+        filter.setCutoffFrequency (fcSm);
+        filter.setResonance (rqSm);
+        lastAppliedFc = fcSm;
+        lastAppliedRes = rqSm;
+    }
+    if (numSamples > 1)
+    {
+        cutoffSm.skip (numSamples - numSamples / 2);
+        resSm.skip (numSamples - numSamples / 2);
+    }
 
     // Architecture: always processSample(ch, ·) so each channel keeps its own
     // SVF state. Feeding mono AudioBlocks into filter.process() reuses ch0 state
     // for every channel → L/R desync and crackle on stereo.
+    float* chPtr[2] {};
+    for (int ch = 0; ch < numChannels && ch < 2; ++ch)
+        chPtr[ch] = buffer.getWritePointer (ch);
+
     for (int i = 0; i < numSamples; ++i)
     {
         for (int ch = 0; ch < numChannels; ++ch)
         {
             if (channelMode == Stage::ChannelMode::Left  && ch != 0) continue;
             if (channelMode == Stage::ChannelMode::Right && ch != 1) continue;
-            auto* d = buffer.getWritePointer (ch);
+            auto* d = chPtr[ch];
             float y = filter.processSample (ch, d[i]);
             if (! std::isfinite (y))
                 y = (ch < (int) yPrev.size()) ? yPrev[(size_t) ch] : 0.f;
@@ -2443,6 +2591,9 @@ void SignalChain::Eq::clearRuntimeState() noexcept
 {
     filtL.reset();
     filtR.reset();
+    lastAppliedF = -1.f;
+    lastAppliedQ = -1.f;
+    lastAppliedG = 1.0e9f;
 }
 
 void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
@@ -2504,6 +2655,9 @@ void SignalChain::Eq::applyCoeffs (float fHz, float qVal, float gDb) noexcept
         return;
     filtL.coefficients = c;
     filtR.coefficients = c;
+    lastAppliedF = f;
+    lastAppliedQ = qv;
+    lastAppliedG = g;
 }
 
 float SignalChain::Eq::process (int ch, float x)
@@ -2545,24 +2699,33 @@ void SignalChain::Eq::processBlock (juce::AudioBuffer<float>& buffer)
     qSm.setTargetValue (q0);
     gainSm.setTargetValue (g0);
 
+    float* chPtr[2] {};
+    const int useCh = juce::jmin (nCh, 2);
+    for (int ch = 0; ch < useCh; ++ch)
+        chPtr[ch] = buffer.getWritePointer (ch);
+
     for (int i = 0; i < n; ++i)
     {
         const float fHz = freqSm.getNextValue();
         const float qv  = qSm.getNextValue();
         const float gDb = gainSm.getNextValue();
-        if (modulated || (coeffPhase++ & 7) == 0)
+        // Allocating IIR coeffs every sample clicks and burns the heap.
+        const bool jumped = lastAppliedF < 0.f
+                         || std::abs (fHz - lastAppliedF) > 0.35f
+                         || std::abs (qv - lastAppliedQ) > 0.006f
+                         || std::abs (gDb - lastAppliedG) > 0.03f;
+        if (jumped && (modulated || (coeffPhase++ & 7) == 0))
             applyCoeffs (fHz, qv, gDb);
 
-        for (int ch = 0; ch < nCh; ++ch)
+        for (int ch = 0; ch < useCh; ++ch)
         {
             if (channelMode == Stage::ChannelMode::Left  && ch != 0) continue;
             if (channelMode == Stage::ChannelMode::Right && ch != 1) continue;
-            auto* d = buffer.getWritePointer (ch);
             auto& flt = (ch == 1) ? filtR : filtL;
-            float y = flt.processSample (d[i]);
+            float y = flt.processSample (chPtr[ch][i]);
             if (! std::isfinite (y))
                 y = 0.f;
-            d[i] = y;
+            chPtr[ch][i] = y;
         }
     }
 }
@@ -2635,6 +2798,8 @@ float SignalChain::Env::process(int ch, float x)
         out = relCoeff * out + (1.0f - relCoeff) * input;
     if (mode == Rms)
         out = std::sqrt(out);
+    if (std::abs (out) < 1.0e-20f)
+        out = 0.f;
     value[ch] = out;
     (*varPtr)[name] = out;
     return x;
@@ -2787,6 +2952,10 @@ float SignalChain::getMaxTailTime() const noexcept
         {
             maxTail = juce::jmax (maxTail, rv->tailSeconds());
         }
+        else if (const auto* ot = dynamic_cast<const Ott*> (b.get()))
+        {
+            maxTail = juce::jmax (maxTail, ot->tailSeconds());
+        }
     }
     return maxTail;
 }
@@ -2797,36 +2966,38 @@ float SignalChain::getMaxTailTime() const noexcept
 
 namespace
 {
-/** 6-point Lagrange fractional delay — less imaging than 4-point Hermite. */
+inline float flushDenorm (float x) noexcept
+{
+    return (std::abs (x) < 1.0e-20f) ? 0.f : x;
+}
+
+/** 4-point Hermite. Keep the 4-tap window ≥4 samples behind the write head. */
 inline float fracDelayRead (const std::vector<float>& buf, float pos, int N) noexcept
 {
-    if (N < 8 || buf.size() < (size_t) N)
+    if (N < 4 || buf.size() < (size_t) N)
         return 0.f;
-    float p = std::fmod (pos, (float) N);
+    // pos is writePos - delay; range is (-N, N) so a single wrap is enough.
+    float p = pos;
     if (p < 0.f)
         p += (float) N;
-    int i0 = (int) p;
-    if (i0 >= N) i0 = 0;
-    if (i0 < 0) i0 = 0;
-    const float x = p - (float) i0;
-    auto at = [ &buf, N, i0 ] (int k) noexcept -> float
-    {
-        int i = i0 + k;
-        i %= N;
-        if (i < 0) i += N;
-        return buf[(size_t) i];
-    };
-    const float ym2 = at (-2), ym1 = at (-1), y0 = at (0);
-    const float y1  = at (1),  y2  = at (2),  y3 = at (3);
-    const float xm2 = x + 2.f, xm1 = x + 1.f, x0 = x;
-    const float x1  = x - 1.f, x2  = x - 2.f, x3 = x - 3.f;
-    const float l0 = (xm1 * x0 * x1 * x2 * x3) * (-1.f / 120.f);
-    const float l1 = (xm2 * x0 * x1 * x2 * x3) * (-1.f / 24.f);
-    const float l2 = (xm2 * xm1 * x1 * x2 * x3) * (-1.f / 12.f);
-    const float l3 = (xm2 * xm1 * x0 * x2 * x3) * ( 1.f / 12.f);
-    const float l4 = (xm2 * xm1 * x0 * x1 * x3) * (-1.f / 24.f);
-    const float l5 = (xm2 * xm1 * x0 * x1 * x2) * ( 1.f / 120.f);
-    return ym2 * l0 + ym1 * l1 + y0 * l2 + y1 * l3 + y2 * l4 + y3 * l5;
+    else if (p >= (float) N)
+        p -= (float) N;
+    int i1 = (int) p;
+    if (i1 >= N) i1 = 0;
+    if (i1 < 0) i1 = 0;
+    const float f = p - (float) i1;
+    const int i0 = (i1 - 1 + N) % N;
+    const int i2 = (i1 + 1) % N;
+    const int i3 = (i1 + 2) % N;
+    const float y0 = buf[(size_t) i0];
+    const float y1 = buf[(size_t) i1];
+    const float y2 = buf[(size_t) i2];
+    const float y3 = buf[(size_t) i3];
+    const float c0 = y1;
+    const float c1 = 0.5f * (y2 - y0);
+    const float c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3;
+    const float c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
+    return ((c3 * f + c2) * f + c1) * f + c0;
 }
 } // namespace
 
@@ -2837,7 +3008,7 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     bufL.assign ((size_t) maxDelaySamples, 0.f);
     bufR.assign ((size_t) maxDelaySamples, 0.f);
     writePos = 0;
-    dampStateL = dampStateR = dampStateL2 = dampStateR2 = 0.f;
+    dampStateL = dampStateR = 0.f;
     dcBlockL = dcBlockR = 0.f;
     lastDelaySamples = -1.f;
 
@@ -2853,13 +3024,29 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
         varNames.clear();
         for (auto& kv : *varPtr)
             varNames.emplace_back (kv.first, kv.first.toStdString());
+        for (const auto& n : varNames)
+        {
+            const float v = (*varPtr)[n.first];
+            timeMs.setVariable (n.second, v);
+            feedback.setVariable (n.second, v);
+            mix.setVariable (n.second, v);
+            dampHz.setVariable (n.second, v);
+        }
     }
 
     const float ds = resolveDelaySamples();
     delaySm.setCurrentAndTargetValue (ds);
-    fbSm.setCurrentAndTargetValue (0.35f);
-    mixSm.setCurrentAndTargetValue (0.35f);
-    dampCoeffSm.setCurrentAndTargetValue (0.2f);
+    float fb0 = feedback.evaluate (0.f);
+    if (! std::isfinite (fb0)) fb0 = 0.35f;
+    fbSm.setCurrentAndTargetValue (juce::jlimit (0.0f, 0.98f, fb0));
+    float mx0 = mix.evaluate (0.f);
+    if (! std::isfinite (mx0)) mx0 = 0.35f;
+    mixSm.setCurrentAndTargetValue (juce::jlimit (0.0f, 1.0f, mx0));
+    float dampHz0 = dampHz.evaluate (0.f);
+    if (! std::isfinite (dampHz0)) dampHz0 = 6500.f;
+    dampHz0 = juce::jlimit (200.f, sampleRate * 0.45f, dampHz0);
+    const float dampA0 = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHz0 / sampleRate);
+    dampCoeffSm.setCurrentAndTargetValue (juce::jlimit (0.0f, 0.99f, dampA0));
 }
 
 void SignalChain::Delay::clearRuntimeState() noexcept
@@ -2867,7 +3054,7 @@ void SignalChain::Delay::clearRuntimeState() noexcept
     std::fill (bufL.begin(), bufL.end(), 0.f);
     std::fill (bufR.begin(), bufR.end(), 0.f);
     writePos = 0;
-    dampStateL = dampStateR = dampStateL2 = dampStateR2 = 0.f;
+    dampStateL = dampStateR = 0.f;
     dcBlockL = dcBlockR = 0.f;
     lastDelaySamples = -1.f;
 }
@@ -2893,7 +3080,8 @@ float SignalChain::Delay::resolveDelaySamples() const noexcept
             ms = 250.f;
     }
     ms = juce::jlimit (0.1f, kMaxDelaySec * 1000.f, ms);
-    return juce::jlimit (1.0f, (float) (maxDelaySamples - 2), ms * 0.001f * sampleRate);
+    // Hermite window is 4 taps — closer than that reads the write head → period tick
+    return juce::jlimit (4.0f, (float) (maxDelaySamples - 4), ms * 0.001f * sampleRate);
 }
 
 float SignalChain::Delay::tailSeconds() const noexcept
@@ -2954,10 +3142,8 @@ float SignalChain::Delay::process (int ch, float x)
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi
                                   * juce::jlimit (200.f, sampleRate * 0.45f, dampHzV) / sampleRate);
     float& dState = (ch == 1) ? dampStateR : dampStateL;
-    float& dState2 = (ch == 1) ? dampStateR2 : dampStateL2;
     dState = dampA * dState + (1.f - dampA) * delayed;
-    dState2 = dampA * dState2 + (1.f - dampA) * dState;
-    float w = x + dState2 * fb;
+    float w = x + dState * fb;
     if (! std::isfinite (w)) w = 0.f;
     else if (std::abs (w) > 1.5f) w = 1.5f * std::tanh (w / 1.5f);
     buf[(size_t) writePos] = w;
@@ -3063,18 +3249,13 @@ void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
         dcBlockL = dcA * dcBlockL + (1.f - dcA) * fbInL;
         dcBlockR = dcA * dcBlockR + (1.f - dcA) * fbInR;
 
-        dampStateL = dampA_ * dampStateL + (1.f - dampA_) * hpL;
-        dampStateR = dampA_ * dampStateR + (1.f - dampA_) * hpR;
-        dampStateL2 = dampA_ * dampStateL2 + (1.f - dampA_) * dampStateL;
-        dampStateR2 = dampA_ * dampStateR2 + (1.f - dampA_) * dampStateR;
-        if (std::abs (dampStateL2) < 1.0e-15f) dampStateL2 = 0.f;
-        if (std::abs (dampStateR2) < 1.0e-15f) dampStateR2 = 0.f;
+        dampStateL = flushDenorm (dampA_ * dampStateL + (1.f - dampA_) * hpL);
+        dampStateR = flushDenorm (dampA_ * dampStateR + (1.f - dampA_) * hpR);
+        dcBlockL = flushDenorm (dcBlockL);
+        dcBlockR = flushDenorm (dcBlockR);
 
-        const float xfeed = 0.08f;
-        const float fbL = dampStateL2 * (1.f - xfeed) + dampStateR2 * xfeed;
-        const float fbR = dampStateR2 * (1.f - xfeed) + dampStateL2 * xfeed;
-        float wL = inL + fbL * fbk;
-        float wR = inR + fbR * fbk;
+        float wL = inL + dampStateL * fbk;
+        float wR = inR + dampStateR * fbk;
         if (! std::isfinite (wL)) wL = 0.f;
         if (! std::isfinite (wR)) wR = 0.f;
         if (std::abs (wL) > 1.5f) wL = 1.5f * std::tanh (wL / 1.5f);
@@ -3085,11 +3266,11 @@ void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
         if (++writePos >= maxDelaySamples)
             writePos = 0;
 
-        // Mild output soft-clip on wet only — kills HF click spikes from the line
+        // Soft-limit only true peaks — constant tanh on the wet path dulls transients
         float outWetL = wetL;
         float outWetR = wetR;
-        if (std::abs (outWetL) > 1.0f) outWetL = std::tanh (outWetL);
-        if (std::abs (outWetR) > 1.0f) outWetR = std::tanh (outWetR);
+        if (std::abs (outWetL) > 1.2f) outWetL = 1.2f * std::tanh (outWetL / 1.2f);
+        if (std::abs (outWetR) > 1.2f) outWetR = 1.2f * std::tanh (outWetR / 1.2f);
 
         if (doL)
             L[i] = inL * dryG + outWetL * wet;
@@ -3126,7 +3307,7 @@ void SignalChain::Reverb::allocateMaxBuffers() noexcept
 {
     // Freeverb base @ 44.1 kHz; allocate for max size scale at current SR
     static constexpr int combBase[kNumCombs] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225, 186, 155 };
+    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225 };
     static constexpr int stereoSpread = 23;
     const float srScale = sampleRate / 44100.0f;
     const float maxSizeScale = 1.15f;
@@ -3151,7 +3332,7 @@ void SignalChain::Reverb::applySize (float size01) noexcept
 {
     // Only change delay *lengths* — never clear rings (that was a hard click).
     static constexpr int combBase[kNumCombs] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225, 186, 155 };
+    static constexpr int apBase[kNumAllpass] = { 556, 441, 341, 225 };
     static constexpr int stereoSpread = 23;
     const float srScale = sampleRate / 44100.0f;
     const float sizeScale = juce::jmap (juce::jlimit (0.05f, 1.0f, size01), 0.05f, 1.0f, 0.50f, 1.15f);
@@ -3184,15 +3365,40 @@ void SignalChain::Reverb::prepare (const juce::dsp::ProcessSpec& spec)
         varNames.clear();
         for (auto& kv : *varPtr)
             varNames.emplace_back (kv.first, kv.first.toStdString());
+        for (const auto& n : varNames)
+        {
+            const float v = (*varPtr)[n.first];
+            sizeExpr.setVariable (n.second, v);
+            decayExpr.setVariable (n.second, v);
+            dampExpr.setVariable (n.second, v);
+            mixExpr.setVariable (n.second, v);
+            widthExpr.setVariable (n.second, v);
+        }
     }
 
-    sizeSm.setCurrentAndTargetValue (0.55f);
-    decaySm.setCurrentAndTargetValue (0.5f);
-    dampSm.setCurrentAndTargetValue (0.4f);
-    mixSm.setCurrentAndTargetValue (0.3f);
-    widthSm.setCurrentAndTargetValue (1.0f);
+    float size0 = sizeExpr.evaluate (0.f);
+    if (! std::isfinite (size0)) size0 = 0.55f;
+    size0 = juce::jlimit (0.05f, 1.0f, size0);
+    float decay0 = decayExpr.evaluate (0.f);
+    if (! std::isfinite (decay0)) decay0 = 0.5f;
+    decay0 = juce::jlimit (0.05f, 0.95f, decay0);
+    float damp0 = dampExpr.evaluate (0.f);
+    if (! std::isfinite (damp0)) damp0 = 0.4f;
+    damp0 = juce::jlimit (0.0f, 0.95f, damp0);
+    float mx0 = mixExpr.evaluate (0.f);
+    if (! std::isfinite (mx0)) mx0 = 0.3f;
+    mx0 = juce::jlimit (0.0f, 1.0f, mx0);
+    float w0 = widthExpr.evaluate (0.f);
+    if (! std::isfinite (w0)) w0 = 1.f;
+    w0 = juce::jlimit (0.0f, 1.0f, w0);
+
+    sizeSm.setCurrentAndTargetValue (size0);
+    decaySm.setCurrentAndTargetValue (0.7f + decay0 * 0.28f);
+    dampSm.setCurrentAndTargetValue (damp0);
+    mixSm.setCurrentAndTargetValue (mx0);
+    widthSm.setCurrentAndTargetValue (w0);
     allocateMaxBuffers();
-    applySize (0.55f);
+    applySize (size0);
 }
 
 float SignalChain::Reverb::tailSeconds() const noexcept
@@ -3281,29 +3487,29 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
     if (! std::isfinite (width)) width = 1.f;
     width = juce::jlimit (0.0f, 1.0f, width);
     widthSm.setTargetValue (width);
+    if (nS > 0)
+        sizeSm.skip (nS);
 
     auto* L = buffer.getWritePointer (0);
     auto* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
 
     for (int i = 0; i < nS; ++i)
     {
-        juce::ignoreUnused (sizeSm.getNextValue()); // size already applied via rebuild
         const float feedback = decaySm.getNextValue();
         const float dampAmt  = dampSm.getNextValue();
         const float wet      = mixSm.getNextValue();
         const float w        = widthSm.getNextValue();
         const float dryG     = 1.0f - wet;
 
-        const float inL = L[i];
-        const float inR = R != nullptr ? R[i] : inL;
-        const float inCrossL = inL * 0.92f + inR * 0.08f;
-        const float inCrossR = inR * 0.92f + inL * 0.08f;
+        const float inL = std::isfinite (L[i]) ? L[i] : 0.f;
+        const float inR = R != nullptr ? (std::isfinite (R[i]) ? R[i] : 0.f) : inL;
+        const float input = 0.5f * (inL + inR);
 
         float outL = 0.f, outR = 0.f;
         for (int c = 0; c < kNumCombs; ++c)
         {
-            outL += combL[(size_t) c].process (inCrossL, feedback, dampAmt);
-            outR += combR[(size_t) c].process (inCrossR, feedback, dampAmt);
+            outL += combL[(size_t) c].process (input, feedback, dampAmt);
+            outR += combR[(size_t) c].process (input, feedback, dampAmt);
         }
         outL *= (1.0f / (float) kNumCombs);
         outR *= (1.0f / (float) kNumCombs);
@@ -3372,6 +3578,10 @@ void SignalChain::Ms::processBlock (juce::AudioBuffer<float>& buffer)
 
 void SignalChain::Octaver::clearRuntimeState() noexcept
 {
+    det = {};
+    det.flip = 1.f;
+    det.polarity = 1;
+    det.armed = true;
     ch[0] = {};
     ch[1] = {};
 }
@@ -3394,6 +3604,14 @@ void SignalChain::Octaver::prepare (const juce::dsp::ProcessSpec& spec)
     mixSm.setCurrentAndTargetValue (std::isfinite (m0) ? m0 : 0.7f);
     toneSm.setCurrentAndTargetValue (std::isfinite (t0) ? t0 : 420.f);
     thrSm.setCurrentAndTargetValue (std::isfinite (h0) ? h0 : 0.04f);
+    hpR = std::exp (-2.f * juce::MathConstants<float>::pi * 28.f / sampleRate);
+    detLpA = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * 650.f / sampleRate);
+    envAtk = 1.f - std::exp (-1.f / (0.005f * sampleRate));
+    envRel = 1.f - std::exp (-1.f / (0.07f * sampleRate));
+    minAge = juce::jmax (8, (int) std::lround (sampleRate / 700.f));
+    maxAge = juce::jmax (minAge + 8, (int) std::lround (sampleRate / 22.f));
+    lastToneHz = -1.f;
+    toneA = 0.f;
     clearRuntimeState();
     varNames.clear();
     if (varPtr)
@@ -3401,81 +3619,116 @@ void SignalChain::Octaver::prepare (const juce::dsp::ProcessSpec& spec)
             varNames.emplace_back (kv.first, kv.first.toStdString());
 }
 
+void SignalChain::Octaver::tickDetector (float mid, float thr) noexcept
+{
+    const float hp = mid - det.hpX + hpR * det.hpY;
+    det.hpX = mid;
+    det.hpY = flushDenorm (hp);
+    det.lp += detLpA * (det.hpY - det.lp);
+    det.lp = flushDenorm (det.lp);
+
+    const float ax = std::abs (det.lp);
+    det.env += (ax > det.env ? envAtk : envRel) * (ax - det.env);
+    det.env = flushDenorm (det.env);
+
+    const float hys = juce::jmax (0.006f, juce::jlimit (0.008f, 0.28f, thr) * (0.22f + 0.9f * det.env));
+    ++det.age;
+
+    if (det.armed)
+    {
+        if (det.lp > hys && det.polarity <= 0)
+        {
+            if (det.age >= minAge && det.age <= maxAge)
+            {
+                const float measured = (float) det.age;
+                const float prev = det.period;
+                const float ratio = (prev > 4.f) ? (measured / prev) : 1.f;
+                const bool ok = prev <= 4.f
+                             || (ratio > 0.82f && ratio < 1.22f);
+                if (ok)
+                {
+                    det.period = (prev > 4.f) ? (prev * 0.88f + measured * 0.12f) : measured;
+                    det.lock = juce::jmin (1.f, det.lock + 0.14f);
+                }
+                else
+                {
+                    det.lock *= 0.86f;
+                }
+            }
+            else
+            {
+                det.lock *= 0.9f;
+            }
+
+            det.flip = -det.flip;
+            det.phSub = (det.flip > 0.f) ? 0.f : juce::MathConstants<float>::pi;
+            det.age = 0;
+            det.polarity = 1;
+            det.armed = false;
+        }
+        else if (det.lp < -hys && det.polarity >= 0)
+        {
+            det.polarity = -1;
+            det.armed = false;
+        }
+    }
+    else if (std::abs (det.lp) < hys * 0.38f)
+    {
+        det.armed = true;
+    }
+
+    if (det.age > maxAge)
+        det.lock *= 0.985f;
+}
+
+float SignalChain::Octaver::renderSub() noexcept
+{
+    const float sq = std::tanh (det.flip * 2.3f);
+    if (det.period > 4.f && det.age < (int) (det.period * 2.4f))
+        det.phSub += juce::MathConstants<float>::pi / det.period;
+    const float sn = std::sin (det.phSub);
+    const float g = juce::jlimit (0.f, 1.f, det.lock);
+    return (g * sn + (1.f - g) * sq) * det.env;
+}
+
+float SignalChain::Octaver::renderUp (Chan& c, float x) noexcept
+{
+    const float rect = std::abs (x);
+    const float dcA = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * 70.f / sampleRate);
+    c.fwrDc += dcA * (rect - c.fwrDc);
+    const float ac = rect - c.fwrDc;
+    const float lpA = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * 1400.f / sampleRate);
+    c.fwrLp += lpA * (ac - c.fwrLp);
+    c.fwrDc = flushDenorm (c.fwrDc);
+    c.fwrLp = flushDenorm (c.fwrLp);
+    return c.fwrLp * c.env;
+}
+
 float SignalChain::Octaver::processChan (Chan& c, float x,
                                          float subAmt, float upAmt, float mixAmt,
                                          float toneHz, float thr) noexcept
 {
-    const float hpR = std::exp (-2.f * juce::MathConstants<float>::pi * 32.f / sampleRate);
-    const float hp = x - c.hpX + hpR * c.hpY;
-    c.hpX = x;
-    c.hpY = hp;
+    tickDetector (x, thr);
+    const float ax = std::abs (x);
+    c.env += (ax > c.env ? envAtk : envRel) * (ax - c.env);
+    c.env = flushDenorm (c.env);
 
-    const float ax = std::abs (hp);
-    const float atk = 1.f - std::exp (-1.f / (0.0025f * sampleRate));
-    const float rel = 1.f - std::exp (-1.f / (0.045f * sampleRate));
-    c.env += (ax > c.env ? atk : rel) * (ax - c.env);
-
-    const float hys = juce::jmax (0.005f, juce::jlimit (0.005f, 0.3f, thr) * (0.12f + c.env));
-    ++c.age;
-
-    if (c.armed)
+    const float fc = juce::jlimit (70.f, 4000.f, toneHz);
+    if (std::abs (fc - lastToneHz) > 0.5f)
     {
-        if (hp > hys && c.polarity <= 0)
-        {
-            if (c.age > 8 && c.age < (int) (sampleRate * 0.055f))
-            {
-                const float measured = (float) c.age;
-                c.period = (c.period > 4.f) ? (c.period * 0.72f + measured * 0.28f) : measured;
-            }
-            c.age = 0;
-            c.polarity = 1;
-            c.armed = false;
-            c.flip = -c.flip;
-            if (c.flip > 0.f)
-                c.flip2 = -c.flip2;
-        }
-        else if (hp < -hys && c.polarity >= 0)
-        {
-            c.polarity = -1;
-            c.armed = false;
-        }
-    }
-    else if (std::abs (hp) < hys * 0.42f)
-    {
-        c.armed = true;
+        lastToneHz = fc;
+        toneA = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * fc / sampleRate);
     }
 
-    const bool live = c.period > 6.f
-                   && c.age < (int) (c.period * 3.5f + sampleRate * 0.04f);
-
-    float sub = 0.f, up = 0.f;
-    if (live)
-    {
-        const float inc = juce::MathConstants<float>::twoPi / juce::jmax (2.f, c.period);
-        c.phSub += 0.5f * inc;
-        c.phUp  += 2.0f * inc;
-        const float twopi = juce::MathConstants<float>::twoPi;
-        if (c.phSub > twopi) c.phSub -= twopi;
-        if (c.phUp  > twopi) c.phUp  -= twopi;
-        if (c.phSub < 0.f)   c.phSub += twopi;
-        if (c.phUp  < 0.f)   c.phUp  += twopi;
-        sub = std::sin (c.phSub) * c.env;
-        up  = std::sin (c.phUp)  * c.env;
-    }
-    else
-    {
-        sub = c.flip * c.env;
-        up  = ax - c.env;
-    }
-
-    const float fc = juce::jlimit (80.f, 6000.f, toneHz);
-    const float a = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * fc / sampleRate);
-    const float wet = sub * juce::jlimit (0.f, 1.6f, subAmt)
-                    + up  * juce::jlimit (0.f, 1.6f, upAmt);
-    c.outLp += a * (wet - c.outLp);
+    const float wet = renderSub() * juce::jlimit (0.f, 1.6f, subAmt)
+                    + renderUp (c, x) * juce::jlimit (0.f, 1.6f, upAmt);
+    c.tone1 += toneA * (wet - c.tone1);
+    c.tone2 += toneA * (c.tone1 - c.tone2);
+    c.tone1 = flushDenorm (c.tone1);
+    c.tone2 = flushDenorm (c.tone2);
 
     const float m = juce::jlimit (0.f, 1.f, mixAmt);
-    float y = x * (1.f - m) + c.outLp * m;
+    float y = x * (1.f - m) + c.tone2 * m;
     if (! std::isfinite (y))
         y = 0.f;
     return y;
@@ -3520,18 +3773,49 @@ void SignalChain::Octaver::processBlock (juce::AudioBuffer<float>& buffer)
     setT (toneSm, toneExpr.evaluate (0.f), 420.f);
     setT (thrSm, threshExpr.evaluate (0.f), 0.04f);
 
+    float* dst[2] {};
+    const int useCh = juce::jmin (nCh, 2);
+    for (int c = 0; c < useCh; ++c)
+        dst[c] = buffer.getWritePointer (c);
+
     for (int i = 0; i < n; ++i)
     {
-        const float sub = subSm.getNextValue();
-        const float up  = upSm.getNextValue();
-        const float mix = mixSm.getNextValue();
-        const float ton = toneSm.getNextValue();
-        const float thr = thrSm.getNextValue();
-        for (int c = 0; c < nCh; ++c)
+        const float subAmt = subSm.getNextValue();
+        const float upAmt  = upSm.getNextValue();
+        const float mixAmt = mixSm.getNextValue();
+        const float ton    = toneSm.getNextValue();
+        const float thr    = thrSm.getNextValue();
+
+        const float inL = dst[0][i];
+        const float inR = useCh > 1 ? dst[1][i] : inL;
+        tickDetector (0.5f * (inL + inR), thr);
+
+        const float fc = juce::jlimit (70.f, 4000.f, ton);
+        if (std::abs (fc - lastToneHz) > 0.5f)
         {
-            auto& slot = ch[c != 0 ? 1 : 0];
-            buffer.setSample (c, i, processChan (slot, buffer.getSample (c, i),
-                                                 sub, up, mix, ton, thr));
+            lastToneHz = fc;
+            toneA = 1.f - std::exp (-2.f * juce::MathConstants<float>::pi * fc / sampleRate);
+        }
+
+        const float subWave = renderSub() * juce::jlimit (0.f, 1.6f, subAmt);
+        const float m = juce::jlimit (0.f, 1.f, mixAmt);
+
+        for (int c = 0; c < useCh; ++c)
+        {
+            auto& slot = ch[c];
+            const float x = dst[c][i];
+            const float ax = std::abs (x);
+            slot.env += (ax > slot.env ? envAtk : envRel) * (ax - slot.env);
+            slot.env = flushDenorm (slot.env);
+            const float wet = subWave + renderUp (slot, x) * juce::jlimit (0.f, 1.6f, upAmt);
+            slot.tone1 += toneA * (wet - slot.tone1);
+            slot.tone2 += toneA * (slot.tone1 - slot.tone2);
+            slot.tone1 = flushDenorm (slot.tone1);
+            slot.tone2 = flushDenorm (slot.tone2);
+            float y = x * (1.f - m) + slot.tone2 * m;
+            if (! std::isfinite (y))
+                y = 0.f;
+            dst[c][i] = y;
         }
     }
 }
@@ -3548,26 +3832,29 @@ void SignalChain::Vocoder::clearRuntimeState() noexcept
         b.modR.reset();
         b.carL.reset();
         b.carR.reset();
-        b.envL = 0.f;
-        b.envR = 0.f;
+        b.env = 0.f;
     }
     lastQ = -1.f;
     lastForm = -1.f;
+    modHpX = modHpY = 0.f;
+    scHold = 0;
 }
 
 void SignalChain::Vocoder::applyBands (float q, float formant) noexcept
 {
     const int nb = juce::jlimit (3, kMaxBands, numBands);
     const float form = juce::jlimit (0.5f, 2.f, formant);
-    const float qv = juce::jlimit (0.7f, 8.f, q);
-    const float lo = 180.f * form;
-    const float hi = 6400.f * form;
+    // User Q used to be fed raw into a 2-pole BP (2–8 = paper-thin holes).
+    // Map to overlapping vocoder bands; spacing sets the rest.
+    const float qv = juce::jlimit (0.55f, 2.6f, 0.55f + q * 0.28f);
+    const float lo = 140.f * form;
+    const float hi = 5800.f * form;
     const float ratio = (nb > 1) ? std::pow (hi / lo, 1.f / (float) (nb - 1)) : 1.f;
     const float ny = sampleRate * 0.42f;
 
     for (int i = 0; i < nb; ++i)
     {
-        const float fc = juce::jlimit (80.f, ny, lo * std::pow (ratio, (float) i));
+        const float fc = juce::jlimit (90.f, ny, lo * std::pow (ratio, (float) i));
         auto c = juce::dsp::IIR::Coefficients<float>::makeBandPass (sampleRate, fc, qv);
         if (c == nullptr)
             continue;
@@ -3577,7 +3864,7 @@ void SignalChain::Vocoder::applyBands (float q, float formant) noexcept
         b.carL.coefficients = c;
         b.carR.coefficients = c;
     }
-    lastQ = qv;
+    lastQ = q;
     lastForm = form;
 }
 
@@ -3604,6 +3891,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     qSm.setCurrentAndTargetValue (std::isfinite (q0) ? q0 : 2.2f);
     formSm.setCurrentAndTargetValue (std::isfinite (f0) ? f0 : 1.f);
     drySm.setCurrentAndTargetValue (std::isfinite (d0) ? d0 : 0.15f);
+    hpR = std::exp (-2.f * juce::MathConstants<float>::pi * 70.f / sampleRate);
     clearRuntimeState();
     applyBands (qSm.getCurrentValue(), formSm.getCurrentValue());
     varNames.clear();
@@ -3647,10 +3935,26 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     setT (drySm, dryExpr.evaluate (0.f), 0.15f);
 
     const int nb = juce::jlimit (3, kMaxBands, numBands);
-    const float atk = 1.f - std::exp (-1.f / (0.008f * sampleRate));
-    const float rel = 1.f - std::exp (-1.f / (0.055f * sampleRate));
-    const float makeup = 2.4f / std::sqrt ((float) nb);
-    const bool scAvail = (scL != nullptr && scN > 0);
+    const float atk = 1.f - std::exp (-1.f / (0.0035f * sampleRate));
+    const float rel = 1.f - std::exp (-1.f / (0.028f * sampleRate));
+    const float makeup = 7.2f / std::sqrt ((float) nb);
+    const bool scWired = (scL != nullptr && scN > 0);
+    float scPeak = 0.f;
+    if (scWired)
+    {
+        for (int i = 0; i < scN; ++i)
+        {
+            scPeak = juce::jmax (scPeak, std::abs (scL[i]));
+            if (scR != nullptr)
+                scPeak = juce::jmax (scPeak, std::abs (scR[i]));
+        }
+    }
+    if (scPeak > 1.5e-4f)
+        scHold = (int) (0.06f * sampleRate);
+    else if (scHold > 0)
+        scHold = juce::jmax (0, scHold - n);
+    const bool useSc = scWired && (scPeak > 1.5e-4f || scHold > 0);
+
     const int useCh = juce::jmin (nCh, 2);
     float* dst[2] {};
     for (int c = 0; c < useCh; ++c)
@@ -3658,7 +3962,7 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
 
     const float q0 = qSm.getNextValue();
     const float form0 = formSm.getNextValue();
-    if (std::abs (q0 - lastQ) > 0.08f || std::abs (form0 - lastForm) > 0.02f)
+    if (std::abs (q0 - lastQ) > 0.04f || std::abs (form0 - lastForm) > 0.015f)
         applyBands (q0, form0);
     if (n > 1)
     {
@@ -3670,38 +3974,52 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     {
         const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
         const float dry = juce::jlimit (0.f, 1.f, drySm.getNextValue());
-        const int si = scAvail ? juce::jlimit (0, scN - 1, i) : 0;
+        const int si = useSc ? juce::jlimit (0, scN - 1, i) : 0;
 
-        for (int c = 0; c < useCh; ++c)
+        const float carL = dst[0][i];
+        const float carR = useCh > 1 ? dst[1][i] : carL;
+        float modL = carL;
+        float modR = carR;
+        if (useSc)
         {
-            const float car = dst[c][i];
-            float mod = car;
-            if (scAvail)
-            {
-                const float* src = (c != 0 && scR != nullptr) ? scR : scL;
-                mod = src[si];
-            }
+            modL = scL[si];
+            modR = scR != nullptr ? scR[si] : modL;
+        }
 
-            float sum = 0.f;
-            for (int b = 0; b < nb; ++b)
-            {
-                auto& band = bands[(size_t) b];
-                auto& mf = (c != 0) ? band.modR : band.modL;
-                auto& cf = (c != 0) ? band.carR : band.carL;
-                float& env = (c != 0) ? band.envR : band.envL;
-                const float mb = mf.processSample (mod);
-                const float cb = cf.processSample (car);
-                const float ax = std::abs (mb);
-                env += (ax > env ? atk : rel) * (ax - env);
-                if (! std::isfinite (env))
-                    env = 0.f;
-                sum += cb * env;
-            }
+        const float hp = 0.5f * (modL + modR);
+        const float hpY = hp - modHpX + hpR * modHpY;
+        modHpX = hp;
+        modHpY = (std::abs (hpY) < 1.0e-20f) ? 0.f : hpY;
+        const float modMono = hpY;
 
-            float y = car * dry + sum * mix * makeup;
+        float sumL = 0.f, sumR = 0.f;
+        for (int b = 0; b < nb; ++b)
+        {
+            auto& band = bands[(size_t) b];
+            const float mb = band.modL.processSample (modMono);
+            (void) band.modR.processSample (modMono);
+            const float cbL = band.carL.processSample (carL);
+            const float cbR = band.carR.processSample (carR);
+            const float ax = std::abs (mb);
+            band.env += (ax > band.env ? atk : rel) * (ax - band.env);
+            if (! std::isfinite (band.env) || std::abs (band.env) < 1.0e-20f)
+                band.env = 0.f;
+            sumL += cbL * band.env;
+            sumR += cbR * band.env;
+        }
+
+        auto finish = [dry, mix, makeup] (float car, float sum) noexcept
+        {
+            float wet = sum * makeup;
+            if (std::abs (wet) > 1.8f)
+                wet = 1.8f * std::tanh (wet / 1.8f);
+            float y = car * dry + wet * mix;
             if (! std::isfinite (y))
                 y = car * dry;
-            dst[c][i] = y;
-        }
+            return y;
+        };
+        dst[0][i] = finish (carL, sumL);
+        if (useCh > 1)
+            dst[1][i] = finish (carR, sumR);
     }
 }

@@ -24,9 +24,13 @@ void SignalChain::Ir::loadImpulse (const juce::AudioBuffer<float>& ir, double ir
         return;
     }
 
-    juce::AudioBuffer<float> copy (ir.getNumChannels(), ir.getNumSamples());
-    for (int c = 0; c < ir.getNumChannels(); ++c)
-        copy.copyFrom (c, 0, ir, c, 0, ir.getNumSamples());
+    const int n = ir.getNumSamples();
+    juce::AudioBuffer<float> copy (2, n);
+    copy.copyFrom (0, 0, ir, 0, 0, n);
+    if (ir.getNumChannels() > 1)
+        copy.copyFrom (1, 0, ir, 1, 0, n);
+    else
+        copy.copyFrom (1, 0, ir, 0, 0, n);
 
     conv.loadImpulseResponse (std::move (copy), irSr,
                               juce::dsp::Convolution::Stereo::yes,

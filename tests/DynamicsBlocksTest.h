@@ -194,6 +194,90 @@ public:
             expect (quiet > 0.18f && quiet < 0.22f,
                     "below ceiling should pass, peak=" + juce::String (quiet, 3));
         }
+
+        beginTest ("comp then silence stays finite");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "comp1: threshold = -18; ratio = 6; attack = 0.002; release = 0.08; hpf = 80",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int b = 0; b < 6; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = 0.6f * std::sin (i * 0.11f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlock (buf);
+            }
+            buf.clear();
+            for (int b = 0; b < 20; ++b)
+            {
+                chain.processBlock (buf);
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+            }
+        }
+
+        beginTest ("ott block parses");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String err;
+            expect (parser.parse (
+                "ott1: depth = 0.5; time = 0.3; in = 1; low = 1; mid = 1; high = 1",
+                blocks, aliases, params, err), err);
+            expectEquals ((int) blocks.size(), 1);
+            expect (blocks[0].type.startsWith ("ott"));
+        }
+
+        beginTest ("ott lifts a quiet sine and stays finite on a loud one");
+        {
+            dsl::SignalChain dry, ott;
+            juce::String err;
+            expect (dry.loadScript ("stage1: y = x", err), err);
+            expect (ott.loadScript (
+                "ott1: depth = 1; time = 0.25; in = 1.2; low = 1; mid = 1; high = 1",
+                err), err);
+            dry.prepare ({ 48000.0, 256, 2 });
+            ott.prepare ({ 48000.0, 256, 2 });
+            const float quietDry = tonePeak (dry, 0.08f, 1000.f, 48000.f, 10);
+            const float quietOtt = tonePeak (ott, 0.08f, 1000.f, 48000.f, 10);
+            expect (quietOtt > quietDry * 1.15f, "upward should lift a quiet mid, dry="
+                    + juce::String (quietDry, 3) + " ott=" + juce::String (quietOtt, 3));
+
+            dsl::SignalChain smash;
+            expect (smash.loadScript (
+                "ott1: depth = 0.85; time = 0.2; in = 2.0; low = 1; mid = 1; high = 1",
+                err), err);
+            smash.prepare ({ 48000.0, 256, 2 });
+            const float loud = tonePeak (smash, 0.9f, 440.f, 48000.f, 8);
+            expect (std::isfinite (loud));
+            expect (loud < 2.2f, "OTT should not run away, peak=" + juce::String (loud, 3));
+            expect (smash.getMaxTailTime() > 0.02f);
+        }
+
+        beginTest ("limit then silence stays finite");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("limit1: ceiling = -1; release = 0.05", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            (void) tonePeak (chain, 1.0f, 440.f, 48000.f, 4);
+            juce::AudioBuffer<float> z (2, 256);
+            z.clear();
+            for (int b = 0; b < 16; ++b)
+            {
+                chain.processBlock (z);
+                expectEquals (TestHelpers::countNonFinite (z), 0);
+                expect (TestHelpers::peakAbs (z) < 1.0e-4f);
+            }
+        }
     }
 
 private:

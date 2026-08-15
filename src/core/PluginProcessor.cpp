@@ -67,7 +67,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), false)
+                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
@@ -853,6 +853,19 @@ void NeuroCoreAudioProcessor::loadPreset(int index)
             sendChangeMessage();
         }
     }
+}
+
+void NeuroCoreAudioProcessor::stepPreset (int delta)
+{
+    if (delta == 0)
+        return;
+    const auto names = getPresetNames();
+    const int n = names.size();
+    if (n <= 0)
+        return;
+    const int cur = names.indexOf (currentPresetName);
+    const int idx = ((cur + delta) % n + n) % n;
+    loadPreset (idx);
 }
 
 void NeuroCoreAudioProcessor::loadLanguage (const juce::String&)

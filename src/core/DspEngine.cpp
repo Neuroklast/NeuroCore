@@ -433,13 +433,20 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
             if (scOsBuffer.getNumSamples() < osN)
                 scOsBuffer.setSize (2, osN, false, false, true);
             const int hn = hostScN;
+            const float scale = (hn > 1 && osN > 1) ? ((float) (hn - 1) / (float) (osN - 1)) : 0.f;
             for (int i = 0; i < osN; ++i)
             {
-                const int src = juce::jlimit (0, hn - 1, (int) ((int64_t) i * hn / juce::jmax (1, osN)));
-                const float sl = hostScL[src];
-                const float sr = hostScR != nullptr ? hostScR[src] : sl;
-                scOsBuffer.setSample (0, i, sl);
-                scOsBuffer.setSample (1, i, sr);
+                const float pos = (float) i * scale;
+                int i0 = (int) pos;
+                if (i0 >= hn - 1) i0 = hn - 1;
+                const int i1 = juce::jmin (hn - 1, i0 + 1);
+                const float f = pos - (float) i0;
+                const float sl0 = hostScL[i0];
+                const float sl1 = hostScL[i1];
+                const float sr0 = hostScR != nullptr ? hostScR[i0] : sl0;
+                const float sr1 = hostScR != nullptr ? hostScR[i1] : sl1;
+                scOsBuffer.setSample (0, i, sl0 + f * (sl1 - sl0));
+                scOsBuffer.setSample (1, i, sr0 + f * (sr1 - sr0));
             }
             signalChain.setExternalSidechain (scOsBuffer.getReadPointer (0),
                                               scOsBuffer.getReadPointer (1), osN);

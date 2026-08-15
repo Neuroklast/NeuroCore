@@ -124,6 +124,8 @@ private:
     std::unique_ptr<juce::Label>         mixLabel;
     std::unique_ptr<juce::Label>         mixValue;
     std::unique_ptr<juce::Label>         currentPresetLabel;
+    std::unique_ptr<juce::TextButton>    presetPrevButton;
+    std::unique_ptr<juce::TextButton>    presetNextButton;
     juce::TooltipWindow                  tooltipWindow { this, 450 };
     std::unique_ptr<InputChannelSwitch>  inputChannelSwitch;
     std::unique_ptr<juce::ComboBox>      polisherBox;

@@ -147,6 +147,9 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
                  || b.type == "octave" || b.type.startsWith ("vocoder")
                  || b.type.startsWith ("gate") || b.type.startsWith ("limit")
                  || b.type.startsWith ("xover") || b.type.startsWith ("crossover")
+                 || b.type.startsWith ("ott") || b.type.startsWith ("widen")
+                 || b.type.startsWith ("stereo") || b.type.startsWith ("delay")
+                 || b.type.startsWith ("reverb") || b.type == "verb"
                  || b.type.startsWith ("ir") || b.type.startsWith ("convolve"))
         {
             hasAudioPath = true;
@@ -212,7 +215,7 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
     }
 
     if (! hasAudioPath)
-        r.errors.add ("No stage/filter/comp/eq/octaver/vocoder/gate/limit — script cannot process audio");
+        r.errors.add ("No audio block (stage/filter/comp/ott/widen/…) — script cannot process audio");
 }
 
 void FormulaQualityAnalyzer::accumulateBufferStats (const juce::AudioBuffer<float>& buf,
@@ -299,6 +302,26 @@ void FormulaQualityAnalyzer::runDynamicChecks (const juce::String& script,
         double sum = 0, sumSq = 0, sumAbs = 0;
         int silent = 0, n = 0;
         int sampleCounter = 0;
+
+        // Wet-only delay/reverb needs the comb/line to fill before the probe
+        // (mix=1 used to leak dry because smoothers started at 0.3).
+        {
+            juce::AudioBuffer<float> warm (2, opt.blockSize);
+            std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> kp {};
+            for (int p = 0; p < Config::kNumUserParams; ++p)
+                kp[(size_t) p] = &knobs[(size_t) p];
+            for (int w = 0; w < 12; ++w)
+            {
+                for (int i = 0; i < opt.blockSize; ++i)
+                {
+                    const float s = fillFn (sampleCounter + i);
+                    warm.setSample (0, i, s);
+                    warm.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (warm, kp);
+                sampleCounter += opt.blockSize;
+            }
+        }
 
         for (int b = 0; b < opt.numBlocks; ++b)
         {

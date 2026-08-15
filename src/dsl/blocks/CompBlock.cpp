@@ -11,6 +11,8 @@ void SignalChain::Comp::clearRuntimeState() noexcept
     hpfLpR = 0.f;
     hpfLpL2 = 0.f;
     hpfLpR2 = 0.f;
+    cachedAtk = cachedRel = cachedHpf = -1.f;
+    cachedMakeup = 1.0e9f;
 }
 
 void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
@@ -102,16 +104,12 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     for (int c = 0; c < useCh; ++c)
         out[c] = buffer.getWritePointer (c);
 
-    for (int i = 0; i < nS; ++i)
-    {
-        const float thr = juce::jlimit (-80.f, 0.f, thrSm.getNextValue());
-        const float rat = juce::jlimit (1.f, 40.f, ratioSm.getNextValue());
-        const float atk = juce::jmax (0.001f, atkSm.getNextValue());
-        const float rel = juce::jmax (0.005f, relSm.getNextValue());
-        const float knee = juce::jlimit (0.f, 24.f, kneeSm.getNextValue());
-        const float makeup = juce::jlimit (-24.f, 24.f, makeupSm.getNextValue());
-        const float hpf = juce::jlimit (0.f, 800.f, hpfSm.getNextValue());
+    const bool live = thrSm.isSmoothing() || ratioSm.isSmoothing() || atkSm.isSmoothing()
+                   || relSm.isSmoothing() || kneeSm.isSmoothing() || makeupSm.isSmoothing()
+                   || hpfSm.isSmoothing();
 
+    auto refreshCached = [this] (float atk, float rel, float hpf, float makeup) noexcept
+    {
         if (std::abs (atk - cachedAtk) > 1.0e-6f)
         {
             cachedAtk = atk;
@@ -133,6 +131,30 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         {
             cachedMakeup = makeup;
             makeupLin = juce::Decibels::decibelsToGain (makeup);
+        }
+    };
+
+    float thr = juce::jlimit (-80.f, 0.f, thrSm.getCurrentValue());
+    float rat = juce::jlimit (1.f, 40.f, ratioSm.getCurrentValue());
+    float knee = juce::jlimit (0.f, 24.f, kneeSm.getCurrentValue());
+    float hpf = juce::jlimit (0.f, 800.f, hpfSm.getCurrentValue());
+    refreshCached (juce::jmax (0.001f, atkSm.getCurrentValue()),
+                   juce::jmax (0.005f, relSm.getCurrentValue()),
+                   hpf,
+                   juce::jlimit (-24.f, 24.f, makeupSm.getCurrentValue()));
+
+    for (int i = 0; i < nS; ++i)
+    {
+        if (live)
+        {
+            thr = juce::jlimit (-80.f, 0.f, thrSm.getNextValue());
+            rat = juce::jlimit (1.f, 40.f, ratioSm.getNextValue());
+            const float atk = juce::jmax (0.001f, atkSm.getNextValue());
+            const float rel = juce::jmax (0.005f, relSm.getNextValue());
+            knee = juce::jlimit (0.f, 24.f, kneeSm.getNextValue());
+            const float makeup = juce::jlimit (-24.f, 24.f, makeupSm.getNextValue());
+            hpf = juce::jlimit (0.f, 800.f, hpfSm.getNextValue());
+            refreshCached (atk, rel, hpf, makeup);
         }
 
         float detL = 0.f, detR = 0.f;
@@ -162,6 +184,10 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             hpfLpR2 = a * hpfLpR2 + (1.f - a) * detR;
             detL -= hpfLpL2;
             detR -= hpfLpR2;
+            if (std::abs (hpfLpL) < 1.0e-20f) hpfLpL = 0.f;
+            if (std::abs (hpfLpR) < 1.0e-20f) hpfLpR = 0.f;
+            if (std::abs (hpfLpL2) < 1.0e-20f) hpfLpL2 = 0.f;
+            if (std::abs (hpfLpR2) < 1.0e-20f) hpfLpR2 = 0.f;
         }
 
         const float det = juce::jmax (std::abs (detL), std::abs (detR));
@@ -169,13 +195,27 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         const float grDb = computeGrDb (levelDb, thr, rat, knee);
 
         envDb += ((grDb > envDb) ? atkC : relC) * (grDb - envDb);
-        if (! std::isfinite (envDb))
+        if (! std::isfinite (envDb) || std::abs (envDb) < 1.0e-20f)
             envDb = 0.f;
         envDb = juce::jlimit (0.f, 60.f, envDb);
 
         const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
         for (int c = 0; c < useCh; ++c)
             out[c][i] *= g;
+    }
+
+    if (! live)
+    {
+        if (nS > 0)
+        {
+            thrSm.skip (nS);
+            ratioSm.skip (nS);
+            atkSm.skip (nS);
+            relSm.skip (nS);
+            kneeSm.skip (nS);
+            makeupSm.skip (nS);
+            hpfSm.skip (nS);
+        }
     }
 
     if (varPtr != nullptr)

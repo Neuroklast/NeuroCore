@@ -64,6 +64,9 @@ inline float hardClipSoftKnee (float x, float limit) noexcept
     const float L = juce::jmax (1.0e-6f, std::abs (limit));
     const float t = x / L;
     const float absT = std::abs (t);
+    // n=24: |t|^24 at 0.8 is ~0.0047 → den≈1.0002. Skip two pow() on the linear region.
+    if (absT < 0.8f)
+        return x;
     constexpr float n = 24.0f;
     // (1 + |t|^n)^(1/n)
     const float den = std::pow (1.0f + std::pow (absT, n), 1.0f / n);
@@ -1116,6 +1119,13 @@ bool ExpressionEvaluator::captureScalarState(std::function<float(const float*)>&
                                              size_t& xIndex) const noexcept
 {
     const juce::SpinLock::ScopedLockType sl(lock);
+    return bindCompiledUnlocked (func, varsCopy, xIndex);
+}
+
+bool ExpressionEvaluator::bindCompiledUnlocked (std::function<float(const float*)>& func,
+                                                VarArray& varsCopy,
+                                                size_t& xIndex) const noexcept
+{
     varsCopy = variables;
     func = compiled;
     xIndex = invalidIndex;

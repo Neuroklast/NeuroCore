@@ -22,6 +22,8 @@ void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
     };
     ceilSm.setCurrentAndTargetValue (snap (ceilingDb, -0.3f));
     relSm.setCurrentAndTargetValue (snap (release, 0.08f));
+    // ~80 µs attack — instant slam clicked; hard clip still holds the ceiling
+    atkC = 1.f - std::exp (-1.f / juce::jmax (1.f, 0.00008f * sampleRate));
     clearRuntimeState();
     varNames.clear();
     if (varPtr != nullptr)
@@ -89,11 +91,11 @@ void SignalChain::Limit::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float needed = (peak > ceilLin && peak > 1.0e-12f) ? (ceilLin / peak) : 1.f;
         if (needed < gain)
-            gain = needed;
+            gain += atkC * (needed - gain);
         else
             gain += relC * (1.f - gain);
-        if (! std::isfinite (gain))
-            gain = 1.f;
+        if (! std::isfinite (gain) || std::abs (gain) < 1.0e-20f)
+            gain = (needed < 1.f) ? needed : 1.f;
         gain = juce::jlimit (0.f, 1.f, gain);
 
         for (int c = 0; c < useCh; ++c)

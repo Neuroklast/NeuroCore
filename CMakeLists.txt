@@ -93,6 +93,8 @@ set(SOURCE_FILES
     src/dsl/blocks/CompBlock.cpp
     src/dsl/blocks/LimitBlock.cpp
     src/dsl/blocks/XoverBlock.cpp
+    src/dsl/blocks/OttBlock.cpp
+    src/dsl/blocks/WidenBlock.cpp
     src/dsl/blocks/IrBlock.cpp
     src/ui/IrPanelComponent.cpp
     src/utils/ExpressionEvaluator.cpp

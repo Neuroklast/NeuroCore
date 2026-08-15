@@ -175,7 +175,7 @@ public:
             buf.setSample (1, 0, 0.8f);
             float earlyPeak = 0.f, latePeak = 0.f;
             int bad = 0;
-            // ~0.4 s @ 48k — enough to prove decay without 100k expects
+            // 100 ms @ 48 kHz = 4800 samples ≈ block 19. mix=1 has no dry leak.
             for (int b = 0; b < 80; ++b)
             {
                 if (b > 0)
@@ -183,7 +183,7 @@ public:
                 chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
                 bad += TestHelpers::countNonFinite (buf);
                 const float pk = TestHelpers::peakAbs (buf);
-                if (b < 10)
+                if (b >= 16 && b < 28)
                     earlyPeak = juce::jmax (earlyPeak, pk);
                 if (b >= 70)
                     latePeak = juce::jmax (latePeak, pk);

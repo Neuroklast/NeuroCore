@@ -20,7 +20,7 @@ Load a preset
 - Click Presets in the top bar.
 - Leave Scope on All or Factory.
 - Double-click a row, or select it and press Load.
-- The chip next to Presets shows the name.
+- The chip next to Presets shows the name. Use the < and > buttons on either side to step through the library.
 
 Hear it
 - Mix at 0% is dry (untouched input).
@@ -48,7 +48,8 @@ Top bar
 - NK + NEUROKORE + by Neuroklast + version: product mark. Click it to open neuroklast.net.
 - Presets: factory and your own sounds. The last category stays selected when you reopen.
 - Current chip: loaded preset name, or Untitled.
-- Functions: look up formula words and insert them.
+- Current chip: loaded preset name. < / > step through the library.
+- Functions: look up formula words and insert them. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder, octaver).
 - Stages: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
 - Bypass: forces Mix to 0 (dry) and locks the Mix slider so you cannot sneak wet signal back in. Turn Bypass off and the previous Mix comes back.
 - License: import a signed .lic file. After activation, License shows who this copy is licensed to. Replace license loads a new file.
@@ -145,6 +146,7 @@ The Presets window is an explorer
 
 Load
 - Double-click a row, or select + Load.
+- Or stay in the editor: < / > beside the preset name steps through factory, then user presets. Wraps at both ends.
 - New Blank starts a simple softclip formula.
 
 Save your own
@@ -174,6 +176,7 @@ These are mix tools, not a full mastering suite.
 - NY Drum Bus / Parallel Tape: dry plus a smashed or tape-like path. Blend is the mix.
 - Plate Send / Width Delay / Slap Double: dry in the middle, wet on a side path.
 - Haas Width / Loudness Curve / Missing Bass / Speech Band: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
+- Mono to Stereo: allpass + Haas. Mid stays the original. Works on a mono send.
 - Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed: score, FX, and dialogue processing. Not a trailer sample pack.
 - Stereo Guitar Wall: two DI takes, two amps (Mesa left / 5150 right). Needs stereo in and BOTH. Not a fake double of one take.
 - Cyberpunk Drive / Neon Clip / Chrome Fold / Data Mosher: digital dirt.
@@ -203,7 +206,14 @@ octaverN: sub = ...; up = ...; mix = ...; tone = ...
     Tracking -1 / +1 octave. thresh sets how hard it locks.
 
 vocoderN: bands = 8; mix = ...; q = ...; formant = ...; dry = ...
-    Analog vocoder. Voice goes on the Sidechain pin. Without a pin it self-vocodes.
+    Analog vocoder. Insert on a synth/pad (carrier). Pin the voice on Sidechain.
+    Empty pin self-vocodes.
+
+widenN: width = ...; delay = ...; bass = ...
+    Mono to stereo. Mid stays the original. Side is allpass + Haas. Bass stays mono.
+
+ottN: depth = ...; time = ...
+    3-band upward + downward compressor (OTT).
 
 Hardware-character factory presets (not circuit clones):
     1176 FET / All In, LA-2A Opto, SSL Bus Comp, Fairchild Mu, dbx 160,
@@ -258,6 +268,10 @@ Good habits
 ---
 
 ## 7. Tips
+
+Functions catalog
+- Open Functions. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder).
+- Pick a word, then Insert.
 
 Send effect
 - Load a delay or reverb, set Mix high, ride the host send.

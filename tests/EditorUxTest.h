@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include "../src/ui/HelpContentComponent.h"
+#include "../src/ui/FunctionsContentComponent.h"
 #include "../src/ui/DslAutocomplete.h"
 #include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
@@ -75,6 +76,20 @@ public:
             expect (PresetContentComponent::kExplorerSidebarWidth >= 200);
             expect (PresetContentComponent::kCategoryRowHeight >= 28);
             expect (PresetContentComponent::kCategoryNameFontPt >= 16.f);
+        }
+
+        beginTest ("functions catalog folders split core from drive");
+        {
+            expect (FunctionsContentComponent::kExplorerSidebarWidth >= 180);
+            expectEquals (FunctionsContentComponent::categoryForName ("sin"), juce::String ("Core"));
+            expectEquals (FunctionsContentComponent::categoryForName ("lerp"), juce::String ("Core"));
+            expectEquals (FunctionsContentComponent::categoryForName ("tube"), juce::String ("Drive"));
+            expectEquals (FunctionsContentComponent::categoryForName ("diode"), juce::String ("Drive"));
+            expectEquals (FunctionsContentComponent::categoryForName ("softclip"), juce::String ("Drive"));
+            expectEquals (FunctionsContentComponent::categoryForName ("bitcrush"), juce::String ("Crush"));
+            expectEquals (FunctionsContentComponent::categoryForName ("ott"), juce::String ("Blocks"));
+            expectEquals (FunctionsContentComponent::categoryForName ("widen"), juce::String ("Blocks"));
+            expectEquals (FunctionsContentComponent::categoryForName ("vocoder"), juce::String ("Blocks"));
         }
 
         beginTest ("formula comments use rust, not editor green");

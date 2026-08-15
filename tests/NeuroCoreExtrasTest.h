@@ -596,6 +596,27 @@ private:
 
     void testFactoryPresetLibrary()
     {
+        beginTest ("stepPreset walks factory names and wraps");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            NeuroCoreAudioProcessor proc;
+            proc.prepareToPlay (44100.0, 256);
+            const auto names = proc.getPresetNames();
+            expect (names.size() >= 2);
+            proc.stepPreset (1);
+            expectEquals (proc.getCurrentPresetName(), names[0]);
+            proc.stepPreset (1);
+            expectEquals (proc.getCurrentPresetName(), names[1]);
+            proc.stepPreset (-1);
+            expectEquals (proc.getCurrentPresetName(), names[0]);
+            proc.stepPreset (-1);
+            expectEquals (proc.getCurrentPresetName(), names[names.size() - 1]);
+            proc.stepPreset (1);
+            expectEquals (proc.getCurrentPresetName(), names[0]);
+        }
+
         beginTest("FactoryPresetLibrary: load and apply ALL presets");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
@@ -914,6 +935,51 @@ private:
             expect (diff > 0.5f, "L/R too similar for a dual-DI wall");
         }
 
+        beginTest ("Stereo Guitar Wall stays stereo on the smoothed plugin path");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            const auto* wall = lib.findByName ("Stereo Guitar Wall");
+            expect (wall != nullptr);
+            if (wall == nullptr)
+                return;
+
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (wall->script, err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+
+            juce::SmoothedValue<float> knobs[6];
+            std::array<juce::SmoothedValue<float>*, 6> knobPtrs {};
+            for (int i = 0; i < 6; ++i)
+            {
+                knobs[i].reset (48000.0, 0.0);
+                knobs[i].setCurrentAndTargetValue (0.55f);
+                knobPtrs[(size_t) i] = &knobs[i];
+            }
+
+            juce::AudioBuffer<float> buf (2, 256);
+            float peakL = 0.f, peakR = 0.f;
+            for (int b = 0; b < 8; ++b)
+            {
+                for (int n = 0; n < 256; ++n)
+                {
+                    const float t = (float) (b * 256 + n) / 48000.0f;
+                    const float twoPi = 2.0f * juce::MathConstants<float>::pi;
+                    buf.setSample (0, n, 0.4f * std::sin (twoPi * 220.0f * t));
+                    buf.setSample (1, n, 0.4f * std::sin (twoPi * 1100.0f * t));
+                }
+                chain.processBlockSmoothed (buf, knobPtrs);
+                for (int n = 0; n < 256; ++n)
+                {
+                    peakL = juce::jmax (peakL, std::abs (buf.getSample (0, n)));
+                    peakR = juce::jmax (peakR, std::abs (buf.getSample (1, n)));
+                    expect (std::isfinite (buf.getSample (0, n)) && std::isfinite (buf.getSample (1, n)));
+                }
+            }
+            expect (peakL > 0.05f, "smoothed path left silent");
+            expect (peakR > 0.05f, "smoothed path right silent");
+        }
+
         beginTest ("Cyberpunk Drive: digital guitar dirt stays loud");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
@@ -1074,7 +1140,7 @@ private:
             const auto* sidechain = proc.getBus (true, 1);
             const auto* mainOut = proc.getBus (false, 0);
             expect (mainIn != nullptr && mainIn->isEnabled());
-            expect (sidechain != nullptr && ! sidechain->isEnabledByDefault());
+            expect (sidechain != nullptr && sidechain->isEnabledByDefault());
             expect (mainOut != nullptr && mainOut->isEnabled());
             expectEquals (sidechain->getName(), juce::String ("Sidechain"));
 

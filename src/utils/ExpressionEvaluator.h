@@ -79,6 +79,9 @@ public:
     /** Reset ADAA / waveshaper runtime state (call on formula load / prepare, NOT every block). */
     void resetRuntimeState() const noexcept;
 
+    /** Audio-thread: bind compiled functor without taking the parse lock. */
+    bool bindCompiledUnlocked (std::function<float(const float*)>& func, VarArray& varsCopy, size_t& xIndex) const noexcept;
+
     /**
         Select ADAA state bank for multi-channel streaming (0 = left/mid, 1 = right/side).
         Call once before processing a channel's samples; do NOT resetRuntime between blocks.
@@ -283,7 +286,7 @@ inline void ExpressionEvaluator::evaluateBlockT(float* samples, size_t numSample
     std::function<float(const float*)> func;
     VarArray varsCopy{};
     size_t xIndex = invalidIndex;
-    if (!captureScalarState(func, varsCopy, xIndex))
+    if (!bindCompiledUnlocked(func, varsCopy, xIndex))
         return;
 
     for (size_t i = 0; i < numSamples; ++i)

@@ -263,6 +263,8 @@ bool DSLParser::parse(const juce::String& text,
             // delay/reverb/ms/verb aliases
             if (desc.type == "verb")
                 desc.type = "reverb";
+            if (desc.type == "stereo" || desc.type == "stereoize" || desc.type == "stereoiser")
+                desc.type = "widen";
             if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
                 desc.type = "ms";
 
@@ -272,6 +274,8 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
                 desc.type != "gate" && desc.type != "limit" && desc.type != "limiter" &&
                 desc.type != "xover" && desc.type != "crossover" &&
+                desc.type != "ott" &&
+                desc.type != "widen" && desc.type != "stereo" &&
                 desc.type != "ir" && desc.type != "convolve")
             {
                 error = "Unknown block type on line " + juce::String(i+1);
@@ -526,6 +530,26 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         if (const auto b = arg ("f2"); b.isNotEmpty())
             parts.add ("f2=" + b);
         return parts.isEmpty() ? juce::String ("xover") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "ott")
+    {
+        juce::StringArray parts;
+        if (const auto d = arg ("depth"); d.isNotEmpty())
+            parts.add ("depth=" + d);
+        if (const auto t = arg ("time"); t.isNotEmpty())
+            parts.add ("time=" + t);
+        return parts.isEmpty() ? juce::String ("ott") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "widen" || block.type == "stereo")
+    {
+        juce::StringArray parts;
+        if (const auto w = arg ("width"); w.isNotEmpty())
+            parts.add ("width=" + w);
+        if (const auto d = arg ("delay"); d.isNotEmpty())
+            parts.add ("delay=" + d);
+        return parts.isEmpty() ? juce::String ("widen") : parts.joinIntoString (", ");
     }
 
     if (block.type == "ir" || block.type == "convolve")

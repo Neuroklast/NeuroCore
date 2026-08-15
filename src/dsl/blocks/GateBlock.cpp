@@ -10,6 +10,8 @@ void SignalChain::Gate::clearRuntimeState() noexcept
     gain = 0.f;
     holdLeft = 0.f;
     open = false;
+    cachedAtk = cachedRel = cachedHyst = -1.f;
+    cachedThr = cachedRange = 1.0e9f;
 }
 
 void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
@@ -135,7 +137,7 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         }
 
         env += ((det > env) ? atkC : relC) * (det - env);
-        if (! std::isfinite (env))
+        if (! std::isfinite (env) || std::abs (env) < 1.0e-20f)
             env = 0.f;
 
         if (env >= openLin)

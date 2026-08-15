@@ -114,6 +114,8 @@ namespace DslAutocomplete
         if (first.startsWith ("gate")) return "gate";
         if (first.startsWith ("limit")) return "limit";
         if (first.startsWith ("xover") || first.startsWith ("crossover")) return "xover";
+        if (first.startsWith ("ott")) return "ott";
+        if (first.startsWith ("widen") || first.startsWith ("stereo")) return "widen";
         if (first.startsWith ("ir") || first.startsWith ("convolve")) return "ir";
         if (first.startsWith ("delay")) return "delay";
         if (first.startsWith ("reverb") || first.startsWith ("verb")) return "reverb";
@@ -298,6 +300,10 @@ namespace DslAutocomplete
                 props.addArray ({ "ceiling", "release" });
             else if (kind == "xover")
                 props.addArray ({ "f1", "f2" });
+            else if (kind == "ott")
+                props.addArray ({ "depth", "time", "in", "low", "mid", "high", "f1", "f2" });
+            else if (kind == "widen")
+                props.addArray ({ "width", "delay", "bass" });
             else if (kind == "ir")
                 props.addArray ({ "mix", "gain" });
             else if (kind == "env")
@@ -323,7 +329,7 @@ namespace DslAutocomplete
         if (isIdentStartLine (head))
         {
             juce::StringArray blocks { "param", "stage", "filter", "eq", "comp", "gate", "limit", "osc", "env",
-                                       "delay", "reverb", "ms", "octaver", "vocoder", "xover", "ir", "bus" };
+                                       "delay", "reverb", "ms", "octaver", "vocoder", "xover", "ott", "widen", "ir", "bus" };
             if (canSuggestSend (text, start))
                 blocks.add ("send");
             if (canSuggestOut (text, start))
@@ -398,6 +404,25 @@ namespace DslAutocomplete
                 Item sn;
                 sn.label = "xover 3-band";
                 sn.insertText = "xover1: f1 = 120; f2 = 2500";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("ott").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "ott (3-band up+down)";
+                sn.insertText = "ott1: depth = 0.5; time = 0.35; in = 1; low = 1; mid = 1; high = 1";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("widen").startsWithIgnoreCase (prefix)
+                || juce::String ("stereo").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "widen (mono to stereo)";
+                sn.insertText = "widen1: width = 0.7; delay = 14; bass = 140";
                 sn.detail = "snippet";
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);

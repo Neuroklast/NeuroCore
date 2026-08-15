@@ -266,11 +266,112 @@ void FunctionPlotComponent::paint (juce::Graphics& g)
 }
 
 //==============================================================================
+class FunctionsContentComponent::CategoryNav : public juce::ListBox,
+                                               public juce::ListBoxModel
+{
+public:
+    struct Row { juce::String name; int count { 0 }; };
+
+    CategoryNav()
+    {
+        setModel (this);
+        setRowHeight (FunctionsContentComponent::kCategoryRowHeight);
+        setOutlineThickness (0);
+        setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
+        setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+    }
+
+    void setRows (juce::Array<Row> next, const juce::String& selectedName)
+    {
+        rows = std::move (next);
+        int pick = 0;
+        for (int i = 0; i < rows.size(); ++i)
+            if (rows.getReference (i).name.equalsIgnoreCase (selectedName))
+                pick = i;
+        updateContent();
+        selectRow (pick);
+    }
+
+    juce::String selectedCategory() const
+    {
+        const int r = getSelectedRow();
+        if (! juce::isPositiveAndBelow (r, rows.size()))
+            return {};
+        return rows.getReference (r).name;
+    }
+
+    std::function<void(juce::String)> onPick;
+
+    int getNumRows() override { return rows.size(); }
+
+    void paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected) override
+    {
+        if (! juce::isPositiveAndBelow (row, rows.size()))
+            return;
+        const auto& item = rows.getReference (row);
+        if (selected)
+            g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+        else if (row % 2)
+            g.fillAll (NeuroCoreLookAndFeel::surfaceHigh());
+
+        g.setColour (selected ? NeuroCoreLookAndFeel::accent() : juce::Colour (0xffe8ecf4));
+        g.setFont (NeuroCoreLookAndFeel::brandFont (FunctionsContentComponent::kCategoryNameFontPt, selected));
+        const auto label = item.name.isEmpty() ? juce::String ("All") : item.name;
+        g.drawText (label, 10, 0, w - 52, h, juce::Justification::centredLeft, true);
+        g.setColour (NeuroCoreLookAndFeel::mutedText());
+        g.setFont (NeuroCoreLookAndFeel::monoFont (FunctionsContentComponent::kCategoryCountFontPt));
+        g.drawText (juce::String (item.count), 0, 0, w - 10, h,
+                    juce::Justification::centredRight, false);
+    }
+
+    void selectedRowsChanged (int) override
+    {
+        if (onPick)
+            onPick (selectedCategory());
+    }
+
+private:
+    juce::Array<Row> rows;
+};
+
+juce::String FunctionsContentComponent::categoryForName (const juce::String& name)
+{
+    const auto n = name.trim().toLowerCase();
+    if (n == "tube" || n == "diode" || n == "tanh" || n == "softclip" || n == "hardclip"
+        || n.contains ("clip"))
+        return "Drive";
+    if (n == "fold" || n == "wrap" || n == "bitcrush" || n == "quantize")
+        return "Crush";
+    if (n.startsWith ("param") || n.contains ("ms ") || n.contains ("encode")
+        || n.contains ("chain") || n.contains ("ott") || n.contains ("widen")
+        || n.contains ("stereo") || n.contains ("vocoder") || n.contains ("octaver")
+        || n.contains ("delay") || n.contains ("reverb") || n.contains ("comp")
+        || n.contains ("gate") || n.contains ("limit") || n.contains ("filter")
+        || n.contains ("eq ") || n.startsWith ("eq") || n.contains ("xover") || n.contains ("ir")
+        || n.contains ("blend") || n.contains ("parallel"))
+        return "Blocks";
+    return "Core";
+}
+
+//==============================================================================
 FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p)
     : processor (p)
 {
     setWantsKeyboardFocus (true);
     setOpaque (false);
+
+    folderLabel.setText ("Folders", juce::dontSendNotification);
+    folderLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    folderLabel.setFont (NeuroCoreLookAndFeel::brandFont (11.f));
+    addAndMakeVisible (folderLabel);
+    countLabel.setJustificationType (juce::Justification::centredRight);
+    countLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    countLabel.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    addAndMakeVisible (countLabel);
+
+    folderNav = std::make_unique<CategoryNav>();
+    folderNav->onPick = [this] (juce::String cat) { applyCategory (cat); };
+    addAndMakeVisible (*folderNav);
 
     addAndMakeVisible (searchField);
     addAndMakeVisible (listBox);
@@ -342,8 +443,11 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p
     }
 
     loadFunctions();
+    refreshCategories();
     filterList();
 }
+
+FunctionsContentComponent::~FunctionsContentComponent() = default;
 
 void FunctionsContentComponent::loadFunctions()
 {
@@ -410,9 +514,44 @@ void FunctionsContentComponent::loadFunctions()
             info.aliasing = d.value ("aliasing", std::string{});
             info.performance = d.value ("performance", std::string{});
         }
+        if (v.contains ("category"))
+            info.category = v.value ("category", std::string{});
+        if (info.category.isEmpty())
+            info.category = categoryForName (info.name);
         if (info.name.isNotEmpty())
             allFunctions.push_back (std::move (info));
     }
+}
+
+void FunctionsContentComponent::applyCategory (const juce::String& cat)
+{
+    selectedCategory = cat;
+    filterList();
+}
+
+void FunctionsContentComponent::refreshCategories()
+{
+    struct Acc { juce::String name; int count { 0 }; };
+    juce::Array<Acc> acc;
+    acc.add ({ {}, (int) allFunctions.size() });
+    auto bump = [&] (const juce::String& cat)
+    {
+        for (auto& a : acc)
+            if (a.name == cat)
+            {
+                ++a.count;
+                return;
+            }
+        acc.add ({ cat, 1 });
+    };
+    for (const auto& f : allFunctions)
+        bump (f.category.isNotEmpty() ? f.category : categoryForName (f.name));
+
+    juce::Array<CategoryNav::Row> rows;
+    for (const auto& a : acc)
+        rows.add ({ a.name, a.count });
+    if (folderNav)
+        folderNav->setRows (std::move (rows), selectedCategory);
 }
 
 void FunctionsContentComponent::filterList()
@@ -422,10 +561,14 @@ void FunctionsContentComponent::filterList()
     for (int i = 0; i < (int) allFunctions.size(); ++i)
     {
         const auto& f = allFunctions[(size_t) i];
+        if (selectedCategory.isNotEmpty()
+            && ! f.category.equalsIgnoreCase (selectedCategory))
+            continue;
         auto name = f.name.toLowerCase();
         bool match = q.isEmpty() || name.contains (q)
                      || f.description.toLowerCase().contains (q)
-                     || f.soundCharacter.toLowerCase().contains (q);
+                     || f.soundCharacter.toLowerCase().contains (q)
+                     || f.category.toLowerCase().contains (q);
         if (! match)
             for (auto& k : f.keywords)
                 if (k.toLowerCase().contains (q))
@@ -444,6 +587,9 @@ void FunctionsContentComponent::filterList()
             filtered.push_back (i);
     }
     listBox.updateContent();
+    countLabel.setText (juce::String ((int) filtered.size()) + " / "
+                            + juce::String ((int) allFunctions.size()),
+                        juce::dontSendNotification);
     if (! filtered.empty())
     {
         listBox.selectRow (0);
@@ -522,8 +668,17 @@ void FunctionsContentComponent::paint (juce::Graphics&)
 void FunctionsContentComponent::resized()
 {
     auto area = getLocalBounds().reduced (6);
-    auto left = area.removeFromLeft (juce::jmax (200, area.getWidth() * 30 / 100));
-    searchField.setBounds (left.removeFromTop (36).reduced (0, 2));
+    auto folders = area.removeFromLeft (kExplorerSidebarWidth);
+    folderLabel.setBounds (folders.removeFromTop (18));
+    folders.removeFromTop (4);
+    if (folderNav)
+        folderNav->setBounds (folders);
+
+    area.removeFromLeft (10);
+    auto left = area.removeFromLeft (juce::jmax (180, area.getWidth() * 28 / 100));
+    auto searchRow = left.removeFromTop (36);
+    searchField.setBounds (searchRow.removeFromLeft (searchRow.getWidth() - 72).reduced (0, 2));
+    countLabel.setBounds (searchRow);
     left.removeFromTop (8);
     listBox.setBounds (left);
 

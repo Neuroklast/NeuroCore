@@ -41,6 +41,7 @@ private:
 struct FunctionInfo
 {
     juce::String name;
+    juce::String category;
     juce::String description;
     juce::String soundCharacter;
     juce::String example;
@@ -55,7 +56,7 @@ class FunctionsContentComponent : public juce::Component, public juce::ListBoxMo
 {
 public:
     explicit FunctionsContentComponent (NeuroCoreAudioProcessor& p);
-    ~FunctionsContentComponent() override = default;
+    ~FunctionsContentComponent() override;
 
     std::function<void(const juce::String&)> onInsert;
     std::function<void()> onClose;
@@ -68,12 +69,28 @@ public:
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected) override;
     void selectedRowsChanged (int row) override;
 
+    static constexpr int kExplorerSidebarWidth = 200;
+    static constexpr int kCategoryRowHeight    = 30;
+    static constexpr float kCategoryNameFontPt = 16.5f;
+    static constexpr float kCategoryCountFontPt = 13.f;
+
+    /** Core / Drive / Crush / Blocks — used by the sidebar and tests. */
+    static juce::String categoryForName (const juce::String& name);
+
 private:
+    class CategoryNav;
+
     void loadFunctions();
     void updateDetails (int index);
     void filterList();
+    void refreshCategories();
+    void applyCategory (const juce::String& cat);
 
     NeuroCoreAudioProcessor& processor;
+    juce::Label folderLabel;
+    juce::Label countLabel;
+    std::unique_ptr<CategoryNav> folderNav;
+    juce::String selectedCategory;
     juce::TextEditor searchField;
     juce::ListBox listBox { "functions", this };
     juce::TextButton insertButton { "Insert" };

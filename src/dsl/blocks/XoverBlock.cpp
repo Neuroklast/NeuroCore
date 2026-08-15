@@ -115,14 +115,19 @@ void SignalChain::Xover::processBlock (juce::AudioBuffer<float>& buffer)
 
         for (int i = 0; i < nS; ++i)
         {
-            const float x = in[i];
-            const float low = p.lp1b.processSample (p.lp1a.processSample (x));
-            const float hp1 = p.hp1b.processSample (p.hp1a.processSample (x));
+            const float x = std::isfinite (in[i]) ? in[i] : 0.f;
+            float low = p.lp1b.processSample (p.lp1a.processSample (x));
+            float hp1 = p.hp1b.processSample (p.hp1a.processSample (x));
+            if (! std::isfinite (low)) low = 0.f;
+            if (! std::isfinite (hp1)) hp1 = 0.f;
             if (i < nLo) lo[i] = low;
             if (threeBand)
             {
-                const float mid = p.lp2b.processSample (p.lp2a.processSample (hp1));
-                const float high = p.hp2b.processSample (p.hp2a.processSample (x));
+                float mid = p.lp2b.processSample (p.lp2a.processSample (hp1));
+                // High = HP(f2)² of HP(f1)² — feeding x skipped the first split
+                float high = p.hp2b.processSample (p.hp2a.processSample (hp1));
+                if (! std::isfinite (mid)) mid = 0.f;
+                if (! std::isfinite (high)) high = 0.f;
                 if (i < nMd) md[i] = mid;
                 if (i < nHi) hi[i] = high;
             }
