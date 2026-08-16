@@ -9,6 +9,42 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-16 – Widen Haas slap flips the stereo field
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Poly Glue Synth knackt brutal und schaltet das Stereofeld  
+**Ergebnis:** `widen` schob eine 10-ms-Haas-Kopie nur auf eine Seite (Slap + 100-Hz-Pumpen). `|side| > |mid|` dreht einen Kanal um — sichtbarer L/R-Switch. OTT `time=0.025` hatte 0.8 ms Attack.
+
+#### Regel
+Widen ist Allpass-Dekorrelation, kein Delay-Slap. Side nie größer als Mid (kein Polaritätsflip). OTT-Attack hat eine Untergrenze. Das gilt für jedes Preset, nicht nur Poly Glue.
+
+### 2026-08-16 – LFO cable must be a running light, not a wave overlay
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Lauflicht vom LFO-Ausgang zum verbundenen Block, Form erkennbar  
+**Ergebnis:** Erster Versuch hat `drawLiveCable` als Wellenlinie auf den Pfad gelegt. Ein Audio-Block-Tap eines 0.5-Hz-LFO ist praktisch DC — Form unsichtbar, kein Lauflicht. Richtig: decimierte 2-s-Historie am Osc, Perlen laufen Quelle→Ziel, Größe/Helligkeit = LFO-Sample (Sinus schwillt, Square taktet, Saw rampt).
+
+#### Regel
+LFO-Viz ist eine Zeitreihe über mindestens eine Periode, nicht der aktuelle Audio-Block. Lauflicht = wandernde Perlen, nicht ein Oszilloskop auf dem Kabel.
+
+### 2026-08-16 – Wide Canvas tidy and preset-load crash
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Auto-arrange Wide Canvas tot; Preset-Menü stürzt generell  
+**Ergebnis:** `visualRail` hat `channel=mid` über den Bus gestellt — die Sides-MS-Kette von Wide Canvas landete auf denselben mid/side-Reihen wie die Main-MS-Kette. Zweiter Fehler: `setScript` erbte `@x,y` vom vorigen Preset per Node-Name (`stage1` ≠ `stage1`). Overlay `requestClose` mitten in `loadSelected` zerstört den Content während des Callbacks.
+
+#### Regel
+Named Bus ist die Rail. Channel-Split nur auf `main`. Neue Graphen ohne Positionen immer tidy — nie Koordinaten aus einem anderen Script klauen. Overlay nach Preset-Load erst im nächsten Message-Turn schließen.
+
+### 2026-08-16 – Far Plane knallt because predelay was a slap
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Far Plane knallt regelmäßig, Delay  
+**Ergebnis:** `delay1: time=b; feedback=0.05; mix=0.38` in Serie vor dem Hall. Predelay 95 ms = zweiter Dry-Angriff auf jedem Transient. Dasselbe Muster wie Cinematic Space / Score Hall.
+
+#### Regel
+Cinematic-Predelay: eigener Wet-Bus, Delay `mix=1; feedback=0`, Hall `mix=1`. Dry bleibt auf main. Nie 30–40 % Delay in Serie vor dem Reverb — das ist ein Slap, kein Predelay.
+
 ### 2026-08-16 – Kick Rumble knacken is slap + square + phase reset
 
 **Agent:** Grok Coding Agent  

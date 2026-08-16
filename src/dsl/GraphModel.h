@@ -185,7 +185,9 @@ inline bool isMsDecode (const GraphNode& n)
     return n.type.equalsIgnoreCase ("ms") && ! isMsEncode (n);
 }
 
-/** Visual rail id: main, named bus, mid/side, left/right, or mod. */
+/** Visual rail id: main, named bus, mid/side, left/right, or mod.
+    Channel split (mid/side/L/R) is only a main-chain visual. A named bus is
+    one rail — mid/side on that bus must not share the main mid/side rows. */
 inline juce::String visualRail (const GraphNode& n)
 {
     if (n.type == "bus")
@@ -194,10 +196,13 @@ inline juce::String visualRail (const GraphNode& n)
         return "mod";
     if (n.type == "out")
         return "main";
+    const auto bus = n.busName.isNotEmpty() ? n.busName : juce::String ("main");
+    if (bus != "main")
+        return bus;
     const auto ch = channelRail (n);
     if (ch.isNotEmpty())
         return ch;
-    return n.busName.isNotEmpty() ? n.busName : juce::String ("main");
+    return "main";
 }
 
 } // namespace dsl

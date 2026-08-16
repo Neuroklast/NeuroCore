@@ -3,7 +3,7 @@
 ; Installs the VST3 bundle where hosts scan, plus the Standalone app.
 
 #define MyAppName "NEUROKORE"
-#define MyAppVersion "0.9.0"
+#define MyAppVersion "0.9.1-alpha"
 #define MyAppPublisher "Neuroklast"
 #define MyAppURL "https://neuroklast.net"
 #define MyAppExeName "NEUROKORE.exe"

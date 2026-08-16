@@ -159,8 +159,8 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
         if (std::abs (time01 - cachedTime) > 1.0e-4f)
         {
             cachedTime = time01;
-            const float atkS = 0.0008f + time01 * 0.036f;
-            const float relS = 0.014f + time01 * 0.26f;
+            const float atkS = 0.004f + time01 * 0.036f;
+            const float relS = 0.028f + time01 * 0.26f;
             atkC = 1.f - std::exp (-1.f / juce::jmax (1.f, atkS * sampleRate));
             relC = 1.f - std::exp (-1.f / juce::jmax (1.f, relS * sampleRate));
         }

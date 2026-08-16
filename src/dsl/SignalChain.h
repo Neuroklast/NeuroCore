@@ -165,6 +165,15 @@ private:
         float sampleRate{44100.0f};
         float lastSetFreq { -1.f };
         juce::SmoothedValue<float> modSm;
+        /** Decimated history so a slow LFO still shows one cycle on the cable. */
+        static constexpr int kVizN = 256;
+        static constexpr float kVizWindowSec = 2.f;
+        std::array<float, kVizN> viz {};
+        std::atomic<int> vizWrite { 0 };
+        int vizDecim { 1 };
+        int vizDecimAcc { 0 };
+        void pushViz (float v) noexcept;
+        bool copyViz (float* dest, int destN) const noexcept;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
@@ -391,46 +400,60 @@ private:
     };
 
     /**
-        Mono-compatible stereoizer. Mid stays the source; side is allpass + Haas,
-        highs only (bass stays mono).
+        Mono-compatible stereoizer. Mid stays the source; side is allpass
+        decorrelation above the bass. No discrete Haas slap (that clicked
+        and flipped the image at `delay` Hz).
     */
     struct Widen : Block
     {
         static constexpr int kNumAp = 3;
-        static constexpr float kMaxHaasSec = 0.045f;
 
         ExpressionEvaluator widthExpr, delayMs, bassHz;
         juce::SmoothedValue<float> widthSm, delaySm, bassSm;
         float sampleRate { 44100.f };
         float bassA { 0.f }, lastBass { -1.f };
         float hpX { 0.f }, hpY { 0.f };
-        int writePos { 0 };
-        int maxDelayN { 0 };
-        std::vector<float> haasBuf;
+        int baseL[kNumAp] {}, baseR[kNumAp] {};
+        int slewClock { 0 };
 
         struct Ap
         {
             std::vector<float> buf;
             int writePos { 0 };
             int delayLen { 2 };
+            int delayTarget { 2 };
             void allocate (int n)
             {
-                buf.assign ((size_t) juce::jmax (4, n), 0.f);
+                buf.assign ((size_t) juce::jmax (8, n), 0.f);
                 writePos = 0;
                 delayLen = juce::jmin (delayLen, (int) buf.size() - 1);
+                delayTarget = delayLen;
+            }
+            void setDelayTarget (int n) noexcept
+            {
+                delayTarget = juce::jlimit (2, juce::jmax (2, (int) buf.size() - 1), n);
+            }
+            void slewDelay() noexcept
+            {
+                if (delayLen < delayTarget) ++delayLen;
+                else if (delayLen > delayTarget) --delayLen;
             }
             float process (float input) noexcept
             {
                 if (buf.empty())
                     return input;
-                constexpr float g = 0.55f;
+                constexpr float g = 0.42f;
                 int rp = writePos - delayLen;
                 const int N = (int) buf.size();
                 if (rp < 0) rp += N;
                 const float y = buf[(size_t) rp];
-                buf[(size_t) writePos] = input + y * g;
+                float w = input + y * g;
+                if (! std::isfinite (w) || std::abs (w) < 1.0e-20f) w = 0.f;
+                buf[(size_t) writePos] = w;
                 if (++writePos >= N) writePos = 0;
-                return -input * g + y;
+                float out = -input * g + y;
+                if (! std::isfinite (out) || std::abs (out) < 1.0e-20f) out = 0.f;
+                return out;
             }
             void clear() noexcept
             {
@@ -793,6 +816,7 @@ private:
 
     void publishSidechainSample (int sampleIndex) noexcept;
     void writeNodeTap (const juce::String& id, const juce::AudioBuffer<float>& buf) noexcept;
+    void writeNodeTapLane (const juce::String& id, const float* src, int n) noexcept;
 
     static constexpr int kNodeTapSamples = 64;
     static constexpr int kMaxNodeTaps = 32;
@@ -808,6 +832,7 @@ public:
 
     /** Copy the latest post-block tap for `id` (`__in__`, `__out__`, or a node name). */
     bool copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept;
+    bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;

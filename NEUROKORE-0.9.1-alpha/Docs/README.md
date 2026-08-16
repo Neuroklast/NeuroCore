@@ -36,7 +36,7 @@ Windows zip / installer (after a Release build):
 powershell -File scripts/package_windows.ps1
 ```
 
-That stages `NEUROKORE.vst3` and the Standalone, writes `build/package/NEUROKORE-0.9.0-win64.zip`, fills the portable kit `NEUROKORE-0.9.0/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`.
+That stages `NEUROKORE.vst3` and the Standalone, writes `build/package/NEUROKORE-0.9.1-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.9.1-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`.
 
 Oversampling defaults to **4×**. Drop to 2× or 1× if the CPU is tight.
 

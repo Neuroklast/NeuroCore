@@ -702,6 +702,59 @@ public:
                     >= (float) dsl::kTidyCardH * 0.5f);
         }
 
+        beginTest ("named-bus mid/side stay on the bus rail (Wide Canvas)");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "ms1: mode = encode\n"
+                "stage2: channel = mid; y = x\n"
+                "ms2: mode = decode\n"
+                "bus sides:\n"
+                "  send: in = 1\n"
+                "  ms3: mode = encode\n"
+                "  stage3: channel = mid; y = x * 0.0\n"
+                "  stage4: channel = side; y = x\n"
+                "  ms4: mode = decode\n"
+                "  reverb1: size = 0.5; mix = 1\n"
+                "out: main = 0.7; sides = 0.3\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            auto railOf = [&] (const juce::String& name) -> juce::String
+            {
+                for (const auto& n : doc.nodes)
+                    if (n.name == name)
+                        return dsl::visualRail (n);
+                return {};
+            };
+            expectEquals (railOf ("stage2"), juce::String ("mid"));
+            expectEquals (railOf ("stage3"), juce::String ("sides"));
+            expectEquals (railOf ("stage4"), juce::String ("sides"));
+            expectEquals (railOf ("reverb1"), juce::String ("sides"));
+            dsl::tidyLayout (doc, 1100, 640);
+            expect (dsl::hasAllPositions (doc));
+            float midY = 0.f, sidesY = 0.f;
+            int sidesN = 0;
+            float sidesMinY = 1.0e9f, sidesMaxY = -1.0e9f;
+            for (const auto& n : doc.nodes)
+            {
+                if (n.name == "stage2")
+                    midY = n.y;
+                if (dsl::visualRail (n) == "sides")
+                {
+                    ++sidesN;
+                    sidesMinY = juce::jmin (sidesMinY, n.y);
+                    sidesMaxY = juce::jmax (sidesMaxY, n.y);
+                    sidesY += n.y;
+                }
+            }
+            expect (sidesN >= 4);
+            sidesY /= (float) sidesN;
+            expect (std::abs (midY - sidesY) >= (float) dsl::kTidyCardH * 0.4f,
+                    "sides bus must not sit on the main mid row");
+            expect (sidesMaxY - sidesMinY < (float) dsl::kTidyRowGap * 8.f + (float) dsl::kTidyCardH * 4.f);
+        }
+
         beginTest ("OUT edit keys include every mix jack including xover bands");
         {
             const juce::String script =

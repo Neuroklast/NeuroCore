@@ -992,6 +992,7 @@ void NeuroKoreAudioProcessorEditor::refreshParameterControls()
 void NeuroKoreAudioProcessorEditor::syncFromProcessor()
 {
     cancelWindowAssemble();
+    hideNodeInspectOverlay();
     audioProcessor.resolvePresetNameFromScript();
     // Preset wins. Stay in Graph or Script — do not bounce the workspace.
     if (formulaInputEditor)
@@ -1738,9 +1739,16 @@ void NeuroKoreAudioProcessorEditor::showPresetOverlay()
 
     ptr->onLoaded = [this, refreshAfterPreset]
     {
-        if (presetOverlay != nullptr)
-            presetOverlay->requestClose();
+        hideNodeInspectOverlay();
         refreshAfterPreset();
+        juce::Component::SafePointer<NeuroKoreAudioProcessorEditor> safe (this);
+        juce::MessageManager::callAsync ([safe]
+        {
+            if (safe == nullptr)
+                return;
+            if (safe->presetOverlay != nullptr)
+                safe->presetOverlay->requestClose();
+        });
     };
     ptr->onSaved = [this] { syncFromProcessor(); };
     ptr->onClose = [this] { presetOverlay.reset(); syncGlCover(); };

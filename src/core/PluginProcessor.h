@@ -236,6 +236,11 @@ public:
         return scriptManager.signalChain.copyNodeTap (id, dest, destN);
     }
 
+    bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept
+    {
+        return scriptManager.signalChain.copyLfoViz (id, dest, destN);
+    }
+
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept
     {
         return scriptManager.signalChain.copyMeterReading (id, destDb);

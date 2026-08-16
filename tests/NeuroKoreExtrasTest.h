@@ -845,8 +845,11 @@ private:
             requireBlock ("Trailer Impact", "delay");
             requireBlock ("Score Hall", "reverb");
             requireBlock ("Score Hall", "ms");
+            requireBlock ("Score Hall", "feedback = 0");
             requireBlock ("Dialogue Seat", "reverb");
             requireBlock ("Far Plane", "reverb");
+            requireBlock ("Far Plane", "send");
+            requireBlock ("Far Plane", "feedback = 0");
             requireBlock ("Boom Tail", "reverb");
             requireBlock ("Wide Canvas", "ms");
             requireBlock ("Wide Canvas", "reverb");

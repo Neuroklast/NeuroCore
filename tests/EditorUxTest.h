@@ -158,7 +158,7 @@ public:
             expectEquals (juce::String (Config::kBrandByline), juce::String ("by Neuroklast"));
             expectEquals (juce::String (Config::kAppDataFolder), juce::String ("NeuroKore"));
             expectEquals (juce::String (PLUGIN_ID), juce::String ("nrko01"));
-            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.9.0"));
+            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.9.1-alpha"));
         }
 
         beginTest ("preset ratings clamp to 1-5 and clear at 0");

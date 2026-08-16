@@ -79,7 +79,7 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 
 static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
 {
-    if (shape == "triangle")
+    if (shape == "triangle" || shape == "tri")
         return juce::dsp::Oscillator<float>([] (float x) {
             return juce::jmap (x, -juce::MathConstants<float>::pi, juce::MathConstants<float>::pi, -1.0f, 1.0f);
         });
@@ -90,7 +90,7 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
             const float s = std::sin (x);
             return std::tanh (s * k) / std::tanh (k);
         });
-    if (shape == "square")
+    if (shape == "square" || shape == "pulse")
         return juce::dsp::Oscillator<float>([] (float x) {
             // Mild edge softening (was pure ±1 brick) — still "choppy" but less clicky
             constexpr float k = 6.0f;
@@ -101,7 +101,7 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
             const float saw = x / juce::MathConstants<float>::pi;
             return std::tanh (saw * 2.2f) / std::tanh (2.2f);
         });
-    if (shape == "saw")
+    if (shape == "saw" || shape == "sawtooth" || shape == "ramp")
         return juce::dsp::Oscillator<float>([] (float x) {
             const float saw = x / juce::MathConstants<float>::pi;
             return std::tanh (saw * 3.4f) / std::tanh (3.4f);
@@ -1848,7 +1848,12 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     }
 
     for (int i = 0; i < nOsc; ++i)
+    {
         oscs[i]->renderModBlock (numSamples);
+        if (! oscs[i]->modLane.empty())
+            writeNodeTapLane (oscs[i]->name, oscs[i]->modLane.data(),
+                              (int) oscs[i]->modLane.size());
+    }
 
     for (auto& b : *chainPtr)
         if (auto* vc = dynamic_cast<Vocoder*> (b.get()))
@@ -2411,6 +2416,11 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     lastSetFreq = -1.f;
     modSm.reset ((double) sampleRate, Config::kLfoSmoothingTime);
     modSm.setCurrentAndTargetValue (0.f);
+    viz.fill (0.f);
+    vizWrite.store (0, std::memory_order_relaxed);
+    vizDecimAcc = 0;
+    vizDecim = juce::jmax (1, (int) std::lround ((double) sampleRate * (double) kVizWindowSec
+                                                / (double) kVizN));
     varNames.clear();
     if (varPtr)
     {
@@ -2503,6 +2513,7 @@ float SignalChain::Osc::process(int ch, float x)
             (*varPtr)[name] = v;
         if (! last.empty())
             last[0] = v;
+        pushViz (v);
     }
     else if (ch < static_cast<int>(last.size()) && ! last.empty())
     {
@@ -2512,6 +2523,44 @@ float SignalChain::Osc::process(int ch, float x)
             (*varPtr)[name] = last[0];
     }
     return x; // oscillators are modulation sources — never replace the audio path
+}
+
+void SignalChain::Osc::pushViz (float v) noexcept
+{
+    if (++vizDecimAcc < vizDecim)
+        return;
+    vizDecimAcc = 0;
+    const int w = vizWrite.load (std::memory_order_relaxed);
+    viz[(size_t) w] = v;
+    vizWrite.store ((w + 1) % kVizN, std::memory_order_release);
+}
+
+bool SignalChain::Osc::copyViz (float* dest, int destN) const noexcept
+{
+    if (dest == nullptr || destN <= 0)
+        return false;
+    const int w = vizWrite.load (std::memory_order_acquire);
+    for (int i = 0; i < destN; ++i)
+    {
+        const float u = (destN <= 1) ? 0.f : (float) i / (float) (destN - 1);
+        const int idx = (w + (int) std::lround (u * (float) (kVizN - 1))) % kVizN;
+        dest[i] = viz[(size_t) idx];
+    }
+    return true;
+}
+
+bool SignalChain::copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept
+{
+    if (dest == nullptr || destN <= 0 || id.isEmpty())
+        return false;
+    auto chainPtr = std::atomic_load (&chain);
+    if (! chainPtr)
+        return false;
+    for (auto& b : *chainPtr)
+        if (auto* oc = dynamic_cast<Osc*> (b.get()))
+            if (oc->name.equalsIgnoreCase (id))
+                return oc->copyViz (dest, destN);
+    return false;
 }
 
 void SignalChain::Osc::renderModBlock (int numSamples) noexcept
@@ -2540,6 +2589,7 @@ void SignalChain::Osc::renderModBlock (int numSamples) noexcept
             v = modSm.getNextValue();
         }
         modLane[(size_t) i] = v;
+        pushViz (v);
         lastV = v;
     }
 
@@ -4292,6 +4342,33 @@ void SignalChain::writeNodeTap (const juce::String& id, const juce::AudioBuffer<
     const float step = (float) n / (float) kNodeTapSamples;
     for (int i = 0; i < kNodeTapSamples; ++i)
         t.wave[(size_t) i] = s[juce::jmin (n - 1, (int) (i * step))];
+    t.gen.fetch_add (1, std::memory_order_release);
+}
+
+void SignalChain::writeNodeTapLane (const juce::String& id, const float* src, int n) noexcept
+{
+    if (id.isEmpty() || src == nullptr || n <= 0)
+        return;
+    int slot = -1;
+    for (int i = 0; i < kMaxNodeTaps; ++i)
+    {
+        if (id == juce::String (nodeTaps[(size_t) i].id.data()))
+        {
+            slot = i;
+            break;
+        }
+        if (slot < 0 && nodeTaps[(size_t) i].id[0] == 0)
+            slot = i;
+    }
+    if (slot < 0)
+        slot = 0;
+    auto& t = nodeTaps[(size_t) slot];
+    const auto utf = id.toRawUTF8();
+    std::memset (t.id.data(), 0, t.id.size());
+    std::strncpy (t.id.data(), utf, t.id.size() - 1);
+    const float step = (float) n / (float) kNodeTapSamples;
+    for (int i = 0; i < kNodeTapSamples; ++i)
+        t.wave[(size_t) i] = src[juce::jmin (n - 1, (int) (i * step))];
     t.gen.fetch_add (1, std::memory_order_release);
 }
 

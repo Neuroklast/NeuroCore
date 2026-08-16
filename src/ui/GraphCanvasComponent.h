@@ -144,7 +144,10 @@ private:
 
     void timerCallback() override;
     void drawLiveCable (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
-                        float level, bool mix, bool hot, const float* wave, int waveN) const;
+                        float level, bool mix, bool hot, const float* wave, int waveN,
+                        bool forceWave = false) const;
+    void drawModLauflicht (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
+                           const float* wave, int waveN, bool hot) const;
     int scaled (int v) const noexcept { return (int) std::lround ((float) v * zoom); }
     void pullCableWaves();
     const float* waveForEdge (int fromIndex) const;

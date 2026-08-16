@@ -80,6 +80,54 @@ public:
             expect (peak > 0.2f);
         }
 
+        beginTest ("lfo viz ring holds a sine cycle not a DC slice");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "osc1: shape = sine; freq = 4; depth = 1\n"
+                "stage1: y = x * (0.5 + 0.5 * osc1)", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int b = 0; b < 400; ++b)
+            {
+                buf.clear();
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            }
+            float viz[64] {};
+            expect (chain.copyLfoViz ("osc1", viz, 64));
+            float mn = 1.0e9f, mx = -1.0e9f;
+            for (float v : viz)
+            {
+                mn = juce::jmin (mn, v);
+                mx = juce::jmax (mx, v);
+            }
+            expect (mx - mn > 0.8f, "lfo viz span=" + juce::String (mx - mn, 3));
+        }
+
+        beginTest ("osc shape aliases sawtooth tri pulse stay finite");
+        {
+            for (const char* shape : { "sawtooth", "tri", "pulse", "ramp" })
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                expect (chain.loadScript (
+                    juce::String ("osc1: shape = ") + shape + "; freq = 4; depth = 1\n"
+                    "stage1: y = x * (0.5 + 0.5 * osc1)", err), err);
+                chain.prepare ({ 48000.0, 256, 2 });
+                juce::AudioBuffer<float> buf (2, 256);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = 0.3f * std::sin (2.f * juce::MathConstants<float>::pi * 220.f
+                                                    * (float) i / 48000.f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+            }
+        }
+
         beginTest ("octaver keeps a sine audible");
         {
             dsl::SignalChain chain;

@@ -835,6 +835,8 @@ public:
                 "Phaser Sweep",
                 "Rhythmic Gate Delay",
                 "Cinematic Space",
+                "Far Plane",
+                "Poly Glue Synth",
                 "Kick Rumble",
                 "Warehouse Rumble",
                 "Hardcore Clip",
@@ -1096,6 +1098,54 @@ public:
             expect (maxLate < 0.28f, "Kick Rumble late jump=" + juce::String (maxLate, 4));
             expect (! proc.isCpuProtectActive(), "Kick Rumble tripped CPU protect");
             proc.releaseResources();
+        }
+
+        beginTest ("Far Plane impulse has no slap at predelay");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* entry = lib.findByName ("Far Plane");
+            expect (entry != nullptr, "missing factory Far Plane");
+            if (entry == nullptr)
+                return;
+
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (entry->script, err), err);
+
+            juce::AudioBuffer<float> buf (2, 256);
+            float maxSlap = 0.f, firstPeak = 0.f;
+            int bad = 0;
+            for (int b = 0; b < 24; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const int absI = b * 256 + i;
+                    const float s = (absI == 8) ? 0.85f : 0.f;
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                bad += TestHelpers::countNonFinite (buf);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const int absI = b * 256 + i;
+                    const float y = std::abs (buf.getSample (0, i));
+                    if (absI < 512)
+                        firstPeak = juce::jmax (firstPeak, y);
+                    // Default Predelay = 95 ms → sample ~4560. A series slap
+                    // (old mix=0.38) reprints the impulse there.
+                    if (absI >= 4300 && absI < 4900)
+                        maxSlap = juce::jmax (maxSlap, y);
+                }
+            }
+            expectEquals (bad, 0, "Far Plane produced NaN/Inf");
+            expect (firstPeak > 0.05f, "Far Plane dry went silent");
+            expect (maxSlap < firstPeak * 0.55f,
+                    "Far Plane slap at ~95 ms: slap=" + juce::String (maxSlap, 4)
+                    + " first=" + juce::String (firstPeak, 4));
         }
     }
 };

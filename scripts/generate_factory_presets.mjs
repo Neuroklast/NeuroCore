@@ -3232,14 +3232,18 @@ param c = Decay [0.42, 0.88]
 param d = Mix [0.18, 0.62]
 param e = Damp [0.28, 0.82]
 param f = Width [0.65, 1.5]
-delay1: time = a; feedback = 0.04; mix = 0.28; damp = 6500
-reverb1: size = b; decay = c; damp = e; mix = d; width = 0.92
-ms1: mode = encode
-stage1: channel = mid; y = x
-stage2: channel = side; y = x * f
-ms2: mode = decode
-filter1: type = lowpass; cutoff = 9200; resonance = 0.24
-stage3: y = softclip(x, 1.05)`,
+stage1: y = x
+bus hall:
+  send: in = 1
+  delay1: time = a; feedback = 0; mix = 1; damp = 6500
+  reverb1: size = b; decay = c; damp = e; mix = 1; width = 0.92
+  ms1: mode = encode
+  stage2: channel = mid; y = x
+  stage3: channel = side; y = x * f
+  ms2: mode = decode
+  filter1: type = lowpass; cutoff = 9200; resonance = 0.24
+  stage4: y = softclip(x, 1.05)
+out: main = 1-d; hall = d`,
   {
     a: p("Predelay", 24, 140, 68),
     b: p("Size", 0.48, 0.95, 0.78),
@@ -3298,10 +3302,14 @@ param d = Mix [0.28, 0.75]
 param e = Damp [0.42, 0.88]
 param f = Level [0.6, 1.1]
 filter1: type = highpass; cutoff = a; resonance = 0.26
-delay1: time = b; feedback = 0.05; mix = 0.38; damp = 5000
-reverb1: size = c; decay = 0.72; damp = e; mix = d; width = 0.88
-filter2: type = lowpass; cutoff = 6800; resonance = 0.24
-stage1: y = softclip(x * f, 1.05)`,
+stage1: y = x * f
+bus hall:
+  send: main = 1
+  delay1: time = b; feedback = 0; mix = 1; damp = 5000
+  reverb1: size = c; decay = 0.72; damp = e; mix = 1; width = 0.88
+  filter2: type = lowpass; cutoff = 6800; resonance = 0.24
+  stage2: y = softclip(x, 1.05)
+out: main = 1-d; hall = d`,
   {
     a: p("Near", 140, 520, 260),
     b: p("Predelay", 45, 180, 95),

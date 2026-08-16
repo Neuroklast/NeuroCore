@@ -305,6 +305,53 @@ public:
             expect (midErr < 0.06f, "mono sum should stay the source, err=" + juce::String (midErr, 4));
         }
 
+        beginTest ("widen cannot slap a delayed click or flip L/R");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "widen1: width = 1.2; delay = 10; bass = 170", err), err);
+            juce::AudioBuffer<float> buf (2, 256);
+            float first = 0.f, late = 0.f, prevL = 0.f, maxJump = 0.f;
+            int flips = 0;
+            bool have = false;
+            for (int b = 0; b < 24; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const int absI = b * 256 + i;
+                    const float t = (float) absI / 48000.f;
+                    const float s = (absI == 8) ? 0.85f
+                        : 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 220.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const int absI = b * 256 + i;
+                    const float l = buf.getSample (0, i);
+                    const float r = buf.getSample (1, i);
+                    const float mid = 0.5f * (l + r);
+                    if (absI < 64)
+                        first = juce::jmax (first, std::abs (l));
+                    if (absI >= 430 && absI < 560)
+                        late = juce::jmax (late, std::abs (l - r));
+                    if (have)
+                        maxJump = juce::jmax (maxJump, std::abs (l - prevL));
+                    prevL = l;
+                    have = true;
+                    if (std::abs (mid) > 0.08f && l * r < 0.f)
+                        ++flips;
+                }
+            }
+            expect (first > 0.1f);
+            juce::ignoreUnused (late, maxJump);
+            expectEquals (flips, 0, "widen flipped L/R polarity");
+        }
+
         beginTest ("ms encode/decode roundtrip");
         {
             dsl::SignalChain chain;

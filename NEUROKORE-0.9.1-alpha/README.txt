@@ -1,9 +1,9 @@
-﻿NEUROKORE 0.9.0 by Neuroklast
+﻿NEUROKORE 0.9.1-alpha by Neuroklast
 
 This folder is the Windows release kit.
 
 INSTALL
-  Preferred: run Installer\NEUROKORE-0.9.0-Setup.exe (admin).
+  Preferred: run Installer\NEUROKORE-0.9.1-alpha-Setup.exe (admin).
   Manual VST3: copy VST3\NEUROKORE.vst3 to
     C:\Program Files\Common Files\VST3\
   Standalone: run Standalone\NEUROKORE.exe

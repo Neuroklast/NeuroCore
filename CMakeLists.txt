@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroKore VERSION 0.9.0 LANGUAGES C CXX)
+project(NeuroKore VERSION 0.9.1 LANGUAGES C CXX)
 
 # MSVC defaults to the system code page for string literals. Our sources are
 # UTF-8 (em dash, ·, ✕, German comments). Without /utf-8 the UI shows mojibake

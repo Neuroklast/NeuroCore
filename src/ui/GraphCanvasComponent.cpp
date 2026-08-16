@@ -1005,13 +1005,10 @@ public:
                                   || owner.hoverNode == destv->nodeIndex;
                 const auto a = owner.portCentre (nv->nodeIndex, "mod", true);
                 const auto b = owner.portCentre (destv->nodeIndex, src.name, false);
-                auto path = makeCable (a, b);
-                g.setColour (NeuroKoreLookAndFeel::inkMuted()
-                                 .withAlpha (srcHot || destHot ? 0.55f : 0.18f));
-                float dash[] = { 5.f, 4.f };
-                juce::Path dest;
-                juce::PathStrokeType (1.0f).createDashedStroke (dest, path, dash, 2);
-                g.strokePath (dest, juce::PathStrokeType (1.0f));
+                const auto it = owner.nodeWaves.find (src.name);
+                const float* wave = (it != owner.nodeWaves.end()) ? it->second.data() : nullptr;
+                const int waveN = (wave != nullptr) ? GraphCanvasComponent::kTapN : 0;
+                owner.drawModLauflicht (g, a, b, wave, waveN, srcHot || destHot);
             }
         }
 
@@ -1293,11 +1290,6 @@ void GraphCanvasComponent::setScript (const juce::String& script)
         return;
     }
 
-    std::map<juce::String, juce::Point<float>> kept;
-    for (const auto& n : document.nodes)
-        if (n.name.isNotEmpty() && std::isfinite (n.x) && std::isfinite (n.y))
-            kept[n.name] = { n.x, n.y };
-
     document = std::move (incoming);
     parseOk = true;
     lastScript = script;
@@ -1306,17 +1298,9 @@ void GraphCanvasComponent::setScript (const juce::String& script)
     cableFromJack.clear();
     markEdgesDirty();
 
-    for (auto& n : document.nodes)
-    {
-        if (std::isfinite (n.x) && std::isfinite (n.y))
-            continue;
-        const auto it = kept.find (n.name);
-        if (it != kept.end())
-        {
-            n.x = it->second.x;
-            n.y = it->second.y;
-        }
-    }
+    // A new graph must not inherit coordinates from the previous preset just
+    // because names collide (stage1 in A is not stage1 in B). Factory text
+    // has no @x,y — tidy at the current viewport/zoom.
     if (! dsl::hasAllPositions (document))
     {
         autoLayout();
@@ -2188,7 +2172,10 @@ void GraphCanvasComponent::pullCableWaves()
         if (n.name.isEmpty())
             continue;
         std::array<float, kTapN> w {};
-        if (processor.copyCircuitTap (n.name, w.data(), kTapN))
+        if (n.type.startsWithIgnoreCase ("osc")
+            && processor.copyLfoViz (n.name, w.data(), kTapN))
+            nodeWaves[n.name] = w;
+        else if (processor.copyCircuitTap (n.name, w.data(), kTapN))
             nodeWaves[n.name] = w;
     }
 }
@@ -2275,10 +2262,17 @@ void GraphCanvasComponent::timerCallback()
     const float raw = loudnessToCableLevel (processor.getLoudnessDb());
     inLevel = inLevel * 0.72f + raw * 0.28f;
     outLevel = inLevel;
+    bool haveMod = false;
+    for (const auto& n : document.nodes)
+        if (dsl::isModulator (n))
+        {
+            haveMod = true;
+            break;
+        }
     const bool live = inLevel > 0.018f;
-    if (live)
+    if (live || haveMod)
     {
-        cablePhase += 0.045f + inLevel * 0.18f;
+        cablePhase += 0.045f + (live ? inLevel * 0.18f : 0.07f);
         if (cablePhase > 64.f)
             cablePhase -= 64.f;
         pullCableWaves();
@@ -2328,7 +2322,7 @@ float GraphCanvasComponent::cableTapEnergy (const float* wave, int n) noexcept
 
 void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
                                          float level, bool mix, bool hot,
-                                         const float* wave, int waveN) const
+                                         const float* wave, int waveN, bool forceWave) const
 {
     auto path = makeCable (a, b);
     const float idle = mix ? 0.16f : 0.22f;
@@ -2339,10 +2333,10 @@ void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> 
                                               juce::PathStrokeType::curved,
                                               juce::PathStrokeType::rounded));
 
-    if (! cableBeadsVisible (level))
+    if (! cableBeadsVisible (level) && ! forceWave)
         return;
 
-    const bool wantWave = UiSettings::get().cableWaveform();
+    const bool wantWave = forceWave || UiSettings::get().cableWaveform();
     if (! wantWave)
     {
         juce::PathFlatteningIterator it (path);
@@ -2432,6 +2426,77 @@ void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> 
     g.strokePath (wavePath, juce::PathStrokeType (hot ? 1.6f : 1.15f,
                                                   juce::PathStrokeType::curved,
                                                   juce::PathStrokeType::rounded));
+}
+
+void GraphCanvasComponent::drawModLauflicht (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
+                                            const float* wave, int waveN, bool hot) const
+{
+    auto path = makeCable (a, b);
+    g.setColour (NeuroKoreLookAndFeel::inkMuted().withAlpha (hot ? 0.42f : 0.22f));
+    g.strokePath (path, juce::PathStrokeType (hot ? 1.35f : 1.05f,
+                                              juce::PathStrokeType::curved,
+                                              juce::PathStrokeType::rounded));
+
+    struct Seg { juce::Point<float> p0, p1; float len; };
+    std::vector<Seg> segs;
+    float length = 0.f;
+    {
+        juce::PathFlatteningIterator it (path);
+        while (it.next())
+        {
+            const juce::Point<float> p0 (it.x1, it.y1), p1 (it.x2, it.y2);
+            const float len = p0.getDistanceFrom (p1);
+            if (len < 1.0e-4f)
+                continue;
+            segs.push_back ({ p0, p1, len });
+            length += len;
+        }
+    }
+    if (length < 8.f)
+        return;
+
+    const float spacing = 18.f;
+    const int lights = juce::jmax (3, (int) std::floor (length / spacing));
+    const float travel = std::fmod (cablePhase / 64.f, 1.f);
+    const bool haveWave = wave != nullptr && waveN >= 4;
+
+    for (int i = 0; i < lights; ++i)
+    {
+        const float along = ((float) i + 0.5f) / (float) lights;
+        float target = along * length;
+        juce::Point<float> pt = a;
+        juce::Point<float> nrm (0.f, -1.f);
+        float walked = 0.f;
+        for (const auto& s : segs)
+        {
+            if (walked + s.len >= target)
+            {
+                const float u = (target - walked) / s.len;
+                pt = s.p0 + (s.p1 - s.p0) * u;
+                const auto dir = (s.p1 - s.p0) / s.len;
+                nrm = { -dir.y, dir.x };
+                break;
+            }
+            walked += s.len;
+        }
+
+        float smp = 0.f;
+        if (haveWave)
+        {
+            float u = along - travel;
+            u -= std::floor (u);
+            const float idx = u * (float) (waveN - 1);
+            const int i0 = (int) idx;
+            const int i1 = juce::jmin (waveN - 1, i0 + 1);
+            const float f = idx - (float) i0;
+            smp = wave[i0] * (1.f - f) + wave[i1] * f;
+        }
+        const float uni = juce::jlimit (0.f, 1.f, 0.5f + 0.5f * smp);
+        const float pr = (hot ? 2.15f : 1.65f) + 2.4f * uni;
+        const auto glow = pt + nrm * (smp * 4.5f);
+        g.setColour (NeuroKoreLookAndFeel::ink().withAlpha ((hot ? 0.28f : 0.16f) + uni * 0.62f));
+        g.fillEllipse (glow.x - pr, glow.y - pr, pr * 2.f, pr * 2.f);
+    }
 }
 
 juce::Point<float> GraphCanvasComponent::knobJackOnNode (int nodeIndex, int knobIndex) const

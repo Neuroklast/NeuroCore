@@ -1,7 +1,7 @@
 # Entwicklungsstand NEUROKORE
 
 **Letzte Aktualisierung:** 2026-08-16  
-**Version:** 0.9.0  
+**Version:** 0.9.1-alpha  
 **Gesamtfortschritt:** ~90%
 
 ---
@@ -53,10 +53,17 @@
 - [x] Freq `+osc` is unipolar + `max(fmin,…)` (no HP/LP invert)
 - [x] Phaser Lab/Sweep: HP stays below LP; no `y_prev` feedback
 - [x] Cinematic Space: delay is true predelay (`mix=1`, `feedback=0`)
+- [x] Far Plane / Score Hall: same — wet-bus predelay, no 95 ms series slap
+- [x] visualRail: named bus wins over channel (Wide Canvas)
+- [x] setScript does not inherit positions from a previous preset by name
+- [x] Preset overlay closes on the next message turn; inspect closes on script change
+- [x] LFO cables draw the live osc lane (sine/saw/square readable)
 - [x] Kick/Warehouse/Hardcore/Gabber: softclip before hardclip; env-filter Q 0.85
 - [x] Octaver: free-running sub, silent until lock (no period-reset click)
 - [x] Rumble body LPF stays on Floor ~48–88 Hz (no env-open to 400 Hz)
 - [x] Scream is env-gated (floor 0.08), not a square tail
+- [x] Widen: no Haas slap; |side| ≤ 0.92 |mid| (no L/R flip)
+- [x] OTT minimum attack/release so time≈0 cannot click
 
 ### 2026-08-16 – Factory library 500+
 
@@ -71,10 +78,11 @@
 - [x] Factory apply leaves `@x,y` out; Circuit arranges at the current viewport/zoom on load
 - [x] Pending arrange after first resize if the canvas had no size yet
 
-### 2026-08-16 – Release kit refresh (crackle + 526 factory)
+### 2026-08-16 – Alpha 0.9.1-alpha kit
 
-- [x] Release Standalone + VST3 (Kick Rumble / Octaver / 526 factory)
-- [x] Pack `NEUROKORE-0.9.0/` (VST3, Standalone, Docs, zip)
+- [x] Version string **0.9.1-alpha** (CMake 0.9.1, PLUGIN_VERSION, Inno, pack folder)
+- [x] Release Standalone + VST3
+- [x] Pack `NEUROKORE-0.9.1-alpha/` (VST3, Standalone, Docs, zip)
 - [ ] Inno Setup 6 fehlt weiter — kein `Setup.exe`
 
 ### 2026-08-16 – Release kit refresh
