@@ -18,6 +18,7 @@
 #include "../utils/Localiser.h"
 #include "../dsp/LookupTables.h"
 #include "../core/Config.h"
+#include "../utils/UiSettings.h"
 
 #ifndef JucePlugin_Name
 #define JucePlugin_Name "NEUROKORE"
@@ -61,7 +62,7 @@ juce::String variableNameStateKey(int index)
 
 
 //==============================================================================
-NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
+NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -136,7 +137,7 @@ NeuroCoreAudioProcessor::NeuroCoreAudioProcessor()
     }
 }
 
-bool NeuroCoreAudioProcessor::isDemoMixLocked() const noexcept
+bool NeuroKoreAudioProcessor::isDemoMixLocked() const noexcept
 {
 #if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
     return false;
@@ -147,7 +148,7 @@ bool NeuroCoreAudioProcessor::isDemoMixLocked() const noexcept
 #endif
 }
 
-int NeuroCoreAudioProcessor::demoSecondsRemaining() const noexcept
+int NeuroKoreAudioProcessor::demoSecondsRemaining() const noexcept
 {
     if (! Config::kEnableLicensing || isLicensed.load())
         return 0;
@@ -155,7 +156,7 @@ int NeuroCoreAudioProcessor::demoSecondsRemaining() const noexcept
     return juce::jmax (0, (int) std::ceil (Config::kDemoDurationSeconds - elapsed));
 }
 
-bool NeuroCoreAudioProcessor::importProductLicense (const juce::File& file)
+bool NeuroKoreAudioProcessor::importProductLicense (const juce::File& file)
 {
     if (! licenseManager.importLicenseFile (file))
         return false;
@@ -163,7 +164,7 @@ bool NeuroCoreAudioProcessor::importProductLicense (const juce::File& file)
     return true;
 }
 
-NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
+NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
 {
     // Drop any pending prepare-on-message-thread work before tearing down members.
     // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
@@ -177,12 +178,12 @@ NeuroCoreAudioProcessor::~NeuroCoreAudioProcessor()
 }
 
 //==============================================================================
-const juce::String NeuroCoreAudioProcessor::getName() const
+const juce::String NeuroKoreAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool NeuroCoreAudioProcessor::acceptsMidi() const
+bool NeuroKoreAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -191,7 +192,7 @@ bool NeuroCoreAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool NeuroCoreAudioProcessor::producesMidi() const
+bool NeuroKoreAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -200,7 +201,7 @@ bool NeuroCoreAudioProcessor::producesMidi() const
    #endif
 }
 
-bool NeuroCoreAudioProcessor::isMidiEffect() const
+bool NeuroKoreAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -209,45 +210,46 @@ bool NeuroCoreAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double NeuroCoreAudioProcessor::getTailLengthSeconds() const
+double NeuroKoreAudioProcessor::getTailLengthSeconds() const
 {
     const double chainTail = static_cast<double>(scriptManager.signalChain.getMaxTailTime()) + 0.5;
     return juce::jmax(Config::kDefaultTailTime, chainTail);
 }
 
-int NeuroCoreAudioProcessor::getNumPrograms()
+int NeuroKoreAudioProcessor::getNumPrograms()
 {
     return 1;
 }
 
-int NeuroCoreAudioProcessor::getCurrentProgram()
+int NeuroKoreAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void NeuroCoreAudioProcessor::setCurrentProgram (int) {}
+void NeuroKoreAudioProcessor::setCurrentProgram (int) {}
 
-const juce::String NeuroCoreAudioProcessor::getProgramName (int)
+const juce::String NeuroKoreAudioProcessor::getProgramName (int)
 {
     return {};
 }
 
-void NeuroCoreAudioProcessor::changeProgramName (int, const juce::String&) {}
+void NeuroKoreAudioProcessor::changeProgramName (int, const juce::String&) {}
 
 //==============================================================================
-void NeuroCoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void NeuroKoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     cpuProtect.reset();
+    dspEngine.setLiveMode (UiSettings::get().liveMode());
     updateProcessingSpec(sampleRate, samplesPerBlock);
 }
 
-void NeuroCoreAudioProcessor::releaseResources()
+void NeuroKoreAudioProcessor::releaseResources()
 {
     dspEngine.release();
     waveformCapture.reset();
 }
 
-void NeuroCoreAudioProcessor::reset()
+void NeuroKoreAudioProcessor::reset()
 {
     cpuProtect.reset();
     dspEngine.reset(getSampleRate(), getBlockSize());
@@ -255,7 +257,7 @@ void NeuroCoreAudioProcessor::reset()
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -284,7 +286,7 @@ bool NeuroCoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 }
 #endif
 
-void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                             juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -412,18 +414,18 @@ void NeuroCoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-bool NeuroCoreAudioProcessor::hasEditor() const
+bool NeuroKoreAudioProcessor::hasEditor() const
 {
     return true;
 }
 
-juce::AudioProcessorEditor* NeuroCoreAudioProcessor::createEditor()
+juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
-    return new NeuroCoreAudioProcessorEditor (*this);
+    return new NeuroKoreAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void NeuroKoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     if (state.isValid())
@@ -461,7 +463,7 @@ void NeuroCoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     }
 }
 
-void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
     if (xmlState)
@@ -539,49 +541,77 @@ void NeuroCoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             }
 
             loadLanguage ("en");
+            resolvePresetNameFromScript();
 
             sendChangeMessage();
         }
     }
 }
 
-void NeuroCoreAudioProcessor::refreshReportedLatency()
+void NeuroKoreAudioProcessor::refreshReportedLatency()
 {
     setLatencySamples (dspEngine.getOversamplingLatency()
                        + scriptManager.signalChain.getIrLatencySamples());
 }
 
-juce::String NeuroCoreAudioProcessor::getIrName (const juce::String& slot) const
+bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
+{
+    return dspEngine.isLiveMode();
+}
+
+int NeuroKoreAudioProcessor::getOversamplingLatencySamples() const noexcept
+{
+    return dspEngine.getOversamplingLatency();
+}
+
+void NeuroKoreAudioProcessor::setLiveMode (bool enabled)
+{
+    if (dspEngine.isLiveMode() == enabled)
+        return;
+    UiSettings::get().setLiveMode (enabled);
+    cpuProtect.reset();
+    if (getSampleRate() > 0.0)
+    {
+        const juce::ScopedLock pl (scriptManager.getProcessLock());
+        dspEngine.setLiveMode (enabled);
+        updateProcessingSpec (getSampleRate(), juce::jmax (1, getBlockSize()));
+        return;
+    }
+    dspEngine.setLiveMode (enabled);
+    triggerAsyncUpdate();
+}
+
+juce::String NeuroKoreAudioProcessor::getIrName (const juce::String& slot) const
 {
     auto it = irBank.find (slot.trim().toLowerCase());
     return it != irBank.end() ? it->second.fileName : juce::String();
 }
 
-int NeuroCoreAudioProcessor::getIrNumSamples (const juce::String& slot) const noexcept
+int NeuroKoreAudioProcessor::getIrNumSamples (const juce::String& slot) const noexcept
 {
     auto it = irBank.find (slot.trim().toLowerCase());
     return it != irBank.end() ? it->second.samples.getNumSamples() : 0;
 }
 
-int NeuroCoreAudioProcessor::getIrNumChannels (const juce::String& slot) const noexcept
+int NeuroKoreAudioProcessor::getIrNumChannels (const juce::String& slot) const noexcept
 {
     auto it = irBank.find (slot.trim().toLowerCase());
     return it != irBank.end() ? it->second.samples.getNumChannels() : 0;
 }
 
-double NeuroCoreAudioProcessor::getIrSampleRate (const juce::String& slot) const noexcept
+double NeuroKoreAudioProcessor::getIrSampleRate (const juce::String& slot) const noexcept
 {
     auto it = irBank.find (slot.trim().toLowerCase());
     return it != irBank.end() ? it->second.sr : 44100.0;
 }
 
-const juce::AudioBuffer<float>* NeuroCoreAudioProcessor::getIrBuffer (const juce::String& slot) const noexcept
+const juce::AudioBuffer<float>* NeuroKoreAudioProcessor::getIrBuffer (const juce::String& slot) const noexcept
 {
     auto it = irBank.find (slot.trim().toLowerCase());
     return it != irBank.end() ? &it->second.samples : nullptr;
 }
 
-bool NeuroCoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFormatReader& reader,
+bool NeuroKoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFormatReader& reader,
                                          const juce::String& displayName, juce::String& error)
 {
     const int srcN = (int) reader.lengthInSamples;
@@ -604,11 +634,12 @@ bool NeuroCoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFo
     irBank[key] = std::move (asset);
     scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
     refreshReportedLatency();
+    cpuProtect.reset();
     sendChangeMessage();
     return true;
 }
 
-bool NeuroCoreAudioProcessor::loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error)
+bool NeuroKoreAudioProcessor::loadIrFromFile (const juce::String& slot, const juce::File& file, juce::String& error)
 {
     juce::AudioFormatManager fm;
     fm.registerBasicFormats();
@@ -621,7 +652,7 @@ bool NeuroCoreAudioProcessor::loadIrFromFile (const juce::String& slot, const ju
     return installIr (slot, *reader, file.getFileName(), error);
 }
 
-bool NeuroCoreAudioProcessor::loadIrFromMemory (const juce::String& slot, const void* data, int size,
+bool NeuroKoreAudioProcessor::loadIrFromMemory (const juce::String& slot, const void* data, int size,
                                                 const juce::String& displayName, juce::String& error)
 {
     if (data == nullptr || size <= 0)
@@ -642,7 +673,7 @@ bool NeuroCoreAudioProcessor::loadIrFromMemory (const juce::String& slot, const 
                       displayName.isNotEmpty() ? displayName : "factory.wav", error);
 }
 
-void NeuroCoreAudioProcessor::clearIr (const juce::String& slot)
+void NeuroKoreAudioProcessor::clearIr (const juce::String& slot)
 {
     const auto key = slot.trim().toLowerCase();
     irBank.erase (key);
@@ -651,7 +682,7 @@ void NeuroCoreAudioProcessor::clearIr (const juce::String& slot)
     sendChangeMessage();
 }
 
-void NeuroCoreAudioProcessor::clearAllIrs()
+void NeuroKoreAudioProcessor::clearAllIrs()
 {
     juce::StringArray keys;
     for (const auto& kv : irBank)
@@ -664,7 +695,7 @@ void NeuroCoreAudioProcessor::clearAllIrs()
 class FormulaChangeAction : public juce::UndoableAction
 {
 public:
-    FormulaChangeAction(NeuroCoreAudioProcessor& proc,
+    FormulaChangeAction(NeuroKoreAudioProcessor& proc,
                         const juce::String& newScript,
                         const juce::String& oldScript)
         : processor(proc), newFormula(newScript), oldFormula(oldScript)
@@ -678,43 +709,109 @@ public:
             return true; // Already applied by setFormula()
         }
         juce::String err;
-        return processor.applyFormula(newFormula, err);
+        return processor.applyFormula (newFormula, err, false);
     }
 
     bool undo() override
     {
         juce::String err;
-        return processor.applyFormula(oldFormula, err);
+        return processor.applyFormula (oldFormula, err, false);
     }
 
     int getSizeInUnits() override { return static_cast<int>(newFormula.length() + oldFormula.length()); }
 
 private:
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::String newFormula;
     juce::String oldFormula;
     bool firstTime { true };
 };
 
-bool NeuroCoreAudioProcessor::setFormula (const juce::String& text, juce::String& error)
+bool NeuroKoreAudioProcessor::setFormula (const juce::String& text, juce::String& error)
 {
-    juce::String oldScript = getScript();
+    return setFormula (text, error, true);
+}
 
-    if (applyFormula(text, error))
+bool NeuroKoreAudioProcessor::setFormula (const juce::String& text, juce::String& error, bool clearPresetName)
+{
+    const juce::String oldScript = getScript();
+    if (applyFormula (text, error, clearPresetName))
     {
         if (oldScript != text)
-            undoManager.perform(new FormulaChangeAction(*this, text, oldScript), "Formula Change");
+        {
+            undoManager.beginNewTransaction ("Formula");
+            undoManager.perform (new FormulaChangeAction (*this, text, oldScript), "Formula Change");
+        }
         return true;
     }
     return false;
 }
 
-bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error)
+namespace
+{
+class NameChangeAction : public juce::UndoableAction
+{
+public:
+    NameChangeAction (NeuroKoreAudioProcessor& p, int i, juce::String from, juce::String to)
+        : processor (p), index (i), oldName (std::move (from)), newName (std::move (to)) {}
+
+    bool perform() override
+    {
+        if (first)
+        {
+            first = false;
+            return true;
+        }
+        processor.setVariableName (index, newName);
+        return true;
+    }
+
+    bool undo() override
+    {
+        processor.setVariableName (index, oldName);
+        return true;
+    }
+
+    int getSizeInUnits() override { return 16; }
+
+private:
+    NeuroKoreAudioProcessor& processor;
+    int index;
+    juce::String oldName, newName;
+    bool first { true };
+};
+}
+
+bool NeuroKoreAudioProcessor::resolvePresetNameFromScript()
+{
+    if (currentPresetName.isNotEmpty())
+        return false;
+    auto& lib = FactoryPresetLibrary::getInstance();
+    if (lib.getEntries().empty())
+        return false;
+    const auto* match = lib.findMatchingScript (getScript());
+    if (match == nullptr)
+        return false;
+    currentPresetName = match->name;
+    dspEngine.getDiagnostics().setPresetName (currentPresetName);
+    return true;
+}
+
+void NeuroKoreAudioProcessor::recordNameChange (int index, const juce::String& oldName,
+                                                const juce::String& newName)
+{
+    if (oldName == newName)
+        return;
+    undoManager.beginNewTransaction ("Rename knob");
+    undoManager.perform (new NameChangeAction (*this, index, oldName, newName), "Rename knob");
+}
+
+bool NeuroKoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error)
 {
     return applyFormula (text, error, true);
 }
 
-bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error, bool clearPresetName)
+bool NeuroKoreAudioProcessor::applyFormula (const juce::String& text, juce::String& error, bool clearPresetName)
 {
     if (scriptManager.applyFormula(text, error))
     {
@@ -732,7 +829,7 @@ bool NeuroCoreAudioProcessor::applyFormula (const juce::String& text, juce::Stri
     return false;
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout NeuroKoreAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
     auto addParam = [&params](const juce::String& id, const juce::String& name,
@@ -765,7 +862,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroCoreAudioProcessor::cre
     return { params.begin(), params.end() };
 }
 
-void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
+void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
 {
     if (sampleRate <= 0.0)
     {
@@ -805,7 +902,7 @@ void NeuroCoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     waveformCapture.prepare(channels, Config::kWaveformDisplaySamples);
 }
 
-void NeuroCoreAudioProcessor::handleAsyncUpdate()
+void NeuroKoreAudioProcessor::handleAsyncUpdate()
 {
     // Fade out, swap OS under lock, fade in. Never suspend the audio device.
     osOutGainTarget.store (0.f, std::memory_order_release);
@@ -824,7 +921,7 @@ void NeuroCoreAudioProcessor::handleAsyncUpdate()
     osOutGainTarget.store (1.f, std::memory_order_release);
 }
 
-void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID, float /*newValue*/)
+void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID, float /*newValue*/)
 {
     if (parameterID == EffectParameters::oversampling)
     {
@@ -834,7 +931,7 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
             idx = juce::jlimit (0, 3, choice->getIndex());
         if (idx == dspEngine.getOversamplingIndex())
             return;
-        cpuProtect.clear();
+        cpuProtect.reset();
         triggerAsyncUpdate();
     }
     else if (parameterID == EffectParameters::dryWet)
@@ -843,7 +940,7 @@ void NeuroCoreAudioProcessor::parameterChanged (const juce::String& parameterID,
     }
 }
 
-juce::StringArray NeuroCoreAudioProcessor::getPresetNames() const
+juce::StringArray NeuroKoreAudioProcessor::getPresetNames() const
 {
     juce::StringArray result;
     for (const auto& e : FactoryPresetLibrary::getInstance().getEntries())
@@ -857,7 +954,7 @@ juce::StringArray NeuroCoreAudioProcessor::getPresetNames() const
     return result;
 }
 
-void NeuroCoreAudioProcessor::loadPreset(int index)
+void NeuroKoreAudioProcessor::loadPreset(int index)
 {
     const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
     if (juce::isPositiveAndBelow(index, (int) factory.size()))
@@ -896,7 +993,7 @@ void NeuroCoreAudioProcessor::loadPreset(int index)
     }
 }
 
-void NeuroCoreAudioProcessor::stepPreset (int delta)
+void NeuroKoreAudioProcessor::stepPreset (int delta)
 {
     if (delta == 0)
         return;
@@ -909,7 +1006,7 @@ void NeuroCoreAudioProcessor::stepPreset (int delta)
     loadPreset (idx);
 }
 
-void NeuroCoreAudioProcessor::loadLanguage (const juce::String&)
+void NeuroKoreAudioProcessor::loadLanguage (const juce::String&)
 {
     auto resDir = juce::File::getSpecialLocation (juce::File::currentApplicationFile)
                        .getSiblingFile (Config::kResourceFolder)
@@ -924,6 +1021,6 @@ void NeuroCoreAudioProcessor::loadLanguage (const juce::String&)
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new NeuroCoreAudioProcessor();
+    return new NeuroKoreAudioProcessor();
 }
 

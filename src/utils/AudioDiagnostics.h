@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     RT-safe audio anomaly logger: NaN/Inf, hard sample jumps, crackle clusters.
     Audio thread only pushes POD events into a lock-free ring; message thread
     flushes them to a log file with full preset/param context.

@@ -1,7 +1,13 @@
-# NeuroCore DSL – Sprachreferenz
+# NeuroKore DSL – Sprachreferenz
 
-Die NeuroCore-DSL beschreibt Audio-Signalketten als **zeilenbasiertes Skript**.
+Die NeuroKore-DSL beschreibt Audio-Signalketten als **zeilenbasiertes Skript**.
 Blöcke werden von oben nach unten verarbeitet.
+
+**Zwei Sichten, ein Konstrukt**
+- **Graph**: Platine. Bauteile (Chips) einrasten, Kabel ziehen. Das Skript bleibt die Quelle.
+- **Script**: Text-Hack derselben Kette. Live-Ansicht zeigt Knob-Werte in Klammern; Edit öffnet den Editor.
+
+Layout-Positionen stehen als Kommentar ` # @x,y` (16-px-Raster). Sie ändern den Klang nicht.
 
 ---
 
@@ -28,7 +34,7 @@ stage1: y = tanh(x * a)
 
 ## `param` – Parameter-Alias
 
-Weist einem Knob (`a`–`d`) einen Anzeigenamen und optionalen Wertebereich zu.
+Weist einem Knob (`a`–`f`) einen Anzeigenamen und optionalen Wertebereich zu.
 
 ```
 param a = Drive [0.0, 2.0]
@@ -134,21 +140,55 @@ eq3: type = highcut; freq = 12000; q = 0.707
 
 ---
 
-## `octaver` – Tracking-Oktav
+## `octaver` – Analog-Oktav
 
 ```
-octaver1: sub = 0.65; up = 0.2; mix = 0.72; tone = 420; thresh = 0.04
+octaver1: sub = 0.84; up = 0.1; mix = 0.52; tone = 240; thresh = 0.05
 ```
 
-Schmitt-Tracker auf der Periode, Sinus bei −1 und +1 Oktave mal Hüllkurve. Bei Akkorden/Verlust analoger Flip-Flop-Fallback.
+Wie ein OC-2/OC-5: **eine** Mid-Clock, Flip-Flop auf −1 (Pitch = Nulldurchgänge, kein freier Sinus), Vollweg-Gleichrichter auf +1. Detector ist auf 28–650 Hz begrenzt; Perioden außerhalb 22–700 Hz werden verworfen.
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
-| `sub` | 0–1.5 | Pegel der Unteroktave |
-| `up` | 0–1.5 | Pegel der Oberoktave |
+| `sub` | 0–1.5 | Pegel der Unteroktave (mono, mitte) |
+| `up` | 0–1.5 | Pegel der Oberoktave (Gleichrichter) |
 | `mix` | 0–1 | Nassanteil |
-| `tone` | Hz | Tiefpass nach der Summe |
-| `thresh` | 0.01–0.25 | Tracker-Hysterese (höher = stabiler, langsamer) |
+| `tone` | Hz | 12 dB/Okt Tiefpass nach der Summe |
+| `thresh` | 0.01–0.25 | Tracker-Hysterese (höher = stabiler) |
+
+---
+
+## `widen` – Mono → Stereo
+
+```
+widen1: width = 0.72; delay = 14; bass = 130
+```
+
+Alias: `stereo1`. Mid bleibt das Original. Side = Allpass-Dekorrelation + kurzer Haas, unter `bass` Hz bleibt mono. `(L+R)/2` = Eingangs-Mid.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `width` | 0–1.4 | Seitenanteil (0 = mono) |
+| `delay` / `haas` | ms | Precedence auf der rechten Dekorrelation |
+| `bass` / `mono` | Hz | Darunter kein Side (Default 140) |
+
+---
+
+## `ott` – 3-Band Up+Down (OTT)
+
+```
+ott1: depth = 0.52; time = 0.3; in = 1.15; low = 1; mid = 0.92; high = 1.05
+```
+
+Xfer-OTT-Stil: Split bei ~90 Hz / 3.2 kHz, pro Band Abwärts- **und** Aufwärtskompression, dann Depth gegen Dry. Time skaliert Attack/Release. `in` ist der Pegel ins Detect.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `depth` / `mix` | 0–1 | Nassanteil |
+| `time` | 0–1 | Hüllkurve (kurz → lang) |
+| `in` / `input` | 0.25–6 | Eingangs-Gain ins OTT |
+| `low` `mid` `high` | 0–1.4 | Prozessanteil pro Band |
+| `f1` `f2` | Hz | Trennfrequenzen (Default 90 / 3200) |
 
 ---
 
@@ -247,6 +287,8 @@ ir2: mix = 0.35
 ```
 
 Mehrere Slots (`ir1`, `ir2`, …). Die Datei steht **nicht** in der Formel. Im Formel-Editor erscheint unter jeder `ir`-Zeile ein Button über die volle Breite: Drop / Change / Clear. WAV/AIFF, max. 2 s. Leerer Slot = dry.
+
+Amp-Factory-Presets (Mesa, 5150, JCM, AC30, Tube Screamer, Fuzz Face, Metal Gate, Stereo Guitar Wall) laden beim Apply eine Cab-WAV aus `resources/irs/` (auch in BinaryData). Die Zuordnung steht im Factory-JSON unter `irs`, nicht in der DSL.
 
 ---
 

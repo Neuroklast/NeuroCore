@@ -7,7 +7,7 @@ class IrPanelComponent : public juce::Component,
                          public juce::FileDragAndDropTarget
 {
 public:
-    IrPanelComponent (NeuroCoreAudioProcessor& proc, juce::String slot);
+    IrPanelComponent (NeuroKoreAudioProcessor& proc, juce::String slot);
     std::function<void()> onClose;
 
     void paint (juce::Graphics& g) override;
@@ -17,7 +17,7 @@ public:
 
 private:
     void drawWave (juce::Graphics& g, juce::Rectangle<int> area);
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::String slotId;
     juce::TextButton loadButton { "Load" };
     juce::TextButton clearButton { "Clear" };

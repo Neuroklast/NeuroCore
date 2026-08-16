@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 
@@ -22,10 +22,10 @@
 #define NEUROKORE_RESOURCES_DIR "resources"
 #endif
 
-class NeuroCoreExtrasTest : public juce::UnitTest
+class NeuroKoreExtrasTest : public juce::UnitTest
 {
 public:
-    NeuroCoreExtrasTest() : juce::UnitTest("NeuroCoreExtrasTest", "NewFeatures") {}
+    NeuroKoreExtrasTest() : juce::UnitTest("NeuroKoreExtrasTest", "NewFeatures") {}
 
     void runTest() override
     {
@@ -601,7 +601,7 @@ private:
             auto& lib = FactoryPresetLibrary::getInstance();
             if (lib.getEntries().empty())
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (44100.0, 256);
             const auto names = proc.getPresetNames();
             expect (names.size() >= 2);
@@ -719,7 +719,7 @@ private:
             expectEquals (processOk, (int) entries.size(),
                           "all factory presets must process finite, first fail: " + firstProcErr);
 
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (44100.0, 256);
             int applied = 0;
             juce::String firstApplyErr;
@@ -914,7 +914,7 @@ private:
                 { "5150 Lead",            "American IR 01.wav" },
             };
 
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (44100.0, 256);
 
             for (const auto& row : expected)
@@ -1156,7 +1156,7 @@ private:
     {
         beginTest("Processor state: variable names persist; language stays English");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             juce::String err;
             expect(proc.setFormula("stage1: y = x * a", err));
             proc.setVariableName(0, "drive");
@@ -1166,7 +1166,7 @@ private:
             juce::MemoryBlock state;
             proc.getStateInformation(state);
 
-            NeuroCoreAudioProcessor restored;
+            NeuroKoreAudioProcessor restored;
             restored.setStateInformation(state.getData(), (int) state.getSize());
 
             expectEquals(restored.getScript(), juce::String("stage1: y = x * a"));
@@ -1178,7 +1178,7 @@ private:
 
         beginTest ("Preset browser remembers category and scope");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.setLastPresetBrowserCategory ("Delay");
             proc.setLastPresetBrowserScope (2);
             expectEquals (proc.getLastPresetBrowserCategory(), juce::String ("Delay"));
@@ -1187,12 +1187,12 @@ private:
     }
 
     // Logic/AU hosts need a declared sidechain bus. Plugin MIDI macros live on
-    // the NeuroCore target, not this console test app.
+    // the NeuroKore target, not this console test app.
     void testAuHostBusLayout()
     {
         beginTest ("AU host: stereo I/O plus optional stereo sidechain");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
 
             expect (! proc.producesMidi());
             expect (! proc.isMidiEffect());

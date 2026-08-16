@@ -12,15 +12,12 @@ struct LicensePayload
 
 namespace LicenseCrypto
 {
-    inline constexpr const char* kProductName       = "NEUROKORE";
-    inline constexpr const char* kLegacyProductName = "NeuroCore";
-    inline constexpr const char* kHeaderLine        = "NEUROKORE LICENSE";
-    inline constexpr const char* kLegacyHeaderLine  = "NEUROCORE LICENSE";
+    inline constexpr const char* kProductName = "NEUROKORE";
+    inline constexpr const char* kHeaderLine  = "NEUROKORE LICENSE";
 
     inline bool isAcceptedProduct (const juce::String& name) noexcept
     {
-        return name.equalsIgnoreCase (kProductName)
-            || name.equalsIgnoreCase (kLegacyProductName);
+        return name.equalsIgnoreCase (kProductName);
     }
 
     juce::String normalizeEmail (juce::String email);

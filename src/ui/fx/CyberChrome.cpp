@@ -46,6 +46,22 @@ namespace CyberChrome
         g.fillRect (r);
     }
 
+    void drawCrtGlow (juce::Graphics& g, juce::Rectangle<int> r, float timeSec, float peak01)
+    {
+        if (r.isEmpty())
+            return;
+        const float breathe = 0.82f + 0.10f * std::sin (timeSec * 0.7f)
+                            + 0.08f * juce::jlimit (0.f, 1.f, peak01);
+        drawVignette (g, r, 0.38f * breathe);
+        drawScanlines (g, r, timeSec * 0.35f, 0.16f * breathe);
+        const int edge = juce::jlimit (4, 14, r.getWidth() / 90);
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.035f * breathe));
+        g.fillRect (r.getX(), r.getY(), edge, r.getHeight());
+        g.fillRect (r.getRight() - edge, r.getY(), edge, r.getHeight());
+        g.fillRect (r.getX(), r.getY(), r.getWidth(), edge / 2);
+        g.fillRect (r.getX(), r.getBottom() - edge / 2, r.getWidth(), edge / 2);
+    }
+
     void drawChromaticInset (juce::Graphics& g, juce::Rectangle<int> r, float amount)
     {
         if (amount <= 0.01f)
@@ -69,7 +85,7 @@ namespace CyberChrome
             const int y = r.getY() + rng.nextInt (juce::jmax (1, r.getHeight() - 8));
             const int h = 3 + rng.nextInt (18);
             const int shift = (int) ((rng.nextFloat() * 2.f - 1.f) * 10.f * amount);
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.10f * amount));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.10f * amount));
             g.fillRect (r.getX(), y, r.getWidth(), h);
             g.setColour (juce::Colour (0x66ff0044));
             g.fillRect (r.getX() + juce::jmax (0, shift), y + 1, r.getWidth(), 2);
@@ -84,11 +100,11 @@ namespace CyberChrome
             return;
         const float y = (float) r.getY() + y01 * (float) juce::jmax (1, r.getHeight());
         juce::ColourGradient beam (juce::Colours::transparentBlack, 0, y - 18.f,
-                                   NeuroCoreLookAndFeel::accent().withAlpha (0.28f * alpha),
+                                   NeuroKoreLookAndFeel::accent().withAlpha (0.28f * alpha),
                                    0, y, false);
         g.setGradientFill (beam);
         g.fillRect ((float) r.getX(), y - 18.f, (float) r.getWidth(), 36.f);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f * alpha));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f * alpha));
         g.fillRect ((float) r.getX(), y, (float) r.getWidth(), 2.f);
     }
 
@@ -97,7 +113,7 @@ namespace CyberChrome
         if (reveal01 <= 0.01f)
             return;
         const float len = 16.f * juce::jlimit (0.f, 1.f, reveal01);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f + 0.45f * reveal01));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f + 0.45f * reveal01));
         auto corner = [&g, thick, len] (float x, float y, float dx, float dy)
         {
             g.drawLine (x, y, x + dx * len, y, thick);
@@ -112,8 +128,8 @@ namespace CyberChrome
     void drawBlockBar (juce::Graphics& g, juce::Rectangle<int> r, float progress01)
     {
         progress01 = juce::jlimit (0.f, 1.f, progress01);
-        g.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
-        g.setColour (NeuroCoreLookAndFeel::accent());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
+        g.setColour (NeuroKoreLookAndFeel::accent());
         const int cols = juce::jlimit (8, 40, r.getWidth() / 8);
         const int filled = (int) std::round (progress01 * (float) cols);
         juce::String bar;
@@ -143,8 +159,8 @@ namespace CyberChrome
 
     void drawHexMeta (juce::Graphics& g, juce::Rectangle<int> r, float progress01)
     {
-        g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+        g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
         const int ptr = juce::jlimit (0, 0xffff, (int) (progress01 * 65535.f));
         juce::String line = "PTR 0x";
         line += juce::String::toHexString (ptr).paddedLeft ('0', 4).toUpperCase();
@@ -209,13 +225,13 @@ namespace CyberChrome
             return;
 
         auto area = inner.reduced (18, 16);
-        g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+        g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
         g.drawText (loaderLabelForClip (clipTypeIndex),
                     area.removeFromTop (16), juce::Justification::centred, false);
 
-        g.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
-        g.setColour (NeuroCoreLookAndFeel::accent());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+        g.setColour (NeuroKoreLookAndFeel::accent());
         g.drawText (loadingTextAt (tSec, teardown),
                     area.removeFromTop (22), juce::Justification::centred, false);
 
@@ -228,8 +244,8 @@ namespace CyberChrome
                      teardown ? (1.f - bar01) : bar01);
 
         const int crc = (seed * 1103515245 + (int) (tSec * 4093.f)) & 0xffff;
-        g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+        g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
         g.drawText ("CRC 0x" + juce::String::toHexString (crc).paddedLeft ('0', 4).toUpperCase()
                         + "   SEQ " + juce::String ((int) (tSec * 240.f)).paddedLeft ('0', 3)
                         + "   CH " + juce::String (8 + (seed & 7)),
@@ -252,11 +268,11 @@ namespace CyberChrome
             "> release viewport"
         };
         const int shown = juce::jlimit (1, 5, 1 + (int) (tSec / 0.11f));
-        g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+        g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
         for (int i = 0; i < shown; ++i)
         {
             const bool hot = (i == shown - 1);
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (hot ? 0.95f : 0.40f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (hot ? 0.95f : 0.40f));
             juce::String line = teardown ? downLines[i] : upLines[i];
             if (hot)
                 line += (((int) (tSec * 8.f) % 2) == 0 ? " _" : "  ");

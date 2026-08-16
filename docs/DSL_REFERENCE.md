@@ -1,7 +1,13 @@
-# NeuroCore DSL – Sprachreferenz
+# NeuroKore DSL – Sprachreferenz
 
-Die NeuroCore-DSL beschreibt Audio-Signalketten als **zeilenbasiertes Skript**.
+Die NeuroKore-DSL beschreibt Audio-Signalketten als **zeilenbasiertes Skript**.
 Blöcke werden von oben nach unten verarbeitet.
+
+**Zwei Sichten, ein Konstrukt**
+- **Graph**: Platine. Bauteile (Chips) einrasten, Kabel ziehen. Das Skript bleibt die Quelle.
+- **Script**: Text-Hack derselben Kette. Live-Ansicht zeigt Knob-Werte in Klammern; Edit öffnet den Editor.
+
+Layout-Positionen stehen als Kommentar ` # @x,y` (16-px-Raster). Sie ändern den Klang nicht.
 
 ---
 
@@ -28,7 +34,7 @@ stage1: y = tanh(x * a)
 
 ## `param` – Parameter-Alias
 
-Weist einem Knob (`a`–`d`) einen Anzeigenamen und optionalen Wertebereich zu.
+Weist einem Knob (`a`–`f`) einen Anzeigenamen und optionalen Wertebereich zu.
 
 ```
 param a = Drive [0.0, 2.0]

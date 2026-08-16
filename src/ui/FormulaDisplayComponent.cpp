@@ -242,7 +242,7 @@ juce::Colour FormulaDisplayComponent::colourForToken (const juce::String& token)
     const int idx = knobIndexForToken (token);
     if (idx >= 0)
         return varColours[(size_t) idx];
-    return juce::Colour (0xfffff0f0);
+    return NeuroKoreLookAndFeel::ink();
 }
 
 juce::String FormulaDisplayComponent::formatValue (float v) const
@@ -400,26 +400,19 @@ void FormulaDisplayComponent::rebuildAttributed()
     cachedLayout = {};
     cachedLayout.setLineSpacing (fontHeight * (Config::kFormulaLineHeight - 1.0f));
     // Formula live view uses embedded mono for readability (Apex is UI chrome only)
-    const juce::Font font = NeuroCoreLookAndFeel::monoFont (fontHeight);
-    const juce::Font mono = NeuroCoreLookAndFeel::monoFont (fontHeight);
-    // Terminal palette: near-white text on black, red accents for knobs
-    const auto textCol   = juce::Colour (0xfffff0f0);
-    const auto mutedCol  = juce::Colour (0xff8a8a8a);
-    const auto keyCol    = juce::Colour (0xffb0b0b0);
-
-    if (error.isNotEmpty())
-    {
-        cachedLayout.append (error, font, juce::Colour (0xffff1a1a));
-        layoutDirty = false;
-        return;
-    }
+    const juce::Font font = NeuroKoreLookAndFeel::monoFont (fontHeight);
+    const juce::Font mono = NeuroKoreLookAndFeel::monoFont (fontHeight);
+    // Terminal palette: ink on canvas; knob tokens keep their own hues
+    const auto textCol   = NeuroKoreLookAndFeel::ink();
+    const auto mutedCol  = NeuroKoreLookAndFeel::inkMuted();
+    const auto keyCol    = NeuroKoreLookAndFeel::inkMuted();
 
     juce::StringArray lines;
     lines.addLines (formula);
     if (lines.isEmpty())
         lines.add ("// empty formula");
 
-    const auto commentCol = NeuroCoreLookAndFeel::comment();
+    const auto commentCol = NeuroKoreLookAndFeel::comment();
 
     for (int li = 0; li < lines.size(); ++li)
     {
@@ -586,7 +579,7 @@ void FormulaDisplayComponent::rebuildAttributed()
                         if (dominant >= 0)
                             bracketCol = varColours[(size_t) dominant];
                         else if (dominant == -2)
-                            bracketCol = juce::Colour (0xffe8ecf4);
+                            bracketCol = NeuroKoreLookAndFeel::ink();
 
                         cachedLayout.append (" [= ", mono, bracketCol.withAlpha (0.85f));
                         cachedLayout.append (formatValue (value), mono, bracketCol);
@@ -608,6 +601,13 @@ void FormulaDisplayComponent::rebuildAttributed()
 int FormulaDisplayComponent::getContentHeight() const noexcept
 {
     return body != nullptr ? body->getHeight() : 0;
+}
+
+juce::String FormulaDisplayComponent::getAnnotatedText()
+{
+    if (layoutDirty)
+        rebuildAttributed();
+    return cachedLayout.getText();
 }
 
 juce::String FormulaDisplayComponent::irSlotFromLine (const juce::String& line)
@@ -707,7 +707,7 @@ void FormulaDisplayComponent::resized()
 
 void FormulaDisplayComponent::paintBody (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff000000));
+    g.fillAll (NeuroKoreLookAndFeel::canvas());
     if (layoutDirty)
         refreshBodySize();
     cachedTextLayout.draw (g, juce::Rectangle<float> (8.f, 6.f,
@@ -724,13 +724,13 @@ void FormulaDisplayComponent::paintOverChildren (juce::Graphics& g)
 
 void FormulaDisplayComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff000000));
+    g.fillAll (NeuroKoreLookAndFeel::canvas());
 
-    // Header strip: formula terminal identity
-    g.setColour (juce::Colour (0xff0a0000));
+    // Header strip: chrome accent on canvas (not red fill + red text)
+    g.setColour (NeuroKoreLookAndFeel::canvas());
     g.fillRect (0, 0, getWidth(), 18);
-    g.setColour (juce::Colour (0xffff1a1a).withAlpha (0.85f));
-    g.setFont (juce::Font (juce::Font::getDefaultMonospacedFontName(), 10.f, juce::Font::bold));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
     const int lines = juce::StringArray::fromLines (formula).size();
     const bool blink = ((int) (juce::Time::getMillisecondCounter() / 400) % 2) == 0;
     g.drawText (juce::String ("DSP_CORE // ")
@@ -738,10 +738,10 @@ void FormulaDisplayComponent::paint (juce::Graphics& g)
                     + (error.isNotEmpty() ? " // ERR" : (blink ? " // LIVE_" : " // LIVE ")),
                 8, 2, getWidth() - 16, 14, juce::Justification::centredLeft, false);
     // scan line under header
-    g.setColour (juce::Colour (0xffff1a1a).withAlpha (0.45f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
     g.fillRect (0, 17, getWidth(), 1);
 
-    g.setColour (juce::Colour (0xff3a0000));
+    g.setColour (NeuroKoreLookAndFeel::panelBorder());
     g.drawRect (getLocalBounds().toFloat().reduced (0.5f), 1.f);
 
 }

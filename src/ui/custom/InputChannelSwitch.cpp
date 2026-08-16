@@ -58,12 +58,23 @@ juce::Rectangle<float> InputChannelSwitch::plateBounds() const noexcept
     return full.withSizeKeepingCentre (full.getWidth(), h).reduced (0.5f);
 }
 
-EffectParameters::InputChannelMode InputChannelSwitch::modeAt (float x) const noexcept
+juce::Rectangle<float> InputChannelSwitch::cellBounds (int index) const noexcept
 {
     const auto plate = plateBounds();
-    const float t = juce::jlimit (0.f, 0.999f, (x - plate.getX()) / juce::jmax (1.f, plate.getWidth()));
-    if (t < 1.f / 3.f) return EffectParameters::InputChannelMode::Left;
-    if (t < 2.f / 3.f) return EffectParameters::InputChannelMode::Both;
+    const float inner = juce::jmax (1.f, plate.getWidth() - 2.f * kCellGap);
+    const float w = inner / 3.f;
+    const int i = juce::jlimit (0, 2, index);
+    return { plate.getX() + (w + kCellGap) * (float) i, plate.getY(), w, plate.getHeight() };
+}
+
+EffectParameters::InputChannelMode InputChannelSwitch::modeAt (float x) const noexcept
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        const auto c = cellBounds (i);
+        if (x < c.getRight() + kCellGap * 0.5f)
+            return static_cast<EffectParameters::InputChannelMode> (i);
+    }
     return EffectParameters::InputChannelMode::Right;
 }
 
@@ -79,27 +90,23 @@ void InputChannelSwitch::mouseDrag (const juce::MouseEvent& e)
 
 void InputChannelSwitch::paint (juce::Graphics& g)
 {
-    // Same plate as ComboBox in this row: sharp rect, vertically centred.
-    auto r = plateBounds();
-    g.setColour (NeuroCoreLookAndFeel::surfaceHigh());
-    g.fillRect (r);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
-    g.drawRect (r, 1.f);
-
-    const float w = r.getWidth() / 3.f;
     const char* labels[] = { "L", "BOTH", "R" };
     for (int i = 0; i < 3; ++i)
     {
-        auto cell = r.withWidth (w).translated (w * (float) i, 0.f);
+        const auto cell = cellBounds (i);
+        g.setColour (NeuroKoreLookAndFeel::surfaceHigh());
+        g.fillRect (cell);
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha ((int) mode == i ? 0.95f : 0.45f));
+        g.drawRect (cell, 1.f);
         if ((int) mode == i)
         {
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.9f));
             g.fillRect (cell.reduced (2.f, 2.f));
         }
 
-        g.setFont (NeuroCoreLookAndFeel::brandFont (11.f, true));
+        g.setFont (NeuroKoreLookAndFeel::brandFont (11.f, true));
         g.setColour ((int) mode == i ? juce::Colours::white
-                                     : NeuroCoreLookAndFeel::mutedText());
+                                     : NeuroKoreLookAndFeel::mutedText());
         g.drawText (labels[i], cell.toNearestInt(), juce::Justification::centred, false);
     }
 }

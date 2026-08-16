@@ -848,7 +848,80 @@
         "midside",
         "width",
         "mastering"
-      ]
+      ],
+      "category": "Blocks"
+    },
+    {
+      "name": "ott",
+      "description": "3-band upward + downward compressor (OTT). Depth is the smash. Time is the envelope. Insert on a bus.",
+      "soundCharacter": "Loud, glued, pumped mids. Quiet stuff comes up, peaks get sat on.",
+      "useCases": [
+        "EDM / club group bus",
+        "Drum bus smash",
+        "Vocal radio-ready"
+      ],
+      "dangersAndLimits": {
+        "domain": "depth 0–1, time 0–1",
+        "aliasing": "Low; no extra clip unless you slam Input",
+        "performance": "3-band LR4 + envelopes"
+      },
+      "example": "ott1: depth = a; time = b; in = c; low = d; mid = e; high = f",
+      "keywords": ["ott", "multiband", "compressor", "glue", "edm"],
+      "category": "Blocks"
+    },
+    {
+      "name": "widen",
+      "description": "Mono-to-stereo. Mid stays the original. Side is allpass + Haas. Bass stays mono so the mix still collapses.",
+      "soundCharacter": "Wide without chorus swirl. Lows stay centered.",
+      "useCases": [
+        "Mono DI or synth to stereo",
+        "Send return width",
+        "Vocal double-ish width"
+      ],
+      "dangersAndLimits": {
+        "domain": "width 0–1.4, delay 0.5–40 ms",
+        "aliasing": "n/a",
+        "performance": "Cheap allpass + short delay"
+      },
+      "example": "widen1: width = a; delay = b; bass = c",
+      "keywords": ["widen", "stereo", "haas", "mono", "width"],
+      "category": "Blocks"
+    },
+    {
+      "name": "vocoder",
+      "description": "Analog-style band vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain. Empty pin self-vocodes.",
+      "soundCharacter": "Spoken synth. Formant shifts the vowel size.",
+      "useCases": [
+        "Talking pad",
+        "Robot vocal",
+        "FX throw"
+      ],
+      "dangersAndLimits": {
+        "domain": "needs a bright carrier; voice on Sidechain",
+        "aliasing": "Low",
+        "performance": "8 bandpass pairs"
+      },
+      "example": "vocoder1: bands = 8; mix = a; q = b; formant = d; dry = c",
+      "keywords": ["vocoder", "sidechain", "vocal", "formant"],
+      "category": "Blocks"
+    },
+    {
+      "name": "octaver",
+      "description": "Analog octaver: mid-clocked divider on −1, rectifier on +1. Track the dry string, then warm the blend.",
+      "soundCharacter": "Solid sub, no free-oscillator wobble. Up is a bit buzzy.",
+      "useCases": [
+        "Bass sub",
+        "Guitar octave",
+        "Kick rumble body"
+      ],
+      "dangersAndLimits": {
+        "domain": "mono-ish sources track best; chords fall back to analog square",
+        "aliasing": "Low on sub; up can be bright",
+        "performance": "Cheap"
+      },
+      "example": "octaver1: sub = a; up = b; mix = d; tone = c; thresh = e",
+      "keywords": ["octaver", "sub", "pitch", "bass"],
+      "category": "Blocks"
     }
   ]
 }

@@ -1,4 +1,4 @@
-# NeuroCore – Vollständige Code-Analyse
+# NeuroKore – Vollständige Code-Analyse
 
 **Analyse-Datum:** 2026-04-01  
 **Basis-Commit:** `b5e76bb`  
@@ -8,7 +8,7 @@
 
 ## Zusammenfassung
 
-NeuroCore ist ein innovatives Audio-Plugin mit einem einzigartigen DSL-basierten Ansatz für Echtzeit-Signalverarbeitung. Die Kernidee ist solide und das Plugin ist funktionsfähig. Es fehlen jedoch wichtige professionelle Qualitätsmerkmale, die vor einem Produktions-Release behoben werden müssen.
+NeuroKore ist ein innovatives Audio-Plugin mit einem einzigartigen DSL-basierten Ansatz für Echtzeit-Signalverarbeitung. Die Kernidee ist solide und das Plugin ist funktionsfähig. Es fehlen jedoch wichtige professionelle Qualitätsmerkmale, die vor einem Produktions-Release behoben werden müssen.
 
 **Gesamtbewertung:** ~40–50% eines professionellen Gold-Standard-Plugins.
 
@@ -17,7 +17,7 @@ NeuroCore ist ein innovatives Audio-Plugin mit einem einzigartigen DSL-basierten
 ## 1. Kritische Bugs
 
 ### Bug 1: Licensing-Server ist ein Placeholder
-**Status:** behoben 2026-08-13. Offline RSA-`.lic` + `NeuroCoreIssuer`. Kein Activation-Server mehr.
+**Status:** behoben 2026-08-13. Offline RSA-`.lic` + `NeuroKoreIssuer`. Kein Activation-Server mehr.
 
 ---
 
@@ -26,11 +26,11 @@ NeuroCore ist ein innovatives Audio-Plugin mit einem einzigartigen DSL-basierten
 **Zeile:** ~99–102
 
 ```cmake
-juce_add_plugin(NeuroCore
+juce_add_plugin(NeuroKore
     SOURCES ${SOURCE_FILES}
 )
 
-target_sources(NeuroCore PRIVATE ${SOURCE_FILES})
+target_sources(NeuroKore PRIVATE ${SOURCE_FILES})
 ```
 
 **Problem:** `SOURCES` in `juce_add_plugin` und nochmals `target_sources` kompilieren dieselben Dateien zweimal. Das erhöht die Build-Zeit und kann ODR-Verstöße (One Definition Rule) verursachen.
@@ -177,7 +177,7 @@ for (size_t i = 0; i < numSamples; ++i)
 
 ### Problem 13: `SignalChainTest` nicht im CMake Test-Target
 **Datei:** `CMakeLists.txt`  
-**Problem:** `tests/SignalChainTest.h` existiert, ist aber **nicht** im `NeuroCoreTests`-Target verlinkt.
+**Problem:** `tests/SignalChainTest.h` existiert, ist aber **nicht** im `NeuroKoreTests`-Target verlinkt.
 
 **Lösung:** Die Datei in das Test-Target aufnehmen.
 
@@ -189,8 +189,8 @@ for (size_t i = 0; i < numSamples; ++i)
 
 | Feature | Priorität | Status |
 |---|---|---|
-| Oversampling UI-Control | 🔴 Hoch | `oversamplingIndex` existiert, aber kein UI |
-| DC-Blocker | 🔴 Hoch | Manche Formeln erzeugen DC-Offset |
+| Oversampling UI-Control | ✅ | 1× / 2× / 4× / 8× in Settings + Statuszeile |
+| DC-Blocker | ✅ | Nach der DSL-Kette, vor Polisher |
 | Latenz-Reporting | 🟡 Mittel | `getLatencyCompensationInSamples()` fehlt |
 | Tail-Time | 🟡 Mittel | `getTailLengthSeconds()` gibt 0 zurück |
 | Sample-Rate Adaptation | 🟡 Mittel | Filter-Koeffizienten bei Rate-Änderung? |
@@ -199,8 +199,8 @@ for (size_t i = 0; i < numSamples; ++i)
 
 | Feature | Priorität | Status |
 |---|---|---|
-| Resizable UI | 🔴 Hoch | Fest 1600×900 px |
-| Undo/Redo | 🔴 Hoch | Kein `UndoManager` |
+| Resizable UI | ✅ | Seitenverhältnis fest; Scale 100 / 125 / 150 |
+| Undo/Redo | ✅ | Ctrl+Z / Ctrl+Y auf Formel + Graph |
 | Tooltips | 🟡 Mittel | Keine kontextuellen Hilfe-Tooltips |
 | HiDPI/Retina | 🟡 Mittel | PNG-basiert, kein Vektor-Rendering |
 | Accessibility | 🟡 Mittel | Kein `AccessibilityHandler` |

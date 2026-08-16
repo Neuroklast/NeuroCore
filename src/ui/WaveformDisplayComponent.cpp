@@ -6,7 +6,7 @@
 #include "../utils/Localiser.h"
 #include "PluginLookAndFeel.h"
 
-WaveformDisplayComponent::WaveformDisplayComponent (NeuroCoreAudioProcessor& proc, Type t)
+WaveformDisplayComponent::WaveformDisplayComponent (NeuroKoreAudioProcessor& proc, Type t)
     : processor (proc), type (t)
 {
     setOpaque (true);
@@ -157,7 +157,7 @@ void WaveformDisplayComponent::drawAxes (juce::Graphics& g, juce::Rectangle<floa
     g.setGradientFill (well);
     g.fillRect (plot);
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
     g.drawRect (plot, 1.0f);
 
     const int totalSamples = (int) displayData.size();
@@ -165,14 +165,14 @@ void WaveformDisplayComponent::drawAxes (juce::Graphics& g, juce::Rectangle<floa
     const int xTicks = 8;
     const int yTicks = 4;
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
 
     for (int i = 0; i <= xTicks; ++i)
     {
         const float x = plot.getX() + (plot.getWidth() / (float) xTicks) * (float) i;
         if (showGrid)
         {
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (i == 0 || i == xTicks ? 0.35f : 0.12f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (i == 0 || i == xTicks ? 0.35f : 0.12f));
             g.drawLine (x, plot.getY(), x, plot.getBottom(), 0.6f);
         }
         g.setColour (juce::Colour (0xff888888));
@@ -203,7 +203,7 @@ void WaveformDisplayComponent::drawAxes (juce::Graphics& g, juce::Rectangle<floa
         const float y = plot.getY() + (plot.getHeight() / (float) yTicks) * (float) i;
         if (showGrid)
         {
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.12f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.12f));
             g.drawLine (plot.getX(), y, plot.getRight(), y, 0.6f);
         }
         g.setColour (juce::Colour (0xff888888));
@@ -212,8 +212,11 @@ void WaveformDisplayComponent::drawAxes (juce::Graphics& g, juce::Rectangle<floa
                           juce::Justification::centredRight, 1);
     }
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.75f));
-    g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.40f));
+    g.drawLine (plot.getX(), plot.getCentreY(), plot.getRight(), plot.getCentreY(), 1.1f);
+
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.75f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
     // PRE = host buffer before DSP, POST = after full chain (true before/after)
     g.drawText (type == Type::Input ? "IN // PRE" : "OUT // POST",
                 plot.getX() + 4.f, plot.getY() + 2.f, 96.f, 12.f,

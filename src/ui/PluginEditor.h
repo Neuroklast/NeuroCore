@@ -36,6 +36,8 @@
 #include "fx/CyberBackdropComponent.h"
 #include "fx/CyberClip.h"
 #include "IrPanelComponent.h"
+#include "GraphCanvasComponent.h"
+#include "../utils/UiSettings.h"
 
 
 class ParameterSlider : public juce::Slider
@@ -57,20 +59,28 @@ public:
 //==============================================================================
 /**
 */
-class NeuroCoreAudioProcessorEditor  : public juce::AudioProcessorEditor,
+class NeuroKoreAudioProcessorEditor  : public juce::AudioProcessorEditor,
                                        private Localiser::Listener,
                                        private juce::ChangeListener,
                                        private juce::Timer
 {
 public:
-    NeuroCoreAudioProcessorEditor (NeuroCoreAudioProcessor&);
-    ~NeuroCoreAudioProcessorEditor() override;
+    NeuroKoreAudioProcessorEditor (NeuroKoreAudioProcessor&);
+    ~NeuroKoreAudioProcessorEditor() override;
 
     juce::String getFormulaText() const;
     void setFormulaText(const juce::String& text);
 
+    enum WorkspaceMode { WorkspaceGraph = 0, WorkspaceScript = 1 };
+    void setWorkspaceMode (int mode);
+    int getWorkspaceMode() const noexcept { return workspaceMode; }
+    bool isEditingFormula() const noexcept { return editing; }
+    bool isLiveFormulaVisible() const;
+    bool isFormulaEditorVisible() const;
+
     //==============================================================================
     void paint (juce::Graphics&) override;
+    void paintOverChildren (juce::Graphics&) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress& key) override;
     void visibilityChanged() override;
@@ -84,9 +94,12 @@ private:
     void updateStatusBar();
     void paintHudChrome (juce::Graphics& g);
     void applyOverlayMotion (ModalOverlay& overlay);
+    int overlayTopInset() const noexcept;
+    void reportScriptIssue (const juce::String& message);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
     void layoutOpenOverlays();
     void syncGlCover();
+    bool anyOverlayShowing() const noexcept;
     juce::Rectangle<int> chromeBounds() const;
     void startWindowAssemble();
     void captureAssembleTargets();
@@ -94,13 +107,14 @@ private:
     void onAssembleVBlank (double nowSec);
     void setFormulaEditMode(bool shouldEdit);
     void applyEditorFontSize (float heightPt);
+    void cancelWindowAssemble();
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
     void timerCallback() override;
     /// Updates all text labels after language change.
     void updateTranslations();
     void languageChanged() override { updateTranslations(); }
     float editorFontHeight { Config::kDefaultEditorFontPt };
-    NeuroCoreAudioProcessor& audioProcessor;
+    NeuroKoreAudioProcessor& audioProcessor;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> attachments;
     std::unique_ptr<ui::LayoutNode> layoutRoot;
 
@@ -108,7 +122,6 @@ private:
     std::array<std::unique_ptr<juce::TextEditor>, Config::kNumUserParams>        nameEditors;
     std::unique_ptr<BrandLockup>         brandLockup;
     std::unique_ptr<juce::Label>         statusBarLabel; // LAT / SR / LIVE
-    std::unique_ptr<juce::TextButton>    audioSettingsButton;
     std::unique_ptr<juce::TextButton>    helpButton;
     std::unique_ptr<juce::TextButton>    licenseButton;
     std::unique_ptr<juce::FileChooser>   licenseChooser;
@@ -117,9 +130,15 @@ private:
     std::unique_ptr<juce::TextButton>    editorFontPlusButton;
     std::unique_ptr<juce::Label>         editorFontSizeLabel;
     std::unique_ptr<juce::TextButton>    presetsButton;
+    std::unique_ptr<juce::TextButton>    liveButton;
     std::unique_ptr<juce::TextButton>    bypassButton; // cyber toggle (text button styled)
     std::unique_ptr<juce::TextButton>    functionsButton;
     std::unique_ptr<juce::TextButton>    stagesButton;
+    std::unique_ptr<juce::TextButton>    settingsButton;
+    std::unique_ptr<juce::TextButton>    workspaceGraphButton;
+    std::unique_ptr<juce::TextButton>    workspaceScriptButton;
+    std::unique_ptr<GraphCanvasComponent> graphCanvas;
+    std::unique_ptr<juce::Component>     scaledRoot;
     std::unique_ptr<CyberMixSlider>      mixSlider;
     std::unique_ptr<juce::Label>         mixLabel;
     std::unique_ptr<juce::Label>         mixValue;
@@ -146,8 +165,19 @@ private:
     bool                                    editing { false };
     float                                   mixBeforeBypass { 1.0f };
     void applyBypassMixLock() noexcept;
+    void applyMotion (CyberMotion motion);
+    void applyUiScale();
+    void syncGraphFromScript();
+    bool commitGraphToScript();
+    bool commitScriptToGraph();
+    void applyKnobDisplayName (int index, const juce::String& name);
+    void syncParamNamesFromScript (const juce::String& script);
+    void writeParamNameToScript (int index, const juce::String& name);
+    bool ignoreScriptNameSync { false };
 
-    NeuroCoreLookAndFeel lookAndFeel;
+    int workspaceMode { WorkspaceScript };
+
+    NeuroKoreLookAndFeel lookAndFeel;
     CyberFxDirector cyberDirector;
     std::unique_ptr<CyberBackdropComponent> backdrop;
     struct WindowAssemble
@@ -185,6 +215,7 @@ private:
     std::unique_ptr<ModalOverlay>            validationOverlay;
     std::unique_ptr<ModalOverlay>            irOverlay;
     std::unique_ptr<ModalOverlay>            licenseOverlay;
+    std::unique_ptr<ModalOverlay>            settingsOverlay;
 
     void showIrOverlay (const juce::String& slot);
     void hideIrOverlay();
@@ -192,6 +223,8 @@ private:
     void showLicenseInfoOverlay();
     void hideLicenseOverlay();
     void refreshLicenseButton();
+    void showSettingsOverlay();
+    void hideSettingsOverlay();
 
     void showPresetOverlay();
     void hidePresetOverlay();
@@ -203,7 +236,7 @@ private:
 
     //melatonin::Inspector inspector{ *this };
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroKoreAudioProcessorEditor)
 };
 
 

@@ -1,6 +1,6 @@
 # Coding Agent Workflow
 
-Dieses Dokument beschreibt den **verbindlichen Ablauf** für jeden Coding-Agent-Einsatz im NeuroCore-Projekt.
+Dieses Dokument beschreibt den **verbindlichen Ablauf** für jeden Coding-Agent-Einsatz im NeuroKore-Projekt.
 Alle Regeln müssen eingehalten werden, um Qualität und Nachvollziehbarkeit zu gewährleisten.
 
 ---

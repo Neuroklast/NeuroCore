@@ -1,6 +1,6 @@
-# NeuroCore – Alleinstellungsmerkmale
+# NeuroKore – Alleinstellungsmerkmale
 
-Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden kommerziellen und Open-Source-Audio-Plugins.
+Was NeuroKore einzigartig und innovativ macht – im Vergleich zu bestehenden kommerziellen und Open-Source-Audio-Plugins.
 
 ---
 
@@ -12,7 +12,7 @@ Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden ko
 - Constant Folding: Konstante Teilausdrücke werden zur Parse-Zeit berechnet (z. B. `2 * pi * 440` → `2764.6`)
 - Common Subexpression Elimination (CSE): Identische Teilausdrücke werden nur einmal berechnet
 - SIMD-Support: `evaluateBlockSimd()` verarbeitet mehrere Samples gleichzeitig via SSE/AVX
-- Die meisten Plugins mit "formel-basiertem Waveshaping" (z. B. Külatronic, Glitch Machines) kompilieren Formeln vor dem Laden. NeuroCore evaluiert **live** mit professioneller Performance.
+- Die meisten Plugins mit "formel-basiertem Waveshaping" (z. B. Külatronic, Glitch Machines) kompilieren Formeln vor dem Laden. NeuroKore evaluiert **live** mit professioneller Performance.
 
 **Technisch:** AST-Baum mit `std::shared_ptr<Node>`, optimiert durch einen zweiten Pass des Compilers.
 
@@ -26,12 +26,13 @@ Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden ko
 - Kein Plugin auf dem Markt lässt den User **komplette Signalketten als Text beschreiben**
 - Kombination aus `stage` (Formel), `filter`, `comp`, `env`, `osc`, `param` in einem kohärenten Syntax
 - Formeln können sich auf Envelope-Follower und LFOs beziehen: `y = tanh(x * a + env1 * 2)`
+- **Graph** ist die Platine (Chips einrasten, Kabel ziehen). **Script** ist der Hack derselben Kette als Text
 - Das öffnet eine ganz neue Kreativitätsdimension: Musiker und Entwickler können Audio-Effekte durch Text definieren
 
 **Vergleich:**
 - SOUL/FAUST: Ähnliches Konzept, aber externe Sprachen ohne In-Plugin-Editor
 - Max/MSP, PureData: Grafische Programmierung, nicht textbasiert
-- NeuroCore: Text-DSL **direkt im Plugin** mit Live-Preview und Validierung
+- NeuroKore: Text-DSL **und** Graph-Platine **direkt im Plugin**, ein Konstrukt, zwei Sichten
 
 ---
 
@@ -45,19 +46,19 @@ Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden ko
 
 **Warum einzigartig:**
 - Die meisten Plugins übernehmen Parameter blind
-- NeuroCore schützt den User vor selbst verschuldetem Audioschaden (Lautsprecher-Killer-Formeln)
+- NeuroKore schützt den User vor selbst verschuldetem Audioschaden (Lautsprecher-Killer-Formeln)
 - Mit Fortschrittsanzeige und konkreten Warnmeldungen vor der Aktivierung
 
 ---
 
 ## 4. Cross-Fade zwischen Formeln (glitchfreier Formelwechsel)
 
-**Was:** Beim Wechsel zu einer neuen Formel blendet NeuroCore sanft zwischen `oldSignalChain` und `signalChain` über (`formulaBlend`).
+**Was:** Beim Wechsel zu einer neuen Formel blendet NeuroKore sanft zwischen `oldSignalChain` und `signalChain` über (`formulaBlend`).
 
 **Warum einzigartig:**
 - Verhindert Knackser und Aussetzer beim Live-Performanz-Einsatz
 - Selbst teure kommerzielle Effekte (z. B. FabFilter) haben oft hörbare Glitches bei Preset-Wechseln
-- NeuroCore ermöglicht **Echtzeit-Formel-Morphing** auf der Bühne
+- NeuroKore ermöglicht **Echtzeit-Formel-Morphing** auf der Bühne
 
 ---
 
@@ -84,7 +85,7 @@ Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden ko
 
 ## 7. Integrierter Formel-Präview (FormulaDisplayComponent)
 
-**Was:** Bevor eine Formel aktiviert wird, zeigt NeuroCore eine Vorschau der Transfer-Kurve (Eingabe-/Ausgabe-Mapping).
+**Was:** Bevor eine Formel aktiviert wird, zeigt NeuroKore eine Vorschau der Transfer-Kurve (Eingabe-/Ausgabe-Mapping).
 
 **Warum wertvoll:**
 - Der User sieht sofort ob die Formel sinnvoll ist (z. B. "sieht aus wie Soft-Clipping")
@@ -95,17 +96,17 @@ Was NeuroCore einzigartig und innovativ macht – im Vergleich zu bestehenden ko
 
 ## Zusammenfassung: Positionierung
 
-NeuroCore kombiniert das Kreativitätspotential von **Musikprogrammierung** (FAUST/SOUL) mit der Zugänglichkeit und dem Look eines modernen **kommerziellen Effekt-Plugins**.
+NeuroKore kombiniert das Kreativitätspotential von **Musikprogrammierung** (FAUST/SOUL) mit der Zugänglichkeit und dem Look eines modernen **kommerziellen Effekt-Plugins**.
 
 ```
                     Zugänglichkeit
                           ↑
-    Max/MSP ─────────────►│◄─────────────── NeuroCore
+    Max/MSP ─────────────►│◄─────────────── NeuroKore
     PureData               │              (Ziel)
                            │
     FAUST/SOUL ────────────┼──────────────► Mächtigkeit
                            │
-                     NeuroCore
+                     NeuroKore
                     (aktueller Stand)
 ```
 

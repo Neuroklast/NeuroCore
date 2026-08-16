@@ -47,8 +47,8 @@ namespace BinaryData
     extern const char*   install_linux_deps_sh;
     const int            install_linux_deps_shSize = 190;
 
-    extern const char*   NeuroCore_Tests_jucer;
-    const int            NeuroCore_Tests_jucerSize = 1786;
+    extern const char*   NeuroKore_Tests_jucer;
+    const int            NeuroKore_Tests_jucerSize = 1786;
 
     extern const char*   AGENTS_md;
     const int            AGENTS_mdSize = 1241;
@@ -56,8 +56,8 @@ namespace BinaryData
     extern const char*   CMakeLists_txt;
     const int            CMakeLists_txtSize = 6405;
 
-    extern const char*   NeuroCore_jucer;
-    const int            NeuroCore_jucerSize = 20234;
+    extern const char*   NeuroKore_jucer;
+    const int            NeuroKore_jucerSize = 20234;
 
     extern const char*   README_md;
     const int            README_mdSize = 5874;

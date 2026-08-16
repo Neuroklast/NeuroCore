@@ -63,13 +63,13 @@ public:
 
         g.setColour (juce::Colours::black);
         g.fillPath (hull);
-        g.setColour (NeuroCoreLookAndFeel::surfaceHigh());
+        g.setColour (NeuroKoreLookAndFeel::surfaceHigh());
         g.fillPath (hull);
 
         const float t = (float) valueToProportionOfLength (getValue());
         auto fillR = r.withWidth (juce::jmax (cut + 2.f, r.getWidth() * t));
-        juce::ColourGradient grad (NeuroCoreLookAndFeel::accentDim(), fillR.getX(), fillR.getY(),
-                                   NeuroCoreLookAndFeel::accent(), fillR.getRight(), fillR.getY(), false);
+        juce::ColourGradient grad (NeuroKoreLookAndFeel::accentDim(), fillR.getX(), fillR.getY(),
+                                   NeuroKoreLookAndFeel::accent(), fillR.getRight(), fillR.getY(), false);
         g.saveState();
         g.reduceClipRegion (hull);
         g.setGradientFill (grad);
@@ -85,13 +85,13 @@ public:
                 const float dx = (sliceRng.nextFloat() - 0.5f) * 10.f * glitch;
                 g.setColour ((i == 0 ? juce::Colours::cyan
                                      : (i == 1 ? juce::Colours::magenta
-                                               : NeuroCoreLookAndFeel::accent()))
+                                               : NeuroKoreLookAndFeel::accent()))
                                  .withAlpha (0.35f * glitch));
                 g.fillRect (r.getX() + dx, y, r.getWidth(), h);
             }
         }
 
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.18f));
         for (int i = 1; i < 10; ++i)
         {
             const float x = r.getX() + r.getWidth() * (float) i / 10.f;
@@ -99,7 +99,7 @@ public:
         }
         g.restoreState();
 
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (isMouseOverOrDragging() ? 0.95f : 0.55f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (isMouseOverOrDragging() ? 0.95f : 0.55f));
         g.strokePath (hull, juce::PathStrokeType (1.2f));
 
         const float thumbX = r.getX() + r.getWidth() * t;
@@ -115,7 +115,7 @@ public:
         th.closeSubPath();
         g.setColour (juce::Colours::black);
         g.fillPath (th);
-        g.setColour (NeuroCoreLookAndFeel::accent());
+        g.setColour (NeuroKoreLookAndFeel::accent());
         g.strokePath (th, juce::PathStrokeType (1.4f));
         g.setColour (juce::Colours::white.withAlpha (0.85f));
         g.fillRect (thumb.withWidth (2.f).withX (thumb.getCentreX() - 1.f).reduced (0.f, 3.f));

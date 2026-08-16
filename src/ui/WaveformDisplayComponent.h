@@ -18,7 +18,7 @@ public:
     enum class XScale { Samples, Time, Frequency };
     enum class YScale { Linear, Decibel };
 
-    WaveformDisplayComponent (NeuroCoreAudioProcessor& proc, Type t);
+    WaveformDisplayComponent (NeuroKoreAudioProcessor& proc, Type t);
     ~WaveformDisplayComponent() override;
 
     void paint (juce::Graphics& g) override;
@@ -43,7 +43,7 @@ private:
     void updateTooltip (juce::Point<int> pos, juce::Rectangle<float> area);
     juce::Rectangle<float> plotArea() const;
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     Type type;
     /** Stereo capture; display uses L+R mono mix for fair before/after compare. */
     juce::AudioBuffer<float> buffer { Config::kMaxChannels, Config::kWaveformDisplaySamples };

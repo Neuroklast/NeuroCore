@@ -17,7 +17,10 @@ public:
 
     EffectParameters::InputChannelMode getMode() const noexcept { return mode; }
 
+    static constexpr float kCellGap = 3.f;
+
     juce::Rectangle<float> plateBounds() const noexcept;
+    juce::Rectangle<float> cellBounds (int index) const noexcept;
 
 private:
     void parameterChanged (const juce::String&, float) override;

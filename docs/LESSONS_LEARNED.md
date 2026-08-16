@@ -9,6 +9,250 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-16 – Graph is a board, Script is a hack
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Graph-Blöcke einrasten, rose Kreuze, Chip-Look  
+**Ergebnis:** Volle Gitterlinien wirken wie UI-Chrome. Abgerundete Karten sind Fenster, keine Bauteile.
+
+#### Regel
+Graph-Modus = Platine: Snap auf Raster, Orientierung nur durch kleine Kreuze. Blöcke = Packages (Fase, Notch, Pin-1, DIP-Pads). Script-Modus bleibt der Text-Hack desselben Konstrukts. Halbe Rasterstufen runden weg vom Nullpunkt (`8 → 16`, `24 → 32`, `31 → 32`; `-7 → 0`, `-8 → -16`).
+
+### 2026-08-16 – A bus you cannot see is not a bus
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kontextmenü lesbar; Split/Mix/MS/Bus sichtbar; Jack-Drop leuchtet; Verschieben mit Feedback  
+**Ergebnis:** Popup war 14 pt. `bus` Nodes wurden in `rebuildViews` übersprungen. `ms` hieß WIDTH. Kabel zeigten kein Drop-Ziel.
+
+#### Regel
+Routing braucht sichtbare Köpfe und eigene Rails (`visualRail` + `visualAudioEdges`). MS encode/decode forkt MID/SIDE wie `bus dirt`. Menü ≥ 18 pt. Drop nur mit leuchtendem Jack. Karten-Drag ändert Rail/Reihenfolge, nicht nur X/Y.
+
+### 2026-08-16 – 8× delay must not skip the AA lowpass
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Tape Echo Dirt klickt/singt periodisch bei 8×  
+**Ergebnis:** Studio-FIR hat den Host-Nyquist-LPF übersprungen. Tube + Softclip + Delay-Feedback erzeugen Bilder über Nyquist; die half-band FIR ist kein Brickwall. Die Reste schlagen periodisch. Delay-Zeit wurde einmal pro Block gesetzt.
+
+#### Regel
+Nach Nonlinear + Delay immer den AA-Tiefpass vor dem Downsample laufen lassen — auch bei linear-phase FIR. Delay-Parameter samplegenau aus den Knob-Lanes, nie als Block-Treppe. Write-Head mindestens 8 Samples Abstand (Hermite).
+
+### 2026-08-16 – Value under the needle is not a readout
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** L/Both/R-Breite, Toolbar, Preset-Name, Node-Text, Knob-Kabel, Wertanzeige  
+**Ergebnis:** L/Both/R saß in der Tools-Zeile ohne Zellenabstand. Script-Restore ließ Untitled, obwohl die Formel ein Factory-Preset war. Jack-Labels A–D lagen über `th -16`. `hoverKnob` prüfte nur `isMouseOver()`, nicht Drag.
+
+#### Regel
+Kanalwahl gehört in die Knob-Spalte, gleiche Breite, Lücken zwischen den Segmenten. Preset-Name aus dem Script matchen wenn leer. Karten-Text nur in der Mitte; Knob-Buchstaben sind Chips. Kabel-Hot = Drag oder Hover. Knob-Wert unter die Scheibe, nie unter den Zeiger.
+
+### 2026-08-16 – Script tab is not the text editor
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Live-Knob-Werte fehlen im Script-Modus  
+**Ergebnis:** `setWorkspaceMode(Script)` rief immer `setFormulaEditMode(true)`. Der Code-Editor liegt über `FormulaDisplayComponent` und der 30-Hz-Timer aktualisiert die Live-Werte nur wenn `!editing`. Edit/Save war aus dem Layout gefallen.
+
+#### Regel
+Script = Live-Ansicht mit `[value]` / `=>`. Edit öffnet den Texteditor. Graph darf Edit aus, Script darf Edit nicht anzwingen. `DslTerminalEditor` annotiert keine Live-Werte — die gehören in `FormulaDisplayComponent`.
+
+### 2026-08-16 – Label::setText closes the inline editor
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Knob-Rename, Min/Max-Anzeige, Overlay-Scale, Script-Param-Namen  
+**Ergebnis:** Editor-Timer rief `refreshValues` → `nameLabel.setText` → JUCE schließt den Editor. Min/Max hingen am aktuellen Wert (`av >= 100` → 0 Dezimalen). Overlay-`preferredSize` nutzte Host-`getWidth()` auf einem Design-Raster-Parent.
+
+#### Regel
+`Label::setText` während `isBeingEdited()` nicht anfassen. Min/Max aus den Bounds formatieren, nicht aus dem Live-Wert. Overlay-Maße in Design-Pixeln (`kUiDesignWidth`), nie `editor.getWidth()`.
+
+---
+
+### 2026-08-16 – One in/out is not a patcher
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Nodes brauchen so viele Buchsen wie das Signal, nicht ein gemeinsames In/Out  
+**Ergebnis:** `jacksFor` stapelt Audio, Mix-Busse am OUT, gebundene Knobs, SC, LFO-MOD. Kabel nutzen `fromJack`/`toJack`. `connectJack` patched Mix-Bus oder LFO→Parameter. DSP bleibt serial-per-bus.
+
+#### Regel
+Ein linker und ein rechter Punkt macht jeden Mix-Bus und jeden Knob zum Spaghetti. Sichtbare Buchsen folgen der DSL (OUT-Keys, `source=sidechain`, `knobBindings`, Osc-Namen in Args) — kein zweites DSP.
+
+### 2026-08-16 – UndoManager groups until beginNewTransaction
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Formel-Undo im Graph  
+**Ergebnis:** Zwei `setFormula`-Aufrufe ohne `beginNewTransaction` liegen in einer Transaction. Ein Undo springt über beide hinweg (zurück auf den Init-`tanh`).
+
+#### Regel
+Vor jedem `undoManager.perform` erst `beginNewTransaction`. Sonst ist „eine Änderung rückgängig“ in Wahrheit die ganze Session.
+
+---
+
+### 2026-08-16 – A patcher dialog is not an editor
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Graph/Script/Node UX — lesbar, ein Editor  
+**Ergebnis:** Karten kompakt, Inline-Edit, AlertWindow weg. Audio-Kabel grau und ruhig. Knob-Kabel nur Hover. Script-Tab = Texteditor. More-Menü statt fünf Chrome-Buttons. Scope-Extras zu.
+
+#### Regel
+Zwei Edit-Wege (AlertWindow + Edit-Button + Script) sind eines zu viel. Rot für jede Kante macht die Formel unsichtbar. IN/OUT als leere Hallen sind Chrome, keine Module.
+
+---
+
+### 2026-08-16 – Apex as default sans is ALL-CAPS on every unset control
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Offene Deep-Research-Punkte (Lesbarkeit, Overlay, Graph-Formel, Script-Fehler)  
+**Ergebnis:** Default-Sans und Button/Label/Combo/Popup-Fonts sind JetBrains Mono. Apex nur noch über `brandFont`. Selektierte Listen: `ink` + 3-px-Tick, kein Accent-Text auf Accent-Fill. Overlay `topInset` hält Mix/OS frei. Graph-Karten ohne 25-Zeichen-Cut. Script-Zeile wird aus „line N“ markiert.
+
+#### Regel
+Apex als `setDefaultSansSerifTypefaceName` macht jeden ungesetzten Button ALL-CAPS und frisst `·`. Body-Text setzt `monoFont` explizit. Overlay als Editor-Child liegt über `scaledRoot` — Inset in Host-Pixeln (`designChrome * fit`).
+
+---
+
+### 2026-08-16 – paintOverChildren sits above overlays
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kabel durch License, Add/Remove/AUDIO weg, Settings, LIVE  
+**Ergebnis:** `AudioProcessorEditor::paintOverChildren` malt nach jedem Child, also über `ModalOverlay`. Knob-Kabel nur wenn kein Overlay sichtbar. LIVE nutzt eine zweite OS-Bank (`filterHalfBandPolyphaseIIR`); Studio bleibt FIR. `knobLanes` wachsen in `prepare`, nicht im Audio-Thread.
+
+#### Regel
+Editor-`paintOverChildren` ist die oberste Farbe. Overlays müssen entweder selbst darüber malen oder der Editor darf in dem Frame nicht malen. Lineare FIR-OS ist mix-tauglich und spürbar spät; Live braucht IIR, nicht 1×.
+
+---
+
+### 2026-08-16 – Switching Graph/Script must not rebuild DSP
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kontextmenü, Knob-Sichtbarkeit, Performance  
+**Ergebnis:** Graph→Script wendet `applyFormula` nur an, wenn `semanticallyEqual` falsch ist. Graph-Timer liest `getLoudnessDb` statt 2× Waveform-Kopien. Kanten-Cache, Knob-Bindings am Node, keine Full-Editor-Repaints im Idle.
+
+#### Regel
+Workspace-Wechsel ist keine Formeländerung. 24 Hz darf kein Ringbuffer-Copy und kein `getTopLevelComponent()->repaint()` sein.
+
+---
+
+### 2026-08-16 – Virtual OUT is not a document index
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Crash Shimmer Drive → Wide Motion; Audio auf den Kabeln  
+**Ergebnis:** Presets ohne `out:` bekamen eine View mit Index `-2`. `isOut()` prüfte nur `nodes[i].type`. `paint` machte `kindLabel(nodes[(size_t)-2])` → Absturz. `kOutIndex` ist immer OUT. Kabel zeigen IN/OUT-Peak als Pulse.
+
+#### Regel
+Sentinel-Indizes (`-1` IN, `-2` OUT) dürfen nie in `document.nodes[]` landen. Jeder Zugriff braucht `isPositiveAndBelow`. Viele Factory-Presets haben kein `out`.
+
+---
+
+### 2026-08-15 – Lanes are not a node editor
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Freier Drag-and-Drop-Patcher statt Schienen  
+**Ergebnis:** `GraphCanvas` ist ein 2D-Patcher (IN/Module/OUT als Children, Port→Port, Bezier). Positionen in `# @x,y`. Audio bleibt serielle DSL-Kette; `connectAudio` schreibt Reihenfolge/Bus.
+
+#### Regel
+Schienen + inferred Kabel sind kein Patcher. Body-Drag bewegt, Port-Drag verkabelt. Position darf `applyFormula` nicht anfassen. `unique_ptr<Incomplete>` braucht den Destruktor in der .cpp.
+
+---
+
+### 2026-08-15 – Cables through chrome are not a graph
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Screenshot-Kritik: Spaghetti-Kabel, Label-Clash, LFO auf Audio, Untitled, Status-Müll  
+**Ergebnis:** Knob-Traces clippen auf Knobs ∪ Graph-Innen, Elbow im linken Gutter (nicht midX). MOD-Schiene für osc/env. OUT rechts nach der längsten Kette. `applyPreset` setzt den Namen *vor* `applyFormula` (synchroner ChangeListener). Status ist LIVE/CPU/ms/OS.
+
+#### Regel
+`midX = (a.x+b.x)/2` legt den Knick in die Mitte der Kette — Linien schneiden Chips und Buttons. Union zweier Rects als Bounding-Box überdeckt die Action-Row; Clip-Region muss ein Path aus beiden Rects sein. ChangeBroadcaster auf dem Message-Thread ist synchron: Name muss vor `applyFormula` stehen.
+
+---
+
+### 2026-08-15 – Graph must show MAIN vs BUS, not stacked cards
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Wave/Field zurück, Graph mit Mehrwert, Preset bleibt in Graph/Script, eine Knob-Spalte  
+**Ergebnis:** ScopeDeck extras default offen (176 px). Knobs eine Spalte. Graph = horizontale Rails MAIN LINE / BUS. Drag wechselt die Lane via `assignNodeToBus`. Knob-Traces im Editor-`paintOverChildren`. Assemble-Reveal darf Graph/Script nicht wieder zudecken — `cancelWindowAssemble` bei Mode-Wechsel und Preset-Load.
+
+#### Regel
+Eine Kartenliste ist kein Graph. Signalfluss liegt auf Rails; Bus vs Main muss sichtbar sein. Overlay-Assemble (`setVisible`/`setBounds` auf der Formel) überschreibt `visibleWhen` und sieht aus wie „Preset lädt nicht / springt zurück“.
+
+---
+
+### 2026-08-15 – Host resize is not UI scale
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Image-Line Feedback (Lesbarkeit, Scale, 8×, Calm, Block-Editor)  
+**Ergebnis:** Content liegt auf dem Design-Raster und bekommt `AffineTransform::scale`. CPU-Anzeige nutzt EMA. Calm überspringt Assemble/Boot. Graph emittiert DSL.
+
+#### Regel
+Fenster größer ziehen ohne Transform lässt Fonts stehen. Ein Spike ist kein Overload — EMA + Warmup. Overlay-Intro darf den Browser nicht verzögern.
+
+---
+
+### 2026-08-15 – Calm UI is Off motion, not a paint flag
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Persist Calm UI + instant overlays (Image-Line: don't distract me)  
+**Ergebnis:** `UiSettings` schreibt `calmUi` / `uiScalePercent` nach userAppData/NEUROKLAST/NeuroKore. `CyberMotion::Off` macht Director-tick/glitch tot, `shouldPlayBoot` false, Overlay `show()` skippt Intro via `skipToEnd` → `Shown`. Kein Extra-Flag in `paint`.
+
+#### Regel
+Browser/Help sofort zeigen: Sequenz auf Shown setzen, nicht den Intro-Glitch in paint ausblenden. Off ≠ Reduced: Reduced darf Pulse behalten, Off ist No-Op.
+
+---
+
+### 2026-08-15 – Chrome stays red; body text is ink
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** FL-Feedback: roter Text auf Rot ist unlesbar  
+**Ergebnis:** `accent()` nur noch Chrome (Rahmen, aktive Buttons, Brand, `warningMark()`-Balken). Formel, Hilfe, Listen, Status, CPU-Banner nutzen `ink()` / `inkMuted()` auf `canvas()`.
+
+#### Regel
+Signalrot ist Chrome, nicht Fließtext. Banner: ink auf canvas, Accent höchstens als linker Strich.
+
+---
+
+### 2026-08-15 – GraphModel is DSL parse/emit, not a second language
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** GraphModel parse ↔ emit für den visuellen Block-Editor  
+**Ergebnis:** `GraphModel` wrappt `DSLParser`. Stage-Formeln bleiben in `args["y"]`. `emit` schreibt kanonische Zeilen (`bus name:`, `send:`, `out:`). `semanticallyEqual` ignoriert Kommentartext. Bandpass-Synthese im Parser (center/width ↔ lowcut/highcut) muss mit-emittiert werden, sonst bricht der Roundtrip.
+
+#### Regel
+Kein zweites Graph-Format. Parse + emit müssen `semanticallyEqual` zum Parser-AST sein. Kommentare sind optional; Block-Reihenfolge und Args sind Pflicht.
+
+---
+
+### 2026-08-15 – A single 8× OS spike is not a CPU trip
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** FL 8× OS: ~32% CPU, gelegentlich 800% Spikes, ständig „wet path paused“  
+**Ergebnis:** `CpuProtect` trippte auf einem kalten Block bei 2.5× (Hard-Trip), dann 0.75s Dry/Retry-Stotter. Jetzt: EMA-Last, Zeit-Warmup 3s, Soft-Trip erst nach aufeinanderfolgenden EMA-Hits, Hard-Trip nur wenn die EMA (nicht ein Sample) bei ≥3× bleibt. Retry 2s. Reset nach prepare, OS-Wechsel und IR-Load.
+
+#### Root Cause
+Host-Callback-Budget ≠ Durchschnitts-CPU. Ein 8×-OS-Kaltblock (Cache, FIR, IR) kann 8× das Blockbudget brauchen und trotzdem im Mittel 32% liegen. Instant-Hard-Trip + kurzes Retry macht genau den gehörten Mute-Loop.
+
+#### Regel
+CPU-Guard auf geglätteter Last und Zeit, nicht auf einem Sample. Ein Spike darf nicht muten. Nach Trip lange warten, einmal nass prüfen, nur bei wirklich niedriger EMA zurück.
+
+---
+
+### 2026-08-15 – Chrome stays red; body text is ink
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** FL-Feedback: roter Text auf Rot ist unlesbar  
+**Ergebnis:** `accent()` nur noch Chrome (Rahmen, aktive Buttons, Brand, `warningMark()`-Balken). Formel, Hilfe, Listen, Status, CPU-Banner nutzen `ink()` / `inkMuted()` auf `canvas()`.
+
+#### Regel
+Signalrot ist Chrome, nicht Fließtext. Banner: ink auf canvas, Accent höchstens als linker Strich.
+
+---
+
+### 2026-08-15 – Calm UI is Off motion, not a paint flag
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Persist Calm UI + instant overlays (Image-Line: don't distract me)  
+**Ergebnis:** `UiSettings` schreibt `calmUi` / `uiScalePercent` nach userAppData/NEUROKLAST/NeuroKore. `CyberMotion::Off` macht Director-tick/glitch tot, `shouldPlayBoot` false, Overlay `show()` skippt Intro via `skipToEnd` → `Shown`. Kein Extra-Flag in `paint`.
+
+#### Regel
+Browser/Help sofort zeigen: Sequenz auf Shown setzen, nicht den Intro-Glitch in paint ausblenden. Off ≠ Reduced: Reduced darf Pulse behalten, Off ist No-Op.
+
+---
+
 ### 2026-08-15 – Factory IRs are names plus shipped WAVs, never paths in the formula
 
 **Agent:** Grok Coding Agent  
@@ -200,7 +444,7 @@ Jedes Kind-Overlay in `resized()` neu legen. Preferred-Größe ist ein Maximum, 
 
 **Agent:** Grok Coding Agent  
 **Aufgabe:** Alles umbenennen inkl. ID und App-Ordner; Versionsnummer  
-**Ergebnis:** `NRKO`, AppData `NeuroKore`, CMake-Target `NeuroKore`. Version **0.9.0** — Feature-Stand ist weit über 0.2, 1.0 bleibt der Verkaufs-Cut. C++-Klassen (`NeuroCoreAudioProcessor`) intern gelassen.
+**Ergebnis:** `NRKO`, AppData `NeuroKore`, CMake-Target `NeuroKore`. Version **0.9.0** — Feature-Stand ist weit über 0.2, 1.0 bleibt der Verkaufs-Cut. C++-Klassen (`NeuroKoreAudioProcessor`) intern gelassen.
 
 #### Regel
 In der Testphase dürfen CID und AppData wechseln. 0.9 heisst: testers-ready, nicht shop-ready.
@@ -211,7 +455,7 @@ In der Testphase dürfen CID und AppData wechseln. 0.9 heisst: testers-ready, ni
 
 **Agent:** Grok Coding Agent  
 **Aufgabe:** Rebrand zu NEUROKORE by Neuroklast  
-**Ergebnis:** Host-Name, HUD, Help, Installer. `NRCO`/`NRKL`, AppData `NEUROKLAST/NeuroCore`, CMake-Target `NeuroCore` bleiben. Lizenz akzeptiert `NeuroCore` und `NEUROKORE`.
+**Ergebnis:** Host-Name, HUD, Help, Installer. `NRCO`/`NRKL`, AppData `NEUROKLAST/NeuroKore`, CMake-Target `NeuroKore` bleiben. Lizenz akzeptiert `NeuroKore` und `NEUROKORE`.
 
 #### Regel
 Produktname in der UI ist nicht der CMake-Target-Name. License-`product=` steht in der Signatur — alte Dateien nicht ungültig machen.
@@ -398,7 +642,7 @@ Windows: `JUCE_BUILD_HELPER_TOOLS=ON`. Apple/Linux: OFF, JUCE bootstrapt juceaid
 
 **Agent:** Grok Coding Agent  
 **Aufgabe:** AU bauen ohne lokalen Mac  
-**Ergebnis:** Kein Cross-Compile von Windows. Eigener CI-Job `AU (macOS)` baut `NeuroCore_AU`, ad-hoc-signiert, kopiert nach `~/Library/Audio/Plug-Ins/Components/`, dann `auval -v aumf NRCO NRKL`.
+**Ergebnis:** Kein Cross-Compile von Windows. Eigener CI-Job `AU (macOS)` baut `NeuroKore_AU`, ad-hoc-signiert, kopiert nach `~/Library/Audio/Plug-Ins/Components/`, dann `auval -v aumf NRCO NRKL`.
 
 #### Regel
 AU nur mit Apple-Toolchain. Ohne Mac: `macos-latest` + Artifact. Vor `auval` Registrar killen und das Bundle signieren, sonst sieht Logic/auval das Component nicht.
@@ -412,7 +656,7 @@ AU nur mit Apple-Toolchain. Ohne Mac: `macos-latest` + Artifact. Vor `auval` Reg
 **Ergebnis:** `FORMATS … AU` stand schon in CMake, erzeugt auf Windows aber kein Target. Projucer baute nur Standalone+VST3. `kAudioUnitType_Effect` (`aufx`) bekommt in Logic kein MIDI.
 
 #### Regel
-AU nur auf macOS (`NeuroCore.component`). Typ `kAudioUnitType_MusicEffect` (`aumf`) wenn das Plugin MIDI will (Learn, `midi_note`). Kein `pluginChannelConfigs={2,2}` — das wirft den Sidechain-Bus weg.
+AU nur auf macOS (`NeuroKore.component`). Typ `kAudioUnitType_MusicEffect` (`aumf`) wenn das Plugin MIDI will (Learn, `midi_note`). Kein `pluginChannelConfigs={2,2}` — das wirft den Sidechain-Bus weg.
 
 ---
 
@@ -518,7 +762,7 @@ Mix 0 / SAFE darf den Meter nicht einfrieren — immer den hörbaren Buffer mess
 ### 2026-08-13 – NK logo must never use toolbar height
 
 **Agent:** Grok Coding Agent  
-**Aufgabe:** Screenshot 174706: NK deckt NEUROCORE // NEUROKLAST OS  
+**Aufgabe:** Screenshot 174706: NK deckt NEUROKORE // NEUROKLAST OS  
 **Ergebnis:** `paint()` hat jedes Frame `performLayout(getLocalBounds())` gemacht und das Lockup auf y=0 über die HUD gelegt. Dazu war `logoH` die volle Zellenhöhe.
 
 #### Regel
@@ -530,10 +774,10 @@ Lockup-Logo bleibt unter 20 px (unter der 22 px HUD). Chrome-Layout nur in `resi
 
 **Agent:** Grok Coding Agent  
 **Aufgabe:** Testphase: sicheres Offline-Lizenzmodell, Demo Mix=0 nach 20 min, Issuer nur E-Mail  
-**Ergebnis:** RSA-Signatur. Private Key nur in `NeuroCoreIssuer`. Plugin prüft mit Public Key. Ohne gültige `.lic` geht Mix nach 20 min auf 0, Audio bleibt dry.
+**Ergebnis:** RSA-Signatur. Private Key nur in `NeuroKoreIssuer`. Plugin prüft mit Public Key. Ohne gültige `.lic` geht Mix nach 20 min auf 0, Audio bleibt dry.
 
 #### Regel
-Keinen Placeholder-Server einschalten. Tests mit `NEUROCORE_SKIP_LICENSE_ENFORCEMENT`, sonst läuft die Suite nach Ablauf der Demo trocken. JUCE-`RSAKey` String ist `exponent,modulus` — nicht PKCS `#n,e`. Schlüssel nur mit `RSAKey::createKeyPair` erzeugen.
+Keinen Placeholder-Server einschalten. Tests mit `NEUROKORE_SKIP_LICENSE_ENFORCEMENT`, sonst läuft die Suite nach Ablauf der Demo trocken. JUCE-`RSAKey` String ist `exponent,modulus` — nicht PKCS `#n,e`. Schlüssel nur mit `RSAKey::createKeyPair` erzeugen.
 
 ---
 
@@ -541,7 +785,7 @@ Keinen Placeholder-Server einschalten. Tests mit `NEUROCORE_SKIP_LICENSE_ENFORCE
 
 **Agent:** Grok Coding Agent  
 **Aufgabe:** L/BOTH/R = Knobbreite; Text-/+ = Meterbreite; Logo mittig zweizeilig; Glitch smooth  
-**Ergebnis:** Settings-Row nutzt dieselben Weights wie Body. Lockup: Logo + NeuroCore / vX.Y.Z. Meter-Pixel über die ganze Höhe, nicht ab 50 %.
+**Ergebnis:** Settings-Row nutzt dieselben Weights wie Body. Lockup: Logo + NeuroKore / vX.Y.Z. Meter-Pixel über die ganze Höhe, nicht ab 50 %.
 
 #### Regel
 Spalten-Align nur, wenn Settings und Body dieselben drei Weights und denselben innerMargin haben.
@@ -555,7 +799,7 @@ Spalten-Align nur, wenn Settings und Body dieselben drei Weights und denselben i
 **Ergebnis:** Kein Auto-Copy mehr. Host lädt das installierte Plugin, nicht den Build-Ordner.
 
 #### Regel
-Niemals nach `Program Files\\Common Files\\VST3` kopieren. Cubase-Pfad selbst setzen oder die Datei `NeuroCore.vst3` aus `Contents/x86_64-win/` nutzen. Editor-Ctor darf nicht `setFormula` nochmal feuern — das resettet den Oversampler beim Fenster auf und knackt, und ein Combo-Sync kann OS auf 1× ziehen.
+Niemals nach `Program Files\\Common Files\\VST3` kopieren. Cubase-Pfad selbst setzen oder die Datei `NeuroKore.vst3` aus `Contents/x86_64-win/` nutzen. Editor-Ctor darf nicht `setFormula` nochmal feuern — das resettet den Oversampler beim Fenster auf und knackt, und ein Combo-Sync kann OS auf 1× ziehen.
 
 ---
 
@@ -677,7 +921,7 @@ HUD-Zeile ist 22 px. Layout-Margin 8 schiebt die Toolbar in diese Zeile. Zugesch
 **Ergebnis:** +11 Presets (Haas, Loudness Curve, Missing Bass, Speech Band, Trailer Impact, Score Hall, Dialogue Seat, Far Plane, Boom Tail, Wide Canvas, Tension Bed)
 
 #### Regel
-Kein "Avengers Mode". NeuroCore bearbeitet Signal; es liefert keine Impacts als Samples. Beschreibungen sagen, was die Kette tut (Haas-Delay, implied bass, score send). Osc-Shape ist `shape`, nicht `type`.
+Kein "Avengers Mode". NeuroKore bearbeitet Signal; es liefert keine Impacts als Samples. Beschreibungen sagen, was die Kette tut (Haas-Delay, implied bass, score send). Osc-Shape ist `shape`, nicht `type`.
 
 ---
 
@@ -735,7 +979,7 @@ Meter-Ballistik im DSP (Attack schnell, Release langsam). UI nur nachziehen, nie
 **Ergebnis:** +14 Mix-Desk-Presets (130 total). Side Delay/Hall, Vocal Send, NY Drum Bus, Mono Below, MS Imager, …
 
 #### Regel
-Keine „unverzichtbar für Top-Produzenten“-Claims im Preset-Text. NeuroCore hat echtes MS und einen Send-DAG, aber keinen linearphasigen MS-EQ, kein Convolution, kein Multiband-Imager. Reverb hat kein `channel` — Side-Hall mutet Mid auf einem Bus. Comp hat kein `channel` — Mid-only über Stages nach `ms encode`. Generator-only, nie `factory_presets.json` per Hand.
+Keine „unverzichtbar für Top-Produzenten“-Claims im Preset-Text. NeuroKore hat echtes MS und einen Send-DAG, aber keinen linearphasigen MS-EQ, kein Convolution, kein Multiband-Imager. Reverb hat kein `channel` — Side-Hall mutet Mid auf einem Bus. Comp hat kein `channel` — Mid-only über Stages nach `ms encode`. Generator-only, nie `factory_presets.json` per Hand.
 
 ---
 
@@ -749,7 +993,7 @@ Keine „unverzichtbar für Top-Produzenten“-Claims im Preset-Text. NeuroCore 
 `LookAndFeel::getTypefaceForFont` mappt leeren/Default-Sans-Namen auf Apex. `TextEditor::setFont(Font(16))` ohne Typeface-Namen wird damit ALL-CAPS. `setText` setzt die Runs zurueck — ohne `applyFontToAllText` nach jedem Setzen gewinnt Apex wieder. Das Logo-PNG hat viel schwarzen Rand; `ImageComponent` + `onlyReduceInSize` schrumpft das ganze Quadrat, NK sitzt klein und hoch.
 
 #### Regel
-Help-Body immer `NeuroCoreLookAndFeel::monoFont` + `applyFontToAllText` nach `setText`. Apex nur fuer Chrome. Logo vor dem Draw auf die rote Tinte croppen und mit Version als ein Lockup vertikal zentrieren. L/BOTH/R dieselbe eckige Platte wie `drawButtonBackground`, keine Pill.
+Help-Body immer `NeuroKoreLookAndFeel::monoFont` + `applyFontToAllText` nach `setText`. Apex nur fuer Chrome. Logo vor dem Draw auf die rote Tinte croppen und mit Version als ein Lockup vertikal zentrieren. L/BOTH/R dieselbe eckige Platte wie `drawButtonBackground`, keine Pill.
 
 ---
 
@@ -760,7 +1004,7 @@ Help-Body immer `NeuroCoreLookAndFeel::monoFont` + `applyFontToAllText` nach `se
 **Ergebnis:** `LICENSE` All rights reserved (NEUROKLAST); README auf aktuellen Stand (a–f, CMake, EN-only)
 
 #### Regel
-Kein MIT/GPL für NeuroCore-Code. Third-party (JUCE, VST3 SDK) bleibt deren Lizenz.
+Kein MIT/GPL für NeuroKore-Code. Third-party (JUCE, VST3 SDK) bleibt deren Lizenz.
 
 ---
 
@@ -860,7 +1104,7 @@ Nicht mehr Knobs bauen. `kNumUserParams = 6`. Extra Werte hardcoden wie die Temp
 „Doubler“/„Shimmer“ nur mit AM auf `y` klingen nach Tremolo, nicht nach Double/Hall. Engine hat keinen Pitch-Shifter — „octave shimmer“ wäre eine Lüge.
 
 #### Regel
-Time/Space-Namen brauchen echte `delay`/`reverb`/`ms` Blöcke. `y_prev` nur für Dirt. JSON nie handeditieren; Generator erst schreiben, wenn alle Script-Edits (inkl. g/h-Trim) drin sind. CTest-Name ist `NeuroCoreTests`, nicht `NeuroCoreExtrasTest`.
+Time/Space-Namen brauchen echte `delay`/`reverb`/`ms` Blöcke. `y_prev` nur für Dirt. JSON nie handeditieren; Generator erst schreiben, wenn alle Script-Edits (inkl. g/h-Trim) drin sind. CTest-Name ist `NeuroKoreTests`, nicht `NeuroKoreExtrasTest`.
 
 ---
 
@@ -927,7 +1171,7 @@ Brand font **Apex** lacks glyphs for `…` `—` `●` → garbage (`à`).
 
 #### Root Causes
 1. **Kein `ScopedJuceInitialiser_GUI`** in `tests/main.cpp` → AudioProcessor/APVTS/AsyncUpdater ohne MessageManager (Spins / undefiniertes Verhalten).
-2. **`NeuroCoreAudioProcessor` Dtor rief `cancelPendingUpdate()` nicht** → nach `setValueNotifyingHost` / OS-Change queued `handleAsyncUpdate` auf freigegebenem Objekt → **0xC0000005** oft genau beim nächsten Processor-Test (z. B. Factory).
+2. **`NeuroKoreAudioProcessor` Dtor rief `cancelPendingUpdate()` nicht** → nach `setValueNotifyingHost` / OS-Change queued `handleAsyncUpdate` auf freigegebenem Objekt → **0xC0000005** oft genau beim nächsten Processor-Test (z. B. Factory).
 3. **`MessageManager::callAsync ([&processor]…)`** in `FactoryPresetLibrary::applyPreset` fängt Stack-Referenz — nach Scope-Exit UAF.
 4. „Hang“ wirkte wie Endlosschleife (CPU), war aber oft **Crash ohne TOTAL-Zeile** oder sehr teure Expect-Loops.
 
@@ -1136,7 +1380,7 @@ Echte Zeit/Raum-Effekte **müssen** `delay`/`reverb` nutzen. `y_prev` nur noch f
 
 #### Log-Pfad
 
-`%AppData%/NEUROKLAST/NeuroCore/audio_diagnostics.log`  
+`%AppData%/NEUROKLAST/NeuroKore/audio_diagnostics.log`  
 (Rotation ab ~8 MB → `.prev.log`)
 
 #### Nutzung
@@ -1588,7 +1832,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 - `PresetManager::loadPreset` ruft nur `setStateInformation` auf — ohne `ChangeBroadcaster` bleibt die UI stale (Formel, Alias-Namen, Sprache).
 - Variable-Namen und Sprache gehören in denselben `ValueTree` wie APVTS (`varName0`…`varName3`, `language`), nicht in separate Preset-Chunks.
 - Bypass über `dryWet == 0` ist konsistent mit `DspEngine`; vorherigen Mix in `mixBeforeBypass` speichern, damit Ent-Bypass den Mix wiederherstellt.
-- Legacy `WaveShaper`/Filter/OscillatorWrapper im Plugin-Target entfernen, in `NeuroCoreTests` behalten (`WaveShaperTest`).
+- Legacy `WaveShaper`/Filter/OscillatorWrapper im Plugin-Target entfernen, in `NeuroKoreTests` behalten (`WaveShaperTest`).
 
 #### Empfehlungen für nächste Session
 
@@ -1666,7 +1910,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 
 1. Phase B: LPF auf `osSpec`, RT-safe `oldSignalChain`-Swap, ein kanonischer DSP-Pfad
 2. `factory_presets.json` auf Zeilen-Syntax migrieren
-3. CI/Build lokal mit `build_debug.bat` + `NeuroCoreTests` verifizieren
+3. CI/Build lokal mit `build_debug.bat` + `NeuroKoreTests` verifizieren
 
 ---
 
@@ -1696,12 +1940,12 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 ### 2026-05-24 – Projucer/CMake Sync-Fix für PR #195
 
 **Agent:** GitHub Copilot Coding Agent  
-**Aufgabe:** Fehlende Dateien in `NeuroCore.jucer` nachtragen, JUCE-CMake-Einbindung (`juceaide`) reparieren, Windows-Buildskripte ergänzen  
+**Aufgabe:** Fehlende Dateien in `NeuroKore.jucer` nachtragen, JUCE-CMake-Einbindung (`juceaide`) reparieren, Windows-Buildskripte ergänzen  
 **Ergebnis:** ✅ Erfolgreich
 
 #### Erkenntnisse
 
-- Wenn neue Klassen nur in `CMakeLists.txt`, aber nicht in `NeuroCore.jucer` eingetragen werden, driften CMake- und Projucer-Build auseinander und Visual-Studio-Projekte aus Projucer fehlen dann komplette Units.
+- Wenn neue Klassen nur in `CMakeLists.txt`, aber nicht in `NeuroKore.jucer` eingetragen werden, driften CMake- und Projucer-Build auseinander und Visual-Studio-Projekte aus Projucer fehlen dann komplette Units.
 - Für stabile JUCE-CMake-Integration muss `JUCE_BUILD_HELPER_TOOLS` VOR jeder JUCE-Einbindung gesetzt werden; sonst fehlt in CI der `juceaide`-Target und BinaryData/RC-Generierung bricht.
 - Das Entfernen von unnötigen Plattform-Libs (`curl` im Test-Target) reduziert plattformspezifische Build-Probleme, ohne Funktionalität zu verlieren.
 
@@ -1739,7 +1983,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 
 #### Empfehlungen für nächste Session
 
-1. CI-Jobs neu triggern, damit alle neuen NeuroCoreExtrasTests auf allen Plattformen laufen.
+1. CI-Jobs neu triggern, damit alle neuen NeuroKoreExtrasTests auf allen Plattformen laufen.
 2. UI: `ValidationTypes.h` prüfen ob `ValidationContentComponent.cpp` noch `#include "ValidationTypes.h"` benötigt oder es über `PluginProcessor.h` bekommt.
 3. Negativtest für kaputte Preset-Dateien (aus vorheriger Session) noch ausstehend.
 
@@ -1825,7 +2069,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 #### Erkenntnisse
 
 - **CI/CD:** Der `ci.yml` Workflow schlug fehl weil juceaide manuell gebaut wurde und `pkgRedirects` nicht erstellt werden konnte. Lösung: JUCE direkt mit `--recurse-submodules` klonen (bringt VST3 SDK mit) und JUCE über `add_subdirectory()` + `JUCE_BUILD_HELPER_TOOLS ON` einbinden lassen – juceaide wird dann automatisch konfiguriert.
-- **MSBuild Workflow:** `msbuild.yml` war komplett broken (suchte `NeuroCore.sln` die nie existierte). Entfernt, da `ci.yml` bereits Windows/macOS/Linux abdeckt.
+- **MSBuild Workflow:** `msbuild.yml` war komplett broken (suchte `NeuroKore.sln` die nie existierte). Entfernt, da `ci.yml` bereits Windows/macOS/Linux abdeckt.
 - **MIDI Learn Architektur:** `MidiLearnManager` mit SpinLock und TryLock-Pattern im Audio-Thread ist sauber. `processMidiMessages()` verwendet `ScopedTryLockType` damit der Audio-Thread nie blockiert – wichtig für Echtzeit-Garantie.
 - **Undo/Redo Pattern:** `setFormula()` erstellt `FormulaChangeAction` und delegiert an `applyFormula()`. Die UndoableAction ruft auch `applyFormula()` auf (nicht `setFormula()`), um Rekursion zu vermeiden.
 - **EDITOR_WANTS_KEYBOARD_FOCUS:** Muss `TRUE` sein damit `keyPressed()` im Editor funktioniert. Ohne diese Einstellung kommen Tastatur-Events nie an.
@@ -1835,7 +2079,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 #### Fallstricke
 
 - **Doppelte Undo-Registration:** Wenn `setFormula()` sowohl parst als auch `applyFormula()` aufruft und dann die UndoableAction registriert, muss die Action NUR `applyFormula()` aufrufen (nicht `setFormula()`), sonst entsteht eine Endlosschleife.
-- **MidiLearnManager in Test-Target:** Muss auch in `NeuroCoreTests` eingebunden werden, da `PluginProcessor.cpp` (das im Test-Target ist) `MidiLearnManager.h` inkludiert.
+- **MidiLearnManager in Test-Target:** Muss auch in `NeuroKoreTests` eingebunden werden, da `PluginProcessor.cpp` (das im Test-Target ist) `MidiLearnManager.h` inkludiert.
 - **install_linux_deps.sh:** Fehlende Pakete (`libxcursor-dev`, `libxinerama-dev`, `libasound2-dev`, `libcurl4-openssl-dev`, `pkg-config`) führen zu kryptischen CMake-Fehlern. Immer ALLE JUCE-Abhängigkeiten auflisten.
 
 #### Empfehlungen für nächste Session
@@ -1854,16 +2098,16 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 #### Erkenntnisse
 
 - `SignalChain.cpp` verwendete bereits `std::atomic_load`/`std::atomic_store` für `chain` an allen relevanten Stellen: `prepare()` (Zeile 36), `loadScript()` (Zeile 298), `processBlock()` (Zeile 317) und `processBlockSmoothed()` (Zeile 329). Der Konstruktor weist `chain` direkt zu (Single-Thread, kein Race möglich). Es fehlte nur der öffentliche `getChain()` Getter im Header.
-- `tests/main.cpp` inkludierte und registrierte `SignalChainTest` und `LookupTableSmootherTest` bereits korrekt – sie fehlten nur in `target_sources(NeuroCoreTests)` in `CMakeLists.txt`.
+- `tests/main.cpp` inkludierte und registrierte `SignalChainTest` und `LookupTableSmootherTest` bereits korrekt – sie fehlten nur in `target_sources(NeuroKoreTests)` in `CMakeLists.txt`.
 - `kEnableLicensing = true` mit Placeholder-URL `licensing.example.com` macht das Plugin im Dev-Build sofort zum Demo-Plugin. Das ist der gefährlichste stille Bug.
-- Das doppelte `target_sources(NeuroCore PRIVATE ${SOURCE_FILES})` in CMakeLists.txt (Zeile 99 in `juce_add_plugin SOURCES` + Zeile 102 explizit) kann ODR-Verstöße und erhöhte Build-Zeit verursachen.
+- Das doppelte `target_sources(NeuroKore PRIVATE ${SOURCE_FILES})` in CMakeLists.txt (Zeile 99 in `juce_add_plugin SOURCES` + Zeile 102 explizit) kann ODR-Verstöße und erhöhte Build-Zeit verursachen.
 - DSLParser validiert bereits viele Fehlerfälle (fehlender Doppelpunkt, unbekannter Block-Typ, doppelter Block-Name, param nach Block). Tests decken jetzt alle diese Fälle ab.
 
 #### Fallstricke
 
 - `getScript()` ohne Lock ist ein echter Data-Race: `dslScript` kann von `setFormula()` im UI-Thread geschrieben werden während `getScript()` liest. Der `noexcept`-Qualifier muss entfernt werden, da SpinLock-Zugriff technisch werfen kann.
 - Bei `SpinLock` + `juce::String`: Die String-Kopie unter Lock ist ein potenzieller Heap-Allokations-Punkt im Audio-Thread. Für eine vollständige Lösung wäre ein Lock-Free FIFO (z. B. `juce::AbstractFifo`) besser – das ist aber Phase 2.
-- Kein blindes Hinzufügen von Sourcen zu beiden Targets: `NeuroCore` und `NeuroCoreTests` haben unterschiedliche Abhängigkeiten (NeuroCoreTests braucht kein `juce::juce_audio_plugin_client`).
+- Kein blindes Hinzufügen von Sourcen zu beiden Targets: `NeuroKore` und `NeuroKoreTests` haben unterschiedliche Abhängigkeiten (NeuroKoreTests braucht kein `juce::juce_audio_plugin_client`).
 
 #### Empfehlungen für nächste Session
 
@@ -1897,7 +2141,7 @@ Ersetzt durch algebraisch glattes `x/√(1+x²)` (C∞, Unity small-signal gain)
 - JUCE muss in Version ≥ 8.0.6 vorhanden sein. Die CMake-Integration lädt JUCE automatisch wenn `JUCE_DIR` nicht gesetzt ist.
 - Die VST3-SDK muss manuell in `~/JUCE/modules/juce_audio_processors/format_types/VST3_SDK` kopiert werden.
 - `CMakeLists.txt` hat eine doppelte Source-Einbindung (`SOURCES` in `juce_add_plugin` UND `target_sources`) – das ist ein Bug der Warnungen erzeugen kann.
-- `SignalChainTest.h` existiert im `tests/`-Verzeichnis, ist aber nicht im `NeuroCoreTests` CMake-Target verlinkt.
+- `SignalChainTest.h` existiert im `tests/`-Verzeichnis, ist aber nicht im `NeuroKoreTests` CMake-Target verlinkt.
 
 #### Fallstricke
 

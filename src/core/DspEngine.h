@@ -1,13 +1,13 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 
 /**
     @file DspEngine.h
-    @brief Manages all real-time DSP processing for NeuroCore.
+    @brief Manages all real-time DSP processing for NeuroKore.
 
     Owns:
     - Oversampling (juce::dsp::Oversampling)
@@ -84,6 +84,10 @@ public:
     int getOversamplingIndex() const noexcept { return oversamplingIndex.load(); }
     void setOversamplingIndex(int idx) noexcept { oversamplingIndex.store(idx); }
 
+    /** Live = min-phase IIR OS (near-zero latency). Studio = linear-phase FIR. */
+    bool isLiveMode() const noexcept { return liveMode.load (std::memory_order_relaxed); }
+    void setLiveMode (bool enabled) noexcept;
+
     // Status queries (RT-safe)
     float getLoudnessDb()     const noexcept { return lastLoudness.load(); }
     bool  isLimiterActive()   const noexcept { return limiterActive.load(); }
@@ -143,9 +147,11 @@ private:
     juce::AudioBuffer<float> scriptBuffer;
 
     /** [1]=2× [2]=4× [3]=8× — built once per host spec so OS switches do not realloc. */
-    std::unique_ptr<juce::dsp::Oversampling<float>> osBank[4];
+    std::unique_ptr<juce::dsp::Oversampling<float>> osStudio[4];
+    std::unique_ptr<juce::dsp::Oversampling<float>> osLive[4];
     juce::dsp::Oversampling<float>* oversampler { nullptr };
     std::atomic<int> oversamplingIndex { Config::kDefaultOversamplingIndex };
+    std::atomic<bool> liveMode { false };
     /** Integer OS latency used by the dry sidechain and setLatencySamples. */
     int osLatencySamples { 0 };
     juce::uint32 lastOsBankBlock { 0 };

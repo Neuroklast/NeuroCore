@@ -16,9 +16,9 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
       VALUE "CompanyName",  "NEUROKLAST\0"
-      VALUE "FileDescription",  "NeuroCore\0"
+      VALUE "FileDescription",  "NeuroKore\0"
       VALUE "FileVersion",  "0.0.1\0"
-      VALUE "ProductName",  "NeuroCore\0"
+      VALUE "ProductName",  "NeuroKore\0"
       VALUE "ProductVersion",  "0.0.1\0"
     END
   END

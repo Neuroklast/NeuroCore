@@ -11,8 +11,19 @@ BootSequenceOverlay::BootSequenceOverlay()
     setWantsKeyboardFocus (true);
 }
 
+void BootSequenceOverlay::setMotion (CyberMotion newMotion)
+{
+    motion = newMotion;
+}
+
 void BootSequenceOverlay::startOn (juce::Component& parent)
 {
+    if (motion == CyberMotion::Off || ! shouldPlayBoot (motion, false))
+    {
+        finish();
+        return;
+    }
+
     parent.addAndMakeVisible (this);
     setBounds (parent.getLocalBounds());
     toFront (true);
@@ -76,34 +87,34 @@ void BootSequenceOverlay::paint (juce::Graphics& g)
 
     auto frame = bounds.withSizeKeepingCentre (juce::jmin (640, getWidth() - 48), 280).toFloat();
     CyberChrome::drawHudCorners (g, frame, juce::jmin (1.f, p * 1.6f), 2.4f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
     g.drawRect (frame, 1.f);
 
     auto area = frame.reduced (28.f, 22.f).toNearestInt();
     const juce::String title = Config::kOsBanner;
     const int revealed = (int) std::round (juce::jlimit (0.f, 1.f, p / 0.45f) * (float) title.length());
-    g.setFont (NeuroCoreLookAndFeel::monoFont (22.f));
-    g.setColour (NeuroCoreLookAndFeel::accent());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (22.f));
+    g.setColour (NeuroKoreLookAndFeel::accent());
     g.drawText (decodeGlitchText (title, revealed, rng),
                 area.removeFromTop (32), juce::Justification::centredLeft, false);
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
-    g.setColour (NeuroCoreLookAndFeel::mutedText());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroKoreLookAndFeel::mutedText());
     g.drawText ("// BOOT SEQUENCE", area.removeFromTop (18), juce::Justification::centredLeft, false);
 
     CyberChrome::drawBlockBar (g, area.removeFromTop (22), p);
     area.removeFromTop (10);
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
     g.drawText (CyberChrome::statusForProgress (p),
                 area.removeFromTop (20), juce::Justification::centredLeft, false);
 
     area.removeFromTop (8);
     CyberChrome::drawHexMeta (g, area.removeFromTop (16), p);
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.4f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.4f));
     g.drawText ("ESC SKIP", area.removeFromBottom (16), juce::Justification::centredRight, false);
 }
 

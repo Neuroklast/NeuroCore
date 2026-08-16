@@ -7,6 +7,8 @@ namespace CyberChrome
 {
     void drawScanlines (juce::Graphics& g, juce::Rectangle<int> r, float timeSec, float alpha);
     void drawVignette (juce::Graphics& g, juce::Rectangle<int> r, float alpha);
+    /** Soft phosphor glass: faint scan + vignette. Full motion only. */
+    void drawCrtGlow (juce::Graphics& g, juce::Rectangle<int> r, float timeSec, float peak01);
     void drawChromaticInset (juce::Graphics& g, juce::Rectangle<int> r, float amount);
     void drawGlitchSlices (juce::Graphics& g, juce::Rectangle<int> r, float amount, int seed, int count);
     void drawScanBeam (juce::Graphics& g, juce::Rectangle<int> r, float y01, float alpha);

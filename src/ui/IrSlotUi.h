@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include <vector>
+#include "PluginLookAndFeel.h"
 
 /** Shared IR-slot helpers for the formula view and the code editor. */
 namespace IrSlotUi
@@ -53,16 +54,16 @@ inline void collectSlots (const juce::String& script,
 
 inline void styleButton (juce::TextButton& b)
 {
-    b.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2a0808));
-    b.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff4a1010));
-    b.setColour (juce::TextButton::textColourOffId, juce::Colour (0xfffff5f5));
-    b.setColour (juce::TextButton::textColourOnId, juce::Colour (0xfffff5f5));
+    b.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::surface());
+    b.setColour (juce::TextButton::buttonOnColourId, NeuroKoreLookAndFeel::surfaceHigh());
+    b.setColour (juce::TextButton::textColourOffId, NeuroKoreLookAndFeel::ink());
+    b.setColour (juce::TextButton::textColourOnId, NeuroKoreLookAndFeel::ink());
     b.setMouseCursor (juce::MouseCursor::PointingHandCursor);
     b.setWantsKeyboardFocus (false);
 }
 
 inline juce::String buttonText (const juce::String& slot, const juce::String& caption)
 {
-    return slot + "  ·  " + (caption.isNotEmpty() ? caption : juce::String ("drop / change / clear"));
+    return slot + "  —  " + (caption.isNotEmpty() ? caption : juce::String ("drop / change / clear"));
 }
 } // namespace IrSlotUi

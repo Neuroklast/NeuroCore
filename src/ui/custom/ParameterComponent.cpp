@@ -1,6 +1,7 @@
 // ParameterComponent.cpp
 #include "ParameterComponent.h"
 #include "../../core/Config.h"
+#include <cmath>
 #include "../../utils/Localiser.h"
 #include "../MidiLearnManager.h"
 #include "../PluginLookAndFeel.h"
@@ -30,11 +31,28 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
     addAndMakeVisible (slider);
 
     // Labels sollen Klicks durchlassen und individuell justiert werden
-    for (auto* lbl : { &nameLabel, &valueLabel, &minLabel, &maxLabel })
+    for (auto* lbl : { &valueLabel, &minLabel, &maxLabel })
     {
         lbl->setInterceptsMouseClicks (false, false);
         addAndMakeVisible (*lbl);
     }
+    nameLabel.setInterceptsMouseClicks (true, false);
+    nameLabel.setEditable (true, true, false);
+    nameLabel.setTooltip ("Click the name to rename this knob (a–f stay in the formula)");
+    nameLabel.setMouseCursor (juce::MouseCursor::IBeamCursor);
+    nameLabel.onEditorShow = [this]
+    {
+        if (auto* ed = nameLabel.getCurrentTextEditor())
+        {
+            ed->setJustification (Justification::centred);
+            ed->setColour (TextEditor::backgroundColourId, Colour (0xff141414));
+            ed->setColour (TextEditor::textColourId, accentColour.brighter (0.2f));
+            ed->setHighlightedRegion ({ 0, ed->getText().length() });
+            ed->grabKeyboardFocus();
+        }
+    };
+    nameLabel.onEditorHide = [this] { commitAlias(); };
+    addAndMakeVisible (nameLabel);
 
     valueLabel.setJustificationType (Justification::centred);
     minLabel.setJustificationType (Justification::centredLeft);
@@ -43,14 +61,14 @@ ParameterComponent::ParameterComponent (AudioProcessorValueTreeState& vts,
 
     const auto muted  = Colour(0xffb0b0b0); // readable min/max
     valueLabel.setColour (Label::textColourId, accentColour);
-    valueLabel.setFont (NeuroCoreLookAndFeel::monoFont (17.f));
+    valueLabel.setFont (NeuroKoreLookAndFeel::monoFont (15.f));
     valueLabel.setJustificationType (Justification::centred);
     nameLabel.setColour(Label::textColourId, Colour (0xfffff5f5));
-    nameLabel.setFont (NeuroCoreLookAndFeel::brandFont (13.f, true));
+    nameLabel.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
     minLabel.setColour(Label::textColourId, muted);
     maxLabel.setColour(Label::textColourId, muted);
-    minLabel.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
-    maxLabel.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    minLabel.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+    maxLabel.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
     // Values always painted above knob art
     valueLabel.setAlwaysOnTop (true);
     nameLabel.setAlwaysOnTop (true);
@@ -75,8 +93,35 @@ ParameterComponent::~ParameterComponent()
 }
 
 // externes Alias setzen
+juce::String ParameterComponent::formatRangeBound (float v)
+{
+    if (! std::isfinite (v))
+        return "0";
+    if (std::abs (v - std::round (v)) < 1.0e-4f && std::abs (v) < 1.0e7f)
+        return String ((int) std::lround (v));
+    return String (v, 2);
+}
+
+void ParameterComponent::commitAlias()
+{
+    auto next = nameLabel.getText().trim();
+    if (next.isEmpty())
+        next = paramID;
+    if (next == aliasName)
+    {
+        nameLabel.setText (aliasName, dontSendNotification);
+        return;
+    }
+    aliasName = next;
+    nameLabel.setText (aliasName, dontSendNotification);
+    if (onAliasChanged)
+        onAliasChanged (aliasName);
+}
+
 void ParameterComponent::setAliasName (const String& name)
 {
+    if (nameLabel.isBeingEdited())
+        return;
     aliasName = name;
     updateLabel();
 }
@@ -152,7 +197,6 @@ void ParameterComponent::resized()
 {
     auto bounds = getLocalBounds().reduced (2);
 
-    // Name sits ABOVE the knob (own row) — not painted over the rotary.
     const int nameH = 18;
     nameLabel.setBounds (bounds.removeFromTop (nameH));
     nameLabel.setJustificationType (Justification::centred);
@@ -166,18 +210,24 @@ void ParameterComponent::resized()
     minLabel.setJustificationType (Justification::centredLeft);
     maxLabel.setJustificationType (Justification::centredRight);
 
-    // Rotary fills the middle; value sits in the centre of that disc
+    // Value sits under the disc so the needle never covers the readout
+    const int valueH = 16;
+    auto valueRow = bounds.removeFromBottom (valueH);
+    valueLabel.setBounds (valueRow);
+    valueLabel.setJustificationType (Justification::centred);
+
     auto knobArea = bounds.reduced (2);
-    // Keep rotary roughly square and centred
     const int side = jmin (knobArea.getWidth(), knobArea.getHeight());
     auto rotary = juce::Rectangle<int> (0, 0, side, side)
                       .withCentre (knobArea.getCentre());
     slider.setBounds (rotary);
+}
 
-    // Value text over the knob centre only (not the name row)
-    const int valueH = jmax (16, (int) (side * 0.22f));
-    valueLabel.setBounds (rotary.withSizeKeepingCentre (rotary.getWidth() - 8, valueH));
-    valueLabel.setJustificationType (Justification::centred);
+bool ParameterComponent::isActivelyUsed() const
+{
+    return slider.isMouseButtonDown()
+        || slider.isMouseOverOrDragging()
+        || isMouseOverOrDragging();
 }
 
 void ParameterComponent::paintOverChildren (Graphics& g)
@@ -207,11 +257,15 @@ void ParameterComponent::updateLabel()
     else
         norm = (float) slider.getValue();
 
-    if (auto* p = valueTreeState.getParameter (paramID))
-        nameLabel.setText (aliasName.isNotEmpty() ? aliasName : p->getName (64),
-                           dontSendNotification);
-    else if (aliasName.isNotEmpty())
-        nameLabel.setText (aliasName, dontSendNotification);
+    if (! nameLabel.isBeingEdited())
+    {
+        if (auto* p = valueTreeState.getParameter (paramID))
+            nameLabel.setText (aliasName.isNotEmpty() ? aliasName : p->getName (64),
+                               dontSendNotification);
+        else if (aliasName.isNotEmpty())
+            nameLabel.setText (aliasName, dontSendNotification);
+        nameLabel.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
+    }
 
     if (noteLabels.size() >= 2)
     {
@@ -231,8 +285,8 @@ void ParameterComponent::updateLabel()
         else if (av >= 10.f)   txt = String (mapped, 2);
         else                   txt = String (mapped, 3);
         valueLabel.setText (txt, dontSendNotification);
-        minLabel.setText (String (mappedMin, av >= 100.f ? 0 : 2), dontSendNotification);
-        maxLabel.setText (String (mappedMax, av >= 100.f ? 0 : 2), dontSendNotification);
+        minLabel.setText (formatRangeBound (mappedMin), dontSendNotification);
+        maxLabel.setText (formatRangeBound (mappedMax), dontSendNotification);
     }
     else
     {
@@ -241,10 +295,8 @@ void ParameterComponent::updateLabel()
         maxLabel  .setText ("1", dontSendNotification);
     }
 
-    // Keep value high-contrast even when component alpha is reduced
-    valueLabel.setColour (Label::textColourId, accentColour.brighter (0.15f));
-    valueLabel.setFont (NeuroCoreLookAndFeel::monoFont (17.f));
-    nameLabel.setFont (NeuroCoreLookAndFeel::brandFont (13.f, true));
+    valueLabel.setColour (Label::textColourId, accentColour.brighter (0.25f));
+    valueLabel.setFont (NeuroKoreLookAndFeel::monoFont (15.f));
 }
 
 void ParameterComponent::mouseUp (const MouseEvent& e)
@@ -252,6 +304,8 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
     if (e.mods.isPopupMenu())
     {
         PopupMenu menu;
+        menu.addItem (5, "Rename knob");
+        menu.addSeparator();
         menu.addItem (1, TRANS("Set Min"));
         menu.addItem (2, TRANS("Set Max"));
 
@@ -277,6 +331,11 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
         menu.showMenuAsync (opts,
             [this] (int res)
             {
+                if (res == 5)
+                {
+                    nameLabel.showEditor();
+                    return;
+                }
                 if (res == 3 && midiLearnMgr != nullptr)
                 {
                     midiLearnMgr->startLearning(paramID);

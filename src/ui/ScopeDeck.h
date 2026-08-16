@@ -9,7 +9,7 @@
 class ScopeDeck : public juce::Component
 {
 public:
-    ScopeDeck (NeuroCoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
+    ScopeDeck (NeuroKoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
     ~ScopeDeck() override = default;
 
     void resized() override;

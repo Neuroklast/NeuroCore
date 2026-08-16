@@ -1,4 +1,4 @@
-# NeuroCore expression optimization rules
+# NeuroKore expression optimization rules
 # format: pattern_no_spaces|replacement|LocaleMessageKey
 # Applied after built-in smart rewrites. Patterns are space-stripped.
 # NOTE: do not use saturate() — not a DSL function; use softclip/hardclip/tube.

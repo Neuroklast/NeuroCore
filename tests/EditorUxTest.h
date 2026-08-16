@@ -8,6 +8,7 @@
 #include "../src/ui/HelpContentComponent.h"
 #include "../src/ui/FunctionsContentComponent.h"
 #include "../src/ui/DslAutocomplete.h"
+#include "../src/ui/DslTokeniser.h"
 #include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
 #include "../src/ui/FormulaDisplayComponent.h"
@@ -25,7 +26,14 @@
 #include "../src/ui/DslTerminalEditor.h"
 #include "../src/ui/IrSlotUi.h"
 #include "../src/ui/LicenseInfoComponent.h"
+#include "../src/utils/FormulaHelper.h"
+#include "../src/ui/SettingsContentComponent.h"
+#include "../src/utils/UiSettings.h"
 #include "../src/core/PluginProcessor.h"
+#include "../src/ui/GraphCanvasComponent.h"
+#include "../src/ui/custom/ParameterComponent.h"
+#include "../src/dsl/GraphModel.h"
+#include "../src/ui/PluginEditor.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -47,7 +55,7 @@ public:
             auto& lib = FactoryPresetLibrary::getInstance();
             if (lib.getEntries().empty())
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             PresetTableComponent table (proc);
             auto& header = table.getTable().getHeader();
             expectEquals (header.getSortColumnId(), 1);
@@ -92,12 +100,36 @@ public:
             expectEquals (FunctionsContentComponent::categoryForName ("vocoder"), juce::String ("Blocks"));
         }
 
-        beginTest ("formula comments use rust, not editor green");
+        beginTest ("formula comments stay red/white/black, not rust");
         {
-            const auto c = NeuroCoreLookAndFeel::comment();
-            expect (c.getRed() > c.getGreen());
-            expect (c.getRed() > 0x90);
-            expect (c.getGreen() < 0x90);
+            expect (NeuroKoreLookAndFeel::comment() == NeuroKoreLookAndFeel::inkMuted());
+        }
+
+        beginTest ("look and feel splits chrome accent from body ink");
+        {
+            const auto canvas = NeuroKoreLookAndFeel::canvas();
+            const auto ink = NeuroKoreLookAndFeel::ink();
+            const auto muted = NeuroKoreLookAndFeel::inkMuted();
+            const auto accent = NeuroKoreLookAndFeel::accent();
+            expect (canvas.getBrightness() < 0.08f);
+            expect (ink.getBrightness() > 0.85f);
+            expect (muted.getBrightness() > juce::Colour (0xff8a8a8a).getBrightness());
+            expect (muted.getPerceivedBrightness() > 0.7f);
+            expect (NeuroKoreLookAndFeel::mutedText() == muted);
+            expect (NeuroKoreLookAndFeel::brightText() == ink);
+            expect (NeuroKoreLookAndFeel::warningMark() == accent);
+            expect (NeuroKoreLookAndFeel::error() != accent);
+            expect (FormulaDisplayComponent::knobColour (3) == NeuroKoreLookAndFeel::accent());
+            expect (FormulaDisplayComponent::knobColour (0) == FormulaDisplayComponent::knobColour (5));
+        }
+
+        beginTest ("UI design raster is larger than the old unscaled minimum");
+        {
+            expectEquals (Config::kUiDesignWidth, Config::kWindowWidth);
+            expectEquals (Config::kUiDesignHeight, Config::kWindowHeight);
+            expect (Config::kUiMinWindowWidth > 960);
+            expect (Config::kUiMinWindowHeight > 640);
+            expect (Config::kUiScalePercentMax > Config::kUiScalePercentMin);
         }
 
         beginTest ("modal overlay panel and scrim grow with the host");
@@ -107,11 +139,13 @@ public:
             expect (small.getWidth() > 1200);
             expect (large.getWidth() > small.getWidth());
             expect (large.getHeight() > small.getHeight());
-            expectEquals (large.getWidth(), 1800 - 24);
-            expectEquals (large.getHeight(), 1200 - 24);
+            expectEquals (large.getWidth(), 1800 - 16);
+            expectEquals (large.getHeight(), 1200 - 16);
             const auto capped = ModalOverlay::panelSizeFor (1800, 1200, 520, 400);
             expectEquals (capped.getWidth(), 520);
             expectEquals (capped.getHeight(), 400);
+            expect (Config::kOverlayTopChromeDesign
+                    > Config::kHudHeaderHeight + Config::kToolsRowHeight);
         }
 
         beginTest ("OS banner is Neuroklast OS");
@@ -162,7 +196,7 @@ public:
 
         beginTest ("preset chip fills the compact toolbar");
         {
-            expect (Config::kPresetChipFontPt >= 14.f);
+            expect (Config::kPresetChipFontPt >= 12.f);
             expect (Config::kPresetChipFontPt <= 16.f);
         }
 
@@ -180,20 +214,65 @@ public:
             expectEquals (modeA.length(), modeB.length());
         }
 
-        beginTest ("toolbar is half the previous 0.09 weight and stays under the HUD");
+        beginTest ("toolbar is a thin rail so the editor owns the window");
         {
-            expect (Config::kHudHeaderHeight == 22);
-            expectEquals (Config::kToolbarRowWeight, 0.045f);
-            expect (Config::kToolbarRowMaxHeight * 2 <= 80);
+            expect (Config::kHudHeaderHeight <= 16);
             expect (Config::kToolbarRowMaxHeight <= 38);
-            expect (Config::kToolbarRowMinHeight >= 32);
-            expect (BrandLockup::kMaxLogoHeight <= (float) Config::kToolbarRowMaxHeight);
-            expectEquals (BrandLockup::kMaxLogoHeight, 26.f);
+            expect (Config::kToolbarRowMinHeight >= 28);
+            expect (Config::kBodyEditorWeight > Config::kBodyKnobsWeight * 4.f);
+            expect (Config::kParameterKnobSize <= 80);
+            expect (Config::kScopeRowHeight >= 168);
+            expect (Config::kBodyKnobsWeight >= 1.0f);
+            expect (Config::kBodyKnobsWeight <= 1.4f);
+            expect (BrandLockup::kMaxLogoHeight <= (float) Config::kToolbarRowMaxHeight + 2.f);
+        }
+
+        beginTest ("L/Both/R cells have a gap and fill the plate");
+        {
+            NeuroKoreAudioProcessor proc;
+            InputChannelSwitch sw (proc.apvts);
+            sw.setSize (140, 26);
+            const auto a = sw.cellBounds (0);
+            const auto b = sw.cellBounds (1);
+            const auto c = sw.cellBounds (2);
+            expect (b.getX() >= a.getRight() + InputChannelSwitch::kCellGap - 0.1f);
+            expect (c.getX() >= b.getRight() + InputChannelSwitch::kCellGap - 0.1f);
+            expect (c.getRight() <= sw.plateBounds().getRight() + 0.1f);
+            expect (a.getWidth() > 30.f);
+        }
+
+        beginTest ("knob value sits below the rotary, not on the needle");
+        {
+            NeuroKoreAudioProcessor proc;
+            ui::ParameterComponent pc (proc.apvts, "a", "Drive");
+            pc.setSize (90, 130);
+            expect (pc.getValueBounds().getY() >= pc.getSliderBounds().getBottom() - 1);
+            expect (pc.getValueBounds().getHeight() >= 14);
+            expect (! pc.isActivelyUsed());
+        }
+
+        beginTest ("factory script match names an untitled processor");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* sample = lib.findByName ("Shimmer Drive");
+            expect (sample != nullptr);
+            if (sample == nullptr)
+                return;
+            expect (lib.findMatchingScript (sample->script) == sample);
+            NeuroKoreAudioProcessor proc;
+            expect (proc.getCurrentPresetName().isEmpty());
+            juce::String err;
+            expect (proc.setFormula (sample->script, err, true));
+            expect (proc.getCurrentPresetName().isEmpty());
+            expect (proc.resolvePresetNameFromScript());
+            expectEquals (proc.getCurrentPresetName(), sample->name);
         }
 
         beginTest ("NK logo asset is edge-cropped landscape");
         {
-            auto img = NeuroCoreLookAndFeel::cropOpaqueContent (
+            auto img = NeuroKoreLookAndFeel::cropOpaqueContent (
                 juce::ImageCache::getFromMemory (BinaryData::nk_logo_png,
                                                  BinaryData::nk_logo_pngSize));
             expect (img.isValid());
@@ -237,14 +316,14 @@ public:
         {
             expect (Config::kScopeFoldWidth >= 14);
             expect (Config::kScopeLoudnessWidth >= 40);
-            expect (Config::kScopeFieldMinWidth >= 72);
+            expect (Config::kScopeFieldMinWidth >= 88);
             const int extras = Config::kScopeFoldWidth
                              + Config::kScopeLoudnessWidth
                              + Config::kScopeFieldMinWidth;
             expect (extras < 200);
             expect (extras > 100);
 
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             ScopeDeck deck (proc, WaveformDisplayComponent::Type::Input);
             deck.setSize (600, 120);
             expect (deck.extrasOpen());
@@ -252,6 +331,8 @@ public:
             deck.setExtrasOpen (false);
             expect (! deck.extrasOpen());
             expect (deck.waveform().getWidth() >= 600 - Config::kScopeFoldWidth - 2);
+            deck.setExtrasOpen (true);
+            expect (deck.extrasOpen());
         }
 
         beginTest ("licensed License click shows the holder email");
@@ -455,7 +536,7 @@ public:
 
         beginTest ("formula editor keeps autocomplete closed until Ctrl+Space");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             DslTerminalEditor ed (proc);
             ed.setText ("filter1: type = ");
             ed.setCaretPosition (ed.getText().length());
@@ -473,6 +554,33 @@ public:
             expect (IrSlotUi::slotFromLine ("// ir2: mix = 1").isEmpty());
         }
 
+        beginTest ("formula live view annotates mapped knob values");
+        {
+            FormulaDisplayComponent d;
+            d.setFormula ("param a = Drive [0, 10]\nstage1: y = a * x\n");
+            std::array<float, Config::kNumUserParams> knobs {};
+            knobs[0] = 0.5f;
+            d.setKnobValues (knobs);
+            const auto text = d.getAnnotatedText();
+            expect (text.contains ("=> 5"), "param line should show mapped live value, got: " + text);
+            expect (text.contains ("a[5.000]"), "knob token should carry [value], got: " + text);
+        }
+
+        beginTest ("script workspace shows live formula values, not the text editor");
+        {
+            auto proc = std::make_unique<NeuroKoreAudioProcessor>();
+            auto ed = std::make_unique<NeuroKoreAudioProcessorEditor> (*proc);
+            expectEquals (ed->getWorkspaceMode(), (int) NeuroKoreAudioProcessorEditor::WorkspaceGraph);
+            ed->setWorkspaceMode (NeuroKoreAudioProcessorEditor::WorkspaceScript);
+            expectEquals (ed->getWorkspaceMode(), (int) NeuroKoreAudioProcessorEditor::WorkspaceScript);
+            expect (! ed->isEditingFormula(), "Script tab must open the live view, not force Edit");
+            expect (ed->isLiveFormulaVisible());
+            expect (! ed->isFormulaEditorVisible());
+            ed.reset();
+            proc.reset();
+            juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
+        }
+
         beginTest ("formula display adds one full-width IR button per slot");
         {
             FormulaDisplayComponent d;
@@ -487,7 +595,7 @@ public:
 
         beginTest ("code editor adds one IR button per irN line");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             DslTerminalEditor ed (proc);
             ed.setSize (400, 300);
             ed.setText ("ir1: mix = 1\nstage1: y = x\nir2: mix = 0.4\n");
@@ -516,7 +624,7 @@ public:
                 g.setColour (juce::Colour (0xffff1a1a));
                 g.fillRect (10, 12, 16, 10);
             }
-            const auto cropped = NeuroCoreLookAndFeel::cropOpaqueContent (src);
+            const auto cropped = NeuroKoreLookAndFeel::cropOpaqueContent (src);
             expect (cropped.getWidth() < 40);
             expect (cropped.getHeight() < 40);
             expect (cropped.getWidth() >= 16);
@@ -616,6 +724,240 @@ public:
             for (const auto& it : b)
                 if (it.label == "send") sendIn = true;
             expect (sendIn);
+        }
+
+        beginTest ("graph canvas paints a no-out preset and survives a switch");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+
+            const auto* shimmer = lib.findByName ("Shimmer Drive");
+            const auto* wide = lib.findByName ("Wide Motion");
+            expect (shimmer != nullptr);
+            expect (wide != nullptr);
+            if (shimmer == nullptr || wide == nullptr)
+                return;
+
+            expect (! wide->script.containsIgnoreCase ("\nout:"),
+                    "Wide Motion must stay an out-less script for this crash case");
+
+            NeuroKoreAudioProcessor proc;
+            GraphCanvasComponent canvas (proc);
+            canvas.setSize (900, 520);
+            canvas.setScript (shimmer->script);
+            expect (canvas.hasValidGraph());
+            {
+                juce::Image img (juce::Image::ARGB, 900, 520, true);
+                juce::Graphics g (img);
+                canvas.paintEntireComponent (g, false);
+            }
+            canvas.setScript (wide->script);
+            expect (canvas.hasValidGraph(), canvas.getParseError());
+            {
+                juce::Image img (juce::Image::ARGB, 900, 520, true);
+                juce::Graphics g (img);
+                canvas.paintEntireComponent (g, false);
+            }
+        }
+
+        beginTest ("popup menu type is large enough to read");
+        {
+            NeuroKoreLookAndFeel lf;
+            expect (lf.getPopupMenuFont().getHeight() >= 17.f);
+            int w = 0, h = 0;
+            lf.getIdealPopupMenuItemSize ("Filter     low / high / band", false, 24, w, h);
+            expect (h >= 28);
+            expect (w >= 260);
+        }
+
+        beginTest ("DSL tokeniser colours comments and keywords");
+        {
+            expect (DslTokeniser::isKeyword ("stage1"));
+            expect (DslTokeniser::isKeyword ("param"));
+            expect (DslTokeniser::isKnobWord ("a"));
+            expect (! DslTokeniser::isKnobWord ("drive"));
+            juce::CodeDocument doc;
+            doc.replaceAllContent ("# note\nstage1: y = a\n");
+            DslTokeniser tok;
+            juce::CodeDocument::Iterator it (doc);
+            expectEquals (tok.readNextToken (it), (int) DslTokeniser::Comment);
+            expectEquals (tok.readNextToken (it), (int) DslTokeniser::Keyword);
+        }
+
+        beginTest ("script error line extracts 1-based parser lines");
+        {
+            expectEquals (firstScriptErrorLine ("Error on line 12: bus needs a name"), 12);
+            expectEquals (firstScriptErrorLine ("Malformed parameter line at 3"), 3);
+            expectEquals (firstScriptErrorLine ("ok"), 0);
+        }
+
+        beginTest ("IR and preset tags do not use Apex middot");
+        {
+            expect (IrSlotUi::buttonText ("ir1", "Cab").contains ("ir1"));
+            expect (IrSlotUi::buttonText ("ir1", "Cab").contains ("Cab"));
+            expect (! IrSlotUi::buttonText ("ir1", "Cab").containsChar ((juce::juce_wchar) 0x00B7));
+        }
+
+        beginTest ("graph cards stay compact terminals plus a one-line caption");
+        {
+            expect (GraphCanvasComponent::kCardHeight <= 64);
+            expect (GraphCanvasComponent::kCardWidth <= 160);
+            expect (GraphCanvasComponent::kIoHeight <= 36);
+            expect (GraphCanvasComponent::kIoWidth <= 72);
+            expect (GraphCanvasComponent::kCardHeight >= 56);
+        }
+
+        beginTest ("graph positions snap to the board grid");
+        {
+            expectEquals (GraphCanvasComponent::kGrid, 16);
+            expectEquals (GraphCanvasComponent::snap (0), 0);
+            expectEquals (GraphCanvasComponent::snap (7), 0);
+            expectEquals (GraphCanvasComponent::snap (8), 16);
+            expectEquals (GraphCanvasComponent::snap (9), 16);
+            expectEquals (GraphCanvasComponent::snap (16), 16);
+            expectEquals (GraphCanvasComponent::snap (24), 32);
+            expectEquals (GraphCanvasComponent::snap (-7), 0);
+            expectEquals (GraphCanvasComponent::snap (-8), -16);
+            const auto p = GraphCanvasComponent::snapPoint ({ 17, 31 });
+            expectEquals (p.x, 16);
+            expectEquals (p.y, 32);
+        }
+
+        beginTest ("graph load snaps @x,y comments onto the board grid");
+        {
+            NeuroKoreAudioProcessor proc;
+            GraphCanvasComponent canvas (proc);
+            canvas.setSize (900, 400);
+            canvas.setScript ("stage1: y = x  # @17,31\n"
+                              "filter1: type = lowpass; cutoff = 800  # @20,80");
+            expect (canvas.hasValidGraph(), canvas.getParseError());
+            const auto emitted = canvas.getEmittedScript();
+            expect (emitted.contains ("@16.0,32.0"), emitted);
+            expect (emitted.contains ("@16.0,80.0"), emitted);
+        }
+
+        beginTest ("knob min/max bounds do not flip decimals with the live value");
+        {
+            expectEquals (ui::ParameterComponent::formatRangeBound (0.f), juce::String ("0"));
+            expectEquals (ui::ParameterComponent::formatRangeBound (800.f), juce::String ("800"));
+            expectEquals (ui::ParameterComponent::formatRangeBound (0.5f), juce::String ("0.50"));
+            NeuroKoreAudioProcessor proc;
+            ui::ParameterComponent pc (proc.apvts, "a", "Drive");
+            pc.setSize (90, 120);
+            pc.setMappedRange (0.f, 800.f);
+            expectEquals (pc.getMinText(), juce::String ("0"));
+            expectEquals (pc.getMaxText(), juce::String ("800"));
+            pc.refreshValues();
+            expectEquals (pc.getMaxText(), juce::String ("800"));
+        }
+
+        beginTest ("knob rename editor survives a value refresh");
+        {
+            NeuroKoreAudioProcessor proc;
+            ui::ParameterComponent pc (proc.apvts, "a", "Drive");
+            pc.setSize (90, 120);
+            pc.startRename();
+            expect (pc.isRenaming());
+            pc.refreshValues();
+            pc.setAliasName ("Other");
+            expect (pc.isRenaming());
+            expectEquals (pc.getDisplayedName(), juce::String ("Drive"));
+        }
+
+        beginTest ("formula and knob rename go on the undo stack");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x\n", err));
+            expect (proc.setFormula ("stage1: y = tanh(x)\n", err, false));
+            expect (proc.undo());
+            expect (proc.getScript().contains ("y = x"));
+            expect (proc.redo());
+            expect (proc.getScript().contains ("tanh"));
+            const auto old = proc.getVariableName (0);
+            proc.setVariableName (0, "drive");
+            proc.recordNameChange (0, old, "drive");
+            expectEquals (proc.getVariableName (0), juce::String ("drive"));
+            expect (proc.undo());
+            expectEquals (proc.getVariableName (0), old);
+        }
+
+        beginTest ("graph canvas has no add/remove toolbar");
+        {
+            NeuroKoreAudioProcessor proc;
+            GraphCanvasComponent canvas (proc);
+            canvas.setSize (800, 500);
+            int buttons = 0;
+            for (auto* c : canvas.getChildren())
+                if (dynamic_cast<juce::TextButton*> (c) != nullptr)
+                    ++buttons;
+            expectEquals (buttons, 0);
+            expectEquals (canvas.getNumChildComponents(), 1);
+        }
+
+        beginTest ("settings motion labels and persist Full/Reduced/Off");
+        {
+            expectEquals (SettingsUi::motionCaption (CyberMotion::Full), juce::String ("Full"));
+            expectEquals (SettingsUi::motionCaption (CyberMotion::Reduced), juce::String ("Reduced"));
+            expectEquals (SettingsUi::motionCaption (CyberMotion::Off), juce::String ("Off"));
+            expect (SettingsUi::motionHint (CyberMotion::Off).containsIgnoreCase ("no motion"));
+            expectEquals (juce::String (UiSettings::motionKey (CyberMotion::Full)), juce::String ("full"));
+            expect (UiSettings::clampMotion (99) == CyberMotion::Full);
+            expect (UiSettings::clampMotion ((int) CyberMotion::Reduced) == CyberMotion::Reduced);
+
+            auto& s = UiSettings::get();
+            const auto prevMotion = s.motion();
+            const auto prevScale  = s.uiScalePercent();
+            const auto prevFont   = s.editorFontPt();
+            const auto prevLive   = s.liveMode();
+            s.setMotion (CyberMotion::Reduced);
+            expect (s.motion() == CyberMotion::Reduced);
+            expect (! s.calmUi());
+            s.setCalmUi (true);
+            expect (s.motion() == CyberMotion::Off);
+            expect (s.calmUi());
+            s.setMotion (CyberMotion::Full);
+            expect (! s.calmUi());
+            s.setLiveMode (true);
+            expect (s.liveMode());
+            s.setLiveMode (false);
+            expect (! s.liveMode());
+            s.setMotion (prevMotion);
+            s.setUiScalePercent (prevScale);
+            s.setEditorFontPt (prevFont);
+            s.setLiveMode (prevLive);
+        }
+
+        beginTest ("live mode IIR latency is far below studio FIR");
+        {
+            juce::dsp::Oversampling<float> fir (2, 2,
+                juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+            juce::dsp::Oversampling<float> iir (2, 2,
+                juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false, true);
+            fir.initProcessing (1024);
+            iir.initProcessing (1024);
+            const float firLat = fir.getLatencyInSamples();
+            const float iirLat = iir.getLatencyInSamples();
+            expect (iirLat < firLat * 0.5f,
+                    "raw IIR " + juce::String (iirLat, 2) + " vs FIR " + juce::String (firLat, 2));
+
+            auto& s = UiSettings::get();
+            const auto prevLive = s.liveMode();
+            NeuroKoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 64);
+            proc.setLiveMode (false);
+            const int studioOs = proc.getOversamplingLatencySamples();
+            proc.setLiveMode (true);
+            const int liveOs = proc.getOversamplingLatencySamples();
+            expect (proc.isLiveMode());
+            expect (liveOs < studioOs,
+                    "live OS " + juce::String (liveOs) + " should be below studio OS " + juce::String (studioOs));
+            expect (liveOs < 32, "live OS latency should stay under ~0.7 ms at 48 kHz");
+            proc.setLiveMode (false);
+            expect (! proc.isLiveMode());
+            proc.releaseResources();
+            s.setLiveMode (prevLive);
         }
     }
 };

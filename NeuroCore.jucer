@@ -6,7 +6,7 @@
               pluginManufacturerCode="NRKL" pluginCode="NRKO" pluginVST3Category="Fx"
               pluginAUMainType="aumf" pluginAUIsSandboxSafe="1" pluginWantsMidiIn="1"
               pluginEditorRequiresKeys="1" cppLanguageStandard="20">
-  <MAINGROUP id="GyblaO" name="NeuroCore">
+  <MAINGROUP id="GyblaO" name="NeuroKore">
     <GROUP id="{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}" name="docs"/>
     <GROUP id="{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}" name="resources">
       <GROUP id="{CAD75D28-A416-5820-041C-133A5E07D04D}" name="fonts">
@@ -196,8 +196,8 @@
       <FILE id="TynB8G" name="ExpressionEvaluatorTest.h" compile="0" resource="0"
             file="tests/ExpressionEvaluatorTest.h"/>
       <FILE id="p7xujK" name="main.cpp" compile="1" resource="0" file="tests/main.cpp"/>
-      <FILE id="ZnMR3v" name="NeuroCore_Tests.jucer" compile="0" resource="1"
-            file="tests/NeuroCore_Tests.jucer"/>
+      <FILE id="ZnMR3v" name="NeuroKore_Tests.jucer" compile="0" resource="1"
+            file="tests/NeuroKore_Tests.jucer"/>
       <FILE id="ELZvam" name="PresetManagerTest.h" compile="0" resource="0"
             file="tests/PresetManagerTest.h"/>
       <FILE id="Pe1Ic5" name="SignalChainTest.h" compile="0" resource="0"
@@ -207,7 +207,7 @@
     </GROUP>
     <FILE id="AO7OZj" name="AGENTS.md" compile="0" resource="1" file="AGENTS.md"/>
     <FILE id="Skq3Ct" name="CMakeLists.txt" compile="0" resource="1" file="CMakeLists.txt"/>
-    <FILE id="NRaDWB" name="NeuroCore.jucer" compile="0" resource="1" file="NeuroCore.jucer"/>
+    <FILE id="NRaDWB" name="NeuroKore.jucer" compile="0" resource="1" file="NeuroKore.jucer"/>
     <FILE id="HMZ7yb" name="README.md" compile="0" resource="1" file="README.md"/>
   </MAINGROUP>
   <MODULES>
@@ -236,8 +236,8 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuroCore"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="NeuroCore"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuroKore"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="NeuroKore"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_animation" path="D:/JUCE/modules"/>

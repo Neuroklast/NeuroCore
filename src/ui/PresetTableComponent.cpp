@@ -24,7 +24,7 @@ struct ChunkEntry {
 };
 }
 
-PresetTableComponent::PresetTableComponent (NeuroCoreAudioProcessor& proc)
+PresetTableComponent::PresetTableComponent (NeuroKoreAudioProcessor& proc)
     : processor (proc)
 {
     addAndMakeVisible (table);
@@ -312,28 +312,25 @@ int PresetTableComponent::getNumRows()
 
 void PresetTableComponent::paintRowBackground (juce::Graphics& g, int row, int, int height, bool selected)
 {
-    auto bg  = NeuroCoreLookAndFeel::surface();
-    auto alt = NeuroCoreLookAndFeel::surfaceHigh();
-    auto hl  = NeuroCoreLookAndFeel::accent().withAlpha (0.22f);
-    auto active = NeuroCoreLookAndFeel::accent().withAlpha (0.38f);
+    auto bg  = NeuroKoreLookAndFeel::surface();
+    auto alt = NeuroKoreLookAndFeel::surfaceHigh();
+    auto hl  = NeuroKoreLookAndFeel::surfaceHigh();
 
     const auto* e = entryAt (row);
     const bool isCurrent = e != nullptr
                         && e->name == processor.getCurrentPresetName()
                         && processor.getCurrentPresetName().isNotEmpty();
 
-    if (selected)
+    if (selected || isCurrent)
         g.fillAll (hl);
-    else if (isCurrent)
-        g.fillAll (active);
     else if (row % 2)
         g.fillAll (alt);
     else
         g.fillAll (bg);
 
-    if (isCurrent)
+    if (isCurrent || selected)
     {
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
+        g.setColour (NeuroKoreLookAndFeel::accent());
         g.fillRect (0, 0, 3, height);
     }
 }
@@ -355,8 +352,8 @@ void PresetTableComponent::paintCell (juce::Graphics& g, int row, int columnId,
         const float y = ((float) height - cell) * 0.5f;
         for (int i = 1; i <= 5; ++i)
         {
-            g.setColour (i <= r ? NeuroCoreLookAndFeel::accent()
-                                : NeuroCoreLookAndFeel::mutedText().withAlpha (0.35f));
+            g.setColour (i <= r ? NeuroKoreLookAndFeel::accent()
+                                : NeuroKoreLookAndFeel::mutedText().withAlpha (0.35f));
             juce::Path p;
             p.addStar ({ x + cell * 0.5f, y + cell * 0.5f }, 5, cell * 0.22f, cell * 0.48f, -0.5f);
             g.fillPath (p);
@@ -370,16 +367,16 @@ void PresetTableComponent::paintCell (juce::Graphics& g, int row, int columnId,
     else if (columnId == 2) text = e->category;
     else if (columnId == 3) text = e->isFactory ? "Factory" : "User";
     else if (columnId == 4) text = e->author.isNotEmpty() ? e->author : "NEUROKLAST";
-    else if (columnId == 6) text = e->tags.joinIntoString ("  ·  ");
+    else if (columnId == 6) text = e->tags.joinIntoString (" / ");
 
     const bool isCurrent = e->name == processor.getCurrentPresetName()
                         && processor.getCurrentPresetName().isNotEmpty();
 
-    g.setColour (isCurrent && columnId == 1
-                     ? NeuroCoreLookAndFeel::accent()
-                     : (columnId == 2 || columnId == 3 || columnId == 6
-                            ? NeuroCoreLookAndFeel::mutedText()
-                            : juce::Colour (0xffe8ecf4)));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+    g.setColour (columnId == 2 || columnId == 3 || columnId == 6
+                     ? NeuroKoreLookAndFeel::inkMuted()
+                     : NeuroKoreLookAndFeel::ink());
+    juce::ignoreUnused (isCurrent);
     g.drawText (text, 6, 0, width - 8, height, juce::Justification::centredLeft, true);
 }
 

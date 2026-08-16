@@ -1,14 +1,14 @@
 #include "IrPanelComponent.h"
 #include "PluginLookAndFeel.h"
 
-IrPanelComponent::IrPanelComponent (NeuroCoreAudioProcessor& proc, juce::String slot)
+IrPanelComponent::IrPanelComponent (NeuroKoreAudioProcessor& proc, juce::String slot)
     : processor (proc), slotId (slot.trim().toLowerCase())
 {
     addAndMakeVisible (loadButton);
     addAndMakeVisible (clearButton);
     addAndMakeVisible (closeButton);
     addAndMakeVisible (status);
-    status.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    status.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
     loadButton.onClick = [this]
     {
         fileChooser = std::make_unique<juce::FileChooser> (
@@ -42,8 +42,8 @@ IrPanelComponent::IrPanelComponent (NeuroCoreAudioProcessor& proc, juce::String 
 void IrPanelComponent::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().reduced (12);
-    g.setColour (NeuroCoreLookAndFeel::accent());
-    g.setFont (juce::Font (18.f, juce::Font::bold));
+    g.setColour (NeuroKoreLookAndFeel::ink());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (18.f));
     g.drawText ("IR  " + slotId, r.removeFromTop (24), juce::Justification::centredLeft);
 
     auto wave = r.removeFromTop (juce::jmax (80, r.getHeight() - 90));
@@ -63,13 +63,13 @@ void IrPanelComponent::drawWave (juce::Graphics& g, juce::Rectangle<int> area)
 {
     g.setColour (juce::Colour (0xff12161c));
     g.fillRoundedRectangle (area.toFloat(), 6.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.35f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.35f));
     g.drawRoundedRectangle (area.toFloat(), 6.f, 1.f);
 
     const auto* irPtr = processor.getIrBuffer (slotId);
     if (irPtr == nullptr || irPtr->getNumSamples() <= 0)
     {
-        g.setColour (NeuroCoreLookAndFeel::mutedText());
+        g.setColour (NeuroKoreLookAndFeel::mutedText());
         g.drawFittedText ("drop IR", area, juce::Justification::centred, 1);
         return;
     }
@@ -96,7 +96,7 @@ void IrPanelComponent::drawWave (juce::Graphics& g, juce::Rectangle<int> area)
             mx = juce::jmax (mx, s);
         }
         const float px = (float) area.getX() + 4.f + (float) x;
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
         g.drawVerticalLine ((int) px, mid - mx * amp, mid - mn * amp);
     }
 }

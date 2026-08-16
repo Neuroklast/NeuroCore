@@ -2,8 +2,8 @@
 
 #include <JuceHeader.h>
 
-/** Private RSA key. Compile this into NeuroCoreIssuer only — never the plugin. */
-inline juce::RSAKey neurocoreProductPrivateKey()
+/** Private RSA key. Compile this into NeuroKoreIssuer only — never the plugin. */
+inline juce::RSAKey neurokoreProductPrivateKey()
 {
     return juce::RSAKey (
         "59f569dc5c2d2951b7763c56ee3845048ecc46e85ffc5627bec5c929e052640518b1dd3ec471b9ad41980736fead6348ba36d3e02f93dfba3356c917b53cc206fe3359e93d36d50d6b15eb9804e030005f473e0fe7d74dea0ecb88f191a4193353022204796199c8ff397030bd1ef39ec8a213e920f29261f76a531b732a4ef1,"

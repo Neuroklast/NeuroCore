@@ -49,6 +49,10 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
     currentSpec = spec;
     variables["sr"] = static_cast<float>(spec.sampleRate);
     sampleCounter = 0;
+    const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64);
+    for (auto& lane : knobLanes)
+        if (lane.capacity() < laneN)
+            lane.reserve (laneN);
     for (auto& s : paramSmooth)
         s.reset(spec.sampleRate, Config::kSmoothingTime);
     if (valueTreeState)
@@ -1822,6 +1826,18 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 continue;
             }
 
+            if (auto* dl = dynamic_cast<Delay*> (b.get()))
+            {
+                auto* L = work.getWritePointer (0);
+                auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    injectKnobsAt (i);
+                    dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
+                }
+                continue;
+            }
+
             if (auto* fi = dynamic_cast<Filter*> (b.get()))
             {
                 if (fi->modulated)
@@ -3047,6 +3063,7 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     dampHz0 = juce::jlimit (200.f, sampleRate * 0.45f, dampHz0);
     const float dampA0 = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHz0 / sampleRate);
     dampCoeffSm.setCurrentAndTargetValue (juce::jlimit (0.0f, 0.99f, dampA0));
+    dcCoeff = std::exp (-2.0f * juce::MathConstants<float>::pi * 40.0f / sampleRate);
 }
 
 void SignalChain::Delay::clearRuntimeState() noexcept
@@ -3080,8 +3097,10 @@ float SignalChain::Delay::resolveDelaySamples() const noexcept
             ms = 250.f;
     }
     ms = juce::jlimit (0.1f, kMaxDelaySec * 1000.f, ms);
-    // Hermite window is 4 taps — closer than that reads the write head → period tick
-    return juce::jlimit (4.0f, (float) (maxDelaySamples - 4), ms * 0.001f * sampleRate);
+    // Hermite uses 4 taps; keep 8 samples behind the write head so 8× OS
+    // cannot scrape the write cursor (that is a periodic wrap tick).
+    const float minSamps = 8.0f;
+    return juce::jlimit (minSamps, (float) (maxDelaySamples - 8), ms * 0.001f * sampleRate);
 }
 
 float SignalChain::Delay::tailSeconds() const noexcept
@@ -3156,13 +3175,8 @@ float SignalChain::Delay::process (int ch, float x)
     return x * (1.f - wet) + delayed * wet;
 }
 
-void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
+void SignalChain::Delay::syncFromVariables() noexcept
 {
-    const int nCh = buffer.getNumChannels();
-    const int nS  = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0 || maxDelaySamples <= 2)
-        return;
-
     if (varPtr != nullptr)
     {
         for (const auto& n : varNames)
@@ -3179,104 +3193,106 @@ void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
 
     float fb = feedback.evaluate (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
-    // Pole radius < 1 (with DC-HPF + damp in loop) — not a musical character cap
-    fb = juce::jlimit (0.0f, 0.98f, fb);
-    fbSm.setTargetValue (fb);
+    fbSm.setTargetValue (juce::jlimit (0.0f, 0.98f, fb));
 
     float mx = mix.evaluate (0.f);
     if (! std::isfinite (mx)) mx = 0.35f;
-    mx = juce::jlimit (0.0f, 1.0f, mx);
-    mixSm.setTargetValue (mx);
+    mixSm.setTargetValue (juce::jlimit (0.0f, 1.0f, mx));
 
     float dampHzV = dampHz.evaluate (0.f);
     if (! std::isfinite (dampHzV)) dampHzV = 6500.f;
     dampHzV = juce::jlimit (200.f, sampleRate * 0.45f, dampHzV);
-    // One-pole LPF coeff from cutoff: a = exp(-2π fc/sr)
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHzV / sampleRate);
     dampCoeffSm.setTargetValue (juce::jlimit (0.0f, 0.99f, dampA));
+}
 
-    // DC-block in feedback (~40 Hz) — kills the hum that "builds after a while"
-    const float dcA = std::exp (-2.0f * juce::MathConstants<float>::pi * 40.0f / sampleRate);
+void SignalChain::Delay::processFrame (float& left, float* right) noexcept
+{
+    if (maxDelaySamples <= 2 || bufL.empty())
+        return;
+
+    syncFromVariables();
+
+    const float dcA = dcCoeff;
+    const float maxDelayDelta = juce::jmax (0.25f, sampleRate * 0.0008f);
+
+    float dSamps = delaySm.getNextValue();
+    if (lastDelaySamples > 0.f)
+    {
+        const float delta = dSamps - lastDelaySamples;
+        if (std::abs (delta) > maxDelayDelta)
+            dSamps = lastDelaySamples + std::copysign (maxDelayDelta, delta);
+    }
+    lastDelaySamples = dSamps;
+
+    const float fbk    = fbSm.getNextValue();
+    const float wet    = mixSm.getNextValue();
+    const float dryG   = 1.0f - wet;
+    const float dampA_ = dampCoeffSm.getNextValue();
+
+    const float readPos = (float) writePos - dSamps;
+    float wetL = fracDelayRead (bufL, readPos, maxDelaySamples);
+    float wetR = fracDelayRead (bufR, readPos, maxDelaySamples);
+    if (! std::isfinite (wetL)) wetL = 0.f;
+    if (! std::isfinite (wetR)) wetR = 0.f;
+
+    const float inL = std::isfinite (left) ? left : 0.f;
+    const float inR = right != nullptr ? (std::isfinite (*right) ? *right : 0.f) : inL;
+
+    float fbInL = wetL;
+    float fbInR = wetR;
+    if (pingpong && right != nullptr)
+    {
+        fbInL = wetR;
+        fbInR = wetL;
+    }
+
+    const float hpL = fbInL - dcBlockL;
+    const float hpR = fbInR - dcBlockR;
+    dcBlockL = dcA * dcBlockL + (1.f - dcA) * fbInL;
+    dcBlockR = dcA * dcBlockR + (1.f - dcA) * fbInR;
+
+    dampStateL = flushDenorm (dampA_ * dampStateL + (1.f - dampA_) * hpL);
+    dampStateR = flushDenorm (dampA_ * dampStateR + (1.f - dampA_) * hpR);
+    dcBlockL = flushDenorm (dcBlockL);
+    dcBlockR = flushDenorm (dcBlockR);
+
+    float wL = inL + dampStateL * fbk;
+    float wR = inR + dampStateR * fbk;
+    if (! std::isfinite (wL)) wL = 0.f;
+    if (! std::isfinite (wR)) wR = 0.f;
+    if (std::abs (wL) > 1.5f) wL = 1.5f * std::tanh (wL / 1.5f);
+    if (std::abs (wR) > 1.5f) wR = 1.5f * std::tanh (wR / 1.5f);
+
+    bufL[(size_t) writePos] = wL;
+    bufR[(size_t) writePos] = wR;
+    if (++writePos >= maxDelaySamples)
+        writePos = 0;
+
+    float outWetL = wetL;
+    float outWetR = wetR;
+    if (std::abs (outWetL) > 1.2f) outWetL = 1.2f * std::tanh (outWetL / 1.2f);
+    if (std::abs (outWetR) > 1.2f) outWetR = 1.2f * std::tanh (outWetR / 1.2f);
+
+    const bool doL = channelMode != Stage::ChannelMode::Right;
+    const bool doR = channelMode != Stage::ChannelMode::Left && right != nullptr;
+    if (doL)
+        left = inL * dryG + outWetL * wet;
+    if (doR)
+        *right = inR * dryG + outWetR * wet;
+}
+
+void SignalChain::Delay::processBlock (juce::AudioBuffer<float>& buffer)
+{
+    const int nCh = buffer.getNumChannels();
+    const int nS  = buffer.getNumSamples();
+    if (nS <= 0 || nCh <= 0 || maxDelaySamples <= 2)
+        return;
 
     auto* L = buffer.getWritePointer (0);
     auto* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
-
-    const bool doL = channelMode != Stage::ChannelMode::Right;
-    const bool doR = channelMode != Stage::ChannelMode::Left && R != nullptr;
-
-    // Cap delay-time slew (samples/sample) — stops zipper when tempo/sync jumps
-    const float maxDelayDelta = juce::jmax (0.25f, sampleRate * 0.0008f); // ~0.8 ms/s
-
     for (int i = 0; i < nS; ++i)
-    {
-        float dSamps = delaySm.getNextValue();
-        // Extra rate limit on top of SmoothedValue for host BPM glitches
-        if (lastDelaySamples > 0.f)
-        {
-            const float delta = dSamps - lastDelaySamples;
-            if (std::abs (delta) > maxDelayDelta)
-                dSamps = lastDelaySamples + std::copysign (maxDelayDelta, delta);
-        }
-        lastDelaySamples = dSamps;
-
-        float fbk          = fbSm.getNextValue();
-        const float wet    = mixSm.getNextValue();
-        const float dryG   = 1.0f - wet;
-        const float dampA_ = dampCoeffSm.getNextValue();
-
-        // Hermite fractional read (linear interp was a major crackle source on sync delays)
-        float readPos = (float) writePos - dSamps;
-        float wetL = fracDelayRead (bufL, readPos, maxDelaySamples);
-        float wetR = fracDelayRead (bufR, readPos, maxDelaySamples);
-        if (! std::isfinite (wetL)) wetL = 0.f;
-        if (! std::isfinite (wetR)) wetR = 0.f;
-
-        const float inL = std::isfinite (L[i]) ? L[i] : 0.f;
-        const float inR = R != nullptr ? (std::isfinite (R[i]) ? R[i] : 0.f) : inL;
-
-        // Feedback with damping + DC block (and optional ping-pong)
-        float fbInL = wetL;
-        float fbInR = wetR;
-        if (pingpong && R != nullptr)
-        {
-            fbInL = wetR;
-            fbInR = wetL;
-        }
-
-        // HPF in feedback loop — kills DC hum buildup
-        const float hpL = fbInL - dcBlockL;
-        const float hpR = fbInR - dcBlockR;
-        dcBlockL = dcA * dcBlockL + (1.f - dcA) * fbInL;
-        dcBlockR = dcA * dcBlockR + (1.f - dcA) * fbInR;
-
-        dampStateL = flushDenorm (dampA_ * dampStateL + (1.f - dampA_) * hpL);
-        dampStateR = flushDenorm (dampA_ * dampStateR + (1.f - dampA_) * hpR);
-        dcBlockL = flushDenorm (dcBlockL);
-        dcBlockR = flushDenorm (dcBlockR);
-
-        float wL = inL + dampStateL * fbk;
-        float wR = inR + dampStateR * fbk;
-        if (! std::isfinite (wL)) wL = 0.f;
-        if (! std::isfinite (wR)) wR = 0.f;
-        if (std::abs (wL) > 1.5f) wL = 1.5f * std::tanh (wL / 1.5f);
-        if (std::abs (wR) > 1.5f) wR = 1.5f * std::tanh (wR / 1.5f);
-
-        bufL[(size_t) writePos] = wL;
-        bufR[(size_t) writePos] = wR;
-        if (++writePos >= maxDelaySamples)
-            writePos = 0;
-
-        // Soft-limit only true peaks — constant tanh on the wet path dulls transients
-        float outWetL = wetL;
-        float outWetR = wetR;
-        if (std::abs (outWetL) > 1.2f) outWetL = 1.2f * std::tanh (outWetL / 1.2f);
-        if (std::abs (outWetR) > 1.2f) outWetR = 1.2f * std::tanh (outWetR / 1.2f);
-
-        if (doL)
-            L[i] = inL * dryG + outWetL * wet;
-        if (doR)
-            R[i] = inR * dryG + outWetR * wet;
-    }
+        processFrame (L[i], R != nullptr ? &R[i] : nullptr);
 }
 
 //==============================================================================

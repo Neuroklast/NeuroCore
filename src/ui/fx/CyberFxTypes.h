@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-enum class CyberMotion : uint8_t { Full, Reduced };
+enum class CyberMotion : uint8_t { Full, Reduced, Off };
 
 enum class OverlayPhase : uint8_t
 {

@@ -10,7 +10,7 @@ class PresetTableComponent : public juce::Component, public juce::TableListBoxMo
 public:
     enum class Scope { All = 0, Factory, User };
 
-    explicit PresetTableComponent (NeuroCoreAudioProcessor& proc);
+    explicit PresetTableComponent (NeuroKoreAudioProcessor& proc);
     void resized() override;
 
     int getNumRows() override;
@@ -75,5 +75,5 @@ private:
     Scope scope { Scope::All };
     int  sortColumn { 1 }; ///< Default: Name A–Z
     bool sortForwards { true };
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
 };

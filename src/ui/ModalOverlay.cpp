@@ -15,8 +15,8 @@ ModalOverlay::ModalOverlay()
     addAndMakeVisible (closeButton);
 
     titleLabel.setJustificationType (juce::Justification::centredLeft);
-    titleLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
-    titleLabel.setFont (NeuroCoreLookAndFeel::brandFont (15.0f, true));
+    titleLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
+    titleLabel.setFont (NeuroKoreLookAndFeel::brandFont (15.0f, true));
 
     okButton.onClick = [this]
     {
@@ -79,7 +79,7 @@ void ModalOverlay::setPreferredContentSize (int w, int h)
 juce::Rectangle<int> ModalOverlay::panelSizeFor (int hostW, int hostH,
                                                  int prefW, int prefH) noexcept
 {
-    constexpr int kMargin = 24;
+    constexpr int kMargin = 16;
     const int availW = juce::jmax (1, hostW - kMargin);
     const int availH = juce::jmax (1, hostH - kMargin);
     int pw = prefW > 0 ? juce::jmin (availW, prefW) : availW;
@@ -92,20 +92,26 @@ juce::Rectangle<int> ModalOverlay::panelSizeFor (int hostW, int hostH,
 void ModalOverlay::fitToParent()
 {
     if (auto* p = getParentComponent())
-        setBounds (p->getLocalBounds());
+    {
+        auto b = p->getLocalBounds();
+        b.removeFromTop (topInset);
+        setBounds (b);
+    }
 }
 
 void ModalOverlay::show (juce::Component& parent)
 {
     parent.addAndMakeVisible (this);
-    setBounds (parent.getLocalBounds());
+    auto b = parent.getLocalBounds();
+    b.removeFromTop (topInset);
+    setBounds (b);
     setVisible (true);
     toFront (true);
     grabKeyboardFocus();
     lastStamp = 0.0;
     clipType = randomClipReveal (rng);
     sequence.playEnter();
-    if (motion == CyberMotion::Reduced)
+    if (motion != CyberMotion::Full)
         sequence.skipToEnd();
     applyContentVisibility();
     resized();
@@ -117,7 +123,7 @@ void ModalOverlay::show (juce::Component& parent)
 
 void ModalOverlay::requestClose()
 {
-    if (motion == CyberMotion::Reduced
+    if (motion != CyberMotion::Full
         || sequence.getPhase() == OverlayPhase::Idle
         || sequence.getPhase() == OverlayPhase::Closed)
     {
@@ -220,21 +226,21 @@ void ModalOverlay::paint (juce::Graphics& g)
         return;
 
     const auto r = panel.toFloat();
-    g.setColour (NeuroCoreLookAndFeel::background());
+    g.setColour (NeuroKoreLookAndFeel::background());
     g.fillRect (r);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
     g.drawRect (r, 1.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.14f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.14f));
     g.fillRect (r.getX(), r.getY(), r.getWidth(), 40.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.90f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.90f));
     g.fillRect (r.getX(), r.getY(), r.getWidth(), 2.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.30f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.30f));
     g.fillRect (r.getX() + 10.f, r.getY() + 40.f, r.getWidth() - 20.f, 1.f);
     CyberChrome::drawHudCorners (g, r.expanded (2.f), sequence.clipProgress(), 2.4f);
 
     const bool blink = ((int) (sequence.timeSec() * 6.f) % 2) == 0;
-    g.setColour (blink ? NeuroCoreLookAndFeel::accent()
-                       : NeuroCoreLookAndFeel::accent().withAlpha (0.25f));
+    g.setColour (blink ? NeuroKoreLookAndFeel::accent()
+                       : NeuroKoreLookAndFeel::accent().withAlpha (0.25f));
     g.fillEllipse (r.getX() + 10.f, r.getY() + 14.f, 6.f, 6.f);
 
     if (sequence.isLoaderVisible())
@@ -248,8 +254,8 @@ void ModalOverlay::paint (juce::Graphics& g)
                                         (int) clipType, rng.nextInt(), teardown);
         if (liveStatus.isNotEmpty())
         {
-            g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+            g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
             g.drawText (liveStatus, inner.removeFromBottom (18).reduced (12, 0),
                         juce::Justification::centredLeft, false);
         }

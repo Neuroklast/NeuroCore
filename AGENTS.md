@@ -20,6 +20,7 @@
 | [`docs/ANALYSIS.md`](docs/ANALYSIS.md) | Code-Analyse: Bugs, Probleme, Lücken |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phasen-basierte Entwicklungs-Roadmap |
 | [`docs/UNIQUE_SELLING_POINTS.md`](docs/UNIQUE_SELLING_POINTS.md) | Alleinstellungsmerkmale |
+| [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) | Bedienung: Graph-Platine, Script-Hack, Regler, Presets |
 | [`docs/VISAGE_UI_INTEGRATION.md`](docs/VISAGE_UI_INTEGRATION.md) | VisageUI Integration Guide |
 
 ---

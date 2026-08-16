@@ -16,8 +16,12 @@ void CyberFxDirector::setVisible (bool shouldBeVisible)
 void CyberFxDirector::setMotion (CyberMotion motion)
 {
     state.motion = motion;
-    if (motion == CyberMotion::Reduced)
+    if (motion != CyberMotion::Full)
+    {
         state.glitch = 0.f;
+        if (motion == CyberMotion::Off)
+            ambientDirty = false;
+    }
 }
 
 void CyberFxDirector::setPeakNorm (float norm01)
@@ -27,7 +31,7 @@ void CyberFxDirector::setPeakNorm (float norm01)
 
 void CyberFxDirector::triggerGlitch (float strength01, int seed)
 {
-    if (! state.visible || state.motion == CyberMotion::Reduced)
+    if (! state.visible || state.motion != CyberMotion::Full)
         return;
 
     state.glitch = juce::jlimit (0.f, 1.f, strength01);
@@ -36,6 +40,9 @@ void CyberFxDirector::triggerGlitch (float strength01, int seed)
 
 void CyberFxDirector::tick (float dtSec, juce::Random& rng)
 {
+    if (state.motion == CyberMotion::Off)
+        return;
+
     const float dt = juce::jlimit (0.f, 0.05f, dtSec);
     state.timeSec += dt;
     state.peakPulse += (peakTarget - state.peakPulse) * config.pulseSmooth;
@@ -72,5 +79,5 @@ void CyberFxDirector::tick (float dtSec, juce::Random& rng)
 
 bool CyberFxDirector::needsAmbientRepaint() const noexcept
 {
-    return ambientDirty;
+    return state.motion != CyberMotion::Off && ambientDirty;
 }

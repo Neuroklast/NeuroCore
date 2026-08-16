@@ -86,8 +86,11 @@ set(SOURCE_FILES
     src/utils/FactoryPresetLibrary.cpp
     src/utils/FormulaQuality.cpp
     src/utils/AudioDiagnostics.cpp
+    src/utils/UiSettings.cpp
     src/dsp/SignalPolisher.cpp
     src/dsl/DSLParser.cpp
+    src/dsl/GraphModel.cpp
+    src/ui/GraphCanvasComponent.cpp
     src/dsl/SignalChain.cpp
     src/dsl/blocks/GateBlock.cpp
     src/dsl/blocks/CompBlock.cpp
@@ -275,6 +278,7 @@ juce_generate_juce_header(NeuroKoreTests)
 target_sources(NeuroKoreTests PRIVATE
     tests/main.cpp
     tests/DSLParserTest.h
+    tests/GraphModelTest.h
     tests/ExpressionEvaluatorTest.h
     tests/LookupTableSmootherTest.h
     tests/SignalChainTest.h
@@ -282,7 +286,7 @@ target_sources(NeuroKoreTests PRIVATE
     tests/WeightedLayoutTest.h
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
-    tests/NeuroCoreExtrasTest.h
+    tests/NeuroKoreExtrasTest.h
     tests/CyberFxTest.h
     tests/EditorUxTest.h
     tests/LicenseTest.h
@@ -331,6 +335,10 @@ target_link_libraries(NeuroKoreTests PRIVATE
     juce::juce_opengl
     resourcesBinary
 )
+
+if (MSVC)
+    target_link_options (NeuroKoreTests PRIVATE /STACK:8388608)
+endif()
 
 enable_testing()
 add_test(NAME NeuroKoreTests COMMAND NeuroKoreTests)

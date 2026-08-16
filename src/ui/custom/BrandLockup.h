@@ -8,8 +8,8 @@ class BrandLockup : public juce::Component,
 {
 public:
     static constexpr const char* kWebsiteUrl = "https://neuroklast.net";
-    /// Edge-cropped NK mark fills the compact toolbar; stays under the HUD strip.
-    static constexpr float kMaxLogoHeight = 26.f;
+    /// Edge-cropped NK mark fills the toolbar; stays under the HUD strip.
+    static constexpr float kMaxLogoHeight = 32.f;
 
     BrandLockup (juce::Image logoImage, juce::String titleText, juce::String versionText)
         : logo (std::move (logoImage)),
@@ -44,8 +44,8 @@ public:
         const float h = r.getHeight();
         const float titleH = juce::jlimit (11.f, 15.f, h * 0.50f);
         const float verH   = juce::jlimit (9.f, 11.5f, h * 0.34f);
-        auto titleFont = NeuroCoreLookAndFeel::brandFont (titleH, true);
-        auto verFont   = NeuroCoreLookAndFeel::monoFont (verH);
+        auto titleFont = NeuroKoreLookAndFeel::brandFont (titleH, true);
+        auto verFont   = NeuroKoreLookAndFeel::monoFont (verH);
 
         const float titleW = (float) titleFont.getStringWidth (title);
         const float verW   = (float) verFont.getStringWidth (version);
@@ -84,10 +84,10 @@ public:
         auto verArea   = juce::Rectangle<float> (tx, titleArea.getBottom() + 1.f,
                                                  textW, verH);
 
-        g.setColour (NeuroCoreLookAndFeel::accent());
+        g.setColour (NeuroKoreLookAndFeel::accent());
         g.setFont (titleFont);
         g.drawText (title, titleArea, juce::Justification::centredLeft, false);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.72f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.72f));
         g.setFont (verFont);
         g.drawText (version, verArea, juce::Justification::centredLeft, false);
     }

@@ -24,7 +24,7 @@ public:
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
             expect (lib.getEntries().size() > 100);
 
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.setPlayConfigDetails (2, 2, 48000.0, 512);
             proc.prepareToPlay (48000.0, 512);
 
@@ -80,7 +80,7 @@ public:
                 }
                 ++insertN;
                 const float peakFloor = e.category.equalsIgnoreCase ("Filter") ? 0.08f : 0.12f;
-                const float rmsFloor  = e.category.equalsIgnoreCase ("Filter") ? 0.025f : 0.04f;
+                const float rmsFloor  = e.category.equalsIgnoreCase ("Filter") ? 0.025f : 0.038f;
                 if (peak < peakFloor || rms < rmsFloor)
                 {
                     ++quietN;

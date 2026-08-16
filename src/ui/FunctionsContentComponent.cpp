@@ -215,9 +215,9 @@ void FunctionPlotComponent::timerCallback()
 void FunctionPlotComponent::paint (juce::Graphics& g)
 {
     auto area = getLocalBounds().toFloat().reduced (1.f);
-    g.setColour (NeuroCoreLookAndFeel::background());
+    g.setColour (NeuroKoreLookAndFeel::background());
     g.fillRoundedRectangle (area, 8.f);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
     g.drawRoundedRectangle (area, 8.f, 1.2f);
 
     auto body = area.reduced (6.f, 4.f);
@@ -228,15 +228,15 @@ void FunctionPlotComponent::paint (juce::Graphics& g)
     auto drawWave = [&] (juce::Rectangle<float> r, const std::vector<float>& samples,
                          juce::Colour col, const juce::String& tag)
     {
-        g.setColour (NeuroCoreLookAndFeel::surfaceHigh().withAlpha (0.55f));
+        g.setColour (NeuroKoreLookAndFeel::surfaceHigh().withAlpha (0.55f));
         g.fillRoundedRectangle (r, 6.f);
 
         const float midY = r.getCentreY();
-        g.setColour (NeuroCoreLookAndFeel::mutedText().withAlpha (0.3f));
+        g.setColour (NeuroKoreLookAndFeel::mutedText().withAlpha (0.3f));
         g.drawLine (r.getX() + 2.f, midY, r.getRight() - 2.f, midY, 1.f);
 
         g.setColour (col.withAlpha (0.95f));
-        g.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+        g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
         g.drawText (tag, r.reduced (8.f, 4.f), juce::Justification::topLeft, false);
 
         if (samples.size() < 2)
@@ -260,7 +260,7 @@ void FunctionPlotComponent::paint (juce::Graphics& g)
     // IN: pure sine  |  OUT: sine after function
     drawWave (top, inSamples, juce::Colour (0xff7aa2ff), "IN  sine");
     drawWave (bot, outSamples,
-              formulaOk ? NeuroCoreLookAndFeel::accent() : juce::Colour (0xff666666),
+              formulaOk ? NeuroKoreLookAndFeel::accent() : juce::Colour (0xff666666),
               formulaOk ? ("OUT  " + (displayName.isNotEmpty() ? displayName : juce::String ("f(x)")))
                         : "OUT  (no demo)");
 }
@@ -277,8 +277,8 @@ public:
         setModel (this);
         setRowHeight (FunctionsContentComponent::kCategoryRowHeight);
         setOutlineThickness (0);
-        setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
-        setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+        setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
+        setColour (juce::ListBox::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
     }
 
     void setRows (juce::Array<Row> next, const juce::String& selectedName)
@@ -309,17 +309,13 @@ public:
         if (! juce::isPositiveAndBelow (row, rows.size()))
             return;
         const auto& item = rows.getReference (row);
-        if (selected)
-            g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
-        else if (row % 2)
-            g.fillAll (NeuroCoreLookAndFeel::surfaceHigh());
-
-        g.setColour (selected ? NeuroCoreLookAndFeel::accent() : juce::Colour (0xffe8ecf4));
-        g.setFont (NeuroCoreLookAndFeel::brandFont (FunctionsContentComponent::kCategoryNameFontPt, selected));
+        NeuroKoreLookAndFeel::paintSelectableRow (g, w, h, selected, row % 2);
+        g.setColour (NeuroKoreLookAndFeel::ink());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (FunctionsContentComponent::kCategoryNameFontPt));
         const auto label = item.name.isEmpty() ? juce::String ("All") : item.name;
         g.drawText (label, 10, 0, w - 52, h, juce::Justification::centredLeft, true);
-        g.setColour (NeuroCoreLookAndFeel::mutedText());
-        g.setFont (NeuroCoreLookAndFeel::monoFont (FunctionsContentComponent::kCategoryCountFontPt));
+        g.setColour (NeuroKoreLookAndFeel::mutedText());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (FunctionsContentComponent::kCategoryCountFontPt));
         g.drawText (juce::String (item.count), 0, 0, w - 10, h,
                     juce::Justification::centredRight, false);
     }
@@ -354,19 +350,19 @@ juce::String FunctionsContentComponent::categoryForName (const juce::String& nam
 }
 
 //==============================================================================
-FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p)
+FunctionsContentComponent::FunctionsContentComponent (NeuroKoreAudioProcessor& p)
     : processor (p)
 {
     setWantsKeyboardFocus (true);
     setOpaque (false);
 
     folderLabel.setText ("Folders", juce::dontSendNotification);
-    folderLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    folderLabel.setFont (NeuroCoreLookAndFeel::brandFont (11.f));
+    folderLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
+    folderLabel.setFont (NeuroKoreLookAndFeel::brandFont (11.f));
     addAndMakeVisible (folderLabel);
     countLabel.setJustificationType (juce::Justification::centredRight);
-    countLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    countLabel.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    countLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
+    countLabel.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
     addAndMakeVisible (countLabel);
 
     folderNav = std::make_unique<CategoryNav>();
@@ -386,15 +382,15 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p
     addAndMakeVisible (plotCaption);
     addAndMakeVisible (plot);
 
-    searchField.setTextToShowWhenEmpty ("Search functions...", NeuroCoreLookAndFeel::mutedText());
-    searchField.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
-    searchField.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
+    searchField.setTextToShowWhenEmpty ("Search functions...", NeuroKoreLookAndFeel::mutedText());
+    searchField.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
+    searchField.setColour (juce::TextEditor::backgroundColourId, NeuroKoreLookAndFeel::surfaceHigh());
     searchField.setColour (juce::TextEditor::textColourId, juce::Colour (0xffe8ecf4));
     searchField.setColour (juce::TextEditor::outlineColourId, juce::Colour (0xff2e3545));
     searchField.onTextChange = [this] { filterList(); };
 
     listBox.setRowHeight (36);
-    listBox.setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
+    listBox.setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
     listBox.setColour (juce::ListBox::outlineColourId, juce::Colours::transparentBlack);
 
     insertButton.setButtonText ("Insert");
@@ -413,26 +409,26 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroCoreAudioProcessor& p
     };
 
     // Readable sizes (Apex brand title + mono body — never tiny 11–12 pt)
-    nameLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
-    nameLabel.setFont (NeuroCoreLookAndFeel::brandFont (22.f, true));
+    nameLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::accent());
+    nameLabel.setFont (NeuroKoreLookAndFeel::brandFont (22.f, true));
 
     descLabel.setColour (juce::Label::textColourId, juce::Colour (0xffe8ecf4));
-    descLabel.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
+    descLabel.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
 
     soundLabel.setColour (juce::Label::textColourId, juce::Colour (0xffffb08a));
-    soundLabel.setFont (NeuroCoreLookAndFeel::monoFont (15.f));
+    soundLabel.setFont (NeuroKoreLookAndFeel::monoFont (15.f));
 
     useLabel.setColour (juce::Label::textColourId, juce::Colour (0xffa8d4a8));
-    useLabel.setFont (NeuroCoreLookAndFeel::monoFont (15.f));
+    useLabel.setFont (NeuroKoreLookAndFeel::monoFont (15.f));
 
     exampleLabel.setColour (juce::Label::textColourId, juce::Colour (0xffc8d0e4));
-    exampleLabel.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
+    exampleLabel.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
 
     extraLabel.setColour (juce::Label::textColourId, juce::Colour (0xffc0c4cc));
-    extraLabel.setFont (NeuroCoreLookAndFeel::monoFont (14.f));
+    extraLabel.setFont (NeuroKoreLookAndFeel::monoFont (14.f));
 
     plotCaption.setColour (juce::Label::textColourId, juce::Colour (0xffd0d4dc));
-    plotCaption.setFont (NeuroCoreLookAndFeel::monoFont (14.f));
+    plotCaption.setFont (NeuroKoreLookAndFeel::monoFont (14.f));
     plotCaption.setText ("Animated: sine IN (top) vs after function OUT (bottom)",
                          juce::dontSendNotification);
 
@@ -605,12 +601,12 @@ void FunctionsContentComponent::paintListBoxItem (int row, juce::Graphics& g, in
         return;
 
     if (selected)
-        g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+        g.fillAll (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
     else if (row % 2)
-        g.fillAll (NeuroCoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
+        g.fillAll (NeuroKoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
 
     g.setColour (juce::Colour (0xffe8ecf4));
-    g.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
     g.drawText (allFunctions[(size_t) filtered[(size_t) row]].name,
                 12, 0, width - 16, height, juce::Justification::centredLeft, true);
 }

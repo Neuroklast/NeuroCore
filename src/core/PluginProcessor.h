@@ -9,7 +9,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 
@@ -36,15 +36,15 @@
 //==============================================================================
 /**
 */
-class NeuroCoreAudioProcessor  : public juce::AudioProcessor,
+class NeuroKoreAudioProcessor  : public juce::AudioProcessor,
                                  public juce::ChangeBroadcaster,
                                  private juce::AudioProcessorValueTreeState::Listener,
                                  private juce::AsyncUpdater
 {
 public:
     //==============================================================================
-    NeuroCoreAudioProcessor();
-    ~NeuroCoreAudioProcessor() override;
+    NeuroKoreAudioProcessor();
+    ~NeuroKoreAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -82,11 +82,14 @@ public:
 
     // Updates signal chain script from the UI (with undo support)
     bool setFormula (const juce::String& text, juce::String& error);
+    bool setFormula (const juce::String& text, juce::String& error, bool clearPresetName);
 
     /** Apply a formula without undo tracking (used by undo/redo actions). */
     bool applyFormula (const juce::String& text, juce::String& error);
     /** @param clearPresetName  false when loading a named factory/user preset */
     bool applyFormula (const juce::String& text, juce::String& error, bool clearPresetName);
+
+    void recordNameChange (int index, const juce::String& oldName, const juce::String& newName);
 
     juce::String getScript() const { return scriptManager.getScript(); }
 
@@ -164,6 +167,8 @@ public:
     /** Currently loaded preset name (empty if none / custom formula). */
     juce::String getCurrentPresetName() const { return currentPresetName; }
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
+    /** If the live script is a factory preset and no name is set, adopt that name. */
+    bool resolvePresetNameFromScript();
 
     void setLastPresetBrowserName (const juce::String& name)
     {
@@ -192,7 +197,7 @@ public:
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
 
     bool  isCpuProtectActive() const noexcept { return cpuProtect.isTripped(); }
-    float getCpuLoad()         const noexcept { return cpuProtect.getLastLoad(); }
+    float getCpuLoad()         const noexcept { return cpuProtect.getSmoothedLoad(); }
     void  clearCpuProtect()          noexcept { cpuProtect.clear(); }
 
     bool          isProductLicensed() const noexcept { return isLicensed.load(); }
@@ -203,7 +208,7 @@ public:
     juce::String  licenseError() const { return licenseManager.lastError(); }
     bool          importProductLicense (const juce::File& file);
 
-    /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroCore). */
+    /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroKore). */
     AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }
     juce::File getAudioDiagnosticsLogFile() const { return dspEngine.getDiagnostics().getLogFile(); }
 
@@ -220,6 +225,10 @@ public:
     void clearIr (const juce::String& slot);
     void clearAllIrs();
     void refreshReportedLatency();
+
+    bool isLiveMode() const noexcept;
+    void setLiveMode (bool enabled);
+    int getOversamplingLatencySamples() const noexcept;
 
     // juce::AudioProcessorValueTreeState::Listener implementation
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -264,6 +273,6 @@ private:
                     const juce::String& displayName, juce::String& error);
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroCoreAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroKoreAudioProcessor)
 };
 

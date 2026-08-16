@@ -38,7 +38,8 @@ public:
             const auto text = LicenseCrypto::issue (payload, priv);
             expect (text.contains ("NEUROKORE LICENSE"));
             expect (LicenseCrypto::isAcceptedProduct ("NEUROKORE"));
-            expect (LicenseCrypto::isAcceptedProduct ("NeuroCore"));
+            expect (LicenseCrypto::isAcceptedProduct ("NeuroKore"));
+            expect (! LicenseCrypto::isAcceptedProduct ("NeuroCore"));
             expect (! LicenseCrypto::isAcceptedProduct ("OtherPlugin"));
 
             LicensePayload loaded;
@@ -66,7 +67,7 @@ public:
         {
             LicenseManager manager;
             const auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                                 .getChildFile ("neurocore-bad.lic");
+                                 .getChildFile ("neurokore-bad.lic");
             tmp.replaceWithText ("{ \"email\": \"x@y.com\" }");
             expect (! manager.importLicenseFile (tmp));
             tmp.deleteFile();

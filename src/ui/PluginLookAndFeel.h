@@ -3,10 +3,10 @@
 #include "PresetTableComponent.h"
 
 /**
-    NeuroCore brand LookAndFeel — pure black / signal-red cyber UI
+    NeuroKore brand LookAndFeel — pure black / signal-red cyber UI
     (reference: screenshots + NK Logo Red Bold).
 */
-class NeuroCoreLookAndFeel : public juce::LookAndFeel_V4 {
+class NeuroKoreLookAndFeel : public juce::LookAndFeel_V4 {
 public:
   enum ColourIds {
     glowColourId = 0x2340000,
@@ -25,16 +25,21 @@ public:
     panelBorderColourId = 0x234000d,
   };
 
-  // Brand palette (NK red on pure black)
-  static juce::Colour accent()       { return juce::Colour (0xffff1a1a); } // signal red
+  // Brand palette: red chrome on near-black. Body copy is ink, never accent.
+  static juce::Colour accent()       { return juce::Colour (0xffff1a1a); } // signal red — borders, active buttons, brand
   static juce::Colour accentDim()    { return juce::Colour (0xff990000); }
   static juce::Colour surface()      { return juce::Colour (0xff0a0a0a); }
   static juce::Colour surfaceHigh()  { return juce::Colour (0xff141414); }
   static juce::Colour background()   { return juce::Colour (0xff000000); }
-  static juce::Colour mutedText()    { return juce::Colour (0xff8a8a8a); }
-  static juce::Colour brightText()   { return juce::Colour (0xfffff5f5); }
-  /// Formula comments: rust, sits with the red chrome (not editor-green).
-  static juce::Colour comment()      { return juce::Colour (0xffc4786a); }
+  static juce::Colour canvas()       { return background(); }             // near-black body
+  static juce::Colour ink()          { return juce::Colour (0xfffff5f5); } // near-white formula / help / lists
+  static juce::Colour inkMuted()     { return juce::Colour (0xffc8c8c8); } // cool gray, red/white/black only
+  static juce::Colour mutedText()    { return inkMuted(); }
+  static juce::Colour brightText()   { return ink(); }
+  /// Formula comments stay in the red/white/black set (no rust).
+  static juce::Colour comment()      { return inkMuted(); }
+  static juce::Colour error()        { return juce::Colour (0xffff6b6b); } // error copy — not chrome fill
+  static juce::Colour warningMark()  { return accent(); }                 // left bar only; banner text stays ink
   static juce::Colour panelBorder()  { return juce::Colour (0xff3a0000); }
   static juce::Colour gridLine()     { return juce::Colour (0x22ff1a1a); }
 
@@ -88,14 +93,14 @@ public:
   int   glitchSeed   { 0 };
   float peakPulse    { 0.f };   // 0..1 from loudness meter feedback
 
-  NeuroCoreLookAndFeel() {
+  NeuroKoreLookAndFeel() {
     using namespace juce;
 
     auto scheme = getCurrentColourScheme();
     scheme.setUIColour(ColourScheme::windowBackground, background());
     scheme.setUIColour(ColourScheme::widgetBackground, surface());
-    scheme.setUIColour(ColourScheme::defaultText, brightText());
-    scheme.setUIColour(ColourScheme::highlightedText, accent());
+    scheme.setUIColour(ColourScheme::defaultText, ink());
+    scheme.setUIColour(ColourScheme::highlightedText, ink());
     scheme.setUIColour(ColourScheme::outline, panelBorder());
     setColourScheme(scheme);
 
@@ -106,10 +111,10 @@ public:
     setColour(panelBorderColourId, panelBorder());
     setColour(glowColourId, accent().withAlpha(0.45f));
     setColour(shadowColourId, Colours::black.withAlpha(0.7f));
-    setColour(errorColourId, Colour(0xffff4444));
+    setColour(errorColourId, error());
 
     setColour(ResizableWindow::backgroundColourId, background());
-    setColour(Label::textColourId, brightText());
+    setColour(Label::textColourId, ink());
     setColour(Label::backgroundColourId, Colours::transparentBlack);
 
     setColour(Slider::rotarySliderFillColourId, accent().withAlpha(0.2f));
@@ -145,14 +150,14 @@ public:
     setColour(ScrollBar::trackColourId, surface());
 
     setColour(presetTableBackgroundColourId, surface());
-    setColour(presetTableTextColourId, brightText());
+    setColour(presetTableTextColourId, ink());
     setColour(presetTableAltRowColourId, surfaceHigh());
     setColour(presetTableHighlightColourId, accent().withAlpha(0.28f));
     setColour(presetTableHeaderBackgroundColourId, Colour(0xff080808));
-    setColour(presetTableHeaderTextColourId, accent().withAlpha(0.85f));
+    setColour(presetTableHeaderTextColourId, inkMuted());
 
-    // Force brand face for default UI text (labels, buttons, menus)
-    if (auto tf = brandTypeface())
+    // Body UI is JetBrains Mono. Apex is only used when brandFont() is asked for.
+    if (auto tf = monoTypeface())
         setDefaultSansSerifTypefaceName (tf->getName());
 
     outerKnob = juce::ImageCache::getFromMemory(BinaryData::outerKnob_png,
@@ -167,21 +172,77 @@ public:
                                                                  BinaryData::nk_logo_pngSize));
   }
 
-  ~NeuroCoreLookAndFeel() override = default;
+  ~NeuroKoreLookAndFeel() override = default;
 
   juce::Typeface::Ptr getTypefaceForFont (const juce::Font& f) override
   {
-      // Route default / brand UI text through embedded Apex
-      if (auto tf = brandTypeface())
+      const auto name = f.getTypefaceName();
+      if (auto brand = brandTypeface())
+          if (name == brand->getName() || name == "Apex" || name == "apex")
+              return brand;
+      if (auto mono = monoTypeface())
       {
-          const auto name = f.getTypefaceName();
           if (name == juce::Font::getDefaultSansSerifFontName()
-              || name == tf->getName()
+              || name == juce::Font::getDefaultMonospacedFontName()
+              || name == mono->getName()
               || name.isEmpty()
-              || name == "Apex" || name == "apex")
-              return tf;
+              || name == "JetBrains Mono")
+              return mono;
       }
       return LookAndFeel_V4::getTypefaceForFont (f);
+  }
+
+  juce::Font getTextButtonFont (juce::TextButton&, int buttonHeight) override
+  {
+      return monoFont ((float) juce::jlimit (11, 15, buttonHeight / 2 + 2));
+  }
+
+  juce::Font getLabelFont (juce::Label&) override
+  {
+      return monoFont (13.f);
+  }
+
+  juce::Font getComboBoxFont (juce::ComboBox&) override
+  {
+      return monoFont (13.f);
+  }
+
+  juce::Font getPopupMenuFont() override
+  {
+      return juce::Font (juce::Font::getDefaultMonospacedFontName(), 18.0f, juce::Font::plain);
+  }
+
+  void getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
+                                  int standardMenuItemHeight,
+                                  int& idealWidth, int& idealHeight) override
+  {
+      juce::ignoreUnused (standardMenuItemHeight);
+      if (isSeparator)
+      {
+          idealWidth = 50;
+          idealHeight = 8;
+          return;
+      }
+      // Do not call getPopupMenuFont() here — LookAndFeel construction can
+      // query item size, and Font setup would recurse into this LAF.
+      idealHeight = 30;
+      idealWidth  = juce::jmax (280, text.length() * 11 + 40);
+  }
+
+  /** Selected list row: ink on surface, accent tick — never red-on-red. */
+  static void paintSelectableRow (juce::Graphics& g, int w, int h, bool selected, bool alt)
+  {
+      juce::ignoreUnused (w);
+      if (selected)
+      {
+          g.fillAll (surfaceHigh());
+          g.setColour (accent());
+          g.fillRect (0, 0, 3, h);
+      }
+      else if (alt)
+      {
+          g.fillAll (surfaceHigh());
+      }
   }
 
   void drawRotarySlider(juce::Graphics& g,

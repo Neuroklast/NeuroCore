@@ -3,6 +3,7 @@
 #include "../core/PluginProcessor.h"
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
+#include "../dsl/GraphModel.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <BinaryData.h>
 
@@ -150,7 +151,7 @@ juce::File findLooseFactoryIr (const juce::String& fileName)
     return {};
 }
 
-bool loadFactoryIrInto (NeuroCoreAudioProcessor& processor,
+bool loadFactoryIrInto (NeuroKoreAudioProcessor& processor,
                         const juce::String& slot,
                         const juce::String& fileName,
                         juce::String& error)
@@ -185,11 +186,11 @@ juce::File FactoryPresetLibrary::resolveResourcesDir(const juce::File& hint)
     const auto moduleFile = juce::File::getSpecialLocation(juce::File::currentApplicationFile);
     const auto moduleDir  = moduleFile.getParentDirectory();
 
-    // Flat layout: <dir>/NeuroCore.vst3 + <dir>/resources/
+    // Flat layout: <dir>/NeuroKore.vst3 + <dir>/resources/
     candidates.add(moduleFile.getSiblingFile(Config::kResourceFolder));
     candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
 
-    // Bundle layout: NeuroCore.vst3/Contents/x86_64-win/NeuroCore.vst3
+    // Bundle layout: NeuroKore.vst3/Contents/x86_64-win/NeuroKore.vst3
     // resources next to the binary, or under Contents/Resources
     candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
     candidates.add(moduleDir.getParentDirectory().getChildFile("Resources"));
@@ -223,6 +224,57 @@ const FactoryPresetEntry* FactoryPresetLibrary::findByName (const juce::String& 
     for (const auto& e : entries)
         if (e.name == name)
             return &e;
+    return nullptr;
+}
+
+namespace
+{
+juce::String strippedFactoryScript (const juce::String& script)
+{
+    juce::StringArray lines;
+    lines.addLines (script);
+    juce::StringArray keep;
+    for (auto line : lines)
+    {
+        auto t = line.trim();
+        if (t.isEmpty() || t.startsWithChar ('#') || t.startsWith ("//"))
+            continue;
+        const int hash = t.indexOfChar ('#');
+        const int sl = t.indexOf ("//");
+        int cut = -1;
+        if (sl >= 0 && (hash < 0 || sl < hash))
+            cut = sl;
+        else if (hash >= 0)
+            cut = hash;
+        if (cut >= 0)
+            t = t.substring (0, cut).trim();
+        if (t.isNotEmpty())
+            keep.add (t);
+    }
+    return keep.joinIntoString ("\n");
+}
+}
+
+const FactoryPresetEntry* FactoryPresetLibrary::findMatchingScript (const juce::String& script) const
+{
+    const auto stripped = strippedFactoryScript (script);
+    if (stripped.isEmpty())
+        return nullptr;
+
+    for (const auto& e : entries)
+        if (strippedFactoryScript (e.script) == stripped)
+            return &e;
+
+    juce::String err;
+    dsl::GraphDocument want;
+    if (! dsl::parse (script, want, err))
+        return nullptr;
+    for (const auto& e : entries)
+    {
+        dsl::GraphDocument have;
+        if (dsl::parse (e.script, have, err) && dsl::semanticallyEqual (want, have))
+            return &e;
+    }
     return nullptr;
 }
 
@@ -273,7 +325,7 @@ bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
     return loadFromEmbedded();
 }
 
-bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
+bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
                                        int index,
                                        juce::String& error) const
 {
@@ -287,9 +339,16 @@ bool FactoryPresetLibrary::applyPreset(NeuroCoreAudioProcessor& processor,
 
     processor.clearAllIrs();
 
+    // Name first — applyFormula notifies the editor synchronously.
+    const auto previousName = processor.getCurrentPresetName();
+    processor.setCurrentPresetName (preset.name);
+
     // Keep preset name: applyFormula(clear=false) must not wipe the active label
     if (! processor.applyFormula (preset.script, error, false))
+    {
+        processor.setCurrentPresetName (previousName);
         return false;
+    }
 
     for (const auto& kv : preset.irs)
     {

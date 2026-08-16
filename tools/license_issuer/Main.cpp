@@ -18,7 +18,7 @@ juce::String issueToFile (const juce::String& email, const juce::File& dest, juc
     payload.email = normalised;
     payload.issued = juce::Time::getCurrentTime().formatted ("%Y-%m-%d");
 
-    const auto text = LicenseCrypto::issue (payload, neurocoreProductPrivateKey());
+    const auto text = LicenseCrypto::issue (payload, neurokoreProductPrivateKey());
     if (text.isEmpty() || ! text.contains ("sig="))
     {
         error = "Signing failed.";
@@ -63,7 +63,7 @@ int runCli (const juce::StringArray& args)
     {
         juce::String error;
         const auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                             .getChildFile ("neurocore-selftest.lic");
+                             .getChildFile ("neurokore-selftest.lic");
         const auto path = issueToFile ("selftest@neuroklast.net", tmp, error);
         const bool ok = path.isNotEmpty();
         const auto report = juce::File::getSpecialLocation (juce::File::currentExecutableFile)

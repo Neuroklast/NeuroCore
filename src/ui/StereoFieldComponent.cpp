@@ -1,7 +1,7 @@
 #include "StereoFieldComponent.h"
 #include "PluginLookAndFeel.h"
 
-StereoFieldComponent::StereoFieldComponent (NeuroCoreAudioProcessor& proc,
+StereoFieldComponent::StereoFieldComponent (NeuroKoreAudioProcessor& proc,
                                             WaveformDisplayComponent::Type t)
     : processor (proc), type (t)
 {
@@ -48,13 +48,14 @@ void StereoFieldComponent::paint (juce::Graphics& g)
     g.setGradientFill (well);
     g.fillRect (plot);
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
     g.drawRect (plot, 1.f);
 
     const auto c = plot.getCentre();
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
     g.drawLine (c.x, plot.getY(), c.x, plot.getBottom(), 0.6f);
     g.drawLine (plot.getX(), c.y, plot.getRight(), c.y, 0.6f);
+    g.drawEllipse (plot.reduced (plot.getWidth() * 0.08f), 0.7f);
     g.drawLine (plot.getX(), plot.getY(), plot.getRight(), plot.getBottom(), 0.5f);
     g.drawLine (plot.getRight(), plot.getY(), plot.getX(), plot.getBottom(), 0.5f);
 
@@ -86,16 +87,16 @@ void StereoFieldComponent::paint (juce::Graphics& g)
                 path.lineTo (x, y);
             }
         }
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.18f));
         g.strokePath (path, juce::PathStrokeType (3.2f, juce::PathStrokeType::curved,
                                                   juce::PathStrokeType::rounded));
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.92f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.92f));
         g.strokePath (path, juce::PathStrokeType (1.1f, juce::PathStrokeType::curved,
                                                   juce::PathStrokeType::rounded));
     }
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.80f));
-    g.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.80f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
     g.drawText (type == WaveformDisplayComponent::Type::Input ? "IN FIELD" : "OUT FIELD",
                 full.getX() + 4.f, full.getY() + 2.f, full.getWidth() - 8.f, 12.f,
                 juce::Justification::centredLeft, false);
@@ -104,12 +105,12 @@ void StereoFieldComponent::paint (juce::Graphics& g)
                                            plot.getWidth(), 6.f);
     g.setColour (juce::Colour (0xff1a0505));
     g.fillRect (corrBar);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.45f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
     g.drawRect (corrBar, 1.f);
     const float midX = corrBar.getCentreX();
     const float corr = juce::jlimit (-1.f, 1.f, stats.correlation);
     const float markX = midX + corr * (corrBar.getWidth() * 0.5f - 2.f);
-    g.setColour (NeuroCoreLookAndFeel::accent());
+    g.setColour (NeuroKoreLookAndFeel::accent());
     g.fillRect (juce::jmin (midX, markX), corrBar.getY() + 1.f,
                 std::abs (markX - midX), corrBar.getHeight() - 2.f);
     g.fillRect (markX - 1.f, corrBar.getY(), 2.f, corrBar.getHeight());

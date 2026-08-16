@@ -8,7 +8,7 @@
 class StagesContentComponent : public juce::Component, public juce::ListBoxModel
 {
 public:
-    explicit StagesContentComponent(NeuroCoreAudioProcessor& processor);
+    explicit StagesContentComponent(NeuroKoreAudioProcessor& processor);
     ~StagesContentComponent() override = default;
 
     std::function<void()> onClose;
@@ -26,7 +26,7 @@ private:
     void refreshFromScript();
     void updateDetails(int index);
 
-    NeuroCoreAudioProcessor& audioProcessor;
+    NeuroKoreAudioProcessor& audioProcessor;
     juce::ListBox listBox { "stages", this };
     juce::Label paramsLabel;
     juce::Label nameLabel;

@@ -49,8 +49,8 @@ public:
         setModel (this);
         setRowHeight (PresetContentComponent::kCategoryRowHeight);
         setOutlineThickness (0);
-        setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
-        setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+        setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
+        setColour (juce::ListBox::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
     }
 
     void setRows (juce::Array<Row> next, const juce::String& selectedName)
@@ -81,17 +81,13 @@ public:
         if (! juce::isPositiveAndBelow (row, rows.size()))
             return;
         const auto& item = rows.getReference (row);
-        if (selected)
-            g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
-        else if (row % 2)
-            g.fillAll (NeuroCoreLookAndFeel::surfaceHigh());
-
-        g.setColour (selected ? NeuroCoreLookAndFeel::accent() : juce::Colour (0xffe8ecf4));
-        g.setFont (NeuroCoreLookAndFeel::brandFont (PresetContentComponent::kCategoryNameFontPt, selected));
+        NeuroKoreLookAndFeel::paintSelectableRow (g, w, h, selected, row % 2);
+        g.setColour (NeuroKoreLookAndFeel::ink());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (PresetContentComponent::kCategoryNameFontPt));
         const auto label = item.name.isEmpty() ? juce::String ("All") : item.name;
         g.drawText (label, 10, 0, w - 52, h, juce::Justification::centredLeft, true);
-        g.setColour (NeuroCoreLookAndFeel::mutedText());
-        g.setFont (NeuroCoreLookAndFeel::monoFont (PresetContentComponent::kCategoryCountFontPt));
+        g.setColour (NeuroKoreLookAndFeel::mutedText());
+        g.setFont (NeuroKoreLookAndFeel::monoFont (PresetContentComponent::kCategoryCountFontPt));
         g.drawText (juce::String (item.count), 0, 0, w - 10, h,
                     juce::Justification::centredRight, false);
     }
@@ -106,7 +102,7 @@ private:
     juce::Array<Row> rows;
 };
 
-PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, juce::LookAndFeel& lf)
+PresetContentComponent::PresetContentComponent (NeuroKoreAudioProcessor& proc, juce::LookAndFeel& lf)
     : table (proc), processor (proc), lookAndFeel (lf)
 {
     juce::ignoreUnused (lookAndFeel);
@@ -118,16 +114,17 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
     countLabel.setJustificationType (juce::Justification::centredRight);
     for (auto* l : { &searchLabel, &folderLabel, &countLabel })
     {
-        l->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-        l->setFont (NeuroCoreLookAndFeel::brandFont (11.f));
+        l->setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
+        l->setFont (NeuroKoreLookAndFeel::monoFont (11.f));
         addAndMakeVisible (*l);
     }
 
+    searchBox.setFont (NeuroKoreLookAndFeel::monoFont (14.f));
     searchBox.setTextToShowWhenEmpty ("Search name, tags, formula (delay, kick, techno)...",
-                                      NeuroCoreLookAndFeel::mutedText());
-    searchBox.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
+                                      NeuroKoreLookAndFeel::mutedText());
+    searchBox.setColour (juce::TextEditor::backgroundColourId, NeuroKoreLookAndFeel::surfaceHigh());
     searchBox.setColour (juce::TextEditor::textColourId, juce::Colours::white);
-    searchBox.setColour (juce::TextEditor::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+    searchBox.setColour (juce::TextEditor::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
     searchBox.addListener (this);
     addAndMakeVisible (searchBox);
 
@@ -135,8 +132,8 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
     {
         b.setClickingTogglesState (true);
         b.setRadioGroupId (0x50524553);
-        b.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
-        b.setColour (juce::TextButton::buttonOnColourId, NeuroCoreLookAndFeel::accent());
+        b.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::surfaceHigh());
+        b.setColour (juce::TextButton::buttonOnColourId, NeuroKoreLookAndFeel::accent());
         b.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
         b.setColour (juce::TextButton::textColourOnId, juce::Colours::black);
     };
@@ -162,17 +159,17 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
         updateCountLabel();
     };
 
-    detailTitle.setFont (NeuroCoreLookAndFeel::brandFont (18.f, true));
-    detailTitle.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    detailTitle.setFont (NeuroKoreLookAndFeel::monoFont (18.f));
+    detailTitle.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
     detailTitle.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (detailTitle);
 
-    detailMeta.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
-    detailMeta.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    detailMeta.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
+    detailMeta.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
     detailMeta.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (detailMeta);
 
-    detailBody.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
+    detailBody.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
     detailBody.setColour (juce::Label::textColourId, juce::Colour (0xffd0d4dc));
     detailBody.setJustificationType (juce::Justification::topLeft);
     detailBody.setMinimumHorizontalScale (0.8f);
@@ -180,7 +177,7 @@ PresetContentComponent::PresetContentComponent (NeuroCoreAudioProcessor& proc, j
 
     auto styleBtn = [] (juce::TextButton& b)
     {
-        b.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
+        b.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::surfaceHigh());
         b.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
     };
     for (auto* b : { &loadButton, &saveButton, &deleteButton, &newBlankButton,
@@ -533,10 +530,10 @@ void PresetContentComponent::paint (juce::Graphics& g)
 {
     if (! fileDragActive)
         return;
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.18f));
     g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (4.f), 6.f);
-    g.setColour (NeuroCoreLookAndFeel::accent());
-    g.setFont (NeuroCoreLookAndFeel::brandFont (16.f, true));
+    g.setColour (NeuroKoreLookAndFeel::accent());
+    g.setFont (NeuroKoreLookAndFeel::brandFont (16.f, true));
     g.drawFittedText ("Drop .nrk, a folder, or a .zip pack",
                       getLocalBounds(), juce::Justification::centred, 1);
 }

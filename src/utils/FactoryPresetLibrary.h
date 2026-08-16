@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-class NeuroCoreAudioProcessor;
+class NeuroKoreAudioProcessor;
 
 struct FactoryPresetEntry
 {
@@ -33,7 +33,7 @@ public:
     bool loadFromResources(const juce::File& resourcesDir);
     const std::vector<FactoryPresetEntry>& getEntries() const noexcept { return entries; }
 
-    bool applyPreset(NeuroCoreAudioProcessor& processor, int index, juce::String& error) const;
+    bool applyPreset(NeuroKoreAudioProcessor& processor, int index, juce::String& error) const;
 
     /** Resolve a resources directory that contains factory_presets.json. */
     static juce::File resolveResourcesDir(const juce::File& hint);
@@ -42,6 +42,8 @@ public:
     bool loadFromEmbedded();
 
     const FactoryPresetEntry* findByName (const juce::String& name) const noexcept;
+    /** First factory preset whose script matches (comments ignored, then graph-equal). */
+    const FactoryPresetEntry* findMatchingScript (const juce::String& script) const;
 
 private:
     FactoryPresetLibrary() = default;

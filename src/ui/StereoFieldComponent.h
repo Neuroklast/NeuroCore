@@ -11,7 +11,7 @@ class StereoFieldComponent : public juce::Component,
                              private juce::Timer
 {
 public:
-    StereoFieldComponent (NeuroCoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
+    StereoFieldComponent (NeuroKoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
     ~StereoFieldComponent() override;
 
     void paint (juce::Graphics& g) override;
@@ -22,7 +22,7 @@ public:
 private:
     void timerCallback() override;
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     WaveformDisplayComponent::Type type;
     juce::AudioBuffer<float> buffer { Config::kMaxChannels, Config::kWaveformDisplaySamples };
     ScopeAnalytics::StereoStats stats;

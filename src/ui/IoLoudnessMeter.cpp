@@ -2,7 +2,7 @@
 #include "PluginLookAndFeel.h"
 #include "../dsp/DSPUtils.h"
 
-IoLoudnessMeter::IoLoudnessMeter (NeuroCoreAudioProcessor& proc,
+IoLoudnessMeter::IoLoudnessMeter (NeuroKoreAudioProcessor& proc,
                                   WaveformDisplayComponent::Type t)
     : processor (proc), type (t)
 {
@@ -66,7 +66,7 @@ void IoLoudnessMeter::drawBar (juce::Graphics& g, juce::Rectangle<float> r,
     hull.lineTo (r.getX(), r.getY() + cut);
     hull.closeSubPath();
 
-    g.setColour (NeuroCoreLookAndFeel::surfaceHigh());
+    g.setColour (NeuroKoreLookAndFeel::surfaceHigh());
     g.fillPath (hull);
 
     const auto dbToY = [r] (float db)
@@ -78,8 +78,8 @@ void IoLoudnessMeter::drawBar (juce::Graphics& g, juce::Rectangle<float> r,
     const float fillTop = dbToY (rmsDb);
     g.saveState();
     g.reduceClipRegion (hull);
-    juce::ColourGradient fill (NeuroCoreLookAndFeel::accent(), r.getCentreX(), r.getY(),
-                               NeuroCoreLookAndFeel::accentDim(), r.getCentreX(), r.getBottom(), false);
+    juce::ColourGradient fill (NeuroKoreLookAndFeel::accent(), r.getCentreX(), r.getY(),
+                               NeuroKoreLookAndFeel::accentDim(), r.getCentreX(), r.getBottom(), false);
     g.setGradientFill (fill);
     g.fillRect (r.getX(), fillTop, r.getWidth(), r.getBottom() - fillTop);
 
@@ -88,11 +88,11 @@ void IoLoudnessMeter::drawBar (juce::Graphics& g, juce::Rectangle<float> r,
     g.fillRect (r.getX() + 1.f, peakY, r.getWidth() - 2.f, 1.4f);
     g.restoreState();
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
     g.strokePath (hull, juce::PathStrokeType (1.f));
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.80f));
-    g.setFont (NeuroCoreLookAndFeel::monoFont (8.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.80f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
     g.drawText (tag, r, juce::Justification::centredBottom, false);
 }
 
@@ -101,12 +101,12 @@ void IoLoudnessMeter::paint (juce::Graphics& g)
     auto full = getLocalBounds().toFloat();
     g.fillAll (juce::Colours::black);
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.80f));
-    g.setFont (NeuroCoreLookAndFeel::monoFont (8.f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.80f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
     g.drawText (type == WaveformDisplayComponent::Type::Input ? "IN LU" : "OUT LU",
                 full.removeFromTop (12.f), juce::Justification::centred, false);
 
-    auto area = full.reduced (3.f, 4.f);
+    auto area = full.reduced (4.f, 3.f);
     auto left = area.removeFromLeft (area.getWidth() * 0.5f).reduced (1.5f, 0.f);
     auto right = area.reduced (1.5f, 0.f);
     drawBar (g, left, rmsDbL, peakDbL, "L");

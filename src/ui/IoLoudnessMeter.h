@@ -11,7 +11,7 @@ class IoLoudnessMeter : public juce::Component,
                         private juce::Timer
 {
 public:
-    IoLoudnessMeter (NeuroCoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
+    IoLoudnessMeter (NeuroKoreAudioProcessor& proc, WaveformDisplayComponent::Type t);
     ~IoLoudnessMeter() override;
 
     void paint (juce::Graphics& g) override;
@@ -25,7 +25,7 @@ private:
     void drawBar (juce::Graphics& g, juce::Rectangle<float> r,
                   float rmsDb, float peakDb, const char* tag) const;
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     WaveformDisplayComponent::Type type;
     juce::AudioBuffer<float> buffer { Config::kMaxChannels, Config::kWaveformDisplaySamples };
     float rmsDbL { -100.f }, rmsDbR { -100.f };

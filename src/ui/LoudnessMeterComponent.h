@@ -8,7 +8,7 @@ class LoudnessMeterComponent : public juce::Component,
                                private juce::Timer
 {
 public:
-    explicit LoudnessMeterComponent(NeuroCoreAudioProcessor& proc);
+    explicit LoudnessMeterComponent(NeuroKoreAudioProcessor& proc);
     ~LoudnessMeterComponent() override = default;
 
     void paint(juce::Graphics& g) override;
@@ -40,7 +40,7 @@ private:
     float valueToY(float db, juce::Rectangle<float> area) const noexcept;
     void showContextMenu();
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     float loudness { -100.0f };
     bool  limiter { false };
     bool  blink   { false };

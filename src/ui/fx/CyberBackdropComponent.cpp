@@ -41,7 +41,7 @@ void CyberBackdropComponent::paint (juce::Graphics& g)
     const float w = (float) getWidth();
     const float beamY = std::fmod (s.timeSec * 90.f, h + 40.f) - 20.f;
     juce::ColourGradient beam (juce::Colours::transparentBlack, 0, beamY - 12.f,
-                               NeuroCoreLookAndFeel::accent().withAlpha (0.12f), 0, beamY, false);
+                               NeuroKoreLookAndFeel::accent().withAlpha (0.12f), 0, beamY, false);
     g.setGradientFill (beam);
     g.fillRect (0.f, beamY - 12.f, w, 24.f);
 
@@ -53,16 +53,16 @@ void CyberBackdropComponent::paint (juce::Graphics& g)
 
     g.setColour (juce::Colour (0xff0a0000));
     g.fillRect (0, 0, getWidth(), Config::kHudHeaderHeight);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.9f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.9f));
     g.fillRect (0, 0, getWidth(), 2);
-    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
-    g.setColour (NeuroCoreLookAndFeel::accent());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroKoreLookAndFeel::accent());
     const bool blink = ((int) (s.timeSec * 2.f) % 2) == 0;
     juce::String hdr = juce::String (Config::kOsBanner) + "  //  LINK ";
     hdr << (blink ? "ACTIVE" : "active");
     g.drawText (hdr, 10, 4, getWidth() - 20, Config::kHudHeaderHeight - 6,
                 juce::Justification::centredLeft, false);
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
     g.drawText (juce::String::formatted ("T+%.1f", s.timeSec),
                 10, 4, getWidth() - 20, Config::kHudHeaderHeight - 6,
                 juce::Justification::centredRight, false);

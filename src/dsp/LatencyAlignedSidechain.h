@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
 
     Architecture contract: wet path latency must equal dry sidechain delay.
 

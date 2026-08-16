@@ -14,7 +14,7 @@ class DslTerminalEditor::AutoCompleteCodeEditor : public CodeEditorComponent,
 {
 public:
     AutoCompleteCodeEditor (CodeDocument& doc, CodeTokeniser* tok,
-                            NeuroCoreAudioProcessor& p)
+                            NeuroKoreAudioProcessor& p)
         : CodeEditorComponent (doc, tok), processor (p)
     {
         doc.addListener (this);
@@ -151,9 +151,9 @@ public:
             return;
 
         const auto box = popupBounds();
-        g.setColour (NeuroCoreLookAndFeel::surfaceHigh().withAlpha (0.96f));
+        g.setColour (NeuroKoreLookAndFeel::surfaceHigh().withAlpha (0.96f));
         g.fillRoundedRectangle (box.toFloat(), 4.f);
-        g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.85f));
+        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
         g.drawRoundedRectangle (box.toFloat(), 4.f, 1.2f);
 
         const int rowH = juce::jmax (16, (int) getFont().getHeight() + 4);
@@ -165,12 +165,12 @@ public:
                                              box.getWidth() - 8, rowH);
             if (i == selected)
             {
-                g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+                g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
                 g.fillRoundedRectangle (row.toFloat(), 3.f);
             }
 
             const auto& it = items[(size_t) i];
-            g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.7f));
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.7f));
             g.drawText (DslAutocomplete::kindTag (it.kind),
                         row.removeFromLeft (36), Justification::centredLeft, false);
             g.setColour (Colours::white.withAlpha (0.95f));
@@ -253,21 +253,26 @@ private:
         repaint();
     }
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     std::vector<DslAutocomplete::Item> items;
     int selected { 0 };
     bool showPopup { false };
 };
 
 //==============================================================================
-DslTerminalEditor::DslTerminalEditor (NeuroCoreAudioProcessor& proc)
+DslTerminalEditor::DslTerminalEditor (NeuroKoreAudioProcessor& proc)
     : processor (proc)
 {
     document = std::make_unique<CodeDocument>();
-    editor = std::make_unique<AutoCompleteCodeEditor> (*document, nullptr, processor);
+    editor = std::make_unique<AutoCompleteCodeEditor> (*document, &tokeniser, processor);
     editor->onViewportMoved = [this] { syncIrButtons(); };
     document->addListener (this);
     addAndMakeVisible (*editor);
+    editor->setColourScheme (tokeniser.getDefaultColourScheme());
+    editor->setColour (juce::CodeEditorComponent::backgroundColourId, NeuroKoreLookAndFeel::canvas());
+    editor->setColour (juce::CodeEditorComponent::lineNumberTextId, NeuroKoreLookAndFeel::inkMuted());
+    editor->setColour (juce::CodeEditorComponent::highlightColourId,
+                       NeuroKoreLookAndFeel::accent().withAlpha (0.28f));
     setFontHeight (Config::kDefaultEditorFontPt);
 }
 
@@ -277,7 +282,7 @@ void DslTerminalEditor::setFontHeight (float heightPt)
     if (editor != nullptr)
     {
         // Embedded JetBrains Mono - never Apex (missing punctuation glyphs)
-        editor->setFont (NeuroCoreLookAndFeel::monoFont (fontHeight * Config::kFormulaLineHeight));
+        editor->setFont (NeuroKoreLookAndFeel::monoFont (fontHeight * Config::kFormulaLineHeight));
         editor->setLineNumbersShown (true);
         editor->setScrollbarThickness (10);
     }
@@ -326,9 +331,47 @@ void DslTerminalEditor::setEditorColour (int colourID, juce::Colour colour)
         editor->setColour (colourID, colour);
 }
 
+void DslTerminalEditor::setLineError (int line1Based, const juce::String& message)
+{
+    errorLine = line1Based > 0 ? line1Based : 0;
+    errorMessage = errorLine > 0 ? message : juce::String();
+    if (errorLine > 0 && editor != nullptr && document != nullptr)
+    {
+        juce::CodeDocument::Position pos (*document, errorLine - 1, 0);
+        editor->moveCaretTo (pos, false);
+        editor->scrollToKeepLinesOnScreen ({ errorLine - 1, errorLine });
+    }
+    repaint();
+}
+
+void DslTerminalEditor::clearLineError()
+{
+    if (errorLine == 0 && errorMessage.isEmpty())
+        return;
+    errorLine = 0;
+    errorMessage.clear();
+    repaint();
+}
+
 void DslTerminalEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colours::black);
+}
+
+void DslTerminalEditor::paintOverChildren (juce::Graphics& g)
+{
+    if (errorLine <= 0 || editor == nullptr || document == nullptr)
+        return;
+    juce::CodeDocument::Position pos (*document, errorLine - 1, 0);
+    auto r = getLocalArea (editor.get(), editor->getCharacterBounds (pos).toNearestInt());
+    if (r.getHeight() < 2)
+        r = juce::Rectangle<int> (0, 0, getWidth(), juce::jmax (18, (int) fontHeight + 4));
+    r.setX (0);
+    r.setWidth (getWidth());
+    g.setColour (NeuroKoreLookAndFeel::error().withAlpha (0.18f));
+    g.fillRect (r);
+    g.setColour (NeuroKoreLookAndFeel::error());
+    g.fillRect (r.getX(), r.getY(), 3, r.getHeight());
 }
 
 void DslTerminalEditor::resized()
@@ -388,14 +431,20 @@ void DslTerminalEditor::syncIrButtons()
 
 void DslTerminalEditor::codeDocumentTextInserted (const juce::String&, int)
 {
+    clearLineError();
     syncIrButtons();
     sendChangeMessage();
+    if (onScriptTextChanged)
+        onScriptTextChanged();
 }
 
 void DslTerminalEditor::codeDocumentTextDeleted (int, int)
 {
+    clearLineError();
     syncIrButtons();
     sendChangeMessage();
+    if (onScriptTextChanged)
+        onScriptTextChanged();
 }
 
 void DslTerminalEditor::insertTextAtCaret (const juce::String& text)

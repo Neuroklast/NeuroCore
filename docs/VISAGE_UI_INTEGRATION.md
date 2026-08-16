@@ -1,6 +1,6 @@
 # VisageUI Integration Guide
 
-Wie man **visageui** trotz JUCE als Haupt-Framework in NeuroCore integrieren kann.
+Wie man **visageui** trotz JUCE als Haupt-Framework in NeuroKore integrieren kann.
 Dieser Guide beschreibt drei Ansätze von einfach bis komplex.
 
 ---
@@ -75,8 +75,8 @@ void PluginEditor::parameterChanged(const juce::String& paramID, float value) {
 // Callbacks aus WebView → JUCE empfangen
 bool PluginEditor::pageAboutToLoad(const juce::String& url) {
     // URL-Schema als Kommunikationskanal nutzen:
-    // neurocore://setParam?id=paramA&value=0.75
-    if (url.startsWith("neurocore://setParam")) {
+    // neurokore://setParam?id=paramA&value=0.75
+    if (url.startsWith("neurokore://setParam")) {
         auto paramID = /* parse paramID */;
         auto value = /* parse value */;
         processor.apvts.getParameter(paramID)->setValueNotifyingHost(value);
@@ -101,7 +101,7 @@ function App() {
     
     // React → JUCE
     const setParam = (id, value) => {
-        window.location = `neurocore://setParam?id=${id}&value=${value}`;
+        window.location = `neurokore://setParam?id=${id}&value=${value}`;
     };
     
     return (
@@ -157,9 +157,9 @@ class DslTerminalEditor : public juce::Component {
     <script>
         require.config({ paths: { vs: 'monaco-editor/min/vs' } });
         require(['vs/editor/editor.main'], function() {
-            // NeuroCore DSL Syntax-Definition registrieren
-            monaco.languages.register({ id: 'neurocore-dsl' });
-            monaco.languages.setMonarchTokensProvider('neurocore-dsl', {
+            // NeuroKore DSL Syntax-Definition registrieren
+            monaco.languages.register({ id: 'neurokore-dsl' });
+            monaco.languages.setMonarchTokensProvider('neurokore-dsl', {
                 keywords: ['stage', 'filter', 'comp', 'env', 'osc', 'param'],
                 tokenizer: {
                     root: [
@@ -172,14 +172,14 @@ class DslTerminalEditor : public juce::Component {
             });
             
             const editor = monaco.editor.create(document.getElementById('editor'), {
-                language: 'neurocore-dsl',
+                language: 'neurokore-dsl',
                 theme: 'vs-dark',
                 minimap: { enabled: false }
             });
             
             // Script-Änderungen an JUCE melden
             editor.onDidChangeModelContent(() => {
-                window.location = 'neurocore://setScript?value=' 
+                window.location = 'neurokore://setScript?value=' 
                     + encodeURIComponent(editor.getValue());
             });
         });
@@ -236,18 +236,18 @@ JUCE PluginEditor (minimaler Host)
 ### Kommunikations-Protokoll
 ```typescript
 // Alle Nachrichten via URL-Schema
-interface NeuroCoreMessage {
+interface NeuroKoreMessage {
     type: 'setParam' | 'getParam' | 'setScript' | 'loadPreset' | 'savePreset';
     payload: Record<string, unknown>;
 }
 
 // Plugin → WebView: WebBrowserComponent::evaluateJavascript()
-// WebView → Plugin: window.location = 'neurocore://...'
+// WebView → Plugin: window.location = 'neurokore://...'
 ```
 
 ---
 
-## Empfehlung für NeuroCore
+## Empfehlung für NeuroKore
 
 **Sofort umsetzbar (Phase 1 in Roadmap):** Option B  
 

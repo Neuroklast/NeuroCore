@@ -1,7 +1,7 @@
 #include "ValidationContentComponent.h"
 #include "../core/PluginProcessor.h"
 
-ValidationContentComponent::ValidationContentComponent(NeuroCoreAudioProcessor& proc, const juce::String& expr)
+ValidationContentComponent::ValidationContentComponent(NeuroKoreAudioProcessor& proc, const juce::String& expr)
     : processor(proc), script(expr)
 {
     setWantsKeyboardFocus(true);

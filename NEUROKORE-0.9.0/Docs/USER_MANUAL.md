@@ -28,7 +28,7 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 - Click **Presets** in the top bar.
 - Leave Scope on All or Factory.
 - Double-click a row, or select it and press **Load**.
-- The chip next to Presets shows the name.
+- The chip next to Presets shows the name. Use the **<** and **>** buttons on either side to step through the library.
 
 ### Hear it
 
@@ -60,30 +60,40 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 
 - **NK + NEUROKORE + by Neuroklast + version**: product mark. Click it to open neuroklast.net.
 - **Presets**: factory and your own sounds. The last category stays selected when you reopen.
-- **Current chip**: loaded preset name, or Untitled.
-- **Functions**: look up formula words and insert them.
+- **Current chip**: loaded preset name, or Untitled. **<** / **>** step through factory, then user presets.
+- **Functions**: look up formula words and insert them. Folders on the left: **Core** (math), **Drive** (tube, diode, clip), **Crush** (fold, bitcrush), **Blocks** (ott, widen, vocoder, octaver, ms).
 - **Stages**: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
+- **Settings**: animation (**Full** / **Reduced** / **Off**), **Studio / Live** processing, UI scale (100 / 125 / 150), formula text size, and standalone audio device. Remembered.
+- **LIVE / STUDIO**: Live uses min-phase oversampling so the delay is not noticeable when you play. Studio uses linear-phase oversampling for mix work. Same control lives in Settings.
 - **Bypass**: forces Mix to 0 (dry) and locks the Mix slider. Turn it off and the previous Mix comes back.
 - **License**: import a signed `.lic` file. After activation, License shows who this copy is licensed to. **Replace license** loads a new file.
 - **Help**: this guide, one chapter at a time. Text is large so you can read it from the chair.
 
 ### Settings
 
+The second strip is tools, not a second window: L/BOTH/R, oversampling, polisher, Mix, and the live status live on one row.
+
 - **L / BOTH / R**: which input channel feeds the formula. Click a third. L or R copies that side onto both channels — the stereo field becomes a vertical line.
 - **Oversampling**: 1× / 2× / 4× / 8×. Default **4×**. Drop to 2× or 1× if the computer is struggling.
 - **Polisher**: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
-- **Text − / +**: size of the formula text.
+- **Text − / +**: size of the formula text (also in **Settings**).
+- **Settings → scale**: 100 / 125 / 150. You can still resize the window; the aspect ratio stays locked.
+- **Settings → animation**: Full (boot, glitch, light CRT glow), Reduced (overlays snap), Off (still chrome).
 
 ### Knobs
 
-- Six knobs in two columns: a b / c d / e f.
-- The name chips under the knobs are labels only. They do not change the formula.
+- Six knobs in one column: a, b, c, d, e, f from top to bottom.
+- Click the name above a knob to rename it (Graph and Script). That also updates `param a = …` in the script. Edit the name in the script and the knob label follows. The formula still uses `a`–`f`.
 - Right-click a knob for MIDI Learn.
 
 ### Formula area
 
-- When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
-- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Empty slot is dry.
+- **L / Both / R**: input channel, same width as the knobs, on the Graph / Script row.
+- **Graph / Script**: two views of the same construct.
+  - **Graph** = assemble. The surface is a board: faint rose crosses, 16 px snap. Blocks are chips (chamfer, notch, pin-1, DIP pads). Right-click to add Filter, Drive, Delay, Bus, Mid-Side Split, Left/Right Split, Crossover, Stereo Width. Mid-side encode forks MID and SIDE rails like a bus; decode joins them. Drag a jack to patch — the target jack lights when you can drop. Drag a chip onto another rail to re-route.
+  - **Script** = hack. The same chain as text. Live view shows coloured knobs and current values (`a[3.20]`, `param a = Drive => 3.20`). **Edit** opens the editor; **Save** applies it. Positions are stored as `# @x,y` comments and do not change the sound.
+- Each block shows the jacks it needs: audio in/out, a mix jack per bus on OUT, A–F for bound knobs, SC on comp/gate/vocoder, MOD on an LFO. Double-click a card to edit. Click a knob name to rename it. Ctrl+Z / Ctrl+Y undo and redo.
+- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - **Edit**, then **Save** to apply.
 - **Optimize**: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
 - **Insert / Quick template**: drop in a common block.
@@ -91,9 +101,9 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 ### Bottom
 
 - **Mix**: dry / wet. Drag may flash the background.
-- **AUDIO** (Standalone only): pick the audio device and sample rate. In a DAW the host owns the sample rate.
-- **Status**: LIVE or BYPASS, how late the plugin is (samples and ms), current sample rate.
-- **IN / OUT**: input and output waveforms. Next to each wave sits a stereo field (how left and right sit together) and a loudness meter for that side. The wave is a bit narrower so all three share the same height. Click **<<** on that row to hide field and loudness and widen the wave again; click **>>** to bring them back.
+- Audio device lives in **Settings** (Standalone only). In a DAW the host owns the sample rate.
+- **Status**: LIVE / STUDIO / BYPASS / SAFE, CPU load, latency in ms, oversampling factor.
+- **IN / OUT**: wave, stereo field, and loudness stay open. Click **<<** only if you want the wave alone.
 - **Meter**: the tall level meter on the right, plus a limiter cue.
 
 ---
@@ -168,6 +178,7 @@ delay1: time = c
 ### Load
 
 - Double-click a row, or select + **Load**.
+- Or stay in the editor: **<** / **>** beside the preset name steps through factory, then user presets. Wraps at both ends.
 - **New Blank** starts a simple softclip formula.
 
 ### Save your own
@@ -197,8 +208,9 @@ These are mix tools, not a full mastering suite.
 - **NY Drum Bus / Parallel Tape**: dry plus a smashed or tape-like path. Blend is the mix.
 - **Plate Send / Width Delay / Slap Double**: dry in the middle, wet on a side path.
 - **Haas Width / Loudness Curve / Missing Bass / Speech Band**: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
+- **Mono to Stereo**: allpass + Haas stereoizer. Mid stays the original so the mix still collapses clean.
 - **Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed**: score, FX, and dialogue processing. Not a trailer sample pack.
-- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, empty IR slot. Needs stereo in and **BOTH**. Drop a cab on the `ir1` button.
+- **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, cabinet IR preloaded. Needs stereo in and **BOTH**. Swap the cab on the `ir1` button if you want.
 - **Glitch Laboratory**: digital smash without ping-pong or an LFO on the filter — light on the computer.
 - **Neon Clip / Chrome Fold / Data Mosher / Cyberpunk Drive**: digital dirt.
 - **Kick Rumble / Warehouse Rumble**: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit. Body = tight sine+sub. Tune ≈ 15 ms is the resonator. Insert on the kick, Mix 100.
@@ -207,6 +219,12 @@ These are mix tools, not a full mastering suite.
 - **Glitch Laboratory**: louder smash + short ping-pong + Level makeup. Still a glitch toy, not an amp.
 
 ---
+
+## 5b. Graph vs Script
+
+- **Graph** is how you assemble the parts. The surface is a circuit board: faint rose crosses for orientation, blocks snap to 16 px, each block is a chip (notch, pin-1, DIP pads). Cables are traces. Mid-side and buses fork onto their own rails.
+- **Script** is how you hack the construct. Same chain, as text. Live `[value]` next to every knob letter. Edit / Save when you want to type.
+- Positions are comments (`# @160.0,80.0`). Deleting them does not change the sound; Graph will lay the chips out again.
 
 ## 6. Formula language
 
@@ -218,12 +236,14 @@ Everyday blocks:
 | `stageN: y = …` | Per-sample math (`x` in, `y` out) |
 | `filterN: type = lowpass; cutoff = …` | SVF lowpass / highpass / bandpass |
 | `eqN: type = peak; freq = …; q = …; gain = …` | Peak, notch, lowcut, highcut, shelves |
-| `octaverN: sub = …; up = …; mix = …; tone = …` | Tracking −1 / +1 octave |
-| `vocoderN: bands = 8; mix = …; q = …` | Vocoder; voice on the Sidechain pin |
+| `octaverN: sub = …; up = …; mix = …; tone = …` | Analog −1 divider / +1 rectifier |
+| `vocoderN: bands = 8; mix = …; q = …` | Vocoder. Insert on a synth/pad (carrier). Pin the **voice** on Sidechain. Empty pin self-vocodes. |
 | `compN: threshold = …; ratio = …` | Compressor; optional `knee`, `makeup`, `hpf`, `source = sidechain` (no pin = no duck) |
 | `gateN: threshold = …; hyst = …` | Noise gate (hysteresis + hold) |
 | `limitN: ceiling = …; release = …` | In-chain limiter (not the Polisher) |
 | `xoverN: f1 = …; f2 = …` | Crossover into `low` / `mid` / `high`; mix with `out: low = 1; high = 1` |
+| `ottN: depth = …; time = …` | 3-band upward + downward compressor (OTT). `in`, `low`, `mid`, `high` optional |
+| `widenN: width = …; delay = …; bass = …` | Mono to stereo. Mid stays put, side is allpass + Haas. Bass stays mono. |
 | `irN: mix = …` | Cab / room slot. Button on that line: drop WAV/AIFF, Load, waveform, Clear. Several slots. Empty = dry |
 | `envN: type = peak; source = sidechain` | Envelope; `source = sidechain` follows the extra input |
 | `oscN: type = sine; freq = …` | Slow oscillator / LFO |
@@ -241,6 +261,7 @@ Everyday blocks:
 
 ## 7. Tips
 
+- **Functions catalog**: open **Functions**. Pick a folder, then a word, then **Insert**. Core is `sin` / `lerp` / `map`. Drive is `tube` / `diode` / `softclip`. Blocks is `ott1` / `widen1` / `vocoder1`.
 - **Send effect**: load a delay or reverb, set Mix high, ride the host send.
 - **Amp-like**: Drive + softclip + lowpass. Leave Polisher on None so hits still breathe.
 - **Two guitar DIs**: `Stereo Guitar Wall`, L/BOTH/R on BOTH, hard-pan the two takes into this insert.
@@ -250,8 +271,8 @@ Everyday blocks:
 - **Harsh digital**: raise oversampling to 4×/8×. Add a lowpass after clip or fold.
 - **A/B**: Bypass is dry without losing your Mix value.
 - **MIDI**: right-click a knob → MIDI Learn.
-- **Latency**: status shows how late the plugin is, not the delay-effect time.
-- **Standalone sample rate**: **AUDIO** opens the device dialog. In a DAW, follow the host.
+- **Latency**: status shows how late the plugin is, not the delay-effect time. Flip **LIVE** when you play; stay on **STUDIO** when you mix.
+- **Standalone sample rate**: **Settings → Audio device**. In a DAW, follow the host.
 
 ---
 
@@ -329,8 +350,10 @@ ir1: mix = b; gain = 0
 ```
 
 2. Save. Click the full-width **ir1** button under that line.
-3. Drop a WAV or AIFF cab, or click **Load**. **Clear** empties the slot (dry).
+3. Amp factory presets (Mesa, 5150, JCM, AC30, Tube Screamer, Fuzz Face, Metal Gate, Stereo Guitar Wall) already load a matching cabinet. Drop a WAV or AIFF to replace it, or click **Load**. **Clear** empties the slot (dry).
 4. Need two cabs? Add `ir2: mix = 1` and click its own button.
+
+The formula never contains a file path.
 
 ---
 

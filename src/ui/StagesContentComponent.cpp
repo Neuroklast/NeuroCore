@@ -2,7 +2,7 @@
 #include "../utils/Localiser.h"
 #include "PluginLookAndFeel.h"
 
-StagesContentComponent::StagesContentComponent (NeuroCoreAudioProcessor& processor)
+StagesContentComponent::StagesContentComponent (NeuroKoreAudioProcessor& processor)
     : audioProcessor (processor)
 {
     setWantsKeyboardFocus (true);
@@ -17,7 +17,7 @@ StagesContentComponent::StagesContentComponent (NeuroCoreAudioProcessor& process
     addAndMakeVisible (refreshButton);
 
     listBox.setRowHeight (30);
-    listBox.setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
+    listBox.setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
     listBox.setColour (juce::ListBox::outlineColourId, juce::Colours::transparentBlack);
 
     closeButton.setButtonText (TRANS ("CloseButton"));
@@ -30,9 +30,9 @@ StagesContentComponent::StagesContentComponent (NeuroCoreAudioProcessor& process
     refreshButton.setButtonText (TRANS ("StagesRefresh") == "StagesRefresh" ? "Refresh" : TRANS ("StagesRefresh"));
     refreshButton.onClick = [this] { refreshFromScript(); };
 
-    nameLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    nameLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::accent());
     nameLabel.setFont (juce::Font (15.f, juce::Font::bold));
-    paramsLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+    paramsLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
     paramsLabel.setFont (juce::Font (12.5f));
     paramsLabel.setJustificationType (juce::Justification::topLeft);
     detailsLabel.setColour (juce::Label::textColourId, juce::Colour (0xffe8ecf4));
@@ -118,9 +118,9 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
         return;
 
     if (selected)
-        g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+        g.fillAll (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
     else if (row % 2)
-        g.fillAll (NeuroCoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
+        g.fillAll (NeuroKoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
 
     const auto& block = blocks[(size_t) row];
     auto summary = dsl::formatBlockSummary (block);
@@ -130,9 +130,9 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
         summary = "[" + block.busName + "] " + summary;
 
     // Type badge colour
-    juce::Colour badge = NeuroCoreLookAndFeel::mutedText();
+    juce::Colour badge = NeuroKoreLookAndFeel::mutedText();
     if (block.type.startsWith ("stage"))
-        badge = NeuroCoreLookAndFeel::accent();
+        badge = NeuroKoreLookAndFeel::accent();
     else if (block.type.startsWith ("filter") || block.type.startsWith ("eq"))
         badge = juce::Colour (0xff5dade2);
     else if (block.type.startsWith ("octaver") || block.type == "octave")

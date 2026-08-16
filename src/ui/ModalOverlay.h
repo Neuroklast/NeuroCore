@@ -21,10 +21,16 @@ public:
     void setLiveStatus (const juce::String& text);
     void setMotion (CyberMotion motion);
 
+    /** Leave this many pixels of parent chrome uncovered (Mix / OS / status). */
+    void setTopInset (int pixels) noexcept { topInset = juce::jmax (0, pixels); }
+    int getTopInset() const noexcept { return topInset; }
+
     /** Cover @parent and show. Parent must outlive the overlay. */
     void show (juce::Component& parent);
 
-    /** Play exit, then fire onClose. Instant if Reduced. */
+    OverlayPhase getPhase() const noexcept { return sequence.getPhase(); }
+
+    /** Play exit, then fire onClose. Instant if Reduced or Off. */
     void requestClose();
 
     /** Jump to end of the current sequence (re-open / editor teardown). */
@@ -67,6 +73,7 @@ private:
     ClipReveal clipType { ClipReveal::SystemBoot };
     int preferredW { 0 };
     int preferredH { 0 };
+    int topInset { 0 };
     double lastStamp { 0.0 };
     juce::String rawTitle;
     juce::String liveStatus;

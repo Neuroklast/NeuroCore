@@ -446,5 +446,46 @@ public:
                 expectEquals (TestHelpers::countNonFinite (buf), 0);
             }
         }
+
+        beginTest ("delay at 8x sample rate has one echo and no wrap ticks");
+        {
+            // Oversampled delay lines are sized at OS SR. A 1×-sized ring
+            // wraps every 2s/factor and ticks. This is the OS-rate chain alone.
+            juce::dsp::ProcessSpec os { 48000.0 * 8.0, 512, 2 };
+            dsl::SignalChain chain;
+            chain.prepare (os);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 40; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+
+            const float echoAt = 0.040f * (float) os.sampleRate; // 15360
+            float laterPeak = 0.f;
+            int extraPeaks = 0;
+            int sample = 512;
+            for (int b = 0; b < 80; ++b)
+            {
+                buf.clear();
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                for (int i = 0; i < 512; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    const bool nearEcho = std::abs ((float) sample - echoAt) < 64.f;
+                    if (nearEcho)
+                        continue;
+                    laterPeak = juce::jmax (laterPeak, a);
+                    if (a > 0.08f)
+                        ++extraPeaks;
+                }
+            }
+            expect (laterPeak < 0.06f, "8x-rate wrap/write-head tick, peak="
+                    + juce::String (laterPeak, 4) + " extras=" + juce::String (extraPeaks));
+        }
     }
 };

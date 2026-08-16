@@ -1,4 +1,4 @@
-# NeuroCore – Architektur-Übersicht
+# NeuroKore – Architektur-Übersicht
 
 ## RT-Verträge (Crackle → Timeline/State, nicht Thresholds)
 
@@ -54,10 +54,12 @@ Input
 - Verwaltet `SignalChain`, `PresetManager`, `LicenseManager`, Waveform-Capture und Validierungs-Logik
 - ⚠️ God-Class (~34 KB) – Refactoring geplant (siehe `docs/ROADMAP.md`)
 
-### `PluginEditor` (`src/core/PluginEditor.h/.cpp`)
+### `PluginEditor` (`src/ui/PluginEditor.h/.cpp`)
 - `juce::AudioProcessorEditor`-Erbe
 - Instanziiert alle UI-Komponenten und verbindet sie mit dem APVTS
-- Fenster: **1600 × 900 px** (fest, Resizing noch nicht implementiert)
+- Workspace: **Graph** (Platine, Snap, Chips) und **Script** (Text-Hack, Live-`[value]`)
+- L/Both/R sitzt in der Knob-Spalte, gleiche Breite, gleiche Zeile wie Graph/Script
+- Fenster skalierbar bei festem Seitenverhältnis (Settings 100 / 125 / 150)
 
 ### `Config.h` (`src/core/Config.h`)
 Zentrale Konfigurationskonstanten in anonymen Namespaces:
@@ -79,7 +81,7 @@ Parameter-IDs für den APVTS:
 | Input Gain | `"inputGain"` | Eingangs-Verstärkung |
 | Output Gain | `"outputGain"` | Ausgangs-Verstärkung |
 | Mix | `"dryWetMix"` | Dry/Wet-Verhältnis |
-| Oversampling | `"oversamplingIndex"` | Oversampling-Faktor (kein UI-Control!) |
+| Oversampling | `"oversamplingIndex"` | 1× / 2× / 4× / 8× (Settings + Statuszeile) |
 
 ---
 
@@ -87,20 +89,33 @@ Parameter-IDs für den APVTS:
 
 ### `DSLParser` (`src/dsl/DSLParser.h/.cpp`)
 - Parst DSL-Text in `BlockDesc`-/`ParamDesc`-Strukturen
-- Unterstützte Block-Typen: `stage`, `filter`, `comp`, `env`, `osc`, `param`
+- Blöcke: `stage`, `filter`, `eq`, `comp`, `gate`, `limit`, `delay`, `reverb`, `ir`, `ott`, `widen`, `ms`, `xover`, `bus`/`send`/`out`, `env`, `osc`, `param`
 - Liefert strukturierte Fehler mit Zeilen-/Spaltenangabe
-- ⚠️ Keine Unit-Tests vorhanden
+
+### `GraphModel` (`src/dsl/GraphModel.h/.cpp`)
+- Editor-Datenmodell für den 2D Node-Patcher (`GraphCanvasComponent`)
+- `parse` nutzt `DSLParser` und hängt `#`-Header/Trailing-Kommentare inkl. `@x,y` an
+- `emit` schreibt kanonische DSL; Formel bleibt Source of Truth
+- `jacksFor` / `jacksForInput` / `jacksForVirtualOut`: sichtbare Ports (Audio, Mix-Bus, Knob, SC, Mod, MID/SIDE, L/R, Xover)
+- `visualRail` / `channelRail` / `visualAudioEdges`: Bus- und MS-Rails in der UI
+- `isMsEncode` / `isMsDecode`: Mid-Side forkt wie ein Bus (MID/SIDE), `widen` ist Stereo-Width, nicht MS
+- `connectJack` patched eine konkrete Buchse (Mix-Bus, LFO→Parameter, sonst `connectAudio`)
+- `semanticallyEqual` vergleicht Typ/Name/Bus/Args und Param-Ranges, ignoriert Kommentartext
+- `moveNode` verschiebt Blöcke mit Bus-Regeln (`send` nur im Named Bus, `out` zuletzt)
+
+### `GraphCanvasComponent` (`src/ui/GraphCanvasComponent.h/.cpp`)
+- Graph-Modus: Platine. Karten rasten auf 16 px (`snap` / `snapPoint`)
+- Hintergrund: minimale rose Kreuze (kein Linienraster)
+- Blöcke als IC-Packages (Fase, inneres Die, Notch, Pin-1, DIP-Pads)
+- Script-Modus bleibt der Text-Hack desselben Konstrukts
+- Drop-Jack leuchtet; Karten-Drag hebt die Ziel-Rail
 
 ### `SignalChain` (`src/dsl/SignalChain.h/.cpp`)
 - Führt die geparsten Blöcke als Audio-Processing-Chain aus
-- Innere Klassen (als Member der `Chain`-Klasse):
-  - `Stage` – mathematische Formel via `ExpressionEvaluator`
-  - `Filter` – `juce::StateVariableTPTFilter`
-  - `Comp` – Kompressor mit Attack/Release
-  - `Env` – Envelope Follower (RMS oder Peak)
-  - `Osc` – Sinus/Saw/Triangle/Square LFO
-- Unterstützt **Cross-Fade** (`formulaBlend`) beim Formel-Wechsel
-- ⚠️ `std::shared_ptr<Chain>` ohne `atomic_load` → Race Condition möglich
+- Delay: Hermite-Interpolation, samplegenaue Zeit/Feedback/Mix/Damp, Write-Head ≥ 8 Samples
+- Studio-Oversampling: Host-Nyquist-AA-LPF läuft immer vor dem Downsample (auch bei 8× FIR)
+- Innere Klassen: Stage, Filter, Comp, Gate, Limit, Delay, Reverb, IR, Ott, Widen, MS, Xover, Env, Osc
+- Formelwechsel über `switchRamp` (kein Dual-Chain-Blend im Audio-Thread)
 
 ### `ExpressionEvaluator` (`src/dsl/ExpressionEvaluator.h/.cpp`)
 - AST-basierter Mathe-Parser
@@ -137,12 +152,13 @@ Parameter-IDs für den APVTS:
 
 | Komponente | Beschreibung |
 |---|---|
-| `PluginLookAndFeel` (NeuroCoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
-| `DslTerminalEditor` | Code-Editor für DSL-Eingabe |
+| `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
+| `DslTerminalEditor` | Code-Editor (Script-Edit). Keine Live-`[value]`-Annotation |
+| `GraphCanvasComponent` | Graph-Platine: Snap, rose Kreuze, Chip-Karten, Kabel |
 | `WaveformDisplayComponent` | Input/Output-Wellenform-Anzeige |
 | `LoudnessMeterComponent` | Echtzeit-Loudness-Meter |
-| `FormulaDisplayComponent` | Formel-Vorschau-Wellenform |
-| `ParameterComponent` | Custom-Knob-Widgets (a–f) |
+| `FormulaDisplayComponent` | Script-Live-Ansicht: Farbe + `a[value]` |
+| `ParameterComponent` | Knobs a–f; Wert unter dem Zeiger; Drag hebt Knob-Kabel |
 | `ModalOverlay` | Overlay-Container für Dialoge |
 | `ValidationContentComponent` | Formel-Validierungs-Dialog |
 | `PresetContentComponent` | Preset-Browser-Panel |
@@ -179,8 +195,8 @@ Cyber-UI-Regeln: kein Audio-Thread, kein WebView, kein Vollfenster-`repaint()` o
 ## Licensing (`src/licensing/`)
 
 ### Offline `.lic`
-- Issuer `NeuroCoreIssuer`: E-Mail eintragen, signierte Datei speichern
+- Issuer `NeuroKoreIssuer`: E-Mail eintragen, signierte Datei speichern
 - Plugin prüft RSA-Signatur mit dem Public Key
 - Private Key nur in `tools/license_issuer/LicensePrivateKey.h`
 - Unlizenziert: nach 20 Minuten Mix = 0 (dry). Import über den License-Button
-- Unit-Tests schalten die Sperre mit `NEUROCORE_SKIP_LICENSE_ENFORCEMENT` aus
+- Unit-Tests schalten die Sperre mit `NEUROKORE_SKIP_LICENSE_ENFORCEMENT` aus

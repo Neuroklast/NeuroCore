@@ -1,4 +1,4 @@
-# NeuroCore – Entwicklungs-Roadmap
+# NeuroKore – Entwicklungs-Roadmap
 
 **Version:** 0.1.0  
 **Stand:** 2026-04-01  
@@ -19,7 +19,7 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 
 ### Build & Infrastruktur
 - [ ] CMake: doppelte Source-Einbindung fixen (`SOURCES` in `juce_add_plugin` ODER `target_sources`, nicht beides)
-- [ ] `SignalChainTest.h` in das CMake Test-Target `NeuroCoreTests` aufnehmen
+- [ ] `SignalChainTest.h` in das CMake Test-Target `NeuroKoreTests` aufnehmen
 - [ ] CI/CD: GitHub Actions Workflow für Matrix-Build (Windows/macOS/Linux)
 
 ### DSP-Korrektheit
@@ -29,7 +29,7 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 - [ ] Oversampling UI-Control implementieren (Dropdown im Editor)
 
 ### Licensing
-- [x] Offline RSA-`.lic` + `NeuroCoreIssuer` (E-Mail → Datei)
+- [x] Offline RSA-`.lic` + `NeuroKoreIssuer` (E-Mail → Datei)
 - [x] Demo: Mix = 0 nach 20 Minuten
 - [ ] Optional später: Online-Widerruf / Maschinenbindung
 
@@ -37,7 +37,7 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 
 ## Phase 2 – Professionalität (4–6 Wochen)
 
-Diese Phase bringt NeuroCore auf den Stand eines professionell vertriebenen Plugins.
+Diese Phase bringt NeuroKore auf den Stand eines professionell vertriebenen Plugins.
 
 ### Format-Support
 - [x] AU-Format für macOS aktivieren (JUCE `FORMATS AU`, `aumf` MusicEffect)
@@ -67,7 +67,7 @@ Diese Phase bringt NeuroCore auf den Stand eines professionell vertriebenen Plug
 
 ## Phase 3 – Innovation (6–8 Wochen)
 
-Diese Phase hebt NeuroCore über den Stand typischer kommerzieller Plugins.
+Diese Phase hebt NeuroKore über den Stand typischer kommerzieller Plugins.
 
 ### Erweiterte DSL
 - [ ] `delay`-Block: Delay-Line mit Feedback

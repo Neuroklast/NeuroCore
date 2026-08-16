@@ -1,13 +1,13 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 
 /**
     @file Config.h
-    @brief Central configuration constants for the NeuroCore plugin.
+    @brief Central configuration constants for the NeuroKore plugin.
 
     The values here are organised by logical domain and can be used
     throughout the project without instantiating any objects.
@@ -23,25 +23,43 @@ namespace Config
     inline constexpr int kWindowWidth        = 1280;
     /// Height of the plugin window in pixels.
     inline constexpr int kWindowHeight       = 860;
+    /// Layout raster. The editor scales this to the host window (true UI scale).
+    inline constexpr int kUiDesignWidth      = kWindowWidth;
+    inline constexpr int kUiDesignHeight     = kWindowHeight;
+    /// Host window must stay large enough that 100% scale stays readable.
+    inline constexpr int kUiMinWindowWidth   = 1100;
+    inline constexpr int kUiMinWindowHeight  = 739;  // 1100 * 860/1280
+    inline constexpr int kUiMaxWindowWidth   = 1920;
+    inline constexpr int kUiMaxWindowHeight  = 1290; // 1920 * 860/1280
+    inline constexpr double kUiAspectRatio   = (double) kUiDesignWidth / (double) kUiDesignHeight;
+    inline constexpr int kUiScalePercentMin  = 100;
+    inline constexpr int kUiScalePercentMax  = 150;
+    inline constexpr int kUiScalePercentStep = 25;
     /// Global padding for all UI elements.
-    inline constexpr int kUiPadding         = 8;
+    inline constexpr int kUiPadding         = 5;
     /// Top HUD strip (Neuroklast OS line). Chrome must start below this.
-    inline constexpr int kHudHeaderHeight   = 22;
+    inline constexpr int kHudHeaderHeight   = 16;
     inline constexpr const char* kProductName   = "NEUROKORE";
     inline constexpr const char* kCompanyName   = "Neuroklast";
     inline constexpr const char* kBrandByline   = "by Neuroklast";
     inline constexpr const char* kOsBanner      = "NEUROKORE // NEUROKLAST OS";
-    /// Brand + chrome button row. Half of the previous 0.09 weight (~72 px → ~36 px).
-    inline constexpr float kToolbarRowWeight    = 0.045f;
+    /// Brand + chrome button row. Tall enough for the NK lockup after L/Both/R left the tools row.
+    inline constexpr float kToolbarRowWeight    = 0.042f;
     inline constexpr int   kToolbarRowMinHeight = 32;
-    inline constexpr int   kToolbarRowMaxHeight = 38;
-    /// Shared height for settings-row chrome (L/BOTH/R, combos look).
-    inline constexpr int kChromeControlHeight = 32;
-    /// Main body column weights: knobs / formula module / meter.
-    /// Knobs are square — a fat left column only pads the gap between a/b.
-    inline constexpr float kBodyKnobsWeight  = 2.05f;
-    inline constexpr float kBodyEditorWeight = 6.40f;
-    inline constexpr float kBodyMeterWeight  = 1.05f;
+    inline constexpr int   kToolbarRowMaxHeight = 36;
+    inline constexpr int kChromeControlHeight = 26;
+    inline constexpr int kToolsRowHeight     = 26;
+    /// Host pixels reserved so overlays leave Mix / OS / status clickable.
+    inline constexpr int kOverlayTopChromeDesign = kHudHeaderHeight
+                                                 + kToolbarRowMaxHeight
+                                                 + kToolsRowHeight
+                                                 + 10;
+    inline constexpr int kActionRowHeight    = 26;
+    inline constexpr int kScopeRowHeight     = 176;
+    /// One vertical column of six knobs. The formula / graph owns the window.
+    inline constexpr float kBodyKnobsWeight  = 1.10f;
+    inline constexpr float kBodyEditorWeight = 8.20f;
+    inline constexpr float kBodyMeterWeight  = 0.01f;
 
     /// Size of the custom parameter knobs.
 
@@ -74,11 +92,9 @@ namespace Config
     inline constexpr int kFontSizeLarge      = 18;
 
     /// Size of rotary knobs in pixels.
-    inline constexpr int kKnobSize          = 110;
-    /// Mindestdurchmesser aller Rotary-Slider.
-    inline constexpr int kRotaryDiameterMin = 120;
-    /// Fixed size of each ParameterComponent knob.
-    inline constexpr int kParameterKnobSize = 160;
+    inline constexpr int kKnobSize          = 72;
+    inline constexpr int kRotaryDiameterMin = 56;
+    inline constexpr int kParameterKnobSize = 76;
     /// Width of the loudness meter labels.
     inline constexpr float kLoudnessLabelWidth = 45.0f;
     /// One-pole rise time for the published loudness (dB domain).
@@ -93,8 +109,8 @@ namespace Config
     inline constexpr int kWaveformFftOrder = 11;
     /// Compact extras next to each IN/OUT scope (same row height).
     inline constexpr int kScopeFoldWidth      = 18;
-    inline constexpr int kScopeLoudnessWidth  = 48;
-    inline constexpr int kScopeFieldMinWidth  = 80;
+    inline constexpr int kScopeLoudnessWidth  = 62;
+    inline constexpr int kScopeFieldMinWidth  = 96;
 
 
 
@@ -141,7 +157,7 @@ namespace Config
         "a", "b", "c", "d", "e", "f"
     };
     /// Preset name chip in the compact toolbar (fills the 32–38 px row).
-    inline constexpr float kPresetChipFontPt = 15.0f;
+    inline constexpr float kPresetChipFontPt = 13.0f;
     /// Default formula editor / live view font height (points).
     inline constexpr float kDefaultEditorFontPt = 18.0f;
     inline constexpr float kMinEditorFontPt     = 12.0f;
@@ -175,22 +191,29 @@ namespace Config
     // Audio diagnostics (NaN / click / crackle logging)
     //==========================================================================
 
-    /// Master switch for runtime anomaly logging (file under AppData/NEUROKLAST/NeuroCore).
+    /// Master switch for runtime anomaly logging (file under AppData/NEUROKLAST/NeuroKore).
     /// Default off in product builds — enable explicitly when diagnosing.
     inline constexpr bool  kAudioDiagnosticsEnabled     = false;
 
     /// Default oversampling choice index: 0=1×, 1=2×, 2=4×, 3=8×.
     inline constexpr int   kDefaultOversamplingIndex    = 2; // 4× — gold-standard clip/filter HQ
-    /// Trip only when we actually overrun the host callback (not "busy but OK").
+    /// Soft-trip when the load EMA stays above this (host callback overrun, not "% of machine").
     inline constexpr float kCpuTripRatio     = 1.15f;
-    /// A single block this far over budget trips immediately.
-    inline constexpr float kCpuTripHardRatio = 2.50f;
+    /// Hard-trip only if the EMA (not a single sample) stays this far over budget.
+    inline constexpr float kCpuTripHardRatio = 3.00f;
+    /// Consecutive observe() calls with EMA >= kCpuTripRatio required for a soft trip.
     inline constexpr int   kCpuTripHits      = 8;
-    /// After a trip, stay dry this long then probe wet again.
-    inline constexpr float kCpuRetrySec      = 0.75f;
-    /// Probe recovers if load is under this (hysteresis below trip).
-    inline constexpr float kCpuRecoverRatio  = 0.95f;
-    /// Ignore this many blocks after prepare/clear (cold caches, OS rebuild).
+    /// Consecutive observe() calls with EMA >= kCpuTripHardRatio required for a hard trip.
+    inline constexpr int   kCpuHardTripHits  = 4;
+    /// After a trip, stay dry this long then run one wet probe.
+    inline constexpr float kCpuRetrySec      = 2.0f;
+    /// Probe recovers if EMA is under this (clearly below the soft-trip line).
+    inline constexpr float kCpuRecoverRatio  = 0.85f;
+    /// Ignore trips this long after prepare/clear/OS/IR (cold caches, OS rebuild).
+    inline constexpr float kCpuWarmupSeconds = 3.0f;
+    /// EMA coefficient: smoothed += alpha * (instant - smoothed). 0.15 ignores lone 8× spikes.
+    inline constexpr float kCpuEmaAlpha      = 0.15f;
+    /// Legacy block-count warmup; CpuProtect uses kCpuWarmupSeconds.
     inline constexpr int   kCpuWarmupBlocks  = 48;
     /// |sample[n]-sample[n-1]| above this → hard jump (audible click).
     inline constexpr float kAudioDiagJumpThreshold      = 0.28f;

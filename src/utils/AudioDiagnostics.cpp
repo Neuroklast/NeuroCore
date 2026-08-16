@@ -1,5 +1,5 @@
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
 */
 
 #include "AudioDiagnostics.h"
@@ -344,7 +344,7 @@ void AudioDiagnostics::writePendingEvents()
     if (! headerWritten && logFile.getSize() == 0)
     {
         stream.writeText (
-            "# NeuroCore AudioDiagnostics\n"
+            "# NeuroKore AudioDiagnostics\n"
             "# time | kind | stage | ch | smp | nanN | jumpN | inJumpN | jumpMax | prev | curr | inPk | outPk | "
             "preset | a b c d | gain mix outG | sr bs os | flags | formula\n"
             "# flags: blend|ramp|lim|useL|useR\n",

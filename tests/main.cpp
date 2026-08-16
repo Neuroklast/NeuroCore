@@ -1,4 +1,5 @@
 #include "DSLParserTest.h"
+#include "GraphModelTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
 #include "SignalChainTest.h"
@@ -6,7 +7,7 @@
 #include "WeightedLayoutTest.h"
 #include "LookupTableSmootherTest.h"
 #include "DSPUtilsTest.h"
-#include "NeuroCoreExtrasTest.h"
+#include "NeuroKoreExtrasTest.h"
 #include "FormulaOptimizeTest.h"
 #include "SpectralSmokeTest.h"
 #include "AudioDiagnosticsTest.h"
@@ -29,10 +30,11 @@ int main (int argc, char* argv[])
   juce::ignoreUnused (argc, argv);
 
   // AudioProcessor / APVTS / AsyncUpdater need a live MessageManager.
-  // Without this, the first NeuroCoreAudioProcessor construction can spin forever.
+  // Without this, the first NeuroKoreAudioProcessor construction can spin forever.
   juce::ScopedJuceInitialiser_GUI juceInit;
 
   DSLParserTest parserTest;
+  GraphModelTest graphModelTest;
   ExpressionEvaluatorTest evaluatorTest;
   WaveShaperTest shaperTest;
   SignalChainTest chainTest;
@@ -40,7 +42,7 @@ int main (int argc, char* argv[])
   WeightedLayoutTest layoutTest;
   LookupTableSmootherTest smootherTest;
   DSPUtilsTest dspUtilsTest;
-  NeuroCoreExtrasTest extrasTest;
+  NeuroKoreExtrasTest extrasTest;
   FormulaOptimizeTest formulaOptimizeTest;
   SpectralSmokeTest spectralSmokeTest;
   AudioDiagnosticsTest audioDiagnosticsTest;

@@ -9,6 +9,7 @@ class BootSequenceOverlay : public juce::Component
 public:
     BootSequenceOverlay();
 
+    void setMotion (CyberMotion motion);
     void startOn (juce::Component& parent);
     void skip();
 
@@ -23,6 +24,7 @@ private:
     void onVBlank (double nowSec);
     void finish();
 
+    CyberMotion motion { CyberMotion::Full };
     CyberSequence sequence;
     juce::VBlankAttachment vblank;
     juce::Random rng { 0x424f4f54 };

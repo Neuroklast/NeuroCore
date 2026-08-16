@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include "PresetTableComponent.h"
 
-class NeuroCoreAudioProcessor;
+class NeuroKoreAudioProcessor;
 
 /**
     Preset Explorer: folder list + table + detail (Serum-style browse).
@@ -12,7 +12,7 @@ class PresetContentComponent : public juce::Component,
                                private juce::TextEditor::Listener
 {
 public:
-    PresetContentComponent (NeuroCoreAudioProcessor& processor, juce::LookAndFeel& lf);
+    PresetContentComponent (NeuroKoreAudioProcessor& processor, juce::LookAndFeel& lf);
     ~PresetContentComponent() override;
 
     /** Called after a preset was loaded into the processor. */
@@ -48,7 +48,7 @@ private:
     void importFromPaths (const juce::StringArray& paths);
 
     PresetTableComponent table;
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::LookAndFeel& lookAndFeel;
 
     juce::TextEditor searchBox;

@@ -55,7 +55,7 @@ struct FunctionInfo
 class FunctionsContentComponent : public juce::Component, public juce::ListBoxModel
 {
 public:
-    explicit FunctionsContentComponent (NeuroCoreAudioProcessor& p);
+    explicit FunctionsContentComponent (NeuroKoreAudioProcessor& p);
     ~FunctionsContentComponent() override;
 
     std::function<void(const juce::String&)> onInsert;
@@ -86,7 +86,7 @@ private:
     void refreshCategories();
     void applyCategory (const juce::String& cat);
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::Label folderLabel;
     juce::Label countLabel;
     std::unique_ptr<CategoryNav> folderNav;

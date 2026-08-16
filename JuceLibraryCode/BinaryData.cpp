@@ -13331,13 +13331,13 @@ static const unsigned char temp_binary_data_12[] =
 
 const char* install_linux_deps_sh = (const char*) temp_binary_data_12;
 
-//================== NeuroCore_Tests.jucer ==================
+//================== NeuroKore_Tests.jucer ==================
 static const unsigned char temp_binary_data_13[] =
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
-"<JUCERPROJECT id=\"testProj\" name=\"NeuroCoreTests\" projectType=\"consoleapp\" useAppConfig=\"1\"\r\n"
+"<JUCERPROJECT id=\"testProj\" name=\"NeuroKoreTests\" projectType=\"consoleapp\" useAppConfig=\"1\"\r\n"
 "              addUsingNamespaceToJuceHeader=\"1\" jucerFormatVersion=\"1\" version=\"0.0.1\"\r\n"
 "              companyName=\"NEUROKLAST\">\r\n"
-"  <MAINGROUP id=\"root\" name=\"NeuroCoreTests\">\r\n"
+"  <MAINGROUP id=\"root\" name=\"NeuroKoreTests\">\r\n"
 "    <FILE id=\"MainCpp\" name=\"main.cpp\" compile=\"1\" resource=\"0\" file=\"main.cpp\"/>\r\n"
 "    <FILE id=\"EvalTest\" name=\"ExpressionEvaluatorTest.h\" compile=\"1\" resource=\"0\" file=\"ExpressionEvaluatorTest.h\"/>\r\n"
 "    <FILE id=\"ShaperTest\" name=\"WaveShaperTest.h\" compile=\"1\" resource=\"0\" file=\"WaveShaperTest.h\"/>\r\n"
@@ -13352,8 +13352,8 @@ static const unsigned char temp_binary_data_13[] =
 "  <EXPORTFORMATS>\r\n"
 "    <VS2022 targetFolder=\"../Builds/VisualStudio2022\">\r\n"
 "      <CONFIGURATIONS>\r\n"
-"        <CONFIGURATION isDebug=\"1\" name=\"Debug\" targetName=\"NeuroCore_Tests\"/>\r\n"
-"        <CONFIGURATION isDebug=\"0\" name=\"Release\" targetName=\"NeuroCore_Tests\"/>\r\n"
+"        <CONFIGURATION isDebug=\"1\" name=\"Debug\" targetName=\"NeuroKore_Tests\"/>\r\n"
+"        <CONFIGURATION isDebug=\"0\" name=\"Release\" targetName=\"NeuroKore_Tests\"/>\r\n"
 "      </CONFIGURATIONS>\r\n"
 "      <MODULEPATHS>\r\n"
 "        <MODULEPATH id=\"juce_core\" path=\"D:/JUCE/modules\"/>\r\n"
@@ -13366,7 +13366,7 @@ static const unsigned char temp_binary_data_13[] =
 "  </EXPORTFORMATS>\r\n"
 "</JUCERPROJECT>\r\n";
 
-const char* NeuroCore_Tests_jucer = (const char*) temp_binary_data_13;
+const char* NeuroKore_Tests_jucer = (const char*) temp_binary_data_13;
 
 //================== AGENTS.md ==================
 static const unsigned char temp_binary_data_14[] =
@@ -13395,11 +13395,11 @@ static const unsigned char temp_binary_data_14[] =
 "   cmake --build build --config Release\r\n"
 "   ```\r\n"
 "   Diese Befehle laden JUCE (falls notwendig) und erstellen alle Artefakte im\r\n"
-"   Ordner `build/NeuroCore_artefacts`.\r\n"
+"   Ordner `build/NeuroKore_artefacts`.\r\n"
 "\r\n"
 "4. **Tests ausf\xc3\xbchren**\r\n"
 "   ```bash\r\n"
-"   cmake --build build --target NeuroCoreTests\r\n"
+"   cmake --build build --target NeuroKoreTests\r\n"
 "   ctest --test-dir build\r\n"
 "   ```\r\n"
 "   Sofern JUCE korrekt eingebunden ist, laufen alle Unit-Tests durch.\r\n";
@@ -13412,7 +13412,7 @@ static const unsigned char temp_binary_data_15[] =
 "\r\n"
 "include(FetchContent)\r\n"
 "\r\n"
-"project(NeuroCore VERSION 0.0.1 LANGUAGES C CXX)\r\n"
+"project(NeuroKore VERSION 0.0.1 LANGUAGES C CXX)\r\n"
 "\r\n"
 "if(UNIX AND NOT APPLE)\r\n"
 "    find_package(PkgConfig REQUIRED)\r\n"
@@ -13484,7 +13484,7 @@ static const unsigned char temp_binary_data_15[] =
 "    src/ui/PluginEditor.cpp\r\n"
 ")\r\n"
 "\r\n"
-"juce_add_plugin(NeuroCore\r\n"
+"juce_add_plugin(NeuroKore\r\n"
 "    COMPANY_NAME \"NEUROKLAST\"\r\n"
 "    IS_SYNTH FALSE\r\n"
 "    NEEDS_MIDI_INPUT FALSE\r\n"
@@ -13495,17 +13495,17 @@ static const unsigned char temp_binary_data_15[] =
 "    PLUGIN_MANUFACTURER_CODE NRKL\r\n"
 "    PLUGIN_CODE NRCO\r\n"
 "    FORMATS Standalone VST3\r\n"
-"    PRODUCT_NAME \"NeuroCore\"\r\n"
+"    PRODUCT_NAME \"NeuroKore\"\r\n"
 "    VST3_CATEGORIES \"Fx|Distortion\"\r\n"
 "    VST3_AUTO_MANIFEST FALSE\r\n"
 "    SOURCES ${SOURCE_FILES}\r\n"
 ")\r\n"
 "\r\n"
-"target_sources(NeuroCore PRIVATE ${SOURCE_FILES})\r\n"
+"target_sources(NeuroKore PRIVATE ${SOURCE_FILES})\r\n"
 "\r\n"
-"juce_generate_juce_header(NeuroCore)\r\n"
+"juce_generate_juce_header(NeuroKore)\r\n"
 "\r\n"
-"target_include_directories(NeuroCore PRIVATE\r\n"
+"target_include_directories(NeuroKore PRIVATE\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/core\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/dsp\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/dsl\r\n"
@@ -13516,7 +13516,7 @@ static const unsigned char temp_binary_data_15[] =
 "    ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann\r\n"
 ")\r\n"
 "\r\n"
-"target_compile_features(NeuroCore PRIVATE cxx_std_17)\r\n"
+"target_compile_features(NeuroKore PRIVATE cxx_std_17)\r\n"
 "\r\n"
 "juce_add_binary_data(resourcesBinary\r\n"
 "    SOURCES\r\n"
@@ -13532,7 +13532,7 @@ static const unsigned char temp_binary_data_15[] =
 "        resources/templates.json\r\n"
 ")\r\n"
 "\r\n"
-"target_link_libraries(NeuroCore PRIVATE\r\n"
+"target_link_libraries(NeuroKore PRIVATE\r\n"
 "    resourcesBinary\r\n"
 "    juce::juce_audio_utils\r\n"
 "    juce::juce_audio_formats\r\n"
@@ -13553,16 +13553,16 @@ static const unsigned char temp_binary_data_15[] =
 "    juce::juce_product_unlocking\r\n"
 ")\r\n"
 "\r\n"
-"add_custom_command(TARGET NeuroCore POST_BUILD\r\n"
+"add_custom_command(TARGET NeuroKore POST_BUILD\r\n"
 "    COMMAND ${CMAKE_COMMAND} -E copy_directory\r\n"
 "        ${CMAKE_CURRENT_SOURCE_DIR}/resources\r\n"
-"        $<TARGET_FILE_DIR:NeuroCore>/resources\r\n"
+"        $<TARGET_FILE_DIR:NeuroKore>/resources\r\n"
 ")\r\n"
 "\r\n"
-"juce_add_console_app(NeuroCoreTests PRODUCT_NAME \"NeuroCoreTests\")\r\n"
-"juce_generate_juce_header(NeuroCoreTests)\r\n"
+"juce_add_console_app(NeuroKoreTests PRODUCT_NAME \"NeuroKoreTests\")\r\n"
+"juce_generate_juce_header(NeuroKoreTests)\r\n"
 "\r\n"
-"target_sources(NeuroCoreTests PRIVATE\r\n"
+"target_sources(NeuroKoreTests PRIVATE\r\n"
 "    tests/main.cpp\r\n"
 "    tests/ExpressionEvaluatorTest.h\r\n"
 "    tests/WaveShaperTest.h\r\n"
@@ -13588,7 +13588,7 @@ static const unsigned char temp_binary_data_15[] =
 "    src/ui/WeightedLayout.cpp\r\n"
 ")\r\n"
 "\r\n"
-"target_include_directories(NeuroCoreTests PRIVATE\r\n"
+"target_include_directories(NeuroKoreTests PRIVATE\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/utils\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/dsp\r\n"
 "    ${PROJECT_SOURCE_DIR}/src/core\r\n"
@@ -13597,9 +13597,9 @@ static const unsigned char temp_binary_data_15[] =
 "    ${PROJECT_SOURCE_DIR}/src/licensing\r\n"
 ")\r\n"
 "\r\n"
-"target_compile_features(NeuroCoreTests PRIVATE cxx_std_17)\r\n"
+"target_compile_features(NeuroKoreTests PRIVATE cxx_std_17)\r\n"
 "\r\n"
-"target_link_libraries(NeuroCoreTests PRIVATE\r\n"
+"target_link_libraries(NeuroKoreTests PRIVATE\r\n"
 "    juce::juce_audio_basics\r\n"
 "    juce::juce_dsp\r\n"
 "    juce::juce_data_structures\r\n"
@@ -13619,21 +13619,21 @@ static const unsigned char temp_binary_data_15[] =
 ")\r\n"
 "\r\n"
 "enable_testing()\r\n"
-"add_test(NAME NeuroCoreTests COMMAND NeuroCoreTests)\r\n"
+"add_test(NAME NeuroKoreTests COMMAND NeuroKoreTests)\r\n"
 "\r\n";
 
 const char* CMakeLists_txt = (const char*) temp_binary_data_15;
 
-//================== NeuroCore.jucer ==================
+//================== NeuroKore.jucer ==================
 static const unsigned char temp_binary_data_16[] =
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
 "\r\n"
-"<JUCERPROJECT id=\"wui1EH\" name=\"NeuroCore\" projectType=\"audioplug\" jucerFormatVersion=\"1\"\r\n"
+"<JUCERPROJECT id=\"wui1EH\" name=\"NeuroKore\" projectType=\"audioplug\" jucerFormatVersion=\"1\"\r\n"
 "              version=\"0.0.1\" companyName=\"NEUROKLAST\" companyWebsite=\"http://neuroklast.net\"\r\n"
 "              companyEmail=\"info@neuroklast.net\" pluginFormats=\"buildStandalone,buildVST3\"\r\n"
 "              pluginManufacturerCode=\"NRKL\" pluginCode=\"NRCO\" pluginVST3Category=\"Fx\"\r\n"
 "              cppLanguageStandard=\"20\" pluginChannelConfigs=\"{2,2}\">\r\n"
-"  <MAINGROUP id=\"GyblaO\" name=\"NeuroCore\">\r\n"
+"  <MAINGROUP id=\"GyblaO\" name=\"NeuroKore\">\r\n"
 "    <GROUP id=\"{D835C2BA-58EC-CFCF-E3DB-5289BAE4576E}\" name=\"docs\"/>\r\n"
 "    <GROUP id=\"{2FB0BCD4-BE9C-E761-0482-7559DC222A8A}\" name=\"resources\">\r\n"
 "      <GROUP id=\"{77B36C55-0DF8-337B-1083-B2E4666F6F09}\" name=\"img\">\r\n"
@@ -13808,8 +13808,8 @@ static const unsigned char temp_binary_data_16[] =
 "      <FILE id=\"TynB8G\" name=\"ExpressionEvaluatorTest.h\" compile=\"0\" resource=\"0\"\r\n"
 "            file=\"tests/ExpressionEvaluatorTest.h\"/>\r\n"
 "      <FILE id=\"p7xujK\" name=\"main.cpp\" compile=\"1\" resource=\"0\" file=\"tests/main.cpp\"/>\r\n"
-"      <FILE id=\"ZnMR3v\" name=\"NeuroCore_Tests.jucer\" compile=\"0\" resource=\"1\"\r\n"
-"            file=\"tests/NeuroCore_Tests.jucer\"/>\r\n"
+"      <FILE id=\"ZnMR3v\" name=\"NeuroKore_Tests.jucer\" compile=\"0\" resource=\"1\"\r\n"
+"            file=\"tests/NeuroKore_Tests.jucer\"/>\r\n"
 "      <FILE id=\"ELZvam\" name=\"PresetManagerTest.h\" compile=\"0\" resource=\"0\"\r\n"
 "            file=\"tests/PresetManagerTest.h\"/>\r\n"
 "      <FILE id=\"Pe1Ic5\" name=\"SignalChainTest.h\" compile=\"0\" resource=\"0\"\r\n"
@@ -13819,7 +13819,7 @@ static const unsigned char temp_binary_data_16[] =
 "    </GROUP>\r\n"
 "    <FILE id=\"AO7OZj\" name=\"AGENTS.md\" compile=\"0\" resource=\"1\" file=\"AGENTS.md\"/>\r\n"
 "    <FILE id=\"Skq3Ct\" name=\"CMakeLists.txt\" compile=\"0\" resource=\"1\" file=\"CMakeLists.txt\"/>\r\n"
-"    <FILE id=\"NRaDWB\" name=\"NeuroCore.jucer\" compile=\"0\" resource=\"1\" file=\"NeuroCore.jucer\"/>\r\n"
+"    <FILE id=\"NRaDWB\" name=\"NeuroKore.jucer\" compile=\"0\" resource=\"1\" file=\"NeuroKore.jucer\"/>\r\n"
 "    <FILE id=\"HMZ7yb\" name=\"README.md\" compile=\"0\" resource=\"1\" file=\"README.md\"/>\r\n"
 "  </MAINGROUP>\r\n"
 "  <MODULES>\r\n"
@@ -13849,8 +13849,8 @@ static const unsigned char temp_binary_data_16[] =
 "  <EXPORTFORMATS>\r\n"
 "    <VS2022 targetFolder=\"Builds/VisualStudio2022\">\r\n"
 "      <CONFIGURATIONS>\r\n"
-"        <CONFIGURATION isDebug=\"1\" name=\"Debug\" targetName=\"NeuroCore\"/>\r\n"
-"        <CONFIGURATION isDebug=\"0\" name=\"Release\" targetName=\"NeuroCore\"/>\r\n"
+"        <CONFIGURATION isDebug=\"1\" name=\"Debug\" targetName=\"NeuroKore\"/>\r\n"
+"        <CONFIGURATION isDebug=\"0\" name=\"Release\" targetName=\"NeuroKore\"/>\r\n"
 "      </CONFIGURATIONS>\r\n"
 "      <MODULEPATHS>\r\n"
 "        <MODULEPATH id=\"juce_animation\" path=\"D:/JUCE/modules\"/>\r\n"
@@ -13931,13 +13931,13 @@ static const unsigned char temp_binary_data_16[] =
 "  </EXPORTFORMATS>\r\n"
 "</JUCERPROJECT>\r\n";
 
-const char* NeuroCore_jucer = (const char*) temp_binary_data_16;
+const char* NeuroKore_jucer = (const char*) temp_binary_data_16;
 
 //================== README.md ==================
 static const unsigned char temp_binary_data_17[] =
-"#NeuroCore\r\n"
+"#NeuroKore\r\n"
 "\r\n"
-"NeuroCore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen \xc3\xbc""ber vier Parameter **a** bis **d** v"
+"NeuroKore ist ein experimentelles Audio-Plug-in, das Audioeingangsdaten mithilfe einer frei definierten mathematischen Formel transformiert. Die Formel wird zur Laufzeit ausgewertet und kann Modulationen \xc3\xbc""ber vier Parameter **a** bis **d** v"
 "erwenden. Zus\xc3\xa4tzlich steht ein Sinus-Modulationssignal (*mod*) bereit.\r\n"
 "\r\n"
 "## Voraussetzungen\r\n"
@@ -13967,10 +13967,10 @@ static const unsigned char temp_binary_data_17[] =
 "\r\n"
 "## Build-Schritte\r\n"
 "\r\n"
-"1. Projektdatei `NeuroCore.jucer` im Projucer \xc3\xb6""ffnen. Sofern `JUCE_PATH` gesetzt ist, wird der Pfad automatisch verwendet. Andernfalls kann er unter\r\n"
+"1. Projektdatei `NeuroKore.jucer` im Projucer \xc3\xb6""ffnen. Sofern `JUCE_PATH` gesetzt ist, wird der Pfad automatisch verwendet. Andernfalls kann er unter\r\n"
 "   *Global Paths \xe2\x86\x92 JUCE Modules* eingetragen werden. Anschlie\xc3\x9f""end \xc3\xbc""ber *File \xe2\x86\x92 Export Project* die gew\xc3\xbcnschten Exporter generieren.\r\n"
-"2. F\xc3\xbcr die **Standalone-Version** das Projekt `NeuroCore_StandalonePlugin` in der IDE \xc3\xb6""ffnen und \xc3\xbc""bersetzen. Die erzeugte Anwendung verh\xc3\xa4lt sich wie ein eigenst\xc3\xa4ndiger Effekt.\r\n"
-"3. F\xc3\xbcr die **VST3-Version** das Projekt `NeuroCore_VST3` kompilieren. Die entstandene *.vst3*-Datei kann in kompatiblen Hosts geladen werden.\r\n"
+"2. F\xc3\xbcr die **Standalone-Version** das Projekt `NeuroKore_StandalonePlugin` in der IDE \xc3\xb6""ffnen und \xc3\xbc""bersetzen. Die erzeugte Anwendung verh\xc3\xa4lt sich wie ein eigenst\xc3\xa4ndiger Effekt.\r\n"
+"3. F\xc3\xbcr die **VST3-Version** das Projekt `NeuroKore_VST3` kompilieren. Die entstandene *.vst3*-Datei kann in kompatiblen Hosts geladen werden.\r\n"
 "\r\n"
 "### CMake-Build\r\n"
 "\r\n"
@@ -13984,7 +13984,7 @@ static const unsigned char temp_binary_data_17[] =
 "cmake --build build --config Release\r\n"
 "```\r\n"
 "\r\n"
-"Die fertigen Artefakte erscheinen im Unterordner `build/NeuroCore_artefacts`.\r\n"
+"Die fertigen Artefakte erscheinen im Unterordner `build/NeuroKore_artefacts`.\r\n"
 "Die ben\xc3\xb6tigten Ressourcen werden automatisch in den Ausgabepfad kopiert.\r\n"
 "\r\n"
 "### Docker-Umgebung\r\n"
@@ -14001,7 +14001,7 @@ static const unsigned char temp_binary_data_17[] =
 "### Tests ausf\xc3\xbchren\r\n"
 "\r\n"
 "```bash\r\n"
-"cmake --build build --target NeuroCoreTests\r\n"
+"cmake --build build --target NeuroKoreTests\r\n"
 "ctest --test-dir build\r\n"
 "```\r\n"
 "\r\n"
@@ -14031,7 +14031,7 @@ static const unsigned char temp_binary_data_17[] =
 "\r\n"
 "Vorlagen f\xc3\xbcr Formeln befinden sich in `resources/templates.json`. Beim Start werden diese Eintr\xc3\xa4ge geladen und dienen als Basis f\xc3\xbcr Template-Vorschl\xc3\xa4ge.\r\n"
 "\r\n"
-"Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroCoreUserTemplates.txt` gespeichert und beim Start geladen.\r\n"
+"Benutzerdefinierte Templates werden im Benutzerprofil unter `NeuroKoreUserTemplates.txt` gespeichert und beim Start geladen.\r\n"
 "\r\n"
 "## DSL-Handb\xc3\xbc""cher\r\n"
 "\r\n"
@@ -14077,10 +14077,10 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0xbbbbcb57:  numBytes = 102; return optimizations_txt;
         case 0xd453fe2e:  numBytes = 234; return templates_json;
         case 0x6bf5ee41:  numBytes = 190; return install_linux_deps_sh;
-        case 0x9802c522:  numBytes = 1786; return NeuroCore_Tests_jucer;
+        case 0x9802c522:  numBytes = 1786; return NeuroKore_Tests_jucer;
         case 0x40c27d68:  numBytes = 1241; return AGENTS_md;
         case 0x90e15cf5:  numBytes = 6405; return CMakeLists_txt;
-        case 0x7daaf120:  numBytes = 20218; return NeuroCore_jucer;
+        case 0x7daaf120:  numBytes = 20218; return NeuroKore_jucer;
         case 0x64791dc8:  numBytes = 5874; return README_md;
         default: break;
     }
@@ -14104,10 +14104,10 @@ const char* namedResourceList[] =
     "optimizations_txt",
     "templates_json",
     "install_linux_deps_sh",
-    "NeuroCore_Tests_jucer",
+    "NeuroKore_Tests_jucer",
     "AGENTS_md",
     "CMakeLists_txt",
-    "NeuroCore_jucer",
+    "NeuroKore_jucer",
     "README_md"
 };
 
@@ -14126,10 +14126,10 @@ const char* originalFilenames[] =
     "optimizations.txt",
     "templates.json",
     "install_linux_deps.sh",
-    "NeuroCore_Tests.jucer",
+    "NeuroKore_Tests.jucer",
     "AGENTS.md",
     "CMakeLists.txt",
-    "NeuroCore.jucer",
+    "NeuroKore.jucer",
     "README.md"
 };
 

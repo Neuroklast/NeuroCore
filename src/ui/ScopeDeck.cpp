@@ -2,7 +2,7 @@
 #include "PluginLookAndFeel.h"
 #include "../core/Config.h"
 
-ScopeDeck::ScopeDeck (NeuroCoreAudioProcessor& proc, WaveformDisplayComponent::Type t)
+ScopeDeck::ScopeDeck (NeuroKoreAudioProcessor& proc, WaveformDisplayComponent::Type t)
     : wave (proc, t),
       field (proc, t),
       loud (proc, t)
@@ -10,12 +10,12 @@ ScopeDeck::ScopeDeck (NeuroCoreAudioProcessor& proc, WaveformDisplayComponent::T
     setOpaque (true);
     if (t == WaveformDisplayComponent::Type::Input)
     {
-        wave.lineColour = NeuroCoreLookAndFeel::accent().withAlpha (0.85f);
+        wave.lineColour = NeuroKoreLookAndFeel::accent().withAlpha (0.85f);
         wave.lineThickness = 1.4f;
     }
     else
     {
-        wave.lineColour = NeuroCoreLookAndFeel::accent();
+        wave.lineColour = NeuroKoreLookAndFeel::accent();
         wave.lineThickness = 1.6f;
     }
     wave.setOpaque (true);
@@ -74,12 +74,12 @@ void ScopeDeck::paint (juce::Graphics& g)
 void ScopeDeck::FoldHit::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat().reduced (0.5f);
-    g.setColour (NeuroCoreLookAndFeel::surfaceHigh());
+    g.setColour (NeuroKoreLookAndFeel::surfaceHigh());
     g.fillRect (r);
     const bool hot = isMouseOver();
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (hot ? 0.95f : 0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (hot ? 0.95f : 0.55f));
     g.drawRect (r, 1.f);
-    g.setFont (NeuroCoreLookAndFeel::monoFont (10.f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
     g.drawText (owner.extrasOpen() ? "<<" : ">>",
                 getLocalBounds(), juce::Justification::centred, false);
 }

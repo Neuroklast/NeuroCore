@@ -86,7 +86,7 @@ bool LicenseCrypto::parse (const juce::String& text,
     payload = {};
     sigHex.clear();
 
-    if (! text.contains (kHeaderLine) && ! text.contains (kLegacyHeaderLine))
+    if (! text.contains (kHeaderLine))
     {
         error = "Not a NEUROKORE license file";
         return false;
@@ -161,5 +161,5 @@ bool LicenseCrypto::parseAndVerify (const juce::String& text,
 
 juce::RSAKey LicenseCrypto::productPublicKey()
 {
-    return juce::RSAKey (kNeuroCoreLicensePublicKey);
+    return juce::RSAKey (kNeuroKoreLicensePublicKey);
 }

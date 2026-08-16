@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
 
     Context-aware DSL completion for the formula editor (IDE-style).
 */

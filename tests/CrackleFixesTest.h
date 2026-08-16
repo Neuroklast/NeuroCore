@@ -8,6 +8,7 @@
 #include "../src/core/PluginProcessor.h"
 #include "../src/core/CpuProtect.h"
 #include "../src/core/EffectParameters.h"
+#include "../src/utils/FactoryPresetLibrary.h"
 #include "TestHelpers.h"
 #include <cmath>
 #include <vector>
@@ -229,7 +230,7 @@ public:
 
         beginTest ("delay formula then dry formula stays finite");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (48000.0, 256);
             juce::String err;
             expect (proc.applyFormula (
@@ -372,44 +373,103 @@ public:
 
         beginTest ("CpuProtect trips on consecutive over-budget blocks");
         {
-            CpuProtect g;
-            expect (! g.isTripped());
-            // Warmup blocks must not trip
-            for (int i = 0; i < Config::kCpuWarmupBlocks; ++i)
-                g.observe (0.010, 0.002);
-            expect (! g.isTripped());
+            const double budget = 0.002;
+            auto expireWarmup = [] (CpuProtect& g)
+            {
+                g.observe (0.0, (double) Config::kCpuWarmupSeconds + 1.0);
+            };
 
-            g.observe (0.001, 0.002); // 50 %
-            expect (! g.isTripped());
-            for (int i = 0; i < Config::kCpuTripHits - 1; ++i)
-                g.observe (0.003, 0.002); // 150 %
-            expect (! g.isTripped());
-            g.observe (0.003, 0.002);
-            expect (g.isTripped());
+            // Warmup: many 8× spikes must not trip (cold 8× OS / IR / cache).
+            {
+                CpuProtect g;
+                expect (! g.isTripped());
+                const int n = (int) (0.5 * (double) Config::kCpuWarmupSeconds / budget);
+                expect (n > 8);
+                for (int i = 0; i < n; ++i)
+                    g.observe (8.0 * budget, budget);
+                expect (! g.isTripped());
+                expect (g.getLastLoad() > 7.f);
+            }
 
-            // Sticky until cooldown, then a cheap probe recovers
-            expect (! g.shouldProbeWet (64, 48000.0));
-            const int need = (int) std::ceil (Config::kCpuRetrySec * 48000.0 / 64.0) + 1;
-            bool probed = false;
-            for (int i = 0; i < need; ++i)
-                probed = g.shouldProbeWet (64, 48000.0);
-            expect (probed);
-            g.observe (0.001, 0.002);
-            expect (! g.isTripped());
+            // Single 8× spike after warmup must not trip (instant or hard).
+            {
+                CpuProtect g;
+                expireWarmup (g);
+                expect (! g.isTripped());
+                g.observe (8.0 * budget, budget);
+                expect (! g.isTripped());
+                expect (g.getLastLoad() > 7.f);
+                expect (g.getSmoothedLoad() < g.getLastLoad());
+                g.observe (100.0 * budget, budget); // one absurd sample still not a hard trip
+                expect (! g.isTripped());
+            }
 
-            g.clear();
-            expect (! g.isTripped());
-            for (int i = 0; i < Config::kCpuWarmupBlocks; ++i)
-                g.observe (0.0, 0.002);
-            g.observe (0.010, 0.002); // 5x = hard trip
-            expect (g.isTripped());
+            // Sustained over-budget EMA (2×, below hard) trips after consecutive hits.
+            {
+                CpuProtect g;
+                expireWarmup (g);
+                g.observe (0.5 * budget, budget);
+                expect (! g.isTripped());
+                bool tripped = false;
+                for (int i = 0; i < 64; ++i)
+                {
+                    g.observe (2.0 * budget, budget);
+                    if (g.isTripped())
+                    {
+                        tripped = true;
+                        break;
+                    }
+                }
+                expect (tripped);
+                expect (g.getSmoothedLoad() >= Config::kCpuTripRatio);
+
+                // After trip: wait retry, one wet probe + cheap observe recovers.
+                expect (! g.shouldProbeWet (64, 48000.0));
+                const int need = (int) std::ceil (Config::kCpuRetrySec * 48000.0 / 64.0) + 1;
+                bool probed = false;
+                for (int i = 0; i < need; ++i)
+                    probed = g.shouldProbeWet (64, 48000.0);
+                expect (probed);
+                g.observe (0.5 * budget, budget);
+                expect (! g.isTripped());
+            }
+
+            // Hard trip requires consecutive EMA extremes, not one sample.
+            {
+                CpuProtect g;
+                expireWarmup (g);
+                g.observe (10.0 * budget, budget);
+                expect (! g.isTripped());
+
+                bool hardTripped = false;
+                int hits = 0;
+                for (int i = 0; i < 32; ++i)
+                {
+                    g.observe (10.0 * budget, budget);
+                    ++hits;
+                    if (g.isTripped())
+                    {
+                        hardTripped = true;
+                        break;
+                    }
+                }
+                expect (hardTripped);
+                expect (hits >= Config::kCpuHardTripHits);
+            }
+
+            {
+                CpuProtect g;
+                expect (! g.isTripped());
+                g.clear();
+                expect (! g.isTripped());
+            }
         }
 
         beginTest ("8x then 4x oversampling does not process leftover silence");
         {
             // Grow-only scriptBuffer used to keep the 8× length after dropping to 4×.
             // DSL then ran an extra half-block of zeros every callback → periodic glitch.
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (48000.0, 64);
             juce::String err;
             expect (proc.applyFormula ("stage1: y = x", err), err);
@@ -469,7 +529,7 @@ public:
 
         beginTest ("switch up to 8x stays finite");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (48000.0, 64);
             juce::String err;
             expect (proc.applyFormula ("stage1: y = softclip(x, 2.2)", err), err);
@@ -511,7 +571,7 @@ public:
 
         beginTest ("oversampling change stays finite (no sticky crackle)");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (48000.0, 128);
             juce::String err;
             expect (proc.applyFormula (
@@ -559,7 +619,7 @@ public:
 
         beginTest ("loudness meter falls on silence when mix is dry");
         {
-            NeuroCoreAudioProcessor proc;
+            NeuroKoreAudioProcessor proc;
             proc.setPlayConfigDetails (2, 2, 48000.0, 128);
             proc.prepareToPlay (48000.0, 128);
             if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
@@ -585,6 +645,176 @@ public:
                 proc.processBlock (buf, midi);
             }
             expect (proc.getLoudnessDb() < loud - 12.f);
+            proc.releaseResources();
+        }
+
+        beginTest ("8x delay impulse has no periodic wrap ticks");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (3.f)); // 8×
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula (
+                "delay1: time = 80; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            buf.clear();
+            buf.setSample (0, 0, 0.9f);
+            buf.setSample (1, 0, 0.9f);
+            proc.processBlock (buf, midi);
+
+            const int echoHost = (int) std::lround (0.080 * 48000.0); // 3840
+            float laterPeak = 0.f;
+            int extraPeaks = 0;
+            int sample = 64;
+            for (int b = 0; b < 200; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                for (int i = 0; i < 64; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    const bool nearEcho = std::abs (sample - echoHost) < 96;
+                    if (nearEcho)
+                        continue;
+                    laterPeak = juce::jmax (laterPeak, a);
+                    if (a > 0.07f)
+                        ++extraPeaks;
+                }
+            }
+            expect (laterPeak < 0.07f, "8x delay wrap/block tick peak="
+                    + juce::String (laterPeak, 4) + " extras=" + juce::String (extraPeaks));
+            proc.releaseResources();
+        }
+
+        beginTest ("Tape Echo Dirt at 8x has no periodic ticks");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* preset = lib.findByName ("Tape Echo Dirt");
+            expect (preset != nullptr);
+            if (preset == nullptr)
+                return;
+
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (3.f));
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (lib.applyPreset (proc, (int) (preset - lib.getEntries().data()), err), err);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            buf.clear();
+            buf.setSample (0, 0, 0.85f);
+            buf.setSample (1, 0, 0.85f);
+            proc.processBlock (buf, midi);
+
+            // Default Time ≈ 320 ms. Allow the first echo and its decay; reject
+            // ticks that repeat at the host block (64) or a too-short wrap.
+            const int echoHost = (int) std::lround (0.320 * 48000.0);
+            std::vector<int> peakAt;
+            int sample = 64;
+            for (int b = 0; b < 400; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                for (int i = 0; i < 64; ++i, ++sample)
+                {
+                    if (std::abs (buf.getSample (0, i)) > 0.08f)
+                        peakAt.push_back (sample);
+                }
+            }
+
+            int odd = 0;
+            for (int p : peakAt)
+            {
+                bool nearEcho = false;
+                for (int k = 1; k <= 6; ++k)
+                    if (std::abs (p - k * echoHost) < 200)
+                        nearEcho = true;
+                if (! nearEcho)
+                    ++odd;
+            }
+            expect (odd < 8, "Tape Echo Dirt 8x extra ticks=" + juce::String (odd)
+                    + " of " + juce::String ((int) peakAt.size()));
+            proc.releaseResources();
+        }
+
+        beginTest ("8x Tape Echo Dirt sine has no block-rate clicks");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            int idx = -1;
+            for (int i = 0; i < (int) lib.getEntries().size(); ++i)
+                if (lib.getEntries()[(size_t) i].name == "Tape Echo Dirt")
+                    idx = i;
+            expect (idx >= 0);
+            if (idx < 0)
+                return;
+
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (3.f));
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (lib.applyPreset (proc, idx, err), err);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            float prev = 0.f;
+            bool have = false;
+            float maxInterior = 0.f, maxBoundary = 0.f;
+            for (int b = 0; b < 120; ++b)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float t = (float) (b * 64 + i) / 48000.f;
+                    const float s = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 220.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                if (b < 24)
+                {
+                    prev = buf.getSample (0, 63);
+                    have = true;
+                    continue;
+                }
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    if (have)
+                    {
+                        const float jump = std::abs (y - prev);
+                        if (i == 0)
+                            maxBoundary = juce::jmax (maxBoundary, jump);
+                        else
+                            maxInterior = juce::jmax (maxInterior, jump);
+                    }
+                    prev = y;
+                    have = true;
+                }
+            }
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expect (maxBoundary < maxInterior * 2.5f + 0.02f,
+                    "8x delay block click: boundary=" + juce::String (maxBoundary, 4)
+                    + " interior=" + juce::String (maxInterior, 4));
             proc.releaseResources();
         }
     }

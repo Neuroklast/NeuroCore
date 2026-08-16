@@ -1,0 +1,50 @@
+#pragma once
+
+#include <JuceHeader.h>
+#include <atomic>
+#include "../ui/fx/CyberFxTypes.h"
+
+/** Persisted UI prefs under userAppData/NEUROKLAST/NeuroKore.
+    Message-thread settings; getters are lock-free. */
+class UiSettings
+{
+public:
+    static UiSettings& get();
+
+    CyberMotion motion() const noexcept;
+    void setMotion (CyberMotion motion);
+
+    bool calmUi() const noexcept;
+    void setCalmUi (bool enabled);
+
+    int uiScalePercent() const noexcept;
+    void setUiScalePercent (int percent);
+    float uiScaleFactor() const noexcept;
+
+    float editorFontPt() const noexcept;
+    void setEditorFontPt (float pt);
+
+    bool liveMode() const noexcept;
+    void setLiveMode (bool enabled);
+
+    static int clampScale (int percent) noexcept;
+    static CyberMotion clampMotion (int stored) noexcept;
+    static const char* motionKey (CyberMotion motion) noexcept;
+
+private:
+    UiSettings();
+    ~UiSettings();
+
+    UiSettings (const UiSettings&) = delete;
+    UiSettings& operator= (const UiSettings&) = delete;
+
+    static float clampFont (float pt) noexcept;
+    void persist() const;
+
+    juce::CriticalSection lock;
+    std::unique_ptr<juce::PropertiesFile> props;
+    std::atomic<int>   motionValue { (int) CyberMotion::Full };
+    std::atomic<int>   scalePercent { 100 };
+    std::atomic<float> fontPt { 18.f };
+    std::atomic<bool>  live { false };
+};

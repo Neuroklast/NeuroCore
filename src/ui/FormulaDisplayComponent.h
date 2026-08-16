@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 #include <JuceHeader.h>
@@ -19,16 +19,8 @@ class FormulaDisplayComponent : public juce::Component
 public:
     static juce::Colour knobColour (int index) noexcept
     {
-        // Brand-red family - 6 hues for a..f
-        static const juce::Colour cols[6] {
-            juce::Colour (0xffff1a1a), // a
-            juce::Colour (0xffff6a3a), // b
-            juce::Colour (0xffff4477), // c
-            juce::Colour (0xffcc2030), // d
-            juce::Colour (0xffff9944), // e
-            juce::Colour (0xffee3366)  // f
-        };
-        return cols[juce::jlimit (0, 5, index)];
+        juce::ignoreUnused (index);
+        return juce::Colour (0xffff1a1a);
     }
 
     FormulaDisplayComponent();
@@ -56,6 +48,9 @@ public:
     /** Rebuild IR action-bar captions (file name can change without the script). */
     void refreshIrButtons();
     juce::StringArray getIrButtonSlots() const { return irButtonSlots; }
+
+    /** Flattened live-view text including `[value]` / `=>` annotations. */
+    juce::String getAnnotatedText();
 
     void paint (juce::Graphics& g) override;
     void paintOverChildren (juce::Graphics& g) override;

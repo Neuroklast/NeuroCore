@@ -139,7 +139,7 @@ PresetImportResult PresetLibrary::importPathsInto (const juce::StringArray& path
         else if (isPackArchive (f))
         {
             auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                           .getChildFile ("neurocore-pack-"
+                           .getChildFile ("neurokore-pack-"
                                           + juce::String (juce::Random::getSystemRandom().nextInt()));
             tmp.deleteRecursively();
             tmp.createDirectory();
@@ -179,10 +179,10 @@ bool PresetLibrary::exportPack (const std::vector<juce::File>& nrkFiles,
     meta["name"] = folder.toStdString();
     if (author.isNotEmpty())
         meta["author"] = author.toStdString();
-    meta["format"] = "neurocore-pack";
+    meta["format"] = "neurokore-pack";
 
     auto tmpDir = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                      .getChildFile ("neurocore-pack-out-"
+                      .getChildFile ("neurokore-pack-out-"
                                      + juce::String (juce::Random::getSystemRandom().nextInt()));
     tmpDir.createDirectory();
     const auto manifest = tmpDir.getChildFile ("pack.json");

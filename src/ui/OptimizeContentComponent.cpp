@@ -4,16 +4,16 @@
 #include "../utils/FormulaHelper.h"
 #include "../utils/FormulaQuality.h"
 
-OptimizeContentComponent::OptimizeContentComponent (NeuroCoreAudioProcessor& proc,
+OptimizeContentComponent::OptimizeContentComponent (NeuroKoreAudioProcessor& proc,
                                                     const juce::String& sourceScript)
     : processor (proc), original (sourceScript)
 {
     titleLabel.setText ("Formula Optimizer", juce::dontSendNotification);
-    titleLabel.setFont (NeuroCoreLookAndFeel::brandFont (18.f, true));
-    titleLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+    titleLabel.setFont (NeuroKoreLookAndFeel::brandFont (18.f, true));
+    titleLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::accent());
     addAndMakeVisible (titleLabel);
 
-    summaryLabel.setFont (NeuroCoreLookAndFeel::brandFont (13.f));
+    summaryLabel.setFont (NeuroKoreLookAndFeel::brandFont (13.f));
     summaryLabel.setColour (juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible (summaryLabel);
 
@@ -21,11 +21,11 @@ OptimizeContentComponent::OptimizeContentComponent (NeuroCoreAudioProcessor& pro
     {
         e.setMultiLine (true, true);
         e.setReadOnly (ro);
-        e.setFont (NeuroCoreLookAndFeel::monoFont (12.f));
-        e.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surface());
+        e.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
+        e.setColour (juce::TextEditor::backgroundColourId, NeuroKoreLookAndFeel::surface());
         e.setColour (juce::TextEditor::textColourId, juce::Colour (0xffe8ecf4));
-        e.setColour (juce::TextEditor::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
-        e.setColour (juce::TextEditor::focusedOutlineColourId, NeuroCoreLookAndFeel::accent());
+        e.setColour (juce::TextEditor::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
+        e.setColour (juce::TextEditor::focusedOutlineColourId, NeuroKoreLookAndFeel::accent());
     };
     styleEd (beforeEditor, true);
     styleEd (afterEditor, true);
@@ -40,15 +40,15 @@ OptimizeContentComponent::OptimizeContentComponent (NeuroCoreAudioProcessor& pro
     logLabel.setText ("Changes & quality", juce::dontSendNotification);
     for (auto* l : { &beforeLabel, &afterLabel, &logLabel })
     {
-        l->setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-        l->setFont (NeuroCoreLookAndFeel::brandFont (11.f));
+        l->setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
+        l->setFont (NeuroKoreLookAndFeel::brandFont (11.f));
         addAndMakeVisible (*l);
     }
 
-    applyButton.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::accentDim());
+    applyButton.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::accentDim());
     applyButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
-    reRunButton.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
-    closeButton.setColour (juce::TextButton::buttonColourId, NeuroCoreLookAndFeel::surfaceHigh());
+    reRunButton.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::surfaceHigh());
+    closeButton.setColour (juce::TextButton::buttonColourId, NeuroKoreLookAndFeel::surfaceHigh());
     addAndMakeVisible (applyButton);
     addAndMakeVisible (reRunButton);
     addAndMakeVisible (closeButton);
@@ -98,7 +98,7 @@ void OptimizeContentComponent::runOptimize()
     }
     else
     {
-        summaryLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        summaryLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
         summaryLabel.setText ("Nothing to change safely.", juce::dontSendNotification);
         applyButton.setEnabled (false);
     }
@@ -106,7 +106,7 @@ void OptimizeContentComponent::runOptimize()
 
 void OptimizeContentComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (NeuroCoreLookAndFeel::surface().withAlpha (0.4f));
+    g.fillAll (NeuroKoreLookAndFeel::surface().withAlpha (0.4f));
 }
 
 void OptimizeContentComponent::resized()

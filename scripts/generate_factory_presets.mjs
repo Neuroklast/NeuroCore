@@ -1,5 +1,5 @@
 /**
- * Professional factory preset library for NeuroCore.
+ * Professional factory preset library for NeuroKore.
  *
  * Modeling notes (abstractions, not full SPICE):
  * - tube(x,d): asymmetric 12AX7-style transfer (even harmonics + soft compression)

@@ -284,23 +284,23 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     rebuildVisible();
 
     searchLabel.setText ("Search", juce::dontSendNotification);
-    searchLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
-    searchLabel.setFont (NeuroCoreLookAndFeel::monoFont (16.f));
+    searchLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
+    searchLabel.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
     addAndMakeVisible (searchLabel);
 
-    search.setFont (NeuroCoreLookAndFeel::monoFont (17.5f));
+    search.setFont (NeuroKoreLookAndFeel::monoFont (17.5f));
     search.setTextToShowWhenEmpty ("Filter chapters and text...",
-                                   NeuroCoreLookAndFeel::mutedText());
-    search.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::surfaceHigh());
-    search.setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
-    search.setColour (juce::TextEditor::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+                                   NeuroKoreLookAndFeel::mutedText());
+    search.setColour (juce::TextEditor::backgroundColourId, NeuroKoreLookAndFeel::surfaceHigh());
+    search.setColour (juce::TextEditor::textColourId, NeuroKoreLookAndFeel::brightText());
+    search.setColour (juce::TextEditor::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
     search.addListener (this);
     addAndMakeVisible (search);
 
     chapterList.setModel (this);
     chapterList.setRowHeight (36);
-    chapterList.setColour (juce::ListBox::backgroundColourId, NeuroCoreLookAndFeel::surface());
-    chapterList.setColour (juce::ListBox::outlineColourId, NeuroCoreLookAndFeel::panelBorder());
+    chapterList.setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
+    chapterList.setColour (juce::ListBox::outlineColourId, NeuroKoreLookAndFeel::panelBorder());
     addAndMakeVisible (chapterList);
 
     body.setMultiLine (true, true);
@@ -308,12 +308,12 @@ HelpContentComponent::HelpContentComponent (const juce::String& markdown)
     body.setScrollbarsShown (true);
     body.setCaretVisible (false);
     body.setIndents (16, 12);
-    const auto helpFont = NeuroCoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
+    const auto helpFont = NeuroKoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
     body.setFont (helpFont);
     body.applyFontToAllText (helpFont);
-    body.setColour (juce::TextEditor::backgroundColourId, NeuroCoreLookAndFeel::background());
-    body.setColour (juce::TextEditor::textColourId, NeuroCoreLookAndFeel::brightText());
-    body.setColour (juce::TextEditor::highlightColourId, NeuroCoreLookAndFeel::accent().withAlpha (0.28f));
+    body.setColour (juce::TextEditor::backgroundColourId, NeuroKoreLookAndFeel::background());
+    body.setColour (juce::TextEditor::textColourId, NeuroKoreLookAndFeel::brightText());
+    body.setColour (juce::TextEditor::highlightColourId, NeuroKoreLookAndFeel::accent().withAlpha (0.28f));
     addAndMakeVisible (body);
 
     if (! visible.empty())
@@ -360,7 +360,7 @@ juce::String HelpContentComponent::readableChapter (const HelpChapter& ch)
 
 void HelpContentComponent::applyBodyFont()
 {
-    const auto helpFont = NeuroCoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
+    const auto helpFont = NeuroKoreLookAndFeel::monoFont (Config::kHelpBodyFontPt);
     body.setFont (helpFont);
     body.applyFontToAllText (helpFont);
 }
@@ -413,16 +413,11 @@ void HelpContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w, 
 {
     if (! juce::isPositiveAndBelow (row, (int) visible.size()))
         return;
-    if (selected)
-        g.fillAll (NeuroCoreLookAndFeel::accent().withAlpha (0.28f));
-    else if (row % 2)
-        g.fillAll (NeuroCoreLookAndFeel::surfaceHigh());
-    else
-        g.fillAll (NeuroCoreLookAndFeel::surface());
+    NeuroKoreLookAndFeel::paintSelectableRow (g, w, h, selected, row % 2);
 
     const auto& ch = chapters[(size_t) visible[(size_t) row]];
-    g.setFont (NeuroCoreLookAndFeel::monoFont (Config::kHelpListFontPt));
-    g.setColour (selected ? NeuroCoreLookAndFeel::accent() : NeuroCoreLookAndFeel::brightText());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (Config::kHelpListFontPt));
+    g.setColour (NeuroKoreLookAndFeel::ink());
     g.drawText (ch.title, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }
 
@@ -440,7 +435,7 @@ void HelpContentComponent::selectedRowsChanged (int lastRowSelected)
 
 void HelpContentComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (NeuroCoreLookAndFeel::surface());
+    g.fillAll (NeuroKoreLookAndFeel::surface());
 }
 
 void HelpContentComponent::resized()

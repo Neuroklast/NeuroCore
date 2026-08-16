@@ -24,29 +24,29 @@ public:
     LicenseInfoComponent (juce::String email, juce::String issued)
     {
         caption.setText ("Licensed to", juce::dontSendNotification);
-        caption.setFont (NeuroCoreLookAndFeel::monoFont (13.f));
-        caption.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        caption.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+        caption.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
         caption.setJustificationType (juce::Justification::centred);
         addAndMakeVisible (caption);
 
         holder.setText (LicenseInfoUi::holderLine (email), juce::dontSendNotification);
-        holder.setFont (NeuroCoreLookAndFeel::brandFont (22.f, true));
-        holder.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::accent());
+        holder.setFont (NeuroKoreLookAndFeel::brandFont (22.f, true));
+        holder.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::accent());
         holder.setJustificationType (juce::Justification::centred);
         holder.setMinimumHorizontalScale (0.6f);
         addAndMakeVisible (holder);
 
         const auto issuedText = LicenseInfoUi::issuedLine (issued);
         issuedLabel.setText (issuedText, juce::dontSendNotification);
-        issuedLabel.setFont (NeuroCoreLookAndFeel::monoFont (14.f));
-        issuedLabel.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::mutedText());
+        issuedLabel.setFont (NeuroKoreLookAndFeel::monoFont (14.f));
+        issuedLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
         issuedLabel.setJustificationType (juce::Justification::centred);
         issuedLabel.setVisible (issuedText.isNotEmpty());
         addAndMakeVisible (issuedLabel);
 
         note.setText ("This copy of NEUROKORE is activated.", juce::dontSendNotification);
-        note.setFont (NeuroCoreLookAndFeel::monoFont (14.f));
-        note.setColour (juce::Label::textColourId, NeuroCoreLookAndFeel::brightText());
+        note.setFont (NeuroKoreLookAndFeel::monoFont (14.f));
+        note.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::brightText());
         note.setJustificationType (juce::Justification::centred);
         addAndMakeVisible (note);
 

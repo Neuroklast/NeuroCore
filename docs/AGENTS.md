@@ -1,7 +1,7 @@
 # NEUROKORE – Agent Guidelines
 
 ## Project Overview
-- Product: NEUROKORE by Neuroklast (code targets stay NeuroCore)
+- Product: NEUROKORE by Neuroklast (code targets stay NeuroKore)
 - Stack: JUCE 8.0.6, C++17, CMake
 - Formats: VST3, AU, Standalone
 - Core idea: runtime-programmable DSL signal chain ("ShaderToy for audio")
@@ -31,16 +31,18 @@
 ## Architecture Map
 
 ### Processing Pipeline
-`Input -> InputRouter -> InputGain -> Oversampling Up -> DSL SignalChain -> DC Blocker -> NoiseGate -> SignalPolisher -> Lowpass -> Oversampling Down -> DryWetMixer -> AutoGain -> OutputGain -> Output`
+`Input -> InputRouter -> InputGain -> Oversampling Up -> DSL SignalChain -> DC Blocker -> SignalPolisher -> AA LPF (always, including 8× FIR) -> Oversampling Down -> DryWetMixer -> AutoGain -> OutputGain -> OutputSanitizer`
 
 ### Main Modules
 - `src/core/PluginProcessor.*`: APVTS, full DSP orchestration, preset/language integration
-- `src/core/PluginEditor.*`: UI wiring and overlays
+- `src/ui/PluginEditor.*`: UI wiring, Graph/Script workspace, overlays
 - `src/dsl/DSLParser.*`: parses DSL to blocks/params/aliases
-- `src/dsl/SignalChain.*`: executes stage/filter/comp/env/osc blocks
+- `src/dsl/GraphModel.*`: graph document, jacks, rails, emit/parse `@x,y`
+- `src/ui/GraphCanvasComponent.*`: board (16 px snap, rose crosses, chip packages)
+- `src/dsl/SignalChain.*`: executes the full block set; delay is sample-accurate
 - `src/utils/ExpressionEvaluator.*`: AST evaluator with constant folding/CSE/SIMD
 - `src/dsp/*`: gain/router/filters/polisher/utils helpers
-- `src/licensing/LicenseManager.*`: online/offline activation, machine binding
+- `src/licensing/LicenseManager.*`: offline RSA `.lic`, machine binding
 - `src/utils/PresetManager.*`: encrypted user preset load/save
 
 ## Known Issues to Avoid Reintroducing
@@ -49,6 +51,9 @@
 - Per-sample heavy object creation in DSP hot paths
 - Missing latency reporting after oversampling changes
 - Missing wet-path latency compensation for dry/wet mix
+- Skipping the host-Nyquist AA LPF on Studio FIR 8× (periodic delay ticks)
+- Forcing Script tab into Edit (hides live `[value]` on FormulaDisplayComponent)
+- Graph cards that do not snap, or a full line grid instead of rose crosses
 - AU listed in CMake `FORMATS` but built only on Apple (JUCE drops it on Windows/Linux)
 - AU type must stay `kAudioUnitType_MusicEffect` (`aumf`) so Logic routes MIDI
 - AU binaries come from the `AU (macOS)` GitHub Actions job, not from a Windows build

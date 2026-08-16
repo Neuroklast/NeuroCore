@@ -51,22 +51,27 @@ Top bar
 - Current chip: loaded preset name. < / > step through the library.
 - Functions: look up formula words and insert them. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder, octaver).
 - Stages: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
+- Settings: animation Full / Reduced / Off, Studio / Live processing, UI scale, formula text size, and standalone audio device. Remembered.
+- LIVE / STUDIO: Live uses min-phase oversampling so playing feels instant. Studio uses linear-phase oversampling for mix work.
 - Bypass: forces Mix to 0 (dry) and locks the Mix slider so you cannot sneak wet signal back in. Turn Bypass off and the previous Mix comes back.
 - License: import a signed .lic file. After activation, License shows who this copy is licensed to. Replace license loads a new file.
 - Help: this guide, one chapter at a time. Text is large so you can read it from the chair.
 
 Settings
+The second strip is tools, not a second window: L/BOTH/R, oversampling, polisher, Mix, and the live status live on one row.
 - L / BOTH / R: which input channel feeds the formula. Click a third.
 - Oversampling: 1x / 2x / 4x / 8x. Default 4x. Drop to 2x or 1x if the computer is struggling.
 - Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
 - Text - / +: size of the formula text.
+- Resize the window to scale the UI. The aspect ratio stays locked.
 
 Knobs
-- Six knobs in two columns: a b / c d / e f.
-- The name chips under the knobs are labels only. They do not change the formula.
+- Six knobs in one column: a, b, c, d, e, f from top to bottom.
+- Click the name above a knob to rename it. That updates param a = ... in the script. Change the name in the script and the knob label follows. The formula still uses a-f.
 - Right-click a knob for MIDI Learn.
 
 Formula area
+- Graph / Script: Graph is the board. Parts snap to a faint rose-cross grid and look like chips you assemble. Script is the hack — the same construct as text. Each block has the jacks it needs (audio, mix buses on OUT, A-F knobs, SC, LFO MOD). Right-click to add a module (Bus, Mid-Side Split, Left/Right Split, Crossover). Drag a jack to patch — the target lights when you can drop. Drag a card onto another rail to re-route. Double-click a card to edit. Click a knob name to rename it. Ctrl+Z / Ctrl+Y undo. Script (not editing) shows live knob values in brackets. Edit opens the text editor. Functions and Stages stay in the top bar. License and Help live in Settings.
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
 - Each ir1 / ir2 line has a full-width button. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - Edit, then Save to apply.
@@ -75,10 +80,9 @@ Formula area
 
 Bottom
 - Mix: dry / wet. Locked while Bypass is on. Drag may flash the background.
-- AUDIO (Standalone only): pick the audio device and sample rate. In a DAW the host owns the sample rate.
-- Status: LIVE or BYPASS, how late the plugin is (samples and ms), current sample rate.
-- IN / OUT: input and output waveforms. Next to each wave sits a stereo field (how left and right sit together) and a loudness meter for that side. The wave is a bit narrower so all three share the same height. Click << on that row to hide field and loudness and widen the wave again; click >> to bring them back.
-- Meter: the tall level meter on the right, plus a limiter cue.
+- Audio device lives in Settings (Standalone only). In a DAW the host owns the sample rate.
+- Status: LIVE / STUDIO / BYPASS / SAFE, CPU load, latency in ms, oversampling factor.
+- IN / OUT: wave, stereo field, and loudness on each side. Click << to hide field and loudness; click >> to bring them back.
 
 ---
 
@@ -293,7 +297,7 @@ Latency
 - Oversampling and some blocks add a little latency. The host is told the amount.
 
 Standalone sample rate
-- Click AUDIO and pick the device / sample rate. In a DAW, follow the host.
+- Open Settings and click Audio device. In a DAW, follow the host.
 
 ---
 
@@ -340,6 +344,12 @@ If import fails, the file was edited or is not a NEUROKORE license. Ask for a ne
 ---
 
 ## 10. Glossary
+
+Graph
+    The board. Parts snap to rose crosses and look like chips you assemble.
+
+Script
+    The hack. The same construct as text. Live view shows knob values in brackets.
 
 Formula
     The text that describes the sound: stages, filters, delay, and so on.

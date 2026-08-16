@@ -3,13 +3,13 @@
 #include <thread>
 #include <atomic>
 #include "custom/ProgressBarComponent.h"
-class NeuroCoreAudioProcessor;
+class NeuroKoreAudioProcessor;
 
 /** Content component performing validation with progress display. */
 class ValidationContentComponent : public juce::Component, private juce::Timer
 {
 public:
-    ValidationContentComponent(NeuroCoreAudioProcessor& proc, const juce::String& expr);
+    ValidationContentComponent(NeuroKoreAudioProcessor& proc, const juce::String& expr);
     ~ValidationContentComponent() override;
 
     std::function<void(bool)> onResult; // true if stable
@@ -21,7 +21,7 @@ public:
 
 private:
     enum class State { running, warning } state { State::running };
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::String script;
     std::unique_ptr<std::thread> worker;
 

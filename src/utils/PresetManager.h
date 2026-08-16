@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 #include <JuceHeader.h>
@@ -9,7 +9,7 @@
 #include "../third_party/nlohmann/json.hpp"
 #include <array>
 
-class NeuroCoreAudioProcessor;
+class NeuroKoreAudioProcessor;
 
 struct Preset
 {
@@ -20,7 +20,7 @@ struct Preset
 class PresetManager
 {
 public:
-    explicit PresetManager(NeuroCoreAudioProcessor& proc);
+    explicit PresetManager(NeuroKoreAudioProcessor& proc);
 
     /** Save current processor state. Author/category for artist packs (META JSON). */
     bool savePreset(const juce::File& file,
@@ -51,7 +51,7 @@ private:
 
     static constexpr char kDscrId[4] {'D', 'S', 'C', 'R'};
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     std::array<uint8_t, 32> key{};
 };
 

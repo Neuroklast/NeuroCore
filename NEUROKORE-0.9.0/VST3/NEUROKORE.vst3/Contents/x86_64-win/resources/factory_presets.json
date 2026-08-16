@@ -117,6 +117,9 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.42
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {
@@ -165,7 +168,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tube Screamer\n# How it sounds: TS808: ~720 Hz HPF into clipper, then a real 720 Hz mid peak (not a bandpass), tone LPF.\n# a Drive: 1.2 to 11, default 5.2\n# b Tone: 350 to 4500, default 1800\n# c Level: 0.28 to 1.15, default 0.7\n\nparam a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 720; resonance = 0.28  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = 720; q = 1.65; gain = 6  # peak EQ\nstage2: y = diode(y * 1.15, 1.3) * c  # diode clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.48  # lowpass\nir1: mix = 0.4; gain = 0  # impulse response",
+    "script": "# Tube Screamer\n# How it sounds: TS808: ~720 Hz HPF into clipper, then a real 720 Hz mid peak (not a bandpass), tone LPF.\n# a Drive: 1.2 to 11, default 5.2\n# b Tone: 350 to 4500, default 1800\n# c Level: 0.28 to 1.15, default 0.7\n\nparam a = Drive [1.2, 11.0]\nparam b = Tone [350, 4500]\nparam c = Level [0.28, 1.15]\nfilter1: type = highpass; cutoff = 720; resonance = 0.28  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = 720; q = 1.65; gain = 6  # peak EQ\nstage2: y = diode(y * 1.15, 1.3) * c  # diode clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.48  # lowpass\nir1: mix = 0.4; gain = 6  # impulse response",
     "tags": [
       "cabinet",
       "clip",
@@ -198,6 +201,9 @@
       "min": 0.28,
       "max": 1.15,
       "default": 0.7
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -282,7 +288,7 @@
     "inputGain": 1.5,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Fuzz Face\n# How it sounds: Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n# a Fuzz: 3 to 16, default 9\n# b Tone: 250 to 4500, default 1400\n# c Level: 0.15 to 0.85, default 0.42\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80  # noise gate\nfilter1: type = highpass; cutoff = 45; resonance = 0.3  # highpass\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)  # soft clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.7  # lowpass\nstage2: y = tube(y, 1.4) * c  # tube saturation\nir1: mix = 0.35; gain = 0  # impulse response\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
+    "script": "# Fuzz Face\n# How it sounds: Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n# a Fuzz: 3 to 16, default 9\n# b Tone: 250 to 4500, default 1400\n# c Level: 0.15 to 0.85, default 0.42\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80  # noise gate\nfilter1: type = highpass; cutoff = 45; resonance = 0.3  # highpass\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)  # soft clip\nfilter2: type = lowpass; cutoff = b; resonance = 0.7  # lowpass\nstage2: y = tube(y, 1.4) * c  # tube saturation\nir1: mix = 0.35; gain = 8  # impulse response\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
     "tags": [
       "cabinet",
       "clip",
@@ -314,6 +320,9 @@
       "min": 0.15,
       "max": 0.85,
       "default": 0.42
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -1116,6 +1125,62 @@
     }
   },
   {
+    "name": "OTT Smash",
+    "category": "Dynamics",
+    "description": "Xfer-style 3-band upward + downward compressor. Depth is the smash. Time is the envelope. Insert on a bus or a group.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# OTT Smash\n# How it sounds: Xfer-style 3-band upward + downward compressor. Depth is the smash. Time is the envelope. Insert on a bus or a group.\n# a Depth: 0.18 to 1, default 0.52\n# b Time: 0.06 to 0.82, default 0.3\n# c Input: 0.7 to 2.8, default 1.15\n# d Low: 0.4 to 1.2, default 1\n# e Mid: 0.4 to 1.2, default 0.92\n# f High: 0.4 to 1.2, default 1.05\n\nparam a = Depth [0.18, 1.0]\nparam b = Time [0.06, 0.82]\nparam c = Input [0.7, 2.8]\nparam d = Low [0.4, 1.2]\nparam e = Mid [0.4, 1.2]\nparam f = High [0.4, 1.2]\nott1: depth = a; time = b; in = c; low = d; mid = e; high = f  # OTT (3-band up+down)\nlimit1: ceiling = -0.4; release = 0.05  # limiter",
+    "tags": [
+      "bus",
+      "compressor",
+      "dynamics",
+      "edm",
+      "glue",
+      "limiter",
+      "multiband",
+      "ott",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Depth",
+      "min": 0.18,
+      "max": 1,
+      "default": 0.52
+    },
+    "paramB": {
+      "name": "Time",
+      "min": 0.06,
+      "max": 0.82,
+      "default": 0.3
+    },
+    "paramC": {
+      "name": "Input",
+      "min": 0.7,
+      "max": 2.8,
+      "default": 1.15
+    },
+    "paramD": {
+      "name": "Low",
+      "min": 0.4,
+      "max": 1.2,
+      "default": 1
+    },
+    "paramE": {
+      "name": "Mid",
+      "min": 0.4,
+      "max": 1.2,
+      "default": 0.92
+    },
+    "paramF": {
+      "name": "High",
+      "min": 0.4,
+      "max": 1.2,
+      "default": 1.05
+    }
+  },
+  {
     "name": "Amp Crunch",
     "category": "Guitar",
     "description": "Edge-of-breakup: mild tube, 1.1 kHz peak, open cab — between clean and Marshall.",
@@ -1195,6 +1260,9 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.45
+    },
+    "irs": {
+      "ir1": "Medium IR 01.wav"
     }
   },
   {
@@ -3399,6 +3467,9 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {
@@ -4859,7 +4930,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Kick Rumble\n# How it sounds: Split kick: main is click+mids (HPF ~95, dip at 320 Hz), scream is the bright hit, body is a tight held sine+sub. Tune is the resonator. Insert on the kick, Mix 100.\n# a Sub: 0.55 to 1.35, default 1.02\n# b Wow: 220 to 700, default 400\n# c Tune: 11 to 20, default 15.5\n# d Drive: 5 to 16, default 11.8\n# e Decay: 0.62 to 0.9, default 0.76\n# f Level: 1.05 to 1.5, default 1.26\n\nparam a = Sub [0.55, 1.35]\nparam b = Wow [220, 700]\nparam c = Tune [11, 20]\nparam d = Drive [5.0, 16.0]\nparam e = Decay [0.62, 0.9]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.09  # envelope follower\nfilter1: type = highpass; cutoff = 95; resonance = 0.22  # highpass\neq1: type = peak; freq = 320; q = 1.15; gain = -5.5  # peak EQ\neq2: type = peak; freq = 1150; q = 1.3; gain = 5.2  # peak EQ\neq3: type = peak; freq = 3800; q = 1.7; gain = 6.4  # peak EQ\neq4: type = highshelf; freq = 6800; q = 0.7; gain = 3.2  # high shelf\nstage1: y = hardclip(x * f * (0.9 + 0.65 * env1), 0.4)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = 200; resonance = 0.52  # highpass\n  eq5: type = peak; freq = 3400; q = 1.5; gain = 8.8  # peak EQ\n  eq6: type = peak; freq = 7200; q = 1.4; gain = 4.2  # peak EQ\n  stage2: y = hardclip(x * d * (0.85 + 0.95 * env1), 0.28)  # hard clip\n  filter3: type = lowpass; cutoff = 11000; resonance = 0.28  # lowpass\n  stage3: y = diode(y, 1.7) * (0.48 + 0.55 * env1)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 28; resonance = 0.18  # highpass\n  filter5: type = lowpass; cutoff = 68; + = env1; * = b; resonance = 2.15  # lowpass\n  delay1: time = c; feedback = e; mix = 0.76; damp = 520  # delay line\n  octaver1: sub = 0.95; up = 0; mix = 0.58; tone = 95; thresh = 0.03  # tracking octaver\n  stage4: y = tube(x, d * 0.26)  # tube saturation\n  stage5: y = hardclip(y, 0.5)  # hard clip\n  eq7: type = peak; freq = 56; q = 1.05; gain = 5.8  # peak EQ\n  filter6: type = lowpass; cutoff = 145; resonance = 0.28  # lowpass\nout: main = 0.62; scream = 1.08; body = a  # mix buses back to the output",
+    "script": "# Kick Rumble\n# How it sounds: Split kick: main is click+mids (HPF ~95, dip at 320 Hz), scream is the bright hit, body is a tight held sine+sub. Tune is the resonator. Insert on the kick, Mix 100.\n# a Sub: 0.55 to 1.35, default 1.02\n# b Wow: 220 to 700, default 400\n# c Tune: 11 to 20, default 15.5\n# d Drive: 5 to 16, default 11.8\n# e Decay: 0.62 to 0.9, default 0.76\n# f Level: 1.05 to 1.5, default 1.26\n\nparam a = Sub [0.55, 1.35]\nparam b = Wow [220, 700]\nparam c = Tune [11, 20]\nparam d = Drive [5.0, 16.0]\nparam e = Decay [0.62, 0.9]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.09  # envelope follower\nfilter1: type = highpass; cutoff = 95; resonance = 0.22  # highpass\neq1: type = peak; freq = 320; q = 1.15; gain = -5.5  # peak EQ\neq2: type = peak; freq = 1150; q = 1.3; gain = 5.2  # peak EQ\neq3: type = peak; freq = 3800; q = 1.7; gain = 6.4  # peak EQ\neq4: type = highshelf; freq = 6800; q = 0.7; gain = 3.2  # high shelf\nstage1: y = hardclip(x * f * (0.9 + 0.65 * env1), 0.4)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = 200; resonance = 0.52  # highpass\n  eq5: type = peak; freq = 3400; q = 1.5; gain = 8.8  # peak EQ\n  eq6: type = peak; freq = 7200; q = 1.4; gain = 4.2  # peak EQ\n  stage2: y = hardclip(x * d * (0.85 + 0.95 * env1), 0.28)  # hard clip\n  filter3: type = lowpass; cutoff = 11000; resonance = 0.28  # lowpass\n  stage3: y = diode(y, 1.7) * (0.48 + 0.55 * env1)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 28; resonance = 0.18  # highpass\n  filter5: type = lowpass; cutoff = 68; + = env1; * = b; resonance = 2.15  # lowpass\n  delay1: time = c; feedback = e; mix = 0.76; damp = 520  # delay line\n  octaver1: sub = 0.95; up = 0; mix = 0.58; tone = 95; thresh = 0.03  # analog octaver\n  stage4: y = tube(x, d * 0.26)  # tube saturation\n  stage5: y = hardclip(y, 0.5)  # hard clip\n  eq7: type = peak; freq = 56; q = 1.05; gain = 5.8  # peak EQ\n  filter6: type = lowpass; cutoff = 145; resonance = 0.28  # lowpass\nout: main = 0.62; scream = 1.08; body = a  # mix buses back to the output",
     "tags": [
       "bus",
       "clip",
@@ -4928,7 +4999,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Warehouse Rumble\n# How it sounds: Same split, lower floor: click stays above 80 Hz, 320 Hz scooped, body stays under 130 Hz. Insert on the kick.\n# a Sub: 0.6 to 1.4, default 1.1\n# b Wow: 180 to 560, default 330\n# c Tune: 14 to 24, default 18\n# d Drive: 5 to 16, default 11.4\n# e Decay: 0.68 to 0.92, default 0.82\n# f Level: 1.05 to 1.5, default 1.24\n\nparam a = Sub [0.6, 1.4]\nparam b = Wow [180, 560]\nparam c = Tune [14, 24]\nparam d = Drive [5.0, 16.0]\nparam e = Decay [0.68, 0.92]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.14  # envelope follower\nfilter1: type = highpass; cutoff = 82; resonance = 0.2  # highpass\neq1: type = peak; freq = 310; q = 1.1; gain = -5.0  # peak EQ\neq2: type = peak; freq = 1050; q = 1.2; gain = 4.6  # peak EQ\neq3: type = peak; freq = 2800; q = 1.45; gain = 5.0  # peak EQ\neq4: type = highshelf; freq = 6200; q = 0.7; gain = 2.4  # high shelf\nstage1: y = hardclip(x * f * (0.88 + 0.55 * env1), 0.42)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = 170; resonance = 0.46  # highpass\n  eq5: type = peak; freq = 2400; q = 1.35; gain = 7.2  # peak EQ\n  eq6: type = peak; freq = 6000; q = 1.3; gain = 3.4  # peak EQ\n  stage2: y = hardclip(x * d * (0.8 + 0.85 * env1), 0.3)  # hard clip\n  filter3: type = lowpass; cutoff = 9000; resonance = 0.26  # lowpass\n  stage3: y = diode(y, 1.65) * (0.46 + 0.5 * env1)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 24; resonance = 0.16  # highpass\n  filter5: type = lowpass; cutoff = 56; + = env1; * = b; resonance = 2.25  # lowpass\n  delay1: time = c; feedback = e; mix = 0.82; damp = 420  # delay line\n  octaver1: sub = 1.05; up = 0; mix = 0.66; tone = 88; thresh = 0.028  # tracking octaver\n  stage4: y = tube(x, d * 0.3)  # tube saturation\n  stage5: y = hardclip(y, 0.48)  # hard clip\n  eq7: type = peak; freq = 50; q = 0.95; gain = 6.8  # peak EQ\n  filter6: type = lowpass; cutoff = 128; resonance = 0.26  # lowpass\nout: main = 0.6; scream = 0.88; body = a  # mix buses back to the output",
+    "script": "# Warehouse Rumble\n# How it sounds: Same split, lower floor: click stays above 80 Hz, 320 Hz scooped, body stays under 130 Hz. Insert on the kick.\n# a Sub: 0.6 to 1.4, default 1.1\n# b Wow: 180 to 560, default 330\n# c Tune: 14 to 24, default 18\n# d Drive: 5 to 16, default 11.4\n# e Decay: 0.68 to 0.92, default 0.82\n# f Level: 1.05 to 1.5, default 1.24\n\nparam a = Sub [0.6, 1.4]\nparam b = Wow [180, 560]\nparam c = Tune [14, 24]\nparam d = Drive [5.0, 16.0]\nparam e = Decay [0.68, 0.92]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.14  # envelope follower\nfilter1: type = highpass; cutoff = 82; resonance = 0.2  # highpass\neq1: type = peak; freq = 310; q = 1.1; gain = -5.0  # peak EQ\neq2: type = peak; freq = 1050; q = 1.2; gain = 4.6  # peak EQ\neq3: type = peak; freq = 2800; q = 1.45; gain = 5.0  # peak EQ\neq4: type = highshelf; freq = 6200; q = 0.7; gain = 2.4  # high shelf\nstage1: y = hardclip(x * f * (0.88 + 0.55 * env1), 0.42)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = 170; resonance = 0.46  # highpass\n  eq5: type = peak; freq = 2400; q = 1.35; gain = 7.2  # peak EQ\n  eq6: type = peak; freq = 6000; q = 1.3; gain = 3.4  # peak EQ\n  stage2: y = hardclip(x * d * (0.8 + 0.85 * env1), 0.3)  # hard clip\n  filter3: type = lowpass; cutoff = 9000; resonance = 0.26  # lowpass\n  stage3: y = diode(y, 1.65) * (0.46 + 0.5 * env1)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 24; resonance = 0.16  # highpass\n  filter5: type = lowpass; cutoff = 56; + = env1; * = b; resonance = 2.25  # lowpass\n  delay1: time = c; feedback = e; mix = 0.82; damp = 420  # delay line\n  octaver1: sub = 1.05; up = 0; mix = 0.66; tone = 88; thresh = 0.028  # analog octaver\n  stage4: y = tube(x, d * 0.3)  # tube saturation\n  stage5: y = hardclip(y, 0.48)  # hard clip\n  eq7: type = peak; freq = 50; q = 0.95; gain = 6.8  # peak EQ\n  filter6: type = lowpass; cutoff = 128; resonance = 0.26  # lowpass\nout: main = 0.6; scream = 0.88; body = a  # mix buses back to the output",
     "tags": [
       "bus",
       "clip",
@@ -4997,7 +5068,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hardcore Clip\n# How it sounds: 160 BPM brick: mid bark + air on the hit, 320 Hz scooped so it stays crisp, tight body underneath. Insert on the kick.\n# a Drive: 6.5 to 18, default 13.6\n# b Ceiling: 0.16 to 0.44, default 0.24\n# c HPF: 90 to 220, default 145\n# d Body: 0.45 to 1.2, default 0.88\n# e Tune: 12 to 20, default 15\n# f Level: 1.05 to 1.5, default 1.26\n\nparam a = Drive [6.5, 18.0]\nparam b = Ceiling [0.16, 0.44]\nparam c = HPF [90, 220]\nparam d = Body [0.45, 1.2]\nparam e = Tune [12, 20]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.08  # envelope follower\nfilter1: type = highpass; cutoff = c; resonance = 0.62  # highpass\neq1: type = peak; freq = 320; q = 1.2; gain = -5.8  # peak EQ\neq2: type = peak; freq = 1050; q = 1.4; gain = 9.2  # peak EQ\neq3: type = peak; freq = 3600; q = 1.75; gain = 6.8  # peak EQ\neq4: type = highshelf; freq = 7500; q = 0.7; gain = 3.6  # high shelf\nstage1: y = hardclip(x * f * (0.75 + 1.05 * env1), b)  # hard clip\nfilter2: type = lowpass; cutoff = 10500; resonance = 0.32  # lowpass\nstage2: y = diode(y, 1.7)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter3: type = highpass; cutoff = 26; resonance = 0.16  # highpass\n  filter4: type = lowpass; cutoff = 66; + = env1; * = 360; resonance = 2.05  # lowpass\n  delay1: time = e; feedback = 0.74; mix = 0.74; damp = 480  # delay line\n  octaver1: sub = 0.88; up = 0; mix = 0.55; tone = 100; thresh = 0.03  # tracking octaver\n  stage3: y = tube(x, a * 0.24)  # tube saturation\n  stage4: y = hardclip(y, 0.48)  # hard clip\n  filter5: type = lowpass; cutoff = 140; resonance = 0.26  # lowpass\nout: main = 0.92; body = d  # mix buses back to the output",
+    "script": "# Hardcore Clip\n# How it sounds: 160 BPM brick: mid bark + air on the hit, 320 Hz scooped so it stays crisp, tight body underneath. Insert on the kick.\n# a Drive: 6.5 to 18, default 13.6\n# b Ceiling: 0.16 to 0.44, default 0.24\n# c HPF: 90 to 220, default 145\n# d Body: 0.45 to 1.2, default 0.88\n# e Tune: 12 to 20, default 15\n# f Level: 1.05 to 1.5, default 1.26\n\nparam a = Drive [6.5, 18.0]\nparam b = Ceiling [0.16, 0.44]\nparam c = HPF [90, 220]\nparam d = Body [0.45, 1.2]\nparam e = Tune [12, 20]\nparam f = Level [1.05, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.08  # envelope follower\nfilter1: type = highpass; cutoff = c; resonance = 0.62  # highpass\neq1: type = peak; freq = 320; q = 1.2; gain = -5.8  # peak EQ\neq2: type = peak; freq = 1050; q = 1.4; gain = 9.2  # peak EQ\neq3: type = peak; freq = 3600; q = 1.75; gain = 6.8  # peak EQ\neq4: type = highshelf; freq = 7500; q = 0.7; gain = 3.6  # high shelf\nstage1: y = hardclip(x * f * (0.75 + 1.05 * env1), b)  # hard clip\nfilter2: type = lowpass; cutoff = 10500; resonance = 0.32  # lowpass\nstage2: y = diode(y, 1.7)  # diode clip\nbus body:\n  send: in = 1  # feed this bus from the input\n  filter3: type = highpass; cutoff = 26; resonance = 0.16  # highpass\n  filter4: type = lowpass; cutoff = 66; + = env1; * = 360; resonance = 2.05  # lowpass\n  delay1: time = e; feedback = 0.74; mix = 0.74; damp = 480  # delay line\n  octaver1: sub = 0.88; up = 0; mix = 0.55; tone = 100; thresh = 0.03  # analog octaver\n  stage3: y = tube(x, a * 0.24)  # tube saturation\n  stage4: y = hardclip(y, 0.48)  # hard clip\n  filter5: type = lowpass; cutoff = 140; resonance = 0.26  # lowpass\nout: main = 0.92; body = d  # mix buses back to the output",
     "tags": [
       "air",
       "bus",
@@ -5066,7 +5137,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Gabber Drive\n# How it sounds: New-style gabber: scooped 320 Hz, envelope-crushed highs, tight clipped sub that stays under. Insert on the kick, Mix 100.\n# a Drive: 6 to 18, default 13.4\n# b Scoop: 90 to 220, default 145\n# c Scream: 1600 to 3400, default 2300\n# d Sub: 0.65 to 1.3, default 1.05\n# e Dyn: 0.45 to 1.15, default 0.98\n# f Level: 1 to 1.5, default 1.22\n\nparam a = Drive [6.0, 18.0]\nparam b = Scoop [90, 220]\nparam c = Scream [1600, 3400]\nparam d = Sub [0.65, 1.3]\nparam e = Dyn [0.45, 1.15]\nparam f = Level [1.0, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.1  # envelope follower\nfilter1: type = highpass; cutoff = 88; resonance = 0.28  # highpass\neq1: type = peak; freq = 320; q = 1.15; gain = -6.0  # peak EQ\neq2: type = peak; freq = 78; q = 1.05; gain = 2.4  # peak EQ\neq3: type = peak; freq = 3000; q = 1.55; gain = 5.2  # peak EQ\neq4: type = highshelf; freq = 7000; q = 0.7; gain = 3.0  # high shelf\nstage1: y = hardclip(x * f * (0.7 + 0.55 * env1), 0.5)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = b; resonance = 0.55  # highpass\n  eq5: type = peak; freq = c; q = 1.5; gain = 10.8  # peak EQ\n  eq6: type = peak; freq = 6800; q = 1.6; gain = 5.2  # peak EQ\n  stage2: y = hardclip(x * a * (0.9 + e * env1), 0.24)  # hard clip\n  filter3: type = lowpass; cutoff = 11500; resonance = 0.3  # lowpass\n  stage3: y = diode(y, 1.85) * (0.42 + 0.58 * env1)  # diode clip\nbus sub:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 24; resonance = 0.16  # highpass\n  filter5: type = lowpass; cutoff = 60; + = env1; * = 260; resonance = 2.1  # lowpass\n  delay1: time = 16; feedback = 0.76; mix = 0.78; damp = 400  # delay line\n  octaver1: sub = 1.0; up = 0; mix = 0.62; tone = 90; thresh = 0.028  # tracking octaver\n  stage4: y = tube(x, 3.2)  # tube saturation\n  stage5: y = hardclip(y, 0.5)  # hard clip\n  filter6: type = lowpass; cutoff = 135; resonance = 0.26  # lowpass\nout: main = 0.5; scream = 1.32; sub = d  # mix buses back to the output",
+    "script": "# Gabber Drive\n# How it sounds: New-style gabber: scooped 320 Hz, envelope-crushed highs, tight clipped sub that stays under. Insert on the kick, Mix 100.\n# a Drive: 6 to 18, default 13.4\n# b Scoop: 90 to 220, default 145\n# c Scream: 1600 to 3400, default 2300\n# d Sub: 0.65 to 1.3, default 1.05\n# e Dyn: 0.45 to 1.15, default 0.98\n# f Level: 1 to 1.5, default 1.22\n\nparam a = Drive [6.0, 18.0]\nparam b = Scoop [90, 220]\nparam c = Scream [1600, 3400]\nparam d = Sub [0.65, 1.3]\nparam e = Dyn [0.45, 1.15]\nparam f = Level [1.0, 1.5]\nenv1: type = peak; attack = 0.001; release = 0.1  # envelope follower\nfilter1: type = highpass; cutoff = 88; resonance = 0.28  # highpass\neq1: type = peak; freq = 320; q = 1.15; gain = -6.0  # peak EQ\neq2: type = peak; freq = 78; q = 1.05; gain = 2.4  # peak EQ\neq3: type = peak; freq = 3000; q = 1.55; gain = 5.2  # peak EQ\neq4: type = highshelf; freq = 7000; q = 0.7; gain = 3.0  # high shelf\nstage1: y = hardclip(x * f * (0.7 + 0.55 * env1), 0.5)  # hard clip\nbus scream:\n  send: in = 1  # feed this bus from the input\n  filter2: type = highpass; cutoff = b; resonance = 0.55  # highpass\n  eq5: type = peak; freq = c; q = 1.5; gain = 10.8  # peak EQ\n  eq6: type = peak; freq = 6800; q = 1.6; gain = 5.2  # peak EQ\n  stage2: y = hardclip(x * a * (0.9 + e * env1), 0.24)  # hard clip\n  filter3: type = lowpass; cutoff = 11500; resonance = 0.3  # lowpass\n  stage3: y = diode(y, 1.85) * (0.42 + 0.58 * env1)  # diode clip\nbus sub:\n  send: in = 1  # feed this bus from the input\n  filter4: type = highpass; cutoff = 24; resonance = 0.16  # highpass\n  filter5: type = lowpass; cutoff = 60; + = env1; * = 260; resonance = 2.1  # lowpass\n  delay1: time = 16; feedback = 0.76; mix = 0.78; damp = 400  # delay line\n  octaver1: sub = 1.0; up = 0; mix = 0.62; tone = 90; thresh = 0.028  # analog octaver\n  stage4: y = tube(x, 3.2)  # tube saturation\n  stage5: y = hardclip(y, 0.5)  # hard clip\n  filter6: type = lowpass; cutoff = 135; resonance = 0.26  # lowpass\nout: main = 0.5; scream = 1.32; sub = d  # mix buses back to the output",
     "tags": [
       "bus",
       "clip",
@@ -5814,6 +5885,7 @@
       "mid-side",
       "midside",
       "ms",
+      "multiband",
       "side",
       "width"
     ],
@@ -6167,6 +6239,44 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
+    }
+  },
+  {
+    "name": "Mono to Stereo",
+    "category": "Psychoacoustic",
+    "description": "True stereoizer: mid stays the source, side is allpass + Haas above the bass. Mono sum stays the original. Works on a mono send or a collapsed DI.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Mono to Stereo\n# How it sounds: True stereoizer: mid stays the source, side is allpass + Haas above the bass. Mono sum stays the original. Works on a mono send or a collapsed DI.\n# a Width: 0.2 to 1.15, default 0.72\n# b Haas: 8 to 28, default 14\n# c Bass: 80 to 240, default 130\n\nparam a = Width [0.2, 1.15]\nparam b = Haas [8, 28]\nparam c = Bass [80, 240]\nwiden1: width = a; delay = b; bass = c  # mono to stereo",
+    "tags": [
+      "bass",
+      "delay",
+      "haas",
+      "mono",
+      "psychoacoustic",
+      "send",
+      "stereo",
+      "widen",
+      "width"
+    ],
+    "paramA": {
+      "name": "Width",
+      "min": 0.2,
+      "max": 1.15,
+      "default": 0.72
+    },
+    "paramB": {
+      "name": "Haas",
+      "min": 8,
+      "max": 28,
+      "default": 14
+    },
+    "paramC": {
+      "name": "Bass",
+      "min": 80,
+      "max": 240,
+      "default": 130
     }
   },
   {
@@ -6804,6 +6914,9 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
+    },
+    "irs": {
+      "ir1": "British IR 01.wav"
     }
   },
   {
@@ -7042,11 +7155,11 @@
   {
     "name": "Precision Octaver",
     "category": "Pitch",
-    "description": "Tracking octaver: Schmitt lock, sine at -1 / +1 octave times the envelope, analog fallback on chords.",
+    "description": "OC-style analog octaver: mid-clocked divider on −1, rectifier on +1. Track the dry string, then warm the blend.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Precision Octaver\n# How it sounds: Tracking octaver: Schmitt lock, sine at -1 / +1 octave times the envelope, analog fallback on chords.\n# a Sub: 0 to 1.2, default 0.68\n# b Up: 0 to 1, default 0.18\n# c Tone: 160 to 1400, default 380\n# d Mix: 0.2 to 1, default 0.74\n# e Track: 0.02 to 0.16, default 0.045\n# f Level: 0.55 to 1.2, default 0.96\n\nparam a = Sub [0.0, 1.2]\nparam b = Up [0.0, 1.0]\nparam c = Tone [160, 1400]\nparam d = Mix [0.2, 1.0]\nparam e = Track [0.02, 0.16]\nparam f = Level [0.55, 1.2]\nfilter1: type = highpass; cutoff = 38; resonance = 0.2  # highpass\nstage1: y = tube(x, 1.05) * f  # tube saturation\noctaver1: sub = a; up = b; mix = d; tone = c; thresh = e  # tracking octaver\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.22  # lowpass\nstage2: y = softclip(y, 1.06)  # soft clip",
+    "script": "# Precision Octaver\n# How it sounds: OC-style analog octaver: mid-clocked divider on −1, rectifier on +1. Track the dry string, then warm the blend.\n# a Sub: 0 to 1.2, default 0.84\n# b Up: 0 to 0.7, default 0.1\n# c Tone: 120 to 800, default 240\n# d Mix: 0.18 to 0.82, default 0.52\n# e Track: 0.02 to 0.12, default 0.05\n# f Level: 0.7 to 1.15, default 1\n\nparam a = Sub [0.0, 1.2]\nparam b = Up [0.0, 0.7]\nparam c = Tone [120, 800]\nparam d = Mix [0.18, 0.82]\nparam e = Track [0.02, 0.12]\nparam f = Level [0.7, 1.15]\nfilter1: type = highpass; cutoff = 42; resonance = 0.16  # highpass\noctaver1: sub = a; up = b; mix = d; tone = c; thresh = e  # analog octaver\nstage1: y = tube(x, 1.04) * f  # tube saturation\nfilter2: type = lowpass; cutoff = 6200; resonance = 0.2  # lowpass\nstage2: y = softclip(y, 1.04)  # soft clip",
     "tags": [
       "bass",
       "clip",
@@ -7062,47 +7175,47 @@
       "name": "Sub",
       "min": 0,
       "max": 1.2,
-      "default": 0.68
+      "default": 0.84
     },
     "paramB": {
       "name": "Up",
       "min": 0,
-      "max": 1,
-      "default": 0.18
+      "max": 0.7,
+      "default": 0.1
     },
     "paramC": {
       "name": "Tone",
-      "min": 160,
-      "max": 1400,
-      "default": 380
+      "min": 120,
+      "max": 800,
+      "default": 240
     },
     "paramD": {
       "name": "Mix",
-      "min": 0.2,
-      "max": 1,
-      "default": 0.74
+      "min": 0.18,
+      "max": 0.82,
+      "default": 0.52
     },
     "paramE": {
       "name": "Track",
       "min": 0.02,
-      "max": 0.16,
-      "default": 0.045
+      "max": 0.12,
+      "default": 0.05
     },
     "paramF": {
       "name": "Level",
-      "min": 0.55,
-      "max": 1.2,
-      "default": 0.96
+      "min": 0.7,
+      "max": 1.15,
+      "default": 1
     }
   },
   {
     "name": "Bass Sub Octave",
     "category": "Bass",
-    "description": "Sub-only tracking octaver for bass: deep tone, no up-octave, blend with dry.",
+    "description": "Sub-only analog divider for bass. Clean track, then a little tube on the blend.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Bass Sub Octave\n# How it sounds: Sub-only tracking octaver for bass: deep tone, no up-octave, blend with dry.\n# a Sub: 0.25 to 1.15, default 0.62\n# b Tone: 80 to 320, default 150\n# c Mix: 0.25 to 0.95, default 0.58\n# d Level: 0.6 to 1.25, default 1\n\nparam a = Sub [0.25, 1.15]\nparam b = Tone [80, 320]\nparam c = Mix [0.25, 0.95]\nparam d = Level [0.6, 1.25]\nfilter1: type = highpass; cutoff = 28; resonance = 0.18  # highpass\nstage1: y = tube(x, 1.08) * d  # tube saturation\noctaver1: sub = a; up = 0; mix = c; tone = b; thresh = 0.035  # tracking octaver\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.22  # lowpass\nstage2: y = softclip(y, 1.04)  # soft clip",
+    "script": "# Bass Sub Octave\n# How it sounds: Sub-only analog divider for bass. Clean track, then a little tube on the blend.\n# a Sub: 0.25 to 1.15, default 0.8\n# b Tone: 80 to 280, default 140\n# c Mix: 0.22 to 0.78, default 0.48\n# d Level: 0.7 to 1.2, default 1\n\nparam a = Sub [0.25, 1.15]\nparam b = Tone [80, 280]\nparam c = Mix [0.22, 0.78]\nparam d = Level [0.7, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.16  # highpass\noctaver1: sub = a; up = 0; mix = c; tone = b; thresh = 0.04  # analog octaver\nstage1: y = tube(x, 1.05) * d  # tube saturation\nfilter2: type = lowpass; cutoff = 4200; resonance = 0.2  # lowpass\nstage2: y = softclip(y, 1.03)  # soft clip",
     "tags": [
       "bass",
       "clip",
@@ -7118,63 +7231,64 @@
       "name": "Sub",
       "min": 0.25,
       "max": 1.15,
-      "default": 0.62
+      "default": 0.8
     },
     "paramB": {
       "name": "Tone",
       "min": 80,
-      "max": 320,
-      "default": 150
+      "max": 280,
+      "default": 140
     },
     "paramC": {
       "name": "Mix",
-      "min": 0.25,
-      "max": 0.95,
-      "default": 0.58
+      "min": 0.22,
+      "max": 0.78,
+      "default": 0.48
     },
     "paramD": {
       "name": "Level",
-      "min": 0.6,
-      "max": 1.25,
+      "min": 0.7,
+      "max": 1.2,
       "default": 1
     }
   },
   {
     "name": "Vocoder Bank",
     "category": "Vocals",
-    "description": "8-band analog vocoder. Carrier = this insert. Voice = Sidechain pin. Self-vocodes if no pin.",
+    "description": "8-band analog vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain. Empty sidechain self-vocodes.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vocoder Bank\n# How it sounds: 8-band analog vocoder. Carrier = this insert. Voice = Sidechain pin. Self-vocodes if no pin.\n# a Mix: 0.25 to 1, default 0.84\n# b Q: 1.2 to 5.5, default 2.3\n# c Dry: 0.05 to 0.55, default 0.28\n# d Formant: 0.72 to 1.4, default 1\n# e CarrierHP: 60 to 280, default 120\n# f Level: 0.55 to 1.2, default 1.12\n\nparam a = Mix [0.25, 1.0]\nparam b = Q [1.2, 5.5]\nparam c = Dry [0.05, 0.55]\nparam d = Formant [0.72, 1.4]\nparam e = CarrierHP [60, 280]\nparam f = Level [0.55, 1.2]\nfilter1: type = highpass; cutoff = e; resonance = 0.2  # highpass\nstage1: y = tube(x, 1.04) * f  # tube saturation\nvocoder1: bands = 8; mix = a; q = b; formant = d; dry = c  # vocoder (voice on Sidechain)\nfilter2: type = lowpass; cutoff = 9000; resonance = 0.22  # lowpass\nstage2: y = softclip(y, 1.08)  # soft clip",
+    "script": "# Vocoder Bank\n# How it sounds: 8-band analog vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain. Empty sidechain self-vocodes.\n# a Mix: 0.35 to 1, default 0.92\n# b Q: 0.8 to 4, default 1.35\n# c Dry: 0 to 0.4, default 0.12\n# d Formant: 0.72 to 1.4, default 1\n# e CarrierHP: 60 to 280, default 90\n# f Level: 0.7 to 1.35, default 1.08\n\nparam a = Mix [0.35, 1.0]\nparam b = Q [0.8, 4.0]\nparam c = Dry [0.0, 0.4]\nparam d = Formant [0.72, 1.4]\nparam e = CarrierHP [60, 280]\nparam f = Level [0.7, 1.35]\nfilter1: type = highpass; cutoff = e; resonance = 0.18  # highpass\nstage1: y = x * f  # waveshape / mix\nvocoder1: bands = 8; mix = a; q = b; formant = d; dry = c  # vocoder (voice on Sidechain)\nfilter2: type = lowpass; cutoff = 8500; resonance = 0.2  # lowpass\nstage2: y = softclip(y, 1.12)  # soft clip",
     "tags": [
       "clip",
       "filter",
       "highpass",
       "lowpass",
+      "pad",
       "sidechain",
-      "tube",
+      "synth",
       "vocal",
       "vocals",
       "vocoder"
     ],
     "paramA": {
       "name": "Mix",
-      "min": 0.25,
+      "min": 0.35,
       "max": 1,
-      "default": 0.84
+      "default": 0.92
     },
     "paramB": {
       "name": "Q",
-      "min": 1.2,
-      "max": 5.5,
-      "default": 2.3
+      "min": 0.8,
+      "max": 4,
+      "default": 1.35
     },
     "paramC": {
       "name": "Dry",
-      "min": 0.05,
-      "max": 0.55,
-      "default": 0.28
+      "min": 0,
+      "max": 0.4,
+      "default": 0.12
     },
     "paramD": {
       "name": "Formant",
@@ -7186,13 +7300,13 @@
       "name": "CarrierHP",
       "min": 60,
       "max": 280,
-      "default": 120
+      "default": 90
     },
     "paramF": {
       "name": "Level",
-      "min": 0.55,
-      "max": 1.2,
-      "default": 1.12
+      "min": 0.7,
+      "max": 1.35,
+      "default": 1.08
     }
   },
   {
@@ -7292,6 +7406,9 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.82
+    },
+    "irs": {
+      "ir1": "Vintage IR 01.wav"
     }
   },
   {
@@ -7345,6 +7462,9 @@
       "min": 0.2,
       "max": 0.8,
       "default": 0.38
+    },
+    "irs": {
+      "ir1": "American IR 01.wav"
     }
   },
   {

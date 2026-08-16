@@ -1,13 +1,13 @@
 #pragma once
 #include <JuceHeader.h>
 
-class NeuroCoreAudioProcessor;
+class NeuroKoreAudioProcessor;
 
 /** Modal optimizer: shows report, original vs optimized, Apply / Cancel. */
 class OptimizeContentComponent : public juce::Component
 {
 public:
-    OptimizeContentComponent (NeuroCoreAudioProcessor& proc,
+    OptimizeContentComponent (NeuroKoreAudioProcessor& proc,
                               const juce::String& sourceScript);
 
     std::function<void(const juce::String& optimized)> onApply;
@@ -19,7 +19,7 @@ public:
 private:
     void runOptimize();
 
-    NeuroCoreAudioProcessor& processor;
+    NeuroKoreAudioProcessor& processor;
     juce::String original;
     juce::String optimized;
 

@@ -8,6 +8,9 @@
 #include "../src/ui/fx/CyberBackdropCache.h"
 #include "../src/ui/fx/CyberClip.h"
 #include "../src/ui/custom/CyberMixSlider.h"
+#include "../src/ui/ModalOverlay.h"
+#include "../src/ui/fx/BootSequenceOverlay.h"
+#include "../src/ui/fx/CyberChrome.h"
 
 class CyberFxTest : public juce::UnitTest
 {
@@ -16,6 +19,16 @@ public:
 
     void runTest() override
     {
+        beginTest ("CRT glow paints without throwing");
+        {
+            juce::Image img (juce::Image::ARGB, 64, 48, true);
+            juce::Graphics g (img);
+            CyberChrome::drawCrtGlow (g, { 0, 0, 64, 48 }, 1.2f, 0.4f);
+            expect (img.getPixelAt (2, 2).getAlpha() > 0
+                    || img.getPixelAt (32, 2).getAlpha() > 0
+                    || img.getPixelAt (32, 24).getAlpha() >= 0);
+        }
+
         beginTest ("Mix slider starts with no glitch");
         {
             CyberMixSlider mix;
@@ -154,6 +167,47 @@ public:
             expect (shouldPlayBoot (CyberMotion::Full, false));
             expect (! shouldPlayBoot (CyberMotion::Reduced, false));
             expect (! shouldPlayBoot (CyberMotion::Full, true));
+            expect (! shouldPlayBoot (CyberMotion::Off, false));
+        }
+
+        beginTest ("Director Off ignores glitch and ambient");
+        {
+            CyberFxDirector d;
+            juce::Random rng { 4 };
+            d.setMotion (CyberMotion::Off);
+            d.triggerGlitch (0.9f, 7);
+            expectEquals (d.getState().glitch, 0.f);
+            d.tick (1.0f, rng);
+            expectEquals (d.getState().glitch, 0.f);
+            expect (! d.needsAmbientRepaint());
+        }
+
+        beginTest ("Overlay Off lands in Shown immediately");
+        {
+            juce::Component host;
+            host.setSize (800, 600);
+            ModalOverlay overlay;
+            auto content = std::make_unique<juce::Component>();
+            auto* raw = content.get();
+            overlay.setContent (std::move (content));
+            overlay.setMotion (CyberMotion::Off);
+            overlay.show (host);
+            expect (overlay.getPhase() == OverlayPhase::Shown);
+            expect (raw->isVisible());
+            expect (raw->getAlpha() >= 0.99f);
+        }
+
+        beginTest ("Boot Off startOn finishes immediately");
+        {
+            juce::Component host;
+            host.setSize (320, 240);
+            BootSequenceOverlay boot;
+            bool done = false;
+            boot.onFinished = [&done] { done = true; };
+            boot.setMotion (CyberMotion::Off);
+            boot.startOn (host);
+            expect (done);
+            expect (! boot.isVisible());
         }
     }
 };

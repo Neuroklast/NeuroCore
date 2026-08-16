@@ -13,7 +13,7 @@ class PresetManagerTest : public juce::UnitTest {
 public:
   PresetManagerTest() : juce::UnitTest("PresetManagerTest", "Persistence") {}
 
-  using TestProcessor = NeuroCoreAudioProcessor;
+  using TestProcessor = NeuroKoreAudioProcessor;
 
   void runTest() override {
     beginTest("Save and load preset");

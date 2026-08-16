@@ -25,7 +25,7 @@ void CyberBackdropCache::rebuild()
     g.setGradientFill (vig);
     g.fillAll();
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.07f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.07f));
     const float horizon = (float) height * 0.42f;
     for (int i = 0; i < 18; ++i)
     {
@@ -48,8 +48,8 @@ void CyberBackdropCache::rebuild()
     hexStrip = juce::Image (juce::Image::ARGB, 64, 512, true);
     juce::Graphics hg (hexStrip);
     hg.fillAll (juce::Colours::transparentBlack);
-    hg.setFont (NeuroCoreLookAndFeel::monoFont (9.f));
-    hg.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.22f));
+    hg.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
+    hg.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.22f));
     juce::Random rng { 0x4e434658 };
     for (int row = 0; row < 36; ++row)
     {

@@ -1,161 +1,143 @@
-NeuroCore DSL – User Manual
-1. Was ist die NeuroCore DSL?
-Die NeuroCore-DSL ist eine textbasierte Sprache, mit der du komplexe Audio-Effektketten
-(mit Waveshaping, Filtern, Kompressoren, LFOs, Hüllkurven etc.) direkt in einem einzigen Textfeld beschreibst.
-Du hast vollständige Kontrolle über den Signalfluss, kannst eigene Formeln nutzen
-und alles in Echtzeit mit vier Makro-Reglern steuern.
+# NEUROKORE
 
-2. Grundaufbau eines DSL-Presets
-Jedes Preset besteht aus Zeilen.
-Jede Zeile beschreibt eine Effekt-Stage oder einen Modulator.
+NEUROKORE ist ein Insert- oder Send-Effekt von Neuroklast. Lade einen Factory-Sound, drehe die Regler a–f, oder schreibe eine kurze Formel (Drive, Filter, Delay, Reverb, Kompressor, Gate, Limiter, IR-Cab, Crossover, Envelope, Oszillator).
 
-Signalfluss: Zeilen werden von oben nach unten abgearbeitet.
+Die Oberfläche ist auf Englisch. Dieses Dokument ist die deutsche Bedienhilfe.
 
-Ein- und Ausgang: Jede Stage nutzt das Ergebnis der vorherigen Stage als Eingang.
+30-Sekunden-Weg
+1. Presets öffnen und eine Factory-Zeile doppelklicken (Amp, Delay, Reverb, Vocal).
+2. Audio spielen. Mix anheben, bis der Effekt hörbar ist.
+3. Regler a–f drehen. Namen und Bereiche kommen aus der Formel.
+4. Eigenen Sound? Edit, Formel ändern, Save.
 
-Parameter: Die Buchstaben a, b, c, d (oder Aliasnamen) stehen für die vier Makro-Regler.
+---
 
-3. Blöcke und ihre Syntax
-3.1. Parameterbenennung
-param a = gain
-param b = tone
-param c = drive
-param d = depth
-Weist den Reglern a–d sprechende Namen zu.
+## 1. Schnellstart
 
-Im restlichen Script kannst du entweder a/b/… oder den Alias verwenden.
-Nur die Buchstaben a–d sind zulässig; Groß- und Kleinschreibung werden ignoriert.
-Optional kann ein Wertebereich angegeben werden:
+NEUROKORE auf eine Spur oder einen Send legen. macOS: AU und VST3. Windows/Linux: VST3 oder Standalone.
+
+Preset laden
+- Presets in der oberen Leiste.
+- Scope auf All oder Factory lassen.
+- Zeile doppelklicken oder Load.
+- Der Chip neben Presets zeigt den Namen. < und > blättern durch die Bibliothek.
+- Passt das geladene Skript zu einem Factory-Preset, erscheint dieser Name.
+
+Hören
+- Mix 0 % ist trocken.
+- Insert: etwa 40–70 %. Send: Mix hoch, Pegel über den Host-Send.
+- L / BOTH / R wählt, welchen Eingangskanal die Formel hört. BOTH ist Standard. L oder R kopiert diese Seite auf beide Kanäle.
+
+Sound ändern
+- a–f lassen sich vom Host automatisieren.
+- Tut ein Regler nichts, kommt der Buchstabe in der Formel nicht vor.
+
+Formel
+- Edit öffnet den Texteditor. Vorschläge erst mit Ctrl+Leertaste (Mac: Cmd+Leertaste).
+- Save wendet die Formel an. Eine rote Zeile erklärt Fehler.
+- Copy legt die Formel in die Zwischenablage.
+
+Eigenes speichern
+- Presets → Save As…
+- Name, Author, Category.
+
+---
+
+## 2. Oberfläche
+
+Obere Leiste
+- NK + NEUROKORE: Marke. Klick öffnet neuroklast.net.
+- Presets: Factory und eigene Sounds.
+- Name-Chip: geladenes Preset oder Untitled. < / > blättert.
+- Functions: Wörterbuch. Ordner: Core, Drive, Crush, Blocks.
+- Stages: Blöcke der aktuellen Formel und welche Regler sie nutzen.
+- Settings: Animation Full / Reduced / Off, Studio / Live, UI-Scale, Formelgröße, Standalone-Audio.
+- LIVE / STUDIO: Live = min-phase Oversampling (kaum Latenz). Studio = linear-phase.
+- Bypass: Mix auf 0, Slider gesperrt.
+- License: signierte .lic importieren. Danach zeigt License den Inhaber.
+- Help: diese Anleitung (englische In-Plugin-Hilfe).
+
+Regler
+- Sechs Knöpfe in einer Spalte: a, b, c, d, e, f.
+- Name über dem Knopf umbenennen schreibt `param a = …` ins Skript.
+- Der aktuelle Wert steht unter dem Zeiger, nicht in der Mitte der Scheibe.
+- Rechtsklick: MIDI Learn.
+
+Formelbereich
+- L / Both / R: gleiche Breite wie die Knöpfe, gleiche Zeile wie Graph / Script.
+- Graph / Script: zwei Sichten desselben Konstrukts.
+
+Graph = zusammenbauen
+- Die Fläche ist eine Platine: dezente rose Kreuze zur Orientierung.
+- Blöcke rasten auf 16 px ein und sehen aus wie Chips (Fase, Kerbe, Pin-1, DIP-Pads).
+- Rechtsklick: Modul hinzufügen (Bus, Mid-Side Split, Left/Right Split, Crossover, Stereo Width).
+- Mid-Side Encode teilt MID- und SIDE-Schienen wie ein Bus. Decode führt sie zusammen. Widen ist Breite, nicht MS.
+- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst.
+- Chip auf eine andere Schiene ziehen, um umzuleiten.
+- Doppelklick: Block editieren.
+
+Script = hacken
+- Dieselbe Kette als Text.
+- Live-Ansicht: farbige Regler und aktuelle Werte in Klammern (`a[3.20]`).
+- Edit öffnet den Editor, Save wendet an.
+- Positionen stehen als Kommentar `# @x,y` und ändern den Klang nicht.
+
+IR
+- Jede `ir1` / `ir2`-Zeile hat einen breiten Button. Drop, Load, Clear.
+- Amp-Factory-Presets kommen mit Cabinet. Slot leer = trocken.
+
+Unten
+- Mix: Dry / Wet. Gesperrt bei Bypass.
+- Status: LIVE / STUDIO / BYPASS / SAFE, CPU, Latenz, Oversampling.
+- IN / OUT: Welle, Stereofeld, Loudness.
+
+---
+
+## 3. Regler a–f
+
 ```
-param a = gain [0, 2]
+param a = Drive [0.5, 6.0]
+param b = Tone [800, 9000]
+param c = Time [1/1, 1/16]
+stage1: y = softclip(x, a)
+filter1: type = lowpass; cutoff = b; resonance = 0.3
+delay1: time = c
 ```
-Damit erhält Regler *a* einen Minimalwert von 0 und einen Maximalwert von 2.
-Ohne Bereich gilt standardmäßig 0 bis 1.
 
-3.2. Waveshaping-Stage
-stage1: y = tanh(a * x)
-stage2: y = y + 0.3 * pow(y,3)
-Definiert eine mathematische Funktion, die auf das Signal angewendet wird.
+- Der Host sieht jeden Regler als 0–1.
+- `param a = Name [min, max]` mappt auf den geschriebenen Bereich.
+- `param c = Time [1/1, 1/16]` rastet auf Notenwerte. In der Formel ist c Millisekunden beim Host-Tempo.
+- Ein alleinstehendes `e` ist Regler e, nicht 2.718. Dafür `exp(1)`.
 
-Du kannst alle üblichen Funktionen und Operatoren nutzen:
-+, -, *, /, pow, sin, cos, tanh, exp, log, abs, min, max etc.
+---
 
-Eingabevariablen:
+## 4. Sprache (Kurz)
 
-x = Input der Stage
-x_prev = Vorheriger Input (minimaler Leak-Faktor 0.9999 für Stabilität)
-y_prev = Vorheriges Output (minimaler Leak-Faktor 0.9999 verhindert DC-Akkumulation)
-ch     = Aktueller Kanal (0 = Links, 1 = Rechts)
-t      = Zeit in Sekunden (wird pro Block aktualisiert)
-sr     = Samplerate in Hz (z. B. 44100)
-pi     = 3.14159265…
+| Block | Aufgabe |
+|-------|---------|
+| `param a = Name [min, max]` | Regler a und Bereich |
+| `stageN: y = …` | Sample-Mathe (`x` rein, `y` raus) |
+| `filterN: type = lowpass; cutoff = …` | SVF low / high / band |
+| `delayN: time = …; feedback = …; mix = …` | Delay, samplegenau, auch bei 8× ohne periodische Ticks |
+| `reverbN: size = …; decay = …; mix = …` | Hall |
+| `compN` / `gateN` / `limitN` | Dynamik |
+| `msN: mode = encode` / `decode` | Mid/Side aufteilen / zusammenführen |
+| `widenN: width = …` | Stereobreite (kein MS) |
+| `xoverN: f1 = …; f2 = …` | Bänder |
+| `bus name:` + `send:` + `out:` | parallele Schienen |
+| `irN: mix = …` | Impuls (Pfad steht nicht in der Formel) |
+| `oscN` / `envN` | LFO / Hüllkurve |
 
-MIDI-Variablen (in allen Stages verfügbar wenn MIDI aktiv):
-midi_note  = aktuelle MIDI-Note (0–127, 0 wenn keine Note aktiv)
-midi_freq  = Frequenz der aktuellen Note in Hz
-midi_vel   = Velocity (0.0–1.0)
-midi_gate  = 1.0 wenn Note aktiv, 0.0 sonst
-midi_bend  = Pitch Bend (-1.0 bis +1.0)
-midi_mod   = CC1 Modulationsrad (0.0–1.0)
+Volle Referenz: docs/DSL_REFERENCE.md
 
-Kanal-Routing (optional pro Stage):
-stage1: y = tanh(x * a); channel = left    # nur linker Kanal
-stage2: y = tanh(x * b); channel = right   # nur rechter Kanal
-stage3: y = x * 2;        channel = both   # beide Kanäle (Standard)
+---
 
-Mid/Side-Kodierung:
-stage1: ms_encode = true   # wandelt L/R in Mid/Side um
-stage2: ms_decode = true   # wandelt Mid/Side zurück in L/R
+## 5. Lizenz
 
-3.3. Filter-Stage
-filter1: type = lowpass; cutoff = b * 1000; resonance = 0.8
-Typen: lowpass, highpass, bandpass
+Ohne Lizenz: 20-Minuten-Demo, danach Mix = 0 (trocken). Die Formel bleibt geladen.
+License → .lic wählen. Datei liegt unter AppData (NEUROKLAST / NeuroKore).
 
-Parameter können Makros, Modulatoren und Formeln enthalten. Bei Bandpass-Filtern dürfen
-entweder `center` und `width` oder `lowcut` und `highcut` angegeben werden.
+---
 
-3.4. Kompressor
-comp1: threshold = c; ratio = 4; attack = 0.01; release = 0.1
-Alle Parameter sind Formeln, z. B. regelbar durch Regler, LFO oder Envelope.
-
-3.5. Envelope Follower (Hüllkurve)
-env1: type = rms; attack = 0.01; release = 0.1
-Typen: rms, peak
-
-Ergibt eine Variable (env1), die du in anderen Blöcken nutzen kannst.
-
-3.6. LFO (Oszillator/Modulator)
-osc1: shape = sine; freq = 2.0; depth = d
-Formen: sine, triangle, square, saw, noise
-
-Gibt pro Sample einen Wert aus, z. B. für Modulation in Stage oder Filter.
-
-Tempo-Sync (optional, synchronisiert den LFO zum DAW-Tempo):
-osc1: shape = sine; sync = 1/4; depth = d   # ein Zyklus pro Viertelnote
-osc1: shape = sine; sync = 1;   depth = d   # ein Zyklus pro Takt
-osc1: shape = sine; sync = 1/8; depth = d   # ein Zyklus pro Achtelnote
-Wenn `sync` angegeben ist, wird `freq` ignoriert.
-
-3.7. Envelope Follower mit MIDI-Trigger
-env1: mode = rms; attack = 1; release = 100; trigger = midi_gate
-Mit `trigger = midi_gate` wird die Hüllkurve bei jedem MIDI-Note-On neu gestartet.
-
-4. Beispiel-Preset (Marshall-Style Distortion)
-param a = inputGain
-param b = tone
-param c = masterVolume
-param d = compThresh
-
-stage1: y = inputGain * x
-stage2: y = tanh(2.5 * y + 0.3 * pow(y, 3)) + 0.05 * y_prev
-filter1: type = bandpass; center = 1200 + 300 * tone; width = 1000; resonance = 0.8
-stage3: y = tanh(y + 0.2 * y_prev) + 0.05 * pow(y, 5)
-comp1: threshold = compThresh; ratio = 6; attack = 0.005; release = 0.05
-env1: type = rms; attack = 0.01; release = 0.1
-osc1: shape = sine; freq = 0.25; depth = 0.1
-stage4: y = masterVolume * (y + 0.1 * env1 + 0.05 * osc1)
-5. Tipps & Hinweise
-Reihenfolge beachten: Modulatoren (env1, osc1 etc.) müssen vor ihrer Nutzung definiert werden.
-
-Nur von oben nach unten: Keine Referenzen auf spätere Blöcke möglich.
-
-Keine doppelten Namen: Jeder Blockname (stage1, filter1, env1, osc1, etc.) darf nur einmal vergeben werden.
-
-Kommentare: Zeilen mit # oder // werden ignoriert.
-
-6. Fehlermeldungen
-Bei Fehlern (z. B. Tippfehler, undefinierte Variable, falsche Syntax) zeigt das Plugin die genaue Zeile und eine Beschreibung an.
-
-Beispiel:
-Error on line 4: 'osc2' is not defined. Did you mean 'osc1'?
-
-7. Parameter-Automation
-Alle Parameter (a–d oder Aliase) sind über die DAW automatisierbar und werden live in der Formel aktualisiert.
-
-8. Weitere Beispiele
-Soft-Clipping:
-stage1: y = a * x
-stage2: y = tanh(y)
-
-Auto-Wah:
-env1: type = rms; attack = 0.01; release = 0.05
-osc1: shape = sine; freq = 1.0; depth = b
-filter1: type = bandpass; lowcut = 400 + env1 * 200; highcut = 2000 + osc1 * 200
-9. Häufige Fehlerquellen
-Blöcke in falscher Reihenfolge
-
-Undefinierte oder doppelte Namen
-
-Syntaxfehler (fehlendes Semikolon, Gleichheitszeichen etc.)
-
-Nutzung von Modulatoren vor deren Definition
-
-10. Schnellstart
-Wähle das DSL-Textfeld im Plugin aus.
-
-Schreibe oder lade ein Preset nach obigem Muster.
-
-Klicke auf „Compile“ oder „Save“, um die Formel zu aktivieren.
-
-Steuere die Parameter mit den Reglern oder via Automation.
-
+NEUROKORE © NEUROKLAST. Alle Rechte vorbehalten.
+Vollständige englische Hilfe: resources/UserManual_en.txt und docs/USER_MANUAL.md.

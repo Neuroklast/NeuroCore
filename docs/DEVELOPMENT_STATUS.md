@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Letzte Aktualisierung:** 2026-08-15  
+**Letzte Aktualisierung:** 2026-08-16  
 **Version:** 0.9.0  
 **Gesamtfortschritt:** ~90%
 
@@ -10,39 +10,199 @@
 
 | Modul | Status | Fortschritt | Letzte Änderung |
 |---|---|---|---|
-| Core/PluginProcessor | ✅ Session-State (var names, language); ChangeBroadcaster; modFrequency entfernt | 90% | 2026-06-29 |
-| Core/DspEngine | ✅ OS integer-latency im Ctor; OS-Wechsel resettet Sidechain/IIR | 99% | 2026-08-13 |
+| Core/PluginProcessor | ✅ CpuProtect reset nach prepare/OS/IR; Session-State; ChangeBroadcaster | 91% | 2026-08-15 |
+| Core/DspEngine | ✅ Studio FIR + Live IIR OS-Bänke; Live ≈ 0 ms OS-Latenz | 99% | 2026-08-16 |
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ Brand NEUROKORE by Neuroklast; compact toolbar + cropped NK | 99% | 2026-08-14 |
-| Core/Config.h | ✅ kFeedbackLeakFactor, kDefaultTailTime hinzugefügt | 98% | 2026-05-21 |
+| Core/PluginEditor | ✅ L/Both/R on knob column; even toolbar; brand space | 99% | 2026-08-16 |
+| UI/UiSettings | ✅ Persist motion Full/Reduced/Off, liveMode, scale, formula font | 96% | 2026-08-16 |
+| Core/Config.h | ✅ CPU-Guard: EMA / Warmup-Sekunden / 2s Retry | 99% | 2026-08-15 |
 | DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate | 99% | 2026-08-14 |
-| DSL/SignalChain | ✅ Alle Effekt-Blöcke gehärtet: Hermite-4 Delay, Mono-Freeverb, Coeff-Skip, Denorm | 99% | 2026-08-15 |
+| DSL/GraphModel | ✅ jacksFor; Karten ohne überlagerte Jack-Labels | 99% | 2026-08-16 |
+| UI/GraphCanvas | ✅ 16-px Snap; rose Kreuze; Chip-Packages | 99% | 2026-08-16 |
+| DSL/SignalChain | ✅ Delay samplegenau; 8-sample write-head; AA-LPF auch bei 8× FIR | 99% | 2026-08-16 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
 | DSP/SignalPolisher | ✅ Funktional + DC-Blocker nach DSL integriert | 82% | 2026-05-19 |
 | DSP/DSPUtils | ✅ autoGainCompensate optimiert (direkte Sample-Multiplikation) | 85% | 2026-05-19 |
 | UI/DslTerminalEditor | ✅ Edit-Modus; zeilenbreiter IR-Button pro `irN` | 90% | 2026-08-14 |
-| UI/FormulaDisplayComponent | ✅ Live-Eval + Extra-Zeile mit IR-Drop-Button | 94% | 2026-08-14 |
-| UI/WaveformDisplay | ✅ ScopeDeck: Wave + Field + I/O-Loudness, einklappbar | 90% | 2026-08-14 |
+| UI/FormulaDisplayComponent | ✅ Live-Eval; Script tab shows `[value]` again | 96% | 2026-08-16 |
+| UI/WaveformDisplay | ✅ ScopeDeck: Wave + Field + Loudness default offen, 176 px | 94% | 2026-08-15 |
 | UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; plus kompakte IN/OUT-Balken | 99% | 2026-08-14 |
-| UI/ParameterComponent | ✅ MIDI Learn + Accent-Farbe (A rot / B gelb / C blau / D lila) | 90% | 2026-08-11 |
+| UI/ParameterComponent | ✅ Wert unter dem Zeiger; Drag hebt Knob-Kabel | 94% | 2026-08-16 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 191 Factory; Amp-IRs preloaded (Neuroklast British/Vintage) | 99% | 2026-08-15 |
+| Preset-System | ✅ 191 Factory; Script-Match setzt den Preset-Namen | 99% | 2026-08-16 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
-| Tests | ✅ 2940 passed / 0 failed | 99% | 2026-08-14 |
+| Tests | ✅ Graph routing + 8× delay + UI chrome (suite 6206+) | 99% | 2026-08-16 |
 | CI/CD | ✅ Windows Tests+pluginval; macOS-Job baut AU + auval | 95% | 2026-08-14 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
-| Dokumentation | ✅ Help 20 pt; IR / License / gate / limit / xover | 96% | 2026-08-14 |
+| Dokumentation | ✅ Graph-Platine / Script-Hack; a–f; Delay 8×; Routing | 99% | 2026-08-16 |
 | Installer | ✅ Kit `NEUROKORE-0.9.0/` im Repo-Root (VST3, Standalone, EULA, Docs) | 90% | 2026-08-15 |
 | AU-Format | ✅ AUv2 `aumf`; CI-Job `AU (macOS)` liefert `.component` | 100% | 2026-08-14 |
 
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-16 – Graph board: chips + rose crosses
+
+- [x] Cards snap to a 16 px grid (rounded); load and add write snapped `@x,y`
+- [x] Background is sparse rose crosses, not a full line grid
+- [x] Blocks read as IC packages (chamfer, inner die, notch, pin-1, DIP pads)
+
+### 2026-08-16 – Graph routing + readable menus
+
+- [x] Popup menu 18 pt / 28 px rows
+- [x] Add Bus, Mid-Side Split, L/R Split, Crossover; Widen labeled Stereo Width
+- [x] Bus headers visible; MS forks MID/SIDE rails like a bus
+- [x] Cable drop lights the target jack; moving a card highlights the rail
+
+### 2026-08-16 – 8× Tape Echo Dirt periodic artifacts
+
+- [x] Studio 8× always runs the host-Nyquist AA LPF (FIR is not enough after tube+delay)
+- [x] Delay time/fb/mix/damp follow knob lanes every sample
+- [x] Hermite read stays ≥ 8 samples behind the write head
+- [x] Tests: 8× wrap silence, Tape Echo Dirt ticks, block-boundary continuity
+
+### 2026-08-16 – Chrome, preset name, readable cards
+
+- [x] L/Both/R same width as knobs, same row as Graph/Script, 3 px gaps
+- [x] Toolbar buttons even; brand lockup gets the freed width/height
+- [x] Untitled script that matches a factory preset shows that name
+- [x] Graph cards: chips on the title row, no A/B/C labels over the formula
+- [x] Turning a knob highlights its cables; value sits under the disc
+
+### 2026-08-16 – Script live knob values
+
+- [x] Script tab no longer forces Edit (DslTerminalEditor has no live `[value]`)
+- [x] Edit / Save back in the Script action row
+- [x] Knob rename in Script live view writes `param a = …` into the processor script
+- [x] Tests: annotated `a[5.000]` / `=> 5`; Script workspace stays in live view
+
+### 2026-08-16 – Knob rename + overlay scale + script param names
+
+- [x] Name-Label `setText` nicht während Edit (Timer hat das Feld sofort geschlossen)
+- [x] Min/Max-Text unabhängig vom Live-Wert (Integer bleibt Integer)
+- [x] Overlays: Design-Pixel, nicht Host-`getWidth`; Optimize füllt wie Help
+- [x] Script ↔ Knob: `param a = Name` live, Rename schreibt die Zeile zurück
+
+### 2026-08-16 – Multi-jack nodes
+
+- [x] `GraphJack` + `jacksFor` / `jacksForInput` / `jacksForVirtualOut`
+- [x] OUT: ein Mix-Eingang pro Bus (MAIN, DIRT, …)
+- [x] Filter/Stage: Audio in/out + Knob-Buchsen A–F + referenzierte LFO-Namen
+- [x] Comp/Gate/Vocoder/Env: extra SC; Osc: nur MOD-Out
+- [x] Resolve-Drag landet auf der getroffenen Buchse (`connectJack`)
+- [x] Undo: jede Formel/Rename-Aktion ist eine eigene Transaction
+- [x] Tests: 5468 passed / 0 failed
+
+### 2026-08-16 – Overlay scale + script colour + chrome
+
+- [x] Overlays sit on `scaledRoot` so they follow window scale
+- [x] Tighter overlay margin (16)
+- [x] Functions / Stages back in the toolbar; License / Help in Settings
+- [x] Script tokeniser: comments muted, keywords/knobs accent
+
+### 2026-08-16 – Graph is the editor
+
+- [x] Compact cards (152×56) / IN-OUT terminals (64×32); one caption line
+- [x] Double-click edits in the card (formula + a–f). No AlertWindow
+- [x] Audio cables dim gray, no packets; knob/LFO lines only on hover
+- [x] Action row is Graph | Script | Edit; Script shows live knob values; Edit opens the text editor
+- [x] Functions / Stages / Copy / Optimize live in More
+- [x] Scope extras start folded
+
+### 2026-08-16 – Deep-research UI leftovers
+
+- [x] Body/chrome/default sans is JetBrains Mono; Apex only via `brandFont`
+- [x] Preset/Functions/Help rows: ink + tick, no red-on-red
+- [x] Tags / IR captions drop `·` (Apex missing glyph)
+- [x] Overlays leave HUD + toolbar + tools (Mix/OS/status) uncovered
+- [x] Graph cards show the full `y` formula (3 lines)
+- [x] Script marks the parser line; `setError` no longer replaces the live formula
+
+### 2026-08-16 – Settings overlay + LIVE mode
+
+- [x] Knob-Kabel nicht durch ModalOverlays (License/Settings/…)
+- [x] Graph Add/Remove entfernt (Rechtsklick bleibt)
+- [x] AUDIO-Button aus der Tools-Zeile; Gerät sitzt in Settings
+- [x] Settings-Overlay: Animation Full/Reduced/Off, Studio/Live, Scale, Formeltext, Standalone-Audio
+- [x] LIVE: min-phase IIR-OS, Studio: linear-phase FIR; Latenz gemeldet
+- [x] Audio-Thread: knobLanes in prepare voralloziert
+- [x] Tests: Graph ohne Add/Remove, Motion-Persist, Live-Latenz < Studio
+
+### 2026-08-15 – Graph is a circuit, not a list
+
+- [x] Horizontal MAIN LINE + named BUS rails; send tap; out mix traces
+- [x] Drag-and-drop reorder / `assignNodeToBus`; ghost + drop highlight
+- [x] Knob traces a–f → blocks that reference them (`paintPatchCables`)
+- [x] One knob column (6); IN/OUT wave + stereo field + loudness restored
+- [x] Preset load stays in Graph/Script; assemble no longer covers the view
+- [x] Tests: `assignNodeToBus` + send stays on a named bus
+
+### 2026-08-16 – Node context menu + Graph/Script translation
+
+- [x] Right-click empty: add block at cursor
+- [x] Right-click node: Edit parameters / formula, Knobs a–f per arg, Remove
+- [x] Graph → Script emits DSL; Script → Graph parses; layout kept if semantics match
+- [x] `setNodeArg` / `editableArgKeys` + tests
+- [x] Knob letters on nodes + traces from left knobs; hover highlights
+- [x] Graph→Script does not `applyFormula` when semantics match; timer uses loudness not waveform copies
+
+### 2026-08-16 – Preset switch crash + live cables
+
+- [x] Virtual OUT (`kOutIndex`) is a real OUT, never `nodes[(size_t)-2]`
+- [x] Rebuild detaches children before delete; no re-entrant rebuild
+- [x] Cables pulse with IN/OUT waveform peak
+- [x] Test: Shimmer Drive → Wide Motion paintEntireComponent
+
+### 2026-08-15 – Free node patcher
+
+- [x] GraphCanvas: freie Nodes (Children), Ports, Bezier-Kabel, Body-Drag ≠ Port-Drag
+- [x] GraphModel: `@x,y`, `audioEdges`, `connectAudio`, `disconnectAudio`, `insertOnEdge`
+- [x] Auto-Layout nur wenn alle Positionen fehlen
+- [x] Editor-Spaghetti-Kabel entfernt
+- [x] Tests: Layout-Roundtrip + connect/insert
+
+### 2026-08-15 – Graph readable: no spaghetti, no Untitled
+
+- [x] LFO/env on MOD rail; OUT at the end of MAIN; bus return hooks to OUT
+- [x] Lane titles do not sit on IN/TAP; cards are one title + compact params
+- [x] Knob cables clip to knobs ∪ graph inner; gutter routing, lower alpha
+- [x] Preset name set before `applyFormula` notify
+- [x] Status HUD is LIVE / CPU / latency / OS — rest in tooltip
+
+### 2026-08-15 – GraphModel parse ↔ emit
+
+- [x] `src/dsl/GraphModel.h/.cpp`: parse via DSLParser + `#`-Kommentare, emit, semanticallyEqual, moveNode
+- [x] CMake SOURCE_FILES + `tests/GraphModelTest.h`
+- [x] Roundtrip: einfache Kette, Bus-Skript, moveNode, Factory Mesa / Side Delay / OTT Smash
+- [x] GraphCanvas + Graph/Script im Editor; Formel bleibt editierbar
+
+### 2026-08-15 – CpuProtect: 8× OS must not mute on spikes
+
+- [x] EMA-Last; Soft-Trip nach aufeinanderfolgenden Hits; Hard-Trip nur EMA ≥ 3× × 4
+- [x] Zeit-Warmup 3s; Retry 2s; Reset nach prepare / OS / IR
+- [x] Tests: Warmup-8×, einzelner Spike, sustained, Recover, Hard-Trip
+- [ ] Manuell: 8× in FL — ~32% bleibt nass, kein „wet path paused“-Stotter
+
+### 2026-08-15 – Contrast: chrome red, body ink
+
+- [x] `canvas` / `ink` / `inkMuted` / `comment` / `warningMark` in LookAndFeel
+- [x] Formula + IR-Buttons + CPU-Banner: ink on canvas, not red-on-red
+- [x] Preset-Header und Labels nicht accent-on-dark-red
+- [ ] Manuell: Formel, Help, Preset-Tabelle, CPU-SAFE in FL — Text lesbar
+
+### 2026-08-15 – Persist Calm UI + instant overlays
+
+- [x] `UiSettings` PropertiesFile unter NEUROKLAST/NeuroKore (`calmUi`, `uiScalePercent`)
+- [x] `CyberMotion::Off`: kein Boot, kein Glitch, Director-tick No-Op
+- [x] ModalOverlay Off/Reduced: `show()` landet sofort in Shown
+- [x] Tests: shouldPlayBoot(Off), Director triggerGlitch, Overlay Shown
+- [ ] Parent: Calm-Button an `UiSettings` + `cyberDirector.setMotion` verdrahten
 
 ### 2026-08-15 – Factory cabinet IRs
 
@@ -169,7 +329,7 @@
 - [x] AppData `NEUROKLAST/NeuroKore`, Datei `neurokore.lic`
 - [x] CMake: `NeuroKore` / `NeuroKoreTests` / `NeuroKoreIssuer`
 - [x] Version 0.9.0 (Tester-Stand, 1.0 ist Verkauf)
-- [x] Alte NeuroCore-.lic werden beim Import noch akzeptiert
+- [x] Alte NeuroKore-.lic werden beim Import noch akzeptiert
 - [ ] Manuell: Lizenz neu importieren (neuer Ordner); DAW-Scan auf NEUROKORE / NRKO
 
 ### 2026-08-14 – Club presets + explorer
@@ -221,9 +381,9 @@
 
 ### 2026-08-14 – AU ohne lokalen Mac (GitHub Actions)
 
-- [x] Job `AU (macOS)`: `NeuroCore_AU`, ad-hoc codesign, Install nach Components
+- [x] Job `AU (macOS)`: `NeuroKore_AU`, ad-hoc codesign, Install nach Components
 - [x] `auval -v aumf NRCO NRKL` + pluginval auf dem `.component`
-- [x] Artifact `NeuroCore-AU-macOS`; `workflow_dispatch` für manuellen Lauf
+- [x] Artifact `NeuroKore-AU-macOS`; `workflow_dispatch` für manuellen Lauf
 - [ ] Ersten CI-Lauf auf `macos-latest` prüfen (juceaide/auval/UI)
 
 ### 2026-08-14 – AU plugin (Logic / GarageBand)
@@ -424,7 +584,7 @@
 - [x] Erkennt: NaN/Inf, harte Sample-Sprünge (`|Δ| ≥ 0.28`), Crackle-Cluster (≥4 Soft-Jumps)
 - [x] Kontext pro Event: Preset, Formel-Kopf, a–d, Gain/Mix, SR/BS/OS, blend/ramp/lim, Input L/R
 - [x] Tag `dsp-introduced` vs `input-sourced` (Vergleich Input- vs Output-Jumps)
-- [x] Log-Datei: `%AppData%/NEUROKLAST/NeuroCore/audio_diagnostics.log`
+- [x] Log-Datei: `%AppData%/NEUROKLAST/NeuroKore/audio_diagnostics.log`
 - [x] Schalter: `Config::kAudioDiagnosticsEnabled` (+ Thresholds)
 - [x] Unit-Tests `AudioDiagnosticsTest` (3307 total grün)
 
@@ -440,7 +600,7 @@
 - [x] `getTailLengthSeconds()` delegiert an `SignalChain::getMaxTailTime()`
 - [x] MIDI-Trigger für Env-Blöcke: `trigger = midi_gate`
 - [x] `MidiVariableMapper`: Klasse mit `std::atomic<float>` (RT-safe)
-- [x] Tests für alle neuen Features in `NeuroCoreExtrasTest.h`
+- [x] Tests für alle neuen Features in `NeuroKoreExtrasTest.h`
 - [x] UserManual EN + DE aktualisiert
 - [x] `ValidationTypes.h` extrahiert (keine zirkulären Includes)
 
@@ -469,7 +629,7 @@
 - [x] `SignalChain::scriptLock` (TryLock im Audio-Thread, Lock in `loadScript`)
 - [x] `testFormulaStability` nutzt `processBlockSmoothed` (Production-Pfad)
 - [x] `factory_presets.json` auf Zeilen-Syntax migriert (75 Factory-Presets, 15 Kategorien)
-- [x] UI-Modernisierung: `NeuroCoreLookAndFeel`, WeightedLayout-Grid, Preset-Tabelle mit Kategorie-Spalte
+- [x] UI-Modernisierung: `NeuroKoreLookAndFeel`, WeightedLayout-Grid, Preset-Tabelle mit Kategorie-Spalte
 - [x] `FactoryPresetLibrary` + Unit-Test (Load/Apply-Sampling)
 - [x] `docs/ARCHITECTURE.md` Signalkette korrigiert
 
@@ -555,9 +715,9 @@
 - [x] `autoGainCompensate()` optimieren
 - [x] Blockierenden HTTP-Call in `LicenseManager.cpp` asynchron machen
 - [x] AU-Format für macOS aktivieren
-- [x] `NeuroCore.jucer` um neue Core-/UI-Dateien aus PR #195 ergänzt (Projucer-Build wieder konsistent)
+- [x] `NeuroKore.jucer` um neue Core-/UI-Dateien aus PR #195 ergänzt (Projucer-Build wieder konsistent)
 - [x] CMake JUCE-Einbindungslogik für `juceaide` robust gemacht (`JUCE_BUILD_HELPER_TOOLS` + FetchContent/Add-Subdirectory-Pfad)
-- [x] `curl` aus `NeuroCoreTests` entfernt (Windows-Linking vermeiden)
+- [x] `curl` aus `NeuroKoreTests` entfernt (Windows-Linking vermeiden)
 - [x] Windows-Buildskripte ergänzt: `build_debug.bat`, `build_release.bat`
 - [x] Windows-Buildskripte auf Ninja Multi-Config umgestellt (VS-Generator `juce::juceaide` Custom-Command-Bug umgangen)
 - [x] Windows installer (Inno Setup) + zip; macOS .pkg still open

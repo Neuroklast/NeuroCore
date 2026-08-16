@@ -22,6 +22,7 @@ namespace ui
         void paintOverChildren(juce::Graphics& g) override;
 
         void setAliasName(const juce::String& name);
+        std::function<void (juce::String)> onAliasChanged;
 
         /** Accent colour for label text and outer knob ring (A=red, B=yellow, …). */
         void setAccentColour(juce::Colour colour);
@@ -41,18 +42,34 @@ namespace ui
         /** Force re-read APVTS and refresh name/value/min/max labels (always visible). */
         void refreshValues() { updateLabel(); }
 
+        bool isRenaming() const noexcept { return nameLabel.isBeingEdited(); }
+        void startRename() { nameLabel.showEditor(); }
+
+        juce::String getDisplayedName() const { return nameLabel.getText(); }
+        juce::String getMinText() const { return minLabel.getText(); }
+        juce::String getMaxText() const { return maxLabel.getText(); }
+        juce::Rectangle<int> getValueBounds() const { return valueLabel.getBounds(); }
+        juce::Rectangle<int> getSliderBounds() const { return slider.getBounds(); }
+
+        /** True while the mouse is over the knob or the rotary is being dragged. */
+        bool isActivelyUsed() const;
+
+        /** Stable min/max text: integers stay integers, otherwise two decimals. */
+        static juce::String formatRangeBound (float v);
+
         /** Set a MidiLearnManager to enable MIDI Learn in the right-click menu. */
         void setMidiLearnManager(MidiLearnManager* mgr) { midiLearnMgr = mgr; }
 
     private:
         void updateLabel();
+        void commitAlias();
         void mouseUp(const juce::MouseEvent& event) override;
 
         juce::AudioProcessorValueTreeState& valueTreeState;
         juce::String                        paramID;
         juce::String                        aliasName;
         MidiLearnManager*                   midiLearnMgr { nullptr };
-        juce::Colour                        accentColour { 0xffe8486a };
+        juce::Colour                        accentColour { 0xffff1a1a };
         float                               mappedMin { 0.f };
         float                               mappedMax { 1.f };
         bool                                hasMappedRange { false };

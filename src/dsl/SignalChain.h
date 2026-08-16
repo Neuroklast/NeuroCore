@@ -486,6 +486,7 @@ private:
         float dampStateL { 0.f }, dampStateR { 0.f };
         float dcBlockL { 0.f }, dcBlockR { 0.f }; ///< Feedback HPF state (stability in loop)
         float lastDelaySamples { -1.f };           ///< Slew limit state for delay time
+        float dcCoeff { 0.99f };
         juce::SmoothedValue<float> delaySm, fbSm, mixSm, dampCoeffSm;
 
         std::unordered_map<juce::String, float>* varPtr = nullptr;
@@ -498,6 +499,8 @@ private:
         void applyTempo (double bpm) noexcept;
         float resolveDelaySamples() const noexcept;
         float tailSeconds() const noexcept;
+        void syncFromVariables() noexcept;
+        void processFrame (float& left, float* right) noexcept;
     };
 
     /** Schroeder/Freeverb-style multi-comb + allpass reverb (stereo). */

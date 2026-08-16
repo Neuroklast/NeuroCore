@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
 
     Sole end-of-chain safety boundary (do not re-implement elsewhere):
       - NaN/Inf hold (never hard-zero)

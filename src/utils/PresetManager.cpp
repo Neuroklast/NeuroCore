@@ -30,9 +30,9 @@ constexpr const char* kAttrFileName   = "FileName";
 constexpr const char* kAttrPluginName = "PluginName";
 }
 
-PresetManager::PresetManager(NeuroCoreAudioProcessor& proc) : processor(proc)
+PresetManager::PresetManager(NeuroKoreAudioProcessor& proc) : processor(proc)
 {
-    const juce::String keyString = "NeuroCoreKey";
+    const juce::String keyString = "NeuroKoreKey";
     std::fill(key.begin(), key.end(), 0);
     auto bytes = keyString.getNumBytesAsUTF8();
     std::memcpy(key.data(), keyString.toRawUTF8(), std::min<size_t>(bytes, key.size()));

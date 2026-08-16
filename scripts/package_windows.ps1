@@ -82,7 +82,7 @@ if (Test-Path (Join-Path $stage "NEUROKORE.exe")) {
 Copy-Item -Force (Join-Path $stage "README.txt") (Join-Path $dist "README.txt")
 Copy-Item -Force (Join-Path $stage "LICENSE.txt") (Join-Path $dist "LICENSE.txt")
 Copy-Item -Force (Join-Path $stage "EULA.txt") (Join-Path $dist "EULA.txt")
-Copy-Item -Force (Join-Path $root "installer\NeuroCore.iss") (Join-Path $dist "Installer\NeuroCore.iss")
+Copy-Item -Force (Join-Path $root "installer\NeuroKore.iss") (Join-Path $dist "Installer\NeuroKore.iss")
 Copy-Item -Force (Join-Path $root "installer\EULA.txt") (Join-Path $dist "Installer\EULA.txt")
 Copy-Item -Force (Join-Path $stage "Docs\*") (Join-Path $dist "Docs")
 
@@ -98,7 +98,7 @@ $iscc = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if ($iscc) {
-    $iss = Join-Path $root "installer\NeuroCore.iss"
+    $iss = Join-Path $root "installer\NeuroKore.iss"
     & $iscc "/DNcStage=$stage" $iss
     $setup = Join-Path $out "NEUROKORE-$version-Setup.exe"
     if (Test-Path $setup) {

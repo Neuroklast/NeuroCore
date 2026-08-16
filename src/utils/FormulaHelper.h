@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 #include <JuceHeader.h>
@@ -31,6 +31,31 @@ struct OptimizeReport
     int changes { 0 };            ///< Number of accepted rewrites
     bool verified { false };      ///< true if re-parse (+ optional quality) succeeded
 };
+
+/** 1-based DSL line from parser/quality text ("line 12"). 0 if none. */
+inline int firstScriptErrorLine (const juce::String& message) noexcept
+{
+    const auto s = message.toLowerCase();
+    int at = s.indexOf ("line ");
+    if (at < 0)
+        at = s.indexOf ("line");
+    if (at < 0)
+        return 0;
+    int i = at + 4;
+    if (s.substring (at).startsWith ("line "))
+        i = at + 5;
+    while (i < s.length() && ! juce::CharacterFunctions::isDigit (s[i]))
+        ++i;
+    int n = 0;
+    bool any = false;
+    while (i < s.length() && juce::CharacterFunctions::isDigit (s[i]))
+    {
+        n = n * 10 + (int) (s[i] - '0');
+        ++i;
+        any = true;
+    }
+    return any ? n : 0;
+}
 
 extern std::vector<FormulaTemplate> formulaTemplates;
 extern const std::vector<juce::String> builtinFunctions;

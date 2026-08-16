@@ -1,5 +1,5 @@
 /*
-    NeuroCore - Copyright (c) 2024 NEUROKLAST
+    NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
 */
 
@@ -40,28 +40,37 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     // callback after a tiny prepare used to alloc / overflow.
     const juce::uint32 osHostBlock = juce::jmax (currentSpec.maximumBlockSize,
                                                  (juce::uint32) 1024);
-    const bool bankStale = osBank[1] == nullptr
+    const bool bankStale = osStudio[1] == nullptr || osLive[1] == nullptr
         || lastOsBankBlock < osHostBlock
         || lastOsBankCh != currentSpec.numChannels;
     if (bankStale)
     {
-        for (int stages = 1; stages <= 3; ++stages)
+        auto makeOs = [channels, osHostBlock] (int stages, bool live)
         {
-            osBank[stages] = std::make_unique<juce::dsp::Oversampling<float>>(
+            auto os = std::make_unique<juce::dsp::Oversampling<float>>(
                 (size_t) channels,
                 (size_t) stages,
-                juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple,
-                true,
+                live ? juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR
+                     : juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple,
+                ! live,
                 true);
-            osBank[stages]->initProcessing (osHostBlock);
-            osBank[stages]->reset();
+            os->initProcessing (osHostBlock);
+            os->reset();
+            return os;
+        };
+        for (int stages = 1; stages <= 3; ++stages)
+        {
+            osStudio[(size_t) stages] = makeOs (stages, false);
+            osLive[(size_t) stages]   = makeOs (stages, true);
         }
         lastOsBankBlock = osHostBlock;
         lastOsBankCh = currentSpec.numChannels;
     }
 
+    const bool live = liveMode.load (std::memory_order_relaxed);
     oversampler = (oversamplingStages >= 1 && oversamplingStages <= 3)
-                    ? osBank[oversamplingStages].get()
+                    ? (live ? osLive[(size_t) oversamplingStages].get()
+                            : osStudio[(size_t) oversamplingStages].get())
                     : nullptr;
     if (oversampler)
         oversampler->reset();
@@ -163,7 +172,9 @@ void DspEngine::reset(double sampleRate, int blockSize)
 void DspEngine::release()
 {
     oversampler = nullptr;
-    for (auto& slot : osBank)
+    for (auto& slot : osStudio)
+        slot.reset();
+    for (auto& slot : osLive)
         slot.reset();
     lastOsBankBlock = 0;
     lastOsBankCh = 0;
@@ -191,6 +202,19 @@ void DspEngine::onFormulaChanged()
     diagLastIn.fill (0.0f);
     diagLastPost.fill (0.0f);
     diagLastOut.fill (0.0f);
+}
+
+void DspEngine::setLiveMode (bool enabled) noexcept
+{
+    liveMode.store (enabled, std::memory_order_relaxed);
+    const int stages = oversamplingIndex.load (std::memory_order_relaxed);
+    oversampler = (stages >= 1 && stages <= 3)
+                    ? (enabled ? osLive[(size_t) stages].get()
+                               : osStudio[(size_t) stages].get())
+                    : nullptr;
+    osLatencySamples = oversampler
+        ? juce::roundToInt (oversampler->getLatencyInSamples())
+        : 0;
 }
 
 size_t DspEngine::getOversamplingFactor() const noexcept
@@ -512,9 +536,9 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     juce::dsp::ProcessContextReplacing<float> ctxPolish(upBlock);
     chain.get<1>().process(ctxPolish);
 
-    // FIR half-band already anti-aliases on the way down. An extra IIR on
-    // top smears the click. Keep the gentle LPF only when OS is off.
-    if (oversampler == nullptr)
+    // Always lowpass at host Nyquist before downsample. FIR half-band is not
+    // brick-wall enough after tube/clip + delay feedback — leftover images
+    // beat as a periodic tone at 8×. 1× / Live IIR need this too.
     {
         juce::dsp::ProcessContextReplacing<float> ctxFilter(upBlock);
         lowpassFilter.process(ctxFilter);

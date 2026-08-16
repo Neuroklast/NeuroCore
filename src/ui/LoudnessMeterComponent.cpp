@@ -5,7 +5,7 @@
 #include "../dsp/DSPUtils.h"
 #include "../utils/Localiser.h"
 
-LoudnessMeterComponent::LoudnessMeterComponent(NeuroCoreAudioProcessor& proc)
+LoudnessMeterComponent::LoudnessMeterComponent(NeuroKoreAudioProcessor& proc)
     : processor(proc)
 {
     startTimerHz (Config::kMeterUiHz);
@@ -127,9 +127,9 @@ void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
                                                float fillTop,
                                                float fillNorm) noexcept
 {
-    const juce::Colour topC = limiter ? juce::Colour (0xffff4a22) : NeuroCoreLookAndFeel::accent();
+    const juce::Colour topC = limiter ? juce::Colour (0xffff4a22) : NeuroKoreLookAndFeel::accent();
     const juce::Colour botC = limiter ? juce::Colour (0xffff1a1a)
-                                      : NeuroCoreLookAndFeel::accentDim();
+                                      : NeuroKoreLookAndFeel::accentDim();
     const float fill = juce::jlimit (0.f, 1.f, fillNorm);
 
     juce::Random px (glitchSeed);
@@ -173,7 +173,7 @@ void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
             const float dx = (px.nextFloat() - 0.5f) * 8.f * sliceAmt;
             const auto sliceC = (i % 3 == 0 ? juce::Colours::cyan
                                             : (i % 3 == 1 ? juce::Colours::magenta
-                                                          : NeuroCoreLookAndFeel::accent()));
+                                                          : NeuroKoreLookAndFeel::accent()));
             g.setColour (sliceC.withAlpha (0.08f + 0.32f * sliceAmt));
             g.fillRect (meterArea.getX() + dx, ySlice, meterArea.getWidth(), sh);
         }
@@ -211,7 +211,7 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
     auto hull = makeHull (meterArea);
     g.setColour (juce::Colours::black);
     g.fillPath (hull);
-    g.setColour (NeuroCoreLookAndFeel::surfaceHigh());
+    g.setColour (NeuroKoreLookAndFeel::surfaceHigh());
     g.fillPath (hull);
 
     const float yLevel = valueToY (shown, meterArea);
@@ -224,7 +224,7 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
     g.reduceClipRegion (hull);
     drawOverloadFill (g, meterArea, fillTop, fillNorm);
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.18f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.18f));
     for (int i = 1; i < 10; ++i)
     {
         const float y = meterArea.getY() + meterArea.getHeight() * (float) i / 10.f;
@@ -232,14 +232,14 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
     }
     g.restoreState();
 
-    g.setColour (NeuroCoreLookAndFeel::accent().withAlpha (0.55f));
+    g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.55f));
     g.strokePath (hull, juce::PathStrokeType (1.2f));
 
-    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
     for (float db = info.minDb; db <= info.maxDb; db += info.step)
     {
         float y = valueToY(db, meterArea);
-        g.setColour (NeuroCoreLookAndFeel::mutedText());
+        g.setColour (NeuroKoreLookAndFeel::mutedText());
         g.drawFittedText(juce::String(db, 0),
                          (int)labelArea.getX(),
                          (int)y - 7,
@@ -252,8 +252,8 @@ void LoudnessMeterComponent::paint(juce::Graphics& g)
     auto ledArea = juce::Rectangle<float>(bounds.getWidth() - 15.0f, 5.0f, 10.0f, 10.0f);
     drawLed(g, ledArea, blink);
 
-    g.setColour (NeuroCoreLookAndFeel::accent());
-    g.setFont (NeuroCoreLookAndFeel::monoFont (11.f));
+    g.setColour (NeuroKoreLookAndFeel::accent());
+    g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
     juce::String scaleName = info.name;
     if (limiter)
         scaleName += "  LIM";
