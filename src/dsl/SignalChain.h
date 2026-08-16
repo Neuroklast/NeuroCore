@@ -67,6 +67,7 @@ private:
     struct Block
     {
         juce::String busName { "main" };
+        juce::String tapId;
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
         virtual float process(int ch, float x) = 0;
@@ -162,6 +163,8 @@ private:
         float syncRatio{0.25f};     ///< Beat ratio (e.g. 0.25 = 1/4 note → 1 cycle per quarter)
         double currentBpm{Config::kDefaultTempo};
         float sampleRate{44100.0f};
+        float lastSetFreq { -1.f };
+        juce::SmoothedValue<float> modSm;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
@@ -171,6 +174,7 @@ private:
         void applyTempo(double bpm) noexcept;
         void updateFrequencyFromExpr() noexcept;
         void updateSyncFrequency() noexcept;
+        void applyOscFrequency (float hz) noexcept;
     };
 
     struct Filter : Block
@@ -278,6 +282,35 @@ private:
         float process (int ch, float x) override;
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+    };
+
+    /** Pass-through probe. Does not change samples. Live dB on the chip. */
+    struct Meter : Block
+    {
+        enum class Mode { Loudness, Peak, Rms };
+        Mode mode { Mode::Loudness };
+        std::atomic<float> readingDb { -100.f };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Host extra input onto this cable. mix 1 = full sidechain, 0 = dry through. */
+    struct Sidechain : Block
+    {
+        ExpressionEvaluator mixExpr;
+        juce::SmoothedValue<float> mixSm;
+        const float* scL { nullptr };
+        const float* scR { nullptr };
+        int scN { 0 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<juce::String, std::string>> varNames;
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void syncMixFromVars() noexcept;
     };
 
     /** In-chain peak limiter. Instant attack, no lookahead. Distinct from Polisher. */
@@ -645,6 +678,7 @@ private:
             bool armed { true };
             float period { 0.f };
             float flip { 1.f };
+            float flipSm { 1.f };
             float lock { 0.f };
             float phSub { 0.f };
         };
@@ -758,8 +792,26 @@ private:
     int extScN { 0 };
 
     void publishSidechainSample (int sampleIndex) noexcept;
+    void writeNodeTap (const juce::String& id, const juce::AudioBuffer<float>& buf) noexcept;
+
+    static constexpr int kNodeTapSamples = 64;
+    static constexpr int kMaxNodeTaps = 32;
+    struct NodeTapSlot
+    {
+        std::array<char, 48> id {};
+        std::array<float, kNodeTapSamples> wave {};
+        std::atomic<uint32_t> gen { 0 };
+    };
+    std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
 
 public:
+
+    /** Copy the latest post-block tap for `id` (`__in__`, `__out__`, or a node name). */
+    bool copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept;
+
+    /** Latest meter chip reading in dB. False if `id` is not a meter. */
+    bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;
+
     /** Always true — hybrid path keeps filters/comps on block processing.
         Kept for tests / API compatibility. */
     static bool canUseBlockPath(const Chain& chain) noexcept;

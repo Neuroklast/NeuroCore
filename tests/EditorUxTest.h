@@ -145,7 +145,7 @@ public:
             expectEquals (capped.getWidth(), 520);
             expectEquals (capped.getHeight(), 400);
             expect (Config::kOverlayTopChromeDesign
-                    > Config::kHudHeaderHeight + Config::kToolsRowHeight);
+                    > Config::kHudHeaderHeight);
         }
 
         beginTest ("OS banner is Neuroklast OS");
@@ -571,6 +571,12 @@ public:
             auto proc = std::make_unique<NeuroKoreAudioProcessor>();
             auto ed = std::make_unique<NeuroKoreAudioProcessorEditor> (*proc);
             expectEquals (ed->getWorkspaceMode(), (int) NeuroKoreAudioProcessorEditor::WorkspaceGraph);
+            {
+                const auto foot = ed->statusFooterText();
+                expect (foot.containsIgnoreCase ("CPU"), foot);
+                expect (foot.containsIgnoreCase ("SR") || foot.containsIgnoreCase ("BPM"), foot);
+                expect (! foot.containsChar ((juce::juce_wchar) 0x00E2), foot);
+            }
             ed->setWorkspaceMode (NeuroKoreAudioProcessorEditor::WorkspaceScript);
             expectEquals (ed->getWorkspaceMode(), (int) NeuroKoreAudioProcessorEditor::WorkspaceScript);
             expect (! ed->isEditingFormula(), "Script tab must open the live view, not force Edit");
@@ -581,7 +587,7 @@ public:
             juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
         }
 
-        beginTest ("formula display adds one full-width IR button per slot");
+        beginTest ("formula display adds one inline IR button per slot");
         {
             FormulaDisplayComponent d;
             d.setSize (400, 300);
@@ -801,11 +807,13 @@ public:
 
         beginTest ("graph cards stay compact terminals plus a one-line caption");
         {
-            expect (GraphCanvasComponent::kCardHeight <= 64);
-            expect (GraphCanvasComponent::kCardWidth <= 160);
-            expect (GraphCanvasComponent::kIoHeight <= 36);
-            expect (GraphCanvasComponent::kIoWidth <= 72);
+            expect (GraphCanvasComponent::kCardHeight <= 96);
+            expect (GraphCanvasComponent::kCardWidth <= 220);
+            expect (GraphCanvasComponent::kIoHeight <= 44);
+            expect (GraphCanvasComponent::kIoWidth <= 96);
             expect (GraphCanvasComponent::kCardHeight >= 56);
+            expectEquals (GraphCanvasComponent::formatLiveKnob (3.2f), juce::String ("3.20"));
+            expectEquals (GraphCanvasComponent::formatLiveKnob (800.f), juce::String ("800"));
         }
 
         beginTest ("graph positions snap to the board grid");
@@ -819,6 +827,14 @@ public:
             expectEquals (GraphCanvasComponent::snap (24), 32);
             expectEquals (GraphCanvasComponent::snap (-7), 0);
             expectEquals (GraphCanvasComponent::snap (-8), -16);
+            {
+                NeuroKoreAudioProcessor proc;
+                GraphCanvasComponent canvas (proc);
+                canvas.setZoom (0.2f);
+                expect (canvas.getZoom() >= GraphCanvasComponent::kZoomMin);
+                canvas.setZoom (8.f);
+                expect (canvas.getZoom() <= GraphCanvasComponent::kZoomMax);
+            }
             const auto p = GraphCanvasComponent::snapPoint ({ 17, 31 });
             expectEquals (p.x, 16);
             expectEquals (p.y, 32);
@@ -835,6 +851,177 @@ public:
             const auto emitted = canvas.getEmittedScript();
             expect (emitted.contains ("@16.0,32.0"), emitted);
             expect (emitted.contains ("@16.0,80.0"), emitted);
+        }
+
+        beginTest ("factory apply tidies circuit positions");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* preset = lib.findByName ("Space Echo RE-201");
+            expect (preset != nullptr);
+            if (preset != nullptr)
+            {
+                NeuroKoreAudioProcessor proc;
+                juce::String err;
+                const int idx = (int) (preset - lib.getEntries().data());
+                expect (lib.applyPreset (proc, idx, err), err);
+                GraphCanvasComponent canvas (proc);
+                canvas.setSize (900, 520);
+                canvas.setScript (proc.getScript());
+                expect (canvas.hasValidGraph(), canvas.getParseError());
+                dsl::GraphDocument doc;
+                expect (dsl::parse (canvas.getEmittedScript(), doc, err), err);
+                expect (dsl::hasAllPositions (doc));
+            }
+        }
+
+        beginTest ("factory load auto-arranges Trailer Impact at current zoom");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* preset = lib.findByName ("Trailer Impact");
+            expect (preset != nullptr);
+            if (preset != nullptr)
+            {
+                NeuroKoreAudioProcessor proc;
+                juce::String err;
+                const int idx = (int) (preset - lib.getEntries().data());
+                expect (lib.applyPreset (proc, idx, err), err);
+                GraphCanvasComponent canvas (proc);
+                canvas.setSize (800, 620);
+                canvas.setScript (proc.getScript());
+                expect (canvas.hasValidGraph(), canvas.getParseError());
+                dsl::GraphDocument doc;
+                expect (dsl::parse (canvas.getEmittedScript(), doc, err), err);
+                expect (dsl::hasAllPositions (doc));
+                float maxX = 0.f, maxY = 0.f;
+                float smashMinY = 1.0e9f, smashMaxY = -1.0e9f;
+                int smashN = 0;
+                for (const auto& n : doc.nodes)
+                {
+                    maxX = juce::jmax (maxX, n.x + (float) dsl::kTidyCardW);
+                    maxY = juce::jmax (maxY, n.y + (float) dsl::kTidyCardH);
+                    if (n.type != "out" && dsl::visualRail (n) == "smash")
+                    {
+                        ++smashN;
+                        smashMinY = juce::jmin (smashMinY, n.y);
+                        smashMaxY = juce::jmax (smashMaxY, n.y);
+                    }
+                }
+                expect (smashN >= 5);
+                expect (smashMaxY - smashMinY >= (float) dsl::kTidyCardH);
+                expect (maxX <= 800.f + (float) dsl::kTidyMargin);
+                expect (maxY <= 620.f + (float) dsl::kTidyMargin);
+            }
+        }
+
+        beginTest ("circuit cable style defaults to dots");
+        {
+            const bool prev = UiSettings::get().cableWaveform();
+            UiSettings::get().setCableWaveform (false);
+            expect (! UiSettings::get().cableWaveform());
+            UiSettings::get().setCableWaveform (true);
+            expect (UiSettings::get().cableWaveform());
+            UiSettings::get().setCableWaveform (prev);
+        }
+
+        beginTest ("circuit cable beads follow loudness, not sample peak");
+        {
+            expect (! GraphCanvasComponent::cableBeadsVisible (
+                GraphCanvasComponent::loudnessToCableLevel (-100.f)));
+            expect (! GraphCanvasComponent::cableBeadsVisible (
+                GraphCanvasComponent::loudnessToCableLevel (-50.f)));
+            expect (GraphCanvasComponent::cableBeadsVisible (
+                GraphCanvasComponent::loudnessToCableLevel (-12.f)));
+            expect (GraphCanvasComponent::loudnessToCableLevel (-18.f) > 0.2f);
+
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            proc.prepareToPlay (48000.0, 128);
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            GraphCanvasComponent canvas (proc);
+            canvas.setSize (900, 400);
+            canvas.setScript ("stage1: y = x\n");
+            expect (canvas.hasValidGraph(), canvas.getParseError());
+
+            for (int b = 0; b < 20; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float s = 0.55f * std::sin (0.2f * (float) (b * 128 + i));
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                canvas.refreshCableMeters();
+            }
+            expect (GraphCanvasComponent::cableBeadsVisible (canvas.getCableInLevel()),
+                    "loud inLevel=" + juce::String (canvas.getCableInLevel(), 4)
+                    + " db=" + juce::String (proc.getLoudnessDb(), 1));
+
+            for (int b = 0; b < 80; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+                canvas.refreshCableMeters();
+            }
+            expect (! GraphCanvasComponent::cableBeadsVisible (canvas.getCableInLevel()),
+                    "silent inLevel=" + juce::String (canvas.getCableInLevel(), 4)
+                    + " db=" + juce::String (proc.getLoudnessDb(), 1));
+            proc.releaseResources();
+        }
+
+        beginTest ("circuit traces are ink, beads only when signal is present");
+        {
+            expect (! GraphCanvasComponent::cableBeadsVisible (0.f));
+            expect (! GraphCanvasComponent::cableBeadsVisible (0.021f));
+            expect (GraphCanvasComponent::cableBeadsVisible (0.05f));
+            const auto idle = GraphCanvasComponent::cableTraceColour (false, 1.f);
+            const auto lit = GraphCanvasComponent::cableTraceColour (true, 1.f);
+            expect (idle.getPerceivedBrightness() > 0.7f);
+            expect (lit.getPerceivedBrightness() > 0.85f);
+            expect (idle.getSaturation() < 0.15f);
+            expect (lit != NeuroKoreLookAndFeel::accent());
+            const float silent[8] {};
+            expect (GraphCanvasComponent::cableTapEnergy (silent, 8) < 0.01f);
+            const float loud[8] { 0.8f, -0.6f, 0.4f, 0.f, 0.f, 0.f, 0.f, 0.f };
+            expect (GraphCanvasComponent::cableTapEnergy (loud, 8) > 0.5f);
+            expectEquals (GraphCanvasComponent::cableTapEnergy (nullptr, 8), 0.f);
+        }
+
+        beginTest ("effective BPM follows host or user setting");
+        {
+            const bool prevHost = UiSettings::get().useHostTempo();
+            const float prevBpm = UiSettings::get().userBpm();
+            NeuroKoreAudioProcessor proc;
+            UiSettings::get().setUseHostTempo (true);
+            expect (proc.isHostTempo());
+            expect (proc.getEffectiveBpm() >= 20.f);
+            expect (proc.getEffectiveBpm() <= 400.f);
+            UiSettings::get().setUseHostTempo (false);
+            UiSettings::get().setUserBpm (140.f);
+            expect (! proc.isHostTempo());
+            expectEquals (proc.getEffectiveBpm(), 140.f);
+            UiSettings::get().setUseHostTempo (prevHost);
+            UiSettings::get().setUserBpm (prevBpm);
+        }
+
+        beginTest ("circuit drag snap does not rewrite block order");
+        {
+            const juce::String script =
+                "stage1: y = x  # @32,80\n"
+                "filter1: type = lowpass; cutoff = 800  # @208,80\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            expectEquals ((int) doc.nodes.size(), 2);
+            expectEquals (doc.nodes[0].name, juce::String ("stage1"));
+            dsl::setPosition (doc, 0, 32.f, 208.f);
+            expectEquals (doc.nodes[0].name, juce::String ("stage1"));
+            expectEquals (doc.nodes[1].name, juce::String ("filter1"));
         }
 
         beginTest ("knob min/max bounds do not flip decimals with the live value");

@@ -71,11 +71,14 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 
 ### Settings
 
-The second strip is tools, not a second window: L/BOTH/R, oversampling, polisher, Mix, and the live status live on one row.
+Oversampling, Polisher, and Mix sit **between the Circuit/Terminal and the IN/OUT scopes**, not in the top bar.
 
-- **L / BOTH / R**: which input channel feeds the formula. Click a third. L or R copies that side onto both channels — the stereo field becomes a vertical line.
+- **L / BOTH / R**: which input channel feeds the formula. Same width as the knobs, on the Circuit / Terminal row.
 - **Oversampling**: 1× / 2× / 4× / 8×. Default **4×**. Drop to 2× or 1× if the computer is struggling.
 - **Polisher**: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
+- **Settings → Tempo**: **Host** follows the DAW BPM. **User** lets you type a BPM. Note-length knobs and delay sync use that value. The footer shows `BPM 120 HOST` or `BPM 128 USER`.
+- **Settings → Circuit cables**: **Dots** (white/gray traces, beads only while audio is present) or **Wave** (same traces, gray post-block waveform).
+- **Guitar / BOTH**: a silent stereo side is copied from the live side so L/R splits (Stereo Guitar Wall) work from a mono DI. Amp presets have a **Width** knob (`widen`) defaulting to 0.
 - **Text − / +**: size of the formula text (also in **Settings**).
 - **Settings → scale**: 100 / 125 / 150. You can still resize the window; the aspect ratio stays locked.
 - **Settings → animation**: Full (boot, glitch, light CRT glow), Reduced (overlays snap), Off (still chrome).
@@ -83,26 +86,26 @@ The second strip is tools, not a second window: L/BOTH/R, oversampling, polisher
 ### Knobs
 
 - Six knobs in one column: a, b, c, d, e, f from top to bottom.
-- Click the name above a knob to rename it (Graph and Script). That also updates `param a = …` in the script. Edit the name in the script and the knob label follows. The formula still uses `a`–`f`.
+- Click the name above a knob to rename it (Circuit and Terminal). That also updates `param a = …` in the script. Edit the name in the script and the knob label follows. The formula still uses `a`–`f`.
 - Right-click a knob for MIDI Learn.
 
 ### Formula area
 
-- **L / Both / R**: input channel, same width as the knobs, on the Graph / Script row.
-- **Graph / Script**: two views of the same construct.
-  - **Graph** = assemble. The surface is a board: faint rose crosses, 16 px snap. Blocks are chips (chamfer, notch, pin-1, DIP pads). Right-click to add Filter, Drive, Delay, Bus, Mid-Side Split, Left/Right Split, Crossover, Stereo Width. Mid-side encode forks MID and SIDE rails like a bus; decode joins them. Drag a jack to patch — the target jack lights when you can drop. Drag a chip onto another rail to re-route.
-  - **Script** = hack. The same chain as text. Live view shows coloured knobs and current values (`a[3.20]`, `param a = Drive => 3.20`). **Edit** opens the editor; **Save** applies it. Positions are stored as `# @x,y` comments and do not change the sound.
+- **L / Both / R**: input channel, same width as the knobs, on the Circuit / Terminal row.
+- **Circuit / Terminal**: two views of the same construct.
+  - **Circuit** = assemble. The surface is a board: faint rose crosses, 16 px snap. Blocks are chips. Drag moves X and Y only — it does not change the signal order. Double-click or right-click a chip to open the node overlay (every jack field, knob bind, Remove). Click the arrow to fold/unfold. Right-click empty paper: **Auto-arrange** (fit chips to the current zoom, no rewire) or **Add** with category folders (Tone, Drive, Dynamics, Space, Routing, Stereo, Pitch, Modulation, Measure). Factory presets open already auto-arranged for the current zoom. Routing includes Sidechain (host extra input). Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. Audio cables stay white/gray; beads only while loudness is up.
+  - **Terminal** = hack. The same chain as text. Live view shows coloured knobs and current values (`a[3.20]`). IR slots have an inline button on that line. **Edit** opens the editor; **Save** applies it. Positions are `# @x,y` comments.
 - Each block shows the jacks it needs: audio in/out, a mix jack per bus on OUT, A–F for bound knobs, SC on comp/gate/vocoder, MOD on an LFO. Double-click a card to edit. Click a knob name to rename it. Ctrl+Z / Ctrl+Y undo and redo.
-- Each `ir1` / `ir2` line has a full-width button. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
+- Each `ir1` / `ir2` line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - **Edit**, then **Save** to apply.
 - **Optimize**: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
 - **Insert / Quick template**: drop in a common block.
 
 ### Bottom
 
-- **Mix**: dry / wet. Drag may flash the background.
+- **Tools row** (between Circuit/Terminal and the scopes): Oversampling, Polisher, Mix. Mix drag may flash only inside the slider.
 - Audio device lives in **Settings** (Standalone only). In a DAW the host owns the sample rate.
-- **Status**: LIVE / STUDIO / BYPASS / SAFE, CPU load, latency in ms, oversampling factor.
+- **Footer**: NKOS LIVE / STUDIO / BYPASS / SAFE, CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS.
 - **IN / OUT**: wave, stereo field, and loudness stay open. Click **<<** only if you want the wave alone.
 - **Meter**: the tall level meter on the right, plus a limiter cue.
 
@@ -199,7 +202,7 @@ Share packs by exporting a `.zip` (visible user presets) or by sending a folder 
 
 ### Useful factory sounds
 
-These are mix tools, not a full mastering suite.
+The factory library is 500+ studio jobs across 22 folders. Search or tags are the way in. These are mix tools, not a full mastering suite.
 
 - **Side Delay / Side Hall**: delay or reverb on the sides only. The center stays dry.
 - **Mono Below**: lows become mono; the top stays wide.
@@ -213,18 +216,20 @@ These are mix tools, not a full mastering suite.
 - **Stereo Guitar Wall**: two DI takes, two amps (Mesa left / 5150 right), noise gate, cabinet IR preloaded. Needs stereo in and **BOTH**. Swap the cab on the `ir1` button if you want.
 - **Glitch Laboratory**: digital smash without ping-pong or an LFO on the filter — light on the computer.
 - **Neon Clip / Chrome Fold / Data Mosher / Cyberpunk Drive**: digital dirt.
-- **Kick Rumble / Warehouse Rumble**: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit. Body = tight sine+sub. Tune ≈ 15 ms is the resonator. Insert on the kick, Mix 100.
+- **Kick Rumble / Warehouse Rumble**: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit only (follows the envelope). Body = dark floor (Floor knob, ~60 Hz) into a 15 ms resonator + sub. Insert on the kick, Mix 100.
 - **Hardcore Clip / Gabber Drive**: same split, more mid bark, 320 Hz scooped so it stays crisp. Acid Hash / Tekno Comb / Industrial Gate / Hoover Dirt: more club tools.
 - **Cyberpunk Drive**: guitar-shaped digital dirt (crush + fold + short metal comb). Use this instead of the old quiet Glitch Laboratory.
 - **Glitch Laboratory**: louder smash + short ping-pong + Level makeup. Still a glitch toy, not an amp.
 
 ---
 
-## 5b. Graph vs Script
+## 5b. Circuit vs Terminal
 
-- **Graph** is how you assemble the parts. The surface is a circuit board: faint rose crosses for orientation, blocks snap to 16 px, each block is a chip (notch, pin-1, DIP pads). Cables are traces. Mid-side and buses fork onto their own rails.
-- **Script** is how you hack the construct. Same chain, as text. Live `[value]` next to every knob letter. Edit / Save when you want to type.
-- Positions are comments (`# @160.0,80.0`). Deleting them does not change the sound; Graph will lay the chips out again.
+- **Circuit** is how you assemble the parts. Snap to 16 px. Drag is placement only. Edit a chip in its overlay.
+- **Terminal** is how you hack the construct. Same chain, as text. Live `[value]` next to every knob letter.
+- The footer strip shows CPU, latency, sample rate, 32-bit float, buffer, BPM (HOST or USER), and oversampling.
+- Settings → Tempo: follow the host BPM or type your own. Note-length knobs and delay sync use that tempo.
+- Circuit: Ctrl + mouse wheel zooms the board. Cables show the live waveform after each block. Bound knobs print their live value in red on the chip.
 
 ## 6. Formula language
 
@@ -349,7 +354,7 @@ stage1: y = tube(x, a)
 ir1: mix = b; gain = 0
 ```
 
-2. Save. Click the full-width **ir1** button under that line.
+2. Save. Click the inline **ir1** button on that line.
 3. Amp factory presets (Mesa, 5150, JCM, AC30, Tube Screamer, Fuzz Face, Metal Gate, Stereo Guitar Wall) already load a matching cabinet. Drop a WAV or AIFF to replace it, or click **Load**. **Clear** empties the slot (dry).
 4. Need two cabs? Add `ir2: mix = 1` and click its own button.
 

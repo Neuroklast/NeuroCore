@@ -110,9 +110,8 @@ void LoudnessMeterComponent::mouseDown(const juce::MouseEvent& e)
 
 float LoudnessMeterComponent::glitchAmount (float fillNorm) noexcept
 {
-    // Below ~-36 dBFS (fill 0.40) stay solid. Ramp hard toward 0 dBFS.
-    const float t = juce::jlimit (0.f, 1.f, (fillNorm - 0.40f) / 0.60f);
-    return t * t * t;
+    const float t = juce::jlimit (0.f, 1.f, (fillNorm - 0.34f) / 0.66f);
+    return t * t;
 }
 
 int LoudnessMeterComponent::bandHeightPx (float fillNorm, float heightFromBottom01) noexcept
@@ -161,20 +160,18 @@ void LoudnessMeterComponent::drawOverloadFill (juce::Graphics& g,
         y = y0;
     }
 
-    const float sliceAmt = glitchAmount (fill);
-    if (sliceAmt > 0.18f)
+    const float sliceAmt = motion == CyberMotion::Off ? 0.f
+                         : glitchAmount (fill) * (motion == CyberMotion::Full ? 0.55f : 0.28f);
+    if (sliceAmt > 0.08f)
     {
-        const int n = (int) std::lround (sliceAmt * 5.f);
+        const int n = (int) std::lround (sliceAmt * (motion == CyberMotion::Full ? 4.f : 2.f));
         for (int i = 0; i < n; ++i)
         {
             const float span = juce::jmax (4.f, meterArea.getBottom() - fillTop);
             const float ySlice = fillTop + px.nextFloat() * span;
-            const float sh = 1.f + px.nextFloat() * (1.2f + 3.2f * sliceAmt);
-            const float dx = (px.nextFloat() - 0.5f) * 8.f * sliceAmt;
-            const auto sliceC = (i % 3 == 0 ? juce::Colours::cyan
-                                            : (i % 3 == 1 ? juce::Colours::magenta
-                                                          : NeuroKoreLookAndFeel::accent()));
-            g.setColour (sliceC.withAlpha (0.08f + 0.32f * sliceAmt));
+            const float sh = 1.f + px.nextFloat() * (1.0f + 2.0f * sliceAmt);
+            const float dx = (px.nextFloat() - 0.5f) * 4.f * sliceAmt;
+            g.setColour (NeuroKoreLookAndFeel::ink().withAlpha (0.06f + 0.16f * sliceAmt));
             g.fillRect (meterArea.getX() + dx, ySlice, meterArea.getWidth(), sh);
         }
     }

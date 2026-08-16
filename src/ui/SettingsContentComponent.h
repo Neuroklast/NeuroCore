@@ -153,6 +153,85 @@ public:
         addAndMakeVisible (fontMinus);
         addAndMakeVisible (fontPlus);
 
+        cableTitle.setText ("CIRCUIT CABLES", juce::dontSendNotification);
+        styleLabel (cableTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        addAndMakeVisible (cableTitle);
+        cableHint.setText (UiSettings::get().cableWaveform()
+                               ? "Gray waveform on the cable, only while audio is present."
+                               : "White/gray traces; beads travel only while audio is present.",
+                           juce::dontSendNotification);
+        styleLabel (cableHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        addAndMakeVisible (cableHint);
+        dotsCableButton.setButtonText ("Dots");
+        waveCableButton.setButtonText ("Wave");
+        dotsCableButton.setClickingTogglesState (true);
+        waveCableButton.setClickingTogglesState (true);
+        dotsCableButton.setRadioGroupId (0x43424c45);
+        waveCableButton.setRadioGroupId (0x43424c45);
+        dotsCableButton.setTooltip ("White/gray traces with beads that follow the input level.");
+        waveCableButton.setTooltip ("Gray post-block waveform on the same traces.");
+        dotsCableButton.onClick = [this]
+        {
+            UiSettings::get().setCableWaveform (false);
+            cableHint.setText ("White/gray traces; beads travel only while audio is present.",
+                               juce::dontSendNotification);
+            if (onCableStyleChanged)
+                onCableStyleChanged();
+        };
+        waveCableButton.onClick = [this]
+        {
+            UiSettings::get().setCableWaveform (true);
+            cableHint.setText ("Gray waveform on the cable, only while audio is present.",
+                               juce::dontSendNotification);
+            if (onCableStyleChanged)
+                onCableStyleChanged();
+        };
+        addAndMakeVisible (dotsCableButton);
+        addAndMakeVisible (waveCableButton);
+
+        tempoTitle.setText ("TEMPO", juce::dontSendNotification);
+        styleLabel (tempoTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        addAndMakeVisible (tempoTitle);
+        tempoHint.setText (UiSettings::get().useHostTempo()
+                               ? "BPM follows the host / DAW."
+                               : "BPM is set here. Delay note lengths use this tempo.",
+                           juce::dontSendNotification);
+        styleLabel (tempoHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        addAndMakeVisible (tempoHint);
+        hostTempoButton.setButtonText ("Host");
+        userTempoButton.setButtonText ("User");
+        hostTempoButton.setClickingTogglesState (true);
+        userTempoButton.setClickingTogglesState (true);
+        hostTempoButton.setRadioGroupId (0x54454d50);
+        userTempoButton.setRadioGroupId (0x54454d50);
+        hostTempoButton.setTooltip ("Use the DAW / host tempo.");
+        userTempoButton.setTooltip ("Ignore the host. Type a BPM.");
+        hostTempoButton.onClick = [this]
+        {
+            UiSettings::get().setUseHostTempo (true);
+            bpmEdit.setEnabled (false);
+            tempoHint.setText ("BPM follows the host / DAW.", juce::dontSendNotification);
+        };
+        userTempoButton.onClick = [this]
+        {
+            UiSettings::get().setUseHostTempo (false);
+            bpmEdit.setEnabled (true);
+            tempoHint.setText ("BPM is set here. Delay note lengths use this tempo.",
+                               juce::dontSendNotification);
+        };
+        addAndMakeVisible (hostTempoButton);
+        addAndMakeVisible (userTempoButton);
+        bpmLabel.setText ("BPM", juce::dontSendNotification);
+        styleLabel (bpmLabel, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        addAndMakeVisible (bpmLabel);
+        bpmEdit.setFont (NeuroKoreLookAndFeel::monoFont (16.f));
+        bpmEdit.setInputRestrictions (6, "0123456789.");
+        bpmEdit.setText (juce::String (UiSettings::get().userBpm(), 1), false);
+        bpmEdit.setEnabled (! UiSettings::get().useHostTempo());
+        bpmEdit.onReturnKey = [this] { commitUserBpm(); };
+        bpmEdit.onFocusLost = [this] { commitUserBpm(); };
+        addAndMakeVisible (bpmEdit);
+
         audioTitle.setText ("AUDIO", juce::dontSendNotification);
         styleLabel (audioTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
         addAndMakeVisible (audioTitle);
@@ -166,7 +245,7 @@ public:
         audioHint.setMinimumHorizontalScale (0.7f);
         addAndMakeVisible (audioHint);
 
-        audioButton.setButtonText ("Audio device…");
+        audioButton.setButtonText ("Audio device...");
         audioButton.setTooltip ("Sample rate / device (Standalone).");
         audioButton.onClick = [] { tryOpenStandaloneAudioSettings(); };
         audioButton.setEnabled (standalone);
@@ -198,6 +277,7 @@ public:
     std::function<void (int)>         onScaleChanged;
     std::function<void (int)>         onFontStep;
     std::function<void (bool)>        onLiveModeChanged;
+    std::function<void()>             onCableStyleChanged;
     std::function<void()>             onLicense;
     std::function<void()>             onHelp;
     std::function<void()>             onClose;
@@ -258,6 +338,31 @@ public:
         }
         r.removeFromTop (12);
 
+        cableTitle.setBounds (row (18));
+        {
+            auto bar = row (30);
+            const int w = bar.getWidth() / 2;
+            dotsCableButton.setBounds (bar.removeFromLeft (w).reduced (2));
+            waveCableButton.setBounds (bar.reduced (2));
+        }
+        cableHint.setBounds (row (22));
+        r.removeFromTop (12);
+
+        tempoTitle.setBounds (row (18));
+        {
+            auto bar = row (30);
+            const int w = bar.getWidth() / 2;
+            hostTempoButton.setBounds (bar.removeFromLeft (w).reduced (2));
+            userTempoButton.setBounds (bar.reduced (2));
+        }
+        tempoHint.setBounds (row (22));
+        {
+            auto bar = row (30);
+            bpmLabel.setBounds (bar.removeFromLeft (48));
+            bpmEdit.setBounds (bar.removeFromLeft (80).reduced (0, 2));
+        }
+        r.removeFromTop (12);
+
         audioTitle.setBounds (row (18));
         audioHint.setBounds (row (36));
         if (audioButton.isVisible())
@@ -293,11 +398,37 @@ private:
         procHint.setText (live ? "Live: min-phase OS, near-zero latency."
                                : "Studio: linear-phase OS, mix-ready.",
                           juce::dontSendNotification);
+
+        const bool hostT = UiSettings::get().useHostTempo();
+        hostTempoButton.setToggleState (hostT, juce::dontSendNotification);
+        userTempoButton.setToggleState (! hostT, juce::dontSendNotification);
+        bpmEdit.setEnabled (! hostT);
+        bpmEdit.setText (juce::String (UiSettings::get().userBpm(), 1), false);
+        tempoHint.setText (hostT ? "BPM follows the host / DAW."
+                                 : "BPM is set here. Delay note lengths use this tempo.",
+                           juce::dontSendNotification);
+
+        const bool wave = UiSettings::get().cableWaveform();
+        dotsCableButton.setToggleState (! wave, juce::dontSendNotification);
+        waveCableButton.setToggleState (wave, juce::dontSendNotification);
+        cableHint.setText (wave ? "Cables draw the post-block waveform."
+                                : "Cables show traveling dots, like a live trace.",
+                           juce::dontSendNotification);
     }
 
-    juce::Label animTitle, animHint, procTitle, procHint, displayTitle, scaleHint, fontHint, fontSize, audioTitle, audioHint, aboutTitle;
+    void commitUserBpm()
+    {
+        UiSettings::get().setUserBpm (bpmEdit.getText().getFloatValue());
+        bpmEdit.setText (juce::String (UiSettings::get().userBpm(), 1), false);
+    }
+
+    juce::Label animTitle, animHint, procTitle, procHint, displayTitle, scaleHint, fontHint, fontSize,
+                cableTitle, cableHint, tempoTitle, tempoHint, bpmLabel, audioTitle, audioHint, aboutTitle;
     juce::TextButton motionButtons[3];
     juce::TextButton scaleButtons[3];
     juce::TextButton studioButton, liveButton;
+    juce::TextButton hostTempoButton, userTempoButton;
+    juce::TextButton dotsCableButton, waveCableButton;
+    juce::TextEditor bpmEdit;
     juce::TextButton fontMinus, fontPlus, audioButton, licenseButton, helpButton, closeButton;
 };

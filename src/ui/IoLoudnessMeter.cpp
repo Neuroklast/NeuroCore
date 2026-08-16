@@ -50,6 +50,9 @@ void IoLoudnessMeter::timerCallback()
 
     setTooltip (juce::String (type == WaveformDisplayComponent::Type::Input ? "IN  " : "OUT ")
                 + "L " + juce::String (rmsDbL, 1) + "  R " + juce::String (rmsDbR, 1) + " dB");
+    const float loud = juce::jlimit (0.f, 1.f, (juce::jmax (rmsDbL, rmsDbR) + 60.f) / 60.f);
+    if (motion != CyberMotion::Off && loud > 0.2f && rng.nextFloat() < 0.12f + 0.45f * loud)
+        grainSeed = rng.nextInt();
     repaint();
 }
 
@@ -82,6 +85,25 @@ void IoLoudnessMeter::drawBar (juce::Graphics& g, juce::Rectangle<float> r,
                                NeuroKoreLookAndFeel::accentDim(), r.getCentreX(), r.getBottom(), false);
     g.setGradientFill (fill);
     g.fillRect (r.getX(), fillTop, r.getWidth(), r.getBottom() - fillTop);
+
+    if (motion != CyberMotion::Off)
+    {
+        const float loud = juce::jlimit (0.f, 1.f, (rmsDb + 60.f) / 60.f);
+        const float amt = (motion == CyberMotion::Full ? 0.22f : 0.10f) * loud * loud;
+        if (amt > 0.01f)
+        {
+            juce::Random px (grainSeed ^ (int) std::lround (r.getX() * 17.f));
+            const int n = 2 + (int) std::lround (amt * 10.f);
+            for (int i = 0; i < n; ++i)
+            {
+                const float y = fillTop + px.nextFloat() * juce::jmax (1.f, r.getBottom() - fillTop);
+                const float h = 1.f + px.nextFloat() * (1.2f + 2.5f * amt);
+                const float dx = (px.nextFloat() - 0.5f) * 3.5f * amt;
+                g.setColour (NeuroKoreLookAndFeel::ink().withAlpha (0.06f + 0.18f * amt));
+                g.fillRect (r.getX() + dx, y, r.getWidth(), h);
+            }
+        }
+    }
 
     const float peakY = dbToY (peakDb);
     g.setColour (juce::Colours::white.withAlpha (0.85f));

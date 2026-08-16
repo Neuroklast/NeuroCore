@@ -15,37 +15,138 @@
 | Core/ScriptManager | ✅ Neu: Skript-Verwaltung, Variable Names, Preview, testFormulaStability | 85% | 2026-05-21 |
 | Core/WaveformCapture | ✅ Neu: Lock-free Ring-Buffer für Input/Output-Waveform | 90% | 2026-05-21 |
 | Core/MidiVariableMapper | ✅ Neu: midi_note/vel/gate/bend/mod/freq als DSL-Variablen (atomic) | 95% | 2026-05-21 |
-| Core/PluginEditor | ✅ L/Both/R on knob column; even toolbar; brand space | 99% | 2026-08-16 |
-| UI/UiSettings | ✅ Persist motion Full/Reduced/Off, liveMode, scale, formula font | 96% | 2026-08-16 |
+| Core/PluginEditor | ✅ Circuit/Terminal; tools row above scopes; NKOS footer | 99% | 2026-08-16 |
+| UI/UiSettings | ✅ Persist motion, liveMode, scale, font, Host/User tempo | 97% | 2026-08-16 |
 | Core/Config.h | ✅ CPU-Guard: EMA / Warmup-Sekunden / 2s Retry | 99% | 2026-08-15 |
-| DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate | 99% | 2026-08-14 |
-| DSL/GraphModel | ✅ jacksFor; Karten ohne überlagerte Jack-Labels | 99% | 2026-08-16 |
-| UI/GraphCanvas | ✅ 16-px Snap; rose Kreuze; Chip-Packages | 99% | 2026-08-16 |
-| DSL/SignalChain | ✅ Delay samplegenau; 8-sample write-head; AA-LPF auch bei 8× FIR | 99% | 2026-08-16 |
+| DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate / ngate | 99% | 2026-08-16 |
+| DSL/GraphModel | ✅ tidyLayout wrappt jede Rail; setPosition only | 99% | 2026-08-16 |
+| UI/GraphCanvas | ✅ Auto-arrange; Presets beim Laden auf aktuellen Zoom | 99% | 2026-08-16 |
+| DSL/SignalChain | ✅ Delay control-rate; Gate/noisegate; per-Block Taps | 99% | 2026-08-16 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
 | DSP/WaveShaper | ✅ Funktional | 75% | 2026-04-01 |
 | DSP/SignalPolisher | ✅ Funktional + DC-Blocker nach DSL integriert | 82% | 2026-05-19 |
 | DSP/DSPUtils | ✅ autoGainCompensate optimiert (direkte Sample-Multiplikation) | 85% | 2026-05-19 |
-| UI/DslTerminalEditor | ✅ Edit-Modus; zeilenbreiter IR-Button pro `irN` | 90% | 2026-08-14 |
+| UI/DslTerminalEditor | ✅ Edit-Modus; IR-Button in Zeilenhöhe pro `irN` | 92% | 2026-08-16 |
 | UI/FormulaDisplayComponent | ✅ Live-Eval; Script tab shows `[value]` again | 96% | 2026-08-16 |
 | UI/WaveformDisplay | ✅ ScopeDeck: Wave + Field + Loudness default offen, 176 px | 94% | 2026-08-15 |
 | UI/LoudnessMeter | ✅ Glitch cubisch mit Pegel; plus kompakte IN/OUT-Balken | 99% | 2026-08-14 |
 | UI/ParameterComponent | ✅ Wert unter dem Zeiger; Drag hebt Knob-Kabel | 94% | 2026-08-16 |
 | UI/MidiLearnManager | ✅ Neu erstellt, vollständig | 90% | 2026-04-01 |
-| Preset-System | ✅ 191 Factory; Script-Match setzt den Preset-Namen | 99% | 2026-08-16 |
+| Preset-System | ✅ 526 Factory; Topology-Hash; Script-Match setzt den Namen | 99% | 2026-08-16 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
-| Tests | ✅ Graph routing + 8× delay + UI chrome (suite 6206+) | 99% | 2026-08-16 |
+| Tests | ✅ CrackleFixes inkl. Kick-Rumble-Impuls; 12372 passed, 2 factory-quality leftovers | 99% | 2026-08-16 |
 | CI/CD | ✅ Windows Tests+pluginval; macOS-Job baut AU + auval | 95% | 2026-08-14 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
-| Dokumentation | ✅ Graph-Platine / Script-Hack; a–f; Delay 8×; Routing | 99% | 2026-08-16 |
+| Dokumentation | ✅ Circuit/Terminal; noisegate; Host/User BPM; Tools-Zeile | 99% | 2026-08-16 |
 | Installer | ✅ Kit `NEUROKORE-0.9.0/` im Repo-Root (VST3, Standalone, EULA, Docs) | 90% | 2026-08-15 |
 | AU-Format | ✅ AUv2 `aumf`; CI-Job `AU (macOS)` liefert `.component` | 100% | 2026-08-14 |
 
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-16 – Periodic crackle (gate/phaser/space/rumble)
+
+- [x] Env peak clamped 0–1 (no `1-env*k` polarity flip)
+- [x] Freq `+osc` is unipolar + `max(fmin,…)` (no HP/LP invert)
+- [x] Phaser Lab/Sweep: HP stays below LP; no `y_prev` feedback
+- [x] Cinematic Space: delay is true predelay (`mix=1`, `feedback=0`)
+- [x] Kick/Warehouse/Hardcore/Gabber: softclip before hardclip; env-filter Q 0.85
+- [x] Octaver: free-running sub, silent until lock (no period-reset click)
+- [x] Rumble body LPF stays on Floor ~48–88 Hz (no env-open to 400 Hz)
+- [x] Scream is env-gated (floor 0.08), not a square tail
+
+### 2026-08-16 – Factory library 500+
+
+- [x] Keep 191; add wave2 jobs (526 total)
+- [x] Distinct topologies (hash on blocks/notes/literals), not knob clones
+- [x] All 22 categories filled; search/tags remain the index
+
+### 2026-08-16 – Auto-arrange at current zoom
+
+- [x] Context menu label is only **Auto-arrange**
+- [x] `tidyLayout` wraps each rail (Trailer Impact smash no longer stays one long row)
+- [x] Factory apply leaves `@x,y` out; Circuit arranges at the current viewport/zoom on load
+- [x] Pending arrange after first resize if the canvas had no size yet
+
+### 2026-08-16 – Release kit refresh (crackle + 526 factory)
+
+- [x] Release Standalone + VST3 (Kick Rumble / Octaver / 526 factory)
+- [x] Pack `NEUROKORE-0.9.0/` (VST3, Standalone, Docs, zip)
+- [ ] Inno Setup 6 fehlt weiter — kein `Setup.exe`
+
+### 2026-08-16 – Release kit refresh
+
+- [x] Release Standalone + VST3
+- [x] Pack `NEUROKORE-0.9.0/` (VST3, Standalone, Docs, zip)
+
+### 2026-08-16 – Tidy, meters, sidechain, full Add menu
+
+- [x] `tidyLayout` setPosition only; factory apply leaves `@x,y` to Circuit Auto-arrange
+- [x] Meter pass-through (loudness/peak/RMS); Sidechain block (host extra in)
+- [x] Context Add is hierarchical; all DSL blocks listed
+- [x] Expand hit matches chevron; OUT edit keys include every mix jack
+
+### 2026-08-16 – Circuit beads are loudness, not always-on
+
+- [x] Dots from `getLoudnessDb()` (`loudnessToCableLevel`), gate 0.022
+- [x] Silence hides beads; loudness lights and moves them
+- [x] Wave shape may use the scope ring; gate stays loudness
+
+### 2026-08-16 – Space Echo CPU + live cables
+
+- [x] Delay control-rate once per block (no per-sample evaluate lock)
+- [x] Heavy tape/delay presets: 8x sine finite, no block click, no CPU trip
+- [x] Circuit beads/waves from WaveformCapture (same as IN/OUT scopes)
+
+### 2026-08-16 – Circuit cables back to ink
+
+- [x] Audio traces `ink` / `inkMuted` (not rose)
+- [x] Beads only when input/tap energy is above the gate (same as before waveforms)
+- [x] Wave mode uses the same gray ink
+
+### 2026-08-16 – Split language + guitar stereo + kit
+
+- [x] `split { mid/side | left/right | crossover | parallel }` expands to existing DSP
+- [x] Octaver/vocoder extra param jacks; tooltips on Presets/Functions/Stages/Bypass/OS/Polisher
+- [x] Guitar Width on amp presets; silent-side copy; Stereo Guitar Wall via leftright split
+- [x] Release Standalone + VST3 + `NEUROKORE-0.9.0/`
+
+### 2026-08-16 – Circuit UX + mono guitar stereo
+
+- [x] Circuit cables: Settings Dots / Wave; white/gray traces; beads only with signal
+- [x] Chips fold; jacks stay laid out; octaver keys + knob jacks
+- [x] Knob cables behind chips at 50%, 25% across a card
+- [x] No rail-drop red line while placing chips
+- [x] LFO output + filter-mod smoothing (no zipper/crackle)
+- [x] BOTH seeds a silent side from the live side; guitar Width knob
+- [x] Brand left-aligned; unified padding; no assemble on resize
+
+### 2026-08-16 – Review, release build, kit
+
+- [x] Overlay hint is a layout Label (no overlap with a-f)
+- [x] Host BPM 0 falls back to 120; noisegate defaults without hold
+- [x] Manuals: Circuit/Terminal, tools row, footer, inline IR
+- [x] Release Standalone + VST3; pack `NEUROKORE-0.9.0/`
+
+### 2026-08-16 – Circuit polish, noisegate, tempo source
+
+- [x] Overlay button gaps; chip labels do not overlap; live knob values in red
+- [x] Ctrl+wheel zoom; cables draw the post-block waveform
+- [x] Bus header wired IN -> BUS -> send
+- [x] `ngate` / noisegate: optional threshold, attack, release
+- [x] Tempo: Host or User BPM in Settings; footer shows HOST / USER
+- [x] Mix / OS / Polisher sit above the scopes
+
+### 2026-08-16 – Circuit overlay, footer, no accidental reorder
+
+- [x] Drag snaps X/Y only; order/routing stay put
+- [x] Node overlay for every block (ASCII, readable fields)
+- [x] Circuit / Terminal names; footer SR / 32f / BUF / BPM / CPU / LAT / OS
+- [x] Knob hover lights traces; IR button on the formula line
+- [x] Mix glitch stays in the slider; loudness grain scales with motion
 
 ### 2026-08-16 – Graph board: chips + rose crosses
 

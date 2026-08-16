@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "InputRouter.h"
 #include "../utils/Log.h"
+#include <cmath>
 
 void InputRouter::prepare(const juce::dsp::ProcessSpec& spec)
 {
@@ -47,6 +48,21 @@ void InputRouter::process(const juce::dsp::ProcessContextReplacing<SampleType>& 
     const size_t numSamples = block.getNumSamples();
     auto* left  = block.getChannelPointer(0);
     auto* right = block.getChannelPointer(1);
+
+    // BOTH + mono guitar: one side is digital zero. Seed it so L/R splits work.
+    if (channelEnabled[0] && channelEnabled[1] && numSamples > 0)
+    {
+        float lE = 0.f, rE = 0.f;
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            lE = juce::jmax (lE, std::abs (left[i]));
+            rE = juce::jmax (rE, std::abs (right[i]));
+        }
+        if (rE < 1.0e-5f && lE > 1.0e-5f)
+            juce::FloatVectorOperations::copy (right, left, (int) numSamples);
+        else if (lE < 1.0e-5f && rE > 1.0e-5f)
+            juce::FloatVectorOperations::copy (left, right, (int) numSamples);
+    }
 
     for (size_t i = 0; i < numSamples; ++i)
     {

@@ -851,8 +851,9 @@ private:
             requireBlock ("Wide Canvas", "ms");
             requireBlock ("Wide Canvas", "reverb");
             requireBlock ("Tension Bed", "reverb");
-            requireBlock ("Stereo Guitar Wall", "channel = left");
-            requireBlock ("Stereo Guitar Wall", "channel = right");
+            requireBlock ("Stereo Guitar Wall", "leftright");
+            requireBlock ("Stereo Guitar Wall", "left");
+            requireBlock ("Stereo Guitar Wall", "right");
             requireBlock ("Stereo Guitar Wall", "tube");
             requireBlock ("Cyberpunk Drive", "bitcrush");
             requireBlock ("Cyberpunk Drive", "fold");
@@ -1094,7 +1095,7 @@ private:
             expect (lib.findByName ("Hardcore Clip") != nullptr);
             expect (lib.findByName ("Gabber Drive") != nullptr);
             expect (lib.findByName ("Acid Hash") != nullptr);
-            expect (lib.getEntries().size() >= 189);
+            expect (lib.getEntries().size() >= 500);
         }
 
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");

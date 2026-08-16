@@ -316,6 +316,31 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 0), 1.0f, 1.0e-4f);
         }
 
+        beginTest("mono guitar in feeds both L and R channel paths");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "stage1: channel = left; y = x * 0.5\n"
+                "stage2: channel = right; y = x * 0.8\n", e), e);
+            c.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.4f);
+                buf.setSample (1, i, 0.f);
+            }
+            c.processBlock (buf);
+            float lPeak = 0.f, rPeak = 0.f;
+            for (int i = 0; i < 64; ++i)
+            {
+                lPeak = juce::jmax (lPeak, std::abs (buf.getSample (0, i)));
+                rPeak = juce::jmax (rPeak, std::abs (buf.getSample (1, i)));
+            }
+            expect (lPeak > 0.1f, "left path should hear the mono DI");
+            expect (rPeak > 0.1f, "right path should hear the copied mono DI");
+        }
+
         beginTest("parallel dirt mixes with main");
         {
             dsl::SignalChain c;

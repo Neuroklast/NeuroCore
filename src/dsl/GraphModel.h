@@ -71,6 +71,31 @@ bool hasAllPositions (const GraphDocument& doc);
 
 void setPosition (GraphDocument& doc, int nodeIndex, float x, float y);
 
+/** Suggested IN / virtual-OUT after tidy. Node positions are written on `doc`. */
+struct TidyHint
+{
+    float inX { 32.f };
+    float inY { 32.f };
+    float outX { 512.f };
+    float outY { 32.f };
+    float boardW { 0.f };
+    float boardH { 0.f };
+    bool fitted { false };
+};
+
+inline constexpr int kTidyGrid = 16;
+inline constexpr int kTidyCardW = 208;
+inline constexpr int kTidyCardH = 84;
+inline constexpr int kTidyColGap = 48;
+inline constexpr int kTidyRowGap = 32;
+inline constexpr int kTidyMinGap = 16;
+inline constexpr int kTidyMargin = 16;
+
+/** Arrange chips from visual edges. Does not reorder nodes or change cables.
+    If viewW/viewH > 0 and the graph fits at readable size, pack into that view.
+    Each rail wraps on its own when one row is too wide and the wrapped board still fits. */
+TidyHint tidyLayout (GraphDocument& doc, int viewW = 0, int viewH = 0);
+
 /** Place `to` immediately after `from` on from's rail. fromIndex -1 = IN. */
 bool connectAudio (GraphDocument& doc, int fromIndex, int toIndex, juce::String& error);
 
@@ -89,8 +114,9 @@ bool insertOnEdge (GraphDocument& doc, int fromIndex, int toIndex,
 bool setNodeArg (GraphDocument& doc, int nodeIndex,
                  const juce::String& key, const juce::String& value);
 
-/** Keys a user can edit for this block type, in display order. */
-juce::StringArray editableArgKeys (const GraphNode& node);
+/** Keys a user can edit for this block type, in display order.
+    When `doc` is set, every mix/param/send jack also gets a field (OUT low/mid/high). */
+juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* doc = nullptr);
 
 /** A knob letter a–f used by a node argument or formula. */
 struct KnobBinding
@@ -138,6 +164,8 @@ inline juce::String channelRail (const GraphNode& n)
     if (c == "side" || c == "s") return "side";
     if (c == "left" || c == "l") return "left";
     if (c == "right" || c == "r") return "right";
+    if (c == "low") return "low";
+    if (c == "high") return "high";
     return {};
 }
 

@@ -64,6 +64,6 @@ inline void styleButton (juce::TextButton& b)
 
 inline juce::String buttonText (const juce::String& slot, const juce::String& caption)
 {
-    return slot + "  —  " + (caption.isNotEmpty() ? caption : juce::String ("drop / change / clear"));
+    return slot + " / " + (caption.isNotEmpty() ? caption : juce::String ("IR"));
 }
 } // namespace IrSlotUi

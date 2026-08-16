@@ -112,6 +112,8 @@ namespace DslAutocomplete
             return "filter";
         if (first.startsWith ("comp")) return "comp";
         if (first.startsWith ("gate")) return "gate";
+        if (first.startsWith ("ngate") || first.startsWith ("noisegate") || first == "noise_gate")
+            return "noisegate";
         if (first.startsWith ("limit")) return "limit";
         if (first.startsWith ("xover") || first.startsWith ("crossover")) return "xover";
         if (first.startsWith ("ott")) return "ott";
@@ -321,15 +323,20 @@ namespace DslAutocomplete
             else if (kind == "send")
                 props.addArray ({ "in" });
             else if (kind == "out")
-                props.addArray ({ "main" });
+                props.addArray ({ "main", "mid", "low", "high" });
+            else if (kind == "meter")
+                props.addArray ({ "mode" });
+            else if (kind == "sidechain")
+                props.addArray ({ "mix" });
             addAll (items, props, Kind::Property, "property", prefix, " = ");
             return uniqueSorted (items, prefix, forceAll, ctx, inBlockProps);
         }
 
         if (isIdentStartLine (head))
         {
-            juce::StringArray blocks { "param", "stage", "filter", "eq", "comp", "gate", "limit", "osc", "env",
-                                       "delay", "reverb", "ms", "octaver", "vocoder", "xover", "ott", "widen", "ir", "bus" };
+            juce::StringArray blocks { "param", "stage", "filter", "eq", "comp", "gate", "noisegate", "limit",
+                                       "osc", "env", "delay", "reverb", "ms", "octaver", "vocoder", "xover",
+                                       "ott", "widen", "ir", "bus", "meter", "sidechain", "split" };
             if (canSuggestSend (text, start))
                 blocks.add ("send");
             if (canSuggestOut (text, start))
@@ -359,6 +366,15 @@ namespace DslAutocomplete
                 Item sn;
                 sn.label = "eq peak/notch/cut";
                 sn.insertText = "eq1: type = peak; freq = 1000; q = 1.2; gain = 3";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("split").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "split midside / leftright / crossover";
+                sn.insertText = "split1: type = midside {\n  mid {\n    stage1: y = x\n  }\n  side {\n    stage2: y = x\n  }\n}\n";
                 sn.detail = "snippet";
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);
@@ -423,6 +439,16 @@ namespace DslAutocomplete
                 Item sn;
                 sn.label = "widen (mono to stereo)";
                 sn.insertText = "widen1: width = 0.7; delay = 14; bass = 140";
+                sn.detail = "snippet";
+                sn.kind = Kind::Snippet;
+                addCand (items, std::move (sn), prefix);
+            }
+            if (prefix.isEmpty() || juce::String ("ngate").startsWithIgnoreCase (prefix)
+                || juce::String ("noisegate").startsWithIgnoreCase (prefix))
+            {
+                Item sn;
+                sn.label = "noisegate (threshold / attack / release)";
+                sn.insertText = "ngate1: threshold = -48; attack = 0.001; release = 0.08";
                 sn.detail = "snippet";
                 sn.kind = Kind::Snippet;
                 addCand (items, std::move (sn), prefix);

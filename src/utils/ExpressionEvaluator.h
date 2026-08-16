@@ -27,6 +27,9 @@ public:
     // Evaluates the parsed expression with the given x value.
     float evaluate(float x) const noexcept;
 
+    /** Audio-thread eval: no parse lock, no ADAA reset. Formula is immutable after load. */
+    float evaluateLive (float x) const noexcept;
+
     /** Returns a callable functor that evaluates the parsed expression using
         the given variable array. The functor is thread-safe and immutable. */
     std::function<float(const float*)> toFunction() const noexcept;

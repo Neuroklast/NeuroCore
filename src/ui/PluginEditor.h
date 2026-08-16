@@ -77,6 +77,7 @@ public:
     bool isEditingFormula() const noexcept { return editing; }
     bool isLiveFormulaVisible() const;
     bool isFormulaEditorVisible() const;
+    juce::String statusFooterText() const;
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -216,6 +217,10 @@ private:
     std::unique_ptr<ModalOverlay>            irOverlay;
     std::unique_ptr<ModalOverlay>            licenseOverlay;
     std::unique_ptr<ModalOverlay>            settingsOverlay;
+    std::unique_ptr<ModalOverlay>            nodeInspectOverlay;
+
+    void showNodeInspectOverlay (int nodeIndex);
+    void hideNodeInspectOverlay();
 
     void showIrOverlay (const juce::String& slot);
     void hideIrOverlay();

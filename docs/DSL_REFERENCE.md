@@ -47,7 +47,7 @@ param c = Time [1/1, 1/16]
 | `a`–`f` | Welcher Knob konfiguriert wird |
 | `Drive` | Anzeigename im UI |
 | `[min, max]` | Optionaler Wertebereich (Standard: `[0, 1]`) |
-| `[1/1, 1/16]` | Zählzeiten. Der Knob rastet auf 1/1, 1/2., 1/2, 1/4., 1/3, 1/4, 1/8., 1/6, 1/8, 1/16., 1/12, 1/16. In der Formel ist der Wert **Millisekunden** bei Host-Tempo (für `delay` / `time`). **Ausnahme:** `osc freq` / `osc sync` auf einem Note-Knob = ein Zyklus pro Note (1/4 bei 120 BPM = 2 Hz), nicht 500 Hz. |
+| `[1/1, 1/16]` | Zählzeiten. Der Knob rastet auf 1/1, 1/2., 1/2, 1/4., 1/3, 1/4, 1/8., 1/6, 1/8, 1/16., 1/12, 1/16. In der Formel ist der Wert **Millisekunden** beim gewählten Tempo (Settings: Host-BPM oder User-BPM; für `delay` / `time`). **Ausnahme:** `osc freq` / `osc sync` auf einem Note-Knob = ein Zyklus pro Note (1/4 bei 120 BPM = 2 Hz), nicht 500 Hz. |
 
 Nach dem Parsen steht der Skaliertwert weiterhin unter `a`–`f`; in Formeln kann der Alias-Name (z. B. `drive`) verwendet werden.
 
@@ -240,15 +240,68 @@ gate1: source = sidechain
 
 Stereo-verkoppelt. Öffnet bei `threshold`, schließt bei `threshold - hyst`. `range` ist die geschlossene Verstärkung in dB.
 
+## `split` – Mid/Side, L/R, Bänder, parallel
+
+Konzeptuell ein Node, der das Signal aufteilt und am Ende wieder zusammenführt. Die Engine senkt das auf die bestehenden `ms` / `channel` / `xover` / `bus`-Blöcke.
+
+```
+split1: type = midside {
+  mid { stage1: y = x * b }
+  side { stage2: y = x * a }
+}
+
+split2: type = leftright {
+  left { stage1: y = tube(x, a) }
+  right { stage2: y = tube(x, b) }
+}
+
+split3: type = crossover; freq = 250 {
+  low { comp1: threshold = -16; ratio = 3 }
+  high { stage2: y = tanh(x) }
+}
+out: main = 0; low = 1; high = 1
+
+split4: type = parallel {
+  path1 { stage1: y = x * 2 }
+  path2 { filter1: type = highpass; cutoff = 500 }
+}
+out: main = 0; path1 = 1; path2 = 1
+```
+
+Alte Form `ms1: mode = encode` + `channel = mid` bleibt gültig. Circuit: Rechtsklick → Add → Routing.
+
+## `meter` – messen, nicht faerben
+
+```
+meter1: mode = loudness
+meter2: mode = peak
+meter3: mode = rms
+```
+
+Pass-through. Circuit-Chip zeigt den Live-Wert. `probe` ist ein Alias.
+
+## `sidechain` – Host-Extra-Input auf dieses Kabel
+
+```
+sidechain1: mix = 1
+```
+
+`mix` 1 = voller Sidechain, 0 = Dry durch. Ohne Extra-Input bleibt Dry. Alias: `sc`, `scin`.
+
+## `noisegate` / `ngate` – einfaches Noise Gate
+
+```
+ngate1: threshold = -48
+ngate1: threshold = a; attack = 0.001; release = 0.08
+```
+
+Dieselbe Engine wie `gate`, aber im Circuit-Overlay und in der Autocomplete nur die drei üblichen Parameter. `attack` und `release` sind optional (Standard 1 ms / 80 ms). Ohne Angabe: 1 dB Hysterese, kein Hold.
+
 | Argument | Werte | Beschreibung |
 |---|---|---|
-| `threshold` / `thresh` | dB | Öffnungsschwelle |
-| `hyst` / `hysteresis` | dB | Hysterese (Standard 3) |
-| `attack` | s | Öffnungszeit |
-| `hold` | s | Mindest-Offenzeit |
-| `release` | s | Schließzeit |
-| `range` | dB | Pegel wenn zu (Standard −80) |
-| `source` | `sidechain` | Detektor vom Sidechain-Pin |
+| `threshold` / `thresh` | dB | Öffnungsschwelle (Standard -42) |
+| `attack` | s | optional, Öffnungszeit |
+| `release` | s | optional, Schließzeit |
 
 ---
 

@@ -8,6 +8,7 @@
 #include <array>
 #include <vector>
 #include "../core/Config.h"
+#include "fx/CyberFxTypes.h"
 
 /**
     Read-only formula view with:
@@ -39,6 +40,7 @@ public:
 
     /** Body font height for formula text (live view). */
     void setFontHeight (float heightPt);
+    void setMotion (CyberMotion m) noexcept { motion = m; }
     float getFontHeight() const noexcept { return fontHeight; }
     int getContentHeight() const noexcept;
 
@@ -93,6 +95,7 @@ private:
     juce::Viewport viewport;
     bool layoutDirty = true;
     float fontHeight { 13.5f };
+    CyberMotion motion { CyberMotion::Full };
     std::vector<std::unique_ptr<juce::TextButton>> irButtons;
     juce::StringArray irButtonSlots;
 };

@@ -148,10 +148,12 @@ inline bool buildBusGraph (const std::vector<BlockDesc>& desc, BusGraph& out, ju
                 error = "Too many named buses.";
                 return false;
             }
-            if (findBusIndex (out, d.name) >= 0)
+            const int existing = findBusIndex (out, d.name);
+            if (existing >= 0)
             {
-                error = "Duplicate bus '" + d.name + "'.";
-                return false;
+                // Re-open a bus xover already created (low/mid/high).
+                current = existing;
+                continue;
             }
             BusDef b;
             b.name = d.name.trim().toLowerCase();

@@ -2,6 +2,7 @@
 #include "NoteValues.h"
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 namespace dsl
 {
@@ -631,6 +632,29 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
 
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
     {
+        if (doc.nodes[(size_t) i].type != "bus")
+            continue;
+        const auto bus = doc.nodes[(size_t) i].name;
+        if (bus.isEmpty())
+            continue;
+        int dest = -1;
+        for (int j = 0; j < (int) doc.nodes.size(); ++j)
+        {
+            if (railOf (doc.nodes[(size_t) j]) != bus)
+                continue;
+            dest = j;
+            if (doc.nodes[(size_t) j].type == "send")
+                break;
+        }
+        if (dest < 0)
+            continue;
+        stripSerial (-1, dest);
+        edges.push_back ({ -1, i, "send", "out", "in" });
+        edges.push_back ({ i, dest, "audio", "out", "in" });
+    }
+
+    for (int i = 0; i < (int) doc.nodes.size(); ++i)
+    {
         const auto t = doc.nodes[(size_t) i].type.toLowerCase();
         if (! t.startsWith ("xover") && ! t.startsWith ("crossover"))
             continue;
@@ -654,6 +678,374 @@ void setPosition (GraphDocument& doc, int nodeIndex, float x, float y)
         return;
     doc.nodes[(size_t) nodeIndex].x = x;
     doc.nodes[(size_t) nodeIndex].y = y;
+}
+
+namespace
+{
+int tidySnap (int v) noexcept
+{
+    const int g = kTidyGrid;
+    if (v >= 0)
+        return ((v + g / 2) / g) * g;
+    return -(((-v) + g / 2) / g) * g;
+}
+}
+
+TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
+{
+    TidyHint hint;
+    const int n = (int) doc.nodes.size();
+    int colPitch = kTidyCardW + kTidyColGap;
+    int rowPitch = kTidyCardH + kTidyRowGap;
+    hint.inX = (float) tidySnap (kTidyMargin);
+    hint.inY = (float) tidySnap (kTidyMargin);
+    hint.outX = hint.inX + (float) colPitch;
+    hint.outY = hint.inY;
+    if (n <= 0)
+        return hint;
+
+    const auto edges = visualAudioEdges (doc);
+    std::vector<int> rank ((size_t) n, 0);
+    for (int pass = 0; pass < n + 2; ++pass)
+    {
+        bool changed = false;
+        for (const auto& e : edges)
+        {
+            if (e.toIndex < 0 || e.toIndex >= n)
+                continue;
+            int want = 1;
+            if (e.fromIndex == -1)
+                want = 1;
+            else if (e.fromIndex >= 0 && e.fromIndex < n)
+                want = rank[(size_t) e.fromIndex] + 1;
+            else
+                continue;
+            if (rank[(size_t) e.toIndex] < want)
+            {
+                rank[(size_t) e.toIndex] = want;
+                changed = true;
+            }
+        }
+        if (! changed)
+            break;
+    }
+
+    int isolated = 1;
+    for (int i = 0; i < n; ++i)
+    {
+        if (doc.nodes[(size_t) i].type == "out")
+            continue;
+        if (rank[(size_t) i] > 0)
+            continue;
+        rank[(size_t) i] = isolated++;
+    }
+
+    juce::StringArray rails;
+    rails.add ("mod");
+    rails.add ("main");
+    const char* pref[] = { "mid", "side", "left", "right", "low", "high", nullptr };
+    auto ensureRail = [&] (const juce::String& r)
+    {
+        if (r.isEmpty() || rails.contains (r))
+            return;
+        rails.add (r);
+    };
+    for (int p = 0; pref[p] != nullptr; ++p)
+        for (int i = 0; i < n; ++i)
+            if (visualRail (doc.nodes[(size_t) i]) == pref[p])
+                ensureRail (pref[p]);
+    for (int i = 0; i < n; ++i)
+        ensureRail (visualRail (doc.nodes[(size_t) i]));
+
+    auto rowOf = [&] (int idx) -> int
+    {
+        const int r = rails.indexOf (visualRail (doc.nodes[(size_t) idx]));
+        return r >= 0 ? r : 1;
+    };
+
+    int maxRank = 1;
+    for (int i = 0; i < n; ++i)
+        maxRank = juce::jmax (maxRank, rank[(size_t) i]);
+
+    std::vector<std::vector<int>> cols ((size_t) maxRank + 1);
+    for (int i = 0; i < n; ++i)
+        if (doc.nodes[(size_t) i].type != "out")
+            cols[(size_t) juce::jlimit (1, maxRank, rank[(size_t) i])].push_back (i);
+
+    for (int c = 1; c <= maxRank; ++c)
+    {
+        auto& col = cols[(size_t) c];
+        std::sort (col.begin(), col.end(), [&] (int a, int b)
+        {
+            auto avg = [&] (int idx) -> float
+            {
+                float s = 0.f;
+                int k = 0;
+                for (const auto& e : edges)
+                {
+                    if (e.toIndex == idx && e.fromIndex >= 0 && e.fromIndex < n)
+                    {
+                        s += (float) rowOf (e.fromIndex);
+                        ++k;
+                    }
+                    if (e.fromIndex == idx && e.toIndex >= 0 && e.toIndex < n)
+                    {
+                        s += (float) rowOf (e.toIndex);
+                        ++k;
+                    }
+                }
+                return k > 0 ? s / (float) k : (float) rowOf (idx);
+            };
+            const float aa = avg (a), bb = avg (b);
+            if (aa != bb)
+                return aa < bb;
+            const int ra = rowOf (a), rb = rowOf (b);
+            if (ra != rb)
+                return ra < rb;
+            return a < b;
+        });
+    }
+
+    const int nRails = rails.size();
+    std::vector<int> maxStack ((size_t) juce::jmax (1, nRails), 1);
+    for (int c = 1; c <= maxRank; ++c)
+    {
+        std::map<int, int> count;
+        for (int idx : cols[(size_t) c])
+            count[rowOf (idx)]++;
+        for (const auto& kv : count)
+            if (juce::isPositiveAndBelow (kv.first, nRails))
+                maxStack[(size_t) kv.first] = juce::jmax (maxStack[(size_t) kv.first], kv.second);
+    }
+    int nRowSlots = 0;
+    for (int s : maxStack)
+        nRowSlots += juce::jmax (1, s);
+    nRowSlots = juce::jmax (1, nRowSlots);
+
+    const int minCol = kTidyCardW + kTidyMinGap;
+    const int minRow = kTidyCardH + kTidyMinGap;
+    const int nColSteps = maxRank + 1;
+    const int pad = kTidyMargin * 2;
+    auto spanW = [&] (int pitch) -> int
+    {
+        return pad + kTidyCardW + nColSteps * pitch;
+    };
+    auto spanH = [&] (int pitch) -> int
+    {
+        return pad + kTidyCardH + juce::jmax (0, nRowSlots - 1) * pitch;
+    };
+
+    const bool oneRowFits = viewW > 0 && viewH > 0
+                         && spanW (minCol) <= viewW && spanH (minRow) <= viewH;
+    if (oneRowFits)
+    {
+        const int fitCol = nColSteps > 0
+            ? (viewW - pad - kTidyCardW) / nColSteps : colPitch;
+        const int fitRow = nRowSlots > 1
+            ? (viewH - pad - kTidyCardH) / (nRowSlots - 1) : rowPitch;
+        colPitch = juce::jlimit (minCol, kTidyCardW + kTidyColGap, fitCol);
+        rowPitch = juce::jlimit (minRow, kTidyCardH + kTidyRowGap, fitRow);
+        hint.fitted = true;
+    }
+
+    std::vector<std::vector<int>> railSeq ((size_t) juce::jmax (1, nRails));
+    for (int c = 1; c <= maxRank; ++c)
+        for (int idx : cols[(size_t) c])
+        {
+            const int r = rowOf (idx);
+            if (juce::isPositiveAndBelow (r, nRails))
+                railSeq[(size_t) r].push_back (idx);
+        }
+
+    const int mainRailIdx = juce::jmax (0, rails.indexOf ("main"));
+    auto railCount = [&] (int r) -> int
+    {
+        if (! juce::isPositiveAndBelow (r, nRails))
+            return 0;
+        const int extra = (r == mainRailIdx) ? 2 : 0;
+        return (int) railSeq[(size_t) r].size() + extra;
+    };
+
+    int wrapSlots = 0;
+    const bool tryWrap = ! oneRowFits && viewW > 0 && viewH > 0;
+    auto wrapFits = [&] (int cPitch, int rPitch, int& slotsOut) -> bool
+    {
+        int slots = (viewW - pad - kTidyCardW) / cPitch + 1;
+        if (slots < 2)
+            return false;
+        int bands = 0;
+        for (int r = 0; r < nRails; ++r)
+        {
+            const int count = railCount (r);
+            if (count <= 0)
+                continue;
+            bands += (count + slots - 1) / slots;
+        }
+        if (bands <= 0)
+            return false;
+        const int h = pad + kTidyCardH + (bands - 1) * rPitch;
+        const int w = pad + kTidyCardW + (slots - 1) * cPitch;
+        if (w > viewW || h > viewH)
+            return false;
+        slotsOut = slots;
+        return true;
+    };
+    if (tryWrap)
+    {
+        int s = 0;
+        if (wrapFits (colPitch, rowPitch, s) || wrapFits (minCol, minRow, s))
+        {
+            if (! wrapFits (colPitch, rowPitch, s))
+            {
+                colPitch = minCol;
+                rowPitch = minRow;
+                wrapFits (colPitch, rowPitch, s);
+            }
+            wrapSlots = s;
+            hint.fitted = true;
+        }
+    }
+
+    std::vector<int> rowBase ((size_t) juce::jmax (1, nRails), 0);
+    {
+        int acc = 0;
+        for (int r = 0; r < nRails; ++r)
+        {
+            rowBase[(size_t) r] = acc;
+            acc += juce::jmax (1, maxStack[(size_t) r]);
+        }
+    }
+    const int mainRail = mainRailIdx;
+    const int originX = kTidyMargin;
+    const int originY = kTidyMargin;
+
+    if (wrapSlots >= 2)
+    {
+        int band = 0;
+        auto cell = [&] (int local, int band0, int& x, int& y)
+        {
+            const int row = local / wrapSlots;
+            const int col = local % wrapSlots;
+            x = originX + col * colPitch;
+            y = originY + (band0 + row) * rowPitch;
+        };
+        for (int r = 0; r < nRails; ++r)
+        {
+            const int count = railCount (r);
+            if (count <= 0)
+                continue;
+            const bool isMain = (r == mainRail);
+            const auto& seq = railSeq[(size_t) r];
+            int local = 0;
+            if (isMain)
+            {
+                int ix = 0, iy = 0;
+                cell (0, band, ix, iy);
+                hint.inX = (float) tidySnap (ix);
+                hint.inY = (float) tidySnap (iy);
+                local = 1;
+            }
+            for (int i = 0; i < (int) seq.size(); ++i)
+            {
+                int x = 0, y = 0;
+                cell (local++, band, x, y);
+                setPosition (doc, seq[(size_t) i], (float) tidySnap (x), (float) tidySnap (y));
+            }
+            if (isMain)
+            {
+                int ix = 0, iy = 0;
+                cell (local, band, ix, iy);
+                hint.outX = (float) tidySnap (ix);
+                hint.outY = (float) tidySnap (iy);
+            }
+            band += juce::jmax (1, (count + wrapSlots - 1) / wrapSlots);
+        }
+        for (int i = 0; i < n; ++i)
+            if (doc.nodes[(size_t) i].type == "out")
+                setPosition (doc, i, hint.outX, hint.outY);
+    }
+    else
+    {
+        for (int c = 1; c <= maxRank; ++c)
+        {
+            std::map<int, int> stackAtRow;
+            for (int idx : cols[(size_t) c])
+            {
+                const int row = rowOf (idx);
+                const int stack = stackAtRow[row]++;
+                const int slot = (juce::isPositiveAndBelow (row, nRails) ? rowBase[(size_t) row] : 0) + stack;
+                const int x = originX + c * colPitch;
+                const int y = originY + slot * rowPitch;
+                setPosition (doc, idx, (float) tidySnap (x), (float) tidySnap (y));
+            }
+        }
+
+        hint.inX = (float) tidySnap (originX);
+        hint.inY = (float) tidySnap (originY + rowBase[(size_t) juce::jlimit (0, nRails - 1, mainRail)] * rowPitch);
+        int lastMainX = originX + colPitch;
+        int lastMainY = (int) std::lround (hint.inY);
+        for (int i = 0; i < n; ++i)
+        {
+            const auto& nd = doc.nodes[(size_t) i];
+            if (nd.type == "out" || ! std::isfinite (nd.x))
+                continue;
+            if (visualRail (nd) != "main")
+                continue;
+            lastMainX = juce::jmax (lastMainX, (int) std::lround (nd.x) + colPitch);
+            lastMainY = (int) std::lround (nd.y);
+        }
+        hint.outX = (float) tidySnap (lastMainX);
+        hint.outY = (float) tidySnap (lastMainY);
+        for (int i = 0; i < n; ++i)
+            if (doc.nodes[(size_t) i].type == "out")
+                setPosition (doc, i, hint.outX, hint.outY);
+    }
+
+    auto overlaps = [&] (int a, int b) -> bool
+    {
+        const auto& na = doc.nodes[(size_t) a];
+        const auto& nb = doc.nodes[(size_t) b];
+        if (! std::isfinite (na.x) || ! std::isfinite (nb.x))
+            return false;
+        const float ax1 = na.x, ay1 = na.y;
+        const float bx1 = nb.x, by1 = nb.y;
+        return std::abs (ax1 - bx1) < (float) kTidyCardW
+            && std::abs (ay1 - by1) < (float) kTidyCardH;
+    };
+    for (int guard = 0; guard < n * 4; ++guard)
+    {
+        bool moved = false;
+        for (int i = 0; i < n; ++i)
+            for (int j = i + 1; j < n; ++j)
+            {
+                if (! overlaps (i, j))
+                    continue;
+                auto& nb = doc.nodes[(size_t) j];
+                nb.y = (float) tidySnap ((int) std::lround (nb.y) + rowPitch);
+                moved = true;
+            }
+        if (! moved)
+            break;
+    }
+
+    float maxX = hint.outX + (float) kTidyCardW;
+    float maxY = hint.outY + (float) kTidyCardH;
+    maxX = juce::jmax (maxX, hint.inX + (float) kTidyCardW);
+    maxY = juce::jmax (maxY, hint.inY + (float) kTidyCardH);
+    for (const auto& nd : doc.nodes)
+    {
+        if (! std::isfinite (nd.x) || ! std::isfinite (nd.y))
+            continue;
+        maxX = juce::jmax (maxX, nd.x + (float) kTidyCardW);
+        maxY = juce::jmax (maxY, nd.y + (float) kTidyCardH);
+    }
+    hint.boardW = maxX + (float) kTidyMargin;
+    hint.boardH = maxY + (float) kTidyMargin;
+    if (viewW > 0 && viewH > 0)
+        hint.fitted = hint.fitted
+                   && hint.boardW <= (float) viewW + 0.5f
+                   && hint.boardH <= (float) viewH + 0.5f;
+    return hint;
 }
 
 bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJack,
@@ -894,13 +1286,14 @@ bool setNodeArg (GraphDocument& doc, int nodeIndex,
     return true;
 }
 
-juce::StringArray editableArgKeys (const GraphNode& node)
+juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* doc)
 {
     static const char* kStage[] = { "y", "channel", nullptr };
     static const char* kFilter[] = { "type", "cutoff", "resonance", nullptr };
     static const char* kEq[] = { "type", "freq", "q", "gain", nullptr };
     static const char* kComp[] = { "threshold", "ratio", "attack", "release", "makeup", nullptr };
     static const char* kGate[] = { "threshold", "hyst", "hold", "range", nullptr };
+    static const char* kNoiseGate[] = { "threshold", "attack", "release", nullptr };
     static const char* kLimit[] = { "ceiling", "release", nullptr };
     static const char* kDelay[] = { "time", "feedback", "mix", nullptr };
     static const char* kReverb[] = { "size", "decay", "damp", "mix", "width", nullptr };
@@ -912,6 +1305,8 @@ juce::StringArray editableArgKeys (const GraphNode& node)
     static const char* kSend[] = { "in", "main", nullptr };
     static const char* kOut[] = { "main", nullptr };
     static const char* kMs[] = { "mode", nullptr };
+    static const char* kOctaver[] = { "sub", "up", "mix", "tone", "thresh", nullptr };
+    static const char* kVocoder[] = { "bands", "mix", "q", "formant", "dry", nullptr };
 
     const char** keys = nullptr;
     const auto t = node.type.toLowerCase();
@@ -919,6 +1314,8 @@ juce::StringArray editableArgKeys (const GraphNode& node)
     else if (t.startsWith ("filter")) keys = kFilter;
     else if (t == "eq") keys = kEq;
     else if (t.startsWith ("comp")) keys = kComp;
+    else if (t.startsWith ("ngate") || t.startsWith ("noisegate") || t == "noise_gate")
+        keys = kNoiseGate;
     else if (t.startsWith ("gate")) keys = kGate;
     else if (t.startsWith ("limit")) keys = kLimit;
     else if (t.startsWith ("delay")) keys = kDelay;
@@ -931,6 +1328,18 @@ juce::StringArray editableArgKeys (const GraphNode& node)
     else if (t == "send") keys = kSend;
     else if (t == "out") keys = kOut;
     else if (t == "ms") keys = kMs;
+    else if (t.startsWith ("octav")) keys = kOctaver;
+    else if (t.startsWith ("vocod")) keys = kVocoder;
+    else if (t.startsWith ("meter") || t == "probe")
+    {
+        static const char* kMeter[] = { "mode", nullptr };
+        keys = kMeter;
+    }
+    else if (t.startsWith ("sidechain") || t == "sc" || t == "scin")
+    {
+        static const char* kSc[] = { "mix", nullptr };
+        keys = kSc;
+    }
 
     juce::StringArray out;
     if (keys != nullptr)
@@ -939,6 +1348,18 @@ juce::StringArray editableArgKeys (const GraphNode& node)
     for (const auto& kv : node.args)
         if (! out.contains (kv.first))
             out.add (kv.first);
+    if (doc != nullptr)
+    {
+        for (const auto& j : jacksFor (node, doc))
+        {
+            if (j.id.isEmpty())
+                continue;
+            if (j.kind == "audio" || j.kind == "knob" || j.kind == "mod" || j.kind == "sc")
+                continue;
+            if (! out.contains (j.id))
+                out.add (j.id);
+        }
+    }
     return out;
 }
 
@@ -1018,7 +1439,8 @@ juce::String shortJackLabel (const juce::String& id)
 bool wantsSidechainJack (const GraphNode& n)
 {
     const auto t = n.type.toLowerCase();
-    if (t.startsWith ("comp") || t.startsWith ("gate")
+    if (t.startsWith ("comp") || t.startsWith ("gate") || t.startsWith ("ngate")
+        || t.startsWith ("noisegate")
         || t.startsWith ("vocod") || t.startsWith ("env"))
         return true;
     const auto it = n.args.find ("source");
@@ -1072,6 +1494,15 @@ std::vector<GraphJack> mixJacksForOut (const GraphNode* outNode, const GraphDocu
         for (const auto& n : doc->nodes)
             if (n.type == "bus" && n.name.isNotEmpty())
                 addJack (jacks, n.name, false, "mix");
+        for (const auto& n : doc->nodes)
+        {
+            const auto t = n.type.toLowerCase();
+            if (! t.startsWith ("xover") && ! t.startsWith ("crossover"))
+                continue;
+            addJack (jacks, "low", false, "mix");
+            addJack (jacks, "mid", false, "mix");
+            addJack (jacks, "high", false, "mix");
+        }
     }
     if (outNode != nullptr)
     {
@@ -1257,6 +1688,26 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     {
         const auto letter = juce::String::charToString ((juce::juce_wchar) ('a' + b.knobIndex));
         addJack (jacks, "knob:" + letter, false, "knob");
+    }
+
+    const bool extraParams = t.startsWith ("octav") || t.startsWith ("vocod")
+                          || t.startsWith ("noisegate") || t == "noise_gate"
+                          || t.startsWith ("ott") || t.startsWith ("widen");
+    if (extraParams)
+    {
+        for (const auto& key : editableArgKeys (node))
+        {
+            const auto k = key.toLowerCase();
+            if (k == "y" || k == "type" || k == "channel" || k == "mode" || k == "shape")
+                continue;
+            bool bound = false;
+            for (const auto& b : knobBindings (node))
+                if (b.key == key)
+                    bound = true;
+            if (bound)
+                continue;
+            addJack (jacks, key, false, "param");
+        }
     }
 
     if (doc != nullptr)

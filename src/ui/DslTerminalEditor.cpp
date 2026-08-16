@@ -360,6 +360,14 @@ void DslTerminalEditor::paint (juce::Graphics& g)
 
 void DslTerminalEditor::paintOverChildren (juce::Graphics& g)
 {
+    if (motion != CyberMotion::Off)
+    {
+        const float a = motion == CyberMotion::Full ? 0.08f : 0.04f;
+        const int step = motion == CyberMotion::Full ? 3 : 5;
+        g.setColour (juce::Colours::black.withAlpha (a));
+        for (int y = 0; y < getHeight(); y += step)
+            g.drawHorizontalLine (y, 0.f, (float) getWidth());
+    }
     if (errorLine <= 0 || editor == nullptr || document == nullptr)
         return;
     juce::CodeDocument::Position pos (*document, errorLine - 1, 0);
@@ -418,13 +426,12 @@ void DslTerminalEditor::syncIrButtons()
         };
         juce::CodeDocument::Position pos (*document, lines[i], 0);
         const auto r = editor->getCharacterBounds (pos);
-        const int x = juce::jmax (0, r.getX());
-        const int h = juce::jmax (20, r.getHeight());
+        const int h = juce::jmax (16, r.getHeight());
         const int y = r.getY();
-        const int w = juce::jmax (80, getWidth() - x - 8);
+        const int btnW = juce::jmin (110, juce::jmax (56, getWidth() / 6));
         const bool onScreen = (y + h) > 0 && y < getHeight();
         btn.setVisible (onScreen);
-        btn.setBounds (x, y, w, h);
+        btn.setBounds (getWidth() - btnW - 6, y, btnW, h);
         btn.toFront (false);
     }
 }

@@ -64,31 +64,33 @@ Regler
 - Rechtsklick: MIDI Learn.
 
 Formelbereich
-- L / Both / R: gleiche Breite wie die Knöpfe, gleiche Zeile wie Graph / Script.
-- Graph / Script: zwei Sichten desselben Konstrukts.
+- L / Both / R: gleiche Breite wie die Knöpfe, gleiche Zeile wie Circuit / Terminal.
+- Circuit / Terminal: zwei Sichten desselben Konstrukts.
 
-Graph = zusammenbauen
+Circuit = zusammenbauen
 - Die Fläche ist eine Platine: dezente rose Kreuze zur Orientierung.
 - Blöcke rasten auf 16 px ein und sehen aus wie Chips (Fase, Kerbe, Pin-1, DIP-Pads).
-- Rechtsklick: Modul hinzufügen (Bus, Mid-Side Split, Left/Right Split, Crossover, Stereo Width).
+- Ziehen ändert nur X/Y, nicht die Signalreihenfolge. Reihenfolge im Overlay oder per Kabel.
+- Rechtsklick: Auto-arrange, oder Modul hinzufügen (Kategorien). Factory-Presets kommen schon angeordnet zur aktuellen Zoom-Stufe.
 - Mid-Side Encode teilt MID- und SIDE-Schienen wie ein Bus. Decode führt sie zusammen. Widen ist Breite, nicht MS.
-- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst.
-- Chip auf eine andere Schiene ziehen, um umzuleiten.
-- Doppelklick: Block editieren.
+- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst. Leitungen weiss/grau; Punkte nur bei Signal.
+- Ctrl+Mausrad zoomt.
+- Doppelklick: Overlay für alle Parameter. Gebundene Knobs stehen rot auf dem Chip.
 
-Script = hacken
+Terminal = hacken
 - Dieselbe Kette als Text.
 - Live-Ansicht: farbige Regler und aktuelle Werte in Klammern (`a[3.20]`).
 - Edit öffnet den Editor, Save wendet an.
+- IR-Button sitzt in der Zeile, nicht darunter.
 - Positionen stehen als Kommentar `# @x,y` und ändern den Klang nicht.
 
 IR
-- Jede `ir1` / `ir2`-Zeile hat einen breiten Button. Drop, Load, Clear.
+- Jede `ir1` / `ir2`-Zeile hat einen Button in Zeilenhöhe. Drop, Load, Clear.
 - Amp-Factory-Presets kommen mit Cabinet. Slot leer = trocken.
 
 Unten
-- Mix: Dry / Wet. Gesperrt bei Bypass.
-- Status: LIVE / STUDIO / BYPASS / SAFE, CPU, Latenz, Oversampling.
+- Tools-Zeile (zwischen Editor und Scopes): Oversampling, Polisher, Mix. Mix-Glitch nur im Slider.
+- Fußzeile: NKOS LIVE / STUDIO / BYPASS / SAFE, CPU, Latenz, SR, 32f, BUF, BPM HOST oder USER, OS.
 - IN / OUT: Welle, Stereofeld, Loudness.
 
 ---
@@ -106,7 +108,10 @@ delay1: time = c
 
 - Der Host sieht jeden Regler als 0–1.
 - `param a = Name [min, max]` mappt auf den geschriebenen Bereich.
-- `param c = Time [1/1, 1/16]` rastet auf Notenwerte. In der Formel ist c Millisekunden beim Host-Tempo.
+- `param c = Time [1/1, 1/16]` rastet auf Notenwerte. In der Formel ist c Millisekunden beim gewählten Tempo (Settings: Host oder User).
+- Settings → Tempo: Host folgt der DAW. User = eigene BPM. Die Fußzeile zeigt HOST oder USER.
+- Circuit: Ctrl+Mausrad zoomt. Leitungen weiss/grau, Punkte folgen dem Input. Gebundene Knobs stehen rot auf dem Chip.
+- `ngate1: threshold = -48` ist ein Noise Gate. attack und release sind optional.
 - Ein alleinstehendes `e` ist Regler e, nicht 2.718. Dafür `exp(1)`.
 
 ---
@@ -120,7 +125,7 @@ delay1: time = c
 | `filterN: type = lowpass; cutoff = …` | SVF low / high / band |
 | `delayN: time = …; feedback = …; mix = …` | Delay, samplegenau, auch bei 8× ohne periodische Ticks |
 | `reverbN: size = …; decay = …; mix = …` | Hall |
-| `compN` / `gateN` / `limitN` | Dynamik |
+| `compN` / `gateN` / `ngateN` / `limitN` | Dynamik |
 | `msN: mode = encode` / `decode` | Mid/Side aufteilen / zusammenführen |
 | `widenN: width = …` | Stereobreite (kein MS) |
 | `xoverN: f1 = …; f2 = …` | Bänder |

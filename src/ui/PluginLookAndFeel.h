@@ -225,8 +225,8 @@ public:
       }
       // Do not call getPopupMenuFont() here — LookAndFeel construction can
       // query item size, and Font setup would recurse into this LAF.
-      idealHeight = 30;
-      idealWidth  = juce::jmax (280, text.length() * 11 + 40);
+      idealHeight = 32;
+      idealWidth  = juce::jmax (300, text.length() * 12 + 48);
   }
 
   /** Selected list row: ink on surface, accent tick — never red-on-red. */

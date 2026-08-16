@@ -817,5 +817,285 @@ public:
                     + " interior=" + juce::String (maxInterior, 4));
             proc.releaseResources();
         }
+
+        beginTest ("heavy tape/delay factory presets stay finite at 8x");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+
+            const juce::String names[] = {
+                "Space Echo RE-201",
+                "Memory Man BBD",
+                "Echoplex EP-3",
+                "Tape Echo Dirt",
+                "TC 2290 Grid",
+                "Glitch Laboratory",
+                "Phaser Lab",
+                "Phaser Sweep",
+                "Rhythmic Gate Delay",
+                "Cinematic Space",
+                "Kick Rumble",
+                "Warehouse Rumble",
+                "Hardcore Clip",
+                "Gabber Drive",
+            };
+
+            for (const auto& name : names)
+            {
+                int idx = -1;
+                for (int i = 0; i < (int) lib.getEntries().size(); ++i)
+                    if (lib.getEntries()[(size_t) i].name == name)
+                        idx = i;
+                expect (idx >= 0, "missing factory " + name);
+                if (idx < 0)
+                    continue;
+
+                NeuroKoreAudioProcessor proc;
+                proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+                auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                    proc.apvts.getParameter (EffectParameters::oversampling));
+                expect (choice != nullptr);
+                choice->setValueNotifyingHost (choice->convertTo0to1 (3.f));
+                proc.prepareToPlay (48000.0, 64);
+                juce::String err;
+                expect (lib.applyPreset (proc, idx, err), name + " " + err);
+
+                juce::AudioBuffer<float> buf (2, 64);
+                juce::MidiBuffer midi;
+                float prev = 0.f;
+                bool have = false;
+                float maxBoundary = 0.f, maxInterior = 0.f;
+                int bad = 0;
+                for (int b = 0; b < 90; ++b)
+                {
+                    for (int i = 0; i < 64; ++i)
+                    {
+                        const float t = (float) (b * 64 + i) / 48000.f;
+                        const float s = 0.32f * std::sin (2.f * juce::MathConstants<float>::pi * 220.f * t);
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    proc.processBlock (buf, midi);
+                    bad += TestHelpers::countNonFinite (buf);
+                    if (b < 20)
+                    {
+                        prev = buf.getSample (0, 63);
+                        have = true;
+                        continue;
+                    }
+                    for (int i = 0; i < 64; ++i)
+                    {
+                        const float y = buf.getSample (0, i);
+                        if (have)
+                        {
+                            const float jump = std::abs (y - prev);
+                            if (i == 0)
+                                maxBoundary = juce::jmax (maxBoundary, jump);
+                            else
+                                maxInterior = juce::jmax (maxInterior, jump);
+                        }
+                        prev = y;
+                        have = true;
+                    }
+                }
+                expectEquals (bad, 0, name + " produced NaN/Inf");
+                expect (maxBoundary < maxInterior * 2.8f + 0.025f,
+                        name + " 8x block click: boundary=" + juce::String (maxBoundary, 4)
+                        + " interior=" + juce::String (maxInterior, 4));
+                expect (! proc.isCpuProtectActive(), name + " tripped CPU protect");
+                proc.releaseResources();
+            }
+        }
+
+        beginTest ("env peak of a hot signal stays in 0..1 (no gain invert)");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "env1: type = peak; attack = 0.001; release = 0.05\n"
+                "stage1: y = x * (1.0 - env1 * 0.85)", err), err);
+
+            juce::AudioBuffer<float> buf (2, 256);
+            float minY = 1.0e9f, maxY = -1.0e9f, maxJump = 0.f, prev = 0.f;
+            bool have = false;
+            for (int b = 0; b < 12; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float t = (float) (b * 256 + i) / 48000.f;
+                    const float s = 1.8f * std::sin (2.f * juce::MathConstants<float>::pi * 120.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    expect (std::isfinite (y));
+                    minY = juce::jmin (minY, y);
+                    maxY = juce::jmax (maxY, y);
+                    if (have)
+                        maxJump = juce::jmax (maxJump, std::abs (y - prev));
+                    prev = y;
+                    have = true;
+                }
+            }
+            expect (maxJump < 0.35f, "env duck jump " + juce::String (maxJump, 4));
+            expect (minY > -2.2f && maxY < 2.2f);
+        }
+
+        beginTest ("phaser sweep does not slam stereo width each LFO cycle");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "param a = Rate [0.08, 3.0]\n"
+                "param b = Center [300, 1600]\n"
+                "param c = Depth [200, 2200]\n"
+                "param d = Mix [0.25, 0.9]\n"
+                "osc1: shape = sine; freq = 2.2; depth = 1.0\n"
+                "bus wet:\n"
+                "  send: in = 1\n"
+                "  filter1: type = highpass; cutoff = b + (0.5 + 0.5 * osc1) * (c * 0.22); resonance = 0.55\n"
+                "  filter2: type = lowpass; cutoff = b + c * 0.7 + (0.5 + 0.5 * osc1) * (c * 0.28); resonance = 0.45\n"
+                "out: main = 1-d; wet = d\n", err), err);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            float maxJump = 0.f, prev = 0.f;
+            bool have = false;
+            int bad = 0;
+            for (int b = 0; b < 40; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float t = (float) (b * 128 + i) / 48000.f;
+                    const float s = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 440.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s * 0.7f);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                bad += TestHelpers::countNonFinite (buf);
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    if (have)
+                        maxJump = juce::jmax (maxJump, std::abs (y - prev));
+                    prev = y;
+                    have = true;
+                }
+            }
+            expectEquals (bad, 0);
+            expect (maxJump < 0.28f, "phaser stereo slam jump=" + juce::String (maxJump, 4));
+        }
+
+        beginTest ("octaver on a kick impulse does not click each period");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "octaver1: sub = 1.0; up = 0; mix = 0.7; tone = 120; thresh = 0.03",
+                err), err);
+
+            juce::AudioBuffer<float> buf (2, 256);
+            float maxJump = 0.f, prev = 0.f;
+            bool have = false;
+            int bad = 0;
+            for (int b = 0; b < 24; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float t = (float) (b * 256 + i) / 48000.f;
+                    const float body = std::exp (-t / 0.08f)
+                        * std::sin (2.f * juce::MathConstants<float>::pi * (55.f - 16.f * t) * t);
+                    const float click = (t < 0.004f)
+                        ? std::exp (-t / 0.0012f)
+                            * std::sin (2.f * juce::MathConstants<float>::pi * 2200.f * t)
+                        : 0.f;
+                    const float s = 0.85f * body + 0.35f * click;
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                bad += TestHelpers::countNonFinite (buf);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const int absI = b * 256 + i;
+                    const float y = buf.getSample (0, i);
+                    // Skip the dry kick attack; we care about octaver period flips.
+                    if (have && absI > 480)
+                        maxJump = juce::jmax (maxJump, std::abs (y - prev));
+                    prev = y;
+                    have = true;
+                }
+            }
+            expectEquals (bad, 0);
+            expect (maxJump < 0.22f, "octaver kick jump=" + juce::String (maxJump, 4));
+        }
+
+        beginTest ("Kick Rumble kick impulse has no delayed click");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            int idx = -1;
+            for (int i = 0; i < (int) lib.getEntries().size(); ++i)
+                if (lib.getEntries()[(size_t) i].name == "Kick Rumble")
+                    idx = i;
+            expect (idx >= 0, "missing factory Kick Rumble");
+            if (idx < 0)
+                return;
+
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (lib.applyPreset (proc, idx, err), err);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            juce::MidiBuffer midi;
+            float maxLate = 0.f, prev = 0.f;
+            bool have = false;
+            int bad = 0;
+            float peakTail = 0.f;
+            for (int b = 0; b < 80; ++b)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float t = (float) (b * 64 + i) / 48000.f;
+                    const float body = std::exp (-t / 0.075f)
+                        * std::sin (2.f * juce::MathConstants<float>::pi * (50.f - 14.f * t) * t);
+                    const float click = (t < 0.004f)
+                        ? std::exp (-t / 0.0011f)
+                            * std::sin (2.f * juce::MathConstants<float>::pi * 2400.f * t)
+                        : 0.f;
+                    const float s = 0.82f * body + 0.4f * click;
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                bad += TestHelpers::countNonFinite (buf);
+                for (int i = 0; i < 64; ++i)
+                {
+                    const int absI = b * 64 + i;
+                    const float y = buf.getSample (0, i);
+                    if (absI > 480)
+                        peakTail = juce::jmax (peakTail, std::abs (y));
+                    // After the dry attack, no second click at the 15.5 ms tap.
+                    if (have && absI > 480)
+                        maxLate = juce::jmax (maxLate, std::abs (y - prev));
+                    prev = y;
+                    have = true;
+                }
+            }
+            expectEquals (bad, 0, "Kick Rumble produced NaN/Inf");
+            expect (peakTail > 0.02f, "Kick Rumble went silent");
+            expect (maxLate < 0.28f, "Kick Rumble late jump=" + juce::String (maxLate, 4));
+            expect (! proc.isCpuProtectActive(), "Kick Rumble tripped CPU protect");
+            proc.releaseResources();
+        }
     }
 };

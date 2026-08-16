@@ -50,6 +50,53 @@ public:
             expect (dsl::semanticallyEqual (doc, again));
         }
 
+        beginTest ("octaver exposes sub up mix tone thresh and knob jacks");
+        {
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse (
+                "octaver1: sub = a; up = 0.1; mix = 0.5; tone = c; thresh = 0.05",
+                doc, error), error);
+            expectEquals ((int) doc.nodes.size(), 1);
+            const auto keys = dsl::editableArgKeys (doc.nodes[0]);
+            expect (keys.contains ("sub"));
+            expect (keys.contains ("up"));
+            expect (keys.contains ("mix"));
+            expect (keys.contains ("tone"));
+            expect (keys.contains ("thresh"));
+            const auto jacks = dsl::jacksFor (doc.nodes[0], &doc);
+            bool sawIn = false, sawOut = false, sawA = false, sawC = false;
+            for (const auto& j : jacks)
+            {
+                if (j.id == "in" && ! j.output) sawIn = true;
+                if (j.id == "out" && j.output) sawOut = true;
+                if (j.id == "knob:a" && ! j.output) sawA = true;
+                if (j.id == "knob:c" && ! j.output) sawC = true;
+            }
+            expect (sawIn && sawOut && sawA && sawC);
+        }
+
+        beginTest ("noisegate parses as ngate with threshold attack release");
+        {
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse ("ngate1: threshold = -48; attack = 0.002; release = 0.05",
+                                doc, error), error);
+            expectEquals ((int) doc.nodes.size(), 1);
+            expectEquals (doc.nodes[0].type, juce::String ("noisegate"));
+            expectEquals (doc.nodes[0].name, juce::String ("ngate1"));
+            const auto keys = dsl::editableArgKeys (doc.nodes[0]);
+            expect (keys.contains ("threshold"));
+            expect (keys.contains ("attack"));
+            expect (keys.contains ("release"));
+            const juce::String emitted = dsl::emit (doc);
+            expect (emitted.contains ("ngate1:"));
+            expect (emitted.contains ("threshold = -48"));
+            dsl::GraphDocument again;
+            expect (dsl::parse (emitted, again, error), error);
+            expect (dsl::semanticallyEqual (doc, again));
+        }
+
         beginTest ("bus script: bus dirt send out");
         {
             const juce::String script =
@@ -88,6 +135,18 @@ public:
             dsl::GraphDocument again;
             expect (dsl::parse (emitted, again, error), error);
             expect (dsl::semanticallyEqual (doc, again));
+
+            const auto vis = dsl::visualAudioEdges (doc);
+            bool busIn = false, busOut = false;
+            for (const auto& e : vis)
+            {
+                if (e.toIndex == 1 && e.fromIndex == -1)
+                    busIn = true;
+                if (e.fromIndex == 1 && e.toIndex == 2)
+                    busOut = true;
+            }
+            expect (busIn, "bus header must take a send from IN");
+            expect (busOut, "bus header must feed its send block");
         }
 
         beginTest ("moveNode reorders two filters");
@@ -267,6 +326,22 @@ public:
             const auto before = dsl::emit (doc);
             dsl::assignNodeToBus (doc, sendIdx, "main");
             expectEquals (dsl::emit (doc), before);
+        }
+
+        beginTest ("factory library has 500+ unique named jobs");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)),
+                        "factory_presets.json missing");
+            expect (lib.getEntries().size() >= 500);
+            juce::StringArray seen;
+            for (const auto& e : lib.getEntries())
+            {
+                expect (e.name.isNotEmpty());
+                expect (! seen.contains (e.name), e.name + " duplicated");
+                seen.add (e.name);
+            }
         }
 
         beginTest ("factory presets parse/emit/parse semanticallyEqual");
@@ -460,6 +535,203 @@ public:
             const auto added = dsl::rewriteParamDisplayName ("stage1: y = x\n", 1, "Tone");
             expect (added.contains ("param b = Tone"));
             expect (added.contains ("stage1: y = x"));
+        }
+
+        beginTest ("tidyLayout places a chain left to right without reordering");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "filter1: type = lowpass; cutoff = 800\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            juce::StringArray names;
+            for (const auto& n : doc.nodes)
+                names.add (n.name);
+            dsl::GraphDocument before = doc;
+            dsl::tidyLayout (doc);
+            expect (dsl::semanticallyEqual (before, doc));
+            expect (dsl::hasAllPositions (doc));
+            expectEquals (doc.nodes[0].name, names[0]);
+            expectEquals (doc.nodes[1].name, names[1]);
+            expect (doc.nodes[0].x < doc.nodes[1].x);
+            const int g = dsl::kTidyGrid;
+            expectEquals ((int) doc.nodes[0].x % g, 0);
+            expectEquals ((int) doc.nodes[0].y % g, 0);
+            expectEquals ((int) doc.nodes[1].x % g, 0);
+            const float dx = std::abs (doc.nodes[0].x - doc.nodes[1].x);
+            const float dy = std::abs (doc.nodes[0].y - doc.nodes[1].y);
+            expect (dx >= (float) dsl::kTidyCardW || dy >= (float) dsl::kTidyCardH);
+        }
+
+        beginTest ("tidyLayout fits a short chain into the view when it can");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "filter1: type = lowpass; cutoff = 800\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            const auto hint = dsl::tidyLayout (doc, 1200, 420);
+            expect (hint.fitted);
+            expect (hint.boardW <= 1200.f);
+            expect (hint.boardH <= 420.f);
+            expect (hint.boardW > 0.f && hint.boardH > 0.f);
+        }
+
+        beginTest ("tidyLayout does not crush a graph that cannot fit");
+        {
+            juce::String script;
+            for (int i = 0; i < 12; ++i)
+                script << "stage" << (i + 1) << ": y = x\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            const auto hint = dsl::tidyLayout (doc, 200, 160);
+            expect (! hint.fitted);
+            expect (dsl::hasAllPositions (doc));
+            expect (doc.nodes[0].x < doc.nodes[11].x);
+            const float dx = std::abs (doc.nodes[0].x - doc.nodes[1].x);
+            expect (dx >= (float) dsl::kTidyCardW);
+        }
+
+        beginTest ("tidyLayout wraps a single chain into rows when one line is too wide");
+        {
+            juce::String script;
+            for (int i = 0; i < 8; ++i)
+                script << "stage" << (i + 1) << ": y = x\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            const auto names = [&]
+            {
+                juce::StringArray a;
+                for (const auto& n : doc.nodes)
+                    a.add (n.name);
+                return a;
+            }();
+            const auto hint = dsl::tidyLayout (doc, 800, 620);
+            expect (hint.fitted, "wrap should fit 8-stage chain in 800x620");
+            expect (hint.boardW <= 800.f);
+            expect (hint.boardH <= 620.f);
+            for (int i = 0; i < (int) names.size(); ++i)
+                expectEquals (doc.nodes[(size_t) i].name, names[(size_t) i]);
+            float minY = 1.0e9f, maxY = -1.0e9f;
+            for (const auto& n : doc.nodes)
+            {
+                minY = juce::jmin (minY, n.y);
+                maxY = juce::jmax (maxY, n.y);
+            }
+            expect (maxY - minY >= (float) dsl::kTidyCardH,
+                    "wrapped chain must use more than one row");
+        }
+
+        beginTest ("tidyLayout wraps each rail so a bus smash fits the view");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "bus smash:\n"
+                "  send: in = 1\n"
+                "  stage2: y = tube(x, a)\n"
+                "  delay1: time = 22; mix = 1\n"
+                "  reverb1: size = 0.3; mix = 1\n"
+                "  filter1: type = lowpass; cutoff = 4800\n"
+                "  stage3: y = softclip(y, 1.08)\n"
+                "out: main = 1-d; smash = d\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            juce::StringArray names;
+            for (const auto& n : doc.nodes)
+                names.add (n.name);
+            const auto hint = dsl::tidyLayout (doc, 800, 620);
+            expect (hint.fitted, "Trailer-style smash must wrap into 800x620");
+            expect (hint.boardW <= 800.f);
+            expect (hint.boardH <= 620.f);
+            for (int i = 0; i < (int) names.size(); ++i)
+                expectEquals (doc.nodes[(size_t) i].name, names[(size_t) i]);
+            expect (dsl::semanticallyEqual ([&]
+            {
+                dsl::GraphDocument raw;
+                juce::String e;
+                dsl::parse (script, raw, e);
+                return raw;
+            }(), doc));
+            float smashMinY = 1.0e9f, smashMaxY = -1.0e9f;
+            float smashMaxX = -1.0e9f;
+            int smashN = 0;
+            for (const auto& n : doc.nodes)
+            {
+                if (n.type == "out" || dsl::visualRail (n) != "smash")
+                    continue;
+                ++smashN;
+                smashMinY = juce::jmin (smashMinY, n.y);
+                smashMaxY = juce::jmax (smashMaxY, n.y);
+                smashMaxX = juce::jmax (smashMaxX, n.x);
+            }
+            expect (smashN >= 5);
+            expect (smashMaxY - smashMinY >= (float) dsl::kTidyCardH,
+                    "smash rail must wrap to more than one row");
+            expect (smashMaxX + (float) dsl::kTidyCardW <= 800.f);
+        }
+
+        beginTest ("tidyLayout puts mid/side off the main rail");
+        {
+            const juce::String script =
+                "ms1: mode = encode\n"
+                "stage1: channel = mid; y = x\n"
+                "stage2: channel = side; y = x * 0.8\n"
+                "ms2: mode = decode\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            juce::StringArray names;
+            for (const auto& n : doc.nodes)
+                names.add (n.name);
+            dsl::tidyLayout (doc);
+            for (int i = 0; i < (int) names.size(); ++i)
+                expectEquals (doc.nodes[(size_t) i].name, names[(size_t) i]);
+            int mid = -1, side = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+            {
+                if (doc.nodes[(size_t) i].name == "stage1") mid = i;
+                if (doc.nodes[(size_t) i].name == "stage2") side = i;
+            }
+            expect (mid >= 0 && side >= 0);
+            expect (std::abs (doc.nodes[(size_t) mid].y - doc.nodes[(size_t) side].y)
+                    >= (float) dsl::kTidyCardH * 0.5f);
+        }
+
+        beginTest ("OUT edit keys include every mix jack including xover bands");
+        {
+            const juce::String script =
+                "xover1: f1 = 200; f2 = 2500\n"
+                "out: main = 1-c; mid = c\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            int out = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                if (doc.nodes[(size_t) i].type == "out")
+                    out = i;
+            expect (out >= 0);
+            const auto jacks = dsl::jacksFor (doc.nodes[(size_t) out], &doc);
+            auto hasJack = [&] (const juce::String& id)
+            {
+                for (const auto& j : jacks)
+                    if (j.id == id && ! j.output)
+                        return true;
+                return false;
+            };
+            expect (hasJack ("main"));
+            expect (hasJack ("mid"));
+            expect (hasJack ("low"));
+            expect (hasJack ("high"));
+            const auto keys = dsl::editableArgKeys (doc.nodes[(size_t) out], &doc);
+            expect (keys.contains ("main"));
+            expect (keys.contains ("mid"));
+            expect (keys.contains ("low"));
+            expect (keys.contains ("high"));
         }
     }
 };

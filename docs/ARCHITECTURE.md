@@ -104,17 +104,20 @@ Parameter-IDs für den APVTS:
 - `moveNode` verschiebt Blöcke mit Bus-Regeln (`send` nur im Named Bus, `out` zuletzt)
 
 ### `GraphCanvasComponent` (`src/ui/GraphCanvasComponent.h/.cpp`)
-- Graph-Modus: Platine. Karten rasten auf 16 px (`snap` / `snapPoint`)
-- Hintergrund: minimale rose Kreuze (kein Linienraster)
-- Blöcke als IC-Packages (Fase, inneres Die, Notch, Pin-1, DIP-Pads)
-- Script-Modus bleibt der Text-Hack desselben Konstrukts
-- Drop-Jack leuchtet; Karten-Drag hebt die Ziel-Rail
+- Circuit-Modus: Platine. Karten rasten auf 16 px (`snap` / `snapPoint`). Ctrl+Rad zoomt (0.55–2.4)
+- Karten-Drag schreibt nur `@x,y` (`setPosition`). Reihenfolge nur Overlay/Kabel, nie `commitNodeDrop`
+- Audio-Kabel: weiss/grau. Energie aus WaveformCapture (gleiche Quelle wie die Scopes); optional Tap-Welle
+- Bus-Kopf ist verdrahtet: IN -> BUS -> send
+- Live-Knobwerte stehen rot auf dem Chip
+- Doppelklick öffnet `NodeInspectComponent` (alle Args, a–f, Apply/Remove)
+- Terminal bleibt der Text-Hack desselben Konstrukts
 
 ### `SignalChain` (`src/dsl/SignalChain.h/.cpp`)
 - Führt die geparsten Blöcke als Audio-Processing-Chain aus
 - Delay: Hermite-Interpolation, samplegenaue Zeit/Feedback/Mix/Damp, Write-Head ≥ 8 Samples
 - Studio-Oversampling: Host-Nyquist-AA-LPF läuft immer vor dem Downsample (auch bei 8× FIR)
-- Innere Klassen: Stage, Filter, Comp, Gate, Limit, Delay, Reverb, IR, Ott, Widen, MS, Xover, Env, Osc
+- Innere Klassen: Stage, Filter, Comp, Gate / noisegate, Limit, Delay, Reverb, IR, Ott, Widen, MS, Xover, Env, Osc
+- Nach jedem Block: `writeNodeTap` (64 Samples) für die Circuit-Kabel
 - Formelwechsel über `switchRamp` (kein Dual-Chain-Blend im Audio-Thread)
 
 ### `ExpressionEvaluator` (`src/dsl/ExpressionEvaluator.h/.cpp`)
@@ -153,8 +156,9 @@ Parameter-IDs für den APVTS:
 | Komponente | Beschreibung |
 |---|---|
 | `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
-| `DslTerminalEditor` | Code-Editor (Script-Edit). Keine Live-`[value]`-Annotation |
-| `GraphCanvasComponent` | Graph-Platine: Snap, rose Kreuze, Chip-Karten, Kabel |
+| `DslTerminalEditor` | Code-Editor (Terminal-Edit). IR-Button in Zeilenhöhe. Keine Live-`[value]`-Annotation |
+| `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, grau/weisse Signalkabel |
+| `NodeInspectComponent` | Overlay pro Block: alle Parameter, Knob-Bind, Remove/Apply |
 | `WaveformDisplayComponent` | Input/Output-Wellenform-Anzeige |
 | `LoudnessMeterComponent` | Echtzeit-Loudness-Meter |
 | `FormulaDisplayComponent` | Script-Live-Ansicht: Farbe + `a[value]` |

@@ -27,6 +27,15 @@ public:
     bool liveMode() const noexcept;
     void setLiveMode (bool enabled);
 
+    bool useHostTempo() const noexcept;
+    void setUseHostTempo (bool enabled);
+    float userBpm() const noexcept;
+    void setUserBpm (float bpm);
+
+    /** Circuit cables: false = traveling dots, true = post-block waveform. */
+    bool cableWaveform() const noexcept;
+    void setCableWaveform (bool enabled);
+
     static int clampScale (int percent) noexcept;
     static CyberMotion clampMotion (int stored) noexcept;
     static const char* motionKey (CyberMotion motion) noexcept;
@@ -47,4 +56,7 @@ private:
     std::atomic<int>   scalePercent { 100 };
     std::atomic<float> fontPt { 18.f };
     std::atomic<bool>  live { false };
+    std::atomic<bool>  hostTempo { true };
+    std::atomic<float> bpmUser { 120.f };
+    std::atomic<bool>  cableWave { false };
 };

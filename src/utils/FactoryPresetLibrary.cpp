@@ -343,8 +343,12 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
     const auto previousName = processor.getCurrentPresetName();
     processor.setCurrentPresetName (preset.name);
 
+    // Positions stay out of the factory text. Circuit Auto-arrange runs at
+    // the current zoom when the editor loads the script (no @x,y yet).
+    const juce::String script = preset.script;
+
     // Keep preset name: applyFormula(clear=false) must not wipe the active label
-    if (! processor.applyFormula (preset.script, error, false))
+    if (! processor.applyFormula (script, error, false))
     {
         processor.setCurrentPresetName (previousName);
         return false;

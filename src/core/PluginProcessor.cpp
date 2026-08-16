@@ -368,12 +368,21 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         if (lock.held)
         {
             scriptManager.signalChain.setMidiVariables(midiVariableMapper);
+            double ppq = 0.0;
+            bool playing = false;
             if (auto* head = getPlayHead())
             {
                 juce::AudioPlayHead::CurrentPositionInfo pos;
-                if (head->getCurrentPosition(pos))
-                    scriptManager.signalChain.setTempo(pos.bpm, pos.ppqPosition, pos.isPlaying);
+                if (head->getCurrentPosition (pos))
+                {
+                    if (pos.bpm > 1.0)
+                        hostBpm.store ((float) pos.bpm, std::memory_order_relaxed);
+                    ppq = pos.ppqPosition;
+                    playing = pos.isPlaying;
+                }
             }
+            scriptManager.signalChain.setTempo (getEffectiveBpm(), ppq, playing);
+            hostBlock.store (nSamp, std::memory_order_relaxed);
             dspEngine.setHostSidechain (scL, scR, scN);
             dspEngine.processBlock (main, scriptManager.signalChain);
             ranWet = true;
@@ -557,6 +566,23 @@ void NeuroKoreAudioProcessor::refreshReportedLatency()
 bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
 {
     return dspEngine.isLiveMode();
+}
+
+bool NeuroKoreAudioProcessor::isHostTempo() const noexcept
+{
+    return UiSettings::get().useHostTempo();
+}
+
+float NeuroKoreAudioProcessor::getEffectiveBpm() const noexcept
+{
+    if (isHostTempo())
+    {
+        const float bpm = hostBpm.load (std::memory_order_relaxed);
+        if (bpm >= 20.f && bpm <= 400.f)
+            return bpm;
+        return (float) Config::kDefaultTempo;
+    }
+    return UiSettings::get().userBpm();
 }
 
 int NeuroKoreAudioProcessor::getOversamplingLatencySamples() const noexcept

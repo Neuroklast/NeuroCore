@@ -192,6 +192,11 @@ public:
     }
     int getLastPresetBrowserScope() const noexcept { return lastPresetBrowserScope; }
 
+    float getHostBpm() const noexcept { return hostBpm.load (std::memory_order_relaxed); }
+    float getEffectiveBpm() const noexcept;
+    bool isHostTempo() const noexcept;
+    int getHostBlockSize() const noexcept { return hostBlock.load (std::memory_order_relaxed); }
+
     float getLoudnessDb()      const noexcept { return dspEngine.getLoudnessDb(); }
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
@@ -225,6 +230,16 @@ public:
     void clearIr (const juce::String& slot);
     void clearAllIrs();
     void refreshReportedLatency();
+
+    bool copyCircuitTap (const juce::String& id, float* dest, int destN) const noexcept
+    {
+        return scriptManager.signalChain.copyNodeTap (id, dest, destN);
+    }
+
+    bool copyMeterReading (const juce::String& id, float& destDb) const noexcept
+    {
+        return scriptManager.signalChain.copyMeterReading (id, destDb);
+    }
 
     bool isLiveMode() const noexcept;
     void setLiveMode (bool enabled);
@@ -260,6 +275,8 @@ private:
 
     std::atomic<float> osOutGain { 1.f };
     std::atomic<float> osOutGainTarget { 1.f };
+    std::atomic<float> hostBpm { 120.f };
+    std::atomic<int> hostBlock { 0 };
 
     struct IrAsset
     {

@@ -50,10 +50,11 @@ namespace Config
     inline constexpr int kChromeControlHeight = 26;
     inline constexpr int kToolsRowHeight     = 26;
     /// Host pixels reserved so overlays leave Mix / OS / status clickable.
+    /// Mix / OS / Polisher sit above the scopes, not in the top chrome.
     inline constexpr int kOverlayTopChromeDesign = kHudHeaderHeight
                                                  + kToolbarRowMaxHeight
-                                                 + kToolsRowHeight
                                                  + 10;
+    inline constexpr int kFooterRowHeight    = 22;
     inline constexpr int kActionRowHeight    = 26;
     inline constexpr int kScopeRowHeight     = 176;
     /// One vertical column of six knobs. The formula / graph owns the window.
@@ -130,8 +131,10 @@ namespace Config
     inline constexpr float kDefaultGainOutDb   = 0.0f;
     /// Time in seconds used for parameter smoothing (knobs, static filters).
     inline constexpr float kSmoothingTime      = 0.02f;
-    /// Faster ramp for env/osc-modulated cutoff/EQ so the click stays tight.
-    inline constexpr float kModSmoothingTime   = 0.0008f;
+    /// Ramp for env/osc-modulated cutoff/EQ. Too short = LFO zipper/crackle.
+    inline constexpr float kModSmoothingTime   = 0.004f;
+    /// LFO output slew — square/saw/noise edges must not click the destination.
+    inline constexpr float kLfoSmoothingTime   = 0.006f;
 
 
     /// Fallback sample rate used during resets.

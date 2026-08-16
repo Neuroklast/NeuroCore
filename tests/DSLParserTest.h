@@ -445,6 +445,45 @@ public:
             expectEquals (blocks[1].args.at ("bands"), juce::String ("8"));
         }
 
+        beginTest("split midside expands to encode / channel / decode");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse (
+                "split1: type = midside {\n"
+                "  mid { stage1: y = x * b }\n"
+                "  side { stage2: y = x * a }\n"
+                "}\n",
+                blocks, aliases, params, error), error);
+            expect (blocks.size() >= 4);
+            expectEquals (blocks[0].type, juce::String ("ms"));
+            expectEquals (blocks[0].args.at ("mode"), juce::String ("encode"));
+            expectEquals (blocks[1].args.at ("channel"), juce::String ("mid"));
+            expectEquals (blocks[2].args.at ("channel"), juce::String ("side"));
+            expectEquals (blocks.back().args.at ("mode"), juce::String ("decode"));
+        }
+
+        beginTest("split leftright stamps left and right");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse (
+                "split1: type = leftright {\n"
+                "  left { stage1: y = tube(x, a) }\n"
+                "  right { stage2: y = tube(x, b) }\n"
+                "}\n",
+                blocks, aliases, params, error), error);
+            expectEquals ((int) blocks.size(), 2);
+            expectEquals (blocks[0].args.at ("channel"), juce::String ("left"));
+            expectEquals (blocks[1].args.at ("channel"), juce::String ("right"));
+        }
+
         beginTest("block after out is an error");
         {
             dsl::DSLParser parser;

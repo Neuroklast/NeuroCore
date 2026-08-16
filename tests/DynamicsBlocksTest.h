@@ -13,6 +13,49 @@ public:
 
     void runTest() override
     {
+        beginTest ("noisegate parses with optional attack release threshold");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String err;
+            expect (parser.parse ("ngate1: threshold = -50", blocks, aliases, params, err), err);
+            expectEquals ((int) blocks.size(), 1);
+            expectEquals (blocks[0].type, juce::String ("noisegate"));
+            dsl::SignalChain chain;
+            expect (chain.loadScript ("ngate1: threshold = -24; attack = 0.001; release = 0.02", err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            const float quiet = tonePeak (chain, 0.01f, 200.f, 48000.f, 8);
+            const float loud  = tonePeak (chain, 0.4f, 200.f, 48000.f, 8);
+            expect (quiet < 0.03f, "quiet tone should be gated, peak=" + juce::String (quiet, 4));
+            expect (loud  > 0.15f, "loud tone should pass, peak=" + juce::String (loud, 4));
+        }
+
+        beginTest ("process writes a node tap the canvas can copy");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("stage1: y = x", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                const float s = 0.4f * std::sin (2.f * juce::MathConstants<float>::pi * 200.f * (float) i / 48000.f);
+                buf.setSample (0, i, s);
+                buf.setSample (1, i, s);
+            }
+            chain.processBlock (buf);
+            float dest[64];
+            expect (chain.copyNodeTap ("stage1", dest, 64), "stage tap missing");
+            expect (chain.copyNodeTap ("__out__", dest, 64), "out tap missing");
+            expect (chain.copyNodeTap ("__in__", dest, 64), "in tap missing");
+            float peak = 0.f;
+            for (float s : dest)
+                peak = juce::jmax (peak, std::abs (s));
+            expect (peak > 0.05f, "tap wave should carry the tone");
+        }
+
         beginTest ("gate block parses");
         {
             dsl::DSLParser parser;
@@ -277,6 +320,50 @@ public:
                 expectEquals (TestHelpers::countNonFinite (z), 0);
                 expect (TestHelpers::peakAbs (z) < 1.0e-4f);
             }
+        }
+
+        beginTest ("meter is dry and reports peak dB");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("meter1: mode = peak", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                buf.setSample (0, i, 0.5f);
+                buf.setSample (1, i, 0.5f);
+            }
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expect (std::abs (buf.getSample (0, 10) - 0.5f) < 1.0e-6f);
+            float db = 0.f;
+            expect (chain.copyMeterReading ("meter1", db));
+            expect (db > -7.f && db < -5.f, "0.5 peak should be about -6 dB, got "
+                    + juce::String (db, 2));
+        }
+
+        beginTest ("sidechain mix 1 replaces the cable with the extra input");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("sidechain1: mix = 1", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            juce::AudioBuffer<float> sc (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                buf.setSample (0, i, 0.8f);
+                buf.setSample (1, i, 0.8f);
+                sc.setSample (0, i, 0.1f);
+                sc.setSample (1, i, 0.1f);
+            }
+            chain.setExternalSidechain (sc.getReadPointer (0), sc.getReadPointer (1), 256);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expect (std::abs (buf.getSample (0, 200) - 0.1f) < 0.02f,
+                    "full SC mix should follow the extra input, y="
+                    + juce::String (buf.getSample (0, 200), 3));
         }
     }
 

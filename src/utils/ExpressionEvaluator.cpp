@@ -1059,6 +1059,18 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
     return 0.0f;
 }
 
+float ExpressionEvaluator::evaluateLive (float xValue) const noexcept
+{
+    if (! valid || ! root)
+        return 0.0f;
+    VarArray varsCopy = variables;
+    auto it = varIndices.find ("x");
+    if (it != varIndices.end())
+        varsCopy[it->second] = xValue;
+    const float result = root->eval (varsCopy.data());
+    return std::isfinite (result) ? result : 0.0f;
+}
+
 size_t ExpressionEvaluator::getVariableIndex(const std::string& name) const noexcept
 {
     auto it = varIndices.find(name);

@@ -2,12 +2,14 @@
 
 #include <JuceHeader.h>
 #include "../PluginLookAndFeel.h"
+#include "../fx/CyberFxTypes.h"
 
 /** Horizontal dry/wet slider with a cyber track and occasional drag glitch. */
 class CyberMixSlider : public juce::Slider
 {
 public:
     std::function<void (float strength, int seed)> onGlitchPulse;
+    void setMotion (CyberMotion m) noexcept { motion = m; }
 
     CyberMixSlider()
     {
@@ -37,15 +39,15 @@ public:
     void mouseDown (const juce::MouseEvent& e) override
     {
         juce::Slider::mouseDown (e);
-        if (rng.nextFloat() < 0.4f)
-            pulse (0.35f + rng.nextFloat() * 0.4f);
+        if (motion != CyberMotion::Off && rng.nextFloat() < (motion == CyberMotion::Full ? 0.4f : 0.18f))
+            pulse ((motion == CyberMotion::Full ? 0.28f : 0.14f) + rng.nextFloat() * 0.25f);
     }
 
     void mouseDrag (const juce::MouseEvent& e) override
     {
         juce::Slider::mouseDrag (e);
-        if (rng.nextFloat() < 0.14f)
-            pulse (0.45f + rng.nextFloat() * 0.55f);
+        if (motion != CyberMotion::Off && rng.nextFloat() < (motion == CyberMotion::Full ? 0.12f : 0.05f))
+            pulse ((motion == CyberMotion::Full ? 0.32f : 0.14f) + rng.nextFloat() * 0.22f);
     }
 
     void paint (juce::Graphics& g) override
@@ -133,5 +135,6 @@ private:
 
     float glitch { 0.f };
     int glitchSeed { 0 };
+    CyberMotion motion { CyberMotion::Full };
     juce::Random rng { 0x4d495858 };
 };

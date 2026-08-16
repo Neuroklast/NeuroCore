@@ -487,5 +487,56 @@ public:
             expect (laterPeak < 0.06f, "8x-rate wrap/write-head tick, peak="
                     + juce::String (laterPeak, 4) + " extras=" + juce::String (extraPeaks));
         }
+
+        beginTest ("wow-modulated delay has no block-rate clicks");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "osc1: shape = sine; freq = 0.65; depth = 1.0\n"
+                "delay1: time = 180 + osc1 * 8; feedback = 0.42; mix = 0.45; damp = 2600",
+                err), err);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            float prev = 0.f;
+            bool have = false;
+            float maxBoundary = 0.f, maxInterior = 0.f;
+            for (int b = 0; b < 80; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float t = (float) (b * 128 + i) / 48000.f;
+                    const float s = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 220.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                if (b < 16)
+                {
+                    prev = buf.getSample (0, 127);
+                    have = true;
+                    continue;
+                }
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    if (have)
+                    {
+                        const float jump = std::abs (y - prev);
+                        if (i == 0)
+                            maxBoundary = juce::jmax (maxBoundary, jump);
+                        else
+                            maxInterior = juce::jmax (maxInterior, jump);
+                    }
+                    prev = y;
+                    have = true;
+                }
+            }
+            expect (maxBoundary < maxInterior * 2.5f + 0.02f,
+                    "wow delay block click: boundary=" + juce::String (maxBoundary, 4)
+                    + " interior=" + juce::String (maxInterior, 4));
+        }
     }
 };

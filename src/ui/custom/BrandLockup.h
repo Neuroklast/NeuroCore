@@ -62,10 +62,9 @@ public:
         const float groupW = logoW + gap + textW;
         const float groupH = juce::jmax (logoH, stackH);
 
-        auto group = juce::Rectangle<float> (0.f, 0.f, groupW, groupH)
-                         .withCentre (r.getCentre());
-        if (group.getX() < r.getX())
-            group.setX (r.getX());
+        auto group = juce::Rectangle<float> (r.getX(),
+                                             r.getCentreY() - groupH * 0.5f,
+                                             groupW, groupH);
         if (group.getRight() > r.getRight())
             group.setWidth (juce::jmax (1.f, r.getRight() - group.getX()));
 

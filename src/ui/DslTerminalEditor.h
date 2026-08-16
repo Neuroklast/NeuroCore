@@ -10,6 +10,7 @@
 #include "../core/PluginProcessor.h"
 #include "../utils/FormulaHelper.h"
 #include "DslTokeniser.h"
+#include "fx/CyberFxTypes.h"
 
 /**
     @class DslTerminalEditor
@@ -38,6 +39,7 @@ public:
 
     /** DSL editor font height in points (clamped). */
     void setFontHeight (float heightPt);
+    void setMotion (CyberMotion m) noexcept { motion = m; }
     float getFontHeight() const noexcept { return fontHeight; }
 
     std::function<void (juce::String slot)> onOpenIrSlot;
@@ -65,6 +67,7 @@ private:
     std::unique_ptr<AutoCompleteCodeEditor> editor;
     NeuroKoreAudioProcessor& processor;
     float fontHeight { 18.0f };
+    CyberMotion motion { CyberMotion::Full };
     int errorLine { 0 };
     juce::String errorMessage;
     std::vector<std::unique_ptr<juce::TextButton>> irButtons;

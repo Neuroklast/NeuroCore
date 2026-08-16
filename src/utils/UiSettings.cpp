@@ -8,6 +8,9 @@ namespace
     constexpr const char* kScaleKey = "uiScalePercent";
     constexpr const char* kFontKey  = "editorFontPt";
     constexpr const char* kLiveKey  = "liveMode";
+    constexpr const char* kHostTempoKey = "useHostTempo";
+    constexpr const char* kUserBpmKey   = "userBpm";
+    constexpr const char* kCableWaveKey = "cableWaveform";
 }
 
 UiSettings& UiSettings::get()
@@ -36,6 +39,11 @@ UiSettings::UiSettings()
     fontPt.store (clampFont ((float) props->getDoubleValue (kFontKey, Config::kDefaultEditorFontPt)),
                   std::memory_order_relaxed);
     live.store (props->getBoolValue (kLiveKey, false), std::memory_order_relaxed);
+    hostTempo.store (props->getBoolValue (kHostTempoKey, true), std::memory_order_relaxed);
+    bpmUser.store (juce::jlimit (20.f, 400.f,
+                                 (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo)),
+                   std::memory_order_relaxed);
+    cableWave.store (props->getBoolValue (kCableWaveKey, false), std::memory_order_relaxed);
 
     if (props->containsKey (kMotionKey))
         motionValue.store ((int) clampMotion (props->getIntValue (kMotionKey, 0)),
@@ -111,6 +119,39 @@ void UiSettings::setLiveMode (bool enabled)
     persist();
 }
 
+bool UiSettings::useHostTempo() const noexcept
+{
+    return hostTempo.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setUseHostTempo (bool enabled)
+{
+    hostTempo.store (enabled, std::memory_order_relaxed);
+    persist();
+}
+
+float UiSettings::userBpm() const noexcept
+{
+    return bpmUser.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setUserBpm (float bpm)
+{
+    bpmUser.store (juce::jlimit (20.f, 400.f, bpm), std::memory_order_relaxed);
+    persist();
+}
+
+bool UiSettings::cableWaveform() const noexcept
+{
+    return cableWave.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setCableWaveform (bool enabled)
+{
+    cableWave.store (enabled, std::memory_order_relaxed);
+    persist();
+}
+
 int UiSettings::clampScale (int percent) noexcept
 {
     if (percent >= Config::kUiScalePercentMax)
@@ -155,5 +196,8 @@ void UiSettings::persist() const
     props->setValue (kScaleKey, scalePercent.load (std::memory_order_relaxed));
     props->setValue (kFontKey, (double) fontPt.load (std::memory_order_relaxed));
     props->setValue (kLiveKey, live.load (std::memory_order_relaxed));
+    props->setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));
+    props->setValue (kUserBpmKey, (double) bpmUser.load (std::memory_order_relaxed));
+    props->setValue (kCableWaveKey, cableWave.load (std::memory_order_relaxed));
     props->saveIfNeeded();
 }

@@ -19,6 +19,7 @@
  * outputGain defaults to 0 dB (host meter friendly; AutoGain handles loudness).
  */
 import fs from "fs";
+import { registerWave2 } from "./factory/wave2.mjs";
 
 const p = (name, min, max, def) => ({ name, min, max, default: def });
 
@@ -31,8 +32,9 @@ const inferTags = (script, name, description, category, extra = []) => {
   };
   addIf(/delay/, "delay");
   addIf(/reverb|verb\d+\s*:/, "reverb", "space");
-  addIf(/ms\d+\s*:|mode\s*=\s*encode|channel\s*=\s*(mid|side)|ms_encode|ms_decode/,
+  addIf(/ms\d+\s*:|mode\s*=\s*encode|channel\s*=\s*(mid|side)|ms_encode|ms_decode|type\s*=\s*midside|split\d*\s*:/,
         "mid-side", "midside", "ms", "mid", "side");
+  addIf(/type\s*=\s*leftright|type\s*=\s*crossover/, "split", "stereo");
   addIf(/\bbus\b|send:|out:/, "bus", "parallel");
   addIf(/tube/, "tube");
   addIf(/softclip|hardclip/, "clip");
@@ -119,6 +121,8 @@ const describeBlock = (line) => {
   if (low.startsWith("limit")) return `${id}: limiter`;
   if (low.startsWith("xover") || low.startsWith("crossover")) return `${id}: crossover`;
   if (low.startsWith("ir") || low.startsWith("convolve")) return `${id}: impulse response`;
+  if (low.startsWith("meter") || low === "probe") return `${id}: meter (dry)`;
+  if (low.startsWith("sidechain") || low === "scin") return `${id}: host sidechain`;
   if (low.startsWith("ms"))
     return /decode/.test(t) ? `${id}: mid/side decode` : `${id}: mid/side encode`;
   if (low === "bus") {
@@ -494,7 +498,7 @@ filter2: type = lowpass; cutoff = 8500; resonance = d`,
 add(
   "Phaser Sweep",
   "Modulation",
-  "Stable phaser-ish: dual LFO-mod filters (low Q), dry/wet blend — no self-osc hang.",
+  "Stable phaser-ish: HP stays below LP for the whole LFO, dry/wet blend — no band invert, no image slam.",
   `param a = Rate [0.08, 3.0]
 param b = Center [300, 1600]
 param c = Depth [200, 2200]
@@ -502,8 +506,8 @@ param d = Mix [0.25, 0.9]
 osc1: shape = sine; freq = a; depth = 1.0
 bus wet:
   send: in = 1
-  filter1: type = highpass; cutoff = b; + = osc1; * = c; resonance = 0.55
-  filter2: type = lowpass; cutoff = b; + = osc1; * = c * 0.7; resonance = 0.45
+  filter1: type = highpass; cutoff = b + (0.5 + 0.5 * osc1) * (c * 0.22); resonance = 0.55
+  filter2: type = lowpass; cutoff = b + c * 0.7 + (0.5 + 0.5 * osc1) * (c * 0.28); resonance = 0.45
   stage1: y = softclip(x, 1.12)
   filter3: type = lowpass; cutoff = 12000; resonance = 0.25
 out: main = 1-d; wet = d`,
@@ -687,12 +691,14 @@ add(
   `param a = Drive [0.9, 5.5]
 param b = Tone [900, 7000]
 param c = Level [0.4, 1.2]
+param d = Width [0.0, 1.2]
 filter1: type = highpass; cutoff = 70; resonance = 0.3
 stage1: y = tube(x, a * 0.7)
 eq1: type = peak; freq = 1100; q = 0.9; gain = 3.5
 stage2: y = softclip(y, 1.05) * c
-filter2: type = lowpass; cutoff = b; resonance = 0.38`,
-  { a: p("Drive", 0.9, 5.5, 2.2), b: p("Tone", 900, 7000, 3600), c: p("Level", 0.4, 1.2, 0.88), outG: 0 }
+filter2: type = lowpass; cutoff = b; resonance = 0.38
+widen1: width = d`,
+  { a: p("Drive", 0.9, 5.5, 2.2), b: p("Tone", 900, 7000, 3600), c: p("Level", 0.4, 1.2, 0.88), d: p("Width", 0.0, 1.2, 0.0), outG: 0 }
 );
 
 add(
@@ -702,15 +708,17 @@ add(
   `param a = Drive [4.0, 14.0]
 param b = LowCut [70, 350]
 param c = Level [0.2, 0.85]
+param d = Width [0.0, 1.2]
 gate1: threshold = -42; hyst = 8; hold = 0.025; range = -80
 filter1: type = highpass; cutoff = b; resonance = 0.5
 stage1: y = tube(x, a * 0.45)
 stage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)
 filter2: type = lowpass; cutoff = 4800; resonance = 0.6
 stage3: y = y * c
+widen1: width = d
 ir1: mix = 0.5; gain = 0
 limit1: ceiling = -0.3; release = 0.08`,
-  { a: p("Drive", 4, 14, 8.5), b: p("LowCut", 70, 350, 140), c: p("Level", 0.2, 0.85, 0.45), tags: ["gate", "ir"], outG: 0, irs: { ir1: "Medium IR 01.wav" } }
+  { a: p("Drive", 4, 14, 8.5), b: p("LowCut", 70, 350, 140), c: p("Level", 0.2, 0.85, 0.45), d: p("Width", 0.0, 1.2, 0.0), tags: ["gate", "ir"], outG: 0, irs: { ir1: "Medium IR 01.wav" } }
 );
 
 add(
@@ -720,9 +728,11 @@ add(
   `param a = Drive [1.0, 5.5]
 param b = Bias [0.0, 0.22]
 param c = Level [0.5, 1.25]
+param d = Width [0.0, 1.2]
 stage1: y = tube(x + b * 0.5, a) * c
-filter1: type = lowpass; cutoff = 5500; resonance = 0.4`,
-  { a: p("Drive", 1, 5.5, 2.5), b: p("Bias", 0, 0.22, 0.07), c: p("Level", 0.5, 1.25, 0.95), outG: 0 }
+filter1: type = lowpass; cutoff = 5500; resonance = 0.4
+widen1: width = d`,
+  { a: p("Drive", 1, 5.5, 2.5), b: p("Bias", 0, 0.22, 0.07), c: p("Level", 0.5, 1.25, 0.95), d: p("Width", 0.0, 1.2, 0.0), outG: 0 }
 );
 
 add(
@@ -732,12 +742,14 @@ add(
   `param a = Boost [1.5, 7.0]
 param b = Presence [1800, 7000]
 param c = Level [0.4, 1.15]
+param d = Width [0.0, 1.2]
 filter1: type = highpass; cutoff = 100; resonance = 0.35
 stage1: y = tube(x, a)
 eq1: type = highshelf; freq = b; q = 0.7; gain = 3.2
 stage2: y = diode(y, 1.35) * c
-filter2: type = lowpass; cutoff = 6200; resonance = 0.42`,
-  { a: p("Boost", 1.5, 7, 3.8), b: p("Presence", 1800, 7000, 3400), c: p("Level", 0.4, 1.15, 0.8), outG: 0 }
+filter2: type = lowpass; cutoff = 6200; resonance = 0.42
+widen1: width = d`,
+  { a: p("Boost", 1.5, 7, 3.8), b: p("Presence", 1800, 7000, 3400), c: p("Level", 0.4, 1.15, 0.8), d: p("Width", 0.0, 1.2, 0.0), outG: 0 }
 );
 
 add(
@@ -1289,8 +1301,14 @@ add(
 param b = Depth [0.15, 0.7]
 param c = Drive [1.0, 2.6]
 osc1: shape = sine; freq = a; depth = 1.0
-stage1: channel = left; y = tube(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))
-stage2: channel = right; y = tube(x, c) * (1.0 - b + b * (0.5 - 0.5 * osc1))`,
+split1: type = leftright {
+  left {
+    stage1: y = tube(x, c) * (1.0 - b + b * (0.5 + 0.5 * osc1))
+  }
+  right {
+    stage2: y = tube(x, c) * (1.0 - b + b * (0.5 - 0.5 * osc1))
+  }
+}`,
   { a: p("Rate", 0.08, 2.5, 0.35), b: p("Depth", 0.15, 0.7, 0.42), c: p("Drive", 1, 2.6, 1.45), outG: 0 }
 );
 
@@ -1608,27 +1626,33 @@ stage4: y = y * d`,
 add(
   "Stereo Guitar Wall",
   "Guitar",
-  "Two DI takes, two amps: left Mesa-style (dark, dense), right 5150-style (tight presence). Hard-pan stereo. BOTH + stereo in. Not a fake double of one take.",
+  "Two amps from one mono DI: left Mesa-style (dark, dense), right 5150-style (tight presence). Works with a mono guitar in (silent side is copied).",
   `param a = GainL [3.5, 12.0]
 param b = GainR [3.5, 12.0]
 param c = Tight [55, 200]
 param d = Presence [2800, 7000]
 param e = Level [0.28, 0.95]
 gate1: threshold = -46; hyst = 7; hold = 0.03; range = -80
-filter1: channel = left; type = highpass; cutoff = c; resonance = 0.55
-stage1: channel = left; y = tube(x, a * 0.5)
-stage2: channel = left; y = tube(y, a * 0.58)
-eq1: channel = left; type = peak; freq = 780; q = 1.05; gain = 3.8
-stage3: channel = left; y = hardclip(softclip(y, 1.5), 0.68)
-filter2: channel = left; type = lowpass; cutoff = 4500; resonance = 0.52
-stage4: channel = left; y = diode(y, 1.5) * e
-filter3: channel = right; type = highpass; cutoff = c * 1.12; resonance = 0.58
-stage5: channel = right; y = tube(x, b * 0.46)
-stage6: channel = right; y = tube(y, b * 0.55)
-eq2: channel = right; type = highshelf; freq = d; q = 0.7; gain = 3.6
-stage7: channel = right; y = hardclip(softclip(y, 1.48), 0.7)
-filter4: channel = right; type = lowpass; cutoff = 4200; resonance = 0.48
-stage8: channel = right; y = diode(y, 1.48) * e
+split1: type = leftright {
+  left {
+    filter1: type = highpass; cutoff = c; resonance = 0.55
+    stage1: y = tube(x, a * 0.5)
+    stage2: y = tube(y, a * 0.58)
+    eq1: type = peak; freq = 780; q = 1.05; gain = 3.8
+    stage3: y = hardclip(softclip(y, 1.5), 0.68)
+    filter2: type = lowpass; cutoff = 4500; resonance = 0.52
+    stage4: y = diode(y, 1.5) * e
+  }
+  right {
+    filter3: type = highpass; cutoff = c * 1.12; resonance = 0.58
+    stage5: y = tube(x, b * 0.46)
+    stage6: y = tube(y, b * 0.55)
+    eq2: type = highshelf; freq = d; q = 0.7; gain = 3.6
+    stage7: y = hardclip(softclip(y, 1.48), 0.7)
+    filter4: type = lowpass; cutoff = 4200; resonance = 0.48
+    stage8: y = diode(y, 1.48) * e
+  }
+}
 ir1: mix = 0.5; gain = 0
 limit1: ceiling = -0.3; release = 0.08`,
   {
@@ -1873,10 +1897,14 @@ add(
   "True mid/side stereo width: encode, scale side, decode.",
   `param a = Width [0.0, 1.6]
 param b = Level [0.7, 1.2]
-ms1: mode = encode
-stage1: channel = mid; y = x * b
-stage2: channel = side; y = x * a * b
-ms2: mode = decode`,
+split1: type = midside {
+  mid {
+    stage1: y = x * b
+  }
+  side {
+    stage2: y = x * a * b
+  }
+}`,
   {
     a: p("Width", 0, 1.6, 1.0),
     b: p("Level", 0.7, 1.2, 1.0),
@@ -1892,12 +1920,16 @@ add(
 param b = Ratio [1.5, 6.0]
 param c = Side [0.7, 1.35]
 param d = Makeup [0.9, 1.4]
-ms1: mode = encode
-stage1: channel = mid; y = x
-comp1: threshold = a; ratio = b; attack = 0.012; release = 0.16
-stage2: channel = mid; y = softclip(x * d, 1.08)
-stage3: channel = side; y = softclip(x * c, 1.05)
-ms2: mode = decode`,
+split1: type = midside {
+  mid {
+    stage1: y = x
+    comp1: threshold = a; ratio = b; attack = 0.012; release = 0.16
+    stage2: y = softclip(x * d, 1.08)
+  }
+  side {
+    stage3: y = softclip(x * c, 1.05)
+  }
+}`,
   {
     a: p("Threshold", -30, -8, -18),
     b: p("Ratio", 1.5, 6, 2.8),
@@ -2115,7 +2147,7 @@ bus echo:
   send: in = 1
   delay1: time = a; feedback = b; mix = 1; damp = d
   stage2: y = softclip(x * (1.0 + f * 0.22), 1.08)
-  stage3: y = x * (1.0 - env1 * e)
+  stage3: y = x * max(0.08, 1.0 - env1 * e)
 out: main = 1; echo = c`,
   {
     a: p("Time", 80, 480, 220),
@@ -2131,21 +2163,25 @@ out: main = 1; echo = c`,
 add(
   "Cinematic Space",
   "Reverb",
-  "Pre-delay → reverb → MS width + air LPF + soft tail ceiling.",
+  "Dry stays. Wet is true predelay into the hall, then MS width. No slap comb.",
   `param a = Predelay [20, 180]
 param b = Size [0.25, 0.95]
 param c = Decay [0.35, 0.92]
 param d = Damp [0.15, 0.85]
 param e = Mix [0.2, 0.85]
 param f = Width [0.4, 1.6]
-delay1: time = a; feedback = 0.05; mix = 0.35; damp = 8000
-reverb1: size = b; decay = c; damp = d; mix = e; width = 0.95
-filter1: type = lowpass; cutoff = 8000; resonance = 0.25
-ms1: mode = encode
-stage1: channel = mid; y = x
-stage2: channel = side; y = x * f
-ms2: mode = decode
-stage3: y = softclip(x, 1.08)`,
+stage1: y = x
+bus space:
+  send: in = 1
+  delay1: time = a; feedback = 0; mix = 1; damp = 8000
+  reverb1: size = b; decay = c; damp = d; mix = 1; width = 0.95
+  filter1: type = lowpass; cutoff = 8000; resonance = 0.25
+  ms1: mode = encode
+  stage2: channel = mid; y = x
+  stage3: channel = side; y = x * f
+  ms2: mode = decode
+  stage4: y = softclip(x, 1.08)
+out: main = 1-e; space = e`,
   {
     a: p("Predelay", 20, 180, 65),
     b: p("Size", 0.25, 0.95, 0.72),
@@ -2160,28 +2196,29 @@ stage3: y = softclip(x, 1.08)`,
 add(
   "Phaser Lab",
   "Modulation",
-  "LFO-modulated multi-notch cascade with feedback, depth, rate, center, and wet. Advanced swirl.",
+  "LFO swirl: HP stays below LP, no 1-sample feedback. Rate, depth, center, drive, wet.",
   `param a = Rate [0.05, 6.0]
 param b = Depth [200, 2500]
 param c = Center [400, 4000]
-param d = Feedback [0.05, 0.55]
+param d = Drive [0.8, 1.6]
 param e = Mix [0.25, 0.95]
-param f = Resonance [0.4, 2.2]
-osc1: type = sine; freq = a
+param f = Resonance [0.35, 1.1]
+osc1: shape = sine; freq = a; depth = 1.0
 stage1: y = x
 bus swirl:
-  send: main = 1
-  filter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f
-  stage2: y = softclip(x + y_prev * d, 1.2)
-  filter2: type = lowpass; cutoff = 12000; resonance = 0.28
+  send: in = 1
+  filter1: type = highpass; cutoff = c + (0.5 + 0.5 * osc1) * (b * 0.22); resonance = f
+  filter2: type = lowpass; cutoff = c + b * 0.55 + (0.5 + 0.5 * osc1) * (b * 0.35); resonance = 0.5
+  stage2: y = softclip(x, d)
+  filter3: type = lowpass; cutoff = 12000; resonance = 0.28
 out: main = 1-e; swirl = e`,
   {
     a: p("Rate", 0.05, 6, 0.35),
     b: p("Depth", 200, 2500, 900),
     c: p("Center", 400, 4000, 1200),
-    d: p("Feedback", 0.05, 0.55, 0.28),
+    d: p("Drive", 0.8, 1.6, 1.12),
     e: p("Mix", 0.25, 0.95, 0.7),
-    f: p("Resonance", 0.4, 2.2, 1.1),
+    f: p("Resonance", 0.35, 1.1, 0.65),
     outG: 0,
   }
 );
@@ -2349,7 +2386,7 @@ add(
   "Club",
   "Split kick: main is click+mids (HPF ~95, dip at 320 Hz), scream is the bright hit, body is a tight held sine+sub. Tune is the resonator. Insert on the kick, Mix 100.",
   `param a = Sub [0.55, 1.35]
-param b = Wow [220, 700]
+param b = Floor [48, 88]
 param c = Tune [11, 20]
 param d = Drive [5.0, 16.0]
 param e = Decay [0.62, 0.9]
@@ -2360,29 +2397,29 @@ eq1: type = peak; freq = 320; q = 1.15; gain = -5.5
 eq2: type = peak; freq = 1150; q = 1.3; gain = 5.2
 eq3: type = peak; freq = 3800; q = 1.7; gain = 6.4
 eq4: type = highshelf; freq = 6800; q = 0.7; gain = 3.2
-stage1: y = hardclip(x * f * (0.9 + 0.65 * env1), 0.4)
+stage1: y = hardclip(softclip(x * f * (0.82 + 0.28 * env1), 1.12), 0.72)
 bus scream:
   send: in = 1
-  filter2: type = highpass; cutoff = 200; resonance = 0.52
-  eq5: type = peak; freq = 3400; q = 1.5; gain = 8.8
-  eq6: type = peak; freq = 7200; q = 1.4; gain = 4.2
-  stage2: y = hardclip(x * d * (0.85 + 0.95 * env1), 0.28)
-  filter3: type = lowpass; cutoff = 11000; resonance = 0.28
-  stage3: y = diode(y, 1.7) * (0.48 + 0.55 * env1)
+  filter2: type = highpass; cutoff = 200; resonance = 0.42
+  eq5: type = peak; freq = 3400; q = 1.35; gain = 7.4
+  eq6: type = peak; freq = 7200; q = 1.25; gain = 3.6
+  stage2: y = tube(x * d * 0.22 * (0.15 + 0.85 * env1), 1.35)
+  filter3: type = lowpass; cutoff = 9800; resonance = 0.24
+  stage3: y = diode(y, 1.45) * (0.08 + 0.92 * env1)
 bus body:
   send: in = 1
-  filter4: type = highpass; cutoff = 28; resonance = 0.18
-  filter5: type = lowpass; cutoff = 68; + = env1; * = b; resonance = 2.15
-  delay1: time = c; feedback = e; mix = 0.76; damp = 520
-  octaver1: sub = 0.95; up = 0; mix = 0.58; tone = 95; thresh = 0.03
-  stage4: y = tube(x, d * 0.26)
-  stage5: y = hardclip(y, 0.5)
-  eq7: type = peak; freq = 56; q = 1.05; gain = 5.8
-  filter6: type = lowpass; cutoff = 145; resonance = 0.28
-out: main = 0.62; scream = 1.08; body = a`,
+  filter4: type = highpass; cutoff = 28; resonance = 0.16
+  filter5: type = lowpass; cutoff = b; resonance = 0.42
+  delay1: time = c; feedback = e; mix = 0.68; damp = 280
+  octaver1: sub = 0.95; up = 0; mix = 0.48; tone = 95; thresh = 0.03
+  stage4: y = tube(x, d * 0.22)
+  stage5: y = hardclip(softclip(y, 1.1), 0.7)
+  eq7: type = peak; freq = 56; q = 0.95; gain = 5.2
+  filter6: type = lowpass; cutoff = 132; resonance = 0.24
+out: main = 0.7; scream = 0.82; body = a`,
   {
     a: p("Sub", 0.55, 1.35, 1.02),
-    b: p("Wow", 220, 700, 400),
+    b: p("Floor", 48, 88, 62),
     c: p("Tune", 11, 20, 15.5),
     d: p("Drive", 5, 16, 11.8),
     e: p("Decay", 0.62, 0.9, 0.76),
@@ -2397,7 +2434,7 @@ add(
   "Club",
   "Same split, lower floor: click stays above 80 Hz, 320 Hz scooped, body stays under 130 Hz. Insert on the kick.",
   `param a = Sub [0.6, 1.4]
-param b = Wow [180, 560]
+param b = Floor [42, 80]
 param c = Tune [14, 24]
 param d = Drive [5.0, 16.0]
 param e = Decay [0.68, 0.92]
@@ -2408,29 +2445,29 @@ eq1: type = peak; freq = 310; q = 1.1; gain = -5.0
 eq2: type = peak; freq = 1050; q = 1.2; gain = 4.6
 eq3: type = peak; freq = 2800; q = 1.45; gain = 5.0
 eq4: type = highshelf; freq = 6200; q = 0.7; gain = 2.4
-stage1: y = hardclip(x * f * (0.88 + 0.55 * env1), 0.42)
+stage1: y = hardclip(softclip(x * f * (0.84 + 0.24 * env1), 1.12), 0.72)
 bus scream:
   send: in = 1
-  filter2: type = highpass; cutoff = 170; resonance = 0.46
-  eq5: type = peak; freq = 2400; q = 1.35; gain = 7.2
-  eq6: type = peak; freq = 6000; q = 1.3; gain = 3.4
-  stage2: y = hardclip(x * d * (0.8 + 0.85 * env1), 0.3)
-  filter3: type = lowpass; cutoff = 9000; resonance = 0.26
-  stage3: y = diode(y, 1.65) * (0.46 + 0.5 * env1)
+  filter2: type = highpass; cutoff = 170; resonance = 0.38
+  eq5: type = peak; freq = 2400; q = 1.25; gain = 6.2
+  eq6: type = peak; freq = 6000; q = 1.2; gain = 2.8
+  stage2: y = tube(x * d * 0.2 * (0.12 + 0.88 * env1), 1.3)
+  filter3: type = lowpass; cutoff = 8600; resonance = 0.22
+  stage3: y = diode(y, 1.4) * (0.08 + 0.9 * env1)
 bus body:
   send: in = 1
   filter4: type = highpass; cutoff = 24; resonance = 0.16
-  filter5: type = lowpass; cutoff = 56; + = env1; * = b; resonance = 2.25
-  delay1: time = c; feedback = e; mix = 0.82; damp = 420
-  octaver1: sub = 1.05; up = 0; mix = 0.66; tone = 88; thresh = 0.028
-  stage4: y = tube(x, d * 0.3)
-  stage5: y = hardclip(y, 0.48)
-  eq7: type = peak; freq = 50; q = 0.95; gain = 6.8
-  filter6: type = lowpass; cutoff = 128; resonance = 0.26
-out: main = 0.6; scream = 0.88; body = a`,
+  filter5: type = lowpass; cutoff = b; resonance = 0.4
+  delay1: time = c; feedback = e; mix = 0.7; damp = 240
+  octaver1: sub = 1.05; up = 0; mix = 0.5; tone = 88; thresh = 0.028
+  stage4: y = tube(x, d * 0.24)
+  stage5: y = hardclip(softclip(y, 1.1), 0.7)
+  eq7: type = peak; freq = 50; q = 0.9; gain = 6.2
+  filter6: type = lowpass; cutoff = 120; resonance = 0.22
+out: main = 0.68; scream = 0.72; body = a`,
   {
     a: p("Sub", 0.6, 1.4, 1.1),
-    b: p("Wow", 180, 560, 330),
+    b: p("Floor", 42, 80, 56),
     c: p("Tune", 14, 24, 18),
     d: p("Drive", 5, 16, 11.4),
     e: p("Decay", 0.68, 0.92, 0.82),
@@ -2451,23 +2488,23 @@ param d = Body [0.45, 1.2]
 param e = Tune [12, 20]
 param f = Level [1.05, 1.5]
 env1: type = peak; attack = 0.001; release = 0.08
-filter1: type = highpass; cutoff = c; resonance = 0.62
+filter1: type = highpass; cutoff = c; resonance = 0.48
 eq1: type = peak; freq = 320; q = 1.2; gain = -5.8
-eq2: type = peak; freq = 1050; q = 1.4; gain = 9.2
-eq3: type = peak; freq = 3600; q = 1.75; gain = 6.8
-eq4: type = highshelf; freq = 7500; q = 0.7; gain = 3.6
-stage1: y = hardclip(x * f * (0.75 + 1.05 * env1), b)
-filter2: type = lowpass; cutoff = 10500; resonance = 0.32
-stage2: y = diode(y, 1.7)
+eq2: type = peak; freq = 1050; q = 1.35; gain = 8.2
+eq3: type = peak; freq = 3600; q = 1.55; gain = 5.8
+eq4: type = highshelf; freq = 7500; q = 0.7; gain = 3.2
+stage1: y = hardclip(softclip(x * f * (0.78 + 0.28 * env1), 1.15), b)
+filter2: type = lowpass; cutoff = 9800; resonance = 0.26
+stage2: y = diode(y, 1.45)
 bus body:
   send: in = 1
   filter3: type = highpass; cutoff = 26; resonance = 0.16
-  filter4: type = lowpass; cutoff = 66; + = env1; * = 360; resonance = 2.05
-  delay1: time = e; feedback = 0.74; mix = 0.74; damp = 480
-  octaver1: sub = 0.88; up = 0; mix = 0.55; tone = 100; thresh = 0.03
-  stage3: y = tube(x, a * 0.24)
-  stage4: y = hardclip(y, 0.48)
-  filter5: type = lowpass; cutoff = 140; resonance = 0.26
+  filter4: type = lowpass; cutoff = 62; resonance = 0.4
+  delay1: time = e; feedback = 0.7; mix = 0.64; damp = 260
+  octaver1: sub = 0.88; up = 0; mix = 0.46; tone = 100; thresh = 0.03
+  stage3: y = tube(x, a * 0.2)
+  stage4: y = hardclip(softclip(y, 1.1), 0.7)
+  filter5: type = lowpass; cutoff = 128; resonance = 0.22
 out: main = 0.92; body = d`,
   {
     a: p("Drive", 6.5, 18, 13.6),
@@ -2492,30 +2529,30 @@ param d = Sub [0.65, 1.3]
 param e = Dyn [0.45, 1.15]
 param f = Level [1.0, 1.5]
 env1: type = peak; attack = 0.001; release = 0.1
-filter1: type = highpass; cutoff = 88; resonance = 0.28
+filter1: type = highpass; cutoff = 88; resonance = 0.24
 eq1: type = peak; freq = 320; q = 1.15; gain = -6.0
 eq2: type = peak; freq = 78; q = 1.05; gain = 2.4
-eq3: type = peak; freq = 3000; q = 1.55; gain = 5.2
-eq4: type = highshelf; freq = 7000; q = 0.7; gain = 3.0
-stage1: y = hardclip(x * f * (0.7 + 0.55 * env1), 0.5)
+eq3: type = peak; freq = 3000; q = 1.4; gain = 4.6
+eq4: type = highshelf; freq = 7000; q = 0.7; gain = 2.6
+stage1: y = hardclip(softclip(x * f * (0.76 + 0.24 * env1), 1.14), 0.7)
 bus scream:
   send: in = 1
-  filter2: type = highpass; cutoff = b; resonance = 0.55
-  eq5: type = peak; freq = c; q = 1.5; gain = 10.8
-  eq6: type = peak; freq = 6800; q = 1.6; gain = 5.2
-  stage2: y = hardclip(x * a * (0.9 + e * env1), 0.24)
-  filter3: type = lowpass; cutoff = 11500; resonance = 0.3
-  stage3: y = diode(y, 1.85) * (0.42 + 0.58 * env1)
+  filter2: type = highpass; cutoff = b; resonance = 0.42
+  eq5: type = peak; freq = c; q = 1.35; gain = 8.6
+  eq6: type = peak; freq = 6800; q = 1.35; gain = 4.0
+  stage2: y = tube(x * a * 0.18 * (0.12 + 0.88 * e * env1), 1.4)
+  filter3: type = lowpass; cutoff = 10200; resonance = 0.24
+  stage3: y = diode(y, 1.5) * (0.08 + 0.9 * env1)
 bus sub:
   send: in = 1
   filter4: type = highpass; cutoff = 24; resonance = 0.16
-  filter5: type = lowpass; cutoff = 60; + = env1; * = 260; resonance = 2.1
-  delay1: time = 16; feedback = 0.76; mix = 0.78; damp = 400
-  octaver1: sub = 1.0; up = 0; mix = 0.62; tone = 90; thresh = 0.028
-  stage4: y = tube(x, 3.2)
-  stage5: y = hardclip(y, 0.5)
-  filter6: type = lowpass; cutoff = 135; resonance = 0.26
-out: main = 0.5; scream = 1.32; sub = d`,
+  filter5: type = lowpass; cutoff = 58; resonance = 0.4
+  delay1: time = 16; feedback = 0.7; mix = 0.66; damp = 240
+  octaver1: sub = 1.0; up = 0; mix = 0.48; tone = 90; thresh = 0.028
+  stage4: y = tube(x, 2.6)
+  stage5: y = hardclip(softclip(y, 1.1), 0.7)
+  filter6: type = lowpass; cutoff = 124; resonance = 0.22
+out: main = 0.58; scream = 0.95; sub = d`,
   {
     a: p("Drive", 6, 18, 13.4),
     b: p("Scoop", 90, 220, 145),
@@ -4247,11 +4284,38 @@ stage2: y = softclip(x, 1.08)`,
   }
 );
 
+registerWave2(add, p);
+
+const topologySig = (script, category) => {
+  const bits = [category];
+  for (const raw of String(script).split(/\r?\n/)) {
+    const l = raw.replace(/#.*$/, "").replace(/\/\/.*$/, "").trim();
+    if (!l || /^param\s/i.test(l)) continue;
+    const type = ((l.match(/^([a-zA-Z_]+)/) || [, ""])[1] || "").replace(/\d+$/, "");
+    const clip = (l.match(/tube|diode|softclip|hardclip|fold|bitcrush/g) || []).join("+");
+    const notes = (l.match(/\b1\/\d+[t.]?\b/g) || []).join(",");
+    const bus = (l.match(/^bus\s+(\w+)/) || [])[1] || "";
+    const ir = /ir\d/.test(l) ? "ir" : "";
+    const ch = (l.match(/channel\s*=\s*\w+|mode\s*=\s*\w+|type\s*=\s*\w+|pingpong|source\s*=\s*\w+/) || [""])[0];
+    const lit = (l.match(/=\s*(?!([a-f])\b)([^;]+)/g) || []).join("");
+    bits.push([type, clip, notes, bus, ir, ch, lit].filter(Boolean).join(":"));
+  }
+  return bits.join("|");
+};
+
 // Validate
 const names = new Set();
+const sigs = new Map();
+let idx = 0;
 for (const e of list) {
   if (names.has(e.name)) throw new Error("duplicate: " + e.name);
   names.add(e.name);
+  const sig = topologySig(e.script, e.category);
+  if (sigs.has(sig) && idx >= 191)
+    throw new Error("topology clash: " + sigs.get(sig) + " vs " + e.name);
+  if (!sigs.has(sig))
+    sigs.set(sig, e.name);
+  idx++;
   if (!e.script.includes(":")) throw new Error("bad script " + e.name);
   if (/\bparam\s+[gh]\b/.test(e.script))
     throw new Error("dead knob g/h in " + e.name + " (host only binds a–f)");

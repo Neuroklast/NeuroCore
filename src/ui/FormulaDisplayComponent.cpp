@@ -591,8 +591,7 @@ void FormulaDisplayComponent::rebuildAttributed()
         if (trail.isNotEmpty())
             cachedLayout.append (trail, mono, commentCol);
 
-        if (irSlotFromLine (trimmed).isNotEmpty())
-            cachedLayout.append ("\n", mono, textCol);
+        juce::ignoreUnused (irSlotFromLine (trimmed));
     }
 
     layoutDirty = false;
@@ -635,8 +634,8 @@ void FormulaDisplayComponent::syncIrButtons()
         const auto slot = irSlotFromLine (lines[i]);
         if (slot.isNotEmpty())
         {
-            hits.push_back ({ slot, layoutLine + 1 });
-            layoutLine += 2;
+            hits.push_back ({ slot, layoutLine });
+            ++layoutLine;
         }
         else
         {
@@ -676,9 +675,10 @@ void FormulaDisplayComponent::syncIrButtons()
         if (juce::isPositiveAndBelow (hits[i].layoutLine, nLines))
             lineBounds = cachedTextLayout.getLine (hits[i].layoutLine).getLineBounds()
                              .translated (8.f, 6.f);
-        btn.setBounds (8, (int) lineBounds.getY() - 2,
-                       juce::jmax (80, body->getWidth() - 16),
-                       juce::jmax (22, (int) fontHeight + 8));
+        const int lineH = juce::jmax (16, (int) std::lround (juce::jmax (fontHeight, lineBounds.getHeight())));
+        const int btnW = juce::jmin (120, juce::jmax (64, body->getWidth() / 5));
+        btn.setBounds (body->getWidth() - btnW - 8, (int) lineBounds.getY(),
+                       btnW, lineH);
         btn.toFront (false);
     }
 }
@@ -717,8 +717,12 @@ void FormulaDisplayComponent::paintBody (juce::Graphics& g)
 
 void FormulaDisplayComponent::paintOverChildren (juce::Graphics& g)
 {
-    g.setColour (juce::Colours::black.withAlpha (0.12f));
-    for (int y = 20; y < getHeight(); y += 3)
+    if (motion == CyberMotion::Off)
+        return;
+    const float a = motion == CyberMotion::Full ? 0.10f : 0.05f;
+    const int step = motion == CyberMotion::Full ? 3 : 5;
+    g.setColour (juce::Colours::black.withAlpha (a));
+    for (int y = 20; y < getHeight(); y += step)
         g.drawHorizontalLine (y, 0.f, (float) getWidth());
 }
 

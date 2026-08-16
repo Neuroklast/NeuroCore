@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../core/PluginProcessor.h"
+#include "fx/CyberFxTypes.h"
 
 /** Vertical loudness bar — same angular hull / accent gradient as the Mix slider. */
 class LoudnessMeterComponent : public juce::Component,
@@ -16,6 +17,7 @@ public:
     void mouseDown(const juce::MouseEvent& e) override;
     /** Hide while a modal covers the editor (OpenGL used to sit above siblings). */
     void setCoveredByOverlay (bool covered);
+    void setMotion (CyberMotion m) noexcept { motion = m; }
 
     /** 0 at idle / low level, 1 at full scale. Cubic so the bottom stays calm. */
     static float glitchAmount (float fillNorm) noexcept;
@@ -48,4 +50,5 @@ private:
 
     Scale scale { Scale::dBFS };
     bool coveredByOverlay { false };
+    CyberMotion motion { CyberMotion::Full };
 };

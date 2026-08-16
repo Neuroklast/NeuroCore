@@ -9,6 +9,141 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-16 – Kick Rumble knacken is slap + square + phase reset
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kick Rumble mega am knacken  
+**Ergebnis:** Softclip-vor-Hardclip und Q-Cap reichten nicht. Drei Ursachen: (1) Body-LPF `cutoff=68; +=env; *=Wow(400)` öffnet auf ~468 Hz und lässt den Click in die 15-ms-Delay-Schleife (Slap). (2) Octaver setzt `phSub` auf 0/π und mischt unlocked ein Rechteck — Klick jede detektierte Periode. (3) Scream-Hardclip mit Env-Floor 0.55 hält ein Rechteck durch den ganzen Kick-Tail. Delay-Wet=Damp hat Tape-Echo-Wrap-Tests zerlegt — Damp bleibt nur auf dem Feedback.
+
+#### Regel
+Rumble-LPF bleibt unter ~80 Hz (kein Env-Open auf den Click). Octaver: Phase frei laufen, Sub nur bei Lock (slewed Square nur als leises Bett). Scream nur auf den Hit (`* env`, Floor ≤ 0.1). Delay-Damp nicht auf den Ersttap legen — das ändert Space Echo. `addDefaultMap` darf zusammengesetzte Ausdrücke (`900+osc1*b`) nicht als Ganzes in `map(...,0,1,20,20000)` wickeln — sonst sitzt ein Bandpass bei Nyquist (Leslie/Vibe tot).
+
+### 2026-08-16 – Periodic clicks are inverted bands, raw env, hardclip
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Rhythmic Gate Delay / Phaser Lab+Sweep / Cinematic Space / Kick Rumble knacken  
+**Ergebnis:** Drei Ursachen, ein Muster. (1) `cutoff=b; +=osc; *=c` ist bipolar → HP/LP tauschen sich, Wet wird stumm, Stereo knallt im LFO-Takt. (2) Peak-Env ist `|x|` ohne 0–1-Klammer → `1-env*k` wird negativ (Phasensprung). (3) `hardclip(x*env)` ohne Soft-Pre + Q≈2.2 auf Env-Cutoff klingelt jeden Kick.
+
+#### Regel
+Freq-`+osc`: unipolar `(0.5+0.5*osc)*depth` und `max(fmin, …)`. Env-Ausgang immer 0–1. Clip: `hardclip(softclip(…), ceiling)`. Phaser: HP bleibt unter LP. Cinematic Predelay: Delay `mix=1; feedback=0`, nicht 35 % Slap vor dem Hall.
+
+### 2026-08-16 – 500 factory presets must differ in topology
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Mindestens 500 professionelle Factory-Presets, nicht alle gleich  
+**Ergebnis:** 526 Jobs in 22 Kategorien. Generator `scripts/factory/wave2*.mjs`. Signatur aus Blocktypen, Clip-Verben, Notenwerten und Literalen — Knob-Offsets zaehlen nicht als neues Preset.
+
+#### Regel
+Neue Factory-Sounds sind Studio-Jobs (FET-into-Opto, dotted throw, de-ess via xover). Keine 20 Gain-Varianten derselben Kette. Bandpass braucht `center`/`width`. Octaver-`tone` ist Hz. `xover`-Baender in `bus high:` bearbeiten, nicht `comp: bus = high`.
+
+### 2026-08-16 – Auto-arrange is per-rail and happens on preset load
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Trailer Impact tidy; Menue nur Auto-arrange; Presets schon angeordnet bei aktuellem Zoom  
+**Ergebnis:** Wrap war hinter `singleChain` versteckt — Bus-Smash blieb eine Zeile. Factory `applyPreset` backte Comfort-`@x,y` ohne Viewport, also uebersprang das Circuit `autoLayout`.
+
+#### Regel
+Jede Rail wrappt allein, wenn eine Zeile zu breit ist und Breite+Hoehe danach ins Viewport bei aktuellem Zoom passen. Factory-Text ohne Positionen lassen; Circuit legt beim Laden an. Menue-Label ohne Beschreibungstext.
+
+### 2026-08-16 – Tidy fits the view only when chips stay readable
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Tidy ohne Scrollen, aber nur wenn es geht  
+**Ergebnis:** Abstaende (nicht Chip-Groesse) schrumpfen bis `kTidyMinGap`. Wenn selbst das nicht in die Viewport-Pixel passt, bleibt der Komfort-Abstand — dann scrollt man.
+
+#### Regel
+Fit = groesster lesbarer Pitch, der in die Sicht fliegt. Nie unter Kartenmass + 16 px. Eine einzelne Kette, die in einer Zeile zu breit ist, wrappt in mehrere Zeilen — nur wenn Breite und Hoehe danach wirklich ins Viewport bei aktuellem Zoom passen.
+
+### 2026-08-16 – Modulated filters must not call evaluate()
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Phaser Lab / Sweep knistern  
+**Ergebnis:** `Filter::advanceCoeffsOnce` rief `evaluate()` pro Sample (SpinLock + ADAA-Reset) und uebersprang `setCutoff` wenn delta < 0.18 Hz. LFO-Sweeps wurden zur Treppe. CPU-Trip machte Dry/Wet-Klicks.
+
+#### Regel
+Cutoff/Time-Ausdruecke: `evaluateLive` (kein Lock, kein ADAA-Reset). Modulierte SVF jedes Sample die geglaetteten Coeffs setzen. `evaluate()` nur One-Shot/UI.
+
+### 2026-08-16 – Edit keys follow jacks, Add menu follows the DSL
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Tidy, Meter, Expand, OUT-Felder, hierarchisches Add, Sidechain  
+**Ergebnis:** Expand-Hit lag neben dem Chevron. OUT zeigte nur `main` plus vorhandene Args, nicht Xover-Baender. Inline-Edit capte auf 4 Felder. Sidechain war nur `source=sidechain` an Comp/Gate.
+
+#### Regel
+`editableArgKeys(node, doc)` vereinigt Typ-Keys mit mix/param/send-Jacks. Kontextmenue: Kategorien als Submenus, ein Eintrag pro DSL-Typ. Host-SC als eigener `sidechain`-Block auf das Kabel legen, nicht nur als Flag.
+
+### 2026-08-16 – Beads are a loudness meter, not a peak lamp
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Punkte dauerhaft sichtbar statt loudness-abhaengig  
+**Ergebnis:** Sample-Peak und immer-N-Dots machten jede spielende Quelle zu einer vollen Perlenkette. Original: `decibelsToGain(LUFS+18)*0.35`, Gate 0.022, Wanderperlen mit Spacing.
+
+#### Regel
+Circuit-Punkte nur aus `getLoudnessDb()`. Welle darf den Scope-Ring nutzen, aber nicht die Gate ersetzen. Timer laeuft weiter, damit die Perlen wandern wenn Pegel da ist.
+
+### 2026-08-16 – Delay eval is control-rate; cables follow the scope
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Space Echo knistert/hakt; Circuit-Kabel ohne Punkte bei Input  
+**Ergebnis:** `Delay::processFrame` rief jedes Sample `syncFromVariables` → `setVariable` + `evaluate()` (SpinLock + ADAA-Reset). Zwei Tape-Heads bei 8× OS sprengen das Blockbudget; CpuProtect schaltet hart auf Dry → Knistern. Kabel-Energie kam aus `getLoudnessDb()+18 * 0.35` und blieb oft unter der Gate.
+
+#### Regel
+Delay-Zeit/Feedback/Mix einmal pro Block setzen, Sample-Schleife nur Hermite + SmoothedValue. `evaluate()` ist kein Audio-Inner-Loop. Circuit-Beads aus `WaveformCapture` (gleiche Quelle wie die Scopes), nicht aus dem LUFS-Meter.
+
+### 2026-08-16 – Signal cables are ink, chrome is accent
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Circuit-Punkte wieder signalabhaengig, Leitungen weiss/grau  
+**Ergebnis:** `accent()` auf der Signalkante machte immer-rote Punkte. Alte Gate (`0.022`) + `ink`/`inkMuted` wiederhergestellt. Welle nutzt dieselbe Tinte.
+
+#### Regel
+Audio-Kabel bleiben `ink`/`inkMuted`. `accent()` nur Chrome (Hover-Knob-Kabel, Rahmen). Punkte/Welle nur zeichnen wenn Pegel oder Tap ueber der Gate liegt.
+
+### 2026-08-16 – Split is syntax sugar, not a new DSP graph
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** split{} konzeptionell, ohne LR4/RCU aus der Spek  
+**Ergebnis:** Parser expandiert `split` nach `ms`/`channel`/`xover`/`bus`. Circuit zeigt weiter ENC/DEC- und Xover-Köpfe.
+
+#### Regel
+Neue Routing-Syntax zuerst auf bestehende Blöcke senken. Preset-JSON liegt in BinaryData — nach Generator immer Tests neu linken. `requireBlock` sucht den Rohtext, nicht die Expansion.
+
+### 2026-08-16 – Mono guitar is not stereo until you copy the silent side
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Stereo Guitar Wall + L/R splits bei Mono-DI  
+**Ergebnis:** BOTH ließ L=Signal, R=0. `channel = right` hörte Stille.
+
+#### Regel
+Bevor L/R-Pfade laufen: stille Seite aus der lebenden kopieren (InputRouter + SignalChain). `widen` ist extra Breite, kein Ersatz dafür.
+
+### 2026-08-16 – Review before pack: layout vs paint
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Circuit/Tempo/Gate-Umsetzung prüfen, dann Release + Kit  
+**Ergebnis:** Overlay-Hinweis lag fest bei `getHeight()-108` und schnitt die a–f-Buttons. Host-BPM 0 (kein Playhead) wäre in Delay-Sync gelaufen. Kit-Docs hingen hinter dem Repo.
+
+#### Regel
+Overlay-Texte als Labels im selben `resized()` wie die Buttons, nie mit Magie-Y. `getEffectiveBpm()` clamp 20–400, sonst Default. `noisegate` teilt die Gate-Engine, aber Default ohne Hold und nur 1 dB Hyst. Bundle erst nach Doc-Sync packen.
+
+### 2026-08-16 – Bus needs a cable, BPM needs a source
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Bus sichtbar verdrahten; BPM Host/User; Wellen auf Kabeln  
+**Ergebnis:** `bus` war nur ein Header ohne `audioOnRail`. Tempo kam immer vom Playhead.
+
+#### Regel
+Bus-Kopf visuell IN -> BUS -> send. Tempo: `UiSettings` Host/User, Engine bekommt `getEffectiveBpm()`. Kabel: Tap nach jedem Block, Welle entlang der Kurve, keine Punkte.
+
+### 2026-08-16 – Drag is place, overlay is edit
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Circuit-UX: kein Flusswechsel beim Ziehen, Overlay, Footer, Encoding  
+**Ergebnis:** `commitNodeDrop` hat Rail und Reihenfolge beim vertikalen Drag umgeschrieben. Curly Quotes im Popup wurden zu `â`. Mix-Glitch ging an den ganzen Director.
+
+#### Regel
+Karten-Drag nur `setPosition` + Snap. Reihenfolge nur im Overlay oder per Kabel. UI-Strings ASCII (`Edit Threshold`, nie `“`). Mix-Glitch nur im Slider. Hover-Kabel im Editor-Timer, nicht nur im Canvas-Timer.
+
 ### 2026-08-16 – Graph is a board, Script is a hack
 
 **Agent:** Grok Coding Agent  

@@ -21,6 +21,7 @@ public:
     bool extrasOpen() const noexcept { return extrasVisible; }
     void setExtrasOpen (bool shouldOpen);
     void toggleExtras();
+    void setMotion (CyberMotion m) { loud.setMotion (m); }
 
     std::function<void()> onExtrasChanged;
 

@@ -58,10 +58,14 @@ Top bar
 - Help: this guide, one chapter at a time. Text is large so you can read it from the chair.
 
 Settings
-The second strip is tools, not a second window: L/BOTH/R, oversampling, polisher, Mix, and the live status live on one row.
-- L / BOTH / R: which input channel feeds the formula. Click a third.
+Oversampling, Polisher, and Mix sit between Circuit/Terminal and the IN/OUT scopes, not in the top bar.
+- L / BOTH / R: which input channel feeds the formula. Same width as the knobs, on the Circuit / Terminal row.
 - Oversampling: 1x / 2x / 4x / 8x. Default 4x. Drop to 2x or 1x if the computer is struggling.
 - Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
+- Settings, Tempo: Host follows the DAW BPM. User lets you type a BPM. The footer shows HOST or USER.
+- Settings, Circuit cables: Dots (white/gray, beads follow loudness) or Wave (gray waveform).
+- Circuit right-click: Auto-arrange, or Add with category folders. Factory presets open already arranged at the current zoom. Sidechain puts the host extra input on a cable. Meter is dry.
+- Guitar: BOTH copies a silent side from the live side so L/R amps (Stereo Guitar Wall) work from a mono DI. Amp presets have a Width knob (default 0).
 - Text - / +: size of the formula text.
 - Resize the window to scale the UI. The aspect ratio stays locked.
 
@@ -71,17 +75,17 @@ Knobs
 - Right-click a knob for MIDI Learn.
 
 Formula area
-- Graph / Script: Graph is the board. Parts snap to a faint rose-cross grid and look like chips you assemble. Script is the hack — the same construct as text. Each block has the jacks it needs (audio, mix buses on OUT, A-F knobs, SC, LFO MOD). Right-click to add a module (Bus, Mid-Side Split, Left/Right Split, Crossover). Drag a jack to patch — the target lights when you can drop. Drag a card onto another rail to re-route. Double-click a card to edit. Click a knob name to rename it. Ctrl+Z / Ctrl+Y undo. Script (not editing) shows live knob values in brackets. Edit opens the text editor. Functions and Stages stay in the top bar. License and Help live in Settings.
+- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. Drag moves a chip without changing the chain order. Double-click opens the node overlay. Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. Cables show the waveform after each block. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
-- Each ir1 / ir2 line has a full-width button. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
+- Each ir1 / ir2 line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - Edit, then Save to apply.
 - Optimize: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
 - Insert / Quick template: drop in a common block.
 
 Bottom
-- Mix: dry / wet. Locked while Bypass is on. Drag may flash the background.
+- Tools row (between the editor and the scopes): Oversampling, Polisher, Mix. Mix drag may flash only inside the slider. Locked while Bypass is on.
 - Audio device lives in Settings (Standalone only). In a DAW the host owns the sample rate.
-- Status: LIVE / STUDIO / BYPASS / SAFE, CPU load, latency in ms, oversampling factor.
+- Footer: NKOS LIVE / STUDIO / BYPASS / SAFE, CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS.
 - IN / OUT: wave, stereo field, and loudness on each side. Click << to hide field and loudness; click >> to bring them back.
 
 ---
@@ -185,7 +189,7 @@ These are mix tools, not a full mastering suite.
 - Stereo Guitar Wall: two DI takes, two amps (Mesa left / 5150 right), cabinet IR preloaded. Needs stereo in and BOTH. Not a fake double of one take.
 - Cyberpunk Drive / Neon Clip / Chrome Fold / Data Mosher: digital dirt.
 - Glitch Laboratory: crush + fold + a short note-grid delay. No ping-pong, no LFO on the filter.
-- Kick Rumble / Warehouse Rumble: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit. Body = tight sine+sub. Tune ≈ 15 ms is the resonator. Insert on the kick, Mix 100.
+- Kick Rumble / Warehouse Rumble: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit only (follows the envelope). Body = dark floor (Floor knob, ~60 Hz) into a 15 ms resonator + sub. Insert on the kick, Mix 100.
 - Hardcore Clip / Gabber Drive: same split, more mid bark, 320 Hz scooped so it stays crisp. Acid Hash / Tekno Comb / Industrial Gate / Hoover Dirt: more club tools.
 
 ---
@@ -525,7 +529,7 @@ param b = Mix [0.4, 1.0]
 stage1: y = tube(x, a)
 ir1: mix = b; gain = 0
 
-2. Save. Click the full-width ir1 button under that line.
+2. Save. Click the inline ir1 button on that line.
 3. Amp factory presets already load a matching cabinet. Drop a WAV or AIFF to replace it, or click Load. Clear empties the slot (dry).
 4. Need two cabs? Add ir2: mix = 1 and click its own button. Each slot is separate.
 
