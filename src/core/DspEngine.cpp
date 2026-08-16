@@ -94,6 +94,11 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
                           (int) currentSpec.maximumBlockSize,
                           osLatencySamples);
     drySidechain.reset();
+    // Sidechain must match the OS-delayed wet, not OS+IR (IR sits later in the chain).
+    scHostBuffer.setSize (2, (int) currentSpec.maximumBlockSize, false, true, true);
+    scHostBuffer.clear();
+    scHostAlign.prepare (2, (int) currentSpec.maximumBlockSize, osLatencySamples);
+    scHostAlign.reset();
 
     outputGain.prepare(currentSpec);
     outputGain.setGainLinear(1.0f);
@@ -166,6 +171,7 @@ void DspEngine::reset(double sampleRate, int blockSize)
     dcBlocker.reset();
     outputSanitizer.reset();
     drySidechain.reset();
+    scHostAlign.reset();
     postDslLastGood.fill (0.0f);
 }
 
@@ -178,6 +184,16 @@ void DspEngine::release()
         slot.reset();
     lastOsBankBlock = 0;
     lastOsBankCh = 0;
+}
+
+void DspEngine::setDryAlignLatency (int samples) noexcept
+{
+    if (currentSpec.sampleRate <= 0.0)
+        return;
+    const int n = juce::jmax (0, samples);
+    drySidechain.prepare ((int) juce::jmax ((juce::uint32) 1, currentSpec.numChannels),
+                          (int) juce::jmax ((juce::uint32) 1, currentSpec.maximumBlockSize),
+                          n);
 }
 
 void DspEngine::onFormulaChanged()
@@ -196,6 +212,7 @@ void DspEngine::onFormulaChanged()
     lowpassFilter.reset();
     dcBlocker.reset();
     drySidechain.reset();
+    scHostAlign.reset();
     outputSanitizer.reset();
     postDslLastGood.fill (0.0f);
     gainCompValue.setCurrentAndTargetValue (1.0f);
@@ -376,10 +393,17 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
             }
         }
 
-        // Light safety on dry-only (NaN hold + peak)
+        // Host PDC already delays other tracks by OS+IR. Mix 0% must emit
+        // that same timeline — raw dry here is early and clicks on mix-up.
         if (numSamplesEarly > 0)
         {
-            auto dryConst = juce::dsp::AudioBlock<const float> (dryBuffer)
+            drySidechain.pushAndRead (dryBuffer, (int) numSamplesEarly);
+            const auto& aligned = drySidechain.getAligned();
+            const int nCh = juce::jmin (buffer.getNumChannels(), aligned.getNumChannels());
+            for (int ch = 0; ch < nCh; ++ch)
+                buffer.copyFrom (ch, 0, aligned, ch, 0, (int) numSamplesEarly);
+
+            auto dryConst = juce::dsp::AudioBlock<const float> (aligned)
                                 .getSubBlock (0, numSamplesEarly);
             auto mixed    = block.getSubBlock (0, numSamplesEarly);
             const bool peakWas = outputSanitizer.isPeakSafetyEnabled();
@@ -457,6 +481,19 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
             if (scOsBuffer.getNumSamples() < osN)
                 scOsBuffer.setSize (2, osN, false, false, true);
             const int hn = hostScN;
+            if (scHostBuffer.getNumSamples() < hn || scHostBuffer.getNumChannels() < 2)
+                scHostBuffer.setSize (2, hn, false, false, true);
+            scHostBuffer.copyFrom (0, 0, hostScL, hn);
+            if (hostScR != nullptr)
+                scHostBuffer.copyFrom (1, 0, hostScR, hn);
+            else
+                scHostBuffer.copyFrom (1, 0, hostScL, hn);
+            // Studio FIR OS delays the main path; raw host SC would duck early.
+            scHostAlign.pushAndRead (scHostBuffer, hn);
+            const auto& scAligned = scHostAlign.getAligned();
+            const float* sl = scAligned.getReadPointer (0);
+            const float* sr = scAligned.getNumChannels() > 1
+                                  ? scAligned.getReadPointer (1) : sl;
             const float scale = (hn > 1 && osN > 1) ? ((float) (hn - 1) / (float) (osN - 1)) : 0.f;
             for (int i = 0; i < osN; ++i)
             {
@@ -465,10 +502,10 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
                 if (i0 >= hn - 1) i0 = hn - 1;
                 const int i1 = juce::jmin (hn - 1, i0 + 1);
                 const float f = pos - (float) i0;
-                const float sl0 = hostScL[i0];
-                const float sl1 = hostScL[i1];
-                const float sr0 = hostScR != nullptr ? hostScR[i0] : sl0;
-                const float sr1 = hostScR != nullptr ? hostScR[i1] : sl1;
+                const float sl0 = sl[i0];
+                const float sl1 = sl[i1];
+                const float sr0 = sr[i0];
+                const float sr1 = sr[i1];
                 scOsBuffer.setSample (0, i, sl0 + f * (sl1 - sl0));
                 scOsBuffer.setSample (1, i, sr0 + f * (sr1 - sr0));
             }

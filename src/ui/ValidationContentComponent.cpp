@@ -1,5 +1,6 @@
 #include "ValidationContentComponent.h"
 #include "../core/PluginProcessor.h"
+#include "../utils/FormulaQuality.h"
 
 ValidationContentComponent::ValidationContentComponent(NeuroKoreAudioProcessor& proc, const juce::String& expr)
     : processor(proc), script(expr)
@@ -40,6 +41,7 @@ void ValidationContentComponent::startTest()
 {
     auto text = script;
     worker = std::make_unique<std::thread>([this, text]() {
+        auto* host = this;
         juce::String warn;
         auto progressFn = [this](const ValidationProgressInfo& info) {
             progress.store(info.progress);
@@ -53,26 +55,38 @@ void ValidationContentComponent::startTest()
         };
 
         // 1) Fast quality metric (static + dynamic probes)
-        const auto quality = processor.analyseFormulaQuality (text);
+        FormulaQualityReport quality;
+        try
+        {
+            quality = processor.analyseFormulaQuality (text);
+        }
+        catch (...)
+        {
+            quality.ok = false;
+            quality.errors.add ("Validation crashed while scoring the script.");
+        }
         if (quality.nanCount > 0 || quality.infCount > 0 || ! quality.ok)
         {
-            juce::MessageManager::callAsync ([this, quality]()
+            juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<ValidationContentComponent> (host), quality]()
             {
-                state = State::warning;
-                warningString = quality.errors.isEmpty()
+                if (safe == nullptr)
+                    return;
+                auto* self = safe.getComponent();
+                self->state = State::warning;
+                self->warningString = quality.errors.isEmpty()
                                     ? "Invalid output (NaN / Inf / unsafe)."
                                     : quality.errors.joinIntoString ("; ");
-                progressBar.setVisible (false);
-                okButton.setVisible (true);
-                icon.setVisible (true);
-                messageLabel.setText (warningString, juce::dontSendNotification);
-                statsLabel.setText (quality.summary()
+                self->progressBar.setVisible (false);
+                self->okButton.setVisible (true);
+                self->icon.setVisible (true);
+                self->messageLabel.setText (self->warningString, juce::dontSendNotification);
+                self->statsLabel.setText (quality.summary()
                                     + "  NaN: " + juce::String (quality.nanCount)
                                     + " Inf: " + juce::String (quality.infCount),
                                     juce::dontSendNotification);
-                grabKeyboardFocus();
-                resized();
-                repaint();
+                self->grabKeyboardFocus();
+                self->resized();
+                self->repaint();
             });
             return;
         }
@@ -92,20 +106,23 @@ void ValidationContentComponent::startTest()
         bool stable = processor.testFormulaStability(text, warn, gatedProgress);
         if (abortRequested.load() && (nanCount.load() > 0 || infCount.load() > 0))
         {
-            juce::MessageManager::callAsync ([this]()
+            juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<ValidationContentComponent> (host)]()
             {
-                state = State::warning;
-                warningString = "Invalid output detected (NaN / Inf).";
-                progressBar.setVisible (false);
-                okButton.setVisible (true);
-                icon.setVisible (true);
-                messageLabel.setText (warningString, juce::dontSendNotification);
-                statsLabel.setText ("NaN: " + juce::String (nanCount.load())
-                                    + " Inf: " + juce::String (infCount.load()),
+                if (safe == nullptr)
+                    return;
+                auto* self = safe.getComponent();
+                self->state = State::warning;
+                self->warningString = "Invalid output detected (NaN / Inf).";
+                self->progressBar.setVisible (false);
+                self->okButton.setVisible (true);
+                self->icon.setVisible (true);
+                self->messageLabel.setText (self->warningString, juce::dontSendNotification);
+                self->statsLabel.setText ("NaN: " + juce::String (self->nanCount.load())
+                                    + " Inf: " + juce::String (self->infCount.load()),
                                     juce::dontSendNotification);
-                grabKeyboardFocus();
-                resized();
-                repaint();
+                self->grabKeyboardFocus();
+                self->resized();
+                self->repaint();
             });
             return;
         }
@@ -128,36 +145,40 @@ void ValidationContentComponent::startTest()
         const auto qualityLine = quality.summary();
         const auto warnLine = quality.warnings.joinIntoString (" | ");
 
-        juce::MessageManager::callAsync ([cb = onResult, ok, detail, qualityLine, warnLine, quality, this]() mutable {
+        juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<ValidationContentComponent> (host),
+                                          ok, detail, qualityLine, warnLine, quality]()
+        {
+            if (safe == nullptr)
+                return;
+            auto* self = safe.getComponent();
             if (ok)
             {
-                warningString = qualityLine;
+                self->warningString = qualityLine;
                 if (warnLine.isNotEmpty())
-                    warningString << "  | " << warnLine;
-                messageLabel.setText ("FORMULA STABLE", juce::dontSendNotification);
-                statsLabel.setText (qualityLine
+                    self->warningString << "  | " << warnLine;
+                self->messageLabel.setText ("FORMULA STABLE", juce::dontSendNotification);
+                self->statsLabel.setText (qualityLine
                                     + "  NaN: " + juce::String (quality.nanCount)
                                     + " Inf: " + juce::String (quality.infCount),
                                     juce::dontSendNotification);
-                progressBar.setProgress (1.f);
-                finishSuccess();
-                juce::ignoreUnused (cb);
+                self->progressBar.setProgress (1.f);
+                self->finishSuccess();
             }
             else
             {
-                state = State::warning;
-                warningString = detail;
-                progressBar.setVisible (false);
-                okButton.setVisible (true);
-                icon.setVisible (true);
-                messageLabel.setText (detail, juce::dontSendNotification);
-                statsLabel.setText (qualityLine
+                self->state = State::warning;
+                self->warningString = detail;
+                self->progressBar.setVisible (false);
+                self->okButton.setVisible (true);
+                self->icon.setVisible (true);
+                self->messageLabel.setText (detail, juce::dontSendNotification);
+                self->statsLabel.setText (qualityLine
                                     + "  NaN: " + juce::String (quality.nanCount)
                                     + " Inf: " + juce::String (quality.infCount),
                                     juce::dontSendNotification);
-                grabKeyboardFocus();
-                resized();
-                repaint();
+                self->grabKeyboardFocus();
+                self->resized();
+                self->repaint();
             }
         });
     });
@@ -179,12 +200,9 @@ void ValidationContentComponent::resized()
     auto btnHeight = 24;
     auto bottom = area.removeFromBottom(btnHeight);
     okButton.setBounds(bottom.removeFromRight(80));
-    icon.setBounds(bottom.removeFromLeft(24));
-	icon.setBounds(getLocalBounds().removeFromTop(24).removeFromLeft(24).withTrimmedLeft(8));
-	icon.setSize(getLocalBounds().getWidth() , getLocalBounds().getHeight() );
-	icon.toBack();
-	icon.setAlpha(0.5f);
-    messageLabel.setBounds(area);
+    icon.setBounds (bottom.removeFromLeft (24).reduced (2));
+    icon.setAlpha (0.85f);
+    messageLabel.setBounds (area);
 }
 
 bool ValidationContentComponent::keyPressed(const juce::KeyPress& kp)

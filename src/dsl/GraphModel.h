@@ -84,12 +84,20 @@ struct TidyHint
 };
 
 inline constexpr int kTidyGrid = 16;
-inline constexpr int kTidyCardW = 208;
-inline constexpr int kTidyCardH = 84;
-inline constexpr int kTidyColGap = 48;
-inline constexpr int kTidyRowGap = 32;
-inline constexpr int kTidyMinGap = 16;
-inline constexpr int kTidyMargin = 16;
+inline constexpr int kTidyCardW = 13 * kTidyGrid; // 208 — same as GraphCanvas kCardWidth
+inline constexpr int kTidyCardH = 2 * kTidyGrid;  // 32  — title + one jack row
+inline constexpr int kTidyIoW = 5 * kTidyGrid;    // 80  — IN / OUT
+inline constexpr int kTidyColGap = 3 * kTidyGrid; // 48
+inline constexpr int kTidyRowGap = kTidyGrid;     // 16 — next jack row
+inline constexpr int kTidyMinGap = kTidyGrid;
+inline constexpr int kTidyMargin = kTidyGrid;
+
+int tidyNodeWidth (const GraphNode& n) noexcept;
+int tidyNodeHeight (const GraphNode& n, const GraphDocument* doc);
+bool nodeRectsClash (float ax, float ay, float aw, float ah,
+                     float bx, float by, float bw, float bh,
+                     float gap = (float) kTidyMinGap) noexcept;
+void separateOverlappingNodes (GraphDocument& doc, float inX, float inY);
 
 /** Arrange chips from visual edges. Does not reorder nodes or change cables.
     If viewW/viewH > 0 and the graph fits at readable size, pack into that view.
@@ -131,6 +139,10 @@ std::vector<KnobBinding> knobBindings (const GraphNode& node);
 /** Rewrite `param a = Old` to `param a = New`, keeping range and comment. */
 juce::String rewriteParamDisplayName (const juce::String& script, int knobIndex,
                                       const juce::String& newName);
+
+/** Rewrite `param a = Name [min, max]` bounds. Creates the line if missing. */
+juce::String rewriteParamRange (const juce::String& script, int knobIndex,
+                                float newMin, float newMax);
 
 /** Fill names[0..5] from `param a = …` lines. Missing letters stay empty. */
 void collectParamDisplayNames (const juce::String& script, juce::String* names, int numNames);

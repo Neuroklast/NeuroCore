@@ -53,6 +53,7 @@ namespace Config
     /// Mix / OS / Polisher sit above the scopes, not in the top chrome.
     inline constexpr int kOverlayTopChromeDesign = kHudHeaderHeight
                                                  + kToolbarRowMaxHeight
+                                                 + kToolsRowHeight
                                                  + 10;
     inline constexpr int kFooterRowHeight    = 22;
     inline constexpr int kActionRowHeight    = 26;
@@ -279,7 +280,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.9.1-alpha"
+#define PLUGIN_VERSION    "0.4.4-alpha"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

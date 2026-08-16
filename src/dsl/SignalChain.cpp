@@ -735,7 +735,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 auto freqStr = d.args.at("freq").trim();
                 if (isNumeric(freqStr))
                 {
-                    oc->osc.setFrequency(freqStr.getFloatValue());
+                    oc->fixedHz = freqStr.getFloatValue();
+                    oc->applyOscFrequency (oc->fixedHz);
                 }
                 else
                 {
@@ -795,6 +796,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                     const auto el = (exprC + exprW).toLowerCase();
                     fi->modulated = d.args.count ("+") || d.args.count ("*")
                                  || el.contains ("osc") || el.contains ("env");
+                    fi->modulatedByOsc = el.contains ("osc");
                 }
                 if (fi->useLowHigh)
                 {
@@ -812,6 +814,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
                     const auto el = (exprL + exprH).toLowerCase();
                     fi->modulated = fi->modulated || el.contains ("osc") || el.contains ("env");
+                    fi->modulatedByOsc = fi->modulatedByOsc || el.contains ("osc");
                 }
 
                 // fallback cutoff/resonance
@@ -829,6 +832,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                     const auto el = expr.toLowerCase();
                     fi->modulated = d.args.count ("+") || d.args.count ("*")
                                  || el.contains ("osc") || el.contains ("env");
+                    fi->modulatedByOsc = el.contains ("osc");
                 }
                 else
                 {
@@ -2414,6 +2418,11 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     osc.prepare({spec.sampleRate, spec.maximumBlockSize, 1});
     last.assign(spec.numChannels, 0.0f);
     lastSetFreq = -1.f;
+    vizHz.store (0.f, std::memory_order_relaxed);
+    if (fixedHz > 0.f)
+        applyOscFrequency (fixedHz);
+    else if (useSyncRatio)
+        updateSyncFrequency();
     modSm.reset ((double) sampleRate, Config::kLfoSmoothingTime);
     modSm.setCurrentAndTargetValue (0.f);
     viz.fill (0.f);
@@ -2429,8 +2438,10 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     }
     if (useSyncRatio)
         updateSyncFrequency();
-    else
+    else if (useFreqExpr)
         updateFrequencyFromExpr();
+    else if (fixedHz > 0.f)
+        applyOscFrequency (fixedHz);
 }
 
 void SignalChain::Osc::updateFrequencyFromExpr() noexcept
@@ -2488,6 +2499,7 @@ void SignalChain::Osc::applyOscFrequency (float hz) noexcept
         return;
     osc.setFrequency (hz, lastSetFreq < 0.f);
     lastSetFreq = hz;
+    vizHz.store (hz, std::memory_order_release);
 }
 
 float SignalChain::Osc::process(int ch, float x)
@@ -2498,8 +2510,10 @@ float SignalChain::Osc::process(int ch, float x)
     {
         if (useSyncRatio)
             updateSyncFrequency();
-        else
+        else if (useFreqExpr)
             updateFrequencyFromExpr();
+        else if (fixedHz > 0.f)
+            applyOscFrequency (fixedHz);
         auto v = osc.processSample(0.0f) * depth;
         if (! std::isfinite(v))
             v = 0.0f;
@@ -2563,6 +2577,24 @@ bool SignalChain::copyLfoViz (const juce::String& id, float* dest, int destN) co
     return false;
 }
 
+bool SignalChain::copyLfoHz (const juce::String& id, float& destHz) const noexcept
+{
+    destHz = 0.f;
+    if (id.isEmpty())
+        return false;
+    auto chainPtr = std::atomic_load (&chain);
+    if (! chainPtr)
+        return false;
+    for (auto& b : *chainPtr)
+        if (auto* oc = dynamic_cast<Osc*> (b.get()))
+            if (oc->name.equalsIgnoreCase (id))
+            {
+                destHz = oc->vizHz.load (std::memory_order_acquire);
+                return true;
+            }
+    return false;
+}
+
 void SignalChain::Osc::renderModBlock (int numSamples) noexcept
 {
     if (numSamples <= 0)
@@ -2570,8 +2602,10 @@ void SignalChain::Osc::renderModBlock (int numSamples) noexcept
 
     if (useSyncRatio)
         updateSyncFrequency();
-    else
+    else if (useFreqExpr)
         updateFrequencyFromExpr();
+    else if (fixedHz > 0.f)
+        applyOscFrequency (fixedHz);
 
     if ((int) modLane.size() < numSamples)
         modLane.resize ((size_t) numSamples);
@@ -2706,9 +2740,9 @@ void SignalChain::Filter::advanceCoeffsOnce() noexcept
     const bool jumped = lastAppliedFc < 0.f
                      || std::abs (fcSm - lastAppliedFc) > 0.18f
                      || std::abs (rqSm - lastAppliedRes) > 0.004f;
-    // LFO sweep must apply every sample. Skipping setCutoff here is a zipper
-    // (Phaser Lab / Sweep). evaluate() lock+ADAA reset was the CPU crackle.
-    if (modulated || jumped || (coeffPhase++ & 7) == 0)
+    // Osc sweeps need every sample. Env-only Acid-style mods can stride 8.
+    // evaluate() lock+ADAA reset was the CPU crackle.
+    if (modulatedByOsc || jumped || (coeffPhase++ & 7) == 0)
     {
         filter.setCutoffFrequency (fcSm);
         filter.setResonance (rqSm);
@@ -3002,6 +3036,15 @@ void SignalChain::Eq::processBlock (juce::AudioBuffer<float>& buffer)
     }
 }
 
+void SignalChain::Env::clearRuntimeState() noexcept
+{
+    std::fill (value.begin(), value.end(), 0.f);
+    std::fill (modLane.begin(), modLane.end(), 0.f);
+    prevMidiGate = 0.f;
+    if (varPtr && name.isNotEmpty())
+        (*varPtr)[name] = 0.f;
+}
+
 void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
@@ -3011,6 +3054,15 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     relTime.reset(sampleRate, Config::kSmoothingTime);
     auto initAtk = juce::jlimit(0.0001f, 1.0f, attack.evaluate(0.f));
     auto initRel = juce::jlimit(0.0001f, 1.0f, release.evaluate(0.f));
+    auto formulaIsLit = [] (const ExpressionEvaluator& e) noexcept
+    {
+        const auto s = juce::String (e.getFormula()).trim();
+        return s.isEmpty() || s.containsOnly ("0123456789.+-eE");
+    };
+    attackLit = formulaIsLit (attack);
+    releaseLit = formulaIsLit (release);
+    attackFixed = initAtk;
+    releaseFixed = initRel;
     atkTime.setCurrentAndTargetValue(initAtk);
     relTime.setCurrentAndTargetValue(initRel);
     prevAtk = initAtk;
@@ -3018,7 +3070,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
     varNames.clear();
-    if (varPtr)
+    if (varPtr && (! attackLit || ! releaseLit))
         for (const auto& kv : *varPtr)
             varNames.emplace_back(kv.first, kv.first.toStdString());
 }
@@ -3028,17 +3080,28 @@ float SignalChain::Env::process(int ch, float x)
     if (!varPtr || ch >= static_cast<int>(value.size()))
         return x;
 
-    for (const auto& n : varNames)
+    float a = attackFixed;
+    float r = releaseFixed;
+    if (! attackLit || ! releaseLit)
     {
-        attack.setVariable(n.second, (*varPtr)[n.first]);
-        release.setVariable(n.second, (*varPtr)[n.first]);
+        for (const auto& n : varNames)
+        {
+            if (! attackLit)
+                attack.setVariable(n.second, (*varPtr)[n.first]);
+            if (! releaseLit)
+                release.setVariable(n.second, (*varPtr)[n.first]);
+        }
+        if (! attackLit)
+        {
+            atkTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, attack.evaluate (x)));
+            a = atkTime.getNextValue();
+        }
+        if (! releaseLit)
+        {
+            relTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, release.evaluate (x)));
+            r = relTime.getNextValue();
+        }
     }
-
-    atkTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, attack.evaluate(x)));
-    relTime.setTargetValue(juce::jlimit(0.0001f, 1.0f, release.evaluate(x)));
-
-    auto a = atkTime.getNextValue();
-    auto r = relTime.getNextValue();
     if (a != prevAtk)
     {
         atkCoeff = std::exp(-1.0f / (a * sampleRate));
@@ -3133,11 +3196,16 @@ float SignalChain::publishedKnobValue (int index, float norm01) const noexcept
     return knobNotes[(size_t) index].msFromNorm (norm01, hostBpm);
 }
 
-void SignalChain::setTempo(double bpm, double /*ppqPosition*/, bool /*isPlaying*/) noexcept
+void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexcept
 {
     if (bpm <= 0.0)
         return;
+    const bool started = isPlaying && ! hostPlaying;
+    const bool seeked  = isPlaying && hostPlaying
+                      && std::abs (ppqPosition - hostPpq) > 0.5;
     hostBpm = bpm;
+    hostPpq = ppqPosition;
+    hostPlaying = isPlaying;
     auto chainPtr = std::atomic_load(&chain);
     if (! chainPtr)
         return;
@@ -3145,7 +3213,11 @@ void SignalChain::setTempo(double bpm, double /*ppqPosition*/, bool /*isPlaying*
     {
         if (auto* oc = dynamic_cast<Osc*>(b.get()))
             if (oc->useSyncRatio)
+            {
                 oc->applyTempo(bpm);
+                if (started || seeked)
+                    oc->osc.reset();
+            }
         if (auto* dl = dynamic_cast<Delay*>(b.get()))
             if (dl->useSync)
                 dl->applyTempo(bpm);
@@ -3980,7 +4052,7 @@ float SignalChain::Octaver::renderSub() noexcept
     // quiet and only as a bed until lock (Sub Only Octave must not be mute).
     det.flipSm += 0.07f * (det.flip - det.flipSm);
     const float sq = std::tanh (det.flipSm * 2.3f);
-    return (g * sn + (1.f - g) * sq * 0.28f) * det.env;
+    return (g * sn + (1.f - g) * sq * 0.70f) * det.env;
 }
 
 float SignalChain::Octaver::renderUp (Chan& c, float x) noexcept

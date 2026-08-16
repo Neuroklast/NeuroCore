@@ -13,9 +13,11 @@
 #include "../src/core/WaveformCapture.h"
 #include "../src/core/ScriptManager.h"
 #include "../src/core/PluginProcessor.h"
+#include "../src/core/EffectParameters.h"
 #include "../src/utils/FactoryPresetLibrary.h"
 #include "../src/utils/FormulaQuality.h"
 #include "TestHelpers.h"
+#include <algorithm>
 #include <cmath>
 
 #ifndef NEUROKORE_RESOURCES_DIR
@@ -603,18 +605,58 @@ private:
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
             NeuroKoreAudioProcessor proc;
             proc.prepareToPlay (44100.0, 256);
-            const auto names = proc.getPresetNames();
-            expect (names.size() >= 2);
+            struct Item { juce::String name, category; };
+            std::vector<Item> order;
+            for (const auto& e : lib.getEntries())
+                order.push_back ({ e.name, e.category });
+            std::sort (order.begin(), order.end(), [] (const Item& a, const Item& b)
+            {
+                const int c = a.category.compareNatural (b.category);
+                if (c != 0) return c < 0;
+                return a.name.compareNatural (b.name) < 0;
+            });
+            expect (order.size() >= 2);
             proc.stepPreset (1);
-            expectEquals (proc.getCurrentPresetName(), names[0]);
+            expectEquals (proc.getCurrentPresetName(), order[0].name);
             proc.stepPreset (1);
-            expectEquals (proc.getCurrentPresetName(), names[1]);
+            expectEquals (proc.getCurrentPresetName(), order[1].name);
             proc.stepPreset (-1);
-            expectEquals (proc.getCurrentPresetName(), names[0]);
+            expectEquals (proc.getCurrentPresetName(), order[0].name);
             proc.stepPreset (-1);
-            expectEquals (proc.getCurrentPresetName(), names[names.size() - 1]);
+            expectEquals (proc.getCurrentPresetName(), order.back().name);
             proc.stepPreset (1);
-            expectEquals (proc.getCurrentPresetName(), names[0]);
+            expectEquals (proc.getCurrentPresetName(), order[0].name);
+        }
+
+        beginTest ("stepPreset stays in a category then jumps to the next folder");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            struct Item { juce::String name, category; };
+            std::vector<Item> order;
+            for (const auto& e : lib.getEntries())
+                order.push_back ({ e.name, e.category });
+            std::sort (order.begin(), order.end(), [] (const Item& a, const Item& b)
+            {
+                const int c = a.category.compareNatural (b.category);
+                if (c != 0) return c < 0;
+                return a.name.compareNatural (b.name) < 0;
+            });
+            int firstCatEnd = 0;
+            while (firstCatEnd + 1 < (int) order.size()
+                   && order[(size_t) firstCatEnd + 1].category == order[0].category)
+                ++firstCatEnd;
+            if (firstCatEnd + 1 < (int) order.size())
+            {
+                NeuroKoreAudioProcessor proc;
+                proc.prepareToPlay (44100.0, 256);
+                proc.setCurrentPresetName (order[(size_t) firstCatEnd].name);
+                proc.stepPreset (1);
+                expectEquals (proc.getCurrentPresetName(), order[(size_t) firstCatEnd + 1].name);
+                expect (proc.getLastPresetBrowserCategory()
+                            .equalsIgnoreCase (order[(size_t) firstCatEnd + 1].category));
+            }
         }
 
         beginTest("FactoryPresetLibrary: load and apply ALL presets");
@@ -901,6 +943,22 @@ private:
             requireBlock ("LA-2A Opto", "knee");
         }
 
+        beginTest ("Metal Gate widens after the cab and Width is on by default");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* e = lib.findByName ("Metal Gate");
+            expect (e != nullptr);
+            if (e != nullptr)
+            {
+                const int irAt = e->script.indexOfIgnoreCase ("ir1:");
+                const int wideAt = e->script.indexOfIgnoreCase ("widen1:");
+                expect (irAt >= 0 && wideAt > irAt, "widen must sit after the cab IR");
+                expect (e->paramDefault[3] > 0.3f, "Width default must be audible");
+            }
+        }
+
         beginTest ("Factory amp presets preload matching cabinet IRs");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
@@ -1178,6 +1236,30 @@ private:
             expectEquals(restored.getVariableName(1), juce::String("tone"));
             expectEquals(proc.getCurrentLanguage(), juce::String("en"));
             expectEquals(restored.getCurrentLanguage(), juce::String("en"));
+        }
+
+        beginTest ("Processor state restores Input L/R");
+        {
+            NeuroKoreAudioProcessor proc;
+            if (auto* l = proc.apvts.getParameter (EffectParameters::useInputLeft))
+                l->setValueNotifyingHost (0.f);
+            if (auto* r = proc.apvts.getParameter (EffectParameters::useInputRight))
+                r->setValueNotifyingHost (1.f);
+            juce::MemoryBlock state;
+            proc.getStateInformation (state);
+
+            NeuroKoreAudioProcessor restored;
+            if (auto* l = restored.apvts.getParameter (EffectParameters::useInputLeft))
+                l->setValueNotifyingHost (1.f);
+            if (auto* r = restored.apvts.getParameter (EffectParameters::useInputRight))
+                r->setValueNotifyingHost (0.f);
+            restored.setStateInformation (state.getData(), (int) state.getSize());
+
+            auto* l = restored.apvts.getParameter (EffectParameters::useInputLeft);
+            auto* r = restored.apvts.getParameter (EffectParameters::useInputRight);
+            expect (l != nullptr && r != nullptr);
+            expect (l->getValue() < 0.5f, "Input L must stay off after restore");
+            expect (r->getValue() > 0.5f, "Input R must stay on after restore");
         }
 
         beginTest ("Preset browser remembers category and scope");

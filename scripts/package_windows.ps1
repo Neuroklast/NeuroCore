@@ -1,20 +1,27 @@
-# Stage Release artefacts, fill repo-root NEUROKORE-0.9.1-alpha, optionally compile Inno Setup.
+# Stage Release artefacts, fill repo-root NEUROKORE-0.4.4-alpha, optionally compile Inno Setup.
 # Usage (from repo root, after cmake --build build --config Release --target NeuroKore):
 #   powershell -File scripts/package_windows.ps1
 
 $ErrorActionPreference = "Stop"
 if (-not $PSScriptRoot) { $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.9.1-alpha"
+$version = "0.4.4-alpha"
+$stem = "NEUROKORE-$version"
 $art = Join-Path $root "build\NeuroKore_artefacts\Release"
 $stage = Join-Path $root "build\package\stage"
 $out = Join-Path $root "build\package"
-$dist = Join-Path $root "NEUROKORE-$version"
-$vst3 = Join-Path $art "VST3\NEUROKORE.vst3"
+$dist = Join-Path $root $stem
+$vst3 = $null
+foreach ($cand in @(
+        (Join-Path $art "VST3\$stem.vst3"),
+        (Join-Path $art "VST3\NEUROKORE.vst3")
+    )) {
+    if (Test-Path $cand) { $vst3 = $cand; break }
+}
 
 Write-Host "Root: $root"
-if (-not (Test-Path $vst3)) {
-    throw "VST3 not found at $vst3 -- build Release first."
+if (-not $vst3 -or -not (Test-Path $vst3)) {
+    throw "VST3 not found (looked for $stem.vst3 and NEUROKORE.vst3) -- build Release first."
 }
 
 function Reset-Dir([string]$path) {
@@ -25,10 +32,16 @@ function Reset-Dir([string]$path) {
 Reset-Dir $stage
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
-Copy-Item -Recurse -Force $vst3 (Join-Path $stage "NEUROKORE.vst3")
-$exe = Join-Path $art "Standalone\NEUROKORE.exe"
-if (Test-Path $exe) {
-    Copy-Item -Force $exe (Join-Path $stage "NEUROKORE.exe")
+Copy-Item -Recurse -Force $vst3 (Join-Path $stage "$stem.vst3")
+$exe = $null
+foreach ($cand in @(
+        (Join-Path $art "Standalone\$stem.exe"),
+        (Join-Path $art "Standalone\NEUROKORE.exe")
+    )) {
+    if (Test-Path $cand) { $exe = $cand; break }
+}
+if ($exe) {
+    Copy-Item -Force $exe (Join-Path $stage "$stem.exe")
 }
 
 Copy-Item -Force (Join-Path $root "LICENSE") (Join-Path $stage "LICENSE.txt")
@@ -55,9 +68,9 @@ New-Item -ItemType Directory -Force -Path $docsStage | Out-Null
     "",
     "INSTALL",
     "  Preferred: run Installer\NEUROKORE-$version-Setup.exe (admin).",
-    "  Manual VST3: copy VST3\NEUROKORE.vst3 to",
+    "  Manual VST3: copy VST3\$stem.vst3 to",
     "    C:\Program Files\Common Files\VST3\",
-    "  Standalone: run Standalone\NEUROKORE.exe",
+    "  Standalone: run Standalone\$stem.exe",
     "",
     "After install, rescan plug-ins in the DAW.",
     "Activate with a .lic via License in the plug-in.",
@@ -75,9 +88,9 @@ New-Item -ItemType Directory -Force -Path (Join-Path $dist "Standalone") | Out-N
 New-Item -ItemType Directory -Force -Path (Join-Path $dist "Installer") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $dist "Docs") | Out-Null
 
-Copy-Item -Recurse -Force (Join-Path $stage "NEUROKORE.vst3") (Join-Path $dist "VST3\NEUROKORE.vst3")
-if (Test-Path (Join-Path $stage "NEUROKORE.exe")) {
-    Copy-Item -Force (Join-Path $stage "NEUROKORE.exe") (Join-Path $dist "Standalone\NEUROKORE.exe")
+Copy-Item -Recurse -Force (Join-Path $stage "$stem.vst3") (Join-Path $dist "VST3\$stem.vst3")
+if (Test-Path (Join-Path $stage "$stem.exe")) {
+    Copy-Item -Force (Join-Path $stage "$stem.exe") (Join-Path $dist "Standalone\$stem.exe")
 }
 Copy-Item -Force (Join-Path $stage "README.txt") (Join-Path $dist "README.txt")
 Copy-Item -Force (Join-Path $stage "LICENSE.txt") (Join-Path $dist "LICENSE.txt")

@@ -103,6 +103,30 @@ public:
                 mx = juce::jmax (mx, v);
             }
             expect (mx - mn > 0.8f, "lfo viz span=" + juce::String (mx - mn, 3));
+
+            float hz = 0.f;
+            expect (chain.copyLfoHz ("osc1", hz), "copyLfoHz osc1");
+            expect (std::abs (hz - 4.f) < 0.05f, "lfo hz=" + juce::String (hz, 3));
+            expect (! chain.copyLfoHz ("stage1", hz));
+        }
+
+        beginTest ("copyLfoHz follows freq and stays 0 for missing osc");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "osc1: shape = sine; freq = 1.5; depth = 0.25\n"
+                "stage1: y = x * (0.5 + 0.5 * osc1)", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            buf.clear();
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            float hz = -1.f;
+            expect (chain.copyLfoHz ("osc1", hz));
+            expect (std::abs (hz - 1.5f) < 0.05f, "lfo hz=" + juce::String (hz, 3));
+            float missing = 99.f;
+            expect (! chain.copyLfoHz ("osc9", missing));
+            expectEquals (missing, 0.f);
         }
 
         beginTest ("osc shape aliases sawtooth tri pulse stay finite");

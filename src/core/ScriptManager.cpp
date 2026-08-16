@@ -138,7 +138,8 @@ float ScriptManager::evaluateFormula(float x)
     previewBuffer.setSample(0, 0, x);
     std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobs {};
     for (auto& k : knobs) k = nullptr;
-    const juce::ScopedLock pl (processLock);
+    // Preview is not the live chain — never take processLock (that would
+    // force the audio thread to drop a wet block).
     previewSignalChain.processBlockSmoothed(previewBuffer, knobs);
     return previewBuffer.getSample(0, 0);
 }
@@ -243,6 +244,12 @@ juce::String ScriptManager::getScript() const
 {
     const juce::SpinLock::ScopedLockType lock(variableLock);
     return dslScript;
+}
+
+void ScriptManager::storeScriptText (const juce::String& text)
+{
+    const juce::SpinLock::ScopedLockType lock (variableLock);
+    dslScript = text;
 }
 
 void ScriptManager::setVariableName(int index, const juce::String& name)

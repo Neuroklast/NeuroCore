@@ -537,6 +537,26 @@ public:
             expect (added.contains ("stage1: y = x"));
         }
 
+        beginTest ("rewriteParamRange updates bounds and delay keys list every jack");
+        {
+            const juce::String script =
+                "param a = Drive [0.0, 2.0]  # tone\n"
+                "delay1: time = 140; feedback = 0.3; mix = 0.4\n";
+            const auto next = dsl::rewriteParamRange (script, 0, 1.5f, 8.f);
+            expect (next.contains ("param a = Drive [1.5, 8]"));
+            expect (next.contains ("# tone"));
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            const auto keys = dsl::editableArgKeys (doc.nodes[0]);
+            expect (keys.contains ("time"));
+            expect (keys.contains ("sync"));
+            expect (keys.contains ("feedback"));
+            expect (keys.contains ("mix"));
+            expect (keys.contains ("damp"));
+            expect (keys.contains ("pingpong"));
+        }
+
         beginTest ("tidyLayout places a chain left to right without reordering");
         {
             const juce::String script =
@@ -673,6 +693,68 @@ public:
             expect (smashMaxY - smashMinY >= (float) dsl::kTidyCardH,
                     "smash rail must wrap to more than one row");
             expect (smashMaxX + (float) dsl::kTidyCardW <= 800.f);
+        }
+
+        beginTest ("tidyLayout never overlaps chips and parks OUT to the right");
+        {
+            const juce::String script =
+                "ms1: mode = encode\n"
+                "stage1: channel = mid; y = tube(x, a)\n"
+                "stage2: channel = side; y = x * b\n"
+                "ms2: mode = decode\n"
+                "filter1: type = lowpass; cutoff = e\n"
+                "out: main = 1\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            dsl::tidyLayout (doc, 1400, 800);
+            expect (dsl::hasAllPositions (doc));
+            int outI = -1, lastMain = -1;
+            float lastMainX = -1.0e9f;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+            {
+                const auto& n = doc.nodes[(size_t) i];
+                if (n.type == "out")
+                    outI = i;
+                else if (dsl::visualRail (n) == "main" && n.x >= lastMainX)
+                {
+                    lastMainX = n.x;
+                    lastMain = i;
+                }
+            }
+            expect (outI >= 0 && lastMain >= 0);
+            expect (doc.nodes[(size_t) outI].x > lastMainX + 8.f, "OUT must sit right of the last main chip");
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                for (int j = i + 1; j < (int) doc.nodes.size(); ++j)
+                {
+                    const auto& a = doc.nodes[(size_t) i];
+                    const auto& b = doc.nodes[(size_t) j];
+                    expect (! dsl::nodeRectsClash (a.x, a.y,
+                                                   (float) dsl::tidyNodeWidth (a),
+                                                   (float) dsl::tidyNodeHeight (a, &doc),
+                                                   b.x, b.y,
+                                                   (float) dsl::tidyNodeWidth (b),
+                                                   (float) dsl::tidyNodeHeight (b, &doc),
+                                                   (float) dsl::kTidyMinGap),
+                            "chips must keep a gap and never overlap");
+                }
+        }
+
+        beginTest ("separateOverlappingNodes pulls stacked chips apart");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse ("stage1: y = x\nstage2: y = x\n", doc, err), err);
+            dsl::setPosition (doc, 0, 80.f, 80.f);
+            dsl::setPosition (doc, 1, 80.f, 80.f);
+            dsl::separateOverlappingNodes (doc, 16.f, 16.f);
+            expect (! dsl::nodeRectsClash (doc.nodes[0].x, doc.nodes[0].y,
+                                           (float) dsl::tidyNodeWidth (doc.nodes[0]),
+                                           (float) dsl::tidyNodeHeight (doc.nodes[0], &doc),
+                                           doc.nodes[1].x, doc.nodes[1].y,
+                                           (float) dsl::tidyNodeWidth (doc.nodes[1]),
+                                           (float) dsl::tidyNodeHeight (doc.nodes[1], &doc),
+                                           (float) dsl::kTidyMinGap));
         }
 
         beginTest ("tidyLayout puts mid/side off the main rail");

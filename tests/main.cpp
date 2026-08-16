@@ -1,5 +1,6 @@
 #include "DSLParserTest.h"
 #include "GraphModelTest.h"
+#include "PcbRouterTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
 #include "SignalChainTest.h"
@@ -35,6 +36,7 @@ int main (int argc, char* argv[])
 
   DSLParserTest parserTest;
   GraphModelTest graphModelTest;
+  PcbRouterTest pcbRouterTest;
   ExpressionEvaluatorTest evaluatorTest;
   WaveShaperTest shaperTest;
   SignalChainTest chainTest;

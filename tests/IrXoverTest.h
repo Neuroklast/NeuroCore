@@ -46,6 +46,35 @@ public:
             expect (std::isfinite (mid) && std::isfinite (high));
         }
 
+        beginTest ("xover stays finite while the split moves");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "xover1: f1 = 200; f2 = 2500\nout: low = 0.5; mid = 0.35; high = 0.35",
+                err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> buf (2, 64);
+            float peak = 0.f;
+            for (int block = 0; block < 24; ++block)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float x = (i == 0 && block == 0) ? 1.f
+                        : std::sin (6.2831853f * 440.f * (float) (block * 64 + i) / 48000.f);
+                    buf.setSample (0, i, x);
+                    buf.setSample (1, i, x);
+                }
+                chain.processBlock (buf);
+                for (int i = 0; i < 64; ++i)
+                {
+                    expect (std::isfinite (buf.getSample (0, i)));
+                    peak = juce::jmax (peak, std::abs (buf.getSample (0, i)));
+                }
+            }
+            expect (peak < 8.f, "xover must not explode on an impulse + tone");
+        }
+
         beginTest ("two ir blocks both parse");
         {
             dsl::DSLParser parser;

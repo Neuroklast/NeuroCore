@@ -202,7 +202,7 @@ void ParameterComponent::resized()
     nameLabel.setJustificationType (Justification::centred);
 
     // Remaining area = knob + min/max + centre value
-    const int rangeH = 14;
+    const int rangeH = 16;
     auto rangeRow = bounds.removeFromBottom (rangeH);
     const int labelW = jmax (28, rangeRow.getWidth() / 3);
     minLabel.setBounds (rangeRow.removeFromLeft (labelW));
@@ -272,8 +272,8 @@ void ParameterComponent::updateLabel()
         const int last = (int) noteLabels.size() - 1;
         const int idx = juce::jlimit (0, last, (int) std::lround (norm * (float) last));
         valueLabel.setText (noteLabels[(size_t) idx], dontSendNotification);
-        minLabel.setText (noteLabels.front(), dontSendNotification);
-        maxLabel.setText (noteLabels.back(), dontSendNotification);
+        minLabel.setText ("MIN " + noteLabels.front(), dontSendNotification);
+        maxLabel.setText ("MAX " + noteLabels.back(), dontSendNotification);
     }
     else if (hasMappedRange)
     {
@@ -285,14 +285,14 @@ void ParameterComponent::updateLabel()
         else if (av >= 10.f)   txt = String (mapped, 2);
         else                   txt = String (mapped, 3);
         valueLabel.setText (txt, dontSendNotification);
-        minLabel.setText (formatRangeBound (mappedMin), dontSendNotification);
-        maxLabel.setText (formatRangeBound (mappedMax), dontSendNotification);
+        minLabel.setText ("MIN " + formatRangeBound (mappedMin), dontSendNotification);
+        maxLabel.setText ("MAX " + formatRangeBound (mappedMax), dontSendNotification);
     }
     else
     {
         valueLabel.setText (String (norm, 3), dontSendNotification);
-        minLabel  .setText ("0", dontSendNotification);
-        maxLabel  .setText ("1", dontSendNotification);
+        minLabel  .setText ("MIN 0", dontSendNotification);
+        maxLabel  .setText ("MAX 1", dontSendNotification);
     }
 
     valueLabel.setColour (Label::textColourId, accentColour.brighter (0.25f));
@@ -304,6 +304,19 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
     if (e.mods.isPopupMenu())
     {
         PopupMenu menu;
+        if (auto* editor = findParentComponentOfClass<juce::AudioProcessorEditor>())
+        {
+            if (auto* ctx = editor->getHostContext())
+            {
+                if (auto* param = valueTreeState.getParameter (paramID))
+                {
+                    if (auto hostMenu = ctx->getContextMenuForParameter (param))
+                        menu = hostMenu->getEquivalentPopupMenu();
+                }
+            }
+        }
+        if (menu.getNumItems() > 0)
+            menu.addSeparator();
         menu.addItem (5, "Rename knob");
         menu.addSeparator();
         menu.addItem (1, TRANS("Set Min"));
@@ -351,10 +364,11 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
                     return;
 
                 const bool setMin = (res == 1);
-                auto* aw = new AlertWindow ("", TRANS("Enter value"), AlertWindow::NoIcon);
-                aw->addTextEditor ("val",
-                                   setMin ? String (slider.getMinimum())
-                                          : String (slider.getMaximum()));
+                const float curMin = hasMappedRange ? mappedMin : 0.f;
+                const float curMax = hasMappedRange ? mappedMax : 1.f;
+                auto* aw = new AlertWindow ("", setMin ? "Set minimum" : "Set maximum",
+                                            AlertWindow::NoIcon);
+                aw->addTextEditor ("val", formatRangeBound (setMin ? curMin : curMax));
                 aw->addButton      ("OK", 1, KeyPress (KeyPress::returnKey));
                 aw->addButton      ("Cancel", 0, KeyPress (KeyPress::escapeKey));
 
@@ -366,18 +380,17 @@ void ParameterComponent::mouseUp (const MouseEvent& e)
                                 return;
 
                             const float v = awPtr->getTextEditor ("val")->getText().getFloatValue();
-                            if (auto* p = dynamic_cast<AudioParameterFloat*> (valueTreeState.getParameter (paramID)))
-                            {
-                                const float newMin = setMin ? v : p->range.start;
-                                const float newMax = setMin ? p->range.end : v;
-                                if (newMax > newMin)
-                                {
-                                    p->range.start = newMin;
-                                    p->range.end   = newMax;
-                                    slider.setRange (newMin, newMax);
-                                    updateLabel();
-                                }
-                            }
+                            if (! std::isfinite (v))
+                                return;
+                            float newMin = setMin ? v : (hasMappedRange ? mappedMin : 0.f);
+                            float newMax = setMin ? (hasMappedRange ? mappedMax : 1.f) : v;
+                            if (newMax < newMin)
+                                std::swap (newMin, newMax);
+                            if (std::abs (newMax - newMin) < 1.0e-9f)
+                                newMax = newMin + 1.f;
+                            setMappedRange (newMin, newMax);
+                            if (onMappedRangeChanged)
+                                onMappedRangeChanged (newMin, newMax);
                         }),
                     true);
             });

@@ -273,6 +273,62 @@ public:
         }
 
         // ---- Timeline contracts (architecture, not thresholds) ----
+        beginTest ("mix 0 dry is delayed by reported host latency");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f)); // 4×
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.f);
+
+            const int lat = proc.getLatencySamples();
+            expect (lat >= 0);
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            // prepare() starts switchRamp at 0 — eat the fade before the impulse.
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            proc.processBlock (buf, midi);
+            int peakAt = -1;
+            float peak = 0.f;
+            int sample = 0;
+            for (int b = 0; b < 16; ++b)
+            {
+                if (b > 0)
+                {
+                    buf.clear();
+                    proc.processBlock (buf, midi);
+                }
+                for (int i = 0; i < 128; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    if (a > peak)
+                    {
+                        peak = a;
+                        peakAt = sample;
+                    }
+                }
+            }
+            expect (peak > 0.25f, "dry impulse must appear, peak=" + juce::String (peak, 3));
+            if (lat > 0)
+                expect (std::abs (peakAt - lat) <= 2,
+                        "mix0 peakAt=" + juce::String (peakAt) + " lat=" + juce::String (lat));
+            else
+                expectEquals (peakAt, 0);
+            proc.releaseResources();
+        }
+
         beginTest ("LatencyAlignedSidechain delay equals configured latency");
         {
             for (int lat : { 0, 1, 26, 64, 128 })
@@ -463,6 +519,50 @@ public:
                 g.clear();
                 expect (! g.isTripped());
             }
+        }
+
+        beginTest ("live lock miss does not splice dry input through the output");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            proc.prepareToPlay (48000.0, 128);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x * 0.25", err), err);
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            auto fill = [&] (float amp)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float s = amp * std::sin (0.11f * (float) i);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+            };
+            float wetPeak = 0.f;
+            for (int b = 0; b < 48; ++b)
+            {
+                fill (0.8f);
+                proc.processBlock (buf, midi);
+                if (b >= 40)
+                    for (int i = 0; i < 128; ++i)
+                        wetPeak = juce::jmax (wetPeak, std::abs (buf.getSample (0, i)));
+            }
+            expect (wetPeak > 0.12f && wetPeak < 0.35f, "wet peak=" + juce::String (wetPeak, 3));
+
+            float heldPeak = 0.f;
+            {
+                const juce::ScopedLock sl (proc.getProcessLock());
+                fill (0.8f);
+                proc.processBlock (buf, midi);
+                for (int i = 0; i < 128; ++i)
+                    heldPeak = juce::jmax (heldPeak, std::abs (buf.getSample (0, i)));
+            }
+            expect (heldPeak < 0.40f, "lock-miss must not emit dry 0.8, peak="
+                    + juce::String (heldPeak, 3));
+            expect (heldPeak > 0.05f, "lock-miss should keep last wet, peak="
+                    + juce::String (heldPeak, 3));
+            proc.releaseResources();
         }
 
         beginTest ("8x then 4x oversampling does not process leftover silence");
@@ -946,6 +1046,124 @@ public:
             }
             expect (maxJump < 0.35f, "env duck jump " + juce::String (maxJump, 4));
             expect (minY > -2.2f && maxY < 2.2f);
+        }
+
+        beginTest ("Acid Line env-open filter stays finite without a hitch");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "param a = Res [0.8, 3.4]\n"
+                "param b = Min [90, 500]\n"
+                "param c = Range [500, 4500]\n"
+                "param d = Drive [1.1, 4.0]\n"
+                "env1: type = peak; attack = 0.002; release = 0.16\n"
+                "filter1: type = lowpass; cutoff = b; + = env1; * = c; resonance = a\n"
+                "stage1: y = diode(x, d)\n", err), err);
+            juce::AudioBuffer<float> buf (2, 256);
+            float maxJump = 0.f, prev = 0.f;
+            bool have = false;
+            for (int b = 0; b < 40; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float t = (float) (b * 256 + i) / 48000.f;
+                    const float s = ((b % 8) < 2 ? 0.85f : 0.02f)
+                                  * std::sin (2.f * juce::MathConstants<float>::pi * 110.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    expect (std::isfinite (y));
+                    if (have)
+                        maxJump = juce::jmax (maxJump, std::abs (y - prev));
+                    prev = y;
+                    have = true;
+                }
+            }
+            expect (maxJump < 1.8f, "acid line jump " + juce::String (maxJump, 4));
+        }
+
+        beginTest ("preset switch Acid Line to Metal Gate stays finite and env resets");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "env1: type = peak; attack = 0.004; release = 0.16\n"
+                "filter1: type = lowpass; cutoff = 180; + = env1; * = 2400; resonance = 1.9\n"
+                "stage1: y = diode(x, 2)\n", err), err);
+            juce::AudioBuffer<float> buf (2, 128);
+            for (int b = 0; b < 8; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float s = 0.7f * std::sin (0.2f * (float) (b * 128 + i));
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            }
+            chain.clearRuntimeState();
+            expect (chain.loadScript (
+                "gate1: threshold = -38; hyst = 8; hold = 0.08; release = 0.12; range = -80\n"
+                "stage1: y = tube(x, 4)\n"
+                "widen1: width = 0.7\n", err), err);
+            chain.clearRuntimeState();
+            float maxAbs = 0.f;
+            for (int b = 0; b < 12; ++b)
+            {
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float s = 0.4f * std::sin (0.11f * (float) (b * 128 + i));
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                for (int i = 0; i < 128; ++i)
+                {
+                    const float l = buf.getSample (0, i);
+                    const float r = buf.getSample (1, i);
+                    expect (std::isfinite (l) && std::isfinite (r));
+                    maxAbs = juce::jmax (maxAbs, std::abs (l), std::abs (r));
+                }
+            }
+            expect (maxAbs > 0.02f);
+        }
+
+        beginTest ("widen after a mono IR still opens L/R");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "stage1: y = x\n"
+                "ir1: mix = 0.5; gain = 0\n"
+                "widen1: width = 1.0\n", err), err);
+            juce::AudioBuffer<float> ir (1, 64);
+            ir.clear();
+            ir.setSample (0, 0, 1.f);
+            chain.loadImpulseResponse ("ir1", ir, 48000.0);
+            juce::AudioBuffer<float> buf (2, 256);
+            float side = 0.f;
+            for (int b = 0; b < 20; ++b)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = 0.5f * std::sin (2.f * juce::MathConstants<float>::pi
+                                                     * 440.f * (float) (b * 256 + i) / 48000.f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                for (int i = 0; i < 256; ++i)
+                    side = juce::jmax (side, std::abs (buf.getSample (0, i) - buf.getSample (1, i)));
+            }
+            expect (side > 0.02f, "widen side=" + juce::String (side, 4));
         }
 
         beginTest ("phaser sweep does not slam stereo width each LFO cycle");

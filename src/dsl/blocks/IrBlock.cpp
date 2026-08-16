@@ -7,6 +7,7 @@ using namespace dsl;
 void SignalChain::Ir::clearRuntimeState() noexcept
 {
     conv.reset();
+    dryAlign.reset();
 }
 
 void SignalChain::Ir::clearImpulse()
@@ -38,15 +39,19 @@ void SignalChain::Ir::loadImpulse (const juce::AudioBuffer<float>& ir, double ir
                               juce::dsp::Convolution::Normalise::no);
     hasIr = true;
     latencySamples = (int) conv.getLatency();
+    if (dryScratch.getNumChannels() > 0 && dryScratch.getNumSamples() > 0)
+        dryAlign.prepare (dryScratch.getNumChannels(), dryScratch.getNumSamples(),
+                          juce::jmax (0, latencySamples));
 }
 
 void SignalChain::Ir::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
     conv.prepare (spec);
-    dryScratch.setSize ((int) juce::jmax ((juce::uint32) 1, spec.numChannels),
-                        (int) juce::jmax ((juce::uint32) 1, spec.maximumBlockSize),
-                        false, false, true);
+    const int ch = (int) juce::jmax ((juce::uint32) 1, spec.numChannels);
+    const int n  = (int) juce::jmax ((juce::uint32) 1, spec.maximumBlockSize);
+    dryScratch.setSize (ch, n, false, false, true);
+    dryAlign.prepare (ch, n, juce::jmax (0, latencySamples));
     mixSm.reset (sampleRate, Config::kSmoothingTime);
     gainSm.reset (sampleRate, Config::kSmoothingTime);
     const float m = mixExpr.evaluate (0.f);
@@ -100,6 +105,13 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
     juce::dsp::ProcessContextReplacing<float> ctx (block);
     conv.process (ctx);
 
+    const juce::AudioBuffer<float>* drySrc = &dryScratch;
+    if (latencySamples > 0)
+    {
+        dryAlign.pushAndRead (dryScratch, nS);
+        drySrc = &dryAlign.getAligned();
+    }
+
     const bool staticMix = ! mixSm.isSmoothing() && ! gainSm.isSmoothing();
     const float mix0 = juce::jlimit (0.f, 1.f, mixSm.getCurrentValue());
     const float g0 = juce::Decibels::decibelsToGain (
@@ -107,7 +119,7 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
     if (staticMix && mix0 <= 1.0e-4f)
     {
         for (int c = 0; c < nCh; ++c)
-            buffer.copyFrom (c, 0, dryScratch, c, 0, nS);
+            buffer.copyFrom (c, 0, *drySrc, c, 0, nS);
         mixSm.skip (nS);
         gainSm.skip (nS);
         return;
@@ -127,7 +139,7 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
     for (int c = 0; c < useCh; ++c)
     {
         chOut[c] = buffer.getWritePointer (c);
-        chDry[c] = dryScratch.getReadPointer (c);
+        chDry[c] = drySrc->getReadPointer (c);
     }
 
     for (int i = 0; i < nS; ++i)

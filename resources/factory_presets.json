@@ -1236,7 +1236,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Metal Gate\n# How it sounds: Tight metal: HPF â†’ tube cascade â†’ soft-pre hard knee â†’ cab LPF (filter after clip).\n# a Drive: 4 to 14, default 8.5\n# b LowCut: 70 to 350, default 140\n# c Level: 0.2 to 0.85, default 0.45\n# d Width: 0 to 1.2, default 0\n\nparam a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nparam d = Width [0.0, 1.2]\ngate1: threshold = -42; hyst = 8; hold = 0.025; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.5  # highpass\nstage1: y = tube(x, a * 0.45)  # tube saturation\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)  # tube saturation\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6  # lowpass\nstage3: y = y * c  # waveshape / mix\nwiden1: width = d  # mono to stereo\nir1: mix = 0.5; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter",
+    "script": "# Metal Gate\n# How it sounds: Tight metal: HPF → tube cascade → soft-pre hard knee → cab LPF, then width.\n# a Drive: 4 to 14, default 8.5\n# b LowCut: 70 to 350, default 140\n# c Level: 0.2 to 0.85, default 0.45\n# d Width: 0 to 1.2, default 0.55\n\nparam a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nparam d = Width [0.0, 1.2]\ngate1: threshold = -38; hyst = 8; attack = 0.004; hold = 0.08; release = 0.12; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.5  # highpass\nstage1: y = tube(x, a * 0.45)  # tube saturation\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)  # tube saturation\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6  # lowpass\nstage3: y = y * c  # waveshape / mix\nir1: mix = 0.5; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter\nwiden1: width = d  # mono to stereo",
     "tags": [
       "cabinet",
       "clip",
@@ -1277,7 +1277,7 @@
       "name": "Width",
       "min": 0,
       "max": 1.2,
-      "default": 0
+      "default": 0.55
     },
     "irs": {
       "ir1": "Medium IR 01.wav"
@@ -1986,7 +1986,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Acid Line\n# How it sounds: 303-ish: env opens LPF with musical Q, then diode.\n# a Res: 0.8 to 3.4, default 2.4\n# b Min: 90 to 500, default 180\n# c Range: 500 to 4500, default 2400\n# d Drive: 1.1 to 4, default 2\n\nparam a = Res [0.8, 3.4]\nparam b = Min [90, 500]\nparam c = Range [500, 4500]\nparam d = Drive [1.1, 4.0]\nenv1: type = peak; attack = 0.002; release = 0.16  # envelope follower\nfilter1: type = lowpass; cutoff = b; + = env1; * = c; resonance = a  # lowpass\nstage1: y = diode(x, d)  # diode clip",
+    "script": "# Acid Line\n# How it sounds: 303-ish: env opens LPF with musical Q, then diode.\n# a Res: 0.8 to 2.6, default 1.9\n# b Min: 90 to 500, default 180\n# c Range: 500 to 4500, default 2400\n# d Drive: 1.1 to 4, default 2\n\nparam a = Res [0.8, 2.6]\nparam b = Min [90, 500]\nparam c = Range [500, 4500]\nparam d = Drive [1.1, 4.0]\nenv1: type = peak; attack = 0.004; release = 0.16  # envelope follower\nfilter1: type = lowpass; cutoff = b; + = env1; * = c; resonance = a  # lowpass\nstage1: y = diode(x, d)  # diode clip",
     "tags": [
       "acid",
       "diode",
@@ -1999,8 +1999,8 @@
     "paramA": {
       "name": "Res",
       "min": 0.8,
-      "max": 3.4,
-      "default": 2.4
+      "max": 2.6,
+      "default": 1.9
     },
     "paramB": {
       "name": "Min",
@@ -10671,7 +10671,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Acoustic Sim Box\n# How it sounds: Electric to faux-acoustic: notch body, high bandpass, tiny room.\n# a Body: 200 to 500, default 320\n# b Notch: -10 to -3, default -6\n# c Room: 0.08 to 0.3, default 0.16\n\nparam a = Body [200, 500]\nparam b = Notch [-10, -3]\nparam c = Room [0.08, 0.3]\nfilter1: type = highpass; cutoff = 90; resonance = 0.3  # highpass\neq1: type = peak; freq = a; q = 2.2; gain = b  # peak EQ\nfilter2: type = bandpass; center = 1800; width = 1400; resonance = 0.45  # bandpass\nreverb1: size = 0.18; decay = c; damp = 0.45; mix = 0.16; width = 0.5  # reverb",
+    "script": "# Acoustic Sim Box\n# How it sounds: Electric to faux-acoustic: notch body, high bandpass, tiny room.\n# a Body: 200 to 500, default 320\n# b Notch: -10 to -3, default -6\n# c Room: 0.08 to 0.3, default 0.16\n\nparam a = Body [200, 500]\nparam b = Notch [-10, -3]\nparam c = Room [0.08, 0.3]\nfilter1: type = highpass; cutoff = 90; resonance = 0.3  # highpass\neq1: type = peak; freq = a; q = 2.2; gain = b  # peak EQ\nfilter2: type = bandpass; center = 1800; width = 1400; resonance = 0.45  # bandpass\nreverb1: size = 0.18; decay = c; damp = 0.45; mix = 0.16; width = 0.5  # reverb\nstage1: y = x * 2.4  # makeup",
     "tags": [
       "eq",
       "equalizer",
@@ -10978,7 +10978,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Synth Sub Round\n# How it sounds: 808 / sine sub: HPF 25, soft clip, tiny even harmonics.\n# a Round: 0.4 to 2.2, default 1\n# b Floor: 22 to 45, default 28\n# c Ceiling: 0.4 to 0.95, default 0.72\n\nparam a = Round [0.4, 2.2]\nparam b = Floor [22, 45]\nparam c = Ceiling [0.4, 0.95]\nfilter1: type = highpass; cutoff = b; resonance = 0.18  # highpass\nstage1: y = tube(x, a)  # tube saturation\nstage2: y = hardclip(softclip(y, 1.1), c)  # soft clip\nfilter2: type = lowpass; cutoff = 180; resonance = 0.25  # lowpass",
+    "script": "# Synth Sub Round\n# How it sounds: 808 / sine sub: HPF 25, soft clip, tiny even harmonics.\n# a Round: 0.4 to 2.2, default 1\n# b Floor: 22 to 45, default 28\n# c Ceiling: 0.4 to 0.95, default 0.72\n\nparam a = Round [0.4, 2.2]\nparam b = Floor [22, 45]\nparam c = Ceiling [0.4, 0.95]\nfilter1: type = highpass; cutoff = b; resonance = 0.18  # highpass\nstage1: y = tube(x, a)  # tube saturation\nstage2: y = hardclip(softclip(y, 1.1), c)  # soft clip\nfilter2: type = lowpass; cutoff = 220; resonance = 0.25  # lowpass\nstage3: y = x * 4.2  # makeup",
     "tags": [
       "bass",
       "clip",
@@ -11424,7 +11424,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Sub Only Octave\n# How it sounds: Just the analog sub, no dry. Bass / guitar. Mix to taste in the host.\n# a Tone: 80 to 400, default 180\n# b Level: 0.3 to 1.2, default 0.7\n# c Low: 30 to 80, default 45\n\nparam a = Tone [80, 400]\nparam b = Level [0.3, 1.2]\nparam c = Low [30, 80]\nfilter1: type = highpass; cutoff = c; resonance = 0.2  # highpass\noctaver1: mix = 1; sub = 1; up = 0; tone = a; thresh = 0.05  # analog octaver\nstage1: y = x * b  # waveshape / mix\nfilter2: type = lowpass; cutoff = 400; resonance = 0.25  # lowpass",
+    "script": "# Sub Only Octave\n# How it sounds: Just the analog sub, no dry. Bass / guitar. Mix to taste in the host.\n# a Tone: 80 to 400, default 280\n# b Level: 0.3 to 1.2, default 1.1\n# c Low: 30 to 80, default 45\n\nparam a = Tone [80, 400]\nparam b = Level [0.3, 1.2]\nparam c = Low [30, 80]\nfilter1: type = highpass; cutoff = c; resonance = 0.2  # highpass\noctaver1: mix = 1; sub = 1; up = 0; tone = a; thresh = 0.03  # analog octaver\nstage1: y = x * b * 3.2  # makeup\nfilter2: type = lowpass; cutoff = 400; resonance = 0.25  # lowpass",
     "tags": [
       "bass",
       "filter",
@@ -11438,13 +11438,13 @@
       "name": "Tone",
       "min": 80,
       "max": 400,
-      "default": 180
+      "default": 280
     },
     "paramB": {
       "name": "Level",
       "min": 0.3,
       "max": 1.2,
-      "default": 0.7
+      "default": 1.1
     },
     "paramC": {
       "name": "Low",
@@ -13959,7 +13959,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Mixbus Soft Clip\n# How it sounds: Glue then a soft ceiling. Mix 100.\n# a Glue: 4 to 11, default 6.5\n# b Ceiling: 0.55 to 0.95, default 0.82\n# c Drive: 0.8 to 1.6, default 1.05\n\nparam a = Glue [4, 11]\nparam b = Ceiling [0.55, 0.95]\nparam c = Drive [0.8, 1.6]\ncomp1: threshold = -a; ratio = 2.2; attack = 0.015; release = 0.2; knee = 8; makeup = 1  # compressor\nstage1: y = hardclip(softclip(x, c), b)  # soft clip",
+    "script": "# Mixbus Soft Clip\n# How it sounds: Glue then a soft ceiling. Mix 100.\n# a Glue: 4 to 11, default 6.5\n# b Ceiling: 0.55 to 0.95, default 0.82\n# c Drive: 0.8 to 1.6, default 1.05\n\nparam a = Glue [4, 11]\nparam b = Ceiling [0.55, 0.95]\nparam c = Drive [0.8, 1.6]\ncomp1: threshold = -a; ratio = 2.2; attack = 0.015; release = 0.2; knee = 8; makeup = 1  # compressor\nstage1: y = hardclip(softclip(x, c), b)  # soft clip\nfilter1: type = lowpass; cutoff = 14000; resonance = 0.25  # recovery",
     "tags": [
       "clip",
       "compressor",
@@ -14263,7 +14263,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# 808 Sub Kick\n# How it sounds: Sine-like 808: tiny HPF, tube, LPF 120.\n# a Round: 0.5 to 2.2, default 1.05\n# b Sub: 22 to 50, default 30\n# c Ceiling: 0.45 to 0.95, default 0.75\n\nparam a = Round [0.5, 2.2]\nparam b = Sub [22, 50]\nparam c = Ceiling [0.45, 0.95]\nfilter1: type = highpass; cutoff = b; resonance = 0.18  # highpass\nstage1: y = tube(x, a)  # tube saturation\nstage2: y = hardclip(softclip(y, 1.05), c)  # soft clip\nfilter2: type = lowpass; cutoff = 140; resonance = 0.22  # lowpass",
+    "script": "# 808 Sub Kick\n# How it sounds: Sine-like 808: tiny HPF, tube, LPF 120.\n# a Round: 0.5 to 2.2, default 1.05\n# b Sub: 22 to 50, default 30\n# c Ceiling: 0.45 to 0.95, default 0.75\n\nparam a = Round [0.5, 2.2]\nparam b = Sub [22, 50]\nparam c = Ceiling [0.45, 0.95]\nfilter1: type = highpass; cutoff = b; resonance = 0.18  # highpass\nstage1: y = tube(x, a)  # tube saturation\nstage2: y = hardclip(softclip(y, 1.05), c)  # soft clip\nfilter2: type = lowpass; cutoff = 160; resonance = 0.22  # lowpass\nstage3: y = x * 6.2  # makeup",
     "tags": [
       "clip",
       "drums",
@@ -15124,7 +15124,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Leslie Slow\n# How it sounds: Slow rotary: AM + bandpass sweep.\n# a Rate: 0.4 to 1.6, default 0.75\n# b Horn: 400 to 1800, default 900\n# c AM: 0.2 to 0.7, default 0.4\n\nparam a = Rate [0.4, 1.6]\nparam b = Horn [400, 1800]\nparam c = AM [0.2, 0.7]\nosc1: shape = sine; freq = a; depth = 1  # LFO\nfilter1: type = bandpass; center = 900 + osc1 * b; width = 700; resonance = 0.6  # bandpass\nstage1: y = x * (1 - c + c * (0.5 + 0.5 * osc1))  # waveshape / mix",
+    "script": "# Leslie Slow\n# How it sounds: Slow rotary: AM + bandpass sweep.\n# a Rate: 0.4 to 1.6, default 0.75\n# b Horn: 400 to 1800, default 900\n# c AM: 0.2 to 0.7, default 0.4\n\nparam a = Rate [0.4, 1.6]\nparam b = Horn [400, 1800]\nparam c = AM [0.2, 0.7]\nosc1: shape = sine; freq = a; depth = 1  # LFO\nfilter1: type = bandpass; center = 900 + osc1 * b; width = 700; resonance = 0.6  # bandpass\nstage1: y = x * (1 - c + c * (0.5 + 0.5 * osc1)) * 1.8  # waveshape / mix",
     "tags": [
       "filter",
       "lfo",
@@ -16386,7 +16386,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Safety Clip Utility\n# How it sounds: Last-resort clip. Different ceiling range than Safety Clip stock.\n# a Ceiling: 0.7 to 0.99, default 0.92\n# b Drive: 0.8 to 1.3, default 1\n# c Mix: 0.5 to 1, default 1\n\nparam a = Ceiling [0.7, 0.99]\nparam b = Drive [0.8, 1.3]\nparam c = Mix [0.5, 1]\nstage1: y = lerp(x, hardclip(softclip(x, b), a), c)  # soft clip",
+    "script": "# Safety Clip Utility\n# How it sounds: Last-resort clip. Different ceiling range than Safety Clip stock.\n# a Ceiling: 0.7 to 0.99, default 0.92\n# b Drive: 0.8 to 1.3, default 1\n# c Mix: 0.5 to 1, default 1\n\nparam a = Ceiling [0.7, 0.99]\nparam b = Drive [0.8, 1.3]\nparam c = Mix [0.5, 1]\nstage1: y = lerp(x, hardclip(softclip(x, b), a), c)  # soft clip\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2  # recovery",
     "tags": [
       "clip",
       "drive",
@@ -16419,7 +16419,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Missing Air\n# How it sounds: Implied air via 10 kHz shelf + tiny fold. Not Loudness Curve.\n# a Air: 1 to 6, default 2.6\n# b Fold: 0.05 to 0.2, default 0.1\n# c Mix: 0.3 to 1, default 0.55\n\nparam a = Air [1, 6]\nparam b = Fold [0.05, 0.2]\nparam c = Mix [0.3, 1]\neq1: type = highshelf; freq = 10500; q = 0.5; gain = a  # high shelf\nstage1: y = lerp(x, fold(x, -b, b), c)  # wavefold",
+    "script": "# Missing Air\n# How it sounds: Implied air via 10 kHz shelf + tiny fold. Not Loudness Curve.\n# a Air: 1 to 6, default 2.6\n# b Fold: 0.05 to 0.2, default 0.1\n# c Mix: 0.3 to 1, default 0.55\n\nparam a = Air [1, 6]\nparam b = Fold [0.05, 0.2]\nparam c = Mix [0.3, 1]\neq1: type = highshelf; freq = 10500; q = 0.5; gain = a  # high shelf\nstage1: y = lerp(x, fold(x, -b, b), c)  # wavefold\nfilter1: type = lowpass; cutoff = 16000; resonance = 0.2  # recovery",
     "tags": [
       "air",
       "eq",
@@ -16598,7 +16598,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Green Boost Only\n# How it sounds: TS mid-hump, almost no clip. Boost into an amp.\n# a Boost: 1 to 6, default 2.4\n# b Mid: 3 to 8, default 5\n# c Tone: 1500 to 5000, default 2800\n\nparam a = Boost [1, 6]\nparam b = Mid [3, 8]\nparam c = Tone [1500, 5000]\nfilter1: type = highpass; cutoff = 700; resonance = 0.25  # highpass\neq1: type = peak; freq = 720; q = 1.5; gain = b  # peak EQ\nstage1: y = softclip(x, a * 0.35)  # soft clip\nfilter2: type = lowpass; cutoff = c; resonance = 0.35  # lowpass",
+    "script": "# Green Boost Only\n# How it sounds: TS mid-hump, almost no clip. Boost into an amp.\n# a Boost: 1 to 6, default 2.4\n# b Mid: 3 to 8, default 5\n# c Tone: 1500 to 5000, default 2800\n\nparam a = Boost [1, 6]\nparam b = Mid [3, 8]\nparam c = Tone [1500, 5000]\nfilter1: type = highpass; cutoff = 280; resonance = 0.25  # highpass\neq1: type = peak; freq = 720; q = 1.5; gain = b  # peak EQ\nstage1: y = softclip(x, a * 0.35) * 1.8  # soft clip\nfilter2: type = lowpass; cutoff = c; resonance = 0.35  # lowpass",
     "tags": [
       "amp",
       "clip",
@@ -17118,11 +17118,11 @@
   {
     "name": "British Plexi Bark",
     "category": "Distortion",
-    "description": "Plexi cousin: 800 Hz bark, no Marshall name.",
+    "description": "British plexi bark: 800 Hz mid peak, dual tube, cabinet IR.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# British Plexi Bark\n# How it sounds: Plexi cousin: 800 Hz bark, no Marshall name.\n# a Drive: 1.5 to 7, default 3.4\n# b Bark: 2 to 7, default 4\n# c Cab: 0.25 to 0.6, default 0.4\n\nparam a = Drive [1.5, 7]\nparam b = Bark [2, 7]\nparam c = Cab [0.25, 0.6]\nfilter1: type = highpass; cutoff = 105; resonance = 0.36  # highpass\nstage1: y = tube(x, a * 0.6)  # tube saturation\nstage2: y = tube(y, a * 0.5)  # tube saturation\neq1: type = peak; freq = 800; q = 1.05; gain = b  # peak EQ\nir1: mix = c; gain = 1  # impulse response",
+    "script": "# British Plexi Bark\n# How it sounds: British plexi bark: 800 Hz mid peak, dual tube, cabinet IR.\n# a Drive: 1.5 to 7, default 3.4\n# b Bark: 2 to 7, default 4\n# c Cab: 0.25 to 0.6, default 0.4\n\nparam a = Drive [1.5, 7]\nparam b = Bark [2, 7]\nparam c = Cab [0.25, 0.6]\nfilter1: type = highpass; cutoff = 105; resonance = 0.36  # highpass\nstage1: y = tube(x, a * 0.6)  # tube saturation\nstage2: y = tube(y, a * 0.5)  # tube saturation\neq1: type = peak; freq = 800; q = 1.05; gain = b  # peak EQ\nir1: mix = c; gain = 1  # impulse response",
     "tags": [
       "cabinet",
       "distortion",
@@ -17593,7 +17593,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Lo-Fi Amp Sim\n# How it sounds: Tiny speaker: 300–3.5 kHz + crush.\n# a Bits: 5 to 11, default 8\n# b Low: 180 to 450, default 280\n# c High: 2500 to 5000, default 3500\n\nparam a = Bits [5, 11]\nparam b = Low [180, 450]\nparam c = High [2500, 5000]\nfilter1: type = highpass; cutoff = b; resonance = 0.35  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = bitcrush(softclip(x, 1.5), a)  # soft clip",
+    "script": "# Lo-Fi Amp Sim\n# How it sounds: Tiny speaker: 300–3.5 kHz + crush.\n# a Bits: 5 to 11, default 8\n# b Low: 180 to 450, default 280\n# c High: 2500 to 5000, default 3500\n\nparam a = Bits [5, 11]\nparam b = Low [180, 450]\nparam c = High [2500, 5000]\nfilter1: type = highpass; cutoff = b; resonance = 0.35  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = bitcrush(softclip(x, 1.5), a)  # soft clip\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
     "tags": [
       "amp",
       "bitcrush",
@@ -17852,7 +17852,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Industrial Chop\n# How it sounds: Gate + clip. Not Industrial Gate stock.\n# a Open: -36 to -14, default -24\n# b Drive: 1.5 to 7, default 3.2\n# c Hold: 0.01 to 0.08, default 0.03\n\nparam a = Open [-36, -14]\nparam b = Drive [1.5, 7]\nparam c = Hold [0.01, 0.08]\ngate1: threshold = a; hyst = 4; hold = c; range = -70  # noise gate\nstage1: y = hardclip(softclip(x, b), 0.55)  # soft clip\nfilter1: type = highpass; cutoff = 100; resonance = 0.3  # highpass",
+    "script": "# Industrial Chop\n# How it sounds: Gate + clip. Not Industrial Gate stock.\n# a Open: -36 to -14, default -24\n# b Drive: 1.5 to 7, default 3.2\n# c Hold: 0.01 to 0.08, default 0.03\n\nparam a = Open [-36, -14]\nparam b = Drive [1.5, 7]\nparam c = Hold [0.01, 0.08]\ngate1: threshold = a; hyst = 4; hold = c; range = -70  # noise gate\nstage1: y = hardclip(softclip(x, b), 0.55)  # soft clip\nfilter1: type = highpass; cutoff = 100; resonance = 0.3  # highpass\nfilter2: type = lowpass; cutoff = 9000; resonance = 0.28  # recovery",
     "tags": [
       "clip",
       "club",
@@ -18216,7 +18216,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Sidechain Pad EDM\n# How it sounds: Four-on-the-floor duck.\n# a Depth: 0.35 to 1, default 0.75\n# b Release: 0.1 to 0.4, default 0.2\n# c Floor: -24 to -8, default -14\n\nparam a = Depth [0.35, 1]\nparam b = Release [0.1, 0.4]\nparam c = Floor [-24, -8]\nsidechain1: mix = a  # host sidechain\ncomp1: threshold = c; ratio = 10; attack = 0.001; release = b; source = sidechain  # compressor",
+    "script": "# Sidechain Pad EDM\n# How it sounds: Four-on-the-floor duck.\n# a Depth: 0.35 to 1, default 0.75\n# b Release: 0.1 to 0.4, default 0.2\n# c Floor: -24 to -8, default -14\n\nparam a = Depth [0.35, 1]\nparam b = Release [0.1, 0.4]\nparam c = Floor [-24, -8]\nsidechain1: mix = a  # host sidechain\ncomp1: threshold = c; ratio = 10; attack = 0.001; release = b; makeup = 3; source = sidechain  # compressor\nstage1: y = x * 1.25  # makeup",
     "tags": [
       "compressor",
       "edm",
@@ -18402,7 +18402,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Festival Drum Bus\n# How it sounds: EDM drum bus: OTT + clip + HPF.\n# a Depth: 0.2 to 0.7, default 0.38\n# b Drive: 1 to 4, default 1.8\n# c Cut: 30 to 80, default 45\n\nparam a = Depth [0.2, 0.7]\nparam b = Drive [1, 4]\nparam c = Cut [30, 80]\nfilter1: type = highpass; cutoff = c; resonance = 0.22  # highpass\nott1: depth = a; time = 0.015; in = 1.1  # OTT (3-band up+down)\nstage1: y = hardclip(softclip(x, b), 0.72)  # soft clip",
+    "script": "# Festival Drum Bus\n# How it sounds: EDM drum bus: OTT + clip + HPF.\n# a Depth: 0.2 to 0.7, default 0.38\n# b Drive: 1 to 4, default 1.8\n# c Cut: 30 to 80, default 45\n\nparam a = Depth [0.2, 0.7]\nparam b = Drive [1, 4]\nparam c = Cut [30, 80]\nfilter1: type = highpass; cutoff = c; resonance = 0.22  # highpass\nott1: depth = a; time = 0.015; in = 1.1  # OTT (3-band up+down)\nstage1: y = hardclip(softclip(x, b), 0.72)  # soft clip\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.25  # recovery",
     "tags": [
       "bus",
       "clip",
@@ -18481,7 +18481,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# AM Radio Narrow\n# How it sounds: Narrower than Phone Line. 500–2.8 kHz.\n# a Low: 350 to 700, default 500\n# b High: 2000 to 3500, default 2800\n# c Bits: 6 to 11, default 8\n\nparam a = Low [350, 700]\nparam b = High [2000, 3500]\nparam c = Bits [6, 11]\nfilter1: type = highpass; cutoff = a; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = b; resonance = 0.35  # lowpass\nstage1: y = bitcrush(softclip(x, 1.3), c)  # soft clip",
+    "script": "# AM Radio Narrow\n# How it sounds: Narrower than Phone Line. 500–2.8 kHz.\n# a Low: 350 to 700, default 500\n# b High: 2000 to 3500, default 2800\n# c Bits: 6 to 11, default 8\n\nparam a = Low [350, 700]\nparam b = High [2000, 3500]\nparam c = Bits [6, 11]\nfilter1: type = highpass; cutoff = a; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = b; resonance = 0.35  # lowpass\nstage1: y = bitcrush(softclip(x, 1.3), c)  # soft clip\nfilter3: type = lowpass; cutoff = b; resonance = 0.28  # recovery",
     "tags": [
       "bitcrush",
       "clip",
@@ -18554,7 +18554,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Broken Speaker\n# How it sounds: 300–2.5 kHz + fold.\n# a Fold: 0.12 to 0.4, default 0.22\n# b Low: 200 to 450, default 300\n# c High: 1800 to 3500, default 2500\n\nparam a = Fold [0.12, 0.4]\nparam b = Low [200, 450]\nparam c = High [1800, 3500]\nfilter1: type = highpass; cutoff = b; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.42  # lowpass\nstage1: y = fold(x, -a, a)  # wavefold",
+    "script": "# Broken Speaker\n# How it sounds: 300–2.5 kHz + fold.\n# a Fold: 0.12 to 0.4, default 0.22\n# b Low: 200 to 450, default 300\n# c High: 1800 to 3500, default 2500\n\nparam a = Fold [0.12, 0.4]\nparam b = Low [200, 450]\nparam c = High [1800, 3500]\nfilter1: type = highpass; cutoff = b; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.42  # lowpass\nstage1: y = fold(x, -a, a)  # wavefold\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
     "tags": [
       "filter",
       "fold",
@@ -19535,7 +19535,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Horror Low Drone\n# How it sounds: Sub + dark verb. Horror bed.\n# a Sub: 0.15 to 0.6, default 0.32\n# b Top: 300 to 1200, default 600\n# c Hall: 0.4 to 0.85, default 0.62\n\nparam a = Sub [0.15, 0.6]\nparam b = Top [300, 1200]\nparam c = Hall [0.4, 0.85]\noctaver1: mix = a; sub = 1; up = 0; tone = 100; thresh = 0.05  # analog octaver\nfilter1: type = lowpass; cutoff = b; resonance = 0.32  # lowpass\nreverb1: size = c; decay = 2.4; damp = 0.7; mix = 0.38; width = 0.6  # reverb",
+    "script": "# Horror Low Drone\n# How it sounds: Sub + dark verb. Horror bed.\n# a Sub: 0.15 to 0.6, default 0.32\n# b Top: 300 to 1200, default 600\n# c Hall: 0.4 to 0.85, default 0.62\n\nparam a = Sub [0.15, 0.6]\nparam b = Top [300, 1200]\nparam c = Hall [0.4, 0.85]\noctaver1: mix = a; sub = 1; up = 0; tone = 100; thresh = 0.05  # analog octaver\nfilter1: type = lowpass; cutoff = b; resonance = 0.32  # lowpass\nreverb1: size = c; decay = 2.4; damp = 0.7; mix = 0.38; width = 0.6  # reverb\nstage1: y = x * 2.4  # makeup",
     "tags": [
       "cinematic",
       "filter",
@@ -19847,7 +19847,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Noise Blow Soft\n# How it sounds: HPF + fold, softer than Noise Blow.\n# a Cut: 200 to 2000, default 700\n# b Fold: 0.1 to 0.4, default 0.22\n# c Mix: 0.2 to 0.8, default 0.45\n\nparam a = Cut [200, 2000]\nparam b = Fold [0.1, 0.4]\nparam c = Mix [0.2, 0.8]\nfilter1: type = highpass; cutoff = a; resonance = 0.35  # highpass\nstage1: y = lerp(x, fold(x, -b, b), c)  # wavefold",
+    "script": "# Noise Blow Soft\n# How it sounds: HPF + fold, softer than Noise Blow.\n# a Cut: 200 to 2000, default 700\n# b Fold: 0.1 to 0.4, default 0.22\n# c Mix: 0.2 to 0.8, default 0.45\n\nparam a = Cut [200, 2000]\nparam b = Fold [0.1, 0.4]\nparam c = Mix [0.2, 0.8]\nfilter1: type = highpass; cutoff = a; resonance = 0.35  # highpass\nstage1: y = lerp(x, fold(x, -b, b), c)  # wavefold\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.25  # recovery",
     "tags": [
       "creative",
       "filter",
@@ -20020,7 +20020,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Texture Crush\n# How it sounds: Crush + bandpass. Texture layer.\n# a Bits: 4 to 10, default 7\n# b Center: 400 to 2000, default 900\n# c Width: 200 to 1200, default 500\n\nparam a = Bits [4, 10]\nparam b = Center [400, 2000]\nparam c = Width [200, 1200]\nstage1: y = bitcrush(softclip(x, 1.4), a)  # soft clip\nfilter1: type = bandpass; center = b; width = c  # bandpass",
+    "script": "# Texture Crush\n# How it sounds: Crush + bandpass. Texture layer.\n# a Bits: 4 to 10, default 7\n# b Center: 400 to 2000, default 900\n# c Width: 200 to 1200, default 500\n\nparam a = Bits [4, 10]\nparam b = Center [400, 2000]\nparam c = Width [200, 1200]\nstage1: y = bitcrush(softclip(x, 1.4), a)  # soft clip\nfilter1: type = bandpass; center = b; width = c  # bandpass\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.25  # recovery",
     "tags": [
       "bitcrush",
       "clip",
@@ -20056,7 +20056,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Sub Drop FX\n# How it sounds: Octave sub + clip. Drop FX.\n# a Sub: 0.3 to 0.9, default 0.55\n# b Drive: 1 to 5, default 2.2\n# c Top: 80 to 200, default 130\n\nparam a = Sub [0.3, 0.9]\nparam b = Drive [1, 5]\nparam c = Top [80, 200]\noctaver1: mix = a; sub = 1; up = 0; tone = 90; thresh = 0.04  # analog octaver\nstage1: y = hardclip(softclip(x, b), 0.65)  # soft clip\nfilter1: type = lowpass; cutoff = c; resonance = 0.25  # lowpass",
+    "script": "# Sub Drop FX\n# How it sounds: Octave sub + clip. Drop FX.\n# a Sub: 0.3 to 0.9, default 0.55\n# b Drive: 1 to 5, default 2.2\n# c Top: 80 to 200, default 130\n\nparam a = Sub [0.3, 0.9]\nparam b = Drive [1, 5]\nparam c = Top [80, 200]\noctaver1: mix = a; sub = 1; up = 0; tone = 90; thresh = 0.04  # analog octaver\nstage1: y = hardclip(softclip(x, b), 0.65)  # soft clip\nfilter1: type = lowpass; cutoff = c; resonance = 0.25  # lowpass\nstage2: y = x * 6.2  # makeup",
     "tags": [
       "clip",
       "drive",

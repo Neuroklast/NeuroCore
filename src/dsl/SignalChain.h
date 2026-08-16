@@ -6,6 +6,7 @@
 #include "NoteValues.h"
 #include "BusGraph.h"
 #include "../utils/ExpressionEvaluator.h"
+#include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
@@ -164,6 +165,8 @@ private:
         double currentBpm{Config::kDefaultTempo};
         float sampleRate{44100.0f};
         float lastSetFreq { -1.f };
+        float fixedHz { 0.f };
+        std::atomic<float> vizHz { 0.f };
         juce::SmoothedValue<float> modSm;
         /** Decimated history so a slow LFO still shows one cycle on the cable. */
         static constexpr int kVizN = 256;
@@ -196,6 +199,8 @@ private:
         bool useLowHigh    { false };
         /** Cutoff/res depend on osc/env — update coeffs while streaming audio. */
         bool modulated { false };
+        /** Osc (not env) on cutoff — must rebuild every sample. Env can stride. */
+        bool modulatedByOsc { false };
         juce::dsp::StateVariableTPTFilterType type{ juce::dsp::StateVariableTPTFilterType::lowpass };
         Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
         float sampleRate{44100.0f};
@@ -480,6 +485,7 @@ private:
         juce::SmoothedValue<float> mixSm, gainSm;
         juce::dsp::Convolution conv;
         juce::AudioBuffer<float> dryScratch;
+        LatencyAlignedSidechain dryAlign;
         bool hasIr { false };
         float sampleRate { 44100.f };
         int latencySamples { 0 };
@@ -511,9 +517,14 @@ private:
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
         bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
+        bool attackLit { false };
+        bool releaseLit { false };
+        float attackFixed { 0.01f };
+        float releaseFixed { 0.1f };
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
         /** Fill modLane from stereo sidechain (max |L|,|R|; right may be null). */
         void renderModBlock (const float* left, const float* right, int numSamples) noexcept;
     };
@@ -787,6 +798,8 @@ private:
     std::array<bool, Config::kNumUserParams> knobIsNote {};
     std::array<NoteValues::Grid, Config::kNumUserParams> knobNotes {};
     double hostBpm { Config::kDefaultTempo };
+    double hostPpq { 0.0 };
+    bool hostPlaying { false };
     juce::AudioProcessorValueTreeState* valueTreeState { nullptr };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
     struct StoredIr
@@ -833,6 +846,8 @@ public:
     /** Copy the latest post-block tap for `id` (`__in__`, `__out__`, or a node name). */
     bool copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept;
     bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept;
+    /** Live oscillator rate in Hz. False if `id` is not an osc. */
+    bool copyLfoHz (const juce::String& id, float& destHz) const noexcept;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;

@@ -9,6 +9,98 @@ Er dient dazu, Fehler nicht zu wiederholen und bekannte Fallstricke zu dokumenti
 
 ---
 
+### 2026-08-16 – Title paint ate jack row 0; wrap parked OUT in the middle
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Screenshot 183757 + Feedback-Sheet  
+**Ergebnis:** Chip-Titel wurde in 8+18 px gezeichnet, Jack 0 sitzt bei y=24 — MID/SIDE-Labels lagen auf dem Pin. Knob-Kabel nutzten `makeOrthoCable` und stapelten sich auf derselben Mid-X. `tidyLayout` wrapte OUT auf die nächste Band. `setFormula` rebuildete die Kette bei jedem Chip-Move, weil `@x,y` im Script steht.
+
+#### Regel
+Titel nur in Rasterzeile 0. Höhe = Signal-Jacks, nicht Knob-Jacks. Knob-Kabel = Kurve. OUT rechts neben dem letzten Main-Chip. Layout-only Script über `semanticallyEqual` ohne DSP-Swap. Overlays exklusiv. Validation-Callbacks nur mit SafePointer.
+
+### 2026-08-16 – Half-cell lane centering looks like the stairs you just banned
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Parallele PCB-Bahnen ohne Mini-Jogs  
+**Ergebnis:** `offsetSharedRuns` hat Lanes um den Mittelwert zentriert (`±laneGap/2`). Bei `laneGap=6` waren das ±3 px — genau die Treppen aus Screenshot 180407. `dropMicroJogs(4px)` hat die Steigung danach gelöscht, `collapseColinear` hat die Stubs der geraden Bahn mitgegessen. Test sah `waypoints[2].y` gleich.
+
+#### Regel
+Bus-Lanes in ganzen Rasterzellen: Spur 0 bleibt auf der Jack-Achse, 1 = +1 Zelle, 2 = −1. Nach Offset kein `dropMicroJogs`. Nach `collapseColinear` Stubs wiederherstellen, wenn die Bahn auf 2 Punkte schrumpft.
+
+### 2026-08-16 – Jacks only line up if sizes and slots share one grid
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Orthogonale Jacks, LFO-LED, Auto-Align gegenüber  
+**Ergebnis:** Knob-Kabel waren Cubic-Beziers — die liefen schräg durch den Chip. LFO-Perlen liefen in *Pfadanteilen* (1 Hz = 1 Umlauf), also auf langen Leitungen schneller. Jack-Y wurde über die Chip-Höhe gestreckt (`pad + slot * usable/(n-1)`), Pad war 14 px — zwei Chips auf dem 16er-Raster hatten versetzte Buchsen.
+
+#### Regel
+Kabel: letzte/erste Strecke immer auf der Jack-Achse. LFO-Licht: konstante px/s, Pulse = Hz. Chip-Maße und Jack-Slots nur Vielfache des Board-Rasters. Gegenüberliegende Buchsen = gleiche Slot-Y, nicht „Mitte der Karte“.
+
+### 2026-08-16 – Factory gate leftovers were missing LPF / makeup
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Mixbus Soft Clip + 9 leise Inserts; Dry/Wet vs IR  
+**Ergebnis:** Quality-Gate will nach `hardclip` ein Recovery-LPF. Subs/Octaver/Bandpass sind bei 440-Hz-Test leise — Makeup nach dem Filter, nicht den Test aufweichen. Dry-Sidechain kannte nur OS-Latenz; Host-PDC zählt OS+IR → Mix kämpft.
+
+#### Regel
+Hardclip-Presets enden mit LPF. Insert-Lautheit am Preset heben. Dry-Align = `setLatencySamples`.
+
+### 2026-08-16 – Live DAW click is a wet/dry splice, not a buffer overflow
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Live bei 512 knackt wie Buffer-Überlauf, Export sauber  
+**Ergebnis:** `processBlock` hat bei `processLock` TryLock-Fail und CPU-Hold den **Roh-Input** durchgelassen. Export hält den Lock nie. Ein Wet→Dry-Schnitt klingt wie ein Underrun. Richtig: letzten Wet-Block halten und ausklingen, nach der Lücke 64 Samples einblenden. Preview darf `processLock` nicht nehmen.
+
+#### Regel
+Audio-Thread darf bei Lock-Miss/CPU-Hold nie Dry-Input ausgeben. Letzter Wet oder Stille. Export-ok + Live-Knack = Pfad-Splice.
+
+### 2026-08-16 – Metal Gate widen died after the cab; IR load raced the audio thread
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Widen tot, Bypass flackert, Acid Line kratzt, Preset-Reset  
+**Ergebnis:** Metal Gate: `width=d` Default 0 und Widen **vor** der mono-kopierten Cab-IR → Stereo wieder zugeklappt. Gate hold 25 ms chattert wie ein Bypass. `loadImpulseResponse` nach `applyFormula` ohne `processLock` — Audio-Thread läuft durch Convolution-Swap (Dry-Blöcke / Kratzer). Env hatte kein `clearRuntimeState`. Acid-Q 2.4 + 2 ms Attack kratzt.
+
+#### Regel
+Widen nach Cab/Limit. Width-Default hörbar. IR-Swap nur unter `processLock`. Jeder Mod-Block (Env inklusive) muss State auf Preset-Wechsel nullen. CPU-Trip + Lock-Miss klingen wie zufälliger Bypass.
+
+### 2026-08-16 – Drag cable is a free line, PCB only after drop
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Kabelziehen nicht sofort orthogonal  
+**Ergebnis:** Rubber-Band rief `pcbRouter.route` jeden Maus-Move — die Leitung sprang in 90°-Stufen. Preview ist jetzt `lineTo(rubber)`. A* läuft erst beim Commit (`rebuildPcbRoutes`).
+
+#### Regel
+Ziehen = klare Linie zur Maus. Schaltplan-Routing erst nach dem Loslassen.
+
+### 2026-08-16 – Inspect lists every arg; min/max is DSL; Acid env is literal
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Overlay-Parameter, Knob min/max, Preset-Pfeile, Acid Line, Chip-Text  
+**Ergebnis:** `editableArgKeys` kannte nur 3 Delay-Felder — sync/damp/pingpong fehlten. Set Min/Max schrieb auf APVTS 0–1, nicht `param [min,max]`. Pfeile liefen JSON-Reihenfolge statt Kategorie. Env evaluierte attack/release jedes Sample; Filter `modulated` zwang tan() jedes Sample (LFO-Fix zerbrach Acid Line). MS DEC-Labels lagen im Title.
+
+#### Regel
+Inspect-Keys = alle DSP-Args, auch wenn das Preset sie weglässt. Knob-Range ist die `param`-Zeile. Env-Literale nicht evaluieren. Coeff-Stride für Env, jedes Sample nur für Osc. Chip-Text und Jack-Labels teilen sich nie dieselbe Fläche.
+
+### 2026-08-16 – LFO Lauflicht is motion + brightness, not a wave
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** LFO-Kabel statisch, nur Lauflichter (Tempo = Hz, Helligkeit = Amplitude)  
+**Ergebnis:** `drawModLauflicht` hat Perlen auf festen Positionen gelassen und sie mit `nrm * smp` seitlich versetzt — das war eine Welle, kein Lauflicht. `cablePhase / 64` war global, nicht die Osc-Frequenz. Richtig: `copyLfoHz` liest `vizHz` (atomic), Perlen bei `(i/N + phase) mod 1` auf der Spur, Alpha = Peak `|viz|`, Radius fest, kein Normal-Offset. Env bleibt statische Spur ohne Chase.
+
+#### Regel
+LFO-Kabel: die Leiterbahn bewegt sich nicht. Nur die Perlen laufen. Tempo kommt von `lastSetFreq`, Helligkeit von der Amplitude. Eine Wellenlinie auf dem Kabel ist immer falsch.
+
+---
+
+### 2026-08-16 – PCB traces need dir-in-state and anchored cells
+
+**Agent:** Grok Coding Agent  
+**Aufgabe:** Orthogonale Platinen-Kabel statt Cubic-Bezier Punkt-zu-Punkt  
+**Ergebnis:** A* mit Zelle allein als State verwirft den billigeren geraden Vorgänger, sobald ein anderer Eingangs-Dir dieselbe Zelle zuerst erreicht. Parent muss `(x,y,dir)` sein. Zellmittelpunkte einer gleichen Zeile liegen ½ Zelle neben dem Jack — ohne Anchor an Start/Ziel-Achse entsteht ein künstlicher 8-px-Jog (0 Turns erwartet, 2 geliefert). `hitCable` darf `edgesDirty` nicht löschen, ohne `rebuildPcbRoutes` — sonst bleiben alte Traces klickbar.
+
+#### Regel
+Pathfinding-State = Zelle + Ankunftsrichtung. Weltpunkte der Start/Ziel-Zeile/Spalte auf den echten Jack pinnen. Cache-Rebuild ist atomar (Kanten + Routen). Router bleibt ohne JUCE-Typen.
+
 ### 2026-08-16 – Widen Haas slap flips the stereo field
 
 **Agent:** Grok Coding Agent  

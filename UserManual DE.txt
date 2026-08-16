@@ -73,9 +73,9 @@ Circuit = zusammenbauen
 - Ziehen ändert nur X/Y, nicht die Signalreihenfolge. Reihenfolge im Overlay oder per Kabel.
 - Rechtsklick: Auto-arrange, oder Modul hinzufügen (Kategorien). Factory-Presets kommen schon angeordnet zur aktuellen Zoom-Stufe.
 - Mid-Side Encode teilt MID- und SIDE-Schienen wie ein Bus. Decode führt sie zusammen. Widen ist Breite, nicht MS.
-- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst. Leitungen weiss/grau; Punkte nur bei Signal.
+- Kabel ziehen: erst eine gerade Linie zur Maus, die Zielbuchse leuchtet. Nach dem Loslassen wird daraus die orthogonale Leiterbahn (runde Ecken, parallele Bus-Lanes). Punkte nur bei Signal. LFO-Kabel bleiben statisch: ein Lauflicht wandert die Bahn entlang (schnellerer Osc = schnelleres Licht, Amplitude = Helligkeit).
 - Ctrl+Mausrad zoomt.
-- Doppelklick: Overlay für alle Parameter. Gebundene Knobs stehen rot auf dem Chip.
+- Doppelklick: Overlay für alle Parameter (leere Felder zeigen den Default). Gebundene Knobs stehen rot auf dem Chip. Min/Max am Knob schreibt die param-Zeile. Die Pfeile neben dem Preset-Namen gehen die Kategorie durch, dann den ersten der nächsten.
 
 Terminal = hacken
 - Dieselbe Kette als Text.

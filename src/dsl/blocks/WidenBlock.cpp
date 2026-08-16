@@ -12,6 +12,8 @@ void SignalChain::Widen::clearRuntimeState() noexcept
         apR[i].clear();
     }
     hpX = hpY = 0.f;
+    lastBass = -1.f;
+    slewClock = 0;
 }
 
 void SignalChain::Widen::prepare (const juce::dsp::ProcessSpec& spec)

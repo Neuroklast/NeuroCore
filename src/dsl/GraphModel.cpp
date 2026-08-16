@@ -691,12 +691,115 @@ int tidySnap (int v) noexcept
 }
 }
 
+int tidyNodeWidth (const GraphNode& n) noexcept
+{
+    if (n.type == "out")
+        return kTidyIoW;
+    return kTidyCardW;
+}
+
+int tidyNodeHeight (const GraphNode& n, const GraphDocument* doc)
+{
+    if (n.type == "bus")
+        return kTidyCardH;
+    const auto js = jacksFor (n, doc);
+    int in = 0, out = 0;
+    for (const auto& j : js)
+    {
+        if (j.kind == "knob" || j.kind == "param")
+            continue;
+        (j.output ? out : in) += 1;
+    }
+    return (1 + juce::jmax (in, out, 1)) * kTidyGrid;
+}
+
+bool nodeRectsClash (float ax, float ay, float aw, float ah,
+                     float bx, float by, float bw, float bh,
+                     float gap) noexcept
+{
+    return ax < bx + bw + gap && ax + aw + gap > bx
+        && ay < by + bh + gap && ay + ah + gap > by;
+}
+
+void separateOverlappingNodes (GraphDocument& doc, float inX, float inY)
+{
+    const int n = (int) doc.nodes.size();
+    if (n <= 0)
+        return;
+    const float gap = (float) kTidyMinGap;
+    const float inW = (float) kTidyIoW;
+    const float inH = (float) kTidyCardH;
+    auto wOf = [&] (int i) -> float
+    {
+        return (float) tidyNodeWidth (doc.nodes[(size_t) i]);
+    };
+    auto hOf = [&] (int i) -> float
+    {
+        return (float) tidyNodeHeight (doc.nodes[(size_t) i], &doc);
+    };
+    auto hitsIn = [&] (int i) -> bool
+    {
+        const auto& nd = doc.nodes[(size_t) i];
+        if (! std::isfinite (nd.x) || ! std::isfinite (nd.y))
+            return false;
+        return nodeRectsClash (nd.x, nd.y, wOf (i), hOf (i), inX, inY, inW, inH, gap);
+    };
+    auto hitsOther = [&] (int i, int j) -> bool
+    {
+        const auto& a = doc.nodes[(size_t) i];
+        const auto& b = doc.nodes[(size_t) j];
+        if (! std::isfinite (a.x) || ! std::isfinite (a.y)
+            || ! std::isfinite (b.x) || ! std::isfinite (b.y))
+            return false;
+        return nodeRectsClash (a.x, a.y, wOf (i), hOf (i),
+                               b.x, b.y, wOf (j), hOf (j), gap);
+    };
+
+    for (int guard = 0; guard < n * 12; ++guard)
+    {
+        bool moved = false;
+        for (int i = 0; i < n; ++i)
+        {
+            auto& nd = doc.nodes[(size_t) i];
+            if (! std::isfinite (nd.x) || ! std::isfinite (nd.y))
+                continue;
+            if (hitsIn (i))
+            {
+                nd.y = (float) tidySnap ((int) std::lround (nd.y + hOf (i) + gap));
+                moved = true;
+                continue;
+            }
+            for (int j = 0; j < n; ++j)
+            {
+                if (j == i || ! hitsOther (i, j))
+                    continue;
+                // Keep the earlier (top-left) chip; push this one down, then right.
+                const auto& other = doc.nodes[(size_t) j];
+                const bool iIsLater = (nd.y > other.y + 0.5f)
+                                   || (std::abs (nd.y - other.y) <= 0.5f && nd.x >= other.x);
+                if (! iIsLater)
+                    continue;
+                nd.y = (float) tidySnap ((int) std::lround (other.y + hOf (j) + gap));
+                if (hitsOther (i, j) || hitsIn (i))
+                    nd.x = (float) tidySnap ((int) std::lround (other.x + wOf (j) + gap));
+                moved = true;
+                break;
+            }
+        }
+        if (! moved)
+            break;
+    }
+}
+
 TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
 {
     TidyHint hint;
     const int n = (int) doc.nodes.size();
+    int maxChipH = kTidyCardH;
+    for (const auto& nd : doc.nodes)
+        maxChipH = juce::jmax (maxChipH, tidyNodeHeight (nd, &doc));
     int colPitch = kTidyCardW + kTidyColGap;
-    int rowPitch = kTidyCardH + kTidyRowGap;
+    int rowPitch = maxChipH + kTidyMinGap;
     hint.inX = (float) tidySnap (kTidyMargin);
     hint.inY = (float) tidySnap (kTidyMargin);
     hint.outX = hint.inX + (float) colPitch;
@@ -823,7 +926,7 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
     nRowSlots = juce::jmax (1, nRowSlots);
 
     const int minCol = kTidyCardW + kTidyMinGap;
-    const int minRow = kTidyCardH + kTidyMinGap;
+    const int minRow = maxChipH + kTidyMinGap;
     const int nColSteps = maxRank + 1;
     const int pad = kTidyMargin * 2;
     auto spanW = [&] (int pitch) -> int
@@ -832,7 +935,7 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
     };
     auto spanH = [&] (int pitch) -> int
     {
-        return pad + kTidyCardH + juce::jmax (0, nRowSlots - 1) * pitch;
+        return pad + maxChipH + juce::jmax (0, nRowSlots - 1) * pitch;
     };
 
     const bool oneRowFits = viewW > 0 && viewH > 0
@@ -843,8 +946,10 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
             ? (viewW - pad - kTidyCardW) / nColSteps : colPitch;
         const int fitRow = nRowSlots > 1
             ? (viewH - pad - kTidyCardH) / (nRowSlots - 1) : rowPitch;
-        colPitch = juce::jlimit (minCol, kTidyCardW + kTidyColGap, fitCol);
-        rowPitch = juce::jlimit (minRow, kTidyCardH + kTidyRowGap, fitRow);
+        colPitch = tidySnap (juce::jlimit (minCol, kTidyCardW + kTidyColGap, fitCol));
+        rowPitch = tidySnap (juce::jlimit (minRow, kTidyCardH + kTidyRowGap, fitRow));
+        if (colPitch < minCol) colPitch = minCol;
+        if (rowPitch < minRow) rowPitch = minRow;
         hint.fitted = true;
     }
 
@@ -902,6 +1007,10 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
                 wrapFits (colPitch, rowPitch, s);
             }
             wrapSlots = s;
+            colPitch = tidySnap (colPitch);
+            rowPitch = tidySnap (rowPitch);
+            if (colPitch < minCol) colPitch = minCol;
+            if (rowPitch < minRow) rowPitch = minRow;
             hint.fitted = true;
         }
     }
@@ -1001,43 +1110,51 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
                 setPosition (doc, i, hint.outX, hint.outY);
     }
 
-    auto overlaps = [&] (int a, int b) -> bool
     {
-        const auto& na = doc.nodes[(size_t) a];
-        const auto& nb = doc.nodes[(size_t) b];
-        if (! std::isfinite (na.x) || ! std::isfinite (nb.x))
-            return false;
-        const float ax1 = na.x, ay1 = na.y;
-        const float bx1 = nb.x, by1 = nb.y;
-        return std::abs (ax1 - bx1) < (float) kTidyCardW
-            && std::abs (ay1 - by1) < (float) kTidyCardH;
-    };
-    for (int guard = 0; guard < n * 4; ++guard)
-    {
-        bool moved = false;
-        for (int i = 0; i < n; ++i)
-            for (int j = i + 1; j < n; ++j)
+        float lastX = hint.inX;
+        float lastY = hint.inY;
+        for (const auto& nd : doc.nodes)
+        {
+            if (nd.type == "out" || ! std::isfinite (nd.x) || ! std::isfinite (nd.y))
+                continue;
+            if (visualRail (nd) != "main")
+                continue;
+            if (nd.x > lastX + 0.5f
+                || (std::abs (nd.x - lastX) <= 0.5f && nd.y >= lastY))
             {
-                if (! overlaps (i, j))
-                    continue;
-                auto& nb = doc.nodes[(size_t) j];
-                nb.y = (float) tidySnap ((int) std::lround (nb.y) + rowPitch);
-                moved = true;
+                lastX = nd.x;
+                lastY = nd.y;
             }
-        if (! moved)
-            break;
+        }
+        hint.outX = (float) tidySnap ((int) lastX + colPitch);
+        hint.outY = (float) tidySnap ((int) lastY);
+        if (viewW > 0 && hint.outX + (float) kTidyIoW + (float) kTidyMargin > (float) viewW)
+        {
+            hint.outX = (float) tidySnap (kTidyMargin);
+            hint.outY = (float) tidySnap ((int) hint.outY + rowPitch);
+        }
+        for (int i = 0; i < n; ++i)
+            if (doc.nodes[(size_t) i].type == "out")
+                setPosition (doc, i, hint.outX, hint.outY);
     }
+    separateOverlappingNodes (doc, hint.inX, hint.inY);
+    for (const auto& nd : doc.nodes)
+        if (nd.type == "out" && std::isfinite (nd.x) && std::isfinite (nd.y))
+        {
+            hint.outX = nd.x;
+            hint.outY = nd.y;
+        }
 
-    float maxX = hint.outX + (float) kTidyCardW;
-    float maxY = hint.outY + (float) kTidyCardH;
-    maxX = juce::jmax (maxX, hint.inX + (float) kTidyCardW);
+    float maxX = hint.outX + (float) kTidyIoW;
+    float maxY = hint.outY + (float) maxChipH;
+    maxX = juce::jmax (maxX, hint.inX + (float) kTidyIoW);
     maxY = juce::jmax (maxY, hint.inY + (float) kTidyCardH);
     for (const auto& nd : doc.nodes)
     {
         if (! std::isfinite (nd.x) || ! std::isfinite (nd.y))
             continue;
-        maxX = juce::jmax (maxX, nd.x + (float) kTidyCardW);
-        maxY = juce::jmax (maxY, nd.y + (float) kTidyCardH);
+        maxX = juce::jmax (maxX, nd.x + (float) tidyNodeWidth (nd));
+        maxY = juce::jmax (maxY, nd.y + (float) tidyNodeHeight (nd, &doc));
     }
     hint.boardW = maxX + (float) kTidyMargin;
     hint.boardH = maxY + (float) kTidyMargin;
@@ -1289,24 +1406,30 @@ bool setNodeArg (GraphDocument& doc, int nodeIndex,
 juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* doc)
 {
     static const char* kStage[] = { "y", "channel", nullptr };
-    static const char* kFilter[] = { "type", "cutoff", "resonance", nullptr };
-    static const char* kEq[] = { "type", "freq", "q", "gain", nullptr };
-    static const char* kComp[] = { "threshold", "ratio", "attack", "release", "makeup", nullptr };
-    static const char* kGate[] = { "threshold", "hyst", "hold", "range", nullptr };
+    static const char* kFilter[] = { "type", "cutoff", "resonance", "+", "*",
+                                     "center", "width", "lowcut", "highcut", "channel", nullptr };
+    static const char* kEq[] = { "type", "freq", "q", "gain", "channel", nullptr };
+    static const char* kComp[] = { "threshold", "ratio", "attack", "release", "knee",
+                                   "makeup", "source", nullptr };
+    static const char* kGate[] = { "threshold", "hyst", "attack", "hold", "release",
+                                   "range", "source", nullptr };
     static const char* kNoiseGate[] = { "threshold", "attack", "release", nullptr };
     static const char* kLimit[] = { "ceiling", "release", nullptr };
-    static const char* kDelay[] = { "time", "feedback", "mix", nullptr };
+    static const char* kDelay[] = { "time", "sync", "feedback", "mix", "damp",
+                                    "pingpong", "channel", nullptr };
     static const char* kReverb[] = { "size", "decay", "damp", "mix", "width", nullptr };
     static const char* kIr[] = { "mix", "gain", nullptr };
     static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", nullptr };
     static const char* kWiden[] = { "width", "bass", nullptr };
-    static const char* kOsc[] = { "shape", "freq", "depth", nullptr };
-    static const char* kEnv[] = { "attack", "hold", "release", "depth", nullptr };
+    static const char* kOsc[] = { "shape", "freq", "sync", "depth", nullptr };
+    static const char* kEnv[] = { "type", "attack", "hold", "release", "depth",
+                                  "source", "trigger", nullptr };
     static const char* kSend[] = { "in", "main", nullptr };
     static const char* kOut[] = { "main", nullptr };
     static const char* kMs[] = { "mode", nullptr };
     static const char* kOctaver[] = { "sub", "up", "mix", "tone", "thresh", nullptr };
     static const char* kVocoder[] = { "bands", "mix", "q", "formant", "dry", nullptr };
+    static const char* kXover[] = { "f1", "f2", nullptr };
 
     const char** keys = nullptr;
     const auto t = node.type.toLowerCase();
@@ -1330,6 +1453,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     else if (t == "ms") keys = kMs;
     else if (t.startsWith ("octav")) keys = kOctaver;
     else if (t.startsWith ("vocod")) keys = kVocoder;
+    else if (t.startsWith ("xover") || t.startsWith ("crossover")) keys = kXover;
     else if (t.startsWith ("meter") || t == "probe")
     {
         static const char* kMeter[] = { "mode", nullptr };
@@ -1585,6 +1709,96 @@ juce::String rewriteParamDisplayName (const juce::String& script, int knobIndex,
                 break;
         }
         lines.insert (insertAt, "param " + letter + " = " + name);
+    }
+    return lines.joinIntoString ("\n");
+}
+
+juce::String rewriteParamRange (const juce::String& script, int knobIndex,
+                                float newMin, float newMax)
+{
+    if (knobIndex < 0 || knobIndex > 5 || ! std::isfinite (newMin) || ! std::isfinite (newMax))
+        return script;
+    if (newMax < newMin)
+        std::swap (newMin, newMax);
+    if (std::abs (newMax - newMin) < 1.0e-9f)
+        newMax = newMin + 1.f;
+
+    auto boundTxt = [] (float v) -> juce::String
+    {
+        if (! std::isfinite (v))
+            return "0";
+        if (std::abs (v - std::round (v)) < 1.0e-5f && std::abs (v) < 1.0e7f)
+            return juce::String ((int) std::lround (v));
+        juce::String s (v, 4);
+        if (s.containsChar ('.'))
+        {
+            while (s.endsWithChar ('0'))
+                s = s.dropLastCharacters (1);
+            if (s.endsWithChar ('.'))
+                s << '0';
+        }
+        return s;
+    };
+    const auto letter = juce::String::charToString ((juce::juce_wchar) ('a' + knobIndex));
+    const auto bounds = juce::String ("[") + boundTxt (newMin) + ", " + boundTxt (newMax) + "]";
+    juce::StringArray lines;
+    lines.addLines (script);
+    bool found = false;
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        const auto raw = lines[i];
+        const auto trimmed = raw.trimStart();
+        if (trimmed.startsWithChar ('#') || trimmed.startsWith ("//"))
+            continue;
+        if (! trimmed.startsWithIgnoreCase ("param"))
+            continue;
+        auto rest = trimmed.substring (5).trimStart();
+        if (rest.length() < 1 || juce::CharacterFunctions::toLowerCase (rest[0]) != letter[0])
+            continue;
+        rest = rest.substring (1).trimStart();
+        if (! rest.startsWithChar ('='))
+            continue;
+        rest = rest.substring (1).trimStart();
+        int nameEnd = rest.length();
+        const int br = rest.indexOfChar ('[');
+        const int hash = rest.indexOfChar ('#');
+        const int sl = rest.indexOf ("//");
+        if (br >= 0) nameEnd = juce::jmin (nameEnd, br);
+        if (hash >= 0) nameEnd = juce::jmin (nameEnd, hash);
+        if (sl >= 0) nameEnd = juce::jmin (nameEnd, sl);
+        auto name = rest.substring (0, nameEnd).trim();
+        if (name.isEmpty())
+            name = letter;
+        juce::String comment;
+        const int cut = (hash >= 0 && (sl < 0 || hash < sl)) ? hash : sl;
+        if (cut >= 0)
+            comment = rest.substring (cut);
+        const int indent = raw.length() - trimmed.length();
+        juce::String line = raw.substring (0, indent) + "param " + letter + " = " + name
+                          + " " + bounds;
+        if (comment.isNotEmpty())
+            line << "  " << comment;
+        lines.set (i, line);
+        found = true;
+        break;
+    }
+    if (! found)
+    {
+        int insertAt = 0;
+        for (int i = 0; i < lines.size(); ++i)
+        {
+            const auto t = lines[i].trimStart();
+            if (t.isEmpty() || t.startsWithChar ('#') || t.startsWith ("//"))
+            {
+                insertAt = i + 1;
+                continue;
+            }
+            if (t.startsWithIgnoreCase ("param"))
+                insertAt = i + 1;
+            else
+                break;
+        }
+        lines.insert (insertAt, "param " + letter + " = " + letter + " " + bounds);
     }
     return lines.joinIntoString ("\n");
 }

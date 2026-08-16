@@ -98,6 +98,7 @@ private:
     int overlayTopInset() const noexcept;
     void reportScriptIssue (const juce::String& message);
     void dismissOverlayNow (std::unique_ptr<ModalOverlay>& overlay);
+    void closePeerOverlays (ModalOverlay* keep);
     void layoutOpenOverlays();
     void syncGlCover();
     bool anyOverlayShowing() const noexcept;
@@ -174,6 +175,7 @@ private:
     void applyKnobDisplayName (int index, const juce::String& name);
     void syncParamNamesFromScript (const juce::String& script);
     void writeParamNameToScript (int index, const juce::String& name);
+    void writeParamRangeToScript (int index, float newMin, float newMax);
     bool ignoreScriptNameSync { false };
 
     int workspaceMode { WorkspaceScript };

@@ -18,6 +18,7 @@ public:
     void setMode (OverlayMode newMode);
     void setContent (std::unique_ptr<juce::Component> newContent);
     void setTitle (const juce::String& text);
+    juce::String getTitle() const { return rawTitle; }
     void setLiveStatus (const juce::String& text);
     void setMotion (CyberMotion motion);
 

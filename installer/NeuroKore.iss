@@ -3,10 +3,10 @@
 ; Installs the VST3 bundle where hosts scan, plus the Standalone app.
 
 #define MyAppName "NEUROKORE"
-#define MyAppVersion "0.9.1-alpha"
+#define MyAppVersion "0.4.4-alpha"
 #define MyAppPublisher "Neuroklast"
 #define MyAppURL "https://neuroklast.net"
-#define MyAppExeName "NEUROKORE.exe"
+#define MyAppExeName "NEUROKORE-0.4.4-alpha.exe"
 
 #ifndef NcStage
   #define NcStage "..\build\package\stage"
@@ -40,7 +40,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 
 [Files]
 ; VST3 is a folder bundle — hosts look in Common Files\VST3
-Source: "{#NcStage}\NEUROKORE.vst3\*"; DestDir: "{commoncf64}\VST3\NEUROKORE.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#NcStage}\NEUROKORE-0.4.4-alpha.vst3\*"; DestDir: "{commoncf64}\VST3\NEUROKORE-0.4.4-alpha.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#NcStage}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#NcStage}\README.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#NcStage}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist

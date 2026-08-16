@@ -77,6 +77,9 @@ public:
     /** Returns the latency introduced by oversampling in samples. */
     int getOversamplingLatency() const noexcept { return osLatencySamples; }
 
+    /** Dry/wet delay must match host PDC (OS + IR). Safe to call after IR load. */
+    void setDryAlignLatency (int samples) noexcept;
+
     /** Returns the current processing spec (before oversampling). */
     juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return currentSpec; }
 
@@ -140,10 +143,12 @@ private:
 
     juce::AudioBuffer<float> dryBuffer;
     juce::AudioBuffer<float> scOsBuffer;
+    juce::AudioBuffer<float> scHostBuffer;
     const float* hostScL { nullptr };
     const float* hostScR { nullptr };
     int hostScN { 0 };
     LatencyAlignedSidechain drySidechain;
+    LatencyAlignedSidechain scHostAlign;
     juce::AudioBuffer<float> scriptBuffer;
 
     /** [1]=2× [2]=4× [3]=8× — built once per host spec so OS switches do not realloc. */

@@ -95,7 +95,7 @@ void SignalChain::Xover::processBlock (juce::AudioBuffer<float>& buffer)
         f1Sm.skip (nS - 1);
         f2Sm.skip (nS - 1);
     }
-    if (std::abs (f1 - lastF1) > 0.8f || std::abs (f2 - lastF2) > 0.8f)
+    if (std::abs (f1 - lastF1) > 4.f || std::abs (f2 - lastF2) > 4.f)
         applyCoeffs (f1, f2);
 
     const int useCh = juce::jmin (nCh, 2);

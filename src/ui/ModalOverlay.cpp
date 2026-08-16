@@ -14,7 +14,7 @@ ModalOverlay::ModalOverlay()
     addAndMakeVisible (backButton);
     addAndMakeVisible (closeButton);
 
-    titleLabel.setJustificationType (juce::Justification::centredLeft);
+    titleLabel.setJustificationType (juce::Justification::centred);
     titleLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
     titleLabel.setFont (NeuroKoreLookAndFeel::brandFont (15.0f, true));
 

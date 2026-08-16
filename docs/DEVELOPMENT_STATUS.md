@@ -1,7 +1,7 @@
 # Entwicklungsstand NEUROKORE
 
 **Letzte Aktualisierung:** 2026-08-16  
-**Version:** 0.9.1-alpha  
+**Version:** 0.4.4-alpha  
 **Gesamtfortschritt:** ~90%
 
 ---
@@ -20,7 +20,8 @@
 | Core/Config.h | ✅ CPU-Guard: EMA / Warmup-Sekunden / 2s Retry | 99% | 2026-08-15 |
 | DSL/DSLParser | ✅ + delay / reverb / ms + bus/send/out + eq + octaver + vocoder + gate / ngate | 99% | 2026-08-16 |
 | DSL/GraphModel | ✅ tidyLayout wrappt jede Rail; setPosition only | 99% | 2026-08-16 |
-| UI/GraphCanvas | ✅ Auto-arrange; Presets beim Laden auf aktuellen Zoom | 99% | 2026-08-16 |
+| DSL/PcbRouter | ✅ Manhattan-Stubs, volle Zell-Lanes, keine Micro-Jogs | 100% | 2026-08-16 |
+| UI/GraphCanvas | ✅ Raster-Jacks; orthogonale Stecker; LFO-LED konstante px/s | 99% | 2026-08-16 |
 | DSL/SignalChain | ✅ Delay control-rate; Gate/noisegate; per-Block Taps | 99% | 2026-08-16 |
 | DSL/ExpressionEvaluator | ✅ Solide (SIMD, CSE, Const-Folding) + SIMD-Funktionspfade + Template-Block-APIs | 90% | 2026-05-21 |
 | DSP/InputGain | ✅ Funktional | 80% | 2026-04-01 |
@@ -36,7 +37,7 @@
 | Preset-System | ✅ 526 Factory; Topology-Hash; Script-Match setzt den Namen | 99% | 2026-08-16 |
 | Localiser | ✅ DE/EN; Gain/Mix Labels; CurrentPreset | 82% | 2026-08-11 |
 | Licensing | ✅ Offline RSA-.lic; nach Aktivierung zeigt License den Inhaber | 93% | 2026-08-14 |
-| Tests | ✅ CrackleFixes inkl. Kick-Rumble-Impuls; 12372 passed, 2 factory-quality leftovers | 99% | 2026-08-16 |
+| Tests | ✅ Factory quality + loudness gate; jack-grid + LFO-LED | 99% | 2026-08-16 |
 | CI/CD | ✅ Windows Tests+pluginval; macOS-Job baut AU + auval | 95% | 2026-08-14 |
 | Build (Windows) | ✅ Standalone + VST3 Release unter VS2022 | 100% | 2026-06-29 |
 | Dokumentation | ✅ Circuit/Terminal; noisegate; Host/User BPM; Tools-Zeile | 99% | 2026-08-16 |
@@ -46,6 +47,100 @@
 ---
 
 ## Aktive Checkliste
+
+### 2026-08-16 – Feedback sheet P0–P4 + graph overview
+
+- [x] Save-validation uses SafePointer (British Plexi Bark crash)
+- [x] Position-only emit does not rebuild the audio chain
+- [x] Xover coeff updates are less twitchy
+- [x] One overlay at a time + toggle; `?` in the top bar
+- [x] Footer brighter / less squash; Mix % has a min width
+- [x] Settings motion applies while the overlay is open
+- [x] Right-click = node menu (duplicate/delete); double-click = inspect
+- [x] Add-on-cable splices; chips never overlap (16 px gap)
+- [x] Knob cables are direct curves, not square PCB traces
+- [x] Host context menu on knobs; MIN/MAX labels
+- [x] IR Play preview; Functions Copy + Nodes lookup
+- [x] Plexi copy no longer leaks the “no Marshall name” prompt
+- [x] Idle backdrop skips when Motion=Off or the meter is silent
+- [x] Version **0.4.4-alpha**
+
+### 2026-08-16 – PCB lanes keep a full-cell offset
+
+- [x] Shared tracks: lane 0 on jack axis, others ±N cells (not ±3 px)
+- [x] `dropMicroJogs` no longer eats intentional lane risers after `routeAll`
+- [x] Same-Y bus restores stubs after `collapseColinear`
+- [x] Version **0.4.3-alpha**
+
+### 2026-08-16 – PCB rows + no micro-jogs + cyber LFO
+
+- [x] Chip height = (1 title + N jack) units; jack i in the centre of row 1+i
+- [x] Manhattan + mandatory horizontal stubs
+- [x] Parallel lanes: equal gap, stubs stay on the jack axis
+- [x] LFO light: neon bolt + cyan diamond + red trail (not a generic blob)
+- [x] Version **0.4.2-alpha**
+
+### 2026-08-16 – Orthogonal jacks + LED + grid sizes
+
+- [x] Knob/LFO/audio traces enter jacks on the axis (no cubic diagonals)
+- [x] One LFO LED, constant px/s, pulse = Hz
+- [x] Empty jack = socket; patched jack = plug in the socket
+- [x] Chip W/H/IO/jack pad/pitch are 16-grid; jack Y = pad + slot×pitch
+- [x] tidyLayout col/row pitch snapped to the same grid
+
+### 2026-08-16 – Factory leftovers + IR mix align
+
+- [x] Mixbus Soft Clip: recovery LPF after hardclip
+- [x] Quiet inserts get makeup (Acoustic Sim, Subs, Leslie, Green Boost, SC Pad, Horror, Sub Drop)
+- [x] Dry/wet delay = OS + IR latency (`setDryAlignLatency`)
+
+### 2026-08-16 – Live path never splices dry on lock/CPU
+
+- [x] Lock-miss / CPU-hold replay last wet (decay), fade back in
+- [x] `evaluateFormula` no longer takes `processLock`
+- [x] Overlay inset includes the tools row; fold hit uses 40 px gutter
+- [x] Settings motion callback is wired before `show()`
+
+### 2026-08-16 – Version 0.4.1-alpha on binaries
+
+- [x] `PLUGIN_VERSION` / CMake / Inno / pack script = **0.4.1-alpha**
+- [x] Standalone + VST3 (+ AU) `OUTPUT_NAME` = `NEUROKORE-0.4.1-alpha`
+
+### 2026-08-16 – Metal Gate / Acid Line / preset reset
+
+- [x] Metal Gate: widen after IR+limit; Width default 0.55; gate hold/release stable
+- [x] IR load/clear under processLock
+- [x] Env::clearRuntimeState; Widen AP buffers reset
+- [x] Acid Line: Res 1.9 / max 2.6, attack 4 ms
+
+### 2026-08-16 – Drag preview is a free line
+
+- [x] Rubber-band is jack → pointer; PCB A* only after drop
+
+### 2026-08-16 – Circuit node overlay, knobs, presets, Acid Line
+
+- [x] Node inspect lists every block argument (delay sync/damp/pingpong, filter +/*, env source…)
+- [x] Empty fields show placeholders; overlay scrolls
+- [x] MS DEC jack labels stay in a gutter — title/summary no longer overlap
+- [x] Knob Set Min/Max writes `param a = Name [min, max]` (APVTS stays 0–1)
+- [x] Preset arrows walk category then name, then the next folder
+- [x] Top chip shows the loaded preset name
+- [x] Env literals skip per-sample evaluate; env-only filters stride coeffs (Acid Line)
+
+### 2026-08-16 – LFO cables are a running light
+
+- [x] Trace stays static (no perpendicular wave, no size pulse)
+- [x] Beads travel along the path; speed = osc Hz (1 Hz = 1 trip/s, clamped 0.05–16)
+- [x] Brightness = peak |LFO|; `copyLfoHz` is atomic
+- [x] Env cables stay a static trace (no chase)
+
+### 2026-08-16 – PCB-style circuit cables
+
+- [x] `dsl::PcbRouter` is UI-free: A* on a 4-neighbour grid, turn penalty 12, Manhattan heuristic
+- [x] Node bounding boxes are obstacles (start/end chips stay passable so the jack can leave)
+- [x] Sharp 90° corners become quadratic Beziers with a fixed radius
+- [x] Shared tracks get a parallel lane offset (`routeAll`)
+- [x] GraphCanvas maps chips → `PcbRect` and cmds → `juce::Path`; drag/zoom/fold rebuild routes
 
 ### 2026-08-16 – Periodic crackle (gate/phaser/space/rumble)
 
@@ -57,7 +152,7 @@
 - [x] visualRail: named bus wins over channel (Wide Canvas)
 - [x] setScript does not inherit positions from a previous preset by name
 - [x] Preset overlay closes on the next message turn; inspect closes on script change
-- [x] LFO cables draw the live osc lane (sine/saw/square readable)
+- [x] LFO cables: static PCB trace + running light (speed = Hz, brightness = amplitude)
 - [x] Kick/Warehouse/Hardcore/Gabber: softclip before hardclip; env-filter Q 0.85
 - [x] Octaver: free-running sub, silent until lock (no period-reset click)
 - [x] Rumble body LPF stays on Floor ~48–88 Hz (no env-open to 400 Hz)

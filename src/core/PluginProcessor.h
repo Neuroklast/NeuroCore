@@ -88,6 +88,11 @@ public:
     bool applyFormula (const juce::String& text, juce::String& error);
     /** @param clearPresetName  false when loading a named factory/user preset */
     bool applyFormula (const juce::String& text, juce::String& error, bool clearPresetName);
+    void storeScriptLayout (const juce::String& text)
+    {
+        scriptManager.storeScriptText (text);
+        sendChangeMessage();
+    }
 
     void recordNameChange (int index, const juce::String& oldName, const juce::String& newName);
 
@@ -201,6 +206,9 @@ public:
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
     bool  consumeInvalidFlag() noexcept       { return dspEngine.consumeInvalidFlag(); }
 
+    /** Test hook: hold during processBlock to simulate a UI formula/IR swap. */
+    juce::CriticalSection& getProcessLock() noexcept { return scriptManager.getProcessLock(); }
+
     bool  isCpuProtectActive() const noexcept { return cpuProtect.isTripped(); }
     float getCpuLoad()         const noexcept { return cpuProtect.getSmoothedLoad(); }
     void  clearCpuProtect()          noexcept { cpuProtect.clear(); }
@@ -229,6 +237,7 @@ public:
                            const juce::String& displayName, juce::String& error);
     void clearIr (const juce::String& slot);
     void clearAllIrs();
+    void startIrPreview (const juce::String& slot);
     void refreshReportedLatency();
 
     bool copyCircuitTap (const juce::String& id, float* dest, int destN) const noexcept
@@ -239,6 +248,11 @@ public:
     bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept
     {
         return scriptManager.signalChain.copyLfoViz (id, dest, destN);
+    }
+
+    bool copyLfoHz (const juce::String& id, float& destHz) const noexcept
+    {
+        return scriptManager.signalChain.copyLfoHz (id, destHz);
     }
 
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept
@@ -282,6 +296,19 @@ private:
     std::atomic<float> osOutGainTarget { 1.f };
     std::atomic<float> hostBpm { 120.f };
     std::atomic<int> hostBlock { 0 };
+
+    /** Last successful wet block. Replay on lock-miss / CPU-hold — never splice dry. */
+    juce::AudioBuffer<float> continuityBuf;
+    int continuityN { 0 };
+    int continuityCh { 0 };
+    float continuityDecay { 0.f };
+    int fadeInRemain { 0 };
+    juce::AudioBuffer<float> irPreviewBuf;
+    std::atomic<int> irPreviewPos { -1 };
+    void mixIrPreview (juce::AudioBuffer<float>& dest) noexcept;
+    void storeContinuity (const juce::AudioBuffer<float>& src);
+    void replayContinuity (juce::AudioBuffer<float>& dest) noexcept;
+    void fadeInAfterGap (juce::AudioBuffer<float>& dest) noexcept;
 
     struct IrAsset
     {

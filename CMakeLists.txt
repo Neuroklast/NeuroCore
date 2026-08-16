@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-project(NeuroKore VERSION 0.9.1 LANGUAGES C CXX)
+set(NEUROKORE_VERSION_NUMERIC "0.4.4")
+set(NEUROKORE_VERSION_LABEL "0.4.4-alpha")
+set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
+project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
 # MSVC defaults to the system code page for string literals. Our sources are
 # UTF-8 (em dash, ·, ✕, German comments). Without /utf-8 the UI shows mojibake
@@ -90,6 +93,7 @@ set(SOURCE_FILES
     src/dsp/SignalPolisher.cpp
     src/dsl/DSLParser.cpp
     src/dsl/GraphModel.cpp
+    src/dsl/PcbRouter.cpp
     src/ui/GraphCanvasComponent.cpp
     src/dsl/SignalChain.cpp
     src/dsl/blocks/GateBlock.cpp
@@ -247,6 +251,17 @@ add_custom_command(TARGET NeuroKore POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/resources
         $<TARGET_FILE_DIR:NeuroKore>/resources
 )
+# Always stamp the version on the built binaries (exe / .vst3 / .component).
+if(TARGET NeuroKore_Standalone)
+    set_target_properties(NeuroKore_Standalone PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
+endif()
+if(TARGET NeuroKore_VST3)
+    set_target_properties(NeuroKore_VST3 PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
+endif()
+if(TARGET NeuroKore_AU)
+    set_target_properties(NeuroKore_AU PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
+endif()
+
 if(TARGET NeuroKore_Standalone)
     add_custom_command(TARGET NeuroKore_Standalone POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

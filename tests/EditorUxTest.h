@@ -158,7 +158,7 @@ public:
             expectEquals (juce::String (Config::kBrandByline), juce::String ("by Neuroklast"));
             expectEquals (juce::String (Config::kAppDataFolder), juce::String ("NeuroKore"));
             expectEquals (juce::String (PLUGIN_ID), juce::String ("nrko01"));
-            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.9.1-alpha"));
+            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.4.4-alpha"));
         }
 
         beginTest ("preset ratings clamp to 1-5 and clear at 0");
@@ -811,7 +811,7 @@ public:
             expect (GraphCanvasComponent::kCardWidth <= 220);
             expect (GraphCanvasComponent::kIoHeight <= 44);
             expect (GraphCanvasComponent::kIoWidth <= 96);
-            expect (GraphCanvasComponent::kCardHeight >= 56);
+            expect (GraphCanvasComponent::kCardHeight >= 32);
             expectEquals (GraphCanvasComponent::formatLiveKnob (3.2f), juce::String ("3.20"));
             expectEquals (GraphCanvasComponent::formatLiveKnob (800.f), juce::String ("800"));
         }
@@ -992,6 +992,87 @@ public:
             expectEquals (GraphCanvasComponent::cableTapEnergy (nullptr, 8), 0.f);
         }
 
+        beginTest ("lfo LED travels at constant speed; pulse follows hz");
+        {
+            expectEquals (GraphCanvasComponent::lfoChaseHz (0.f), 0.f);
+            expectEquals (GraphCanvasComponent::lfoChaseHz (-2.f), 0.f);
+            expect (GraphCanvasComponent::lfoChaseHz (0.01f) >= GraphCanvasComponent::kLfoChaseHzMin);
+            expect (GraphCanvasComponent::lfoChaseHz (40.f) <= GraphCanvasComponent::kLfoChaseHzMax);
+            expectEquals (GraphCanvasComponent::lfoChaseHz (2.f), 2.f);
+
+            const float s1 = GraphCanvasComponent::lfoChaseStep (1.f, 30.f);
+            const float s8 = GraphCanvasComponent::lfoChaseStep (8.f, 30.f);
+            expect (s1 > 0.f);
+            expect (std::abs (s1 - s8) < 1.0e-6f);
+            expect (std::abs (s1 - GraphCanvasComponent::kLfoLedPxPerSec / 30.f) < 1.0e-5f);
+            expectEquals (GraphCanvasComponent::lfoChaseStep (4.f, 0.f), 0.f);
+
+            expect (std::abs (GraphCanvasComponent::lfoChaseAlong (0.f, 100.f)) < 1.0e-5f);
+            expect (GraphCanvasComponent::lfoChaseAlong (25.f, 100.f) > 0.2f);
+            expect (std::abs (GraphCanvasComponent::lfoChaseAlong (100.f, 100.f)
+                              - GraphCanvasComponent::lfoChaseAlong (0.f, 100.f)) < 1.0e-5f);
+
+            const float p0 = GraphCanvasComponent::lfoLedPulse (2.f, 0.f);
+            const float p1 = GraphCanvasComponent::lfoLedPulse (2.f, 0.125f);
+            expect (std::abs (p0 - p1) > 0.2f);
+
+            const float silent[8] {};
+            expectEquals (GraphCanvasComponent::lfoChaseBrightness (silent, 8), 0.f);
+            expectEquals (GraphCanvasComponent::lfoChaseBrightness (nullptr, 4), 0.f);
+            const float deep[8] { 0.9f, -0.85f, 0.4f, 0.f, 0.f, 0.f, 0.f, 0.f };
+            const float shallow[8] { 0.18f, -0.16f, 0.1f, 0.f, 0.f, 0.f, 0.f, 0.f };
+            expect (GraphCanvasComponent::lfoChaseBrightness (deep, 8) > 0.8f);
+            expect (GraphCanvasComponent::lfoChaseBrightness (shallow, 8) < 0.25f);
+            expect (GraphCanvasComponent::lfoChaseBrightness (deep, 8)
+                    > GraphCanvasComponent::lfoChaseBrightness (shallow, 8) * 2.f);
+        }
+
+        beginTest ("chip sizes and jack slots share the board grid");
+        {
+            expectEquals (GraphCanvasComponent::kGrid, 16);
+            expectEquals (GraphCanvasComponent::kJackPitch, GraphCanvasComponent::kGrid);
+            expectEquals (GraphCanvasComponent::kCardWidth % GraphCanvasComponent::kGrid, 0);
+            expectEquals (GraphCanvasComponent::kCardHeight % GraphCanvasComponent::kGrid, 0);
+            expectEquals (GraphCanvasComponent::kIoWidth % GraphCanvasComponent::kGrid, 0);
+            expectEquals (GraphCanvasComponent::kIoHeight % GraphCanvasComponent::kGrid, 0);
+            expectEquals (GraphCanvasComponent::jackLocalY (0),
+                          GraphCanvasComponent::kTitleRows * GraphCanvasComponent::kGrid
+                              + GraphCanvasComponent::kJackPad);
+            expectEquals (GraphCanvasComponent::jackLocalY (1) - GraphCanvasComponent::jackLocalY (0),
+                          GraphCanvasComponent::kGrid);
+            expectEquals (GraphCanvasComponent::chipHeight (1, 1, 0, 0, false),
+                          (GraphCanvasComponent::kTitleRows + 1) * GraphCanvasComponent::kGrid);
+            expectEquals (GraphCanvasComponent::chipHeight (5, 2, 0, 0, false),
+                          (GraphCanvasComponent::kTitleRows + 5) * GraphCanvasComponent::kGrid);
+            expectEquals (GraphCanvasComponent::chipHeight (3, 2, 6, 1, true)
+                              % GraphCanvasComponent::kGrid, 0);
+            const auto fold = GraphCanvasComponent::foldChevronRect (208, 48, false, 1.f);
+            expect (fold.getBottom() <= GraphCanvasComponent::kGrid + 2,
+                    "chevron must stay in the title row");
+            const auto knobPath = GraphCanvasComponent::makeKnobCable ({ 0.f, 20.f }, { 200.f, 80.f });
+            juce::PathFlatteningIterator kit (knobPath);
+            bool curved = false;
+            while (kit.next())
+            {
+                const float dx = std::abs (kit.x2 - kit.x1);
+                const float dy = std::abs (kit.y2 - kit.y1);
+                if (dx > 1.f && dy > 1.f)
+                    curved = true;
+            }
+            expect (curved, "knob cable must be a direct curve, not square corners");
+            const int y0a = GraphCanvasComponent::jackLocalY (0);
+            const int y0b = GraphCanvasComponent::jackLocalY (0);
+            expectEquals (y0a, y0b);
+            auto path = GraphCanvasComponent::makeOrthoCable ({ 10.f, 32.f }, { 200.f, 80.f });
+            juce::PathFlatteningIterator it (path);
+            while (it.next())
+            {
+                const float dx = std::abs (it.x2 - it.x1);
+                const float dy = std::abs (it.y2 - it.y1);
+                expect (dx < 0.6f || dy < 0.6f, "ortho cable must not go diagonal");
+            }
+        }
+
         beginTest ("effective BPM follows host or user setting");
         {
             const bool prevHost = UiSettings::get().useHostTempo();
@@ -1029,14 +1110,19 @@ public:
             expectEquals (ui::ParameterComponent::formatRangeBound (0.f), juce::String ("0"));
             expectEquals (ui::ParameterComponent::formatRangeBound (800.f), juce::String ("800"));
             expectEquals (ui::ParameterComponent::formatRangeBound (0.5f), juce::String ("0.50"));
+            NeuroKoreAudioProcessor procRange;
+            juce::String rangeErr;
+            expect (procRange.setFormula ("param a = Drive [0, 2]\nstage1: y = x * a\n", rangeErr));
+            const auto ranged = dsl::rewriteParamRange (procRange.getScript(), 0, 1.f, 8.f);
+            expect (ranged.contains ("[1, 8]"));
             NeuroKoreAudioProcessor proc;
             ui::ParameterComponent pc (proc.apvts, "a", "Drive");
             pc.setSize (90, 120);
             pc.setMappedRange (0.f, 800.f);
-            expectEquals (pc.getMinText(), juce::String ("0"));
-            expectEquals (pc.getMaxText(), juce::String ("800"));
+            expectEquals (pc.getMinText(), juce::String ("MIN 0"));
+            expectEquals (pc.getMaxText(), juce::String ("MAX 800"));
             pc.refreshValues();
-            expectEquals (pc.getMaxText(), juce::String ("800"));
+            expectEquals (pc.getMaxText(), juce::String ("MAX 800"));
         }
 
         beginTest ("knob rename editor survives a value refresh");

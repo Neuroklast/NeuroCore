@@ -94,6 +94,7 @@ private:
     juce::TextEditor searchField;
     juce::ListBox listBox { "functions", this };
     juce::TextButton insertButton { "Insert" };
+    juce::TextButton copyButton { "Copy" };
     juce::TextButton closeButton { "Close" };
 
     juce::Label nameLabel;

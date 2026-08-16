@@ -75,12 +75,19 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
     statusBarLabel->setJustificationType(juce::Justification::centredLeft);
     statusBarLabel->setColour(juce::Label::textColourId, NeuroKoreLookAndFeel::inkMuted());
     statusBarLabel->setFont(NeuroKoreLookAndFeel::monoFont(12.f));
-    statusBarLabel->setMinimumHorizontalScale(0.55f);
+    statusBarLabel->setMinimumHorizontalScale(0.82f);
     scaledRoot->addAndMakeVisible(*statusBarLabel);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
     {
+        if (validationOverlay != nullptr
+            && validationOverlay->getTitle().containsIgnoreCase ("Help"))
+        {
+            dismissOverlayNow (validationOverlay);
+            return;
+        }
+        closePeerOverlays (nullptr);
         juce::String body;
         // Prefer embedded manual (always offline), then loose resource file
         if (BinaryData::UserManual_en_txtSize > 0)
@@ -108,7 +115,9 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
         syncGlCover();
         validationOverlay->onClose = [this] { validationOverlay.reset(); syncGlCover(); };
     };
-    scaledRoot->addChildComponent(*helpButton);
+    helpButton->setButtonText ("?");
+    helpButton->setTooltip ("User manual");
+    scaledRoot->addAndMakeVisible (*helpButton);
 
     licenseButton = std::make_unique<juce::TextButton> ("License");
     licenseButton->onClick = [this]
@@ -263,6 +272,12 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
             applyKnobDisplayName (i, name);
             audioProcessor.recordNameChange (i, old, name);
             writeParamNameToScript (i, name);
+            updateLiveFormulaView();
+        };
+        paramComponents[i]->onMappedRangeChanged = [this, i] (float mn, float mx)
+        {
+            writeParamRangeToScript (i, mn, mx);
+            refreshParameterControls();
             updateLiveFormulaView();
         };
         scaledRoot->addAndMakeVisible(*paramComponents[i]);
@@ -556,6 +571,7 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
     toolbar->addChild (makeLeaf (functionsButton.get(), 0.82f));
     toolbar->addChild (makeLeaf (stagesButton.get(), 0.82f));
     toolbar->addChild (makeLeaf (settingsButton.get(), 0.82f));
+    toolbar->addChild (makeLeaf (helpButton.get(), 0.42f));
     toolbar->addChild (makeLeaf (liveButton.get(), 0.82f));
     toolbar->addChild (makeLeaf (bypassButton.get(), 0.82f));
     layoutRoot->addChild (std::move (toolbar));
@@ -635,7 +651,9 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
     addChrome (*tools, polisherBox.get(), 0.85f);
     tools->addChild (makeLeaf (mixLabel.get(), 0.35f));
     tools->addChild (makeLeaf (mixSlider.get(), 3.6f, 0.f));
-    tools->addChild (makeLeaf (mixValue.get(), 0.4f));
+    auto mixValLeaf = makeLeaf (mixValue.get(), 0.55f);
+    mixValLeaf->minWidth = 44;
+    tools->addChild (std::move (mixValLeaf));
     layoutRoot->addChild (std::move (tools));
 
     auto waveRow = makeRow (0.0f);
@@ -786,7 +804,9 @@ void NeuroKoreAudioProcessorEditor::timerCallback()
         updateLiveFormulaView();
     updateStatusBar();
     const bool live = audioProcessor.isLiveMode();
-    if (backdrop && ! live)
+    const auto motionNow = UiSettings::get().motion();
+    if (backdrop && ! live && motionNow != CyberMotion::Off
+        && audioProcessor.getLoudnessDb() > -70.f)
     {
         backdrop->setPeakFromDb (audioProcessor.getLoudnessDb());
         backdrop->advance (1.f / 24.f);
@@ -903,10 +923,7 @@ void NeuroKoreAudioProcessorEditor::updateStatusBar()
         << "   OS " << osFactor << "x   MIX " << juce::String ((int) std::lround ((double) mixPct)) << "%";
     statusBarLabel->setTooltip (tip);
     statusBarLabel->setText (s, juce::dontSendNotification);
-    statusBarLabel->setColour (juce::Label::textColourId,
-                               (lim || bypassed || cpuSafe)
-                                   ? NeuroKoreLookAndFeel::ink()
-                                   : NeuroKoreLookAndFeel::inkMuted());
+    statusBarLabel->setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
 
     if (errorLabel != nullptr)
     {
@@ -1010,7 +1027,12 @@ void NeuroKoreAudioProcessorEditor::syncFromProcessor()
 
     if (currentPresetLabel)
     {
-        const auto name = audioProcessor.getCurrentPresetName();
+        auto name = audioProcessor.getCurrentPresetName();
+        if (name.isEmpty())
+        {
+            audioProcessor.resolvePresetNameFromScript();
+            name = audioProcessor.getCurrentPresetName();
+        }
         // ASCII only: brand font Apex lacks bullet glyphs (showed as garbage "a")
         currentPresetLabel->setText (name.isNotEmpty() ? name : "Untitled",
                                      juce::dontSendNotification);
@@ -1248,6 +1270,23 @@ void NeuroKoreAudioProcessorEditor::dismissOverlayNow (std::unique_ptr<ModalOver
     overlay->skipToEnd();
     overlay.reset();
     syncGlCover();
+}
+
+void NeuroKoreAudioProcessorEditor::closePeerOverlays (ModalOverlay* keep)
+{
+    auto close = [this, keep] (std::unique_ptr<ModalOverlay>& o)
+    {
+        if (o != nullptr && o.get() != keep)
+            dismissOverlayNow (o);
+    };
+    close (presetOverlay);
+    close (functionsOverlay);
+    close (stagesOverlay);
+    close (validationOverlay);
+    close (irOverlay);
+    close (licenseOverlay);
+    close (settingsOverlay);
+    close (nodeInspectOverlay);
 }
 
 void NeuroKoreAudioProcessorEditor::layoutOpenOverlays()
@@ -1561,6 +1600,26 @@ void NeuroKoreAudioProcessorEditor::syncParamNamesFromScript (const juce::String
             applyKnobDisplayName (i, names[i]);
 }
 
+void NeuroKoreAudioProcessorEditor::writeParamRangeToScript (int index, float newMin, float newMax)
+{
+    const auto src = (formulaInputEditor != nullptr && (editing || workspaceMode == WorkspaceScript))
+                         ? formulaInputEditor->getText()
+                         : audioProcessor.getScript();
+    const auto next = dsl::rewriteParamRange (src, index, newMin, newMax);
+    if (next == src)
+        return;
+
+    ignoreScriptNameSync = true;
+    if (formulaInputEditor != nullptr)
+        formulaInputEditor->setText (next);
+    ignoreScriptNameSync = false;
+
+    juce::String err;
+    audioProcessor.setFormula (next, err, false);
+    if (workspaceMode == WorkspaceGraph)
+        syncGraphFromScript();
+}
+
 void NeuroKoreAudioProcessorEditor::writeParamNameToScript (int index, const juce::String& name)
 {
     const auto src = (formulaInputEditor != nullptr && (editing || workspaceMode == WorkspaceScript))
@@ -1698,7 +1757,12 @@ bool NeuroKoreAudioProcessorEditor::keyPressed(const juce::KeyPress& key)
 
 void NeuroKoreAudioProcessorEditor::showPresetOverlay()
 {
-    dismissOverlayNow (presetOverlay);
+    if (presetOverlay != nullptr)
+    {
+        hidePresetOverlay();
+        return;
+    }
+    closePeerOverlays (nullptr);
     auto content = std::make_unique<PresetContentComponent>(audioProcessor, lookAndFeel);
     auto* ptr = content.get();
 
@@ -1756,7 +1820,12 @@ void NeuroKoreAudioProcessorEditor::showPresetOverlay()
 
 void NeuroKoreAudioProcessorEditor::showFunctionsOverlay()
 {
-    dismissOverlayNow (functionsOverlay);
+    if (functionsOverlay != nullptr)
+    {
+        hideFunctionsOverlay();
+        return;
+    }
+    closePeerOverlays (nullptr);
     auto content = std::make_unique<FunctionsContentComponent>(audioProcessor);
     auto* ptr = content.get();
 
@@ -1786,7 +1855,12 @@ void NeuroKoreAudioProcessorEditor::hideFunctionsOverlay()
 
 void NeuroKoreAudioProcessorEditor::showStagesOverlay()
 {
-    dismissOverlayNow (stagesOverlay);
+    if (stagesOverlay != nullptr)
+    {
+        hideStagesOverlay();
+        return;
+    }
+    closePeerOverlays (nullptr);
     auto content = std::make_unique<StagesContentComponent>(audioProcessor);
     auto* ptr = content.get();
 
@@ -1814,7 +1888,7 @@ void NeuroKoreAudioProcessorEditor::showNodeInspectOverlay (int nodeIndex)
         return;
     dismissOverlayNow (nodeInspectOverlay);
     auto content = std::make_unique<NodeInspectComponent> (audioProcessor, *graphCanvas, nodeIndex);
-    const int h = juce::jlimit (280, 640, content->preferredHeight());
+    const int h = juce::jlimit (280, 760, content->preferredHeight());
     content->onFinished = [this]
     {
         hideNodeInspectOverlay();
@@ -1971,7 +2045,12 @@ void NeuroKoreAudioProcessorEditor::hideLicenseOverlay()
 
 void NeuroKoreAudioProcessorEditor::showSettingsOverlay()
 {
-    dismissOverlayNow (settingsOverlay);
+    if (settingsOverlay != nullptr)
+    {
+        hideSettingsOverlay();
+        return;
+    }
+    closePeerOverlays (nullptr);
     auto content = std::make_unique<SettingsContentComponent>();
     auto* ptr = content.get();
     ptr->setFontPt (editorFontHeight);
@@ -1980,10 +2059,12 @@ void NeuroKoreAudioProcessorEditor::showSettingsOverlay()
     settingsOverlay->setTitle ("Settings");
     settingsOverlay->setPreferredContentSize (560, 780);
     settingsOverlay->setContent (std::move (content));
-    applyOverlayMotion (*settingsOverlay);
-    settingsOverlay->show (*scaledRoot);
-    syncGlCover();
-    ptr->onMotionChanged = [this] (CyberMotion m) { applyMotion (m); };
+    ptr->onMotionChanged = [this] (CyberMotion m)
+    {
+        applyMotion (m);
+        if (settingsOverlay != nullptr)
+            settingsOverlay->setMotion (m);
+    };
     ptr->onLiveModeChanged = [this] (bool live)
     {
         audioProcessor.setLiveMode (live);
@@ -2029,6 +2110,9 @@ void NeuroKoreAudioProcessorEditor::showSettingsOverlay()
         settingsOverlay.reset();
         syncGlCover();
     };
+    applyOverlayMotion (*settingsOverlay);
+    settingsOverlay->show (*scaledRoot);
+    syncGlCover();
 }
 
 void NeuroKoreAudioProcessorEditor::hideSettingsOverlay()

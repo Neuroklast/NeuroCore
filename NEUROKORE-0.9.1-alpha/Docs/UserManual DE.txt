@@ -73,7 +73,7 @@ Circuit = zusammenbauen
 - Ziehen ändert nur X/Y, nicht die Signalreihenfolge. Reihenfolge im Overlay oder per Kabel.
 - Rechtsklick: Auto-arrange, oder Modul hinzufügen (Kategorien). Factory-Presets kommen schon angeordnet zur aktuellen Zoom-Stufe.
 - Mid-Side Encode teilt MID- und SIDE-Schienen wie ein Bus. Decode führt sie zusammen. Widen ist Breite, nicht MS.
-- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst. Leitungen weiss/grau; Punkte nur bei Signal.
+- Kabel ziehen: die Zielbuchse leuchtet, sobald du loslassen kannst. Leitungen laufen orthogonal wie Leiterbahnen (runde Ecken, parallele Bus-Lanes); Punkte nur bei Signal.
 - Ctrl+Mausrad zoomt.
 - Doppelklick: Overlay für alle Parameter. Gebundene Knobs stehen rot auf dem Chip.
 

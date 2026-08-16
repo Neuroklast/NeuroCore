@@ -372,6 +372,7 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroKoreAudioProcessor& p
     addAndMakeVisible (searchField);
     addAndMakeVisible (listBox);
     addAndMakeVisible (insertButton);
+    addAndMakeVisible (copyButton);
     addAndMakeVisible (closeButton);
     addAndMakeVisible (nameLabel);
     addAndMakeVisible (descLabel);
@@ -394,6 +395,7 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroKoreAudioProcessor& p
     listBox.setColour (juce::ListBox::outlineColourId, juce::Colours::transparentBlack);
 
     insertButton.setButtonText ("Insert");
+    copyButton.setButtonText ("Copy");
     closeButton.setButtonText ("Close");
     insertButton.onClick = [this]
     {
@@ -401,6 +403,20 @@ FunctionsContentComponent::FunctionsContentComponent (NeuroKoreAudioProcessor& p
             onInsert (allFunctions[(size_t) filtered[(size_t) currentIndex]].example);
         if (onClose)
             onClose();
+    };
+    copyButton.onClick = [this]
+    {
+        if (currentIndex < 0)
+            return;
+        juce::SystemClipboard::copyTextToClipboard (
+            allFunctions[(size_t) filtered[(size_t) currentIndex]].example);
+        copyButton.setButtonText ("Copied");
+        auto* self = this;
+        juce::Timer::callAfterDelay (900, [safe = juce::Component::SafePointer<FunctionsContentComponent> (self)]
+        {
+            if (safe != nullptr)
+                safe->copyButton.setButtonText ("Copy");
+        });
     };
     closeButton.onClick = [this]
     {
@@ -517,6 +533,41 @@ void FunctionsContentComponent::loadFunctions()
         if (info.name.isNotEmpty())
             allFunctions.push_back (std::move (info));
     }
+
+    auto addNode = [this] (const char* name, const char* desc, const char* example)
+    {
+        FunctionInfo n;
+        n.name = name;
+        n.category = "Nodes";
+        n.description = desc;
+        n.example = example;
+        n.soundCharacter = "Block on the circuit board.";
+        allFunctions.push_back (std::move (n));
+    };
+    addNode ("filter", "Low / high / band-pass. Jacks: in, out. Typical: type, cutoff, resonance.",
+             "filter1: type = lowpass; cutoff = 4000; resonance = 0.3");
+    addNode ("eq", "Peak or shelf EQ. Jacks: in, out. Typical: type, freq, q, gain.",
+             "eq1: type = peak; freq = 1000; q = 0.7; gain = 0");
+    addNode ("stage", "Drive / formula block. Jacks: in, knobs, out.",
+             "stage1: y = tube(x, a)");
+    addNode ("comp", "Compressor. threshold, ratio, attack, release.",
+             "comp1: threshold = -18; ratio = 4; attack = 0.01; release = 0.12");
+    addNode ("ms", "Mid-side encode or decode. ENC: in → mid/side. DEC: mid/side → out.",
+             "ms1: mode = encode");
+    addNode ("ott", "3-band up/down. Not a widener or octaver.",
+             "ott1: depth = 0.4");
+    addNode ("widen", "Stereo width / Haas. Not OTT.",
+             "widen1: width = 0.45");
+    addNode ("octaver", "Sub / up octave mix. Not OTT.",
+             "octaver1: sub = 0.4; up = 0.2; mix = 0.5");
+    addNode ("vocoder", "Voice on sidechain. Not OTT.",
+             "vocoder1: mix = 1; bands = 16");
+    addNode ("xover", "Splits into low / mid / high rails.",
+             "xover1: f1 = 200; f2 = 2500");
+    addNode ("ir", "Cabinet impulse. Load a WAV on the IR jack.",
+             "ir1: mix = 0.4; gain = 1");
+    addNode ("osc", "LFO. Lives on the MOD rail, not the audio line.",
+             "osc1: shape = sine; freq = 0.4; depth = 1");
 }
 
 void FunctionsContentComponent::applyCategory (const juce::String& cat)
@@ -696,8 +747,9 @@ void FunctionsContentComponent::resized()
     extraLabel.setBounds (area.removeFromTop (64));
 
     auto buttons = area.removeFromBottom (40);
-    insertButton.setBounds (buttons.removeFromLeft (130).reduced (2));
-    closeButton.setBounds (buttons.removeFromLeft (130).reduced (2));
+    insertButton.setBounds (buttons.removeFromLeft (110).reduced (2));
+    copyButton.setBounds (buttons.removeFromLeft (110).reduced (2));
+    closeButton.setBounds (buttons.removeFromLeft (110).reduced (2));
 }
 
 bool FunctionsContentComponent::keyPressed (const juce::KeyPress& kp)

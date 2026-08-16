@@ -60,6 +60,9 @@ public:
     /** Returns the current DSL script text. */
     juce::String getScript() const;
 
+    /** Store script text without rebuilding the audio chain (layout-only edits). */
+    void storeScriptText (const juce::String& text);
+
     void setVariableName(int index, const juce::String& name);
     juce::String getVariableName(int index) const noexcept;
     std::array<juce::String, Config::kNumUserParams> getVariableNames() const;

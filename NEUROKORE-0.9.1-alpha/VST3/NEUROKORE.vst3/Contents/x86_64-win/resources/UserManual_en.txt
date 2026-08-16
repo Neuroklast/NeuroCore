@@ -63,7 +63,7 @@ Oversampling, Polisher, and Mix sit between Circuit/Terminal and the IN/OUT scop
 - Oversampling: 1x / 2x / 4x / 8x. Default 4x. Drop to 2x or 1x if the computer is struggling.
 - Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
 - Settings, Tempo: Host follows the DAW BPM. User lets you type a BPM. The footer shows HOST or USER.
-- Settings, Circuit cables: Dots (white/gray, beads follow the input) or Wave (gray waveform).
+- Settings, Circuit cables: Dots (white/gray orthogonal PCB traces, beads follow the input) or Wave (gray waveform).
 - Circuit right-click: Auto-arrange, or Add with category folders. Factory presets open already arranged at the current zoom.
 - Guitar: BOTH copies a silent side from the live side so L/R amps (Stereo Guitar Wall) work from a mono DI. Amp presets have a Width knob (default 0).
 - Text - / +: size of the formula text.
@@ -75,7 +75,7 @@ Knobs
 - Right-click a knob for MIDI Learn.
 
 Formula area
-- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. Drag moves a chip without changing the chain order. Double-click opens the node overlay. Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. Cables show the waveform after each block. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
+- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. Drag moves a chip without changing the chain order. Double-click opens the node overlay. Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. Cables are orthogonal PCB traces (rounded corners) and can show the waveform after each block. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
 - Each ir1 / ir2 line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - Edit, then Save to apply.

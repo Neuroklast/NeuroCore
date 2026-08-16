@@ -26,6 +26,12 @@ public:
         if (n.type.startsWithIgnoreCase ("stage") && ! keys.contains ("y"))
             keys.insert (0, "y");
 
+        list.setOpaque (false);
+        addAndMakeVisible (scroller);
+        scroller.setViewedComponent (&list, false);
+        scroller.setScrollBarsShown (true, false);
+        scroller.getVerticalScrollBar().setAutoHide (false);
+
         for (const auto& key : keys)
         {
             auto lab = std::make_unique<juce::Label>();
@@ -33,7 +39,7 @@ public:
             lab->setFont (NeuroKoreLookAndFeel::monoFont (14.f));
             lab->setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
             lab->setJustificationType (juce::Justification::centredLeft);
-            addAndMakeVisible (*lab);
+            list.addAndMakeVisible (*lab);
 
             auto ed = std::make_unique<juce::TextEditor>();
             juce::String cur;
@@ -41,13 +47,16 @@ public:
             if (it != n.args.end())
                 cur = it->second;
             ed->setText (cur, false);
+            ed->setTextToShowWhenEmpty (placeholder (n.type, key),
+                                        NeuroKoreLookAndFeel::mutedText());
             ed->setFont (NeuroKoreLookAndFeel::monoFont (16.f));
             ed->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff050505));
             ed->setColour (juce::TextEditor::textColourId, NeuroKoreLookAndFeel::ink());
             ed->setColour (juce::TextEditor::outlineColourId, NeuroKoreLookAndFeel::accent().withAlpha (0.45f));
             ed->setColour (juce::TextEditor::focusedOutlineColourId, NeuroKoreLookAndFeel::accent());
             ed->setJustification (juce::Justification::centredLeft);
-            addAndMakeVisible (*ed);
+            ed->setTooltip (hintFor (key));
+            list.addAndMakeVisible (*ed);
 
             rows.push_back ({ key, std::move (lab), std::move (ed) });
         }
@@ -128,13 +137,17 @@ public:
         r.removeFromBottom (8);
         hint.setBounds (r.removeFromBottom (16));
         r.removeFromBottom (8);
+        scroller.setBounds (r);
+        const int listH = juce::jmax (r.getHeight(), (int) rows.size() * 44);
+        list.setBounds (0, 0, r.getWidth() - scroller.getScrollBarThickness(), listH);
+        auto body = list.getLocalBounds();
         for (auto& row : rows)
         {
-            auto line = r.removeFromTop (36);
-            row.label->setBounds (line.removeFromLeft (118));
+            auto line = body.removeFromTop (36);
+            row.label->setBounds (line.removeFromLeft (128));
             line.removeFromLeft (10);
             row.field->setBounds (line);
-            r.removeFromTop (8);
+            body.removeFromTop (8);
         }
         const int gap = 8;
         const int bw = juce::jmax (36, (bind.getWidth() - gap * (Config::kNumUserParams - 1))
@@ -157,7 +170,7 @@ public:
 
     int preferredHeight() const noexcept
     {
-        return 14 + 32 + (int) rows.size() * 44 + 16 + 8 + 28 + 12 + 40 + 14;
+        return 14 + 32 + juce::jmin (8, (int) rows.size()) * 44 + 16 + 8 + 28 + 12 + 40 + 14;
     }
 
 private:
@@ -184,7 +197,7 @@ private:
         if (k == "type") return "Type";
         if (k == "cutoff") return "Cutoff";
         if (k == "resonance") return "Resonance";
-        if (k == "freq") return "Freq";
+        if (k == "freq" || k == "frequency") return "Freq";
         if (k == "q") return "Q";
         if (k == "gain") return "Gain";
         if (k == "threshold") return "Threshold";
@@ -192,16 +205,17 @@ private:
         if (k == "attack") return "Attack";
         if (k == "release") return "Release";
         if (k == "makeup") return "Makeup";
-        if (k == "hyst") return "Hyst";
+        if (k == "hyst" || k == "hysteresis") return "Hysteresis";
         if (k == "hold") return "Hold";
         if (k == "range") return "Range";
         if (k == "ceiling") return "Ceiling";
-        if (k == "time") return "Time";
-        if (k == "feedback") return "Feedback";
-        if (k == "mix") return "Mix";
+        if (k == "time" || k == "time_ms") return "Time";
+        if (k == "sync") return "Sync";
+        if (k == "feedback" || k == "fb") return "Feedback";
+        if (k == "mix" || k == "wet") return "Mix";
         if (k == "size") return "Size";
         if (k == "decay") return "Decay";
-        if (k == "damp") return "Damp";
+        if (k == "damp" || k == "damping" || k == "tone") return "Damp";
         if (k == "width") return "Width";
         if (k == "depth") return "Depth";
         if (k == "shape") return "Shape";
@@ -209,7 +223,72 @@ private:
         if (k == "in") return "Input";
         if (k == "main") return "Main";
         if (k == "bass") return "Bass";
+        if (k == "pingpong") return "Ping-pong";
+        if (k == "source") return "Source";
+        if (k == "trigger") return "Trigger";
+        if (k == "knee") return "Knee";
+        if (k == "center") return "Center";
+        if (k == "lowcut") return "Low cut";
+        if (k == "highcut") return "High cut";
+        if (k == "formant") return "Formant";
+        if (k == "bands") return "Bands";
+        if (k == "dry") return "Dry";
+        if (k == "sub") return "Sub";
+        if (k == "up") return "Up";
+        if (k == "thresh") return "Thresh";
+        if (k == "f1") return "Freq 1";
+        if (k == "f2") return "Freq 2";
+        if (k == "+") return "Plus";
+        if (k == "*") return "Times";
         return key;
+    }
+
+    static juce::String placeholder (const juce::String& type, const juce::String& key)
+    {
+        const auto t = type.toLowerCase();
+        const auto k = key.toLowerCase();
+        if (k == "time" || k == "time_ms") return t.startsWith ("delay") ? "250" : "0.02";
+        if (k == "sync") return "off   or  1/4";
+        if (k == "feedback") return "0.35";
+        if (k == "mix") return "0.4";
+        if (k == "damp" || k == "damping") return t.startsWith ("delay") ? "6500" : "0.4";
+        if (k == "pingpong") return "off";
+        if (k == "channel") return "both";
+        if (k == "type")
+        {
+            if (t.startsWith ("filter")) return "lowpass";
+            if (t == "eq") return "peak";
+            if (t.startsWith ("env")) return "rms";
+            if (t == "ms") return "decode";
+            return {};
+        }
+        if (k == "cutoff") return "800";
+        if (k == "resonance") return "0.7";
+        if (k == "shape") return "sine";
+        if (k == "freq") return "2";
+        if (k == "depth") return "1";
+        if (k == "attack") return "0.01";
+        if (k == "release") return "0.1";
+        if (k == "hold") return "0";
+        if (k == "source") return "input   or  sidechain";
+        if (k == "trigger") return "off   or  midi_gate";
+        if (k == "mode") return t.startsWith ("meter") ? "loudness" : "decode";
+        if (k == "y") return "x";
+        if (k == "+" ) return "env1";
+        if (k == "*" ) return "c";
+        return {};
+    }
+
+    static juce::String hintFor (const juce::String& key)
+    {
+        const auto k = key.toLowerCase();
+        if (k == "sync") return "Note length (1/4) or off. Overrides Time when set.";
+        if (k == "time" || k == "time_ms") return "Milliseconds, or a formula / knob letter.";
+        if (k == "pingpong") return "on / off — bounce delay L/R.";
+        if (k == "source") return "input (default) or sidechain.";
+        if (k == "+") return "Added to cutoff (env/osc).";
+        if (k == "*") return "Scales the Plus term.";
+        return {};
     }
 
     void commit()
@@ -231,4 +310,6 @@ private:
     std::vector<std::unique_ptr<juce::TextButton>> knobs;
     juce::TextButton applyBtn, removeBtn, irBtn;
     juce::Label hint;
+    juce::Viewport scroller;
+    juce::Component list;
 };

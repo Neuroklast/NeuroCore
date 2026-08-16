@@ -45,7 +45,7 @@ Oversampling defaults to **4×**. Drop to 2× or 1× if the CPU is tight.
 1. Load the Standalone, the VST3, or on macOS the AU (`NEUROKORE.component`) in a host.
 2. Open **Presets** and pick a factory preset (amp, delay, vocal chain, …). Use **<** / **>** next to the name chip to step through the library. If the loaded script already matches a factory preset, that name is shown.
 3. Tweak knobs **a–f**. Names and ranges come from `param` lines in the formula. The live value sits under the pointer.
-4. **Circuit** is the board: parts snap to a faint rose-cross grid. Ctrl+wheel zooms. Cables show the waveform after each block. Bound knobs print the live value in red. Right-click to add Bus, Noise Gate, Mid-Side Split, L/R Split, Crossover.
+4. **Circuit** is the board: parts snap to a faint rose-cross grid. Ctrl+wheel zooms. Cables are orthogonal PCB traces (rounded corners, parallel lanes) and can show the waveform after each block. Bound knobs print the live value in red. Right-click to add Bus, Noise Gate, Mid-Side Split, L/R Split, Crossover.
 5. **Terminal** is the hack: the same construct as text. Live view shows `a[3.20]`. **Edit** opens the editor; **Save** applies it.
 6. **Settings → Tempo**: follow the host BPM or type your own. The footer shows HOST or USER.
 7. **Functions** is a catalog with folders on the left: **Core** (math), **Drive** (tube/diode/clip), **Crush** (fold/bitcrush), **Blocks** (ott, widen, vocoder, …).

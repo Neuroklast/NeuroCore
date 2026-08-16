@@ -63,7 +63,7 @@ Oversampling, Polisher, and Mix sit between Circuit/Terminal and the IN/OUT scop
 - Oversampling: 1x / 2x / 4x / 8x. Default 4x. Drop to 2x or 1x if the computer is struggling.
 - Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
 - Settings, Tempo: Host follows the DAW BPM. User lets you type a BPM. The footer shows HOST or USER.
-- Settings, Circuit cables: Dots (white/gray, beads follow loudness) or Wave (gray waveform).
+- Settings, Circuit cables: Dots (white/gray, beads follow loudness) or Wave (gray waveform). LFO cables stay static; a running light follows the oscillator rate, brightness follows amplitude.
 - Circuit right-click: Auto-arrange, or Add with category folders. Factory presets open already arranged at the current zoom. Sidechain puts the host extra input on a cable. Meter is dry.
 - Guitar: BOTH copies a silent side from the live side so L/R amps (Stereo Guitar Wall) work from a mono DI. Amp presets have a Width knob (default 0).
 - Text - / +: size of the formula text.

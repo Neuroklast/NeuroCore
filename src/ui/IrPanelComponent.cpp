@@ -5,6 +5,7 @@ IrPanelComponent::IrPanelComponent (NeuroKoreAudioProcessor& proc, juce::String 
     : processor (proc), slotId (slot.trim().toLowerCase())
 {
     addAndMakeVisible (loadButton);
+    addAndMakeVisible (playButton);
     addAndMakeVisible (clearButton);
     addAndMakeVisible (closeButton);
     addAndMakeVisible (status);
@@ -26,6 +27,16 @@ IrPanelComponent::IrPanelComponent (NeuroKoreAudioProcessor& proc, juce::String 
                                 juce::dontSendNotification);
             repaint();
         });
+    };
+    playButton.onClick = [this]
+    {
+        if (processor.getIrNumSamples (slotId) <= 0)
+        {
+            status.setText ("Load an IR first.", juce::dontSendNotification);
+            return;
+        }
+        processor.startIrPreview (slotId);
+        status.setText ("Playing IR preview…", juce::dontSendNotification);
     };
     clearButton.onClick = [this]
     {
@@ -110,6 +121,8 @@ void IrPanelComponent::resized()
     clearButton.setBounds (buttons.removeFromRight (90));
     buttons.removeFromRight (8);
     loadButton.setBounds (buttons.removeFromRight (90));
+    buttons.removeFromRight (8);
+    playButton.setBounds (buttons.removeFromRight (90));
     status.setBounds (r.removeFromBottom (28));
 }
 

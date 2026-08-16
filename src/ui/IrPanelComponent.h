@@ -20,6 +20,7 @@ private:
     NeuroKoreAudioProcessor& processor;
     juce::String slotId;
     juce::TextButton loadButton { "Load" };
+    juce::TextButton playButton { "Play" };
     juce::TextButton clearButton { "Clear" };
     juce::TextButton closeButton { "Close" };
     juce::Label status;

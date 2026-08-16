@@ -1,4 +1,5 @@
 #include "GraphCanvasComponent.h"
+#include "../dsl/PcbRouter.h"
 #include "PluginLookAndFeel.h"
 #include "custom/ParameterComponent.h"
 #include "../core/Config.h"
@@ -109,8 +110,12 @@ juce::String prettyArgName (const juce::String& key)
     if (k == "release") return "Release";
     if (k == "makeup") return "Makeup";
     if (k == "time") return "Time";
+    if (k == "sync") return "Sync";
     if (k == "feedback") return "Feedback";
     if (k == "mix") return "Mix";
+    if (k == "pingpong") return "Ping-pong";
+    if (k == "+") return "Plus";
+    if (k == "*") return "Times";
     if (k == "size") return "Size";
     if (k == "decay") return "Decay";
     if (k == "damp") return "Damp";
@@ -124,20 +129,38 @@ juce::String prettyArgName (const juce::String& key)
 
 juce::Path makeCable (juce::Point<float> a, juce::Point<float> b)
 {
-    juce::Path p;
-    const float dx = juce::jmax (40.f, std::abs (b.x - a.x) * 0.45f);
-    p.startNewSubPath (a);
-    p.cubicTo ({ a.x + dx, a.y }, { b.x - dx, b.y }, b);
-    return p;
+    return GraphCanvasComponent::makeOrthoCable (a, b);
 }
 
-juce::Path makeSoftCable (juce::Point<float> a, juce::Point<float> b)
+void pathEnds (const juce::Path& path, juce::Point<float>& start, juce::Point<float>& end)
 {
-    juce::Path p;
-    const float dx = juce::jlimit (28.f, 72.f, std::abs (b.x - a.x) * 0.18f);
-    p.startNewSubPath (a);
-    p.cubicTo ({ a.x + dx, a.y }, { b.x - dx, b.y }, b);
-    return p;
+    start = {};
+    end = {};
+    bool have = false;
+    juce::PathFlatteningIterator it (path);
+    while (it.next())
+    {
+        if (! have)
+        {
+            start = { it.x1, it.y1 };
+            have = true;
+        }
+        end = { it.x2, it.y2 };
+    }
+}
+
+void drawCablePlug (juce::Graphics& g, juce::Point<float> jack, bool leaveRight, juce::Colour body)
+{
+    const float bodyW = 7.2f, bodyH = 5.4f;
+    const float pinW = 5.2f, pinH = 2.4f;
+    const float bodyX = leaveRight ? jack.x + 0.6f : jack.x - bodyW - 0.6f;
+    const float pinX  = leaveRight ? jack.x - 2.2f : jack.x - pinW + 2.2f;
+    g.setColour (body);
+    g.fillRoundedRectangle (bodyX, jack.y - bodyH * 0.5f, bodyW, bodyH, 1.1f);
+    g.setColour (body.brighter (0.18f));
+    g.fillRoundedRectangle (pinX, jack.y - pinH * 0.5f, pinW, pinH, 0.6f);
+    g.setColour (juce::Colours::white.withAlpha (0.22f));
+    g.fillRect (bodyX + 1.2f, jack.y - 1.5f, 2.2f, 1.0f);
 }
 
 bool nodeUsesToken (const dsl::GraphNode& n, const juce::String& token)
@@ -247,6 +270,7 @@ public:
                 owner.expandedNames.removeString (n->name);
         }
         applyCardSize();
+        owner.markEdgesDirty();
         owner.layoutPaper();
         repaint();
         owner.repaintPaper();
@@ -261,17 +285,17 @@ public:
         }
         int nIn = 0, nOut = 0;
         for (const auto& j : jacks)
+        {
+            if (isControlJack (j))
+                continue;
             (j.output ? nOut : nIn) += 1;
+        }
         const bool io = isIn() || isOut();
         const int w = io ? GraphCanvasComponent::kIoWidth : GraphCanvasComponent::kCardWidth;
         int wantH = GraphCanvasComponent::kIoHeight;
         if (io)
         {
-            const int rows = juce::jmax (nIn, nOut, 1);
-            const int jackH = GraphCanvasComponent::kJackPad * 2
-                            + juce::jmax (0, rows - 1) * GraphCanvasComponent::kJackPitch
-                            + 12;
-            wantH = juce::jmax (GraphCanvasComponent::kIoHeight, jackH);
+            wantH = GraphCanvasComponent::chipHeight (nIn, nOut, 0, 0, false);
         }
         else
         {
@@ -423,26 +447,36 @@ public:
         return &owner.document.nodes[(size_t) nodeIndex];
     }
 
+    static bool isControlJack (const dsl::GraphJack& j) noexcept
+    {
+        return j.kind == "knob" || j.kind == "param";
+    }
+
     juce::Point<float> jackCentre (int jackIndex) const
     {
         if (! juce::isPositiveAndBelow (jackIndex, (int) jacks.size()))
             return { (float) getWidth() * 0.5f, (float) getHeight() * 0.5f };
-        const bool output = jacks[(size_t) jackIndex].output;
+        const auto& jack = jacks[(size_t) jackIndex];
+        // Knob/param pins share the first signal-in row so they do not
+        // stretch the chip and throw opposite jacks off the grid.
+        if (isControlJack (jack))
+        {
+            const float y = (float) owner.scaled (GraphCanvasComponent::jackLocalY (0));
+            return { 2.f, y };
+        }
+        const bool output = jack.output;
         int slot = 0, count = 0;
         for (int i = 0; i < (int) jacks.size(); ++i)
         {
+            if (isControlJack (jacks[(size_t) i]))
+                continue;
             if (jacks[(size_t) i].output != output)
                 continue;
             if (i == jackIndex)
                 slot = count;
             ++count;
         }
-        const float pad = (float) owner.scaled (GraphCanvasComponent::kJackPad);
-        const float pitch = (float) owner.scaled (GraphCanvasComponent::kJackPitch);
-        if (count <= 1)
-            return { output ? (float) getWidth() - 2.f : 2.f, (float) getHeight() * 0.5f };
-        const float usable = juce::jmax (pitch, (float) getHeight() - pad * 2.f);
-        const float y = pad + (float) slot * (usable / (float) (count - 1));
+        const float y = (float) owner.scaled (GraphCanvasComponent::jackLocalY (slot));
         return { output ? (float) getWidth() - 2.f : 2.f, y };
     }
 
@@ -571,14 +605,9 @@ public:
         }
         else
         {
-            auto body = r.reduced (22.f, 8.f);
-            auto titleRow = body.removeFromTop (18.f);
-            auto valueRow = juce::Rectangle<float>();
-            if (! binds.empty())
-            {
-                valueRow = body.removeFromTop (16.f);
-                body.removeFromTop (2.f);
-            }
+            const float titleH = (float) owner.scaled (GraphCanvasComponent::kGrid);
+            auto titleRow = juce::Rectangle<float> (r.getX() + 8.f, r.getY() + 1.f,
+                                                    r.getWidth() - 16.f, titleH - 2.f);
             bool hasSc = false;
             for (const auto& j : jacks)
                 if (j.kind == "sc")
@@ -591,38 +620,40 @@ public:
                 g.drawText ("SC", badge.toNearestInt(), juce::Justification::centredRight, false);
                 titleRow.removeFromRight (4.f);
             }
-            auto foldR = titleRow.removeFromRight (16.f);
+            auto foldR = titleRow.removeFromRight (14.f);
             g.setColour (NeuroKoreLookAndFeel::inkMuted());
             juce::Path chev;
             const float cx = foldR.getCentreX(), cy = foldR.getCentreY();
             if (expanded)
-            {
                 chev.addTriangle (cx - 4.f, cy - 2.f, cx + 4.f, cy - 2.f, cx, cy + 3.f);
-            }
             else
-            {
                 chev.addTriangle (cx - 2.f, cy - 4.f, cx + 3.f, cy, cx - 2.f, cy + 4.f);
-            }
             g.fillPath (chev);
-            g.setColour (NeuroKoreLookAndFeel::ink());
-            g.setFont (NeuroKoreLookAndFeel::monoFont (15.f));
-            g.drawText (title, titleRow.toNearestInt(), juce::Justification::centredLeft, true);
             if (! binds.empty())
             {
-                g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
-                auto row = valueRow;
-                const int cell = juce::jmax (52, (int) row.getWidth() / (int) binds.size());
+                juce::String bits;
                 for (const auto& b : binds)
                 {
-                    auto cellR = row.removeFromLeft ((float) cell);
-                    const auto live = GraphCanvasComponent::formatLiveKnob (
-                        owner.mappedKnobValue (b.knobIndex));
-                    const auto letter = juce::String::charToString ((juce::juce_wchar) ('a' + b.knobIndex));
-                    g.setColour (accent);
-                    g.drawText (letter + " " + live, cellR.toNearestInt(),
-                                juce::Justification::centredLeft, true);
+                    if (bits.isNotEmpty()) bits << "  ";
+                    bits << juce::String::charToString ((juce::juce_wchar) ('a' + b.knobIndex))
+                         << " "
+                         << GraphCanvasComponent::formatLiveKnob (owner.mappedKnobValue (b.knobIndex));
                 }
+                auto valR = titleRow.removeFromRight (juce::jmin (titleRow.getWidth() * 0.52f, 108.f));
+                g.setColour (accent);
+                g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+                g.drawFittedText (bits, valR.toNearestInt(), juce::Justification::centredRight, 1);
+                titleRow.removeFromRight (4.f);
             }
+            g.setColour (NeuroKoreLookAndFeel::ink());
+            g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+            g.drawText (title, titleRow.toNearestInt(), juce::Justification::centredLeft, true);
+
+            auto body = r;
+            body.removeFromTop (titleH);
+            body.removeFromLeft (16.f);
+            body.removeFromRight (16.f);
+            body.removeFromBottom (3.f);
             if (node != nullptr
                 && (node->type.startsWithIgnoreCase ("meter") || node->type.equalsIgnoreCase ("probe")))
             {
@@ -634,62 +665,64 @@ public:
                                                                 : juce::String ("loudness");
                     if (mode == "peak") unit = "PK";
                     else if (mode == "rms") unit = "RMS";
-                    auto line = body.removeFromTop (16.f);
+                    auto line = body.removeFromTop (14.f);
                     g.setColour (accent);
-                    g.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+                    g.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
                     g.drawText (juce::String (db, 1) + " " + unit, line.toNearestInt(),
                                 juce::Justification::centredLeft, true);
                 }
             }
-            if (node != nullptr)
+            if (node != nullptr && expanded)
             {
-                if (expanded)
+                g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
+                for (const auto& key : dsl::editableArgKeys (*node))
                 {
+                    auto line = body.removeFromTop (15.f);
+                    if (line.getHeight() < 10.f)
+                        break;
+                    juce::String val;
+                    const auto it = node->args.find (key);
+                    if (it != node->args.end())
+                        val = it->second;
                     g.setColour (NeuroKoreLookAndFeel::inkMuted());
-                    g.setFont (NeuroKoreLookAndFeel::monoFont (11.f));
-                    for (const auto& key : dsl::editableArgKeys (*node))
-                    {
-                        auto line = body.removeFromTop (15.f);
-                        if (line.getHeight() < 10.f)
-                            break;
-                        juce::String val;
-                        const auto it = node->args.find (key);
-                        if (it != node->args.end())
-                            val = it->second;
-                        g.setColour (NeuroKoreLookAndFeel::inkMuted());
-                        g.drawText (prettyArgName (key), line.removeFromLeft (72.f).toNearestInt(),
-                                    juce::Justification::centredLeft, true);
-                        g.setColour (NeuroKoreLookAndFeel::ink());
-                        g.drawText (val.isEmpty() ? "-" : val, line.toNearestInt(),
-                                    juce::Justification::centredLeft, true);
-                    }
-                }
-                else
-                {
-                    const auto sub = compactSummary (*node);
-                    if (sub.isNotEmpty())
-                    {
-                        g.setColour (NeuroKoreLookAndFeel::inkMuted());
-                        g.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
-                        g.drawFittedText (sub, body.toNearestInt(),
-                                          juce::Justification::centredLeft, 1);
-                    }
+                    g.drawText (prettyArgName (key), line.removeFromLeft (72.f).toNearestInt(),
+                                juce::Justification::centredLeft, true);
+                    g.setColour (NeuroKoreLookAndFeel::ink());
+                    g.drawText (val.isEmpty() ? "-" : val, line.toNearestInt(),
+                                juce::Justification::centredLeft, true);
                 }
             }
         }
 
-        auto drawPort = [&] (juce::Point<float> c, bool hot, bool knobish, bool output)
+        auto drawPort = [&] (juce::Point<float> c, bool hot, bool knobish, bool output, bool patched)
         {
-            const float pinW = 6.f, pinH = 4.f;
-            auto pad = juce::Rectangle<float> (output ? c.x - 1.f : c.x - pinW + 1.f,
-                                               c.y - pinH * 0.5f, pinW, pinH);
-            g.setColour (hot || knobish ? accent.withAlpha (hot ? 0.95f : 0.55f)
-                                        : NeuroKoreLookAndFeel::inkMuted().withAlpha (0.55f));
-            g.fillRect (pad);
-            g.setColour (NeuroKoreLookAndFeel::canvas());
-            g.fillEllipse (c.x - 3.2f, c.y - 3.2f, 6.4f, 6.4f);
-            g.setColour (hot ? accent : NeuroKoreLookAndFeel::accent().withAlpha (0.7f));
-            g.drawEllipse (c.x - 3.2f, c.y - 3.2f, 6.4f, 6.4f, 1.1f);
+            const float rOut = 5.2f;
+            const float rIn  = patched ? 2.4f : 3.1f;
+            g.setColour (NeuroKoreLookAndFeel::inkMuted().withAlpha (hot ? 0.85f : 0.55f));
+            g.fillEllipse (c.x - rOut, c.y - rOut, rOut * 2.f, rOut * 2.f);
+            g.setColour (NeuroKoreLookAndFeel::canvas().brighter (0.04f));
+            g.drawEllipse (c.x - rOut, c.y - rOut, rOut * 2.f, rOut * 2.f, 1.15f);
+            g.setColour (juce::Colour::fromRGB (12, 12, 14));
+            g.fillEllipse (c.x - rIn, c.y - rIn, rIn * 2.f, rIn * 2.f);
+            if (patched)
+            {
+                const float pinW = 7.f, pinH = 3.2f;
+                auto pin = juce::Rectangle<float> (output ? c.x - 1.2f : c.x - pinW + 1.2f,
+                                                   c.y - pinH * 0.5f, pinW, pinH);
+                g.setColour (hot || knobish ? accent.withAlpha (hot ? 0.95f : 0.75f)
+                                            : NeuroKoreLookAndFeel::ink().withAlpha (0.82f));
+                g.fillRoundedRectangle (pin, 0.8f);
+                g.setColour (NeuroKoreLookAndFeel::ink().withAlpha (0.9f));
+                g.fillEllipse (c.x - 2.1f, c.y - 2.1f, 4.2f, 4.2f);
+                g.setColour (accent.withAlpha (hot ? 0.95f : 0.55f));
+                g.drawEllipse (c.x - 2.1f, c.y - 2.1f, 4.2f, 4.2f, 0.9f);
+            }
+            else
+            {
+                g.setColour ((hot || knobish ? accent : NeuroKoreLookAndFeel::accent())
+                                 .withAlpha (hot ? 0.85f : 0.45f));
+                g.drawEllipse (c.x - rOut, c.y - rOut, rOut * 2.f, rOut * 2.f, 1.0f);
+            }
         };
 
         g.setFont (NeuroKoreLookAndFeel::monoFont (12.f));
@@ -699,7 +732,8 @@ public:
             const auto c = jackCentre (i);
             const bool knobish = (j.kind == "knob" || j.kind == "mod");
             const bool dropHot = owner.hoverDropNode == nodeIndex && owner.hoverDropJack == j.id;
-            drawPort (c, isMouseOver() || dropHot, knobish, j.output);
+            const bool patched = owner.jackIsPatched (nodeIndex, j.id, j.output);
+            drawPort (c, isMouseOver() || dropHot, knobish, j.output, patched);
             if (dropHot)
             {
                 g.setColour (accent);
@@ -707,22 +741,25 @@ public:
                 g.setColour (NeuroKoreLookAndFeel::ink());
                 g.drawEllipse (c.x - 6.f, c.y - 6.f, 12.f, 12.f, 1.6f);
             }
-            if (j.label.isEmpty() || j.kind == "sc")
+            if (j.label.isEmpty() || j.kind == "sc" || isControlJack (j))
                 continue;
             if (! (j.id == "mid" || j.id == "side" || j.id == "low"
                    || j.id == "high" || j.id == "left" || j.id == "right"
                    || j.kind == "mix" || j.kind == "mod"))
                 continue;
+            const float titleH = (float) owner.scaled (GraphCanvasComponent::kGrid);
+            if (c.y < titleH + 1.f)
+                continue;
             const bool outside = j.output ? (c.x > r.getRight() - 8.f) : (c.x < r.getX() + 8.f);
             if (! outside)
                 continue;
-            auto lr = juce::Rectangle<float> (j.output ? c.x - 34.f : c.x + 8.f,
-                                              c.y - 6.f, 28.f, 12.f);
+            auto lr = juce::Rectangle<float> (j.output ? c.x - 38.f : c.x + 8.f,
+                                              c.y - 6.f, 32.f, 12.f);
             g.setColour (NeuroKoreLookAndFeel::inkMuted());
-            g.setFont (NeuroKoreLookAndFeel::monoFont (10.f));
-            g.drawText (j.label, lr.toNearestInt(),
-                        j.output ? juce::Justification::centredRight
-                                 : juce::Justification::centredLeft, false);
+            g.setFont (NeuroKoreLookAndFeel::monoFont (9.f));
+            g.drawFittedText (j.label, lr.toNearestInt(),
+                              j.output ? juce::Justification::centredRight
+                                       : juce::Justification::centredLeft, 1);
         }
     }
 
@@ -772,8 +809,14 @@ public:
             owner.repaintPaper();
             return;
         }
-        if (e.mods.isPopupMenu()
-            || e.getNumberOfClicks() >= 2)
+        if (e.mods.isPopupMenu())
+        {
+            owner.selected = nodeIndex;
+            owner.showNodeMenu (nodeIndex);
+            owner.repaintPaper();
+            return;
+        }
+        if (e.getNumberOfClicks() >= 2)
         {
             owner.selected = nodeIndex;
             if (owner.onInspectNode
@@ -815,6 +858,7 @@ public:
                                                          (int) std::lround ((float) p.y / z) });
         design.x = juce::jmax (kGrid, design.x);
         design.y = juce::jmax (kGrid, design.y);
+        design = owner.firstFreeDesign (nodeIndex, design);
         setTopLeftPosition (owner.scaled (design.x), owner.scaled (design.y));
         if (isIn())
             owner.inPos = design.toFloat();
@@ -822,6 +866,7 @@ public:
             owner.outPos = design.toFloat();
         else if (juce::isPositiveAndBelow (nodeIndex, (int) owner.document.nodes.size()))
             dsl::setPosition (owner.document, nodeIndex, (float) design.x, (float) design.y);
+        owner.markEdgesDirty();
         owner.layoutPaper();
         owner.repaintPaper();
     }
@@ -940,33 +985,11 @@ public:
                         juce::Justification::centredLeft, false);
         }
 
-        if (owner.edgesDirty)
-        {
-            owner.cachedEdges = dsl::visualAudioEdges (owner.document);
-            if (owner.outIndex() == kOutIndex)
-            {
-                int lastMain = -99;
-                for (const auto& e : owner.cachedEdges)
-                    if (e.kind == "audio" && e.toIndex >= 0)
-                        lastMain = e.toIndex;
-                if (lastMain == -99)
-                {
-                    for (int i = 0; i < (int) owner.document.nodes.size(); ++i)
-                    {
-                        const auto& n = owner.document.nodes[(size_t) i];
-                        if (n.type != "bus" && ! dsl::isModulator (n)
-                            && (n.busName.isEmpty() || n.busName == "main"))
-                            lastMain = i;
-                    }
-                }
-                owner.cachedEdges.push_back ({ lastMain != -99 ? lastMain : kInIndex,
-                                               kOutIndex, "audio", "out", "main" });
-            }
-            owner.edgesDirty = false;
-        }
+        owner.refreshEdgesIfDirty();
 
-        for (const auto& e : owner.cachedEdges)
+        for (int ei = 0; ei < (int) owner.cachedEdges.size(); ++ei)
         {
+            const auto& e = owner.cachedEdges[(size_t) ei];
             const auto a = owner.portCentre (e.fromIndex, e.fromJack, true);
             const auto b = owner.portCentre (e.toIndex, e.toJack, false);
             if (a.x < 1.f && a.y < 1.f && b.x < 1.f)
@@ -977,10 +1000,14 @@ public:
                             : juce::jmax (owner.inLevel, owner.outLevel);
             const bool hot = owner.hoverNode == e.fromIndex || owner.hoverNode == e.toIndex
                           || owner.selected == e.fromIndex || owner.selected == e.toIndex;
-            owner.drawLiveCable (g, a, b, lvl, mix, hot,
+            const juce::Path path = (ei < (int) owner.cachedRoutes.size())
+                ? owner.pathFromPcb (owner.cachedRoutes[(size_t) ei])
+                : makeCable (a, b);
+            owner.drawLiveCable (g, path, lvl, mix, hot,
                                  owner.waveForEdge (e.fromIndex), GraphCanvasComponent::kTapN);
         }
 
+        int modI = 0;
         for (const auto& nv : owner.nodeViews)
         {
             if (nv->isIn() || nv->isOut())
@@ -1008,16 +1035,30 @@ public:
                 const auto it = owner.nodeWaves.find (src.name);
                 const float* wave = (it != owner.nodeWaves.end()) ? it->second.data() : nullptr;
                 const int waveN = (wave != nullptr) ? GraphCanvasComponent::kTapN : 0;
-                owner.drawModLauflicht (g, a, b, wave, waveN, srcHot || destHot);
+                float hz = 0.f;
+                owner.processor.copyLfoHz (src.name, hz);
+                const auto ampIt = owner.lfoAmp.find (src.name);
+                const float amp = (ampIt != owner.lfoAmp.end())
+                    ? ampIt->second
+                    : GraphCanvasComponent::lfoChaseBrightness (wave, waveN);
+                const auto phIt = owner.lfoPhase.find (src.name);
+                const float phase = (phIt != owner.lfoPhase.end()) ? phIt->second : 0.f;
+                const juce::Path path = (modI < (int) owner.cachedModRoutes.size())
+                    ? owner.pathFromPcb (owner.cachedModRoutes[(size_t) modI])
+                    : makeCable (a, b);
+                ++modI;
+                owner.drawModLauflicht (g, path, hz, amp, srcHot || destHot, phase);
             }
         }
 
         if (owner.cableFrom != -99)
         {
             const auto a = owner.portCentre (owner.cableFrom, owner.cableFromJack, true);
-            auto path = makeCable (a, owner.rubber);
-            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.85f));
-            g.strokePath (path, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved,
+            juce::Path drag;
+            drag.startNewSubPath (a);
+            drag.lineTo (owner.rubber);
+            g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.92f));
+            g.strokePath (drag, juce::PathStrokeType (1.8f, juce::PathStrokeType::curved,
                                                       juce::PathStrokeType::rounded));
         }
 
@@ -1230,6 +1271,15 @@ void GraphCanvasComponent::showNodeMenu (int nodeIndex)
 
     m.addSeparator();
     const bool canRemove = n.type != "out" && n.type != "bus";
+    m.addItem (juce::PopupMenu::Item ("Duplicate")
+                   .setEnabled (canRemove)
+                   .setAction ([this, nodeIndex]
+    {
+        if (! juce::isPositiveAndBelow (nodeIndex, (int) document.nodes.size()))
+            return;
+        const auto copy = document.nodes[(size_t) nodeIndex];
+        addBlock (copy.type, { (int) copy.x + kGrid * 2, (int) copy.y + kGrid * 2 });
+    }));
     m.addItem (juce::PopupMenu::Item ("Remove this block")
                    .setEnabled (canRemove)
                    .setAction ([this, nodeIndex]
@@ -1397,6 +1447,99 @@ void GraphCanvasComponent::rebuildViews()
         paper->repaint();
 }
 
+juce::Path GraphCanvasComponent::pathFromPcb (const dsl::PcbRoute& route) const
+{
+    juce::Path p;
+    for (const auto& c : route.cmds)
+    {
+        if (c.kind == dsl::PcbCmdKind::Move)
+            p.startNewSubPath (c.p.x, c.p.y);
+        else if (c.kind == dsl::PcbCmdKind::Line)
+            p.lineTo (c.p.x, c.p.y);
+        else
+            p.quadraticTo (c.c.x, c.c.y, c.p.x, c.p.y);
+    }
+    return p;
+}
+
+void GraphCanvasComponent::refreshEdgesIfDirty() const
+{
+    if (! edgesDirty)
+        return;
+    cachedEdges = dsl::visualAudioEdges (document);
+    if (outIndex() == kOutIndex)
+    {
+        int lastMain = -99;
+        for (const auto& e : cachedEdges)
+            if (e.kind == "audio" && e.toIndex >= 0)
+                lastMain = e.toIndex;
+        if (lastMain == -99)
+        {
+            for (int i = 0; i < (int) document.nodes.size(); ++i)
+            {
+                const auto& n = document.nodes[(size_t) i];
+                if (n.type != "bus" && ! dsl::isModulator (n)
+                    && (n.busName.isEmpty() || n.busName == "main"))
+                    lastMain = i;
+            }
+        }
+        cachedEdges.push_back ({ lastMain != -99 ? lastMain : kInIndex,
+                                 kOutIndex, "audio", "out", "main" });
+    }
+    rebuildPcbRoutes();
+    edgesDirty = false;
+}
+
+void GraphCanvasComponent::rebuildPcbRoutes() const
+{
+    pcbRouter.cellSize = (float) juce::jmax (8, scaled (kGrid));
+    pcbRouter.laneGap = (float) juce::jmax (8, scaled (kGrid));
+    pcbRouter.cornerRadius = (float) juce::jmax (4, scaled (kGrid) / 2);
+    std::vector<dsl::PcbRect> obs;
+    obs.reserve (nodeViews.size());
+    for (const auto& v : nodeViews)
+    {
+        const auto b = v->getBounds().toFloat().reduced (1.f);
+        obs.push_back ({ b.getX(), b.getY(), b.getWidth(), b.getHeight() });
+    }
+
+    std::vector<std::pair<dsl::PcbPoint, dsl::PcbPoint>> nets;
+    nets.reserve (cachedEdges.size());
+    for (const auto& e : cachedEdges)
+    {
+        const auto a = portCentre (e.fromIndex, e.fromJack, true);
+        const auto b = portCentre (e.toIndex, e.toJack, false);
+        nets.push_back ({ { a.x, a.y }, { b.x, b.y } });
+    }
+    cachedRoutes = pcbRouter.routeAll (nets, obs);
+
+    std::vector<std::pair<dsl::PcbPoint, dsl::PcbPoint>> mods;
+    for (const auto& nv : nodeViews)
+    {
+        if (nv->isIn() || nv->isOut())
+            continue;
+        if (! juce::isPositiveAndBelow (nv->nodeIndex, (int) document.nodes.size()))
+            continue;
+        const auto& src = document.nodes[(size_t) nv->nodeIndex];
+        if (! dsl::isModulator (src))
+            continue;
+        for (const auto& destv : nodeViews)
+        {
+            if (destv->isIn() || destv->isOut())
+                continue;
+            if (! juce::isPositiveAndBelow (destv->nodeIndex, (int) document.nodes.size()))
+                continue;
+            const auto& dst = document.nodes[(size_t) destv->nodeIndex];
+            if (! nodeUsesToken (dst, src.name))
+                continue;
+            const auto a = portCentre (nv->nodeIndex, "mod", true);
+            const auto b = portCentre (destv->nodeIndex, src.name, false);
+            mods.push_back ({ { a.x, a.y }, { b.x, b.y } });
+        }
+    }
+    cachedModRoutes = pcbRouter.routeAll (mods, obs);
+}
+
 void GraphCanvasComponent::layoutPaper()
 {
     int maxX = viewport.getWidth();
@@ -1415,11 +1558,113 @@ void GraphCanvasComponent::repaintPaper()
         paper->repaint();
 }
 
+juce::Rectangle<int> GraphCanvasComponent::designBoundsOf (int nodeIndex) const
+{
+    auto* v = viewFor (nodeIndex);
+    if (v == nullptr)
+        return {};
+    const float z = juce::jmax (0.2f, zoom);
+    return { (int) std::lround ((float) v->getX() / z),
+             (int) std::lround ((float) v->getY() / z),
+             juce::jmax (kGrid, (int) std::lround ((float) v->getWidth() / z)),
+             juce::jmax (kGrid, (int) std::lround ((float) v->getHeight() / z)) };
+}
+
+juce::Point<int> GraphCanvasComponent::firstFreeDesign (int nodeIndex, juce::Point<int> want) const
+{
+    auto boxAt = [this, nodeIndex] (juce::Point<int> p) -> juce::Rectangle<int>
+    {
+        auto b = designBoundsOf (nodeIndex);
+        if (b.isEmpty())
+            b = { 0, 0, kCardWidth, kCardHeight };
+        return { p.x, p.y, b.getWidth(), b.getHeight() };
+    };
+    auto clashes = [this, nodeIndex] (juce::Rectangle<int> mine) -> bool
+    {
+        const int g = kGrid;
+        const auto inflated = mine.expanded (g / 2, g / 2);
+        for (const auto& v : nodeViews)
+        {
+            if (v->nodeIndex == nodeIndex)
+                continue;
+            const auto other = designBoundsOf (v->nodeIndex).expanded (g / 2, g / 2);
+            if (inflated.intersects (other))
+                return true;
+        }
+        return false;
+    };
+
+    auto p = want;
+    p.x = juce::jmax (kGrid, p.x);
+    p.y = juce::jmax (kGrid, p.y);
+    for (int step = 0; step < 96; ++step)
+    {
+        if (! clashes (boxAt (p)))
+            return snapPoint (p);
+        p.y += kGrid;
+        if ((step % 16) == 15)
+        {
+            p.y = want.y;
+            p.x += kGrid;
+        }
+    }
+    return snapPoint (p);
+}
+
 juce::Point<int> GraphCanvasComponent::toPaper (juce::Component& from, juce::Point<int> p) const
 {
     if (paper == nullptr)
         return p;
     return paper->getLocalPoint (&from, p);
+}
+
+bool GraphCanvasComponent::jackIsPatched (int nodeIndex, const juce::String& jackId,
+                                          bool output) const
+{
+    refreshEdgesIfDirty();
+    for (const auto& e : cachedEdges)
+    {
+        if (output && e.fromIndex == nodeIndex)
+        {
+            if (jackId.isEmpty() || e.fromJack.isEmpty() || e.fromJack == jackId
+                || e.fromJack == "out" || e.fromJack == "audio")
+                return true;
+        }
+        if (! output && e.toIndex == nodeIndex)
+        {
+            if (jackId.isEmpty() || e.toJack.isEmpty() || e.toJack == jackId)
+                return true;
+        }
+    }
+    if (output && nodeIndex == kInIndex)
+        return ! cachedEdges.empty();
+    if (! output && nodeIndex == kOutIndex)
+        return ! cachedEdges.empty();
+
+    if (juce::isPositiveAndBelow (nodeIndex, (int) document.nodes.size()))
+    {
+        const auto& n = document.nodes[(size_t) nodeIndex];
+        if (jackId.startsWith ("knob:"))
+        {
+            const auto letter = jackId.fromFirstOccurrenceOf (":", false, false);
+            for (const auto& kv : n.args)
+                if (kv.second.containsWholeWord (letter))
+                    return true;
+        }
+        if (output && dsl::isModulator (n))
+        {
+            for (const auto& other : document.nodes)
+                if (other.name != n.name && nodeUsesToken (other, n.name))
+                    return true;
+        }
+        if (! output)
+        {
+            for (const auto& other : document.nodes)
+                if (dsl::isModulator (other) && (jackId == other.name || nodeUsesToken (n, other.name)))
+                    return true;
+        }
+    }
+    return false;
 }
 
 GraphCanvasComponent::NodeView* GraphCanvasComponent::viewFor (int nodeIndex) const
@@ -1475,12 +1720,8 @@ void GraphCanvasComponent::beginCable (int fromIndex, bool pickup, juce::String 
 
 void GraphCanvasComponent::pickupIncoming (int toIndex, const juce::String& toJack)
 {
-    if (edgesDirty)
-    {
-        cachedEdges = dsl::audioEdges (document);
-        edgesDirty = false;
-    }
-    for (const auto& e : cachedEdges)
+    const auto edges = dsl::audioEdges (document);
+    for (const auto& e : edges)
     {
         if (e.toIndex != toIndex)
             continue;
@@ -1498,11 +1739,7 @@ void GraphCanvasComponent::pickupIncoming (int toIndex, const juce::String& toJa
 
 int GraphCanvasComponent::hitCable (juce::Point<float> paperPos) const
 {
-    if (edgesDirty)
-    {
-        cachedEdges = dsl::audioEdges (document);
-        edgesDirty = false;
-    }
+    refreshEdgesIfDirty();
     auto distSeg = [] (juce::Point<float> p, juce::Point<float> a, juce::Point<float> b)
     {
         const auto ab = b - a;
@@ -1520,7 +1757,14 @@ int GraphCanvasComponent::hitCable (juce::Point<float> paperPos) const
         const auto& e = cachedEdges[(size_t) i];
         const auto a = portCentre (e.fromIndex, e.fromJack, true);
         const auto b = portCentre (e.toIndex, e.toJack, false);
-        const float d = distSeg (paperPos, a, b);
+        float d = distSeg (paperPos, a, b);
+        if (i < (int) cachedRoutes.size())
+        {
+            const auto& wp = cachedRoutes[(size_t) i].waypoints;
+            for (size_t s = 1; s < wp.size(); ++s)
+                d = juce::jmin (d, distSeg (paperPos, { wp[s - 1].x, wp[s - 1].y },
+                                            { wp[s].x, wp[s].y }));
+        }
         if (d < bestD)
         {
             bestD = d;
@@ -1812,7 +2056,29 @@ void GraphCanvasComponent::addBlock (const juce::String& type, juce::Point<int> 
             document.nodes.push_back (std::move (out));
         }
     }
+
+    const juce::String newName = document.nodes[(size_t) insertAt].name;
+    const int edgeHit = hitCable (snappedAt.toFloat());
+    if (edgeHit >= 0 && edgeHit < (int) cachedEdges.size())
+    {
+        juce::String spliceErr;
+        dsl::connectAudio (document, cachedEdges[(size_t) edgeHit].fromIndex, insertAt, spliceErr);
+    }
+
     applyGraph();
+    int idx = -1;
+    for (int i = 0; i < (int) document.nodes.size(); ++i)
+        if (document.nodes[(size_t) i].name == newName)
+            idx = i;
+    if (idx >= 0)
+    {
+        const auto want = GraphCanvasComponent::snapPoint ({
+            (int) std::lround (document.nodes[(size_t) idx].x),
+            (int) std::lround (document.nodes[(size_t) idx].y) });
+        const auto free = firstFreeDesign (idx, want);
+        dsl::setPosition (document, idx, (float) free.x, (float) free.y);
+        applyGraph();
+    }
 }
 
 void GraphCanvasComponent::addRouting (const juce::String& kind, juce::Point<int> at)
@@ -2002,6 +2268,7 @@ void GraphCanvasComponent::setZoom (float z)
     if (std::abs (next - zoom) < 0.001f)
         return;
     zoom = next;
+    markEdgesDirty();
     rebuildViews();
 }
 
@@ -2052,43 +2319,84 @@ juce::String GraphCanvasComponent::formatLiveKnob (float v)
     return juce::String (v, 2);
 }
 
+int GraphCanvasComponent::alignToGrid (int v) noexcept
+{
+    if (v <= 0)
+        return kGrid;
+    return ((v + kGrid - 1) / kGrid) * kGrid;
+}
+
+int GraphCanvasComponent::jackLocalY (int slot) noexcept
+{
+    // Title occupies row 0. Jack slot i sits in the centre of row 1+i.
+    return kTitleRows * kGrid + juce::jmax (0, slot) * kJackPitch + kJackPad;
+}
+
 int GraphCanvasComponent::chipHeight (int nInJacks, int nOutJacks, int nArgs, int nBinds,
                                       bool expanded) noexcept
 {
+    juce::ignoreUnused (nBinds);
     const int rows = juce::jmax (nInJacks, nOutJacks, 1);
-    const int jackH = kJackPad * 2 + juce::jmax (0, rows - 1) * kJackPitch + 12;
-    int contentH = 36;
-    if (nBinds > 0)
-        contentH += 18;
+    int units = kTitleRows + rows;
     if (expanded)
-        contentH += juce::jmax (1, nArgs) * 15 + 8;
+        units += juce::jmax (0, nArgs);
+    return units * kGrid;
+}
+
+juce::Path GraphCanvasComponent::makeOrthoCable (juce::Point<float> from, juce::Point<float> to)
+{
+    juce::Path p;
+    const float stub = (float) kGrid;
+    const float ax = from.x + stub;
+    const float bx = to.x - stub;
+    p.startNewSubPath (from);
+    p.lineTo (ax, from.y);
+    if (std::abs (from.y - to.y) < 0.6f && bx >= ax - 0.5f)
+    {
+        p.lineTo (bx, to.y);
+    }
+    else if (bx >= ax + 8.f)
+    {
+        const float mx = 0.5f * (ax + bx);
+        p.lineTo (mx, from.y);
+        p.lineTo (mx, to.y);
+        p.lineTo (bx, to.y);
+    }
     else
-        contentH += 16;
-    return juce::jmax (56, jackH, contentH);
+    {
+        const float midY = 0.5f * (from.y + to.y);
+        p.lineTo (ax, midY);
+        p.lineTo (bx, midY);
+        p.lineTo (bx, to.y);
+    }
+    p.lineTo (to);
+    return p;
+}
+
+juce::Path GraphCanvasComponent::makeKnobCable (juce::Point<float> from, juce::Point<float> to)
+{
+    juce::Path p;
+    p.startNewSubPath (from);
+    const float pull = juce::jmax (28.f, std::abs (to.x - from.x) * 0.38f);
+    p.cubicTo ({ from.x + pull, from.y }, { to.x - pull, to.y }, to);
+    return p;
 }
 
 juce::Rectangle<int> GraphCanvasComponent::foldChevronRect (int cardW, int cardH,
                                                             bool hasSidechain, float zoom) noexcept
 {
     juce::ignoreUnused (cardH, zoom);
-    auto r = juce::Rectangle<float> (0.f, 0.f, (float) cardW, 28.f).reduced (1.f);
-    auto body = r.reduced (22.f, 8.f);
-    auto titleRow = body.removeFromTop (18.f);
+    auto title = juce::Rectangle<int> (8, 1, juce::jmax (16, cardW - 16), kGrid - 2);
     if (hasSidechain)
-        titleRow.removeFromRight (26.f);
-    return titleRow.removeFromRight (16.f).toNearestInt();
+        title.removeFromRight (22);
+    return title.removeFromRight (14);
 }
 
 juce::Rectangle<int> GraphCanvasComponent::foldHitRect (int cardW, int cardH,
                                                         bool hasSidechain, float zoom) noexcept
 {
-    juce::ignoreUnused (zoom);
-    auto r = juce::Rectangle<float> (0.f, 0.f, (float) cardW, (float) juce::jmax (28, cardH)).reduced (1.f);
-    auto body = r.reduced (22.f, 8.f);
-    auto titleRow = body.removeFromTop (18.f);
-    if (hasSidechain)
-        titleRow.removeFromRight (26.f);
-    return titleRow.removeFromRight (20.f).expanded (4.f, 4.f).toNearestInt();
+    juce::ignoreUnused (cardH, zoom);
+    return foldChevronRect (cardW, cardH, hasSidechain, zoom).expanded (6, 4);
 }
 
 bool GraphCanvasComponent::isNodeExpanded (int nodeIndex) const
@@ -2276,6 +2584,23 @@ void GraphCanvasComponent::timerCallback()
         if (cablePhase > 64.f)
             cablePhase -= 64.f;
         pullCableWaves();
+        const float fps = 30.f;
+        for (const auto& n : document.nodes)
+        {
+            if (! n.type.startsWithIgnoreCase ("osc"))
+                continue;
+            float hz = 0.f;
+            processor.copyLfoHz (n.name, hz);
+            auto& ph = lfoPhase[n.name];
+            ph += lfoChaseStep (hz, fps);
+            if (ph > 100000.f)
+                ph -= 100000.f;
+            const auto it = nodeWaves.find (n.name);
+            const float peak = (it != nodeWaves.end())
+                ? lfoChaseBrightness (it->second.data(), kTapN) : 0.f;
+            auto& amp = lfoAmp[n.name];
+            amp = amp * 0.72f + peak * 0.28f;
+        }
     }
 
     int hover = -1;
@@ -2320,11 +2645,61 @@ float GraphCanvasComponent::cableTapEnergy (const float* wave, int n) noexcept
     return juce::jlimit (0.f, 1.f, peak * 2.5f);
 }
 
+float GraphCanvasComponent::lfoChaseHz (float hz) noexcept
+{
+    if (! std::isfinite (hz) || hz <= 0.f)
+        return 0.f;
+    return juce::jlimit (kLfoChaseHzMin, kLfoChaseHzMax, hz);
+}
+
+float GraphCanvasComponent::lfoChaseStep (float hz, float fps) noexcept
+{
+    juce::ignoreUnused (hz);
+    if (! std::isfinite (fps) || fps < 1.f)
+        return 0.f;
+    return kLfoLedPxPerSec / fps;
+}
+
+float GraphCanvasComponent::lfoLedPulse (float hz, float timeSec) noexcept
+{
+    const float rate = lfoChaseHz (hz);
+    if (rate <= 0.f || ! std::isfinite (timeSec))
+        return 1.f;
+    return 0.38f + 0.62f * (0.5f + 0.5f * std::sin (juce::MathConstants<float>::twoPi * rate * timeSec));
+}
+
+float GraphCanvasComponent::lfoChaseAlong (float phasePx, float pathLength) noexcept
+{
+    if (! (pathLength > 1.f) || ! std::isfinite (phasePx))
+        return 0.f;
+    float u = phasePx / pathLength;
+    u -= std::floor (u);
+    return u;
+}
+
+float GraphCanvasComponent::lfoChaseBrightness (const float* wave, int n) noexcept
+{
+    if (wave == nullptr || n < 1)
+        return 0.f;
+    float peak = 0.f;
+    for (int i = 0; i < n; ++i)
+        peak = juce::jmax (peak, std::abs (wave[i]));
+    return juce::jlimit (0.f, 1.f, peak);
+}
+
 void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
                                          float level, bool mix, bool hot,
                                          const float* wave, int waveN, bool forceWave) const
 {
-    auto path = makeCable (a, b);
+    drawLiveCable (g, makeCable (a, b), level, mix, hot, wave, waveN, forceWave);
+}
+
+void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, const juce::Path& path,
+                                         float level, bool mix, bool hot,
+                                         const float* wave, int waveN, bool forceWave) const
+{
+    if (path.isEmpty())
+        return;
     const float idle = mix ? 0.16f : 0.22f;
     const float alpha = hot ? 0.62f
                             : (idle + 0.14f * juce::jlimit (0.f, 1.f, level));
@@ -2332,6 +2707,16 @@ void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> 
     g.strokePath (path, juce::PathStrokeType (mix ? 1.0f : (hot ? 1.7f : 1.25f),
                                               juce::PathStrokeType::curved,
                                               juce::PathStrokeType::rounded));
+    {
+        juce::Point<float> s, e;
+        pathEnds (path, s, e);
+        const auto plug = cableTraceColour (hot, juce::jmin (1.f, alpha + 0.25f));
+        if (s.getDistanceFrom (e) > 6.f)
+        {
+            drawCablePlug (g, s, true, plug);
+            drawCablePlug (g, e, false, plug);
+        }
+    }
 
     if (! cableBeadsVisible (level) && ! forceWave)
         return;
@@ -2429,13 +2814,33 @@ void GraphCanvasComponent::drawLiveCable (juce::Graphics& g, juce::Point<float> 
 }
 
 void GraphCanvasComponent::drawModLauflicht (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b,
-                                            const float* wave, int waveN, bool hot) const
+                                            float hz, float amp, bool hot, float phase) const
 {
-    auto path = makeCable (a, b);
+    drawModLauflicht (g, makeCable (a, b), hz, amp, hot, phase);
+}
+
+void GraphCanvasComponent::drawModLauflicht (juce::Graphics& g, const juce::Path& path,
+                                            float hz, float amp, bool hot, float phase) const
+{
+    if (path.isEmpty())
+        return;
     g.setColour (NeuroKoreLookAndFeel::inkMuted().withAlpha (hot ? 0.42f : 0.22f));
     g.strokePath (path, juce::PathStrokeType (hot ? 1.35f : 1.05f,
                                               juce::PathStrokeType::curved,
                                               juce::PathStrokeType::rounded));
+    {
+        juce::Point<float> s, e;
+        pathEnds (path, s, e);
+        const auto plug = NeuroKoreLookAndFeel::ink().withAlpha (hot ? 0.72f : 0.45f);
+        if (s.getDistanceFrom (e) > 6.f)
+        {
+            drawCablePlug (g, s, true, plug);
+            drawCablePlug (g, e, false, plug);
+        }
+    }
+
+    if (lfoChaseHz (hz) <= 0.f)
+        return;
 
     struct Seg { juce::Point<float> p0, p1; float len; };
     std::vector<Seg> segs;
@@ -2452,51 +2857,101 @@ void GraphCanvasComponent::drawModLauflicht (juce::Graphics& g, juce::Point<floa
             length += len;
         }
     }
-    if (length < 8.f)
+    if (length < 8.f || segs.empty())
         return;
 
-    const float spacing = 18.f;
-    const int lights = juce::jmax (3, (int) std::floor (length / spacing));
-    const float travel = std::fmod (cablePhase / 64.f, 1.f);
-    const bool haveWave = wave != nullptr && waveN >= 4;
-
-    for (int i = 0; i < lights; ++i)
+    const float along = lfoChaseAlong (phase, length);
+    const float target = along * length;
+    juce::Point<float> pt = segs.front().p0;
+    float walked = 0.f;
+    for (const auto& s : segs)
     {
-        const float along = ((float) i + 0.5f) / (float) lights;
-        float target = along * length;
-        juce::Point<float> pt = a;
-        juce::Point<float> nrm (0.f, -1.f);
-        float walked = 0.f;
+        if (walked + s.len >= target)
+        {
+            const float u = (target - walked) / s.len;
+            pt = s.p0 + (s.p1 - s.p0) * u;
+            break;
+        }
+        walked += s.len;
+    }
+
+    juce::Point<float> dir { 1.f, 0.f };
+    {
+        float walked2 = 0.f;
         for (const auto& s : segs)
         {
-            if (walked + s.len >= target)
+            if (walked2 + s.len >= target)
             {
-                const float u = (target - walked) / s.len;
-                pt = s.p0 + (s.p1 - s.p0) * u;
-                const auto dir = (s.p1 - s.p0) / s.len;
-                nrm = { -dir.y, dir.x };
+                const float sl = s.p0.getDistanceFrom (s.p1);
+                if (sl > 1.0e-3f)
+                    dir = (s.p1 - s.p0) / sl;
                 break;
             }
-            walked += s.len;
+            walked2 += s.len;
         }
-
-        float smp = 0.f;
-        if (haveWave)
-        {
-            float u = along - travel;
-            u -= std::floor (u);
-            const float idx = u * (float) (waveN - 1);
-            const int i0 = (int) idx;
-            const int i1 = juce::jmin (waveN - 1, i0 + 1);
-            const float f = idx - (float) i0;
-            smp = wave[i0] * (1.f - f) + wave[i1] * f;
-        }
-        const float uni = juce::jlimit (0.f, 1.f, 0.5f + 0.5f * smp);
-        const float pr = (hot ? 2.15f : 1.65f) + 2.4f * uni;
-        const auto glow = pt + nrm * (smp * 4.5f);
-        g.setColour (NeuroKoreLookAndFeel::ink().withAlpha ((hot ? 0.28f : 0.16f) + uni * 0.62f));
-        g.fillEllipse (glow.x - pr, glow.y - pr, pr * 2.f, pr * 2.f);
     }
+    const juce::Point<float> nrm (-dir.y, dir.x);
+    const float glow = juce::jlimit (0.f, 1.f, amp)
+                     * lfoLedPulse (hz, phase / kLfoLedPxPerSec);
+    const float pulse = juce::jlimit (0.f, 1.f, glow);
+    const float hard = pulse * pulse; // cyber: sharp, not a soft bulb
+    const auto neon = NeuroKoreLookAndFeel::accent();
+    const auto cyan = juce::Colour::fromRGB (0, 240, 255);
+
+    auto alongAt = [&] (float dist) -> juce::Point<float>
+    {
+        float d = dist;
+        while (d < 0.f) d += length;
+        while (d >= length) d -= length;
+        float w = 0.f;
+        for (const auto& s : segs)
+        {
+            if (w + s.len >= d)
+            {
+                const float u = (d - w) / s.len;
+                return s.p0 + (s.p1 - s.p0) * u;
+            }
+            w += s.len;
+        }
+        return segs.back().p1;
+    };
+
+    for (int ghost = 2; ghost >= 0; --ghost)
+    {
+        const float back = (float) (ghost + 1) * 11.f;
+        const auto gp = alongAt (target - back);
+        const float ga = hard * (0.18f - 0.05f * (float) ghost);
+        g.setColour (neon.withAlpha (ga));
+        g.fillEllipse (gp.x - 2.2f, gp.y - 2.2f, 4.4f, 4.4f);
+        g.setColour (cyan.withAlpha (ga * 0.65f));
+        g.fillEllipse (gp.x - 1.2f, gp.y - 1.2f, 2.4f, 2.4f);
+    }
+
+    const float len = 7.5f + hard * 4.f;
+    const float wid = 1.6f + hard * 1.1f;
+    juce::Path bolt;
+    const auto a = pt - dir * len;
+    const auto b = pt + dir * len;
+    const auto n = nrm * wid;
+    bolt.startNewSubPath (a + n);
+    bolt.lineTo (b + n * 0.45f);
+    bolt.lineTo (b - n * 0.45f);
+    bolt.lineTo (a - n);
+    bolt.closeSubPath();
+    g.setColour (neon.withAlpha (0.12f + hard * 0.38f));
+    g.fillPath (bolt);
+    g.setColour (cyan.withAlpha (0.20f + hard * 0.55f));
+    g.strokePath (bolt, juce::PathStrokeType (1.15f));
+    g.setColour (juce::Colours::white.withAlpha (0.35f + hard * 0.60f));
+    g.drawLine (a.x, a.y, b.x, b.y, 1.15f);
+    juce::Path diamond;
+    const float d = 2.4f + hard * 1.2f;
+    diamond.addTriangle (pt.x, pt.y - d, pt.x + d * 0.75f, pt.y, pt.x, pt.y + d);
+    diamond.addTriangle (pt.x, pt.y - d, pt.x - d * 0.75f, pt.y, pt.x, pt.y + d);
+    g.setColour (cyan.withAlpha (0.25f + hard * 0.70f));
+    g.fillPath (diamond);
+    g.setColour (juce::Colours::white.withAlpha (0.55f + hard * 0.40f));
+    g.fillEllipse (pt.x - 1.1f, pt.y - 1.1f, 2.2f, 2.2f);
 }
 
 juce::Point<float> GraphCanvasComponent::knobJackOnNode (int nodeIndex, int knobIndex) const
@@ -2535,11 +2990,19 @@ void GraphCanvasComponent::paintKnobCables (juce::Graphics& g, juce::Component& 
             const bool nodeHot = nv->isMouseOver() || selected == nv->nodeIndex
                               || hoverNode == nv->nodeIndex;
             const bool hot = (hoverKnob == b.knobIndex) || nodeHot;
-            auto path = makeSoftCable (from, to);
+            auto path = makeKnobCable (from, to);
             g.setColour (accent.withAlpha ((hot ? 0.70f : 0.50f) * mul));
             g.strokePath (path, juce::PathStrokeType (hot ? 2.0f : 1.2f,
                                                       juce::PathStrokeType::curved,
                                                       juce::PathStrokeType::rounded));
+            juce::Point<float> s, e;
+            pathEnds (path, s, e);
+            const auto plug = accent.withAlpha ((hot ? 0.88f : 0.62f) * mul);
+            if (s.getDistanceFrom (e) > 6.f)
+            {
+                drawCablePlug (g, s, true, plug);
+                drawCablePlug (g, e, false, plug);
+            }
         }
     }
 }

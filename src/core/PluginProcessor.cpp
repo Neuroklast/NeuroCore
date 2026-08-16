@@ -7,6 +7,7 @@
 */
 
 #include <JuceHeader.h>
+#include <algorithm>
 #include <cmath>
 #include <vector>
 #include "PluginProcessor.h"
@@ -19,6 +20,7 @@
 #include "../dsp/LookupTables.h"
 #include "../core/Config.h"
 #include "../utils/UiSettings.h"
+#include "../dsl/GraphModel.h"
 
 #ifndef JucePlugin_Name
 #define JucePlugin_Name "NEUROKORE"
@@ -239,6 +241,10 @@ void NeuroKoreAudioProcessor::changeProgramName (int, const juce::String&) {}
 void NeuroKoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     cpuProtect.reset();
+    continuityN = 0;
+    continuityCh = 0;
+    continuityDecay = 0.f;
+    fadeInRemain = 0;
     dspEngine.setLiveMode (UiSettings::get().liveMode());
     updateProcessingSpec(sampleRate, samplesPerBlock);
 }
@@ -247,6 +253,8 @@ void NeuroKoreAudioProcessor::releaseResources()
 {
     dspEngine.release();
     waveformCapture.reset();
+    continuityN = 0;
+    continuityCh = 0;
 }
 
 void NeuroKoreAudioProcessor::reset()
@@ -254,6 +262,9 @@ void NeuroKoreAudioProcessor::reset()
     cpuProtect.reset();
     dspEngine.reset(getSampleRate(), getBlockSize());
     waveformCapture.reset();
+    continuityN = 0;
+    continuityDecay = 0.f;
+    fadeInRemain = 0;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -285,6 +296,65 @@ bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
   #endif
 }
 #endif
+
+void NeuroKoreAudioProcessor::storeContinuity (const juce::AudioBuffer<float>& src)
+{
+    const int n = src.getNumSamples();
+    const int ch = src.getNumChannels();
+    if (n <= 0 || ch <= 0)
+        return;
+    if (continuityBuf.getNumChannels() < ch || continuityBuf.getNumSamples() < n)
+        continuityBuf.setSize (juce::jmax (ch, continuityBuf.getNumChannels()),
+                               juce::jmax (n, continuityBuf.getNumSamples()),
+                               false, false, true);
+    for (int c = 0; c < ch; ++c)
+        continuityBuf.copyFrom (c, 0, src, c, 0, n);
+    continuityN = n;
+    continuityCh = ch;
+    continuityDecay = 1.f;
+}
+
+void NeuroKoreAudioProcessor::replayContinuity (juce::AudioBuffer<float>& dest) noexcept
+{
+    const int n = dest.getNumSamples();
+    const int ch = dest.getNumChannels();
+    if (n <= 0 || ch <= 0)
+        return;
+    if (continuityN <= 0 || continuityCh <= 0 || continuityDecay < 0.02f)
+    {
+        dest.clear();
+        continuityDecay = 0.f;
+        return;
+    }
+    continuityDecay *= 0.72f;
+    const float g = continuityDecay;
+    for (int c = 0; c < ch; ++c)
+    {
+        const int srcC = juce::jmin (c, continuityCh - 1);
+        const float* s = continuityBuf.getReadPointer (srcC);
+        float* d = dest.getWritePointer (c);
+        const int srcN = continuityN;
+        for (int i = 0; i < n; ++i)
+            d[i] = s[i < srcN ? i : srcN - 1] * g;
+    }
+}
+
+void NeuroKoreAudioProcessor::fadeInAfterGap (juce::AudioBuffer<float>& dest) noexcept
+{
+    if (fadeInRemain <= 0)
+        return;
+    const int n = dest.getNumSamples();
+    const int ch = dest.getNumChannels();
+    const int total = juce::jmax (32, fadeInRemain);
+    int left = fadeInRemain;
+    for (int i = 0; i < n && left > 0; ++i, --left)
+    {
+        const float g = 1.f - (float) left / (float) total;
+        for (int c = 0; c < ch; ++c)
+            dest.getWritePointer (c)[i] *= g;
+    }
+    fadeInRemain = left;
+}
 
 void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                             juce::MidiBuffer& midiMessages)
@@ -334,19 +404,16 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         mix = 0.f;
 #endif
 
-    // User dry: never take the formula lock.
-    // CPU trip: stay dry until the watchdog allows a wet probe.
+    // CPU trip: replay last wet (decay). Never splice raw input through the
+    // output — that click is the "buffer overflow" live-only glitch.
+    // Mix 0% still runs the engine: host PDC delays other tracks by OS+IR,
+    // so dry must leave on that same timeline (bypass path delays dry).
     const bool cpuHold = cpuProtect.isTripped()
                       && ! cpuProtect.shouldProbeWet (nSamp, sr);
-    if (cpuHold || mix <= 1.0e-5f)
+    if (cpuHold)
     {
-        for (int ch = 0; ch < main.getNumChannels(); ++ch)
-        {
-            auto* d = main.getWritePointer (ch);
-            for (int i = 0; i < nSamp; ++i)
-                if (! std::isfinite (d[i]))
-                    d[i] = 0.f;
-        }
+        replayContinuity (main);
+        fadeInRemain = juce::jmax (fadeInRemain, nSamp);
         waveformCapture.pushInput (main);
         dspEngine.publishOutputMeter (main);
         waveformCapture.pushOutput (main);
@@ -386,10 +453,13 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             dspEngine.setHostSidechain (scL, scR, scN);
             dspEngine.processBlock (main, scriptManager.signalChain);
             ranWet = true;
+            fadeInAfterGap (main);
+            storeContinuity (main);
         }
-        else
+        else if (mix <= 1.0e-5f)
         {
-            // Formula swap in progress — stay dry this block, do not wait.
+            // Formula swap while the user is fully dry: keep the input, do not
+            // replay the last wet block over a dry request.
             for (int ch = 0; ch < main.getNumChannels(); ++ch)
             {
                 auto* d = main.getWritePointer (ch);
@@ -397,6 +467,13 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                     if (! std::isfinite (d[i]))
                         d[i] = 0.f;
             }
+            waveformCapture.pushInput (main);
+            dspEngine.publishOutputMeter (main);
+        }
+        else
+        {
+            replayContinuity (main);
+            fadeInRemain = juce::jmax (fadeInRemain, nSamp);
             waveformCapture.pushInput (main);
             dspEngine.publishOutputMeter (main);
         }
@@ -419,6 +496,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     if (g < 0.999f)
         main.applyGain (juce::jlimit (0.f, 1.f, g));
 
+    mixIrPreview (main);
     waveformCapture.pushOutput (main);
 }
 
@@ -537,10 +615,13 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 if (!applyFormula(scriptFromState, err))
                     logError("Failed to restore DSL script from state: " + err);
             }
-            for (const auto& kv : irBank)
-                if (kv.second.samples.getNumSamples() > 0)
-                    scriptManager.signalChain.loadImpulseResponse (kv.first, kv.second.samples, kv.second.sr);
-            refreshReportedLatency();
+            {
+                const juce::ScopedLock pl (scriptManager.getProcessLock());
+                for (const auto& kv : irBank)
+                    if (kv.second.samples.getNumSamples() > 0)
+                        scriptManager.signalChain.loadImpulseResponse (kv.first, kv.second.samples, kv.second.sr);
+                refreshReportedLatency();
+            }
 
             for (int i = 0; i < Config::kNumUserParams; ++i)
             {
@@ -559,8 +640,14 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 
 void NeuroKoreAudioProcessor::refreshReportedLatency()
 {
-    setLatencySamples (dspEngine.getOversamplingLatency()
-                       + scriptManager.signalChain.getIrLatencySamples());
+    const int osLat = dspEngine.getOversamplingLatency();
+    const int osF = (int) juce::jmax ((size_t) 1, dspEngine.getOversamplingFactor());
+    // Convolution reports latency in the rate it was prepared at (OS domain).
+    const int irOs = scriptManager.signalChain.getIrLatencySamples();
+    const int irHost = (osF > 1) ? (irOs + osF / 2) / osF : irOs;
+    const int lat = osLat + juce::jmax (0, irHost);
+    setLatencySamples (lat);
+    dspEngine.setDryAlignLatency (lat);
 }
 
 bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
@@ -658,8 +745,11 @@ bool NeuroKoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFo
     asset.samples = std::move (buf);
     const auto key = slot.trim().toLowerCase();
     irBank[key] = std::move (asset);
-    scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
-    refreshReportedLatency();
+    {
+        const juce::ScopedLock pl (scriptManager.getProcessLock());
+        scriptManager.signalChain.loadImpulseResponse (key, irBank[key].samples, irBank[key].sr);
+        refreshReportedLatency();
+    }
     cpuProtect.reset();
     sendChangeMessage();
     return true;
@@ -703,9 +793,48 @@ void NeuroKoreAudioProcessor::clearIr (const juce::String& slot)
 {
     const auto key = slot.trim().toLowerCase();
     irBank.erase (key);
-    scriptManager.signalChain.clearImpulseResponse (key);
-    refreshReportedLatency();
+    {
+        const juce::ScopedLock pl (scriptManager.getProcessLock());
+        scriptManager.signalChain.clearImpulseResponse (key);
+        refreshReportedLatency();
+    }
     sendChangeMessage();
+}
+
+void NeuroKoreAudioProcessor::startIrPreview (const juce::String& slot)
+{
+    const auto* src = getIrBuffer (slot);
+    if (src == nullptr || src->getNumSamples() <= 0)
+        return;
+    const int n = juce::jmin (src->getNumSamples(),
+                              (int) std::lround (juce::jmax (1.0, getSampleRate()) * 1.8));
+    irPreviewBuf.setSize (2, n, false, true, true);
+    irPreviewBuf.clear();
+    for (int c = 0; c < 2; ++c)
+    {
+        const int sc = juce::jmin (c, src->getNumChannels() - 1);
+        irPreviewBuf.copyFrom (c, 0, *src, sc, 0, n);
+    }
+    irPreviewBuf.applyGain (0.22f);
+    irPreviewPos.store (0, std::memory_order_release);
+}
+
+void NeuroKoreAudioProcessor::mixIrPreview (juce::AudioBuffer<float>& dest) noexcept
+{
+    int pos = irPreviewPos.load (std::memory_order_acquire);
+    if (pos < 0 || pos >= irPreviewBuf.getNumSamples())
+        return;
+    const int n = dest.getNumSamples();
+    const int avail = irPreviewBuf.getNumSamples() - pos;
+    const int take = juce::jmin (n, avail);
+    for (int c = 0; c < dest.getNumChannels(); ++c)
+    {
+        const int sc = juce::jmin (c, irPreviewBuf.getNumChannels() - 1);
+        dest.addFrom (c, 0, irPreviewBuf, sc, pos, take);
+    }
+    pos += take;
+    irPreviewPos.store (pos >= irPreviewBuf.getNumSamples() ? -1 : pos,
+                        std::memory_order_release);
 }
 
 void NeuroKoreAudioProcessor::clearAllIrs()
@@ -734,14 +863,27 @@ public:
             firstTime = false;
             return true; // Already applied by setFormula()
         }
-        juce::String err;
-        return processor.applyFormula (newFormula, err, false);
+        return applyText (newFormula);
     }
 
     bool undo() override
     {
+        return applyText (oldFormula);
+    }
+
+    bool applyText (const juce::String& text)
+    {
         juce::String err;
-        return processor.applyFormula (oldFormula, err, false);
+        dsl::GraphDocument a, b;
+        juce::String pe;
+        if (dsl::parse (processor.getScript(), a, pe)
+            && dsl::parse (text, b, pe)
+            && dsl::semanticallyEqual (a, b))
+        {
+            processor.storeScriptLayout (text);
+            return true;
+        }
+        return processor.applyFormula (text, err, false);
     }
 
     int getSizeInUnits() override { return static_cast<int>(newFormula.length() + oldFormula.length()); }
@@ -761,6 +903,22 @@ bool NeuroKoreAudioProcessor::setFormula (const juce::String& text, juce::String
 bool NeuroKoreAudioProcessor::setFormula (const juce::String& text, juce::String& error, bool clearPresetName)
 {
     const juce::String oldScript = getScript();
+    dsl::GraphDocument oldDoc, newDoc;
+    juce::String parseErr;
+    const bool sameSound = dsl::parse (oldScript, oldDoc, parseErr)
+                        && dsl::parse (text, newDoc, parseErr)
+                        && dsl::semanticallyEqual (oldDoc, newDoc);
+    if (sameSound)
+    {
+        scriptManager.storeScriptText (text);
+        if (oldScript != text)
+        {
+            undoManager.beginNewTransaction ("Layout");
+            undoManager.perform (new FormulaChangeAction (*this, text, oldScript), "Layout");
+        }
+        sendChangeMessage();
+        return true;
+    }
     if (applyFormula (text, error, clearPresetName))
     {
         if (oldScript != text)
@@ -844,7 +1002,11 @@ bool NeuroKoreAudioProcessor::applyFormula (const juce::String& text, juce::Stri
         // Manual edits clear the named-preset association; factory/user load keeps it.
         if (clearPresetName)
             currentPresetName.clear();
-        dspEngine.onFormulaChanged();
+        {
+            const juce::ScopedLock pl (scriptManager.getProcessLock());
+            dspEngine.onFormulaChanged();
+            refreshReportedLatency();
+        }
         cpuProtect.clear();
         dspEngine.getDiagnostics().setPresetName (
             currentPresetName.isNotEmpty() ? currentPresetName : juce::String ("(custom)"));
@@ -1023,13 +1185,47 @@ void NeuroKoreAudioProcessor::stepPreset (int delta)
 {
     if (delta == 0)
         return;
-    const auto names = getPresetNames();
-    const int n = names.size();
-    if (n <= 0)
+    resolvePresetNameFromScript();
+
+    struct Item { juce::String name, category; int loadIndex; };
+    std::vector<Item> items;
+    const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
+    for (int i = 0; i < (int) factory.size(); ++i)
+        items.push_back ({ factory[(size_t) i].name, factory[(size_t) i].category, i });
+
+    auto base = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                    .getChildFile (Config::kUserPresetFolder);
+    auto files = presetManager.getAvailablePresets (base);
+    const int factoryN = (int) factory.size();
+    for (int i = 0; i < (int) files.size(); ++i)
+        items.push_back ({ files[(size_t) i].getFileNameWithoutExtension(),
+                           juce::String ("User"), factoryN + i });
+
+    if (items.empty())
         return;
-    const int cur = names.indexOf (currentPresetName);
-    const int idx = ((cur + delta) % n + n) % n;
-    loadPreset (idx);
+
+    std::sort (items.begin(), items.end(), [] (const Item& a, const Item& b)
+    {
+        const int c = a.category.compareNatural (b.category);
+        if (c != 0)
+            return c < 0;
+        return a.name.compareNatural (b.name) < 0;
+    });
+
+    int cur = -1;
+    for (int i = 0; i < (int) items.size(); ++i)
+        if (items[(size_t) i].name == currentPresetName)
+        {
+            cur = i;
+            break;
+        }
+    const int n = (int) items.size();
+    const int next = cur < 0
+        ? (delta > 0 ? 0 : n - 1)
+        : ((cur + delta) % n + n) % n;
+    loadPreset (items[(size_t) next].loadIndex);
+    setLastPresetBrowserName (currentPresetName);
+    setLastPresetBrowserCategory (items[(size_t) next].category);
 }
 
 void NeuroKoreAudioProcessor::loadLanguage (const juce::String&)

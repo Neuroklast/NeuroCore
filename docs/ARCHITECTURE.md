@@ -92,6 +92,14 @@ Parameter-IDs für den APVTS:
 - Blöcke: `stage`, `filter`, `eq`, `comp`, `gate`, `limit`, `delay`, `reverb`, `ir`, `ott`, `widen`, `ms`, `xover`, `bus`/`send`/`out`, `env`, `osc`, `param`
 - Liefert strukturierte Fehler mit Zeilen-/Spaltenangabe
 
+### `PcbRouter` (`src/dsl/PcbRouter.h/.cpp`)
+- UI-freier orthogonaler Router für Circuit-Kabel (keine JUCE-Typen)
+- A* auf einem 4-Nachbar-Gitter; State ist Zelle + Ankunftsrichtung
+- Kantengewicht `1 + turnPenalty` bei Richtungswechsel; Heuristik ist Manhattan
+- Hindernisse: Achsen-parallele Node-Boxen. Boxen, die Start oder Ziel enthalten, bleiben passierbar
+- Nachbearbeitung: colineare Punkte entfernen, 90°-Ecken als quadratische Beziers, paralleler Lane-Offset bei geteilten Tracks
+- Ausgabe: `PcbRoute` mit Waypoints und `Move`/`Line`/`Quad`-Kommandos. Das Canvas mapped das auf `juce::Path`
+
 ### `GraphModel` (`src/dsl/GraphModel.h/.cpp`)
 - Editor-Datenmodell für den 2D Node-Patcher (`GraphCanvasComponent`)
 - `parse` nutzt `DSLParser` und hängt `#`-Header/Trailing-Kommentare inkl. `@x,y` an
@@ -106,7 +114,7 @@ Parameter-IDs für den APVTS:
 ### `GraphCanvasComponent` (`src/ui/GraphCanvasComponent.h/.cpp`)
 - Circuit-Modus: Platine. Karten rasten auf 16 px (`snap` / `snapPoint`). Ctrl+Rad zoomt (0.55–2.4)
 - Karten-Drag schreibt nur `@x,y` (`setPosition`). Reihenfolge nur Overlay/Kabel, nie `commitNodeDrop`
-- Audio-Kabel: weiss/grau. Energie aus WaveformCapture (gleiche Quelle wie die Scopes); optional Tap-Welle
+- Audio-Kabel: weiss/grau, orthogonal über `PcbRouter` (gerundete 90°-Ecken, Bus-Lanes). Energie aus WaveformCapture (gleiche Quelle wie die Scopes); optional Tap-Welle
 - Bus-Kopf ist verdrahtet: IN -> BUS -> send
 - Live-Knobwerte stehen rot auf dem Chip
 - Doppelklick öffnet `NodeInspectComponent` (alle Args, a–f, Apply/Remove)
@@ -157,7 +165,7 @@ Parameter-IDs für den APVTS:
 |---|---|
 | `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
 | `DslTerminalEditor` | Code-Editor (Terminal-Edit). IR-Button in Zeilenhöhe. Keine Live-`[value]`-Annotation |
-| `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, grau/weisse Signalkabel |
+| `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, orthogonale PCB-Kabel |
 | `NodeInspectComponent` | Overlay pro Block: alle Parameter, Knob-Bind, Remove/Apply |
 | `WaveformDisplayComponent` | Input/Output-Wellenform-Anzeige |
 | `LoudnessMeterComponent` | Echtzeit-Loudness-Meter |

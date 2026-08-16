@@ -23,6 +23,8 @@ namespace ui
 
         void setAliasName(const juce::String& name);
         std::function<void (juce::String)> onAliasChanged;
+        /** Called when Set Min / Set Max commits a mapped engineering range. */
+        std::function<void (float, float)> onMappedRangeChanged;
 
         /** Accent colour for label text and outer knob ring (A=red, B=yellow, …). */
         void setAccentColour(juce::Colour colour);
