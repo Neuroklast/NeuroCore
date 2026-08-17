@@ -1,4 +1,6 @@
-# NeuroKore – Vollständige Code-Analyse
+# NeuroKore – Code-Analyse (historisch)
+
+> Snapshot from 2026-04-01. Daily brief: `Agents.md` + `docs/agents/`. Copy: `docs/archive/ANALYSIS_2026-04.md`.
 
 **Analyse-Datum:** 2026-04-01  
 **Basis-Commit:** `b5e76bb`  

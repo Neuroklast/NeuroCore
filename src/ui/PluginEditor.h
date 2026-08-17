@@ -56,6 +56,72 @@ public:
 };
 
 
+/** Fixed-width HUD slots. Hover never rewrites this strip. */
+class StatusBarStrip : public juce::Component
+{
+public:
+    static constexpr int kNumSlots = 9;
+    static constexpr float kFontPt = 13.f;
+
+    StatusBarStrip()
+    {
+        setInterceptsMouseClicks (false, false);
+        setOpaque (false);
+        while (slots.size() < kNumSlots)
+            slots.add ({});
+    }
+
+    void setSlots (juce::StringArray next)
+    {
+        while (next.size() < kNumSlots)
+            next.add ({});
+        if (next.size() > kNumSlots)
+            next.removeRange (kNumSlots, next.size() - kNumSlots);
+        if (next == slots)
+            return;
+        slots = std::move (next);
+        repaint();
+    }
+
+    juce::String joinedText() const
+    {
+        juce::String s;
+        for (int i = 0; i < slots.size(); ++i)
+        {
+            if (slots[i].isEmpty())
+                continue;
+            if (s.isNotEmpty())
+                s << "  ";
+            s << slots[i];
+        }
+        return s;
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto r = getLocalBounds().toFloat();
+        g.setFont (NeuroKoreLookAndFeel::monoFont (kFontPt));
+        g.setColour (NeuroKoreLookAndFeel::ink());
+        static constexpr float widths[] = { 62.f, 78.f, 148.f, 88.f, 84.f, 102.f, 48.f, 56.f, 72.f };
+        float x = r.getX() + 4.f;
+        const float y = r.getY();
+        const float h = r.getHeight();
+        for (int i = 0; i < kNumSlots; ++i)
+        {
+            const float w = widths[i];
+            if (x >= r.getRight())
+                break;
+            const float use = juce::jmin (w, r.getRight() - x);
+            g.drawText (slots[i], juce::Rectangle<float> (x, y, use, h),
+                        juce::Justification::centredLeft, false);
+            x += w + 6.f;
+        }
+    }
+
+private:
+    juce::StringArray slots;
+};
+
 //==============================================================================
 /**
 */
@@ -85,6 +151,13 @@ public:
     void resized() override;
     bool keyPressed(const juce::KeyPress& key) override;
     void visibilityChanged() override;
+    /** Host 125/150 % must not add a second scale on top of our Affine fit. */
+    float getDesktopScaleFactor() const override { return 1.0f; }
+
+    static float snapFitToGrid (float fit) noexcept
+    {
+        return Config::snapUiFitToGrid (fit);
+    }
 
 
 
@@ -123,7 +196,7 @@ private:
     std::array<std::unique_ptr<ui::ParameterComponent>, Config::kNumUserParams> paramComponents;
     std::array<std::unique_ptr<juce::TextEditor>, Config::kNumUserParams>        nameEditors;
     std::unique_ptr<BrandLockup>         brandLockup;
-    std::unique_ptr<juce::Label>         statusBarLabel; // LAT / SR / LIVE
+    std::unique_ptr<StatusBarStrip>      statusBar;
     std::unique_ptr<juce::TextButton>    helpButton;
     std::unique_ptr<juce::TextButton>    licenseButton;
     std::unique_ptr<juce::FileChooser>   licenseChooser;

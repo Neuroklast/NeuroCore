@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 /*
     NeuroKore - Copyright (c) 2024 NEUROKLAST
     Developed by Kay Schäfer and Simon Seifried
@@ -35,6 +37,25 @@ namespace Config
     inline constexpr int kUiScalePercentMin  = 100;
     inline constexpr int kUiScalePercentMax  = 150;
     inline constexpr int kUiScalePercentStep = 25;
+    /// Design-px per board cell. Host-scale fit snaps so this stays integer on screen.
+    inline constexpr int kUiBoardGrid = 16;
+
+    /** Snap a window-fit so `fit * kUiBoardGrid` is a whole number of host pixels. */
+    inline float snapUiFitToGrid (float fit) noexcept
+    {
+        const float g = (float) kUiBoardGrid;
+        if (! (fit > 0.f) || ! (g > 0.f))
+            return 1.f;
+        return juce::jmax (0.5f, std::round (fit * g) / g);
+    }
+
+    /** Footer CPU is 0–100. Load is host-callback ratio; over-budget still reads 100. */
+    inline int cpuDisplayPercent (float load) noexcept
+    {
+        if (! std::isfinite (load) || load <= 0.f)
+            return 0;
+        return juce::jlimit (0, 100, (int) std::lround ((double) load * 100.0));
+    }
     /// Global padding for all UI elements.
     inline constexpr int kUiPadding         = 5;
     /// Top HUD strip (Neuroklast OS line). Chrome must start below this.
@@ -46,7 +67,7 @@ namespace Config
     /// Brand + chrome button row. Tall enough for the NK lockup after L/Both/R left the tools row.
     inline constexpr float kToolbarRowWeight    = 0.042f;
     inline constexpr int   kToolbarRowMinHeight = 32;
-    inline constexpr int   kToolbarRowMaxHeight = 36;
+    inline constexpr int   kToolbarRowMaxHeight = 38;
     inline constexpr int kChromeControlHeight = 26;
     inline constexpr int kToolsRowHeight     = 26;
     /// Host pixels reserved so overlays leave Mix / OS / status clickable.
@@ -55,7 +76,7 @@ namespace Config
                                                  + kToolbarRowMaxHeight
                                                  + kToolsRowHeight
                                                  + 10;
-    inline constexpr int kFooterRowHeight    = 22;
+    inline constexpr int kFooterRowHeight    = 26;
     inline constexpr int kActionRowHeight    = 26;
     inline constexpr int kScopeRowHeight     = 176;
     /// One vertical column of six knobs. The formula / graph owns the window.
@@ -132,6 +153,12 @@ namespace Config
     inline constexpr float kDefaultGainOutDb   = 0.0f;
     /// Time in seconds used for parameter smoothing (knobs, static filters).
     inline constexpr float kSmoothingTime      = 0.02f;
+    /// Xover / OTT split must move slowly — IIR coeff swaps click if they jump.
+    inline constexpr float kXoverSmoothingTime = 0.06f;
+    /// Peak below this counts as silence for DSP idle (about −98 dB).
+    inline constexpr float kIdlePeakGate       = 1.2e-5f;
+    /// Extra silence after tails/OS flush before the wet path may sleep.
+    inline constexpr float kIdleHoldSec        = 0.12f;
     /// Ramp for env/osc-modulated cutoff/EQ. Too short = LFO zipper/crackle.
     inline constexpr float kModSmoothingTime   = 0.004f;
     /// LFO output slew — square/saw/noise edges must not click the destination.
@@ -205,19 +232,25 @@ namespace Config
     inline constexpr float kCpuTripRatio     = 1.15f;
     /// Hard-trip only if the EMA (not a single sample) stays this far over budget.
     inline constexpr float kCpuTripHardRatio = 3.00f;
-    /// Consecutive observe() calls with EMA >= kCpuTripRatio required for a soft trip.
-    inline constexpr int   kCpuTripHits      = 8;
-    /// Consecutive observe() calls with EMA >= kCpuTripHardRatio required for a hard trip.
-    inline constexpr int   kCpuHardTripHits  = 4;
-    /// After a trip, stay dry this long then run one wet probe.
+    /// Soft-trip only if the EMA stays over kCpuTripRatio for this long.
+    inline constexpr float kCpuTripHoldSec   = 0.35f;
+    /// Hard-trip only if the EMA stays over kCpuTripHardRatio for this long.
+    inline constexpr float kCpuHardHoldSec   = 0.08f;
+    /// After a trip, stay dry this long, then run a wet probe window.
     inline constexpr float kCpuRetrySec      = 2.0f;
-    /// Probe recovers if EMA is under this (clearly below the soft-trip line).
+    /// Wet seconds after a retry before we decide recover vs. stay dry.
+    inline constexpr float kCpuProbeSec      = 0.25f;
+    /// Probe window recovers if EMA is under this (clearly below the soft-trip line).
     inline constexpr float kCpuRecoverRatio  = 0.85f;
     /// Ignore trips this long after prepare/clear/OS/IR (cold caches, OS rebuild).
     inline constexpr float kCpuWarmupSeconds = 3.0f;
     /// EMA coefficient: smoothed += alpha * (instant - smoothed). 0.15 ignores lone 8× spikes.
     inline constexpr float kCpuEmaAlpha      = 0.15f;
-    /// Legacy block-count warmup; CpuProtect uses kCpuWarmupSeconds.
+    /// LFO/env filter coeffs: every N samples. 1 Hz–6 Hz LFOs do not need per-sample TPT rebuilds.
+    inline constexpr int   kFilterCoeffStride = 8;
+    /// Legacy names kept for older tests; trip logic is time-based now.
+    inline constexpr int   kCpuTripHits      = 8;
+    inline constexpr int   kCpuHardTripHits  = 4;
     inline constexpr int   kCpuWarmupBlocks  = 48;
     /// |sample[n]-sample[n-1]| above this → hard jump (audible click).
     inline constexpr float kAudioDiagJumpThreshold      = 0.28f;
@@ -280,7 +313,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.4.4-alpha"
+#define PLUGIN_VERSION    "0.4.7-alpha"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

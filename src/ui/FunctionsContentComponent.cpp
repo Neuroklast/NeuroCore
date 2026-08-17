@@ -140,10 +140,38 @@ juce::String FunctionPlotComponent::resolvePlotExpression (const juce::String& f
     return ex;
 }
 
+FunctionPlotComponent::PlotKind FunctionPlotComponent::kindForName (const juce::String& functionName)
+{
+    const auto n = functionName.trim().toLowerCase();
+    if (n == "ott" || n.contains ("ott"))
+        return PlotKind::Ott;
+    if (n == "widen" || n.contains ("widen") || n.contains ("haas") || n.contains ("stereo width"))
+        return PlotKind::Widen;
+    if (n == "octaver" || n.contains ("octaver") || n == "octave")
+        return PlotKind::Octaver;
+    if (n == "vocoder" || n.contains ("vocoder"))
+        return PlotKind::Vocoder;
+    return PlotKind::Transfer;
+}
+
+juce::String FunctionPlotComponent::caption() const
+{
+    switch (plotKind)
+    {
+        case PlotKind::Ott:     return "OTT: three bands, each with its own up/down curve";
+        case PlotKind::Widen:   return "Widen: left dry, right delayed / wider (not OTT)";
+        case PlotKind::Octaver: return "Octaver: dry + sub (1/2) + up (2x)";
+        case PlotKind::Vocoder: return "Vocoder: voice envelope on a carrier (not OTT)";
+        case PlotKind::Transfer:
+        default:                return "Animated: sine IN (top) vs after function OUT (bottom)";
+    }
+}
+
 void FunctionPlotComponent::setFunctionDemo (const juce::String& functionName,
                                              const juce::String& example)
 {
     displayName = functionName;
+    plotKind = kindForName (functionName);
     formula = resolvePlotExpression (functionName, example);
     formulaOk = false;
     rebuildTrace();
@@ -155,7 +183,55 @@ void FunctionPlotComponent::rebuildTrace()
     constexpr int num = 160;
     inSamples.assign ((size_t) num, 0.f);
     outSamples.assign ((size_t) num, 0.f);
+    bandA.assign ((size_t) num, 0.f);
+    bandB.assign ((size_t) num, 0.f);
+    bandC.assign ((size_t) num, 0.f);
     formulaOk = false;
+
+    const float twoPi = juce::MathConstants<float>::twoPi;
+    if (plotKind != PlotKind::Transfer)
+    {
+        formulaOk = true;
+        for (int i = 0; i < num; ++i)
+        {
+            const float t = phase + twoPi * ((float) i / (float) (num - 1));
+            const float xin = std::sin (t);
+            inSamples[(size_t) i] = xin;
+            if (plotKind == PlotKind::Ott)
+            {
+                const float lo = std::tanh (xin * 3.2f) * 0.55f;
+                const float mid = xin * 0.85f;
+                const float hi = juce::jlimit (-1.f, 1.f, xin * 1.8f);
+                bandA[(size_t) i] = lo;
+                bandB[(size_t) i] = mid;
+                bandC[(size_t) i] = hi * 0.45f;
+                outSamples[(size_t) i] = juce::jlimit (-1.5f, 1.5f, lo + mid * 0.35f + hi * 0.2f);
+            }
+            else if (plotKind == PlotKind::Widen)
+            {
+                bandA[(size_t) i] = xin;
+                bandB[(size_t) i] = std::sin (t + 0.55f) * 0.92f;
+                outSamples[(size_t) i] = 0.5f * (bandA[(size_t) i] + bandB[(size_t) i]);
+            }
+            else if (plotKind == PlotKind::Octaver)
+            {
+                bandA[(size_t) i] = xin;
+                bandB[(size_t) i] = std::sin (t * 0.5f) * 0.7f;
+                bandC[(size_t) i] = std::sin (t * 2.f) * 0.35f;
+                outSamples[(size_t) i] = juce::jlimit (-1.5f, 1.5f,
+                    bandA[(size_t) i] * 0.45f + bandB[(size_t) i] + bandC[(size_t) i]);
+            }
+            else // Vocoder
+            {
+                const float env = std::abs (std::sin (t * 0.5f + 0.2f));
+                const float steps = std::floor (env * 6.f) / 6.f;
+                bandA[(size_t) i] = env * 2.f - 1.f;
+                bandB[(size_t) i] = std::sin (t * 7.f) * steps;
+                outSamples[(size_t) i] = bandB[(size_t) i];
+            }
+        }
+        return;
+    }
 
     if (formula.isEmpty())
         return;
@@ -177,7 +253,6 @@ void FunctionPlotComponent::rebuildTrace()
     }
 
     formulaOk = true;
-    const float twoPi = juce::MathConstants<float>::twoPi;
     for (int i = 0; i < num; ++i)
     {
         const float t = phase + twoPi * ((float) i / (float) (num - 1));
@@ -257,7 +332,38 @@ void FunctionPlotComponent::paint (juce::Graphics& g)
                                                juce::PathStrokeType::rounded));
     };
 
-    // IN: pure sine  |  OUT: sine after function
+    if (plotKind == PlotKind::Ott)
+    {
+        auto a = top;
+        auto b = a.removeFromLeft (a.getWidth() * 0.33f);
+        auto c = a.removeFromLeft (a.getWidth() * 0.5f);
+        drawWave (b, bandA, juce::Colour (0xffff8a65), "LOW");
+        drawWave (c, bandB, juce::Colour (0xffffcc66), "MID");
+        drawWave (a, bandC, juce::Colour (0xff7aa2ff), "HIGH");
+        drawWave (bot, outSamples, NeuroKoreLookAndFeel::accent(), "OTT mix");
+        return;
+    }
+    if (plotKind == PlotKind::Widen)
+    {
+        drawWave (top, bandA, juce::Colour (0xff7aa2ff), "L  dry");
+        drawWave (bot, bandB, juce::Colour (0xffff8a65), "R  Haas / width");
+        return;
+    }
+    if (plotKind == PlotKind::Octaver)
+    {
+        drawWave (top, bandA, juce::Colour (0xff7aa2ff), "DRY");
+        auto left = bot.removeFromLeft (bot.getWidth() * 0.5f);
+        drawWave (left, bandB, juce::Colour (0xffff8a65), "SUB  1/2");
+        drawWave (bot, bandC, juce::Colour (0xffffcc66), "UP  2x");
+        return;
+    }
+    if (plotKind == PlotKind::Vocoder)
+    {
+        drawWave (top, bandA, juce::Colour (0xff7aa2ff), "VOICE env");
+        drawWave (bot, bandB, NeuroKoreLookAndFeel::accent(), "CARRIER x bands");
+        return;
+    }
+
     drawWave (top, inSamples, juce::Colour (0xff7aa2ff), "IN  sine");
     drawWave (bot, outSamples,
               formulaOk ? NeuroKoreLookAndFeel::accent() : juce::Colour (0xff666666),
@@ -706,6 +812,7 @@ void FunctionsContentComponent::updateDetails (int index)
 
     // Plot uses a closed f(x) demo (not raw docs example with a/b/DSL)
     plot.setFunctionDemo (f.name, f.example);
+    plotCaption.setText (plot.caption(), juce::dontSendNotification);
 }
 
 void FunctionsContentComponent::paint (juce::Graphics&)

@@ -71,12 +71,8 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
     brandLockup->addMouseListener (&logoGlitch, false);
     scaledRoot->addAndMakeVisible (*brandLockup);
 
-    statusBarLabel = std::make_unique<juce::Label>();
-    statusBarLabel->setJustificationType(juce::Justification::centredLeft);
-    statusBarLabel->setColour(juce::Label::textColourId, NeuroKoreLookAndFeel::inkMuted());
-    statusBarLabel->setFont(NeuroKoreLookAndFeel::monoFont(12.f));
-    statusBarLabel->setMinimumHorizontalScale(0.82f);
-    scaledRoot->addAndMakeVisible(*statusBarLabel);
+    statusBar = std::make_unique<StatusBarStrip>();
+    scaledRoot->addAndMakeVisible (*statusBar);
 
     helpButton = std::make_unique<juce::TextButton>(TRANS("HelpButton"));
     helpButton->onClick = [this]
@@ -674,7 +670,7 @@ NeuroKoreAudioProcessorEditor::NeuroKoreAudioProcessorEditor (NeuroKoreAudioProc
     footer->innerMargin = pad;
     footer->minHeight = Config::kFooterRowHeight;
     footer->maxHeight = Config::kFooterRowHeight;
-    footer->addChild (makeLeaf (statusBarLabel.get(), 1.f));
+    footer->addChild (makeLeaf (statusBar.get(), 1.f));
     layoutRoot->addChild (std::move (footer));
 
     updateTranslations();
@@ -854,12 +850,12 @@ void NeuroKoreAudioProcessorEditor::timerCallback()
 
 juce::String NeuroKoreAudioProcessorEditor::statusFooterText() const
 {
-    return statusBarLabel != nullptr ? statusBarLabel->getText() : juce::String();
+    return statusBar != nullptr ? statusBar->joinedText() : juce::String();
 }
 
 void NeuroKoreAudioProcessorEditor::updateStatusBar()
 {
-    if (statusBarLabel == nullptr)
+    if (statusBar == nullptr)
         return;
 
     const double sr = audioProcessor.getSampleRate();
@@ -888,42 +884,38 @@ void NeuroKoreAudioProcessorEditor::updateStatusBar()
     const juce::String mode = cpuSafe ? "SAFE"
         : (bypassed ? "BYPASS"
                     : (audioProcessor.isLiveMode() ? "LIVE" : "STUDIO"));
-    const int cpuPct = juce::jlimit (0, 999, (int) std::lround ((double) cpuLoad * 100.0));
+    const int cpuPct = Config::cpuDisplayPercent (cpuLoad);
     const int bits = 32;
     const int buf = audioProcessor.getHostBlockSize();
     const float bpm = audioProcessor.getEffectiveBpm();
-    juce::String s;
-    s << "NKOS  "
-      << mode.paddedRight (' ', 6)
-      << "  CPU " << juce::String (cpuPct).paddedLeft (' ', 3) << "%"
-      << "  LAT " << juce::String (latMs, 1) << "ms/" << latSm << "smp"
-      << "  SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
-      << "  " << bits << "f"
-      << "  BUF " << (buf > 0 ? juce::String (buf) : juce::String ("-"))
-      << "  BPM " << juce::String (bpm, 1)
-      << (audioProcessor.isHostTempo() ? " HOST" : " USER")
-      << "  OS " << osFactor << "x";
+    juce::String extra;
     if (lim)
-        s << "  LIM";
+        extra << "LIM";
     if (Config::kEnableLicensing && ! audioProcessor.isProductLicensed())
     {
+        if (extra.isNotEmpty())
+            extra << " ";
         if (audioProcessor.isDemoMixLocked())
-            s << "  DEMO";
+            extra << "DEMO";
         else
         {
             const int left = audioProcessor.demoSecondsRemaining();
-            s << "  " << juce::String (left / 60).paddedLeft ('0', 2) << ":"
-              << juce::String (left % 60).paddedLeft ('0', 2);
+            extra << juce::String (left / 60).paddedLeft ('0', 2) << ":"
+                  << juce::String (left % 60).paddedLeft ('0', 2);
         }
     }
-
-    juce::String tip;
-    tip << mode << "   CPU " << cpuPct << "%   LAT " << latSm << " smp / "
-        << juce::String (latMs, 2) << " ms   SR " << (srInt > 0 ? juce::String (srInt) : juce::String ("-"))
-        << "   OS " << osFactor << "x   MIX " << juce::String ((int) std::lround ((double) mixPct)) << "%";
-    statusBarLabel->setTooltip (tip);
-    statusBarLabel->setText (s, juce::dontSendNotification);
-    statusBarLabel->setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
+    juce::ignoreUnused (mixPct);
+    statusBar->setSlots ({
+        mode,
+        "CPU " + juce::String (cpuPct).paddedLeft (' ', 3) + "%",
+        "LAT " + juce::String (latMs, 1) + "ms/" + juce::String (latSm) + "smp",
+        "SR " + (srInt > 0 ? juce::String (srInt) : juce::String ("-")) + " " + juce::String (bits) + "f",
+        "BUF " + (buf > 0 ? juce::String (buf) : juce::String ("-")),
+        "BPM " + juce::String (bpm, 1),
+        audioProcessor.isHostTempo() ? "HOST" : "USER",
+        "OS " + juce::String (osFactor) + "x",
+        extra
+    });
 
     if (errorLabel != nullptr)
     {
@@ -1197,12 +1189,6 @@ void NeuroKoreAudioProcessorEditor::paintOverChildren (juce::Graphics& g)
         auto inner = getLocalArea (graphCanvas.get(), graphCanvas->getLocalBounds());
         juce::Path clip;
         clip.addRectangle (inner.toFloat());
-        for (auto& pc : paramComponents)
-        {
-            if (pc == nullptr || ! pc->isShowing())
-                continue;
-            clip.addRectangle (getLocalArea (pc.get(), pc->getLocalBounds()).toFloat());
-        }
         g.saveState();
         g.reduceClipRegion (clip);
         {
@@ -1658,8 +1644,9 @@ void NeuroKoreAudioProcessorEditor::resized()
     if (backdrop != nullptr)
         backdrop->setBounds (getLocalBounds());
 
-    const float fit = juce::jmin ((float) getWidth() / (float) Config::kUiDesignWidth,
+    const float raw = juce::jmin ((float) getWidth() / (float) Config::kUiDesignWidth,
                                   (float) getHeight() / (float) Config::kUiDesignHeight);
+    const float fit = Config::snapUiFitToGrid (raw);
     if (scaledRoot != nullptr)
     {
         scaledRoot->setTransform ({});
@@ -1681,12 +1668,7 @@ void NeuroKoreAudioProcessorEditor::resized()
 
     layoutOpenOverlays();
 
-    if (statusBarLabel)
-    {
-        statusBarLabel->setFont (NeuroKoreLookAndFeel::monoFont (11.f));
-        statusBarLabel->setColour (juce::Label::textColourId,
-                                   NeuroKoreLookAndFeel::inkMuted());
-    }
+    // Footer slots paint their own 13 pt ink. Hover never rewrites them.
     if (mixLabel)
     {
         mixLabel->setJustificationType (juce::Justification::centredLeft);

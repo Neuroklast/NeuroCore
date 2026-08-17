@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
-#include <queue>
-#include <unordered_map>
 #include <utility>
 
 namespace dsl
@@ -13,64 +10,16 @@ namespace dsl
 namespace
 {
 
-constexpr int kEast = 0, kNorth = 1, kWest = 2, kSouth = 3, kNoDir = 4;
-constexpr int kDx[4] = { 1,  0, -1, 0 };
-constexpr int kDy[4] = { 0, -1,  0, 1 };
-
-int cellOf (float v, float cell) noexcept
+PcbPoint facingDelta (PcbFacing f, float cell) noexcept
 {
-    return (int) std::floor ((double) v / (double) cell);
-}
-
-float cellOrigin (int c, float cell) noexcept
-{
-    return (float) c * cell;
-}
-
-uint64_t packCell (int x, int y) noexcept
-{
-    return ((uint64_t) (uint32_t) x << 32) | (uint32_t) y;
-}
-
-uint64_t packState (int x, int y, int dir) noexcept
-{
-    return packCell (x, y) ^ ((uint64_t) (dir & 7) << 60);
-}
-
-struct HeapNode
-{
-    float f { 0.f };
-    float g { 0.f };
-    int x { 0 };
-    int y { 0 };
-    int dir { kNoDir };
-    bool operator> (const HeapNode& o) const noexcept { return f > o.f; }
-};
-
-bool rectContains (const PcbRect& r, PcbPoint p) noexcept
-{
-    return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
-}
-
-bool blockedAt (int cx, int cy, float cell, const std::vector<PcbRect>& obs,
-                PcbPoint start, PcbPoint end) noexcept
-{
-    const float ox = cellOrigin (cx, cell);
-    const float oy = cellOrigin (cy, cell);
-    for (const auto& r : obs)
+    switch (f)
     {
-        if (! r.intersectsCell (ox, oy, cell))
-            continue;
-        if (rectContains (r, start) || rectContains (r, end))
-            continue;
-        return true;
+        case PcbFacing::East:  return {  cell, 0.f };
+        case PcbFacing::North: return { 0.f, -cell };
+        case PcbFacing::West:  return { -cell, 0.f };
+        case PcbFacing::South: return { 0.f,  cell };
     }
-    return false;
-}
-
-int manhattan (int ax, int ay, int bx, int by) noexcept
-{
-    return std::abs (ax - bx) + std::abs (ay - by);
+    return { cell, 0.f };
 }
 
 float snapGrid (float v, float cell) noexcept
@@ -78,8 +27,34 @@ float snapGrid (float v, float cell) noexcept
     return std::round (v / cell) * cell;
 }
 
-bool segHitsRect (PcbPoint a, PcbPoint b, const PcbRect& r, float inset) noexcept
+PcbPoint snapPoint (PcbPoint p, float cell) noexcept
 {
+    return { snapGrid (p.x, cell), snapGrid (p.y, cell) };
+}
+
+bool samePoint (PcbPoint a, PcbPoint b, float cell) noexcept
+{
+    const float t = cell * 0.01f;
+    return std::abs (a.x - b.x) <= t && std::abs (a.y - b.y) <= t;
+}
+
+void collectPoints (PcbPoint p, float& minX, float& minY, float& maxX, float& maxY) noexcept
+{
+    minX = std::min (minX, p.x);
+    minY = std::min (minY, p.y);
+    maxX = std::max (maxX, p.x);
+    maxY = std::max (maxY, p.y);
+}
+
+bool closedContains (const PcbRect& r, PcbPoint p, float inset) noexcept
+{
+    return p.x > r.x + inset && p.x < r.x + r.w - inset
+        && p.y > r.y + inset && p.y < r.y + r.h - inset;
+}
+
+bool segHitsRect (PcbPoint a, PcbPoint b, const PcbRect& r) noexcept
+{
+    const float inset = 1.f;
     const float x1 = r.x + inset, y1 = r.y + inset;
     const float x2 = r.x + r.w - inset, y2 = r.y + r.h - inset;
     if (x2 <= x1 || y2 <= y1)
@@ -95,127 +70,283 @@ bool segHitsRect (PcbPoint a, PcbPoint b, const PcbRect& r, float inset) noexcep
     return true;
 }
 
-bool pathHitsObstacles (const std::vector<PcbPoint>& wp, const std::vector<PcbRect>& obs,
-                        PcbPoint start, PcbPoint end) noexcept
+bool pathHitsChips (const std::vector<PcbPoint>& wp, const std::vector<PcbRect>& obs)
 {
-    for (size_t i = 1; i < wp.size(); ++i)
+    if (wp.size() < 2)
+        return false;
+    for (size_t i = 0; i + 1 < wp.size(); ++i)
     {
+        const bool stub = (wp.size() > 2) && (i == 0 || i + 2 >= wp.size());
+        if (stub)
+            continue;
         for (const auto& r : obs)
-        {
-            if (rectContains (r, start) || rectContains (r, end))
-                continue;
-            if (segHitsRect (wp[i - 1], wp[i], r, 4.f))
+            if (segHitsRect (wp[i], wp[i + 1], r))
                 return true;
-        }
     }
+    for (size_t i = 1; i + 1 < wp.size(); ++i)
+        for (const auto& r : obs)
+            if (closedContains (r, wp[i], 1.f))
+                return true;
     return false;
 }
 
-std::vector<PcbPoint> manhattanStubs (PcbPoint start, PcbPoint end, float stub, float cell)
+void pushUnique (std::vector<PcbPoint>& wp, PcbPoint p, float cell)
+{
+    if (wp.empty() || ! samePoint (wp.back(), p, cell))
+        wp.push_back (p);
+}
+
+std::vector<PcbPoint> buildHvh (PcbPoint s, PcbPoint s1, PcbPoint e1, PcbPoint e,
+                                float midX, float runYs, float runYe, float cell)
 {
     std::vector<PcbPoint> wp;
-    const float s1x = start.x + stub;
-    const float e1x = end.x - stub;
-    wp.push_back (start);
-    wp.push_back ({ s1x, start.y });
-
-    if (std::abs (start.y - end.y) < 0.51f)
-    {
-        if (e1x > s1x + 0.5f)
-            wp.push_back ({ e1x, end.y });
-        wp.push_back (end);
-        return wp;
-    }
-
-    if (e1x >= s1x + cell)
-    {
-        float mid = snapGrid (0.5f * (s1x + e1x), cell);
-        mid = std::min (std::max (mid, s1x), e1x);
-        wp.push_back ({ mid, start.y });
-        wp.push_back ({ mid, end.y });
-        wp.push_back ({ e1x, end.y });
-        wp.push_back (end);
-        return wp;
-    }
-
-    float midY = snapGrid (0.5f * (start.y + end.y), cell);
-    if (std::abs (midY - start.y) < 0.51f || std::abs (midY - end.y) < 0.51f)
-        midY = start.y + (end.y > start.y ? cell : -cell);
-    wp.push_back ({ s1x, midY });
-    wp.push_back ({ e1x, midY });
-    wp.push_back ({ e1x, end.y });
-    wp.push_back (end);
-    return wp;
+    pushUnique (wp, s, cell);
+    pushUnique (wp, s1, cell);
+    if (std::abs (runYs - s1.y) > cell * 0.01f)
+        pushUnique (wp, { s1.x, runYs }, cell);
+    pushUnique (wp, { midX, runYs }, cell);
+    if (std::abs (runYe - runYs) > cell * 0.01f)
+        pushUnique (wp, { midX, runYe }, cell);
+    pushUnique (wp, { e1.x, runYe }, cell);
+    if (std::abs (e1.y - runYe) > cell * 0.01f)
+        pushUnique (wp, e1, cell);
+    pushUnique (wp, e, cell);
+    return PcbRouter::collapseColinear (wp);
 }
 
-std::vector<PcbPoint> dropMicroJogs (const std::vector<PcbPoint>& wp, float minSeg)
+std::vector<PcbPoint> buildWrap (PcbPoint s, PcbPoint s1, PcbPoint e1, PcbPoint e,
+                                 float gutterY, float cell)
 {
-    if (wp.size() < 4)
-        return wp;
-    std::vector<PcbPoint> out = wp;
-    bool changed = true;
-    while (changed && out.size() >= 4)
-    {
-        changed = false;
-        for (size_t i = 1; i + 2 < out.size(); ++i)
-        {
-            const float dx = std::abs (out[i].x - out[i + 1].x);
-            const float dy = std::abs (out[i].y - out[i + 1].y);
-            const float len = std::sqrt (dx * dx + dy * dy);
-            if (len + 1.0e-3f >= minSeg)
-                continue;
-            // Remove a tiny stair: keep the longer axis of the neighbours.
-            out.erase (out.begin() + (int) i + 1);
-            changed = true;
-            break;
-        }
-    }
-    return out;
+    std::vector<PcbPoint> wp;
+    pushUnique (wp, s, cell);
+    pushUnique (wp, s1, cell);
+    pushUnique (wp, { s1.x, gutterY }, cell);
+    pushUnique (wp, { e1.x, gutterY }, cell);
+    pushUnique (wp, e1, cell);
+    pushUnique (wp, e, cell);
+    return PcbRouter::collapseColinear (wp);
 }
 
-void forceJackStubs (std::vector<PcbPoint>& wp, PcbPoint start, PcbPoint end, float stub)
+float gutterBetween (PcbPoint start, PcbPoint end, const std::vector<PcbRect>& obs, float cell)
 {
-    if (wp.size() < 2)
+    float srcBot = start.y, srcTop = start.y, dstBot = end.y, dstTop = end.y;
+    bool srcHit = false, dstHit = false;
+    for (const auto& r : obs)
     {
-        wp = { start, { start.x + stub, start.y }, { end.x - stub, end.y }, end };
-        return;
-    }
-    wp.front() = start;
-    wp.back() = end;
-    if (std::abs (wp[1].y - start.y) > 0.5f || wp[1].x < start.x + stub * 0.5f)
-        wp.insert (wp.begin() + 1, PcbPoint { start.x + stub, start.y });
-    else if (wp[1].x < start.x + stub)
-        wp[1] = { start.x + stub, start.y };
-
-    if (wp.size() >= 3)
-    {
-        auto& prev = wp[wp.size() - 2];
-        if (std::abs (prev.y - end.y) > 0.5f || prev.x > end.x - stub * 0.5f)
-            wp.insert (wp.end() - 1, PcbPoint { end.x - stub, end.y });
-        else if (prev.x > end.x - stub)
-            prev = { end.x - stub, end.y };
-    }
-
-    // Repair any non-ortho pair introduced by the stubs.
-    for (size_t i = 0; i + 1 < wp.size();)
-    {
-        if (PcbRouter::isOrthogonal (wp[i], wp[i + 1]))
+        if (start.y >= r.y - 1.f && start.y <= r.y + r.h + 1.f
+            && std::abs (start.x - (r.x + r.w)) < cell * 1.5f)
         {
-            ++i;
-            continue;
+            srcTop = r.y;
+            srcBot = r.y + r.h;
+            srcHit = true;
         }
-        wp.insert (wp.begin() + (int) i + 1, PcbPoint { wp[i + 1].x, wp[i].y });
-        ++i;
+        if (end.y >= r.y - 1.f && end.y <= r.y + r.h + 1.f
+            && std::abs (end.x - r.x) < cell * 1.5f)
+        {
+            dstTop = r.y;
+            dstBot = r.y + r.h;
+            dstHit = true;
+        }
     }
+    if (srcHit && dstHit)
+    {
+        if (dstTop >= srcBot - 0.5f)
+        {
+            const float gy = snapGrid (0.5f * (srcBot + dstTop), cell);
+            if (gy > srcBot + 0.5f && gy < dstTop - 0.5f)
+                return gy;
+            return 0.5f * (srcBot + dstTop);
+        }
+        if (srcTop >= dstBot - 0.5f)
+        {
+            const float gy = snapGrid (0.5f * (dstBot + srcTop), cell);
+            if (gy > dstBot + 0.5f && gy < srcTop - 0.5f)
+                return gy;
+            return 0.5f * (dstBot + srcTop);
+        }
+    }
+    float mid = snapGrid (0.5f * (start.y + end.y), cell);
+    if (std::abs (mid - start.y) < 0.51f || std::abs (mid - end.y) < 0.51f)
+        mid = start.y + (end.y > start.y ? cell : -cell);
+    return mid;
+}
+
+float chipTop (const std::vector<PcbRect>& obs, float fallback)
+{
+    float t = fallback;
+    bool any = false;
+    for (const auto& r : obs)
+    {
+        t = any ? std::min (t, r.y) : r.y;
+        any = true;
+    }
+    return t;
+}
+
+float chipBottom (const std::vector<PcbRect>& obs, float fallback)
+{
+    float b = fallback;
+    bool any = false;
+    for (const auto& r : obs)
+    {
+        const float y2 = r.y + r.h;
+        b = any ? std::max (b, y2) : y2;
+        any = true;
+    }
+    return b;
+}
+
+std::vector<PcbPoint> patternRoute (PcbPoint s, PcbPoint e,
+                                    PcbFacing srcFace, PcbFacing dstFace,
+                                    const std::vector<PcbRect>& obs,
+                                    float cell, float laneShift)
+{
+    auto clampEsc = [cell] (PcbPoint pin, PcbPoint esc) -> PcbPoint
+    {
+        if (esc.x < 0.f && pin.x >= 0.f)
+            esc.x = pin.x;
+        if (esc.y < 0.f && pin.y >= 0.f)
+            esc.y = pin.y;
+        return snapPoint (esc, cell);
+    };
+    const PcbPoint s1 = clampEsc (s, { s.x + facingDelta (srcFace, cell).x,
+                                       s.y + facingDelta (srcFace, cell).y });
+    const PcbPoint e1 = clampEsc (e, { e.x + facingDelta (dstFace, cell).x,
+                                       e.y + facingDelta (dstFace, cell).y });
+
+    const float runYs = s.y + laneShift;
+    const float runYe = e.y + laneShift;
+
+    std::vector<PcbPoint> best;
+    float bestCost = 1.0e9f;
+    auto consider = [&] (std::vector<PcbPoint> wp)
+    {
+        if (wp.size() < 2 || pathHitsChips (wp, obs))
+            return;
+        wp = PcbRouter::collapseColinear (wp);
+        const float cost = PcbRouter::pathCost (wp, cell);
+        if (cost + 1.0e-3f < bestCost)
+        {
+            bestCost = cost;
+            best = std::move (wp);
+        }
+    };
+
+    // Same row, dest to the east: one straight bus.
+    if (std::abs (s.y - e.y) < 0.51f && e1.x + 0.5f >= s1.x)
+    {
+        if (std::abs (laneShift) < 0.25f)
+        {
+            std::vector<PcbPoint> wp { s, s1, e1, e };
+            auto clean = PcbRouter::collapseColinear (wp);
+            if (clean.size() == 2)
+                clean = { s, s1, e1, e };
+            consider (clean);
+            if (! best.empty() && PcbRouter::countTurns (best) == 0)
+                return best;
+        }
+        consider (buildHvh (s, s1, e1, e, s1.x, runYs, runYe, cell));
+    }
+
+    // Dest east of source: HVH. Prefer a mid column that misses chips.
+    if (e1.x + 0.5f >= s1.x)
+    {
+        const float lo = std::min (s1.x, e1.x);
+        const float hi = std::max (s1.x, e1.x);
+        float mid = snapGrid (0.5f * (s1.x + e1.x), cell);
+        mid = std::min (std::max (mid, lo), hi);
+
+        consider (buildHvh (s, s1, e1, e, mid, runYs, runYe, cell));
+        for (float mx = lo; mx <= hi + 0.5f; mx += cell)
+            consider (buildHvh (s, s1, e1, e, mx, runYs, runYe, cell));
+
+        const float above = snapGrid (chipTop (obs, s.y) - cell, cell);
+        const float below = snapGrid (chipBottom (obs, s.y) + cell, cell);
+        consider (buildHvh (s, s1, e1, e, s1.x, above, above, cell));
+        consider (buildHvh (s, s1, e1, e, s1.x, below, below, cell));
+        if (! best.empty())
+            return best;
+        return buildHvh (s, s1, e1, e, mid, runYs, runYe, cell);
+    }
+
+    // Dest west of source: east stub, U through the row gutter, west stub.
+    const float gy = snapGrid (gutterBetween (s, e, obs, cell) + laneShift, cell);
+    consider (buildWrap (s, s1, e1, e, gy, cell));
+    const float below = snapGrid (std::max (s.y, e.y)
+                                  + std::max (cell, chipBottom (obs, std::max (s.y, e.y)) - std::max (s.y, e.y) + cell),
+                                  cell);
+    consider (buildWrap (s, s1, e1, e, below, cell));
+    if (! best.empty())
+        return best;
+    return buildWrap (s, s1, e1, e, below, cell);
+}
+
+int signedLane (int lane) noexcept
+{
+    if (lane <= 0)
+        return 0;
+    const int n = (lane + 1) / 2;
+    return (lane & 1) ? n : -n;
 }
 
 } // namespace
 
+PcbPoint PcbRouter::escapeOf (const PcbPort& port, float cell) noexcept
+{
+    const float c = std::max (1.f, cell);
+    const PcbPoint pin = snapPoint (port.pin, c);
+    const PcbPoint d = facingDelta (port.facing, c);
+    return { pin.x + d.x, pin.y + d.y };
+}
+
+bool PcbRouter::onGrid (const PcbPoint& p, float cell) noexcept
+{
+    const float c = std::max (1.f, cell);
+    return std::abs (p.x - snapGrid (p.x, c)) < 1.0e-3f
+        && std::abs (p.y - snapGrid (p.y, c)) < 1.0e-3f;
+}
+
+PcbBoard PcbRouter::inferBoard (const std::vector<PcbNet>& nets,
+                                const std::vector<PcbRect>& obstacles,
+                                float cell,
+                                int haloCells)
+{
+    const float c = std::max (1.f, cell);
+    const int halo = std::max (1, haloCells);
+    float minX =  1.0e9f, minY =  1.0e9f;
+    float maxX = -1.0e9f, maxY = -1.0e9f;
+    auto add = [&] (PcbPoint p) { collectPoints (p, minX, minY, maxX, maxY); };
+
+    for (const auto& n : nets)
+    {
+        add (snapPoint (n.src.pin, c));
+        add (snapPoint (n.dst.pin, c));
+        add (escapeOf (n.src, c));
+        add (escapeOf (n.dst, c));
+    }
+    for (const auto& r : obstacles)
+    {
+        add ({ r.x, r.y });
+        add ({ r.x + r.w, r.y + r.h });
+    }
+    PcbBoard b;
+    b.cell = c;
+    if (minX > maxX)
+        return b;
+    const float pad = (float) halo * c;
+    minX -= pad; minY -= pad;
+    maxX += pad; maxY += pad;
+    b.origin = { snapGrid (minX, c), snapGrid (minY, c) };
+    if (b.origin.x > minX) b.origin.x -= c;
+    if (b.origin.y > minY) b.origin.y -= c;
+    b.cols = std::max (1, (int) std::ceil ((maxX - b.origin.x) / c));
+    b.rows = std::max (1, (int) std::ceil ((maxY - b.origin.y) / c));
+    return b;
+}
+
 bool PcbRouter::isOrthogonal (const PcbPoint& a, const PcbPoint& b) noexcept
 {
-    const float dx = std::abs (a.x - b.x);
-    const float dy = std::abs (a.y - b.y);
-    return (dx < 1.0e-3f) || (dy < 1.0e-3f);
+    return (std::abs (a.x - b.x) < 1.0e-3f) || (std::abs (a.y - b.y) < 1.0e-3f);
 }
 
 int PcbRouter::countTurns (const std::vector<PcbPoint>& wp) noexcept
@@ -231,6 +362,21 @@ int PcbRouter::countTurns (const std::vector<PcbPoint>& wp) noexcept
             ++n;
     }
     return n;
+}
+
+float PcbRouter::pathCost (const std::vector<PcbPoint>& wp, float cell) noexcept
+{
+    if (wp.size() < 2)
+        return 1.0e9f;
+    const float c = std::max (1.f, cell);
+    float cells = 0.f;
+    for (size_t i = 1; i < wp.size(); ++i)
+    {
+        const float dx = wp[i].x - wp[i - 1].x;
+        const float dy = wp[i].y - wp[i - 1].y;
+        cells += std::sqrt (dx * dx + dy * dy) / c;
+    }
+    return cells + 12.f * (float) countTurns (wp);
 }
 
 std::vector<PcbPoint> PcbRouter::collapseColinear (const std::vector<PcbPoint>& wp)
@@ -289,316 +435,127 @@ std::vector<PcbCmd> PcbRouter::roundCorners (const std::vector<PcbPoint>& wp) co
     return cmds;
 }
 
+PcbRoute PcbRouter::route (const PcbNet& net,
+                           const std::vector<PcbRect>& obstacles,
+                           const PcbBoard& board) const
+{
+    std::vector<PcbNet> one { net };
+    auto all = routeAll (one, obstacles, board);
+    if (all.empty())
+        return {};
+    return std::move (all.front());
+}
+
 PcbRoute PcbRouter::route (PcbPoint start, PcbPoint end,
                            const std::vector<PcbRect>& obstacles) const
 {
-    PcbRoute out;
-    const float cell = std::max (8.f, cellSize);
-    const float stub = cell;
-
-    auto finish = [&] (std::vector<PcbPoint> wp)
-    {
-        forceJackStubs (wp, start, end, stub);
-        wp = collapseColinear (wp);
-        wp = dropMicroJogs (wp, 4.f);
-        wp = collapseColinear (wp);
-        forceJackStubs (wp, start, end, stub);
-        if (wp.size() == 2 && std::abs (start.y - end.y) < 0.51f)
-        {
-            wp = { start, { start.x + stub, start.y }, { end.x - stub, end.y }, end };
-        }
-        wp = collapseColinear (wp);
-        if (wp.size() == 2 && std::abs (start.y - end.y) < 0.51f)
-            wp = { start, { start.x + stub, start.y }, { end.x - stub, end.y }, end };
-        out.waypoints = std::move (wp);
-        out.cmds = roundCorners (out.waypoints);
-    };
-
-    auto simple = manhattanStubs (start, end, stub, cell);
-    simple = collapseColinear (simple);
-    if (! pathHitsObstacles (simple, obstacles, start, end))
-    {
-        finish (std::move (simple));
-        return out;
-    }
-
-    const PcbPoint s1 { start.x + stub, start.y };
-    const PcbPoint e1 { end.x - stub, end.y };
-    const int sx = cellOf (s1.x, cell);
-    const int sy = cellOf (s1.y, cell);
-    const int gx = cellOf (e1.x, cell);
-    const int gy = cellOf (e1.y, cell);
-
-    int minX = std::min (sx, gx), maxX = std::max (sx, gx);
-    int minY = std::min (sy, gy), maxY = std::max (sy, gy);
-    for (const auto& r : obstacles)
-    {
-        minX = std::min (minX, cellOf (r.x, cell));
-        minY = std::min (minY, cellOf (r.y, cell));
-        maxX = std::max (maxX, cellOf (r.x + r.w, cell));
-        maxY = std::max (maxY, cellOf (r.y + r.h, cell));
-    }
-    minX -= padCells; minY -= padCells;
-    maxX += padCells; maxY += padCells;
-
-    std::priority_queue<HeapNode, std::vector<HeapNode>, std::greater<HeapNode>> open;
-    std::unordered_map<uint64_t, float> bestG;
-    struct Parent { int x { 0 }, y { 0 }, dir { kNoDir }; bool ok { false }; };
-    std::unordered_map<uint64_t, Parent> came;
-
-    auto pushStart = [&] (int dir, float extra)
-    {
-        const float g = extra;
-        const float h = (float) manhattan (sx, sy, gx, gy);
-        open.push ({ g + h, g, sx, sy, dir });
-        bestG[packState (sx, sy, dir)] = g;
-    };
-    pushStart (kEast, 0.f);
-    pushStart (kNorth, turnPenalty);
-    pushStart (kSouth, turnPenalty);
-    pushStart (kWest, turnPenalty * 2.f);
-
-    bool found = false;
-    int fx = gx, fy = gy, fd = kEast;
-    int expansions = 0;
-
-    while (! open.empty() && expansions < maxExpansions)
-    {
-        const HeapNode cur = open.top();
-        open.pop();
-        const auto ck = packState (cur.x, cur.y, cur.dir);
-        auto itG = bestG.find (ck);
-        if (itG != bestG.end() && cur.g > itG->second + 1.0e-4f)
-            continue;
-        ++expansions;
-
-        if (cur.x == gx && cur.y == gy)
-        {
-            found = true;
-            fx = cur.x; fy = cur.y; fd = cur.dir;
-            break;
-        }
-
-        for (int nd = 0; nd < 4; ++nd)
-        {
-            const int nx = cur.x + kDx[nd];
-            const int ny = cur.y + kDy[nd];
-            if (nx < minX || nx > maxX || ny < minY || ny > maxY)
-                continue;
-            if (blockedAt (nx, ny, cell, obstacles, s1, e1))
-                continue;
-            const float step = 1.f + (nd != cur.dir ? turnPenalty : 0.f);
-            const float ng = cur.g + step;
-            const auto nk = packState (nx, ny, nd);
-            auto prev = bestG.find (nk);
-            if (prev != bestG.end() && ng >= prev->second)
-                continue;
-            bestG[nk] = ng;
-            came[nk] = Parent { cur.x, cur.y, cur.dir, true };
-            open.push ({ ng + (float) manhattan (nx, ny, gx, gy), ng, nx, ny, nd });
-        }
-    }
-
-    std::vector<PcbPoint> wp;
-    wp.push_back (start);
-    wp.push_back (s1);
-    if (found)
-    {
-        std::vector<PcbPoint> cells;
-        int x = fx, y = fy, d = fd;
-        while (true)
-        {
-            cells.push_back ({ cellOrigin (x, cell) + cell * 0.5f,
-                               cellOrigin (y, cell) + cell * 0.5f });
-            const auto k = packState (x, y, d);
-            auto it = came.find (k);
-            if (it == came.end() || ! it->second.ok)
-                break;
-            x = it->second.x;
-            y = it->second.y;
-            d = it->second.dir;
-            if (x == sx && y == sy)
-            {
-                cells.push_back ({ cellOrigin (x, cell) + cell * 0.5f,
-                                   cellOrigin (y, cell) + cell * 0.5f });
-                break;
-            }
-        }
-        std::reverse (cells.begin(), cells.end());
-        for (auto& c : cells)
-        {
-            // Keep interior on the grid; never pin to jack coords (that is the jog).
-            wp.push_back (c);
-        }
-    }
-    wp.push_back (e1);
-    wp.push_back (end);
-    finish (std::move (wp));
-    return out;
-}
-
-void PcbRouter::offsetSharedRuns (std::vector<PcbRoute>& routes) const
-{
-    struct Run
-    {
-        size_t route { 0 };
-        size_t i0 { 0 };
-        bool horiz { true };
-        int track { 0 };
-        float a { 0.f };
-        float b { 0.f };
-        int lane { 0 };
-    };
-
-    const float q = std::max (1.f, cellSize);
-    const float gap = std::max (q, laneGap);
-    std::vector<Run> runs;
-    for (size_t r = 0; r < routes.size(); ++r)
-    {
-        auto& wp = routes[r].waypoints;
-        if (wp.size() < 4)
-            continue;
-        // Never offset jack stubs (first and last segments).
-        for (size_t i = 1; i + 2 < wp.size(); ++i)
-        {
-            const bool horiz = std::abs (wp[i].y - wp[i + 1].y) < 0.75f;
-            const bool vert  = std::abs (wp[i].x - wp[i + 1].x) < 0.75f;
-            if (! horiz && ! vert)
-                continue;
-            Run run;
-            run.route = r;
-            run.i0 = i;
-            run.horiz = horiz;
-            if (horiz)
-            {
-                run.track = (int) std::lround (wp[i].y / q);
-                run.a = std::min (wp[i].x, wp[i + 1].x);
-                run.b = std::max (wp[i].x, wp[i + 1].x);
-            }
-            else
-            {
-                run.track = (int) std::lround (wp[i].x / q);
-                run.a = std::min (wp[i].y, wp[i + 1].y);
-                run.b = std::max (wp[i].y, wp[i + 1].y);
-            }
-            if (run.b - run.a < q)
-                continue;
-            runs.push_back (run);
-        }
-    }
-
-    auto overlaps = [] (const Run& u, const Run& v) -> bool
-    {
-        return u.horiz == v.horiz && u.track == v.track
-            && u.a < v.b - 1.f && v.a < u.b - 1.f;
-    };
-
-    for (size_t i = 0; i < runs.size(); ++i)
-    {
-        std::vector<char> used (24, 0);
-        for (size_t j = 0; j < i; ++j)
-            if (overlaps (runs[i], runs[j]) && runs[j].lane >= 0
-                && runs[j].lane < (int) used.size())
-                used[(size_t) runs[j].lane] = 1;
-        int lane = 0;
-        while (lane < (int) used.size() && used[(size_t) lane])
-            ++lane;
-        runs[i].lane = lane;
-    }
-
-    // 0 stays on the jack axis; 1 = +1 cell, 2 = -1, 3 = +2… Full-cell
-    // spacing — half-gap centering produced 3 px stairs that looked like
-    // the micro-jogs and were then deleted by dropMicroJogs.
-    auto signedLane = [] (int lane) noexcept -> int
-    {
-        if (lane <= 0)
-            return 0;
-        const int n = (lane + 1) / 2;
-        return (lane & 1) ? n : -n;
-    };
-
-    struct Insert
-    {
-        size_t route { 0 };
-        size_t a { 0 };
-        bool horiz { true };
-        float off { 0.f };
-    };
-    std::vector<Insert> inserts;
-    for (const auto& run : runs)
-    {
-        int groupMax = run.lane;
-        for (const auto& other : runs)
-            if (overlaps (run, other))
-                groupMax = std::max (groupMax, other.lane);
-        if (groupMax <= 0)
-            continue;
-        const float off = (float) signedLane (run.lane) * gap;
-        if (std::abs (off) < 0.25f)
-            continue;
-        inserts.push_back ({ run.route, run.i0, run.horiz, off });
-    }
-
-    std::sort (inserts.begin(), inserts.end(),
-               [] (const Insert& u, const Insert& v)
-               {
-                   if (u.route != v.route)
-                       return u.route < v.route;
-                   return u.a > v.a;
-               });
-
-    for (const auto& ins : inserts)
-    {
-        auto& wp = routes[ins.route].waypoints;
-        if (ins.a + 1 >= wp.size())
-            continue;
-        if (ins.horiz)
-        {
-            const PcbPoint p0 { wp[ins.a].x, wp[ins.a].y + ins.off };
-            const PcbPoint p1 { wp[ins.a + 1].x, wp[ins.a + 1].y + ins.off };
-            wp.insert (wp.begin() + (int) ins.a + 1, p1);
-            wp.insert (wp.begin() + (int) ins.a + 1, p0);
-        }
-        else
-        {
-            const PcbPoint p0 { wp[ins.a].x + ins.off, wp[ins.a].y };
-            const PcbPoint p1 { wp[ins.a + 1].x + ins.off, wp[ins.a + 1].y };
-            wp.insert (wp.begin() + (int) ins.a + 1, p1);
-            wp.insert (wp.begin() + (int) ins.a + 1, p0);
-        }
-    }
+    PcbNet net;
+    net.src = { start, PcbFacing::East };
+    net.dst = { end, PcbFacing::West };
+    return route (net, obstacles, inferBoard ({ net }, obstacles, std::max (1.f, cellSize)));
 }
 
 std::vector<PcbRoute> PcbRouter::routeAll (const std::vector<std::pair<PcbPoint, PcbPoint>>& nets,
                                            const std::vector<PcbRect>& obstacles) const
 {
+    std::vector<PcbNet> typed;
+    typed.reserve (nets.size());
+    for (const auto& n : nets)
+        typed.push_back ({ { n.first, PcbFacing::East }, { n.second, PcbFacing::West },
+                           PcbNetClass::Audio });
+    return routeAll (typed, obstacles, inferBoard (typed, obstacles, std::max (1.f, cellSize)));
+}
+
+std::vector<PcbRoute> PcbRouter::routeAll (const std::vector<PcbNet>& nets,
+                                           const std::vector<PcbRect>& obstacles,
+                                           const PcbBoard& boardIn) const
+{
+    const float cell = std::max (1.f, boardIn.cell > 0.f ? boardIn.cell : cellSize);
+    const float radius = (cornerRadius > 0.f) ? cornerRadius : cell * 0.5f;
+
+    struct Track
+    {
+        float y { 0.f };
+        float a { 0.f };
+        float b { 0.f };
+    };
+    std::vector<Track> used;
+
+    auto overlaps = [] (const Track& u, float y, float a, float b) -> bool
+    {
+        return std::abs (u.y - y) < 0.75f && a < u.b - 1.f && b > u.a - 1.f;
+    };
+
     std::vector<PcbRoute> routes;
     routes.reserve (nets.size());
-    for (const auto& n : nets)
+
+    for (const auto& net : nets)
     {
-        auto r = route (n.first, n.second, obstacles);
-        r.cmds.clear();
-        routes.push_back (std::move (r));
-    }
-    offsetSharedRuns (routes);
-    for (auto& r : routes)
-    {
-        if (r.waypoints.size() < 2)
-            continue;
-        const PcbPoint s = r.waypoints.front();
-        const PcbPoint e = r.waypoints.back();
-        // Do not dropMicroJogs here: a one-cell lane riser is intentional.
-        r.waypoints = collapseColinear (r.waypoints);
-        forceJackStubs (r.waypoints, s, e, std::max (8.f, cellSize));
-        r.waypoints = collapseColinear (r.waypoints);
-        // Straight same-Y bus: collapse eats the stubs. Put them back so
-        // plugs stay orthogonal. Offset paths stay size > 2.
-        if (r.waypoints.size() == 2 && std::abs (s.y - e.y) < 0.51f)
+        const PcbPoint s = snapPoint (net.src.pin, cell);
+        const PcbPoint e = snapPoint (net.dst.pin, cell);
+
+        int lane = 0;
+        const float y0 = s.y;
+        const float xa = std::min (s.x, e.x);
+        const float xb = std::max (s.x, e.x);
+        for (;;)
         {
-            const float stub = std::max (8.f, cellSize);
-            r.waypoints = { s, { s.x + stub, s.y }, { e.x - stub, e.y }, e };
+            const float y = y0 + (float) signedLane (lane) * cell;
+            bool taken = false;
+            for (const auto& t : used)
+                if (overlaps (t, y, xa, xb))
+                {
+                    taken = true;
+                    break;
+                }
+            if (! taken)
+                break;
+            ++lane;
+            if (lane > 16)
+                break;
         }
-        r.cmds = roundCorners (r.waypoints);
+        const float shift = (float) signedLane (lane) * cell;
+
+        auto wp = patternRoute (s, e, net.src.facing, net.dst.facing, obstacles, cell, shift);
+        wp = collapseColinear (wp);
+
+        auto keepEsc = [cell] (PcbPoint pin, PcbFacing face) -> PcbPoint
+        {
+            PcbPoint esc = PcbRouter::escapeOf ({ pin, face }, cell);
+            if (esc.x < 0.f && pin.x >= 0.f) esc.x = pin.x;
+            if (esc.y < 0.f && pin.y >= 0.f) esc.y = pin.y;
+            return snapPoint (esc, cell);
+        };
+        const PcbPoint s1 = keepEsc (s, net.src.facing);
+        const PcbPoint e1 = keepEsc (e, net.dst.facing);
+        if (wp.size() >= 2)
+        {
+            if (! samePoint (wp[1], s1, cell) && ! samePoint (s, s1, cell))
+                wp.insert (wp.begin() + 1, s1);
+            if (! samePoint (wp[wp.size() - 2], e1, cell) && ! samePoint (e, e1, cell))
+                wp.insert (wp.end() - 1, e1);
+        }
+        for (auto& p : wp)
+            p = snapPoint (p, cell);
+        if (wp.size() == 2 && std::abs (s.y - e.y) < 0.51f)
+            wp = { s, s1, e1, e };
+
+        for (size_t i = 1; i + 1 < wp.size(); ++i)
+        {
+            if (std::abs (wp[i].y - wp[i + 1].y) > 0.75f)
+                continue;
+            const float a = std::min (wp[i].x, wp[i + 1].x);
+            const float b = std::max (wp[i].x, wp[i + 1].x);
+            if (b - a >= cell)
+                used.push_back ({ wp[i].y, a, b });
+        }
+
+        PcbRoute out;
+        out.waypoints = std::move (wp);
+        PcbRouter tmp;
+        tmp.cornerRadius = radius;
+        out.cmds = tmp.roundCorners (out.waypoints);
+        routes.push_back (std::move (out));
     }
     return routes;
 }

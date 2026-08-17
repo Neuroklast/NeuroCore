@@ -75,6 +75,41 @@ public:
             expect (peak < 8.f, "xover must not explode on an impulse + tone");
         }
 
+        beginTest ("xover split sweep does not zipper");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "xover1: f1 = a * 2000 + 80; f2 = 4000\nout: low = 0.5; mid = 0.35; high = 0.35",
+                err), err);
+            chain.prepare ({ 48000.0, 64, 1 });
+            chain.setParameter (0, 0.1f);
+            juce::AudioBuffer<float> buf (1, 64);
+            float prev = 0.f;
+            float maxJump = 0.f;
+            bool havePrev = false;
+            for (int block = 0; block < 40; ++block)
+            {
+                if (block == 8)
+                    chain.setParameter (0, 0.8f);
+                for (int i = 0; i < 64; ++i)
+                    buf.setSample (0, i, 0.35f * std::sin (6.2831853f * 220.f
+                        * (float) (block * 64 + i) / 48000.f));
+                chain.processBlock (buf);
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float s = buf.getSample (0, i);
+                    expect (std::isfinite (s));
+                    if (havePrev)
+                        maxJump = juce::jmax (maxJump, std::abs (s - prev));
+                    prev = s;
+                    havePrev = true;
+                }
+            }
+            expect (maxJump < 0.28f, "xover coeff moves must not click, jump="
+                    + juce::String (maxJump, 3));
+        }
+
         beginTest ("two ir blocks both parse");
         {
             dsl::DSLParser parser;

@@ -75,7 +75,7 @@ Knobs
 - Right-click a knob for MIDI Learn.
 
 Formula area
-- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. Drag moves a chip without changing the chain order. Double-click opens the node overlay. Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. Cables are orthogonal PCB traces (rounded corners) and can show the waveform after each block. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
+- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. The 16 px cells stay on whole pixels at 125 % / 150 % host scale. IN is top-left, OUT is bottom-right. Drag moves a chip without changing the chain order. Double-click opens the node overlay with every parameter. Click the chevron to expand values and jacks. Bound knobs print their letter and name on the chip - no cables from the knob column. Ctrl+wheel zooms. LFO traces carry small pulses at the LFO rate. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU (0-100), latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
 - When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
 - Each ir1 / ir2 line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
 - Edit, then Save to apply.
@@ -326,7 +326,7 @@ Preset will not load
     Your saved file may be damaged. Save As again. Factory sounds are always available.
 
 High CPU
-    Lower oversampling. Use fewer stages and shorter delays.
+    Lower oversampling. Use fewer stages and shorter delays. Silence after tails sleeps the wet path (OS / formula); a new hit wakes it.
 
 ---
 

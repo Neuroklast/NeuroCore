@@ -262,6 +262,7 @@ public:
 
     bool isLiveMode() const noexcept;
     void setLiveMode (bool enabled);
+    bool isDspIdle() const noexcept { return dspEngine.isIdle(); }
     int getOversamplingLatencySamples() const noexcept;
 
     // juce::AudioProcessorValueTreeState::Listener implementation

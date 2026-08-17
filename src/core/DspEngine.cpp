@@ -140,6 +140,8 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     dcBlocker.reset();
 
     lastLoudness.store (-100.0f, std::memory_order_relaxed);
+    silentSec = 0.0;
+    idleActive.store (false, std::memory_order_relaxed);
 
     postDslLastGood.fill (0.0f);
     diagLastIn.fill (0.0f);
@@ -216,6 +218,8 @@ void DspEngine::onFormulaChanged()
     outputSanitizer.reset();
     postDslLastGood.fill (0.0f);
     gainCompValue.setCurrentAndTargetValue (1.0f);
+    silentSec = 0.0;
+    idleActive.store (false, std::memory_order_relaxed);
     diagLastIn.fill (0.0f);
     diagLastPost.fill (0.0f);
     diagLastOut.fill (0.0f);
@@ -329,6 +333,24 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
 
+    const int hostN = buffer.getNumSamples();
+    const float inPeak = hostN > 0 ? buffer.getMagnitude (0, hostN) : 0.f;
+    const double sr = currentSpec.sampleRate > 1.0 ? currentSpec.sampleRate : Config::kDefaultSampleRate;
+    const double dt = (double) juce::jmax (0, hostN) / sr;
+    const bool keepWarm = inPeak >= Config::kIdlePeakGate
+                       || wetValue.isSmoothing()
+                       || switchRamp.isSmoothing()
+                       || switchRamp.getCurrentValue() < 0.999f;
+    if (keepWarm)
+        silentSec = 0.0;
+    else
+        silentSec += dt;
+    const double flushSec = (double) Config::kIdleHoldSec
+                          + (double) juce::jmax (0.f, signalChain.getMaxTailTime())
+                          + (double) juce::jmax (0, osLatencySamples) / sr;
+    const bool idle = ! bypassActive && silentSec > flushSec;
+    idleActive.store (idle, std::memory_order_relaxed);
+
     uint16_t inputJumpCount = 0;
     float    inputPeak = 0.f;
     if (diagnostics.isEnabled())
@@ -364,8 +386,9 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
 
     const size_t numSamplesEarly = block.getNumSamples();
 
-    // ---- Pure dry path: buffer already holds post-input dry; no DSL/OS ----
-    if (bypassActive)
+    // ---- Pure dry, or smart idle: skip OS/DSL but keep delay alignment.
+    // Idle waits out tails + OS flush so the next transient is not smeared.
+    if (bypassActive || idle)
     {
         // Advance knob smoothers at host rate so automation stays continuous
         for (size_t i = 0; i < numSamplesEarly; ++i)

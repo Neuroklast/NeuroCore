@@ -170,7 +170,8 @@ public:
 
     int preferredHeight() const noexcept
     {
-        return 14 + 32 + juce::jmin (8, (int) rows.size()) * 44 + 16 + 8 + 28 + 12 + 40 + 14;
+        const int rowsH = juce::jmin (520, juce::jmax (44, (int) rows.size() * 44));
+        return 14 + 32 + rowsH + 16 + 8 + 28 + 12 + 40 + 14;
     }
 
 private:

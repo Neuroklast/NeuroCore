@@ -21,6 +21,14 @@ struct GraphNode
     float y { std::numeric_limits<float>::quiet_NaN() };
 };
 
+/** Hidden rail for chips dropped on empty board space (no send, not mixed to OUT). */
+inline constexpr const char* kParkRail = "__park";
+
+inline bool isParked (const GraphNode& n) noexcept
+{
+    return n.busName == kParkRail;
+}
+
 /** One visible port on a node. id is stable for cables (in, out, main, dirt, knob:a, sc, mod). */
 struct GraphJack
 {
@@ -63,6 +71,12 @@ void moveNode (GraphDocument& doc, int from, int to);
 /** Place a processing node onto main or a named bus (reorders for a valid emit). */
 void assignNodeToBus (GraphDocument& doc, int nodeIndex, const juce::String& bus);
 
+/** Move a processing chip onto the hidden park rail (empty-space add / unplug from OUT). */
+void parkNode (GraphDocument& doc, int nodeIndex);
+
+/** Drop `bus __park:` when it has no children. */
+void dropEmptyParkBus (GraphDocument& doc);
+
 /** Serial audio cables implied by order + send + out. */
 std::vector<GraphEdge> audioEdges (const GraphDocument& doc);
 
@@ -84,13 +98,16 @@ struct TidyHint
 };
 
 inline constexpr int kTidyGrid = 16;
-inline constexpr int kTidyCardW = 13 * kTidyGrid; // 208 — same as GraphCanvas kCardWidth
-inline constexpr int kTidyCardH = 2 * kTidyGrid;  // 32  — title + one jack row
-inline constexpr int kTidyIoW = 5 * kTidyGrid;    // 80  — IN / OUT
+inline constexpr int kTidyTitleRows = 2;
+inline constexpr int kTidyBottomRows = 1;
+inline constexpr int kTidyCardW = 11 * kTidyGrid; // 176 — same as GraphCanvas kCardWidth
+inline constexpr int kTidyCardH = (kTidyTitleRows + 1 + kTidyBottomRows) * kTidyGrid; // 64
+inline constexpr int kTidyIoW = 6 * kTidyGrid;    // 96  — IN / OUT
 inline constexpr int kTidyColGap = 3 * kTidyGrid; // 48
-inline constexpr int kTidyRowGap = kTidyGrid;     // 16 — next jack row
+inline constexpr int kTidyRowGap = 2 * kTidyGrid; // 32 — empty grid row for wrap cables
 inline constexpr int kTidyMinGap = kTidyGrid;
-inline constexpr int kTidyMargin = kTidyGrid;
+inline constexpr int kTidyHaloCells = 1;
+inline constexpr int kTidyMargin = kTidyHaloCells * kTidyGrid;
 
 int tidyNodeWidth (const GraphNode& n) noexcept;
 int tidyNodeHeight (const GraphNode& n, const GraphDocument* doc);
@@ -147,7 +164,7 @@ juce::String rewriteParamRange (const juce::String& script, int knobIndex,
 /** Fill names[0..5] from `param a = …` lines. Missing letters stay empty. */
 void collectParamDisplayNames (const juce::String& script, juce::String* names, int numNames);
 
-/** Ports this block actually has (audio + mix + sc + bound knobs + referenced mods). */
+/** Ports this block actually has (audio + mix + sc + referenced mods). Knob binds are labels, not jacks. */
 std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc = nullptr);
 
 /** Virtual IN: one audio output. */

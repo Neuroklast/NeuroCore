@@ -34,6 +34,7 @@
 #include "../src/ui/custom/ParameterComponent.h"
 #include "../src/dsl/GraphModel.h"
 #include "../src/ui/PluginEditor.h"
+#include "../src/ui/StagesContentComponent.h"
 
 class EditorUxTest : public juce::UnitTest
 {
@@ -158,7 +159,39 @@ public:
             expectEquals (juce::String (Config::kBrandByline), juce::String ("by Neuroklast"));
             expectEquals (juce::String (Config::kAppDataFolder), juce::String ("NeuroKore"));
             expectEquals (juce::String (PLUGIN_ID), juce::String ("nrko01"));
-            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.4.4-alpha"));
+            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.4.7-alpha"));
+            expectEquals (Config::cpuDisplayPercent (0.f), 0);
+            expectEquals (Config::cpuDisplayPercent (0.42f), 42);
+            expectEquals (Config::cpuDisplayPercent (1.73f), 100);
+            expectEquals (Config::cpuDisplayPercent (12.f), 100);
+        }
+
+        beginTest ("fold hit matches the painted chevron");
+        {
+            const auto chev = GraphCanvasComponent::foldChevronRect (176, 64, false, 1.f);
+            const auto hit = GraphCanvasComponent::foldHitRect (176, 64, false, 1.f);
+            expect (hit.contains (chev.getCentre()));
+            expect (GraphCanvasComponent::chipHeight (1, 3, 0, 0, false)
+                    > GraphCanvasComponent::chipHeight (1, 1, 0, 0, false));
+        }
+
+        beginTest ("host-scale fit snaps so the 16 px board grid is integer on screen");
+        {
+            expectEquals (Config::kUiBoardGrid, 16);
+            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.f), 1.f, 1.0e-6f);
+            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.25f), 1.25f, 1.0e-6f);
+            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.5f), 1.5f, 1.0e-6f);
+            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.173f), 19.f / 16.f, 1.0e-6f);
+            expectWithinAbsoluteError (NeuroKoreAudioProcessorEditor::snapFitToGrid (1.173f),
+                                       Config::snapUiFitToGrid (1.173f), 1.0e-6f);
+            const float samples[] = { 0.5f, 0.8f, 1.f, 1.07f, 1.173f, 1.25f, 1.333f, 1.5f };
+            for (float raw : samples)
+            {
+                const float fit = Config::snapUiFitToGrid (raw);
+                const float cells = fit * (float) Config::kUiBoardGrid;
+                expect (std::abs (cells - std::round (cells)) < 1.0e-4f,
+                        "fit=" + juce::String (fit, 5) + " cells=" + juce::String (cells, 5));
+            }
         }
 
         beginTest ("preset ratings clamp to 1-5 and clear at 0");
@@ -809,9 +842,9 @@ public:
         {
             expect (GraphCanvasComponent::kCardHeight <= 96);
             expect (GraphCanvasComponent::kCardWidth <= 220);
-            expect (GraphCanvasComponent::kIoHeight <= 44);
+            expect (GraphCanvasComponent::kIoHeight <= 80);
             expect (GraphCanvasComponent::kIoWidth <= 96);
-            expect (GraphCanvasComponent::kCardHeight >= 32);
+            expect (GraphCanvasComponent::kCardHeight >= 48);
             expectEquals (GraphCanvasComponent::formatLiveKnob (3.2f), juce::String ("3.20"));
             expectEquals (GraphCanvasComponent::formatLiveKnob (800.f), juce::String ("800"));
         }
@@ -1003,9 +1036,11 @@ public:
             const float s1 = GraphCanvasComponent::lfoChaseStep (1.f, 30.f);
             const float s8 = GraphCanvasComponent::lfoChaseStep (8.f, 30.f);
             expect (s1 > 0.f);
-            expect (std::abs (s1 - s8) < 1.0e-6f);
-            expect (std::abs (s1 - GraphCanvasComponent::kLfoLedPxPerSec / 30.f) < 1.0e-5f);
+            expect (s8 > s1);
             expectEquals (GraphCanvasComponent::lfoChaseStep (4.f, 0.f), 0.f);
+            expectEquals (GraphCanvasComponent::lfoPulseAlpha (0.f), 0.f);
+            expect (GraphCanvasComponent::lfoPulseAlpha (1.f) > 0.1f);
+            expect (GraphCanvasComponent::lfoPulseAlpha (1.f) < 0.45f);
 
             expect (std::abs (GraphCanvasComponent::lfoChaseAlong (0.f, 100.f)) < 1.0e-5f);
             expect (GraphCanvasComponent::lfoChaseAlong (25.f, 100.f) > 0.2f);
@@ -1041,25 +1076,27 @@ public:
             expectEquals (GraphCanvasComponent::jackLocalY (1) - GraphCanvasComponent::jackLocalY (0),
                           GraphCanvasComponent::kGrid);
             expectEquals (GraphCanvasComponent::chipHeight (1, 1, 0, 0, false),
-                          (GraphCanvasComponent::kTitleRows + 1) * GraphCanvasComponent::kGrid);
+                          (GraphCanvasComponent::kTitleRows + 1 + GraphCanvasComponent::kBottomRows)
+                              * GraphCanvasComponent::kGrid);
             expectEquals (GraphCanvasComponent::chipHeight (5, 2, 0, 0, false),
-                          (GraphCanvasComponent::kTitleRows + 5) * GraphCanvasComponent::kGrid);
+                          (GraphCanvasComponent::kTitleRows + 5 + GraphCanvasComponent::kBottomRows)
+                              * GraphCanvasComponent::kGrid);
             expectEquals (GraphCanvasComponent::chipHeight (3, 2, 6, 1, true)
                               % GraphCanvasComponent::kGrid, 0);
-            const auto fold = GraphCanvasComponent::foldChevronRect (208, 48, false, 1.f);
-            expect (fold.getBottom() <= GraphCanvasComponent::kGrid + 2,
+            const auto fold = GraphCanvasComponent::foldChevronRect (208, 64, false, 1.f);
+            expect (fold.getBottom() <= GraphCanvasComponent::kTitleRows * GraphCanvasComponent::kGrid + 2,
                     "chevron must stay in the title row");
             const auto knobPath = GraphCanvasComponent::makeKnobCable ({ 0.f, 20.f }, { 200.f, 80.f });
             juce::PathFlatteningIterator kit (knobPath);
-            bool curved = false;
+            bool diagonal = false;
             while (kit.next())
             {
                 const float dx = std::abs (kit.x2 - kit.x1);
                 const float dy = std::abs (kit.y2 - kit.y1);
                 if (dx > 1.f && dy > 1.f)
-                    curved = true;
+                    diagonal = true;
             }
-            expect (curved, "knob cable must be a direct curve, not square corners");
+            expect (! diagonal, "knob cable must be Manhattan, not a cubic");
             const int y0a = GraphCanvasComponent::jackLocalY (0);
             const int y0b = GraphCanvasComponent::jackLocalY (0);
             expectEquals (y0a, y0b);
@@ -1231,6 +1268,50 @@ public:
             expect (! proc.isLiveMode());
             proc.releaseResources();
             s.setLiveMode (prevLive);
+        }
+
+        beginTest ("footer slots stay 13 pt and do not squash");
+        {
+            expect (StatusBarStrip::kFontPt >= 13.f);
+            expect (Config::kFooterRowHeight >= 26);
+            expect (BrandLockup::kMinTitlePt >= 14.f);
+            expect (BrandLockup::kMinVersionPt >= 12.f);
+            expect (SettingsUi::motionHint (CyberMotion::Reduced).containsIgnoreCase ("SNAP"));
+        }
+
+        beginTest ("function plots distinguish OTT, widen, octaver, vocoder");
+        {
+            using K = FunctionPlotComponent::PlotKind;
+            expect (FunctionPlotComponent::kindForName ("ott") == K::Ott);
+            expect (FunctionPlotComponent::kindForName ("widen") == K::Widen);
+            expect (FunctionPlotComponent::kindForName ("octaver") == K::Octaver);
+            expect (FunctionPlotComponent::kindForName ("vocoder") == K::Vocoder);
+            expect (FunctionPlotComponent::kindForName ("softclip") == K::Transfer);
+            expect (FunctionPlotComponent::kindForName ("ott")
+                    != FunctionPlotComponent::kindForName ("widen"));
+            expect (FunctionPlotComponent::kindForName ("octaver")
+                    != FunctionPlotComponent::kindForName ("vocoder"));
+            FunctionPlotComponent plot;
+            plot.setFunctionDemo ("ott", "ott1: depth = 0.4");
+            expect (plot.kind() == K::Ott);
+            expect (plot.caption().containsIgnoreCase ("OTT"));
+            plot.setFunctionDemo ("widen", "widen1: width = 0.45");
+            expect (plot.kind() == K::Widen);
+            expect (plot.caption().containsIgnoreCase ("Widen"));
+        }
+
+        beginTest ("stages window reorders two filters with Up");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("filter1: type = lowpass; cutoff = 800\n"
+                                     "filter2: type = highpass; cutoff = 120\n", err), err);
+            StagesContentComponent stages (proc);
+            expect (stages.rowCount() >= 2);
+            expectEquals (stages.rowName (0), juce::String ("filter1"));
+            expect (stages.moveSelected (1));
+            expectEquals (stages.rowName (0), juce::String ("filter2"));
+            expectEquals (stages.rowName (1), juce::String ("filter1"));
         }
     }
 };

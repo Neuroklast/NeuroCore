@@ -12,8 +12,9 @@ class CpuProtect
 public:
     void reset() noexcept
     {
-        consecutiveSoft = 0;
-        consecutiveHard = 0;
+        overSoftSec = 0.0;
+        overHardSec = 0.0;
+        probeSec = 0.0;
         warmupRemainSec = (double) Config::kCpuWarmupSeconds;
         cooldownSec = 0.0;
         emaLoad = 0.f;
@@ -24,8 +25,9 @@ public:
 
     void clear() noexcept
     {
-        consecutiveSoft = 0;
-        consecutiveHard = 0;
+        overSoftSec = 0.0;
+        overHardSec = 0.0;
+        probeSec = 0.0;
         warmupRemainSec = (double) Config::kCpuWarmupSeconds;
         cooldownSec = 0.0;
         emaLoad = 0.f;
@@ -33,20 +35,22 @@ public:
         smoothedLoad.store (0.f, std::memory_order_relaxed);
     }
 
-    /** While tripped: count down dry time. True = run one wet probe block. */
+    /** While tripped: count down dry time. True = run wet (probe window). */
     bool shouldProbeWet (int numSamples, double sampleRate) noexcept
     {
         if (! tripped.load (std::memory_order_acquire))
             return false;
         const double sr = (sampleRate > 1.0) ? sampleRate : Config::kDefaultSampleRate;
         const double dt = (double) juce::jmax (1, numSamples) / sr;
-        cooldownSec -= dt;
-        // Dry blocks use ~0 CPU — decay EMA so one cheap probe can recover.
-        emaLoad += Config::kCpuEmaAlpha * (0.f - emaLoad);
-        smoothedLoad.store (emaLoad, std::memory_order_relaxed);
         if (cooldownSec > 0.0)
+        {
+            cooldownSec -= dt;
+            if (cooldownSec < 0.0)
+                cooldownSec = 0.0;
+            // Keep last wet EMA — decaying it to 0 made a 1.8× probe look
+            // recovered (0.27) and started the 2 s SAFE blink.
             return false;
-        cooldownSec = 0.0;
+        }
         return true;
     }
 
@@ -75,10 +79,14 @@ public:
 
         if (tripped.load (std::memory_order_relaxed))
         {
+            probeSec += budgetSec;
+            if (probeSec < (double) Config::kCpuProbeSec)
+                return;
+            probeSec = 0.0;
             if (emaLoad < Config::kCpuRecoverRatio)
             {
-                consecutiveSoft = 0;
-                consecutiveHard = 0;
+                overSoftSec = 0.0;
+                overHardSec = 0.0;
                 cooldownSec = 0.0;
                 tripped.store (false, std::memory_order_release);
             }
@@ -91,7 +99,8 @@ public:
 
         if (emaLoad >= Config::kCpuTripHardRatio)
         {
-            if (++consecutiveHard >= Config::kCpuHardTripHits)
+            overHardSec += budgetSec;
+            if (overHardSec >= (double) Config::kCpuHardHoldSec)
             {
                 trip();
                 return;
@@ -99,17 +108,18 @@ public:
         }
         else
         {
-            consecutiveHard = 0;
+            overHardSec = 0.0;
         }
 
         if (emaLoad >= Config::kCpuTripRatio)
         {
-            if (++consecutiveSoft >= Config::kCpuTripHits)
+            overSoftSec += budgetSec;
+            if (overSoftSec >= (double) Config::kCpuTripHoldSec)
                 trip();
         }
         else
         {
-            consecutiveSoft = 0;
+            overSoftSec = 0.0;
         }
     }
 
@@ -130,17 +140,26 @@ public:
         return smoothedLoad.load (std::memory_order_relaxed);
     }
 
+    /** Dry / SAFE hold: meter must not keep the last wet overrun (173 % forever). */
+    void noteHoldDisplay() noexcept
+    {
+        lastLoad.store (0.f, std::memory_order_relaxed);
+        smoothedLoad.store (0.f, std::memory_order_relaxed);
+    }
+
 private:
     void trip() noexcept
     {
-        consecutiveSoft = 0;
-        consecutiveHard = 0;
+        overSoftSec = 0.0;
+        overHardSec = 0.0;
+        probeSec = 0.0;
         cooldownSec = (double) Config::kCpuRetrySec;
         tripped.store (true, std::memory_order_release);
     }
 
-    int consecutiveSoft { 0 };
-    int consecutiveHard { 0 };
+    double overSoftSec { 0.0 };
+    double overHardSec { 0.0 };
+    double probeSec { 0.0 };
     double warmupRemainSec { (double) Config::kCpuWarmupSeconds };
     double cooldownSec { 0.0 };
     float emaLoad { 0.f };

@@ -13,8 +13,11 @@ StagesContentComponent::StagesContentComponent (NeuroKoreAudioProcessor& process
     addAndMakeVisible (nameLabel);
     addAndMakeVisible (detailsLabel);
     addAndMakeVisible (errorLabel);
+    addAndMakeVisible (hintLabel);
     addAndMakeVisible (closeButton);
     addAndMakeVisible (refreshButton);
+    addAndMakeVisible (upButton);
+    addAndMakeVisible (downButton);
 
     listBox.setRowHeight (30);
     listBox.setColour (juce::ListBox::backgroundColourId, NeuroKoreLookAndFeel::surface());
@@ -30,30 +33,36 @@ StagesContentComponent::StagesContentComponent (NeuroKoreAudioProcessor& process
     refreshButton.setButtonText (TRANS ("StagesRefresh") == "StagesRefresh" ? "Refresh" : TRANS ("StagesRefresh"));
     refreshButton.onClick = [this] { refreshFromScript(); };
 
+    upButton.onClick = [this] { moveSelected (-1); };
+    downButton.onClick = [this] { moveSelected (1); };
+    upButton.setTooltip ("Move this block earlier in the path");
+    downButton.setTooltip ("Move this block later in the path");
+
     nameLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::accent());
     nameLabel.setFont (juce::Font (15.f, juce::Font::bold));
-    paramsLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::mutedText());
-    paramsLabel.setFont (juce::Font (12.5f));
+    paramsLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
+    paramsLabel.setFont (juce::Font (13.f));
     paramsLabel.setJustificationType (juce::Justification::topLeft);
     detailsLabel.setColour (juce::Label::textColourId, juce::Colour (0xffe8ecf4));
     detailsLabel.setJustificationType (juce::Justification::topLeft);
     detailsLabel.setFont (juce::Font (juce::Font::getDefaultMonospacedFontName(), 13.f, juce::Font::plain));
     errorLabel.setColour (juce::Label::textColourId, juce::Colour (0xffff6b6b));
+    hintLabel.setColour (juce::Label::textColourId, NeuroKoreLookAndFeel::ink());
+    hintLabel.setFont (NeuroKoreLookAndFeel::monoFont (13.f));
+    hintLabel.setText ("Up / Down or drag to reorder the path. Arrow keys move the selection.",
+                       juce::dontSendNotification);
 
     refreshFromScript();
 }
 
 void StagesContentComponent::refreshFromScript()
 {
-    blocks.clear();
-    params.clear();
+    rows.clear();
     currentIndex = -1;
+    document = {};
 
-    dsl::DSLParser parser;
-    std::unordered_map<juce::String, juce::String> aliases;
     juce::String error;
-
-    if (! parser.parse (audioProcessor.getScript(), blocks, aliases, params, error))
+    if (! dsl::parse (audioProcessor.getScript(), document, error))
     {
         errorLabel.setText (TRANS ("StagesParseError") + ": " + error, juce::dontSendNotification);
         paramsLabel.setText ({}, juce::dontSendNotification);
@@ -65,14 +74,14 @@ void StagesContentComponent::refreshFromScript()
 
     errorLabel.setText ({}, juce::dontSendNotification);
 
-    if (params.empty())
+    if (document.params.empty())
     {
         paramsLabel.setText (TRANS ("StagesNoParams"), juce::dontSendNotification);
     }
     else
     {
         juce::StringArray lines;
-        for (const auto& p : params)
+        for (const auto& p : document.params)
             if (p.isNote && p.noteLabels.size() >= 2)
                 lines.add ("param " + p.alias + " = " + p.name
                            + "  [" + p.noteLabels.front() + " ... " + p.noteLabels.back() + "]");
@@ -83,9 +92,29 @@ void StagesContentComponent::refreshFromScript()
                              juce::dontSendNotification);
     }
 
+    for (int i = 0; i < (int) document.nodes.size(); ++i)
+    {
+        const auto& n = document.nodes[(size_t) i];
+        if (n.type == "bus" || n.type == "out" || n.busName == dsl::kParkRail)
+            continue;
+        Row r;
+        r.nodeIndex = i;
+        r.name = n.name;
+        r.type = n.type;
+        r.bus = n.busName;
+        juce::String summary = n.type;
+        if (! n.args.empty())
+        {
+            const auto it = n.args.begin();
+            summary << "  " << it->first << " = " << it->second;
+        }
+        r.summary = summary;
+        rows.push_back (std::move (r));
+    }
+
     listBox.updateContent();
 
-    if (! blocks.empty())
+    if (! rows.empty())
     {
         listBox.selectRow (0);
         selectedRowsChanged (0);
@@ -99,22 +128,38 @@ void StagesContentComponent::refreshFromScript()
 
 void StagesContentComponent::updateDetails (int index)
 {
-    if (! juce::isPositiveAndBelow (index, (int) blocks.size()))
+    if (! juce::isPositiveAndBelow (index, (int) rows.size()))
         return;
 
-    const auto& block = blocks[(size_t) index];
-    nameLabel.setText (block.name + "  |  " + block.type, juce::dontSendNotification);
-    detailsLabel.setText (dsl::formatBlockDetails (block), juce::dontSendNotification);
+    const auto& row = rows[(size_t) index];
+    nameLabel.setText (row.name + "  |  " + row.type, juce::dontSendNotification);
+    juce::String body = row.summary;
+    if (row.bus.isNotEmpty() && row.bus != "main")
+        body = "[" + row.bus + "]\n" + body;
+    if (juce::isPositiveAndBelow (row.nodeIndex, (int) document.nodes.size()))
+    {
+        body << "\n";
+        for (const auto& [k, v] : document.nodes[(size_t) row.nodeIndex].args)
+            body << k << " = " << v << "\n";
+    }
+    detailsLabel.setText (body, juce::dontSendNotification);
 }
 
 int StagesContentComponent::getNumRows()
 {
-    return (int) blocks.size();
+    return (int) rows.size();
+}
+
+juce::String StagesContentComponent::rowName (int row) const
+{
+    if (! juce::isPositiveAndBelow (row, (int) rows.size()))
+        return {};
+    return rows[(size_t) row].name;
 }
 
 void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected)
 {
-    if (! juce::isPositiveAndBelow (row, (int) blocks.size()))
+    if (! juce::isPositiveAndBelow (row, (int) rows.size()))
         return;
 
     if (selected)
@@ -122,36 +167,29 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
     else if (row % 2)
         g.fillAll (NeuroKoreLookAndFeel::surfaceHigh().withAlpha (0.45f));
 
-    const auto& block = blocks[(size_t) row];
-    auto summary = dsl::formatBlockSummary (block);
-    if (block.busName.isNotEmpty()
-        && block.type != "bus" && block.type != "out"
-        && ! block.busName.equalsIgnoreCase ("main"))
-        summary = "[" + block.busName + "] " + summary;
-
-    // Type badge colour
-    juce::Colour badge = NeuroKoreLookAndFeel::mutedText();
-    if (block.type.startsWith ("stage"))
+    const auto& item = rows[(size_t) row];
+    juce::Colour badge = NeuroKoreLookAndFeel::ink();
+    if (item.type.startsWith ("stage"))
         badge = NeuroKoreLookAndFeel::accent();
-    else if (block.type.startsWith ("filter") || block.type.startsWith ("eq"))
+    else if (item.type.startsWith ("filter") || item.type.startsWith ("eq"))
         badge = juce::Colour (0xff5dade2);
-    else if (block.type.startsWith ("octaver") || block.type == "octave")
+    else if (item.type.startsWith ("octaver") || item.type == "octave")
         badge = juce::Colour (0xffff8a65);
-    else if (block.type.startsWith ("vocoder"))
+    else if (item.type.startsWith ("vocoder"))
         badge = juce::Colour (0xff4dd0e1);
-    else if (block.type.startsWith ("comp"))
+    else if (item.type.startsWith ("comp"))
         badge = juce::Colour (0xff58d68d);
-    else if (block.type.startsWith ("osc"))
+    else if (item.type.startsWith ("osc"))
         badge = juce::Colour (0xfff5b041);
-    else if (block.type.startsWith ("env"))
+    else if (item.type.startsWith ("env"))
         badge = juce::Colour (0xffaf7ac5);
-    else if (block.type.startsWith ("delay"))
+    else if (item.type.startsWith ("delay"))
         badge = juce::Colour (0xff26c6da);
-    else if (block.type.startsWith ("reverb") || block.type.startsWith ("verb"))
+    else if (item.type.startsWith ("reverb") || item.type.startsWith ("verb"))
         badge = juce::Colour (0xff7e57c2);
-    else if (block.type == "ms" || block.type.startsWith ("mid"))
+    else if (item.type == "ms" || item.type.startsWith ("mid"))
         badge = juce::Colour (0xffec407a);
-    else if (block.type == "bus" || block.type == "send" || block.type == "out")
+    else if (item.type == "send")
         badge = juce::Colour (0xff90a4ae);
 
     g.setColour (badge.withAlpha (0.85f));
@@ -159,26 +197,49 @@ void StagesContentComponent::paintListBoxItem (int row, juce::Graphics& g, int w
 
     g.setColour (juce::Colour (0xffe8ecf4));
     g.setFont (13.f);
-    const auto text = juce::String (row + 1) + ".  " + block.name
-                    + (summary.isNotEmpty() ? "  -  " + summary : juce::String());
+    auto text = juce::String (row + 1) + ".  " + item.name
+              + (item.summary.isNotEmpty() ? "  -  " + item.summary : juce::String());
     g.drawText (text, 16, 0, width - 22, height, juce::Justification::centredLeft, true);
 }
 
 void StagesContentComponent::selectedRowsChanged (int row)
 {
     currentIndex = row;
-    if (juce::isPositiveAndBelow (row, (int) blocks.size()))
+    if (juce::isPositiveAndBelow (row, (int) rows.size()))
     {
         updateDetails (row);
-        const auto t = blocks[(size_t) row].type.toLowerCase();
+        const auto t = rows[(size_t) row].type.toLowerCase();
         if ((t == "ir" || t == "convolve") && onOpenIr)
-            onOpenIr (blocks[(size_t) row].name);
+            onOpenIr (rows[(size_t) row].name);
     }
+}
+
+juce::var StagesContentComponent::getDragSourceDescription (const juce::SparseSet<int>& selected)
+{
+    if (selected.size() <= 0)
+        return {};
+    return selected[0];
+}
+
+bool StagesContentComponent::isInterestedInDragSource (const SourceDetails& d)
+{
+    return d.description.isInt();
+}
+
+void StagesContentComponent::itemDropped (const SourceDetails& d)
+{
+    if (! d.description.isInt())
+        return;
+    const int from = (int) d.description;
+    const auto listLocal = listBox.getLocalPoint (this, d.localPosition);
+    int to = listBox.getRowContainingPosition (listLocal.x, listLocal.y);
+    if (to < 0)
+        to = (int) rows.size() - 1;
+    applyMove (from, to);
 }
 
 void StagesContentComponent::paint (juce::Graphics&)
 {
-    // Transparent — ModalOverlay draws the card
 }
 
 void StagesContentComponent::resized()
@@ -189,6 +250,8 @@ void StagesContentComponent::resized()
     area.removeFromTop (4);
     paramsLabel.setBounds (area.removeFromTop (56));
     area.removeFromTop (8);
+    hintLabel.setBounds (area.removeFromTop (20));
+    area.removeFromTop (4);
 
     auto left = area.removeFromLeft (juce::jmax (200, area.getWidth() * 42 / 100));
     listBox.setBounds (left);
@@ -197,9 +260,50 @@ void StagesContentComponent::resized()
     nameLabel.setBounds (area.removeFromTop (26));
     area.removeFromTop (6);
     auto buttons = area.removeFromBottom (36);
+    upButton.setBounds (buttons.removeFromLeft (72).reduced (2));
+    downButton.setBounds (buttons.removeFromLeft (80).reduced (2));
     refreshButton.setBounds (buttons.removeFromLeft (100).reduced (2));
     closeButton.setBounds (buttons.removeFromLeft (100).reduced (2));
     detailsLabel.setBounds (area);
+}
+
+bool StagesContentComponent::applyMove (int fromRow, int toRow)
+{
+    if (! juce::isPositiveAndBelow (fromRow, (int) rows.size())
+        || ! juce::isPositiveAndBelow (toRow, (int) rows.size())
+        || fromRow == toRow)
+        return false;
+
+    const int fromNode = rows[(size_t) fromRow].nodeIndex;
+    const int toNode = rows[(size_t) toRow].nodeIndex;
+    const auto keep = rows[(size_t) fromRow].name;
+    dsl::moveNode (document, fromNode, toNode);
+
+    juce::String err;
+    if (! audioProcessor.setFormula (dsl::emit (document), err, false))
+    {
+        errorLabel.setText (err, juce::dontSendNotification);
+        refreshFromScript();
+        return false;
+    }
+
+    refreshFromScript();
+    for (int i = 0; i < (int) rows.size(); ++i)
+        if (rows[(size_t) i].name == keep)
+        {
+            listBox.selectRow (i);
+            selectedRowsChanged (i);
+            break;
+        }
+    return true;
+}
+
+bool StagesContentComponent::moveSelected (int delta)
+{
+    if (delta == 0 || ! juce::isPositiveAndBelow (currentIndex, (int) rows.size()))
+        return false;
+    const int dest = juce::jlimit (0, (int) rows.size() - 1, currentIndex + delta);
+    return applyMove (currentIndex, dest);
 }
 
 bool StagesContentComponent::keyPressed (const juce::KeyPress& key)
@@ -210,5 +314,13 @@ bool StagesContentComponent::keyPressed (const juce::KeyPress& key)
             onClose();
         return true;
     }
+    if (key == juce::KeyPress::upKey && key.getModifiers().isCommandDown())
+        return moveSelected (-1);
+    if (key == juce::KeyPress::downKey && key.getModifiers().isCommandDown())
+        return moveSelected (1);
+    if (key == juce::KeyPress::upKey)
+        return moveSelected (-1);
+    if (key == juce::KeyPress::downKey)
+        return moveSelected (1);
     return false;
 }

@@ -51,8 +51,8 @@ void SignalChain::Xover::prepare (const juce::dsp::ProcessSpec& spec)
         c.lp2a.prepare (one); c.lp2b.prepare (one);
         c.hp2a.prepare (one); c.hp2b.prepare (one);
     }
-    f1Sm.reset (sampleRate, Config::kSmoothingTime);
-    f2Sm.reset (sampleRate, Config::kSmoothingTime);
+    f1Sm.reset (sampleRate, Config::kXoverSmoothingTime);
+    f2Sm.reset (sampleRate, Config::kXoverSmoothingTime);
     const float a = f1Hz.evaluate (0.f);
     const float b = f2Hz.evaluate (0.f);
     f1Sm.setCurrentAndTargetValue (std::isfinite (a) && a > 0.f ? a : 120.f);
@@ -95,7 +95,9 @@ void SignalChain::Xover::processBlock (juce::AudioBuffer<float>& buffer)
         f1Sm.skip (nS - 1);
         f2Sm.skip (nS - 1);
     }
-    if (std::abs (f1 - lastF1) > 4.f || std::abs (f2 - lastF2) > 4.f)
+    // Every block, from the smoothed value — a 4 Hz snap was the zipper.
+    if (lastF1 < 0.f || lastF2 < 0.f
+        || std::abs (f1 - lastF1) > 1.0e-4f || std::abs (f2 - lastF2) > 1.0e-4f)
         applyCoeffs (f1, f2);
 
     const int useCh = juce::jmin (nCh, 2);

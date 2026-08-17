@@ -199,7 +199,7 @@ private:
         bool useLowHigh    { false };
         /** Cutoff/res depend on osc/env — update coeffs while streaming audio. */
         bool modulated { false };
-        /** Osc (not env) on cutoff — must rebuild every sample. Env can stride. */
+        /** Osc (not env) on cutoff. Still control-rate: LFO Hz << audio. */
         bool modulatedByOsc { false };
         juce::dsp::StateVariableTPTFilterType type{ juce::dsp::StateVariableTPTFilterType::lowpass };
         Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
@@ -217,8 +217,9 @@ private:
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
 
-        /** Evaluate cutoff/res once, advance smoothers once (call once per sample). */
-        void advanceCoeffsOnce() noexcept;
+        /** Evaluate cutoff/res once, advance smoothers by `samples` (control-rate). */
+        void advanceCoeffsOnce() noexcept { advanceCoeffsFor (1); }
+        void advanceCoeffsFor (int samples) noexcept;
         /** Process one sample on channel — does NOT advance smoothers. */
         float processSampleOnly (int ch, float x) noexcept;
     };

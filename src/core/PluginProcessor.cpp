@@ -412,6 +412,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                       && ! cpuProtect.shouldProbeWet (nSamp, sr);
     if (cpuHold)
     {
+        cpuProtect.noteHoldDisplay();
         replayContinuity (main);
         fadeInRemain = juce::jmax (fadeInRemain, nSamp);
         waveformCapture.pushInput (main);

@@ -24,7 +24,7 @@ inline juce::String motionHint (CyberMotion m)
 {
     switch (m)
     {
-        case CyberMotion::Reduced: return "Overlays snap open. No boot, no glitch.";
+        case CyberMotion::Reduced: return "SNAP — overlays open instantly. No boot. No glitch.";
         case CyberMotion::Off:     return "Still chrome. No motion at all.";
         case CyberMotion::Full:
         default:                   return "Boot, glitch, CRT glass, overlay cinema.";
@@ -46,13 +46,13 @@ public:
         };
 
         animTitle.setText ("ANIMATION", juce::dontSendNotification);
-        styleLabel (animTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (animTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (animTitle);
 
         animHint.setText (SettingsUi::motionHint (UiSettings::get().motion()),
                           juce::dontSendNotification);
-        styleLabel (animHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
-        animHint.setMinimumHorizontalScale (0.7f);
+        styleLabel (animHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        animHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (animHint);
 
         const CyberMotion choices[] = { CyberMotion::Full, CyberMotion::Reduced, CyberMotion::Off };
@@ -73,14 +73,14 @@ public:
         }
 
         procTitle.setText ("PROCESSING", juce::dontSendNotification);
-        styleLabel (procTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (procTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (procTitle);
         procHint.setText (UiSettings::get().liveMode()
                               ? "Live: min-phase OS, near-zero latency."
                               : "Studio: linear-phase OS, mix-ready.",
                           juce::dontSendNotification);
-        styleLabel (procHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
-        procHint.setMinimumHorizontalScale (0.7f);
+        styleLabel (procHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        procHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (procHint);
 
         studioButton.setButtonText ("Studio");
@@ -107,11 +107,12 @@ public:
         addAndMakeVisible (liveButton);
 
         displayTitle.setText ("DISPLAY", juce::dontSendNotification);
-        styleLabel (displayTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (displayTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (displayTitle);
 
         scaleHint.setText ("Window size. Aspect stays locked.", juce::dontSendNotification);
-        styleLabel (scaleHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        styleLabel (scaleHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        scaleHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (scaleHint);
 
         const int percents[] = { 100, 125, 150 };
@@ -131,7 +132,8 @@ public:
         }
 
         fontHint.setText ("Formula text size", juce::dontSendNotification);
-        styleLabel (fontHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        styleLabel (fontHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        fontHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (fontHint);
         fontSize.setJustificationType (juce::Justification::centred);
         styleLabel (fontSize, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centred);
@@ -154,13 +156,14 @@ public:
         addAndMakeVisible (fontPlus);
 
         cableTitle.setText ("CIRCUIT CABLES", juce::dontSendNotification);
-        styleLabel (cableTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (cableTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (cableTitle);
         cableHint.setText (UiSettings::get().cableWaveform()
                                ? "Gray waveform on the cable, only while audio is present."
                                : "White/gray traces; beads travel only while audio is present.",
                            juce::dontSendNotification);
-        styleLabel (cableHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        styleLabel (cableHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        cableHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (cableHint);
         dotsCableButton.setButtonText ("Dots");
         waveCableButton.setButtonText ("Wave");
@@ -190,13 +193,14 @@ public:
         addAndMakeVisible (waveCableButton);
 
         tempoTitle.setText ("TEMPO", juce::dontSendNotification);
-        styleLabel (tempoTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (tempoTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (tempoTitle);
         tempoHint.setText (UiSettings::get().useHostTempo()
                                ? "BPM follows the host / DAW."
                                : "BPM is set here. Delay note lengths use this tempo.",
                            juce::dontSendNotification);
-        styleLabel (tempoHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        styleLabel (tempoHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        tempoHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (tempoHint);
         hostTempoButton.setButtonText ("Host");
         userTempoButton.setButtonText ("User");
@@ -233,7 +237,7 @@ public:
         addAndMakeVisible (bpmEdit);
 
         audioTitle.setText ("AUDIO", juce::dontSendNotification);
-        styleLabel (audioTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (audioTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (audioTitle);
 
         const bool standalone = juce::JUCEApplicationBase::isStandaloneApp();
@@ -241,8 +245,8 @@ public:
                                ? "Device, sample rate, and buffer. Host plugins follow the DAW."
                                : "This copy is hosted. Sample rate and device belong to the DAW.",
                            juce::dontSendNotification);
-        styleLabel (audioHint, 13.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
-        audioHint.setMinimumHorizontalScale (0.7f);
+        styleLabel (audioHint, 16.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
+        audioHint.setMinimumHorizontalScale (1.0f);
         addAndMakeVisible (audioHint);
 
         audioButton.setButtonText ("Audio device...");
@@ -253,7 +257,7 @@ public:
         addAndMakeVisible (audioButton);
 
         aboutTitle.setText ("ABOUT", juce::dontSendNotification);
-        styleLabel (aboutTitle, 12.f, NeuroKoreLookAndFeel::inkMuted(), juce::Justification::centredLeft);
+        styleLabel (aboutTitle, 14.f, NeuroKoreLookAndFeel::ink(), juce::Justification::centredLeft);
         addAndMakeVisible (aboutTitle);
         licenseButton.setButtonText ("License");
         helpButton.setButtonText ("Help / Manual");
@@ -298,15 +302,15 @@ public:
         r.removeFromBottom (10);
 
         auto row = [&r] (int h) { return r.removeFromTop (h); };
-        animTitle.setBounds (row (18));
+        animTitle.setBounds (row (20));
         {
-            auto bar = row (30);
+            auto bar = row (32);
             const int w = bar.getWidth() / 3;
             motionButtons[0].setBounds (bar.removeFromLeft (w).reduced (2));
             motionButtons[1].setBounds (bar.removeFromLeft (w).reduced (2));
             motionButtons[2].setBounds (bar.reduced (2));
         }
-        animHint.setBounds (row (22));
+        animHint.setBounds (row (36));
         r.removeFromTop (10);
 
         procTitle.setBounds (row (18));

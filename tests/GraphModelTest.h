@@ -50,7 +50,7 @@ public:
             expect (dsl::semanticallyEqual (doc, again));
         }
 
-        beginTest ("octaver exposes sub up mix tone thresh and knob jacks");
+        beginTest ("octaver exposes sub up mix tone thresh and no knob jacks");
         {
             dsl::GraphDocument doc;
             juce::String error;
@@ -65,15 +65,17 @@ public:
             expect (keys.contains ("tone"));
             expect (keys.contains ("thresh"));
             const auto jacks = dsl::jacksFor (doc.nodes[0], &doc);
-            bool sawIn = false, sawOut = false, sawA = false, sawC = false;
+            bool sawIn = false, sawOut = false, sawKnob = false;
             for (const auto& j : jacks)
             {
                 if (j.id == "in" && ! j.output) sawIn = true;
                 if (j.id == "out" && j.output) sawOut = true;
-                if (j.id == "knob:a" && ! j.output) sawA = true;
-                if (j.id == "knob:c" && ! j.output) sawC = true;
+                if (j.kind == "knob") sawKnob = true;
             }
-            expect (sawIn && sawOut && sawA && sawC);
+            expect (sawIn && sawOut);
+            expect (! sawKnob);
+            const auto binds = dsl::knobBindings (doc.nodes[0]);
+            expectEquals ((int) binds.size(), 2);
         }
 
         beginTest ("noisegate parses as ngate with threshold attack release");
@@ -424,7 +426,7 @@ public:
             expect (encToMid && encToSide && midToDec && sideToDec);
         }
 
-        beginTest ("jacksFor gives each mix bus and knob its own port");
+        beginTest ("jacksFor gives each mix bus its own port, not knobs");
         {
             const juce::String script =
                 "osc1: shape = sine; freq = 2\n"
@@ -462,9 +464,10 @@ public:
             {
                 if (j.id == "in" && ! j.output) sawIn = true;
                 if (j.id == "out" && j.output) sawOut = true;
-                if (j.id == "knob:a" && ! j.output) sawKnobA = true;
+                if (j.kind == "knob") sawKnobA = true;
             }
-            expect (sawIn && sawOut && sawKnobA);
+            expect (sawIn && sawOut);
+            expect (! sawKnobA);
 
             const auto sj = dsl::jacksFor (doc.nodes[(size_t) stage], &doc);
             bool sawModIn = false;
@@ -724,6 +727,36 @@ public:
             }
             expect (outI >= 0 && lastMain >= 0);
             expect (doc.nodes[(size_t) outI].x > lastMainX + 8.f, "OUT must sit right of the last main chip");
+        }
+
+        beginTest ("tidyLayout keeps OUT right of last main chip when the view is narrow");
+        {
+            juce::String script;
+            for (int i = 0; i < 8; ++i)
+                script << "stage" << (i + 1) << ": y = x\n";
+            script << "out: main = 1\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            dsl::tidyLayout (doc, 800, 620);
+            int outI = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                if (doc.nodes[(size_t) i].type == "out")
+                    outI = i;
+            expect (outI >= 0);
+            const float outX = doc.nodes[(size_t) outI].x;
+            const float outY = doc.nodes[(size_t) outI].y;
+            float rowMaxX = -1.0e9f;
+            for (const auto& n : doc.nodes)
+            {
+                if (n.type == "out" || ! std::isfinite (n.x) || dsl::visualRail (n) != "main")
+                    continue;
+                if (std::abs (n.y - outY) <= (float) dsl::kTidyCardH)
+                    rowMaxX = juce::jmax (rowMaxX, n.x);
+            }
+            expect (outX > rowMaxX + 8.f,
+                    "narrow view must not fold OUT onto the left margin");
+            expect (outX > (float) dsl::kTidyMargin + 8.f);
             for (int i = 0; i < (int) doc.nodes.size(); ++i)
                 for (int j = i + 1; j < (int) doc.nodes.size(); ++j)
                 {
@@ -867,6 +900,157 @@ public:
             expect (keys.contains ("mid"));
             expect (keys.contains ("low"));
             expect (keys.contains ("high"));
+        }
+
+        beginTest ("parked node is not in the serial audio chain");
+        {
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse ("filter1: type = lowpass; cutoff = 800\n"
+                                "stage1: y = x\n"
+                                "out: main = 1\n", doc, error), error);
+            expectEquals ((int) doc.nodes.size(), 3);
+            auto edges = dsl::audioEdges (doc);
+            bool stageIn = false;
+            for (const auto& e : edges)
+                if (e.fromIndex >= 0 && doc.nodes[(size_t) e.fromIndex].name == "stage1")
+                    stageIn = true;
+            expect (stageIn);
+
+            int stageIdx = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                if (doc.nodes[(size_t) i].name == "stage1")
+                    stageIdx = i;
+            dsl::parkNode (doc, stageIdx);
+            expect (dsl::isParked (doc.nodes[(size_t) [&]
+            {
+                for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                    if (doc.nodes[(size_t) i].name == "stage1")
+                        return i;
+                return 0;
+            }()]));
+
+            const auto parked = dsl::emit (doc);
+            expect (parked.contains ("bus __park:"));
+            edges = dsl::audioEdges (doc);
+            stageIn = false;
+            bool filterToOut = false;
+            for (const auto& e : edges)
+            {
+                if (e.fromIndex >= 0 && doc.nodes[(size_t) e.fromIndex].name == "stage1")
+                    stageIn = true;
+                if (e.fromIndex >= 0 && e.toIndex >= 0
+                    && doc.nodes[(size_t) e.fromIndex].name == "filter1"
+                    && doc.nodes[(size_t) e.toIndex].type == "out")
+                    filterToOut = true;
+            }
+            expect (! stageIn, "parked chip must not sit on the audio path");
+            expect (filterToOut);
+
+            dsl::GraphDocument again;
+            expect (dsl::parse (parked, again, error), error);
+            bool stillParked = false;
+            for (const auto& n : again.nodes)
+                if (n.name == "stage1")
+                    stillParked = dsl::isParked (n);
+            expect (stillParked);
+
+            int filter = -1, stage = -1;
+            for (int i = 0; i < (int) again.nodes.size(); ++i)
+            {
+                if (again.nodes[(size_t) i].name == "filter1") filter = i;
+                if (again.nodes[(size_t) i].name == "stage1") stage = i;
+            }
+            expect (dsl::connectAudio (again, filter, stage, error), error);
+            for (const auto& n : again.nodes)
+                if (n.name == "stage1")
+                    expect (! dsl::isParked (n));
+            expect (! dsl::emit (again).contains ("bus __park:"));
+        }
+
+        beginTest ("unplug last chip from OUT parks it");
+        {
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse ("filter1: type = lowpass; cutoff = 800\n"
+                                "stage1: y = x\n"
+                                "out: main = 1\n", doc, error), error);
+            int stage = -1, out = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+            {
+                if (doc.nodes[(size_t) i].name == "stage1") stage = i;
+                if (doc.nodes[(size_t) i].type == "out") out = i;
+            }
+            expect (dsl::disconnectAudio (doc, stage, out, error), error);
+            bool parked = false;
+            for (const auto& n : doc.nodes)
+                if (n.name == "stage1")
+                    parked = dsl::isParked (n);
+            expect (parked);
+        }
+
+        beginTest ("widen and ott expose every editable key");
+        {
+            dsl::GraphDocument w, o;
+            juce::String err;
+            expect (dsl::parse ("widen1: width = 0.6; delay = 12; bass = 180", w, err), err);
+            const auto wk = dsl::editableArgKeys (w.nodes[0]);
+            expect (wk.contains ("width"));
+            expect (wk.contains ("delay"));
+            expect (wk.contains ("bass"));
+            expect (dsl::parse ("ott1: depth = 0.5; time = 0.3; f1 = 90; f2 = 3200", o, err), err);
+            const auto ok = dsl::editableArgKeys (o.nodes[0]);
+            expect (ok.contains ("depth"));
+            expect (ok.contains ("f1"));
+            expect (ok.contains ("f2"));
+        }
+
+        beginTest ("osc with two destinations gets two mod output jacks");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (
+                "osc1: shape = sine; freq = 0.4\n"
+                "filter1: type = lowpass; cutoff = 800 + osc1 * 400\n"
+                "filter2: type = highpass; cutoff = 200 + osc1 * 80\n",
+                doc, err), err);
+            int osc = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                if (doc.nodes[(size_t) i].name == "osc1")
+                    osc = i;
+            expect (osc >= 0);
+            const auto jacks = dsl::jacksFor (doc.nodes[(size_t) osc], &doc);
+            int outs = 0;
+            for (const auto& j : jacks)
+                if (j.output && j.kind == "mod")
+                    ++outs;
+            expectEquals (outs, 2);
+        }
+
+        beginTest ("tidyLayout puts IN top-left and OUT bottom-right");
+        {
+            const juce::String script =
+                "osc1: shape = sine; freq = 0.4\n"
+                "stage1: y = x\n"
+                "filter1: type = lowpass; cutoff = 800 + osc1 * 200\n"
+                "out: main = 1\n";
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (script, doc, err), err);
+            const auto hint = dsl::tidyLayout (doc, 1400, 800);
+            expect (hint.inX <= (float) dsl::kTidyMargin + 0.5f);
+            expect (hint.inY <= (float) dsl::kTidyMargin + 0.5f);
+            int outI = -1, oscI = -1;
+            for (int i = 0; i < (int) doc.nodes.size(); ++i)
+            {
+                if (doc.nodes[(size_t) i].type == "out") outI = i;
+                if (doc.nodes[(size_t) i].name == "osc1") oscI = i;
+            }
+            expect (outI >= 0 && oscI >= 0);
+            expect (doc.nodes[(size_t) outI].x >= hint.inX + (float) dsl::kTidyCardW);
+            expect (doc.nodes[(size_t) outI].y >= hint.inY - 0.5f);
+            expect (doc.nodes[(size_t) oscI].y >= doc.nodes[1].y - 0.5f,
+                    "mod row stays at or below the main chain so IN stays top-left");
         }
     }
 };

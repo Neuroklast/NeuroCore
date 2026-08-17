@@ -433,6 +433,8 @@ void assignNodeToBus (GraphDocument& doc, int nodeIndex, const juce::String& bus
     if (! outIsLast (trial) || ! sendsHaveNamedBus (trial))
         return;
     doc.nodes = std::move (trial);
+    if (bus != kParkRail)
+        dropEmptyParkBus (doc);
 }
 
 namespace
@@ -541,11 +543,71 @@ std::vector<GraphEdge> audioEdges (const GraphDocument& doc)
     chain ("main");
     juce::StringArray buses;
     for (const auto& n : doc.nodes)
-        if (n.type == "bus" && n.name.isNotEmpty() && ! buses.contains (n.name))
+        if (n.type == "bus" && n.name.isNotEmpty() && n.name != kParkRail
+            && ! buses.contains (n.name))
             buses.add (n.name);
     for (const auto& b : buses)
         chain (b);
     return edges;
+}
+
+void dropEmptyParkBus (GraphDocument& doc)
+{
+    for (int i = 0; i < (int) doc.nodes.size(); ++i)
+    {
+        if (doc.nodes[(size_t) i].type != "bus" || doc.nodes[(size_t) i].name != kParkRail)
+            continue;
+        bool child = false;
+        for (int j = i + 1; j < (int) doc.nodes.size(); ++j)
+        {
+            const auto& n = doc.nodes[(size_t) j];
+            if (n.type == "bus" || n.type == "out")
+                break;
+            if (n.busName == kParkRail)
+            {
+                child = true;
+                break;
+            }
+        }
+        if (! child)
+            doc.nodes.erase (doc.nodes.begin() + (size_t) i);
+        return;
+    }
+}
+
+void parkNode (GraphDocument& doc, int nodeIndex)
+{
+    if (! juce::isPositiveAndBelow (nodeIndex, (int) doc.nodes.size()))
+        return;
+    const auto name = doc.nodes[(size_t) nodeIndex].name;
+    const auto type = doc.nodes[(size_t) nodeIndex].type;
+    if (type == "bus" || type == "out" || type == "send" || name.isEmpty())
+        return;
+    if (doc.nodes[(size_t) nodeIndex].busName == kParkRail)
+        return;
+
+    int parkAt = -1;
+    for (int i = 0; i < (int) doc.nodes.size(); ++i)
+        if (doc.nodes[(size_t) i].type == "bus" && doc.nodes[(size_t) i].name == kParkRail)
+            parkAt = i;
+    if (parkAt < 0)
+    {
+        GraphNode header;
+        header.type = "bus";
+        header.name = kParkRail;
+        int at = (int) doc.nodes.size();
+        for (int i = 0; i < (int) doc.nodes.size(); ++i)
+            if (doc.nodes[(size_t) i].type == "out")
+            {
+                at = i;
+                break;
+            }
+        doc.nodes.insert (doc.nodes.begin() + at, std::move (header));
+    }
+
+    const int idx = indexOfName (doc, name);
+    if (idx >= 0)
+        assignNodeToBus (doc, idx, kParkRail);
 }
 
 bool hasAllPositions (const GraphDocument& doc)
@@ -710,7 +772,7 @@ int tidyNodeHeight (const GraphNode& n, const GraphDocument* doc)
             continue;
         (j.output ? out : in) += 1;
     }
-    return (1 + juce::jmax (in, out, 1)) * kTidyGrid;
+    return (kTidyTitleRows + juce::jmax (in, out, 1) + kTidyBottomRows) * kTidyGrid;
 }
 
 bool nodeRectsClash (float ax, float ay, float aw, float ah,
@@ -799,7 +861,7 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
     for (const auto& nd : doc.nodes)
         maxChipH = juce::jmax (maxChipH, tidyNodeHeight (nd, &doc));
     int colPitch = kTidyCardW + kTidyColGap;
-    int rowPitch = maxChipH + kTidyMinGap;
+    int rowPitch = maxChipH + kTidyRowGap;
     hint.inX = (float) tidySnap (kTidyMargin);
     hint.inY = (float) tidySnap (kTidyMargin);
     hint.outX = hint.inX + (float) colPitch;
@@ -844,7 +906,6 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
     }
 
     juce::StringArray rails;
-    rails.add ("mod");
     rails.add ("main");
     const char* pref[] = { "mid", "side", "left", "right", "low", "high", nullptr };
     auto ensureRail = [&] (const juce::String& r)
@@ -859,6 +920,11 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
                 ensureRail (pref[p]);
     for (int i = 0; i < n; ++i)
         ensureRail (visualRail (doc.nodes[(size_t) i]));
+    if (rails.contains ("mod"))
+    {
+        rails.removeString ("mod");
+        rails.add ("mod");
+    }
 
     auto rowOf = [&] (int idx) -> int
     {
@@ -926,7 +992,7 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
     nRowSlots = juce::jmax (1, nRowSlots);
 
     const int minCol = kTidyCardW + kTidyMinGap;
-    const int minRow = maxChipH + kTidyMinGap;
+    const int minRow = maxChipH + kTidyRowGap;
     const int nColSteps = maxRank + 1;
     const int pad = kTidyMargin * 2;
     auto spanW = [&] (int pitch) -> int
@@ -1063,7 +1129,15 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
             if (isMain)
             {
                 int ix = 0, iy = 0;
-                cell (local, band, ix, iy);
+                if (local > 0 && (local % wrapSlots) == 0)
+                {
+                    cell (local - 1, band, ix, iy);
+                    ix += colPitch;
+                }
+                else
+                {
+                    cell (local, band, ix, iy);
+                }
                 hint.outX = (float) tidySnap (ix);
                 hint.outY = (float) tidySnap (iy);
             }
@@ -1110,6 +1184,7 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
                 setPosition (doc, i, hint.outX, hint.outY);
     }
 
+    if (wrapSlots < 2)
     {
         float lastX = hint.inX;
         float lastY = hint.inY;
@@ -1128,11 +1203,23 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
         }
         hint.outX = (float) tidySnap ((int) lastX + colPitch);
         hint.outY = (float) tidySnap ((int) lastY);
-        if (viewW > 0 && hint.outX + (float) kTidyIoW + (float) kTidyMargin > (float) viewW)
+        for (int i = 0; i < n; ++i)
+            if (doc.nodes[(size_t) i].type == "out")
+                setPosition (doc, i, hint.outX, hint.outY);
+    }
+    if (wrapSlots < 2)
+    {
+        float right = hint.inX;
+        float bottom = hint.inY;
+        for (const auto& nd : doc.nodes)
         {
-            hint.outX = (float) tidySnap (kTidyMargin);
-            hint.outY = (float) tidySnap ((int) hint.outY + rowPitch);
+            if (nd.type == "out" || ! std::isfinite (nd.x) || ! std::isfinite (nd.y))
+                continue;
+            right = juce::jmax (right, nd.x);
+            bottom = juce::jmax (bottom, nd.y);
         }
+        hint.outX = (float) tidySnap ((int) right + colPitch);
+        hint.outY = (float) tidySnap ((int) bottom);
         for (int i = 0; i < n; ++i)
             if (doc.nodes[(size_t) i].type == "out")
                 setPosition (doc, i, hint.outX, hint.outY);
@@ -1347,6 +1434,7 @@ bool disconnectAudio (GraphDocument& doc, int fromIndex, int toIndex, juce::Stri
             const auto rail = railOf (doc.nodes[(size_t) fromIndex]);
             if (rail.isNotEmpty() && rail != "main")
                 doc.nodes[(size_t) toIndex].args.erase (rail);
+            parkNode (doc, fromIndex);
         }
         return true;
     }
@@ -1419,8 +1507,8 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
                                     "pingpong", "channel", nullptr };
     static const char* kReverb[] = { "size", "decay", "damp", "mix", "width", nullptr };
     static const char* kIr[] = { "mix", "gain", nullptr };
-    static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", nullptr };
-    static const char* kWiden[] = { "width", "bass", nullptr };
+    static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", "f1", "f2", nullptr };
+    static const char* kWiden[] = { "width", "delay", "bass", nullptr };
     static const char* kOsc[] = { "shape", "freq", "sync", "depth", nullptr };
     static const char* kEnv[] = { "type", "attack", "hold", "release", "depth",
                                   "source", "trigger", nullptr };
@@ -1890,19 +1978,22 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     {
         if (t.startsWith ("env"))
             addJack (jacks, "sc", false, "sc");
-        addJack (jacks, "mod", true, "mod");
+        int dests = 0;
+        if (doc != nullptr)
+            for (const auto& other : doc->nodes)
+                if (argUsesToken (other, node.name))
+                    ++dests;
+        if (dests <= 1)
+            addJack (jacks, "mod", true, "mod");
+        else
+            for (int i = 0; i < dests; ++i)
+                addJack (jacks, "mod:" + juce::String (i), true, "mod");
         return jacks;
     }
 
     addJack (jacks, "in", false, t == "send" ? "send" : "audio");
     if (wantsSidechainJack (node))
         addJack (jacks, "sc", false, "sc");
-
-    for (const auto& b : knobBindings (node))
-    {
-        const auto letter = juce::String::charToString ((juce::juce_wchar) ('a' + b.knobIndex));
-        addJack (jacks, "knob:" + letter, false, "knob");
-    }
 
     const bool extraParams = t.startsWith ("octav") || t.startsWith ("vocod")
                           || t.startsWith ("noisegate") || t == "noise_gate"

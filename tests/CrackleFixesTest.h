@@ -460,14 +460,15 @@ public:
                 expect (! g.isTripped());
             }
 
-            // Sustained over-budget EMA (2×, below hard) trips after consecutive hits.
+            // Sustained over-budget EMA (2×, below hard) trips after hold time.
             {
                 CpuProtect g;
                 expireWarmup (g);
                 g.observe (0.5 * budget, budget);
                 expect (! g.isTripped());
                 bool tripped = false;
-                for (int i = 0; i < 64; ++i)
+                const int n = (int) (2.0 * (double) Config::kCpuTripHoldSec / budget) + 8;
+                for (int i = 0; i < n; ++i)
                 {
                     g.observe (2.0 * budget, budget);
                     if (g.isTripped())
@@ -479,18 +480,38 @@ public:
                 expect (tripped);
                 expect (g.getSmoothedLoad() >= Config::kCpuTripRatio);
 
-                // After trip: wait retry, one wet probe + cheap observe recovers.
+                // After trip: wait retry, cheap probe window recovers.
                 expect (! g.shouldProbeWet (64, 48000.0));
                 const int need = (int) std::ceil (Config::kCpuRetrySec * 48000.0 / 64.0) + 1;
                 bool probed = false;
                 for (int i = 0; i < need; ++i)
                     probed = g.shouldProbeWet (64, 48000.0);
                 expect (probed);
-                g.observe (0.5 * budget, budget);
+                const int probeN = (int) (2.0 * (double) Config::kCpuProbeSec / budget) + 4;
+                for (int i = 0; i < probeN; ++i)
+                    g.observe (0.5 * budget, budget);
                 expect (! g.isTripped());
             }
 
-            // Hard trip requires consecutive EMA extremes, not one sample.
+            // A still-hot probe must not untrip — that was the 2 s SAFE blink.
+            {
+                CpuProtect g;
+                expireWarmup (g);
+                const int n = (int) (2.0 * (double) Config::kCpuTripHoldSec / budget) + 8;
+                for (int i = 0; i < n; ++i)
+                    g.observe (2.0 * budget, budget);
+                expect (g.isTripped());
+                const int need = (int) std::ceil (Config::kCpuRetrySec * 48000.0 / 64.0) + 1;
+                for (int i = 0; i < need; ++i)
+                    g.shouldProbeWet (64, 48000.0);
+                expect (g.shouldProbeWet (64, 48000.0));
+                const int probeN = (int) (2.0 * (double) Config::kCpuProbeSec / budget) + 4;
+                for (int i = 0; i < probeN; ++i)
+                    g.observe (1.8 * budget, budget);
+                expect (g.isTripped());
+            }
+
+            // Hard trip requires the EMA to stay extreme, not one sample.
             {
                 CpuProtect g;
                 expireWarmup (g);
@@ -499,7 +520,8 @@ public:
 
                 bool hardTripped = false;
                 int hits = 0;
-                for (int i = 0; i < 32; ++i)
+                const int n = (int) (2.0 * (double) Config::kCpuHardHoldSec / budget) + 8;
+                for (int i = 0; i < n; ++i)
                 {
                     g.observe (10.0 * budget, budget);
                     ++hits;
@@ -511,6 +533,9 @@ public:
                 }
                 expect (hardTripped);
                 expect (hits >= Config::kCpuHardTripHits);
+                g.noteHoldDisplay();
+                expectWithinAbsoluteError (g.getSmoothedLoad(), 0.f, 1.0e-5f);
+                expectEquals (Config::cpuDisplayPercent (1.73f), 100);
             }
 
             {
@@ -1364,6 +1389,36 @@ public:
             expect (maxSlap < firstPeak * 0.55f,
                     "Far Plane slap at ~95 ms: slap=" + juce::String (maxSlap, 4)
                     + " first=" + juce::String (firstPeak, 4));
+        }
+
+        beginTest ("silence after tail and hold sleeps wet OS/DSL");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            proc.prepareToPlay (48000.0, 128);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x * 0.8", err), err);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (1.f);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            // switchRamp (80 ms) + idle hold (120 ms) + OS flush. 0.53 s is enough.
+            for (int b = 0; b < 200; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            expect (proc.isDspIdle(), "wet OS/DSL must sleep after silence + tail flush");
+
+            for (int i = 0; i < 128; ++i)
+            {
+                buf.setSample (0, i, 0.4f);
+                buf.setSample (1, i, 0.4f);
+            }
+            proc.processBlock (buf, midi);
+            expect (! proc.isDspIdle(), "a transient must wake the wet path on the same block");
+            proc.releaseResources();
         }
     }
 };

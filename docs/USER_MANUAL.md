@@ -62,7 +62,7 @@ Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a 
 - **Presets**: factory and your own sounds. The last category stays selected when you reopen.
 - **Current chip**: loaded preset name, or Untitled. **<** / **>** step through factory, then user presets.
 - **Functions**: look up formula words and insert them. Folders on the left: **Core** (math), **Drive** (tube, diode, clip), **Crush** (fold, bitcrush), **Blocks** (ott, widen, vocoder, octaver, ms).
-- **Stages**: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
+- **Stages**: the blocks in the current formula, and which knobs they use. **Up / Down**, arrow keys, or drag a row to reorder the path. Select an IR block to open that cab slot.
 - **Settings**: animation (**Full** / **Reduced** / **Off**), **Studio / Live** processing, UI scale (100 / 125 / 150), formula text size, and standalone audio device. Remembered.
 - **LIVE / STUDIO**: Live uses min-phase oversampling so the delay is not noticeable when you play. Studio uses linear-phase oversampling for mix work. Same control lives in Settings.
 - **Bypass**: forces Mix to 0 (dry) and locks the Mix slider. Turn it off and the previous Mix comes back.
@@ -81,7 +81,7 @@ Oversampling, Polisher, and Mix sit **between the Circuit/Terminal and the IN/OU
 - **Guitar / BOTH**: a silent stereo side is copied from the live side so L/R splits (Stereo Guitar Wall) work from a mono DI. Amp presets have a **Width** knob (`widen`) defaulting to 0.
 - **Text − / +**: size of the formula text (also in **Settings**).
 - **Settings → scale**: 100 / 125 / 150. You can still resize the window; the aspect ratio stays locked.
-- **Settings → animation**: Full (boot, glitch, light CRT glow), Reduced (overlays snap), Off (still chrome).
+- **Settings → animation**: Full (boot, glitch, light CRT glow), **SNAP** (overlays open instantly, no boot), Off (still chrome). The SNAP line is large type so it stays readable at 125% host scale.
 
 ### Knobs
 
@@ -93,7 +93,7 @@ Oversampling, Polisher, and Mix sit **between the Circuit/Terminal and the IN/OU
 
 - **L / Both / R**: input channel, same width as the knobs, on the Circuit / Terminal row.
 - **Circuit / Terminal**: two views of the same construct.
-  - **Circuit** = assemble. The surface is a board: faint rose crosses, 16 px snap. Blocks are chips. Drag moves X and Y only — it does not change the signal order. Double-click or right-click a chip to open the node overlay (every jack field, knob bind, Remove). Click the arrow to fold/unfold. Right-click empty paper: **Auto-arrange** (fit chips to the current zoom, no rewire) or **Add** with category folders (Tone, Drive, Dynamics, Space, Routing, Stereo, Pitch, Modulation, Measure). Factory presets open already auto-arranged for the current zoom. Routing includes Sidechain (host extra input). Hover a knob to see its traces. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. While you drag a cable it is a straight line to the pointer; on drop it becomes an orthogonal PCB trace (rounded corners, parallel lanes). Beads only while loudness is up. LFO cables stay a static trace: a running light travels along it (faster osc = faster chase; amplitude = brightness).
+  - **Circuit** = assemble. The surface is a board: faint rose crosses, 16 px snap. Blocks are chips. IN stays on the left, OUT stays on the right of the last main chip (Auto-arrange never parks OUT under IN). Drag moves X and Y only — it does not change the signal order. Double-click or right-click a chip to open the node overlay (every jack field, knob bind, Remove). Click the arrow to fold/unfold. Right-click empty paper: **Auto-arrange** (fit chips to the current zoom, no rewire) or **Add** with category folders (Tone, Drive, Dynamics, Space, Routing, Stereo, Pitch, Modulation, Measure). Add on a cable inserts into that path. Add on empty paper drops a disconnected chip — drag a cable to patch it, including who feeds OUT. Factory presets open already auto-arranged for the current zoom. Routing includes Sidechain (host extra input). Hover a knob to see its traces — red board traces from the left edge, around chips, into the jack. Bound knobs print the live value in red on the chip. Ctrl+wheel zooms. While you drag a cable it is a straight line to the pointer; on drop it becomes an orthogonal PCB trace (ports on the grid, one-cell stubs, parallel lanes). Beads only while loudness is up. LFO cables stay a static trace: a running light travels along it (faster osc = faster chase; amplitude = brightness).
   - **Terminal** = hack. The same chain as text. Live view shows coloured knobs and current values (`a[3.20]`). IR slots have an inline button on that line. **Edit** opens the editor; **Save** applies it. Positions are `# @x,y` comments.
 - Each block shows the jacks it needs: audio in/out, a mix jack per bus on OUT, A–F for bound knobs, SC on comp/gate/vocoder, MOD on an LFO. Double-click a card to edit every argument (empty fields show the default). Click a knob name to rename it. Right-click a knob → Set Min / Set Max writes the `param` range. The < > arrows next to the preset name walk the current category, then the first preset of the next folder. Ctrl+Z / Ctrl+Y undo and redo.
 - Each `ir1` / `ir2` line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
@@ -229,7 +229,7 @@ The factory library is 500+ studio jobs across 22 folders. Search or tags are th
 - **Terminal** is how you hack the construct. Same chain, as text. Live `[value]` next to every knob letter.
 - The footer strip shows CPU, latency, sample rate, 32-bit float, buffer, BPM (HOST or USER), and oversampling.
 - Settings → Tempo: follow the host BPM or type your own. Note-length knobs and delay sync use that tempo.
-- Circuit: Ctrl + mouse wheel zooms the board. Cables show the live waveform after each block. Bound knobs print their live value in red on the chip.
+- Circuit: Ctrl + mouse wheel zooms the board. The 16 px grid stays on whole pixels when the host window is 125 % or 150 %. IN is top-left, OUT is bottom-right. Bound knobs print their letter and name on the chip — no cables from the knob column. Click the chevron to expand values and jacks. LFO traces carry small pulses at the LFO rate.
 
 ## 6. Formula language
 
@@ -291,7 +291,7 @@ Everyday blocks:
 | Host says the plugin is unstable | Save the project and reload the plugin. Avoid rewriting a huge delay formula while recording. |
 | Knob does nothing | That letter is not in the formula. Open **Stages** to see which knobs are live. |
 | Preset will not load | Your saved file may be damaged. Save As again. Factory sounds are always available. |
-| High CPU | Lower oversampling. Use fewer stages and shorter delays. |
+| High CPU | Lower oversampling. Use fewer stages and shorter delays. Silence after tails sleeps the wet path (OS / formula); a new hit wakes it. |
 
 ---
 

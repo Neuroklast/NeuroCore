@@ -6,13 +6,14 @@
 #include "../utils/Localiser.h"
 
 /**
-    Animated demo: input sine (IN) vs same sine after the selected function (OUT).
-    Phase advances on a timer so the waves scroll continuously.
+    Animated demo: transfer I/O, or a block-specific glyph (OTT / widen / octaver / vocoder).
 */
 class FunctionPlotComponent : public juce::Component,
                               private juce::Timer
 {
 public:
+    enum class PlotKind { Transfer, Ott, Widen, Octaver, Vocoder };
+
     FunctionPlotComponent();
     ~FunctionPlotComponent() override;
 
@@ -24,6 +25,10 @@ public:
     void setFunctionDemo (const juce::String& functionName, const juce::String& example);
     void paint (juce::Graphics& g) override;
 
+    static PlotKind kindForName (const juce::String& functionName);
+    PlotKind kind() const noexcept { return plotKind; }
+    juce::String caption() const;
+
 private:
     void timerCallback() override;
     void rebuildTrace();
@@ -32,8 +37,10 @@ private:
 
     juce::String formula;
     juce::String displayName;
+    PlotKind plotKind { PlotKind::Transfer };
     std::vector<float> inSamples;
     std::vector<float> outSamples;
+    std::vector<float> bandA, bandB, bandC;
     float phase { 0.f };
     bool formulaOk { false };
 };

@@ -1,11 +1,11 @@
-# Stage Release artefacts, fill repo-root NEUROKORE-0.4.4-alpha, optionally compile Inno Setup.
+# Stage Release artefacts, fill repo-root NEUROKORE-0.4.7-alpha, optionally compile Inno Setup.
 # Usage (from repo root, after cmake --build build --config Release --target NeuroKore):
 #   powershell -File scripts/package_windows.ps1
 
 $ErrorActionPreference = "Stop"
 if (-not $PSScriptRoot) { $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.4.4-alpha"
+$version = "0.4.7-alpha"
 $stem = "NEUROKORE-$version"
 $art = Join-Path $root "build\NeuroKore_artefacts\Release"
 $stage = Join-Path $root "build\package\stage"

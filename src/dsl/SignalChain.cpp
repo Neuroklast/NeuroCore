@@ -2027,25 +2027,30 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             {
                 if (fi->modulated)
                 {
-                    for (int i = 0; i < numSamples; ++i)
+                    const int stride = juce::jmax (1, Config::kFilterCoeffStride);
+                    for (int i = 0; i < numSamples; )
                     {
+                        const int n = juce::jmin (stride, numSamples - i);
+                        const int mid = i + n / 2;
                         for (int p = 0; p < Config::kNumUserParams; ++p)
                             variables[Config::kDefaultVariableNames[p]]
-                                = knobLanes[(size_t) p][(size_t) i];
-                        publishSidechainSample (i);
+                                = knobLanes[(size_t) p][(size_t) mid];
+                        publishSidechainSample (mid);
                         for (int o = 0; o < nOsc; ++o)
-                            if ((int) oscs[o]->modLane.size() > i)
-                                variables[oscs[o]->name] = oscs[o]->modLane[(size_t) i];
+                            if ((int) oscs[o]->modLane.size() > mid)
+                                variables[oscs[o]->name] = oscs[o]->modLane[(size_t) mid];
                         for (int e = 0; e < nEnv; ++e)
-                            if ((int) envs[e]->modLane.size() > i)
-                                variables[envs[e]->name] = envs[e]->modLane[(size_t) i];
+                            if ((int) envs[e]->modLane.size() > mid)
+                                variables[envs[e]->name] = envs[e]->modLane[(size_t) mid];
 
-                        fi->advanceCoeffsOnce();
-                        for (int ch = 0; ch < workCh; ++ch)
-                        {
-                            auto* data = work.getWritePointer (ch);
-                            data[i] = fi->processSampleOnly (ch, data[i]);
-                        }
+                        fi->advanceCoeffsFor (n);
+                        for (int k = 0; k < n; ++k)
+                            for (int ch = 0; ch < workCh; ++ch)
+                            {
+                                auto* data = work.getWritePointer (ch);
+                                data[i + k] = fi->processSampleOnly (ch, data[i + k]);
+                            }
+                        i += n;
                     }
                 }
                 else
@@ -2680,10 +2685,11 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
             varNames.emplace_back(kv.first, kv.first.toStdString());
 }
 
-void SignalChain::Filter::advanceCoeffsOnce() noexcept
+void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
 {
     if (! varPtr)
         return;
+    samples = juce::jmax (1, samples);
 
     const float probe = 0.0f;
     for (const auto& n : varNames)
@@ -2735,14 +2741,18 @@ void SignalChain::Filter::advanceCoeffsOnce() noexcept
 
     cutoffSm.setTargetValue (fc);
     resSm.setTargetValue (res);
-    const float fcSm = cutoffSm.getNextValue();
-    const float rqSm = resSm.getNextValue();
+    float fcSm = cutoffSm.getNextValue();
+    float rqSm = resSm.getNextValue();
+    if (samples > 1)
+    {
+        fcSm = cutoffSm.skip (samples - 1);
+        rqSm = resSm.skip (samples - 1);
+    }
     const bool jumped = lastAppliedFc < 0.f
                      || std::abs (fcSm - lastAppliedFc) > 0.18f
                      || std::abs (rqSm - lastAppliedRes) > 0.004f;
-    // Osc sweeps need every sample. Env-only Acid-style mods can stride 8.
-    // evaluate() lock+ADAA reset was the CPU crackle.
-    if (modulatedByOsc || jumped || (coeffPhase++ & 7) == 0)
+    // Control-rate TPT rebuild. LFO at a few Hz does not need every audio sample.
+    if (jumped || (coeffPhase++ & 7) == 0)
     {
         filter.setCutoffFrequency (fcSm);
         filter.setResonance (rqSm);

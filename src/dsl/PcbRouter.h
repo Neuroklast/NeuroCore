@@ -46,30 +46,73 @@ struct PcbRoute
     std::vector<PcbCmd> cmds;
 };
 
+enum class PcbFacing : unsigned char { East, North, West, South };
+
+enum class PcbNetClass : unsigned char { Audio, Mix, Mod, Control };
+
+/** Jack on a chip outline. `pin` is a grid point. Escape is one cell along `facing`. */
+struct PcbPort
+{
+    PcbPoint pin {};
+    PcbFacing facing { PcbFacing::East };
+};
+
+struct PcbNet
+{
+    PcbPort src {};
+    PcbPort dst {};
+    PcbNetClass cls { PcbNetClass::Audio };
+};
+
+/** Inclusive vertex grid. World (origin + (i,j)*cell), 0<=i<=cols, 0<=j<=rows. */
+struct PcbBoard
+{
+    float cell { 16.f };
+    PcbPoint origin { 0.f, 0.f };
+    int cols { 0 };
+    int rows { 0 };
+};
+
 /**
-    Orthogonal A* router for circuit cables.
-    No UI types. The canvas maps chips to PcbRect and cmds to a stroke.
+    Pattern Manhattan router. No UI types. No A*.
+
+    Every net is HVH (or a wrap-U when the dest sits west of the source):
+    east stub, one vertical, west stub. If that run hits a chip, the
+    vertical moves to the next free column or the path goes around the
+    chip box. Parallel nets take the next free track. Fan-in shares the
+    dest escape. Corners are filleted by `cell/2`.
 */
 struct PcbRouter
 {
     float cellSize { 16.f };
-    float turnPenalty { 12.f };
     float cornerRadius { 8.f };
-    float laneGap { 16.f };
-    int   padCells { 16 };
-    int   maxExpansions { 80000 };
 
     PcbRoute route (PcbPoint start, PcbPoint end,
                     const std::vector<PcbRect>& obstacles) const;
 
+    PcbRoute route (const PcbNet& net,
+                    const std::vector<PcbRect>& obstacles,
+                    const PcbBoard& board) const;
+
     std::vector<PcbRoute> routeAll (const std::vector<std::pair<PcbPoint, PcbPoint>>& nets,
                                     const std::vector<PcbRect>& obstacles) const;
 
+    std::vector<PcbRoute> routeAll (const std::vector<PcbNet>& nets,
+                                    const std::vector<PcbRect>& obstacles,
+                                    const PcbBoard& board) const;
+
+    static PcbPoint escapeOf (const PcbPort& port, float cell) noexcept;
+    static PcbBoard inferBoard (const std::vector<PcbNet>& nets,
+                                const std::vector<PcbRect>& obstacles,
+                                float cell,
+                                int haloCells = 1);
+    static bool onGrid (const PcbPoint& p, float cell) noexcept;
     static std::vector<PcbPoint> collapseColinear (const std::vector<PcbPoint>& wp);
     static bool isOrthogonal (const PcbPoint& a, const PcbPoint& b) noexcept;
     static int countTurns (const std::vector<PcbPoint>& wp) noexcept;
+    /** cells + 12 * turns. Long and straight beats short and kinked. */
+    static float pathCost (const std::vector<PcbPoint>& wp, float cell) noexcept;
     std::vector<PcbCmd> roundCorners (const std::vector<PcbPoint>& wp) const;
-    void offsetSharedRuns (std::vector<PcbRoute>& routes) const;
 };
 
 } // namespace dsl

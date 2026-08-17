@@ -1,72 +1,34 @@
-# AGENTS
+# NEUROKORE
 
-> **⚠️ WICHTIG FÜR JEDEN CODING-AGENT:**
-> 1. Lies zuerst **`docs/AGENT_WORKFLOW.md`** bevor du Code änderst
-> 2. Lies **`docs/DEVELOPMENT_STATUS.md`** um den aktuellen Entwicklungsstand zu verstehen
-> 3. Lies **`docs/LESSONS_LEARNED.md`** um bekannte Fallstricke zu beachten
-> 4. Aktualisiere **`docs/DEVELOPMENT_STATUS.md`** und **`docs/LESSONS_LEARNED.md`** am Ende jeder Session
+JUCE 8 / C++17 audio plugin (Standalone, VST3, AU). DSL signal chain. Product name NEUROKORE, code target NeuroKore.
 
----
+## Commands
 
-## Dokumentation
+```bash
+cmake -B build -S .
+cmake --build build --config Release --target NeuroKore_All
+cmake --build build --target NeuroKoreTests --config Release
+.\build\NeuroKoreTests_artefacts\Release\NeuroKoreTests.exe
+```
 
-| Dokument | Beschreibung |
+Version is **0.4.7-alpha**. Do not invent a new one.
+
+## Read before you touch code
+
+| Task | Read |
 |---|---|
-| [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md) | Verbindlicher Workflow für Coding-Agent-Sessions |
-| [`docs/DEVELOPMENT_STATUS.md`](docs/DEVELOPMENT_STATUS.md) | Aktueller Entwicklungsstand und Checklisten |
-| [`docs/LESSONS_LEARNED.md`](docs/LESSONS_LEARNED.md) | Erfahrungsspeicher aus allen Sessions |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architektur-Übersicht aller Module |
-| [`docs/DSL_REFERENCE.md`](docs/DSL_REFERENCE.md) | DSL-Sprachreferenz |
-| [`docs/ANALYSIS.md`](docs/ANALYSIS.md) | Code-Analyse: Bugs, Probleme, Lücken |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phasen-basierte Entwicklungs-Roadmap |
-| [`docs/UNIQUE_SELLING_POINTS.md`](docs/UNIQUE_SELLING_POINTS.md) | Alleinstellungsmerkmale |
-| [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) | Bedienung: Graph-Platine, Script-Hack, Regler, Presets |
-| [`docs/VISAGE_UI_INTEGRATION.md`](docs/VISAGE_UI_INTEGRATION.md) | VisageUI Integration Guide |
+| Any change | [workflow](docs/agents/workflow.md) |
+| Circuit / cables / tidy | [ui-ux](docs/agents/ui-ux.md) |
+| DSP / CPU / audio thread | [code-quality](docs/agents/code-quality.md) |
+| Tests | [testing](docs/agents/testing.md) |
+| Current truth | [DEVELOPMENT_STATUS](docs/DEVELOPMENT_STATUS.md) |
 
----
+Do **not** read `docs/archive/` or the old session log unless you are hunting a specific past bug.
 
-## Build & Setup
+## Hard rules
 
-Dieses Projekt basiert auf JUCE und benötigt wenige externe Abhängigkeiten.
-Die folgenden Schritte installieren alle benötigten Komponenten:
-
-1. **JUCE klonen (mindestens Version 8.0.6)**
-   ```bash
-   git clone --recurse-submodules https://github.com/juce-framework/JUCE.git ~/JUCE
-   ```
-   Alternativ kann eine bestehende Installation verwendet werden. Der Pfad muss
-   der Umgebungsvariable `JUCE_DIR` entsprechen oder beim Aufruf von CMake mit
-   `-DJUCE_DIR=/pfad/zur/JUCE` übergeben werden. Ist `JUCE_DIR` nicht gesetzt,
-   lädt CMake JUCE automatisch.
-
-2. **VST3 SDK bereitstellen**
-   Kopiere die VST3-SDK in folgendes Verzeichnis:
-   `~/JUCE/modules/juce_audio_processors/format_types/VST3_SDK`.
-   Die SDK ist nötig, um das Plug-in als VST3 zu erzeugen.
-
-3. **Abhängigkeiten via CMake aufbauen**
-   ```bash
-   cmake -B build -S .
-   cmake --build build --config Release
-   ```
-   Diese Befehle laden JUCE (falls notwendig) und erstellen alle Artefakte im
-   Ordner `build/NeuroKore_artefacts`.
-
-4. **Tests ausführen**
-   ```bash
-   cmake --build build --target NeuroKoreTests
-   ctest --test-dir build
-   ```
-   Sofern JUCE korrekt eingebunden ist, laufen alle Unit-Tests durch.
-
----
-
-## Mandatory Abschluss-Schritte pro Session
-
-Diese Schritte sind verpflichtend und müssen für jede Session geprüft werden:
-
-1. **Code optimieren** in den berührten Hotpaths (nur sichere, messbare Verbesserungen).
-2. **Legacy-Code bereinigen** in den geänderten Bereichen (Duplikate/Magic Numbers/Altlasten reduzieren).
-3. **Test-Coverage erhöhen** für das geänderte Verhalten (neue oder erweiterte Unit-Tests).
-4. **Online-PR-Kommentare** vollständig bearbeiten und beantworten.
-5. **Dokumentation + README** aktualisieren, wenn Verhalten, Formate oder Workflows geändert wurden.
+1. One logical change. If Circuit is broken, do not also “fix” CPU, Settings, and docs in the same pass.
+2. No patch on a patch. If the model is wrong, replace the model. Do not add `if (dest left)` or a new magic number.
+3. Do not claim done unless a **contract test** failed first and now passes. Screenshots are the spec for UI.
+4. Never allocate or copy `juce::String` on the audio thread.
+5. Footer CPU is 0–100. Never print host-callback ratio as 173 %.

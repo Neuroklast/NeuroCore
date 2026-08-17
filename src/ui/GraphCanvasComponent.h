@@ -44,13 +44,14 @@ public:
     void mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w) override;
 
     static constexpr int kGrid = 16;
-    static constexpr int kCardWidth = 13 * kGrid;   // 208
-    static constexpr int kTitleRows = 1;            // one unit above the jack stack
+    static constexpr int kCardWidth = 11 * kGrid;   // 176
+    static constexpr int kTitleRows = 2;            // caption has a full two units
+    static constexpr int kBottomRows = 1;           // pad under the last jack
     static constexpr int kJackPitch = kGrid;        // 1 jack = 1 unit of height
-    static constexpr int kJackPad = kGrid / 2;      // jack sits in the centre of its row
-    static constexpr int kCardHeight = (kTitleRows + 1) * kGrid; // 32 — one jack
-    static constexpr int kIoWidth = 5 * kGrid;      // 80
-    static constexpr int kIoHeight = kCardHeight;   // 32
+    static constexpr int kJackPad = 0;              // jack sits on the grid line of its row
+    static constexpr int kCardHeight = (kTitleRows + 1 + kBottomRows) * kGrid; // 64
+    static constexpr int kIoWidth = 6 * kGrid;      // 96
+    static constexpr int kIoHeight = kCardHeight;   // 64
     static constexpr int kChipMinH = kCardHeight;
     static constexpr int kChipArgRowH = kGrid;
     static constexpr float kZoomMin = 0.55f;
@@ -85,10 +86,12 @@ public:
     static float cableTapEnergy (const float* wave, int n) noexcept;
     /** Clamp a live osc rate for the LED pulse. 0 stays 0 (env / unknown). */
     static float lfoChaseHz (float hz) noexcept;
-    /** Pixels the LED advances this frame. Independent of Hz and cable length. */
+    /** Pixels the pulse advances this frame. Faster LFO = faster travel. */
     static float lfoChaseStep (float hz, float fps) noexcept;
     /** Pulse 0..1 at `hz` (brightness), not travel speed. */
     static float lfoLedPulse (float hz, float timeSec) noexcept;
+    /** Alpha of one travelling pulse. 0 at silence, under 0.45 at full. */
+    static float lfoPulseAlpha (float amp) noexcept;
     /** LED position 0..1 from a pixel phase and path length. */
     static float lfoChaseAlong (float phasePx, float pathLength) noexcept;
     /** Peak |sample| of the LFO viz window, 0..1. */
@@ -99,7 +102,7 @@ public:
     static int jackLocalY (int slot) noexcept;
     /** Orthogonal jack-to-jack path (output faces +X, input faces −X). */
     static juce::Path makeOrthoCable (juce::Point<float> from, juce::Point<float> to);
-    /** Direct knob→jack curve. Not a PCB trace — no square corners. */
+    /** Knob→jack Manhattan (HVH). On-board control uses PcbRouter. */
     static juce::Path makeKnobCable (juce::Point<float> from, juce::Point<float> to);
     bool jackIsPatched (int nodeIndex, const juce::String& jackId, bool output) const;
     void refreshCableMeters();
@@ -167,6 +170,7 @@ private:
     mutable std::vector<dsl::GraphEdge> cachedEdges;
     mutable std::vector<dsl::PcbRoute> cachedRoutes;
     mutable std::vector<dsl::PcbRoute> cachedModRoutes;
+    mutable std::vector<dsl::PcbRoute> cachedControlRoutes;
     mutable bool edgesDirty { true };
     mutable dsl::PcbRouter pcbRouter;
     juce::StringArray expandedNames;

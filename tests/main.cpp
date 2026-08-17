@@ -23,6 +23,7 @@
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
 #include "FactoryLoudnessTest.h"
+#include "CircuitContractTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -59,6 +60,7 @@ int main (int argc, char* argv[])
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
+  CircuitContractTest circuitContractTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

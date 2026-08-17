@@ -65,8 +65,14 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
     snap (lowSm, lowExpr, 1.f);
     snap (midSm, midExpr, 1.f);
     snap (highSm, highExpr, 1.f);
-    snap (f1Sm, f1Expr, 90.f);
-    snap (f2Sm, f2Expr, 3200.f);
+    f1Sm.reset (sampleRate, Config::kXoverSmoothingTime);
+    f2Sm.reset (sampleRate, Config::kXoverSmoothingTime);
+    {
+        const float a = f1Expr.evaluate (0.f);
+        const float b = f2Expr.evaluate (0.f);
+        f1Sm.setCurrentAndTargetValue (std::isfinite (a) && a > 0.f ? a : 90.f);
+        f2Sm.setCurrentAndTargetValue (std::isfinite (b) && b > 0.f ? b : 3200.f);
+    }
     applyCoeffs (f1Sm.getCurrentValue(), f2Sm.getCurrentValue());
     clearRuntimeState();
     applyCoeffs (f1Sm.getCurrentValue(), f2Sm.getCurrentValue());
@@ -128,7 +134,8 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
         f1Sm.skip (nS - 1);
         f2Sm.skip (nS - 1);
     }
-    if (std::abs (f1 - lastF1) > 0.8f || std::abs (f2 - lastF2) > 0.8f)
+    if (lastF1 < 0.f || lastF2 < 0.f
+        || std::abs (f1 - lastF1) > 1.0e-4f || std::abs (f2 - lastF2) > 1.0e-4f)
         applyCoeffs (f1, f2);
 
     const int useCh = juce::jmin (nCh, 2);

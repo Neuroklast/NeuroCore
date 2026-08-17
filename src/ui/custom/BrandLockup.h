@@ -9,7 +9,9 @@ class BrandLockup : public juce::Component,
 public:
     static constexpr const char* kWebsiteUrl = "https://neuroklast.net";
     /// Edge-cropped NK mark fills the toolbar; stays under the HUD strip.
-    static constexpr float kMaxLogoHeight = 32.f;
+    static constexpr float kMaxLogoHeight = 34.f;
+    static constexpr float kMinTitlePt = 14.f;
+    static constexpr float kMinVersionPt = 12.f;
 
     BrandLockup (juce::Image logoImage, juce::String titleText, juce::String versionText)
         : logo (std::move (logoImage)),
@@ -42,8 +44,8 @@ public:
             return;
 
         const float h = r.getHeight();
-        const float titleH = juce::jlimit (11.f, 15.f, h * 0.50f);
-        const float verH   = juce::jlimit (9.f, 11.5f, h * 0.34f);
+        const float titleH = juce::jlimit (kMinTitlePt, 18.f, h * 0.56f);
+        const float verH   = juce::jlimit (kMinVersionPt, 14.f, h * 0.40f);
         auto titleFont = NeuroKoreLookAndFeel::brandFont (titleH, true);
         auto verFont   = NeuroKoreLookAndFeel::monoFont (verH);
 
@@ -86,7 +88,7 @@ public:
         g.setColour (NeuroKoreLookAndFeel::accent());
         g.setFont (titleFont);
         g.drawText (title, titleArea, juce::Justification::centredLeft, false);
-        g.setColour (NeuroKoreLookAndFeel::accent().withAlpha (0.72f));
+        g.setColour (NeuroKoreLookAndFeel::ink());
         g.setFont (verFont);
         g.drawText (version, verArea, juce::Justification::centredLeft, false);
     }
