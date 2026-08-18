@@ -24,6 +24,11 @@
 #include "IrXoverTest.h"
 #include "FactoryLoudnessTest.h"
 #include "CircuitContractTest.h"
+#include "AstJsonTest.h"
+#include "WebShellTest.h"
+#include "WebCompileTest.h"
+#include "HostSnapshotTest.h"
+#include "TelemetryPumpTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -61,6 +66,11 @@ int main (int argc, char* argv[])
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
   CircuitContractTest circuitContractTest;
+  AstJsonTest astJsonTest;
+  WebShellTest webShellTest;
+  WebCompileTest webCompileTest;
+  HostSnapshotTest hostSnapshotTest;
+  TelemetryPumpTest telemetryPumpTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

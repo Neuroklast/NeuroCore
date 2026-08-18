@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-set(NEUROKORE_VERSION_NUMERIC "0.4.7")
-set(NEUROKORE_VERSION_LABEL "0.4.7-alpha")
+set(NEUROKORE_VERSION_NUMERIC "0.4.8")
+set(NEUROKORE_VERSION_LABEL "0.4.8-alpha")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
@@ -145,6 +145,14 @@ set(SOURCE_FILES
     src/core/DspEngine.cpp
     src/core/PluginProcessor.cpp
     src/ui/PluginEditor.cpp
+    src/bridge/AstJson.cpp
+    src/bridge/GraphOps.cpp
+    src/bridge/TelemetryFrame.cpp
+    src/bridge/WebAssets.cpp
+    src/bridge/WebBridge.cpp
+    src/bridge/CompileSession.cpp
+    src/bridge/HostSnapshot.cpp
+    src/bridge/TelemetryPump.cpp
 )
 
 # AU (.component) is generated only on Apple. JUCE silently drops it elsewhere.
@@ -179,11 +187,13 @@ juce_add_plugin(NeuroKore
     VST3_AUTO_MANIFEST FALSE
     MICROPHONE_PERMISSION_ENABLED TRUE
     MICROPHONE_PERMISSION_TEXT "NEUROKORE needs microphone access to process live audio in the standalone app."
+    NEEDS_WEBVIEW2 TRUE
 )
 
 target_sources(NeuroKore PRIVATE
     ${SOURCE_FILES}
     src/ui/StandaloneAudioSettings.cpp
+    src/ui/WebPluginEditor.cpp
 )
 
 juce_generate_juce_header(NeuroKore)
@@ -197,9 +207,21 @@ target_include_directories(NeuroKore PRIVATE
     ${PROJECT_SOURCE_DIR}/src/licensing
     ${PROJECT_SOURCE_DIR}/src/third_party
     ${PROJECT_SOURCE_DIR}/src/third_party/nlohmann
+    ${PROJECT_SOURCE_DIR}/src/bridge
 )
 
 target_compile_features(NeuroKore PRIVATE cxx_std_17)
+
+target_compile_definitions(NeuroKore
+    PUBLIC
+        JUCE_WEB_BROWSER=1
+        JUCE_USE_WIN_WEBVIEW2=1
+        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
+    PRIVATE
+        NEUROKORE_HAS_WEB_EDITOR=1
+        NEUROKORE_NATIVE_EDITOR=0
+        NEUROKORE_WEB_DIST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/web/dist"
+)
 
 juce_add_binary_data(resourcesBinary
     SOURCES
@@ -216,7 +238,7 @@ juce_add_binary_data(resourcesBinary
         resources/optimizations.txt
         resources/templates.json
         resources/UserManual_en.txt
-        # Embedded so Cubase/hosts work without a loose resources/ folder next to the .vst3
+        # Source of truth is this JSON in git. Bound into BinaryData only at cmake time.
         resources/factory_presets.json
         "resources/irs/American IR 01.wav"
         "resources/irs/British IR 01.wav"
@@ -309,6 +331,11 @@ target_sources(NeuroKoreTests PRIVATE
     tests/DynamicsBlocksTest.h
     tests/IrXoverTest.h
     tests/FactoryLoudnessTest.h
+    tests/AstJsonTest.h
+    tests/WebShellTest.h
+    tests/WebCompileTest.h
+    tests/HostSnapshotTest.h
+    tests/TelemetryPumpTest.h
     ${SOURCE_FILES}
     src/ui/StandaloneAudioSettings.cpp
     src/dsp/WaveShaper.cpp
@@ -324,6 +351,8 @@ target_include_directories(NeuroKoreTests PRIVATE
     ${PROJECT_SOURCE_DIR}/src/dsl
     ${PROJECT_SOURCE_DIR}/src/ui
     ${PROJECT_SOURCE_DIR}/src/licensing
+    ${PROJECT_SOURCE_DIR}/src/bridge
+    ${PROJECT_SOURCE_DIR}/src/third_party
 )
 
 target_compile_features(NeuroKoreTests PRIVATE cxx_std_17)
@@ -331,6 +360,7 @@ target_compile_features(NeuroKoreTests PRIVATE cxx_std_17)
 target_compile_definitions(NeuroKoreTests PRIVATE
     NEUROKORE_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
     NEUROKORE_SKIP_LICENSE_ENFORCEMENT=1
+    NEUROKORE_NATIVE_EDITOR=1
 )
 
 target_link_libraries(NeuroKoreTests PRIVATE
@@ -386,3 +416,13 @@ target_link_libraries(NeuroKoreIssuer PRIVATE
     juce::juce_data_structures
     juce::juce_cryptography
 )
+
+find_program(NPM_EXECUTABLE NAMES npm.cmd npm)
+if (NPM_EXECUTABLE)
+    add_custom_target(NeuroKoreWeb
+        COMMAND "${NPM_EXECUTABLE}" install
+        COMMAND "${NPM_EXECUTABLE}" run build
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/web"
+        COMMENT "Build NEUROKORE web UI into web/dist"
+    )
+endif()

@@ -31,6 +31,7 @@
 #include "../core/MidiVariableMapper.h"
 #include "../licensing/LicenseManager.h"
 #include "../ui/MidiLearnManager.h"
+#include "../bridge/TelemetryPump.h"
 
 
 //==============================================================================
@@ -211,6 +212,8 @@ public:
 
     bool  isCpuProtectActive() const noexcept { return cpuProtect.isTripped(); }
     float getCpuLoad()         const noexcept { return cpuProtect.getSmoothedLoad(); }
+    bridge::TelemetryPump& getTelemetry() noexcept { return telemetryPump; }
+    const bridge::TelemetryPump& getTelemetry() const noexcept { return telemetryPump; }
     void  clearCpuProtect()          noexcept { cpuProtect.clear(); }
 
     bool          isProductLicensed() const noexcept { return isLicensed.load(); }
@@ -277,6 +280,7 @@ private:
     ScriptManager   scriptManager;
     CpuProtect      cpuProtect;
     WaveformCapture waveformCapture;
+    bridge::TelemetryPump telemetryPump;
     MidiVariableMapper midiVariableMapper;
 
     juce::String currentLanguage;

@@ -624,8 +624,10 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "meter";
             if (desc.type == "sc" || desc.type == "scin" || desc.type == "side_chain")
                 desc.type = "sidechain";
+            if (desc.type == "custom")
+                desc.type = "custom";
 
-            if (desc.type != "stage" && desc.type != "filter" && desc.type != "eq" &&
+            if (desc.type != "stage" && desc.type != "custom" && desc.type != "filter" && desc.type != "eq" &&
                 desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
                 desc.type != "delay" && desc.type != "reverb" && desc.type != "ms" &&
                 desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
@@ -662,7 +664,7 @@ bool DSLParser::parse(const juce::String& text,
             desc.args[key] = value;
         }
 
-        if (desc.type == "stage" && desc.args.count("y") == 0)
+        if ((desc.type == "stage" || desc.type == "custom") && desc.args.count("y") == 0)
         {
             error = "Error on line " + juce::String(i+1) + ": stage without formula.";
             return false;
