@@ -356,7 +356,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (d.type == "bus" || d.type == "send" || d.type == "out")
             continue;
 
-        if (d.type.startsWith("stage"))
+        if (d.type.startsWith("stage") || d.type == "custom")
         {
             auto st = std::make_unique<Stage>();
             // Scale knob refs a–d via declared param ranges: a → map(a,0,1,min,max)
@@ -3329,33 +3329,22 @@ inline float flushDenorm (float x) noexcept
     return (std::abs (x) < 1.0e-20f) ? 0.f : x;
 }
 
-/** 4-point Hermite. Keep the 4-tap window ≥4 samples behind the write head. */
-inline float fracDelayRead (const std::vector<float>& buf, float pos, int N) noexcept
+/** Linear read, integer wrap. Hermite's 4-tap window crossed index 0 every
+    delay period (i0 = N-1 next to a live sample) and clicked. */
+inline float delayRead (const std::vector<float>& buf, int writePos, float delaySamps, int N) noexcept
 {
     if (N < 4 || buf.size() < (size_t) N)
         return 0.f;
-    // pos is writePos - delay; range is (-N, N) so a single wrap is enough.
-    float p = pos;
-    if (p < 0.f)
-        p += (float) N;
-    else if (p >= (float) N)
-        p -= (float) N;
-    int i1 = (int) p;
-    if (i1 >= N) i1 = 0;
-    if (i1 < 0) i1 = 0;
-    const float f = p - (float) i1;
-    const int i0 = (i1 - 1 + N) % N;
-    const int i2 = (i1 + 1) % N;
-    const int i3 = (i1 + 2) % N;
-    const float y0 = buf[(size_t) i0];
-    const float y1 = buf[(size_t) i1];
-    const float y2 = buf[(size_t) i2];
-    const float y3 = buf[(size_t) i3];
-    const float c0 = y1;
-    const float c1 = 0.5f * (y2 - y0);
-    const float c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3;
-    const float c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
-    return ((c3 * f + c2) * f + c1) * f + c0;
+    const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
+    const int di = (int) d;
+    const float f = d - (float) di;
+    int i0 = writePos - di;
+    if (i0 < 0)
+        i0 += N;
+    int i1 = i0 - 1;
+    if (i1 < 0)
+        i1 += N;
+    return buf[(size_t) i0] + f * (buf[(size_t) i1] - buf[(size_t) i0]);
 }
 } // namespace
 
@@ -3440,10 +3429,9 @@ float SignalChain::Delay::resolveDelaySamples() const noexcept
             ms = 250.f;
     }
     ms = juce::jlimit (0.1f, kMaxDelaySec * 1000.f, ms);
-    // Hermite uses 4 taps; keep 8 samples behind the write head so 8× OS
-    // cannot scrape the write cursor (that is a periodic wrap tick).
-    const float minSamps = 8.0f;
-    return juce::jlimit (minSamps, (float) (maxDelaySamples - 8), ms * 0.001f * sampleRate);
+    // At least 2 samples behind the write slot so linear taps never scrape it.
+    const float minSamps = 2.0f;
+    return juce::jlimit (minSamps, (float) (maxDelaySamples - 2), ms * 0.001f * sampleRate);
 }
 
 float SignalChain::Delay::tailSeconds() const noexcept
@@ -3493,9 +3481,8 @@ float SignalChain::Delay::process (int ch, float x)
     if (! std::isfinite (wet)) wet = 0.35f;
     wet = juce::jlimit (0.f, 1.f, wet);
 
-    float readPos = (float) writePos - dSamps;
     auto& buf = (ch == 1 && ! bufR.empty()) ? bufR : bufL;
-    float delayed = fracDelayRead (buf, readPos, maxDelaySamples);
+    float delayed = delayRead (buf, writePos, dSamps, maxDelaySamples);
     if (! std::isfinite (delayed))
         delayed = 0.f;
 
@@ -3575,9 +3562,8 @@ void SignalChain::Delay::processFrame (float& left, float* right) noexcept
     const float dryG   = 1.0f - wet;
     const float dampA_ = dampCoeffSm.getNextValue();
 
-    const float readPos = (float) writePos - dSamps;
-    float wetL = fracDelayRead (bufL, readPos, maxDelaySamples);
-    float wetR = fracDelayRead (bufR, readPos, maxDelaySamples);
+    float wetL = delayRead (bufL, writePos, dSamps, maxDelaySamples);
+    float wetR = delayRead (bufR, writePos, dSamps, maxDelaySamples);
     if (! std::isfinite (wetL)) wetL = 0.f;
     if (! std::isfinite (wetR)) wetR = 0.f;
 
