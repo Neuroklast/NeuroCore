@@ -22,7 +22,7 @@ On **macOS** also build the AU (Logic, GarageBand, Ableton AU slot):
 cmake --build build --config Release --target NeuroKore_AU
 ```
 
-Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.4.7-alpha.exe`, `VST3/NEUROKORE-0.4.7-alpha.vst3`, and on macOS `AU/NEUROKORE-0.4.7-alpha.component`). Resources are copied next to each binary. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
+Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.4.8-alpha.exe`, `VST3/NEUROKORE-0.4.8-alpha.vst3`, and on macOS `AU/NEUROKORE-0.4.8-alpha.component`). Resources are copied next to each binary. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
 
 Audio Units are an Apple format: a Windows or Linux CMake run still lists `AU` in `FORMATS`, but JUCE skips the target. You cannot produce a `.component` on Windows.
 
@@ -36,7 +36,7 @@ Windows zip / installer (after a Release build):
 powershell -File scripts/package_windows.ps1
 ```
 
-That stages `NEUROKORE-0.4.7-alpha.vst3` and `NEUROKORE-0.4.7-alpha.exe`, writes `build/package/NEUROKORE-0.4.7-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.4.7-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`.
+That stages `NEUROKORE-0.4.8-alpha.vst3` and `NEUROKORE-0.4.8-alpha.exe`, writes `build/package/NEUROKORE-0.4.8-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.4.8-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`.
 
 Oversampling defaults to **4×**. Drop to 2× or 1× if the CPU is tight.
 
