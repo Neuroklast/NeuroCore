@@ -12,7 +12,7 @@ The board is `@xyflow/react`. Check the library before writing geometry. **Dragg
 | Drag snap | `snapToGrid` + `snapGrid={[BOARD_GRID, BOARD_GRID]}` | A second snap model for live drag |
 | Audio connect | `onConnect` + `isValidConnection` + `Handle` + `ConnectionMode.Loose` | `elementsFromPoint` connect, homemade jack hit-test instead of Handle |
 | Drag cable (preview) | `connectionLineComponent` + `getStraightPath` — product: **free line** until drop | `audioStepPath` or A* while the pointer is down |
-| Knob → param bind preview | RF `getSmoothStepPath` via `bindSmoothPath` (knobs are chrome, not RF nodes) | A second A* / PCB router for bind |
+| Knob → param bind preview | Same A* + 32 px stubs + 45° as audio (`routeBoardTrace`); knobs are chrome / solid | A second homemade HVH just for bind |
 | Dot / line grid, pan/zoom | `<Background variant={Dots\|Lines\|Cross} gap={BOARD_GRID} />` — stack a second `Background` for the 4×4 block | SVG `pattern` + `useViewport` |
 | Handle side | `Handle` + `Position.Left/Right/Top/Bottom` | Fake extra plugs, CSS that fights RF handle coords |
 | Layout + PCB route (after drop) | `elkjs` (layered RIGHT) + A* in `layout.worker.ts`; RF paints `data.route` | A third packer, or `routeBoard` on every pointer move |
@@ -39,8 +39,12 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Manhattan, few corners | Path cost = `cells + 12 * turns`. Long straight beats a 4-corner shortcut |
 | 16 px grid | Jack or chip origin not a multiple of 16 |
 | Chips do not overlap | `nodeRectsClash` after tidy |
-| ≥ 1 grid air on every side | Two chips closer than `BOARD_GRID` (32) on the overlapping axis, even with no cable between them |
+| ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column |
+| Dest stub is 32 px east, never a U-turn | Any audio path point with `x > dest jack x`, or a west-then-east jog at the IN jack |
+| IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or the single jack not on the vertical midline |
+| Audio plasma is a white core with red glow | Stream stroke not `#ffffff`, or glow not the scope-out red; dashoffset must run source → dest (never positive) |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
+| Param cables follow the board router | Bind path through a chip, no 32 px stubs, lightning, or dest jack above the knob with an empty path |
 
 **Do not** “fix” a bad tidy with a special case for Phaser Lab. Fix `tidyLayout` ranks/rails so every factory preset obeys the table.
 
@@ -60,4 +64,5 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 
 ## Settings / scale
 
+- Theme engine: `signal` (red/cyan/black/white, default), `gold` (yellow/cyan/black), `azure` (blue/cyan/black). Paint is `--nk-*` / `themeOf(id)` — no private hex in UI code. Settings → THEME.
 - Window scale 100 / 125 / 150. `getDesktopScaleFactor() == 1`. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.

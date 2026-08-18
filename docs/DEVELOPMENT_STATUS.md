@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-18  
+**Stand:** 2026-08-18 (ENV follower; dest stubs + IO 96; param board router; theme engine; plasma dashoffset; 3D spectrogram)  
 **Version:** 0.4.8-alpha  
 **Branch:** `ui-overhaul`
 
