@@ -1,24 +1,25 @@
 import { useEffect, useRef } from "react";
+import { spectrumBins } from "../face/faceModel";
 import { useHostStore } from "../store/hostStore";
+import { liveTheme, themeRgba } from "../theme/theme";
 import { fitCanvas } from "./canvasFit";
 import {
-  sampleAtPx,
+  SCOPE_COLOR,
   SCOPE_MENU,
+  SPEC_BINS,
+  SPEC_DEPTH,
   scopeTitle,
-  tracesFor,
-  type ScopeYScale,
+  spectrogramProject,
+  spectrogramPush,
+  techNoise,
 } from "./scopeModel";
 
-function yOf(v: number, h: number, yScale: ScopeYScale, invert: boolean): number {
-  let n = v;
-  if (yScale === "db") {
-    const abs = Math.max(1.0e-6, Math.abs(v));
-    n = Math.max(-1, Math.min(1, (20 * Math.log10(abs) + 60) / 60)) * Math.sign(v || 1);
-  }
-  if (invert) {
-    n = -n;
-  }
-  return h * 0.5 - n * h * 0.38;
+function pickScope(source: string, inn: ArrayLike<number>, out: ArrayLike<number>): ArrayLike<number> {
+  return source === "in" ? inn : out;
+}
+
+function liftBins(raw: number[]): number[] {
+  return raw.map((v) => Math.min(1, Math.log10(1 + Math.max(0, v) * 18)));
 }
 
 export function ScopeCanvas({
@@ -39,6 +40,9 @@ export function ScopeCanvas({
   const yScale = useHostStore((s) => s.scopeY);
   const grid = useHostStore((s) => s.scopeGrid);
   const invertY = useHostStore((s) => s.scopeInvertY);
+  const themeId = useHostStore((s) => s.theme);
+  const hist = useRef<number[][]>([]);
+  const frame = useRef(0);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -51,83 +55,90 @@ export function ScopeCanvas({
     }
     let raf = 0;
     const draw = () => {
+      const theme = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      const n = Math.max(2, count);
-      ctx.fillStyle = "#000000";
+      const samples = pickScope(source, scopeIn, scopeOut);
+      hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS)));
+      frame.current += 1;
+      ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "#3a0000";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
-      const plotL = 1;
-      const plotR = w - 1;
-      const plotT = 14;
-      const plotB = h - 12;
-      const pw = Math.max(2, plotR - plotL);
-      const ph = Math.max(2, plotB - plotT);
+
       if (grid) {
-        ctx.strokeStyle = "rgba(255,26,26,0.18)";
+        ctx.strokeStyle = themeRgba("accent", 0.14, theme);
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        for (let i = 0; i <= 4; i += 1) {
-          const y = plotT + (ph * i) / 4;
-          ctx.moveTo(plotL, y);
-          ctx.lineTo(plotR, y);
+        for (let r = 0; r < SPEC_DEPTH; r += 4) {
+          const a = spectrogramProject(0, r, 0, w, h);
+          const b = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
         }
-        for (let i = 0; i <= 4; i += 1) {
-          const x = plotL + (pw * i) / 4;
-          ctx.moveTo(x, plotT);
-          ctx.lineTo(x, plotB);
+        for (let b = 0; b < SPEC_BINS; b += 8) {
+          const a = spectrogramProject(b, SPEC_DEPTH - 1, 0, w, h);
+          const c = spectrogramProject(b, 0, 0, w, h);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(c.x, c.y);
         }
         ctx.stroke();
       }
-      ctx.strokeStyle = "#3a0000";
-      ctx.beginPath();
-      ctx.moveTo(plotL, plotT + ph / 2);
-      ctx.lineTo(plotR, plotT + ph / 2);
-      ctx.stroke();
 
-      const traces = tracesFor(source, delta, scopeIn, scopeOut, n);
-      for (const t of traces) {
+      const rows = hist.current;
+      for (let r = rows.length - 1; r >= 0; r -= 1) {
+        const row = rows[r]!;
+        const fade = 1 - r / Math.max(1, SPEC_DEPTH);
+        const pts = row.map((mag, b) => spectrogramProject(b, r, invertY ? 1 - mag : mag, w, h));
         ctx.beginPath();
-        for (let px = 0; px < pw; px += 1) {
-          const x = plotL + px;
-          const y = plotT + yOf(sampleAtPx(t.samples, n, px, pw), ph, yScale, invertY);
-          if (px === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+        const floorL = spectrogramProject(0, r, 0, w, h);
+        const floorR = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
+        ctx.moveTo(floorL.x, floorL.y);
+        for (const p of pts) {
+          ctx.lineTo(p.x, p.y);
         }
-        ctx.save();
-        ctx.strokeStyle = t.color;
-        ctx.shadowColor = t.color;
-        ctx.shadowBlur = t.id === "delta" ? 3 : 5;
-        ctx.lineWidth = t.id === "delta" ? 1.4 : 2;
+        ctx.lineTo(floorR.x, floorR.y);
+        ctx.closePath();
+        ctx.fillStyle = themeRgba("accent", 0.05 + fade * 0.16, theme);
+        ctx.fill();
+        ctx.strokeStyle = r === 0 ? theme.accent : themeRgba("accent", 0.18 + fade * 0.55, theme);
+        ctx.shadowColor = r === 0 ? theme.accent : "transparent";
+        ctx.shadowBlur = r === 0 ? 6 : 0;
+        ctx.lineWidth = r === 0 ? 1.4 : 0.8;
         ctx.stroke();
         ctx.shadowBlur = 0;
-        ctx.lineWidth = t.id === "delta" ? 1 : 1.4;
-        ctx.stroke();
-        ctx.restore();
       }
 
-      ctx.fillStyle = "#ff003c";
+      ctx.fillStyle = themeRgba("cyan", 0.08, theme);
+      for (let y = 2; y < h; y += 3) {
+        ctx.fillRect(1, y, w - 2, 1);
+      }
+      const f = frame.current;
+      ctx.fillStyle = theme.cyan;
+      for (let y = 2; y < h; y += 5) {
+        for (let x = 2; x < w; x += 7) {
+          const n = techNoise(x, y, f);
+          if (n > 0) {
+            ctx.globalAlpha = 0.18 + n * 0.45;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = themeRgba("accent", 0.55, theme);
+      ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+      ctx.fillStyle = SCOPE_COLOR.out;
       ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.fillText(scopeTitle(source, delta), 8, 12);
-      ctx.fillStyle = "#c8c8c8";
+      ctx.fillText(`${scopeTitle(source, delta)}  SPEC`, 8, 12);
+      ctx.fillStyle = theme.inkSoft;
       ctx.font = "9px 'JetBrains Mono', monospace";
-      const xLab = xScale === "time" && sr > 0
-        ? `${((n / sr) * 1000).toFixed(1)} ms`
-        : xScale === "freq" && sr > 0
-          ? `${(sr * 0.5).toFixed(0)} Hz`
-          : `${n}`;
-      ctx.fillText("0", plotL + 4, h - 3);
-      ctx.fillText(xLab, plotR - 36, h - 3);
-      ctx.fillText(yScale === "db" ? "dB" : "1.0", plotL + 4, plotT + 10);
+      const hz = sr > 0 ? `${(sr * 0.5).toFixed(0)} Hz` : "NYQ";
+      ctx.fillText("0", 6, h - 4);
+      ctx.fillText(hz, w - 40, h - 4);
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [count, delta, grid, invertY, scopeIn, scopeOut, source, sr, xScale, yScale]);
+  }, [count, delta, grid, invertY, scopeIn, scopeOut, source, sr, themeId, xScale, yScale]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
+import { useTheme } from "../theme/themeBind";
 import {
   buildTraces,
   PHASE_STEP,
@@ -18,6 +19,7 @@ export function FunctionPlot({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const motion = useHostStore((s) => s.motion);
+  const theme = useTheme();
 
   useEffect(() => {
     const canvas = ref.current;
@@ -33,9 +35,9 @@ export function FunctionPlot({
     let raf = 0;
     let last = performance.now();
     const drawWave = (y0: number, h: number, samples: Float32Array, color: string, tag: string) => {
-      ctx.fillStyle = "#141414";
+      ctx.fillStyle = theme.surfaceHigh;
       ctx.fillRect(8, y0, canvas.width - 16, h);
-      ctx.strokeStyle = "#3a0000";
+      ctx.strokeStyle = theme.accentDeep;
       ctx.strokeRect(8.5, y0 + 0.5, canvas.width - 17, h - 1);
       const mid = y0 + h * 0.5;
       ctx.strokeStyle = "rgba(200,200,200,0.3)";
@@ -65,19 +67,19 @@ export function FunctionPlot({
         if (phase > Math.PI * 2) phase -= Math.PI * 2;
       }
       last = now;
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = "rgba(255,26,26,0.45)";
+      ctx.strokeStyle = `rgba(${theme.accentRgb}, 0.45)`;
       ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
       const { inn, out, ok } = buildTraces(expr, phase, undefined, wave);
-      drawWave(8, canvas.height * 0.46, inn, "#7aa2ff", `IN  ${wave}`);
-      drawWave(canvas.height * 0.52, canvas.height * 0.46, out, ok ? "#ff003c" : "#666666",
+      drawWave(8, canvas.height * 0.46, inn, theme.cyan, `IN  ${wave}`);
+      drawWave(canvas.height * 0.52, canvas.height * 0.46, out, ok ? theme.accent : theme.inkMuted,
         ok ? `OUT  ${name || "f(x)"}` : "OUT  (no demo)");
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [example, motion, name, wave]);
+  }, [example, motion, name, theme, wave]);
 
   return <canvas ref={ref} width={520} height={220} className="h-[220px] w-full" />;
 }

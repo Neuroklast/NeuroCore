@@ -112,6 +112,24 @@ export function dotPeriodMs(peak: number): number {
   return Math.round(1420 - a * 1200);
 }
 
+/** Always positive px/s. Loud signal travels faster, never reverses. */
+export function plasmaSpeedPxPerSec(peak: number): number {
+  return 52 + logAmp(peak) * 240;
+}
+
+/** Dashoffset only decreases (source → dest). dt ≤ 0 leaves the value unchanged. */
+export function advancePlasmaDash(prev: number, peak: number, dtSec: number): number {
+  const dt = Number.isFinite(dtSec) ? Math.max(0, Math.min(0.05, dtSec)) : 0;
+  const cur = Number.isFinite(prev) ? prev : 0;
+  return cur - plasmaSpeedPxPerSec(peak) * dt;
+}
+
+/** Legacy period helper — do not bind this to CSS animation-duration. */
+export function plasmaPeriodMs(peak: number): number {
+  const a = logAmp(peak);
+  return Math.round(1100 - a * 880);
+}
+
 export function cableLayer(
   kind: CableKind,
   style: CableStyle,

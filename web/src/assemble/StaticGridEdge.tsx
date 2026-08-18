@@ -61,12 +61,12 @@ export function StaticGridEdge({
     return (
       <g className="nk-dof-edge" data-focus={focus}>
         <BaseEdge id={id} path={path} style={{ stroke: "transparent", strokeWidth: 10, fill: "none" }} markerEnd={markerEnd} />
-        <path d={path} fill="none" stroke="#00f0ff" strokeWidth={LFO_WIRE} strokeLinecap="butt" className="nk-lfo-wire" />
+        <path d={path} fill="none" stroke="var(--nk-cyan)" strokeWidth={LFO_WIRE} strokeLinecap="butt" className="nk-lfo-wire" />
         {chase ? (
           <path
             d={path}
             fill="none"
-            stroke="#00f0ff"
+            stroke="var(--nk-cyan)"
             strokeWidth={LFO_DOT}
             strokeLinecap="round"
             strokeDasharray={lfo.dash}
@@ -83,9 +83,14 @@ export function StaticGridEdge({
       <path d={path} fill="none" stroke={accent} strokeWidth={outer + 2} strokeLinecap="butt" className={`nk-tube-bloom ${tubeClass}`} />
       <path d={path} fill="none" stroke={kind === "param" ? "#2a2a10" : "#220505"} strokeWidth={outer} opacity={0.96} />
       <path d={path} fill="none" stroke="#050505" strokeWidth={glass} opacity={0.94} />
-      <path d={path} fill="none" stroke={accent} strokeWidth={bore} data-src={srcKey} className={`nk-tube-bore ${tubeClass}`} />
-      {showPlasma ? <path d={path} fill="none" stroke={accent} strokeWidth="1.15" data-src={srcKey} className="nk-plasma" /> : null}
-      {showDots ? <path d={path} fill="none" stroke={accent} strokeWidth="2.2" strokeLinecap="round" data-src={srcKey} className="nk-dots" /> : null}
+      <path d={path} fill="none" stroke={kind === "audio" ? "var(--nk-black)" : accent} strokeWidth={bore} data-src={srcKey} className={`nk-tube-bore ${tubeClass}`} />
+      {showPlasma ? (
+        <>
+          <path d={path} fill="none" stroke="var(--nk-accent)" strokeWidth="2.4" data-src={srcKey} className="nk-plasma-glow" />
+          <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="1.2" data-src={srcKey} className="nk-plasma" />
+        </>
+      ) : null}
+      {showDots ? <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="2.2" strokeLinecap="round" data-src={srcKey} className="nk-dots" /> : null}
     </g>
   );
 }

@@ -104,6 +104,17 @@ export function osModeLabel(osFactor: number): string {
   return `LINEAR_PHASE_${n}X`;
 }
 
+/** Full-pane background. Bars grow up from the Unit floor, not a mid strip. */
+export function faceFftFrame(): { top: 0; bottom: 0; height: "fill" } {
+  return { top: 0, bottom: 0, height: "fill" };
+}
+
+export function faceFftBar(bin: number, viewH: number): { y: number; h: number } {
+  const v = Number.isFinite(bin) ? Math.max(0, bin) : 0;
+  const h = Math.max(1.2, Math.min(viewH * 0.92, v * viewH * 9));
+  return { y: viewH - h, h };
+}
+
 /** Magnitude spectrum. Integer DFT bins 0..N/2 folded into `binCount` slots. */
 export function spectrumBins(samples: ArrayLike<number>, binCount: number): number[] {
   const bins = Math.max(1, Math.floor(binCount));

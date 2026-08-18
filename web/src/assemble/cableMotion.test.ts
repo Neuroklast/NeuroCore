@@ -7,6 +7,8 @@ import {
   lfoDash,
   lfoDotGlow,
   LFO_WIRE,
+  advancePlasmaDash,
+  plasmaSpeedPxPerSec,
   svgPathLength,
   waveAnimMs,
   waveDash,
@@ -62,6 +64,10 @@ describe("cable traffic", () => {
   it("speeds dots up with loudness and leaves LFO independent of wave/dots", () => {
     expect(dotPeriodMs(1)).toBeLessThan(dotPeriodMs(0.05));
     expect(dotPeriodMs(1)).toBeGreaterThan(150);
+    expect(advancePlasmaDash(0, 0.2, 0.016)).toBeLessThan(0);
+    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(-20);
+    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(advancePlasmaDash(-20, 0, 0.016));
+    expect(plasmaSpeedPxPerSec(1)).toBeGreaterThan(plasmaSpeedPxPerSec(0));
     expect(cableLayer("mod", "dots", true)).toBe("lfo");
     expect(cableLayer("mod", "wave", true)).toBe("lfo");
     expect(cableLayer("audio", "wave", true)).toBe("wave");

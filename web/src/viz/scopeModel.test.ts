@@ -11,6 +11,11 @@ import {
   barFillPercent,
   demoLoudness,
   scopeTitle,
+  SPEC_BINS,
+  SPEC_DEPTH,
+  spectrogramProject,
+  spectrogramPush,
+  techNoise,
   tracesFor,
 } from "./scopeModel";
 
@@ -56,6 +61,25 @@ describe("scope deck model", () => {
     const a = demoLoudness(0);
     const b = demoLoudness(30);
     expect(Math.abs(a.inPeak - b.inPeak) + Math.abs(a.outRms - b.outRms)).toBeGreaterThan(0.05);
+  });
+
+  it("rolls a spectrogram history and projects older rows into the distance", () => {
+    let hist: number[][] = [];
+    hist = spectrogramPush(hist, [1, 0.5, 0.1]);
+    hist = spectrogramPush(hist, [0.2, 0.8, 0.4]);
+    expect(hist[0]?.[1]).toBeCloseTo(0.8);
+    expect(hist[1]?.[0]).toBeCloseTo(1);
+    for (let i = 0; i < SPEC_DEPTH + 4; i += 1) {
+      hist = spectrogramPush(hist, [0.1]);
+    }
+    expect(hist.length).toBe(SPEC_DEPTH);
+    expect(hist[0]?.length).toBe(SPEC_BINS);
+    const near = spectrogramProject(0, 0, 0, 400, 120);
+    const far = spectrogramProject(0, SPEC_DEPTH - 1, 0, 400, 120);
+    expect(far.y).toBeLessThan(near.y);
+    expect(techNoise(3, 7, 0)).toBeGreaterThanOrEqual(0);
+    expect(techNoise(3, 7, 0)).toBeLessThanOrEqual(1);
+    expect(techNoise(1, 1, 2) + techNoise(8, 4, 9)).toBeLessThan(2);
   });
 
   it("STUDIO chip cycles LIVE, not Settings", () => {

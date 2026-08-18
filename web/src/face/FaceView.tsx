@@ -24,6 +24,8 @@ import {
   dataRainLines,
   driveAmount,
   dspEvalMs,
+  faceFftBar,
+  faceFftFrame,
   formatDbfs,
   formatLufs,
   logoPulsePeriodMs,
@@ -132,7 +134,7 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
 
   return (
     <section
-      className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#0a0a0c] px-8"
+      className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)] px-8"
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         setCursor(cursorReadout(e.clientX - r.left, e.clientY - r.top));
@@ -216,14 +218,10 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
         </button>
       </div>
 
-      <div className="relative z-[1] flex max-w-[960px] flex-wrap items-stretch justify-center gap-3 self-center pb-2">
+      <div className="relative z-[1] mb-6 flex max-w-[960px] flex-wrap items-stretch justify-center gap-3 self-center pb-2">
         {live.map((k) => (
           <FaceKnob key={k.id} knob={k} />
         ))}
-      </div>
-      <div className="relative z-[1] mb-6 flex justify-center gap-2">
-        <button type="button" className="nk-clip" onClick={() => open("assemble")}>Open Circuit</button>
-        <button type="button" className="nk-clip" onClick={() => open("hack")}>Open Terminal</button>
       </div>
     </section>
   );
@@ -252,20 +250,27 @@ function FaceFft({ bins }: { bins: number[] }) {
     (raw[i - 1] ?? 0) * 0.22 + v * 0.56 + (raw[i + 1] ?? 0) * 0.22
   ));
   const w = 960;
-  const h = 200;
+  const h = 400;
   const gap = 1.15;
   const barW = w / shown.length;
+  const frame = faceFftFrame();
   return (
-    <svg className="nk-face-fft" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden>
+    <svg
+      className="nk-face-fft"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      aria-hidden
+      style={{ top: frame.top, bottom: frame.bottom, height: "100%" }}
+    >
       {shown.map((v, i) => {
-        const bh = Math.max(1.2, Math.min(h * 0.42, v * h * 9));
+        const bar = faceFftBar(v, h);
         return (
           <rect
             key={i}
             x={i * barW + gap * 0.35}
-            y={h - bh}
+            y={bar.y}
             width={Math.max(0.7, barW - gap)}
-            height={bh}
+            height={bar.h}
           />
         );
       })}

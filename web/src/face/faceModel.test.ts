@@ -10,6 +10,8 @@ import {
   dataRainLines,
   driveAmount,
   dspEvalMs,
+  faceFftBar,
+  faceFftFrame,
   formatDbfs,
   formatLufs,
   knobLfo,
@@ -31,6 +33,19 @@ function sum(xs: number[]): number {
 }
 
 describe("unit face spectrum and bands", () => {
+  it("anchors the band display to the unit floor, not a mid band", () => {
+    const frame = faceFftFrame();
+    expect(frame.top).toBe(0);
+    expect(frame.bottom).toBe(0);
+    expect(frame.height).toBe("fill");
+    const loud = faceFftBar(1, 400);
+    expect(loud.y + loud.h).toBe(400);
+    expect(loud.h).toBeGreaterThan(400 * 0.7);
+    const quiet = faceFftBar(0, 400);
+    expect(quiet.y + quiet.h).toBe(400);
+    expect(quiet.y).toBeGreaterThan(loud.y);
+  });
+
   it("puts a 1-cycle sine in the low bins and a Nyquist square in the high bins", () => {
     const n = 256;
     const sine = new Float32Array(n);

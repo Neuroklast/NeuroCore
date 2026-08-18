@@ -101,7 +101,7 @@ export function SignalEdge({
         <path
           d={path}
           fill="none"
-          stroke="#00f0ff"
+          stroke="var(--nk-cyan)"
           strokeWidth={LFO_WIRE}
           strokeLinecap="butt"
           strokeLinejoin="miter"
@@ -111,7 +111,7 @@ export function SignalEdge({
           <path
             d={path}
             fill="none"
-            stroke="#00f0ff"
+            stroke="var(--nk-cyan)"
             strokeWidth={LFO_DOT}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -166,7 +166,7 @@ export function SignalEdge({
       <path
         d={path}
         fill="none"
-        stroke={accent}
+        stroke={kind === "audio" ? "var(--nk-black)" : accent}
         strokeWidth={bore}
         strokeLinecap="butt"
         strokeLinejoin="miter"
@@ -174,22 +174,34 @@ export function SignalEdge({
         className={`nk-tube-bore ${tubeClass}`}
       />
       {showPlasma ? (
-        <path
-          d={path}
-          fill="none"
-          stroke={accent}
-          strokeWidth="1.15"
-          strokeLinecap="butt"
-          strokeLinejoin="miter"
-          data-src={srcKey}
-          className="nk-plasma"
-        />
+        <>
+          <path
+            d={path}
+            fill="none"
+            stroke="var(--nk-accent)"
+            strokeWidth="2.4"
+            strokeLinecap="butt"
+            strokeLinejoin="miter"
+            data-src={srcKey}
+            className="nk-plasma-glow"
+          />
+          <path
+            d={path}
+            fill="none"
+            stroke="var(--nk-white)"
+            strokeWidth="1.2"
+            strokeLinecap="butt"
+            strokeLinejoin="miter"
+            data-src={srcKey}
+            className="nk-plasma"
+          />
+        </>
       ) : null}
       {showDots ? (
         <path
           d={path}
           fill="none"
-          stroke={accent}
+          stroke="var(--nk-white)"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="miter"
