@@ -16,7 +16,7 @@ Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist
 | WP2 WebView-Shell | **grün** — `tests/WebShellTest.h`. Native bleibt Default. |
 | WP3 Zustand + compile/ast | **grün** — `tests/WebCompileTest.h`, `web` Vitest. |
 | WP4 Hack (Monaco) | **grün** — lint ohne apply; Edit/Save; 250 ms Marker. |
-| WP5 Assemble | **grün** — React Flow: easy-connect, proximity, pulse-edges, context menu, zoom-tiers, validation, L→R. ChipSpec catalog (`chipSpec` / `typeCode` / `minBodyPx`); expand no longer grows the chip. |
+| WP5 Assemble | **grün** — React Flow: easy-connect, proximity, pulse-edges, context menu, zoom-tiers, validation, L→R. ChipSpec catalog (`chipSpec` / `typeCode` / `minBodyPx`); expand no longer grows the chip. Inspect: enum `<select>` from `chipSpec.enums`, numeric clamp to `ranges`, blurb + bound knobs (unit, 2 dp). |
 | WP6 Chrome | **grün** — Knobs/Mix/OS/L-R, Footer 0–100, Presets, Settings, License/IR-Dialog. |
 | WP7 Telemetrie | **grün** — NKTM-Frame, Canvas-Scope, WebGL-Gonio, kein JSON-Audio. |
 | WP8 Default-Web | **grün** — Plugin öffnet WebView, wenn der Backend-Probe läuft. Sonst Native. |
