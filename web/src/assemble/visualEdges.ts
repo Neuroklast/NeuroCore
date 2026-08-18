@@ -1,15 +1,97 @@
 import type { AstEdge, AstJack, AstNode } from "../bridge/ast";
 
+function argOf(node: Pick<AstNode, "args">, key: string): string {
+  return (node.args[key] ?? "").trim().toLowerCase();
+}
+
+export function msMode(node: Pick<AstNode, "args">): string {
+  return argOf(node, "mode") || argOf(node, "encode");
+}
+
+export function isJoinMode(mode: string): boolean {
+  const m = mode.trim().toLowerCase();
+  return m === "decode" || m === "join" || m === "lr" || m === "stereo" || m === "to_lr"
+    || m === "join_lr" || m === "lr_join";
+}
+
+/** MS (mid/side) vs LR (left/right). Empty if the chip is not a split/join. */
+export function splitFamily(node: Pick<AstNode, "type" | "args">): "ms" | "lr" | "" {
+  const t = node.type.toLowerCase();
+  if (t === "split_lr" || t === "join_lr") {
+    return "lr";
+  }
+  if (t === "split_ms" || t === "join_ms") {
+    return "ms";
+  }
+  if (t !== "ms") {
+    return "";
+  }
+  const fam = argOf(node, "family") || argOf(node, "rails");
+  if (fam === "lr" || fam === "leftright" || fam === "l/r") {
+    return "lr";
+  }
+  const m = msMode(node);
+  if (m === "split_lr" || m === "join_lr" || m === "lr_split" || m === "lr_join") {
+    return "lr";
+  }
+  return "ms";
+}
+
+export function forkRails(family: "ms" | "lr"): [string, string] {
+  return family === "lr" ? ["left", "right"] : ["mid", "side"];
+}
+
+/** Encode stays an alias of split. */
 export function isMsEncode(node: Pick<AstNode, "type" | "args">): boolean {
-  if (node.type !== "ms") {
+  const t = node.type.toLowerCase();
+  if (t === "split_ms") {
+    return true;
+  }
+  if (t === "join_ms" || t !== "ms") {
     return false;
   }
-  const m = (node.args.mode ?? "").trim().toLowerCase();
-  return m !== "decode" && m !== "lr" && m !== "stereo" && m !== "to_lr";
+  return splitFamily(node) === "ms" && ! isJoinMode(msMode(node));
 }
 
 export function isMsDecode(node: Pick<AstNode, "type" | "args">): boolean {
-  return node.type === "ms" && ! isMsEncode(node);
+  const t = node.type.toLowerCase();
+  if (t === "join_ms") {
+    return true;
+  }
+  if (t === "split_ms") {
+    return false;
+  }
+  return t === "ms" && splitFamily(node) === "ms" && ! isMsEncode(node);
+}
+
+export function isLrSplit(node: Pick<AstNode, "type" | "args">): boolean {
+  const t = node.type.toLowerCase();
+  if (t === "split_lr") {
+    return true;
+  }
+  if (t === "join_lr") {
+    return false;
+  }
+  return splitFamily(node) === "lr" && ! isJoinMode(msMode(node));
+}
+
+export function isLrJoin(node: Pick<AstNode, "type" | "args">): boolean {
+  const t = node.type.toLowerCase();
+  if (t === "join_lr") {
+    return true;
+  }
+  if (t === "split_lr") {
+    return false;
+  }
+  return splitFamily(node) === "lr" && isJoinMode(msMode(node));
+}
+
+export function isForkSplit(node: Pick<AstNode, "type" | "args">): boolean {
+  return isMsEncode(node) || isLrSplit(node);
+}
+
+export function isForkJoin(node: Pick<AstNode, "type" | "args">): boolean {
+  return isMsDecode(node) || isLrJoin(node);
 }
 
 export function channelRail(node: Pick<AstNode, "args">): string {
@@ -26,7 +108,7 @@ export function isXover(node: Pick<AstNode, "type">): boolean {
   return t.startsWith("xover") || t.startsWith("crossover");
 }
 
-function remapMsSerial(edge: AstEdge, byId: Map<string, AstNode>): AstEdge {
+function remapForkSerial(edge: AstEdge, byId: Map<string, AstNode>): AstEdge {
   if (edge.kind === "mod") {
     return edge;
   }
@@ -34,14 +116,18 @@ function remapMsSerial(edge: AstEdge, byId: Map<string, AstNode>): AstEdge {
   const dst = byId.get(edge.to);
   let fromJack = edge.fromJack;
   let toJack = edge.toJack;
-  if (src && isMsEncode(src) && (fromJack === "out" || ! fromJack)) {
-    fromJack = channelRail(dst ?? { args: {} }) === "side" ? "side" : "mid";
-    if (dst && isMsDecode(dst) && (toJack === "in" || ! toJack)) {
+  if (src && isForkSplit(src) && (fromJack === "out" || ! fromJack)) {
+    const family = splitFamily(src) || "ms";
+    const [a, b] = forkRails(family);
+    fromJack = channelRail(dst ?? { args: {} }) === b ? b : a;
+    if (dst && isForkJoin(dst) && splitFamily(dst) === family && (toJack === "in" || ! toJack)) {
       toJack = fromJack;
     }
   }
-  if (dst && isMsDecode(dst) && (toJack === "in" || ! toJack)) {
-    toJack = channelRail(src ?? { args: {} }) === "side" ? "side" : "mid";
+  if (dst && isForkJoin(dst) && (toJack === "in" || ! toJack)) {
+    const family = splitFamily(dst) || "ms";
+    const [a, b] = forkRails(family);
+    toJack = channelRail(src ?? { args: {} }) === b ? b : a;
   }
   if (fromJack === edge.fromJack && toJack === edge.toJack) {
     return edge;
@@ -53,8 +139,8 @@ function busOf(node: Pick<AstNode, "busName">): string {
   return node.busName || "main";
 }
 
-function isMsKid(node: AstNode): boolean {
-  if (node.type === "out" || node.type === "bus" || isMsEncode(node) || isMsDecode(node)) {
+function isForkKid(node: AstNode, family: "ms" | "lr"): boolean {
+  if (node.type === "out" || node.type === "bus" || isForkSplit(node) || isForkJoin(node)) {
     return false;
   }
   const t = node.type.toLowerCase();
@@ -62,6 +148,9 @@ function isMsKid(node: AstNode): boolean {
     return false;
   }
   const ch = channelRail(node);
+  if (family === "lr") {
+    return ch === "" || ch === "left" || ch === "right";
+  }
   return ch === "" || ch === "mid" || ch === "side";
 }
 
@@ -69,12 +158,19 @@ function jack(id: string, output: boolean, kind: string): AstJack {
   return { id, label: id, output, kind };
 }
 
-/** Jacks the circuit actually draws — encode has mid/side, not a fake out. */
+/** Jacks the circuit actually draws — split is 1 in / 2 out, join is 2 in / 1 out. */
 export function visualJacksFor(node: AstNode, _nodes: AstNode[] = []): AstJack[] {
-  if (node.type === "ms") {
-    return isMsEncode(node)
-      ? [jack("in", false, "audio"), jack("mid", true, "audio"), jack("side", true, "audio")]
-      : [jack("mid", false, "audio"), jack("side", false, "audio"), jack("out", true, "audio")];
+  if (isMsEncode(node) || node.type.toLowerCase() === "split_ms") {
+    return [jack("in", false, "audio"), jack("mid", true, "audio"), jack("side", true, "audio")];
+  }
+  if (isMsDecode(node) || node.type.toLowerCase() === "join_ms") {
+    return [jack("mid", false, "audio"), jack("side", false, "audio"), jack("out", true, "audio")];
+  }
+  if (isLrSplit(node)) {
+    return [jack("in", false, "audio"), jack("left", true, "audio"), jack("right", true, "audio")];
+  }
+  if (isLrJoin(node)) {
+    return [jack("left", false, "audio"), jack("right", false, "audio"), jack("out", true, "audio")];
   }
   if (isXover(node)) {
     const outs = [jack("in", false, "audio"), jack("low", true, "mix")];
@@ -94,7 +190,8 @@ function keyOf(e: AstEdge): string {
 /**
  * Serial out/in edges hide MS forks and xover mixes. Rewrite them to the
  * cables the board should draw. Idempotent if the edges are already visual.
- * Untagged chips between encode/decode sit on both rails (DSP: L=mid, R=side).
+ * Untagged chips between a matching split/join sit on both rails
+ * (MS: L=mid, R=side; L/R: left/right).
  */
 export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -127,17 +224,22 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
 
   for (let i = 0; i < nodes.length; i += 1) {
     const enc = nodes[i]!;
-    if (! isMsEncode(enc)) {
+    if (! isForkSplit(enc)) {
       continue;
     }
+    const family = splitFamily(enc);
+    if (family !== "ms" && family !== "lr") {
+      continue;
+    }
+    const [railA, railB] = forkRails(family);
     const bus = busOf(enc);
-    const dec = nodes.slice(i + 1).find((n) => isMsDecode(n) && busOf(n) === bus);
+    const dec = nodes.slice(i + 1).find((n) => isForkJoin(n) && splitFamily(n) === family && busOf(n) === bus);
     if (! dec) {
       continue;
     }
-    const between = nodes.slice(i + 1, nodes.indexOf(dec)).filter((n) => isMsKid(n) && busOf(n) === bus);
-    const mid = between.filter((n) => channelRail(n) !== "side");
-    const side = between.filter((n) => channelRail(n) !== "mid");
+    const between = nodes.slice(i + 1, nodes.indexOf(dec)).filter((n) => isForkKid(n, family) && busOf(n) === bus);
+    const aKids = between.filter((n) => channelRail(n) !== railB);
+    const bKids = between.filter((n) => channelRail(n) !== railA);
     if (between[0]) strip(enc.id, between[0].id);
     for (let k = 1; k < between.length; k += 1) {
       strip(between[k - 1]!.id, between[k]!.id);
@@ -145,11 +247,11 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     if (between[between.length - 1]) strip(between[between.length - 1]!.id, dec.id);
     strip(enc.id, dec.id);
 
-    emitChain(enc.id, "mid", mid, dec.id, "mid");
-    emitChain(enc.id, "side", side, dec.id, "side");
+    emitChain(enc.id, railA, aKids, dec.id, railA);
+    emitChain(enc.id, railB, bKids, dec.id, railB);
   }
 
-  next = next.map((e) => remapMsSerial(e, byId));
+  next = next.map((e) => remapForkSerial(e, byId));
 
   for (const n of nodes) {
     if (! isXover(n)) {

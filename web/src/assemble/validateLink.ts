@@ -1,6 +1,18 @@
 export interface LinkEnd {
   kind: string;
   output: boolean;
+  jack?: string;
+}
+
+export function jackFamily(jack?: string): "ms" | "lr" | "" {
+  const j = (jack ?? "").trim().toLowerCase();
+  if (j === "mid" || j === "side") {
+    return "ms";
+  }
+  if (j === "left" || j === "right") {
+    return "lr";
+  }
+  return "";
 }
 
 export type CableKind = "audio" | "param" | "mod";
@@ -44,7 +56,7 @@ export function cableFace(kind: string): CableFace {
   return "side";
 }
 
-/** No out→out, in→in, knob nets, or cross-kind audio/param/mod. */
+/** No out→out, in→in, knob nets, cross-kind audio/param/mod, or MS↔L/R rails. */
 export function isValidLink(src: LinkEnd, dst: LinkEnd): boolean {
   if (src.output === dst.output) {
     return false;
@@ -57,6 +69,11 @@ export function isValidLink(src: LinkEnd, dst: LinkEnd): boolean {
     return false;
   }
   if (fk !== tk) {
+    return false;
+  }
+  const srcFam = jackFamily(from.jack);
+  const dstFam = jackFamily(to.jack);
+  if (srcFam && dstFam && srcFam !== dstFam) {
     return false;
   }
   return true;

@@ -25,4 +25,30 @@ describe("circuit add/remove", () => {
     expect(gone).not.toMatch(/filter1/);
     expect(gone).toContain("stage1");
   });
+
+  it("offers Split/Join Mid-Side and L/R and emits canonical msN mode", () => {
+    const routing = ADDABLE_BLOCKS.filter((b) => b.category === "Routing");
+    const labels = routing.map((b) => b.label);
+    expect(labels).toEqual(expect.arrayContaining([
+      "Split Mid/Side",
+      "Join Mid/Side",
+      "Split L/R",
+      "Join L/R",
+    ]));
+    expect(labels.some((l) => l === "MS Enc" || l === "MS Dec")).toBe(false);
+
+    const byLabel = (label: string) => routing.find((b) => b.label === label);
+    expect(byLabel("Split Mid/Side")?.type).toBe("ms");
+    expect(byLabel("Split Mid/Side")?.args).toMatch(/mode\s*=\s*split\b/);
+    expect(byLabel("Join Mid/Side")?.args).toMatch(/mode\s*=\s*join\b/);
+    expect(byLabel("Split L/R")?.args).toMatch(/mode\s*=\s*split\b/);
+    expect(byLabel("Split L/R")?.args).toMatch(/family\s*=\s*lr\b/);
+    expect(byLabel("Join L/R")?.args).toMatch(/mode\s*=\s*join\b/);
+    expect(byLabel("Join L/R")?.args).toMatch(/family\s*=\s*lr\b/);
+
+    const split = scriptAfterAdd("stage1: y = x\n", "ms", "mode = split");
+    expect(split).toMatch(/ms1:\s*mode = split/);
+    const joinLr = scriptAfterAdd(split, "ms", "mode = join; family = lr");
+    expect(joinLr).toMatch(/ms2:\s*mode = join;\s*family = lr/);
+  });
 });

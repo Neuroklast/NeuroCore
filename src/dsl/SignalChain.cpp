@@ -652,16 +652,32 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
             newChain->push_back (std::move (rv));
         }
-        else if (d.type == "ms" || d.type.startsWith ("midside") || d.type.startsWith ("mid_side"))
+        else if (d.type == "ms" || d.type.startsWith ("midside") || d.type.startsWith ("mid_side")
+                 || d.type == "split_ms" || d.type == "join_ms"
+                 || d.type == "split_lr" || d.type == "join_lr")
         {
-            auto ms = std::make_unique<Ms>();
             juce::String mode = "encode";
             if (d.args.count ("mode"))
                 mode = d.args.at ("mode").trim().toLowerCase();
             else if (d.args.count ("type"))
                 mode = d.args.at ("type").trim().toLowerCase();
-            ms->encode = ! (mode == "decode" || mode == "lr" || mode == "stereo" || mode == "to_lr");
-            newChain->push_back (std::move (ms));
+            juce::String family;
+            if (d.args.count ("family"))
+                family = d.args.at ("family").trim().toLowerCase();
+            else if (d.args.count ("rails"))
+                family = d.args.at ("rails").trim().toLowerCase();
+            const bool lr = d.type == "split_lr" || d.type == "join_lr"
+                         || family == "lr" || family == "leftright" || family == "l/r"
+                         || mode == "split_lr" || mode == "join_lr"
+                         || mode == "lr_split" || mode == "lr_join";
+            if (! lr)
+            {
+                auto ms = std::make_unique<Ms>();
+                ms->encode = ! (mode == "decode" || mode == "join" || mode == "lr"
+                             || mode == "stereo" || mode == "to_lr"
+                             || mode == "join_lr" || mode == "lr_join");
+                newChain->push_back (std::move (ms));
+            }
         }
         else if (d.type.startsWith("osc"))
         {

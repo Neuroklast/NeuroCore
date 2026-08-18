@@ -618,6 +618,32 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "widen";
             if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
                 desc.type = "ms";
+            if (desc.type == "split_ms" || desc.type == "splitms")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "split";
+            }
+            if (desc.type == "join_ms" || desc.type == "joinms")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "join";
+            }
+            if (desc.type == "split_lr" || desc.type == "splitlr")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "split";
+                desc.args["family"] = "lr";
+            }
+            if (desc.type == "join_lr" || desc.type == "joinlr")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "join";
+                desc.args["family"] = "lr";
+            }
             if (desc.type == "ngate" || desc.type == "noise_gate" || desc.type == "noisegate")
                 desc.type = "noisegate";
             if (desc.type == "probe")

@@ -51,19 +51,19 @@ const defaultEdgeOptions = {
   style: { stroke: "#ff003c", strokeWidth: 20 },
 };
 
-function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefined): { kind: string; output: boolean } | null {
+function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefined): { kind: string; output: boolean; jack: string } | null {
   if (! node || ! handle) {
     return null;
   }
   const parsed = parseHandle(handle);
   if (! parsed) {
-    return { kind: "audio", output: false };
+    return { kind: "audio", output: false, jack: "" };
   }
   const jack = node.data.jacks.find((j) => j.id === parsed.id);
   if (! jack) {
-    return { kind: parsed.id === "mod" || parsed.id.startsWith("mod") ? "mod" : "audio", output: parsed.output };
+    return { kind: parsed.id === "mod" || parsed.id.startsWith("mod") ? "mod" : "audio", output: parsed.output, jack: parsed.id };
   }
-  return { kind: jack.kind, output: jack.output };
+  return { kind: jack.kind, output: jack.output, jack: jack.id };
 }
 
 function Board() {
@@ -215,7 +215,7 @@ function Board() {
     const toJack = primaryJackId(dst.data.jacks, false);
     const fromKind = src.data.jacks.find((j) => j.id === fromJack)?.kind ?? "audio";
     const toKind = dst.data.jacks.find((j) => j.id === toJack)?.kind ?? "audio";
-    if (! isValidLink({ kind: fromKind, output: true }, { kind: toKind, output: false })) {
+    if (! isValidLink({ kind: fromKind, output: true, jack: fromJack }, { kind: toKind, output: false, jack: toJack })) {
       return null;
     }
     return {

@@ -519,10 +519,15 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t === "join_ms") return "join_ms";
   if (t === "ms") {
     const mode = (args.mode ?? args.encode ?? "").trim().toLowerCase();
-    if (mode === "decode" || mode === "lr" || mode === "stereo" || mode === "to_lr") {
-      return "join_ms";
+    const fam = (args.family ?? args.rails ?? "").trim().toLowerCase();
+    const isLr = fam === "lr" || fam === "leftright" || fam === "l/r"
+      || mode === "split_lr" || mode === "join_lr" || mode === "lr_split" || mode === "lr_join";
+    const isJoin = mode === "decode" || mode === "join" || mode === "lr" || mode === "stereo"
+      || mode === "to_lr" || mode === "join_lr" || mode === "lr_join";
+    if (isLr) {
+      return isJoin ? "join_lr" : "split_lr";
     }
-    return "split_ms";
+    return isJoin ? "join_ms" : "split_ms";
   }
   if (t.startsWith("xover") || t.startsWith("crossover") || t === "msplit") return "msplit";
   if (t.startsWith("widen") || t === "width") return "width";

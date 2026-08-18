@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstEdge, AstNode } from "../bridge/ast";
-import { visualAudioEdges, visualJacksFor } from "./visualEdges";
+import { isValidLink } from "./validateLink";
+import { isMsEncode, visualAudioEdges, visualJacksFor } from "./visualEdges";
 
 function node(id: string, type: string, args: Record<string, string> = {}): AstNode {
   return { id, type, busName: "main", args, trailingComment: "", jacks: [] };
@@ -89,6 +90,52 @@ describe("visualAudioEdges", () => {
     );
     expect(loneDec.some((e) => e.from === "stage1" && e.to === "ms2" && e.toJack === "mid")).toBe(true);
     expect(loneDec.some((e) => e.to === "ms2" && e.toJack === "in")).toBe(false);
+  });
+
+  it("treats mode=split as encode and factory encode still draws as Split", () => {
+    const enc = node("ms1", "ms", { mode: "encode" });
+    const split = node("ms3", "ms", { mode: "split" });
+    const join = node("ms4", "ms", { mode: "join" });
+    expect(isMsEncode(enc)).toBe(true);
+    expect(isMsEncode(split)).toBe(true);
+    expect(isMsEncode(join)).toBe(false);
+    const encJ = visualJacksFor(enc);
+    expect(encJ.some((j) => j.id === "mid" && j.output)).toBe(true);
+    expect(encJ.some((j) => j.id === "out")).toBe(false);
+    expect(visualJacksFor(split).map((j) => j.id)).toEqual(["in", "mid", "side"]);
+    expect(visualJacksFor(join).map((j) => j.id)).toEqual(["mid", "side", "out"]);
+  });
+
+  it("forks left/right off an L/R split and sits an untagged chip on both rails", () => {
+    const nodes = [
+      node("ms1", "ms", { mode: "split", family: "lr" }),
+      node("reverb1", "reverb", { size: "0.5" }),
+      node("ms2", "ms", { mode: "join", family: "lr" }),
+    ];
+    expect(visualJacksFor(nodes[0]!).map((j) => j.id)).toEqual(["in", "left", "right"]);
+    expect(visualJacksFor(nodes[2]!).map((j) => j.id)).toEqual(["left", "right", "out"]);
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "ms1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "ms1", to: "reverb1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "reverb1", to: "ms2", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "ms2", to: "OUT", kind: "audio", fromJack: "out", toJack: "in" },
+    ]);
+    expect(vis.some((e) => e.from === "ms1" && e.to === "reverb1" && e.fromJack === "left" && e.toJack === "in")).toBe(true);
+    expect(vis.some((e) => e.from === "ms1" && e.to === "reverb1" && e.fromJack === "right" && e.toJack === "in")).toBe(true);
+    expect(vis.some((e) => e.from === "reverb1" && e.to === "ms2" && e.toJack === "left")).toBe(true);
+    expect(vis.some((e) => e.from === "reverb1" && e.to === "ms2" && e.toJack === "right")).toBe(true);
+    expect(vis.some((e) => e.from === "ms1" && e.fromJack === "out")).toBe(false);
+    expect(vis.some((e) => e.to === "ms2" && e.toJack === "in")).toBe(false);
+  });
+
+  it("rejects Split L/R into Join MS and Split MS into Join L/R", () => {
+    const audio = { kind: "audio" as const };
+    expect(isValidLink({ ...audio, output: true, jack: "left" }, { ...audio, output: false, jack: "mid" })).toBe(false);
+    expect(isValidLink({ ...audio, output: true, jack: "mid" }, { ...audio, output: false, jack: "left" })).toBe(false);
+    expect(isValidLink({ ...audio, output: true, jack: "side" }, { ...audio, output: false, jack: "right" })).toBe(false);
+    expect(isValidLink({ ...audio, output: true, jack: "mid" }, { ...audio, output: false, jack: "side" })).toBe(true);
+    expect(isValidLink({ ...audio, output: true, jack: "left" }, { ...audio, output: false, jack: "right" })).toBe(true);
+    expect(isValidLink({ ...audio, output: true, jack: "out" }, { ...audio, output: false, jack: "in" })).toBe(true);
   });
 
   it("draws xover mixes to OUT", () => {

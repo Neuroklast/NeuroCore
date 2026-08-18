@@ -78,6 +78,10 @@ describe("ChipSpec registry", () => {
     expect(chipSpec("ngate").id).toBe("noisegate");
     expect(chipSpec("ms", { mode: "encode" }).id).toBe("split_ms");
     expect(chipSpec("ms", { mode: "decode" }).id).toBe("join_ms");
+    expect(chipSpec("ms", { mode: "split" }).id).toBe("split_ms");
+    expect(chipSpec("ms", { mode: "join" }).id).toBe("join_ms");
+    expect(chipSpec("ms", { mode: "split", family: "lr" }).id).toBe("split_lr");
+    expect(chipSpec("ms", { mode: "join", family: "lr" }).id).toBe("join_lr");
     expect(chipSpec("ms").label).toBe("Split Mid/Side");
   });
 

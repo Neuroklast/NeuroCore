@@ -140,7 +140,7 @@ juce::String emitParam (const ParamDesc& p)
 void appendPreferredArgs (const GraphNode& node, juce::StringArray& parts, juce::StringArray& used)
 {
     static const char* kPreferred[] = {
-        "in", "main", "y", "type", "mode", "channel",
+        "in", "main", "y", "type", "mode", "family", "rails", "channel",
         "cutoff", "resonance", "center", "width", "lowcut", "highcut",
         "freq", "frequency", "q", "gain",
         "threshold", "ratio", "attack", "hold", "release", "knee", "makeup",
@@ -651,13 +651,20 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
 
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
     {
-        if (! isMsEncode (doc.nodes[(size_t) i]))
+        if (! isForkSplit (doc.nodes[(size_t) i]))
             continue;
+        const auto family = splitFamily (doc.nodes[(size_t) i]);
+        if (family != "ms" && family != "lr")
+            continue;
+        const juce::String railA = family == "lr" ? "left" : "mid";
+        const juce::String railB = family == "lr" ? "right" : "side";
         const auto bus = railOf (doc.nodes[(size_t) i]);
         int dec = -1;
         for (int j = i + 1; j < (int) doc.nodes.size(); ++j)
         {
-            if (! isMsDecode (doc.nodes[(size_t) j]))
+            if (! isForkJoin (doc.nodes[(size_t) j]))
+                continue;
+            if (splitFamily (doc.nodes[(size_t) j]) != family)
                 continue;
             if (railOf (doc.nodes[(size_t) j]) != bus)
                 continue;
@@ -667,22 +674,22 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
         if (dec < 0)
             continue;
 
-        std::vector<int> kids, midKids, sideKids;
+        std::vector<int> kids, aKids, bKids;
         for (int j = i + 1; j < dec; ++j)
         {
             const auto& n = doc.nodes[(size_t) j];
-            if (! isAudioNode (n) || n.type == "out" || isMsEncode (n) || isMsDecode (n))
+            if (! isAudioNode (n) || n.type == "out" || isForkSplit (n) || isForkJoin (n))
                 continue;
             if (railOf (n) != bus)
                 continue;
             const auto ch = channelRail (n);
-            if (ch.isNotEmpty() && ch != "mid" && ch != "side")
+            if (ch.isNotEmpty() && ch != railA && ch != railB)
                 continue;
             kids.push_back (j);
-            if (ch != "side")
-                midKids.push_back (j);
-            if (ch != "mid")
-                sideKids.push_back (j);
+            if (ch != railB)
+                aKids.push_back (j);
+            if (ch != railA)
+                bKids.push_back (j);
         }
 
         if (! kids.empty())
@@ -693,8 +700,8 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
             stripSerial (kids.back(), dec);
         stripSerial (i, dec);
 
-        emitChain (i, "mid", midKids, dec, "mid");
-        emitChain (i, "side", sideKids, dec, "side");
+        emitChain (i, railA, aKids, dec, railA);
+        emitChain (i, railB, bKids, dec, railB);
     }
 
     for (auto& e : edges)
@@ -703,17 +710,25 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
             continue;
         const dsl::GraphNode* src = e.fromIndex >= 0 ? &doc.nodes[(size_t) e.fromIndex] : nullptr;
         const dsl::GraphNode* dst = e.toIndex >= 0 ? &doc.nodes[(size_t) e.toIndex] : nullptr;
-        if (src != nullptr && isMsEncode (*src)
+        if (src != nullptr && isForkSplit (*src)
             && (e.fromJack == "out" || e.fromJack.isEmpty()))
         {
-            e.fromJack = (dst != nullptr && channelRail (*dst) == "side") ? "side" : "mid";
-            if (dst != nullptr && isMsDecode (*dst)
+            const auto family = splitFamily (*src);
+            const juce::String railA = family == "lr" ? "left" : "mid";
+            const juce::String railB = family == "lr" ? "right" : "side";
+            e.fromJack = (dst != nullptr && channelRail (*dst) == railB) ? railB : railA;
+            if (dst != nullptr && isForkJoin (*dst) && splitFamily (*dst) == family
                 && (e.toJack == "in" || e.toJack.isEmpty()))
                 e.toJack = e.fromJack;
         }
-        if (dst != nullptr && isMsDecode (*dst)
+        if (dst != nullptr && isForkJoin (*dst)
             && (e.toJack == "in" || e.toJack.isEmpty()))
-            e.toJack = (src != nullptr && channelRail (*src) == "side") ? "side" : "mid";
+        {
+            const auto family = splitFamily (*dst);
+            const juce::String railA = family == "lr" ? "left" : "mid";
+            const juce::String railB = family == "lr" ? "right" : "side";
+            e.toJack = (src != nullptr && channelRail (*src) == railB) ? railB : railA;
+        }
     }
 
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
@@ -1281,26 +1296,42 @@ bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJac
     error.clear();
     const int n = (int) doc.nodes.size();
     const auto destJack = toJack.trim();
-    auto msRailOf = [] (const juce::String& jack) -> juce::String
+    auto forkRailOf = [] (const juce::String& jack) -> juce::String
     {
         const auto j = jack.trim().toLowerCase();
         if (j == "mid" || j == "m") return "mid";
         if (j == "side" || j == "s") return "side";
+        if (j == "left" || j == "l") return "left";
+        if (j == "right" || j == "r") return "right";
         return {};
     };
     if (juce::isPositiveAndBelow (fromIndex, n) && juce::isPositiveAndBelow (toIndex, n))
     {
         const auto& src = doc.nodes[(size_t) fromIndex];
         const auto& dst = doc.nodes[(size_t) toIndex];
-        if (isMsEncode (src) && ! isMsDecode (dst) && dst.type != "out")
+        const auto srcFam = jackFamily (fromJack);
+        const auto dstFam = jackFamily (destJack);
+        if (srcFam.isNotEmpty() && dstFam.isNotEmpty() && srcFam != dstFam)
         {
-            const auto rail = msRailOf (fromJack);
+            error = "Split L/R cannot connect to Join MS (or Split MS to Join L/R)";
+            return false;
+        }
+        if (isForkSplit (src) && isForkJoin (dst)
+            && splitFamily (src).isNotEmpty() && splitFamily (dst).isNotEmpty()
+            && splitFamily (src) != splitFamily (dst))
+        {
+            error = "Split L/R cannot connect to Join MS (or Split MS to Join L/R)";
+            return false;
+        }
+        if (isForkSplit (src) && ! isForkJoin (dst) && dst.type != "out")
+        {
+            const auto rail = forkRailOf (fromJack);
             if (rail.isNotEmpty())
                 setNodeArg (doc, toIndex, "channel", rail);
         }
-        else if (isMsDecode (dst) && ! isMsEncode (src) && src.type != "out")
+        else if (isForkJoin (dst) && ! isForkSplit (src) && src.type != "out")
         {
-            const auto rail = msRailOf (destJack);
+            const auto rail = forkRailOf (destJack);
             if (rail.isNotEmpty())
                 setNodeArg (doc, fromIndex, "channel", rail);
         }
@@ -1993,20 +2024,32 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     if (t == "out")
         return mixJacksForOut (&node, doc);
 
-    if (t == "ms")
+    if (isMsEncode (node) || t == "split_ms")
     {
-        if (isMsEncode (node))
-        {
-            addJack (jacks, "in", false, "audio");
-            addJack (jacks, "mid", true, "audio");
-            addJack (jacks, "side", true, "audio");
-        }
-        else
-        {
-            addJack (jacks, "mid", false, "audio");
-            addJack (jacks, "side", false, "audio");
-            addJack (jacks, "out", true, "audio");
-        }
+        addJack (jacks, "in", false, "audio");
+        addJack (jacks, "mid", true, "audio");
+        addJack (jacks, "side", true, "audio");
+        return jacks;
+    }
+    if (isMsDecode (node) || t == "join_ms")
+    {
+        addJack (jacks, "mid", false, "audio");
+        addJack (jacks, "side", false, "audio");
+        addJack (jacks, "out", true, "audio");
+        return jacks;
+    }
+    if (isLrSplit (node) || t == "split_lr")
+    {
+        addJack (jacks, "in", false, "audio");
+        addJack (jacks, "left", true, "audio");
+        addJack (jacks, "right", true, "audio");
+        return jacks;
+    }
+    if (isLrJoin (node) || t == "join_lr")
+    {
+        addJack (jacks, "left", false, "audio");
+        addJack (jacks, "right", false, "audio");
+        addJack (jacks, "out", true, "audio");
         return jacks;
     }
 
