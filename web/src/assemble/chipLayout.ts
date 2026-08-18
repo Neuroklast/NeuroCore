@@ -27,7 +27,7 @@ export function chipHeight(inCount: number, outCount: number, expanded = false):
 
 export function ioHeight(jackCount: number): number {
   const n = Math.max(jackCount, 1);
-  return n <= 1 ? 56 : Math.max(56, 28 + n * JACK_PITCH);
+  return n <= 1 ? 96 : Math.max(96, 28 + n * JACK_PITCH);
 }
 
 export const TITLE_H = 26;

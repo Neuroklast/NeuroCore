@@ -1,7 +1,7 @@
-import { BOARD_GRID, snapSize, snapToGrid } from "../grid";
+import { BOARD_GRID, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
-export const COMPACT_GAP = BOARD_GRID;
+export const COMPACT_GAP = CHIP_AIR_X;
 export type BoardView = { w: number; h: number };
 
 export function serialIds(
@@ -66,10 +66,11 @@ function pairGap(
   return { ovX, ovY, gap: BOARD_GRID };
 }
 
-/** Push chips so every pair has `gap` air on the overlapping side. */
+/** Push chips: two grids beside each other, one grid above/below. */
 export function separateChips(
   placed: Record<string, { x: number; y: number; w: number; h: number }>,
-  gap = BOARD_GRID,
+  airX = CHIP_AIR_X,
+  airY = CHIP_AIR_Y,
 ): Record<string, { x: number; y: number; w: number; h: number }> {
   const out: Record<string, { x: number; y: number; w: number; h: number }> = {};
   for (const [id, p] of Object.entries(placed)) {
@@ -83,21 +84,24 @@ export function separateChips(
         const a = out[ids[i]!]!;
         const b = out[ids[j]!]!;
         const g = pairGap(a, b);
-        if (g.gap >= gap) {
-          continue;
-        }
         if (g.ovX > 0) {
+          if (g.gap >= airY) {
+            continue;
+          }
           const top = a.y <= b.y ? a : b;
           const bot = top === a ? b : a;
-          const need = snapToGrid(top.y + top.h + gap);
+          const need = snapToGrid(top.y + top.h + airY);
           if (bot.y < need) {
             bot.y = need;
             moved = true;
           }
         } else if (g.ovY > 0) {
+          if (g.gap >= airX) {
+            continue;
+          }
           const left = a.x <= b.x ? a : b;
           const right = left === a ? b : a;
-          const need = snapToGrid(left.x + left.w + gap);
+          const need = snapToGrid(left.x + left.w + airX);
           if (right.x < need) {
             right.x = need;
             moved = true;
@@ -117,8 +121,9 @@ export function packRows(
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  const gap = COMPACT_GAP;
-  const pad = gap;
+  const gapX = CHIP_AIR_X;
+  const gapY = CHIP_AIR_Y;
+  const pad = gapY;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
   const order = serialIds(nodes, edges, start);
@@ -147,13 +152,13 @@ export function packRows(
   let x = pad;
   for (let c = 0; c < colW.length; c += 1) {
     colX[c] = snapToGrid(x);
-    x += (colW[c] ?? 0) + gap;
+    x += (colW[c] ?? 0) + gapX;
   }
   const rowY: number[] = [];
   let y = pad;
   for (let r = 0; r < rowH.length; r += 1) {
     rowY[r] = snapToGrid(y);
-    y += (rowH[r] ?? 0) + gap;
+    y += (rowH[r] ?? 0) + gapY;
   }
   void view;
   const jackLocal = (id: string): number => {
@@ -185,7 +190,7 @@ export function packRows(
       };
     }
   }
-  return separateChips(out, gap);
+  return separateChips(out);
 }
 
 export function rowCount(

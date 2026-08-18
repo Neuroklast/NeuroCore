@@ -22,7 +22,7 @@ export function ConnectionLine({
     <path
       d={d}
       fill="none"
-      stroke="#ff003c"
+      stroke="var(--nk-accent)"
       strokeWidth={2}
       strokeLinecap="butt"
       opacity={0.7}

@@ -10,23 +10,61 @@ function portY(nodeY: number, localY: number): number {
   return nodeY + localY;
 }
 
-export function ensureHorizontalStubs(from: Pt, to: Pt, pts: Pt[]): Pt[] {
-  const out = pts.length > 0 ? pts.map((p) => ({ x: p.x, y: p.y })) : [{ x: from.x, y: from.y }];
-  if (Math.abs(out[0]!.x - from.x) > 0.6 || Math.abs(out[0]!.y - from.y) > 0.6) {
-    out.unshift({ x: from.x, y: from.y });
+function almost(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.6;
+}
+
+function collapseColinear(pts: Pt[]): Pt[] {
+  const out: Pt[] = [];
+  for (const p of pts) {
+    const last = out[out.length - 1];
+    if (last && almost(last.x, p.x) && almost(last.y, p.y)) {
+      continue;
+    }
+    out.push({ x: p.x, y: p.y });
   }
-  if (out.length < 2 || Math.abs(out[0]!.y - out[1]!.y) > 0.6 || out[1]!.x < from.x + BOARD_GRID - 0.5) {
-    out.splice(1, 0, { x: from.x + BOARD_GRID, y: from.y });
-  }
-  const last = out[out.length - 1]!;
-  if (Math.abs(last.x - to.x) > 0.6 || Math.abs(last.y - to.y) > 0.6) {
-    out.push({ x: to.x, y: to.y });
-  }
-  const n = out.length;
-  if (n < 2 || Math.abs(out[n - 1]!.y - out[n - 2]!.y) > 0.6 || out[n - 1]!.x < out[n - 2]!.x + BOARD_GRID - 0.5) {
-    out.splice(n - 1, 0, { x: to.x - BOARD_GRID, y: to.y });
+  let i = 1;
+  while (i < out.length - 1) {
+    const a = out[i - 1]!;
+    const b = out[i]!;
+    const c = out[i + 1]!;
+    if (Math.abs((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)) < 1) {
+      out.splice(i, 1);
+    } else {
+      i += 1;
+    }
   }
   return out;
+}
+
+/** Jacks own a 32 px east stub. Mid path stays between the stubs so dest never U-turns. */
+export function pinJackStubs(from: Pt, to: Pt, pts: Pt[]): Pt[] {
+  const ax = from.x + BOARD_GRID;
+  const bx = to.x - BOARD_GRID;
+  const lo = Math.min(ax, bx);
+  const hi = Math.max(ax, bx);
+  const mid: Pt[] = [];
+  for (const p of pts) {
+    if (almost(p.x, from.x) && almost(p.y, from.y)) {
+      continue;
+    }
+    if (almost(p.x, to.x) && almost(p.y, to.y)) {
+      continue;
+    }
+    const x = Math.max(lo, Math.min(hi, p.x));
+    const last = mid[mid.length - 1];
+    if (last && almost(last.x, x) && almost(last.y, p.y)) {
+      continue;
+    }
+    mid.push({ x, y: p.y });
+  }
+  return collapseColinear([
+    { x: from.x, y: from.y },
+    { x: ax, y: from.y },
+    ...mid,
+    { x: bx, y: to.y },
+    { x: to.x, y: to.y },
+  ]);
 }
 
 export function pathLength(pts: Pt[]): number {
@@ -112,10 +150,10 @@ export async function runLayout(
     if (pathLength(pts) < BOARD_GRID) {
       pts = hvhFallback(job.from, job.to);
     }
-    pts = ensureHorizontalStubs(job.from, job.to, pts);
+    pts = pinJackStubs(job.from, job.to, pts);
     const cut = chamferWaypoints(pts);
     pts = hasLightning(cut) ? pts : cut;
-    pts = ensureHorizontalStubs(job.from, job.to, pts);
+    pts = pinJackStubs(job.from, job.to, pts);
     edgePaths[job.e.id] = waypointToSvgPath(pts);
   }
 

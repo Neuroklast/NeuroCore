@@ -1,4 +1,7 @@
-import { getSmoothStepPath, Position } from "@xyflow/react";
+
+
+import { waypointToSvgPath } from "./layout/chamfer";
+import { routeBoardTrace } from "./layout/routeTrace";
 
 export type BindLink = {
   letter: string;
@@ -57,29 +60,6 @@ export function bindTargets(nodes: Array<{ id: string; args: Record<string, unkn
 export const BIND_RAIL0 = 156;
 export const BIND_RAIL_PITCH = 10;
 
-function joinStep(a: string, b: string): string {
-  return `${a} ${b.replace(/^M[-.\d\s]+/, "")}`;
-}
-
-function bypassY(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  letterIndex: number,
-  boxes: Array<{ x: number; y: number; w: number; h: number }>,
-): number | null {
-  const left = Math.min(from.x, to.x) + 8;
-  const right = Math.max(from.x, to.x) - 8;
-  const hits = boxes.filter((b) => b.x < right && b.x + b.w > left);
-  if (hits.length === 0) {
-    return null;
-  }
-  const top = Math.min(...hits.map((b) => b.y));
-  const bot = Math.max(...hits.map((b) => b.y + b.h));
-  const below = bot + 18 + letterIndex * BIND_RAIL_PITCH;
-  void top;
-  return below;
-}
-
 export type BindRect = { x: number; y: number; w: number; h: number };
 
 /** True if a horizontal run sits inside the knob-card band. */
@@ -101,51 +81,23 @@ export function bindHitsKnobs(d: string, knobs: BindRect[]): boolean {
   return false;
 }
 
-/** Down from the knob, horizontal rail, vertical into the south (or north) jack. */
+/** Knob → dest. Same A* + 32 px stubs + 45° chamfer as the audio tubes. */
 export function bindSmoothPath(
   from: { x: number; y: number },
   to: { x: number; y: number },
   letterIndex: number,
   boxes: Array<{ x: number; y: number; w: number; h: number }> = [],
-  face: "top" | "bottom" = "bottom",
+  _face: "top" | "bottom" = "bottom",
   knobs: BindRect[] = [],
 ): string {
-  const around = bypassY(from, to, letterIndex, boxes);
-  const fromBelow = from.y > to.y + 12;
-  const leave = fromBelow ? Position.Top : Position.Bottom;
-  let viaY = face === "top"
-    ? (around != null ? Math.min(around, to.y) : to.y - 28) - letterIndex * BIND_RAIL_PITCH
-    : fromBelow
-      ? Math.min(from.y - 16, to.y + 22) + letterIndex * BIND_RAIL_PITCH
-      : (around != null ? Math.max(around, to.y) : to.y + 28) + letterIndex * BIND_RAIL_PITCH;
-  let src = from;
-  if (knobs.length > 0) {
-    const knobTop = Math.min(...knobs.map((k) => k.y));
-    const clear = knobTop - 32;
-    viaY = Math.min(viaY, clear);
-    if (src.y > clear) {
-      src = { x: src.x, y: clear };
-    }
-  }
-  const [legA] = getSmoothStepPath({
-    sourceX: src.x,
-    sourceY: src.y,
-    sourcePosition: leave,
-    targetX: to.x,
-    targetY: viaY,
-    targetPosition: face === "top" ? Position.Top : Position.Bottom,
-    borderRadius: 0,
-  });
-  const [legB] = getSmoothStepPath({
-    sourceX: to.x,
-    sourceY: viaY,
-    sourcePosition: face === "top" ? Position.Bottom : Position.Top,
-    targetX: to.x,
-    targetY: to.y,
-    targetPosition: face === "top" ? Position.Top : Position.Bottom,
-    borderRadius: 0,
-  });
-  return joinStep(legA, legB);
+  const knobTop = knobs.length > 0 ? Math.min(...knobs.map((k) => k.y)) : from.y;
+  const src = { x: from.x, y: Math.min(from.y, knobTop) };
+  const dest = { x: to.x, y: to.y };
+  const solids = knobs.length > 0
+    ? [...boxes, ...knobs.map((k) => ({ ...k, y: k.y + 1 }))]
+    : boxes;
+  const pts = routeBoardTrace(src, dest, solids, `bind${letterIndex}`);
+  return waypointToSvgPath(pts);
 }
 
 export function svgPathPoints(d: string): Array<{ x: number; y: number }> {

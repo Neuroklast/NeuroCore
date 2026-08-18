@@ -307,7 +307,7 @@ export function ChipNode({ data, id }: NodeProps) {
         <polygon
           points={framePoints(box.w, box.h)}
           fill="none"
-          stroke="#ff003c"
+          stroke="var(--nk-accent)"
           strokeWidth="1.15"
           strokeDasharray={CHIP_FRAME_DASH}
           strokeLinejoin="miter"
@@ -500,7 +500,7 @@ export function IoNode({ data, id }: NodeProps) {
         <polygon
           points={framePoints(box.w, box.h)}
           fill="none"
-          stroke={isIn ? "#00f0ff" : "#fcee0a"}
+          stroke={isIn ? "var(--nk-cyan)" : "var(--nk-warn)"}
           strokeWidth="1.15"
           strokeDasharray={CHIP_FRAME_DASH}
           strokeLinejoin="miter"

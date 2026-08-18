@@ -6,7 +6,7 @@ import { parseDslSketch } from "../../presets/parseDslSketch";
 import { findFactory } from "../../presets/factoryCatalog";
 import { handleId } from "../handles";
 import { firstLastHorizontal, hasLightning } from "./chamfer";
-import { arrange, bboxArea, compact, pathLength } from "./runLayout";
+import { arrange, bboxArea, compact, pathLength, pinJackStubs, reroute } from "./runLayout";
 import { requestLayout } from "./layoutClient";
 import type { LayoutEdge, LayoutNode } from "./types";
 
@@ -23,6 +23,60 @@ function chain(): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   ];
   return { nodes, edges };
 }
+
+function hasWestThenEastHook(pts: Array<{ x: number; y: number }>): boolean {
+  for (let i = 0; i < pts.length - 2; i += 1) {
+    const a = pts[i]!;
+    const b = pts[i + 1]!;
+    const c = pts[i + 2]!;
+    const sameY = Math.abs(a.y - b.y) < 0.6 && Math.abs(b.y - c.y) < 0.6;
+    if (sameY && b.x < a.x - 0.5 && c.x > b.x + 0.5) {
+      return true;
+    }
+  }
+  return false;
+}
+
+describe("dest jack stubs", () => {
+  it("pins the screenshot OUT hook so the last step is 32 px east and never past dest", () => {
+    const from = { x: 608, y: 560 };
+    const to = { x: 736, y: 528 };
+    const hooked = [
+      from,
+      { x: 720, y: 560 },
+      { x: 720, y: 528 },
+      { x: 704, y: 528 },
+      to,
+    ];
+    expect(hasWestThenEastHook(hooked)).toBe(true);
+    const pts = pinJackStubs(from, to, hooked);
+    expect(hasWestThenEastHook(pts)).toBe(false);
+    expect(firstLastHorizontal(pts)).toBe(true);
+    expect(Math.max(...pts.map((p) => p.x))).toBeCloseTo(to.x, 5);
+    expect(pts[pts.length - 1]).toEqual(to);
+    expect(pts[0]).toEqual(from);
+    expect(pts[1]!.x - pts[0]!.x).toBeGreaterThanOrEqual(BOARD_GRID - 0.5);
+    expect(pts[pts.length - 1]!.x - pts[pts.length - 2]!.x).toBeGreaterThanOrEqual(BOARD_GRID - 0.5);
+    expect(pts.every((p) => p.x <= to.x + 0.6)).toBe(true);
+  });
+
+  it("does not U-turn when A* arrives at OUT from the south", async () => {
+    const nodes: LayoutNode[] = [
+      { id: "a", x: 0, y: 32, w: 256, h: 96, ins: [], outs: [{ id: "out", y: 80 }] },
+      { id: "OUT", x: 320, y: 0, w: 128, h: 96, ins: [{ id: "in", y: 48 }], outs: [] },
+    ];
+    const edges: LayoutEdge[] = [
+      { id: "e", source: "a", target: "OUT", fromJack: "out", toJack: "in" },
+    ];
+    const r = await reroute(nodes, edges);
+    const pts = parsePath(r.edgePaths.e!);
+    expect(pts.length).toBeGreaterThanOrEqual(2);
+    expect(firstLastHorizontal(pts), r.edgePaths.e).toBe(true);
+    expect(hasWestThenEastHook(pts), r.edgePaths.e).toBe(false);
+    expect(Math.max(...pts.map((p) => p.x)), r.edgePaths.e).toBeLessThanOrEqual(320.6);
+    expect(Math.abs(pts[pts.length - 1]!.x - 320)).toBeLessThan(1);
+  });
+});
 
 describe("arrange vs compact", () => {
   it("snaps every origin and size to 32 and keeps compact smaller", async () => {
@@ -78,6 +132,8 @@ describe("layout lands on jacks", () => {
       expect(pathLength(pts), d).toBeGreaterThanOrEqual(BOARD_GRID);
       expect(hasLightning(pts), d).toBe(false);
       expect(firstLastHorizontal(pts), d).toBe(true);
+      expect(hasWestThenEastHook(pts), d).toBe(false);
+      expect(Math.max(...pts.map((p) => p.x)), d).toBeLessThanOrEqual(pts[pts.length - 1]!.x + 0.6);
       const src = nodes.find((n) => n.id === e.source)!;
       const dst = nodes.find((n) => n.id === e.target)!;
       const sp = laid.nodes[src.id]!;

@@ -12,7 +12,7 @@ import {
   jackCaption,
   snapJackFace,
 } from "./chipLayout";
-import { BOARD_GRID, onCellCenter, onGrid, snapSize } from "./grid";
+import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
 
 const audio = (id: string, output: boolean): AstJack => ({ id, label: id, output, kind: "audio" });
@@ -50,6 +50,22 @@ describe("chip face, labels, copy", () => {
     expect(bindFace(40, 80, 700)).toBe("bottom");
     expect(bindFace(560, 80, 700)).toBe("bottom");
     expect(bindFace(2000, 400, 400)).toBe("bottom");
+  });
+
+  it("sizes IN and OUT so the single jack sits on the vertical midline", () => {
+    const innJ = [audio("out", true)];
+    const outJ = [audio("in", false)];
+    const inn = chipBox("in", innJ, false, {});
+    const out = chipBox("out", outJ, false, {});
+    expect(inn.h).toBeGreaterThanOrEqual(96);
+    expect(out.h).toBe(inn.h);
+    expect(inn.h % BOARD_GRID).toBe(0);
+    const a = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("out", true), true, inn.h, inn.w);
+    const b = jackAnchor({ x: 0, y: 0 }, "out", outJ, handleId("in", false), false, out.h, out.w);
+    expect(a.y).toBe(snapToCellCenter(inn.h * 0.5));
+    expect(b.y).toBe(snapToCellCenter(out.h * 0.5));
+    expect(Math.abs(a.y - inn.h * 0.5)).toBeLessThan(1);
+    expect(Math.abs(b.y - out.h * 0.5)).toBeLessThan(1);
   });
 
   it("lands every jack on the board cell when the chip sits on the cell", () => {

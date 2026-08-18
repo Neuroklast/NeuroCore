@@ -1,5 +1,5 @@
 import ELK, { type ElkNode } from "elkjs/lib/elk.bundled.js";
-import { BOARD_GRID, snapSize, snapToGrid } from "../grid";
+import { BOARD_GRID, CHIP_AIR_X, snapSize, snapToGrid } from "../grid";
 import { separateChips } from "./compactPack";
 import type { LayoutMode, LayoutNode } from "./types";
 
@@ -12,7 +12,7 @@ export function elkOptions(mode: LayoutMode, throughEdges = 0): Record<string, s
       "elk.direction": "RIGHT",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       "elk.spacing.nodeNode": "32",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "32",
+      "elk.layered.spacing.nodeNodeBetweenLayers": String(CHIP_AIR_X),
       "elk.padding": "[top=32,left=32,bottom=32,right=32]",
     };
   }
@@ -69,5 +69,5 @@ export async function placeWithElk(
       h: snapSize(ch.height ?? src?.h ?? BOARD_GRID),
     };
   }
-  return separateChips(out, BOARD_GRID);
+  return separateChips(out);
 }

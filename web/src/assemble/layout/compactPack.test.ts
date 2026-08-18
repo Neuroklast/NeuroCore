@@ -50,10 +50,10 @@ describe("compact packRows", () => {
     expect(packed.c0!.x).toBe(packed.c4!.x);
     expect(packed.c1!.x).toBe(packed.OUT!.x);
     const gap = packed.c0!.x - (packed.IN!.x + packed.IN!.w);
-    expect(gap).toBeGreaterThanOrEqual(BOARD_GRID);
+    expect(gap).toBeGreaterThanOrEqual(BOARD_GRID * 2);
   });
 
-  it("keeps at least one grid of air on every side, including stacked rows", () => {
+  it("keeps two grids of air horizontally and one grid vertically", () => {
     const { nodes, edges } = chain(5);
     nodes[2]!.h = 192;
     nodes[2]!.ins = [{ id: "in", y: 16 }];
@@ -66,7 +66,9 @@ describe("compact packRows", () => {
       for (let j = i + 1; j < rects.length; j += 1) {
         const a = rects[i]!;
         const b = rects[j]!;
-        expect(chipChipGap(a, b), `${a.id}↔${b.id}`).toBeGreaterThanOrEqual(BOARD_GRID);
+        const ovY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        const need = ovY > 0 ? BOARD_GRID * 2 : BOARD_GRID;
+        expect(chipChipGap(a, b), `${a.id}↔${b.id}`).toBeGreaterThanOrEqual(need);
       }
     }
   });

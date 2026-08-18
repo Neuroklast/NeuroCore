@@ -1,3 +1,4 @@
+import { liveTheme } from "../theme/theme";
 import { BOARD_TRACE } from "./grid";
 export { PLASMA_DRIVER } from "../theme/fx";
 
@@ -6,6 +7,7 @@ export const TUBE = {
   audioOuter: BOARD_TRACE,
   audioGlass: BOARD_TRACE - 4,
   audioBore: BOARD_TRACE - 8,
+  audioBoreFill: "#000000",
   modOuter: BOARD_TRACE,
   modGlass: BOARD_TRACE - 4,
   jack: BOARD_TRACE,
@@ -36,6 +38,12 @@ export function tubeGlow(peak: number, motion: string, reduced: boolean): number
 
 export function plasmaAmp(peak: number, bore: number): number {
   return bore * 0.22 * (0.35 + 0.65 * logAmp(peak));
+}
+
+/** White core, accent halo — same pair as the footer scope wave. Dash runs source → dest. */
+export function plasmaPaint(): { core: string; glow: string; forward: number } {
+  const t = liveTheme();
+  return { core: t.white, glow: t.accent, forward: -28 };
 }
 
 /** Fixed bead pitch along the glass. One long snake makes the tube wobble. */

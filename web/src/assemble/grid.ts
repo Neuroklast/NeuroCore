@@ -12,6 +12,10 @@ export const BOARD_GAP = BOARD_GRID - BOARD_TRACE;
 export const BOARD_RAIL = BOARD_GRID;
 /** Centerline stays one full cell off every chip box. */
 export const BOARD_PAD = BOARD_GRID;
+/** Neighbours in a row: two cells so both 32 px jack stubs fit without a maze. */
+export const CHIP_AIR_X = BOARD_GRID * 2;
+/** Neighbours in a column: one cell. */
+export const CHIP_AIR_Y = BOARD_GRID;
 /** Midline of a cell. Cables and jacks sit here so parallels are one cell apart. */
 export const BOARD_HALF = BOARD_GRID * 0.5;
 

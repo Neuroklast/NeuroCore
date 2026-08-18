@@ -1,7 +1,7 @@
 import { Position, type Edge, type Node } from "@xyflow/react";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
-import { CHIP_GAP, CHIP_W, IO_W, chipBox } from "./chipLayout";
+import { CHIP_GAP, CHIP_W, chipBox } from "./chipLayout";
 import { lettersInExpr } from "./bindLinks";
 import { handleId, tokenInExpr } from "./handles";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
@@ -152,19 +152,21 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   const y = 16;
   const visible = visibleNodes(ast, sidechainOn);
 
+  const inJacks = ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
+  const inBox = chipBox("in", inJacks, false, {});
   nodes.push({
     id: "IN",
     type: "io",
     position: { x: 16, y: 112 },
-    data: { label: "IN", type: "in", jacks: ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }], letters: "", args: {}, channel: "", summary: "", nodeId: "IN" },
+    data: { label: "IN", type: "in", jacks: inJacks, letters: "", args: {}, channel: "", summary: "", nodeId: "IN" },
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
     draggable: false,
-    style: { width: IO_W, height: 56 },
-    width: IO_W,
-    height: 56,
+    style: { width: inBox.w, height: inBox.h },
+    width: inBox.w,
+    height: inBox.h,
   });
-  x += IO_W + CHIP_GAP;
+  x += inBox.w + CHIP_GAP;
 
   if (sidechainOn && ! visible.some((n) => isSidechainType(n.type))) {
     const scBox = chipBox("sidechain", [{ id: "out", label: "out", output: true, kind: "audio" }], false, {});
@@ -297,7 +299,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       type: "signal",
       animated: false,
       style: {
-        stroke: kind === "mod" ? "#00f0ff" : "#ff003c",
+        stroke: kind === "mod" ? "var(--nk-cyan)" : "var(--nk-accent)",
         strokeWidth: kind === "mod" ? 1 : 1.15,
       },
       data: {

@@ -57,7 +57,7 @@ const defaultEdgeOptions = {
   animated: false,
   className: cableEndChrome.className,
   interactionWidth: 28,
-  style: { stroke: "#ff003c", strokeWidth: BOARD_TRACE, cursor: cableEndChrome.cursor },
+  style: { stroke: "var(--nk-accent)", strokeWidth: BOARD_TRACE, cursor: cableEndChrome.cursor },
 };
 
 function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefined): { kind: string; output: boolean; jack: string } | null {
@@ -512,13 +512,13 @@ function Board() {
           gap={BOARD_GRID}
           size={BOARD_DOT}
           offset={BOARD_GRID / 2}
-          color="rgba(255,0,60,0.42)"
+          color="rgba(var(--nk-accent-rgb), 0.42)"
         />
         <Background
           id="nk-block"
           variant={BackgroundVariant.Lines}
           gap={BOARD_BLOCK}
-          color="rgba(255,0,60,0.10)"
+          color="rgba(var(--nk-accent-rgb), 0.10)"
         />
       </ReactFlow>
 

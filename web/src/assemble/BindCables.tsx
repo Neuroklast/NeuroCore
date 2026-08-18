@@ -97,12 +97,11 @@ export function BindCables() {
           const face = (dst.closest("[data-bind-face]") as HTMLElement | null)?.dataset.bindFace === "top"
             ? "top"
             : "bottom";
-          const leave = a.top > host.top + host.height * 0.55 ? "top" : "bottom";
           next.push({
             id: `${t.letter}:${t.node}`,
             letter: t.letter,
             d: bindSmoothPath(
-              localPoint(src, hostEl, host, leave),
+              localPoint(src, hostEl, host, "top"),
               localPoint(jack, hostEl, host, face),
               Math.max(0, letterIndex),
               boxes,
