@@ -1,6 +1,6 @@
 import type { AstJack } from "../bridge/ast";
 import { lettersInExpr } from "./bindLinks";
-import { chipSpec, JACK_PITCH, SOCKET_H } from "./chipSpec";
+import { chipSpec, JACK_PITCH, SOCKET_H, sideJackPitch } from "./chipSpec";
 import { BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
 import { bindableArgKeys, parseHandle } from "./handles";
 import { cableFace } from "./validateLink";
@@ -18,16 +18,22 @@ export const TAG_ROW = 18;
 export const BODY_PAD = 10;
 /** South (or north) rail for knob bind jacks. */
 export const BIND_RAIL = 32;
+/** First side jack sits in the cell under the title (cell midline). */
+const JACK_TOP_CLEAR = BOARD_GRID + BOARD_HALF;
 
 export function chipHeight(inCount: number, outCount: number, expanded = false): number {
   const n = Math.max(inCount, outCount, 1);
-  const body = n <= 1 ? CHIP_H : Math.max(CHIP_H, 36 + n * JACK_PITCH);
+  const pitch = sideJackPitch(n);
+  const body = n <= 1
+    ? CHIP_H
+    : Math.max(CHIP_H, JACK_TOP_CLEAR + (n - 1) * pitch + BOARD_GRID + BOARD_HALF);
   return expanded ? Math.max(body, 160) : body;
 }
 
 export function ioHeight(jackCount: number): number {
   const n = Math.max(jackCount, 1);
-  return n <= 1 ? 96 : Math.max(96, 28 + n * JACK_PITCH);
+  const pitch = sideJackPitch(n);
+  return n <= 1 ? 96 : Math.max(96, JACK_TOP_CLEAR + (n - 1) * pitch + BOARD_GRID);
 }
 
 export const TITLE_H = 26;
@@ -110,17 +116,15 @@ export function chipBox(
   return { w: snapSize(CHIP_W), h: snapSize(Math.max(spec.minBodyPx, ports) + rail) };
 }
 
-/** First side jack sits in the cell under the title (cell midline). */
-const JACK_TOP_CLEAR = BOARD_GRID + BOARD_HALF;
-
 export function jackTopPx(index: number, count: number, height: number): number {
   if (count <= 1) {
     const mid = snapToCellCenter(height * 0.5);
     return mid < JACK_TOP_CLEAR ? JACK_TOP_CLEAR : mid;
   }
-  const span = (count - 1) * JACK_PITCH;
+  const pitch = sideJackPitch(count);
+  const span = (count - 1) * pitch;
   const start = Math.max(JACK_TOP_CLEAR, snapToCellCenter((height - span) * 0.5));
-  return start + index * JACK_PITCH;
+  return start + index * pitch;
 }
 
 export function jackIndex(jacks: AstJack[], id: string, output: boolean): number {

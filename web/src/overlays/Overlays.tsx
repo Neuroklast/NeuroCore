@@ -7,6 +7,8 @@ import { useHostStore } from "../store/hostStore";
 import { isThemeId, THEME_STORAGE_KEY, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { settingsAboutTarget } from "./aboutModel";
+import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
+import { isIrSlotId } from "../presets/irSlots";
 import {
   clampInspectArg,
   inspectArgFields,
@@ -148,6 +150,16 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
           <p className="text-ink">{blurb}</p>
         </section>
       ) : null}
+      {isIrSlotId(node.id) || isIrSlotId(node.type) ? (
+        <section>
+          <div className="mb-1 text-[11px] tracking-widest text-muted">CABINET</div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="nk-clip" onClick={() => loadIrFile(node.id)}>Load</button>
+            <button type="button" className="nk-clip" onClick={() => irSlotAction("preview", node.id)}>Play</button>
+            <button type="button" className="nk-clip" onClick={() => irSlotAction("clear", node.id)}>Clear</button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -263,7 +275,6 @@ export function Overlays() {
   const overlay = useHostStore((s) => s.overlay);
   const motion = useHostStore((s) => s.motion);
   const setOverlay = useHostStore((s) => s.setOverlay);
-  const irSlots = useHostStore((s) => s.irSlots);
   const inspectId = useHostStore((s) => s.inspectId);
   const licensed = useHostStore((s) => s.licensed);
   const shell = useOverlayShell(overlay, motion);
@@ -347,16 +358,7 @@ export function Overlays() {
           )}
 
           {name === "ir" && (
-            <ul>
-              {irSlots.map((s) => (
-                <li key={s.slot} className="mb-2 flex items-center gap-2">
-                  <span>{s.slot}: {s.loaded ? s.name : "empty"}</span>
-                  <button type="button" className="nk-clip" onClick={() => void getNativeFunction("pickFile")({ kind: "ir", slot: s.slot })}>
-                    Load
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <ImpulsePanel focusSlot={inspectId} />
           )}
 
           {name === "inspect" && (

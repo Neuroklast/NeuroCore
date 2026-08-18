@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryRows } from "./factoryCatalog";
+import { explorerSession } from "../overlays/explorerSession";
 import { presetAction, seedFactoryPresets } from "./presetActions";
 
 describe("preset actions without the JUCE bridge", () => {
@@ -12,6 +13,7 @@ describe("preset actions without the JUCE bridge", () => {
       knobs: [],
       mix: 1,
     });
+    explorerSession.cat = "";
     useAstStore.setState({
       origin: "bridge",
       ast: null,

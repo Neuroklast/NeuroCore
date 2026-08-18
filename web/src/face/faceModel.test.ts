@@ -44,6 +44,8 @@ describe("unit face spectrum and bands", () => {
     const quiet = faceFftBar(0, 400);
     expect(quiet.y + quiet.h).toBe(400);
     expect(quiet.y).toBeGreaterThan(loud.y);
+    const modest = faceFftBar(0.03, 400);
+    expect(modest.h).toBeGreaterThan(400 * 0.3);
   });
 
   it("puts a 1-cycle sine in the low bins and a Nyquist square in the high bins", () => {

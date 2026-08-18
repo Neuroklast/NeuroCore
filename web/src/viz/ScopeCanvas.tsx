@@ -8,18 +8,16 @@ import {
   SCOPE_MENU,
   SPEC_BINS,
   SPEC_DEPTH,
+  scopeSpectra,
   scopeTitle,
+  specMag01,
   spectrogramProject,
   spectrogramPush,
   techNoise,
 } from "./scopeModel";
 
-function pickScope(source: string, inn: ArrayLike<number>, out: ArrayLike<number>): ArrayLike<number> {
-  return source === "in" ? inn : out;
-}
-
 function liftBins(raw: number[]): number[] {
-  return raw.map((v) => Math.min(1, Math.log10(1 + Math.max(0, v) * 18)));
+  return raw.map((v) => specMag01(v));
 }
 
 export function ScopeCanvas({
@@ -41,7 +39,8 @@ export function ScopeCanvas({
   const grid = useHostStore((s) => s.scopeGrid);
   const invertY = useHostStore((s) => s.scopeInvertY);
   const themeId = useHostStore((s) => s.theme);
-  const hist = useRef<number[][]>([]);
+  const histIn = useRef<number[][]>([]);
+  const histOut = useRef<number[][]>([]);
   const frame = useRef(0);
 
   useEffect(() => {
@@ -58,8 +57,12 @@ export function ScopeCanvas({
       const theme = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      const samples = pickScope(source, scopeIn, scopeOut);
-      hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS)));
+      const ids = scopeSpectra(source);
+      for (const id of ids) {
+        const samples = id === "in" ? scopeIn : scopeOut;
+        const hist = id === "in" ? histIn : histOut;
+        hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS)));
+      }
       frame.current += 1;
       ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, w, h);
@@ -83,28 +86,32 @@ export function ScopeCanvas({
         ctx.stroke();
       }
 
-      const rows = hist.current;
-      for (let r = rows.length - 1; r >= 0; r -= 1) {
-        const row = rows[r]!;
-        const fade = 1 - r / Math.max(1, SPEC_DEPTH);
-        const pts = row.map((mag, b) => spectrogramProject(b, r, invertY ? 1 - mag : mag, w, h));
-        ctx.beginPath();
-        const floorL = spectrogramProject(0, r, 0, w, h);
-        const floorR = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
-        ctx.moveTo(floorL.x, floorL.y);
-        for (const p of pts) {
-          ctx.lineTo(p.x, p.y);
+      for (const id of ids) {
+        const rows = (id === "in" ? histIn : histOut).current;
+        const ink = id === "in" ? theme.cyan : theme.accent;
+        const token = id === "in" ? "cyan" : "accent";
+        for (let r = rows.length - 1; r >= 0; r -= 1) {
+          const row = rows[r]!;
+          const fade = 1 - r / Math.max(1, SPEC_DEPTH);
+          const pts = row.map((mag, b) => spectrogramProject(b, r, invertY ? 1 - mag : mag, w, h));
+          ctx.beginPath();
+          const floorL = spectrogramProject(0, r, 0, w, h);
+          const floorR = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
+          ctx.moveTo(floorL.x, floorL.y);
+          for (const p of pts) {
+            ctx.lineTo(p.x, p.y);
+          }
+          ctx.lineTo(floorR.x, floorR.y);
+          ctx.closePath();
+          ctx.fillStyle = themeRgba(token, 0.04 + fade * 0.12, theme);
+          ctx.fill();
+          ctx.strokeStyle = r === 0 ? ink : themeRgba(token, 0.16 + fade * 0.5, theme);
+          ctx.shadowColor = r === 0 ? ink : "transparent";
+          ctx.shadowBlur = r === 0 ? 6 : 0;
+          ctx.lineWidth = r === 0 ? 1.4 : 0.8;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
         }
-        ctx.lineTo(floorR.x, floorR.y);
-        ctx.closePath();
-        ctx.fillStyle = themeRgba("accent", 0.05 + fade * 0.16, theme);
-        ctx.fill();
-        ctx.strokeStyle = r === 0 ? theme.accent : themeRgba("accent", 0.18 + fade * 0.55, theme);
-        ctx.shadowColor = r === 0 ? theme.accent : "transparent";
-        ctx.shadowBlur = r === 0 ? 6 : 0;
-        ctx.lineWidth = r === 0 ? 1.4 : 0.8;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
       }
 
       ctx.fillStyle = themeRgba("cyan", 0.08, theme);

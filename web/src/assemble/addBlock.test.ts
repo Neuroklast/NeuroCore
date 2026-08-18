@@ -101,6 +101,18 @@ describe("circuit add/remove", () => {
     expect(chipSpec("octaver").paramJacks).toEqual(["sub", "up", "mix", "tone", "thresh"]);
   });
 
+  it("offers Cabinet IR and emits ir1: mix / gain", () => {
+    const cab = ADDABLE_BLOCKS.find((b) => b.label === "Cabinet IR");
+    expect(cab?.type).toBe("ir");
+    expect(cab?.category).toBe("Time");
+    expect(cab?.args).toMatch(/mix\s*=\s*0\.3/);
+    expect(cab?.args).toMatch(/gain\s*=\s*0/);
+    const next = scriptAfterAdd("stage1: y = x\n", "ir");
+    expect(next).toMatch(/ir1:\s*mix = 0\.3/);
+    expect(next).toContain("gain = 0");
+    expect(nextBlockId("ir", ["ir1"])).toBe("ir2");
+  });
+
   it("rewrites a custom chip id across the script on rename", () => {
     const src = "custom1: y = x * a\nfilter1: type = lowpass; cutoff = custom1\nout: main = 1\n";
     const next = scriptAfterRename(src, "custom1", "dirt");

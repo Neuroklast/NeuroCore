@@ -31,3 +31,20 @@ export function shouldBlockWheelZoom(e: { ctrlKey: boolean; metaKey: boolean }):
 export function shouldBlockNativeContextMenu(_e?: { target?: unknown }): boolean {
   return true;
 }
+
+/** Bare Space is Cubase play/pause. Repeat/chords stay with the plugin. */
+export function isHostTransportKey(e: {
+  key: string;
+  code?: string;
+  repeat?: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+}): boolean {
+  if (e.repeat)
+    return false;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey)
+    return false;
+  return e.key === " " || e.key === "Spacebar" || e.code === "Space";
+}

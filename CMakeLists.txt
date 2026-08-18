@@ -93,8 +93,6 @@ set(SOURCE_FILES
     src/dsp/SignalPolisher.cpp
     src/dsl/DSLParser.cpp
     src/dsl/GraphModel.cpp
-    src/dsl/PcbRouter.cpp
-    src/ui/GraphCanvasComponent.cpp
     src/dsl/SignalChain.cpp
     src/dsl/blocks/GateBlock.cpp
     src/dsl/blocks/CompBlock.cpp
@@ -103,39 +101,12 @@ set(SOURCE_FILES
     src/dsl/blocks/OttBlock.cpp
     src/dsl/blocks/WidenBlock.cpp
     src/dsl/blocks/IrBlock.cpp
-    src/ui/IrPanelComponent.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseCrypto.cpp
     src/licensing/LicenseManager.cpp
-    src/ui/FormulaDisplayComponent.cpp
     src/utils/FormulaHelper.cpp
-    src/ui/DslTerminalEditor.cpp
-    src/ui/ModalOverlay.cpp
-    src/ui/PresetTableComponent.cpp
-    src/ui/PresetContentComponent.cpp
-    src/ui/OptimizeContentComponent.cpp
-    src/ui/FunctionsContentComponent.cpp
-    src/ui/StagesContentComponent.cpp
-    src/ui/ValidationContentComponent.cpp
-    src/ui/HelpContentComponent.cpp
-    src/ui/WaveformDisplayComponent.cpp
-    src/ui/StereoFieldComponent.cpp
-    src/ui/IoLoudnessMeter.cpp
-    src/ui/ScopeDeck.cpp
-    src/ui/LoudnessMeterComponent.cpp
-    src/ui/WeightedLayout.cpp
-    src/ui/custom/ParameterComponent.cpp
-    src/ui/custom/ProgressBarComponent.cpp
-    src/ui/custom/InputChannelSwitch.cpp
-    src/ui/fx/CyberFxDirector.cpp
-    src/ui/fx/DecodeText.cpp
-    src/ui/fx/CyberSequence.cpp
-    src/ui/fx/CyberBackdropCache.cpp
-    src/ui/fx/CyberBackdropComponent.cpp
-    src/ui/fx/CyberChrome.cpp
-    src/ui/fx/BootSequenceOverlay.cpp
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
@@ -144,7 +115,6 @@ set(SOURCE_FILES
     src/core/ScriptManager.cpp
     src/core/DspEngine.cpp
     src/core/PluginProcessor.cpp
-    src/ui/PluginEditor.cpp
     src/bridge/AstJson.cpp
     src/bridge/GraphOps.cpp
     src/bridge/TelemetryFrame.cpp
@@ -219,26 +189,21 @@ target_compile_definitions(NeuroKore
         JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
     PRIVATE
         NEUROKORE_HAS_WEB_EDITOR=1
-        NEUROKORE_NATIVE_EDITOR=0
         NEUROKORE_WEB_DIST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/web/dist"
+)
+
+# Reconfigure when the factory catalog changes so juceaide re-embeds it.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/factory_presets.json"
 )
 
 juce_add_binary_data(resourcesBinary
     SOURCES
-        resources/img/innerknob.png
-        resources/img/outerKnob.png
-        resources/img/overknob.png
-        resources/img/knob_lights.png
-        resources/img/warning.png
-        resources/img/nk_logo.png
-        resources/fonts/apex.otf
-        resources/fonts/JetBrainsMono-Regular.ttf
         resources/locale/en.txt
-        resources/locale/functions_en.txt
         resources/optimizations.txt
         resources/templates.json
         resources/UserManual_en.txt
-        # Source of truth is this JSON in git. Bound into BinaryData only at cmake time.
+        # Source of truth is this JSON in git. Bound into BinaryData at configure/build.
         resources/factory_presets.json
         "resources/irs/American IR 01.wav"
         "resources/irs/British IR 01.wav"
@@ -320,12 +285,9 @@ target_sources(NeuroKoreTests PRIVATE
     tests/LookupTableSmootherTest.h
     tests/SignalChainTest.h
     tests/WaveShaperTest.h
-    tests/WeightedLayoutTest.h
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
     tests/NeuroKoreExtrasTest.h
-    tests/CyberFxTest.h
-    tests/EditorUxTest.h
     tests/LicenseTest.h
     tests/EqSidechainTest.h
     tests/DynamicsBlocksTest.h
@@ -360,7 +322,6 @@ target_compile_features(NeuroKoreTests PRIVATE cxx_std_17)
 target_compile_definitions(NeuroKoreTests PRIVATE
     NEUROKORE_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
     NEUROKORE_SKIP_LICENSE_ENFORCEMENT=1
-    NEUROKORE_NATIVE_EDITOR=1
 )
 
 target_link_libraries(NeuroKoreTests PRIVATE
@@ -417,12 +378,80 @@ target_link_libraries(NeuroKoreIssuer PRIVATE
     juce::juce_cryptography
 )
 
+# Web UI is the editor. A plugin binary without a fresh web/dist is a failed build.
 find_program(NPM_EXECUTABLE NAMES npm.cmd npm)
-if (NPM_EXECUTABLE)
-    add_custom_target(NeuroKoreWeb
-        COMMAND "${NPM_EXECUTABLE}" install
-        COMMAND "${NPM_EXECUTABLE}" run build
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/web"
-        COMMENT "Build NEUROKORE web UI into web/dist"
-    )
+if (NOT NPM_EXECUTABLE)
+    message(FATAL_ERROR "npm is required. The VST/Standalone editor is the web UI in web/.")
 endif()
+
+set(_nk_web_dir "${CMAKE_CURRENT_SOURCE_DIR}/web")
+set(_nk_web_stamp "${CMAKE_CURRENT_BINARY_DIR}/neurokore-web.stamp")
+set(_nk_web_nm_stamp "${CMAKE_CURRENT_BINARY_DIR}/neurokore-web-npm.stamp")
+
+file(GLOB_RECURSE _nk_web_sources CONFIGURE_DEPENDS
+    "${_nk_web_dir}/src/*"
+    "${_nk_web_dir}/public/*"
+    "${_nk_web_dir}/index.html"
+    "${_nk_web_dir}/package.json"
+    "${_nk_web_dir}/package-lock.json"
+    "${_nk_web_dir}/vite.config.ts"
+    "${_nk_web_dir}/tsconfig.json"
+    "${_nk_web_dir}/tailwind.config.js"
+    "${_nk_web_dir}/postcss.config.js"
+)
+# Vite embeds these during build; they must not be inputs or every build loops.
+list(FILTER _nk_web_sources EXCLUDE REGEX "\\.gen\\.(json|txt)$")
+
+add_custom_command(
+    OUTPUT "${_nk_web_nm_stamp}"
+    COMMAND "${NPM_EXECUTABLE}" install --no-audit --no-fund
+    COMMAND ${CMAKE_COMMAND} -E touch "${_nk_web_nm_stamp}"
+    WORKING_DIRECTORY "${_nk_web_dir}"
+    DEPENDS
+        "${_nk_web_dir}/package.json"
+        "${_nk_web_dir}/package-lock.json"
+    COMMENT "npm install for NEUROKORE web UI"
+    VERBATIM
+)
+
+add_custom_command(
+    OUTPUT "${_nk_web_stamp}"
+    COMMAND "${NPM_EXECUTABLE}" run build
+    COMMAND ${CMAKE_COMMAND} -E touch "${_nk_web_stamp}"
+    WORKING_DIRECTORY "${_nk_web_dir}"
+    DEPENDS
+        ${_nk_web_sources}
+        "${_nk_web_nm_stamp}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/factory_presets.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/UserManual_en.txt"
+    COMMENT "Build NEUROKORE web UI into web/dist (required before VST/Standalone)"
+    VERBATIM
+)
+
+add_custom_target(NeuroKoreWeb DEPENDS "${_nk_web_stamp}")
+add_dependencies(NeuroKore NeuroKoreWeb)
+if (TARGET NeuroKore_Standalone)
+    add_dependencies(NeuroKore_Standalone NeuroKoreWeb)
+endif()
+if (TARGET NeuroKore_VST3)
+    add_dependencies(NeuroKore_VST3 NeuroKoreWeb)
+endif()
+if (TARGET NeuroKore_AU)
+    add_dependencies(NeuroKore_AU NeuroKoreWeb)
+endif()
+
+function(nk_copy_web_dist tgt)
+    if (NOT TARGET ${tgt})
+        return()
+    endif()
+    add_custom_command(TARGET ${tgt} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${_nk_web_dir}/dist"
+            "$<TARGET_FILE_DIR:${tgt}>/web/dist"
+        COMMENT "Copy current web/dist next to ${tgt}"
+    )
+endfunction()
+nk_copy_web_dist(NeuroKore)
+nk_copy_web_dist(NeuroKore_Standalone)
+nk_copy_web_dist(NeuroKore_VST3)
+nk_copy_web_dist(NeuroKore_AU)

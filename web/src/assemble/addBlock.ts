@@ -19,6 +19,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "eq", label: "EQ", args: "type = peak; freq = 1000; gain = 0", category: "Tone" },
   { type: "delay", label: "Delay", args: "time = 250; mix = 0.35; feedback = 0.2", category: "Time" },
   { type: "reverb", label: "Reverb", args: "size = 0.5; decay = 1.4; mix = 0.3", category: "Time" },
+  { type: "ir", label: "Cabinet IR", args: "mix = 0.3; gain = 0", category: "Time" },
   { type: "osc", label: "LFO", args: "freq = 1; shape = sine", category: "Mod" },
   { type: "env", label: "ENV", args: "type = peak; attack = 0.01; release = 0.1; hold = 0; min = 0; max = 1; invert = off", category: "Mod" },
   { type: "ms", label: "Split Mid/Side", args: "mode = split", category: "Routing" },

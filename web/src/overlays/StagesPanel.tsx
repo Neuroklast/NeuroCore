@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { liveArg } from "../assemble/liveArg";
+import { chipOverlay } from "../presets/irSlots";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { formatParamRange, stageCards } from "./stagesModel";
@@ -122,6 +123,15 @@ export function StagesPanel() {
               >
                 Inspect
               </button>
+              {chipOverlay(card.id, card.type).overlay === "ir" ? (
+                <button
+                  type="button"
+                  className="nk-clip"
+                  onClick={() => setOverlay("ir", card.id)}
+                >
+                  Load cab
+                </button>
+              ) : null}
             </div>
           </>
         )}

@@ -15,10 +15,12 @@ import { primaryJackId } from "./connectModel";
 import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
 import { collapsedFace } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
-import { isModulatorNode, type ChipData } from "./flowFromAst";
+import { isLfoNode, isEnvNode, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { liveArg } from "./liveArg";
 import { cableFace } from "./validateLink";
+import { isIrSlotId } from "../presets/irSlots";
+import { openImpulse } from "../overlays/ImpulsePanel";
 
 function JackPort({
   jack,
@@ -217,6 +219,7 @@ export function ChipNode({ data, id }: NodeProps) {
   const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
+  const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
   const sideJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "side");
   const bottomJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
@@ -227,7 +230,9 @@ export function ChipNode({ data, id }: NodeProps) {
     ...bindableArgKeys(d.args),
     ...Object.keys(d.args).filter((k) => lettersInExpr(d.args[k]).length > 0),
   ])];
-  const lfo = isModulatorNode({ type: d.type, id });
+  const lfo = isLfoNode({ type: d.type, id });
+  const env = isEnvNode({ type: d.type, id });
+  const envLevel = useHostStore((s) => s.mods[id] ?? 0);
   const hz = lfo ? resolveLfoHz(d.args, knobs, bpm) : 0;
   const extra = useMemo(() => detailArgs(isCustomNode(d.type, id) ? "custom" : d.type, d.args), [d.args, d.type, id]);
   const box = chipBox(isCustomNode(d.type, id) ? "custom" : d.type, d.jacks, detail, d.args);
@@ -371,11 +376,25 @@ export function ChipNode({ data, id }: NodeProps) {
         </div>
         <div className="mt-0.5 flex items-end justify-between gap-2">
           <span className="nk-chip-typecode">{face.code}</span>
-          <span className="nk-barcode" aria-hidden>
-            {bits.map((on, i) => (
-              <i key={i} style={{ height: on ? 8 : 3 }} />
-            ))}
-          </span>
+          {isIrSlotId(id) ? (
+            <button
+              type="button"
+              className="nk-clip nodrag nopan px-1 text-[10px]"
+              title="Load cabinet IR"
+              onClick={(e) => {
+                e.stopPropagation();
+                openImpulse(id);
+              }}
+            >
+              {irLoaded ? "CAB" : "LOAD"}
+            </button>
+          ) : (
+            <span className="nk-barcode" aria-hidden>
+              {bits.map((on, i) => (
+                <i key={i} style={{ height: on ? 8 : 3 }} />
+              ))}
+            </span>
+          )}
         </div>
 
         {detail ? (
@@ -407,7 +426,7 @@ export function ChipNode({ data, id }: NodeProps) {
 
         {detail ? (
           <div className="mt-1 truncate text-[10px] text-muted">
-            {lfo ? `hz ${formatMapped(hz)}` : `peak ${peakToDb(peak).toFixed(1)} dB`}
+            {lfo ? `hz ${formatMapped(hz)}` : env ? `env ${envLevel.toFixed(2)}` : `peak ${peakToDb(peak).toFixed(1)} dB`}
           </div>
         ) : null}
       </div>

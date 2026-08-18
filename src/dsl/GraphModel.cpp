@@ -1430,9 +1430,9 @@ bool connectAudio (GraphDocument& doc, int fromIndex, int toIndex, juce::String&
         error = "Cannot patch into a bus header";
         return false;
     }
-    if (isModulator (dst) && dst.type != "out")
+    if (isLfo (dst))
     {
-        error = "Modulators have no audio in";
+        error = "LFO has no audio in";
         return false;
     }
 

@@ -6,7 +6,7 @@ import { AssembleView } from "../assemble/AssembleView";
 import { BindCables, BindDragGhost } from "../assemble/BindCables";
 
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
-import { shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "../chrome/shortcuts";
+import { isHostTransportKey, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { HackView } from "../hack/HackView";
@@ -17,6 +17,7 @@ import { useAstStore } from "../store/astStore";
 
 import { useHostStore } from "../store/hostStore";
 import { shouldPlayBoot } from "../theme/boot";
+import { RESIZE_GRIP } from "../theme/chromeSpec";
 import { CrtFx, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
@@ -68,6 +69,13 @@ export function App() {
         e.preventDefault();
         e.stopPropagation();
         void (isUndoKey(e) ? undoCircuit() : redoCircuit());
+        return;
+      }
+      if (isHostTransportKey(e) && ! undoTargetIsText(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (hasJuceBridge())
+          void getNativeFunction("hostKey")({ key: "Space" }).catch(() => undefined);
         return;
       }
       if (shouldBlockBrowserShortcut(e)) {
@@ -139,6 +147,7 @@ export function App() {
       <Overlays />
 
       <CrtFx />
+      <div className="nk-resize-grip" style={{ width: RESIZE_GRIP, height: RESIZE_GRIP }} aria-hidden />
     </main>
     </ScaleShell>
   );

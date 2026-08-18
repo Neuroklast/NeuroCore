@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
+import { findFactory } from "../presets/factoryCatalog";
+import { parseDslSketch } from "../presets/parseDslSketch";
 import { flowFromAst } from "./flowFromAst";
 
 function emptyAst(nodes: AstDocument["nodes"] = []): AstDocument {
@@ -93,6 +95,101 @@ describe("flowFromAst", () => {
     expect((mod?.data as { kind?: string } | undefined)?.kind).toBe("mod");
     const chip = nodes.find((n) => n.id === "filter1");
     expect(chip?.data.jacks.some((j) => j.id === "lfo1" && j.kind === "mod")).toBe(true);
+    expect((mod?.data as { freqExpr?: string } | undefined)?.freqExpr).toBe("a");
+  });
+
+  it("Kick Rumble draws env1 to every stage that reads it", () => {
+    const row = findFactory("Kick Rumble");
+    expect(row, "missing Kick Rumble").toBeTruthy();
+    const { doc } = parseDslSketch(row!.script);
+    const { edges } = flowFromAst(doc);
+    const to = (id: string) => edges.filter((e) => e.source === "env1" && e.target === id);
+    expect(to("stage1").length, "env → stage1").toBeGreaterThan(0);
+    expect(to("stage2").length, "env → stage2").toBeGreaterThan(0);
+    expect(to("stage3").length, "env → stage3").toBeGreaterThan(0);
+    expect(to("stage1")[0]?.data).toMatchObject({ kind: "mod", sourceType: "env" });
+  });
+
+  it("keeps env cables when the host exposes dest-indexed mod jacks (mod:0)", () => {
+    const ast = emptyAst([
+      {
+        id: "env1",
+        type: "env",
+        busName: "main",
+        args: { type: "peak" },
+        trailingComment: "",
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "mod:0", label: "mod", output: true, kind: "mod" },
+          { id: "mod:1", label: "mod", output: true, kind: "mod" },
+        ],
+      },
+      {
+        id: "stage1",
+        type: "stage",
+        busName: "main",
+        args: { y: "x * env1" },
+        trailingComment: "",
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "env1", label: "env1", output: false, kind: "mod" },
+          { id: "out", label: "out", output: true, kind: "audio" },
+        ],
+      },
+      {
+        id: "stage2",
+        type: "stage",
+        busName: "scream",
+        args: { y: "x * env1" },
+        trailingComment: "",
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "env1", label: "env1", output: false, kind: "mod" },
+          { id: "out", label: "out", output: true, kind: "audio" },
+        ],
+      },
+    ]);
+    const { edges } = flowFromAst(ast);
+    expect(edges.some((e) => e.source === "env1" && e.target === "stage1")).toBe(true);
+    expect(edges.some((e) => e.source === "env1" && e.target === "stage2")).toBe(true);
+  });
+
+  it("does not treat ENV as a free-running LFO", () => {
+    const ast = emptyAst([
+      {
+        id: "env1",
+        type: "env",
+        busName: "main",
+        args: { type: "peak", attack: "0.01", release: "0.1" },
+        trailingComment: "",
+        x: 16,
+        y: 200,
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "mod", label: "mod", output: true, kind: "mod" },
+        ],
+      },
+      {
+        id: "stage1",
+        type: "stage",
+        busName: "main",
+        args: { y: "x * env1" },
+        trailingComment: "",
+        x: 240,
+        y: 16,
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "env1", label: "env1", output: false, kind: "mod" },
+          { id: "out", label: "out", output: true, kind: "audio" },
+        ],
+      },
+    ]);
+    ast.edges = [{ from: "env1", to: "stage1", kind: "mod", fromJack: "mod", toJack: "env1" }];
+    const { edges } = flowFromAst(ast);
+    const mod = edges.find((e) => e.source === "env1" && e.target === "stage1");
+    expect(mod).toBeTruthy();
+    expect((mod?.data as { freqExpr?: string } | undefined)?.freqExpr).toBe("");
+    expect((mod?.data as { sourceType?: string } | undefined)?.sourceType).toBe("env");
   });
 
   it("draws mid/side cables from encode, not a missing out jack", () => {

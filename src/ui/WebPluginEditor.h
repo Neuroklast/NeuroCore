@@ -32,6 +32,7 @@ private:
     void pushHost();
     void timerCallback() override;
     void pickFile (const juce::String& kind, const juce::String& slot);
+    void irSlot (const juce::String& action, const juce::String& slot);
 
     NeuroKoreAudioProcessor& audioProcessor;
     bridge::WebBridge bridge;
@@ -39,6 +40,7 @@ private:
     juce::File distRoot;
     juce::ComponentBoundsConstrainer sizeConstrain;
     std::unique_ptr<PageBrowser> browser;
+    std::unique_ptr<juce::ResizableCornerComponent> cornerGrip;
     std::unique_ptr<juce::FileChooser> fileChooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebPluginEditor)

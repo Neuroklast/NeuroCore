@@ -32,11 +32,20 @@ function lettersOn(node: AstNode): string {
 
 export type SignalKind = "audio" | "mod";
 
-export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+export function isLfoNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
   const t = (node.type || "").toLowerCase();
   const id = (node.id || "").toLowerCase();
-  return t.startsWith("osc") || t.startsWith("env") || t === "lfo"
-    || id.startsWith("osc") || id.startsWith("env") || id.startsWith("lfo");
+  return t.startsWith("osc") || t === "lfo" || id.startsWith("osc") || id.startsWith("lfo");
+}
+
+export function isEnvNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+  const t = (node.type || "").toLowerCase();
+  const id = (node.id || "").toLowerCase();
+  return t.startsWith("env") || id.startsWith("env");
+}
+
+export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+  return isLfoNode(node) || isEnvNode(node);
 }
 
 export function inferModLinks(nodes: AstNode[]): AstEdge[] {
@@ -288,8 +297,8 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   }).map((e, i) => {
     const kind = e.kind === "mod" ? "mod" : "audio";
     const src = byId.get(e.from);
-    const freqExpr = src && isModulatorNode(src) ? (src.args.freq ?? "1") : "";
-    const syncExpr = src && isModulatorNode(src) ? (src.args.sync ?? "off") : "off";
+    const freqExpr = src && isLfoNode(src) ? (src.args.freq ?? "1") : "";
+    const syncExpr = src && isLfoNode(src) ? (src.args.sync ?? "off") : "off";
     return {
       id: `e-${e.from}-${e.to}-${e.fromJack}-${e.toJack}-${i}`,
       source: e.from,
@@ -306,7 +315,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
         kind,
         freqExpr,
         syncExpr,
-        depthExpr: src && isModulatorNode(src) ? (src.args.depth ?? "1") : "1",
+        depthExpr: src && isLfoNode(src) ? (src.args.depth ?? "1") : "1",
         sourceType: src?.type ?? "",
         sourceId: e.from,
       },

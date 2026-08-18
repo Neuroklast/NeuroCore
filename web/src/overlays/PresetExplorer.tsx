@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getNativeFunction } from "../bridge/juce";
+import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { presetAction } from "../presets/presetActions";
 import { useHostStore } from "../store/hostStore";
 import { explorerSession, patchExplorer, type ExplorerScope } from "./explorerSession";
@@ -88,7 +88,11 @@ export function PresetExplorer() {
               className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
                 cat === f.name ? "bg-surface-high" : ""
               }`}
-              onClick={() => persist({ cat: f.name, sel: 0 })}
+              onClick={() => {
+                persist({ cat: f.name, sel: 0 });
+                if (hasJuceBridge())
+                  void getNativeFunction("setUi")({ explorerCat: f.name }).catch(() => undefined);
+              }}
             >
               <span>{f.label}</span>
               <span className="text-muted">{f.count}</span>

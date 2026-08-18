@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoAst } from "./demoAst";
 import { BOARD_GRID } from "./grid";
-import { hasLightning } from "./layout/chamfer";
-import { bindCableVisible, bindHitsKnobs, bindLinks, bindSmoothPath, bindTargets, firstRunVertical, lastRunVertical, svgPathPoints } from "./bindLinks";
+import { bindCableVisible, bindHitsKnobs, bindLinks, bindPathDirs, bindSmoothPath, bindTargets, bindTurnCount, firstRunVertical, lastRunVertical, svgPathPoints } from "./bindLinks";
 
 describe("knob-to-node binds", () => {
   it("lists every a–f token on a node, including formulas", () => {
@@ -28,20 +27,21 @@ describe("knob-to-node binds", () => {
     expect(bindTargets(demoAst.doc.nodes).filter((t) => t.node === "filter1" && t.letter === "b")).toHaveLength(1);
   });
 
-  it("uses the board router: grid stubs, chamfer, no lightning", () => {
+  it("uses only W/N/E with few corners, never A* or south", () => {
     const from = { x: 64, y: 416 };
     const to = { x: 384, y: 160 };
     const d = bindSmoothPath(from, to, 0, [], "bottom", [{ x: 0, y: 448, w: 128, h: 160 }]);
     const pts = svgPathPoints(d);
     expect(d.startsWith("M")).toBe(true);
     expect(/[QC]/.test(d)).toBe(false);
-    expect(hasLightning(pts)).toBe(false);
+    expect(bindPathDirs(pts).every((dir) => dir === "N" || dir === "W" || dir === "E"), d).toBe(true);
+    expect(bindPathDirs(pts).includes("S"), d).toBe(false);
+    expect(bindTurnCount(pts)).toBeLessThanOrEqual(4);
     expect(firstRunVertical(d)).toBe(true);
     expect(lastRunVertical(d)).toBe(true);
     expect(pts[0]!.y - pts[1]!.y).toBeGreaterThanOrEqual(BOARD_GRID - 1);
-    expect(pts[pts.length - 2]!.y - pts[pts.length - 1]!.y).toBeGreaterThanOrEqual(BOARD_GRID - 1);
     const hasDiag = pts.some((p, i) => i > 0 && Math.abs(p.x - pts[i - 1]!.x) > 1 && Math.abs(p.y - pts[i - 1]!.y) > 1);
-    expect(hasDiag, d).toBe(true);
+    expect(hasDiag, d).toBe(false);
   });
 
   it("goes around a chip instead of through it", () => {
@@ -106,7 +106,8 @@ describe("knob-to-node binds", () => {
       && p.y > chip.y + 2 && p.y < chip.y + chip.h - 2
     ));
     expect(inside, d).toEqual([]);
-    expect(hasLightning(svgPathPoints(d))).toBe(false);
+    expect(bindPathDirs(svgPathPoints(d)).every((dir) => dir === "N" || dir === "W" || dir === "E")).toBe(true);
+    expect(bindTurnCount(svgPathPoints(d))).toBeLessThanOrEqual(4);
   });
 
   it("still draws when the dest jack sits directly above the knob out", () => {

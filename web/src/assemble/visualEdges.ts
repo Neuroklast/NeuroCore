@@ -302,12 +302,18 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     push({ ...e, fromJack: railB });
   }
 
+  const isEnvChip = (n: Pick<AstNode, "type" | "id">) => {
+    const t = n.type.toLowerCase();
+    const id = (n.id || "").toLowerCase();
+    return t.startsWith("env") || id.startsWith("env");
+  };
+
   const isRailAudio = (n: AstNode) => {
     if (n.type === "out" || n.type === "bus" || isJoinSignal(n) || isForkSplit(n) || isForkJoin(n)) {
       return false;
     }
     const t = n.type.toLowerCase();
-    return ! t.startsWith("osc") && ! t.startsWith("env");
+    return ! t.startsWith("osc") && ! isEnvChip(n);
   };
 
   for (const jn of nodes.filter(isJoinSignal)) {
@@ -370,11 +376,50 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
         push({ from: "IN", to: b.id, kind: "audio", fromJack: "out", toJack: "in" });
       }
     }
-    const first = kids.find((n) => ! isSend(n)) ?? kids[0];
+    const first = kids.find((n) => ! isSend(n) && ! isEnvChip(n))
+      ?? kids.find((n) => ! isSend(n))
+      ?? kids[0];
     if (first && ! next.some((e) => e.from === b.id && e.to === first.id)) {
       strip("IN", first.id);
       push({ from: b.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
     }
+  }
+
+  // ENV is a tap, not a through node: keep audio into `in`, never out of env.
+  for (const e of [...next]) {
+    const src = byId.get(e.from);
+    if (! src || ! isEnvChip(src) || e.kind === "mod") {
+      continue;
+    }
+    next = next.filter((x) => keyOf(x) !== keyOf(e));
+    const bus = busOf(src);
+    const beforeSrc = nodes
+      .filter((n) => n.id !== src.id && isRailAudio(n) && busOf(n) === bus)
+      .filter((n) => nodes.indexOf(n) < nodes.indexOf(src));
+    const prev = beforeSrc[beforeSrc.length - 1];
+    push({
+      from: prev?.id ?? "IN",
+      to: e.to,
+      kind: e.kind === "mix" ? "mix" : "audio",
+      fromJack: "out",
+      toJack: e.toJack || "in",
+    });
+  }
+
+  for (const en of nodes.filter(isEnvChip)) {
+    const srcArg = (en.args.source || en.args.input || en.args.sidechain || "").toLowerCase();
+    if (srcArg === "sidechain" || srcArg === "sc" || srcArg === "ext") {
+      continue;
+    }
+    if (next.some((e) => e.to === en.id && (e.toJack === "in" || e.toJack === ""))) {
+      continue;
+    }
+    const bus = busOf(en);
+    const before = nodes
+      .filter((n) => n.id !== en.id && isRailAudio(n) && busOf(n) === bus)
+      .filter((n) => nodes.indexOf(n) < nodes.indexOf(en));
+    const prev = before[before.length - 1];
+    push({ from: prev?.id ?? "IN", to: en.id, kind: "audio", fromJack: "out", toJack: "in" });
   }
 
   return [...next, ...mods];

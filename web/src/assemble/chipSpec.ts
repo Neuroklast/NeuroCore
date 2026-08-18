@@ -38,6 +38,12 @@ const ENUM_EXTRA = 8;
 const BODY_FLOOR = 80;
 const IO_BODY = 96;
 export const JACK_PITCH = BOARD_GRID;
+/** Two+ side rails: one empty cell between tube midlines so forks are not a knot. */
+export const FORK_PITCH = BOARD_GRID * 2;
+
+export function sideJackPitch(count: number): number {
+  return count >= 2 ? FORK_PITCH : JACK_PITCH;
+}
 const PARAM_JACK_EDGE = 10;
 
 const CHANNEL = ["both", "left", "right", "mid", "side"] as const;
@@ -96,7 +102,10 @@ export function computeMinBodyPx(spec: {
   const header = TITLE_H + TYPECODE_H + BODY_PAD;
   const sockets = n * SOCKET_H;
   const south = n === 0 ? 0 : SOUTH_BAND;
-  const sideBand = sides <= 1 ? BODY_FLOOR : Math.max(BODY_FLOOR, 36 + (sides - 1) * JACK_PITCH + 20);
+  const pitch = sideJackPitch(sides);
+  const sideBand = sides <= 1
+    ? BODY_FLOOR
+    : Math.max(BODY_FLOOR, BOARD_GRID + BOARD_GRID / 2 + (sides - 1) * pitch + BOARD_GRID + BOARD_GRID / 2);
   return Math.max(BODY_FLOOR, header + sockets + enumRows * ENUM_EXTRA + south, sideBand);
 }
 

@@ -13,6 +13,9 @@ export function shouldAutoArrange(opts: {
   if (opts.origin === "canvas" || opts.origin === "elk") {
     return false;
   }
+  if (opts.origin === "preset") {
+    return true;
+  }
   if (opts.prevIds.length === 0) {
     return true;
   }
@@ -21,7 +24,7 @@ export function shouldAutoArrange(opts: {
   if (prev === next) {
     return false;
   }
-  return opts.origin === "preset" || opts.origin === "host" || opts.origin === "bridge";
+  return opts.origin === "host" || opts.origin === "bridge";
 }
 
 /** Strict Mode re-runs the paint effect. Do not remember ids while arrange is still pending. */

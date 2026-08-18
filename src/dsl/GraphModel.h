@@ -100,7 +100,7 @@ struct TidyHint
 inline constexpr int kTidyGrid = 16;
 inline constexpr int kTidyTitleRows = 2;
 inline constexpr int kTidyBottomRows = 1;
-inline constexpr int kTidyCardW = 11 * kTidyGrid; // 176 — same as GraphCanvas kCardWidth
+inline constexpr int kTidyCardW = 11 * kTidyGrid; // 176
 inline constexpr int kTidyCardH = (kTidyTitleRows + 1 + kTidyBottomRows) * kTidyGrid; // 64
 inline constexpr int kTidyIoW = 6 * kTidyGrid;    // 96  — IN / OUT
 inline constexpr int kTidyColGap = 3 * kTidyGrid; // 48
@@ -176,11 +176,22 @@ std::vector<GraphJack> jacksForVirtualOut (const GraphDocument& doc);
 /** Edges drawn in the patcher (bus + mid/side + L/R forks). */
 std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc);
 
-/** LFO / envelope — control, not audio. */
+/** LFO — no audio in. */
+inline bool isLfo (const GraphNode& n)
+{
+    return n.type.toLowerCase().startsWith ("osc");
+}
+
+/** Envelope follower — audio tap in, mod out. */
+inline bool isEnv (const GraphNode& n)
+{
+    return n.type.toLowerCase().startsWith ("env");
+}
+
+/** LFO / envelope — control, not a serial audio through-node. */
 inline bool isModulator (const GraphNode& n)
 {
-    const auto t = n.type.toLowerCase();
-    return t.startsWith ("osc") || t.startsWith ("env");
+    return isLfo (n) || isEnv (n);
 }
 
 inline juce::String channelRail (const GraphNode& n)

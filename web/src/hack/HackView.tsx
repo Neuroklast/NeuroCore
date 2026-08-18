@@ -5,8 +5,10 @@ import { publishScript } from "../assemble/addBlock";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { terminalActions } from "../app/workspace";
 import { validateOnSave } from "../overlays/validateModel";
+import { irSlotsFromScript, mergeIrSlots } from "../presets/irSlots";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { openImpulse } from "../overlays/ImpulsePanel";
 import { useTheme } from "../theme/themeBind";
 import {
   annotateKnobInlays,
@@ -105,6 +107,11 @@ export function HackView() {
   };
 
   const formulaPt = useHostStore((s) => s.formulaPt);
+  const hostIr = useHostStore((s) => s.irSlots);
+  const cabRows = useMemo(
+    () => mergeIrSlots(irSlotsFromScript(baseScript), hostIr),
+    [baseScript, hostIr],
+  );
 
   return (
     <section className="flex h-full min-h-0 flex-1 flex-col bg-black">
@@ -145,6 +152,17 @@ export function HackView() {
             Cancel
           </button>
         )}
+        {cabRows.map((row) => (
+          <button
+            key={row.slot}
+            type="button"
+            className="nk-clip nk-term-tool"
+            title={row.loaded ? row.name : `Load IR for ${row.slot}`}
+            onClick={() => openImpulse(row.slot)}
+          >
+            {row.slot} {row.loaded ? row.name : "IR"}
+          </button>
+        ))}
       </div>
       <div
         className={`nk-term relative min-h-0 flex-1 overflow-hidden ${

@@ -1,6 +1,6 @@
 # UI / UX contracts
 
-Source of truth for Circuit is the **script**, then `tidyLayout` + `PcbRouter`. The canvas only maps. Screenshots `screenshots/Screenshot 2026-08-16 231501.png` (Phaser Lab) and `231939.png` (Settings) are the current visual debt.
+Source of truth for Circuit is the **script**, then the web board (`web/src/assemble`, React Flow + elkjs). There is no native canvas.
 
 ## React Flow first
 

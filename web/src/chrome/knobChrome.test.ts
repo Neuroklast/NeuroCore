@@ -15,6 +15,8 @@ import {
   round2,
   snapEnum01,
   enumLabelAt01,
+  applyWheel01,
+  wheelStep01,
 } from "./knobChrome";
 
 describe("circuit knob chrome", () => {
@@ -62,5 +64,15 @@ describe("circuit knob chrome", () => {
     expect(snapEnum01(0.4, 3)).toBe(0.5);
     expect(snapEnum01(0.9, 3)).toBe(1);
     expect(enumLabelAt01(0.5, opts)).toBe("highpass");
+  });
+
+  it("maps one wheel notch to a fixed 0..1 step and ignores a zero delta", () => {
+    expect(wheelStep01(120)).toBeCloseTo(-0.03);
+    expect(wheelStep01(-80)).toBeCloseTo(0.03);
+    expect(wheelStep01(0)).toBe(0);
+    expect(applyWheel01(0.4, -120)).toBeCloseTo(0.43);
+    expect(applyWheel01(0.4, 120, true)).toBeCloseTo(0.3925);
+    expect(applyWheel01(0.99, -120)).toBe(1);
+    expect(applyWheel01(0.01, 120)).toBe(0);
   });
 });

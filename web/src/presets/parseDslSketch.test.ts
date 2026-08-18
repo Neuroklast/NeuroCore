@@ -70,6 +70,19 @@ describe("parseDslSketch", () => {
     expect(doc.nodes.some((n) => n.id === "sync")).toBe(false);
   });
 
+  it("loads Schranz Multiband and Precision Multiband sketches", () => {
+    for (const name of ["Schranz Multiband", "Precision Multiband"] as const) {
+      const preset = findFactory(name);
+      expect(preset, name).toBeTruthy();
+      const { doc } = parseDslSketch(preset!.script);
+      expect(doc.nodes.some((n) => n.type.startsWith("xover")), name).toBe(true);
+      expect(doc.nodes.some((n) => n.type === "out"), name).toBe(true);
+      expect(doc.nodes.filter((n) => n.type === "bus").map((n) => n.id).sort()).toEqual(
+        ["high", "low", "mid"],
+      );
+    }
+  });
+
   it("ENV sits on the audio rail with in + mod jacks", () => {
     const { doc } = parseDslSketch("env1: type = peak; attack = 0.01; release = 0.1; min = 0; max = 1\nstage1: y = x * env1");
     const env = doc.nodes.find((n) => n.id === "env1");

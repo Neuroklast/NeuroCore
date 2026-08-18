@@ -88,6 +88,25 @@ export function enumIndexAt01(value01: number, n: number): number {
   return Math.max(0, Math.min(n - 1, Math.round(v * (n - 1))));
 }
 
+/** One mouse-wheel notch in 0..1. Trackpad pixels still count as one notch. */
+export const WHEEL_NOTCH = 0.03;
+
+export function wheelStep01(deltaY: number, shift = false): number {
+  if (! Number.isFinite(deltaY) || deltaY === 0) {
+    return 0;
+  }
+  const mag = WHEEL_NOTCH * (shift ? 0.25 : 1);
+  return deltaY > 0 ? -mag : mag;
+}
+
+export function applyWheel01(current: number, deltaY: number, shift = false): number {
+  const next = current + wheelStep01(deltaY, shift);
+  if (! Number.isFinite(next)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, next));
+}
+
 export function enumLabelAt01(value01: number, enums: string[]): string {
   if (enums.length === 0) {
     return "";

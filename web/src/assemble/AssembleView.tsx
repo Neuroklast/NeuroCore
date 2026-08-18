@@ -44,6 +44,8 @@ import { flowFromAst, visibleNodes, type ChipData } from "./flowFromAst";
 import { parseHandle } from "./handles";
 import { isValidLink } from "./validateLink";
 import { addCircuitBlock, publishScript, removeCircuitBlock } from "./addBlock";
+import { chipOverlay, isIrSlotId } from "../presets/irSlots";
+import { openImpulse } from "../overlays/ImpulsePanel";
 
 import { BOARD_BLOCK, BOARD_DOT, BOARD_GRID, BOARD_TRACE } from "./grid";
 
@@ -365,7 +367,9 @@ function Board() {
     if (node.id === "IN" || node.id === "OUT") {
       return;
     }
-    useHostStore.getState().setOverlay("inspect", node.id);
+    const type = String((node.data as { type?: string } | undefined)?.type ?? node.id);
+    const hit = chipOverlay(node.id, type);
+    useHostStore.getState().setOverlay(hit.overlay, hit.inspectId);
   }, []);
 
   const persistPositions = useCallback((laid: Awaited<ReturnType<typeof requestLayout>>) => {
@@ -532,6 +536,9 @@ function Board() {
           ) : null}
           {menu.kind === "node" && menu.id !== "IN" && menu.id !== "OUT" ? (
             <OsMenuItem onClick={() => { useHostStore.getState().setOverlay("inspect", menu.id); closeMenu(); }}>Inspect</OsMenuItem>
+          ) : null}
+          {menu.kind === "node" && isIrSlotId(menu.id) ? (
+            <OsMenuItem onClick={() => { openImpulse(menu.id); closeMenu(); }}>Load cab</OsMenuItem>
           ) : null}
           {menu.kind === "node" && menu.id !== "IN" && menu.id !== "OUT" ? (
             <OsMenuItem onClick={() => {

@@ -1,10 +1,11 @@
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { peakToDb } from "../bridge/telemetry";
 import { lettersInExpr } from "../assemble/bindLinks";
-import { isModulatorNode } from "../assemble/flowFromAst";
+import { isLfoNode, isModulatorNode } from "../assemble/flowFromAst";
 import { parseLfoShape, resolveLfoHz, lfoWave, type LfoKnob, type LfoShape } from "../assemble/lfoLamp";
 import { visualAudioEdges } from "../assemble/visualEdges";
 import { kindLabel } from "../theme/tokens";
+import { specMag01 } from "../viz/scopeModel";
 import type { MotionPref } from "../theme/motionPolicy";
 
 function clamp01(n: number): number {
@@ -110,8 +111,8 @@ export function faceFftFrame(): { top: 0; bottom: 0; height: "fill" } {
 }
 
 export function faceFftBar(bin: number, viewH: number): { y: number; h: number } {
-  const v = Number.isFinite(bin) ? Math.max(0, bin) : 0;
-  const h = Math.max(1.2, Math.min(viewH * 0.92, v * viewH * 9));
+  const v = specMag01(Number.isFinite(bin) ? bin : 0);
+  const h = Math.max(1.2, Math.min(viewH * 0.92, v * viewH * 0.92));
   return { y: viewH - h, h };
 }
 
@@ -347,7 +348,7 @@ export function knobLfo(
   bpm: number,
 ): { hz: number; shape: LfoShape } | null {
   const letter = knobId.toLowerCase();
-  const lfos = nodes.filter(isModulatorNode);
+  const lfos = nodes.filter(isLfoNode);
   if (lfos.length === 0) {
     return null;
   }

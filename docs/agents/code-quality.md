@@ -24,9 +24,8 @@
 
 ## Where code lives
 
-- `src/dsl/GraphModel.*` — document, jacks, tidy, emit/parse. Geometry contracts belong here, not in the canvas.
-- `src/dsl/PcbRouter.*` — orthogonal paths. No JUCE types.
-- `src/ui/GraphCanvasComponent.*` — paint + hit. If you need a new constant for “looks better on Phaser Lab”, you are in the wrong file.
+- `src/dsl/GraphModel.*` — document, jacks, tidy, emit/parse.
+- `src/ui/WebPluginEditor.*` — WebView host. Circuit lives in `web/` (React Flow + elkjs).
 - `src/core/DspEngine.*` / `CpuProtect.h` — runtime. Do not hide DSP cost by lying in the footer.
 
 ## Version

@@ -103,6 +103,18 @@ static bool expandOneSplit (const juce::String& in, juce::String& out, bool& cha
     const int n = in.length();
     for (int i = 0; i < n; ++i)
     {
+        if (in[i] == '#')
+        {
+            while (i < n && in[i] != '\n')
+                ++i;
+            continue;
+        }
+        if (in[i] == '/' && i + 1 < n && in[i + 1] == '/')
+        {
+            while (i < n && in[i] != '\n')
+                ++i;
+            continue;
+        }
         if (i > 0)
         {
             const auto prev = in[i - 1];

@@ -21,6 +21,7 @@ import {
   knobArcOffset,
   knobCircumference,
   knobInteractive,
+  applyWheel01,
   knobBindKind,
   knobPlugPlacement,
   knobPlugPosition,
@@ -66,7 +67,10 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const showLetter = knobShowsLetter(compact);
   const bindKind = knobBindKind(compact);
   const live = useRef(knob.value);
-  live.current = knob.value;
+  const gesture = useRef(false);
+  if (! gesture.current) {
+    live.current = knob.value;
+  }
   const [hud, setHud] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
@@ -95,10 +99,16 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const gid = `nk-kg-${knob.id}`;
   const liveKnob = knobInteractive(knob.active);
 
-  const send = useCallback((value: number, gesture: "begin" | "change" | "end") => {
+  const send = useCallback((value: number, phase: "begin" | "change" | "end") => {
     const next = enums && enums.length > 0 ? snapEnum01(value, enums.length) : value;
+    if (phase === "begin") {
+      useHostStore.getState().beginKnobGesture(knob.id);
+    }
     useHostStore.getState().setKnob(knob.id, next);
-    void getNativeFunction("setParam")({ id: knob.id, value: next, gesture });
+    void getNativeFunction("setParam")({ id: knob.id, value: next, gesture: phase });
+    if (phase === "end") {
+      useHostStore.getState().endKnobGesture(knob.id);
+    }
   }, [knob.id, enums]);
 
   const startBindDrag = useCallback((letter: string, clientX: number, clientY: number) => {
@@ -130,6 +140,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     el.setPointerCapture(e.pointerId);
     const startY = e.clientY;
     const start = live.current;
+    gesture.current = true;
     send(start, "begin");
     setHud(true);
     const move = (ev: globalThis.PointerEvent) => {
@@ -142,6 +153,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
       el.releasePointerCapture(ev.pointerId);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      gesture.current = false;
       send(live.current, "end");
       setHud(false);
     };
@@ -155,27 +167,33 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     if (! el) {
       return;
     }
+    let endTimer = 0;
     const onWheel = (e: WheelEvent) => {
       if (! liveKnob) {
         return;
       }
       e.preventDefault();
       e.stopPropagation();
-      if (enums && enums.length > 1) {
-        const step = 1 / (enums.length - 1);
-        const dir = e.deltaY > 0 ? -step : step;
-        const next = snapEnum01(live.current + dir, enums.length);
-        live.current = next;
-        send(next, "change");
-        return;
+      if (! gesture.current) {
+        gesture.current = true;
+        send(live.current, "begin");
       }
-      const delta = e.deltaY > 0 ? -0.03 : 0.03;
-      const next = Math.max(0, Math.min(1, live.current + delta * (e.shiftKey ? 0.25 : 1)));
+      const next = enums && enums.length > 1
+        ? snapEnum01(live.current + (e.deltaY > 0 ? -1 : 1) / (enums.length - 1), enums.length)
+        : applyWheel01(live.current, e.deltaY, e.shiftKey);
       live.current = next;
       send(next, "change");
+      window.clearTimeout(endTimer);
+      endTimer = window.setTimeout(() => {
+        gesture.current = false;
+        send(live.current, "end");
+      }, 180);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    return () => {
+      window.clearTimeout(endTimer);
+      el.removeEventListener("wheel", onWheel);
+    };
   }, [liveKnob, send, enums]);
 
   return (

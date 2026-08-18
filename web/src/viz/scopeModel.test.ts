@@ -13,8 +13,10 @@ import {
   scopeTitle,
   SPEC_BINS,
   SPEC_DEPTH,
+  specMag01,
   spectrogramProject,
   spectrogramPush,
+  scopeSpectra,
   techNoise,
   tracesFor,
 } from "./scopeModel";
@@ -61,6 +63,21 @@ describe("scope deck model", () => {
     const a = demoLoudness(0);
     const b = demoLoudness(30);
     expect(Math.abs(a.inPeak - b.inPeak) + Math.abs(a.outRms - b.outRms)).toBeGreaterThan(0.05);
+  });
+
+  it("plots IN and OUT as two colours when source is BOTH", () => {
+    expect(scopeSpectra("in")).toEqual(["in"]);
+    expect(scopeSpectra("out")).toEqual(["out"]);
+    expect(scopeSpectra("both")).toEqual(["in", "out"]);
+    expect(SCOPE_COLOR.in).not.toBe(SCOPE_COLOR.out);
+  });
+
+  it("maps spectrum height in dB so a loud but not-full-scale hit still fills", () => {
+    expect(specMag01(1)).toBeGreaterThan(0.95);
+    expect(specMag01(0)).toBe(0);
+    expect(specMag01(0.03)).toBeGreaterThan(0.35);
+    expect(specMag01(0.03)).toBeGreaterThan(specMag01(0.003) + 0.08);
+    expect(specMag01(0.03)).toBeLessThan(specMag01(0.3));
   });
 
   it("rolls a spectrogram history and projects older rows into the distance", () => {

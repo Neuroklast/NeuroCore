@@ -264,6 +264,21 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     if (auto* scBus = proc.getBus (true, 1))
         sidechainOn = scBus->isEnabled();
     root->setProperty ("sidechainOn", sidechainOn);
+    juce::Array<juce::var> mods;
+    for (const auto& id : proc.getModNames())
+    {
+        float wave[8] {};
+        if (! proc.copyCircuitTap (id, wave, 8))
+            continue;
+        float peak = 0.f;
+        for (int i = 0; i < 8; ++i)
+            peak = juce::jmax (peak, std::abs (wave[i]));
+        auto* m = new juce::DynamicObject();
+        m->setProperty ("id", id);
+        m->setProperty ("value", peak);
+        mods.add (juce::var (m));
+    }
+    root->setProperty ("mods", mods);
     return juce::var (root);
 }
 

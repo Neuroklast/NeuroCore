@@ -248,6 +248,11 @@ public:
         return scriptManager.signalChain.copyNodeTap (id, dest, destN);
     }
 
+    juce::StringArray getModNames() const
+    {
+        return scriptManager.signalChain.getModNames();
+    }
+
     bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept
     {
         return scriptManager.signalChain.copyLfoViz (id, dest, destN);

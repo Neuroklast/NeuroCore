@@ -11,15 +11,18 @@ export function snapUiFitToGrid(fit: number): number {
 }
 
 export function fitForWindow(width: number, height: number): number {
+  if (! hasUsableViewport(width, height)) {
+    return 1;
+  }
   const raw = Math.min(width / DESIGN_W, height / DESIGN_H);
-  return snapUiFitToGrid(raw);
+  if (! (raw > 0) || ! Number.isFinite(raw)) {
+    return 1;
+  }
+  return raw;
 }
 
-export function fitOrigin(width: number, height: number, fit: number): { x: number; y: number } {
-  return {
-    x: Math.max(0, (width - DESIGN_W * fit) * 0.5),
-    y: Math.max(0, (height - DESIGN_H * fit) * 0.5),
-  };
+export function fitOrigin(_width: number, _height: number, _fit: number): { x: number; y: number } {
+  return { x: 0, y: 0 };
 }
 
 /** WebView2 often reports 0×0 until the first host resize. */

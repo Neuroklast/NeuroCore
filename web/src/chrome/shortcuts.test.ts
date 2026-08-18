@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "./shortcuts";
+import { isHostTransportKey, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "./shortcuts";
 
 describe("browser shortcuts are banned", () => {
   it("blocks refresh, find, save, print and inspect chords", () => {
@@ -24,5 +24,15 @@ describe("browser shortcuts are banned", () => {
     expect(shouldBlockNativeContextMenu({ target: "chip" })).toBe(true);
     expect(shouldBlockNativeContextMenu({ target: "input" })).toBe(true);
     expect(shouldBlockNativeContextMenu({})).toBe(true);
+  });
+
+  it("treats bare Space as host transport, never a plugin command", () => {
+    const bare = { key: " ", ctrlKey: false, metaKey: false, altKey: false, shiftKey: false };
+    expect(isHostTransportKey(bare)).toBe(true);
+    expect(isHostTransportKey({ ...bare, code: "Space", key: "Unidentified" })).toBe(true);
+    expect(isHostTransportKey({ ...bare, repeat: true })).toBe(false);
+    expect(isHostTransportKey({ ...bare, ctrlKey: true })).toBe(false);
+    expect(isHostTransportKey({ ...bare, shiftKey: true })).toBe(false);
+    expect(isHostTransportKey({ ...bare, key: "a", code: "KeyA" })).toBe(false);
   });
 });

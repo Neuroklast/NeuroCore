@@ -129,6 +129,33 @@ describe("visualAudioEdges", () => {
     expect(vis.some((e) => e.to === "ms2" && e.toJack === "in")).toBe(false);
   });
 
+  it("ENV taps the previous audio chip (or IN) and is not a through node", () => {
+    const nodes = [
+      node("stage1", "stage", { y: "x" }),
+      node("env1", "env", { type: "peak" }),
+      node("stage2", "stage", { y: "x * env1" }),
+    ];
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage1", to: "env1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "env1", to: "stage2", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage2", to: "OUT", kind: "audio", fromJack: "out", toJack: "in" },
+    ]);
+    expect(vis.some((e) => e.to === "env1" && e.toJack === "in" && e.kind === "audio")).toBe(true);
+    expect(vis.some((e) => e.from === "stage1" && e.to === "env1")).toBe(true);
+    expect(vis.some((e) => e.from === "env1" && e.kind === "audio")).toBe(false);
+    expect(vis.some((e) => e.from === "stage1" && e.to === "stage2")).toBe(true);
+  });
+
+  it("ENV with no serial edges still gets a tap from IN", () => {
+    const nodes = [node("env1", "env", { type: "peak" }), node("stage1", "stage", { y: "x * env1" })];
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage1", to: "OUT", kind: "audio", fromJack: "out", toJack: "in" },
+    ]);
+    expect(vis.some((e) => e.from === "IN" && e.to === "env1" && e.toJack === "in")).toBe(true);
+  });
+
   it("rejects Split L/R into Join MS and Split MS into Join L/R", () => {
     const audio = { kind: "audio" as const };
     expect(isValidLink({ ...audio, output: true, jack: "left" }, { ...audio, output: false, jack: "mid" })).toBe(false);

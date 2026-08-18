@@ -97,11 +97,11 @@ export function tokenizeLine(line: string): DslToken[] {
 
 export type InlayKnob = { id: string; value: number; min: number; max: number };
 
-/** Terminal header: preset name + how-it-sounds only. */
+/** Terminal header: preset name + sound line. No "How it sounds:" label. */
 export function headerComments(name: string, howItSounds: string): string {
   const n = name.trim() || "Untitled";
-  const sound = howItSounds.trim() || "—";
-  return `# ${n}\n# How it sounds: ${sound}`;
+  const sound = howItSounds.trim() || "-";
+  return `# ${n}\n# ${sound}`;
 }
 
 function isHeaderCommentLine(line: string): boolean {
@@ -113,21 +113,13 @@ function isHeaderCommentLine(line: string): boolean {
   if (! body) {
     return true;
   }
-  if (/^how it sounds\s*:/i.test(body)) {
-    return true;
+  if (body.startsWith("@")) {
+    return false;
   }
-  // `# a Drive: 0.5 to 2.8, default 1.1`
-  if (/^[a-f]\s+\S+/i.test(body)) {
-    return true;
-  }
-  // bare title line `# Preset Name` (no colon assignment / @xy)
-  if (! body.includes(":") && ! body.startsWith("@")) {
-    return true;
-  }
-  return false;
+  return true;
 }
 
-/** Replace leading factory header with name + how-it-sounds; keep body / inline notes. */
+/** Replace leading factory header with name + sound; keep body / inline notes. */
 export function withHeaderComments(script: string, name: string, howItSounds: string): string {
   const lines = script.replace(/\r\n/g, "\n").split("\n");
   let i = 0;

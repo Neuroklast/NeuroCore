@@ -1111,6 +1111,49 @@ public:
             expectEquals (outs, 2);
         }
 
+        beginTest ("env in is an audio tap, LFO still has none");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (
+                        "env1: type = peak; attack = 0.01; release = 0.1\n"
+                        "stage1: y = x * env1\n"
+                        "osc1: shape = sine; freq = 1\n",
+                        doc, err),
+                    err);
+            auto idx = [&] (const juce::String& name) -> int
+            {
+                for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                    if (doc.nodes[(size_t) i].name == name)
+                        return i;
+                return -1;
+            };
+            const int env = idx ("env1");
+            const int stage = idx ("stage1");
+            const int osc = idx ("osc1");
+            expect (env >= 0 && stage >= 0 && osc >= 0);
+            const auto envJ = dsl::jacksFor (doc.nodes[(size_t) env], &doc);
+            bool hasIn = false, hasMod = false;
+            for (const auto& j : envJ)
+            {
+                if (j.id == "in" && ! j.output && j.kind == "audio")
+                    hasIn = true;
+                if (j.id == "mod" && j.output && j.kind == "mod")
+                    hasMod = true;
+            }
+            expect (hasIn, "env must expose audio in");
+            expect (hasMod, "env must expose mod out");
+
+            expect (dsl::connectJack (doc, -1, "out", env, "in", err), err);
+            expectEquals (doc.nodes[(size_t) idx ("env1")].busName, juce::String ("main"));
+            expect (dsl::connectJack (doc, idx ("stage1"), "out", idx ("env1"), "in", err), err);
+
+            expect (! dsl::connectJack (doc, idx ("osc1"), "out", idx ("env1"), "in", err),
+                    "LFO still has no audio out into env");
+            expect (! dsl::connectAudio (doc, idx ("stage1"), idx ("osc1"), err),
+                    "LFO still has no audio in");
+        }
+
         beginTest ("tidyLayout puts IN top-left and OUT bottom-right");
         {
             const juce::String script =

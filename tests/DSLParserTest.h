@@ -445,6 +445,24 @@ public:
             expectEquals (blocks[1].args.at ("bands"), juce::String ("8"));
         }
 
+        beginTest("split expander ignores Split: inside comments");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String error;
+            expect (parser.parse (
+                "# d Split: 90 to 220, default 150\n"
+                "param d = Split [90, 220]\n"
+                "xover1: f1 = d; f2 = 2500\n"
+                "stage1: y = x\n",
+                blocks, aliases, params, error), error);
+            expect (error.isEmpty(), error);
+            expect (blocks.size() >= 2);
+            expectEquals (blocks[0].type, juce::String ("xover"));
+        }
+
         beginTest("split midside expands to encode / channel / decode");
         {
             dsl::DSLParser parser;

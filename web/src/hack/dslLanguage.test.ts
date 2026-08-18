@@ -26,10 +26,11 @@ describe("dsl tokenizer", () => {
 });
 
 describe("terminal header comments", () => {
-  it("is only preset name + how-it-sounds", () => {
+  it("is only preset name + the sound line, no How-it-sounds label", () => {
     expect(headerComments("Airy Clean", "soft tube, open cab")).toBe(
-      "# Airy Clean\n# How it sounds: soft tube, open cab",
+      "# Airy Clean\n# soft tube, open cab",
     );
+    expect(headerComments("Airy Clean", "soft tube, open cab")).not.toMatch(/How it sounds/i);
   });
 
   it("withHeaderComments drops param-range header lines", () => {
@@ -44,7 +45,8 @@ describe("terminal header comments", () => {
       "filter1: cutoff = 1000  # @16,32",
     ].join("\n");
     const out = withHeaderComments(script, "Airy Clean", "soft tube");
-    expect(out.startsWith("# Airy Clean\n# How it sounds: soft tube\n")).toBe(true);
+    expect(out.startsWith("# Airy Clean\n# soft tube\n")).toBe(true);
+    expect(out).not.toMatch(/How it sounds/i);
     expect(out).not.toContain("# a Drive:");
     expect(out).not.toContain("# b Bright:");
     expect(out).toContain("param a = Drive [0.5, 2.8]");

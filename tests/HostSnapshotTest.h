@@ -77,9 +77,22 @@ public:
             expect (host.hasProperty ("sidechainOn"));
             const bool on = (bool) host.getProperty ("sidechainOn", false);
             if (auto* bus = proc.getBus (true, 1))
-                expectEquals (on, bus->isEnabled());
+                expect (on == bus->isEnabled());
             else
                 expect (! on);
+        }
+
+        beginTest ("irVar lists compiled IR slots even when empty");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("ir1: mix = 0.3; gain = 0\n", err), err);
+            const auto ir = bridge::irVar (proc);
+            const auto slots = ir.getProperty ("slots", juce::var());
+            expect (slots.isArray(), "ir payload has slots");
+            expect (slots.size() >= 1, "ir1 must appear after compile");
+            expectEquals (slots[0].getProperty ("slot", "").toString(), juce::String ("ir1"));
+            expectEquals ((int) slots[0].getProperty ("loaded", 1), 0);
         }
     }
 };

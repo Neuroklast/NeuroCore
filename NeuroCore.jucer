@@ -111,70 +111,16 @@
         </GROUP>
       </GROUP>
       <GROUP id="{8DAA9E4A-2888-823B-BE78-9ED66C2F810D}" name="ui">
-        <GROUP id="{88E979F5-477D-FBB4-B669-52FFC1BE443F}" name="custom">
-          <FILE id="x3zGPd" name="ParameterComponent.cpp" compile="1" resource="0"
-                file="src/ui/custom/ParameterComponent.cpp"/>
-          <FILE id="DXwU4U" name="ParameterComponent.h" compile="0" resource="0"
-                file="src/ui/custom/ParameterComponent.h"/>
-          <FILE id="rusr06" name="ProgressBarComponent.cpp" compile="1" resource="0"
-                file="src/ui/custom/ProgressBarComponent.cpp"/>
-          <FILE id="eCDzaJ" name="ProgressBarComponent.h" compile="0" resource="0"
-                file="src/ui/custom/ProgressBarComponent.h"/>
-        </GROUP>
-        <FILE id="a5GTfa" name="DslTerminalEditor.cpp" compile="1" resource="0"
-              file="src/ui/DslTerminalEditor.cpp"/>
-        <FILE id="tVlTFt" name="DslTerminalEditor.h" compile="0" resource="0"
-              file="src/ui/DslTerminalEditor.h"/>
-        <FILE id="dA8DvS" name="FormulaDisplayComponent.cpp" compile="1" resource="0"
-              file="src/ui/FormulaDisplayComponent.cpp"/>
-        <FILE id="trmi2X" name="FormulaDisplayComponent.h" compile="0" resource="0"
-              file="src/ui/FormulaDisplayComponent.h"/>
-        <FILE id="GMazot" name="FormulaWaveComponent.cpp" compile="1" resource="0"
-              file="src/ui/FormulaWaveComponent.cpp"/>
-        <FILE id="rDtquO" name="FormulaWaveComponent.h" compile="0" resource="0"
-              file="src/ui/FormulaWaveComponent.h"/>
-        <FILE id="rfW9f6" name="FunctionsContentComponent.cpp" compile="1"
-              resource="0" file="src/ui/FunctionsContentComponent.cpp"/>
-        <FILE id="qkqzQI" name="FunctionsContentComponent.h" compile="0" resource="0"
-              file="src/ui/FunctionsContentComponent.h"/>
-        <FILE id="l7UBuY" name="InlineAutocompleteEditor.cpp" compile="1" resource="0"
-              file="src/ui/InlineAutocompleteEditor.cpp"/>
-        <FILE id="cPSvJZ" name="InlineAutocompleteEditor.h" compile="0" resource="0"
-              file="src/ui/InlineAutocompleteEditor.h"/>
-        <FILE id="hxwksb" name="LoudnessMeterComponent.cpp" compile="1" resource="0"
-              file="src/ui/LoudnessMeterComponent.cpp"/>
-        <FILE id="wRVNKj" name="LoudnessMeterComponent.h" compile="0" resource="0"
-              file="src/ui/LoudnessMeterComponent.h"/>
-        <FILE id="yd4xpe" name="ModalOverlay.cpp" compile="1" resource="0"
-              file="src/ui/ModalOverlay.cpp"/>
-        <FILE id="uc6MmY" name="ModalOverlay.h" compile="0" resource="0" file="src/ui/ModalOverlay.h"/>
         <FILE id="Je4Ks7Wp" name="MidiLearnManager.cpp" compile="1" resource="0" file="src/ui/MidiLearnManager.cpp"/>
         <FILE id="Ld9Qv2Xa" name="MidiLearnManager.h" compile="0" resource="0" file="src/ui/MidiLearnManager.h"/>
-        <FILE id="VN1ZoS" name="PluginEditor.cpp" compile="1" resource="0"
-              file="src/ui/PluginEditor.cpp"/>
-        <FILE id="OaBecS" name="PluginEditor.h" compile="0" resource="0" file="src/ui/PluginEditor.h"/>
-        <FILE id="thhrHR" name="PluginLookAndFeel.h" compile="0" resource="0"
-              file="src/ui/PluginLookAndFeel.h"/>
-        <FILE id="ujR3NN" name="PresetContentComponent.cpp" compile="1" resource="0"
-              file="src/ui/PresetContentComponent.cpp"/>
-        <FILE id="rMhPx8" name="PresetContentComponent.h" compile="0" resource="0"
-              file="src/ui/PresetContentComponent.h"/>
-        <FILE id="HrFJMM" name="PresetTableComponent.cpp" compile="1" resource="0"
-              file="src/ui/PresetTableComponent.cpp"/>
-        <FILE id="TZdGlB" name="PresetTableComponent.h" compile="0" resource="0"
-              file="src/ui/PresetTableComponent.h"/>
-        <FILE id="y11Qqg" name="ValidationContentComponent.cpp" compile="1"
-              resource="0" file="src/ui/ValidationContentComponent.cpp"/>
-        <FILE id="fZ5hE4" name="ValidationContentComponent.h" compile="0" resource="0"
-              file="src/ui/ValidationContentComponent.h"/>
-        <FILE id="B2u5e6" name="WaveformDisplayComponent.cpp" compile="1" resource="0"
-              file="src/ui/WaveformDisplayComponent.cpp"/>
-        <FILE id="zqEnwl" name="WaveformDisplayComponent.h" compile="0" resource="0"
-              file="src/ui/WaveformDisplayComponent.h"/>
-        <FILE id="zkmkwS" name="WeightedLayout.cpp" compile="1" resource="0"
-              file="src/ui/WeightedLayout.cpp"/>
-        <FILE id="GvMjaO" name="WeightedLayout.h" compile="0" resource="0"
-              file="src/ui/WeightedLayout.h"/>
+        <FILE id="Sa8d01" name="StandaloneAudioSettings.cpp" compile="1" resource="0"
+              file="src/ui/StandaloneAudioSettings.cpp"/>
+        <FILE id="Sa8d02" name="StandaloneAudioSettings.h" compile="0" resource="0"
+              file="src/ui/StandaloneAudioSettings.h"/>
+        <FILE id="Wp8e01" name="WebPluginEditor.cpp" compile="1" resource="0"
+              file="src/ui/WebPluginEditor.cpp"/>
+        <FILE id="Wp8e02" name="WebPluginEditor.h" compile="0" resource="0"
+              file="src/ui/WebPluginEditor.h"/>
       </GROUP>
       <GROUP id="{4A4E8D1E-58E4-3D4A-4232-1D5982BD9F53}" name="utils">
         <FILE id="AZhhGo" name="ExpressionEvaluator.cpp" compile="1" resource="0"

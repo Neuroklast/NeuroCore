@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Knob } from "../chrome/Knob";
 import { bloomFilter } from "../overlays/overlayMotion";
 import { useAstStore } from "../store/astStore";
@@ -220,7 +220,7 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
 
       <div className="relative z-[1] mb-6 flex max-w-[960px] flex-wrap items-stretch justify-center gap-3 self-center pb-2">
         {live.map((k) => (
-          <FaceKnob key={k.id} knob={k} />
+          <FaceKnob key={k.id} id={k.id} />
         ))}
       </div>
     </section>
@@ -324,11 +324,11 @@ function FaceMinimap({
   );
 }
 
-function FaceKnob({
-  knob,
-}: {
-  knob: { id: string; name: string; value: number; active: boolean; min: number; max: number; isNote: boolean; unit?: string; enums?: string[] };
-}) {
+const FaceKnob = memo(function FaceKnob({ id }: { id: string }) {
+  const knob = useHostStore((s) => s.knobs.find((k) => k.id === id));
+  if (! knob) {
+    return null;
+  }
   return (
     <div className="nk-face-knob h-[168px] w-[128px]">
       <span className="nk-face-aim nk-face-aim-tl" aria-hidden>+</span>
@@ -338,4 +338,4 @@ function FaceKnob({
       <Knob knob={knob} bind={false} />
     </div>
   );
-}
+});

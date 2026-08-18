@@ -5,6 +5,7 @@ import { TUBE } from "./tubeModel";
 import { lfoChaseMs, lfoDash, lfoDotGlow, resolveAmp, LFO_DOT, LFO_WIRE } from "./cableMotion";
 import { audioStepPath, pathLength, type Obstacle } from "./audioStep";
 import { resolveLfoHz } from "./lfoLamp";
+import { isEnvNode, isLfoNode } from "./flowFromAst";
 import { cableAccent, normalizeCableKind } from "./validateLink";
 
 export function SignalEdge({
@@ -31,13 +32,17 @@ export function SignalEdge({
   const kind = norm === "mod" || norm === "param" ? norm : "audio";
   const freqExpr = String((data as { freqExpr?: string } | undefined)?.freqExpr ?? "");
   const syncExpr = String((data as { syncExpr?: string } | undefined)?.syncExpr ?? "off");
-  const hz = kind === "mod"
+  const sourceType = String((data as { sourceType?: string } | undefined)?.sourceType ?? "");
+  const sourceId = String((data as { sourceId?: string } | undefined)?.sourceId ?? "");
+  const lfoSrc = isLfoNode({ type: sourceType, id: sourceId });
+  const envSrc = isEnvNode({ type: sourceType, id: sourceId });
+  const envAmp = useHostStore((s) => (envSrc ? (s.mods[sourceId] ?? 0) : 0));
+  const hz = kind === "mod" && lfoSrc
     ? resolveLfoHz({ freq: freqExpr || "1", sync: syncExpr }, knobs, bpm)
     : Number((data as { hz?: number } | undefined)?.hz ?? 1) || 1;
   const depthExpr = String((data as { depthExpr?: string } | undefined)?.depthExpr ?? "1");
-  const amp = kind === "mod" ? resolveAmp(depthExpr, knobs) : 1;
+  const amp = kind === "mod" ? (envSrc ? envAmp : resolveAmp(depthExpr, knobs)) : 1;
   const lfoMs = lfoChaseMs(hz);
-  const sourceId = String((data as { sourceId?: string } | undefined)?.sourceId ?? "");
   const srcKey = sourceId === "IN" ? "in" : "out";
 
   const outer = kind === "audio" ? TUBE.audioOuter : TUBE.modOuter;
@@ -83,7 +88,7 @@ export function SignalEdge({
   const lfo = lfoDash(len, LFO_DOT);
   const showPlasma = ! temp && kind === "audio" && cables === "wave" && motionAllows("pipeWave", motion, reduced);
   const showDots = ! temp && kind === "audio" && cables === "dots" && motionAllows("pipeWave", motion, reduced);
-  const chase = ! temp && kind === "mod" && motionAllows("lfoChase", motion, reduced);
+  const chase = ! temp && kind === "mod" && lfoSrc && motionAllows("lfoChase", motion, reduced);
   const accent = cableAccent(kind);
   const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
   const focus = String((data as { focus?: string } | undefined)?.focus ?? "off");
@@ -106,8 +111,19 @@ export function SignalEdge({
           strokeLinecap="butt"
           strokeLinejoin="miter"
           className="nk-lfo-wire"
+          style={envSrc ? { opacity: 0.18 + 0.82 * amp } : undefined}
         />
-        {chase ? (
+        {envSrc && amp > 0.04 ? (
+          <path
+            d={path}
+            fill="none"
+            stroke="var(--nk-cyan)"
+            strokeWidth={LFO_DOT * (0.35 + 0.65 * amp)}
+            strokeLinecap="round"
+            className="nk-lfo-dot"
+            style={{ opacity: glow }}
+          />
+        ) : chase ? (
           <path
             d={path}
             fill="none"

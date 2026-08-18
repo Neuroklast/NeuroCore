@@ -294,6 +294,11 @@ bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
 {
     entries.clear();
 
+    // Shipping catalog is BinaryData. A stale resources/ copy next to an
+    // old VST3 or package/stage must not hide curated Vocals / legacy names.
+    if (loadFromEmbedded() && ! entries.empty())
+        return true;
+
     const auto dir  = resolveResourcesDir(resourcesDir);
     const auto file = dir.getChildFile("factory_presets.json");
     if (file.existsAsFile())
@@ -356,6 +361,7 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
     }
 
     processor.setCurrentPresetName (preset.name);
+    processor.setLastPresetBrowserCategory (preset.category);
 
     auto& apvts = processor.apvts;
     for (int i = 0; i < Config::kNumUserParams; ++i)

@@ -122,6 +122,23 @@ export function processModeIndex(mode: string): number {
 export const SPEC_BINS = 48;
 export const SPEC_DEPTH = 28;
 
+/** Which spectra to paint. BOTH is IN (cyan) then OUT (accent), never a single mix. */
+export function scopeSpectra(source: ScopeSource): Array<"in" | "out"> {
+  if (source === "both") {
+    return ["in", "out"];
+  }
+  return source === "in" ? ["in"] : ["out"];
+}
+
+/** Linear FFT bin → 0..1 display. Floor −72 dB so a loud hit still fills. */
+export function specMag01(linear: number): number {
+  if (! Number.isFinite(linear) || linear <= 0) {
+    return 0;
+  }
+  const db = 20 * Math.log10(Math.max(1.0e-8, linear));
+  return Math.max(0, Math.min(1, (db + 72) / 72));
+}
+
 export function spectrogramPush(hist: number[][], bins: ArrayLike<number>): number[][] {
   const row = new Array<number>(SPEC_BINS);
   for (let i = 0; i < SPEC_BINS; i += 1) {
@@ -151,7 +168,7 @@ export function spectrogramProject(
   const t = bin / Math.max(1, SPEC_BINS - 1);
   const x = x0 + t * (x1 - x0);
   const floor = h * 0.88;
-  const rise = mag * h * 0.3 * (1 - recede * 0.28);
+  const rise = mag * h * 0.5 * (1 - recede * 0.28);
   const y = floor - recede * h * 0.58 - rise;
   return { x, y };
 }

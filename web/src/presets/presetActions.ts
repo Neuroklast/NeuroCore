@@ -2,6 +2,8 @@ import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryExplorerRows, factoryRows, findFactory } from "./factoryCatalog";
+import { stepPresetName } from "./presetStep";
+import { explorerSession } from "../overlays/explorerSession";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
 
 export function seedFactoryPresets(): void {
@@ -44,17 +46,19 @@ export async function presetAction(cmd: { action: string; name?: string }): Prom
     return;
   }
   const names = factoryRows().map((p) => p.name);
-  const idx = names.indexOf(useHostStore.getState().presetName);
   if (cmd.action === "load" && cmd.name) {
     applyLocal(cmd.name);
     return;
   }
-  if (cmd.action === "prev" && names.length > 0) {
-    applyLocal(names[(idx - 1 + names.length) % names.length]);
-    return;
-  }
-  if (cmd.action === "next" && names.length > 0) {
-    applyLocal(names[(idx + 1) % names.length]);
+  if ((cmd.action === "prev" || cmd.action === "next") && names.length > 0) {
+    const rows = useHostStore.getState().presets;
+    const walk = rows.length > 0 ? rows : factoryRows();
+    applyLocal(stepPresetName(
+      walk,
+      useHostStore.getState().presetName,
+      cmd.action === "next" ? 1 : -1,
+      explorerSession.cat,
+    ));
     return;
   }
   if (cmd.action === "new") {

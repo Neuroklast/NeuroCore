@@ -8,6 +8,7 @@ describe("hostStore", () => {
       mode: "STUDIO",
       knobs: [],
       overlay: null,
+      knobGestures: {},
     });
   });
 
@@ -16,6 +17,14 @@ describe("hostStore", () => {
     expect(useHostStore.getState().cpu).toBe(100);
     expect(useHostStore.getState().mode).toBe("SAFE");
     expect(useHostStore.getState().osFactor).toBe(4);
+  });
+
+  it("stores env tap peaks from host.mods", () => {
+    useHostStore.getState().applyHost({
+      mods: [{ id: "env1", value: 0.62 }, { id: "osc1", value: 0.4 }],
+    });
+    expect(useHostStore.getState().mods.env1).toBeCloseTo(0.62);
+    expect(useHostStore.getState().mods.osc1).toBeCloseTo(0.4);
   });
 
   it("stores sidechainOn from the host snapshot", () => {
@@ -43,6 +52,23 @@ describe("hostStore", () => {
     expect(useHostStore.getState().os).toBe(3);
     expect(useHostStore.getState().polisher).toBe(2);
     expect(useHostStore.getState().input).toBe(1);
+  });
+
+  it("keeps a local knob gesture while the host echoes params", () => {
+    useHostStore.setState({
+      knobs: [{ id: "a", name: "Drive", value: 0.4, active: true, min: 0, max: 2, isNote: false }],
+    });
+    useHostStore.getState().beginKnobGesture("a");
+    useHostStore.getState().setKnob("a", 0.7);
+    useHostStore.getState().applyParams({
+      knobs: [{ id: "a", name: "Drive", value: 0.4, active: true, min: 0, max: 2, isNote: false }],
+    });
+    expect(useHostStore.getState().knobs[0]?.value).toBeCloseTo(0.7);
+    useHostStore.getState().endKnobGesture("a");
+    useHostStore.getState().applyParams({
+      knobs: [{ id: "a", name: "Drive", value: 0.55, active: true, min: 0, max: 2, isNote: false }],
+    });
+    expect(useHostStore.getState().knobs[0]?.value).toBeCloseTo(0.55);
   });
 
   it("footer OS factor follows the mix dropdown index", () => {

@@ -52,6 +52,34 @@ describe("chip face, labels, copy", () => {
     expect(bindFace(2000, 400, 400)).toBe("bottom");
   });
 
+  it("spaces split/join outs one empty grid cell apart on a taller body", () => {
+    const msJ = [audio("in", false), audio("mid", true), audio("side", true)];
+    const lrJ = [audio("in", false), audio("left", true), audio("right", true)];
+    const mbJ = [audio("in", false), audio("low", true), audio("mid", true), audio("high", true)];
+    const joinJ = [audio("mid", false), audio("side", false), audio("out", true)];
+    const mixJ = [audio("inA", false), audio("inB", false), audio("out", true)];
+    const forks: Array<[string, AstJack[]]> = [
+      ["split_ms", msJ],
+      ["split_lr", lrJ],
+      ["join_ms", joinJ],
+      ["join_lr", [audio("left", false), audio("right", false), audio("out", true)]],
+      ["msplit", mbJ],
+      ["join", mixJ],
+    ];
+    for (const [id, jacks] of forks) {
+      const box = chipBox(id, jacks, false, {});
+      const rails = Math.max(jacks.filter((j) => j.output).length, jacks.filter((j) => ! j.output).length);
+      expect(box.h, id).toBeGreaterThanOrEqual(BOARD_GRID * (rails === 3 ? 7 : 5));
+      const outs = jacks.filter((j) => j.output);
+      const ins = jacks.filter((j) => ! j.output);
+      const side = outs.length >= 2 ? outs : ins;
+      const y0 = jackAnchor({ x: 0, y: 0 }, id, jacks, handleId(side[0]!.id, side[0]!.output), side[0]!.output, box.h, box.w).y;
+      const y1 = jackAnchor({ x: 0, y: 0 }, id, jacks, handleId(side[1]!.id, side[1]!.output), side[1]!.output, box.h, box.w).y;
+      expect(y1 - y0, `${id} ${y0} ${y1} h=${box.h}`).toBe(BOARD_GRID * 2);
+      expect(onCellCenter(y0) && onCellCenter(y1), `${id} ${y0} ${y1}`).toBe(true);
+    }
+  });
+
   it("sizes IN and OUT so the single jack sits on the vertical midline", () => {
     const innJ = [audio("out", true)];
     const outJ = [audio("in", false)];

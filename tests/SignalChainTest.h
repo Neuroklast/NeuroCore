@@ -2,8 +2,10 @@
 #define SIGNALCHAINTEST_H
 
 #include <JuceHeader.h>
+#include <cmath>
 #include "../src/dsl/SignalChain.h"
 #include "../src/core/Config.h"
+#include "../src/utils/FactoryPresetLibrary.h"
 
 class SignalChainTest : public juce::UnitTest
 {
@@ -77,6 +79,46 @@ public:
             for (int n = 0; n < 8; ++n)
                 c.processBlock(buf);
             expectLessThan(buf.getSample(0, 255), 0.95f);
+        }
+
+        beginTest("hardclip-only stage stays finite without ADAA sample inject");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript ("stage1: y = hardclip(x, 0.5)", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 64);
+            for (int i = 0; i < 64; ++i)
+                buf.setSample (0, i, 1.2f);
+            c.processBlock (buf);
+            for (int i = 0; i < 64; ++i)
+                expect (std::isfinite (buf.getSample (0, i)));
+        }
+
+        beginTest("gabber-like env clip + buses stay finite");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "env1: type = peak; attack = 0.001; release = 0.1\n"
+                "stage1: y = hardclip(softclip(x * (0.76 + 0.24 * env1), 1.14), 0.7)\n"
+                "bus scream:\n"
+                "send: in = 1\n"
+                "stage2: y = tube(x * (0.12 + 0.88 * env1), 1.4)\n"
+                "out: main = 0.58; scream = 0.95\n", e), e);
+            juce::dsp::ProcessSpec os { 192000.0, 512, 2 };
+            c.prepare (os);
+            juce::AudioBuffer<float> buf (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                const float s = 0.8f * std::sin (2.f * juce::MathConstants<float>::pi * 60.f * (float) i / 192000.f);
+                buf.setSample (0, i, s);
+                buf.setSample (1, i, s);
+            }
+            for (int b = 0; b < 8; ++b)
+                c.processBlock (buf);
+            expect (std::isfinite (buf.getSample (0, 255)));
+            expect (std::isfinite (buf.getSample (1, 255)));
         }
 
         beginTest("Envelope follower pass-through");
@@ -441,23 +483,35 @@ public:
             expect (c.loadScript (
                 "env1: type = peak; attack = 0.001; release = 0.05; min = 0.2; max = 0.8\n"
                 "stage1: y = env1\n", e), e);
-            c.prepare (spec);
-            juce::AudioBuffer<float> silent (2, 256);
-            silent.clear();
+            const juce::dsp::ProcessSpec envSpec { 44100.0, 256, 2 };
+            c.prepare (envSpec);
+
+            // Host callbacks get fresh input. Reusing the stage output (y = env1)
+            // makes the follower track its own CV and settle at 0.5.
+            juce::AudioBuffer<float> silentIn (2, 256);
+            silentIn.clear();
+            float quiet = 0.f;
             for (int b = 0; b < 8; ++b)
-                c.processBlock (silent);
-            const float quiet = silent.getSample (0, 255);
+            {
+                juce::AudioBuffer<float> block (silentIn);
+                c.processBlock (block);
+                quiet = block.getSample (0, 255);
+            }
             expect (quiet >= 0.15f && quiet <= 0.28f, "silence maps near min " + juce::String (quiet, 4));
 
-            juce::AudioBuffer<float> hot (2, 256);
+            juce::AudioBuffer<float> hotIn (2, 256);
             for (int i = 0; i < 256; ++i)
             {
-                hot.setSample (0, i, 1.0f);
-                hot.setSample (1, i, 1.0f);
+                hotIn.setSample (0, i, 1.0f);
+                hotIn.setSample (1, i, 1.0f);
             }
+            float loud = 0.f;
             for (int b = 0; b < 16; ++b)
-                c.processBlock (hot);
-            const float loud = hot.getSample (0, 255);
+            {
+                juce::AudioBuffer<float> block (hotIn);
+                c.processBlock (block);
+                loud = block.getSample (0, 255);
+            }
             expect (loud >= 0.7f && loud <= 0.85f, "peak maps near max " + juce::String (loud, 4));
         }
 
@@ -468,17 +522,57 @@ public:
             expect (c.loadScript (
                 "env1: type = peak; attack = 0.001; release = 0.05; min = 0.1; max = 0.9; invert = on\n"
                 "stage1: y = env1\n", e), e);
-            c.prepare (spec);
-            juce::AudioBuffer<float> hot (2, 256);
+            const juce::dsp::ProcessSpec envSpec { 44100.0, 256, 2 };
+            c.prepare (envSpec);
+            juce::AudioBuffer<float> hotIn (2, 256);
             for (int i = 0; i < 256; ++i)
             {
-                hot.setSample (0, i, 1.0f);
-                hot.setSample (1, i, 1.0f);
+                hotIn.setSample (0, i, 1.0f);
+                hotIn.setSample (1, i, 1.0f);
             }
+            float y = 0.f;
             for (int b = 0; b < 16; ++b)
-                c.processBlock (hot);
-            const float y = hot.getSample (0, 255);
+            {
+                juce::AudioBuffer<float> block (hotIn);
+                c.processBlock (block);
+                y = block.getSample (0, 255);
+            }
             expect (y >= 0.05f && y <= 0.25f, "inverted peak near min " + juce::String (y, 4));
+        }
+
+        beginTest ("Kick Rumble env1 tap follows a kick, not silence");
+        {
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+            const auto* row = lib.findByName ("Kick Rumble");
+            expect (row != nullptr, "missing Kick Rumble");
+            if (row == nullptr)
+                return;
+            dsl::SignalChain c;
+            juce::String err;
+            expect (c.loadScript (row->script, err), err);
+            const juce::dsp::ProcessSpec kickSpec { 48000.0, 64, 2 };
+            c.prepare (kickSpec);
+            juce::AudioBuffer<float> buf (2, 64);
+            float peak = 0.f;
+            for (int b = 0; b < 8; ++b)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    const float t = (float) (b * 64 + i) / 48000.f;
+                    const float s = std::exp (-t / 0.04f)
+                        * std::sin (2.f * juce::MathConstants<float>::pi * 55.f * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                c.processBlock (buf);
+                float wave[16] {};
+                expect (c.copyNodeTap ("env1", wave, 16), "env1 must publish a tap like osc");
+                for (int i = 0; i < 16; ++i)
+                    peak = juce::jmax (peak, std::abs (wave[i]));
+            }
+            expect (peak > 0.15f, "env1 stayed silent " + juce::String (peak, 4));
         }
     }
 };

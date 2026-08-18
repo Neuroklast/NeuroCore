@@ -1,6 +1,7 @@
 #include "WebPluginEditor.h"
 #include "../core/Config.h"
 #include "../bridge/GraphOps.h"
+#include "../bridge/HostKeys.h"
 #include "../bridge/HostSnapshot.h"
 #include "../bridge/TelemetryPump.h"
 #include "../bridge/WebEditorPolicy.h"
@@ -12,8 +13,59 @@
 #error WebPluginEditor requires JUCE_WEB_BROWSER=1
 #endif
 
+#if JUCE_WINDOWS
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 namespace
 {
+#if JUCE_WINDOWS
+bool postSpaceToHost (void* hostNative)
+{
+    auto* hwnd = static_cast<HWND> (hostNative);
+    if (hwnd == nullptr || ! IsWindow (hwnd))
+        return false;
+    const auto sc = MapVirtualKeyW (VK_SPACE, MAPVK_VK_TO_VSC);
+    const LPARAM down = 1 | (static_cast<LPARAM> (sc) << 16);
+    const LPARAM up = down | (1L << 30) | (1L << 31);
+    if (PostMessageW (hwnd, WM_KEYDOWN, VK_SPACE, down) == 0)
+        return false;
+    PostMessageW (hwnd, WM_KEYUP, VK_SPACE, up);
+    return true;
+}
+
+bool forwardSpaceToHost (juce::Component& editor)
+{
+    auto* peer = editor.getPeer();
+    if (peer == nullptr)
+        return false;
+    auto* plugin = static_cast<HWND> (peer->getNativeHandle());
+    if (plugin == nullptr)
+        return false;
+    HWND root = GetAncestor (plugin, GA_ROOT);
+    HWND rootOwner = GetAncestor (plugin, GA_ROOTOWNER);
+    HWND owner = GetWindow (root != nullptr ? root : plugin, GW_OWNER);
+    auto* dest = static_cast<HWND> (bridge::chooseHostHwnd (plugin, rootOwner, root, owner));
+    if (dest == nullptr || dest == plugin)
+        return false;
+    return postSpaceToHost (dest);
+}
+#else
+bool forwardSpaceToHost (juce::Component& editor)
+{
+    juce::ignoreUnused (editor);
+    return false;
+}
+#endif
+struct QuietCorner : public juce::ResizableCornerComponent
+{
+    using juce::ResizableCornerComponent::ResizableCornerComponent;
+    void paint (juce::Graphics&) override {}
+};
+
 juce::File resolveDistRoot()
 {
 #ifdef NEUROKORE_WEB_DIST_DIR
@@ -23,11 +75,11 @@ juce::File resolveDistRoot()
 #endif
     auto here = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
                     .getParentDirectory();
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 8; ++i)
     {
-        const auto candidate = here.getChildFile ("web").getChildFile ("dist");
-        if (candidate.getChildFile ("index.html").existsAsFile())
-            return candidate;
+        const auto sibling = here.getChildFile ("web").getChildFile ("dist");
+        if (sibling.getChildFile ("index.html").existsAsFile())
+            return sibling;
         here = here.getParentDirectory();
     }
     return {};
@@ -230,6 +282,9 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
                                     UiSettings::get().setUserBpm ((float) o.getProperty ("bpmUser", 120.0));
                                 if (! o.getProperty ("language", juce::var()).isVoid())
                                     audioProcessor.loadLanguage (o.getProperty ("language", "en").toString());
+                                if (! o.getProperty ("explorerCat", juce::var()).isVoid())
+                                    audioProcessor.setLastPresetBrowserCategory (
+                                        o.getProperty ("explorerCat", "").toString());
                             }
                             pushHost();
                             complete (juce::var (true));
@@ -258,6 +313,19 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
                             pickFile (kind, slot);
                             complete (juce::var (true));
                         })
+                    .withNativeFunction ("irSlot",
+                        [this] (const juce::Array<juce::var>& args, auto complete)
+                        {
+                            juce::String action = "clear";
+                            juce::String slot = "ir1";
+                            if (args.size() > 0 && args[0].isObject())
+                            {
+                                action = args[0].getProperty ("action", "clear").toString();
+                                slot = args[0].getProperty ("slot", "ir1").toString();
+                            }
+                            irSlot (action, slot);
+                            complete (juce::var (true));
+                        })
                     .withNativeFunction ("overlay",
                         [this] (const juce::Array<juce::var>& args, auto complete)
                         {
@@ -284,6 +352,18 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
                                 pushHost();
                             }
                             complete (juce::var (ok));
+                        })
+                    .withNativeFunction ("hostKey",
+                        [this] (const juce::Array<juce::var>& args, auto complete)
+                        {
+                            juce::String key = "Space";
+                            if (args.size() > 0 && args[0].isObject())
+                                key = args[0].getProperty ("key", "Space").toString();
+                            else if (args.size() > 0)
+                                key = args[0].toString();
+                            if (bridge::isHostTransportName (key))
+                                forwardSpaceToHost (*this);
+                            complete (juce::var (true));
                         })
                     .withNativeFunction ("applyLayout",
                         [this] (const juce::Array<juce::var>& args, auto complete)
@@ -397,6 +477,15 @@ void WebPluginEditor::pickFile (const juce::String& kind, const juce::String& sl
     });
 }
 
+void WebPluginEditor::irSlot (const juce::String& action, const juce::String& slot)
+{
+    if (action.equalsIgnoreCase ("preview"))
+        audioProcessor.startIrPreview (slot);
+    else
+        audioProcessor.clearIr (slot);
+    pushHost();
+}
+
 WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
     : juce::AudioProcessorEditor (&p),
       audioProcessor (p),
@@ -411,9 +500,13 @@ WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
     sizeConstrain.setFixedAspectRatio (Config::kUiAspectRatio);
     sizeConstrain.setSizeLimits (minW, minH, Config::kUiMaxWindowWidth, Config::kUiMaxWindowHeight);
     setConstrainer (&sizeConstrain);
-    setResizable (true, true);
+    setResizable (true, false);
     setResizeLimits (minW, minH, Config::kUiMaxWindowWidth, Config::kUiMaxWindowHeight);
     setSize (Config::kUiDesignWidth, Config::kUiDesignHeight);
+    cornerGrip = std::make_unique<QuietCorner> (this, &sizeConstrain);
+    addAndMakeVisible (*cornerGrip);
+    cornerGrip->setAlwaysOnTop (true);
+    cornerGrip->setOpaque (false);
 
     auto options = makeOptions();
     if (! juce::WebBrowserComponent::areOptionsSupported (options))
@@ -447,13 +540,46 @@ WebPluginEditor::~WebPluginEditor() = default;
 
 void WebPluginEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff14080a));
+    auto r = getLocalBounds().toFloat();
+    g.fillAll (juce::Colour (0xff0e0e12));
+    g.setColour (juce::Colour (0x88ff003c));
+    g.drawRect (r.reduced (0.5f), 1.0f);
+    g.setColour (juce::Colour (0x33ff003c));
+    g.drawRect (r.reduced (3.5f), 1.0f);
+    const float s = 20.0f;
+    const float x = r.getRight();
+    const float y = r.getBottom();
+    g.setColour (juce::Colour (0x66ff003c));
+    for (int i = 0; i < 3; ++i)
+    {
+        const float o = 5.0f + (float) i * 5.0f;
+        g.drawLine (x - o, y - 3.0f, x - 3.0f, y - o, 1.2f);
+    }
+    juce::ignoreUnused (s);
 }
 
 void WebPluginEditor::resized()
 {
+    auto r = getLocalBounds();
+    const int pad = 8;
+    const int grip = 22;
+    const double ar = Config::kUiAspectRatio;
+    int availW = juce::jmax (1, r.getWidth() - pad * 2);
+    int availH = juce::jmax (1, r.getHeight() - pad * 2);
+    int w = availW;
+    int h = (int) std::lround ((double) w / ar);
+    if (h > availH)
+    {
+        h = availH;
+        w = (int) std::lround ((double) h * ar);
+    }
     if (browser != nullptr)
-        browser->setBounds (getLocalBounds());
+        browser->setBounds (pad, pad, w, h);
+    if (cornerGrip != nullptr)
+    {
+        cornerGrip->setBounds (r.getWidth() - grip, r.getHeight() - grip, grip, grip);
+        cornerGrip->toFront (false);
+    }
 }
 
 juce::AudioProcessorEditor* createWebEditor (NeuroKoreAudioProcessor& p)
