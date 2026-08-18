@@ -4,6 +4,7 @@ import type { editor } from "monaco-editor";
 import { publishScript } from "../assemble/addBlock";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { terminalActions } from "../app/workspace";
+import { validateOnSave } from "../overlays/validateModel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import {
@@ -66,6 +67,7 @@ export function HackView() {
   const shown = editing ? script : (lastValidScript || script);
 
   const save = () => {
+    validateOnSave(script, diagnostics);
     publishScript(script, "editor");
     setEditing(false);
   };
