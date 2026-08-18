@@ -598,7 +598,7 @@ ir1: mix = c; gain = 1`,
     opt(p, { a: p("Drive", 1.6, 8, 3.8), b: p("Bark", 2, 7, 4), c: p("Cab", 0.25, 0.65, 0.42), tags: ["ir"] }, { irs: irB }));
 
   add("American Clean Cab", "Guitar",
-    "Blackface cousin with IR. Brighter and more open than Edge Of Breakup.",
+    "Open-cab cousin with IR. Brighter and more open than Edge Of Breakup.",
     `param a = Drive [0.4, 2.2]
 param b = Bright [0, 6]
 param c = Cab [0.2, 0.6]

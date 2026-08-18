@@ -186,7 +186,7 @@ These are mix tools, not a full mastering suite.
 - Haas Width / Loudness Curve / Missing Bass / Speech Band: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
 - Mono to Stereo: allpass + Haas. Mid stays the original. Works on a mono send.
 - Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed: score, FX, and dialogue processing. Not a trailer sample pack.
-- Stereo Guitar Wall: two DI takes, two amps (Mesa left / 5150 right), cabinet IR preloaded. Needs stereo in and BOTH. Not a fake double of one take.
+- Stereo Guitar Wall: two DI takes, two amps (dense left / tight right), cabinet IR preloaded. Needs stereo in and BOTH. Not a fake double of one take.
 - Cyberpunk Drive / Neon Clip / Chrome Fold / Data Mosher: digital dirt.
 - Glitch Laboratory: crush + fold + a short note-grid delay. No ping-pong, no LFO on the filter.
 - Kick Rumble / Warehouse Rumble: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit only (follows the envelope). Body = dark floor (Floor knob, ~60 Hz) into a 15 ms resonator + sub. Insert on the kick, Mix 100.
@@ -223,11 +223,11 @@ widenN: width = ...; delay = ...; bass = ...
 ottN: depth = ...; time = ...
     3-band upward + downward compressor (OTT).
 
-Hardware-character factory presets (not circuit clones):
-    1176 FET / All In, LA-2A Opto, SSL Bus Comp, Fairchild Mu, dbx 160,
-    CL-1B Vocal, Neve Diode Bus, Distressor Punch, Multiband Glue,
-    Envelope Shaper, Space Echo RE-201, Memory Man BBD, Echoplex EP-3,
-    TC 2290 Grid, EMT 140 Plate, Lexicon 480 Hall, AMS RMX Nonlin, Spring Tank.
+Factory dynamics and rooms (character, not clones):
+    FET Peak Comp, All Buttons Comp, Optical Leveler Comp, VCA Bus Glue,
+    Vari-Mu Bus, Tube Opto Vocal, Diode Bridge Bus, Punch Comp, Multiband Glue,
+    Envelope Shaper, Tape Echo Heads, Analog Bucket Echo, Tape Slap Echo,
+    Digital Grid Delay, Foil Plate, Large Hall, Nonlinear Snap, Spring Tank.
     Comp attack cannot go below 1 ms.
 
 compN: threshold = ...; ratio = ...
@@ -495,7 +495,7 @@ vocoder1: bands = 8; mix = a; q = b; formant = 1; dry = c
 
 Goal: a guitar or bass amp-like path.
 
-1. Load Tube Screamer, JCM Hot Lead, or SVT Grind and play.
+1. Load Mid Boost OD, Hot British Lead, or Foldback Bass and play.
 2. Or write a short stack: highpass, tube or softclip, peak EQ for mid, lowpass cab.
 3. After hardclip always add a lowpass. Presence is a high shelf, not a darker lowpass.
 4. Leave Polisher on None so the hits still move.

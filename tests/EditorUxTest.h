@@ -159,7 +159,7 @@ public:
             expectEquals (juce::String (Config::kBrandByline), juce::String ("by Neuroklast"));
             expectEquals (juce::String (Config::kAppDataFolder), juce::String ("NeuroKore"));
             expectEquals (juce::String (PLUGIN_ID), juce::String ("nrko01"));
-            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.4.7-alpha"));
+            expectEquals (juce::String (PLUGIN_VERSION), juce::String ("0.4.8-alpha"));
             expectEquals (Config::cpuDisplayPercent (0.f), 0);
             expectEquals (Config::cpuDisplayPercent (0.42f), 42);
             expectEquals (Config::cpuDisplayPercent (1.73f), 100);
@@ -181,7 +181,7 @@ public:
             expectWithinAbsoluteError (Config::snapUiFitToGrid (1.f), 1.f, 1.0e-6f);
             expectWithinAbsoluteError (Config::snapUiFitToGrid (1.25f), 1.25f, 1.0e-6f);
             expectWithinAbsoluteError (Config::snapUiFitToGrid (1.5f), 1.5f, 1.0e-6f);
-            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.173f), 19.f / 16.f, 1.0e-6f);
+            expectWithinAbsoluteError (Config::snapUiFitToGrid (1.173f), 18.f / 16.f, 1.0e-6f);
             expectWithinAbsoluteError (NeuroKoreAudioProcessorEditor::snapFitToGrid (1.173f),
                                        Config::snapUiFitToGrid (1.173f), 1.0e-6f);
             const float samples[] = { 0.5f, 0.8f, 1.f, 1.07f, 1.173f, 1.25f, 1.333f, 1.5f };
@@ -191,6 +191,19 @@ public:
                 const float cells = fit * (float) Config::kUiBoardGrid;
                 expect (std::abs (cells - std::round (cells)) < 1.0e-4f,
                         "fit=" + juce::String (fit, 5) + " cells=" + juce::String (cells, 5));
+            }
+        }
+
+        beginTest ("host-scale fit never paints the canvas larger than the window");
+        {
+            const int pairs[][2] = { { 1270, 850 }, { 1900, 1000 }, { 1100, 739 }, { 1280, 860 } };
+            for (const auto& wh : pairs)
+            {
+                const float raw = juce::jmin ((float) wh[0] / (float) Config::kUiDesignWidth,
+                                              (float) wh[1] / (float) Config::kUiDesignHeight);
+                const float fit = Config::snapUiFitToGrid (raw);
+                expect ((float) Config::kUiDesignWidth * fit <= (float) wh[0] + 0.5f);
+                expect ((float) Config::kUiDesignHeight * fit <= (float) wh[1] + 0.5f);
             }
         }
 
@@ -411,11 +424,11 @@ public:
             if (lib.getEntries().empty())
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
             juce::StringArray need {
-                "Multiband Glue", "Envelope Shaper", "1176 FET", "1176 All In",
-                "LA-2A Opto", "SSL Bus Comp", "Fairchild Mu", "dbx 160 VCA",
-                "CL-1B Vocal", "Neve Diode Bus", "Space Echo RE-201",
-                "Memory Man BBD", "Echoplex EP-3", "TC 2290 Grid",
-                "EMT 140 Plate", "Lexicon 480 Hall", "AMS RMX Nonlin", "Spring Tank"
+                "Multiband Glue", "Envelope Shaper", "FET Peak Comp", "All Buttons Comp",
+                "Optical Leveler Comp", "VCA Bus Glue", "Vari-Mu Bus",
+                "Tube Opto Vocal", "Diode Bridge Bus", "Tape Echo Heads",
+                "Analog Bucket Echo", "Tape Slap Echo", "Digital Grid Delay",
+                "Foil Plate", "Large Hall", "Nonlinear Snap", "Spring Tank"
             };
             juce::StringArray have;
             for (const auto& e : lib.getEntries())
@@ -426,7 +439,7 @@ public:
             bool bassKeepsPeak = false;
             for (const auto& e : lib.getEntries())
             {
-                if (e.name == "Tube Screamer")
+                if (e.name == "Mid Boost OD")
                     tubeScreamerHasPeak = e.script.containsIgnoreCase ("eq")
                                        && e.script.containsIgnoreCase ("peak")
                                        && ! e.script.contains ("type = bandpass");
@@ -434,7 +447,7 @@ public:
                     bassKeepsPeak = e.script.containsIgnoreCase ("eq")
                                  && e.script.containsIgnoreCase ("peak");
             }
-            expect (tubeScreamerHasPeak, "Tube Screamer must use a mid peak, not a bandpass");
+            expect (tubeScreamerHasPeak, "Mid Boost OD must use a mid peak, not a bandpass");
             expect (bassKeepsPeak, "Bass Architect mid must be a peak so the sub stays");
         }
 
@@ -891,7 +904,7 @@ public:
             auto& lib = FactoryPresetLibrary::getInstance();
             if (lib.getEntries().empty())
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
-            const auto* preset = lib.findByName ("Space Echo RE-201");
+            const auto* preset = lib.findByName ("Tape Echo Heads");
             expect (preset != nullptr);
             if (preset != nullptr)
             {

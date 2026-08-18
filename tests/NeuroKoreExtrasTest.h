@@ -675,8 +675,26 @@ private:
             expect(lib.loadFromResources(resDir));
 
             const auto& entries = lib.getEntries();
-            expect(entries.size() >= 70, "expected at least 70 factory presets, got "
+            expect(entries.size() >= 200, "expected the curated factory library, got "
                    + juce::String((int) entries.size()));
+
+            juce::StringArray restored {
+                "Acoustic Body", "Arp Shimmer", "Bitcrush Glitch",
+                "Blues Break OD", "Chug Palm Mute",
+                "Dark Atmosphere", "Harmonic Exciter",
+                "Loudness Safe", "Low End Control", "Metal Scoop",
+                "Pluck Bite", "Podcast Voice",
+                "Riff Sustain",
+                "Sub Weight", "Tape Wobble",
+                "Telephone EQ",
+                "Vocal De-Ess",
+                "Vocal Double", "Vocal Presence", "Vocal Warmth", "Vowel Filter"
+            };
+            juce::StringArray haveNames;
+            for (const auto& e : entries)
+                haveNames.add (e.name);
+            for (const auto& n : restored)
+                expect (haveNames.contains (n), "missing restored factory preset: " + n);
 
             juce::StringArray categories;
             juce::StringArray names;
@@ -928,19 +946,19 @@ private:
             requireBlock ("Tekno Comb", "delay");
             requireBlock ("Data Mosher", "bitcrush");
             requireBlock ("Chrome Fold", "fold");
-            requireBlock ("AMS RMX Nonlin", "lowpass");
+            requireBlock ("Nonlinear Snap", "lowpass");
             requireBlock ("Sidechain Pump", "[1/1, 1/16]");
             requireBlock ("Classic Tremolo", "[1/1, 1/16]");
             requireBlock ("Chopper", "[1/1, 1/16]");
             requireBlock ("Low Pass Sweep", "[1/1, 1/16]");
             requireBlock ("Stereo Guitar Wall", "gate1");
             requireBlock ("Stereo Guitar Wall", "ir1");
-            requireBlock ("5150 Lead", "gate1");
-            requireBlock ("5150 Lead", "ir1");
-            requireBlock ("JCM Hot Lead", "ir1");
-            requireBlock ("Tube Screamer", "ir1");
-            requireBlock ("1176 FET", "makeup");
-            requireBlock ("LA-2A Opto", "knee");
+            requireBlock ("Tight Lead Stack", "gate1");
+            requireBlock ("Tight Lead Stack", "ir1");
+            requireBlock ("Hot British Lead", "ir1");
+            requireBlock ("Mid Boost OD", "ir1");
+            requireBlock ("FET Peak Comp", "makeup");
+            requireBlock ("Optical Leveler Comp", "knee");
         }
 
         beginTest ("Metal Gate widens after the cab and Width is on by default");
@@ -967,13 +985,13 @@ private:
 
             const struct { const char* name; const char* wav; } expected[] = {
                 { "Mesa High Gain",       "American IR 01.wav" },
-                { "Tube Screamer",        "Vintage IR 01.wav" },
-                { "Fuzz Face",            "Vintage IR 01.wav" },
+                { "Mid Boost OD",         "Vintage IR 01.wav" },
+                { "Germanium Fuzz",       "Vintage IR 01.wav" },
                 { "Metal Gate",           "Medium IR 01.wav" },
                 { "Stereo Guitar Wall",   "American IR 01.wav" },
-                { "JCM Hot Lead",         "British IR 01.wav" },
-                { "AC30 Chime",           "Vintage IR 01.wav" },
-                { "5150 Lead",            "American IR 01.wav" },
+                { "Hot British Lead",     "British IR 01.wav" },
+                { "Chime Combo",          "Vintage IR 01.wav" },
+                { "Tight Lead Stack",     "American IR 01.wav" },
             };
 
             NeuroKoreAudioProcessor proc;
@@ -1010,15 +1028,15 @@ private:
             expect (proc.getIrNumSamples ("ir1") > 0, "Mesa High Gain must preload a cabinet IR");
             expectEquals (proc.getIrName ("ir1"), juce::String ("American IR 01.wav"));
 
-            const int fender = indexOf ("Fender Clean");
+            const int fender = indexOf ("Airy Clean");
             expect (fender >= 0);
             expect (lib.applyPreset (proc, fender, err), err);
             expectEquals (proc.getIrNumSamples ("ir1"), 0, "non-IR factory preset must clear leftover cab");
 
-            const int ts = indexOf ("Tube Screamer");
+            const int ts = indexOf ("Mid Boost OD");
             expect (ts >= 0);
             expect (lib.applyPreset (proc, ts, err), err);
-            expect (proc.getIrNumSamples ("ir1") > 0, "Tube Screamer must preload N1");
+            expect (proc.getIrNumSamples ("ir1") > 0, "Mid Boost OD must preload N1");
             expectEquals (proc.getIrName ("ir1"), juce::String ("Vintage IR 01.wav"));
         }
 
@@ -1156,7 +1174,7 @@ private:
             expect (lib.findByName ("Hardcore Clip") != nullptr);
             expect (lib.findByName ("Gabber Drive") != nullptr);
             expect (lib.findByName ("Acid Hash") != nullptr);
-            expect (lib.getEntries().size() >= 500);
+            expect (lib.getEntries().size() >= 200);
         }
 
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");

@@ -204,7 +204,7 @@ const add = (...a) => list.push(preset(...a));
 add(
   "Fender Clean",
   "Distortion",
-  "Blackface clean: soft single tube, bright-cap high shelf, open cab 9 kHz — airy, not mid-crush.",
+  "Airy clean: soft single tube, bright-cap high shelf, open cab 9 kHz — airy, not mid-crush.",
   `param a = Drive [0.5, 2.8]
 param b = Bright [0.0, 7.0]
 param c = Level [0.55, 1.45]
