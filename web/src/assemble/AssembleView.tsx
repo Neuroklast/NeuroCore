@@ -12,7 +12,6 @@ import {
   useUpdateNodeInternals,
   type Connection,
   type Edge,
-  type EdgeChange,
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -29,26 +28,33 @@ import { ConnectionLine } from "./ConnectionLine";
 import { SignalEdge } from "./SignalEdge";
 import {
   alreadyLinked,
-  directedProximity,
-  findClosestChip,
-  primaryJackId,
+  dndCableEndChrome,
+  dndNodeChrome,
+  findClosestJack,
+  proximityPairFromJacks,
+  scriptAfterDisconnect,
+  type JackPoint,
 } from "./connectModel";
-import { handleId } from "./handles";
 import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange } from "./boardSync";
+import { jackTopPx } from "./chipLayout";
 import { arrangeElk } from "./elkArrange";
 import { flowFromAst, visibleNodes, type ChipData } from "./flowFromAst";
 import { parseHandle } from "./handles";
 import { routeBoard } from "./routeBoard";
 import { isValidLink } from "./validateLink";
-import { addCircuitBlock, removeCircuitBlock } from "./addBlock";
+import { addCircuitBlock, publishScript, removeCircuitBlock } from "./addBlock";
 
 const nodeTypes = { chip: ChipNode, io: IoNode };
 const edgeTypes = { signal: SignalEdge };
+const cableEndChrome = dndCableEndChrome();
+const nodeChrome = dndNodeChrome({ locked: false });
 
 const defaultEdgeOptions = {
   type: "signal" as const,
   animated: false,
-  style: { stroke: "#ff003c", strokeWidth: 20 },
+  className: cableEndChrome.className,
+  interactionWidth: 28,
+  style: { stroke: "#ff003c", strokeWidth: 20, cursor: cableEndChrome.cursor },
 };
 
 function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefined): { kind: string; output: boolean; jack: string } | null {
@@ -182,55 +188,102 @@ function Board() {
     commitConnect(c);
   }, [commitConnect]);
 
+  const jackPointsOf = useCallback((nodeId: string | null = null): JackPoint[] => {
+    const list: JackPoint[] = [];
+    for (const n of store.getState().nodeLookup.values()) {
+      if (nodeId && n.id !== nodeId) {
+        continue;
+      }
+      const data = (nodes.find((x) => x.id === n.id)?.data ?? n.data) as ChipData | undefined;
+      if (! data?.jacks) {
+        continue;
+      }
+      const io = n.type === "io";
+      const w = n.measured.width ?? n.width ?? (io ? 96 : 220);
+      const h = n.measured.height ?? n.height ?? (io ? 56 : 80);
+      const pos = n.internals.positionAbsolute;
+      for (const j of data.jacks) {
+        if (j.kind === "knob") {
+          continue;
+        }
+        const side = data.jacks.filter((x) => x.output === j.output && x.kind !== "knob");
+        const index = Math.max(0, side.findIndex((x) => x.id === j.id));
+        list.push({
+          nodeId: n.id,
+          jackId: j.id,
+          output: j.output,
+          kind: j.kind,
+          x: j.output ? pos.x + w : pos.x,
+          y: pos.y + jackTopPx(index, Math.max(side.length, 1), h),
+        });
+      }
+    }
+    return list;
+  }, [nodes, store]);
+
   const closestPair = useCallback((node: Node) => {
-    const internal = getInternalNode(node.id);
-    if (! internal) {
+    if (! getInternalNode(node.id)) {
       return null;
     }
-    const others = Array.from(store.getState().nodeLookup.values())
-      .filter((n) => n.id !== node.id)
-      .map((n) => ({
-        id: n.id,
-        x: n.internals.positionAbsolute.x,
-        y: n.internals.positionAbsolute.y,
-      }));
-    const hit = findClosestChip({
-      id: node.id,
-      x: internal.internals.positionAbsolute.x,
-      y: internal.internals.positionAbsolute.y,
-    }, others);
-    if (! hit) {
-      return null;
+    const mine = jackPointsOf(node.id);
+    const others = jackPointsOf().filter((j) => j.nodeId !== node.id);
+    let best: { pair: NonNullable<ReturnType<typeof proximityPairFromJacks>>; distance: number } | null = null;
+    for (const a of mine) {
+      const hit = findClosestJack({ x: a.x, y: a.y, nodeId: a.nodeId }, others);
+      if (! hit) {
+        continue;
+      }
+      const pair = proximityPairFromJacks(a, hit);
+      if (! pair) {
+        continue;
+      }
+      const srcJack = a.output ? a : hit;
+      const dstJack = a.output ? hit : a;
+      if (! isValidLink(
+        { kind: srcJack.kind, output: true, jack: srcJack.jackId },
+        { kind: dstJack.kind, output: false, jack: dstJack.jackId },
+      )) {
+        continue;
+      }
+      if (alreadyLinked(edges, pair.source, pair.target, pair.sourceHandle, pair.targetHandle)) {
+        continue;
+      }
+      if (! best || hit.distance < best.distance) {
+        best = { pair, distance: hit.distance };
+      }
     }
-    const dir = directedProximity(
-      { id: node.id, x: internal.internals.positionAbsolute.x },
-      hit,
-    );
-    const src = nodes.find((n) => n.id === dir.source);
-    const dst = nodes.find((n) => n.id === dir.target);
-    if (! src || ! dst) {
-      return null;
+    return best?.pair ?? null;
+  }, [edges, getInternalNode, jackPointsOf]);
+
+  const persistDisconnect = useCallback((edge: Edge) => {
+    if (edge.className === "temp") {
+      return;
     }
-    const fromJack = primaryJackId(src.data.jacks, true);
-    const toJack = primaryJackId(dst.data.jacks, false);
-    const fromKind = src.data.jacks.find((j) => j.id === fromJack)?.kind ?? "audio";
-    const toKind = dst.data.jacks.find((j) => j.id === toJack)?.kind ?? "audio";
-    if (! isValidLink({ kind: fromKind, output: true, jack: fromJack }, { kind: toKind, output: false, jack: toJack })) {
-      return null;
+    const from = String(edge.source);
+    const to = String(edge.target);
+    const fromJack = parseHandle(edge.sourceHandle)?.id ?? "out";
+    const toJack = parseHandle(edge.targetHandle)?.id ?? "in";
+    if (hasJuceBridge()) {
+      void getNativeFunction("graphOp")({
+        origin: "canvas",
+        op: "disconnect",
+        from,
+        fromJack,
+        to,
+        toJack,
+      }).catch(() => undefined);
+      return;
     }
-    return {
-      source: dir.source,
-      target: dir.target,
-      sourceHandle: handleId(fromJack, true),
-      targetHandle: handleId(toJack, false),
-    };
-  }, [getInternalNode, nodes, store]);
+    const cur = useAstStore.getState();
+    const script = cur.lastValidScript || cur.script;
+    publishScript(scriptAfterDisconnect(script, from, to), "canvas");
+  }, []);
 
   const onNodeDrag = useCallback((_: unknown, node: Node) => {
     const pair = closestPair(node);
     setEdges((es) => {
       const next = es.filter((e) => e.className !== "temp");
-      if (pair && ! alreadyLinked(next, pair.source, pair.target)) {
+      if (pair && ! alreadyLinked(next, pair.source, pair.target, pair.sourceHandle, pair.targetHandle)) {
         next.push({
           id: `temp-${pair.source}-${pair.target}`,
           ...pair,
@@ -320,14 +373,21 @@ function Board() {
   }, [arrange]);
 
   return (
-    <div ref={paneRef} className="relative h-full min-h-0 w-full bg-black">
+    <div ref={paneRef} className="relative h-full min-h-0 w-full bg-black" style={{ cursor: nodeChrome.cursor }}>
       <ReactFlow
-        className="nk-flow"
+        className={`nk-flow ${nodeChrome.className}`}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={(changes: EdgeChange[]) => {
-          onEdgesChange(changes.filter((c) => c.type !== "remove" || ! String(c.id).startsWith("e-")));
+        onEdgesChange={onEdgesChange}
+        onBeforeDelete={async ({ edges: doomed }) => ({
+          nodes: [],
+          edges: doomed.filter((e) => e.className !== "temp"),
+        })}
+        onEdgesDelete={(deleted) => {
+          for (const e of deleted) {
+            persistDisconnect(e);
+          }
         }}
         onError={(code, msg) => {
           if (code === "008" && import.meta.env.DEV) {
@@ -352,6 +412,7 @@ function Board() {
         maxZoom={2}
         nodesDraggable
         nodesConnectable
+        edgesReconnectable
         nodeDragThreshold={1}
         deleteKeyCode={["Backspace", "Delete"]}
         onlyRenderVisibleElements
