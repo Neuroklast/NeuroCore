@@ -7,6 +7,7 @@ import { terminalActions } from "../app/workspace";
 import { validateOnSave } from "../overlays/validateModel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { useTheme } from "../theme/themeBind";
 import {
   annotateKnobInlays,
   termFrame,
@@ -34,6 +35,7 @@ export function HackView() {
   const modelRef = useRef<editor.ITextModel | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const frame = termFrame(editing);
+  const theme = useTheme();
 
   useEffect(() => {
     const monaco = monacoRef.current;
@@ -65,9 +67,18 @@ export function HackView() {
     return () => window.clearTimeout(handle);
   }, [script, editing]);
 
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (! monaco) {
+      return;
+    }
+    defineDslTheme(monaco, theme);
+    monaco.editor.setTheme(DSL_THEME);
+  }, [theme]);
+
   const onMount: OnMount = (ed, monaco) => {
     registerNeurokoreDsl(monaco);
-    defineDslTheme(monaco);
+    defineDslTheme(monaco, theme);
     monaco.editor.setTheme(DSL_THEME);
     modelRef.current = ed.getModel();
     monacoRef.current = monaco;

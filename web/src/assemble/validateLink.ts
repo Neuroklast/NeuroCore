@@ -1,3 +1,5 @@
+import { liveTheme } from "../theme/theme";
+
 export interface LinkEnd {
   kind: string;
   output: boolean;
@@ -32,13 +34,14 @@ export function normalizeCableKind(kind: string): CableKind | "knob" | string {
   return k;
 }
 
-/** Audio red, param and LFO/mod cyan (same knob glow). */
+/** Audio = theme accent, param and LFO/mod = theme cyan. */
 export function cableAccent(kind: string): string {
   const k = normalizeCableKind(kind);
+  const t = liveTheme();
   if (k === "mod" || k === "param") {
-    return "#00f0ff";
+    return t.cyan;
   }
-  return "#ff003c";
+  return t.accent;
 }
 
 /** Param/ctrl jacks sit on the south rail. Signal (audio + LFO/mod) uses the side plugs. */

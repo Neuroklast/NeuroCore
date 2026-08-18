@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_THEME, isThemeId, readStoredTheme, THEME_STORAGE_KEY, type ThemeId } from "../theme/theme";
 
 export interface KnobState {
   id: string;
@@ -56,6 +57,8 @@ export interface HostState {
   scopeInvertY: boolean;
   /** Host sidechain bus enabled — Sidechain IN chip is visible only when true. */
   sidechainOn: boolean;
+  theme: ThemeId;
+  setTheme: (id: ThemeId) => void;
   applyParams: (p: Record<string, unknown>) => void;
   applyHost: (p: Record<string, unknown>) => void;
   applyPresets: (p: Record<string, unknown>) => void;
@@ -146,6 +149,9 @@ export const useHostStore = create<HostState>((set) => ({
   scopeGrid: true,
   scopeInvertY: false,
   sidechainOn: false,
+  theme: typeof localStorage === "undefined"
+    ? DEFAULT_THEME
+    : readStoredTheme(localStorage.getItem(THEME_STORAGE_KEY)),
 
   applyParams: (p) => set((s) => ({
     knobs: Array.isArray(p.knobs) ? asKnobs(p.knobs) : s.knobs,
@@ -228,4 +234,13 @@ export const useHostStore = create<HostState>((set) => ({
   },
   setPolisher: (index) => set({ polisher: Math.max(0, Math.min(2, Math.round(index))) }),
   setInput: (index) => set({ input: Math.max(0, Math.min(2, Math.round(index))) }),
+  setTheme: (id) => {
+    const theme = isThemeId(id) ? id : DEFAULT_THEME;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      /* private mode */
+    }
+    set({ theme });
+  },
 }));

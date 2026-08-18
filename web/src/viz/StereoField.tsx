@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
+import { liveTheme, themeRgba } from "../theme/theme";
 import { fitCanvas } from "./canvasFit";
 import { fieldTitle, gonioPoint, SCOPE_COLOR } from "./scopeModel";
 
@@ -16,6 +17,7 @@ export function StereoField({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const source = useHostStore((s) => s.scopeSource);
+  const theme = useHostStore((s) => s.theme);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -48,16 +50,16 @@ export function StereoField({
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = liveTheme().black;
       ctx.fillRect(0, 0, w, h);
       const side = Math.min(w - 12, h - 28);
       const x0 = (w - side) / 2;
       const y0 = 16;
-      ctx.strokeStyle = "rgba(255,26,26,0.55)";
+      ctx.strokeStyle = themeRgba("accent", 0.55);
       ctx.strokeRect(x0 + 0.5, y0 + 0.5, side - 1, side - 1);
       const cx = x0 + side / 2;
       const cy = y0 + side / 2;
-      ctx.strokeStyle = "rgba(255,26,26,0.22)";
+      ctx.strokeStyle = themeRgba("accent", 0.22);
       ctx.beginPath();
       ctx.moveTo(cx, y0);
       ctx.lineTo(cx, y0 + side);
@@ -87,14 +89,14 @@ export function StereoField({
       }
 
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#ff003c";
+      ctx.fillStyle = SCOPE_COLOR.out;
       ctx.font = "10px 'JetBrains Mono', monospace";
       ctx.fillText(fieldTitle(source), 6, 12);
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [count, gonioL, gonioR, scopeIn, source]);
+  }, [count, gonioL, gonioR, scopeIn, source, theme]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

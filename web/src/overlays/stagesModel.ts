@@ -50,7 +50,7 @@ export function stageRole(type: string): string {
   if (t.startsWith("filter")) return "Lets some frequencies through and cuts the rest.";
   if (t === "eq") return "Boosts or cuts a band without blocking the whole signal.";
   if (t.startsWith("osc")) return "Low-frequency oscillator — moves another parameter over time.";
-  if (t.startsWith("env")) return "Envelope follower — tracks how loud the signal is.";
+  if (t.startsWith("env")) return "Envelope follower — audio in, mod out. Attack/hold/release, then min..max.";
   if (t.startsWith("comp")) return "Compressor — reduces the difference between quiet and loud.";
   if (t.startsWith("ngate") || t.includes("noisegate")) return "Noise gate — mutes when the signal is too quiet.";
   if (t.startsWith("gate")) return "Gate — opens or closes the path by threshold.";

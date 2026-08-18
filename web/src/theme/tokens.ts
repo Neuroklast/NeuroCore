@@ -1,18 +1,23 @@
-/** Board palette: anthracite + neon red / yellow / cyan. Not a single-red CRT. */
+import { themeOf } from "./theme";
+
+const signal = themeOf("signal");
+
+/** Product copy + default (signal) swatches. Live paint uses the theme engine. */
 export const nk = {
-  accent: "#ff003c",
-  accentDim: "#8a0021",
-  warn: "#fcee0a",
-  cyan: "#00f0ff",
-  surface: "#0e0e12",
-  surfaceHigh: "#16161c",
-  background: "#0a0a0c",
-  ink: "#f4f1ea",
-  inkMuted: "#7a7a86",
-  error: "#ff4d6d",
-  panelBorder: "#3a1420",
-  gridLine: "rgba(255, 0, 60, 0.16)",
-  well: "#07070a",
+  accent: signal.accent,
+  accentDim: signal.accentDim,
+  warn: signal.warn,
+  cyan: signal.cyan,
+  surface: signal.surface,
+  surfaceHigh: signal.surfaceHigh,
+  background: signal.background,
+  ink: signal.ink,
+  inkMuted: signal.inkMuted,
+  inkSoft: signal.inkSoft,
+  error: signal.error,
+  panelBorder: signal.panelBorder,
+  gridLine: `rgba(${signal.accentRgb}, 0.16)`,
+  well: signal.well,
   version: "0.4.8-alpha",
   product: "NEUROKORE",
   company: "Neuroklast",

@@ -4,6 +4,7 @@ import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { isThemeId, THEME_STORAGE_KEY, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { settingsAboutTarget } from "./aboutModel";
 import {
@@ -157,6 +158,7 @@ function SettingsBody() {
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);
   const cables = useHostStore((s) => s.cables);
+  const theme = useHostStore((s) => s.theme) ?? "signal";
   const formulaPt = useHostStore((s) => s.formulaPt);
   const mode = useHostStore((s) => s.mode);
   const setOverlay = useHostStore((s) => s.setOverlay);
@@ -179,6 +181,24 @@ function SettingsBody() {
             const next = id === "live" ? "LIVE" : "STUDIO";
             useHostStore.setState({ mode: next });
             void getNativeFunction("setChoice")({ id: "mode", index: id === "live" ? 1 : 0 });
+          }}
+        />
+      </section>
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">THEME</div>
+        <Seg
+          value={theme}
+          options={themeIds().map((id) => ({ id, label: themeOf(id).label }))}
+          onPick={(id) => {
+            if (! isThemeId(id)) {
+              return;
+            }
+            try {
+              localStorage.setItem(THEME_STORAGE_KEY, id);
+            } catch {
+              /* private mode */
+            }
+            useHostStore.setState({ theme: id });
           }}
         />
       </section>

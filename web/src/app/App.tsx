@@ -20,6 +20,7 @@ import { shouldPlayBoot } from "../theme/boot";
 import { CrtFx, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
+import { bindDocumentTheme } from "../theme/themeBind";
 import { seedFactoryPresets } from "../presets/presetActions";
 import { knobBindEnabled, knobRail, type Workspace } from "./workspace";
 
@@ -30,6 +31,10 @@ export function App() {
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const boot = shouldPlayBoot(reduced, motion);
+  const theme = useHostStore((s) => s.theme) ?? "signal";
+  useEffect(() => {
+    bindDocumentTheme(theme);
+  }, [theme]);
   useEffect(() => {
     onNativeEvent("ast", (payload) => {
       const rec = payload as AstEventPayload;

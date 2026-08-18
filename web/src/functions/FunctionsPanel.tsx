@@ -84,12 +84,12 @@ export function FunctionsPanel() {
           <>
             <div className="font-brand text-[22px] text-accent">{current.name}</div>
             <p className="text-[14px] text-ink">{current.description}</p>
-            <p className="text-[13px] text-[#ffb08a]">{current.soundCharacter}</p>
-            <p className="text-[13px] text-[#a8d4a8]">{current.useCases.slice(0, 3).join(" · ")}</p>
-            <pre className="overflow-auto border border-panel bg-well p-2 text-[13px] text-[#c8d0e4]">{current.example}</pre>
+            <p className="text-[13px] text-[var(--nk-warn)]">{current.soundCharacter}</p>
+            <p className="text-[13px] text-[var(--nk-cyan)]">{current.useCases.slice(0, 3).join(" · ")}</p>
+            <pre className="overflow-auto border border-panel bg-well p-2 text-[13px] text-[var(--nk-ink-soft)]">{current.example}</pre>
             {showsWavePreview(current.name) ? (
               <>
-                <p className="text-[13px] text-[#d0d4dc]">{plotCaption(kindForName(current.name))}</p>
+                <p className="text-[13px] text-[var(--nk-ink-soft)]">{plotCaption(kindForName(current.name))}</p>
                 <div className="flex gap-1">
                   {PREVIEW_WAVES.map((w) => (
                     <button

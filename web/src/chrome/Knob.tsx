@@ -233,8 +233,8 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
             <stop offset="100%" stopColor="#050508" />
           </radialGradient>
           <radialGradient id={`${gid}-cap`} cx="40%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#3a1420" />
-            <stop offset="100%" stopColor="#0a0a0c" />
+            <stop offset="0%" stopColor="var(--nk-panel)" />
+            <stop offset="100%" stopColor="var(--nk-bg)" />
           </radialGradient>
         </defs>
         <circle cx={KNOB_CX} cy={KNOB_CY} r="32" fill={`url(#${gid}-metal)`} />
@@ -256,7 +256,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
             cy={KNOB_CY}
             r={KNOB_ARC_R}
             fill="none"
-            stroke="#00f0ff"
+            stroke="var(--nk-cyan)"
             strokeWidth="3.2"
             strokeLinecap="butt"
             strokeDasharray={`${arc} ${circ}`}
@@ -278,7 +278,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
                 y1={y0}
                 x2={x1}
                 y2={y1}
-                stroke={on ? "#00f0ff" : "#3a3a44"}
+                stroke={on ? "var(--nk-cyan)" : "#3a3a44"}
                 strokeWidth={on ? 2.2 : 1.4}
                 strokeLinecap="round"
               />
@@ -286,8 +286,8 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
           })
         )}
         <circle cx={KNOB_CX} cy={KNOB_CY} r="16" fill={`url(#${gid}-cap)`} stroke="#2a2a32" strokeWidth="1" />
-        <circle cx={KNOB_CX} cy={KNOB_CY} r="5.5" fill="#050508" stroke="#00f0ff" strokeWidth="0.6" opacity="0.55" />
-        <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="#fcee0a" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx={KNOB_CX} cy={KNOB_CY} r="5.5" fill="#050508" stroke="var(--nk-cyan)" strokeWidth="0.6" opacity="0.55" />
+        <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="var(--nk-warn)" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
       <div className="nk-prm-meta-row">
         <span>PRM-{knob.id.toUpperCase()}</span>
@@ -342,7 +342,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
           {readout}
         </button>
       )}
-      <div className="flex w-full justify-between px-1 text-[10px] text-[#b0b0b0]">
+      <div className="flex w-full justify-between px-1 text-[10px] text-[var(--nk-ink-soft)]">
         <span>{minTxt}</span>
         <span>{maxTxt}</span>
       </div>

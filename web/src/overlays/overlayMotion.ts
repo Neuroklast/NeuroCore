@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { MotionPref } from "../theme/motionPolicy";
 import { motionAllows } from "../theme/motionPolicy";
+import { themeRgba } from "../theme/theme";
 
 export type OverlayPhase = "idle" | "enter" | "shown" | "exit";
 
@@ -65,7 +66,7 @@ export function bloomFilter(amp: number, on: boolean): string {
   }
   const p = Math.max(0, Math.min(1, amp));
   const a = 0.22 + p * 0.38;
-  return `drop-shadow(0 0 ${6 + p * 10}px rgba(255,0,60,${a.toFixed(3)})) drop-shadow(0 0 ${18 + p * 22}px rgba(252,238,10,${(a * 0.35).toFixed(3)}))`;
+  return `drop-shadow(0 0 ${6 + p * 10}px ${themeRgba("accent", a)}) drop-shadow(0 0 ${18 + p * 22}px ${themeRgba("warn", a * 0.35)})`;
 }
 
 function sameShell(a: OverlayShell, b: OverlayShell): boolean {

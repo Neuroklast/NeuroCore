@@ -32,6 +32,7 @@ export function LoudnessMeter() {
   const inRms = useTelemetryStore((s) => s.inRms);
   const outRms = useTelemetryStore((s) => s.outRms);
   const source = useHostStore((s) => s.scopeSource);
+  useHostStore((s) => s.theme);
   const showIn = source === "in" || source === "both";
   const showOut = source === "out" || source === "both";
   return (
