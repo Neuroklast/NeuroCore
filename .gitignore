@@ -366,6 +366,12 @@ FodyWeavers.xsd
 # Isolated git worktrees (never commit checkout contents)
 .worktrees/
 
+# Web UI (Vite)
+/web/node_modules/
+/web/dist/
+/web/src/presets/factoryCatalog.gen.json
+/web/src/overlays/userManual.gen.txt
+
 # Agent / local scratch (never ship)
 build-test/
 mcps/

@@ -12,6 +12,10 @@
 #include <vector>
 #include "PluginProcessor.h"
 #include "../ui/PluginEditor.h"
+#include "../bridge/WebEditorPolicy.h"
+#if defined(NEUROKORE_HAS_WEB_EDITOR)
+#include "../ui/WebPluginEditor.h"
+#endif
 #include "../utils/PresetManager.h"
 #include "../utils/FactoryPresetLibrary.h"
 #include "../utils/FormulaHelper.h"
@@ -370,6 +374,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     if (buffer.getNumSamples() == 0 || getTotalNumInputChannels() == 0) return;
 
     auto main = getBusCount (true) > 0 ? getBusBuffer (buffer, true, 0) : buffer;
+    telemetryPump.noteInput (main);
     const float* scL = nullptr;
     const float* scR = nullptr;
     int scN = 0;
@@ -418,6 +423,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         waveformCapture.pushInput (main);
         dspEngine.publishOutputMeter (main);
         waveformCapture.pushOutput (main);
+        telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
         return;
     }
 
@@ -499,6 +505,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     mixIrPreview (main);
     waveformCapture.pushOutput (main);
+    telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
 }
 
 //==============================================================================
@@ -509,6 +516,10 @@ bool NeuroKoreAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
+#if defined(NEUROKORE_HAS_WEB_EDITOR)
+    if (bridge::shouldOpenWebEditor())
+        return createWebEditor (*this);
+#endif
     return new NeuroKoreAudioProcessorEditor (*this);
 }
 

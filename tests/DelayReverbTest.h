@@ -77,6 +77,63 @@ public:
                     + juce::String (laterPeak, 4));
         }
 
+        beginTest ("delay sine has no periodic click at the delay period");
+        {
+            // Contract: a delayed sine is still a sine. A click at k * delayTime
+            // (Hermite stencil wrapping through index 0, write-head scrape)
+            // shows up as a sample jump far above the sine's own delta.
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 10; feedback = 0.35; mix = 1.0; damp = 12000", err), err);
+
+            const float hz = 220.f;
+            const float amp = 0.4f;
+            const float inDelta = 2.f * juce::MathConstants<float>::pi * hz / 48000.f * amp;
+            juce::AudioBuffer<float> buf (2, 512);
+            float prev = 0.f;
+            bool have = false;
+            float maxJump = 0.f;
+            int clickN = 0;
+            const int blocks = 200; // ~2.1 s — past one 2 s ring wrap
+            for (int b = 0; b < blocks; ++b)
+            {
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float t = (float) (b * 512 + i) / 48000.f;
+                    const float s = amp * std::sin (2.f * juce::MathConstants<float>::pi * hz * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                if (b < 8)
+                {
+                    prev = buf.getSample (0, 511);
+                    have = true;
+                    continue;
+                }
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float y = buf.getSample (0, i);
+                    if (have)
+                    {
+                        const float jump = std::abs (y - prev);
+                        maxJump = juce::jmax (maxJump, jump);
+                        if (jump > inDelta * 8.f + 0.04f)
+                            ++clickN;
+                    }
+                    prev = y;
+                    have = true;
+                }
+            }
+            expect (clickN == 0 && maxJump < inDelta * 8.f + 0.04f,
+                    "periodic delay click: jumps=" + juce::String (clickN)
+                    + " maxJump=" + juce::String (maxJump, 4)
+                    + " sineDelta=" + juce::String (inDelta, 4));
+        }
+
         beginTest ("static filter cutoff jump stays finite");
         {
             dsl::SignalChain chain;

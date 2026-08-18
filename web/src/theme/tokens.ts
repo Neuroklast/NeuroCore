@@ -1,0 +1,73 @@
+/** Board palette: anthracite + neon red / yellow / cyan. Not a single-red CRT. */
+export const nk = {
+  accent: "#ff003c",
+  accentDim: "#8a0021",
+  warn: "#fcee0a",
+  cyan: "#00f0ff",
+  surface: "#0e0e12",
+  surfaceHigh: "#16161c",
+  background: "#0a0a0c",
+  ink: "#f4f1ea",
+  inkMuted: "#7a7a86",
+  error: "#ff4d6d",
+  panelBorder: "#3a1420",
+  gridLine: "rgba(255, 0, 60, 0.16)",
+  well: "#07070a",
+  version: "0.4.8-alpha",
+  product: "NEUROKORE",
+  company: "Neuroklast",
+  byline: "by Neuroklast",
+  osBanner: "NEUROKORE // NEUROKLAST OS",
+} as const;
+
+export function kindLabel(type: string): string {
+  const t = type.toLowerCase();
+  if (t.startsWith("filter")) return "FILTER";
+  if (t === "eq") return "EQ";
+  if (t.startsWith("custom")) return "CUSTOM";
+  if (t.startsWith("stage")) return "DRIVE";
+  if (t.startsWith("comp")) return "COMP";
+  if (t.startsWith("ngate") || t.startsWith("noisegate") || t === "noise_gate") return "NGATE";
+  if (t.startsWith("gate")) return "GATE";
+  if (t.startsWith("limit")) return "LIMIT";
+  if (t.startsWith("delay")) return "DELAY";
+  if (t.startsWith("reverb")) return "REVERB";
+  if (t.startsWith("ir")) return "CAB";
+  if (t === "ott") return "OTT";
+  if (t.startsWith("widen")) return "WIDTH";
+  if (t === "ms") return "MS";
+  if (t === "bus") return "BUS";
+  if (t === "send") return "SEND";
+  if (t.startsWith("xover") || t.startsWith("crossover")) return "XOVER";
+  if (t === "out") return "OUT";
+  if (t === "in") return "IN";
+  if (t.startsWith("octav")) return "OCT";
+  if (t.startsWith("vocod")) return "VOC";
+  if (t.startsWith("env")) return "ENV";
+  if (t.startsWith("osc")) return "LFO";
+  return t.toUpperCase().slice(0, 6);
+}
+
+export function mappedValue(value01: number, min: number, max: number): number {
+  return min + value01 * (max - min);
+}
+
+export function formatMapped(v: number): string {
+  if (! Number.isFinite(v)) {
+    return "0";
+  }
+  if (Math.abs(v) >= 100) {
+    return v.toFixed(1);
+  }
+  return v.toFixed(3);
+}
+
+export function formatBound(v: number): string {
+  if (! Number.isFinite(v)) {
+    return "0";
+  }
+  if (Math.abs(v - Math.round(v)) < 1e-4 && Math.abs(v) < 1e7) {
+    return String(Math.round(v));
+  }
+  return v.toFixed(2);
+}

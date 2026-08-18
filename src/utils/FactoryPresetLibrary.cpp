@@ -294,11 +294,6 @@ bool FactoryPresetLibrary::loadFromResources(const juce::File& resourcesDir)
 {
     entries.clear();
 
-    // Embedded JSON matches this binary. A leftover resources/ folder next to
-    // an installed VST3 is often stale (no comments) and must not win.
-    if (loadFromEmbedded())
-        return true;
-
     const auto dir  = resolveResourcesDir(resourcesDir);
     const auto file = dir.getChildFile("factory_presets.json");
     if (file.existsAsFile())

@@ -1,0 +1,59 @@
+/** One chrome spec: high-tech board, not a CRT terminal. */
+
+export const CHIP_CLIP =
+  "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)";
+
+export const CHIP_FRAME_DASH = "16 5 3 5 22 6";
+export const CHIP_CUT = 10;
+/** Details plate on a chip. ui-ux: hit ≥ 26 px, not a ghost chevron. */
+export const DETAIL_HIT = 26;
+
+/** Expand sits on the chip chrome, not inside the overflow-clipped body. */
+export const chipExpandOutsideBody = true;
+
+export function chipExpandOffset(): { top: number; right: number; size: number } {
+  return { top: 6, right: 10, size: DETAIL_HIT };
+}
+
+export function greebleCode(id: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return `TRG-${(h >>> 0).toString(16).toUpperCase().slice(-4)}`;
+}
+
+export function barcodeBits(id: string, n = 16): boolean[] {
+  let h = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    h = (h * 33 + id.charCodeAt(i)) >>> 0;
+  }
+  return Array.from({ length: n }, (_, i) => ((h >>> (i % 32)) & 1) === 1);
+}
+
+export function framePoints(w: number, h: number, cut = CHIP_CUT): string {
+  return [
+    `${cut},0`,
+    `${w},0`,
+    `${w},${h - cut}`,
+    `${w - cut},${h}`,
+    `0,${h}`,
+    `0,${cut}`,
+  ].join(" ");
+}
+
+export function segmentFill(live: string, segments = 10): number {
+  const n = Number.parseFloat(live);
+  if (! Number.isFinite(n)) {
+    return 0;
+  }
+  if (n >= 0 && n <= 1) {
+    return Math.round(n * segments);
+  }
+  const abs = Math.abs(n);
+  if (abs <= 10) {
+    return Math.max(1, Math.min(segments, Math.round((abs / 10) * segments)));
+  }
+  return Math.max(1, Math.min(segments, Math.round(Math.log10(abs + 1) * 3)));
+}

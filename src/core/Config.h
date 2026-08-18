@@ -46,7 +46,7 @@ namespace Config
         const float g = (float) kUiBoardGrid;
         if (! (fit > 0.f) || ! (g > 0.f))
             return 1.f;
-        return juce::jmax (0.5f, std::round (fit * g) / g);
+        return juce::jmax (0.5f, std::floor (fit * g) / g);
     }
 
     /** Footer CPU is 0–100. Load is host-callback ratio; over-budget still reads 100. */
@@ -313,7 +313,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.4.7-alpha"
+#define PLUGIN_VERSION    "0.4.8-alpha"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

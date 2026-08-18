@@ -40,4 +40,4 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 
 ## Settings / scale
 
-- Window scale 100 / 125 / 150. `getDesktopScaleFactor() == 1`. Fit snaps so `fit * 16` is an integer pixel.
+- Window scale 100 / 125 / 150. `getDesktopScaleFactor() == 1`. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.
