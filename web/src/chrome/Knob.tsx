@@ -5,13 +5,14 @@ import { bindHit, commitBind, resolveBindKey } from "../assemble/bindModel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { useBindStore } from "../store/telemetryStore";
-import { formatBound, formatMapped, mappedValue } from "../theme/tokens";
+import { formatBound, mappedValue } from "../theme/tokens";
 import type { KnobState } from "../store/hostStore";
 import {
   KNOB_ARC_R,
   KNOB_CARD_CLIP,
   KNOB_CX,
   KNOB_CY,
+  enumLabelAt01,
   knobArcLen,
   knobArcOffset,
   knobCircumference,
@@ -19,13 +20,35 @@ import {
   knobBindKind,
   knobPlugPlacement,
   knobPlugPosition,
+  knobScaleMode,
   knobShowsLetter,
+  knobTickNorms,
   knobTitleInset,
+  snapEnum01,
 } from "./knobChrome";
-import { formatNoteBound, mappedToNorm, noteLabelForMapped, typedToMapped } from "./noteValue";
+import {
+  formatKnobDisplay,
+  formatNoteBound,
+  mappedToNorm,
+  noteLabelForMapped,
+  typedToMapped,
+} from "./noteValue";
 
 const START = (Math.PI * 4) / 3;
 const END = (Math.PI * 8) / 3;
+
+function finishBindDrop(letter: string, clientX: number, clientY: number) {
+  const hit = bindHit(document.elementFromPoint(clientX, clientY));
+  useBindStore.getState().end();
+  if (! hit) {
+    return;
+  }
+  const node = useAstStore.getState().ast?.nodes.find((n) => n.id === hit.node);
+  const key = resolveBindKey(hit, node?.args);
+  if (key) {
+    commitBind(hit.node, key, letter);
+  }
+}
 
 export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; bind?: boolean; compact?: boolean }) {
   const wired = useAstStore((s) => bindTargets(s.ast?.nodes ?? []).some((t) => t.letter === knob.id));
@@ -38,11 +61,18 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const [hud, setHud] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const bpm = useHostStore((s) => s.bpm);
+  const enums = knob.enums;
+  const scaleMode = knobScaleMode(enums);
   const mapped = mappedValue(knob.value, knob.min, knob.max);
   const noteReadout = noteLabelForMapped(mapped, knob.min, knob.max, bpm, knob.isNote, knob.value);
-  const readout = noteReadout ?? formatMapped(mapped);
-  const minTxt = formatNoteBound(knob.min, knob.max, "min", knob.isNote) ?? formatBound(knob.min);
-  const maxTxt = formatNoteBound(knob.min, knob.max, "max", knob.isNote) ?? formatBound(knob.max);
+  const enumReadout = enums && enums.length > 0 ? enumLabelAt01(knob.value, enums) : null;
+  const readout = noteReadout ?? enumReadout ?? formatKnobDisplay(mapped, knob.unit);
+  const minTxt = enums && enums.length > 0
+    ? enums[0]!
+    : (formatNoteBound(knob.min, knob.max, "min", knob.isNote) ?? formatBound(knob.min));
+  const maxTxt = enums && enums.length > 0
+    ? enums[enums.length - 1]!
+    : (formatNoteBound(knob.min, knob.max, "max", knob.isNote) ?? formatBound(knob.max));
   const angle = START + knob.value * (END - START);
   const p1x = KNOB_CX + 22 * Math.sin(angle);
   const p1y = KNOB_CY - 22 * Math.cos(angle);
@@ -51,19 +81,38 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const circ = knobCircumference();
   const arc = knobArcLen();
   const offset = knobArcOffset(knob.value);
+  const ticks = scaleMode === "ticks" ? knobTickNorms(enums?.length ?? 0) : [];
   const gid = `nk-kg-${knob.id}`;
   const liveKnob = knobInteractive(knob.active);
 
   const send = useCallback((value: number, gesture: "begin" | "change" | "end") => {
-    useHostStore.getState().setKnob(knob.id, value);
-    void getNativeFunction("setParam")({ id: knob.id, value, gesture });
-  }, [knob.id]);
+    const next = enums && enums.length > 0 ? snapEnum01(value, enums.length) : value;
+    useHostStore.getState().setKnob(knob.id, next);
+    void getNativeFunction("setParam")({ id: knob.id, value: next, gesture });
+  }, [knob.id, enums]);
+
+  const startBindDrag = useCallback((letter: string, clientX: number, clientY: number) => {
+    useBindStore.getState().start(letter, clientX, clientY);
+    const move = (ev: PointerEvent) => useBindStore.getState().move(ev.clientX, ev.clientY);
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      finishBindDrop(letter, ev.clientX, ev.clientY);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, []);
 
   const onPointer = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    if (! liveKnob) {
+    if ((e.target as HTMLElement | null)?.closest?.("[data-knob-bind]")) {
       return;
     }
-    if ((e.target as HTMLElement | null)?.closest?.("[data-knob-bind]")) {
+    if (! liveKnob) {
+      if (! bind) {
+        return;
+      }
+      e.preventDefault();
+      startBindDrag(knob.id, e.clientX, e.clientY);
       return;
     }
     e.preventDefault();
@@ -74,7 +123,8 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     send(start, "begin");
     setHud(true);
     const move = (ev: globalThis.PointerEvent) => {
-      const next = Math.max(0, Math.min(1, start - (ev.clientY - startY) / 140));
+      const raw = Math.max(0, Math.min(1, start - (ev.clientY - startY) / 140));
+      const next = enums && enums.length > 0 ? snapEnum01(raw, enums.length) : raw;
       live.current = next;
       send(next, "change");
     };
@@ -87,7 +137,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-  }, [liveKnob, send]);
+  }, [liveKnob, bind, knob.id, send, startBindDrag, enums]);
 
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -101,6 +151,14 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
       }
       e.preventDefault();
       e.stopPropagation();
+      if (enums && enums.length > 1) {
+        const step = 1 / (enums.length - 1);
+        const dir = e.deltaY > 0 ? -step : step;
+        const next = snapEnum01(live.current + dir, enums.length);
+        live.current = next;
+        send(next, "change");
+        return;
+      }
       const delta = e.deltaY > 0 ? -0.03 : 0.03;
       const next = Math.max(0, Math.min(1, live.current + delta * (e.shiftKey ? 0.25 : 1)));
       live.current = next;
@@ -108,7 +166,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [liveKnob, send]);
+  }, [liveKnob, send, enums]);
 
   return (
     <div
@@ -140,24 +198,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              useBindStore.getState().start(knob.id, e.clientX, e.clientY);
-              const move = (ev: PointerEvent) => useBindStore.getState().move(ev.clientX, ev.clientY);
-              const up = (ev: PointerEvent) => {
-                window.removeEventListener("pointermove", move);
-                window.removeEventListener("pointerup", up);
-                const hit = bindHit(document.elementFromPoint(ev.clientX, ev.clientY));
-                useBindStore.getState().end();
-                if (! hit) {
-                  return;
-                }
-                const node = useAstStore.getState().ast?.nodes.find((n) => n.id === hit.node);
-                const key = resolveBindKey(hit, node?.args);
-                if (key) {
-                  commitBind(hit.node, key, knob.id);
-                }
-              };
-              window.addEventListener("pointermove", move);
-              window.addEventListener("pointerup", up);
+              startBindDrag(knob.id, e.clientX, e.clientY);
             }}
           >
             {showLetter ? knob.id.toUpperCase() : null}
@@ -193,19 +234,42 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
           transform={`rotate(150 ${KNOB_CX} ${KNOB_CY})`}
         />
         <circle cx={KNOB_CX} cy={KNOB_CY} r={KNOB_ARC_R} fill="none" stroke="#1a1a20" strokeWidth="3.4" />
-        <circle
-          className="nk-prm-arc"
-          cx={KNOB_CX}
-          cy={KNOB_CY}
-          r={KNOB_ARC_R}
-          fill="none"
-          stroke="#00f0ff"
-          strokeWidth="3.2"
-          strokeLinecap="butt"
-          strokeDasharray={`${arc} ${circ}`}
-          strokeDashoffset={offset}
-          transform={`rotate(150 ${KNOB_CX} ${KNOB_CY})`}
-        />
+        {scaleMode === "arc" ? (
+          <circle
+            className="nk-prm-arc"
+            cx={KNOB_CX}
+            cy={KNOB_CY}
+            r={KNOB_ARC_R}
+            fill="none"
+            stroke="#00f0ff"
+            strokeWidth="3.2"
+            strokeLinecap="butt"
+            strokeDasharray={`${arc} ${circ}`}
+            strokeDashoffset={offset}
+            transform={`rotate(150 ${KNOB_CX} ${KNOB_CY})`}
+          />
+        ) : (
+          ticks.map((t) => {
+            const a = START + t * (END - START);
+            const x0 = KNOB_CX + (KNOB_ARC_R - 4) * Math.sin(a);
+            const y0 = KNOB_CY - (KNOB_ARC_R - 4) * Math.cos(a);
+            const x1 = KNOB_CX + (KNOB_ARC_R + 3) * Math.sin(a);
+            const y1 = KNOB_CY - (KNOB_ARC_R + 3) * Math.cos(a);
+            const on = Math.abs(t - knob.value) < 1e-6;
+            return (
+              <line
+                key={t}
+                x1={x0}
+                y1={y0}
+                x2={x1}
+                y2={y1}
+                stroke={on ? "#00f0ff" : "#3a3a44"}
+                strokeWidth={on ? 2.2 : 1.4}
+                strokeLinecap="round"
+              />
+            );
+          })
+        )}
         <circle cx={KNOB_CX} cy={KNOB_CY} r="16" fill={`url(#${gid}-cap)`} stroke="#2a2a32" strokeWidth="1" />
         <circle cx={KNOB_CX} cy={KNOB_CY} r="5.5" fill="#050508" stroke="#00f0ff" strokeWidth="0.6" opacity="0.55" />
         <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="#fcee0a" strokeWidth="1.6" strokeLinecap="round" />
@@ -223,6 +287,15 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
           onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => setEdit(e.target.value)}
           onBlur={() => {
+            if (enums && enums.length > 0 && edit != null) {
+              const raw = edit.trim().toLowerCase();
+              const idx = enums.findIndex((o) => o.toLowerCase() === raw);
+              if (idx >= 0) {
+                send(enums.length <= 1 ? 0 : idx / (enums.length - 1), "end");
+              }
+              setEdit(null);
+              return;
+            }
             const next = typedToMapped(edit, knob.min, knob.max, bpm, knob.isNote);
             if (next != null) {
               send(knob.isNote ? next : mappedToNorm(next, knob.min, knob.max), "end");

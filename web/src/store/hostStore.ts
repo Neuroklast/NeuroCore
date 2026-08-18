@@ -8,6 +8,10 @@ export interface KnobState {
   min: number;
   max: number;
   isNote: boolean;
+  /** Display unit from chipSpec.ranges (e.g. Hz, %, dB). Not used by DSP. */
+  unit?: string;
+  /** When set, the knob is an enum detent control (N ticks). */
+  enums?: string[];
 }
 
 export interface HostState {
@@ -58,6 +62,7 @@ export interface HostState {
   setOverlay: (name: string | null, inspectId?: string | null) => void;
   setTelemetryPath: (path: string) => void;
   setKnob: (id: string, value: number) => void;
+  activateKnob: (id: string, patch: Partial<KnobState> & { active: true }) => void;
   setMix: (value: number) => void;
   setOs: (index: number) => void;
   setPolisher: (index: number) => void;
@@ -82,6 +87,7 @@ function asKnobs(raw: unknown): KnobState[] {
   }
   return raw.map((k) => {
     const o = k as Record<string, unknown>;
+    const enums = Array.isArray(o.enums) ? o.enums.map(String) : undefined;
     return {
       id: String(o.id ?? ""),
       name: String(o.name ?? ""),
@@ -90,6 +96,8 @@ function asKnobs(raw: unknown): KnobState[] {
       min: Number(o.min ?? 0),
       max: Number(o.max ?? 1),
       isNote: Boolean(o.isNote),
+      unit: o.unit != null ? String(o.unit) : undefined,
+      enums: enums && enums.length > 0 ? enums : undefined,
     };
   });
 }
@@ -186,6 +194,24 @@ export const useHostStore = create<HostState>((set) => ({
   setTelemetryPath: (telemetryPath: string) => set({ telemetryPath }),
   setKnob: (id, value) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, value: Math.max(0, Math.min(1, value)) } : k)),
+  })),
+  activateKnob: (id, patch) => set((s) => ({
+    knobs: s.knobs.map((k) => {
+      if (k.id !== id) {
+        return k;
+      }
+      const value = patch.value != null
+        ? Math.max(0, Math.min(1, patch.value))
+        : k.value;
+      return {
+        ...k,
+        ...patch,
+        id: k.id,
+        active: true,
+        value,
+        enums: patch.enums && patch.enums.length > 0 ? patch.enums : undefined,
+      };
+    }),
   })),
   setMix: (value) => set({ mix: Math.max(0, Math.min(1, value)) }),
   setOs: (index) => {

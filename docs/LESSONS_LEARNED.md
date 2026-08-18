@@ -22,6 +22,11 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - MS chips do not have a serial `out`/`in`. Mid/Side jacks without `channel=` in the document are scenery. Circuit must write `channel=`. An untagged chip between encode/decode sits on both rails (DSP: L=mid, R=side). An edge whose handle is not in `visualJacksFor` is not drawn — React Flow returns null, not a tube.
 - User chip xy is owned by the board until Arrange or a new graph. A host echo is not a second owner.
 
+## Chrome / knobs
+
+- Knob readout is `round2` (+ unit / `%`×100). Never round SignalChain / audio-thread samples to match the label.
+- Bind from an inactive knob activates it with `chipSpec.ranges` / `enums`. Enum binds are N detents + N ticks, not a continuous arc.
+
 ## DSP / CPU
 
 - Footer CPU is 0–100. Host-callback ratio > 1 is not a percent of the machine.

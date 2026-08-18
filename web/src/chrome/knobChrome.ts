@@ -49,3 +49,48 @@ export function knobInteractive(active: boolean): boolean {
 export function knobTitleInset(place: "stack" | "corner"): number {
   return place === "corner" ? 10 : 2;
 }
+
+export { formatKnobDisplay, round2 } from "./noteValue";
+
+export function knobScaleMode(enums: string[] | undefined | null): "arc" | "ticks" {
+  return enums && enums.length > 0 ? "ticks" : "arc";
+}
+
+export function knobTickCount(enums: string[] | undefined | null): number {
+  return enums && enums.length > 0 ? enums.length : 0;
+}
+
+/** Evenly spaced 0..1 norms for N enum detents. */
+export function knobTickNorms(n: number): number[] {
+  if (n <= 0) {
+    return [];
+  }
+  if (n === 1) {
+    return [0];
+  }
+  return Array.from({ length: n }, (_, i) => i / (n - 1));
+}
+
+export function snapEnum01(value01: number, n: number): number {
+  if (n <= 1) {
+    return 0;
+  }
+  const v = Math.max(0, Math.min(1, value01));
+  const i = Math.round(v * (n - 1));
+  return i / (n - 1);
+}
+
+export function enumIndexAt01(value01: number, n: number): number {
+  if (n <= 1) {
+    return 0;
+  }
+  const v = Math.max(0, Math.min(1, value01));
+  return Math.max(0, Math.min(n - 1, Math.round(v * (n - 1))));
+}
+
+export function enumLabelAt01(value01: number, enums: string[]): string {
+  if (enums.length === 0) {
+    return "";
+  }
+  return enums[enumIndexAt01(value01, enums.length)] ?? "";
+}

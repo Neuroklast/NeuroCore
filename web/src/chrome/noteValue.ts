@@ -1,3 +1,20 @@
+/** Display text only — never round audio-thread DSP / SignalChain samples. */
+export function round2(n: number): string {
+  if (! Number.isFinite(n)) {
+    return "0.00";
+  }
+  return (Math.round(n * 100) / 100).toFixed(2);
+}
+
+/** Mapped value → readout. Unit `%` means 0..1 → percent. */
+export function formatKnobDisplay(mapped: number, unit?: string): string {
+  if (unit === "%") {
+    return `${round2(mapped * 100)}%`;
+  }
+  const body = round2(mapped);
+  return unit ? `${body} ${unit}` : body;
+}
+
 /** Whole-note fractions. `1/4` = 0.25 of a bar. Matches `dsl::NoteValues`. */
 export const NOTE_GRID: Array<{ whole: number; label: string }> = [
   { whole: 1, label: "1/1" },
