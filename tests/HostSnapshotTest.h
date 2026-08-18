@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "../src/bridge/HostSnapshot.h"
 #include "../src/core/Config.h"
+#include "../src/core/PluginProcessor.h"
 
 class HostSnapshotTest : public juce::UnitTest
 {
@@ -67,6 +68,18 @@ public:
             expect (bridge::choiceCmdFromVar (juce::var (p), c, err), err);
             expectEquals (c.id, juce::String ("mode"));
             expectEquals (c.index, 1);
+        }
+
+        beginTest ("hostVar reports sidechainOn from the SC bus");
+        {
+            NeuroKoreAudioProcessor proc;
+            const auto host = bridge::hostVar (proc);
+            expect (host.hasProperty ("sidechainOn"));
+            const bool on = (bool) host.getProperty ("sidechainOn", false);
+            if (auto* bus = proc.getBus (true, 1))
+                expectEquals (on, bus->isEnabled());
+            else
+                expect (! on);
         }
     }
 };

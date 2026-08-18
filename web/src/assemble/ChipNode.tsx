@@ -7,46 +7,61 @@ import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
 import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
+import { renameCircuitBlock, setCircuitArg } from "./addBlock";
 import { bindEndId, lettersInExpr } from "./bindLinks";
 import { bindableArgKeys, handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
-import { setCircuitArg } from "./addBlock";
 import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
 import { collapsedFace } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
 import { isModulatorNode, resolveHz, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape } from "./lfoLamp";
 import { liveArg } from "./liveArg";
+import { cableFace } from "./validateLink";
 
 function JackPort({
   jack,
   output,
   top,
+  left,
+  face = "side",
   showLabel = true,
 }: {
   jack: AstJack;
   output: boolean;
-  top: number;
+  top?: number;
+  left?: number;
+  face?: "side" | "bottom" | "top";
   showLabel?: boolean;
 }) {
+  const position = face === "bottom"
+    ? Position.Bottom
+    : face === "top"
+      ? Position.Top
+      : (output ? Position.Right : Position.Left);
+  const style = face === "side"
+    ? { top: `${top ?? 0}px` }
+    : { left: `${left ?? 0}px` };
   return (
     <>
-      <span className={`nk-jack-shell ${output ? "nk-jack-shell-out" : "nk-jack-shell-in"}`} style={{ top: `${top}px` }} />
+      {face === "side" ? (
+        <span className={`nk-jack-shell ${output ? "nk-jack-shell-out" : "nk-jack-shell-in"}`} style={{ top: `${top ?? 0}px` }} />
+      ) : null}
       <Handle
         type={output ? "source" : "target"}
-        position={output ? Position.Right : Position.Left}
+        position={position}
         id={handleId(jack.id, output)}
-        className={`nk-plug ${output ? "nk-plug-out" : "nk-plug-in"} ${jack.kind === "mod" ? "nk-plug-mod" : ""}`}
-        style={{ top: `${top}px` }}
+        className={`nk-plug ${output ? "nk-plug-out" : "nk-plug-in"} ${jack.kind === "mod" ? "nk-plug-mod" : ""} ${face !== "side" ? "nk-plug-face" : ""}`}
+        style={style}
         isConnectableStart={output}
         isConnectableEnd={! output}
         title={jack.label || jack.id}
       />
-      {showLabel ? (
+      {showLabel && face === "side" ? (
         <span
           className={`nk-plug-label ${output ? "nk-plug-label-out" : "nk-plug-label-in"} ${jack.kind === "mod" ? "nk-plug-label-mod" : ""}`}
-          style={{ top: `${top}px` }}
+          style={{ top: `${top ?? 0}px` }}
         >
           {jackCaption(jack)}
         </span>
@@ -202,8 +217,11 @@ export function ChipNode({ data, id }: NodeProps) {
   const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
-  const ins = d.jacks.filter((j) => ! j.output && j.kind !== "knob");
-  const outs = d.jacks.filter((j) => j.output && j.kind !== "knob");
+  const sideJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "side");
+  const bottomJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
+  const topJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "top");
+  const ins = sideJacks.filter((j) => ! j.output);
+  const outs = sideJacks.filter((j) => j.output);
   const binds = [...new Set([
     ...bindableArgKeys(d.args),
     ...Object.keys(d.args).filter((k) => lettersInExpr(d.args[k]).length > 0),
@@ -214,6 +232,7 @@ export function ChipNode({ data, id }: NodeProps) {
   const box = chipBox(isCustomNode(d.type, id) ? "custom" : d.type, d.jacks, detail, d.args);
   const liveRows = extra.map((row) => ({ key: row.key, ...liveArg(row.value, knobs), bind: binds.includes(row.key) }));
   const custom = isCustomNode(d.type, id);
+  const [rename, setRename] = useState(false);
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   const absY = useStore((s) => s.nodeLookup.get(id)?.internals.positionAbsolute.y ?? 0);
@@ -237,9 +256,11 @@ export function ChipNode({ data, id }: NodeProps) {
   }, [box.h, box.w, id, setNodes, updateInternals]);
 
   const face = collapsedFace(isCustomNode(d.type, id) ? "custom" : d.type, d.args);
-  const title = face.title;
+  const title = custom ? id : face.title;
   const bits = barcodeBits(id);
   const warn = /stage|drive|clip|fold|crush/i.test(d.type + title);
+  const bottomXs = bindJackXs(bottomJacks.length, box.w);
+  const topXs = bindJackXs(topJacks.length, box.w);
   return (
     <div
       className="nk-chip relative text-[12px]"
@@ -294,7 +315,44 @@ export function ChipNode({ data, id }: NodeProps) {
       <div className="nk-chip-body">
         <div className="flex h-[26px] w-full items-center justify-between gap-2">
           <span className="nk-chip-grip" aria-hidden title="Drag" />
-          <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">{title}</span>
+          {custom && rename ? (
+            <input
+              className="nk-chip-title-edit nodrag nopan min-w-0 flex-1 truncate font-mono text-ink"
+              defaultValue={id}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                setRename(false);
+                if (next && next !== id) {
+                  renameCircuitBlock(id, next);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+                if (e.key === "Escape") {
+                  setRename(false);
+                }
+              }}
+            />
+          ) : (
+            <span
+              className={`nk-chip-title min-w-0 flex-1 truncate text-ink ${custom ? "nodrag" : ""}`}
+              title={custom ? "Click to rename" : undefined}
+              onClick={(e) => {
+                if (! custom) {
+                  return;
+                }
+                e.stopPropagation();
+                setRename(true);
+              }}
+            >
+              {title}
+            </span>
+          )}
           <span className="flex shrink-0 items-center gap-1">
             {lfo ? (
               <span
@@ -368,6 +426,26 @@ export function ChipNode({ data, id }: NodeProps) {
       {outs.map((j, i) => (
         <JackPort key={`out-${j.id}`} jack={j} output top={jackTopPx(i, Math.max(outs.length, 1), box.h)} />
       ))}
+      {bottomJacks.map((j, i) => (
+        <JackPort
+          key={`bot-${j.id}`}
+          jack={j}
+          output={j.output}
+          face="bottom"
+          left={bottomXs[i] ?? box.w * 0.5}
+          showLabel={false}
+        />
+      ))}
+      {topJacks.map((j, i) => (
+        <JackPort
+          key={`top-${j.id}`}
+          jack={j}
+          output={j.output}
+          face="top"
+          left={topXs[i] ?? box.w * 0.5}
+          showLabel={false}
+        />
+      ))}
       {ins.length === 0 && ! lfo ? (
         <JackPort
           jack={{ id: primaryJackId(d.jacks, false), label: "in", output: false, kind: "audio" }}
@@ -375,7 +453,7 @@ export function ChipNode({ data, id }: NodeProps) {
           top={jackTopPx(0, 1, box.h)}
         />
       ) : null}
-      {outs.length === 0 ? (
+      {outs.length === 0 && ! bottomJacks.some((j) => j.output) ? (
         <JackPort
           jack={{ id: primaryJackId(d.jacks, true), label: "out", output: true, kind: "audio" }}
           output
@@ -389,7 +467,7 @@ export function ChipNode({ data, id }: NodeProps) {
 export function IoNode({ data, id }: NodeProps) {
   const d = data as ChipData;
   const focus = String((data as { focus?: string }).focus ?? "off");
-  const isIn = d.type === "in";
+  const isIn = d.type === "in" || d.type === "sidechain";
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const knobs = useHostStore((s) => s.knobs);
   const extra = useMemo(() => detailArgs(d.type, d.args), [d.args, d.type]);
@@ -428,7 +506,7 @@ export function IoNode({ data, id }: NodeProps) {
         />
       </svg>
       <div className="relative z-[2] flex w-full items-center justify-center gap-1">
-        <span className="nk-chip-title truncate">{d.label}</span>
+        <span className="nk-chip-title truncate">{d.type === "sidechain" ? "Sidechain" : d.label}</span>
       </div>
       {detail ? (
         <div className="nk-sock-list relative z-[2] w-full px-1">

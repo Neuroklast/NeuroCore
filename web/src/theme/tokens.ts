@@ -34,13 +34,14 @@ export function kindLabel(type: string): string {
   if (t.startsWith("reverb")) return "REVERB";
   if (t.startsWith("ir")) return "CAB";
   if (t === "ott") return "OTT";
-  if (t.startsWith("widen")) return "WIDTH";
+  if (t.startsWith("widen") || t === "width") return "WIDTH";
   if (t === "ms") return "MS";
   if (t === "bus") return "BUS";
   if (t === "send") return "SEND";
-  if (t.startsWith("xover") || t.startsWith("crossover")) return "XOVER";
+  if (t.startsWith("xover") || t.startsWith("crossover") || t === "msplit") return "MB SPLIT";
   if (t === "out") return "OUT";
   if (t === "in") return "IN";
+  if (t === "sidechain" || t === "sc" || t === "scin") return "SC IN";
   if (t.startsWith("octav")) return "OCT";
   if (t.startsWith("vocod")) return "VOC";
   if (t.startsWith("env")) return "ENV";

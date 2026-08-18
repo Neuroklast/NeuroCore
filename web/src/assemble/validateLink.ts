@@ -23,7 +23,7 @@ export function normalizeCableKind(kind: string): CableKind | "knob" | string {
   if (k === "lfo" || k === "mod") {
     return "mod";
   }
-  if (k === "param" || k === "knob") {
+  if (k === "param" || k === "knob" || k === "ctrl") {
     return k === "knob" ? "knob" : "param";
   }
   if (k === "audio" || k === "mix" || k === "send") {
@@ -44,8 +44,12 @@ export function cableAccent(kind: string): string {
   return "#ff003c";
 }
 
-/** Param jacks sit on the south rail; LFO/mod on the north; audio on the sides. */
+/** Param/ctrl jacks sit on the south rail; LFO/mod on the north; audio on the sides. */
 export function cableFace(kind: string): CableFace {
+  const raw = (kind || "audio").toLowerCase();
+  if (raw === "ctrl") {
+    return "bottom";
+  }
   const k = normalizeCableKind(kind);
   if (k === "param") {
     return "bottom";

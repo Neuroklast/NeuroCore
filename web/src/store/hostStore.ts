@@ -54,6 +54,8 @@ export interface HostState {
   scopeY: "linear" | "db";
   scopeGrid: boolean;
   scopeInvertY: boolean;
+  /** Host sidechain bus enabled — Sidechain IN chip is visible only when true. */
+  sidechainOn: boolean;
   applyParams: (p: Record<string, unknown>) => void;
   applyHost: (p: Record<string, unknown>) => void;
   applyPresets: (p: Record<string, unknown>) => void;
@@ -142,6 +144,7 @@ export const useHostStore = create<HostState>((set) => ({
   scopeY: "linear",
   scopeGrid: true,
   scopeInvertY: false,
+  sidechainOn: false,
 
   applyParams: (p) => set((s) => ({
     knobs: Array.isArray(p.knobs) ? asKnobs(p.knobs) : s.knobs,
@@ -163,6 +166,7 @@ export const useHostStore = create<HostState>((set) => ({
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     scale: Number(p.scale ?? 100),
+    sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
   })),
   applyPresets: (p) => set((s) => ({
     presetName: String(p.name ?? s.presetName),

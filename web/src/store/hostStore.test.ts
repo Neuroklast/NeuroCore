@@ -18,6 +18,13 @@ describe("hostStore", () => {
     expect(useHostStore.getState().osFactor).toBe(4);
   });
 
+  it("stores sidechainOn from the host snapshot", () => {
+    useHostStore.getState().applyHost({ sidechainOn: true });
+    expect(useHostStore.getState().sidechainOn).toBe(true);
+    useHostStore.getState().applyHost({ sidechainOn: false });
+    expect(useHostStore.getState().sidechainOn).toBe(false);
+  });
+
   it("stores knob letters and mix", () => {
     useHostStore.getState().applyParams({
       knobs: [{ id: "a", name: "Drive", value: 0.4, active: true, min: 0, max: 2, isNote: false }],

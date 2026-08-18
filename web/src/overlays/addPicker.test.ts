@@ -12,7 +12,12 @@ describe("circuit add picker", () => {
       "Join Mid/Side",
       "Split L/R",
       "Join L/R",
+      "Multiband Split",
+      "Send",
+      "Width",
     ]));
+    expect(addPickerBlocks("Routing").map((b) => b.label).includes("Xover")).toBe(false);
+    expect(ADDABLE_BLOCKS.some((b) => b.label === "Octaver")).toBe(true);
     expect(addMenuOverflow("root")).toBe("visible");
     expect(addMenuOverflow("list")).toBe("auto");
   });

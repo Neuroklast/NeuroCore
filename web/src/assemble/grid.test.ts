@@ -41,5 +41,6 @@ describe("isValidLink", () => {
     expect(cableFace("param")).toBe("bottom");
     expect(cableFace("mod")).toBe("top");
     expect(cableFace("audio")).toBe("side");
+    expect(cableFace("ctrl")).toBe("bottom");
   });
 });

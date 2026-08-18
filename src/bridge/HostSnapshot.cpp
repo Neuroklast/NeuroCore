@@ -260,6 +260,10 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("tempoSource", proc.isHostTempo() ? "HOST" : "USER");
     root->setProperty ("os", os);
     root->setProperty ("scale", UiSettings::get().uiScalePercent());
+    bool sidechainOn = false;
+    if (auto* scBus = proc.getBus (true, 1))
+        sidechainOn = scBus->isEnabled();
+    root->setProperty ("sidechainOn", sidechainOn);
     return juce::var (root);
 }
 

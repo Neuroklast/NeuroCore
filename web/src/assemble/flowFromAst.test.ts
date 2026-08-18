@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
 import { flowFromAst } from "./flowFromAst";
 
+function emptyAst(nodes: AstDocument["nodes"] = []): AstDocument {
+  return {
+    version: 1,
+    leadingComments: [],
+    params: [],
+    nodes,
+    edges: [],
+    inJacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
+  };
+}
+
 describe("flowFromAst", () => {
   it("adds IN and a chip, no knob handles", () => {
     const ast: AstDocument = {
@@ -216,5 +227,18 @@ describe("flowFromAst", () => {
       expect(src!.some((j) => j.output && j.id === fromId), `${e.source} missing ${e.sourceHandle}`).toBe(true);
       expect(dst!.some((j) => ! j.output && j.id === toId), `${e.target} missing ${e.targetHandle}`).toBe(true);
     }
+  });
+
+  it("shows a Sidechain IN chip only when host.sidechainOn", () => {
+    const off = flowFromAst(emptyAst(), { sidechainOn: false });
+    expect(off.nodes.some((n) => n.data.type === "sidechain")).toBe(false);
+
+    const on = flowFromAst(emptyAst(), { sidechainOn: true });
+    const sc = on.nodes.find((n) => n.data.type === "sidechain");
+    expect(sc).toBeTruthy();
+    expect(sc?.type).toBe("io");
+    expect(sc?.draggable).toBe(false);
+    expect(sc?.data.jacks.some((j) => j.output && j.id === "out")).toBe(true);
+    expect(sc?.data.label.toLowerCase()).toMatch(/sidechain|sc/);
   });
 });

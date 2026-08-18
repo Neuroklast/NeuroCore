@@ -77,7 +77,11 @@ function Board() {
   const ast = useAstStore((s) => s.ast);
   const origin = useAstStore((s) => s.origin);
   const motion = useHostStore((s) => s.motion);
-  const built = useMemo(() => (ast ? flowFromAst(ast) : { nodes: [], edges: [] }), [ast]);
+  const sidechainOn = useHostStore((s) => s.sidechainOn);
+  const built = useMemo(
+    () => (ast ? flowFromAst(ast, { sidechainOn }) : { nodes: [], edges: [] }),
+    [ast, sidechainOn],
+  );
   const [nodes, setNodes, onNodesChange] = useNodesState(built.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(built.edges);
   const [menu, setMenu] = useState<{ kind: "node" | "pane"; id: string; left: number; top: number } | null>(null);
