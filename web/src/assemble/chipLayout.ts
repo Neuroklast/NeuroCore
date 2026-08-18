@@ -1,7 +1,9 @@
 import type { AstJack } from "../bridge/ast";
 import { lettersInExpr } from "./bindLinks";
-import { chipSpec } from "./chipSpec";
+import { chipSpec, SOCKET_H } from "./chipSpec";
 import { bindableArgKeys, parseHandle } from "./handles";
+
+export { SOCKET_H };
 
 export const LABEL_COL = 44;
 export const CONTENT_MIN = 148;
@@ -10,7 +12,6 @@ export const CHIP_H = 80;
 export const IO_W = LABEL_COL + 80;
 export const CHIP_GAP = 140;
 export const JACK_PITCH = 24;
-export const SOCKET_H = 40;
 export const TAG_ROW = 18;
 export const BODY_PAD = 10;
 /** South (or north) rail for knob bind jacks. */

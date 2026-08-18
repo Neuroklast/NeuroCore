@@ -25,10 +25,9 @@ describe("live node values and chip box", () => {
     ], false, { type: "lp" });
     const many = chipBox("filter", [
       { id: "in", label: "in", output: false, kind: "audio" },
-      { id: "m1", label: "m1", output: false, kind: "mod" },
-      { id: "m2", label: "m2", output: false, kind: "mod" },
-      { id: "m3", label: "m3", output: false, kind: "mod" },
-      { id: "m4", label: "m4", output: false, kind: "mod" },
+      ...["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"].map((id) => (
+        { id, label: id, output: false, kind: "mod" as const }
+      )),
       { id: "out", label: "out", output: true, kind: "audio" },
     ], false, { type: "lp" });
     const open = chipBox("filter", [

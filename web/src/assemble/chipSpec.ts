@@ -25,12 +25,12 @@ export type ParamJackSlot = {
   y: number;
 };
 
-const TITLE_H = 26;
-const TYPECODE_H = 14;
+export const TITLE_H = 26;
+export const TYPECODE_H = 14;
+export const SOCKET_H = 40;
 const BODY_PAD = 10;
-const SOUTH_BASE = 16;
-const SOUTH_PITCH = 12;
-const ENUM_PITCH = 8;
+const SOUTH_BAND = 16;
+const ENUM_EXTRA = 8;
 const BODY_FLOOR = 80;
 const IO_BODY = 56;
 const JACK_PITCH = 24;
@@ -82,13 +82,14 @@ export function computeMinBodyPx(spec: {
   if (spec.id === "in" || spec.id === "out" || spec.id === "sidechain") {
     return IO_BODY;
   }
-  const south = spec.paramJacks.length;
-  const enums = Object.keys(spec.enums).length;
+  const n = spec.paramJacks.length;
+  const enumRows = spec.paramJacks.filter((k) => (spec.enums[k] ?? []).length > 0).length;
   const sides = Math.max(spec.audioIns.length, spec.audioOuts.length, 1);
   const header = TITLE_H + TYPECODE_H + BODY_PAD;
-  const southBand = south === 0 ? 0 : SOUTH_BASE + south * SOUTH_PITCH;
+  const sockets = n * SOCKET_H;
+  const south = n === 0 ? 0 : SOUTH_BAND;
   const sideBand = sides <= 1 ? BODY_FLOOR : 36 + sides * JACK_PITCH;
-  return Math.max(BODY_FLOOR, header + southBand + enums * ENUM_PITCH, sideBand);
+  return Math.max(BODY_FLOOR, header + sockets + enumRows * ENUM_EXTRA + south, sideBand);
 }
 
 function spec(init: Draft): ChipSpec {
@@ -138,7 +139,10 @@ add({
   audioIns: ["in"],
   audioOuts: ["out"],
   paramJacks: ["type", "freq", "q", "gain", "channel"],
-  enums: { type: ["peak", "lowshelf", "highshelf", "lowpass", "highpass"] },
+  enums: {
+    type: ["peak", "lowshelf", "highshelf", "lowpass", "highpass"],
+    channel: [...CHANNEL],
+  },
   ranges: {
     freq: { min: 20, max: 20000, unit: "Hz" },
     q: { min: 0.1, max: 12 },

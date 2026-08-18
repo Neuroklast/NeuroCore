@@ -18,7 +18,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Auto-arrange runs on first paint / new preset, never after a canvas AST echo. User xy stays until Arrange.
 - Do not mark the board as seen until arrange has landed. Strict Mode re-runs the paint effect on the same ref.
 - Fit snap floors. Rounding up makes the 1280×860 canvas bigger than the host window and clips the chrome.
-- Chip height = ChipSpec.minBodyPx (south param jacks + typecode). Expand hides the socket list only; the box does not grow.
+- Chip height = ChipSpec.minBodyPx (header + every param socket + south jack band). Expand hides the socket list only; leftover space stays empty.
 - MS chips do not have a serial `out`/`in`. Mid/Side jacks without `channel=` in the document are scenery. Circuit must write `channel=`. An untagged chip between encode/decode sits on both rails (DSP: L=mid, R=side). An edge whose handle is not in `visualJacksFor` is not drawn — React Flow returns null, not a tube.
 - User chip xy is owned by the board until Arrange or a new graph. A host echo is not a second owner.
 

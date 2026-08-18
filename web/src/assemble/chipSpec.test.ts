@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { chipBox } from "./chipLayout";
+import { chipBox, SOCKET_H } from "./chipLayout";
 import {
+  TITLE_H,
+  TYPECODE_H,
   chipSpec,
   collapsedFace,
   paramJackSlots,
@@ -62,6 +64,11 @@ describe("ChipSpec registry", () => {
     }
   });
 
+  it("gives EQ the same channel enum as filter", () => {
+    expect(chipSpec("eq").enums.channel).toEqual(chipSpec("filter").enums.channel);
+    expect(chipSpec("eq").enums.channel).toEqual(["both", "left", "right", "mid", "side"]);
+  });
+
   it("maps aliases onto the catalog ids", () => {
     expect(chipSpec("lfo").id).toBe("osc");
     expect(chipSpec("osc").id).toBe("osc");
@@ -74,7 +81,7 @@ describe("ChipSpec registry", () => {
     expect(chipSpec("ms").label).toBe("Split Mid/Side");
   });
 
-  it("gives filter a taller min body than reverb because it reserves more south jacks", () => {
+  it("gives filter a taller min body than reverb because its expanded param UI is taller", () => {
     const filter = chipSpec("filter");
     const reverb = chipSpec("reverb");
     expect(
@@ -117,6 +124,23 @@ describe("param jacks on the south edge", () => {
 });
 
 describe("chipBox height ignores expand", () => {
+  it("fits the expanded socket stack inside the chip for filter, ott, and octaver", () => {
+    const header = TITLE_H + TYPECODE_H;
+    const jacks = [
+      { id: "in", label: "in", output: false, kind: "audio" as const },
+      { id: "out", label: "out", output: true, kind: "audio" as const },
+    ];
+    for (const id of ["filter", "ott", "octaver"] as const) {
+      const spec = chipSpec(id);
+      const box = chipBox(id, jacks, true, spec.defaultArgs);
+      const stack = spec.paramJacks.length * SOCKET_H + header;
+      expect(
+        box.h,
+        `${id} stack=${stack} (n=${spec.paramJacks.length} * ${SOCKET_H} + ${header}) h=${box.h} min=${spec.minBodyPx}`,
+      ).toBeGreaterThanOrEqual(stack);
+    }
+  });
+
   it("keeps collapsed filter height equal to expanded", () => {
     const jacks = [
       { id: "in", label: "in", output: false, kind: "audio" as const },
