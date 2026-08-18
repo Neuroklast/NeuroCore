@@ -195,6 +195,7 @@ function BindRail({
 
 export function ChipNode({ data, id }: NodeProps) {
   const d = data as ChipData;
+  const focus = String((data as { focus?: string }).focus ?? "off");
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const toggle = useChipViewStore((s) => s.toggle);
   const setDetail = useChipViewStore((s) => s.setDetail);
@@ -244,6 +245,7 @@ export function ChipNode({ data, id }: NodeProps) {
       className="nk-chip relative text-[12px]"
       data-node-id={id}
       data-bind-node={id}
+      data-focus={focus}
       style={{
         width: box.w,
         height: box.h,
@@ -386,6 +388,7 @@ export function ChipNode({ data, id }: NodeProps) {
 
 export function IoNode({ data, id }: NodeProps) {
   const d = data as ChipData;
+  const focus = String((data as { focus?: string }).focus ?? "off");
   const isIn = d.type === "in";
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const knobs = useHostStore((s) => s.knobs);
@@ -404,6 +407,7 @@ export function IoNode({ data, id }: NodeProps) {
   return (
     <div
       className={`nk-chip-io relative flex flex-col items-center justify-center text-[15px] text-ink ${isIn ? "nk-chip-locked" : ""}`}
+      data-focus={focus}
       style={{
         width: box.w,
         height: box.h,

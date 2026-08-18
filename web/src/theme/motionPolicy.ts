@@ -9,7 +9,8 @@ export type MotionFeature =
   | "jitter"
   | "faceGlow"
   | "overlay"
-  | "bloom";
+  | "bloom"
+  | "dof";
 
 export function motionAllows(
   feature: MotionFeature,

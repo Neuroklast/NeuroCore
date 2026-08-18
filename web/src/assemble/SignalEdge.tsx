@@ -81,9 +81,10 @@ export function SignalEdge({
   const chase = ! temp && kind === "mod" && motionAllows("lfoChase", motion, reduced);
   const accent = cableAccent(kind);
   const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
+  const focus = String((data as { focus?: string } | undefined)?.focus ?? "off");
 
   return (
-    <>
+    <g className="nk-dof-edge" data-focus={focus}>
       <BaseEdge
         id={id}
         path={path}
@@ -152,6 +153,6 @@ export function SignalEdge({
           className="nk-dots"
         />
       ) : null}
-    </>
+    </g>
   );
 }

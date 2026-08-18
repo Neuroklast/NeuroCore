@@ -35,6 +35,7 @@ import {
   scriptAfterDisconnect,
   type JackPoint,
 } from "./connectModel";
+import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange } from "./boardSync";
 import { jackTopPx } from "./chipLayout";
 import { arrangeElk } from "./elkArrange";
@@ -75,15 +76,37 @@ function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefi
 function Board() {
   const ast = useAstStore((s) => s.ast);
   const origin = useAstStore((s) => s.origin);
+  const motion = useHostStore((s) => s.motion);
   const built = useMemo(() => (ast ? flowFromAst(ast) : { nodes: [], edges: [] }), [ast]);
   const [nodes, setNodes, onNodesChange] = useNodesState(built.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(built.edges);
   const [menu, setMenu] = useState<{ kind: "node" | "pane"; id: string; left: number; top: number } | null>(null);
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   const prevIdsRef = useRef<string[]>([]);
   const store = useStoreApi();
   const { getInternalNode, fitView } = useReactFlow();
   const updateInternals = useUpdateNodeInternals();
+  const prefersReduced = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  const dofAllowed = circuitDofAllowed(motion, prefersReduced);
+  const plane = useMemo(() => focusPlane({
+    selectedNodeIds: nodes.filter((n) => n.selected).map((n) => n.id),
+    selectedEdgeIds: edges.filter((e) => e.selected && e.className !== "temp").map((e) => e.id),
+    hoverNodeId,
+    edges: edges
+      .filter((e) => e.className !== "temp")
+      .map((e) => ({ id: e.id, source: String(e.source), target: String(e.target) })),
+  }), [edges, hoverNodeId, nodes]);
+  const dofOn = dofAllowed && plane.active;
+  const displayNodes = useMemo(() => nodes.map((n) => ({
+    ...n,
+    data: { ...(n.data as object), focus: focusAttr(dofAllowed, plane, n.id) },
+  })), [dofAllowed, nodes, plane]);
+  const displayEdges = useMemo(() => edges.map((e) => ({
+    ...e,
+    data: { ...(e.data as object), focus: focusAttr(dofAllowed, plane, e.id, "edge") },
+  })), [dofAllowed, edges, plane]);
 
   useEffect(() => {
     let cancel = false;
@@ -373,11 +396,17 @@ function Board() {
   }, [arrange]);
 
   return (
-    <div ref={paneRef} className="relative h-full min-h-0 w-full bg-black" style={{ cursor: nodeChrome.cursor }}>
+    <div
+      ref={paneRef}
+      className="relative h-full min-h-0 w-full bg-black"
+      style={{ cursor: nodeChrome.cursor }}
+      data-dof={dofOn ? "on" : "off"}
+      data-focus={dofOn ? "plane" : "none"}
+    >
       <ReactFlow
         className={`nk-flow ${nodeChrome.className}`}
-        nodes={nodes}
-        edges={edges}
+        nodes={displayNodes}
+        edges={displayEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onBeforeDelete={async ({ edges: doomed }) => ({
@@ -398,9 +427,14 @@ function Board() {
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
+        onNodeMouseEnter={(_, node) => setHoverNodeId(node.id)}
+        onNodeMouseLeave={() => setHoverNodeId(null)}
         onNodeContextMenu={onNodeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
-        onPaneClick={closeMenu}
+        onPaneClick={() => {
+          setHoverNodeId(null);
+          closeMenu();
+        }}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

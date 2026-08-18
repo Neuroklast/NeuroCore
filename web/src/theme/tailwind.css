@@ -157,6 +157,31 @@ body,
   padding: 0 !important;
 }
 
+/* Circuit DoF: soft plane when data-dof=on (motion full only). No grain. */
+[data-dof="on"] .nk-chip[data-focus="soft"],
+[data-dof="on"] .nk-chip-io[data-focus="soft"],
+[data-dof="on"] .nk-dof-edge[data-focus="soft"] {
+  opacity: 0.48;
+  filter: blur(1.25px);
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+
+[data-dof="on"] .nk-chip[data-focus="sharp"],
+[data-dof="on"] .nk-chip-io[data-focus="sharp"],
+[data-dof="on"] .nk-dof-edge[data-focus="sharp"] {
+  opacity: 1;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dof="on"] .nk-chip[data-focus="soft"],
+  [data-dof="on"] .nk-chip-io[data-focus="soft"],
+  [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
+    opacity: 1;
+    filter: none;
+  }
+}
+
 .react-flow__node-io,
 .react-flow__node-chip {
   box-sizing: border-box;
