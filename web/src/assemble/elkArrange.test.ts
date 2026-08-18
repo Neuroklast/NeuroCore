@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Edge, Node } from "@xyflow/react";
-import { arrangeElk } from "./elkArrange";
+import { arrangeElk, ARR_CHIP_GAP, ARR_TUBE_GAP, chipChipGap, minGapToPolyline } from "./elkArrange";
+import { chipBox } from "./chipLayout";
+import { inflate, midHits, tubePath, TUBE_CLEAR } from "./tubePath";
 import type { ChipData } from "./flowFromAst";
 
 const jack = (id: string, output: boolean) => ({ id, label: id, output, kind: "audio" });
@@ -65,5 +67,43 @@ describe("ELK arrange", () => {
     expect(pos.IN.x).toBeLessThan(pos.filter1.x);
     const spanX = pos.OUT.x - pos.IN.x;
     expect(spanX).toBeLessThan(1400);
+  });
+
+  it("keeps chip↔chip and chip↔foreign-tube clearance for a through-tube", async () => {
+    const nodes = [
+      chip("IN", "in", { jacks: [jack("out", true)] }),
+      chip("a", "stage"),
+      chip("b", "filter"),
+      chip("c", "stage"),
+      chip("OUT", "out", { jacks: [jack("in", false)] }),
+    ];
+    const edges: Edge[] = [
+      { id: "e0", source: "IN", target: "a", sourceHandle: "src::out", targetHandle: "dst::in" },
+      { id: "e1", source: "a", target: "b", sourceHandle: "src::out", targetHandle: "dst::in" },
+      { id: "e2", source: "b", target: "c", sourceHandle: "src::out", targetHandle: "dst::in" },
+      { id: "e3", source: "c", target: "OUT", sourceHandle: "src::out", targetHandle: "dst::in" },
+    ];
+    const pos = await arrangeElk(nodes, edges, { w: 1200, h: 420 });
+    const box = (id: string) => {
+      const n = nodes.find((x) => x.id === id)!;
+      const b = chipBox(n.data.type, n.data.jacks, false, n.data.args);
+      return { id, x: pos[id]!.x, y: pos[id]!.y, w: b.w, h: b.h };
+    };
+    const A = box("a");
+    const B = box("b");
+    const C = box("c");
+    expect(chipChipGap(A, B)).toBeGreaterThanOrEqual(ARR_CHIP_GAP);
+    expect(chipChipGap(B, C)).toBeGreaterThanOrEqual(ARR_CHIP_GAP);
+
+    // Through-tube a → c treats b as a foreign obstacle (not an endpoint).
+    const ay = A.y + A.h * 0.5;
+    const cy = C.y + C.h * 0.5;
+    const tube = tubePath(A.x + A.w, ay, C.x, cy, {
+      obstacles: [A, B, C],
+      sourceId: "a",
+      targetId: "c",
+    });
+    expect(midHits(tube.points, [inflate(B, TUBE_CLEAR)])).toBe(false);
+    expect(minGapToPolyline(B, tube.points)).toBeGreaterThanOrEqual(ARR_TUBE_GAP);
   });
 });

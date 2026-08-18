@@ -13,10 +13,49 @@ function sgn(n: number): number {
 }
 
 export function isOctilinearDelta(dx: number, dy: number): boolean {
-  if (Math.abs(dx) < EPS || Math.abs(dy) < EPS) {
-    return true;
+  return segmentAngle(dx, dy) !== null;
+}
+
+/**
+ * Canonical segment heading folded into {0, 45, 90}.
+ * Absolute 135° (NW) and 180° (west) rewrite to 45 and 0; non-octilinear → null.
+ */
+export function segmentAngle(dx: number, dy: number): 0 | 45 | 90 | null {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax < EPS && ay < EPS) {
+    return 0;
   }
-  return Math.abs(Math.abs(dx) - Math.abs(dy)) < EPS;
+  if (ay < EPS) {
+    return 0;
+  }
+  if (ax < EPS) {
+    return 90;
+  }
+  if (Math.abs(ax - ay) < EPS) {
+    return 45;
+  }
+  return null;
+}
+
+/** Rewrite any non-{0,45,90} segment via an octilinear elbow. */
+export function enforceSegmentAngles(pts: Pt[]): Pt[] {
+  if (pts.length < 2) {
+    return pts;
+  }
+  const out: Pt[] = [];
+  push(out, pts[0]);
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = out[out.length - 1]!;
+    const b = pts[i]!;
+    if (segmentAngle(b.x - a.x, b.y - a.y) === null) {
+      for (const m of octilinearMid(a, b)) {
+        push(out, m);
+      }
+    }
+    push(out, b);
+  }
+  return simplify(out);
 }
 
 function almost(a: number, b: number): boolean {
@@ -158,22 +197,7 @@ export function minRunOk(pts: Pt[], min = TUBE_MIN_RUN): boolean {
 }
 
 function restoreOctilinear(pts: Pt[]): Pt[] {
-  if (pts.length < 2) {
-    return pts;
-  }
-  const out: Pt[] = [];
-  push(out, pts[0]);
-  for (let i = 1; i < pts.length; i += 1) {
-    const a = out[out.length - 1];
-    const b = pts[i];
-    if (! isOctilinearDelta(b.x - a.x, b.y - a.y)) {
-      for (const m of octilinearMid(a, b)) {
-        push(out, m);
-      }
-    }
-    push(out, b);
-  }
-  return simplify(out);
+  return enforceSegmentAngles(pts);
 }
 
 export function dropShortCorners(pts: Pt[], min = TUBE_MIN_RUN): Pt[] {
@@ -387,7 +411,7 @@ export function tubePath(
   ty: number,
   opts?: { obstacles?: Obstacle[]; sourceId?: string; targetId?: string; reserved?: Pt[][] },
 ): { d: string; corners: number; points: Pt[] } {
-  const points = routePoints(sx, sy, tx, ty, opts);
+  const points = enforceSegmentAngles(routePoints(sx, sy, tx, ty, opts));
   return { ...filletPath(points), points };
 }
 

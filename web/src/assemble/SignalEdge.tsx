@@ -5,6 +5,7 @@ import { TUBE } from "./tubeModel";
 import { snapJackFace } from "./chipLayout";
 import { resolveHz } from "./flowFromAst";
 import { tubePath, type Obstacle } from "./tubePath";
+import { cableAccent, normalizeCableKind } from "./validateLink";
 
 export function SignalEdge({
   id,
@@ -41,7 +42,8 @@ export function SignalEdge({
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const temp = Boolean((data as { temp?: boolean } | undefined)?.temp);
-  const kind = (data as { kind?: string } | undefined)?.kind === "mod" ? "mod" : "audio";
+  const norm = normalizeCableKind(String((data as { kind?: string } | undefined)?.kind ?? "audio"));
+  const kind = norm === "mod" || norm === "param" ? norm : "audio";
   const freqExpr = String((data as { freqExpr?: string } | undefined)?.freqExpr ?? "");
   const hz = kind === "mod"
     ? resolveHz(freqExpr || String((data as { hz?: number } | undefined)?.hz ?? 1), knobs)
@@ -50,9 +52,9 @@ export function SignalEdge({
   const sourceId = String((data as { sourceId?: string } | undefined)?.sourceId ?? "");
   const srcKey = sourceId === "IN" ? "in" : "out";
 
-  const outer = kind === "mod" ? TUBE.modOuter : TUBE.audioOuter;
-  const glass = kind === "mod" ? TUBE.modGlass : TUBE.audioGlass;
-  const bore = kind === "mod" ? TUBE.modGlass - 2 : TUBE.audioBore;
+  const outer = kind === "audio" ? TUBE.audioOuter : TUBE.modOuter;
+  const glass = kind === "audio" ? TUBE.audioGlass : TUBE.modGlass;
+  const bore = kind === "audio" ? TUBE.audioBore : TUBE.modGlass - 2;
   const reserved = useStore((s) => {
     const list: Array<Array<{ x: number; y: number }>> = [];
     s.edges.forEach((e) => {
@@ -74,10 +76,11 @@ export function SignalEdge({
     targetId: target,
     reserved,
   }).d;
-  const showPlasma = ! temp && cables === "wave" && motionAllows("pipeWave", motion, reduced);
-  const showDots = ! temp && cables === "dots" && motionAllows("pipeWave", motion, reduced);
+  const showPlasma = ! temp && kind === "audio" && cables === "wave" && motionAllows("pipeWave", motion, reduced);
+  const showDots = ! temp && kind === "audio" && cables === "dots" && motionAllows("pipeWave", motion, reduced);
   const chase = ! temp && kind === "mod" && motionAllows("lfoChase", motion, reduced);
-  const accent = kind === "mod" ? "#00f0ff" : "#ff003c";
+  const accent = cableAccent(kind);
+  const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
 
   return (
     <>
@@ -94,12 +97,12 @@ export function SignalEdge({
         strokeWidth={outer + 2}
         strokeLinecap="butt"
         strokeLinejoin="miter"
-        className={`nk-tube-bloom ${kind === "mod" ? "nk-tube-mod" : ""}`}
+        className={`nk-tube-bloom ${tubeClass}`}
       />
       <path
         d={path}
         fill="none"
-        stroke={kind === "mod" ? "#3a1010" : "#220505"}
+        stroke={kind === "audio" ? "#220505" : kind === "param" ? "#2a2a10" : "#3a1010"}
         strokeWidth={outer}
         strokeLinecap="butt"
         strokeLinejoin="miter"
@@ -122,10 +125,10 @@ export function SignalEdge({
         strokeLinecap="butt"
         strokeLinejoin="miter"
         data-src={srcKey}
-        className={`nk-tube-bore ${kind === "mod" ? "nk-tube-mod" : ""} ${chase ? "nk-bore-chase" : ""}`}
+        className={`nk-tube-bore ${tubeClass} ${chase ? "nk-bore-chase" : ""}`}
         style={chase ? { animationDuration: `${lfoMs}ms` } : undefined}
       />
-      {showPlasma && kind === "audio" ? (
+      {showPlasma ? (
         <path
           d={path}
           fill="none"
@@ -137,7 +140,7 @@ export function SignalEdge({
           className="nk-plasma"
         />
       ) : null}
-      {showDots && kind === "audio" ? (
+      {showDots ? (
         <path
           d={path}
           fill="none"

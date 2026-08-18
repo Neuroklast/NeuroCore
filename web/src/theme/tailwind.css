@@ -625,6 +625,12 @@ body,
     drop-shadow(0 0 11px rgba(0, 240, 255, 0.55));
 }
 
+.nk-tube-bloom.nk-tube-param {
+  filter:
+    drop-shadow(0 0 4px #fcee0a)
+    drop-shadow(0 0 11px rgba(252, 238, 10, 0.5));
+}
+
 .nk-tube-bore {
   filter: drop-shadow(0 0 3px #ff003c) drop-shadow(0 0 8px rgba(255, 0, 60, 0.55));
 }
@@ -639,6 +645,10 @@ body,
 
 .nk-tube-bore.nk-tube-mod {
   filter: drop-shadow(0 0 3.5px #00f0ff) drop-shadow(0 0 9px rgba(0, 240, 255, 0.35));
+}
+
+.nk-tube-bore.nk-tube-param {
+  filter: drop-shadow(0 0 3.5px #fcee0a) drop-shadow(0 0 9px rgba(252, 238, 10, 0.35));
 }
 
 .nk-plasma {
