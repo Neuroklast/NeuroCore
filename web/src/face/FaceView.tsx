@@ -3,11 +3,13 @@ import { Knob } from "../chrome/Knob";
 import { bloomFilter } from "../overlays/overlayMotion";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
-import { logAmp } from "../assemble/tubeModel";
 import { motionAllows } from "../theme/motionPolicy";
 import type { Workspace } from "../app/workspace";
 import {
+  estimateBands,
   faceGlitchStyle,
+  logoMotion,
+  logoMotionStyle,
   logoOverlayMask,
   pickFaceGlitch,
   scheduleFaceGlitch,
@@ -20,9 +22,14 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   const knobs = useHostStore((s) => s.knobs);
   const motion = useHostStore((s) => s.motion);
   const peak = useTelemetryStore((s) => s.outPeak);
+  const scopeOut = useTelemetryStore((s) => s.scopeOut);
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-  const glow = motionAllows("faceGlow", motion, reduced) ? logAmp(peak) : 0;
+  const bands = estimateBands(scopeOut, peak);
+  const drive = logoMotion(bands.loudness, bands.bass, bands.treble, {
+    motion,
+    prefersReduced: reduced,
+  });
   const bloom = motionAllows("bloom", motion, reduced);
   const scan = motionAllows("crtScan", motion, reduced);
   const jit = motionAllows("jitter", motion, reduced);
@@ -48,6 +55,11 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
     return () => window.clearTimeout(handle);
   }, [jit]);
 
+  const fxStyle = {
+    ...faceGlitchStyle(glitch.kind, glitch.seed),
+    ...logoMotionStyle(drive),
+  };
+
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col bg-[#0a0a0c] px-8">
       <div className="relative min-h-0 flex-1">
@@ -58,22 +70,32 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
           title="Open circuit"
         >
           <span
-            className={`nk-face-fx ${scan ? "nk-face-scan" : ""} nk-face-g-${glitch.kind}`}
-            style={faceGlitchStyle(glitch.kind, glitch.seed)}
+            className={[
+              "nk-face-fx",
+              scan ? "nk-face-scan" : "",
+              drive.chromaPx > 0 ? "nk-face-chroma" : "",
+              drive.jitterHz > 0 ? "nk-face-jitter" : "",
+              `nk-face-g-${glitch.kind}`,
+            ].filter(Boolean).join(" ")}
+            style={fxStyle}
             data-glitch={glitch.kind}
           >
             <img
               src={MARK}
               alt="NEUROKORE"
               className="nk-face-mark"
-              style={{ filter: bloomFilter(glow, bloom) }}
+              style={{ filter: bloomFilter(drive.glow, bloom) }}
             />
-            {jit ? (
+            {jit || drive.chromaPx > 0 ? (
               <>
                 <img src={MARK} alt="" className="nk-face-ghost nk-face-ghost-r" />
                 <img src={MARK} alt="" className="nk-face-ghost nk-face-ghost-c" />
-                <span className="nk-face-bars" style={logoOverlayMask(MARK)} aria-hidden />
-                <span className="nk-face-static" style={logoOverlayMask(MARK)} aria-hidden />
+                {jit ? (
+                  <>
+                    <span className="nk-face-bars" style={logoOverlayMask(MARK)} aria-hidden />
+                    <span className="nk-face-static" style={logoOverlayMask(MARK)} aria-hidden />
+                  </>
+                ) : null}
               </>
             ) : null}
           </span>

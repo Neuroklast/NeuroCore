@@ -369,6 +369,26 @@ body,
   display: block;
   background: transparent;
   isolation: isolate;
+  --nk-logo-chroma: 0px;
+  --nk-logo-jitter-hz: 0;
+}
+
+.nk-face-jitter {
+  animation: nk-face-thump calc(1s / max(0.25, var(--nk-logo-jitter-hz))) linear infinite;
+}
+
+.nk-face-chroma .nk-face-ghost-r {
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  filter: sepia(1) saturate(18) hue-rotate(-30deg);
+  transform: translateX(var(--nk-logo-chroma));
+}
+
+.nk-face-chroma .nk-face-ghost-c {
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  filter: sepia(1) saturate(18) hue-rotate(130deg);
+  transform: translateX(calc(var(--nk-logo-chroma) * -1));
 }
 
 .nk-face-mark,
@@ -534,6 +554,13 @@ body,
 @keyframes nk-face-static {
   0% { background-position: 0 0, 0 0, 0 0; }
   100% { background-position: 12px -7px, -5px 9px, 0 11px; }
+}
+
+@keyframes nk-face-thump {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(0.6px, -0.4px); }
+  50% { transform: translate(-0.5px, 0.5px); }
+  75% { transform: translate(0.4px, 0.3px); }
 }
 
 .nk-term-bar {
