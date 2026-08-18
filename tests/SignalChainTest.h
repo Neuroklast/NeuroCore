@@ -433,6 +433,53 @@ public:
             c.processBlock (buf);
             expectWithinAbsoluteError (buf.getSample (0, 0), 1.0f, 1.0e-4f);
         }
+
+        beginTest ("env follower maps silence to min and a hot peak toward max");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "env1: type = peak; attack = 0.001; release = 0.05; min = 0.2; max = 0.8\n"
+                "stage1: y = env1\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> silent (2, 256);
+            silent.clear();
+            for (int b = 0; b < 8; ++b)
+                c.processBlock (silent);
+            const float quiet = silent.getSample (0, 255);
+            expect (quiet >= 0.15f && quiet <= 0.28f, "silence maps near min " + juce::String (quiet, 4));
+
+            juce::AudioBuffer<float> hot (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                hot.setSample (0, i, 1.0f);
+                hot.setSample (1, i, 1.0f);
+            }
+            for (int b = 0; b < 16; ++b)
+                c.processBlock (hot);
+            const float loud = hot.getSample (0, 255);
+            expect (loud >= 0.7f && loud <= 0.85f, "peak maps near max " + juce::String (loud, 4));
+        }
+
+        beginTest ("env invert swaps min and max");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "env1: type = peak; attack = 0.001; release = 0.05; min = 0.1; max = 0.9; invert = on\n"
+                "stage1: y = env1\n", e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> hot (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                hot.setSample (0, i, 1.0f);
+                hot.setSample (1, i, 1.0f);
+            }
+            for (int b = 0; b < 16; ++b)
+                c.processBlock (hot);
+            const float y = hot.getSample (0, 255);
+            expect (y >= 0.05f && y <= 0.25f, "inverted peak near min " + juce::String (y, 4));
+        }
     }
 };
 

@@ -26,7 +26,7 @@ const CATALOG: Array<{
   { id: "limit", label: "Limit", params: ["ceiling", "release"] },
   { id: "ott", label: "OTT", params: ["depth", "time", "low", "mid", "high"] },
   { id: "ir", label: "IR", params: ["mix", "gain"] },
-  { id: "env", label: "Env", params: ["type", "attack", "release", "depth"] },
+  { id: "env", label: "ENV", params: ["type", "attack", "release", "hold", "min", "max", "invert"] },
   { id: "osc", label: "LFO", params: ["shape", "freq", "sync", "depth"] },
   { id: "octaver", label: "Octaver", params: ["sub", "up", "mix", "tone", "thresh"] },
   { id: "vocoder", label: "Vocoder", params: ["bands", "mix", "q"] },
@@ -63,6 +63,19 @@ describe("ChipSpec registry", () => {
       expect(spec.typeCodePrefix.length, dump(row.id)).toBeGreaterThan(0);
       expect(spec.minBodyPx, dump(row.id)).toBeGreaterThan(0);
     }
+  });
+
+  it("ENV is an audio-in envelope follower with min/max and a mod out", () => {
+    const spec = chipSpec("env");
+    expect(spec.audioIns).toEqual(["in"]);
+    expect(spec.audioOuts).toEqual(["mod"]);
+    expect(spec.paramJacks).toEqual(["type", "attack", "release", "hold", "min", "max", "invert"]);
+    expect(spec.enums.type).toEqual(["peak", "rms"]);
+    expect(spec.enums.invert).toEqual(["off", "on"]);
+    expect(spec.ranges.min).toEqual({ min: 0, max: 1 });
+    expect(spec.ranges.max).toEqual({ min: 0, max: 1 });
+    expect(spec.defaultArgs.min).toBe("0");
+    expect(spec.defaultArgs.max).toBe("1");
   });
 
   it("gives EQ the same channel enum as filter", () => {

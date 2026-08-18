@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findFactory } from "./factoryCatalog";
+import { visualJacksFor } from "../assemble/visualEdges";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
 
 const FENDER = `# Fender Clean
@@ -67,6 +68,16 @@ describe("parseDslSketch", () => {
     expect(osc?.args.freq).toBe("1");
     expect(osc?.args.shape).toBe("sine");
     expect(doc.nodes.some((n) => n.id === "sync")).toBe(false);
+  });
+
+  it("ENV sits on the audio rail with in + mod jacks", () => {
+    const { doc } = parseDslSketch("env1: type = peak; attack = 0.01; release = 0.1; min = 0; max = 1\nstage1: y = x * env1");
+    const env = doc.nodes.find((n) => n.id === "env1");
+    expect(env?.type).toBe("env");
+    expect(env?.busName).toBe("main");
+    const jacks = env ? visualJacksFor(env, doc.nodes) : [];
+    expect(jacks.some((j) => j.id === "in" && ! j.output && j.kind === "audio")).toBe(true);
+    expect(jacks.some((j) => j.id === "mod" && j.output && j.kind === "mod")).toBe(true);
   });
 
   it("parks LFOs off the audio chain and marks note params", () => {

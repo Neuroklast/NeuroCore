@@ -36,7 +36,7 @@ export const SOUTH_JACK_GAP = 40;
 const SOUTH_BAND = SOUTH_JACK_GAP;
 const ENUM_EXTRA = 8;
 const BODY_FLOOR = 80;
-const IO_BODY = 56;
+const IO_BODY = 96;
 export const JACK_PITCH = BOARD_GRID;
 const PARAM_JACK_EDGE = 10;
 
@@ -303,19 +303,32 @@ add({
 
 add({
   id: "env",
-  label: "Env",
+  label: "ENV",
   typeCodePrefix: "EV",
-  audioIns: ["sc"],
+  audioIns: ["in"],
   audioOuts: ["mod"],
-  paramJacks: ["type", "attack", "release", "depth"],
-  enums: { type: ["peak", "rms"] },
-  ranges: {
-    attack: { min: 0.001, max: 1, unit: "ms" },
-    release: { min: 0.001, max: 2, unit: "ms" },
-    depth: { min: 0, max: 1 },
+  paramJacks: ["type", "attack", "release", "hold", "min", "max", "invert"],
+  enums: {
+    type: ["peak", "rms"],
+    invert: ["off", "on"],
   },
-  defaultArgs: { type: "peak", attack: "0.01", release: "0.1", depth: "1" },
-  blurb: "Envelope follower, optional sidechain in.",
+  ranges: {
+    attack: { min: 0.001, max: 1, unit: "s" },
+    release: { min: 0.001, max: 2, unit: "s" },
+    hold: { min: 0, max: 0.5, unit: "s" },
+    min: { min: 0, max: 1 },
+    max: { min: 0, max: 1 },
+  },
+  defaultArgs: {
+    type: "peak",
+    attack: "0.01",
+    release: "0.1",
+    hold: "0",
+    min: "0",
+    max: "1",
+    invert: "off",
+  },
+  blurb: "Envelope follower. Audio in, mod out. Attack/hold/release, then map to min..max.",
 });
 
 add({

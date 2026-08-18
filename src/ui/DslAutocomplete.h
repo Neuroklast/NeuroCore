@@ -309,7 +309,8 @@ namespace DslAutocomplete
             else if (kind == "ir")
                 props.addArray ({ "mix", "gain" });
             else if (kind == "env")
-                props.addArray ({ "type", "attack", "release", "source", "trigger" });
+                props.addArray ({ "type", "attack", "release", "hold", "min", "max", "invert",
+                                  "source", "trigger" });
             else if (kind == "delay")
                 props.addArray ({ "time", "feedback", "mix", "damp", "sync", "pingpong" });
             else if (kind == "reverb")

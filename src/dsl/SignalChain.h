@@ -504,8 +504,9 @@ private:
     {
         enum Mode { Peak = 0, Rms };
         Mode mode{ Rms };
-        ExpressionEvaluator attack, release;
+        ExpressionEvaluator attack, release, hold, minV, maxV;
         juce::String name;
+        bool invert { false };
         float sampleRate{44100.0f};
         juce::SmoothedValue<float> atkTime, relTime;
         float atkCoeff{0.0f}, relCoeff{0.0f};
@@ -520,8 +521,15 @@ private:
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
         bool attackLit { false };
         bool releaseLit { false };
+        bool holdLit { true };
+        bool minLit { true };
+        bool maxLit { true };
         float attackFixed { 0.01f };
         float releaseFixed { 0.1f };
+        float holdFixed { 0.f };
+        float minFixed { 0.f };
+        float maxFixed { 1.f };
+        int holdLeft { 0 };
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;

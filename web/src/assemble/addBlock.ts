@@ -20,7 +20,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "delay", label: "Delay", args: "time = 250; mix = 0.35; feedback = 0.2", category: "Time" },
   { type: "reverb", label: "Reverb", args: "size = 0.5; decay = 1.4; mix = 0.3", category: "Time" },
   { type: "osc", label: "LFO", args: "freq = 1; shape = sine", category: "Mod" },
-  { type: "env", label: "Env", args: "type = peak; attack = 0.01; release = 0.2", category: "Mod" },
+  { type: "env", label: "ENV", args: "type = peak; attack = 0.01; release = 0.1; hold = 0; min = 0; max = 1; invert = off", category: "Mod" },
   { type: "ms", label: "Split Mid/Side", args: "mode = split", category: "Routing" },
   { type: "ms", label: "Join Mid/Side", args: "mode = join", category: "Routing" },
   { type: "ms", label: "Split L/R", args: "mode = split; family = lr", category: "Routing" },

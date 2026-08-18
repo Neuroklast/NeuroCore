@@ -1596,8 +1596,8 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", "f1", "f2", nullptr };
     static const char* kWiden[] = { "width", "delay", "bass", nullptr };
     static const char* kOsc[] = { "shape", "freq", "sync", "depth", nullptr };
-    static const char* kEnv[] = { "type", "attack", "hold", "release", "depth",
-                                  "source", "trigger", nullptr };
+    static const char* kEnv[] = { "type", "attack", "hold", "release", "min", "max",
+                                  "invert", "depth", "source", "trigger", nullptr };
     static const char* kSend[] = { "in", "main", nullptr };
     static const char* kOut[] = { "main", nullptr };
     static const char* kMs[] = { "mode", nullptr };
@@ -2084,7 +2084,7 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     if (isModulator (node))
     {
         if (t.startsWith ("env"))
-            addJack (jacks, "sc", false, "sc");
+            addJack (jacks, "in", false, "audio");
         int dests = 0;
         if (doc != nullptr)
             for (const auto& other : doc->nodes)

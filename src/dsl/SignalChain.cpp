@@ -1238,6 +1238,23 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 en->release.parseFormula(addDefaultMap(d.args.at("release"), 0.01f, 2.0f).toStdString());
             else
                 en->release.parseFormula("0.1");
+            if (d.args.count ("hold"))
+                en->hold.parseFormula (addDefaultMap (d.args.at ("hold"), 0.f, 0.5f).toStdString());
+            else
+                en->hold.parseFormula ("0");
+            if (d.args.count ("min"))
+                en->minV.parseFormula (addDefaultMap (d.args.at ("min"), 0.f, 1.f).toStdString());
+            else
+                en->minV.parseFormula ("0");
+            if (d.args.count ("max"))
+                en->maxV.parseFormula (addDefaultMap (d.args.at ("max"), 0.f, 1.f).toStdString());
+            else
+                en->maxV.parseFormula ("1");
+            if (d.args.count ("invert"))
+            {
+                const auto inv = d.args.at ("invert").trim().toLowerCase();
+                en->invert = (inv == "on" || inv == "true" || inv == "1" || inv == "yes");
+            }
             en->name = d.name;
             en->varPtr = &variables;
 
@@ -3068,8 +3085,9 @@ void SignalChain::Env::clearRuntimeState() noexcept
     std::fill (value.begin(), value.end(), 0.f);
     std::fill (modLane.begin(), modLane.end(), 0.f);
     prevMidiGate = 0.f;
+    holdLeft = 0;
     if (varPtr && name.isNotEmpty())
-        (*varPtr)[name] = 0.f;
+        (*varPtr)[name] = minFixed;
 }
 
 void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
@@ -3088,8 +3106,15 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     };
     attackLit = formulaIsLit (attack);
     releaseLit = formulaIsLit (release);
+    holdLit = formulaIsLit (hold);
+    minLit = formulaIsLit (minV);
+    maxLit = formulaIsLit (maxV);
     attackFixed = initAtk;
     releaseFixed = initRel;
+    holdFixed = juce::jlimit (0.f, 0.5f, hold.evaluate (0.f));
+    minFixed = juce::jlimit (0.f, 1.f, minV.evaluate (0.f));
+    maxFixed = juce::jlimit (0.f, 1.f, maxV.evaluate (0.f));
+    holdLeft = 0;
     atkTime.setCurrentAndTargetValue(initAtk);
     relTime.setCurrentAndTargetValue(initRel);
     prevAtk = initAtk;
@@ -3155,7 +3180,15 @@ float SignalChain::Env::process(int ch, float x)
     float input = mode == Rms ? x * x : std::abs(x);
     float out = value[ch];
     if (input > out)
+    {
         out = atkCoeff * out + (1.0f - atkCoeff) * input;
+        const int holdN = (int) std::lround ((double) holdFixed * sampleRate);
+        holdLeft = juce::jmax (0, holdN);
+    }
+    else if (holdLeft > 0)
+    {
+        --holdLeft;
+    }
     else
         out = relCoeff * out + (1.0f - relCoeff) * input;
     if (mode == Rms)
@@ -3167,7 +3200,13 @@ float SignalChain::Env::process(int ch, float x)
     if (std::abs (out) < 1.0e-20f)
         out = 0.f;
     value[ch] = out;
-    (*varPtr)[name] = out;
+    float y = invert ? (1.f - out) : out;
+    const float lo = minFixed;
+    const float hi = maxFixed;
+    y = lo + (hi - lo) * y;
+    if (! std::isfinite (y))
+        y = lo;
+    (*varPtr)[name] = y;
     return x;
 }
 

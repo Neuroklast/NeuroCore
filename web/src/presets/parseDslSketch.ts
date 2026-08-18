@@ -140,8 +140,12 @@ function parseArgs(rest: string): Record<string, string> {
   return args;
 }
 
+function isLfo(type: string): boolean {
+  return type.startsWith("osc");
+}
+
 function isMod(type: string): boolean {
-  return type.startsWith("osc") || type.startsWith("env");
+  return isLfo(type) || type.startsWith("env");
 }
 
 function jack(id: string, output: boolean, kind: string): AstJack {
@@ -162,7 +166,7 @@ function jacksFor(node: AstNode, nodes: AstNode[]): AstJack[] {
   if (isMod(node.type)) {
     const jacks: AstJack[] = [];
     if (node.type.startsWith("env")) {
-      jacks.push(jack("sc", false, "sc"));
+      jacks.push(jack("in", false, "audio"));
     }
     jacks.push(jack("mod", true, "mod"));
     return jacks;
@@ -382,7 +386,7 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
     if (type === "join" && ! args.mix) {
       args.mix = "0.5";
     }
-    const onBus = type === "join" ? "main" : (isMod(type) ? "mod" : currentBus);
+    const onBus = type === "join" ? "main" : (isLfo(type) ? "mod" : currentBus);
     if (type === "join") {
       currentBus = "main";
     }

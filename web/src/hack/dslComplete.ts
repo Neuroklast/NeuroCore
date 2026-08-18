@@ -27,6 +27,7 @@ const PROPS: Record<string, string[]> = {
   ir: ["mix", "gain"],
   out: ["main", "mid", "low", "high"],
   osc: ["shape", "freq", "sync", "depth"],
+  env: ["type", "attack", "release", "hold", "min", "max", "invert"],
   comp: ["threshold", "ratio", "attack", "release"],
   gate: ["threshold", "attack", "release"],
   ms: ["mode"],
@@ -40,6 +41,7 @@ const SNIPPETS: Record<string, string> = {
   delay: "delay1: time = 1/4; feedback = 0.35; mix = 0.3",
   stage: "stage1: y = tanh(x * a)",
   osc: "osc1: shape = sine; freq = 2",
+  env: "env1: type = peak; attack = 0.01; release = 0.1; min = 0; max = 1",
   custom: "custom1: y = x",
 };
 
@@ -157,6 +159,8 @@ export function complete(text: string, caret: number): CompleteItem[] {
       ? ["peak", "notch", "lowcut", "highcut"]
       : kind === "osc"
         ? ["sine", "saw", "triangle", "square"]
+        : kind === "env"
+          ? ["peak", "rms"]
         : kind === "ms"
           ? ["encode", "decode"]
           : ["lowpass", "highpass", "bandpass"];
