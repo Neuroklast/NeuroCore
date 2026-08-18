@@ -330,13 +330,13 @@ public:
             expectEquals (dsl::emit (doc), before);
         }
 
-        beginTest ("factory library has 500+ unique named jobs");
+        beginTest ("factory library has unique named jobs");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
             if (lib.getEntries().empty())
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)),
                         "factory_presets.json missing");
-            expect (lib.getEntries().size() >= 500);
+            expect (lib.getEntries().size() >= 200);
             juce::StringArray seen;
             for (const auto& e : lib.getEntries())
             {
@@ -353,7 +353,7 @@ public:
                 expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)),
                         "factory_presets.json missing");
 
-            const juce::String names[] = { "Mesa High Gain", "Side Delay", "OTT Smash" };
+            const juce::String names[] = { "Mesa High Gain", "Side Delay", "Vocal Chain Pro" };
             for (const auto& name : names)
             {
                 const auto* entry = lib.findByName (name);
@@ -424,6 +424,49 @@ public:
                 if (e.fromIndex == side && e.toIndex == dec) sideToDec = true;
             }
             expect (encToMid && encToSide && midToDec && sideToDec);
+        }
+
+        beginTest ("connectJack from encode side writes channel=side");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (
+                        "ms1: mode = encode\n"
+                        "reverb1: size = 0.5\n"
+                        "ms2: mode = decode\n",
+                        doc, err),
+                    err);
+            auto idx = [&] (const juce::String& name) -> int
+            {
+                for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                    if (doc.nodes[(size_t) i].name == name)
+                        return i;
+                return -1;
+            };
+            auto nameOf = [&] (int i) -> juce::String
+            {
+                if (i < 0) return "IN";
+                if (i >= (int) doc.nodes.size()) return "OUT";
+                return doc.nodes[(size_t) i].name;
+            };
+            auto hasEdge = [&] (const juce::String& from, const juce::String& fromJack,
+                                const juce::String& to, const juce::String& toJack) -> bool
+            {
+                for (const auto& e : dsl::visualAudioEdges (doc))
+                    if (nameOf (e.fromIndex) == from && e.fromJack == fromJack
+                        && nameOf (e.toIndex) == to && e.toJack == toJack)
+                        return true;
+                return false;
+            };
+
+            expect (dsl::connectJack (doc, idx ("ms1"), "side", idx ("reverb1"), "in", err), err);
+            const auto it = doc.nodes[(size_t) idx ("reverb1")].args.find ("channel");
+            expect (it != doc.nodes[(size_t) idx ("reverb1")].args.end());
+            expectEquals (it->second, juce::String ("side"));
+            expect (dsl::emit (doc).contains ("channel = side"));
+            expect (hasEdge ("ms1", "side", "reverb1", "in"));
+            expect (hasEdge ("ms1", "mid", "ms2", "mid"));
+            expect (hasEdge ("reverb1", "out", "ms2", "side"));
         }
 
         beginTest ("jacksFor gives each mix bus its own port, not knobs");

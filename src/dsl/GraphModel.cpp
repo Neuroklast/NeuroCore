@@ -538,6 +538,8 @@ std::vector<GraphEdge> audioEdges (const GraphDocument& doc)
         if (out >= 0)
             edges.push_back ({ idx.back(), out, rail == "main" ? "audio" : "mix",
                                "out", rail.isNotEmpty() ? rail : juce::String ("main") });
+        else if (rail == "main")
+            edges.push_back ({ idx.back(), -1, "audio", "out", "in" });
     };
 
     chain ("main");
@@ -622,24 +624,6 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
 {
     auto edges = audioEdges (doc);
 
-    auto isSplitChild = [] (const GraphNode& n, const juce::String& rail)
-    {
-        return channelRail (n) == rail;
-    };
-
-    auto firstLast = [&] (int from, int to, const juce::String& rail, int& first, int& last)
-    {
-        first = last = -1;
-        for (int i = from + 1; i < to; ++i)
-        {
-            if (! isSplitChild (doc.nodes[(size_t) i], rail))
-                continue;
-            if (first < 0)
-                first = i;
-            last = i;
-        }
-    };
-
     auto stripSerial = [&] (int a, int b)
     {
         edges.erase (std::remove_if (edges.begin(), edges.end(),
@@ -649,47 +633,87 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
             }), edges.end());
     };
 
+    auto emitChain = [&] (int enc, const juce::String& srcJack,
+                          const std::vector<int>& kids, int dec, const juce::String& dstJack)
+    {
+        if (kids.empty())
+        {
+            if (dec >= 0)
+                edges.push_back ({ enc, dec, "audio", srcJack, dstJack });
+            return;
+        }
+        edges.push_back ({ enc, kids.front(), "audio", srcJack, "in" });
+        for (size_t k = 1; k < kids.size(); ++k)
+            edges.push_back ({ kids[k - 1], kids[k], "audio", "out", "in" });
+        if (dec >= 0)
+            edges.push_back ({ kids.back(), dec, "audio", "out", dstJack });
+    };
+
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
     {
         if (! isMsEncode (doc.nodes[(size_t) i]))
             continue;
+        const auto bus = railOf (doc.nodes[(size_t) i]);
         int dec = -1;
         for (int j = i + 1; j < (int) doc.nodes.size(); ++j)
-            if (isMsDecode (doc.nodes[(size_t) j]))
-            {
-                dec = j;
-                break;
-            }
+        {
+            if (! isMsDecode (doc.nodes[(size_t) j]))
+                continue;
+            if (railOf (doc.nodes[(size_t) j]) != bus)
+                continue;
+            dec = j;
+            break;
+        }
         if (dec < 0)
             continue;
 
-        int mid0 = -1, mid1 = -1, side0 = -1, side1 = -1;
-        firstLast (i, dec, "mid", mid0, mid1);
-        firstLast (i, dec, "side", side0, side1);
+        std::vector<int> kids, midKids, sideKids;
+        for (int j = i + 1; j < dec; ++j)
+        {
+            const auto& n = doc.nodes[(size_t) j];
+            if (! isAudioNode (n) || n.type == "out" || isMsEncode (n) || isMsDecode (n))
+                continue;
+            if (railOf (n) != bus)
+                continue;
+            const auto ch = channelRail (n);
+            if (ch.isNotEmpty() && ch != "mid" && ch != "side")
+                continue;
+            kids.push_back (j);
+            if (ch != "side")
+                midKids.push_back (j);
+            if (ch != "mid")
+                sideKids.push_back (j);
+        }
 
-        if (mid0 >= 0)
-            stripSerial (i, mid0);
-        if (side0 >= 0)
-            stripSerial (i, side0);
-        if (mid1 >= 0 && side0 >= 0)
-            stripSerial (mid1, side0);
-        if (mid1 >= 0)
-            stripSerial (mid1, dec);
-        if (side1 >= 0)
-            stripSerial (side1, dec);
+        if (! kids.empty())
+            stripSerial (i, kids.front());
+        for (size_t k = 1; k < kids.size(); ++k)
+            stripSerial (kids[k - 1], kids[k]);
+        if (! kids.empty())
+            stripSerial (kids.back(), dec);
+        stripSerial (i, dec);
 
-        if (mid0 >= 0)
-            edges.push_back ({ i, mid0, "audio", "mid", "in" });
-        else
-            edges.push_back ({ i, dec, "audio", "mid", "mid" });
-        if (side0 >= 0)
-            edges.push_back ({ i, side0, "audio", "side", "in" });
-        else
-            edges.push_back ({ i, dec, "audio", "side", "side" });
-        if (mid1 >= 0)
-            edges.push_back ({ mid1, dec, "audio", "out", "mid" });
-        if (side1 >= 0)
-            edges.push_back ({ side1, dec, "audio", "out", "side" });
+        emitChain (i, "mid", midKids, dec, "mid");
+        emitChain (i, "side", sideKids, dec, "side");
+    }
+
+    for (auto& e : edges)
+    {
+        if (e.kind == "mod")
+            continue;
+        const dsl::GraphNode* src = e.fromIndex >= 0 ? &doc.nodes[(size_t) e.fromIndex] : nullptr;
+        const dsl::GraphNode* dst = e.toIndex >= 0 ? &doc.nodes[(size_t) e.toIndex] : nullptr;
+        if (src != nullptr && isMsEncode (*src)
+            && (e.fromJack == "out" || e.fromJack.isEmpty()))
+        {
+            e.fromJack = (dst != nullptr && channelRail (*dst) == "side") ? "side" : "mid";
+            if (dst != nullptr && isMsDecode (*dst)
+                && (e.toJack == "in" || e.toJack.isEmpty()))
+                e.toJack = e.fromJack;
+        }
+        if (dst != nullptr && isMsDecode (*dst)
+            && (e.toJack == "in" || e.toJack.isEmpty()))
+            e.toJack = (src != nullptr && channelRail (*src) == "side") ? "side" : "mid";
     }
 
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
@@ -721,14 +745,13 @@ std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc)
         if (! t.startsWith ("xover") && ! t.startsWith ("crossover"))
             continue;
         const int out = findOut (doc);
-        if (out < 0)
-            continue;
+        const int dest = out >= 0 ? out : -1;
         const auto jacks = jacksFor (doc.nodes[(size_t) i], &doc);
         for (const auto& j : jacks)
         {
             if (! j.output)
                 continue;
-            edges.push_back ({ i, out, "mix", j.id, j.id });
+            edges.push_back ({ i, dest, "mix", j.id, j.id });
         }
     }
     return edges;
@@ -1255,10 +1278,33 @@ TidyHint tidyLayout (GraphDocument& doc, int viewW, int viewH)
 bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJack,
                   int toIndex, const juce::String& toJack, juce::String& error)
 {
-    juce::ignoreUnused (fromJack);
     error.clear();
     const int n = (int) doc.nodes.size();
     const auto destJack = toJack.trim();
+    auto msRailOf = [] (const juce::String& jack) -> juce::String
+    {
+        const auto j = jack.trim().toLowerCase();
+        if (j == "mid" || j == "m") return "mid";
+        if (j == "side" || j == "s") return "side";
+        return {};
+    };
+    if (juce::isPositiveAndBelow (fromIndex, n) && juce::isPositiveAndBelow (toIndex, n))
+    {
+        const auto& src = doc.nodes[(size_t) fromIndex];
+        const auto& dst = doc.nodes[(size_t) toIndex];
+        if (isMsEncode (src) && ! isMsDecode (dst) && dst.type != "out")
+        {
+            const auto rail = msRailOf (fromJack);
+            if (rail.isNotEmpty())
+                setNodeArg (doc, toIndex, "channel", rail);
+        }
+        else if (isMsDecode (dst) && ! isMsEncode (src) && src.type != "out")
+        {
+            const auto rail = msRailOf (destJack);
+            if (rail.isNotEmpty())
+                setNodeArg (doc, fromIndex, "channel", rail);
+        }
+    }
 
     if (fromIndex >= 0 && juce::isPositiveAndBelow (fromIndex, n)
         && isModulator (doc.nodes[(size_t) fromIndex]))
@@ -1521,7 +1567,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
 
     const char** keys = nullptr;
     const auto t = node.type.toLowerCase();
-    if (t.startsWith ("stage")) keys = kStage;
+    if (t.startsWith ("stage") || t == "custom") keys = kStage;
     else if (t.startsWith ("filter")) keys = kFilter;
     else if (t == "eq") keys = kEq;
     else if (t.startsWith ("comp")) keys = kComp;
@@ -1992,6 +2038,15 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     }
 
     addJack (jacks, "in", false, t == "send" ? "send" : "audio");
+    if (t == "custom")
+    {
+        for (const auto& kv : node.args)
+        {
+            const auto k = kv.first.toLowerCase();
+            if (k.startsWith ("in") && k != "in")
+                addJack (jacks, kv.first, false, "audio");
+        }
+    }
     if (wantsSidechainJack (node))
         addJack (jacks, "sc", false, "sc");
 
