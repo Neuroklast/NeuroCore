@@ -1,3 +1,5 @@
+import { chipSpec, resolveChipId } from "../assemble/chipSpec";
+import { parseDslSketch } from "../presets/parseDslSketch";
 import { isKeyword } from "./dslLanguage";
 
 export type CompleteKind = "keyword" | "block" | "property" | "value" | "snippet";
@@ -87,14 +89,70 @@ function add(out: CompleteItem[], item: CompleteItem, prefix: string) {
   out.push(item);
 }
 
+function bracesOk(script: string): boolean {
+  const opens = (script.match(/\{/g) ?? []).length;
+  const closes = (script.match(/\}/g) ?? []).length;
+  if (opens !== closes) {
+    return false;
+  }
+  return (script.match(/\(/g) ?? []).length === (script.match(/\)/g) ?? []).length;
+}
+
+function enumsOk(script: string): boolean {
+  const { doc } = parseDslSketch(script);
+  for (const node of doc.nodes) {
+    const letters = node.id.toLowerCase().replace(/[^a-z]/g, "");
+    const id = resolveChipId(node.type, node.args);
+    const catalog = letters.startsWith("splitlr")
+      ? "split_lr"
+      : letters.startsWith("joinlr")
+        ? "join_lr"
+        : letters.startsWith("splitms")
+          ? "split_ms"
+          : letters.startsWith("joinms")
+            ? "join_ms"
+            : id;
+    const spec = chipSpec(catalog, node.args);
+    for (const [key, allowed] of Object.entries(spec.enums)) {
+      const raw = node.args[key];
+      if (raw == null || ! /^[a-z_][a-z0-9_]*$/i.test(raw.trim())) {
+        continue;
+      }
+      const token = raw.trim().toLowerCase();
+      if (! allowed.map((a) => a.toLowerCase()).includes(token)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/** True when inserting the item leaves a brace-balanced script with legal enums. */
+export function stillParsesAfterInsert(text: string, caret: number, item: CompleteItem): boolean {
+  const { start } = wordAt(text, caret);
+  const next = `${text.slice(0, start)}${item.insertText}${text.slice(caret)}`;
+  if (! bracesOk(next)) {
+    return false;
+  }
+  try {
+    return enumsOk(next);
+  } catch {
+    return false;
+  }
+}
+
+function compileSafe(text: string, caret: number, items: CompleteItem[]): CompleteItem[] {
+  return items.filter((it) => stillParsesAfterInsert(text, caret, it));
+}
+
 export function complete(text: string, caret: number): CompleteItem[] {
   const { start, prefix } = wordAt(text, caret);
   const head = lineHead(text, start);
   const kind = lineBlockKind(head);
   const items: CompleteItem[] = [];
 
-  const afterType = /type\s*=\s*$/.test(head) || /type\s*=\s*$/.test(`${head}${prefix}`);
-  if (head.includes("type =") || afterType) {
+  // Only while the caret is on the type value — not after `type = lowpass; cut…`
+  if (/type\s*=\s*$/.test(head)) {
     const values = kind === "eq"
       ? ["peak", "notch", "lowcut", "highcut"]
       : kind === "osc"
@@ -105,7 +163,7 @@ export function complete(text: string, caret: number): CompleteItem[] {
     for (const v of values) {
       add(items, { label: v, insertText: v, detail: "type", kind: "value" }, prefix);
     }
-    return items.slice(0, 24);
+    return compileSafe(text, caret, items).slice(0, 24);
   }
 
   if (kind && (head.includes(":") || /;\s*$/.test(head))) {
@@ -114,7 +172,7 @@ export function complete(text: string, caret: number): CompleteItem[] {
         add(items, { label: p, insertText: `${p} = `, detail: "property", kind: "property" }, prefix);
       }
       if (items.length > 0) {
-        return items.slice(0, 24);
+        return compileSafe(text, caret, items).slice(0, 24);
       }
     }
   }
@@ -133,7 +191,7 @@ export function complete(text: string, caret: number): CompleteItem[] {
     for (const p of PROPS[kind] ?? []) {
       add(items, { label: p, insertText: `${kind}1: ${p} = `, detail: "property", kind: "property" }, "");
     }
-    return items.slice(0, 24);
+    return compileSafe(text, caret, items).slice(0, 24);
   }
 
   for (const b of BLOCKS) {
@@ -146,6 +204,7 @@ export function complete(text: string, caret: number): CompleteItem[] {
       }
     }
   }
-  return items.filter((it) => ! prefix || it.label.toLowerCase().includes(prefix.toLowerCase())
-    || (it.kind !== "block" && isKeyword(it.label))).slice(0, 24);
+  const broad = items.filter((it) => ! prefix || it.label.toLowerCase().includes(prefix.toLowerCase())
+    || (it.kind !== "block" && isKeyword(it.label)));
+  return compileSafe(text, caret, broad).slice(0, 24);
 }

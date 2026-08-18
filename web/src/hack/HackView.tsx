@@ -1,5 +1,5 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { editor } from "monaco-editor";
 import { publishScript } from "../assemble/addBlock";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
@@ -7,6 +7,11 @@ import { terminalActions } from "../app/workspace";
 import { validateOnSave } from "../overlays/validateModel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import {
+  annotateKnobInlays,
+  termFrame,
+  withHeaderComments,
+} from "./dslLanguage";
 import {
   defineDslTheme,
   DSL_LANGUAGE_ID,
@@ -23,8 +28,12 @@ export function HackView() {
   const setDraftScript = useAstStore((s) => s.setDraftScript);
   const [editing, setEditing] = useState(false);
   const setOverlay = useHostStore((s) => s.setOverlay);
+  const knobs = useHostStore((s) => s.knobs);
+  const presetName = useHostStore((s) => s.presetName);
+  const presets = useHostStore((s) => s.presets);
   const modelRef = useRef<editor.ITextModel | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
+  const frame = termFrame(editing);
 
   useEffect(() => {
     const monaco = monacoRef.current;
@@ -64,7 +73,19 @@ export function HackView() {
     monacoRef.current = monaco;
   };
 
-  const shown = editing ? script : (lastValidScript || script);
+  const howItSounds = useMemo(() => {
+    const hit = presets.find((p) => p.name === presetName);
+    return hit?.description ?? "";
+  }, [presets, presetName]);
+
+  const baseScript = editing ? script : (lastValidScript || script);
+  const shown = useMemo(() => {
+    if (editing) {
+      return baseScript;
+    }
+    const headed = withHeaderComments(baseScript, presetName || "Untitled", howItSounds);
+    return annotateKnobInlays(headed, knobs);
+  }, [editing, baseScript, presetName, howItSounds, knobs]);
 
   const save = () => {
     validateOnSave(script, diagnostics);
@@ -114,7 +135,12 @@ export function HackView() {
           </button>
         )}
       </div>
-      <div className="nk-term relative min-h-0 flex-1 overflow-hidden">
+      <div
+        className={`nk-term relative min-h-0 flex-1 overflow-hidden ${
+          frame.frame === "accent" ? "nk-term--edit" : "nk-term--view"
+        }`}
+        data-mode={frame.mode}
+      >
         <div className="nk-term-scan pointer-events-none" aria-hidden />
         <Editor
           height="100%"
@@ -128,7 +154,7 @@ export function HackView() {
           }}
           onMount={onMount}
           options={{
-            readOnly: ! editing,
+            readOnly: frame.readOnly,
             minimap: { enabled: false },
             fontFamily: "JetBrains Mono, ui-monospace, Consolas, monospace",
             fontSize: formulaPt,
@@ -137,6 +163,10 @@ export function HackView() {
             wordWrap: "on",
             tabSize: 2,
             automaticLayout: true,
+            cursorStyle: "line",
+            cursorWidth: frame.caret ? 2 : 0,
+            renderLineHighlight: frame.caret ? "line" : "none",
+            overviewRulerLanes: 0,
           }}
         />
       </div>

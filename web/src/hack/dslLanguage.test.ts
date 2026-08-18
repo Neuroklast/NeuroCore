@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { isKeyword, tokenizeLine } from "./dslLanguage";
-import { complete, wordAt } from "./dslComplete";
+import {
+  annotateKnobInlays,
+  headerComments,
+  isKeyword,
+  termFrame,
+  tokenizeLine,
+  withHeaderComments,
+} from "./dslLanguage";
+import { complete, stillParsesAfterInsert, wordAt } from "./dslComplete";
 
 describe("dsl tokenizer", () => {
   it("marks keywords, knobs, comments, numbers", () => {
@@ -18,6 +25,73 @@ describe("dsl tokenizer", () => {
   });
 });
 
+describe("terminal header comments", () => {
+  it("is only preset name + how-it-sounds", () => {
+    expect(headerComments("Airy Clean", "soft tube, open cab")).toBe(
+      "# Airy Clean\n# How it sounds: soft tube, open cab",
+    );
+  });
+
+  it("withHeaderComments drops param-range header lines", () => {
+    const script = [
+      "# Airy Clean",
+      "# How it sounds: soft tube",
+      "# a Drive: 0.5 to 2.8, default 1.1",
+      "# b Bright: 0 to 7, default 3.2",
+      "",
+      "param a = Drive [0.5, 2.8]",
+      "stage1: y = tube(x, a)  # tube saturation",
+      "filter1: cutoff = 1000  # @16,32",
+    ].join("\n");
+    const out = withHeaderComments(script, "Airy Clean", "soft tube");
+    expect(out.startsWith("# Airy Clean\n# How it sounds: soft tube\n")).toBe(true);
+    expect(out).not.toContain("# a Drive:");
+    expect(out).not.toContain("# b Bright:");
+    expect(out).toContain("param a = Drive [0.5, 2.8]");
+    expect(out).toContain("# tube saturation");
+    expect(out).toContain("# @16,32");
+  });
+});
+
+describe("knob inlays", () => {
+  it("appends a[0.34] after each knob token, live, 2 decimals", () => {
+    const knobs = [
+      { id: "a", value: 0.34, min: 0, max: 1 },
+      { id: "b", value: 0.5, min: 200, max: 2500 },
+    ];
+    const annotated = annotateKnobInlays("stage1: y = softclip(x, a) * b", knobs);
+    expect(annotated).toContain("a[0.34]");
+    expect(annotated).toContain("b[1350.00]");
+    expect(annotated).not.toMatch(/a\[0\.340\]/);
+  });
+
+  it("does not annotate letters inside comments", () => {
+    const annotated = annotateKnobInlays(
+      "stage1: y = x  # keep a dry",
+      [{ id: "a", value: 0.5, min: 0, max: 1 }],
+    );
+    expect(annotated).toContain("# keep a dry");
+    expect(annotated).not.toContain("a[");
+  });
+});
+
+describe("view vs edit frame", () => {
+  it("view is muted read-only; edit is accent with caret", () => {
+    expect(termFrame(false)).toEqual({
+      mode: "view",
+      frame: "muted",
+      caret: false,
+      readOnly: true,
+    });
+    expect(termFrame(true)).toEqual({
+      mode: "edit",
+      frame: "accent",
+      caret: true,
+      readOnly: false,
+    });
+  });
+});
+
 describe("dsl complete", () => {
   it("offers filter types after type =", () => {
     const text = "filter1: type = ";
@@ -25,6 +99,25 @@ describe("dsl complete", () => {
     expect(items.map((i) => i.label)).toEqual(
       expect.arrayContaining(["lowpass", "highpass", "bandpass"]),
     );
+  });
+
+  it("after filter1: type = only enum values that still parse", () => {
+    const text = "filter1: type = ";
+    const items = complete(text, text.length);
+    const labels = items.map((i) => i.label);
+    expect(labels.sort()).toEqual(["bandpass", "highpass", "lowpass"]);
+    expect(items.every((i) => i.kind === "value")).toBe(true);
+    for (const it of items) {
+      expect(stillParsesAfterInsert(text, text.length, it)).toBe(true);
+    }
+    expect(
+      stillParsesAfterInsert(text, text.length, {
+        label: "cheese",
+        insertText: "cheese",
+        detail: "type",
+        kind: "value",
+      }),
+    ).toBe(false);
   });
 
   it("wordAt finds the prefix at caret", () => {

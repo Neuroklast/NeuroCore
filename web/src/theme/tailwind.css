@@ -574,6 +574,19 @@ body,
   margin: 0;
 }
 
+.nk-term {
+  border: 1px solid transparent;
+}
+
+.nk-term--view {
+  border-color: rgba(200, 200, 200, 0.28);
+}
+
+.nk-term--edit {
+  border-color: #ff003c;
+  box-shadow: inset 0 0 0 1px rgba(255, 0, 60, 0.35);
+}
+
 .nk-term-scan {
   position: absolute;
   inset: 0;
