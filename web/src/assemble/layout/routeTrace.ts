@@ -1,5 +1,5 @@
 import { BOARD_GRID } from "../grid";
-import { aroundFallback, astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
+import { aroundFallback, astarRoute, cellsToPoints, hvhFallback } from "./astar";
 import { chamferWaypoints, hasLightning } from "./chamfer";
 import { GridMap } from "./gridMap";
 import { DIR_E, DIR_N, DIR_W, type LayoutNode, type Pt } from "./types";
