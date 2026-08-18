@@ -373,6 +373,47 @@ public:
             }
         }
 
+        beginTest ("Bus+Delay+Join emit bus dirt: plus mix and roundtrip");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "delay1: time = 250\n"
+                "join1: mix = 0.5\n";
+
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse (script, doc, error), error);
+            expectEquals ((int) doc.nodes.size(), 4);
+            expectEquals (doc.nodes[1].type, juce::String ("bus"));
+            expectEquals (doc.nodes[1].name, juce::String ("dirt"));
+            expectEquals (doc.nodes[2].type, juce::String ("delay"));
+            expectEquals (doc.nodes[2].busName, juce::String ("dirt"));
+            expectEquals (doc.nodes[3].type, juce::String ("join"));
+            expectEquals (doc.nodes[3].args.at ("mix"), juce::String ("0.5"));
+            expect (doc.nodes[3].busName.isEmpty() || doc.nodes[3].busName == "main");
+
+            const auto jacks = dsl::jacksFor (doc.nodes[3], &doc);
+            bool inA = false, inB = false, out = false;
+            for (const auto& j : jacks)
+            {
+                if (j.id == "inA" && ! j.output) inA = true;
+                if (j.id == "inB" && ! j.output) inB = true;
+                if (j.id == "out" && j.output) out = true;
+            }
+            expect (inA && inB && out, "Join Signal jacks are inA, inB, out");
+
+            const juce::String emitted = dsl::emit (doc);
+            expect (emitted.contains ("bus dirt:"));
+            expect (emitted.contains ("mix"));
+            expect (! emitted.containsIgnoreCase ("out:"),
+                    "one emit path — join must not also write out:");
+
+            dsl::GraphDocument again;
+            expect (dsl::parse (emitted, again, error), error);
+            expect (dsl::semanticallyEqual (doc, again));
+        }
+
         beginTest ("mid-side and bus jacks split like rails");
         {
             const juce::String script =

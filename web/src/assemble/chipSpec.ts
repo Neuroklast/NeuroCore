@@ -441,7 +441,7 @@ add({
   audioIns: ["in"],
   audioOuts: ["out"],
   paramJacks: ["name"],
-  defaultArgs: { name: "bus" },
+  defaultArgs: { name: "dirt" },
   blurb: "Named rail.",
 });
 
@@ -462,7 +462,7 @@ add({
   label: "Send",
   typeCodePrefix: "SD",
   audioIns: ["in"],
-  audioOuts: ["out", "ctrl"],
+  audioOuts: ["out"],
   paramJacks: ["kanal"],
   enums: { kanal: ["both", "left", "right", "mid", "side", "env"] },
   defaultArgs: { kanal: "both" },

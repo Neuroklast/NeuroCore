@@ -122,14 +122,34 @@ function channelOf(node: AstNode): string {
   return bus.toUpperCase();
 }
 
-export function visibleNodes(ast: AstDocument): AstNode[] {
-  return ast.nodes.filter((n) => n.type !== "bus");
+function isSidechainType(type: string): boolean {
+  const t = type.toLowerCase();
+  return t === "sidechain" || t === "sc" || t === "scin";
 }
 
-export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges: Edge[] } {
+export function visibleNodes(ast: AstDocument, sidechainOn = false): AstNode[] {
+  return ast.nodes.filter((n) => {
+    if (n.type === "bus") {
+      const name = (n.args.name || n.id || "").toLowerCase();
+      return name !== "__park";
+    }
+    if (isSidechainType(n.type) && ! sidechainOn) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export type FlowOpts = {
+  sidechainOn?: boolean;
+};
+
+export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Node<ChipData>[]; edges: Edge[] } {
+  const sidechainOn = Boolean(opts.sidechainOn);
   const nodes: Node<ChipData>[] = [];
   let x = 16;
   const y = 16;
+  const visible = visibleNodes(ast, sidechainOn);
 
   nodes.push({
     id: "IN",
@@ -145,20 +165,46 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
   });
   x += IO_W + CHIP_GAP;
 
-  for (const n of visibleNodes(ast)) {
+  if (sidechainOn && ! visible.some((n) => isSidechainType(n.type))) {
+    const scBox = chipBox("sidechain", [{ id: "out", label: "out", output: true, kind: "audio" }], false, {});
+    nodes.push({
+      id: "SC",
+      type: "io",
+      position: { x: 16, y: 112 + scBox.h + 24 },
+      data: {
+        label: "Sidechain",
+        type: "sidechain",
+        jacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
+        letters: "",
+        args: {},
+        channel: "",
+        summary: "",
+        nodeId: "SC",
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      draggable: false,
+      style: { width: scBox.w, height: scBox.h },
+      width: scBox.w,
+      height: scBox.h,
+    });
+  }
+
+  for (const n of visible) {
     const px = n.x != null && Number.isFinite(n.x) ? n.x : x;
     const py = n.y != null && Number.isFinite(n.y) ? n.y : y;
-    const jacks = visualJacksFor(n, visibleNodes(ast)).length
-      ? visualJacksFor(n, visibleNodes(ast))
+    const jacks = visualJacksFor(n, visible).length
+      ? visualJacksFor(n, visible)
       : (n.jacks ?? []);
     const box = chipBox(n.type === "out" ? "out" : n.type, jacks, false, n.args);
+    const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     nodes.push({
       id: n.id,
-      type: n.type === "out" ? "io" : "chip",
+      type: n.type === "out" || isSidechainType(n.type) ? "io" : "chip",
       position: { x: px, y: py },
       data: {
-        label: n.id.toLowerCase().startsWith("custom") ? "CUSTOM" : kindLabel(n.type),
-        type: n.type,
+        label: custom ? n.id : (isSidechainType(n.type) ? "Sidechain" : kindLabel(n.type)),
+        type: isSidechainType(n.type) ? "sidechain" : n.type,
         jacks,
         letters: lettersOn(n),
         args: n.args,
@@ -171,6 +217,7 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
       height: box.h,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
+      draggable: isSidechainType(n.type) ? false : undefined,
     });
     x = px + CHIP_W + CHIP_GAP;
   }
@@ -195,8 +242,8 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
     });
   }
 
-  const explicit = visualAudioEdges(visibleNodes(ast), ast.edges ?? []);
-  const inferred = inferModLinks(visibleNodes(ast));
+  const explicit = visualAudioEdges(visible, ast.edges ?? []);
+  const inferred = inferModLinks(visible);
   const merged: AstEdge[] = [];
   const seen = new Set<string>();
   for (const e of [...explicit, ...inferred]) {
@@ -208,10 +255,13 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
     merged.push(e);
   }
 
-  const byId = new Map(visibleNodes(ast).map((n) => [n.id, n]));
+  const byId = new Map(visible.map((n) => [n.id, n]));
   const jacksOf = (id: string, output: boolean): AstJack[] => {
     if (id === "IN") {
       return ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
+    }
+    if (id === "SC") {
+      return [{ id: "out", label: "out", output: true, kind: "audio" }].filter((j) => j.output === output);
     }
     if (id === "OUT") {
       return [{ id: "in", label: "in", output: false, kind: "audio" }];
@@ -220,7 +270,7 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
     if (! n) {
       return [];
     }
-    const drawn = visualJacksFor(n, visibleNodes(ast));
+    const drawn = visualJacksFor(n, visible);
     return drawn.filter((j) => j.output === output && j.kind !== "knob");
   };
   const edges: Edge[] = merged.filter((e) => {

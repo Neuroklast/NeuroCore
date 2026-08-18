@@ -35,7 +35,7 @@ const DEFAULTS: Record<string, string> = {
   tone: "120",
   thresh: "0.05",
   bands: "8",
-  name: "bus",
+  name: "dirt",
   kanal: "both",
 };
 

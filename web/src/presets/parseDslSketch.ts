@@ -152,6 +152,9 @@ function jacksFor(node: AstNode, nodes: AstNode[]): AstJack[] {
   if (node.type === "bus") {
     return [jack("in", false, "send"), jack("out", true, "audio")];
   }
+  if (node.type === "join") {
+    return visualJacksFor({ ...node, jacks: [] }, nodes);
+  }
   if (node.type === "out") {
     const ins = Object.keys(node.args).map((k) => jack(k, false, "audio"));
     return [...ins, jack("out", true, "audio")];
@@ -165,7 +168,15 @@ function jacksFor(node: AstNode, nodes: AstNode[]): AstJack[] {
     return jacks;
   }
   const special = visualJacksFor({ ...node, jacks: [] }, nodes);
-  if (special.length > 0 && (node.type === "ms" || node.type.startsWith("xover") || node.type.startsWith("crossover"))) {
+  if (special.length > 0 && (
+    node.type === "ms"
+    || node.type === "send"
+    || node.type === "msplit"
+    || node.type.startsWith("xover")
+    || node.type.startsWith("crossover")
+    || node.type.startsWith("split_")
+    || node.type.startsWith("join_")
+  )) {
     return special;
   }
   const jacks: AstJack[] = [jack("in", false, node.type === "send" ? "send" : "audio")];
@@ -312,6 +323,13 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
     const tokens = head.split(/\s+/).filter(Boolean);
     if (tokens[0] === "bus" && tokens[1]) {
       currentBus = tokens[1];
+      nodes.push({
+        id: tokens[1],
+        type: "bus",
+        busName: "",
+        args: { name: tokens[1] },
+        trailingComment: comment,
+      });
       continue;
     }
     if (tokens[0] === "send") {
@@ -357,10 +375,17 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
       else if (letters.startsWith("bp")) args.type = "bandpass";
       else if (letters.startsWith("lp")) args.type = "lowpass";
     }
+    if (type === "join" && ! args.mix) {
+      args.mix = "0.5";
+    }
+    const onBus = type === "join" ? "main" : (isMod(type) ? "mod" : currentBus);
+    if (type === "join") {
+      currentBus = "main";
+    }
     nodes.push({
       id,
       type,
-      busName: isMod(type) ? "mod" : currentBus,
+      busName: onBus,
       args,
       trailingComment: comment,
     });
@@ -375,7 +400,7 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
     edges.push({ from, to, kind, fromJack, toJack });
   };
 
-  const audio = nodes.filter((n) => n.type !== "bus" && n.type !== "out" && ! isMod(n.type));
+  const audio = nodes.filter((n) => n.type !== "bus" && n.type !== "out" && n.type !== "join" && ! isMod(n.type));
   const out = nodes.find((n) => n.type === "out");
   const buses = [...new Set(audio.map((n) => n.busName || "main"))];
   for (const bus of buses) {

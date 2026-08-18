@@ -207,9 +207,12 @@ juce::String emitNode (const GraphNode& node)
     else
         line << node.name << ":";
 
-    const juce::String args = emitArgs (node);
-    if (args.isNotEmpty())
-        line << " " << args;
+    if (node.type != "bus")
+    {
+        const juce::String args = emitArgs (node);
+        if (args.isNotEmpty())
+            line << " " << args;
+    }
 
     juce::String comment = node.trailingComment.trim();
     if (std::isfinite (node.x) && std::isfinite (node.y))
@@ -307,6 +310,12 @@ bool parse (const juce::String& script, GraphDocument& out, juce::String& error)
         n.name = b.name;
         n.busName = b.busName;
         n.args = b.args;
+        if (n.type == "bus" && n.name.isNotEmpty() && n.args.find ("name") == n.args.end())
+            n.args["name"] = n.name;
+        if (n.type == "join" && n.args.find ("mix") == n.args.end())
+            n.args["mix"] = "0.5";
+        if (n.type == "join" && (n.busName.isEmpty() || n.busName != "main"))
+            n.busName = "main";
         out.nodes.push_back (std::move (n));
     }
 
@@ -442,7 +451,7 @@ namespace
 
 bool isAudioNode (const GraphNode& n)
 {
-    return n.type != "bus" && ! isModulator (n);
+    return n.type != "bus" && n.type != "join" && ! isModulator (n);
 }
 
 juce::String railOf (const GraphNode& n)
@@ -476,7 +485,7 @@ std::vector<int> audioOnRail (const GraphDocument& doc, const juce::String& rail
     for (int i = 0; i < (int) doc.nodes.size(); ++i)
     {
         const auto& n = doc.nodes[(size_t) i];
-        if (! isAudioNode (n) || n.type == "out")
+        if (! isAudioNode (n) || n.type == "out" || n.type == "join")
             continue;
         if (railOf (n) == rail)
             idx.push_back (i);
@@ -1595,6 +1604,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     static const char* kOctaver[] = { "sub", "up", "mix", "tone", "thresh", nullptr };
     static const char* kVocoder[] = { "bands", "mix", "q", "formant", "dry", nullptr };
     static const char* kXover[] = { "f1", "f2", nullptr };
+    static const char* kJoin[] = { "mix", nullptr };
 
     const char** keys = nullptr;
     const auto t = node.type.toLowerCase();
@@ -1616,6 +1626,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     else if (t == "send") keys = kSend;
     else if (t == "out") keys = kOut;
     else if (t == "ms") keys = kMs;
+    else if (t == "join") keys = kJoin;
     else if (t.startsWith ("octav")) keys = kOctaver;
     else if (t.startsWith ("vocod")) keys = kVocoder;
     else if (t.startsWith ("xover") || t.startsWith ("crossover")) keys = kXover;
@@ -2049,6 +2060,13 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     {
         addJack (jacks, "left", false, "audio");
         addJack (jacks, "right", false, "audio");
+        addJack (jacks, "out", true, "audio");
+        return jacks;
+    }
+    if (t == "join")
+    {
+        addJack (jacks, "inA", false, "audio");
+        addJack (jacks, "inB", false, "audio");
         addJack (jacks, "out", true, "audio");
         return jacks;
     }

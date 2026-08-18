@@ -180,6 +180,30 @@ inline bool buildBusGraph (const std::vector<BlockDesc>& desc, BusGraph& out, ju
             continue;
         }
 
+        if (d.type == "join")
+        {
+            if (out.outTaps.empty())
+            {
+                juce::String mix = "0.5";
+                if (d.args.count ("mix"))
+                    mix = d.args.at ("mix");
+                OutTap mainTap;
+                mainTap.busIndex = kReservedBusMain;
+                mainTap.gainExpr = "1-(" + mix + ")";
+                out.outTaps.push_back (std::move (mainTap));
+                for (int bi = 1; bi < (int) out.buses.size(); ++bi)
+                {
+                    if (out.buses[(size_t) bi].name == "__park")
+                        continue;
+                    OutTap t;
+                    t.busIndex = bi;
+                    t.gainExpr = mix;
+                    out.outTaps.push_back (std::move (t));
+                }
+            }
+            continue;
+        }
+
         if (d.type == "out")
         {
             if (afterOut)

@@ -105,7 +105,11 @@ export function channelRail(node: Pick<AstNode, "args">): string {
 
 export function isXover(node: Pick<AstNode, "type">): boolean {
   const t = node.type.toLowerCase();
-  return t.startsWith("xover") || t.startsWith("crossover");
+  return t.startsWith("xover") || t.startsWith("crossover") || t === "msplit";
+}
+
+export function isSend(node: Pick<AstNode, "type">): boolean {
+  return node.type.toLowerCase() === "send";
 }
 
 function remapForkSerial(edge: AstEdge, byId: Map<string, AstNode>): AstEdge {
@@ -139,8 +143,13 @@ function busOf(node: Pick<AstNode, "busName">): string {
   return node.busName || "main";
 }
 
+export function isJoinSignal(node: Pick<AstNode, "type">): boolean {
+  return node.type.toLowerCase() === "join";
+}
+
 function isForkKid(node: AstNode, family: "ms" | "lr"): boolean {
-  if (node.type === "out" || node.type === "bus" || isForkSplit(node) || isForkJoin(node)) {
+  if (node.type === "out" || node.type === "bus" || isJoinSignal(node)
+      || isForkSplit(node) || isForkJoin(node)) {
     return false;
   }
   const t = node.type.toLowerCase();
@@ -173,12 +182,22 @@ export function visualJacksFor(node: AstNode, _nodes: AstNode[] = []): AstJack[]
     return [jack("left", false, "audio"), jack("right", false, "audio"), jack("out", true, "audio")];
   }
   if (isXover(node)) {
-    const outs = [jack("in", false, "audio"), jack("low", true, "mix")];
-    if (node.args.f2) {
-      outs.push(jack("mid", true, "mix"));
-    }
-    outs.push(jack("high", true, "mix"));
-    return outs;
+    return [
+      jack("in", false, "audio"),
+      jack("low", true, "mix"),
+      jack("mid", true, "mix"),
+      jack("high", true, "mix"),
+    ];
+  }
+  if (isSend(node)) {
+    return [
+      jack("in", false, "send"),
+      jack("out", true, "audio"),
+      jack("ctrl", true, "ctrl"),
+    ];
+  }
+  if (isJoinSignal(node)) {
+    return [jack("inA", false, "audio"), jack("inB", false, "audio"), jack("out", true, "audio")];
   }
   return node.jacks ?? [];
 }
@@ -252,6 +271,35 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
   }
 
   next = next.map((e) => remapForkSerial(e, byId));
+
+  const isRailAudio = (n: AstNode) => {
+    if (n.type === "out" || n.type === "bus" || isJoinSignal(n) || isForkSplit(n) || isForkJoin(n)) {
+      return false;
+    }
+    const t = n.type.toLowerCase();
+    return ! t.startsWith("osc") && ! t.startsWith("env");
+  };
+
+  for (const jn of nodes.filter(isJoinSignal)) {
+    const idx = nodes.indexOf(jn);
+    const before = nodes.slice(0, idx);
+    const mainSrc = [...before].reverse().find((n) => isRailAudio(n) && busOf(n) === "main");
+    const busSrc = [...before].reverse().find((n) => isRailAudio(n) && busOf(n) !== "main" && busOf(n) !== "mod");
+    next = next.filter((e) => ! (e.to === jn.id && e.kind === "audio"));
+    next = next.filter((e) => ! (e.from === jn.id && e.kind === "audio"));
+    if (mainSrc) {
+      strip(mainSrc.id, outId);
+      push({ from: mainSrc.id, to: jn.id, kind: "audio", fromJack: "out", toJack: "inA" });
+    } else {
+      push({ from: "IN", to: jn.id, kind: "audio", fromJack: "out", toJack: "inA" });
+    }
+    if (busSrc) {
+      strip(busSrc.id, outId);
+      push({ from: busSrc.id, to: jn.id, kind: "audio", fromJack: "out", toJack: "inB" });
+    }
+    const after = nodes.slice(idx + 1).find((n) => isRailAudio(n) && busOf(n) === "main");
+    push({ from: jn.id, to: after?.id ?? outId, kind: "audio", fromJack: "out", toJack: "in" });
+  }
 
   for (const n of nodes) {
     if (! isXover(n)) {

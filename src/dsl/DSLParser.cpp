@@ -663,7 +663,8 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "ott" &&
                 desc.type != "widen" && desc.type != "stereo" &&
                 desc.type != "ir" && desc.type != "convolve" &&
-                desc.type != "meter" && desc.type != "sidechain")
+                desc.type != "meter" && desc.type != "sidechain" &&
+                desc.type != "join")
             {
                 error = "Unknown block type on line " + juce::String(i+1);
                 return false;
@@ -675,7 +676,13 @@ bool DSLParser::parse(const juce::String& text,
                 return false;
             }
 
-            desc.busName = currentBus;
+            if (desc.type == "join")
+            {
+                desc.busName = "main";
+                currentBus = "main";
+            }
+            else
+                desc.busName = currentBus;
         }
 
         juce::StringArray argPairs;

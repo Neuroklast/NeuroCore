@@ -79,6 +79,26 @@ describe("parseDslSketch", () => {
     expect(knobs.find((k) => k.id === "d")?.active).toBe(false);
   });
 
+  it("Bus+Delay+Join opens the dirt rail and mixes on join", () => {
+    const script = [
+      "stage1: y = x",
+      "bus dirt:",
+      "delay1: time = 250",
+      "join1: mix = 0.5",
+    ].join("\n");
+    const { doc } = parseDslSketch(script);
+    const bus = doc.nodes.find((n) => n.type === "bus");
+    expect(bus?.args.name).toBe("dirt");
+    expect(doc.nodes.find((n) => n.id === "delay1")?.busName).toBe("dirt");
+    const join = doc.nodes.find((n) => n.id === "join1");
+    expect(join?.type).toBe("join");
+    expect(join?.args.mix).toBe("0.5");
+    expect(join?.busName === "main" || join?.busName === "").toBe(true);
+    expect(join?.jacks?.map((j) => j.id)).toEqual(["inA", "inB", "out"]);
+    expect(doc.edges?.some((e) => e.to === "join1" && e.toJack === "inA")).toBe(true);
+    expect(doc.edges?.some((e) => e.from === "delay1" && e.to === "join1" && e.toJack === "inB")).toBe(true);
+  });
+
   it("parses a live factory row", () => {
     const row = findFactory("Blues Break OD");
     expect(row).toBeTruthy();

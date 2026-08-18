@@ -353,7 +353,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     for (const auto& d : desc)
     {
-        if (d.type == "bus" || d.type == "send" || d.type == "out")
+        if (d.type == "bus" || d.type == "send" || d.type == "out" || d.type == "join")
             continue;
 
         if (d.type.startsWith("stage") || d.type == "custom")
@@ -1266,7 +1266,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         size_t bi = 0;
         for (const auto& d : desc)
         {
-            if (d.type == "param" || d.type == "bus" || d.type == "send" || d.type == "out")
+            if (d.type == "param" || d.type == "bus" || d.type == "send" || d.type == "out"
+                || d.type == "join")
                 continue;
             if (bi < newChain->size())
                 (*newChain)[bi++]->tapId = d.name;
@@ -1284,7 +1285,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         int ci = 0;
         for (const auto& d : desc)
         {
-            if (d.type == "bus" || d.type == "send" || d.type == "out")
+            if (d.type == "bus" || d.type == "send" || d.type == "out" || d.type == "join")
                 continue;
             if (ci < (int) newChain->size())
                 (*newChain)[(size_t) ci]->busName = d.busName.isNotEmpty() ? d.busName : juce::String ("main");

@@ -138,6 +138,26 @@ describe("visualAudioEdges", () => {
     expect(isValidLink({ ...audio, output: true, jack: "out" }, { ...audio, output: false, jack: "in" })).toBe(true);
   });
 
+  it("Join Signal is inA/inB/out and mixes main with the named bus", () => {
+    const nodes = [
+      node("stage1", "stage", { y: "x" }),
+      { ...node("dirt", "bus", { name: "dirt" }), busName: "" },
+      { ...node("delay1", "delay", { time: "250" }), busName: "dirt" },
+      node("join1", "join", { mix: "0.5" }),
+    ];
+    expect(visualJacksFor(nodes[3]!).map((j) => j.id)).toEqual(["inA", "inB", "out"]);
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage1", to: "join1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "IN", to: "delay1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "delay1", to: "join1", kind: "audio", fromJack: "out", toJack: "in" },
+    ]);
+    expect(vis.some((e) => e.from === "stage1" && e.to === "join1" && e.toJack === "inA")).toBe(true);
+    expect(vis.some((e) => e.from === "delay1" && e.to === "join1" && e.toJack === "inB")).toBe(true);
+    expect(vis.some((e) => e.to === "join1" && e.toJack === "in")).toBe(false);
+    expect(vis.some((e) => e.from === "join1" && (e.to === "OUT" || e.to === "out"))).toBe(true);
+  });
+
   it("draws xover mixes to OUT", () => {
     const nodes = [node("xover1", "xover", { f1: "200", f2: "2000" })];
     const vis = visualAudioEdges(nodes, [
@@ -146,5 +166,17 @@ describe("visualAudioEdges", () => {
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "low")).toBe(true);
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "mid")).toBe(true);
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "high")).toBe(true);
+  });
+
+  it("gives Send in/out plus a bottom ctrl jack, Multiband Split low/mid/high", () => {
+    const send = visualJacksFor(node("send1", "send", { kanal: "both" }));
+    expect(send.map((j) => j.id)).toEqual(["in", "out", "ctrl"]);
+    expect(send.find((j) => j.id === "ctrl")?.output).toBe(true);
+    expect(send.find((j) => j.id === "ctrl")?.kind).toBe("ctrl");
+
+    expect(visualJacksFor(node("xover1", "xover", { f1: "200", f2: "2000" })).map((j) => j.id))
+      .toEqual(["in", "low", "mid", "high"]);
+    expect(visualJacksFor(node("msplit1", "msplit", { f1: "200", f2: "2000" })).map((j) => j.id))
+      .toEqual(["in", "low", "mid", "high"]);
   });
 });

@@ -55,13 +55,14 @@ function msLrFamily(node: AstNode): "ms" | "lr" | null {
 
 function msLrRole(node: AstNode): "split" | "join" | null {
   const id = catalogId(node);
+  if (id === "join") return null;
   if (id === "split_ms" || id === "split_lr") return "split";
   if (id === "join_ms" || id === "join_lr") return "join";
   if (isMsEncode(node)) return "split";
   if (isMsDecode(node)) return "join";
   const letters = lettersOf(node.id);
   if (letters.startsWith("split")) return "split";
-  if (letters.startsWith("join")) return "join";
+  if (letters.startsWith("join") && id !== "join") return "join";
   return null;
 }
 
@@ -203,6 +204,10 @@ function checkBusJoin(script: string, nodes: AstNode[]): ValidateCheck {
   const named = [...buses].filter((b) => b !== "main");
   if (named.length === 0) {
     return { id: "bus_join", title: "Bus/Join", ok: true, detail: "No named buses." };
+  }
+  const mixer = nodes.find((n) => n.type === "join");
+  if (mixer) {
+    return { id: "bus_join", title: "Bus/Join", ok: true, detail: "Named buses reach join." };
   }
   const out = nodes.find((n) => n.type === "out");
   if (! out) {
