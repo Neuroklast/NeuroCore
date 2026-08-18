@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AstJack } from "../bridge/ast";
 import {
-  BIND_RAIL,
   CONTENT_MIN,
   LABEL_COL,
   bindFace,
@@ -28,16 +27,16 @@ describe("chip face, labels, copy", () => {
     expect(jackCaption({ id: "lfo1", label: "lfo1", output: false })).toBe("lfo1");
   });
 
-  it("sizes the chip to the painted body so copy stays inside", () => {
+  it("sizes the chip to minBodyPx so expand does not grow the box", () => {
     const args = { cutoff: "c + lfo1 * b", q: "f", type: "lp" };
     const jacks = [audio("in", false), { id: "lfo1", label: "lfo1", output: false, kind: "mod" } as AstJack, audio("out", true)];
     const name = chipBox("filter", jacks, false, args);
     const detail = chipBox("filter", jacks, true, args);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks));
-    expect(detail.h).toBeGreaterThan(name.h);
+    expect(name.h).toBe(detail.h);
+    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
     expect(contentWidth(name.w)).toBeGreaterThanOrEqual(CONTENT_MIN);
     expect(name.w).toBeGreaterThanOrEqual(LABEL_COL * 2 + CONTENT_MIN);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks) + BIND_RAIL);
+    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
   });
 
   it("parks knob jacks on the south face, north if the chip is low", () => {

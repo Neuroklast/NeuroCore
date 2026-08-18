@@ -1,6 +1,6 @@
 import type { AstJack } from "../bridge/ast";
 import { lettersInExpr } from "./bindLinks";
-import { detailArgs } from "./detailSchema";
+import { chipSpec } from "./chipSpec";
 import { bindableArgKeys, parseHandle } from "./handles";
 
 export const LABEL_COL = 44;
@@ -73,37 +73,34 @@ export function bindFace(nodeY: number, nodeH: number, boardH = 700): "top" | "b
 }
 
 export function chipBodyHeight(
-  detail: boolean,
+  _detail: boolean,
   args: Record<string, string>,
   _jacks: AstJack[],
   type = "",
 ): number {
-  const n = detail ? Math.max(detailArgs(type, args).length, 1) : 0;
-  const extra = type === "custom" || (type || "").startsWith("custom") ? 28 : 0;
-  const socks = detail ? n * SOCKET_H + 16 + extra : 0;
-  return TITLE_H + socks + BODY_PAD * 2;
+  return chipSpec(type, args).minBodyPx;
 }
 
 export function chipBox(
   type: string,
   jacks: AstJack[],
-  detail: boolean,
+  _detail: boolean,
   args: Record<string, string> | number = {},
 ): { w: number; h: number } {
   const rec = typeof args === "number"
     ? Object.fromEntries(Array.from({ length: args }, (_, i) => [`k${i}`, "1"]))
     : args;
-  if (type === "in" || type === "out") {
-    return { w: IO_W, h: ioHeight(Math.max(jacks.length, 1)) };
+  const spec = chipSpec(type, rec);
+  if (spec.id === "in" || spec.id === "out" || spec.id === "sidechain") {
+    return { w: IO_W, h: Math.max(spec.minBodyPx, ioHeight(Math.max(jacks.length, 1))) };
   }
   const { ins, outs } = countSides(jacks);
   const ports = chipHeight(ins, outs, false);
-  const body = chipBodyHeight(detail, rec, jacks, type);
   const rail = (
     bindableArgKeys(rec).length > 0
     || Object.values(rec).some((v) => lettersInExpr(v).length > 0)
   ) ? BIND_RAIL : 0;
-  return { w: detail ? CHIP_W + 56 : CHIP_W, h: Math.max(ports, CHIP_H, body) + rail };
+  return { w: CHIP_W, h: Math.max(spec.minBodyPx, ports) + rail };
 }
 
 export function jackTopPx(index: number, count: number, height: number): number {

@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
+import { chipSpec } from "./chipSpec";
+import { detailArgs, detailKeys, isCustomNode, nextCustomInput } from "./detailSchema";
 
 describe("detail schema", () => {
+  it("reads editable keys from ChipSpec", () => {
+    expect(detailKeys("filter")).toEqual(chipSpec("filter").paramJacks);
+    expect(detailKeys("widen")).toEqual(chipSpec("width").paramJacks);
+    expect(detailKeys("xover")).toEqual(["f1", "f2"]);
+    const rows = detailArgs("filter", {});
+    expect(rows.map((r) => r.key)).toEqual(chipSpec("filter").paramJacks);
+  });
+
   it("gives every filter a cutoff row even when args are empty", () => {
     const rows = detailArgs("filter", {});
     expect(rows.map((r) => r.key)).toEqual(expect.arrayContaining(["type", "cutoff", "resonance"]));

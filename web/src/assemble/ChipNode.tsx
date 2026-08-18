@@ -5,14 +5,15 @@ import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
 import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
-import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, greebleCode, segmentFill } from "../theme/chromeSpec";
-import { formatMapped, kindLabel } from "../theme/tokens";
+import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
+import { formatMapped } from "../theme/tokens";
 import { bindEndId, lettersInExpr } from "./bindLinks";
 import { bindableArgKeys, handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
 import { setCircuitArg } from "./addBlock";
 import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
+import { collapsedFace } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
 import { isModulatorNode, resolveHz, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape } from "./lfoLamp";
@@ -234,7 +235,8 @@ export function ChipNode({ data, id }: NodeProps) {
     updateInternals(id);
   }, [box.h, box.w, id, setNodes, updateInternals]);
 
-  const title = d.label || kindLabel(d.type);
+  const face = collapsedFace(isCustomNode(d.type, id) ? "custom" : d.type, d.args);
+  const title = face.title;
   const bits = barcodeBits(id);
   const warn = /stage|drive|clip|fold|crush/i.test(d.type + title);
   return (
@@ -307,7 +309,7 @@ export function ChipNode({ data, id }: NodeProps) {
           </span>
         </div>
         <div className="mt-0.5 flex items-end justify-between gap-2">
-          <span className="nk-greeble">{greebleCode(id)}</span>
+          <span className="nk-chip-typecode">{face.code}</span>
           <span className="nk-barcode" aria-hidden>
             {bits.map((on, i) => (
               <i key={i} style={{ height: on ? 8 : 3 }} />
