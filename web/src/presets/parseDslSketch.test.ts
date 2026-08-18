@@ -60,6 +60,15 @@ describe("parseDslSketch", () => {
     expect(doc.edges?.some((e) => e.from === "stage2" && e.to === "out")).toBe(true);
   });
 
+  it("keeps indented sync = 1/4 on the LFO, not as a new block", () => {
+    const { doc } = parseDslSketch("osc1: freq = 1\n  sync = 1/4\n  shape = sine\nstage1: y = x");
+    const osc = doc.nodes.find((n) => n.id === "osc1");
+    expect(osc?.args.sync).toBe("1/4");
+    expect(osc?.args.freq).toBe("1");
+    expect(osc?.args.shape).toBe("sine");
+    expect(doc.nodes.some((n) => n.id === "sync")).toBe(false);
+  });
+
   it("parks LFOs off the audio chain and marks note params", () => {
     const { doc } = parseDslSketch(TREM);
     const osc = doc.nodes.find((n) => n.id === "osc1");

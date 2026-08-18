@@ -80,6 +80,27 @@ function bypassY(
   return below;
 }
 
+export type BindRect = { x: number; y: number; w: number; h: number };
+
+/** True if a horizontal run sits inside the knob-card band. */
+export function bindHitsKnobs(d: string, knobs: BindRect[]): boolean {
+  if (knobs.length === 0) {
+    return false;
+  }
+  const top = Math.min(...knobs.map((k) => k.y));
+  const bot = Math.max(...knobs.map((k) => k.y + k.h));
+  const pts = svgPathPoints(d);
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1]!;
+    const b = pts[i]!;
+    const horiz = Math.abs(a.y - b.y) <= 1.5 && Math.abs(a.x - b.x) > 2;
+    if (horiz && a.y >= top && a.y <= bot) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Down from the knob, horizontal rail, vertical into the south (or north) jack. */
 export function bindSmoothPath(
   from: { x: number; y: number },
@@ -87,18 +108,28 @@ export function bindSmoothPath(
   letterIndex: number,
   boxes: Array<{ x: number; y: number; w: number; h: number }> = [],
   face: "top" | "bottom" = "bottom",
+  knobs: BindRect[] = [],
 ): string {
   const around = bypassY(from, to, letterIndex, boxes);
   const fromBelow = from.y > to.y + 12;
   const leave = fromBelow ? Position.Top : Position.Bottom;
-  const viaY = face === "top"
+  let viaY = face === "top"
     ? (around != null ? Math.min(around, to.y) : to.y - 28) - letterIndex * BIND_RAIL_PITCH
     : fromBelow
       ? Math.min(from.y - 16, to.y + 22) + letterIndex * BIND_RAIL_PITCH
       : (around != null ? Math.max(around, to.y) : to.y + 28) + letterIndex * BIND_RAIL_PITCH;
+  let src = from;
+  if (knobs.length > 0) {
+    const knobTop = Math.min(...knobs.map((k) => k.y));
+    const clear = knobTop - 32;
+    viaY = Math.min(viaY, clear);
+    if (src.y > clear) {
+      src = { x: src.x, y: clear };
+    }
+  }
   const [legA] = getSmoothStepPath({
-    sourceX: from.x,
-    sourceY: from.y,
+    sourceX: src.x,
+    sourceY: src.y,
     sourcePosition: leave,
     targetX: to.x,
     targetY: viaY,
@@ -146,4 +177,9 @@ export function firstRunVertical(d: string): boolean {
 
 export function bindEndId(letter: string, node: string): string {
   return `${letter}:${node}`;
+}
+
+/** Cyan param tubes stay off until that knob is hovered or dragged. */
+export function bindCableVisible(letter: string, hover: string | null, drag: string | null): boolean {
+  return letter === hover || letter === drag;
 }

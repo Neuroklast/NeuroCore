@@ -312,6 +312,10 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
     sawBlock = true;
     const colon = code.indexOf(":");
     if (colon < 0) {
+      const last = nodes[nodes.length - 1];
+      if (last && /^\s+\S/.test(raw) && code.includes("=")) {
+        Object.assign(last.args, parseArgs(code));
+      }
       continue;
     }
     const head = code.slice(0, colon).trim().toLowerCase();

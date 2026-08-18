@@ -18,7 +18,7 @@ Version is **0.4.8-alpha**. Do not invent a new one.
 | Task | Read |
 |---|---|
 | Any change | [workflow](docs/agents/workflow.md) |
-| Circuit / cables / tidy | [ui-ux](docs/agents/ui-ux.md) |
+| Circuit / cables / tidy / drag / connect | [ui-ux](docs/agents/ui-ux.md) |
 | DSP / CPU / audio thread | [code-quality](docs/agents/code-quality.md) |
 | Tests | [testing](docs/agents/testing.md) |
 | Current truth | [DEVELOPMENT_STATUS](docs/DEVELOPMENT_STATUS.md) |
@@ -32,3 +32,4 @@ Do **not** read `docs/archive/` or the old session log unless you are hunting a 
 3. Do not claim done unless a **contract test** failed first and now passes. Screenshots are the spec for UI.
 4. Never allocate or copy `juce::String` on the audio thread.
 5. Footer CPU is 0–100. Never print host-callback ratio as 173 %.
+6. **Drag and connect are React Flow.** Chip move = `nodesDraggable` + `snapToGrid`. Audio jack connect = `onConnect` + `Handle` + `getStraightPath` while dragging. Knob bind lives outside the graph (chrome knobs) — preview is RF `getSmoothStepPath` via `bindSmoothPath`, not a second A*. If RF already does it, use it.

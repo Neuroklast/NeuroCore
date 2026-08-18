@@ -3,8 +3,8 @@ import { jackDiameter, plasmaAmp, plasmaGlow, plasmaWindows, PLASMA_PITCH, PLASM
 
 describe("glass tubes and jacks", () => {
   it("audio tubes are wide enough to hold a waveform", () => {
-    expect(TUBE.audioOuter).toBeGreaterThanOrEqual(18);
-    expect(TUBE.audioBore).toBeGreaterThanOrEqual(10);
+    expect(TUBE.audioOuter).toBe(16);
+    expect(TUBE.audioBore).toBeGreaterThanOrEqual(8);
     expect(TUBE.audioBore).toBeLessThan(TUBE.audioOuter);
   });
 

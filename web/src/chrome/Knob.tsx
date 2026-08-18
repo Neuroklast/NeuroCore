@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { getNativeFunction } from "../bridge/juce";
+import { menuPos } from "../theme/fit";
+import { OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
+import { applyKnobEdit, knobMenuFields, parseKnobBound } from "./knobMenu";
 import { bindTargets } from "../assemble/bindLinks";
 import { bindHit, commitBind, resolveBindKey } from "../assemble/bindModel";
 import { useAstStore } from "../store/astStore";
@@ -38,15 +42,20 @@ const START = (Math.PI * 4) / 3;
 const END = (Math.PI * 8) / 3;
 
 function finishBindDrop(letter: string, clientX: number, clientY: number) {
-  const hit = bindHit(document.elementFromPoint(clientX, clientY));
+  const stack = document.elementsFromPoint(clientX, clientY);
   useBindStore.getState().end();
-  if (! hit) {
-    return;
-  }
-  const node = useAstStore.getState().ast?.nodes.find((n) => n.id === hit.node);
-  const key = resolveBindKey(hit, node?.args);
-  if (key) {
-    commitBind(hit.node, key, letter);
+  const ast = useAstStore.getState().ast;
+  for (const el of stack) {
+    const hit = bindHit(el);
+    if (! hit) {
+      continue;
+    }
+    const node = ast?.nodes.find((n) => n.id === hit.node);
+    const key = resolveBindKey(hit, node?.args, node?.type ?? "");
+    if (key) {
+      commitBind(hit.node, key, letter);
+      return;
+    }
   }
 }
 
@@ -60,6 +69,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   live.current = knob.value;
   const [hud, setHud] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
   const bpm = useHostStore((s) => s.bpm);
   const enums = knob.enums;
   const scaleMode = knobScaleMode(enums);
@@ -181,7 +191,12 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
       onPointerDown={onPointer}
       onContextMenu={(e) => {
         e.preventDefault();
-        void getNativeFunction("midiLearn")({ param: knob.id });
+        e.stopPropagation();
+        const host = document.querySelector(".nk-os") as HTMLElement | null;
+        if (! host) {
+          return;
+        }
+        setMenu(menuPos(e.clientX, e.clientY, host, 200, 220));
       }}
     >
       {hud ? <div className="nk-knob-hud">{readout}</div> : null}
@@ -331,6 +346,117 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
         <span>{minTxt}</span>
         <span>{maxTxt}</span>
       </div>
+      {menu
+        ? createPortal(
+          <KnobEditMenu
+            knob={knob}
+            left={menu.left}
+            top={menu.top}
+            onClose={() => setMenu(null)}
+          />,
+          document.querySelector(".nk-os") ?? document.body,
+        )
+        : null}
     </div>
+  );
+}
+
+function commitKnobMeta(id: string, edit: Parameters<typeof applyKnobEdit>[1]) {
+  const cur = useHostStore.getState().knobs.find((k) => k.id === id);
+  if (! cur) {
+    return;
+  }
+  const next = applyKnobEdit(cur, edit);
+  useHostStore.getState().patchKnob(id, next);
+  void getNativeFunction("setKnobMeta")({ id, ...edit }).catch(() => undefined);
+}
+
+function KnobField({
+  label,
+  value,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+  return (
+    <label className="nk-ctx-field">
+      <span>{label}</span>
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => onCommit(draft)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+      />
+    </label>
+  );
+}
+
+function KnobEditMenu({
+  knob,
+  left,
+  top,
+  onClose,
+}: {
+  knob: KnobState;
+  left: number;
+  top: number;
+  onClose: () => void;
+}) {
+  const fields = knobMenuFields(knob);
+  return (
+    <OsContextMenu left={left} top={top} title={`KNOB ${knob.id.toUpperCase()}`} onDismiss={onClose}>
+      {fields.includes("name") ? (
+        <KnobField
+          label="Name"
+          value={knob.name}
+          onCommit={(name) => commitKnobMeta(knob.id, { name })}
+        />
+      ) : null}
+      {fields.includes("min") ? (
+        <KnobField
+          label="Min"
+          value={String(knob.min)}
+          onCommit={(raw) => commitKnobMeta(knob.id, { min: parseKnobBound(raw, knob.min) })}
+        />
+      ) : null}
+      {fields.includes("max") ? (
+        <KnobField
+          label="Max"
+          value={String(knob.max)}
+          onCommit={(raw) => commitKnobMeta(knob.id, { max: parseKnobBound(raw, knob.max) })}
+        />
+      ) : null}
+      {fields.includes("unit") ? (
+        <KnobField
+          label="Unit"
+          value={knob.unit ?? ""}
+          onCommit={(unit) => commitKnobMeta(knob.id, { unit })}
+        />
+      ) : null}
+      {fields.includes("note") ? (
+        <OsMenuItem onClick={() => commitKnobMeta(knob.id, { isNote: ! knob.isNote })}>
+          {knob.isNote ? "Note range: ON" : "Note range: OFF"}
+        </OsMenuItem>
+      ) : null}
+      {fields.includes("learn") ? (
+        <OsMenuItem onClick={() => {
+          void getNativeFunction("midiLearn")({ param: knob.id });
+          onClose();
+        }}>
+          MIDI Learn
+        </OsMenuItem>
+      ) : null}
+    </OsContextMenu>
   );
 }

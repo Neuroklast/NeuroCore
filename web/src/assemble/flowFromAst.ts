@@ -13,6 +13,7 @@ export type ChipData = {
   type: string;
   jacks: AstJack[];
   letters: string;
+  focus?: "off" | "soft" | "sharp";
   args: Record<string, string>;
   channel: string;
   summary: string;
@@ -223,6 +224,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   }
 
   if (! ast.nodes.some((n) => n.type === "out")) {
+    const outBox = chipBox("out", [{ id: "in", label: "in", output: false, kind: "audio" }], false, {});
     nodes.push({
       id: "OUT",
       type: "io",
@@ -239,6 +241,9 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
+      style: { width: outBox.w, height: outBox.h },
+      width: outBox.w,
+      height: outBox.h,
     });
   }
 
@@ -281,8 +286,8 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   }).map((e, i) => {
     const kind = e.kind === "mod" ? "mod" : "audio";
     const src = byId.get(e.from);
-    const freqExpr = src && isModulatorNode(src) ? (src.args.freq ?? src.args.sync ?? "1") : "";
-    const hz = freqExpr ? resolveHz(freqExpr, []) : 0;
+    const freqExpr = src && isModulatorNode(src) ? (src.args.freq ?? "1") : "";
+    const syncExpr = src && isModulatorNode(src) ? (src.args.sync ?? "off") : "off";
     return {
       id: `e-${e.from}-${e.to}-${e.fromJack}-${e.toJack}-${i}`,
       source: e.from,
@@ -295,7 +300,14 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
         stroke: kind === "mod" ? "#00f0ff" : "#ff003c",
         strokeWidth: kind === "mod" ? 1 : 1.15,
       },
-      data: { kind, hz, freqExpr, sourceType: src?.type ?? "", sourceId: e.from },
+      data: {
+        kind,
+        freqExpr,
+        syncExpr,
+        depthExpr: src && isModulatorNode(src) ? (src.args.depth ?? "1") : "1",
+        sourceType: src?.type ?? "",
+        sourceId: e.from,
+      },
     };
   });
 

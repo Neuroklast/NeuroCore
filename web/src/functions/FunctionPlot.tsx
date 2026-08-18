@@ -1,8 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
-import { buildTraces, kindForName, PHASE_STEP, resolvePlotExpression } from "./plotModel";
+import {
+  buildTraces,
+  PHASE_STEP,
+  resolvePlotExpression,
+  type PreviewWave,
+} from "./plotModel";
 
-export function FunctionPlot({ name, example }: { name: string; example: string }) {
+export function FunctionPlot({
+  name,
+  example,
+  wave = "sine",
+}: {
+  name: string;
+  example: string;
+  wave?: PreviewWave;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const motion = useHostStore((s) => s.motion);
 
@@ -15,7 +28,6 @@ export function FunctionPlot({ name, example }: { name: string; example: string 
     if (! ctx) {
       return;
     }
-    const kind = kindForName(name);
     const expr = resolvePlotExpression(name, example);
     let phase = 0;
     let raf = 0;
@@ -57,20 +69,15 @@ export function FunctionPlot({ name, example }: { name: string; example: string 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = "rgba(255,26,26,0.45)";
       ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
-      const { inn, out, ok } = buildTraces(expr, phase);
-      if (kind === "transfer") {
-        drawWave(8, canvas.height * 0.46, inn, "#7aa2ff", "IN  sine");
-        drawWave(canvas.height * 0.52, canvas.height * 0.46, out, ok ? "#ff003c" : "#666666",
-          ok ? `OUT  ${name || "f(x)"}` : "OUT  (no demo)");
-      } else {
-        drawWave(8, canvas.height * 0.46, inn, "#7aa2ff", "IN  sine");
-        drawWave(canvas.height * 0.52, canvas.height * 0.46, out, "#ff003c", `OUT  ${name}`);
-      }
+      const { inn, out, ok } = buildTraces(expr, phase, undefined, wave);
+      drawWave(8, canvas.height * 0.46, inn, "#7aa2ff", `IN  ${wave}`);
+      drawWave(canvas.height * 0.52, canvas.height * 0.46, out, ok ? "#ff003c" : "#666666",
+        ok ? `OUT  ${name || "f(x)"}` : "OUT  (no demo)");
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [example, motion, name]);
+  }, [example, motion, name, wave]);
 
   return <canvas ref={ref} width={520} height={220} className="h-[220px] w-full" />;
 }

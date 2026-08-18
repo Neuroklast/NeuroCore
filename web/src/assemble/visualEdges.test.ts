@@ -79,6 +79,7 @@ describe("visualAudioEdges", () => {
       ],
     );
     expect(loneEnc.some((e) => e.from === "ms1" && e.to === "stage1" && e.fromJack === "mid")).toBe(true);
+    expect(loneEnc.some((e) => e.from === "ms1" && e.to === "stage1" && e.fromJack === "side")).toBe(true);
     expect(loneEnc.some((e) => e.from === "ms1" && e.fromJack === "out")).toBe(false);
 
     const loneDec = visualAudioEdges(
@@ -156,6 +157,19 @@ describe("visualAudioEdges", () => {
     expect(vis.some((e) => e.from === "delay1" && e.to === "join1" && e.toJack === "inB")).toBe(true);
     expect(vis.some((e) => e.to === "join1" && e.toJack === "in")).toBe(false);
     expect(vis.some((e) => e.from === "join1" && (e.to === "OUT" || e.to === "out"))).toBe(true);
+  });
+
+  it("wires a named bus chip so it is not an island", () => {
+    const nodes = [
+      node("xover1", "xover", { f1: "200", f2: "2000" }),
+      { ...node("high", "bus", { name: "high" }), busName: "" },
+      { ...node("comp1", "comp", { threshold: "-6" }), busName: "high" },
+    ];
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "xover1", kind: "audio", fromJack: "out", toJack: "in" },
+    ]);
+    expect(vis.some((e) => e.from === "xover1" && e.to === "high" && e.fromJack === "high")).toBe(true);
+    expect(vis.some((e) => e.from === "high" && e.to === "comp1")).toBe(true);
   });
 
   it("draws xover mixes to OUT", () => {

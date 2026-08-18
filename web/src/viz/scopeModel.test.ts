@@ -8,6 +8,8 @@ import {
   sampleAtPx,
   SCOPE_COLOR,
   SCOPE_MENU,
+  barFillPercent,
+  demoLoudness,
   scopeTitle,
   tracesFor,
 } from "./scopeModel";
@@ -46,6 +48,14 @@ describe("scope deck model", () => {
     const side = gonioPoint(0.6, -0.6);
     expect(side.x).toBeCloseTo(0.6);
     expect(side.y).toBeCloseTo(0);
+  });
+
+  it("LU bar height follows live rms, not a parked constant", () => {
+    expect(barFillPercent(0.6)).toBeGreaterThan(barFillPercent(0.05));
+    expect(barFillPercent(0)).toBe(2);
+    const a = demoLoudness(0);
+    const b = demoLoudness(30);
+    expect(Math.abs(a.inPeak - b.inPeak) + Math.abs(a.outRms - b.outRms)).toBeGreaterThan(0.05);
   });
 
   it("STUDIO chip cycles LIVE, not Settings", () => {

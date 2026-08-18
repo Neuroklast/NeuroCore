@@ -25,7 +25,7 @@ import { addPickerSize } from "../overlays/addPicker";
 import { useChipViewStore } from "../store/expandStore";
 import { ChipNode, IoNode } from "./ChipNode";
 import { ConnectionLine } from "./ConnectionLine";
-import { SignalEdge } from "./SignalEdge";
+import { StaticGridEdge } from "./StaticGridEdge";
 import {
   alreadyLinked,
   dndCableEndChrome,
@@ -38,15 +38,17 @@ import {
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange } from "./boardSync";
 import { jackTopPx } from "./chipLayout";
-import { arrangeElk } from "./elkArrange";
+import { applyLayoutResult, requestLayout } from "./layout/layoutClient";
+import type { LayoutMode } from "./layout/types";
 import { flowFromAst, visibleNodes, type ChipData } from "./flowFromAst";
 import { parseHandle } from "./handles";
-import { routeBoard } from "./routeBoard";
 import { isValidLink } from "./validateLink";
 import { addCircuitBlock, publishScript, removeCircuitBlock } from "./addBlock";
 
+import { BOARD_BLOCK, BOARD_DOT, BOARD_GRID, BOARD_TRACE } from "./grid";
+
 const nodeTypes = { chip: ChipNode, io: IoNode };
-const edgeTypes = { signal: SignalEdge };
+const edgeTypes = { signal: StaticGridEdge };
 const cableEndChrome = dndCableEndChrome();
 const nodeChrome = dndNodeChrome({ locked: false });
 
@@ -55,7 +57,7 @@ const defaultEdgeOptions = {
   animated: false,
   className: cableEndChrome.className,
   interactionWidth: 28,
-  style: { stroke: "#ff003c", strokeWidth: 20, cursor: cableEndChrome.cursor },
+  style: { stroke: "#ff003c", strokeWidth: BOARD_TRACE, cursor: cableEndChrome.cursor },
 };
 
 function jackOf(node: Node<ChipData> | undefined, handle: string | null | undefined): { kind: string; output: boolean; jack: string } | null {
@@ -82,12 +84,17 @@ function Board() {
     () => (ast ? flowFromAst(ast, { sidechainOn }) : { nodes: [], edges: [] }),
     [ast, sidechainOn],
   );
-  const [nodes, setNodes, onNodesChange] = useNodesState(built.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(built.edges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([] as Node<ChipData>[]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
   const [menu, setMenu] = useState<{ kind: "node" | "pane"; id: string; left: number; top: number } | null>(null);
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   const prevIdsRef = useRef<string[]>([]);
+  const layoutGen = useRef(0);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  nodesRef.current = nodes;
+  edgesRef.current = edges;
   const store = useStoreApi();
   const { getInternalNode, fitView } = useReactFlow();
   const updateInternals = useUpdateNodeInternals();
@@ -105,11 +112,11 @@ function Board() {
   const dofOn = dofAllowed && plane.active;
   const displayNodes = useMemo(() => nodes.map((n) => ({
     ...n,
-    data: { ...(n.data as object), focus: focusAttr(dofAllowed, plane, n.id) },
+    data: { ...n.data, focus: focusAttr(dofAllowed, plane, n.id) },
   })), [dofAllowed, nodes, plane]);
   const displayEdges = useMemo(() => edges.map((e) => ({
     ...e,
-    data: { ...(e.data as object), focus: focusAttr(dofAllowed, plane, e.id, "edge") },
+    data: { ...(e.data ?? {}), focus: focusAttr(dofAllowed, plane, e.id, "edge") },
   })), [dofAllowed, edges, plane]);
 
   useEffect(() => {
@@ -126,55 +133,41 @@ function Board() {
     });
     const keepLive = keepLivePositions(origin);
     prevIdsRef.current = nextSeenIds(prevIdsRef.current, nextIds, auto);
-    setNodes((prev) => mergeBoardNodes(prev, built.nodes, keepLive && prev.length > 0));
-    built.nodes.forEach((n) => updateInternals(n.id));
-    setEdges(built.edges);
-    if (! auto) {
-      return () => {
-        cancel = true;
-      };
-    }
+    const merged = mergeBoardNodes(nodesRef.current, built.nodes, keepLive && nodesRef.current.length > 0);
+    const liveEdges = built.edges.filter((e) => e.className !== "temp");
+    const gen = layoutGen.current + 1;
+    layoutGen.current = gen;
+    const mode: LayoutMode = auto ? "ARRANGE" : "REROUTE";
     const view = {
-      w: paneRef.current?.clientWidth || 1200,
+      w: paneRef.current?.clientWidth || 960,
       h: paneRef.current?.clientHeight || 420,
     };
-    void arrangeElk(built.nodes, built.edges.filter((e) => e.className !== "temp"), view).then((pos) => {
-      if (cancel || Object.keys(pos).length === 0) {
+    void requestLayout(mode, auto ? built.nodes : merged, liveEdges, view).then((laid) => {
+      if (cancel || gen !== layoutGen.current) {
         return;
       }
-      prevIdsRef.current = nextSeenIds(prevIdsRef.current, nextIds, false);
-      setNodes((ns) => ns.map((n) => (pos[n.id] ? { ...n, position: pos[n.id] } : n)));
+      if (auto) {
+        prevIdsRef.current = nextSeenIds(prevIdsRef.current, nextIds, false);
+      }
+      const next = applyLayoutResult(laid, auto ? built.nodes : merged, liveEdges, auto);
+      setNodes(next.nodes);
+      setEdges(next.edges);
+      next.nodes.forEach((n) => updateInternals(n.id));
       requestAnimationFrame(() => {
-        if (! cancel) {
-          void fitView({ padding: 0.1, duration: 0, minZoom: 0.75, maxZoom: 1 });
+        if (! cancel && gen === layoutGen.current && (paneRef.current?.clientWidth ?? 0) > 40) {
+          void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
         }
       });
     });
     return () => {
       cancel = true;
     };
-  }, [ast, built, origin, setEdges, setNodes, updateInternals]);
+  }, [ast, built, origin, fitView, setEdges, setNodes, updateInternals]);
 
   const posKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}:${n.height ?? 0}`).join("|");
   useEffect(() => {
     nodes.forEach((n) => updateInternals(n.id));
   }, [posKey, updateInternals, nodes]);
-  const edgeKey = edges.map((e) => `${e.id}:${e.source}:${e.target}:${e.sourceHandle}:${e.targetHandle}`).join("|");
-  useEffect(() => {
-    const mapped = routeBoard(nodes, edges);
-    setEdges((eds) => {
-      let changed = false;
-      const next = eds.map((e) => {
-        const r = mapped.get(e.id);
-        if (! r || (e.data as { route?: string } | undefined)?.route === r.d) {
-          return e;
-        }
-        changed = true;
-        return { ...e, data: { ...(e.data as object), route: r.d, points: r.points } };
-      });
-      return changed ? next : eds;
-    });
-  }, [posKey, edgeKey, edges, nodes, setEdges]);
 
   const isValidConnection = useCallback((c: Connection | Edge) => {
     const src = nodes.find((n) => n.id === c.source);
@@ -187,6 +180,33 @@ function Board() {
     return isValidLink(a, b);
   }, [nodes]);
 
+  const runBoardLayout = useCallback(async (
+    mode: LayoutMode,
+    moveNodes: boolean,
+    ns = nodesRef.current,
+    es = edgesRef.current,
+  ) => {
+    const gen = layoutGen.current + 1;
+    layoutGen.current = gen;
+    const live = es.filter((e) => e.className !== "temp");
+    const view = {
+      w: paneRef.current?.clientWidth || 960,
+      h: paneRef.current?.clientHeight || 420,
+    };
+    const laid = await requestLayout(mode, ns, live, view);
+    if (gen !== layoutGen.current) {
+      return laid;
+    }
+    setNodes((cur) => applyLayoutResult(laid, cur, [], moveNodes).nodes);
+    setEdges((cur) => applyLayoutResult(laid, [], cur, false).edges);
+    if (moveNodes) {
+      requestAnimationFrame(() => {
+        void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
+      });
+    }
+    return laid;
+  }, [fitView, setEdges, setNodes]);
+
   const commitConnect = useCallback((c: Connection) => {
     if (! isValidConnection(c)) {
       return;
@@ -195,7 +215,9 @@ function Board() {
       if (alreadyLinked(eds, String(c.source), String(c.target))) {
         return eds;
       }
-      return addEdge({ ...c, ...defaultEdgeOptions }, eds);
+      const next = addEdge({ ...c, ...defaultEdgeOptions }, eds);
+      void runBoardLayout("REROUTE", false, nodesRef.current, next);
+      return next;
     });
     if (hasJuceBridge()) {
       const fromJack = parseHandle(c.sourceHandle)?.id ?? "out";
@@ -209,7 +231,7 @@ function Board() {
         toJack,
       }).catch(() => undefined);
     }
-  }, [isValidConnection, setEdges]);
+  }, [isValidConnection, runBoardLayout, setEdges]);
 
   const onConnect = useCallback((c: Connection) => {
     commitConnect(c);
@@ -329,6 +351,7 @@ function Board() {
     if (pair) {
       commitConnect(pair);
     }
+    void runBoardLayout("REROUTE", false);
     if (! hasJuceBridge() || node.id === "IN") {
       return;
     }
@@ -336,7 +359,7 @@ function Board() {
       origin: "canvas",
       positions: { [node.id]: { x: node.position.x, y: node.position.y } },
     }).catch(() => undefined);
-  }, [closestPair, commitConnect, setEdges]);
+  }, [closestPair, commitConnect, runBoardLayout, setEdges]);
 
   const onNodeDoubleClick = useCallback((_: unknown, node: Node) => {
     if (node.id === "IN" || node.id === "OUT") {
@@ -345,26 +368,28 @@ function Board() {
     useHostStore.getState().setOverlay("inspect", node.id);
   }, []);
 
-  const arrange = useCallback(async () => {
-    const view = {
-      w: paneRef.current?.clientWidth || 1200,
-      h: paneRef.current?.clientHeight || 420,
-    };
-    const pos = await arrangeElk(nodes, edges.filter((e) => e.className !== "temp"), view);
-    setNodes((ns) => ns.map((n) => (pos[n.id] ? { ...n, position: pos[n.id] } : n)));
-    requestAnimationFrame(() => {
-      void fitView({ padding: 0.1, duration: 0, minZoom: 0.75, maxZoom: 1 });
-    });
-    if (hasJuceBridge()) {
-      const chips: Record<string, { x: number; y: number }> = {};
-      for (const [id, p] of Object.entries(pos)) {
-        if (id !== "IN") {
-          chips[id] = p;
-        }
-      }
-      void getNativeFunction("applyLayout")({ origin: "elk", positions: chips }).catch(() => undefined);
+  const persistPositions = useCallback((laid: Awaited<ReturnType<typeof requestLayout>>) => {
+    if (! hasJuceBridge()) {
+      return;
     }
-  }, [edges, fitView, nodes, setNodes]);
+    const chips: Record<string, { x: number; y: number }> = {};
+    for (const [id, p] of Object.entries(laid.nodes)) {
+      if (id !== "IN") {
+        chips[id] = { x: p.x, y: p.y };
+      }
+    }
+    void getNativeFunction("applyLayout")({ origin: "elk", positions: chips }).catch(() => undefined);
+  }, []);
+
+  const arrange = useCallback(async () => {
+    const laid = await runBoardLayout("ARRANGE", true);
+    persistPositions(laid);
+  }, [persistPositions, runBoardLayout]);
+
+  const compactBoard = useCallback(async () => {
+    const laid = await runBoardLayout("COMPACT", true);
+    persistPositions(laid);
+  }, [persistPositions, runBoardLayout]);
 
   const onNodeContextMenu = useCallback((event: MouseEvent, node: Node) => {
     event.preventDefault();
@@ -389,21 +414,36 @@ function Board() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "a" || ! (e.metaKey || e.ctrlKey)) {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
         return;
       }
-      e.preventDefault();
-      void arrange();
+      if (e.key.toLowerCase() !== "a") {
+        return;
+      }
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        void arrange();
+        return;
+      }
+      if (e.shiftKey) {
+        e.preventDefault();
+        void compactBoard();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [arrange]);
+  }, [arrange, compactBoard]);
 
   return (
     <div
       ref={paneRef}
-      className="relative h-full min-h-0 w-full bg-black"
-      style={{ cursor: nodeChrome.cursor }}
+      className="nk-circuit relative h-full min-h-0 w-full overflow-hidden bg-black"
+      style={{
+        cursor: nodeChrome.cursor,
+        ["--nk-grid" as string]: `${BOARD_GRID}px`,
+        ["--nk-trace" as string]: `${BOARD_TRACE}px`,
+      }}
       data-dof={dofOn ? "on" : "off"}
       data-focus={dofOn ? "plane" : "none"}
     >
@@ -421,6 +461,13 @@ function Board() {
           for (const e of deleted) {
             persistDisconnect(e);
           }
+          const gone = new Set(deleted.map((e) => e.id));
+          void runBoardLayout(
+            "REROUTE",
+            false,
+            nodesRef.current,
+            edgesRef.current.filter((e) => ! gone.has(e.id)),
+          );
         }}
         onError={(code, msg) => {
           if (code === "008" && import.meta.env.DEV) {
@@ -445,9 +492,11 @@ function Board() {
         connectionLineComponent={ConnectionLine}
         connectionMode={ConnectionMode.Loose}
         defaultEdgeOptions={defaultEdgeOptions}
-        defaultViewport={{ x: 24, y: 24, zoom: 1 }}
+        defaultViewport={{ x: BOARD_GRID, y: BOARD_GRID, zoom: 1 }}
         minZoom={0.4}
         maxZoom={2}
+        snapToGrid
+        snapGrid={[BOARD_GRID, BOARD_GRID]}
         nodesDraggable
         nodesConnectable
         edgesReconnectable
@@ -457,8 +506,22 @@ function Board() {
         zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Lines} color="rgba(255,0,60,0.10)" gap={32} />
+        <Background
+          id="nk-cell"
+          variant={BackgroundVariant.Dots}
+          gap={BOARD_GRID}
+          size={BOARD_DOT}
+          offset={BOARD_GRID / 2}
+          color="rgba(255,0,60,0.42)"
+        />
+        <Background
+          id="nk-block"
+          variant={BackgroundVariant.Lines}
+          gap={BOARD_BLOCK}
+          color="rgba(255,0,60,0.10)"
+        />
       </ReactFlow>
+
       {menu ? (
         <OsContextMenu left={menu.left} top={menu.top} title={menu.kind === "node" ? menu.id : "NKOS // BOARD"} onDismiss={closeMenu}>
           {menu.kind === "node" ? (
@@ -485,6 +548,7 @@ function Board() {
             />
           ) : null}
           <OsMenuItem onClick={() => { void arrange(); closeMenu(); }}>Arrange</OsMenuItem>
+          <OsMenuItem onClick={() => { void compactBoard(); closeMenu(); }}>Compact</OsMenuItem>
         </OsContextMenu>
       ) : null}
     </div>

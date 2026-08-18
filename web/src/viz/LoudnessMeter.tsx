@@ -1,6 +1,6 @@
-import { peakToDb } from "../bridge/telemetry";
 import { useHostStore } from "../store/hostStore";
-import { loudTitle, SCOPE_COLOR } from "./scopeModel";
+import { useTelemetryStore } from "../store/telemetryStore";
+import { barFillPercent, loudTitle, SCOPE_COLOR } from "./scopeModel";
 
 function Bar({
   rms,
@@ -13,10 +13,8 @@ function Bar({
   tag: string;
   color: string;
 }) {
-  const rmsDb = peakToDb(rms);
-  const peakDb = peakToDb(peak);
-  const fill = Math.max(2, Math.min(100, ((rmsDb + 60) / 60) * 100));
-  const tick = Math.max(2, Math.min(100, ((peakDb + 60) / 60) * 100));
+  const fill = barFillPercent(rms);
+  const tick = barFillPercent(peak);
   return (
     <div className="relative mx-0.5 flex min-h-0 flex-1 flex-col items-center">
       <div className="relative min-h-0 w-4 flex-1 bg-well">
@@ -28,17 +26,11 @@ function Bar({
   );
 }
 
-export function LoudnessMeter({
-  inPeak,
-  outPeak,
-  inRms,
-  outRms,
-}: {
-  inPeak: number;
-  outPeak: number;
-  inRms: number;
-  outRms: number;
-}) {
+export function LoudnessMeter() {
+  const inPeak = useTelemetryStore((s) => s.inPeak);
+  const outPeak = useTelemetryStore((s) => s.outPeak);
+  const inRms = useTelemetryStore((s) => s.inRms);
+  const outRms = useTelemetryStore((s) => s.outRms);
   const source = useHostStore((s) => s.scopeSource);
   const showIn = source === "in" || source === "both";
   const showOut = source === "out" || source === "both";

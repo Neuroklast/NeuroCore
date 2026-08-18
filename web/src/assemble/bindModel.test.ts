@@ -7,13 +7,14 @@ import {
   bindHit,
   bindProfile,
   commitBind,
+  defaultBindKey,
   resolveBindKey,
 } from "./bindModel";
 import { applyKnobBind } from "./handles";
 
 describe("jack align and knob bind", () => {
   it("moves jack Y when the chip height changes", () => {
-    expect(jackTopPx(0, 1, 80)).toBe(40);
+    expect(jackTopPx(0, 1, 80)).toBe(48);
     expect(jackTopPx(0, 1, 160)).toBe(80);
     expect(jackTopPx(0, 2, 120)).toBeLessThan(jackTopPx(1, 2, 120));
   });
@@ -22,7 +23,9 @@ describe("jack align and knob bind", () => {
     const row = { dataset: { bindNode: "filter1", bindKey: "cutoff" } } as unknown as HTMLElement;
     const hit = bindHit({ closest: () => row } as unknown as Element);
     expect(hit).toEqual({ node: "filter1", key: "cutoff" });
-    expect(resolveBindKey({ node: "filter1", key: "" }, { cutoff: "800", q: "f" })).toBe("cutoff");
+    expect(resolveBindKey({ node: "filter1", key: "" }, { cutoff: "800", q: "f" }, "filter")).toBe("cutoff");
+    expect(defaultBindKey("stage")).toBe("y");
+    expect(defaultBindKey("filter")).toBe("cutoff");
     expect(applyKnobBind({ cutoff: "800" }, "cutoff", "b").cutoff).toBe("b");
   });
 
@@ -77,7 +80,7 @@ describe("jack align and knob bind", () => {
       diagnostics: [],
     });
 
-    commitBind("filter1", "cutoff", "d");
+    commitBind("filter1", defaultBindKey("filter"), "d");
 
     const knob = useHostStore.getState().knobs.find((k) => k.id === "d");
     expect(knob?.active).toBe(true);

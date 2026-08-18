@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chipBox, SOCKET_H } from "./chipLayout";
 import {
+  SOUTH_JACK_GAP,
   TITLE_H,
   TYPECODE_H,
   chipSpec,
@@ -137,10 +138,10 @@ describe("chipBox height ignores expand", () => {
     for (const id of ["filter", "ott", "octaver"] as const) {
       const spec = chipSpec(id);
       const box = chipBox(id, jacks, true, spec.defaultArgs);
-      const stack = spec.paramJacks.length * SOCKET_H + header;
+      const stack = spec.paramJacks.length * SOCKET_H + header + SOUTH_JACK_GAP;
       expect(
         box.h,
-        `${id} stack=${stack} (n=${spec.paramJacks.length} * ${SOCKET_H} + ${header}) h=${box.h} min=${spec.minBodyPx}`,
+        `${id} stack=${stack} (n=${spec.paramJacks.length} * ${SOCKET_H} + ${header} + gap ${SOUTH_JACK_GAP}) h=${box.h} min=${spec.minBodyPx}`,
       ).toBeGreaterThanOrEqual(stack);
     }
   });

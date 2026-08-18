@@ -78,6 +78,24 @@ export function loudTitle(source: ScopeSource): string {
   return "LU";
 }
 
+/** 0..100 bar height from linear peak/rms. Silence sits on the floor. */
+export function barFillPercent(linear: number): number {
+  const db = 20 * Math.log10(Math.max(1.0e-8, linear));
+  return Math.max(2, Math.min(100, ((db + 60) / 60) * 100));
+}
+
+/** Demo telemetry must move the LU bars, not park them on a constant. */
+export function demoLoudness(t: number): {
+  inPeak: number;
+  outPeak: number;
+  inRms: number;
+  outRms: number;
+} {
+  const inn = 0.18 + 0.5 * (0.5 + 0.5 * Math.sin(t * 0.11));
+  const out = 0.22 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.11 + 0.45));
+  return { inPeak: inn, outPeak: out, inRms: inn * 0.62, outRms: out * 0.58 };
+}
+
 /** Goniometer: x = side, y = −mid (up is in-phase). Same as native ScopeAnalytics. */
 export function gonioPoint(l: number, r: number): { x: number; y: number } {
   const left = Number.isFinite(l) ? l : 0;

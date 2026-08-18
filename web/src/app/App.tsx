@@ -3,9 +3,10 @@ import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce"
 import type { AstEventPayload, CompileResultPayload, Origin } from "../bridge/ast";
 import { shouldHydrate } from "../bridge/ast";
 import { AssembleView } from "../assemble/AssembleView";
-import { BindCables } from "../assemble/BindCables";
+import { BindCables, BindDragGhost } from "../assemble/BindCables";
+
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
-import { shouldBlockBrowserShortcut, shouldBlockWheelZoom } from "../chrome/shortcuts";
+import { shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { HackView } from "../hack/HackView";
@@ -13,7 +14,7 @@ import "../hack/monacoEnv";
 import { Overlays } from "../overlays/Overlays";
 import { ScopeDeck } from "../viz/ScopeDeck";
 import { useAstStore } from "../store/astStore";
-import { useBindStore } from "../store/telemetryStore";
+
 import { useHostStore } from "../store/hostStore";
 import { shouldPlayBoot } from "../theme/boot";
 import { CrtFx, PaneVignette } from "../theme/CrtFx";
@@ -29,8 +30,6 @@ export function App() {
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const boot = shouldPlayBoot(reduced, motion);
-  const bind = useBindStore();
-
   useEffect(() => {
     onNativeEvent("ast", (payload) => {
       const rec = payload as AstEventPayload;
@@ -76,8 +75,14 @@ export function App() {
         e.preventDefault();
       }
     };
+    const onContextMenu = (e: Event) => {
+      if (shouldBlockNativeContextMenu({ target: e.target })) {
+        e.preventDefault();
+      }
+    };
     window.addEventListener("keydown", onKey, true);
     window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
       void getNativeFunction("UI_READY")({ build: "0.4.8-alpha", scale: 1 }).catch(() => undefined);
@@ -87,6 +92,7 @@ export function App() {
     return () => {
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
     };
   }, []);
 
@@ -106,28 +112,27 @@ export function App() {
             <Knobs bind={knobBindEnabled(workspace)} rail="left" />
           </aside>
         ) : null}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="nk-frame min-h-0 flex-1 overflow-hidden border border-accent/35">
+        <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-accent/35">
             {workspace === "face" && <FaceView open={setWorkspace} />}
-            {workspace === "assemble" && <AssembleView />}
+            <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
+              <AssembleView />
+            </div>
             {workspace === "hack" && <HackView />}
             <PaneVignette />
           </div>
           {knobRail(workspace) === "bottom" ? (
             <Knobs bind={knobBindEnabled(workspace)} rail="bottom" />
           ) : null}
+          {workspace === "assemble" ? <BindCables /> : null}
+          <BindDragGhost />
           <MixOs />
         </div>
       </div>
       <ScopeDeck telemetryPath={telemetryPath} />
       <Footer />
       <Overlays />
-      {workspace === "assemble" ? <BindCables /> : null}
-      {bind.letter ? (
-        <svg className="pointer-events-none fixed inset-0 z-50 h-full w-full">
-          <line x1={bind.ox} y1={bind.oy} x2={bind.x} y2={bind.y} stroke="#fcee0a" strokeWidth="1.2" />
-        </svg>
-      ) : null}
+
       <CrtFx />
     </main>
     </ScaleShell>

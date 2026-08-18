@@ -1,4 +1,5 @@
 import type { AstEdge, AstJack, AstNode } from "../bridge/ast";
+import { chipSpec } from "./chipSpec";
 
 function argOf(node: Pick<AstNode, "args">, key: string): string {
   return (node.args[key] ?? "").trim().toLowerCase();
@@ -199,7 +200,14 @@ export function visualJacksFor(node: AstNode, _nodes: AstNode[] = []): AstJack[]
   if (isJoinSignal(node)) {
     return [jack("inA", false, "audio"), jack("inB", false, "audio"), jack("out", true, "audio")];
   }
-  return node.jacks ?? [];
+  const spec = chipSpec(node.type, node.args);
+  const fromSpec: AstJack[] = [
+    ...spec.audioIns.map((id) => jack(id, false, id === "mod" || spec.modIns.includes(id) ? "mod" : "audio")),
+    ...spec.audioOuts.map((id) => jack(id, true, id === "mod" ? "mod" : "audio")),
+    ...spec.modIns.map((id) => jack(id, false, "mod")),
+  ];
+  const extra = (node.jacks ?? []).filter((j) => ! fromSpec.some((s) => s.id === j.id && s.output === j.output));
+  return fromSpec.length ? [...fromSpec, ...extra] : (node.jacks ?? []);
 }
 
 function keyOf(e: AstEdge): string {
@@ -272,6 +280,28 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
 
   next = next.map((e) => remapForkSerial(e, byId));
 
+  for (const e of [...next]) {
+    if (e.kind === "mod") {
+      continue;
+    }
+    const src = byId.get(e.from);
+    if (! src || ! isForkSplit(src)) {
+      continue;
+    }
+    const family = splitFamily(src);
+    if (family !== "ms" && family !== "lr") {
+      continue;
+    }
+    if (nodes.some((n) => isForkJoin(n) && splitFamily(n) === family && busOf(n) === busOf(src))) {
+      continue;
+    }
+    const [, railB] = forkRails(family);
+    if (e.fromJack === railB) {
+      continue;
+    }
+    push({ ...e, fromJack: railB });
+  }
+
   const isRailAudio = (n: AstNode) => {
     if (n.type === "out" || n.type === "bus" || isJoinSignal(n) || isForkSplit(n) || isForkJoin(n)) {
       return false;
@@ -301,13 +331,49 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     push({ from: jn.id, to: after?.id ?? outId, kind: "audio", fromJack: "out", toJack: "in" });
   }
 
+  const busChip = (name: string) => nodes.find((n) => n.type === "bus" && ((n.args.name || n.id) === name));
+  const kidsOn = (name: string) => nodes.filter((n) => n.type !== "bus" && busOf(n) === name);
+
   for (const n of nodes) {
     if (! isXover(n)) {
       continue;
     }
     const jacks = visualJacksFor(n, nodes).filter((j) => j.output);
     for (const j of jacks) {
-      push({ from: n.id, to: outId, kind: "mix", fromJack: j.id, toJack: j.id });
+      const bus = busChip(j.id);
+      const kids = kidsOn(j.id);
+      if (bus) {
+        push({ from: n.id, to: bus.id, kind: "mix", fromJack: j.id, toJack: "in" });
+        const first = kids[0];
+        if (first) {
+          strip("IN", first.id);
+          push({ from: bus.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
+        }
+      } else {
+        push({ from: n.id, to: outId, kind: "mix", fromJack: j.id, toJack: j.id });
+      }
+    }
+  }
+
+  for (const b of nodes.filter((n) => n.type === "bus")) {
+    const name = b.args.name || b.id;
+    const kids = kidsOn(name);
+    if (kids.length === 0) {
+      continue;
+    }
+    const fed = next.some((e) => e.to === b.id);
+    if (! fed) {
+      const send = kids.find(isSend);
+      if (send) {
+        push({ from: send.id, to: b.id, kind: "audio", fromJack: "out", toJack: "in" });
+      } else {
+        push({ from: "IN", to: b.id, kind: "audio", fromJack: "out", toJack: "in" });
+      }
+    }
+    const first = kids.find((n) => ! isSend(n)) ?? kids[0];
+    if (first && ! next.some((e) => e.from === b.id && e.to === first.id)) {
+      strip("IN", first.id);
+      push({ from: b.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
     }
   }
 

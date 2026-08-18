@@ -15,8 +15,8 @@ import { primaryJackId } from "./connectModel";
 import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
 import { collapsedFace } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
-import { isModulatorNode, resolveHz, type ChipData } from "./flowFromAst";
-import { lfoPeriodMs, parseLfoShape } from "./lfoLamp";
+import { isModulatorNode, type ChipData } from "./flowFromAst";
+import { lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { liveArg } from "./liveArg";
 import { cableFace } from "./validateLink";
 
@@ -216,6 +216,7 @@ export function ChipNode({ data, id }: NodeProps) {
   const setDetail = useChipViewStore((s) => s.setDetail);
   const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
+  const bpm = useHostStore((s) => s.bpm);
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
   const sideJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "side");
   const bottomJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
@@ -227,7 +228,7 @@ export function ChipNode({ data, id }: NodeProps) {
     ...Object.keys(d.args).filter((k) => lettersInExpr(d.args[k]).length > 0),
   ])];
   const lfo = isModulatorNode({ type: d.type, id });
-  const hz = lfo ? resolveHz(d.args.freq ?? d.args.sync ?? "1", knobs) : 0;
+  const hz = lfo ? resolveLfoHz(d.args, knobs, bpm) : 0;
   const extra = useMemo(() => detailArgs(isCustomNode(d.type, id) ? "custom" : d.type, d.args), [d.args, d.type, id]);
   const box = chipBox(isCustomNode(d.type, id) ? "custom" : d.type, d.jacks, detail, d.args);
   const liveRows = extra.map((row) => ({ key: row.key, ...liveArg(row.value, knobs), bind: binds.includes(row.key) }));
@@ -446,14 +447,14 @@ export function ChipNode({ data, id }: NodeProps) {
           showLabel={false}
         />
       ))}
-      {ins.length === 0 && ! lfo ? (
+      {ins.length === 0 && ! lfo && topJacks.every((j) => j.output) && bottomJacks.every((j) => j.output) ? (
         <JackPort
           jack={{ id: primaryJackId(d.jacks, false), label: "in", output: false, kind: "audio" }}
           output={false}
           top={jackTopPx(0, 1, box.h)}
         />
       ) : null}
-      {outs.length === 0 && ! bottomJacks.some((j) => j.output) ? (
+      {outs.length === 0 && ! bottomJacks.some((j) => j.output) && ! topJacks.some((j) => j.output) ? (
         <JackPort
           jack={{ id: primaryJackId(d.jacks, true), label: "out", output: true, kind: "audio" }}
           output

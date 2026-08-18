@@ -2,9 +2,9 @@ import { BaseEdge, useStore, type EdgeProps } from "@xyflow/react";
 import { useHostStore } from "../store/hostStore";
 import { motionAllows } from "../theme/motionPolicy";
 import { TUBE } from "./tubeModel";
-import { snapJackFace } from "./chipLayout";
-import { resolveHz } from "./flowFromAst";
-import { tubePath, type Obstacle } from "./tubePath";
+import { lfoChaseMs, lfoDash, lfoDotGlow, resolveAmp, LFO_DOT, LFO_WIRE } from "./cableMotion";
+import { audioStepPath, pathLength, type Obstacle } from "./audioStep";
+import { resolveLfoHz } from "./lfoLamp";
 import { cableAccent, normalizeCableKind } from "./validateLink";
 
 export function SignalEdge({
@@ -20,68 +20,113 @@ export function SignalEdge({
   markerEnd,
   data,
 }: EdgeProps) {
-  void sourcePosition;
-  void targetPosition;
-  const obstacles = useStore((s) => {
-    const list: Obstacle[] = [];
-    s.nodeLookup.forEach((n) => {
-      const io = n.type === "io";
-      list.push({
-        id: n.id,
-        x: n.internals.positionAbsolute.x,
-        y: n.internals.positionAbsolute.y,
-        w: n.measured.width ?? n.width ?? (io ? 96 : 220),
-        h: n.measured.height ?? n.height ?? (io ? 56 : 80),
-      });
-    });
-    return list;
-  });
   const cables = useHostStore((s) => s.cables);
   const motion = useHostStore((s) => s.motion);
   const knobs = useHostStore((s) => s.knobs);
+  const bpm = useHostStore((s) => s.bpm);
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const temp = Boolean((data as { temp?: boolean } | undefined)?.temp);
   const norm = normalizeCableKind(String((data as { kind?: string } | undefined)?.kind ?? "audio"));
   const kind = norm === "mod" || norm === "param" ? norm : "audio";
   const freqExpr = String((data as { freqExpr?: string } | undefined)?.freqExpr ?? "");
+  const syncExpr = String((data as { syncExpr?: string } | undefined)?.syncExpr ?? "off");
   const hz = kind === "mod"
-    ? resolveHz(freqExpr || String((data as { hz?: number } | undefined)?.hz ?? 1), knobs)
+    ? resolveLfoHz({ freq: freqExpr || "1", sync: syncExpr }, knobs, bpm)
     : Number((data as { hz?: number } | undefined)?.hz ?? 1) || 1;
-  const lfoMs = Math.max(80, Math.round(1000 / Math.max(hz, 0.05)));
+  const depthExpr = String((data as { depthExpr?: string } | undefined)?.depthExpr ?? "1");
+  const amp = kind === "mod" ? resolveAmp(depthExpr, knobs) : 1;
+  const lfoMs = lfoChaseMs(hz);
   const sourceId = String((data as { sourceId?: string } | undefined)?.sourceId ?? "");
   const srcKey = sourceId === "IN" ? "in" : "out";
 
   const outer = kind === "audio" ? TUBE.audioOuter : TUBE.modOuter;
   const glass = kind === "audio" ? TUBE.audioGlass : TUBE.modGlass;
   const bore = kind === "audio" ? TUBE.audioBore : TUBE.modGlass - 2;
-  const reserved = useStore((s) => {
-    const list: Array<Array<{ x: number; y: number }>> = [];
+  const reservedXs = useStore((s) => {
+    const xs: number[] = [];
     s.edges.forEach((e) => {
-      const pts = (e.data as { points?: Array<{ x: number; y: number }> } | undefined)?.points;
-      if (e.id !== id && pts && pts.length > 1) {
-        list.push(pts);
+      const cx = (e.data as { centerX?: number } | undefined)?.centerX;
+      if (e.id !== id && typeof cx === "number") {
+        xs.push(cx);
       }
+    });
+    return xs;
+  });
+  const obstacles = useStore((s) => {
+    const list: Obstacle[] = [];
+    s.nodeLookup.forEach((n) => {
+      list.push({
+        id: n.id,
+        x: n.internals.positionAbsolute.x,
+        y: n.internals.positionAbsolute.y,
+        w: n.measured.width ?? n.width ?? 220,
+        h: n.measured.height ?? n.height ?? 80,
+      });
     });
     return list;
   });
-  const ready = (data as { route?: string } | undefined)?.route;
-  const srcFace = obstacles.find((o) => o.id === source);
-  const tgtFace = obstacles.find((o) => o.id === target);
-  const from = srcFace ? snapJackFace(sourceX, sourceY, srcFace, true) : { x: sourceX, y: sourceY };
-  const to = tgtFace ? snapJackFace(targetX, targetY, tgtFace, false) : { x: targetX, y: targetY };
-  const path = ready || tubePath(from.x, from.y, to.x, to.y, {
-    obstacles,
-    sourceId: source,
-    targetId: target,
-    reserved,
-  }).d;
+  const stored = data as { route?: string; centerX?: number; points?: Array<{ x: number; y: number }> } | undefined;
+  const step = stored?.route && stored.points && stored.points.length >= 2
+    ? { d: stored.route, points: stored.points, centerX: stored.centerX ?? 0 }
+    : audioStepPath(sourceX, sourceY, targetX, targetY, {
+      sourcePosition,
+      targetPosition,
+      centerX: stored?.centerX,
+      reservedXs,
+      obstacles,
+      sourceId: source,
+      targetId: target,
+    });
+  const path = step.d;
+  const len = pathLength(step.points);
+  const lfo = lfoDash(len, LFO_DOT);
   const showPlasma = ! temp && kind === "audio" && cables === "wave" && motionAllows("pipeWave", motion, reduced);
   const showDots = ! temp && kind === "audio" && cables === "dots" && motionAllows("pipeWave", motion, reduced);
   const chase = ! temp && kind === "mod" && motionAllows("lfoChase", motion, reduced);
   const accent = cableAccent(kind);
   const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
   const focus = String((data as { focus?: string } | undefined)?.focus ?? "off");
+
+  if (kind === "mod") {
+    const glow = lfoDotGlow(amp);
+    return (
+      <g className="nk-dof-edge" data-focus={focus}>
+        <BaseEdge
+          id={id}
+          path={path}
+          style={{ stroke: "transparent", strokeWidth: 10, fill: "none" }}
+          markerEnd={markerEnd}
+        />
+        <path
+          d={path}
+          fill="none"
+          stroke="#00f0ff"
+          strokeWidth={LFO_WIRE}
+          strokeLinecap="butt"
+          strokeLinejoin="miter"
+          className="nk-lfo-wire"
+        />
+        {chase ? (
+          <path
+            d={path}
+            fill="none"
+            stroke="#00f0ff"
+            strokeWidth={LFO_DOT}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={lfo.dash}
+            className="nk-lfo-dot"
+            style={{
+              animationDuration: `${lfoMs}ms`,
+              ["--nk-lfo-cycle" as string]: String(-lfo.cycle),
+              opacity: glow,
+            }}
+          />
+        ) : null}
+      </g>
+    );
+  }
 
   return (
     <g className="nk-dof-edge" data-focus={focus}>
@@ -103,7 +148,7 @@ export function SignalEdge({
       <path
         d={path}
         fill="none"
-        stroke={kind === "audio" ? "#220505" : kind === "param" ? "#2a2a10" : "#3a1010"}
+        stroke={kind === "param" ? "#2a2a10" : "#220505"}
         strokeWidth={outer}
         strokeLinecap="butt"
         strokeLinejoin="miter"
@@ -126,8 +171,7 @@ export function SignalEdge({
         strokeLinecap="butt"
         strokeLinejoin="miter"
         data-src={srcKey}
-        className={`nk-tube-bore ${tubeClass} ${chase ? "nk-bore-chase" : ""}`}
-        style={chase ? { animationDuration: `${lfoMs}ms` } : undefined}
+        className={`nk-tube-bore ${tubeClass}`}
       />
       {showPlasma ? (
         <path

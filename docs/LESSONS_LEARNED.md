@@ -7,10 +7,13 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - One logical change. A screenshot bug is not a license to also rewrite CPU, Settings, and the pack script.
 - Do not tick DEVELOPMENT_STATUS against a screenshot that still fails.
 - `umsetzen` means code. The tester PDF is a source, not a deliverable.
+- **Library first.** Before writing canvas geometry (grid, snap, edge path, drag line, layout), open the React Flow docs and the `@xyflow/react` exports already in the file. Use what it ships. Invent only the constraint RF cannot express. If you cannot name the RF API you rejected and the contract it failed, you do not get a new helper.
 
 ## Circuit
 
-- HVH: east stub, one vertical, west stub. A* finds scenic routes.
+- React Flow owns the canvas chrome: `Background` (Dots / Lines / Cross, `gap`, stack two), `snapToGrid` + `snapGrid`, `Handle` + `Position`, `nodesDraggable`, `onConnect`, `BaseEdge`, `getStraightPath` for audio drag/temp, `getSmoothStepPath` for knob-bind preview. We own only PCB constraints RF does not have **after drop**: east/west stubs, obstacle boxes, parallel rail pitch, equal air to chips. A second drag model, `BoardGrid` SVG, a second router next to `tubePath`, and a drag-preview that PCB-routes while the product rule says “drag = free line” are the failure mode.
+- ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps into 1–3 rows (PCB, not a meter-long sausage) with 32 px air so every tube is at least one grid long. A* writes the stored SVG `d`. React Flow only paints `data.route` (`StaticGridEdge`).
+- HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.
 - IN top-left, OUT bottom-right. Wrap the **chain**, never fold OUT to x = margin.
 - Knob letters are labels on the chip. They are not nets.

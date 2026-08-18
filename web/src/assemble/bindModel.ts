@@ -20,24 +20,44 @@ export function bindHit(el: Element | null): { node: string; key: string } | nul
   if (! el) {
     return null;
   }
-  const pad = el.closest("[data-bind-node]") as HTMLElement | null;
+  const jack = (el as HTMLElement).closest?.("[data-bind-key]") as HTMLElement | null;
+  if (jack?.dataset.bindNode) {
+    return { node: jack.dataset.bindNode, key: jack.dataset.bindKey ?? "" };
+  }
+  const pad = (el as HTMLElement).closest?.(
+    "[data-bind-node], [data-node-id], .nk-chip, .nk-chip-io, .react-flow__node",
+  ) as HTMLElement | null;
   if (! pad) {
     return null;
   }
-  const node = pad.dataset.bindNode ?? "";
+  const node = pad.dataset.bindNode || pad.dataset.nodeId || pad.getAttribute("data-id") || "";
   const key = pad.dataset.bindKey ?? "";
-  if (! node) {
+  if (! node || node === "IN" || node === "OUT") {
     return null;
   }
   return { node, key };
 }
 
+/** First real knob target on a chip (range first, then y / formula). */
+export function defaultBindKey(type: string, args: Record<string, string> = {}): string {
+  const spec = chipSpec(type, args);
+  const ranged = spec.paramJacks.find((k) => spec.ranges[k] && k !== "channel");
+  if (ranged) {
+    return ranged;
+  }
+  return spec.paramJacks.find((k) => k !== "channel" && k !== "mode") ?? spec.paramJacks[0] ?? "";
+}
+
 export function resolveBindKey(
   hit: { node: string; key: string },
   args: Record<string, string> | undefined,
+  type = "",
 ): string {
   if (hit.key) {
     return hit.key;
+  }
+  if (type) {
+    return defaultBindKey(type, args ?? {});
   }
   const keys = args ? bindableArgKeys(args) : [];
   return keys[0] ?? "";

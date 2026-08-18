@@ -1,23 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAstStore } from "../store/astStore";
-import { DESIGN_H, DESIGN_W } from "../theme/fit";
 import { useBindStore } from "../store/telemetryStore";
-import { bindEndId, bindSmoothPath, bindTargets } from "./bindLinks";
+import { bindCableVisible, bindEndId, bindSmoothPath, bindTargets } from "./bindLinks";
+
+function scaleOf(hostEl: HTMLElement, host: DOMRect): { sx: number; sy: number } {
+  return {
+    sx: host.width / Math.max(1, hostEl.clientWidth),
+    sy: host.height / Math.max(1, hostEl.clientHeight),
+  };
+}
 
 function localPoint(
   el: Element,
+  hostEl: HTMLElement,
   host: DOMRect,
-  sx: number,
-  sy: number,
   edge: "left" | "right" | "top" | "bottom",
 ): { x: number; y: number } {
   const r = el.getBoundingClientRect();
+  const { sx, sy } = scaleOf(hostEl, host);
   const x = edge === "right" ? r.right : edge === "left" ? r.left : r.left + r.width * 0.5;
   const y = edge === "bottom" ? r.bottom : edge === "top" ? r.top : r.top + r.height * 0.5;
   return {
-    x: (x - host.left) * sx,
-    y: (y - host.top) * sy,
+    x: (x - host.left) / sx,
+    y: (y - host.top) / sy,
   };
+}
+
+export function BindDragGhost() {
+  const letter = useBindStore((s) => s.letter);
+  const x = useBindStore((s) => s.x);
+  const y = useBindStore((s) => s.y);
+  if (! letter) {
+    return null;
+  }
+  return (
+    <div
+      className="nk-bind-ghost pointer-events-none fixed z-50 flex h-7 w-7 items-center justify-center rounded-sm border border-cyan bg-black text-[12px] text-cyan"
+      style={{ left: x + 10, top: y + 10 }}
+    >
+      {letter.toUpperCase()}
+    </div>
+  );
 }
 
 export function BindCables() {
@@ -25,27 +48,40 @@ export function BindCables() {
   const hover = useBindStore((s) => s.hover);
   const drag = useBindStore((s) => s.letter);
   const targets = useMemo(() => bindTargets(ast?.nodes ?? []), [ast]);
-  const [paths, setPaths] = useState<Array<{ id: string; letter: string; d: string }>>([]);
+  const [paint, setPaint] = useState<{
+    paths: Array<{ id: string; letter: string; d: string }>;
+    frame: { x: number; y: number; w: number; h: number };
+  }>({ paths: [], frame: { x: 0, y: 0, w: 0, h: 0 } });
 
   useEffect(() => {
     let raf = 0;
     const tick = () => {
-      const hostEl = document.querySelector(".nk-os");
+      const hostEl = (document.querySelector(".nk-bind-host") ?? document.querySelector(".nk-circuit")) as HTMLElement | null;
       const next: Array<{ id: string; letter: string; d: string }> = [];
-      if (hostEl) {
+      let frame = { x: 0, y: 0, w: 0, h: 0 };
+      const active = drag || hover;
+      if (hostEl && active) {
         const host = hostEl.getBoundingClientRect();
-        const sx = host.width > 1 ? DESIGN_W / host.width : 1;
-        const sy = host.height > 1 ? DESIGN_H / host.height : 1;
-        const boxes = [...document.querySelectorAll(".nk-chip, .nk-chip-io")].map((el) => {
+        const { sx, sy } = scaleOf(hostEl, host);
+        const boxOf = (el: Element) => {
           const r = el.getBoundingClientRect();
           return {
-            x: (r.left - host.left) * sx,
-            y: (r.top - host.top) * sy,
-            w: r.width * sx,
-            h: r.height * sy,
+            x: (r.left - host.left) / sx,
+            y: (r.top - host.top) / sy,
+            w: r.width / sx,
+            h: r.height / sy,
           };
-        });
+        };
+        const frameEl = hostEl.querySelector(".nk-frame");
+        if (frameEl) {
+          frame = boxOf(frameEl);
+        }
+        const boxes = [...document.querySelectorAll(".nk-chip, .nk-chip-io")].map(boxOf);
+        const knobs = [...hostEl.querySelectorAll(".nk-prm")].map(boxOf);
         for (const t of targets) {
+          if (! bindCableVisible(t.letter, hover, drag)) {
+            continue;
+          }
           const src = document.querySelector(`[data-knob-bind="${t.letter}"]`);
           const dst = document.querySelector(`[data-bind-end="${bindEndId(t.letter, t.node)}"]`);
           if (! src || ! dst) {
@@ -61,46 +97,58 @@ export function BindCables() {
           const face = (dst.closest("[data-bind-face]") as HTMLElement | null)?.dataset.bindFace === "top"
             ? "top"
             : "bottom";
-          const srcBox = src.getBoundingClientRect();
-          const leave = srcBox.top > host.top + host.height * 0.55 ? "top" : "bottom";
+          const leave = a.top > host.top + host.height * 0.55 ? "top" : "bottom";
           next.push({
             id: `${t.letter}:${t.node}`,
             letter: t.letter,
             d: bindSmoothPath(
-              localPoint(src, host, sx, sy, leave),
-              localPoint(jack, host, sx, sy, face),
+              localPoint(src, hostEl, host, leave),
+              localPoint(jack, hostEl, host, face),
               Math.max(0, letterIndex),
               boxes,
               face,
+              knobs,
             ),
           });
         }
       }
-      setPaths((prev) => {
-        if (prev.length === next.length && prev.every((p, i) => p.id === next[i].id && p.d === next[i].d)) {
-          return prev;
-        }
-        return next;
+      setPaint((prev) => {
+        const same = prev.paths.length === next.length
+          && prev.paths.every((p, i) => p.id === next[i]!.id && p.d === next[i]!.d)
+          && prev.frame.x === frame.x && prev.frame.y === frame.y
+          && prev.frame.w === frame.w && prev.frame.h === frame.h;
+        return same ? prev : { paths: next, frame };
       });
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [targets]);
+  }, [drag, hover, targets]);
 
-  if (paths.length === 0) {
+  if (paint.paths.length === 0 || paint.frame.w < 1) {
     return null;
   }
   return (
-    <svg className="nk-bind-cables pointer-events-none absolute inset-0 z-[25]" aria-hidden>
-      {paths.map((p) => (
-        <path
-          key={p.id}
-          d={p.d}
-          className={`nk-bind-cable ${p.letter === hover || p.letter === drag ? "on" : hover || drag ? "dim" : ""}`}
-          data-letter={p.letter}
-        />
-      ))}
+    <svg
+      className="nk-bind-cables pointer-events-none absolute z-30 overflow-hidden"
+      aria-hidden
+      style={{
+        left: paint.frame.x,
+        top: paint.frame.y,
+        width: paint.frame.w,
+        height: paint.frame.h,
+      }}
+    >
+      <g transform={`translate(${-paint.frame.x} ${-paint.frame.y})`}>
+        {paint.paths.map((p) => (
+          <path
+            key={p.id}
+            d={p.d}
+            className="nk-bind-cable on"
+            data-letter={p.letter}
+          />
+        ))}
+      </g>
     </svg>
   );
 }

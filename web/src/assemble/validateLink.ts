@@ -32,19 +32,16 @@ export function normalizeCableKind(kind: string): CableKind | "knob" | string {
   return k;
 }
 
-/** Audio red, param yellow, LFO/mod cyan. */
+/** Audio red, param and LFO/mod cyan (same knob glow). */
 export function cableAccent(kind: string): string {
   const k = normalizeCableKind(kind);
-  if (k === "mod") {
+  if (k === "mod" || k === "param") {
     return "#00f0ff";
-  }
-  if (k === "param") {
-    return "#fcee0a";
   }
   return "#ff003c";
 }
 
-/** Param/ctrl jacks sit on the south rail; LFO/mod on the north; audio on the sides. */
+/** Param/ctrl jacks sit on the south rail. Signal (audio + LFO/mod) uses the side plugs. */
 export function cableFace(kind: string): CableFace {
   const raw = (kind || "audio").toLowerCase();
   if (raw === "ctrl") {
@@ -53,9 +50,6 @@ export function cableFace(kind: string): CableFace {
   const k = normalizeCableKind(kind);
   if (k === "param") {
     return "bottom";
-  }
-  if (k === "mod") {
-    return "top";
   }
   return "side";
 }

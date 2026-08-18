@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { demoAst } from "./demoAst";
-import { bindLinks, bindSmoothPath, bindTargets, firstRunVertical, lastRunVertical } from "./bindLinks";
+import { bindCableVisible, bindHitsKnobs, bindLinks, bindSmoothPath, bindTargets, firstRunVertical, lastRunVertical } from "./bindLinks";
 
 describe("knob-to-node binds", () => {
   it("lists every a–f token on a node, including formulas", () => {
@@ -47,6 +47,13 @@ describe("knob-to-node binds", () => {
     expect(ys.some((y) => y < 50 || y > 110)).toBe(true);
   });
 
+  it("stays invisible until that knob is hovered or dragged", () => {
+    expect(bindCableVisible("a", null, null)).toBe(false);
+    expect(bindCableVisible("a", "b", null)).toBe(false);
+    expect(bindCableVisible("a", "a", null)).toBe(true);
+    expect(bindCableVisible("a", null, "a")).toBe(true);
+  });
+
   it("leaves the knob and enters the socket on vertical runs", () => {
     const d = bindSmoothPath({ x: 40, y: 40 }, { x: 400, y: 140 }, 0);
     expect(firstRunVertical(d)).toBe(true);
@@ -54,5 +61,23 @@ describe("knob-to-node binds", () => {
     const up = bindSmoothPath({ x: 200, y: 520 }, { x: 400, y: 180 }, 0);
     expect(firstRunVertical(up)).toBe(true);
     expect(lastRunVertical(up)).toBe(true);
+  });
+
+  it("never runs a horizontal rail across the knob cards", () => {
+    const knobs = [
+      { x: 40, y: 500, w: 128, h: 168 },
+      { x: 180, y: 500, w: 128, h: 168 },
+      { x: 320, y: 500, w: 128, h: 168 },
+    ];
+    const d = bindSmoothPath(
+      { x: 104, y: 500 },
+      { x: 400, y: 140 },
+      1,
+      [{ x: 200, y: 80, w: 220, h: 96 }],
+      "bottom",
+      knobs,
+    );
+    expect(bindHitsKnobs(d, knobs)).toBe(false);
+    expect(firstRunVertical(d)).toBe(true);
   });
 });

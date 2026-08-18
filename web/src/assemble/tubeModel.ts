@@ -1,12 +1,14 @@
+import { BOARD_TRACE } from "./grid";
 export { PLASMA_DRIVER } from "../theme/fx";
 
+/** Outer tube fills one board cell. LFO stays a thin wire in SignalEdge. */
 export const TUBE = {
-  audioOuter: 20,
-  audioGlass: 16,
-  audioBore: 12,
-  modOuter: 12,
-  modGlass: 9,
-  jack: 16,
+  audioOuter: BOARD_TRACE,
+  audioGlass: BOARD_TRACE - 4,
+  audioBore: BOARD_TRACE - 8,
+  modOuter: BOARD_TRACE,
+  modGlass: BOARD_TRACE - 4,
+  jack: BOARD_TRACE,
 } as const;
 
 /** Glass shell never glows. */

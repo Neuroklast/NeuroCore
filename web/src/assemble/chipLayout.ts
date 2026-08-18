@@ -1,7 +1,9 @@
 import type { AstJack } from "../bridge/ast";
 import { lettersInExpr } from "./bindLinks";
-import { chipSpec, SOCKET_H } from "./chipSpec";
+import { chipSpec, JACK_PITCH, SOCKET_H } from "./chipSpec";
+import { BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
 import { bindableArgKeys, parseHandle } from "./handles";
+import { cableFace } from "./validateLink";
 
 export { SOCKET_H };
 
@@ -11,11 +13,11 @@ export const CHIP_W = LABEL_COL * 2 + CONTENT_MIN;
 export const CHIP_H = 80;
 export const IO_W = LABEL_COL + 80;
 export const CHIP_GAP = 140;
-export const JACK_PITCH = 24;
+export { JACK_PITCH };
 export const TAG_ROW = 18;
 export const BODY_PAD = 10;
 /** South (or north) rail for knob bind jacks. */
-export const BIND_RAIL = 22;
+export const BIND_RAIL = 32;
 
 export function chipHeight(inCount: number, outCount: number, expanded = false): number {
   const n = Math.max(inCount, outCount, 1);
@@ -60,17 +62,17 @@ export function bindJackXs(count: number, width: number): number[] {
   if (count <= 0) {
     return [];
   }
-  const pad = 36;
+  const pad = BOARD_HALF;
   if (count === 1) {
-    return [width * 0.5];
+    return [snapToCellCenter(width * 0.5)];
   }
-  const span = Math.max(12, width - pad * 2);
-  return Array.from({ length: count }, (_, i) => pad + ((i + 0.5) / count) * span);
+  const span = Math.max(BOARD_GRID, width - pad * 2);
+  return Array.from({ length: count }, (_, i) => snapToCellCenter(pad + ((i + 0.5) / count) * span));
 }
 
-/** Bottom of the chip, unless the node sits so low that a top face is the short plug. */
-export function bindFace(nodeY: number, nodeH: number, boardH = 700): "top" | "bottom" {
-  return nodeY + nodeH * 0.55 > boardH * 0.72 ? "top" : "bottom";
+/** Param jacks are always south. Arrange must not flip them to the title. */
+export function bindFace(_nodeY?: number, _nodeH?: number, _boardH?: number): "top" | "bottom" {
+  return "bottom";
 }
 
 export function chipBodyHeight(
@@ -93,24 +95,32 @@ export function chipBox(
     : args;
   const spec = chipSpec(type, rec);
   if (spec.id === "in" || spec.id === "out" || spec.id === "sidechain") {
-    return { w: IO_W, h: Math.max(spec.minBodyPx, ioHeight(Math.max(jacks.length, 1))) };
+    return {
+      w: snapSize(IO_W),
+      h: snapSize(Math.max(spec.minBodyPx, ioHeight(Math.max(jacks.length, 1)))),
+    };
   }
   const { ins, outs } = countSides(jacks);
   const ports = chipHeight(ins, outs, false);
-  const rail = (
-    bindableArgKeys(rec).length > 0
+  const rail = spec.paramJacks.length > 0
+    || bindableArgKeys(rec).length > 0
     || Object.values(rec).some((v) => lettersInExpr(v).length > 0)
-  ) ? BIND_RAIL : 0;
-  return { w: CHIP_W, h: Math.max(spec.minBodyPx, ports) + rail };
+    ? BIND_RAIL
+    : 0;
+  return { w: snapSize(CHIP_W), h: snapSize(Math.max(spec.minBodyPx, ports) + rail) };
 }
+
+/** First side jack sits in the cell under the title (cell midline). */
+const JACK_TOP_CLEAR = BOARD_GRID + BOARD_HALF;
 
 export function jackTopPx(index: number, count: number, height: number): number {
   if (count <= 1) {
-    return height * 0.5;
+    const mid = snapToCellCenter(height * 0.5);
+    return mid < JACK_TOP_CLEAR ? JACK_TOP_CLEAR : mid;
   }
-  const pad = 20;
-  const span = Math.max(12, height - pad * 2);
-  return pad + ((index + 0.5) / count) * span;
+  const span = (count - 1) * JACK_PITCH;
+  const start = Math.max(JACK_TOP_CLEAR, snapToCellCenter((height - span) * 0.5));
+  return start + index * JACK_PITCH;
 }
 
 export function jackIndex(jacks: AstJack[], id: string, output: boolean): number {
@@ -130,11 +140,22 @@ export function jackAnchor(
 ): { x: number; y: number } {
   const parsed = parseHandle(handle);
   const id = parsed?.id ?? (output ? "out" : "in");
-  const side = jacks.filter((j) => j.output === output && j.kind !== "knob");
+  const jack = jacks.find((j) => j.id === id);
+  const face = cableFace(jack?.kind ?? (output ? "audio" : "audio"));
+  if (face === "bottom" || face === "top") {
+    const row = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === face);
+    const xs = bindJackXs(Math.max(row.length, 1), width);
+    const i = Math.max(0, row.findIndex((j) => j.id === id));
+    return {
+      x: snapToCellCenter(pos.x + (xs[i] ?? width * 0.5)),
+      y: snapToGrid(face === "bottom" ? pos.y + height : pos.y),
+    };
+  }
+  const side = jacks.filter((j) => j.output === output && j.kind !== "knob" && cableFace(j.kind) === "side");
   const count = Math.max(side.length, 1);
-  const index = jackIndex(jacks, id, output);
+  const index = Math.max(0, side.findIndex((j) => j.id === id));
   return {
-    x: output ? pos.x + width : pos.x,
-    y: pos.y + jackTopPx(index, count, height),
+    x: snapToGrid(output ? pos.x + width : pos.x),
+    y: snapToCellCenter(pos.y + jackTopPx(index < 0 ? 0 : index, count, height)),
   };
 }

@@ -1,3 +1,5 @@
+import { BOARD_GRID } from "./grid";
+
 /** One catalog for circuit chips: jacks, enums, typecode, min body. */
 
 export type ChipRange = { min: number; max: number; unit?: string };
@@ -29,11 +31,13 @@ export const TITLE_H = 26;
 export const TYPECODE_H = 14;
 export const SOCKET_H = 40;
 const BODY_PAD = 10;
-const SOUTH_BAND = 16;
+/** Air between the last detail row and the south param jacks + captions. */
+export const SOUTH_JACK_GAP = 40;
+const SOUTH_BAND = SOUTH_JACK_GAP;
 const ENUM_EXTRA = 8;
 const BODY_FLOOR = 80;
 const IO_BODY = 56;
-const JACK_PITCH = 24;
+export const JACK_PITCH = BOARD_GRID;
 const PARAM_JACK_EDGE = 10;
 
 const CHANNEL = ["both", "left", "right", "mid", "side"] as const;
@@ -68,8 +72,12 @@ const ENUM_ABBR: Record<string, string> = {
   rms: "RMS",
 };
 
-type Draft = Omit<ChipSpec, "minBodyPx" | "paramJackLabels"> & {
+type Draft = Omit<ChipSpec, "minBodyPx" | "paramJackLabels" | "modIns" | "enums" | "ranges" | "defaultArgs"> & {
   paramJackLabels?: Record<string, string>;
+  modIns?: string[];
+  enums?: Record<string, string[]>;
+  ranges?: Record<string, ChipRange>;
+  defaultArgs?: Record<string, string>;
 };
 
 export function computeMinBodyPx(spec: {
@@ -88,7 +96,7 @@ export function computeMinBodyPx(spec: {
   const header = TITLE_H + TYPECODE_H + BODY_PAD;
   const sockets = n * SOCKET_H;
   const south = n === 0 ? 0 : SOUTH_BAND;
-  const sideBand = sides <= 1 ? BODY_FLOOR : 36 + sides * JACK_PITCH;
+  const sideBand = sides <= 1 ? BODY_FLOOR : Math.max(BODY_FLOOR, 36 + (sides - 1) * JACK_PITCH + 20);
   return Math.max(BODY_FLOOR, header + sockets + enumRows * ENUM_EXTRA + south, sideBand);
 }
 

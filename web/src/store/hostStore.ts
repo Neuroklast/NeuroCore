@@ -64,6 +64,7 @@ export interface HostState {
   setOverlay: (name: string | null, inspectId?: string | null) => void;
   setTelemetryPath: (path: string) => void;
   setKnob: (id: string, value: number) => void;
+  patchKnob: (id: string, patch: Partial<KnobState>) => void;
   activateKnob: (id: string, patch: Partial<KnobState> & { active: true }) => void;
   setMix: (value: number) => void;
   setOs: (index: number) => void;
@@ -198,6 +199,9 @@ export const useHostStore = create<HostState>((set) => ({
   setTelemetryPath: (telemetryPath: string) => set({ telemetryPath }),
   setKnob: (id, value) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, value: Math.max(0, Math.min(1, value)) } : k)),
+  })),
+  patchKnob: (id, patch) => set((s) => ({
+    knobs: s.knobs.map((k) => (k.id === id ? { ...k, ...patch, id: k.id } : k)),
   })),
   activateKnob: (id, patch) => set((s) => ({
     knobs: s.knobs.map((k) => {

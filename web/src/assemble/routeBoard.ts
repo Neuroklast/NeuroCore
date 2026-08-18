@@ -1,13 +1,32 @@
-import type { Edge, Node } from "@xyflow/react";
+import { Position, type Edge, type Node } from "@xyflow/react";
+import { audioStepPath, verticalRails, type Obstacle, type Pt } from "./audioStep";
 import { chipBox, jackAnchor } from "./chipLayout";
 import type { ChipData } from "./flowFromAst";
-import { tubePath, type Obstacle, type Pt } from "./tubePath";
+import { cableFace } from "./validateLink";
+import { parseHandle } from "./handles";
+
+function facePosition(jacks: ChipData["jacks"], handle: string | null | undefined, output: boolean): Position {
+  const id = parseHandle(handle)?.id ?? (output ? "out" : "in");
+  const jack = jacks.find((j) => j.id === id);
+  const face = cableFace(jack?.kind ?? "audio");
+  if (face === "bottom") {
+    return Position.Bottom;
+  }
+  if (face === "top") {
+    return Position.Top;
+  }
+  return output ? Position.Right : Position.Left;
+}
 
 export function routeBoard(
   nodes: Node<ChipData>[],
   edges: Edge[],
-): Map<string, { d: string; points: Pt[] }> {
-  const obs: Obstacle[] = nodes.map((n) => {
+): Map<string, { d: string; points: Pt[]; centerX: number }> {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const reservedXs: number[] = [];
+  const reservedPaths: Pt[][] = [];
+  const out = new Map<string, { d: string; points: Pt[]; centerX: number }>();
+  const obstacles: Obstacle[] = nodes.map((n) => {
     const box = chipBox(n.data.type, n.data.jacks, false, n.data.args);
     return {
       id: n.id,
@@ -17,9 +36,6 @@ export function routeBoard(
       h: n.height ?? box.h,
     };
   });
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const reserved: Pt[][] = [];
-  const out = new Map<string, { d: string; points: Pt[] }>();
   const ordered = [...edges].sort((a, b) => a.id.localeCompare(b.id));
   for (const e of ordered) {
     if (e.className === "temp") {
@@ -50,14 +66,18 @@ export function routeBoard(
       dst.height ?? db.h,
       dst.width ?? db.w,
     );
-    const routed = tubePath(a.x, a.y, b.x, b.y, {
-      obstacles: obs,
+    const routed = audioStepPath(a.x, a.y, b.x, b.y, {
+      sourcePosition: facePosition(src.data.jacks, e.sourceHandle, true),
+      targetPosition: facePosition(dst.data.jacks, e.targetHandle, false),
+      reservedXs,
+      reservedPaths,
+      obstacles,
       sourceId: src.id,
       targetId: dst.id,
-      reserved,
     });
-    reserved.push(routed.points);
-    out.set(e.id, { d: routed.d, points: routed.points });
+    reservedXs.push(routed.centerX, ...verticalRails(routed.points));
+    reservedPaths.push(routed.points);
+    out.set(e.id, routed);
   }
   return out;
 }

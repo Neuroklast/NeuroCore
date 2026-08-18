@@ -1,9 +1,11 @@
+import { BOARD_PAD } from "./grid";
+
 export type Pt = { x: number; y: number };
 export type Obstacle = { id: string; x: number; y: number; w: number; h: number };
 
 export const TUBE_STUB = 44;
 export const TUBE_RADIUS = 0;
-export const TUBE_CLEAR = 24;
+export const TUBE_CLEAR = BOARD_PAD;
 /** No corner until the current run is at least this long. */
 export const TUBE_MIN_RUN = 40;
 const EPS = 2.5;
