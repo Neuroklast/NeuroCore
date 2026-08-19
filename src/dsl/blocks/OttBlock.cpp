@@ -78,7 +78,7 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
     applyCoeffs (f1Sm.getCurrentValue(), f2Sm.getCurrentValue());
     varNames.clear();
     if (varPtr != nullptr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 

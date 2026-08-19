@@ -27,7 +27,7 @@ void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
     clearRuntimeState();
     varNames.clear();
     if (varPtr != nullptr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 

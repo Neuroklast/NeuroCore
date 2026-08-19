@@ -2534,7 +2534,7 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
     {
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back(&kv.second, kv.first.toStdString());
     }
     if (useSyncRatio)
@@ -2800,7 +2800,7 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
     {
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back(&kv.second, kv.first.toStdString());
         yPtr = &(*varPtr)["y"];
     }
@@ -3055,7 +3055,7 @@ void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
     applyCoeffs (freqSm.getCurrentValue(), qSm.getCurrentValue(), gainSm.getCurrentValue());
     varNames.clear();
     if (varPtr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
@@ -3218,7 +3218,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
     varNames.clear();
     if (varPtr && (! attackLit || ! releaseLit))
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back(&kv.second, kv.first.toStdString());
     if (varPtr)
         midiGatePtr = &(*varPtr)["midi_gate"];
@@ -4139,7 +4139,7 @@ void SignalChain::Octaver::prepare (const juce::dsp::ProcessSpec& spec)
     clearRuntimeState();
     varNames.clear();
     if (varPtr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
@@ -4432,7 +4432,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     applyBands (qSm.getCurrentValue(), formSm.getCurrentValue());
     varNames.clear();
     if (varPtr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 

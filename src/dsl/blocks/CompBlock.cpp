@@ -41,7 +41,7 @@ void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
     yPtr = nullptr;
     if (varPtr != nullptr)
     {
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
         yPtr = &(*varPtr)["y"];
     }

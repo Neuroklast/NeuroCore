@@ -44,7 +44,7 @@ void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
     ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
     varNames.clear();
     if (varPtr != nullptr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 

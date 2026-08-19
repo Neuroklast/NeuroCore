@@ -49,7 +49,7 @@ void SignalChain::Widen::prepare (const juce::dsp::ProcessSpec& spec)
     snap (bassSm, bassHz, 140.f);
     varNames.clear();
     if (varPtr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 

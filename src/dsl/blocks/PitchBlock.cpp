@@ -51,7 +51,7 @@ void SignalChain::Pitch::prepare (const juce::dsp::ProcessSpec& spec)
     ceilLin = 1.f;
     varNames.clear();
     if (varPtr != nullptr)
-        for (const auto& kv : *varPtr)
+        for (auto& kv : *varPtr)
             varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
