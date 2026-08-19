@@ -7,7 +7,7 @@ import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
 import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
-import { renameCircuitBlock, setCircuitArg } from "./addBlock";
+import { renameCircuitBlock, setCircuitArg, addCircuitBlock, insertCircuitBlockBetween, ADDABLE_BLOCKS } from "./addBlock";
 import { bindEndId, lettersInExpr } from "./bindLinks";
 import { bindableArgKeys, handleId } from "./handles";
 import { commitBind } from "./bindModel";
@@ -216,8 +216,14 @@ export function ChipNode({ data, id }: NodeProps) {
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const toggle = useChipViewStore((s) => s.toggle);
   const setDetail = useChipViewStore((s) => s.setDetail);
+  const toggleMute = useChipViewStore((s) => s.toggleMute);
+  const toggleSolo = useChipViewStore((s) => s.toggleSolo);
+  const isMuted = useChipViewStore((s) => s.isMuted(id));
+  const isSoloed = useChipViewStore((s) => s.isSoloed(id));
+  const isAudible = useChipViewStore((s) => s.isAudible(id));
   const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
+  const { getEdges } = useReactFlow();
   const bpm = useHostStore((s) => s.bpm);
   const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
@@ -239,12 +245,18 @@ export function ChipNode({ data, id }: NodeProps) {
   const liveRows = extra.map((row) => ({ key: row.key, ...liveArg(row.value, knobs), bind: binds.includes(row.key) }));
   const custom = isCustomNode(d.type, id);
   const [rename, setRename] = useState(false);
+  const [showAddPicker, setShowAddPicker] = useState(false);
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   const absY = useStore((s) => s.nodeLookup.get(id)?.internals.positionAbsolute.y ?? 0);
   const shape = lfo ? parseLfoShape(d.args.shape ?? d.args.wave ?? "sine") : "sine";
   const lampMs = lfo ? lfoPeriodMs(hz) : 0;
   const expandAt = chipExpandOffset();
+  
+  // Check if block has both input and output (eligible for mute/solo)
+  const hasInput = ins.length > 0 || topJacks.some((j) => ! j.output) || bottomJacks.some((j) => ! j.output);
+  const hasOutput = outs.length > 0 || topJacks.some((j) => j.output) || bottomJacks.some((j) => j.output);
+  const canMuteSolo = hasInput && hasOutput && ! lfo && ! env;
 
   useLayoutEffect(() => {
     setNodes((ns) => {
@@ -273,10 +285,12 @@ export function ChipNode({ data, id }: NodeProps) {
       data-node-id={id}
       data-bind-node={id}
       data-focus={focus}
+      data-audible={isAudible ? "on" : "off"}
       style={{
         width: box.w,
         height: box.h,
         ["--nk-label-col" as string]: `${LABEL_COL}px`,
+        opacity: isAudible ? 1 : 0.4,
       }}
       onPointerEnter={() => {
         if (dragging) {
@@ -397,6 +411,50 @@ export function ChipNode({ data, id }: NodeProps) {
           )}
         </div>
 
+        {canMuteSolo || detail ? (
+          <div className="mt-1 flex items-center gap-1">
+            {canMuteSolo ? (
+              <>
+                <button
+                  type="button"
+                  className={`nodrag nopan text-[9px] px-1 py-0.5 border ${isMuted ? "bg-warn/20 border-warn text-warn" : "border-accent/40 text-muted hover:text-ink"}`}
+                  title="Mute block"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMute(id);
+                  }}
+                >
+                  M
+                </button>
+                <button
+                  type="button"
+                  className={`nodrag nopan text-[9px] px-1 py-0.5 border ${isSoloed ? "bg-accent/20 border-accent text-accent" : "border-accent/40 text-muted hover:text-ink"}`}
+                  title="Solo block"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSolo(id);
+                  }}
+                >
+                  S
+                </button>
+              </>
+            ) : null}
+            {detail ? (
+              <button
+                type="button"
+                className="nodrag nopan text-[9px] px-1 py-0.5 border border-accent/40 text-accent hover:text-ink ml-auto"
+                title="Add block after this one"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddPicker((v) => ! v);
+                }}
+              >
+                +
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         {detail ? (
           <div className="nk-sock-list">
             {liveRows.map((row) => (
@@ -479,6 +537,48 @@ export function ChipNode({ data, id }: NodeProps) {
           output
           top={jackTopPx(0, 1, box.h)}
         />
+      ) : null}
+      
+      {showAddPicker && detail ? (
+        <div
+          className="nodrag nopan absolute z-10 mt-1 max-h-48 overflow-y-auto border border-accent bg-black p-2 text-[11px]"
+          style={{ top: box.h, left: 0, minWidth: box.w }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-1 text-muted">Add block after {id}:</div>
+          <div className="grid grid-cols-2 gap-1">
+            {ADDABLE_BLOCKS.filter((b) => b.category !== "Mod").slice(0, 12).map((block) => (
+              <button
+                key={block.type + block.label}
+                type="button"
+                className="border border-accent/40 px-2 py-1 text-left text-ink hover:bg-accent/10"
+                onClick={() => {
+                  // Find the first output edge from this node
+                  const edges = getEdges();
+                  const outputEdge = edges.find((e) => e.source === id);
+                  
+                  if (outputEdge) {
+                    // Insert between this node and the target
+                    insertCircuitBlockBetween(block.type, id, outputEdge.target, block.args);
+                  } else {
+                    // No output edge, just add normally
+                    addCircuitBlock(block.type, block.args);
+                  }
+                  setShowAddPicker(false);
+                }}
+              >
+                {block.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="mt-2 w-full border border-accent/40 py-1 text-muted hover:text-ink"
+            onClick={() => setShowAddPicker(false)}
+          >
+            Cancel
+          </button>
+        </div>
       ) : null}
     </div>
   );

@@ -313,7 +313,12 @@ export function Overlays() {
     <div
       className="nk-overlay-host"
       data-phase={shell.phase}
-      onClick={() => setOverlay(null)}
+      onClick={() => {
+        // Only close via X button for inspect overlay
+        if (name !== "inspect") {
+          setOverlay(null);
+        }
+      }}
     >
       <div
         className={`nk-overlay flex w-full flex-col ${
