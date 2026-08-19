@@ -82,6 +82,9 @@ function Board() {
   const origin = useAstStore((s) => s.origin);
   const motion = useHostStore((s) => s.motion);
   const sidechainOn = useHostStore((s) => s.sidechainOn);
+  const isMuted = useChipViewStore((s) => (id: string) => s.muted.has(id));
+  const isSoloed = useChipViewStore((s) => (id: string) => s.soloed.has(id));
+  const soloedSize = useChipViewStore((s) => s.soloed.size);
   const built = useMemo(
     () => (ast ? flowFromAst(ast, { sidechainOn }) : { nodes: [], edges: [] }),
     [ast, sidechainOn],
@@ -552,13 +555,13 @@ function Board() {
                 useChipViewStore.getState().toggleMute(menu.id);
                 closeMenu();
               }}>
-                {useChipViewStore.getState().isMuted(menu.id) ? "Unmute" : "Mute"}
+                {isMuted(menu.id) ? "Unmute" : "Mute"}
               </OsMenuItem>
               <OsMenuItem onClick={() => {
                 useChipViewStore.getState().toggleSolo(menu.id);
                 closeMenu();
               }}>
-                {useChipViewStore.getState().isSoloed(menu.id) ? "Unsolo" : "Solo"}
+                {isSoloed(menu.id) ? "Unsolo" : "Solo"}
               </OsMenuItem>
             </>
           ) : null}
@@ -594,7 +597,7 @@ function Board() {
           ) : null}
           <OsMenuItem onClick={() => { void arrange(); closeMenu(); }}>Arrange</OsMenuItem>
           <OsMenuItem onClick={() => { void compactBoard(); closeMenu(); }}>Compact</OsMenuItem>
-          {useChipViewStore.getState().soloed.size > 0 ? (
+          {soloedSize > 0 ? (
             <OsMenuItem onClick={() => { useChipViewStore.getState().clearSolo(); closeMenu(); }}>Clear Solo</OsMenuItem>
           ) : null}
         </OsContextMenu>

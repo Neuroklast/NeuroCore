@@ -223,25 +223,17 @@ export async function redoCircuit(): Promise<boolean> {
 
 export function addCircuitBlock(type: string, args?: string): string | null {
   const cur = useAstStore.getState();
-  const script = cur.lastValidScript || cur.script;
-  const spec = ADDABLE_BLOCKS.find((a) => a.type === type);
-  const kind = spec?.type ?? type;
+  const scriptBefore = cur.lastValidScript || cur.script;
+  const scriptAfter = scriptAfterAdd(scriptBefore, type, args);
   
-  // Bus blocks don't have a returnable ID
-  if (kind === "bus" || type === "bus") {
-    publishScript(scriptAfterAdd(script, type, args), "canvas");
-    return null;
-  }
+  publishScript(scriptAfter, "canvas");
   
-  // Extract the taken IDs and generate new ID using same logic as scriptAfterAdd
-  const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
-  const id = nextBlockId(kind, taken);
+  // Extract the new block ID by diffing the scripts
+  const beforeIds = new Set([...scriptBefore.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!.toLowerCase()));
+  const afterIds = [...scriptAfter.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  const newId = afterIds.find((id) => ! beforeIds.has(id.toLowerCase()));
   
-  // Publish the script
-  publishScript(scriptAfterAdd(script, type, args), "canvas");
-  
-  // Return the same ID that scriptAfterAdd generated
-  return id;
+  return newId ?? null;
 }
 
 export function insertCircuitBlockBetween(type: string, sourceId: string, targetId: string, args?: string): void {
