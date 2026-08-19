@@ -12739,5 +12739,233 @@
       "max": 1,
       "default": 0.85
     }
+  },
+  {
+    "name": "Surgical Snare Designer",
+    "category": "Drums",
+    "description": "Multiband transient shaper: 3-band xover (low sustain cut 200-300Hz, mid 300-1500Hz snap boost, high 1500+Hz air), envelope per band, glue comp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Surgical Snare Designer\n# Multiband transient shaper: 3-band xover (low sustain cut 200-300Hz, mid 300-1500Hz snap boost, high 1500+Hz air), envelope per band, glue comp.\n# a Low Sustain: 0.1 to 0.6, default 0.35\n# b Mid Attack: 0 to 6, default 3\n# c High Air: 0 to 4, default 2\n# d Snap Time: 0.02 to 0.15, default 0.06\n# e Glue: 2 to 5, default 3\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Low Sustain [0.1, 0.6]\nparam b = Mid Attack [0.0, 6.0]\nparam c = High Air [0.0, 4.0]\nparam d = Snap Time [0.02, 0.15]\nparam e = Glue [2.0, 5.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28  # highpass\nxover1: f1 = 200; f2 = 300\n\nbus low:\n  send: in = 1\n  env1: type = rms; attack = 0.01; release = 0.12  # sustain detector\n  gate1: threshold = -24; hyst = 6; hold = 0.05; range = 0; attack = 0.005; release = 0.2  # cut sustain\n  stage1: y = y * a\n\nbus mid:\n  send: in = 1\n  env2: type = peak; attack = 0.002; release = d  # snap\n  stage2: y = y * (1 + env2 * b * 0.15)  # boost attack\n\nxover2: f1 = 1500\n\nbus high:\n  send: low = 0; mid = 0; in = 1\n  eq1: type = highshelf; freq = 4500; q = 0.7; gain = c  # air\n\nout: low = 1; mid = 1; high = 1\ncomp1: threshold = -14; ratio = e; attack = 0.003; release = 0.08; makeup = 2  # glue\nstage3: y = y * f",
+    "tags": [
+      "snare",
+      "drums",
+      "transient",
+      "multiband",
+      "surgery",
+      "envelope",
+      "attack",
+      "sustain",
+      "snap",
+      "comp"
+    ],
+    "paramA": {
+      "name": "Low Sustain",
+      "min": 0.1,
+      "max": 0.6,
+      "default": 0.35
+    },
+    "paramB": {
+      "name": "Mid Attack",
+      "min": 0,
+      "max": 6,
+      "default": 3
+    },
+    "paramC": {
+      "name": "High Air",
+      "min": 0,
+      "max": 4,
+      "default": 2
+    },
+    "paramD": {
+      "name": "Snap Time",
+      "min": 0.02,
+      "max": 0.15,
+      "default": 0.06
+    },
+    "paramE": {
+      "name": "Glue",
+      "min": 2,
+      "max": 5,
+      "default": 3
+    },
+    "paramF": {
+      "name": "Output",
+      "min": 0.8,
+      "max": 1.2,
+      "default": 1
+    }
+  },
+  {
+    "name": "Depth Sculptor",
+    "category": "Synth",
+    "description": "Psychoacoustic depth: 2-band xover 400Hz (low immediate, high delayed 5-25ms for 3D layback), crossfeed, soft reverb, slight detuning via chorus.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Depth Sculptor\n# Psychoacoustic depth: 2-band xover 400Hz (low immediate, high delayed 5-25ms for 3D layback), crossfeed, soft reverb, slight detuning via chorus.\n# a Delay Depth: 5 to 25, default 15\n# b Crossfeed: 0.2 to 0.6, default 0.4\n# c Reverb: 0.15 to 0.5, default 0.3\n# d Detune: 0.15 to 0.35, default 0.25\n# e Width: 0.7 to 1.2, default 0.95\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Delay Depth [5.0, 25.0]\nparam b = Crossfeed [0.2, 0.6]\nparam c = Reverb [0.15, 0.5]\nparam d = Detune [0.15, 0.35]\nparam e = Width [0.7, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3  # highpass\nxover1: f1 = 400\n\nbus low:\n  send: in = 1\n  # immediate\n\nbus high:\n  send: in = 1\n  delay1: time = a; feedback = 0; mix = 1  # layer-back delay\n  delay2: channel = left; time = 2; feedback = 0; mix = b  # crossfeed L\n  delay3: channel = right; time = 2; feedback = 0; mix = b  # crossfeed R\n  stage1: channel = right; y = y + delay2\n  stage2: channel = left; y = y + delay3\n\nout: low = 1; high = 1\nreverb1: size = 0.5; decay = 0.35; damp = 0.6; mix = c  # soft space\ndelay4: time = 7; feedback = 0.18; mix = d; damp = 7500  # detune chorus\nwiden1: width = e; delay = 12; bass = 150\nlimit1: ceiling = -0.4; release = 0.1",
+    "tags": [
+      "depth",
+      "synth",
+      "psychoacoustic",
+      "3D",
+      "delay",
+      "reverb",
+      "chorus",
+      "detune",
+      "width",
+      "space"
+    ],
+    "paramA": {
+      "name": "Delay Depth",
+      "min": 5,
+      "max": 25,
+      "default": 15
+    },
+    "paramB": {
+      "name": "Crossfeed",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    "paramC": {
+      "name": "Reverb",
+      "min": 0.15,
+      "max": 0.5,
+      "default": 0.3
+    },
+    "paramD": {
+      "name": "Detune",
+      "min": 0.15,
+      "max": 0.35,
+      "default": 0.25
+    },
+    "paramE": {
+      "name": "Width",
+      "min": 0.7,
+      "max": 1.2,
+      "default": 0.95
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.6,
+      "max": 1,
+      "default": 0.85
+    }
+  },
+  {
+    "name": "Multiband Punch Enhancer",
+    "category": "Mastering",
+    "description": "Master bus: 4-band transient processing (sub sub-bass tight, low punch boost, mid clarity, high sparkle), OTT gentle drive, soft limiter -0.3dB.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Multiband Punch Enhancer\n# Master bus: 4-band transient processing (sub sub-bass tight, low punch boost, mid clarity, high sparkle), OTT gentle drive, soft limiter -0.3dB.\n# a Sub Tight: 0 to 4, default 2\n# b Low Punch: 0 to 5, default 3\n# c Mid Clarity: 0 to 4, default 2\n# d High Sparkle: 0 to 3, default 1.5\n# e OTT Drive: 0.2 to 0.5, default 0.35\n# f Master: 0.9 to 1.1, default 1\n\nparam a = Sub Tight [0.0, 4.0]\nparam b = Low Punch [0.0, 5.0]\nparam c = Mid Clarity [0.0, 4.0]\nparam d = High Sparkle [0.0, 3.0]\nparam e = OTT Drive [0.2, 0.5]\nparam f = Master [0.9, 1.1]\nfilter1: type = highpass; cutoff = 20; resonance = 0.22  # highpass\nxover1: f1 = 90; f2 = 600\n\nbus sub:\n  send: in = 1\n  env1: type = peak; attack = 0.005; release = 0.08\n  stage1: y = y * (1 + env1 * a * 0.1)  # tighten\n\nbus low:\n  send: in = 1\n  env2: type = peak; attack = 0.003; release = 0.1\n  stage2: y = y * (1 + env2 * b * 0.12)  # punch\n\nxover2: f1 = 3000\n\nbus mid:\n  send: sub = 0; low = 0; in = 1\n  env3: type = peak; attack = 0.002; release = 0.06\n  stage3: y = y * (1 + env3 * c * 0.1)  # clarity\n\nbus high:\n  send: sub = 0; low = 0; in = 1\n  env4: type = peak; attack = 0.001; release = 0.04\n  stage4: y = y * (1 + env4 * d * 0.08)  # sparkle\n\nout: sub = 1; low = 1; mid = 1; high = 1\nott1: depth = e; time = 0.02; release = 0.1  # gentle drive\nlimit1: ceiling = -0.3; release = 0.12  # master\nstage5: y = y * f",
+    "tags": [
+      "master",
+      "mastering",
+      "multiband",
+      "transient",
+      "punch",
+      "clarity",
+      "sparkle",
+      "ott",
+      "limiter",
+      "glue"
+    ],
+    "paramA": {
+      "name": "Sub Tight",
+      "min": 0,
+      "max": 4,
+      "default": 2
+    },
+    "paramB": {
+      "name": "Low Punch",
+      "min": 0,
+      "max": 5,
+      "default": 3
+    },
+    "paramC": {
+      "name": "Mid Clarity",
+      "min": 0,
+      "max": 4,
+      "default": 2
+    },
+    "paramD": {
+      "name": "High Sparkle",
+      "min": 0,
+      "max": 3,
+      "default": 1.5
+    },
+    "paramE": {
+      "name": "OTT Drive",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.35
+    },
+    "paramF": {
+      "name": "Master",
+      "min": 0.9,
+      "max": 1.1,
+      "default": 1
+    }
+  },
+  {
+    "name": "Dynamic Space Former",
+    "category": "Ambient",
+    "description": "Ambient/pads: 3-band envelope-based expansion (low slow bloom, mid fast decay, high shimmer tail), hall reverb, soft chorus, gentle comp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Dynamic Space Former\n# Ambient/pads: 3-band envelope-based expansion (low slow bloom, mid fast decay, high shimmer tail), hall reverb, soft chorus, gentle comp.\n# a Low Bloom: 0.25 to 0.6, default 0.4\n# b Mid Decay: 0.1 to 0.3, default 0.2\n# c High Shimmer: 0.4 to 0.8, default 0.6\n# d Verb Size: 0.6 to 0.95, default 0.8\n# e Chorus: 0.2 to 0.5, default 0.35\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Low Bloom [0.25, 0.6]\nparam b = Mid Decay [0.1, 0.3]\nparam c = High Shimmer [0.4, 0.8]\nparam d = Verb Size [0.6, 0.95]\nparam e = Chorus [0.2, 0.5]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 35; resonance = 0.28  # highpass\nxover1: f1 = 250; f2 = 2500\n\nbus low:\n  send: in = 1\n  env1: type = rms; attack = 0.05; release = a  # slow bloom\n  stage1: y = y * (0.7 + env1 * 0.5)\n\nbus mid:\n  send: in = 1\n  env2: type = rms; attack = 0.01; release = b  # fast decay\n  stage2: y = y * (0.8 + env2 * 0.4)\n\nbus high:\n  send: in = 1\n  env3: type = peak; attack = 0.005; release = c  # shimmer tail\n  stage3: y = y * (0.5 + env3 * 0.8)\n  eq1: type = highshelf; freq = 5000; q = 0.7; gain = 2  # air\n\nout: low = 1; mid = 1; high = 1\nreverb1: size = d; decay = 0.7; damp = 0.3; mix = 0.5  # hall\ndelay1: time = 8; feedback = 0.25; mix = e; damp = 7000  # chorus\ncomp1: threshold = -20; ratio = 1.5; attack = 0.05; release = 0.3; makeup = 1  # gentle\nlimit1: ceiling = -0.5; release = 0.15",
+    "tags": [
+      "ambient",
+      "pads",
+      "space",
+      "envelope",
+      "bloom",
+      "shimmer",
+      "reverb",
+      "chorus",
+      "dynamic",
+      "expand"
+    ],
+    "paramA": {
+      "name": "Low Bloom",
+      "min": 0.25,
+      "max": 0.6,
+      "default": 0.4
+    },
+    "paramB": {
+      "name": "Mid Decay",
+      "min": 0.1,
+      "max": 0.3,
+      "default": 0.2
+    },
+    "paramC": {
+      "name": "High Shimmer",
+      "min": 0.4,
+      "max": 0.8,
+      "default": 0.6
+    },
+    "paramD": {
+      "name": "Verb Size",
+      "min": 0.6,
+      "max": 0.95,
+      "default": 0.8
+    },
+    "paramE": {
+      "name": "Chorus",
+      "min": 0.2,
+      "max": 0.5,
+      "default": 0.35
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.7,
+      "max": 1,
+      "default": 0.9
+    }
   }
 ]
