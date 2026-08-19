@@ -373,6 +373,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (d.type.startsWith("stage") || d.type == "custom")
         {
             auto st = std::make_unique<Stage>();
+            st->kind = NodeKind::Stage;
             // Scale knob refs a–d via declared param ranges: a → map(a,0,1,min,max)
             juce::String formula = d.args.at("y");
             for (const auto& pd : parsedParams)
@@ -491,6 +492,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("delay"))
         {
             auto dl = std::make_unique<Delay>();
+            dl->kind = NodeKind::Delay;
             dl->varPtr = &variables;
 
             // time = ms (expression/knob) OR sync = 1/8 | 1/4 | ...
@@ -697,6 +699,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith("osc"))
         {
             auto oc = std::make_unique<Osc>();
+            oc->kind = NodeKind::Osc;
             auto shape = d.args.count("shape") ? d.args.at("shape") : "sine";
             oc->osc = makeOsc(shape.toLowerCase());
             oc->depth = d.args.count("depth") ? d.args.at("depth").getFloatValue() : 1.f;
@@ -794,6 +797,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith("filter"))
         {
             auto fi = std::make_unique<Filter>();
+            fi->kind = NodeKind::Filter;
             auto t = d.args.count("type") ? d.args.at("type").toLowerCase() : "lowpass";
             fi->type = parseFilterType(t);
             if (d.args.count ("channel"))
@@ -988,6 +992,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("vocoder"))
         {
             auto vc = std::make_unique<Vocoder>();
+            vc->kind = NodeKind::Vocoder;
             int bands = 8;
             if (d.args.count ("bands"))
                 bands = juce::jlimit (3, Vocoder::kMaxBands, d.args.at ("bands").getIntValue());
@@ -1013,6 +1018,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith("comp"))
         {
             auto co = std::make_unique<Comp>();
+            co->kind = NodeKind::Comp;
             if (d.args.count("threshold"))
             {
                 auto expr = addDefaultMap(d.args.at("threshold"), -60.f, 0.f);
@@ -1085,6 +1091,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                  || d.type.startsWith ("noisegate") || d.type == "noise_gate")
         {
             auto gt = std::make_unique<Gate>();
+            gt->kind = NodeKind::Gate;
             const bool simpleNg = d.type.startsWith ("noisegate")
                                || d.type.startsWith ("ngate")
                                || d.type == "noise_gate";
@@ -1132,6 +1139,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("sidechain") || d.type == "sc" || d.type == "scin")
         {
             auto scb = std::make_unique<Sidechain>();
+            scb->kind = NodeKind::Sidechain;
             scb->varPtr = &variables;
             const auto raw = d.args.count ("mix") ? d.args.at ("mix") : juce::String ("1");
             scb->mixExpr.parseFormula (addDefaultMap (raw, 0.f, 1.f).toStdString());
@@ -1243,6 +1251,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith("env"))
         {
             auto en = std::make_unique<Env>();
+            en->kind = NodeKind::Env;
             en->mode = d.args.count("type") && d.args.at("type").toLowerCase().startsWith("peak")
                            ? Env::Peak : Env::Rms;
             if (d.args.count("attack"))
@@ -1379,7 +1388,37 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
         }
 
+    // Resolve osc/env destSlot pointers once (off the audio thread) so processBlock
+    // never needs to hash juce::String keys to find the variable slot.
+    for (auto& b : *newChain)
+    {
+        if (b->kind == NodeKind::Osc)
+        {
+            auto* oc = static_cast<Osc*> (b.get());
+            oc->destSlot = (oc->varPtr != nullptr && oc->name.isNotEmpty())
+                               ? &(*oc->varPtr)[oc->name] : nullptr;
+        }
+        else if (b->kind == NodeKind::Env)
+        {
+            auto* en = static_cast<Env*> (b.get());
+            en->destSlot = (en->varPtr != nullptr && en->name.isNotEmpty())
+                               ? &(*en->varPtr)[en->name] : nullptr;
+        }
+    }
+
+    // Build alias pointer cache (src float* → dst float*) so the audio thread can
+    // propagate alias values with pointer writes instead of juce::String map lookups.
+    auto newAliasPtrs = std::make_shared<std::vector<std::pair<float*, float*>>>();
+    for (const auto& kv : newAliases)
+    {
+        auto itSrc = variables.find (kv.first);
+        auto itDst = variables.find (kv.second);
+        if (itSrc != variables.end() && itDst != variables.end())
+            newAliasPtrs->push_back ({ &itSrc->second, &itDst->second });
+    }
+
     std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
+    std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
     std::atomic_store (&chain, newChain);
     hot.bind (variables);
     return true;
@@ -1666,7 +1705,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 {
     // Always process the latest published chain — never drop a block to silence
     // (old behaviour: TryLock fail → return → click/crackle on preset load).
-    auto aliasPtr = std::atomic_load(&aliases);
+    auto aliasPtr    = std::atomic_load(&aliases);
+    auto apPtr       = std::atomic_load(&aliasPtrs);
     auto chainPtr = std::atomic_load(&chain);
     if (! chainPtr)
         return;
@@ -1727,9 +1767,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (hot.knob[p] != nullptr)
                 *hot.knob[p] = knobLanes[(size_t) p][(size_t) mid];
 
-        if (aliasPtr)
-            for (const auto& kv : *aliasPtr)
-                variables[kv.second] = variables[kv.first];
+        if (apPtr && ! apPtr->empty())
+            for (auto& [src, dst] : *apPtr)
+                *dst = *src;
 
         if (hot.t != nullptr)
             *hot.t = static_cast<float>(sampleCounter) * invSr;
@@ -1755,9 +1795,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         for (int p = 0; p < Config::kNumUserParams; ++p)
             if (hot.knob[p] != nullptr)
                 *hot.knob[p] = knobLanes[(size_t) p][(size_t) i];
-        if (aliasPtr)
-            for (const auto& kv : *aliasPtr)
-                variables[kv.second] = variables[kv.first];
+        if (apPtr && ! apPtr->empty())
+            for (auto& [src, dst] : *apPtr)
+                *dst = *src;
         if (currentSpec.sampleRate > 0.0 && hot.t != nullptr)
             *hot.t = static_cast<float> (sampleCounter + i) * invSr;
         publishSidechainSample (i);
@@ -1771,15 +1811,15 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
     for (auto& b : *chainPtr)
     {
-        if (auto* oc = dynamic_cast<Osc*> (b.get()))
+        if (b->kind == NodeKind::Osc)
         {
             if (nOsc < kMaxMods)
-                oscs[nOsc++] = oc;
+                oscs[nOsc++] = static_cast<Osc*> (b.get());
         }
-        else if (auto* en = dynamic_cast<Env*> (b.get()))
+        else if (b->kind == NodeKind::Env)
         {
             if (nEnv < kMaxMods)
-                envs[nEnv++] = en;
+                envs[nEnv++] = static_cast<Env*> (b.get());
         }
     }
 
@@ -1792,15 +1832,6 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (envs[e]->destSlot != nullptr && (int) envs[e]->modLane.size() > i)
                 *envs[e]->destSlot = envs[e]->modLane[(size_t) i];
     };
-    for (int o = 0; o < nOsc; ++o)
-        if (oscs[o]->varPtr != nullptr && oscs[o]->name.isNotEmpty())
-            oscs[o]->destSlot = &(*oscs[o]->varPtr)[oscs[o]->name];
-    for (int e = 0; e < nEnv; ++e)
-        if (envs[e]->varPtr != nullptr && envs[e]->name.isNotEmpty())
-            envs[e]->destSlot = &(*envs[e]->varPtr)[envs[e]->name];
-    for (auto& b : *chainPtr)
-        if (auto* st = dynamic_cast<Stage*> (b.get()))
-            st->bindSlots();
 
     for (int i = 0; i < nOsc; ++i)
     {
@@ -1811,30 +1842,37 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     }
 
     for (auto& b : *chainPtr)
-        if (auto* vc = dynamic_cast<Vocoder*> (b.get()))
+    {
+        switch (b->kind)
         {
-            vc->scL = extScL;
-            vc->scR = extScR;
-            vc->scN = extScN;
+            case NodeKind::Vocoder:
+            {
+                auto* vc = static_cast<Vocoder*> (b.get());
+                vc->scL = extScL; vc->scR = extScR; vc->scN = extScN;
+                break;
+            }
+            case NodeKind::Gate:
+            {
+                auto* gt = static_cast<Gate*> (b.get());
+                gt->scL = extScL; gt->scR = extScR; gt->scN = extScN;
+                break;
+            }
+            case NodeKind::Comp:
+            {
+                auto* co = static_cast<Comp*> (b.get());
+                co->scL = extScL; co->scR = extScR; co->scN = extScN;
+                break;
+            }
+            case NodeKind::Sidechain:
+            {
+                auto* scb = static_cast<Sidechain*> (b.get());
+                scb->scL = extScL; scb->scR = extScR; scb->scN = extScN;
+                break;
+            }
+            default:
+                break;
         }
-        else if (auto* gt = dynamic_cast<Gate*> (b.get()))
-        {
-            gt->scL = extScL;
-            gt->scR = extScR;
-            gt->scN = extScN;
-        }
-        else if (auto* co = dynamic_cast<Comp*> (b.get()))
-        {
-            co->scL = extScL;
-            co->scR = extScR;
-            co->scN = extScN;
-        }
-        else if (auto* scb = dynamic_cast<Sidechain*> (b.get()))
-        {
-            scb->scL = extScL;
-            scb->scR = extScR;
-            scb->scN = extScN;
-        }
+    }
 
     auto graphPtr = std::atomic_load (&busGraph);
     const bool multi = graphPtr != nullptr
@@ -1870,133 +1908,143 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         {
             if (onlyBus.isNotEmpty() && ! b->busName.equalsIgnoreCase (onlyBus))
                 continue;
-            if (dynamic_cast<Osc*> (b.get()) != nullptr
-                || dynamic_cast<Env*> (b.get()) != nullptr)
-                continue;
 
-            if (auto* st = dynamic_cast<Stage*> (b.get()))
+            switch (b->kind)
             {
-                if (st->msEncode && workCh >= 2)
-                {
-                    auto* l = work.getWritePointer (0);
-                    auto* r = work.getWritePointer (1);
-                    for (int i = 0; i < numSamples; ++i)
-                    {
-                        const float m = (l[i] + r[i]) * 0.5f;
-                        const float s = (l[i] - r[i]) * 0.5f;
-                        l[i] = m;
-                        r[i] = s;
-                    }
-                }
+                case NodeKind::Osc:
+                case NodeKind::Env:
+                    continue;
 
-                if (st->needsSampleLoop())
+                case NodeKind::Stage:
                 {
-                    if (! st->needsPerSampleInject())
+                    auto* st = static_cast<Stage*> (b.get());
+                    if (st->msEncode && workCh >= 2)
                     {
-                        st->processBlock (work);
-                    }
-                    else
-                    {
-                        st->prepareBlockEval();
-                        const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
-                        const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
-                                                   ? 1
-                                                   : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
-
+                        auto* l = work.getWritePointer (0);
+                        auto* r = work.getWritePointer (1);
                         for (int i = 0; i < numSamples; ++i)
                         {
-                            if (st->usesTimeVariable)
-                                injectKnobsAt (i);
-                            else
+                            const float m = (l[i] + r[i]) * 0.5f;
+                            const float s = (l[i] - r[i]) * 0.5f;
+                            l[i] = m;
+                            r[i] = s;
+                        }
+                    }
+
+                    if (st->needsSampleLoop())
+                    {
+                        if (! st->needsPerSampleInject())
+                        {
+                            st->processBlock (work);
+                        }
+                        else
+                        {
+                            st->prepareBlockEval();
+                            const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
+                            const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
+                                                       ? 1
+                                                       : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
+
+                            for (int i = 0; i < numSamples; ++i)
                             {
-                                for (int p = 0; p < Config::kNumUserParams; ++p)
-                                    if (hot.knob[p] != nullptr)
-                                        *hot.knob[p] = knobLanes[(size_t) p][(size_t) i];
+                                if (st->usesTimeVariable)
+                                    injectKnobsAt (i);
+                                else
+                                {
+                                    for (int p = 0; p < Config::kNumUserParams; ++p)
+                                        if (hot.knob[p] != nullptr)
+                                            *hot.knob[p] = knobLanes[(size_t) p][(size_t) i];
+                                    if (st->usesModulation)
+                                        publishSidechainSample (i);
+                                }
+
                                 if (st->usesModulation)
-                                    publishSidechainSample (i);
-                            }
+                                    writeModsAt (i);
 
-                            if (st->usesModulation)
-                                writeModsAt (i);
-
-                            for (size_t ch = firstCh; ch < lastCh; ++ch)
-                            {
-                                ExpressionEvaluator::setProcessingChannel ((int) ch);
-                                auto* data = work.getWritePointer ((int) ch);
-                                data[i] = st->processPrepared ((int) ch, data[i]);
+                                for (size_t ch = firstCh; ch < lastCh; ++ch)
+                                {
+                                    ExpressionEvaluator::setProcessingChannel ((int) ch);
+                                    auto* data = work.getWritePointer ((int) ch);
+                                    data[i] = st->processPrepared ((int) ch, data[i]);
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    st->processBlock (work);
+                    else
+                    {
+                        st->processBlock (work);
+                    }
+
+                    if (st->msDecode && workCh >= 2)
+                    {
+                        auto* m = work.getWritePointer (0);
+                        auto* s = work.getWritePointer (1);
+                        for (int i = 0; i < numSamples; ++i)
+                        {
+                            const float l = m[i] + s[i];
+                            const float r = m[i] - s[i];
+                            m[i] = l;
+                            s[i] = r;
+                        }
+                    }
+                    if (b->tapId.isNotEmpty())
+                        writeNodeTap (b->tapId, work);
+                    continue;
                 }
 
-                if (st->msDecode && workCh >= 2)
+                case NodeKind::Delay:
                 {
-                    auto* m = work.getWritePointer (0);
-                    auto* s = work.getWritePointer (1);
+                    auto* dl = static_cast<Delay*> (b.get());
+                    auto* L = work.getWritePointer (0);
+                    auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
+                    const int mid = juce::jmax (0, numSamples - 1);
+                    injectKnobsAt (mid);
+                    writeModsAt (mid);
+                    dl->syncFromVariables();
                     for (int i = 0; i < numSamples; ++i)
-                    {
-                        const float l = m[i] + s[i];
-                        const float r = m[i] - s[i];
-                        m[i] = l;
-                        s[i] = r;
-                    }
+                        dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
+                    if (b->tapId.isNotEmpty())
+                        writeNodeTap (b->tapId, work);
+                    continue;
                 }
-                if (b->tapId.isNotEmpty())
-                    writeNodeTap (b->tapId, work);
-                continue;
-            }
 
-            if (auto* dl = dynamic_cast<Delay*> (b.get()))
-            {
-                auto* L = work.getWritePointer (0);
-                auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
-                const int mid = juce::jmax (0, numSamples - 1);
-                injectKnobsAt (mid);
-                writeModsAt (mid);
-                dl->syncFromVariables();
-                for (int i = 0; i < numSamples; ++i)
-                    dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
-                if (b->tapId.isNotEmpty())
-                    writeNodeTap (b->tapId, work);
-                continue;
-            }
-
-            if (auto* fi = dynamic_cast<Filter*> (b.get()))
-            {
-                if (fi->modulated)
+                case NodeKind::Filter:
                 {
-                    const int stride = juce::jmax (1, Config::kFilterCoeffStride);
-                    for (int i = 0; i < numSamples; )
+                    auto* fi = static_cast<Filter*> (b.get());
+                    if (fi->modulated)
                     {
-                        const int n = juce::jmin (stride, numSamples - i);
-                        const int mid = i + n / 2;
-                        for (int p = 0; p < Config::kNumUserParams; ++p)
-                            if (hot.knob[p] != nullptr)
-                                *hot.knob[p] = knobLanes[(size_t) p][(size_t) mid];
-                        publishSidechainSample (mid);
-                        writeModsAt (mid);
+                        const int stride = juce::jmax (1, Config::kFilterCoeffStride);
+                        for (int i = 0; i < numSamples; )
+                        {
+                            const int n = juce::jmin (stride, numSamples - i);
+                            const int mid = i + n / 2;
+                            for (int p = 0; p < Config::kNumUserParams; ++p)
+                                if (hot.knob[p] != nullptr)
+                                    *hot.knob[p] = knobLanes[(size_t) p][(size_t) mid];
+                            publishSidechainSample (mid);
+                            writeModsAt (mid);
 
-                        fi->advanceCoeffsFor (n);
-                        for (int k = 0; k < n; ++k)
-                            for (int ch = 0; ch < workCh; ++ch)
-                            {
-                                auto* data = work.getWritePointer (ch);
-                                data[i + k] = fi->processSampleOnly (ch, data[i + k]);
-                            }
-                        i += n;
+                            fi->advanceCoeffsFor (n);
+                            for (int k = 0; k < n; ++k)
+                                for (int ch = 0; ch < workCh; ++ch)
+                                {
+                                    auto* data = work.getWritePointer (ch);
+                                    data[i + k] = fi->processSampleOnly (ch, data[i + k]);
+                                }
+                            i += n;
+                        }
                     }
+                    else
+                    {
+                        fi->processBlock (work);
+                    }
+                    if (b->tapId.isNotEmpty())
+                        writeNodeTap (b->tapId, work);
+                    continue;
                 }
-                else
-                {
-                    fi->processBlock (work);
-                }
-                if (b->tapId.isNotEmpty())
-                    writeNodeTap (b->tapId, work);
-                continue;
+
+                default:
+                    break;
             }
 
             b->processBlock (work);
@@ -2083,6 +2131,7 @@ void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
     idxY      = eval.getVariableIndex("y");
     idxCh     = eval.getVariableIndex("ch");
     yPtr      = &(*varPtr)["y"];
+    tPtr      = &(*varPtr)["t"];
 
     for (int p = 0; p < Config::kNumUserParams; ++p)
         paramIndices[(size_t) p] = eval.getVariableIndex (Config::kDefaultVariableNames[p]);
@@ -2097,6 +2146,7 @@ void SignalChain::Stage::bindSlots() noexcept
     for (int p = 0; p < Config::kNumUserParams; ++p)
         paramSlots[p] = &(*varPtr)[juce::String (Config::kDefaultVariableNames[p])];
     yPtr = &(*varPtr)["y"];
+    tPtr = &(*varPtr)["t"];
     if (varRefs.empty())
     {
         for (auto& kv : *varPtr)
@@ -2270,7 +2320,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     if (needsSampleLoop())
     {
         const float invSr = (sampleRate > 0.0f) ? (1.0f / sampleRate) : (1.0f / 44100.0f);
-        const float t0 = varPtr ? (*varPtr)["t"] : 0.0f;
+        const float t0 = tPtr != nullptr ? *tPtr : 0.0f;
         prepareBlockEval();
 
         for (size_t ch = firstCh; ch < lastCh; ++ch)
@@ -2279,14 +2329,14 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             auto* data = block.getChannelPointer (ch);
             for (size_t i = 0; i < numSamples; ++i)
             {
-                if (usesTimeVariable && varPtr)
-                    (*varPtr)["t"] = t0 + static_cast<float>(i) * invSr;
+                if (usesTimeVariable && tPtr != nullptr)
+                    *tPtr = t0 + static_cast<float>(i) * invSr;
                 data[i] = processPrepared (static_cast<int>(ch), data[i]);
             }
         }
 
-        if (usesTimeVariable && varPtr && numSamples > 0)
-            (*varPtr)["t"] = t0 + static_cast<float>(numSamples - 1) * invSr;
+        if (usesTimeVariable && tPtr != nullptr && numSamples > 0)
+            *tPtr = t0 + static_cast<float>(numSamples - 1) * invSr;
     }
     else
     {
@@ -2316,9 +2366,10 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
                 if (varPtr)
                 {
                     for (int p = 0; p < Config::kNumUserParams; ++p)
-                        if (paramIndices[(size_t) p] != ExpressionEvaluator::invalidIndex)
+                        if (paramIndices[(size_t) p] != ExpressionEvaluator::invalidIndex
+                            && paramSlots[p] != nullptr)
                             vars[paramIndices[(size_t) p]] = juce::dsp::SIMDRegister<float>(
-                                (*varPtr)[Config::kDefaultVariableNames[p]]);
+                                *paramSlots[p]);
                 }
                 for (const auto& vr : varRefs)
                     vars[vr.index] = juce::dsp::SIMDRegister<float>(*vr.value);
@@ -2403,7 +2454,7 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     if (varPtr)
     {
         for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+            varNames.emplace_back(&kv.second, kv.first.toStdString());
     }
     if (useSyncRatio)
         updateSyncFrequency();
@@ -2419,7 +2470,7 @@ void SignalChain::Osc::updateFrequencyFromExpr() noexcept
         return;
 
     for (const auto& n : varNames)
-        freqExpr.setVariable(n.second, (*varPtr)[n.first]);
+        freqExpr.setVariable(n.second, *n.first);
 
     float f = freqExpr.evaluate (0.0f);
     if (freqExprIsPeriodMs)
@@ -2437,7 +2488,7 @@ void SignalChain::Osc::updateSyncFrequency() noexcept
     if (useSyncExpr && varPtr)
     {
         for (const auto& n : varNames)
-            syncExpr.setVariable (n.second, (*varPtr)[n.first]);
+            syncExpr.setVariable (n.second, *n.first);
         const float r = syncExpr.evaluate (0.0f);
         if (std::isfinite (r) && r > 0.0f)
         {
@@ -2492,7 +2543,9 @@ float SignalChain::Osc::process(int ch, float x)
             modSm.setTargetValue (v);
             v = modSm.getNextValue();
         }
-        if (varPtr)
+        if (destSlot != nullptr)
+            *destSlot = v;
+        else if (varPtr)
             (*varPtr)[name] = v;
         if (! last.empty())
             last[0] = v;
@@ -2502,7 +2555,9 @@ float SignalChain::Osc::process(int ch, float x)
     {
         // Share sample from ch0 for remaining channels
         last[(size_t) ch] = last[0];
-        if (varPtr)
+        if (destSlot != nullptr)
+            *destSlot = last[0];
+        else if (varPtr)
             (*varPtr)[name] = last[0];
     }
     return x; // oscillators are modulation sources — never replace the audio path
@@ -2618,12 +2673,8 @@ void SignalChain::Osc::renderModBlock (int numSamples) noexcept
         lastV = v;
     }
 
-    if (varPtr != nullptr && name.isNotEmpty())
-        destSlot = &(*varPtr)[name];
     if (destSlot != nullptr)
         *destSlot = lastV;
-    else if (varPtr)
-        (*varPtr)[name] = lastV;
     if (! last.empty())
         std::fill (last.begin(), last.end(), lastV);
 }
@@ -2671,8 +2722,11 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     lastAppliedRes = -1.f;
     varNames.clear();
     if (varPtr)
+    {
         for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+            varNames.emplace_back(&kv.second, kv.first.toStdString());
+        yPtr = &(*varPtr)["y"];
+    }
 }
 
 void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
@@ -2684,12 +2738,12 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
     const float probe = 0.0f;
     for (const auto& n : varNames)
     {
-        cutoff.setVariable(n.second, (*varPtr)[n.first]);
-        resonance.setVariable(n.second, (*varPtr)[n.first]);
-        center.setVariable(n.second, (*varPtr)[n.first]);
-        width.setVariable(n.second, (*varPtr)[n.first]);
-        lowcut.setVariable(n.second, (*varPtr)[n.first]);
-        highcut.setVariable(n.second, (*varPtr)[n.first]);
+        cutoff.setVariable(n.second, *n.first);
+        resonance.setVariable(n.second, *n.first);
+        center.setVariable(n.second, *n.first);
+        width.setVariable(n.second, *n.first);
+        lowcut.setVariable(n.second, *n.first);
+        highcut.setVariable(n.second, *n.first);
     }
 
     float fc = cutoff.evaluateLive (probe);
@@ -2767,7 +2821,7 @@ float SignalChain::Filter::processSampleOnly (int ch, float x) noexcept
     if (ch < (int) yPrev.size())
         yPrev[(size_t) ch] = y;
     if (varPtr)
-        (*varPtr)["y"] = y;
+        if (yPtr) *yPtr = y;
     return y;
 }
 
@@ -2790,7 +2844,7 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
 
     for (const auto& n : varNames)
     {
-        const auto v = (*varPtr)[n.first];
+        const auto v = *n.first;
         cutoff.setVariable(n.second, v);
         resonance.setVariable(n.second, v);
         center.setVariable(n.second, v);
@@ -2890,7 +2944,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    (*varPtr)["y"] = buffer.getSample(0, numSamples - 1);
+    if (yPtr)
+        *yPtr = buffer.getSample(0, numSamples - 1);
 }
 
 void SignalChain::Eq::clearRuntimeState() noexcept
@@ -2924,7 +2979,7 @@ void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 void SignalChain::Eq::applyCoeffs (float fHz, float qVal, float gDb) noexcept
@@ -2988,7 +3043,7 @@ void SignalChain::Eq::processBlock (juce::AudioBuffer<float>& buffer)
     {
         for (const auto& vn : varNames)
         {
-            const float v = (*varPtr)[vn.first];
+            const float v = *vn.first;
             freq.setVariable (vn.second, v);
             q.setVariable (vn.second, v);
             gainDb.setVariable (vn.second, v);
@@ -3042,7 +3097,9 @@ void SignalChain::Env::clearRuntimeState() noexcept
     std::fill (modLane.begin(), modLane.end(), 0.f);
     prevMidiGate = 0.f;
     holdLeft = 0;
-    if (varPtr && name.isNotEmpty())
+    if (destSlot != nullptr)
+        *destSlot = minFixed;
+    else if (varPtr && name.isNotEmpty())
         (*varPtr)[name] = minFixed;
 }
 
@@ -3085,7 +3142,9 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr && (! attackLit || ! releaseLit))
         for (const auto& kv : *varPtr)
-            varNames.emplace_back(kv.first, kv.first.toStdString());
+            varNames.emplace_back(&kv.second, kv.first.toStdString());
+    if (varPtr)
+        midiGatePtr = &(*varPtr)["midi_gate"];
 }
 
 float SignalChain::Env::process(int ch, float x)
@@ -3100,9 +3159,9 @@ float SignalChain::Env::process(int ch, float x)
         for (const auto& n : varNames)
         {
             if (! attackLit)
-                attack.setVariable(n.second, (*varPtr)[n.first]);
+                attack.setVariable(n.second, *n.first);
             if (! releaseLit)
-                release.setVariable(n.second, (*varPtr)[n.first]);
+                release.setVariable(n.second, *n.first);
         }
         if (! attackLit)
         {
@@ -3129,7 +3188,7 @@ float SignalChain::Env::process(int ch, float x)
     // MIDI gate trigger: reset envelope on gate rising edge (ch 0 only to avoid double-trigger)
     if (triggerOnMidiGate && ch == 0)
     {
-        const float currentGate = (*varPtr)["midi_gate"];
+        const float currentGate = midiGatePtr != nullptr ? *midiGatePtr : 0.0f;
         if (currentGate > 0.5f && prevMidiGate <= 0.5f)
         {
             for (auto& v : value)
@@ -3169,8 +3228,6 @@ float SignalChain::Env::process(int ch, float x)
         y = lo;
     if (destSlot != nullptr)
         *destSlot = y;
-    else
-        (*varPtr)[name] = y;
     return x;
 }
 
@@ -3179,8 +3236,6 @@ void SignalChain::Env::renderModBlock (const float* left, const float* right, in
     if (numSamples <= 0)
         return;
 
-    if (varPtr != nullptr && name.isNotEmpty())
-        destSlot = &(*varPtr)[name];
     if ((int) modLane.size() < numSamples)
         modLane.resize ((size_t) numSamples);
 
@@ -3395,10 +3450,10 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     {
         varNames.clear();
         for (auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
         for (const auto& n : varNames)
         {
-            const float v = (*varPtr)[n.first];
+            const float v = *n.first;
             timeMs.setVariable (n.second, v);
             feedback.setVariable (n.second, v);
             mix.setVariable (n.second, v);
@@ -3489,7 +3544,7 @@ float SignalChain::Delay::process (int ch, float x)
     {
         for (const auto& n : varNames)
         {
-            const float v = (*varPtr)[n.first];
+            const float v = *n.first;
             timeMs.setVariable (n.second, v);
             feedback.setVariable (n.second, v);
             mix.setVariable (n.second, v);
@@ -3535,7 +3590,7 @@ void SignalChain::Delay::syncFromVariables() noexcept
     {
         for (const auto& n : varNames)
         {
-            const float v = (*varPtr)[n.first];
+            const float v = *n.first;
             timeMs.setVariable (n.second, v);
             feedback.setVariable (n.second, v);
             mix.setVariable (n.second, v);
@@ -3736,10 +3791,10 @@ void SignalChain::Reverb::prepare (const juce::dsp::ProcessSpec& spec)
     {
         varNames.clear();
         for (auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
         for (const auto& n : varNames)
         {
-            const float v = (*varPtr)[n.first];
+            const float v = *n.first;
             sizeExpr.setVariable (n.second, v);
             decayExpr.setVariable (n.second, v);
             dampExpr.setVariable (n.second, v);
@@ -3820,7 +3875,7 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
     {
         for (const auto& n : varNames)
         {
-            const float v = (*varPtr)[n.first];
+            const float v = *n.first;
             sizeExpr.setVariable (n.second, v);
             decayExpr.setVariable (n.second, v);
             dampExpr.setVariable (n.second, v);
@@ -3991,7 +4046,7 @@ void SignalChain::Octaver::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 void SignalChain::Octaver::tickDetector (float mid, float thr) noexcept
@@ -4138,7 +4193,7 @@ void SignalChain::Octaver::processBlock (juce::AudioBuffer<float>& buffer)
     {
         for (const auto& vn : varNames)
         {
-            const float v = (*varPtr)[vn.first];
+            const float v = *vn.first;
             subExpr.setVariable (vn.second, v);
             upExpr.setVariable (vn.second, v);
             mixExpr.setVariable (vn.second, v);
@@ -4284,7 +4339,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Vocoder::process (int channel, float x)
@@ -4304,7 +4359,7 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     {
         for (const auto& vn : varNames)
         {
-            const float v = (*varPtr)[vn.first];
+            const float v = *vn.first;
             mixExpr.setVariable (vn.second, v);
             qExpr.setVariable (vn.second, v);
             formantExpr.setVariable (vn.second, v);
@@ -4570,10 +4625,10 @@ void SignalChain::Sidechain::syncMixFromVars() noexcept
         if (varNames.empty())
         {
             for (auto& kv : *varPtr)
-                varNames.emplace_back (kv.first, kv.first.toStdString());
+                varNames.emplace_back (&kv.second, kv.first.toStdString());
         }
         for (const auto& n : varNames)
-            mixExpr.setVariable (n.second, (*varPtr)[n.first]);
+            mixExpr.setVariable (n.second, *n.first);
     }
     float m = mixExpr.evaluate (0.f);
     if (! std::isfinite (m)) m = 1.f;
