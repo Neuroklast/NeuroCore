@@ -56,7 +56,7 @@ Quelle: `screenshots/Screenshot 2026-08-16 231501.png` (Phaser Lab), `231939.png
 | GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. |
 | CpuProtect / Footer | Anzeige soll 0–100 sein. 8× + LFO-Filter kann den Guard trotzdem trippen. |
 | Tests | Zu viele Sample-`expect`. Neue Arbeit = Contracts. |
-| Rest | Factory: `resources/factory_presets.json` (270 = 254 curated + 4 Club flagships + 12 PDF chains). Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). |
+| Rest | Factory: `resources/factory_presets.json` (300 = 270 original + 30 genre-specific advanced production techniques: hardstyle/cyberpunk/midtempo/industrial presets covering pre-distortion EQ sweeps, clip-to-zero loudness, LFO grooves, phase alignment, multiband processing, transient shaping, and granular effects). Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). |
 
 ## Build
 
