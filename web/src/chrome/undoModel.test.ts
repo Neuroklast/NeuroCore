@@ -15,4 +15,16 @@ describe("formula undo chords", () => {
     expect(undoTargetIsText({ tagName: "DIV" })).toBe(false);
     expect(undoTargetIsText(null)).toBe(false);
   });
+
+  it("recognises a Monaco editor container as a text target (Issue 2: Ctrl+A)", () => {
+    // Monaco renders inside a div that has class 'monaco-editor'.
+    // undoTargetIsText must return true so that the global keydown handler does
+    // NOT block Ctrl+A for that element.
+    const monacoEl = {
+      tagName: "DIV",
+      isContentEditable: false,
+      closest: (sel: string) => sel.includes("monaco-editor") ? {} : null,
+    };
+    expect(undoTargetIsText(monacoEl)).toBe(true);
+  });
 });

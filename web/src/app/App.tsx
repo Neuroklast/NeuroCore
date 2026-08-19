@@ -75,7 +75,13 @@ export function App() {
         e.preventDefault();
         e.stopPropagation();
         if (hasJuceBridge())
-          void getNativeFunction("hostKey")({ key: "Space" }).catch(() => undefined);
+          void getNativeFunction("hostKey")({ key: e.key }).catch(() => undefined);
+        return;
+      }
+      // Issue 2: Ctrl+A inside the DSL code editor (Monaco / any text input) must
+      // reach the editor's native select-all handler.  undoTargetIsText already
+      // detects Monaco containers via the `.monaco-editor` class selector.
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && undoTargetIsText(e.target)) {
         return;
       }
       if (shouldBlockBrowserShortcut(e)) {

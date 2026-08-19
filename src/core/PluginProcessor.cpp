@@ -268,7 +268,9 @@ void NeuroKoreAudioProcessor::reset()
     waveformCapture.reset();
     continuityN = 0;
     continuityDecay = 0.f;
-    fadeInRemain = 0;
+    // Issue 4: apply a short fade-in so the oversampler filter's initial-state
+    // transient (caused by the reset) is masked rather than heard as a click.
+    fadeInRemain = 256;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations

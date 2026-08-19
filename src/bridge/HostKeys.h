@@ -12,9 +12,14 @@ inline bool isHostTransportKey (const juce::KeyPress& key) noexcept
         && ! key.getModifiers().isAnyModifierKeyDown();
 }
 
+/**
+ * Returns true for key names that must always be forwarded to the DAW host.
+ * Space = play/pause; "0", "1", "/" = Cubase numpad locate/loop transport.
+ */
 inline bool isHostTransportName (const juce::String& name) noexcept
 {
-    return name.equalsIgnoreCase ("Space") || name == " ";
+    return name.equalsIgnoreCase ("Space") || name == " "
+        || name == "0" || name == "1" || name == "/";
 }
 
 /** DAW HWND, or nullptr when the plugin is the top-level window (standalone). */
