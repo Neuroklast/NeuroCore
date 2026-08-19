@@ -12112,5 +12112,347 @@
       "max": 1.15,
       "default": 1
     }
+  },
+  {
+    "name": "rekkt Midtempo Pump",
+    "category": "Synth",
+    "description": "Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# rekkt Midtempo Pump\n# Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.\n# a LFO Rate: 1/1 to 1/16, default 1/8\n# b Filter Depth: 1000 to 4000, default 2500\n# c Reso Depth: 0.5 to 2.5, default 1.5\n# d Drive Depth: 2 to 5, default 3.5\n# e Noise: 0.05 to 0.2, default 0.1\n# f Pump: 2 to 8, default 4\n\nparam a = LFO Rate [1/1, 1/16]\nparam b = Filter Depth [1000, 4000]\nparam c = Reso Depth [0.5, 2.5]\nparam d = Drive Depth [2.0, 5.0]\nparam e = Noise [0.05, 0.2]\nparam f = Pump [2.0, 8.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35  # highpass\nosc1: shape = triangle; sync = a; depth = 1.0  # LFO\nstage1: y = x * (1 - e) + (x * 2 - 1) * e  # noise injection\nfilter2: type = lowpass; cutoff = 300 + osc1 * b; resonance = 0.4 + osc1 * c  # swept LPF\nstage2: y = tube(y, 1.5 + osc1 * d)  # drive modulation\nstage3: y = fold(y, -0.35, 0.45)  # asymmetric fold\ncomp1: threshold = -14; ratio = f; attack = 0.003; release = 0.08; makeup = 4  # pump comp\nfilter3: type = lowpass; cutoff = 7500; resonance = 0.28  # anti-alias\nlimit1: ceiling = -0.3; release = 0.1  # limiter",
+    "tags": [
+      "midtempo",
+      "synth",
+      "lfo",
+      "pump",
+      "groove",
+      "fold",
+      "noise",
+      "modulation",
+      "filter",
+      "tube"
+    ],
+    "paramA": {
+      "name": "LFO Rate",
+      "min": 1,
+      "max": 0.0625,
+      "default": 0.125
+    },
+    "paramB": {
+      "name": "Filter Depth",
+      "min": 1000,
+      "max": 4000,
+      "default": 2500
+    },
+    "paramC": {
+      "name": "Reso Depth",
+      "min": 0.5,
+      "max": 2.5,
+      "default": 1.5
+    },
+    "paramD": {
+      "name": "Drive Depth",
+      "min": 2,
+      "max": 5,
+      "default": 3.5
+    },
+    "paramE": {
+      "name": "Noise",
+      "min": 0.05,
+      "max": 0.2,
+      "default": 0.1
+    },
+    "paramF": {
+      "name": "Pump",
+      "min": 2,
+      "max": 8,
+      "default": 4
+    }
+  },
+  {
+    "name": "zerosum Chaos Grid",
+    "category": "Creative",
+    "description": "Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# zerosum Chaos Grid\n# Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.\n# a Chaos Rate: 4 to 18, default 9\n# b Crush Depth: 4 to 10, default 7\n# c Fold Asym: 0.3 to 0.8, default 0.5\n# d Delay Chaos: 0.2 to 1.5, default 0.6\n# e Gate Thresh: -42 to -30, default -38\n# f Mix: 0.5 to 1, default 0.8\n\nparam a = Chaos Rate [4.0, 18.0]\nparam b = Crush Depth [4.0, 10.0]\nparam c = Fold Asym [0.3, 0.8]\nparam d = Delay Chaos [0.2, 1.5]\nparam e = Gate Thresh [-42, -30]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4  # highpass\nosc1: shape = square; freq = a; depth = 1.0  # S&H LFO\nosc2: shape = triangle; freq = d; depth = 1.0  # delay mod LFO\nfilter2: type = lowpass; cutoff = 400 + osc1 * 3000; resonance = 1.2  # random filter jumps\nstage1: y = bitcrush(y, b + osc1 * 3)  # stepped bitcrush\ndelay1: time = 80; feedback = 0.4 + osc2 * 0.25; mix = 0.35; damp = 5000  # chaos delay\nstage2: y = fold(y, -0.2 * c, 0.6 * c)  # asymmetric fold\nfilter3: type = lowpass; cutoff = 6800; resonance = 0.32  # anti-alias\ngate1: threshold = e; hyst = 6; hold = 0.06; range = -80; attack = 0.001; release = 0.06  # gate",
+    "tags": [
+      "experimental",
+      "glitch",
+      "chaos",
+      "lfo",
+      "sh",
+      "bitcrush",
+      "fold",
+      "delay",
+      "gate",
+      "random"
+    ],
+    "paramA": {
+      "name": "Chaos Rate",
+      "min": 4,
+      "max": 18,
+      "default": 9
+    },
+    "paramB": {
+      "name": "Crush Depth",
+      "min": 4,
+      "max": 10,
+      "default": 7
+    },
+    "paramC": {
+      "name": "Fold Asym",
+      "min": 0.3,
+      "max": 0.8,
+      "default": 0.5
+    },
+    "paramD": {
+      "name": "Delay Chaos",
+      "min": 0.2,
+      "max": 1.5,
+      "default": 0.6
+    },
+    "paramE": {
+      "name": "Gate Thresh",
+      "min": -42,
+      "max": -30,
+      "default": -38
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.5,
+      "max": 1,
+      "default": 0.8
+    }
+  },
+  {
+    "name": "Pulsing Electro",
+    "category": "EDM",
+    "description": "Electro/breaks: dual LFOs (sine 1/4 smooth pump + saw 1/16 stutter), filter/drive modulated, rhythmic hardclip ceiling, noise injection, glue comp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Pulsing Electro\n# Electro/breaks: dual LFOs (sine 1/4 smooth pump + saw 1/16 stutter), filter/drive modulated, rhythmic hardclip ceiling, noise injection, glue comp.\n# a Pump Speed: 1/2 to 1/8, default 1/4\n# b Stutter Speed: 1/8 to 1/32, default 1/16\n# c Filter Range: 1200 to 4000, default 2400\n# d Drive Range: 1.5 to 5, default 3\n# e Noise: 0.08 to 0.18, default 0.12\n# f Glue: 2 to 5, default 3\n\nparam a = Pump Speed [1/2, 1/8]\nparam b = Stutter Speed [1/8, 1/32]\nparam c = Filter Range [1200, 4000]\nparam d = Drive Range [1.5, 5.0]\nparam e = Noise [0.08, 0.18]\nparam f = Glue [2.0, 5.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.38  # highpass\nosc1: shape = sine; sync = a; depth = 1.0  # pump LFO\nosc2: shape = saw; sync = b; depth = 1.0  # stutter LFO\nstage1: y = x * (1 - e) + (x * 3 - 1.5) * e  # noise inject\nfilter2: type = lowpass; cutoff = 400 + osc1 * c; resonance = 0.6  # swept filter\nstage2: y = tube(y, 1 + osc1 * d)  # drive mod\nstage3: y = hardclip(y, 0.4 + osc2 * 0.45)  # rhythmic clip\ncomp1: threshold = -14; ratio = f; attack = 0.005; release = 0.12; makeup = 3  # glue comp\nlimit1: ceiling = -0.25; release = 0.09  # limiter",
+    "tags": [
+      "electro",
+      "breaks",
+      "edm",
+      "lfo",
+      "pump",
+      "stutter",
+      "groove",
+      "modulation",
+      "noise",
+      "clip"
+    ],
+    "paramA": {
+      "name": "Pump Speed",
+      "min": 0.5,
+      "max": 0.125,
+      "default": 0.25
+    },
+    "paramB": {
+      "name": "Stutter Speed",
+      "min": 0.125,
+      "max": 0.03125,
+      "default": 0.0625
+    },
+    "paramC": {
+      "name": "Filter Range",
+      "min": 1200,
+      "max": 4000,
+      "default": 2400
+    },
+    "paramD": {
+      "name": "Drive Range",
+      "min": 1.5,
+      "max": 5,
+      "default": 3
+    },
+    "paramE": {
+      "name": "Noise",
+      "min": 0.08,
+      "max": 0.18,
+      "default": 0.12
+    },
+    "paramF": {
+      "name": "Glue",
+      "min": 2,
+      "max": 5,
+      "default": 3
+    }
+  },
+  {
+    "name": "Vital Saw Morph",
+    "category": "Synth",
+    "description": "Synthwave/future bass: asymmetric saw via fold+tube, phase dispersion dual delay, triangle LFO sweeps highshelf, chorus width, light comp.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Vital Saw Morph\n# Synthwave/future bass: asymmetric saw via fold+tube, phase dispersion dual delay, triangle LFO sweeps highshelf, chorus width, light comp.\n# a Morph LFO: 0.4 to 2.5, default 1.2\n# b Phase Spread: 3 to 7, default 5\n# c Shelf Sweep: -6 to 6, default 0\n# d Chorus: 0.15 to 0.4, default 0.25\n# e Width: 0.6 to 1.2, default 0.9\n# f Level: 0.7 to 1.2, default 0.95\n\nparam a = Morph LFO [0.4, 2.5]\nparam b = Phase Spread [3.0, 7.0]\nparam c = Shelf Sweep [-6, 6]\nparam d = Chorus [0.15, 0.4]\nparam e = Width [0.6, 1.2]\nparam f = Level [0.7, 1.2]\nfilter1: type = highpass; cutoff = 60; resonance = 0.32  # highpass\nstage1: y = fold(x, -0.5, 0.6)  # asymmetric fold\nstage2: y = tube(y, 2.2)  # tube shape\ndelay1: time = b; feedback = 0; mix = 0.35; channel = left  # phase L\ndelay2: time = b * 1.4; feedback = 0; mix = 0.35; channel = right  # phase R\nstage3: channel = right; y = y * -1  # invert R\nosc1: shape = triangle; freq = a; depth = 1.0  # LFO\neq1: type = highshelf; freq = 2800; q = 0.7; gain = c + osc1 * 6  # swept shelf\ndelay3: time = 8; feedback = 0.2; mix = d; damp = 6500  # chorus\nwiden1: width = e; delay = 14; bass = 130\ncomp1: threshold = -16; ratio = 2; attack = 0.01; release = 0.15; makeup = 2\nstage4: y = y * f",
+    "tags": [
+      "synthwave",
+      "future bass",
+      "synth",
+      "lfo",
+      "morph",
+      "fold",
+      "tube",
+      "chorus",
+      "width",
+      "phase"
+    ],
+    "paramA": {
+      "name": "Morph LFO",
+      "min": 0.4,
+      "max": 2.5,
+      "default": 1.2
+    },
+    "paramB": {
+      "name": "Phase Spread",
+      "min": 3,
+      "max": 7,
+      "default": 5
+    },
+    "paramC": {
+      "name": "Shelf Sweep",
+      "min": -6,
+      "max": 6,
+      "default": 0
+    },
+    "paramD": {
+      "name": "Chorus",
+      "min": 0.15,
+      "max": 0.4,
+      "default": 0.25
+    },
+    "paramE": {
+      "name": "Width",
+      "min": 0.6,
+      "max": 1.2,
+      "default": 0.9
+    },
+    "paramF": {
+      "name": "Level",
+      "min": 0.7,
+      "max": 1.2,
+      "default": 0.95
+    }
+  },
+  {
+    "name": "Hard Groove Machine",
+    "category": "EDM",
+    "description": "Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Hard Groove Machine\n# Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.\n# a Gate Rate: 1/4 to 1/16, default 1/8\n# b Drive: 3 to 8, default 5.5\n# c Filter Freq: 800 to 2400, default 1400\n# d Reso: 4 to 8, default 6\n# e Tail: 0.2 to 0.6, default 0.4\n# f Punch: 0 to 6, default 3\n\nparam a = Gate Rate [1/4, 1/16]\nparam b = Drive [3.0, 8.0]\nparam c = Filter Freq [800, 2400]\nparam d = Reso [4.0, 8.0]\nparam e = Tail [0.2, 0.6]\nparam f = Punch [0.0, 6.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.4  # highpass\nosc1: shape = square; sync = a; depth = 1.0  # gate LFO\nstage1: y = x * (0.5 + osc1 * 0.7)  # gate on/off\nstage2: y = tube(y, b)  # drive when open\nfilter2: type = bandpass; center = c; width = 400; resonance = d  # resonant bandpass\nreverb1: size = 0.4; decay = e; damp = 0.5; mix = 0.3 * (1 - osc1)  # tail when closed\nenv1: type = peak; attack = 0.003; release = 0.12  # envelope for punch\nstage3: y = y * (1 + env1 * f * 0.15)  # transient punch\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
+    "tags": [
+      "hardstyle",
+      "hard dance",
+      "edm",
+      "gate",
+      "lfo",
+      "groove",
+      "tube",
+      "filter",
+      "reverb",
+      "transient"
+    ],
+    "paramA": {
+      "name": "Gate Rate",
+      "min": 0.25,
+      "max": 0.0625,
+      "default": 0.125
+    },
+    "paramB": {
+      "name": "Drive",
+      "min": 3,
+      "max": 8,
+      "default": 5.5
+    },
+    "paramC": {
+      "name": "Filter Freq",
+      "min": 800,
+      "max": 2400,
+      "default": 1400
+    },
+    "paramD": {
+      "name": "Reso",
+      "min": 4,
+      "max": 8,
+      "default": 6
+    },
+    "paramE": {
+      "name": "Tail",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    "paramF": {
+      "name": "Punch",
+      "min": 0,
+      "max": 6,
+      "default": 3
+    }
+  },
+  {
+    "name": "Resonant Sweep Stab",
+    "category": "EDM",
+    "description": "Trance/hard trance: envelope follower controls filter cutoff 150-4500 Hz, LFO saw adds sweep, velocity-sensitive resonance Q 0.7-5.5, stereo widener.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Resonant Sweep Stab\n# Trance/hard trance: envelope follower controls filter cutoff 150-4500 Hz, LFO saw adds sweep, velocity-sensitive resonance Q 0.7-5.5, stereo widener.\n# a Env Amount: 0.3 to 1.2, default 0.8\n# b LFO Amount: 0 to 1, default 0.5\n# c Reso Env: 1 to 5, default 3\n# d Drive: 2 to 6, default 3.5\n# e Width: 0.5 to 1.2, default 0.9\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Env Amount [0.3, 1.2]\nparam b = LFO Amount [0.0, 1.0]\nparam c = Reso Env [1.0, 5.0]\nparam d = Drive [2.0, 6.0]\nparam e = Width [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35  # highpass\nenv1: type = peak; attack = 0.008; release = 0.25  # envelope follower\nosc1: shape = saw; sync = 1/4; depth = b  # LFO\nstage1: y = softclip(x, d * 0.8)  # soft distortion\nstage2: y = hardclip(y, 0.75)  # hard limit\nfilter2: type = lowpass; cutoff = 150 + env1 * 4350 * a + osc1 * 1000; resonance = 0.7 + env1 * c  # swept resonant LPF\ncomp1: threshold = -16; ratio = 4; attack = 0.005; release = 0.15; makeup = 4  # tame resonance\nwiden1: width = e; delay = 16; bass = 120\nlimit1: ceiling = -0.35; release = 0.1",
+    "tags": [
+      "trance",
+      "hard trance",
+      "edm",
+      "stab",
+      "sweep",
+      "lfo",
+      "envelope",
+      "resonance",
+      "filter",
+      "width"
+    ],
+    "paramA": {
+      "name": "Env Amount",
+      "min": 0.3,
+      "max": 1.2,
+      "default": 0.8
+    },
+    "paramB": {
+      "name": "LFO Amount",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "paramC": {
+      "name": "Reso Env",
+      "min": 1,
+      "max": 5,
+      "default": 3
+    },
+    "paramD": {
+      "name": "Drive",
+      "min": 2,
+      "max": 6,
+      "default": 3.5
+    },
+    "paramE": {
+      "name": "Width",
+      "min": 0.5,
+      "max": 1.2,
+      "default": 0.9
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.6,
+      "max": 1,
+      "default": 0.85
+    }
   }
 ]
