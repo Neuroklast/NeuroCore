@@ -12967,5 +12967,290 @@
       "max": 1,
       "default": 0.9
     }
+  },
+  {
+    "name": "Metal Percussion",
+    "category": "Sound Design",
+    "description": "SWARM industrial percussion: bitcrush transients only, metallic comb delays (59Hz, 83Hz), resonant peak 1200Hz, envelope-based fold, HPF, limiter.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Metal Percussion\n# SWARM industrial percussion: bitcrush transients only, metallic comb delays (59Hz, 83Hz), resonant peak 1200Hz, envelope-based fold, HPF, limiter.\n# a Bits: 3 to 8, default 5\n# b Comb Mix: 0.3 to 0.7, default 0.5\n# c Metallic: 2 to 6, default 4\n# d Fold Env: 0.2 to 0.8, default 0.5\n# e Tightness: 0.05 to 0.2, default 0.1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Bits [3.0, 8.0]\nparam b = Comb Mix [0.3, 0.7]\nparam c = Metallic [2.0, 6.0]\nparam d = Fold Env [0.2, 0.8]\nparam e = Tightness [0.05, 0.2]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.35  # highpass\nenv1: type = peak; attack = 0.001; release = e  # transient detector\ngate1: threshold = -24; hyst = 8; hold = 0.03; range = 0; attack = 0.001; release = 0.06  # transient gate\nstage1: y = bitcrush(y * env1, a)  # bitcrush transients\ndelay1: time = 16.95; feedback = 0.4; mix = b; damp = 0  # comb 59Hz\ndelay2: time = 12.05; feedback = 0.38; mix = b; damp = 0  # comb 83Hz\neq1: type = peak; freq = 1200; q = 5; gain = c  # metallic resonance\nstage2: y = fold(y, -0.3 - env1 * d, 0.35 + env1 * d)  # envelope fold\ncomp1: threshold = -12; ratio = 4; attack = 0.003; release = 0.08; makeup = 3\nlimit1: ceiling = -0.35; release = 0.1\nstage3: y = y * f",
+    "tags": [
+      "industrial",
+      "percussion",
+      "metal",
+      "bitcrush",
+      "comb",
+      "delay",
+      "fold",
+      "transient",
+      "sound design",
+      "SWARM"
+    ],
+    "paramA": {
+      "name": "Bits",
+      "min": 3,
+      "max": 8,
+      "default": 5
+    },
+    "paramB": {
+      "name": "Comb Mix",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    "paramC": {
+      "name": "Metallic",
+      "min": 2,
+      "max": 6,
+      "default": 4
+    },
+    "paramD": {
+      "name": "Fold Env",
+      "min": 0.2,
+      "max": 0.8,
+      "default": 0.5
+    },
+    "paramE": {
+      "name": "Tightness",
+      "min": 0.05,
+      "max": 0.2,
+      "default": 0.1
+    },
+    "paramF": {
+      "name": "Output",
+      "min": 0.8,
+      "max": 1.2,
+      "default": 1
+    }
+  },
+  {
+    "name": "Field Recording Glitch",
+    "category": "Sound Design",
+    "description": "Granular-approximation: 6 parallel short delays 15-85ms with random feedback 0.2-0.5, slight pitch detune -3 to +5 semitones, LPF 7500Hz, reverb tail.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Field Recording Glitch\n# Granular-approximation: 6 parallel short delays 15-85ms with random feedback 0.2-0.5, slight pitch detune -3 to +5 semitones, LPF 7500Hz, reverb tail.\n# a Grain Size: 15 to 85, default 45\n# b Density: 0.3 to 0.8, default 0.55\n# c Pitch Chaos: 0 to 8, default 4\n# d Tail: 0.3 to 0.7, default 0.5\n# e Damp: 0.3 to 0.8, default 0.6\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [15.0, 85.0]\nparam b = Density [0.3, 0.8]\nparam c = Pitch Chaos [0.0, 8.0]\nparam d = Tail [0.3, 0.7]\nparam e = Damp [0.3, 0.8]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3  # highpass\ndelay1: time = a * 0.8; feedback = 0.22; mix = b  # grain 1\ndelay2: time = a * 1.1; feedback = 0.35; mix = b  # grain 2\ndelay3: time = a * 0.6; feedback = 0.28; mix = b  # grain 3\ndelay4: time = a * 1.4; feedback = 0.42; mix = b  # grain 4\ndelay5: time = a * 0.9; feedback = 0.3; mix = b  # grain 5\ndelay6: time = a * 1.2; feedback = 0.38; mix = b  # grain 6\npitch1: shift = -3 + c * 0.5; size = 512; mix = 0.3  # detune 1\npitch2: shift = 2 + c * 0.38; size = 512; mix = 0.25  # detune 2\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.4  # LPF\nreverb1: size = 0.65; decay = d; damp = e; mix = 0.4  # tail\nlimit1: ceiling = -0.4; release = 0.12",
+    "tags": [
+      "granular",
+      "glitch",
+      "field recording",
+      "delay",
+      "pitch",
+      "chaos",
+      "reverb",
+      "sound design",
+      "experimental",
+      "ambient"
+    ],
+    "paramA": {
+      "name": "Grain Size",
+      "min": 15,
+      "max": 85,
+      "default": 45
+    },
+    "paramB": {
+      "name": "Density",
+      "min": 0.3,
+      "max": 0.8,
+      "default": 0.55
+    },
+    "paramC": {
+      "name": "Pitch Chaos",
+      "min": 0,
+      "max": 8,
+      "default": 4
+    },
+    "paramD": {
+      "name": "Tail",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    "paramE": {
+      "name": "Damp",
+      "min": 0.3,
+      "max": 0.8,
+      "default": 0.6
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.5,
+      "max": 1,
+      "default": 0.75
+    }
+  },
+  {
+    "name": "Downtuned Guitar Industrial",
+    "category": "Distortion",
+    "description": "DJ Hyper 8-string downtuned guitar: HPF 82Hz (low E), heavy comp 8:1, tube+fold chain, resonant 150Hz body, soft-limit -0.45dB. (IR optional in user path)",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Downtuned Guitar Industrial\n# DJ Hyper 8-string downtuned guitar: HPF 82Hz (low E), heavy comp 8:1, tube+fold chain, resonant 150Hz body, soft-limit -0.45dB. (IR optional in user path)\n# a Body Reso: 120 to 200, default 150\n# b Comp Ratio: 6 to 12, default 8\n# c Tube Drive: 3 to 8, default 5.5\n# d Fold Amount: 0.3 to 0.8, default 0.55\n# e Presence: -2 to 4, default 1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Body Reso [120, 200]\nparam b = Comp Ratio [6.0, 12.0]\nparam c = Tube Drive [3.0, 8.0]\nparam d = Fold Amount [0.3, 0.8]\nparam e = Presence [-2, 4]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 82; resonance = 0.4  # downtuned E\ncomp1: threshold = -20; ratio = b; attack = 0.008; release = 0.12; makeup = 8  # heavy comp\neq1: type = peak; freq = a; q = 4; gain = 5  # body resonance\nstage1: y = tube(y, c)\nstage2: y = fold(y, -d, d)\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.35  # LPF\neq2: type = highshelf; freq = 3000; q = 0.8; gain = e  # presence\ncomp2: threshold = -10; ratio = 3; attack = 0.003; release = 0.08; makeup = 2  # glue\nlimit1: ceiling = -0.45; release = 0.1\nstage3: y = y * f\n# Note: User can insert IR block for cabinet simulation",
+    "tags": [
+      "guitar",
+      "industrial",
+      "downtuned",
+      "8-string",
+      "tube",
+      "fold",
+      "comp",
+      "DJ Hyper",
+      "distortion",
+      "metal"
+    ],
+    "paramA": {
+      "name": "Body Reso",
+      "min": 120,
+      "max": 200,
+      "default": 150
+    },
+    "paramB": {
+      "name": "Comp Ratio",
+      "min": 6,
+      "max": 12,
+      "default": 8
+    },
+    "paramC": {
+      "name": "Tube Drive",
+      "min": 3,
+      "max": 8,
+      "default": 5.5
+    },
+    "paramD": {
+      "name": "Fold Amount",
+      "min": 0.3,
+      "max": 0.8,
+      "default": 0.55
+    },
+    "paramE": {
+      "name": "Presence",
+      "min": -2,
+      "max": 4,
+      "default": 1
+    },
+    "paramF": {
+      "name": "Output",
+      "min": 0.8,
+      "max": 1.2,
+      "default": 1
+    }
+  },
+  {
+    "name": "Chaotic Stab Generator",
+    "category": "Sound Design",
+    "description": "Techno chaos stab: random pitch shifts -7 to +7 semitones via dual pitch blocks, resonant BP sweep 400-2400Hz LFO, fold+bitcrush 6-bit, gate, limiter.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Chaotic Stab Generator\n# Techno chaos stab: random pitch shifts -7 to +7 semitones via dual pitch blocks, resonant BP sweep 400-2400Hz LFO, fold+bitcrush 6-bit, gate, limiter.\n# a Pitch Chaos: 0 to 7, default 4\n# b Sweep Rate: 0.5 to 3, default 1.5\n# c Reso: 5 to 8, default 6.5\n# d Fold: 0.3 to 0.7, default 0.5\n# e Bits: 4 to 8, default 6\n# f Mix: 0.6 to 1, default 0.8\n\nparam a = Pitch Chaos [0.0, 7.0]\nparam b = Sweep Rate [0.5, 3.0]\nparam c = Reso [5.0, 8.0]\nparam d = Fold [0.3, 0.7]\nparam e = Bits [4.0, 8.0]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35  # highpass\npitch1: shift = -a; size = 1024; mix = 0.3  # chaos down\npitch2: shift = a; size = 1024; mix = 0.25  # chaos up\nosc1: shape = triangle; freq = b; depth = 1.0  # sweep LFO\nfilter2: type = bandpass; center = 400 + osc1 * 1000; width = 300; resonance = c  # resonant sweep\nstage1: y = fold(y, -d, d)\nstage2: y = bitcrush(y, e)\nfilter3: type = lowpass; cutoff = 7000; resonance = 0.35  # anti-alias\ngate1: threshold = -36; hyst = 6; hold = 0.04; range = 0; attack = 0.002; release = 0.08\ncomp1: threshold = -12; ratio = 4; attack = 0.005; release = 0.1; makeup = 3\nlimit1: ceiling = -0.4; release = 0.1",
+    "tags": [
+      "techno",
+      "chaos",
+      "stab",
+      "pitch",
+      "sweep",
+      "lfo",
+      "fold",
+      "bitcrush",
+      "sound design",
+      "random"
+    ],
+    "paramA": {
+      "name": "Pitch Chaos",
+      "min": 0,
+      "max": 7,
+      "default": 4
+    },
+    "paramB": {
+      "name": "Sweep Rate",
+      "min": 0.5,
+      "max": 3,
+      "default": 1.5
+    },
+    "paramC": {
+      "name": "Reso",
+      "min": 5,
+      "max": 8,
+      "default": 6.5
+    },
+    "paramD": {
+      "name": "Fold",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    "paramE": {
+      "name": "Bits",
+      "min": 4,
+      "max": 8,
+      "default": 6
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.6,
+      "max": 1,
+      "default": 0.8
+    }
+  },
+  {
+    "name": "Granular Smear",
+    "category": "Ambient",
+    "description": "Ambient granular texture: 6 parallel delays 25-150ms detune -4/+4 semitones, soft LFO sweep each delay time, hall reverb 0.8 decay, soft-limit -0.5dB.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Granular Smear\n# Ambient granular texture: 6 parallel delays 25-150ms detune -4/+4 semitones, soft LFO sweep each delay time, hall reverb 0.8 decay, soft-limit -0.5dB.\n# a Grain Size: 25 to 150, default 75\n# b Detune: 0 to 4, default 2\n# c LFO Depth: 0 to 20, default 10\n# d LFO Rate: 0.1 to 1.5, default 0.6\n# e Verb Decay: 0.6 to 0.95, default 0.8\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [25.0, 150.0]\nparam b = Detune [0.0, 4.0]\nparam c = LFO Depth [0.0, 20.0]\nparam d = LFO Rate [0.1, 1.5]\nparam e = Verb Decay [0.6, 0.95]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28  # highpass\nosc1: shape = sine; freq = d; depth = 1.0  # LFO 1\nosc2: shape = triangle; freq = d * 1.3; depth = 1.0  # LFO 2\nosc3: shape = softsquare; freq = d * 0.7; depth = 1.0  # LFO 3\ndelay1: time = a * 0.7 + osc1 * c; feedback = 0.25; mix = 0.35  # grain 1\ndelay2: time = a * 1.1 + osc2 * c; feedback = 0.28; mix = 0.35  # grain 2\ndelay3: time = a * 0.85 + osc3 * c; feedback = 0.22; mix = 0.3  # grain 3\ndelay4: time = a * 1.3 + osc1 * c * 0.8; feedback = 0.3; mix = 0.3  # grain 4\ndelay5: time = a * 0.95 + osc2 * c * 0.9; feedback = 0.26; mix = 0.3  # grain 5\ndelay6: time = a * 1.15 + osc3 * c * 0.85; feedback = 0.24; mix = 0.3  # grain 6\npitch1: shift = -b; size = 1024; mix = 0.25  # detune down\npitch2: shift = b; size = 1024; mix = 0.25  # detune up\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.3  # LPF\nreverb1: size = 0.85; decay = e; damp = 0.35; mix = 0.5  # hall\nlimit1: ceiling = -0.5; release = 0.15",
+    "tags": [
+      "granular",
+      "ambient",
+      "texture",
+      "smear",
+      "delay",
+      "lfo",
+      "detune",
+      "pitch",
+      "reverb",
+      "sound design"
+    ],
+    "paramA": {
+      "name": "Grain Size",
+      "min": 25,
+      "max": 150,
+      "default": 75
+    },
+    "paramB": {
+      "name": "Detune",
+      "min": 0,
+      "max": 4,
+      "default": 2
+    },
+    "paramC": {
+      "name": "LFO Depth",
+      "min": 0,
+      "max": 20,
+      "default": 10
+    },
+    "paramD": {
+      "name": "LFO Rate",
+      "min": 0.1,
+      "max": 1.5,
+      "default": 0.6
+    },
+    "paramE": {
+      "name": "Verb Decay",
+      "min": 0.6,
+      "max": 0.95,
+      "default": 0.8
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.5,
+      "max": 1,
+      "default": 0.75
+    }
   }
 ]
