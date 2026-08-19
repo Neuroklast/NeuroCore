@@ -86,6 +86,23 @@ describe("validate script", () => {
     expect(report.checks.find((c) => c.id === "jacks")?.ok).toBe(false);
   });
 
+  it("passes Jacks for implicit xover mix to out (no serial out jack)", () => {
+    const implicit = validateScript("xover1: f1 = 200; f2 = 2000", []);
+    const jacks = implicit.checks.find((c) => c.id === "jacks");
+    expect(jacks?.ok, jacks?.detail).toBe(true);
+    expect(implicit.ok, implicit.issues.map((i) => i.message).join("; ")).toBe(true);
+  });
+
+  it("passes Jacks when out mixes xover bands low/mid/high", () => {
+    const report = validateScript(
+      ["xover1: f1 = 400; f2 = 2500", "out: low = 1; mid = 0; high = 0"].join("\n"),
+      [],
+    );
+    const jacks = report.checks.find((c) => c.id === "jacks");
+    expect(jacks?.ok, jacks?.detail).toBe(true);
+    expect(report.ok, report.issues.map((i) => i.message).join("; ")).toBe(true);
+  });
+
   it("folds host diagnostics into Parse and validateOnSave matches validateScript", () => {
     const diag = [{ line: 2, column: 1, message: "bad token" }];
     const a = validateScript("stage1: y = x", diag);

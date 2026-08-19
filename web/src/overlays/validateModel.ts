@@ -1,6 +1,6 @@
 import type { AstNode, Diagnostic } from "../bridge/ast";
 import { chipSpec, resolveChipId } from "../assemble/chipSpec";
-import { isMsDecode, isMsEncode, visualJacksFor } from "../assemble/visualEdges";
+import { isMsDecode, isMsEncode, isXover, visualJacksFor } from "../assemble/visualEdges";
 import { isValidLink } from "../assemble/validateLink";
 import { parseDslSketch } from "../presets/parseDslSketch";
 
@@ -230,13 +230,20 @@ function checkBusJoin(script: string, nodes: AstNode[]): ValidateCheck {
   return { id: "bus_join", title: "Bus/Join", ok: true, detail: "Named buses reach out." };
 }
 
-function jackKinds(node: AstNode | undefined, jackId: string): { kind: string; output: boolean } | null {
+const XOVER_BANDS = new Set(["low", "mid", "high"]);
+
+function jackKinds(
+  node: AstNode | undefined,
+  jackId: string,
+  xoverBands: boolean,
+): { kind: string; output: boolean } | null {
   if (! node) {
     if (jackId === "out") return { kind: "audio", output: true };
     if (jackId === "in") return { kind: "audio", output: false };
+    if (xoverBands && XOVER_BANDS.has(jackId)) return { kind: "mix", output: false };
     return { kind: "audio", output: jackId === "out" };
   }
-  const jacks = visualJacksFor(node, []).length > 0 && (node.type === "ms" || node.type.startsWith("xover"))
+  const jacks = visualJacksFor(node, []).length > 0 && (node.type === "ms" || node.type.startsWith("xover") || isXover(node))
     ? visualJacksFor(node, [])
     : (node.jacks ?? []);
   const hit = jacks.find((j) => j.id === jackId);
@@ -247,17 +254,21 @@ function jackKinds(node: AstNode | undefined, jackId: string): { kind: string; o
   if (spec.audioOuts.includes(jackId)) return { kind: "audio", output: true };
   if (spec.audioIns.includes(jackId)) return { kind: "audio", output: false };
   if (spec.modIns.includes(jackId)) return { kind: "mod", output: false };
+  if (node.type === "out" && (jackId === "in" || (xoverBands && XOVER_BANDS.has(jackId)))) {
+    return { kind: "mix", output: false };
+  }
   return null;
 }
 
 function checkJacks(script: string, nodes: AstNode[], edges: { from: string; to: string; fromJack: string; toJack: string; kind: string }[]): ValidateCheck {
   const buses = declaredBuses(script);
+  const xoverBands = nodes.some((n) => isXover(n));
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const out = nodes.find((n) => n.type === "out");
   if (out) {
     for (const key of Object.keys(out.args)) {
       const k = key.toLowerCase();
-      if (k === "in" || buses.has(k)) {
+      if (k === "in" || buses.has(k) || (xoverBands && XOVER_BANDS.has(k))) {
         continue;
       }
       return {
@@ -271,8 +282,8 @@ function checkJacks(script: string, nodes: AstNode[], edges: { from: string; to:
   for (const e of edges) {
     const src = byId.get(e.from);
     const dst = byId.get(e.to);
-    const from = jackKinds(src, e.fromJack || "out");
-    const to = jackKinds(dst, e.toJack || "in");
+    const from = jackKinds(src, e.fromJack || "out", xoverBands);
+    const to = jackKinds(dst, e.toJack || "in", xoverBands);
     if (! from || ! to) {
       return {
         id: "jacks",

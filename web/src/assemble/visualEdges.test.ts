@@ -203,10 +203,12 @@ describe("visualAudioEdges", () => {
     const nodes = [node("xover1", "xover", { f1: "200", f2: "2000" })];
     const vis = visualAudioEdges(nodes, [
       { from: "IN", to: "xover1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "xover1", to: "OUT", kind: "audio", fromJack: "out", toJack: "in" },
     ]);
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "low")).toBe(true);
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "mid")).toBe(true);
     expect(vis.some((e) => e.from === "xover1" && e.to === "OUT" && e.fromJack === "high")).toBe(true);
+    expect(vis.some((e) => e.from === "xover1" && (e.fromJack === "out" || ! e.fromJack))).toBe(false);
   });
 
   it("gives Send in/out plus a bottom ctrl jack, Multiband Split low/mid/high", () => {

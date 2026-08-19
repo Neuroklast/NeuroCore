@@ -344,6 +344,11 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     if (! isXover(n)) {
       continue;
     }
+    next = next.filter((e) => ! (
+      e.from === n.id
+      && e.kind !== "mod"
+      && (e.fromJack === "out" || ! e.fromJack)
+    ));
     const jacks = visualJacksFor(n, nodes).filter((j) => j.output);
     for (const j of jacks) {
       const bus = busChip(j.id);
