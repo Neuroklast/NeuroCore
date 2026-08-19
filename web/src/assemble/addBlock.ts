@@ -221,9 +221,49 @@ export async function redoCircuit(): Promise<boolean> {
   return true;
 }
 
-export function addCircuitBlock(type: string, args?: string): void {
+export function addCircuitBlock(type: string, args?: string): string | null {
   const cur = useAstStore.getState();
+  const spec = ADDABLE_BLOCKS.find((a) => a.type === type);
+  const body = args ?? spec?.args ?? "y = x";
+  const kind = spec?.type ?? type;
+  if (kind === "bus" || type === "bus") {
+    publishScript(insertBeforeMixer(cur.lastValidScript || cur.script, `bus ${railNameFromArgs(body, cur.lastValidScript || cur.script)}:`), "canvas");
+    return null;
+  }
+  const taken = [...(cur.lastValidScript || cur.script).matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  const id = nextBlockId(kind, taken);
   publishScript(scriptAfterAdd(cur.lastValidScript || cur.script, type, args), "canvas");
+  return id;
+}
+
+export function insertCircuitBlockBetween(type: string, sourceId: string, targetId: string, args?: string): void {
+  const cur = useAstStore.getState();
+  const script = cur.lastValidScript || cur.script;
+  
+  // First add the block
+  const spec = ADDABLE_BLOCKS.find((a) => a.type === type);
+  const body = args ?? spec?.args ?? "y = x";
+  const kind = spec?.type ?? type;
+  const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  const newId = nextBlockId(kind, taken);
+  
+  // Add the block definition
+  let newScript = insertBeforeMixer(script, `${newId}: ${body}`);
+  
+  // Update the connection: source -> target becomes source -> newId -> target
+  // Handle various connection patterns (with/without port numbers)
+  const patterns = [
+    new RegExp(`(${sourceId})(\\s*->\\s*)(${targetId})\\b`, "g"),
+    new RegExp(`(${sourceId}:\\d+)(\\s*->\\s*)(${targetId})\\b`, "g"),
+    new RegExp(`(${sourceId})(\\s*->\\s*)(${targetId}:\\d+)\\b`, "g"),
+    new RegExp(`(${sourceId}:\\d+)(\\s*->\\s*)(${targetId}:\\d+)\\b`, "g"),
+  ];
+  
+  for (const pattern of patterns) {
+    newScript = newScript.replace(pattern, `$1$2${newId} -> ${targetId}`);
+  }
+  
+  publishScript(newScript, "canvas");
 }
 
 export function removeCircuitBlock(id: string): void {

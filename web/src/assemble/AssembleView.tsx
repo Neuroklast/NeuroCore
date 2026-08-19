@@ -43,7 +43,7 @@ import type { LayoutMode } from "./layout/types";
 import { flowFromAst, visibleNodes, type ChipData } from "./flowFromAst";
 import { parseHandle } from "./handles";
 import { isValidLink } from "./validateLink";
-import { addCircuitBlock, publishScript, removeCircuitBlock } from "./addBlock";
+import { addCircuitBlock, publishScript, removeCircuitBlock, insertCircuitBlockBetween } from "./addBlock";
 import { chipOverlay, isIrSlotId } from "../presets/irSlots";
 import { openImpulse } from "../overlays/ImpulsePanel";
 
@@ -88,7 +88,7 @@ function Board() {
   );
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node<ChipData>[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
-  const [menu, setMenu] = useState<{ kind: "node" | "pane"; id: string; left: number; top: number } | null>(null);
+  const [menu, setMenu] = useState<{ kind: "node" | "pane" | "edge"; id: string; left: number; top: number; edge?: Edge } | null>(null);
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   const prevIdsRef = useRef<string[]>([]);
@@ -404,6 +404,17 @@ function Board() {
     setMenu({ kind: "node", id: node.id, ...menuPos(event.clientX, event.clientY, pane) });
   }, []);
 
+  const onEdgeClick = useCallback((event: MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const pane = paneRef.current;
+    if (! pane) {
+      return;
+    }
+    const box = addPickerSize();
+    setMenu({ kind: "edge", id: edge.id, edge, ...menuPos(event.clientX, event.clientY, pane, box.w, box.h + 36) });
+  }, []);
+
   const onPaneContextMenu = useCallback((event: MouseEvent | { preventDefault: () => void; clientX: number; clientY: number }) => {
     event.preventDefault();
     const pane = paneRef.current;
@@ -485,6 +496,7 @@ function Board() {
         onNodeMouseEnter={(_, node) => setHoverNodeId(node.id)}
         onNodeMouseLeave={() => setHoverNodeId(null)}
         onNodeContextMenu={onNodeContextMenu}
+        onEdgeClick={onEdgeClick}
         onPaneContextMenu={onPaneContextMenu}
         onPaneClick={() => {
           setHoverNodeId(null);
@@ -527,12 +539,28 @@ function Board() {
       </ReactFlow>
 
       {menu ? (
-        <OsContextMenu left={menu.left} top={menu.top} title={menu.kind === "node" ? menu.id : "NKOS // BOARD"} onDismiss={closeMenu}>
+        <OsContextMenu left={menu.left} top={menu.top} title={menu.kind === "node" ? menu.id : menu.kind === "edge" ? "INSERT BLOCK" : "NKOS // BOARD"} onDismiss={closeMenu}>
           {menu.kind === "node" ? (
             <OsMenuItem onClick={() => {
               useChipViewStore.getState().toggle(menu.id);
               closeMenu();
             }}>Details</OsMenuItem>
+          ) : null}
+          {menu.kind === "node" && menu.id !== "IN" && menu.id !== "OUT" ? (
+            <>
+              <OsMenuItem onClick={() => {
+                useChipViewStore.getState().toggleMute(menu.id);
+                closeMenu();
+              }}>
+                {useChipViewStore.getState().isMuted(menu.id) ? "Unmute" : "Mute"}
+              </OsMenuItem>
+              <OsMenuItem onClick={() => {
+                useChipViewStore.getState().toggleSolo(menu.id);
+                closeMenu();
+              }}>
+                {useChipViewStore.getState().isSoloed(menu.id) ? "Unsolo" : "Solo"}
+              </OsMenuItem>
+            </>
           ) : null}
           {menu.kind === "node" && menu.id !== "IN" && menu.id !== "OUT" ? (
             <OsMenuItem onClick={() => { useHostStore.getState().setOverlay("inspect", menu.id); closeMenu(); }}>Inspect</OsMenuItem>
@@ -546,6 +574,16 @@ function Board() {
               closeMenu();
             }}>Delete</OsMenuItem>
           ) : null}
+          {menu.kind === "edge" ? (
+            <OsAddPicker
+              onPick={(type, args) => {
+                if (menu.edge) {
+                  insertCircuitBlockBetween(type, menu.edge.source, menu.edge.target, args);
+                }
+                closeMenu();
+              }}
+            />
+          ) : null}
           {menu.kind === "pane" ? (
             <OsAddPicker
               onPick={(type, args) => {
@@ -556,6 +594,9 @@ function Board() {
           ) : null}
           <OsMenuItem onClick={() => { void arrange(); closeMenu(); }}>Arrange</OsMenuItem>
           <OsMenuItem onClick={() => { void compactBoard(); closeMenu(); }}>Compact</OsMenuItem>
+          {useChipViewStore.getState().soloed.size > 0 ? (
+            <OsMenuItem onClick={() => { useChipViewStore.getState().clearSolo(); closeMenu(); }}>Clear Solo</OsMenuItem>
+          ) : null}
         </OsContextMenu>
       ) : null}
     </div>
