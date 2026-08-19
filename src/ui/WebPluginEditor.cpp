@@ -6,6 +6,7 @@
 #include "../bridge/TelemetryPump.h"
 #include "../bridge/WebEditorPolicy.h"
 #include "../dsl/GraphModel.h"
+#include "../utils/PresetLibrary.h"
 #include "../utils/UiSettings.h"
 #include "StandaloneAudioSettings.h"
 
@@ -455,19 +456,32 @@ void WebPluginEditor::timerCallback()
 void WebPluginEditor::pickFile (const juce::String& kind, const juce::String& slot)
 {
     const bool lic = kind.equalsIgnoreCase ("license");
-    fileChooser = std::make_unique<juce::FileChooser> (
-        lic ? "Install license" : "Load IR",
-        juce::File(),
-        lic ? "*.lic" : "*.wav;*.aif;*.aiff;*.flac");
+    const bool preset = kind.equalsIgnoreCase ("preset");
+    const char* title = lic ? "Install license" : preset ? "Import preset" : "Load IR";
+    const char* filter = lic ? "*.lic" : preset ? "*.nrk;*.zip" : "*.wav;*.aif;*.aiff;*.flac";
+    fileChooser = std::make_unique<juce::FileChooser> (title, juce::File(), filter);
     const int flags = juce::FileBrowserComponent::openMode
                     | juce::FileBrowserComponent::canSelectFiles;
-    fileChooser->launchAsync (flags, [this, lic, slot] (const juce::FileChooser& fc)
+    fileChooser->launchAsync (flags, [this, lic, preset, slot] (const juce::FileChooser& fc)
     {
         const auto f = fc.getResult();
         if (! f.existsAsFile())
             return;
         if (lic)
             audioProcessor.importProductLicense (f);
+        else if (preset)
+        {
+            PresetLibrary::importPaths (juce::StringArray { f.getFullPathName() });
+            if (PresetLibrary::isNrkFile (f) && audioProcessor.presetManager.loadPreset (f))
+            {
+                PresetManager::Info info;
+                audioProcessor.presetManager.readInfo (f, info);
+                audioProcessor.setCurrentPresetName (
+                    info.name.isNotEmpty() ? info.name : f.getFileNameWithoutExtension());
+                if (info.category.isNotEmpty())
+                    audioProcessor.setLastPresetBrowserCategory (info.category);
+            }
+        }
         else
         {
             juce::String error;

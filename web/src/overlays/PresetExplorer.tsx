@@ -8,6 +8,10 @@ export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
   const current = useHostStore((s) => s.presetName);
   const setOverlay = useHostStore((s) => s.setOverlay);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveAuthor, setSaveAuthor] = useState("");
+  const [saveCat, setSaveCat] = useState("User");
   const [q, setQ] = useState(explorerSession.q);
   const [scope, setScope] = useState<ExplorerScope>(explorerSession.scope);
   const [cat, setCat] = useState(explorerSession.cat);
@@ -70,6 +74,27 @@ export function PresetExplorer() {
   const load = (name: string) => {
     void presetAction({ action: "load", name });
     setOverlay(null);
+  };
+
+  const openSave = () => {
+    setSaveName(current || "Untitled");
+    setSaveAuthor("");
+    setSaveCat(cat || "User");
+    setSaveOpen(true);
+  };
+
+  const commitSave = () => {
+    const name = saveName.trim();
+    if (! name) {
+      return;
+    }
+    void presetAction({
+      action: "save",
+      name,
+      author: saveAuthor.trim(),
+      category: saveCat.trim() || "User",
+    });
+    setSaveOpen(false);
   };
 
   return (
@@ -159,8 +184,33 @@ export function PresetExplorer() {
             <div className="text-muted">No preset selected.</div>
           )}
         </div>
+        {saveOpen ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border border-panel p-2">
+            <input
+              className="h-8 min-w-[10rem] flex-1 border border-panel bg-surface-high px-2 text-white"
+              placeholder="Name"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+            />
+            <input
+              className="h-8 w-[9rem] border border-panel bg-surface-high px-2 text-white"
+              placeholder="Author"
+              value={saveAuthor}
+              onChange={(e) => setSaveAuthor(e.target.value)}
+            />
+            <input
+              className="h-8 w-[8rem] border border-panel bg-surface-high px-2 text-white"
+              placeholder="Category"
+              value={saveCat}
+              onChange={(e) => setSaveCat(e.target.value)}
+            />
+            <button type="button" className="nk-clip" disabled={! saveName.trim()} onClick={commitSave}>Save</button>
+            <button type="button" className="nk-clip" onClick={() => setSaveOpen(false)}>Cancel</button>
+          </div>
+        ) : null}
         <div className="flex shrink-0 flex-wrap gap-2">
           <button type="button" className="nk-clip" disabled={! row} onClick={() => row && load(row.name)}>Load</button>
+          <button type="button" className="nk-clip" onClick={openSave}>Save As…</button>
           <button type="button" className="nk-clip" onClick={() => void presetAction({ action: "new" })}>New Blank</button>
           <button type="button" className="nk-clip" onClick={() => void getNativeFunction("pickFile")({ kind: "preset" })}>Import</button>
           <button type="button" className="nk-clip" onClick={() => setOverlay(null)}>Close</button>

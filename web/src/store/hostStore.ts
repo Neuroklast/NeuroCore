@@ -211,7 +211,7 @@ export const useHostStore = create<HostState>((set) => ({
         (p.mods as Array<Record<string, unknown>>).map((m) => [
           String(m.id ?? ""),
           Number(m.value ?? 0),
-        ]).filter(([id]) => id.length > 0),
+        ] as [string, number]).filter(([id]) => id.length > 0),
       )
       : s.mods,
   })),

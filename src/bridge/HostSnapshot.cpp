@@ -3,6 +3,7 @@
 #include "../core/EffectParameters.h"
 #include "../core/PluginProcessor.h"
 #include "../utils/FactoryPresetLibrary.h"
+#include "../utils/PresetLibrary.h"
 #include "../utils/UiSettings.h"
 
 namespace bridge
@@ -58,6 +59,9 @@ bool presetCmdFromVar (const juce::var& v, PresetCmd& out, juce::String& error)
     }
     out.action = v.getProperty ("action", "").toString().toLowerCase();
     out.name = v.getProperty ("name", "").toString();
+    out.author = v.getProperty ("author", "").toString();
+    out.category = v.getProperty ("category", "").toString();
+    out.tags = v.getProperty ("tags", "").toString();
     if (out.action.isEmpty())
     {
         error = "preset needs action";
@@ -162,6 +166,31 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
         proc.setCurrentPresetName ("Untitled");
         return true;
     }
+    if (c.action == "save" || c.action == "saveas")
+    {
+        const auto name = c.name.trim();
+        if (name.isEmpty())
+        {
+            error = "save needs name";
+            return false;
+        }
+        auto dir = PresetLibrary::userPresetRoot();
+        if (! dir.createDirectory() && ! dir.isDirectory())
+        {
+            error = "Could not create user preset folder";
+            return false;
+        }
+        const auto stem = PresetLibrary::sanitizePackName (name);
+        auto file = dir.getChildFile (stem + Config::kPresetFileExtension);
+        if (! proc.presetManager.savePreset (file, name, c.author, c.category, c.tags))
+        {
+            error = "Could not save preset";
+            return false;
+        }
+        proc.setCurrentPresetName (name);
+        proc.setLastPresetBrowserCategory (c.category.isNotEmpty() ? c.category : juce::String ("User"));
+        return true;
+    }
     if (c.action == "load")
     {
         auto& lib = FactoryPresetLibrary::getInstance();
@@ -175,12 +204,28 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
                 idx = i;
                 break;
             }
-        if (idx < 0)
+        if (idx >= 0)
+            return lib.applyPreset (proc, idx, error);
+
+        const auto files = proc.presetManager.getAvailablePresets (PresetLibrary::userPresetRoot());
+        for (const auto& f : files)
         {
-            error = "Unknown factory preset";
-            return false;
+            PresetManager::Info info;
+            proc.presetManager.readInfo (f, info);
+            if (info.name != c.name && f.getFileNameWithoutExtension() != c.name)
+                continue;
+            if (! proc.presetManager.loadPreset (f))
+            {
+                error = "Could not load user preset";
+                return false;
+            }
+            proc.setCurrentPresetName (info.name.isNotEmpty() ? info.name : c.name);
+            if (info.category.isNotEmpty())
+                proc.setLastPresetBrowserCategory (info.category);
+            return true;
         }
-        return lib.applyPreset (proc, idx, error);
+        error = "Unknown preset";
+        return false;
     }
     error = "Unknown preset action " + c.action;
     return false;
@@ -300,6 +345,22 @@ juce::var presetStateVar (NeuroKoreAudioProcessor& proc)
         o->setProperty ("factory", true);
         juce::Array<juce::var> tags;
         for (const auto& t : e.tags)
+            tags.add (t);
+        o->setProperty ("tags", tags);
+        list.add (juce::var (o));
+    }
+    for (const auto& f : proc.presetManager.getAvailablePresets (PresetLibrary::userPresetRoot()))
+    {
+        PresetManager::Info info;
+        proc.presetManager.readInfo (f, info);
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("name", info.name.isNotEmpty() ? info.name : f.getFileNameWithoutExtension());
+        o->setProperty ("category", info.category.isNotEmpty() ? info.category : juce::String ("User"));
+        o->setProperty ("description", juce::String());
+        o->setProperty ("author", info.author);
+        o->setProperty ("factory", false);
+        juce::Array<juce::var> tags;
+        for (const auto& t : info.tags)
             tags.add (t);
         o->setProperty ("tags", tags);
         list.add (juce::var (o));

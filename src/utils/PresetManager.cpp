@@ -271,6 +271,68 @@ bool PresetManager::loadPreset(const juce::File& file)
     return true;
 }
 
+bool PresetManager::readInfo (const juce::File& file, Info& info) const
+{
+    info = {};
+    info.name = file.getFileNameWithoutExtension();
+    juce::FileInputStream in (file);
+    if (! in.openedOk())
+        return false;
+
+    Header header{};
+    if (in.read (&header, sizeof (header)) != sizeof (header))
+        return false;
+    if (std::memcmp (header.magic, kMagic, 4) != 0)
+        return false;
+
+    in.setPosition ((juce::int64) header.chunkListOffset);
+    char listId[4];
+    if (in.read (listId, 4) != 4)
+        return false;
+    if (std::memcmp (listId, kMetaId, 4) != 0 && std::memcmp (listId, "List", 4) != 0)
+        return true;
+    const int32_t numEntries = in.readIntBigEndian();
+    if (numEntries <= 0 || numEntries > kMaxReasonableChunkEntries)
+        return true;
+
+    for (int i = 0; i < numEntries; ++i)
+    {
+        char id[4] {};
+        if (in.read (id, 4) != 4)
+            return true;
+        const auto offset = in.readInt64();
+        const auto length = in.readInt64();
+        if (std::memcmp (id, kMetaId, 4) != 0)
+            continue;
+        if (offset < 0 || length < 0)
+            return true;
+        in.setPosition (offset);
+        juce::MemoryBlock metaBytes;
+        in.readIntoMemoryBlock (metaBytes, (size_t) length);
+        auto metaJson = json::parse (metaBytes.toString().toStdString(), nullptr, false);
+        if (! metaJson.is_object())
+            return true;
+        if (metaJson.contains ("Name") && metaJson["Name"].is_string())
+        {
+            const auto n = juce::String (metaJson["Name"].get<std::string>()).trim();
+            if (n.isNotEmpty())
+                info.name = n;
+        }
+        if (metaJson.contains ("Author") && metaJson["Author"].is_string())
+            info.author = juce::String (metaJson["Author"].get<std::string>()).trim();
+        if (metaJson.contains ("Category") && metaJson["Category"].is_string())
+            info.category = juce::String (metaJson["Category"].get<std::string>()).trim();
+        if (metaJson.contains ("Tags") && metaJson["Tags"].is_array())
+        {
+            for (const auto& t : metaJson["Tags"])
+                if (t.is_string())
+                    info.tags.add (juce::String (t.get<std::string>()).trim());
+        }
+        return true;
+    }
+    return true;
+}
+
 std::vector<juce::File> PresetManager::getAvailablePresets(const juce::File& dir) const
 {
     std::vector<juce::File> result;
