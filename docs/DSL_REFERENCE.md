@@ -216,18 +216,23 @@ Xfer-OTT-Stil: Split bei ~90 Hz / 3.2 kHz, pro Band Abwärts- **und** Aufwärtsk
 ## `vocoder` – Analog-Vocoder
 
 ```
-vocoder1: bands = 8; mix = 0.85; q = 2.2; formant = 1; dry = 0.15
+vocoder1: bands = 16; mix = 0.85; q = 2.2; formant = 1; dry = 0.15; attack = 0.003; release = 0.030
 ```
 
-Carrier = dieser Insert. Stimme = **Sidechain**-Pin. Ohne Pin self-vocodet der Carrier sich selbst.
+Carrier = dieser Insert (oder der `in`-Jack im Circuit).
+Modulator = `voice`-Jack (im Circuit verbinden) ODER Sidechain-Pin (Host).
+Modulator-Priorität: `voice`-Jack > Sidechain-Pin > self-vocode.
+Ohne Modulator: self-vocode.
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
-| `bands` | 3–8 | Anzahl der Bandpass-Kanäle |
-| `mix` | 0–1 | Nassanteil der Bandsumme |
+| `bands` | 3–32 | Anzahl der Bandpass-Kanäle |
+| `mix` | 0–1 | Nassanteil |
 | `q` | 0.7–8 | Güte der Bänder |
 | `formant` | 0.5–2 | Verschiebt alle Bandmitten |
 | `dry` | 0–1 | Direktsignal |
+| `attack` | 0.001–0.1 s | Hüllkurven-Anstiegszeit pro Band |
+| `release` | 0.005–0.5 s | Hüllkurven-Abfallzeit pro Band |
 
 ---
 

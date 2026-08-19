@@ -3752,7 +3752,7 @@ stage2: y = softclip(y, 1.03)`,
 add(
   "Vocoder Bank",
   "Vocals",
-  "8-band analog vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain. Empty sidechain self-vocodes.",
+  "16-band analog vocoder. Insert on a pad/synth (carrier). Pin the voice on Sidechain or connect the voice-jack. Empty sidechain self-vocodes.",
   `param a = Mix [0.35, 1.0]
 param b = Q [0.8, 4.0]
 param c = Dry [0.0, 0.4]
@@ -3761,7 +3761,7 @@ param e = CarrierHP [60, 280]
 param f = Level [0.7, 1.35]
 filter1: type = highpass; cutoff = e; resonance = 0.18
 stage1: y = x * f
-vocoder1: bands = 8; mix = a; q = b; formant = d; dry = c
+vocoder1: bands = 16; mix = a; q = b; formant = d; dry = c; attack = 0.003; release = 0.030
 filter2: type = lowpass; cutoff = 8500; resonance = 0.2
 stage2: y = softclip(y, 1.12)`,
   {
@@ -3779,14 +3779,14 @@ stage2: y = softclip(y, 1.12)`,
 add(
   "Vocoder Lite",
   "Vocals",
-  "4-band vocoder, lighter CPU. Carrier on this track, voice on the Sidechain pin.",
+  "8-band vocoder, lighter CPU. Carrier on this track, voice on the Sidechain pin or voice-jack.",
   `param a = Mix [0.3, 1.0]
 param b = Q [1.1, 4.5]
 param c = Dry [0.08, 0.6]
 param d = Formant [0.8, 1.28]
 param e = Level [0.55, 1.2]
 stage1: y = x * e
-vocoder1: bands = 4; mix = a; q = b; formant = d; dry = c
+vocoder1: bands = 8; mix = a; q = b; formant = d; dry = c; attack = 0.003; release = 0.030
 filter1: type = lowpass; cutoff = 8500; resonance = 0.2
 stage2: y = softclip(y, 1.08)`,
   {

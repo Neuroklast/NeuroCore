@@ -117,4 +117,11 @@ describe("isValidLink", () => {
     expect(cableFace("audio")).toBe("side");
     expect(cableFace("ctrl")).toBe("bottom");
   });
+
+  it('normalizeCableKind("sc") returns "audio" so SC-jack can connect', () => {
+    // The vocoder SC-jack has kind "sc". It must be treated as audio so that
+    // isValidLink allows connecting an audio output to it.
+    expect(isValidLink({ kind: "audio", output: true }, { kind: "sc", output: false })).toBe(true);
+    expect(isValidLink({ kind: "sc", output: true }, { kind: "audio", output: false })).toBe(true);
+  });
 });

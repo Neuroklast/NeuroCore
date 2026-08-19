@@ -28,7 +28,7 @@ export function normalizeCableKind(kind: string): CableKind | "knob" | string {
   if (k === "param" || k === "knob" || k === "ctrl") {
     return k === "knob" ? "knob" : "param";
   }
-  if (k === "audio" || k === "mix" || k === "send") {
+  if (k === "audio" || k === "mix" || k === "send" || k === "sc") {
     return "audio";
   }
   return k;

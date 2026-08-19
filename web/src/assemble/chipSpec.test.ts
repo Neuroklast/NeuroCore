@@ -29,7 +29,7 @@ const CATALOG: Array<{
   { id: "env", label: "ENV", params: ["type", "attack", "release", "hold", "min", "max", "invert"] },
   { id: "osc", label: "LFO", params: ["shape", "freq", "sync", "depth"] },
   { id: "octaver", label: "Octaver", params: ["sub", "up", "mix", "tone", "thresh"] },
-  { id: "vocoder", label: "Vocoder", params: ["bands", "mix", "q"] },
+  { id: "vocoder", label: "Vocoder", params: ["bands", "mix", "q", "attack", "release"] },
   { id: "width", label: "Width", params: ["width", "delay", "bass"] },
   { id: "split_ms", label: "Split Mid/Side", params: [] },
   { id: "join_ms", label: "Join Mid/Side", params: [] },
