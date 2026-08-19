@@ -2,11 +2,11 @@
   {
     "name": "Airy Clean",
     "category": "Distortion",
-    "description": "Airy clean: soft single tube, bright-cap high shelf, open cab 9 kHz \u2014 airy, not mid-crush.",
+    "description": "Airy clean: soft single tube, bright-cap high shelf, open cab 9 kHz — airy, not mid-crush.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Airy Clean\n# Airy clean: soft single tube, bright-cap high shelf, open cab 9 kHz \u2014 airy, not mid-crush.\n# a Drive: 0.5 to 2.8, default 1.1\n# b Bright: 0 to 7, default 3.2\n# c Level: 0.55 to 1.45, default 1.1\n\nparam a = Drive [0.5, 2.8]\nparam b = Bright [0.0, 7.0]\nparam c = Level [0.55, 1.45]\nfilter1: type = highpass; cutoff = 45; resonance = 0.22 # highpass\nstage1: y = tube(x, a * 0.5) # tube saturation\neq1: type = highshelf; freq = 4800; q = 0.65; gain = b # high shelf\nstage2: y = softclip(y, 0.75) * c # soft clip\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.25 # lowpass",
+    "script": "# Airy Clean\n# Airy clean: soft single tube, bright-cap high shelf, open cab 9 kHz — airy, not mid-crush.\n# a Drive: 0.5 to 2.8, default 1.1\n# b Bright: 0 to 7, default 3.2\n# c Level: 0.55 to 1.45, default 1.1\n\nparam a = Drive [0.5, 2.8]\nparam b = Bright [0.0, 7.0]\nparam c = Level [0.55, 1.45]\nfilter1: type = highpass; cutoff = 45; resonance = 0.22 # highpass\nstage1: y = tube(x, a * 0.5) # tube saturation\neq1: type = highshelf; freq = 4800; q = 0.65; gain = b # high shelf\nstage2: y = softclip(y, 0.75) * c # soft clip\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.25 # lowpass",
     "tags": [
       "clip",
       "crush",
@@ -80,11 +80,11 @@
   {
     "name": "Mesa High Gain",
     "category": "Distortion",
-    "description": "Rectifier wall: tight HPF, triple tube, hard soft-knee ceiling, dark cab \u2014 densest amp.",
+    "description": "Rectifier wall: tight HPF, triple tube, hard soft-knee ceiling, dark cab — densest amp.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Mesa High Gain\n# Rectifier wall: tight HPF, triple tube, hard soft-knee ceiling, dark cab \u2014 densest amp.\n# a Gain: 3.5 to 12, default 7.8\n# b Tight: 45 to 200, default 85\n# c Level: 0.25 to 0.9, default 0.42\n\nparam a = Gain [3.5, 12.0]\nparam b = Tight [45, 200]\nparam c = Level [0.25, 0.9]\ngate1: threshold = -46; hyst = 6; hold = 0.03; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.6  # highpass\nstage1: y = tube(x, a * 0.5)  # tube saturation\nstage2: y = tube(y, a * 0.6)  # tube saturation\nstage3: y = tube(y, a * 0.45)  # tube saturation\nstage4: y = hardclip(softclip(y, 1.55), 0.68)  # soft clip\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.58  # lowpass\nstage5: y = diode(y, 1.6) * c  # diode clip\nir1: mix = 0.45; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter",
+    "script": "# Mesa High Gain\n# Rectifier wall: tight HPF, triple tube, hard soft-knee ceiling, dark cab — densest amp.\n# a Gain: 3.5 to 12, default 7.8\n# b Tight: 45 to 200, default 85\n# c Level: 0.25 to 0.9, default 0.42\n\nparam a = Gain [3.5, 12.0]\nparam b = Tight [45, 200]\nparam c = Level [0.25, 0.9]\ngate1: threshold = -46; hyst = 6; hold = 0.03; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.6  # highpass\nstage1: y = tube(x, a * 0.5)  # tube saturation\nstage2: y = tube(y, a * 0.6)  # tube saturation\nstage3: y = tube(y, a * 0.45)  # tube saturation\nstage4: y = hardclip(softclip(y, 1.55), 0.68)  # soft clip\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.58  # lowpass\nstage5: y = diode(y, 1.6) * c  # diode clip\nir1: mix = 0.45; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter",
     "tags": [
       "amp",
       "cabinet",
@@ -328,11 +328,11 @@
   {
     "name": "Cyberpunk Drive",
     "category": "Distortion",
-    "description": "Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose \u2014 not Glitch Laboratory.",
+    "description": "Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose — not Glitch Laboratory.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Cyberpunk Drive\n# Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose \u2014 not Glitch Laboratory.\n# a Drive: 1.8 to 9.5, default 4.6\n# b Bits: 5 to 12, default 8.5\n# c Fold: 0.22 to 0.68, default 0.4\n# d Metal: 5 to 26, default 11\n# e Tone: 1400 to 7200, default 4200\n# f Level: 0.85 to 1.5, default 1.15\n\nparam a = Drive [1.8, 9.5]\nparam b = Bits [5.0, 12.0]\nparam c = Fold [0.22, 0.68]\nparam d = Metal [5, 26]\nparam e = Tone [1400, 7200]\nparam f = Level [0.85, 1.5]\nfilter1: type = highpass; cutoff = 115; resonance = 0.4  # highpass\nstage1: y = softclip(x, a * 0.5)  # soft clip\neq1: type = peak; freq = 1350; q = 0.95; gain = 3.2  # peak EQ\nstage2: y = bitcrush(y, b)  # bitcrush\nstage3: y = fold(y, -c, c)  # wavefold\ndelay1: time = d; feedback = 0.34; mix = 0.16; damp = 6800  # delay line\nfilter2: type = lowpass; cutoff = e; resonance = 0.38  # lowpass\nstage4: y = diode(y, 1.32) * f * 1.35  # diode clip",
+    "script": "# Cyberpunk Drive\n# Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose — not Glitch Laboratory.\n# a Drive: 1.8 to 9.5, default 4.6\n# b Bits: 5 to 12, default 8.5\n# c Fold: 0.22 to 0.68, default 0.4\n# d Metal: 5 to 26, default 11\n# e Tone: 1400 to 7200, default 4200\n# f Level: 0.85 to 1.5, default 1.15\n\nparam a = Drive [1.8, 9.5]\nparam b = Bits [5.0, 12.0]\nparam c = Fold [0.22, 0.68]\nparam d = Metal [5, 26]\nparam e = Tone [1400, 7200]\nparam f = Level [0.85, 1.5]\nfilter1: type = highpass; cutoff = 115; resonance = 0.4  # highpass\nstage1: y = softclip(x, a * 0.5)  # soft clip\neq1: type = peak; freq = 1350; q = 0.95; gain = 3.2  # peak EQ\nstage2: y = bitcrush(y, b)  # bitcrush\nstage3: y = fold(y, -c, c)  # wavefold\ndelay1: time = d; feedback = 0.34; mix = 0.16; damp = 6800  # delay line\nfilter2: type = lowpass; cutoff = e; resonance = 0.38  # lowpass\nstage4: y = diode(y, 1.32) * f * 1.35  # diode clip",
     "tags": [
       "bitcrush",
       "clip",
@@ -489,11 +489,11 @@
   {
     "name": "Chorus Delay",
     "category": "Modulation",
-    "description": "Real short delay chorus + dual-rate LFO thickness \u2014 not fake AM-only chorus.",
+    "description": "Real short delay chorus + dual-rate LFO thickness — not fake AM-only chorus.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Chorus Delay\n# Real short delay chorus + dual-rate LFO thickness \u2014 not fake AM-only chorus.\n# a Rate: 0.25 to 3.5, default 1.05\n# b Depth: 0.12 to 0.5, default 0.32\n# c Time: 8 to 32, default 18\n# d Mix: 0.18 to 0.55, default 0.34\n\nparam a = Rate [0.25, 3.5]\nparam b = Depth [0.12, 0.5]\nparam c = Time [8, 32]\nparam d = Mix [0.18, 0.55]\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\nosc2: shape = sine; freq = a * 1.31; depth = 1.0  # LFO\nstage1: y = tube(x, 1.35)  # tube saturation\ndelay1: time = c; feedback = 0.14; mix = d; damp = 9500  # delay line\nstage2: y = softclip(y * (1.0 - b + b * 0.5 * ((0.5 + 0.5 * osc1) + (0.5 + 0.5 * osc2))), 1.08)  # soft clip",
+    "script": "# Chorus Delay\n# Real short delay chorus + dual-rate LFO thickness — not fake AM-only chorus.\n# a Rate: 0.25 to 3.5, default 1.05\n# b Depth: 0.12 to 0.5, default 0.32\n# c Time: 8 to 32, default 18\n# d Mix: 0.18 to 0.55, default 0.34\n\nparam a = Rate [0.25, 3.5]\nparam b = Depth [0.12, 0.5]\nparam c = Time [8, 32]\nparam d = Mix [0.18, 0.55]\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\nosc2: shape = sine; freq = a * 1.31; depth = 1.0  # LFO\nstage1: y = tube(x, 1.35)  # tube saturation\ndelay1: time = c; feedback = 0.14; mix = d; damp = 9500  # delay line\nstage2: y = softclip(y * (1.0 - b + b * 0.5 * ((0.5 + 0.5 * osc1) + (0.5 + 0.5 * osc2))), 1.08)  # soft clip",
     "tags": [
       "chorus",
       "clip",
@@ -650,7 +650,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Metal Gate\n# Tight metal: HPF \u2192 tube cascade \u2192 soft-pre hard knee \u2192 cab LPF, then width.\n# a Drive: 4 to 14, default 8.5\n# b LowCut: 70 to 350, default 140\n# c Level: 0.2 to 0.85, default 0.45\n# d Width: 0 to 1.2, default 0.55\n\nparam a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nparam d = Width [0.0, 1.2]\ngate1: threshold = -38; hyst = 8; attack = 0.004; hold = 0.08; release = 0.12; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.5  # highpass\nstage1: y = tube(x, a * 0.45)  # tube saturation\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)  # tube saturation\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6  # lowpass\nstage3: y = y * c  # waveshape / mix\nir1: mix = 0.5; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter\nwiden1: width = d  # mono to stereo",
+    "script": "# Metal Gate\n# Tight metal: HPF → tube cascade → soft-pre hard knee → cab LPF, then width.\n# a Drive: 4 to 14, default 8.5\n# b LowCut: 70 to 350, default 140\n# c Level: 0.2 to 0.85, default 0.45\n# d Width: 0 to 1.2, default 0.55\n\nparam a = Drive [4.0, 14.0]\nparam b = LowCut [70, 350]\nparam c = Level [0.2, 0.85]\nparam d = Width [0.0, 1.2]\ngate1: threshold = -38; hyst = 8; attack = 0.004; hold = 0.08; release = 0.12; range = -80  # noise gate\nfilter1: type = highpass; cutoff = b; resonance = 0.5  # highpass\nstage1: y = tube(x, a * 0.45)  # tube saturation\nstage2: y = hardclip(softclip(tube(y, a * 0.5), 1.1), 0.5)  # tube saturation\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.6  # lowpass\nstage3: y = y * c  # waveshape / mix\nir1: mix = 0.5; gain = 0  # impulse response\nlimit1: ceiling = -0.3; release = 0.08  # limiter\nwiden1: width = d  # mono to stereo",
     "tags": [
       "cabinet",
       "clip",
@@ -1194,11 +1194,11 @@
   {
     "name": "Slapback Drive",
     "category": "Guitar",
-    "description": "Touch-sensitive OD into a real short delay slap (80\u2013140 ms), damped feedback, diode polish.",
+    "description": "Touch-sensitive OD into a real short delay slap (80–140 ms), damped feedback, diode polish.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Slapback Drive\n# Touch-sensitive OD into a real short delay slap (80\u2013140 ms), damped feedback, diode polish.\n# a Drive: 1 to 6.5, default 3\n# b Time: 60 to 160, default 105\n# c Mix: 0.12 to 0.45, default 0.28\n# d Level: 0.4 to 1.2, default 0.88\n\nparam a = Drive [1.0, 6.5]\nparam b = Time [60, 160]\nparam c = Mix [0.12, 0.45]\nparam d = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.3  # highpass\nstage1: y = softclip(x, a * 0.75)  # soft clip\ndelay1: time = b; feedback = 0.18; mix = c; damp = 4200  # delay line\nstage2: y = diode(y, 1.15) * d  # diode clip\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.35  # lowpass",
+    "script": "# Slapback Drive\n# Touch-sensitive OD into a real short delay slap (80–140 ms), damped feedback, diode polish.\n# a Drive: 1 to 6.5, default 3\n# b Time: 60 to 160, default 105\n# c Mix: 0.12 to 0.45, default 0.28\n# d Level: 0.4 to 1.2, default 0.88\n\nparam a = Drive [1.0, 6.5]\nparam b = Time [60, 160]\nparam c = Mix [0.12, 0.45]\nparam d = Level [0.4, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.3  # highpass\nstage1: y = softclip(x, a * 0.75)  # soft clip\ndelay1: time = b; feedback = 0.18; mix = c; damp = 4200  # delay line\nstage2: y = diode(y, 1.15) * d  # diode clip\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.35  # lowpass",
     "tags": [
       "clip",
       "delay",
@@ -1732,11 +1732,11 @@
   {
     "name": "Studio Channel Strip",
     "category": "Mastering",
-    "description": "Full strip: HPF \u2192 soft drive \u2192 real mid peak (dB) \u2192 air LPF \u2192 glue comp \u2192 soft ceiling.",
+    "description": "Full strip: HPF → soft drive → real mid peak (dB) → air LPF → glue comp → soft ceiling.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Studio Channel Strip\n# Full strip: HPF \u2192 soft drive \u2192 real mid peak (dB) \u2192 air LPF \u2192 glue comp \u2192 soft ceiling.\n# a Drive: 0.8 to 3.5, default 1.35\n# b LowCut: 30 to 180, default 55\n# c Mid: 400 to 3500, default 1200\n# d MidGain: -6 to 8, default 2\n# e High: 4000 to 14000, default 9000\n# f Thresh: -28 to -6, default -16\n\nparam a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [-6.0, 8.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.32  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = c; q = 1.15; gain = d  # peak EQ\nfilter2: type = lowpass; cutoff = e; resonance = 0.28  # lowpass\ncomp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15; knee = 4; makeup = 4; hpf = 80  # compressor\nstage2: y = softclip(x, 1.12)  # soft clip",
+    "script": "# Studio Channel Strip\n# Full strip: HPF → soft drive → real mid peak (dB) → air LPF → glue comp → soft ceiling.\n# a Drive: 0.8 to 3.5, default 1.35\n# b LowCut: 30 to 180, default 55\n# c Mid: 400 to 3500, default 1200\n# d MidGain: -6 to 8, default 2\n# e High: 4000 to 14000, default 9000\n# f Thresh: -28 to -6, default -16\n\nparam a = Drive [0.8, 3.5]\nparam b = LowCut [30, 180]\nparam c = Mid [400, 3500]\nparam d = MidGain [-6.0, 8.0]\nparam e = High [4000, 14000]\nparam f = Thresh [-28.0, -6.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.32  # highpass\nstage1: y = softclip(x, a)  # soft clip\neq1: type = peak; freq = c; q = 1.15; gain = d  # peak EQ\nfilter2: type = lowpass; cutoff = e; resonance = 0.28  # lowpass\ncomp1: threshold = f; ratio = 3.0; attack = 0.008; release = 0.15; knee = 4; makeup = 4; hpf = 80  # compressor\nstage2: y = softclip(x, 1.12)  # soft clip",
     "tags": [
       "air",
       "clip",
@@ -2031,11 +2031,11 @@
   {
     "name": "Glitch Laboratory",
     "category": "Creative",
-    "description": "Musical digital smash: HPF, crush, fold, one short damped delay on a note grid, cab LPF. No ping-pong, no LFO on the filter \u2014 light on the CPU.",
+    "description": "Musical digital smash: HPF, crush, fold, one short damped delay on a note grid, cab LPF. No ping-pong, no LFO on the filter — light on the CPU.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Glitch Laboratory\n# Musical digital smash: HPF, crush, fold, one short damped delay on a note grid, cab LPF. No ping-pong, no LFO on the filter \u2014 light on the CPU.\n# a Bits: 5 to 12, default 8.2\n# b Fold: 0.16 to 0.52, default 0.32\n# c Time: 0 to 1, default 0.65\n# d Repeat: 0.04 to 0.28, default 0.12\n# e Tone: 2600 to 7200, default 4800\n# f Level: 0.85 to 1.4, default 1.12\n\nparam a = Bits [5.0, 12.0]\nparam b = Fold [0.16, 0.52]\nparam c = Time [1/16, 1/4]\nparam d = Repeat [0.04, 0.28]\nparam e = Tone [2600, 7200]\nparam f = Level [0.85, 1.4]\nfilter1: type = highpass; cutoff = 95; resonance = 0.22  # highpass\nstage1: y = bitcrush(softclip(x, 1.55), a)  # soft clip\nstage2: y = fold(y, -b, b)  # wavefold\ndelay1: time = c; feedback = d; mix = 0.12; damp = 2800  # delay line\nfilter2: type = lowpass; cutoff = e; resonance = 0.26  # lowpass\nstage3: y = diode(y, 1.1) * f  # diode clip",
+    "script": "# Glitch Laboratory\n# Musical digital smash: HPF, crush, fold, one short damped delay on a note grid, cab LPF. No ping-pong, no LFO on the filter — light on the CPU.\n# a Bits: 5 to 12, default 8.2\n# b Fold: 0.16 to 0.52, default 0.32\n# c Time: 0 to 1, default 0.65\n# d Repeat: 0.04 to 0.28, default 0.12\n# e Tone: 2600 to 7200, default 4800\n# f Level: 0.85 to 1.4, default 1.12\n\nparam a = Bits [5.0, 12.0]\nparam b = Fold [0.16, 0.52]\nparam c = Time [1/16, 1/4]\nparam d = Repeat [0.04, 0.28]\nparam e = Tone [2600, 7200]\nparam f = Level [0.85, 1.4]\nfilter1: type = highpass; cutoff = 95; resonance = 0.22  # highpass\nstage1: y = bitcrush(softclip(x, 1.55), a)  # soft clip\nstage2: y = fold(y, -b, b)  # wavefold\ndelay1: time = c; feedback = d; mix = 0.12; damp = 2800  # delay line\nfilter2: type = lowpass; cutoff = e; resonance = 0.26  # lowpass\nstage3: y = diode(y, 1.1) * f  # diode clip",
     "tags": [
       "bitcrush",
       "clip",
@@ -2153,11 +2153,11 @@
   {
     "name": "Chrome Fold",
     "category": "Distortion",
-    "description": "West-coast fold into diode chrome. Tight HPF, recovery LPF \u2014 harsh but band-limited.",
+    "description": "West-coast fold into diode chrome. Tight HPF, recovery LPF — harsh but band-limited.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Chrome Fold\n# West-coast fold into diode chrome. Tight HPF, recovery LPF \u2014 harsh but band-limited.\n# a Drive: 2 to 11, default 5.4\n# b Fold: 0.2 to 0.62, default 0.36\n# c Chrome: 1 to 2.2, default 1.45\n# d Tone: 2200 to 7800, default 4600\n# e Level: 0.55 to 1.25, default 0.92\n\nparam a = Drive [2.0, 11.0]\nparam b = Fold [0.2, 0.62]\nparam c = Chrome [1.0, 2.2]\nparam d = Tone [2200, 7800]\nparam e = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = 90; resonance = 0.26  # highpass\nstage1: y = fold(x * a, -b, b)  # wavefold\nstage2: y = diode(y, c)  # diode clip\nfilter2: type = lowpass; cutoff = d; resonance = 0.3  # lowpass\nstage3: y = softclip(y, 1.08) * e  # soft clip",
+    "script": "# Chrome Fold\n# West-coast fold into diode chrome. Tight HPF, recovery LPF — harsh but band-limited.\n# a Drive: 2 to 11, default 5.4\n# b Fold: 0.2 to 0.62, default 0.36\n# c Chrome: 1 to 2.2, default 1.45\n# d Tone: 2200 to 7800, default 4600\n# e Level: 0.55 to 1.25, default 0.92\n\nparam a = Drive [2.0, 11.0]\nparam b = Fold [0.2, 0.62]\nparam c = Chrome [1.0, 2.2]\nparam d = Tone [2200, 7800]\nparam e = Level [0.55, 1.25]\nfilter1: type = highpass; cutoff = 90; resonance = 0.26  # highpass\nstage1: y = fold(x * a, -b, b)  # wavefold\nstage2: y = diode(y, c)  # diode clip\nfilter2: type = lowpass; cutoff = d; resonance = 0.3  # lowpass\nstage3: y = softclip(y, 1.08) * e  # soft clip",
     "tags": [
       "clip",
       "cyberpunk",
@@ -2735,11 +2735,11 @@
   {
     "name": "Side Delay",
     "category": "Delay",
-    "description": "MS encode, delay only on the side, decode. Center stays dry \u2014 width without smearing a vocal or kick.",
+    "description": "MS encode, delay only on the side, decode. Center stays dry — width without smearing a vocal or kick.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Side Delay\n# MS encode, delay only on the side, decode. Center stays dry \u2014 width without smearing a vocal or kick.\n# a Time: 90 to 420, default 220\n# b Feedback: 0.12 to 0.62, default 0.32\n# c Mix: 0.15 to 0.7, default 0.38\n# d Damp: 900 to 7000, default 3800\n# e Mid: 0.7 to 1.15, default 1\n# f Level: 0.75 to 1.15, default 1\n\nparam a = Time [90, 420]\nparam b = Feedback [0.12, 0.62]\nparam c = Mix [0.15, 0.7]\nparam d = Damp [900, 7000]\nparam e = Mid [0.7, 1.15]\nparam f = Level [0.75, 1.15]\nms1: mode = encode  # mid/side encode\nstage1: channel = mid; y = x * e  # waveshape / mix\ndelay1: time = a; feedback = b; mix = c; damp = d; channel = side  # delay line\nms2: mode = decode  # mid/side decode\nstage2: y = softclip(x * f, 1.06)  # soft clip",
+    "script": "# Side Delay\n# MS encode, delay only on the side, decode. Center stays dry — width without smearing a vocal or kick.\n# a Time: 90 to 420, default 220\n# b Feedback: 0.12 to 0.62, default 0.32\n# c Mix: 0.15 to 0.7, default 0.38\n# d Damp: 900 to 7000, default 3800\n# e Mid: 0.7 to 1.15, default 1\n# f Level: 0.75 to 1.15, default 1\n\nparam a = Time [90, 420]\nparam b = Feedback [0.12, 0.62]\nparam c = Mix [0.15, 0.7]\nparam d = Damp [900, 7000]\nparam e = Mid [0.7, 1.15]\nparam f = Level [0.75, 1.15]\nms1: mode = encode  # mid/side encode\nstage1: channel = mid; y = x * e  # waveshape / mix\ndelay1: time = a; feedback = b; mix = c; damp = d; channel = side  # delay line\nms2: mode = decode  # mid/side decode\nstage2: y = softclip(x * f, 1.06)  # soft clip",
     "tags": [
       "clip",
       "delay",
@@ -4713,11 +4713,11 @@
   {
     "name": "FET Peak Comp",
     "category": "Dynamics",
-    "description": "FET peak-style FET: Input drives a fixed \u221216 dB threshold. Attack floor 1 ms (panel 20\u2013800 \u00b5s). Release 50\u20131100 ms. Ratio 4/8/12/20. Class-A grit after GR.",
+    "description": "FET peak-style FET: Input drives a fixed −16 dB threshold. Attack floor 1 ms (panel 20–800 µs). Release 50–1100 ms. Ratio 4/8/12/20. Class-A grit after GR.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# FET Peak Comp\n# FET peak-style FET: Input drives a fixed \u221216 dB threshold. Attack floor 1 ms (panel 20\u2013800 \u00b5s). Release 50\u20131100 ms. Ratio 4/8/12/20. Class-A grit after GR.\n# a Input: 1.2 to 6.5, default 3.4\n# b Ratio: 4 to 20, default 8\n# c Attack: 0.001 to 0.02, default 0.001\n# d Release: 0.05 to 1, default 0.22\n# e Output: 0.45 to 1.35, default 0.92\n\nparam a = Input [1.2, 6.5]\nparam b = Ratio [4.0, 20.0]\nparam c = Attack [0.001, 0.02]\nparam d = Release [0.05, 1.0]\nparam e = Output [0.45, 1.35]\nfilter1: type = highpass; cutoff = 28; resonance = 0.2 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -16; ratio = b; attack = c; release = d; knee = 2; makeup = 3; hpf = 80 # compressor\nstage2: y = diode(y, 1.18) * e # diode clip\nfilter2: type = lowpass; cutoff = 16000; resonance = 0.2 # lowpass",
+    "script": "# FET Peak Comp\n# FET peak-style FET: Input drives a fixed −16 dB threshold. Attack floor 1 ms (panel 20–800 µs). Release 50–1100 ms. Ratio 4/8/12/20. Class-A grit after GR.\n# a Input: 1.2 to 6.5, default 3.4\n# b Ratio: 4 to 20, default 8\n# c Attack: 0.001 to 0.02, default 0.001\n# d Release: 0.05 to 1, default 0.22\n# e Output: 0.45 to 1.35, default 0.92\n\nparam a = Input [1.2, 6.5]\nparam b = Ratio [4.0, 20.0]\nparam c = Attack [0.001, 0.02]\nparam d = Release [0.05, 1.0]\nparam e = Output [0.45, 1.35]\nfilter1: type = highpass; cutoff = 28; resonance = 0.2 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -16; ratio = b; attack = c; release = d; knee = 2; makeup = 3; hpf = 80 # compressor\nstage2: y = diode(y, 1.18) * e # diode clip\nfilter2: type = lowpass; cutoff = 16000; resonance = 0.2 # lowpass",
     "tags": [
       "1176",
       "compressor",
@@ -4763,11 +4763,11 @@
   {
     "name": "All Buttons Comp",
     "category": "Dynamics",
-    "description": "All-buttons-in: ratio pegged at 20, threshold \u221220 dB, attack 1 ms, release ~110 ms. Extra even harmonics. Drum smash, not a vocal default.",
+    "description": "All-buttons-in: ratio pegged at 20, threshold −20 dB, attack 1 ms, release ~110 ms. Extra even harmonics. Drum smash, not a vocal default.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# All Buttons Comp\n# All-buttons-in: ratio pegged at 20, threshold \u221220 dB, attack 1 ms, release ~110 ms. Extra even harmonics. Drum smash, not a vocal default.\n# a Input: 1.6 to 7.5, default 4.2\n# b Release: 0.05 to 0.35, default 0.11\n# c Output: 0.35 to 1.15, default 0.95\n\nparam a = Input [1.6, 7.5]\nparam b = Release [0.05, 0.35]\nparam c = Output [0.35, 1.15]\nfilter1: type = highpass; cutoff = 35; resonance = 0.22 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -20; ratio = 20; attack = 0.001; release = b; knee = 1; makeup = 4 # compressor\nstage2: y = hardclip(softclip(y * c, 1.25), 0.82) # soft clip\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.28 # lowpass",
+    "script": "# All Buttons Comp\n# All-buttons-in: ratio pegged at 20, threshold −20 dB, attack 1 ms, release ~110 ms. Extra even harmonics. Drum smash, not a vocal default.\n# a Input: 1.6 to 7.5, default 4.2\n# b Release: 0.05 to 0.35, default 0.11\n# c Output: 0.35 to 1.15, default 0.95\n\nparam a = Input [1.6, 7.5]\nparam b = Release [0.05, 0.35]\nparam c = Output [0.35, 1.15]\nfilter1: type = highpass; cutoff = 35; resonance = 0.22 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -20; ratio = 20; attack = 0.001; release = b; knee = 1; makeup = 4 # compressor\nstage2: y = hardclip(softclip(y * c, 1.25), 0.82) # soft clip\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.28 # lowpass",
     "tags": [
       "1176",
       "clip",
@@ -4805,11 +4805,11 @@
   {
     "name": "Optical Leveler Comp",
     "category": "Dynamics",
-    "description": "optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang \u2014 we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.",
+    "description": "optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang — we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Optical Leveler Comp\n# optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang \u2014 we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.\n# a PeakRed: -28 to -6, default -14\n# b Gain: 0.7 to 2.2, default 1.35\n# c Limit: 3 to 12, default 3.2\n\nparam a = PeakRed [-28.0, -6.0]\nparam b = Gain [0.7, 2.2]\nparam c = Limit [3.0, 12.0]\ncomp1: threshold = a; ratio = c; attack = 0.01; release = 0.48; knee = 6; makeup = 2; hpf = 60 # compressor\nstage1: y = tube(x * b, 1.12) # tube saturation\nfilter1: type = lowpass; cutoff = 15000; resonance = 0.2 # lowpass",
+    "script": "# Optical Leveler Comp\n# optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang — we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.\n# a PeakRed: -28 to -6, default -14\n# b Gain: 0.7 to 2.2, default 1.35\n# c Limit: 3 to 12, default 3.2\n\nparam a = PeakRed [-28.0, -6.0]\nparam b = Gain [0.7, 2.2]\nparam c = Limit [3.0, 12.0]\ncomp1: threshold = a; ratio = c; attack = 0.01; release = 0.48; knee = 6; makeup = 2; hpf = 60 # compressor\nstage1: y = tube(x * b, 1.12) # tube saturation\nfilter1: type = lowpass; cutoff = 15000; resonance = 0.2 # lowpass",
     "tags": [
       "compressor",
       "dynamics",
@@ -4842,11 +4842,11 @@
   {
     "name": "VCA Bus Glue",
     "category": "Dynamics",
-    "description": "VCA bus bus: VCA glue. Panel attack 0.1/0.3/1/3/10/30 ms (engine floor 1 ms). Release 0.1\u20131.0 s (Auto \u2248 0.3). Ratio 2/4/10. Default 4:1, 3 ms, 0.3 s.",
+    "description": "VCA bus bus: VCA glue. Panel attack 0.1/0.3/1/3/10/30 ms (engine floor 1 ms). Release 0.1–1.0 s (Auto ≈ 0.3). Ratio 2/4/10. Default 4:1, 3 ms, 0.3 s.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# VCA Bus Glue\n# VCA bus bus: VCA glue. Panel attack 0.1/0.3/1/3/10/30 ms (engine floor 1 ms). Release 0.1\u20131.0 s (Auto \u2248 0.3). Ratio 2/4/10. Default 4:1, 3 ms, 0.3 s.\n# a Thresh: -22 to -6, default -12\n# b Ratio: 2 to 10, default 4\n# c Attack: 0.001 to 0.03, default 0.003\n# d Release: 0.1 to 1, default 0.3\n# e Makeup: 0.85 to 1.8, default 1.15\n\nparam a = Thresh [-22.0, -6.0]\nparam b = Ratio [2.0, 10.0]\nparam c = Attack [0.001, 0.03]\nparam d = Release [0.1, 1.0]\nparam e = Makeup [0.85, 1.8]\nfilter1: type = highpass; cutoff = 30; resonance = 0.2 # highpass\ncomp1: threshold = a; ratio = b; attack = c; release = d; knee = 3; makeup = 2; hpf = 90 # compressor\nstage1: y = softclip(x * e, 1.06) # soft clip",
+    "script": "# VCA Bus Glue\n# VCA bus bus: VCA glue. Panel attack 0.1/0.3/1/3/10/30 ms (engine floor 1 ms). Release 0.1–1.0 s (Auto ≈ 0.3). Ratio 2/4/10. Default 4:1, 3 ms, 0.3 s.\n# a Thresh: -22 to -6, default -12\n# b Ratio: 2 to 10, default 4\n# c Attack: 0.001 to 0.03, default 0.003\n# d Release: 0.1 to 1, default 0.3\n# e Makeup: 0.85 to 1.8, default 1.15\n\nparam a = Thresh [-22.0, -6.0]\nparam b = Ratio [2.0, 10.0]\nparam c = Attack [0.001, 0.03]\nparam d = Release [0.1, 1.0]\nparam e = Makeup [0.85, 1.8]\nfilter1: type = highpass; cutoff = 30; resonance = 0.2 # highpass\ncomp1: threshold = a; ratio = b; attack = c; release = d; knee = 3; makeup = 2; hpf = 90 # compressor\nstage1: y = softclip(x * e, 1.06) # soft clip",
     "tags": [
       "bus",
       "clip",
@@ -4893,11 +4893,11 @@
   {
     "name": "Vari-Mu Bus",
     "category": "Dynamics",
-    "description": "vari-mu-ish variable-mu: Time Constant 1\u20132 (0.2 ms / 0.3\u20130.8 s \u2192 1 ms / 0.45 s). Ratio ~2.5, thickens with GR. Lateral/vertical via mild MS side HPF.",
+    "description": "vari-mu-ish variable-mu: Time Constant 1–2 (0.2 ms / 0.3–0.8 s → 1 ms / 0.45 s). Ratio ~2.5, thickens with GR. Lateral/vertical via mild MS side HPF.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vari-Mu Bus\n# vari-mu-ish variable-mu: Time Constant 1\u20132 (0.2 ms / 0.3\u20130.8 s \u2192 1 ms / 0.45 s). Ratio ~2.5, thickens with GR. Lateral/vertical via mild MS side HPF.\n# a Input: -24 to -8, default -15\n# b Release: 0.25 to 1, default 0.45\n# c SideHPF: 40 to 220, default 90\n# d Makeup: 0.85 to 1.6, default 1.12\n\nparam a = Input [-24.0, -8.0]\nparam b = Release [0.25, 1.0]\nparam c = SideHPF [40, 220]\nparam d = Makeup [0.85, 1.6]\nms1: mode = encode # mid/side encode\nstage1: channel = mid; y = x # waveshape / mix\nfilter1: type = highpass; cutoff = c; resonance = 0.22; channel = side # highpass\ncomp1: threshold = a; ratio = 2.5; attack = 0.001; release = b # compressor\nms2: mode = decode # mid/side decode\nstage2: y = tube(x * d, 1.08) # tube saturation\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.22 # lowpass",
+    "script": "# Vari-Mu Bus\n# vari-mu-ish variable-mu: Time Constant 1–2 (0.2 ms / 0.3–0.8 s → 1 ms / 0.45 s). Ratio ~2.5, thickens with GR. Lateral/vertical via mild MS side HPF.\n# a Input: -24 to -8, default -15\n# b Release: 0.25 to 1, default 0.45\n# c SideHPF: 40 to 220, default 90\n# d Makeup: 0.85 to 1.6, default 1.12\n\nparam a = Input [-24.0, -8.0]\nparam b = Release [0.25, 1.0]\nparam c = SideHPF [40, 220]\nparam d = Makeup [0.85, 1.6]\nms1: mode = encode # mid/side encode\nstage1: channel = mid; y = x # waveshape / mix\nfilter1: type = highpass; cutoff = c; resonance = 0.22; channel = side # highpass\ncomp1: threshold = a; ratio = 2.5; attack = 0.001; release = b # compressor\nms2: mode = decode # mid/side decode\nstage2: y = tube(x * d, 1.08) # tube saturation\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.22 # lowpass",
     "tags": [
       "bus",
       "compressor",
@@ -4942,11 +4942,11 @@
   {
     "name": "VCA Punch Comp",
     "category": "Dynamics",
-    "description": "dbx 160: RMS / Over Easy. Attack 15 ms, release 120 ms. Clean VCA, almost no color. Ratio 4\u2013inf (we stop at 20). Threshold + Output.",
+    "description": "dbx 160: RMS / Over Easy. Attack 15 ms, release 120 ms. Clean VCA, almost no color. Ratio 4–inf (we stop at 20). Threshold + Output.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# VCA Punch Comp\n# dbx 160: RMS / Over Easy. Attack 15 ms, release 120 ms. Clean VCA, almost no color. Ratio 4\u2013inf (we stop at 20). Threshold + Output.\n# a Thresh: -28 to -6, default -16\n# b Ratio: 4 to 20, default 6\n# c Output: 0.7 to 1.6, default 1.1\n\nparam a = Thresh [-28.0, -6.0]\nparam b = Ratio [4.0, 20.0]\nparam c = Output [0.7, 1.6]\ncomp1: threshold = a; ratio = b; attack = 0.015; release = 0.12 # compressor\nstage1: y = softclip(x * c, 1.04) # soft clip",
+    "script": "# VCA Punch Comp\n# dbx 160: RMS / Over Easy. Attack 15 ms, release 120 ms. Clean VCA, almost no color. Ratio 4–inf (we stop at 20). Threshold + Output.\n# a Thresh: -28 to -6, default -16\n# b Ratio: 4 to 20, default 6\n# c Output: 0.7 to 1.6, default 1.1\n\nparam a = Thresh [-28.0, -6.0]\nparam b = Ratio [4.0, 20.0]\nparam c = Output [0.7, 1.6]\ncomp1: threshold = a; ratio = b; attack = 0.015; release = 0.12 # compressor\nstage1: y = softclip(x * c, 1.04) # soft clip",
     "tags": [
       "clip",
       "compressor",
@@ -4976,11 +4976,11 @@
   {
     "name": "Tube Opto Vocal",
     "category": "Dynamics",
-    "description": "Tube-Tech CL 1B: optical tube, vocal default. Attack 1 ms (fixed-ish), release 50 ms\u20131 s (panel to 10 s). Ratio 2\u201310. Interconnect-style smoothness.",
+    "description": "Tube-Tech CL 1B: optical tube, vocal default. Attack 1 ms (fixed-ish), release 50 ms–1 s (panel to 10 s). Ratio 2–10. Interconnect-style smoothness.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tube Opto Vocal\n# Tube-Tech CL 1B: optical tube, vocal default. Attack 1 ms (fixed-ish), release 50 ms\u20131 s (panel to 10 s). Ratio 2\u201310. Interconnect-style smoothness.\n# a Thresh: -26 to -8, default -13\n# b Ratio: 2 to 10, default 3.2\n# c Release: 0.05 to 1, default 0.32\n# d Makeup: 0.8 to 1.7, default 1.2\n\nparam a = Thresh [-26.0, -8.0]\nparam b = Ratio [2.0, 10.0]\nparam c = Release [0.05, 1.0]\nparam d = Makeup [0.8, 1.7]\nfilter1: type = highpass; cutoff = 70; resonance = 0.22 # highpass\ncomp1: threshold = a; ratio = b; attack = 0.001; release = c # compressor\nstage1: y = tube(x * d, 1.1) # tube saturation",
+    "script": "# Tube Opto Vocal\n# Tube-Tech CL 1B: optical tube, vocal default. Attack 1 ms (fixed-ish), release 50 ms–1 s (panel to 10 s). Ratio 2–10. Interconnect-style smoothness.\n# a Thresh: -26 to -8, default -13\n# b Ratio: 2 to 10, default 3.2\n# c Release: 0.05 to 1, default 0.32\n# d Makeup: 0.8 to 1.7, default 1.2\n\nparam a = Thresh [-26.0, -8.0]\nparam b = Ratio [2.0, 10.0]\nparam c = Release [0.05, 1.0]\nparam d = Makeup [0.8, 1.7]\nfilter1: type = highpass; cutoff = 70; resonance = 0.22 # highpass\ncomp1: threshold = a; ratio = b; attack = 0.001; release = c # compressor\nstage1: y = tube(x * d, 1.1) # tube saturation",
     "tags": [
       "cl1b",
       "compressor",
@@ -5019,11 +5019,11 @@
   {
     "name": "Diode Bridge Bus",
     "category": "Dynamics",
-    "description": "diode-bridge-ish diode-bridge: attack 3\u20135 ms, recovery 100 ms\u20131 s (panel to 6 s). Ratio ~2\u20136. Thick, slow grab. 30 Hz HPF, mild tube.",
+    "description": "diode-bridge-ish diode-bridge: attack 3–5 ms, recovery 100 ms–1 s (panel to 6 s). Ratio ~2–6. Thick, slow grab. 30 Hz HPF, mild tube.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Diode Bridge Bus\n# diode-bridge-ish diode-bridge: attack 3\u20135 ms, recovery 100 ms\u20131 s (panel to 6 s). Ratio ~2\u20136. Thick, slow grab. 30 Hz HPF, mild tube.\n# a Thresh: -22 to -8, default -14\n# b Ratio: 2 to 6, default 3.5\n# c Recovery: 0.1 to 1, default 0.35\n# d Makeup: 0.85 to 1.55, default 1.12\n\nparam a = Thresh [-22.0, -8.0]\nparam b = Ratio [2.0, 6.0]\nparam c = Recovery [0.1, 1.0]\nparam d = Makeup [0.85, 1.55]\nfilter1: type = highpass; cutoff = 30; resonance = 0.2 # highpass\ncomp1: threshold = a; ratio = b; attack = 0.004; release = c # compressor\nstage1: y = tube(x * d, 1.14) # tube saturation\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.22 # lowpass",
+    "script": "# Diode Bridge Bus\n# diode-bridge-ish diode-bridge: attack 3–5 ms, recovery 100 ms–1 s (panel to 6 s). Ratio ~2–6. Thick, slow grab. 30 Hz HPF, mild tube.\n# a Thresh: -22 to -8, default -14\n# b Ratio: 2 to 6, default 3.5\n# c Recovery: 0.1 to 1, default 0.35\n# d Makeup: 0.85 to 1.55, default 1.12\n\nparam a = Thresh [-22.0, -8.0]\nparam b = Ratio [2.0, 6.0]\nparam c = Recovery [0.1, 1.0]\nparam d = Makeup [0.85, 1.55]\nfilter1: type = highpass; cutoff = 30; resonance = 0.2 # highpass\ncomp1: threshold = a; ratio = b; attack = 0.004; release = c # compressor\nstage1: y = tube(x * d, 1.14) # tube saturation\nfilter2: type = lowpass; cutoff = 14000; resonance = 0.22 # lowpass",
     "tags": [
       "bus",
       "compressor",
@@ -5064,11 +5064,11 @@
   {
     "name": "Punch Comp",
     "category": "Dynamics",
-    "description": "EL8-ish: fast FET-like grab, detector HPF ~6 kHz habit as a 90 Hz HPF on the audio (compromise). Ratio 6, attack 1 ms, release 80\u2013400 ms. British-mode grit.",
+    "description": "EL8-ish: fast FET-like grab, detector HPF ~6 kHz habit as a 90 Hz HPF on the audio (compromise). Ratio 6, attack 1 ms, release 80–400 ms. British-mode grit.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Punch Comp\n# EL8-ish: fast FET-like grab, detector HPF ~6 kHz habit as a 90 Hz HPF on the audio (compromise). Ratio 6, attack 1 ms, release 80\u2013400 ms. British-mode grit.\n# a Input: 1.4 to 6, default 3.1\n# b Ratio: 4 to 20, default 6\n# c Release: 0.06 to 0.45, default 0.14\n# d Output: 0.5 to 1.25, default 0.9\n\nparam a = Input [1.4, 6.0]\nparam b = Ratio [4.0, 20.0]\nparam c = Release [0.06, 0.45]\nparam d = Output [0.5, 1.25]\nfilter1: type = highpass; cutoff = 90; resonance = 0.28 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -15; ratio = b; attack = 0.001; release = c # compressor\nstage2: y = diode(y, 1.22) * d # diode clip\nfilter2: type = lowpass; cutoff = 13000; resonance = 0.24 # lowpass",
+    "script": "# Punch Comp\n# EL8-ish: fast FET-like grab, detector HPF ~6 kHz habit as a 90 Hz HPF on the audio (compromise). Ratio 6, attack 1 ms, release 80–400 ms. British-mode grit.\n# a Input: 1.4 to 6, default 3.1\n# b Ratio: 4 to 20, default 6\n# c Release: 0.06 to 0.45, default 0.14\n# d Output: 0.5 to 1.25, default 0.9\n\nparam a = Input [1.4, 6.0]\nparam b = Ratio [4.0, 20.0]\nparam c = Release [0.06, 0.45]\nparam d = Output [0.5, 1.25]\nfilter1: type = highpass; cutoff = 90; resonance = 0.28 # highpass\nstage1: y = tube(x, a) # tube saturation\ncomp1: threshold = -15; ratio = b; attack = 0.001; release = c # compressor\nstage2: y = diode(y, 1.22) * d # diode clip\nfilter2: type = lowpass; cutoff = 13000; resonance = 0.24 # lowpass",
     "tags": [
       "compressor",
       "diode",
@@ -5108,11 +5108,11 @@
   {
     "name": "Tape Echo Heads",
     "category": "Delay",
-    "description": "tape echo: tape preamp, heads ~1.0x and 0.52x in parallel (mode 7-ish), Repeat Rate 140\u2013620 ms, Intensity to the edge of runaway, wow \u00b18 ms @ 0.65 Hz, spring send.",
+    "description": "tape echo: tape preamp, heads ~1.0x and 0.52x in parallel (mode 7-ish), Repeat Rate 140–620 ms, Intensity to the edge of runaway, wow ±8 ms @ 0.65 Hz, spring send.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tape Echo Heads\n# tape echo: tape preamp, heads ~1.0x and 0.52x in parallel (mode 7-ish), Repeat Rate 140\u2013620 ms, Intensity to the edge of runaway, wow \u00b18 ms @ 0.65 Hz, spring send.\n# a Rate: 140 to 620, default 310\n# b Intensity: 0.18 to 0.78, default 0.46\n# c Mix: 0.18 to 0.7, default 0.4\n# d Tone: 1400 to 4800, default 2600\n# e Wow: 0 to 1, default 0.35\n# f Spring: 0 to 0.32, default 0.12\n\nparam a = Rate [140, 620]\nparam b = Intensity [0.18, 0.78]\nparam c = Mix [0.18, 0.7]\nparam d = Tone [1400, 4800]\nparam e = Wow [0.0, 1.0]\nparam f = Spring [0.0, 0.32]\nosc1: shape = sine; freq = 0.65; depth = 1.0 # LFO\nstage1: y = tube(x, 1.58) # tube saturation\nbus h1:\n send: in = 1 # feed this bus from the input\n delay1: time = a + osc1 * e * 8; feedback = b; mix = 1; damp = d # delay line\n stage2: y = softclip(x, 1.08) # soft clip\nbus h2:\n send: in = 1 # feed this bus from the input\n delay2: time = a * 0.52 + osc1 * e * 5; feedback = b * 0.55; mix = 1; damp = d # delay line\nbus tank:\n send: in = 1 # feed this bus from the input\n reverb1: size = 0.26; decay = 0.32; damp = 0.52; mix = 1; width = 0.55 # reverb\nout: main = 1-c; h1 = c * 0.58; h2 = c * 0.42; tank = f # mix buses back to the output",
+    "script": "# Tape Echo Heads\n# tape echo: tape preamp, heads ~1.0x and 0.52x in parallel (mode 7-ish), Repeat Rate 140–620 ms, Intensity to the edge of runaway, wow ±8 ms @ 0.65 Hz, spring send.\n# a Rate: 140 to 620, default 310\n# b Intensity: 0.18 to 0.78, default 0.46\n# c Mix: 0.18 to 0.7, default 0.4\n# d Tone: 1400 to 4800, default 2600\n# e Wow: 0 to 1, default 0.35\n# f Spring: 0 to 0.32, default 0.12\n\nparam a = Rate [140, 620]\nparam b = Intensity [0.18, 0.78]\nparam c = Mix [0.18, 0.7]\nparam d = Tone [1400, 4800]\nparam e = Wow [0.0, 1.0]\nparam f = Spring [0.0, 0.32]\nosc1: shape = sine; freq = 0.65; depth = 1.0 # LFO\nstage1: y = tube(x, 1.58) # tube saturation\nbus h1:\n send: in = 1 # feed this bus from the input\n delay1: time = a + osc1 * e * 8; feedback = b; mix = 1; damp = d # delay line\n stage2: y = softclip(x, 1.08) # soft clip\nbus h2:\n send: in = 1 # feed this bus from the input\n delay2: time = a * 0.52 + osc1 * e * 5; feedback = b * 0.55; mix = 1; damp = d # delay line\nbus tank:\n send: in = 1 # feed this bus from the input\n reverb1: size = 0.26; decay = 0.32; damp = 0.52; mix = 1; width = 0.55 # reverb\nout: main = 1-c; h1 = c * 0.58; h2 = c * 0.42; tank = f # mix buses back to the output",
     "tags": [
       "bus",
       "clip",
@@ -5169,11 +5169,11 @@
   {
     "name": "Analog Bucket Echo",
     "category": "Delay",
-    "description": "EHX Deluxe bucket echo: bucket-brigade 80\u2013550 ms, dark 1.4\u20133.2 kHz damp, chorus 0.6 Hz on the delay time (\u00b16 ms), Blend + Feedback. Analog preamp.",
+    "description": "EHX Deluxe bucket echo: bucket-brigade 80–550 ms, dark 1.4–3.2 kHz damp, chorus 0.6 Hz on the delay time (±6 ms), Blend + Feedback. Analog preamp.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Analog Bucket Echo\n# EHX Deluxe bucket echo: bucket-brigade 80\u2013550 ms, dark 1.4\u20133.2 kHz damp, chorus 0.6 Hz on the delay time (\u00b16 ms), Blend + Feedback. Analog preamp.\n# a Time: 80 to 550, default 320\n# b Feedback: 0.12 to 0.68, default 0.4\n# c Blend: 0.18 to 0.62, default 0.38\n# d Age: 1200 to 3200, default 2100\n# e Chorus: 0 to 1, default 0.4\n\nparam a = Time [80, 550]\nparam b = Feedback [0.12, 0.68]\nparam c = Blend [0.18, 0.62]\nparam d = Age [1200, 3200]\nparam e = Chorus [0.0, 1.0]\nosc1: shape = sine; freq = 0.6; depth = 1.0 # LFO\nstage1: y = tube(x, 1.45) # tube saturation\ndelay1: time = a + osc1 * e * 6; feedback = b; mix = c; damp = d # delay line\nstage2: y = softclip(y, 1.08) # soft clip\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.24 # lowpass",
+    "script": "# Analog Bucket Echo\n# EHX Deluxe bucket echo: bucket-brigade 80–550 ms, dark 1.4–3.2 kHz damp, chorus 0.6 Hz on the delay time (±6 ms), Blend + Feedback. Analog preamp.\n# a Time: 80 to 550, default 320\n# b Feedback: 0.12 to 0.68, default 0.4\n# c Blend: 0.18 to 0.62, default 0.38\n# d Age: 1200 to 3200, default 2100\n# e Chorus: 0 to 1, default 0.4\n\nparam a = Time [80, 550]\nparam b = Feedback [0.12, 0.68]\nparam c = Blend [0.18, 0.62]\nparam d = Age [1200, 3200]\nparam e = Chorus [0.0, 1.0]\nosc1: shape = sine; freq = 0.6; depth = 1.0 # LFO\nstage1: y = tube(x, 1.45) # tube saturation\ndelay1: time = a + osc1 * e * 6; feedback = b; mix = c; damp = d # delay line\nstage2: y = softclip(y, 1.08) # soft clip\nfilter1: type = lowpass; cutoff = 9000; resonance = 0.24 # lowpass",
     "tags": [
       "analog",
       "bbd",
@@ -5220,11 +5220,11 @@
   {
     "name": "Tape Slap Echo",
     "category": "Delay",
-    "description": "Maestro EP-3: tube record amp, 70\u2013400 ms tape path, Sustain = feedback, Echo = mix, Record = drive. Darker than Space Echo, less wow.",
+    "description": "Maestro EP-3: tube record amp, 70–400 ms tape path, Sustain = feedback, Echo = mix, Record = drive. Darker than Space Echo, less wow.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tape Slap Echo\n# Maestro EP-3: tube record amp, 70\u2013400 ms tape path, Sustain = feedback, Echo = mix, Record = drive. Darker than Space Echo, less wow.\n# a Time: 70 to 400, default 190\n# b Sustain: 0.12 to 0.7, default 0.38\n# c Echo: 0.16 to 0.58, default 0.34\n# d Record: 1.1 to 3.4, default 1.85\n# e Age: 1600 to 4200, default 2800\n\nparam a = Time [70, 400]\nparam b = Sustain [0.12, 0.7]\nparam c = Echo [0.16, 0.58]\nparam d = Record [1.1, 3.4]\nparam e = Age [1600, 4200]\nstage1: y = tube(x, d) # tube saturation\ndelay1: time = a; feedback = b; mix = c; damp = e # delay line\nstage2: y = softclip(y, 1.1) # soft clip\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.24 # lowpass",
+    "script": "# Tape Slap Echo\n# Maestro EP-3: tube record amp, 70–400 ms tape path, Sustain = feedback, Echo = mix, Record = drive. Darker than Space Echo, less wow.\n# a Time: 70 to 400, default 190\n# b Sustain: 0.12 to 0.7, default 0.38\n# c Echo: 0.16 to 0.58, default 0.34\n# d Record: 1.1 to 3.4, default 1.85\n# e Age: 1600 to 4200, default 2800\n\nparam a = Time [70, 400]\nparam b = Sustain [0.12, 0.7]\nparam c = Echo [0.16, 0.58]\nparam d = Record [1.1, 3.4]\nparam e = Age [1600, 4200]\nstage1: y = tube(x, d) # tube saturation\ndelay1: time = a; feedback = b; mix = c; damp = e # delay line\nstage2: y = softclip(y, 1.1) # soft clip\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.24 # lowpass",
     "tags": [
       "amp",
       "clip",
@@ -5270,11 +5270,11 @@
   {
     "name": "Digital Grid Delay",
     "category": "Delay",
-    "description": "digital grid-style digital: note-grid time 1/4\u20261/16, clean 12 kHz damp, 0.35 Hz mod \u00b13 ms, no tape grit. Dynamic-ish by leaving dry on main.",
+    "description": "digital grid-style digital: note-grid time 1/4…1/16, clean 12 kHz damp, 0.35 Hz mod ±3 ms, no tape grit. Dynamic-ish by leaving dry on main.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Digital Grid Delay\n# digital grid-style digital: note-grid time 1/4\u20261/16, clean 12 kHz damp, 0.35 Hz mod \u00b13 ms, no tape grit. Dynamic-ish by leaving dry on main.\n# a Time: 0 to 1, default 0.45\n# b Feedback: 0.12 to 0.62, default 0.34\n# c Mix: 0.16 to 0.55, default 0.32\n# d Mod: 0 to 1, default 0.28\n# e Damp: 7000 to 14000, default 11000\n\nparam a = Time [1/4, 1/16]\nparam b = Feedback [0.12, 0.62]\nparam c = Mix [0.16, 0.55]\nparam d = Mod [0.0, 1.0]\nparam e = Damp [7000, 14000]\nosc1: shape = sine; freq = 0.35; depth = 1.0 # LFO\ndelay1: time = a + osc1 * d * 3; feedback = b; mix = c; damp = e # delay line\nstage1: y = softclip(x, 1.03) # soft clip",
+    "script": "# Digital Grid Delay\n# digital grid-style digital: note-grid time 1/4…1/16, clean 12 kHz damp, 0.35 Hz mod ±3 ms, no tape grit. Dynamic-ish by leaving dry on main.\n# a Time: 0 to 1, default 0.45\n# b Feedback: 0.12 to 0.62, default 0.34\n# c Mix: 0.16 to 0.55, default 0.32\n# d Mod: 0 to 1, default 0.28\n# e Damp: 7000 to 14000, default 11000\n\nparam a = Time [1/4, 1/16]\nparam b = Feedback [0.12, 0.62]\nparam c = Mix [0.16, 0.55]\nparam d = Mod [0.0, 1.0]\nparam e = Damp [7000, 14000]\nosc1: shape = sine; freq = 0.35; depth = 1.0 # LFO\ndelay1: time = a + osc1 * d * 3; feedback = b; mix = c; damp = e # delay line\nstage1: y = softclip(x, 1.03) # soft clip",
     "tags": [
       "2290",
       "clip",
@@ -5319,11 +5319,11 @@
   {
     "name": "Foil Plate",
     "category": "Reverb",
-    "description": "foil plate: foil plate, not a hall. Size 0.42\u20130.58, decay 0.42\u20130.72 (~1.5\u20134 s habit), damp 0.18\u20130.34 (bright), predelay 0\u201318 ms, width 0.92.",
+    "description": "foil plate: foil plate, not a hall. Size 0.42–0.58, decay 0.42–0.72 (~1.5–4 s habit), damp 0.18–0.34 (bright), predelay 0–18 ms, width 0.92.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Foil Plate\n# foil plate: foil plate, not a hall. Size 0.42\u20130.58, decay 0.42\u20130.72 (~1.5\u20134 s habit), damp 0.18\u20130.34 (bright), predelay 0\u201318 ms, width 0.92.\n# a Decay: 0.42 to 0.72, default 0.56\n# b Predelay: 0 to 18, default 6\n# c Damp: 0.18 to 0.34, default 0.24\n# d Mix: 0.12 to 0.55, default 0.32\n# e Size: 0.42 to 0.58, default 0.5\n\nparam a = Decay [0.42, 0.72]\nparam b = Predelay [0, 18]\nparam c = Damp [0.18, 0.34]\nparam d = Mix [0.12, 0.55]\nparam e = Size [0.42, 0.58]\ndelay1: time = b; feedback = 0.02; mix = 0.28; damp = 9000 # delay line\nreverb1: size = e; decay = a; damp = c; mix = d; width = 0.92 # reverb\nfilter1: type = highpass; cutoff = 90; resonance = 0.22 # highpass\neq1: type = highshelf; freq = 6500; q = 0.7; gain = 1.8 # high shelf\nstage1: y = softclip(x, 1.04) # soft clip",
+    "script": "# Foil Plate\n# foil plate: foil plate, not a hall. Size 0.42–0.58, decay 0.42–0.72 (~1.5–4 s habit), damp 0.18–0.34 (bright), predelay 0–18 ms, width 0.92.\n# a Decay: 0.42 to 0.72, default 0.56\n# b Predelay: 0 to 18, default 6\n# c Damp: 0.18 to 0.34, default 0.24\n# d Mix: 0.12 to 0.55, default 0.32\n# e Size: 0.42 to 0.58, default 0.5\n\nparam a = Decay [0.42, 0.72]\nparam b = Predelay [0, 18]\nparam c = Damp [0.18, 0.34]\nparam d = Mix [0.12, 0.55]\nparam e = Size [0.42, 0.58]\ndelay1: time = b; feedback = 0.02; mix = 0.28; damp = 9000 # delay line\nreverb1: size = e; decay = a; damp = c; mix = d; width = 0.92 # reverb\nfilter1: type = highpass; cutoff = 90; resonance = 0.22 # highpass\neq1: type = highshelf; freq = 6500; q = 0.7; gain = 1.8 # high shelf\nstage1: y = softclip(x, 1.04) # soft clip",
     "tags": [
       "clip",
       "delay",
@@ -5372,11 +5372,11 @@
   {
     "name": "Large Hall",
     "category": "Reverb",
-    "description": "large hall hall habit: size 0.76\u20130.94, decay 0.62\u20130.88, damp 0.38\u20130.56, predelay 20\u201380 ms, full width. Even, long, not a plate.",
+    "description": "large hall hall habit: size 0.76–0.94, decay 0.62–0.88, damp 0.38–0.56, predelay 20–80 ms, full width. Even, long, not a plate.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Large Hall\n# large hall hall habit: size 0.76\u20130.94, decay 0.62\u20130.88, damp 0.38\u20130.56, predelay 20\u201380 ms, full width. Even, long, not a plate.\n# a Size: 0.76 to 0.94, default 0.84\n# b Decay: 0.62 to 0.88, default 0.74\n# c Predelay: 20 to 80, default 36\n# d Damp: 0.38 to 0.56, default 0.46\n# e Mix: 0.12 to 0.5, default 0.3\n\nparam a = Size [0.76, 0.94]\nparam b = Decay [0.62, 0.88]\nparam c = Predelay [20, 80]\nparam d = Damp [0.38, 0.56]\nparam e = Mix [0.12, 0.5]\ndelay1: time = c; feedback = 0.04; mix = 0.3; damp = 8500 # delay line\nreverb1: size = a; decay = b; damp = d; mix = e; width = 1.0 # reverb\nfilter1: type = highpass; cutoff = 55; resonance = 0.2 # highpass\nstage1: y = softclip(x, 1.04) # soft clip",
+    "script": "# Large Hall\n# large hall hall habit: size 0.76–0.94, decay 0.62–0.88, damp 0.38–0.56, predelay 20–80 ms, full width. Even, long, not a plate.\n# a Size: 0.76 to 0.94, default 0.84\n# b Decay: 0.62 to 0.88, default 0.74\n# c Predelay: 20 to 80, default 36\n# d Damp: 0.38 to 0.56, default 0.46\n# e Mix: 0.12 to 0.5, default 0.3\n\nparam a = Size [0.76, 0.94]\nparam b = Decay [0.62, 0.88]\nparam c = Predelay [20, 80]\nparam d = Damp [0.38, 0.56]\nparam e = Mix [0.12, 0.5]\ndelay1: time = c; feedback = 0.04; mix = 0.3; damp = 8500 # delay line\nreverb1: size = a; decay = b; damp = d; mix = e; width = 1.0 # reverb\nfilter1: type = highpass; cutoff = 55; resonance = 0.2 # highpass\nstage1: y = softclip(x, 1.04) # soft clip",
     "tags": [
       "clip",
       "delay",
@@ -5423,11 +5423,11 @@
   {
     "name": "Nonlinear Snap",
     "category": "Reverb",
-    "description": "nonlinear16 NonLin2 habit: 150\u2013350 ms dense burst. Fixed room (no live size jumps), darker damp, short slap, recovery LPF. 80s snare room, not a hall.",
+    "description": "nonlinear16 NonLin2 habit: 150–350 ms dense burst. Fixed room (no live size jumps), darker damp, short slap, recovery LPF. 80s snare room, not a hall.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Nonlinear Snap\n# nonlinear16 NonLin2 habit: 150\u2013350 ms dense burst. Fixed room (no live size jumps), darker damp, short slap, recovery LPF. 80s snare room, not a hall.\n# a Burst: 0.18 to 0.34, default 0.24\n# b Predelay: 10 to 26, default 16\n# c Damp: 0.32 to 0.55, default 0.42\n# d Mix: 0.18 to 0.62, default 0.4\n\nparam a = Burst [0.18, 0.34]\nparam b = Predelay [10, 26]\nparam c = Damp [0.32, 0.55]\nparam d = Mix [0.18, 0.62]\ndelay1: time = b; feedback = 0.02; mix = 0.12; damp = 5500 # delay line\nreverb1: size = 0.36; decay = a; damp = c; mix = d; width = 0.68 # reverb\neq1: type = highshelf; freq = 3800; q = 0.65; gain = 1.1 # high shelf\nfilter1: type = highpass; cutoff = 160; resonance = 0.22 # highpass\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.22 # lowpass\nstage1: y = softclip(x, 1.04) # soft clip",
+    "script": "# Nonlinear Snap\n# nonlinear16 NonLin2 habit: 150–350 ms dense burst. Fixed room (no live size jumps), darker damp, short slap, recovery LPF. 80s snare room, not a hall.\n# a Burst: 0.18 to 0.34, default 0.24\n# b Predelay: 10 to 26, default 16\n# c Damp: 0.32 to 0.55, default 0.42\n# d Mix: 0.18 to 0.62, default 0.4\n\nparam a = Burst [0.18, 0.34]\nparam b = Predelay [10, 26]\nparam c = Damp [0.32, 0.55]\nparam d = Mix [0.18, 0.62]\ndelay1: time = b; feedback = 0.02; mix = 0.12; damp = 5500 # delay line\nreverb1: size = 0.36; decay = a; damp = c; mix = d; width = 0.68 # reverb\neq1: type = highshelf; freq = 3800; q = 0.65; gain = 1.1 # high shelf\nfilter1: type = highpass; cutoff = 160; resonance = 0.22 # highpass\nfilter2: type = lowpass; cutoff = 9500; resonance = 0.22 # lowpass\nstage1: y = softclip(x, 1.04) # soft clip",
     "tags": [
       "ams",
       "clip",
@@ -5475,11 +5475,11 @@
   {
     "name": "Spring Tank",
     "category": "Reverb",
-    "description": "Guitar-amp / AKG-ish spring: small tank, splashy top, 22\u201340 ms drip delay, decay 0.26\u20130.48, damp 0.16\u20130.3. Not a plate and not a hall.",
+    "description": "Guitar-amp / AKG-ish spring: small tank, splashy top, 22–40 ms drip delay, decay 0.26–0.48, damp 0.16–0.3. Not a plate and not a hall.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Spring Tank\n# Guitar-amp / AKG-ish spring: small tank, splashy top, 22\u201340 ms drip delay, decay 0.26\u20130.48, damp 0.16\u20130.3. Not a plate and not a hall.\n# a Decay: 0.26 to 0.48, default 0.36\n# b Drip: 22 to 40, default 30\n# c Splash: 0.16 to 0.3, default 0.22\n# d Mix: 0.12 to 0.55, default 0.3\n# e Drive: 0.9 to 2.2, default 1.25\n\nparam a = Decay [0.26, 0.48]\nparam b = Drip [22, 40]\nparam c = Splash [0.16, 0.3]\nparam d = Mix [0.12, 0.55]\nparam e = Drive [0.9, 2.2]\nstage1: y = tube(x, e)  # tube saturation\ndelay1: time = b; feedback = 0.08; mix = 0.22; damp = 7000  # delay line\nreverb1: size = 0.24; decay = a; damp = c; mix = d; width = 0.45  # reverb\neq1: type = peak; freq = 2100; q = 1.4; gain = 2.6  # peak EQ\nfilter1: type = highpass; cutoff = 120; resonance = 0.28  # highpass\nstage2: y = softclip(x, 1.08)  # soft clip",
+    "script": "# Spring Tank\n# Guitar-amp / AKG-ish spring: small tank, splashy top, 22–40 ms drip delay, decay 0.26–0.48, damp 0.16–0.3. Not a plate and not a hall.\n# a Decay: 0.26 to 0.48, default 0.36\n# b Drip: 22 to 40, default 30\n# c Splash: 0.16 to 0.3, default 0.22\n# d Mix: 0.12 to 0.55, default 0.3\n# e Drive: 0.9 to 2.2, default 1.25\n\nparam a = Decay [0.26, 0.48]\nparam b = Drip [22, 40]\nparam c = Splash [0.16, 0.3]\nparam d = Mix [0.12, 0.55]\nparam e = Drive [0.9, 2.2]\nstage1: y = tube(x, e)  # tube saturation\ndelay1: time = b; feedback = 0.08; mix = 0.22; damp = 7000  # delay line\nreverb1: size = 0.24; decay = a; damp = c; mix = d; width = 0.45  # reverb\neq1: type = peak; freq = 2100; q = 1.4; gain = 2.6  # peak EQ\nfilter1: type = highpass; cutoff = 120; resonance = 0.28  # highpass\nstage2: y = softclip(x, 1.08)  # soft clip",
     "tags": [
       "amp",
       "clip",
@@ -5718,11 +5718,11 @@
   {
     "name": "Slap And Booth",
     "category": "Vocals",
-    "description": "Vocal send: 95 ms slap plus a small booth. Blend is wet. Mix 25\u201340 on a send.",
+    "description": "Vocal send: 95 ms slap plus a small booth. Blend is wet. Mix 25–40 on a send.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Slap And Booth\n# Vocal send: 95 ms slap plus a small booth. Blend is wet. Mix 25\u201340 on a send.\n# a Slap: 70 to 140, default 95\n# b Room: 0.12 to 0.42, default 0.22\n# c Blend: 0.15 to 0.7, default 0.32\n\nparam a = Slap [70, 140]\nparam b = Room [0.12, 0.42]\nparam c = Blend [0.15, 0.7]\nstage1: y = x  # waveshape / mix\nbus wet:\n  send: in = 1  # feed this bus from the input\n  delay1: time = a; feedback = 0.08; mix = 1; damp = 4500  # delay line\n  reverb1: size = b; decay = 0.22; damp = 0.55; mix = 1; width = 0.45  # reverb\nout: main = 1-c; wet = c  # mix buses back to the output",
+    "script": "# Slap And Booth\n# Vocal send: 95 ms slap plus a small booth. Blend is wet. Mix 25–40 on a send.\n# a Slap: 70 to 140, default 95\n# b Room: 0.12 to 0.42, default 0.22\n# c Blend: 0.15 to 0.7, default 0.32\n\nparam a = Slap [70, 140]\nparam b = Room [0.12, 0.42]\nparam c = Blend [0.15, 0.7]\nstage1: y = x  # waveshape / mix\nbus wet:\n  send: in = 1  # feed this bus from the input\n  delay1: time = a; feedback = 0.08; mix = 1; damp = 4500  # delay line\n  reverb1: size = b; decay = 0.22; damp = 0.55; mix = 1; width = 0.45  # reverb\nout: main = 1-c; wet = c  # mix buses back to the output",
     "tags": [
       "bus",
       "delay",
@@ -5758,11 +5758,11 @@
   {
     "name": "Dotted Eighth Throw",
     "category": "Vocals",
-    "description": "Pop vocal throw. Dotted 1/8, dark. Use as a send, Mix 20\u201335.",
+    "description": "Pop vocal throw. Dotted 1/8, dark. Use as a send, Mix 20–35.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Dotted Eighth Throw\n# Pop vocal throw. Dotted 1/8, dark. Use as a send, Mix 20\u201335.\n# a Feedback: 0.12 to 0.48, default 0.26\n# b Tone: 1800 to 6500, default 3800\n# c Blend: 0.12 to 0.55, default 0.28\n\nparam a = Feedback [0.12, 0.48]\nparam b = Tone [1800, 6500]\nparam c = Blend [0.12, 0.55]\nstage1: y = x  # waveshape / mix\nbus throw:\n  send: in = 1  # feed this bus from the input\n  filter1: type = highpass; cutoff = 180; resonance = 0.25  # highpass\n  delay1: time = 1/8.; feedback = a; mix = 1; damp = b  # delay line\nout: main = 1-c; throw = c  # mix buses back to the output",
+    "script": "# Dotted Eighth Throw\n# Pop vocal throw. Dotted 1/8, dark. Use as a send, Mix 20–35.\n# a Feedback: 0.12 to 0.48, default 0.26\n# b Tone: 1800 to 6500, default 3800\n# c Blend: 0.12 to 0.55, default 0.28\n\nparam a = Feedback [0.12, 0.48]\nparam b = Tone [1800, 6500]\nparam c = Blend [0.12, 0.55]\nstage1: y = x  # waveshape / mix\nbus throw:\n  send: in = 1  # feed this bus from the input\n  filter1: type = highpass; cutoff = 180; resonance = 0.25  # highpass\n  delay1: time = 1/8.; feedback = a; mix = 1; damp = b  # delay line\nout: main = 1-c; throw = c  # mix buses back to the output",
     "tags": [
       "bus",
       "delay",
@@ -5907,11 +5907,11 @@
   {
     "name": "Telephone Cup",
     "category": "Vocals",
-    "description": "Narrower than Radio Band. 400\u20133 kHz cup, diode grit.",
+    "description": "Narrower than Radio Band. 400–3 kHz cup, diode grit.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Telephone Cup\n# Narrower than Radio Band. 400\u20133 kHz cup, diode grit.\n# a Grit: 0.8 to 3.5, default 1.6\n# b Low: 280 to 700, default 400\n# c High: 2200 to 4200, default 3000\n\nparam a = Grit [0.8, 3.5]\nparam b = Low [280, 700]\nparam c = High [2200, 4200]\nfilter1: type = highpass; cutoff = b; resonance = 0.45  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = diode(x, a)  # diode clip",
+    "script": "# Telephone Cup\n# Narrower than Radio Band. 400–3 kHz cup, diode grit.\n# a Grit: 0.8 to 3.5, default 1.6\n# b Low: 280 to 700, default 400\n# c High: 2200 to 4200, default 3000\n\nparam a = Grit [0.8, 3.5]\nparam b = Low [280, 700]\nparam c = High [2200, 4200]\nfilter1: type = highpass; cutoff = b; resonance = 0.45  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = diode(x, a)  # diode clip",
     "tags": [
       "diode",
       "filter",
@@ -8578,11 +8578,11 @@
   {
     "name": "Lo-Fi Amp Sim",
     "category": "Distortion",
-    "description": "Tiny speaker: 300\u20133.5 kHz + crush.",
+    "description": "Tiny speaker: 300–3.5 kHz + crush.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Lo-Fi Amp Sim\n# Tiny speaker: 300\u20133.5 kHz + crush.\n# a Bits: 5 to 11, default 8\n# b Low: 180 to 450, default 280\n# c High: 2500 to 5000, default 3500\n\nparam a = Bits [5, 11]\nparam b = Low [180, 450]\nparam c = High [2500, 5000]\nfilter1: type = highpass; cutoff = b; resonance = 0.35  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = bitcrush(softclip(x, 1.5), a)  # soft clip\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
+    "script": "# Lo-Fi Amp Sim\n# Tiny speaker: 300–3.5 kHz + crush.\n# a Bits: 5 to 11, default 8\n# b Low: 180 to 450, default 280\n# c High: 2500 to 5000, default 3500\n\nparam a = Bits [5, 11]\nparam b = Low [180, 450]\nparam c = High [2500, 5000]\nfilter1: type = highpass; cutoff = b; resonance = 0.35  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.4  # lowpass\nstage1: y = bitcrush(softclip(x, 1.5), a)  # soft clip\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
     "tags": [
       "amp",
       "bitcrush",
@@ -9191,11 +9191,11 @@
   {
     "name": "AM Radio Narrow",
     "category": "Lo-Fi",
-    "description": "Narrower than Phone Line. 500\u20132.8 kHz.",
+    "description": "Narrower than Phone Line. 500–2.8 kHz.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# AM Radio Narrow\n# Narrower than Phone Line. 500\u20132.8 kHz.\n# a Low: 350 to 700, default 500\n# b High: 2000 to 3500, default 2800\n# c Bits: 6 to 11, default 8\n\nparam a = Low [350, 700]\nparam b = High [2000, 3500]\nparam c = Bits [6, 11]\nfilter1: type = highpass; cutoff = a; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = b; resonance = 0.35  # lowpass\nstage1: y = bitcrush(softclip(x, 1.3), c)  # soft clip\nfilter3: type = lowpass; cutoff = b; resonance = 0.28  # recovery",
+    "script": "# AM Radio Narrow\n# Narrower than Phone Line. 500–2.8 kHz.\n# a Low: 350 to 700, default 500\n# b High: 2000 to 3500, default 2800\n# c Bits: 6 to 11, default 8\n\nparam a = Low [350, 700]\nparam b = High [2000, 3500]\nparam c = Bits [6, 11]\nfilter1: type = highpass; cutoff = a; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = b; resonance = 0.35  # lowpass\nstage1: y = bitcrush(softclip(x, 1.3), c)  # soft clip\nfilter3: type = lowpass; cutoff = b; resonance = 0.28  # recovery",
     "tags": [
       "bitcrush",
       "clip",
@@ -9264,11 +9264,11 @@
   {
     "name": "Broken Speaker",
     "category": "Lo-Fi",
-    "description": "300\u20132.5 kHz + fold.",
+    "description": "300–2.5 kHz + fold.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Broken Speaker\n# 300\u20132.5 kHz + fold.\n# a Fold: 0.12 to 0.4, default 0.22\n# b Low: 200 to 450, default 300\n# c High: 1800 to 3500, default 2500\n\nparam a = Fold [0.12, 0.4]\nparam b = Low [200, 450]\nparam c = High [1800, 3500]\nfilter1: type = highpass; cutoff = b; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.42  # lowpass\nstage1: y = fold(x, -a, a)  # wavefold\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
+    "script": "# Broken Speaker\n# 300–2.5 kHz + fold.\n# a Fold: 0.12 to 0.4, default 0.22\n# b Low: 200 to 450, default 300\n# c High: 1800 to 3500, default 2500\n\nparam a = Fold [0.12, 0.4]\nparam b = Low [200, 450]\nparam c = High [1800, 3500]\nfilter1: type = highpass; cutoff = b; resonance = 0.4  # highpass\nfilter2: type = lowpass; cutoff = c; resonance = 0.42  # lowpass\nstage1: y = fold(x, -a, a)  # wavefold\nfilter3: type = lowpass; cutoff = c; resonance = 0.28  # recovery",
     "tags": [
       "filter",
       "fold",
@@ -10211,11 +10211,11 @@
   {
     "name": "Harmonic Exciter",
     "category": "Creative",
-    "description": "Exciter-Charakter \u00fcber Filter + S\u00e4ttigung.",
+    "description": "Exciter-Charakter über Filter + Sättigung.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Harmonic Exciter\n# Exciter-Charakter \u00fcber Filter + S\u00e4ttigung.\n# a Drive: 0.5 to 6, default 2.2\n# b HighFreq: 1500 to 14000, default 5500\n# c Amount: 0 to 1, default 0.55\n\nparam a = Drive [0.5, 6.0]\nparam b = HighFreq [1500.0, 14000.0]\nparam c = Amount [0.0, 1.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.8  # filter1: highpass\nstage1: y = x + tanh(x * a) * c  # stage1: waveshape / mix\nfilter2: type = lowpass; cutoff = 18000; resonance = 0.7  # filter2: lowpass\n",
+    "script": "# Harmonic Exciter\n# Exciter-Charakter über Filter + Sättigung.\n# a Drive: 0.5 to 6, default 2.2\n# b HighFreq: 1500 to 14000, default 5500\n# c Amount: 0 to 1, default 0.55\n\nparam a = Drive [0.5, 6.0]\nparam b = HighFreq [1500.0, 14000.0]\nparam c = Amount [0.0, 1.0]\nfilter1: type = highpass; cutoff = b; resonance = 0.8  # filter1: highpass\nstage1: y = x + tanh(x * a) * c  # stage1: waveshape / mix\nfilter2: type = lowpass; cutoff = 18000; resonance = 0.7  # filter2: lowpass\n",
     "tags": [],
     "paramA": {
       "name": "Drive",
@@ -10419,11 +10419,11 @@
   {
     "name": "Telephone EQ",
     "category": "Filter",
-    "description": "Bandpass 300-3400 Hz f\u00fcr Telefoncharakter.",
+    "description": "Bandpass 300-3400 Hz für Telefoncharakter.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Telephone EQ\n# Bandpass 300-3400 Hz f\u00fcr Telefoncharakter.\n# a LowCut: 120 to 500, default 300\n# b HighCut: 2500 to 5000, default 3400\n# c Drive: 0.8 to 2, default 1.1\n# d Res: 0.3 to 1.2, default 0.6\n\nparam a = LowCut [120.0, 500.0]\nparam b = HighCut [2500.0, 5000.0]\nparam c = Drive [0.8, 2.0]\nparam d = Res [0.3, 1.2]\nfilter1: type = highpass; cutoff = a; resonance = d  # filter1: highpass\nfilter2: type = lowpass; cutoff = b; resonance = d  # filter2: lowpass\nstage1: y = tanh(x * c)  # stage1: waveshape / mix\n",
+    "script": "# Telephone EQ\n# Bandpass 300-3400 Hz für Telefoncharakter.\n# a LowCut: 120 to 500, default 300\n# b HighCut: 2500 to 5000, default 3400\n# c Drive: 0.8 to 2, default 1.1\n# d Res: 0.3 to 1.2, default 0.6\n\nparam a = LowCut [120.0, 500.0]\nparam b = HighCut [2500.0, 5000.0]\nparam c = Drive [0.8, 2.0]\nparam d = Res [0.3, 1.2]\nfilter1: type = highpass; cutoff = a; resonance = d  # filter1: highpass\nfilter2: type = lowpass; cutoff = b; resonance = d  # filter2: lowpass\nstage1: y = tanh(x * c)  # stage1: waveshape / mix\n",
     "tags": [],
     "paramA": {
       "name": "LowCut",
@@ -10547,11 +10547,11 @@
   {
     "name": "Vowel Filter",
     "category": "Filter",
-    "description": "Zwei Bandp\u00e4sse formen vokal\u00e4hnliche Spektren.",
+    "description": "Zwei Bandpässe formen vokalähnliche Spektren.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vowel Filter\n# Zwei Bandp\u00e4sse formen vokal\u00e4hnliche Spektren.\n# a Vowel: 0 to 1, default 0.35\n# b Spread: 200 to 2000, default 800\n# c Res: 0.5 to 3, default 1.5\n\nparam a = Vowel [0.0, 1.0]\nparam b = Spread [200.0, 2000.0]\nparam c = Res [0.5, 3.0]\nfilter1: type = bandpass; center = 500; + = a; * = 1700; width = b  # filter1: bandpass\nstage1: y = x * 1.45  # waveshape / mix  # stage1: waveshape / mix\nfilter2: type = bandpass; center = 1100; + = a; * = 0.7; width = b  # filter2: bandpass\nfilter3: type = lowpass; cutoff = 12000; resonance = 0.25  # filter3: lowpass\n",
+    "script": "# Vowel Filter\n# Zwei Bandpässe formen vokalähnliche Spektren.\n# a Vowel: 0 to 1, default 0.35\n# b Spread: 200 to 2000, default 800\n# c Res: 0.5 to 3, default 1.5\n\nparam a = Vowel [0.0, 1.0]\nparam b = Spread [200.0, 2000.0]\nparam c = Res [0.5, 3.0]\nfilter1: type = bandpass; center = 500; + = a; * = 1700; width = b  # filter1: bandpass\nstage1: y = x * 1.45  # waveshape / mix  # stage1: waveshape / mix\nfilter2: type = bandpass; center = 1100; + = a; * = 0.7; width = b  # filter2: bandpass\nfilter3: type = lowpass; cutoff = 12000; resonance = 0.25  # filter3: lowpass\n",
     "tags": [],
     "paramA": {
       "name": "Vowel",
@@ -11548,7 +11548,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Zatox Screamer\n# Hardstyle screaming lead: swept resonant peak before tube distortion, LFO-driven scream band 300-2400 Hz.\n# a Sweep Rate: 0.3 to 2.5, default 0.8\n# b Peak Gain: 4 to 12, default 8\n# c Dist Drive: 2.5 to 8, default 5.2\n# d Peak Range: 800 to 2400, default 1600\n# e Tone: 2800 to 7500, default 4200\n# f Mix: 0.5 to 1, default 0.85\n\nparam a = Sweep Rate [0.3, 2.5]\nparam b = Peak Gain [4.0, 12.0]\nparam c = Dist Drive [2.5, 8.0]\nparam d = Peak Range [800, 2400]\nparam e = Tone [2800, 7500]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4  # highpass\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\neq1: type = peak; freq = 1200 + osc1 * d; q = 9; gain = b  # swept peak\nstage1: y = tube(x, c * 0.65)  # tube saturation\neq2: type = highshelf; freq = 3800; q = 0.7; gain = 3.2  # high shelf\nstage2: y = hardclip(softclip(y, 1.8), 0.68)  # soft clip\nfilter2: type = lowpass; cutoff = e; resonance = 0.35  # lowpass\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
+    "script": "# Zatox Screamer\n# Hardstyle screaming lead: swept resonant peak before tube distortion, LFO-driven scream band 300-2400 Hz.\n# a Sweep Rate: 0.3 to 2.5, default 0.8\n# b Peak Gain: 4 to 12, default 8\n# c Dist Drive: 2.5 to 8, default 5.2\n# d Peak Range: 800 to 2400, default 1600\n# e Tone: 2800 to 7500, default 4200\n# f Mix: 0.5 to 1, default 0.85\n\nparam a = Sweep Rate [0.3, 2.5]\nparam b = Peak Gain [4.0, 12.0]\nparam c = Dist Drive [2.5, 8.0]\nparam d = Peak Range [800, 2400]\nparam e = Tone [2800, 7500]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4\nosc1: shape = sine; freq = a; depth = 1.0\neq1: type = peak; freq = 800 + (0.5 + 0.5 * osc1) * d; q = 6; gain = b\nstage1: y = tube(x, c * 0.65)\neq2: type = highshelf; freq = 3800; q = 0.7; gain = 3.2\nstage2: y = hardclip(softclip(x, 1.8), 0.68)\nfilter2: type = lowpass; cutoff = e; resonance = 0.35\nlimit1: ceiling = -0.4; release = 0.1\nstage3: y = x * f\n",
     "tags": [
       "hardstyle",
       "edm",
@@ -11606,7 +11606,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hyper Cyberpunk Sweep\n# Breaks/electro: dual bandpass (static + LFO-swept), asymmetric tube+diode, bitcrush on swept path, metallic comb.\n# a Sweep Speed: 0.3 to 1.8, default 0.7\n# b Sweep Width: 600 to 2400, default 1600\n# c Static Peak: 600 to 1200, default 880\n# d Crunch: 6 to 11, default 8.5\n# e Comb: 8 to 22, default 14\n# f Level: 0.7 to 1.3, default 0.95\n\nparam a = Sweep Speed [0.3, 1.8]\nparam b = Sweep Width [600, 2400]\nparam c = Static Peak [600, 1200]\nparam d = Crunch [6.0, 11.0]\nparam e = Comb [8, 22]\nparam f = Level [0.7, 1.3]\nfilter1: type = highpass; cutoff = 95; resonance = 0.45  # highpass\nosc1: shape = triangle; freq = a; depth = 1.0  # LFO\neq1: type = peak; freq = c; q = 4; gain = 5  # static peak\neq2: type = peak; freq = 240 + osc1 * b; q = 8; gain = 7  # swept peak\nstage1: y = tube(x, 3.2)  # tube saturation\nstage2: y = diode(y, 2.5)  # diode clip\nstage3: y = bitcrush(y, d)  # bitcrush\ndelay1: time = e; feedback = 0.34; mix = 0.16; damp = 6800  # delay line\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.38  # lowpass\nstage4: y = y * f  # level",
+    "script": "# Hyper Cyberpunk Sweep\n# Breaks/electro: dual bandpass (static + LFO-swept), asymmetric tube+diode, bitcrush on swept path, metallic comb.\n# a Sweep Speed: 0.3 to 1.8, default 0.7\n# b Sweep Width: 600 to 2400, default 1600\n# c Static Peak: 600 to 1200, default 880\n# d Crunch: 6 to 11, default 8.5\n# e Comb: 8 to 22, default 14\n# f Level: 0.7 to 1.3, default 0.95\n\nparam a = Sweep Speed [0.3, 1.8]\nparam b = Sweep Width [600, 2400]\nparam c = Static Peak [600, 1200]\nparam d = Crunch [6.0, 11.0]\nparam e = Comb [8, 22]\nparam f = Level [0.7, 1.3]\nfilter1: type = highpass; cutoff = 95; resonance = 0.45\nosc1: shape = triangle; freq = a; depth = 1.0\neq1: type = peak; freq = c; q = 4; gain = 5\neq2: type = peak; freq = 400 + (0.5 + 0.5 * osc1) * b; q = 6; gain = 7\nstage1: y = tube(x, 3.2)\nstage2: y = diode(x, 2.5)\nstage3: y = bitcrush(x, d)\ndelay1: time = e; feedback = 0.34; mix = 0.16; damp = 6800\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.38\nstage4: y = x * f\n",
     "tags": [
       "cyberpunk",
       "breaks",
@@ -11664,7 +11664,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Speaking Bass\n# Dubstep talking bass: three formant peaks (120/680/1800 Hz) LFO-modulated simultaneously, soft-then-hard ceiling, clean sub bus.\n# a Talk Speed: 0.2 to 3, default 0.8\n# b Vowel Morph: 0.5 to 2, default 1.2\n# c Dirt: 2 to 7, default 4.5\n# d Formant Shift: 0.7 to 1.5, default 1\n# e Sub Level: 0.4 to 1.2, default 0.8\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Talk Speed [0.2, 3.0]\nparam b = Vowel Morph [0.5, 2.0]\nparam c = Dirt [2.0, 7.0]\nparam d = Formant Shift [0.7, 1.5]\nparam e = Sub Level [0.4, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 40; resonance = 0.3  # highpass\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\nstage1: y = softclip(x, c * 0.4)  # soft pre-clip\neq1: type = peak; freq = 120 * d + osc1 * 80 * b; q = 2; gain = 6  # formant 1\neq2: type = peak; freq = 680 * d + osc1 * 400 * b; q = 6; gain = 7  # formant 2\neq3: type = peak; freq = 1800 * d + osc1 * 600 * b; q = 8; gain = 6  # formant 3\nstage2: y = hardclip(y, 0.72)  # hard ceiling\nxover1: f1 = 150\n\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.4\n  stage3: y = y * e\n\nout: main = f; sub = e",
+    "script": "# Speaking Bass\n# Dubstep talking bass: three formant peaks (120/680/1800 Hz) LFO-modulated simultaneously, soft-then-hard ceiling, clean sub bus.\n# a Talk Speed: 0.2 to 3, default 0.8\n# b Vowel Morph: 0.5 to 2, default 1.2\n# c Dirt: 2 to 7, default 4.5\n# d Formant Shift: 0.7 to 1.5, default 1\n# e Sub Level: 0.4 to 1.2, default 0.8\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Talk Speed [0.2, 3.0]\nparam b = Vowel Morph [0.5, 2.0]\nparam c = Dirt [2.0, 7.0]\nparam d = Formant Shift [0.7, 1.5]\nparam e = Sub Level [0.4, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 40; resonance = 0.3  # highpass\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\nstage1: y = softclip(x, c * 0.4)  # soft pre-clip\neq1: type = peak; freq = 120 * d + osc1 * 80 * b; q = 2; gain = 6  # formant 1\neq2: type = peak; freq = 680 * d + osc1 * 400 * b; q = 6; gain = 7  # formant 2\neq3: type = peak; freq = 1800 * d + osc1 * 600 * b; q = 8; gain = 6  # formant 3\nstage2: y = hardclip(y, 0.72)  # hard ceiling\nxover1: f1 = 150\n\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.4\n  stage3: y = x * e\n\nout: main = f; sub = e",
     "tags": [
       "bass",
       "dubstep",
@@ -11721,7 +11721,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hardstyle Tail Screech\n# Zatox-style hardstyle: envelope-controlled resonance intensity, highpass sweep 800-3200 Hz, tube + hardclip + resonant peak.\n# a Scream Thresh: -30 to -10, default -18\n# b Peak Freq: 800 to 3200, default 1600\n# c Reso Depth: 2 to 6, default 4.2\n# d Drive: 3 to 10, default 6.5\n# e Comp Ratio: 2 to 8, default 4\n# f Output: 0.5 to 1.2, default 0.8\n\nparam a = Scream Thresh [-30, -10]\nparam b = Peak Freq [800, 3200]\nparam c = Reso Depth [2.0, 6.0]\nparam d = Drive [3.0, 10.0]\nparam e = Comp Ratio [2.0, 8.0]\nparam f = Output [0.5, 1.2]\nfilter1: type = highpass; cutoff = 90; resonance = 0.4  # highpass\nenv1: type = peak; attack = 0.005; release = 0.18  # envelope follower\nstage1: y = tube(x, d * 0.6)  # tube saturation\nstage2: y = hardclip(y, 0.7)  # hard ceiling\nfilter2: type = highpass; cutoff = b + env1 * 1200; resonance = 0.5  # swept highpass\neq1: type = peak; freq = b; q = 3.5 + env1 * c; gain = 8  # resonant peak\ncomp1: threshold = a; ratio = e; attack = 0.008; release = 0.12; makeup = 6  # compressor\nstage3: y = y * f  # output level",
+    "script": "# Hardstyle Tail Screech\n# Zatox-style hardstyle: envelope-controlled resonance intensity, highpass sweep 800-3200 Hz, tube + hardclip + resonant peak.\n# a Scream Thresh: -30 to -10, default -18\n# b Peak Freq: 800 to 3200, default 1600\n# c Reso Depth: 0.2 to 0.8, default 0.5\n# d Drive: 3 to 10, default 6.5\n# e Comp Ratio: 2 to 8, default 4\n# f Output: 0.5 to 1.2, default 0.8\n\nparam a = Scream Thresh [-30, -10]\nparam b = Peak Freq [800, 3200]\nparam c = Reso Depth [0.2, 0.8]\nparam d = Drive [3.0, 10.0]\nparam e = Comp Ratio [2.0, 8.0]\nparam f = Output [0.5, 1.2]\nfilter1: type = highpass; cutoff = 90; resonance = 0.4\nenv1: type = peak; attack = 0.005; release = 0.18\nstage1: y = tube(x, d * 0.6)\nstage2: y = hardclip(x, 0.7)\nfilter2: type = highpass; cutoff = b; resonance = 0.45\neq1: type = peak; freq = b; q = 2.4 + env1 * c * 2; gain = 6\ncomp1: threshold = a; ratio = e; attack = 0.008; release = 0.12; makeup = 6\nstage3: y = x * f\n",
     "tags": [
       "hardstyle",
       "edm",
@@ -11748,9 +11748,9 @@
     },
     "paramC": {
       "name": "Reso Depth",
-      "min": 2,
-      "max": 6,
-      "default": 4.2
+      "min": 0.2,
+      "max": 0.8,
+      "default": 0.5
     },
     "paramD": {
       "name": "Drive",
@@ -11778,7 +11778,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Acid Morph 303\n# Classic 303: diode pre-distortion, swept resonant LPF 120-2400 Hz, accent via envelope increases resonance on transients.\n# a Cutoff: 120 to 2400, default 800\n# b Resonance: 1.8 to 4.5, default 3\n# c LFO Rate: 0.2 to 4, default 1\n# d LFO Depth: 0 to 1, default 0.7\n# e Accent: 0 to 1.5, default 0.6\n# f Drive: 3 to 12, default 7\n\nparam a = Cutoff [120, 2400]\nparam b = Resonance [1.8, 4.5]\nparam c = LFO Rate [0.2, 4.0]\nparam d = LFO Depth [0.0, 1.0]\nparam e = Accent [0.0, 1.5]\nparam f = Drive [3.0, 12.0]\nfilter1: type = highpass; cutoff = 35; resonance = 0.28  # highpass\nosc1: shape = sine; freq = c; depth = d  # LFO\nenv1: type = peak; attack = 0.003; release = 0.15  # envelope for accent\nstage1: y = hardclip(x, 0.85)  # hard limit before distortion\nstage2: y = diode(y, f * 0.5)  # diode saturation\nfilter2: type = lowpass; cutoff = a + osc1 * 1000; resonance = b + env1 * e  # swept resonant LPF\nstage3: y = softclip(y, 1.5)  # soft ceiling\nlimit1: ceiling = -0.3; release = 0.08  # limiter",
+    "script": "# Acid Morph 303\n# Classic 303: diode pre-distortion, swept resonant LPF 120-2400 Hz, accent via envelope increases resonance on transients.\n# a Cutoff: 120 to 2400, default 800\n# b Resonance: 0.6 to 1.25, default 0.95\n# c LFO Rate: 0.2 to 4, default 1\n# d LFO Depth: 0 to 1, default 0.7\n# e Accent: 0 to 1.5, default 0.6\n# f Drive: 3 to 12, default 7\n\nparam a = Cutoff [120, 2400]\nparam b = Resonance [0.6, 1.25]\nparam c = LFO Rate [0.2, 4.0]\nparam d = LFO Depth [0.0, 1.0]\nparam e = Accent [0.0, 1.5]\nparam f = Drive [3.0, 12.0]\nfilter1: type = highpass; cutoff = 35; resonance = 0.28\nosc1: shape = sine; freq = c; depth = d\nenv1: type = peak; attack = 0.003; release = 0.15\nstage1: y = hardclip(x, 0.85)\nstage2: y = diode(x, f * 0.5)\nfilter2: type = lowpass; cutoff = a + (0.5 + 0.5 * osc1) * 1000; resonance = b + env1 * e * 0.15\nstage3: y = softclip(x, 1.5)\nlimit1: ceiling = -0.3; release = 0.08\n",
     "tags": [
       "acid",
       "303",
@@ -11799,9 +11799,9 @@
     },
     "paramB": {
       "name": "Resonance",
-      "min": 1.8,
-      "max": 4.5,
-      "default": 3
+      "min": 0.6,
+      "max": 1.25,
+      "default": 0.95
     },
     "paramC": {
       "name": "LFO Rate",
@@ -11835,7 +11835,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Frequency Assassin\n# Industrial smash: three notch filters with inverse LFO sweeps cut 200-1800 Hz, remaining spectrum through fuzz + fold, rhythmic gate.\n# a Notch Sweep: 0.3 to 2.5, default 1\n# b Notch Width: 3 to 10, default 6\n# c Fuzz: 4 to 14, default 9\n# d Gate Thresh: -48 to -30, default -40\n# e Delay FB: 0.2 to 0.7, default 0.45\n# f Mix: 0.5 to 1, default 0.8\n\nparam a = Notch Sweep [0.3, 2.5]\nparam b = Notch Width [3.0, 10.0]\nparam c = Fuzz [4.0, 14.0]\nparam d = Gate Thresh [-48, -30]\nparam e = Delay FB [0.2, 0.7]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 180; resonance = 0.5  # highpass\nosc1: shape = triangle; freq = a; depth = 1.0  # LFO\neq1: type = notch; freq = 400 + osc1 * 400; q = b; gain = 0  # notch 1\neq2: type = notch; freq = 900 - osc1 * 400; q = b; gain = 0  # notch 2\neq3: type = notch; freq = 1400 + osc1 * 400; q = b; gain = 0  # notch 3\nstage1: y = tube(x, c * 0.4)  # tube\nstage2: y = tube(y, c * 0.5)  # tube\nstage3: y = fold(y, -0.4, 0.5)  # fold\ngate1: threshold = d; hyst = 6; hold = 0.04; range = -80  # noise gate\ndelay1: sync = 1/16; feedback = e; mix = 0.3; damp = 5000; pingpong = true  # delay\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.35  # lowpass\ncomp1: threshold = -16; ratio = 6; attack = 0.005; release = 0.1; makeup = 4  # compressor",
+    "script": "# Frequency Assassin\n# Industrial smash: three notch filters with inverse LFO sweeps cut 200-1800 Hz, remaining spectrum through fuzz + fold, rhythmic gate.\n# a Notch Sweep: 0.3 to 2.5, default 1\n# b Notch Width: 3 to 10, default 6\n# c Fuzz: 4 to 14, default 9\n# d Gate Thresh: -42 to -24, default -32\n# e Delay FB: 0.2 to 0.7, default 0.45\n# f Mix: 0.5 to 1, default 0.8\n\nparam a = Notch Sweep [0.3, 2.5]\nparam b = Notch Width [3.0, 10.0]\nparam c = Fuzz [4.0, 14.0]\nparam d = Gate Thresh [-42, -24]\nparam e = Delay FB [0.2, 0.7]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 90; resonance = 0.4\nosc1: shape = triangle; freq = a; depth = 1.0\neq1: type = notch; freq = 500 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\neq2: type = notch; freq = 1100 + (0.5 - 0.5 * osc1) * 400; q = b; gain = 0\neq3: type = notch; freq = 1700 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\nstage1: y = tube(x, c * 0.4)\nstage2: y = tube(x, c * 0.5)\nstage3: y = fold(x, -0.4, 0.5)\ngate1: threshold = d; hyst = 6; hold = 0.04; range = -18\ndelay1: sync = 1/16; feedback = e; mix = 0.22; damp = 5000; pingpong = true\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.35\ncomp1: threshold = -16; ratio = 6; attack = 0.005; release = 0.1; makeup = 4\nstage4: y = x * f\n",
     "tags": [
       "industrial",
       "sound design",
@@ -11868,9 +11868,9 @@
     },
     "paramD": {
       "name": "Gate Thresh",
-      "min": -48,
-      "max": -30,
-      "default": -40
+      "min": -42,
+      "max": -24,
+      "default": -32
     },
     "paramE": {
       "name": "Delay FB",
@@ -11892,7 +11892,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# CTZ Kick Master\n# Hardstyle/hardcore clip-to-zero: transient hard-clip 0.72, 3-band split (sub clean, mid soft-clip, high hard-clip), minimal final limiter.\n# a Transient Clip: 0.65 to 0.85, default 0.72\n# b Mid Drive: 1.5 to 3.5, default 2.5\n# c High Ceiling: 0.75 to 0.95, default 0.85\n# d Soft Glue: 1.2 to 2.2, default 1.8\n# e Final Limit: -0.3 to -0.05, default -0.1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Transient Clip [0.65, 0.85]\nparam b = Mid Drive [1.5, 3.5]\nparam c = High Ceiling [0.75, 0.95]\nparam d = Soft Glue [1.2, 2.2]\nparam e = Final Limit [-0.3, -0.05]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 25; resonance = 0.25  # highpass\nstage1: y = hardclip(x, a)  # transient clip\nxover1: f1 = 80; f2 = 3000\n\nbus sub:\n  send: in = 1\n  stage2: y = y * 1.0  # sub clean\n\nbus mid:\n  send: in = 1\n  stage3: y = softclip(y, b)  # mid soft-clip\n\nbus high:\n  send: in = 1\n  stage4: y = hardclip(y, c)  # high hard-clip\n\nout: sub = 1; mid = 1; high = 1\nstage5: y = softclip(y, d)  # soft glue\nlimit1: ceiling = e; release = 0.08  # limiter\nstage6: y = y * f  # output",
+    "script": "# CTZ Kick Master\n# Hardstyle/hardcore clip-to-zero: transient hard-clip 0.72, 3-band split (sub clean, mid soft-clip, high hard-clip), minimal final limiter.\n# a Transient Clip: 0.65 to 0.85, default 0.72\n# b Mid Drive: 1.5 to 3.5, default 2.5\n# c High Ceiling: 0.75 to 0.95, default 0.85\n# d Soft Glue: 1.2 to 2.2, default 1.8\n# e Final Limit: -0.3 to -0.05, default -0.1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Transient Clip [0.65, 0.85]\nparam b = Mid Drive [1.5, 3.5]\nparam c = High Ceiling [0.75, 0.95]\nparam d = Soft Glue [1.2, 2.2]\nparam e = Final Limit [-0.3, -0.05]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 25; resonance = 0.25\nstage1: y = hardclip(x, a)\nxover1: f1 = 80; f2 = 3000\nbus low:\n  stage2: y = softclip(x, d)\n  limit1: ceiling = e; release = 0.08\n  stage7: y = x * f\nbus mid:\n  stage3: y = softclip(x, b)\n  stage5: y = softclip(x, d)\n  limit2: ceiling = e; release = 0.08\n  stage8: y = x * f\nbus high:\n  stage4: y = hardclip(x, c)\n  stage6: y = softclip(x, d)\n  limit3: ceiling = e; release = 0.08\n  stage9: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "club",
       "hardstyle",
@@ -11945,11 +11945,11 @@
   {
     "name": "Loudness Wall",
     "category": "Mastering",
-    "description": "Club mastering: four-stage clipping cascade (source clip + tube + multiband soft-clip + master soft + limiter), 8\u00d7 OS recommended.",
+    "description": "Club mastering: four-stage clipping cascade (source clip + tube + multiband soft-clip + master soft + limiter), 8× OS recommended.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Loudness Wall\n# Club mastering: four-stage clipping cascade (source clip + tube + multiband soft-clip + master soft + limiter), 8\u00d7 OS recommended.\n# a Source Clip: 0.82 to 0.95, default 0.88\n# b Soft Drive: 1.2 to 2, default 1.5\n# c Band Drive: 1.3 to 2.5, default 1.8\n# d Master Glue: 1 to 1.6, default 1.2\n# e Limiter: -0.3 to -0.1, default -0.2\n# f Makeup: 0.9 to 1.2, default 1\n\nparam a = Source Clip [0.82, 0.95]\nparam b = Soft Drive [1.2, 2.0]\nparam c = Band Drive [1.3, 2.5]\nparam d = Master Glue [1.0, 1.6]\nparam e = Limiter [-0.3, -0.1]\nparam f = Makeup [0.9, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.22  # highpass\nstage1: y = hardclip(x, a)  # source clip\nstage2: y = tube(y, b)  # soft saturation\nxover1: f1 = 120; f2 = 3000\n\nbus low:\n  send: in = 1\n  stage3: y = softclip(y, 1.3)\n\nbus mid:\n  send: in = 1\n  stage4: y = softclip(y, c)\n\nbus high:\n  send: in = 1\n  stage5: y = softclip(y, 1.4)\n\nout: low = 1; mid = 1; high = 1\nstage6: y = softclip(y, d)  # master soft-clip\nlimit1: ceiling = e; release = 0.1  # limiter\nstage7: y = y * f  # makeup",
+    "script": "# Loudness Wall\n# Club mastering: four-stage clipping cascade (source clip + tube + multiband soft-clip + master soft + limiter), 8× OS recommended.\n# a Source Clip: 0.82 to 0.95, default 0.88\n# b Soft Drive: 1.2 to 2, default 1.5\n# c Band Drive: 1.3 to 2.5, default 1.8\n# d Master Glue: 1 to 1.6, default 1.2\n# e Limiter: -0.3 to -0.1, default -0.2\n# f Makeup: 0.9 to 1.2, default 1\n\nparam a = Source Clip [0.82, 0.95]\nparam b = Soft Drive [1.2, 2.0]\nparam c = Band Drive [1.3, 2.5]\nparam d = Master Glue [1.0, 1.6]\nparam e = Limiter [-0.3, -0.1]\nparam f = Makeup [0.9, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.22\nstage1: y = hardclip(x, a)\nstage2: y = tube(x, b)\nxover1: f1 = 120; f2 = 3000\nbus low:\n  stage3: y = softclip(x, 1.3)\n  stage6: y = softclip(x, d)\n  limit1: ceiling = e; release = 0.1\n  stage8: y = x * f\nbus mid:\n  stage4: y = softclip(x, c)\n  stage7: y = softclip(x, d)\n  limit2: ceiling = e; release = 0.1\n  stage9: y = x * f\nbus high:\n  stage5: y = softclip(x, 1.4)\n  stage10: y = softclip(x, d)\n  limit3: ceiling = e; release = 0.1\n  stage11: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "mastering",
       "club",
@@ -12006,7 +12006,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Brickwall Techno\n# Schranz/techno: aggressive per-band limiting (low compress 8:1, mid tube+hard, high transient clip), merge then glue comp + limiter.\n# a Low Comp: 6 to 12, default 8\n# b Mid Drive: 3 to 6, default 4\n# c High Clip: 0.65 to 0.85, default 0.75\n# d Glue: 2 to 5, default 3\n# e Limiter: -0.25 to -0.1, default -0.15\n# f Output: 0.85 to 1.15, default 1\n\nparam a = Low Comp [6.0, 12.0]\nparam b = Mid Drive [3.0, 6.0]\nparam c = High Clip [0.65, 0.85]\nparam d = Glue [2.0, 5.0]\nparam e = Limiter [-0.25, -0.1]\nparam f = Output [0.85, 1.15]\nfilter1: type = highpass; cutoff = 28; resonance = 0.25  # highpass\nxover1: f1 = 120; f2 = 4000\n\nbus low:\n  send: in = 1\n  comp1: threshold = -22; ratio = a; attack = 0.01; release = 0.15; makeup = 8\n  stage1: y = hardclip(softclip(y, 1.4), 0.6)\n\nbus mid:\n  send: in = 1\n  stage2: y = tube(y, b)\n  stage3: y = hardclip(y, 0.55)\n\nbus high:\n  send: in = 1\n  stage4: y = hardclip(y, c)\n  stage5: y = softclip(y, 1.5)\n\nout: low = 1; mid = 1; high = 1\ncomp2: threshold = -8; ratio = d; attack = 0.002; release = 0.08; makeup = 2\nlimit1: ceiling = e; release = 0.1\nstage6: y = y * f",
+    "script": "# Brickwall Techno\n# Schranz/techno: aggressive per-band limiting (low compress 8:1, mid tube+hard, high transient clip), merge then glue comp + limiter.\n# a Low Comp: 6 to 12, default 8\n# b Mid Drive: 3 to 6, default 4\n# c High Clip: 0.65 to 0.85, default 0.75\n# d Glue: 2 to 5, default 3\n# e Limiter: -0.25 to -0.1, default -0.15\n# f Output: 0.85 to 1.15, default 1\n\nparam a = Low Comp [6.0, 12.0]\nparam b = Mid Drive [3.0, 6.0]\nparam c = High Clip [0.65, 0.85]\nparam d = Glue [2.0, 5.0]\nparam e = Limiter [-0.25, -0.1]\nparam f = Output [0.85, 1.15]\nfilter1: type = highpass; cutoff = 28; resonance = 0.25\nxover1: f1 = 120; f2 = 4000\nbus low:\n  comp1: threshold = -22; ratio = a; attack = 0.01; release = 0.15; makeup = 8\n  stage1: y = hardclip(softclip(x, 1.4), 0.6)\n  comp4: threshold = -8; ratio = d; attack = 0.002; release = 0.08; makeup = 2\n  limit1: ceiling = e; release = 0.1\n  stage6: y = x * f\nbus mid:\n  stage2: y = tube(x, b)\n  stage3: y = hardclip(x, 0.55)\n  comp2: threshold = -8; ratio = d; attack = 0.002; release = 0.08; makeup = 2\n  limit2: ceiling = e; release = 0.1\n  stage7: y = x * f\nbus high:\n  stage4: y = hardclip(x, c)\n  stage5: y = softclip(x, 1.5)\n  comp3: threshold = -8; ratio = d; attack = 0.002; release = 0.08; makeup = 2\n  limit3: ceiling = e; release = 0.1\n  stage8: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "club",
       "techno",
@@ -12063,7 +12063,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Master Bus Destroyer\n# Industrial/club: parallel distortion (clean 60-85% + slammed 15-40%), OTT density, final limiter with stereo widener before.\n# a Slam Drive: 4 to 8, default 6\n# b Slam Mix: 0.15 to 0.4, default 0.25\n# c OTT Amount: 0.3 to 0.8, default 0.5\n# d Width: 0.8 to 1.1, default 0.95\n# e Limiter: -0.3 to -0.15, default -0.2\n# f Output: 0.9 to 1.15, default 1\n\nparam a = Slam Drive [4.0, 8.0]\nparam b = Slam Mix [0.15, 0.4]\nparam c = OTT Amount [0.3, 0.8]\nparam d = Width [0.8, 1.1]\nparam e = Limiter [-0.3, -0.15]\nparam f = Output [0.9, 1.15]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25  # highpass\n\nbus clean:\n  send: in = 1\n  stage1: y = y * 1.0\n\nbus slammed:\n  send: in = 1\n  filter2: type = highpass; cutoff = 80; resonance = 0.35\n  stage2: y = tube(y, a)\n  stage3: y = hardclip(y, 0.45)\n  stage4: y = softclip(y, 2.2)\n  filter3: type = lowpass; cutoff = 8000; resonance = 0.3\n\nout: clean = 1 - b; slammed = b\nott1: depth = c; time = 0.015; release = 0.08\nwiden1: width = d; delay = 12; bass = 120\nlimit1: ceiling = e; release = 0.1\nstage5: y = y * f",
+    "script": "# Master Bus Destroyer\n# Industrial/club: parallel distortion (clean 60-85% + slammed 15-40%), OTT density, final limiter with stereo widener before.\n# a Slam Drive: 4 to 8, default 6\n# b Slam Mix: 0.15 to 0.4, default 0.25\n# c OTT Amount: 0.3 to 0.8, default 0.5\n# d Width: 0.8 to 1.1, default 0.95\n# e Limiter: -0.3 to -0.15, default -0.2\n# f Output: 0.9 to 1.15, default 1\n\nparam a = Slam Drive [4.0, 8.0]\nparam b = Slam Mix [0.15, 0.4]\nparam c = OTT Amount [0.3, 0.8]\nparam d = Width [0.8, 1.1]\nparam e = Limiter [-0.3, -0.15]\nparam f = Output [0.9, 1.15]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25\nbus clean:\n  send: in = 1\n  stage1: y = x\n  ott1: depth = c; time = 0.015\n  widen1: width = d; delay = 12; bass = 120\n  limit1: ceiling = e; release = 0.1\n  stage5: y = x * f\nbus slammed:\n  send: in = 1\n  filter2: type = highpass; cutoff = 80; resonance = 0.35\n  stage2: y = tube(x, a)\n  stage3: y = hardclip(x, 0.45)\n  stage4: y = softclip(x, 2.2)\n  filter3: type = lowpass; cutoff = 8000; resonance = 0.3\n  ott2: depth = c; time = 0.015\n  widen2: width = d; delay = 12; bass = 120\n  limit2: ceiling = e; release = 0.1\n  stage6: y = x * f\nout: clean = 1-b; slammed = b\n",
     "tags": [
       "mastering",
       "club",
@@ -12120,7 +12120,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# rekkt Midtempo Pump\n# Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.\n# a LFO Rate: 1/1 to 1/16, default 1/8\n# b Filter Depth: 1000 to 4000, default 2500\n# c Reso Depth: 0.5 to 2.5, default 1.5\n# d Drive Depth: 2 to 5, default 3.5\n# e Noise: 0.05 to 0.2, default 0.1\n# f Pump: 2 to 8, default 4\n\nparam a = LFO Rate [1/1, 1/16]\nparam b = Filter Depth [1000, 4000]\nparam c = Reso Depth [0.5, 2.5]\nparam d = Drive Depth [2.0, 5.0]\nparam e = Noise [0.05, 0.2]\nparam f = Pump [2.0, 8.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35  # highpass\nosc1: shape = triangle; sync = a; depth = 1.0  # LFO\nstage1: y = x * (1 - e) + (x * 2 - 1) * e  # noise injection\nfilter2: type = lowpass; cutoff = 300 + osc1 * b; resonance = 0.4 + osc1 * c  # swept LPF\nstage2: y = tube(y, 1.5 + osc1 * d)  # drive modulation\nstage3: y = fold(y, -0.35, 0.45)  # asymmetric fold\ncomp1: threshold = -14; ratio = f; attack = 0.003; release = 0.08; makeup = 4  # pump comp\nfilter3: type = lowpass; cutoff = 7500; resonance = 0.28  # anti-alias\nlimit1: ceiling = -0.3; release = 0.1  # limiter",
+    "script": "# rekkt Midtempo Pump\n# Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.\n# a LFO Rate: 0 to 1, default 0.5\n# b Filter Depth: 1000 to 4000, default 2500\n# c Reso Depth: 0.5 to 2.5, default 1.5\n# d Drive Depth: 2 to 5, default 3.5\n# e Noise: 0.05 to 0.2, default 0.1\n# f Pump: 2 to 8, default 4\n\nparam a = LFO Rate [1/1, 1/16]\nparam b = Filter Depth [1000, 4000]\nparam c = Reso Depth [0.5, 2.5]\nparam d = Drive Depth [2.0, 5.0]\nparam e = Noise [0.05, 0.2]\nparam f = Pump [2.0, 8.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nosc1: shape = triangle; sync = a; depth = 1.0\nstage1: y = x * (1 - e) + x * e * 1.15\nfilter2: type = lowpass; cutoff = 300 + (0.5 + 0.5 * osc1) * b; resonance = 0.4 + (0.5 + 0.5 * osc1) * c\nstage2: y = tube(x, 1.5 + (0.5 + 0.5 * osc1) * d)\nstage3: y = fold(x, -0.35, 0.45)\ncomp1: threshold = -14; ratio = f; attack = 0.003; release = 0.08; makeup = 4\nfilter3: type = lowpass; cutoff = 7500; resonance = 0.28\nlimit1: ceiling = -0.3; release = 0.1\n",
     "tags": [
       "midtempo",
       "synth",
@@ -12135,9 +12135,9 @@
     ],
     "paramA": {
       "name": "LFO Rate",
-      "min": 1,
-      "max": 0.0625,
-      "default": 0.125
+      "min": 0,
+      "max": 1,
+      "default": 0.5
     },
     "paramB": {
       "name": "Filter Depth",
@@ -12177,7 +12177,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# zerosum Chaos Grid\n# Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.\n# a Chaos Rate: 4 to 18, default 9\n# b Crush Depth: 4 to 10, default 7\n# c Fold Asym: 0.3 to 0.8, default 0.5\n# d Delay Chaos: 0.2 to 1.5, default 0.6\n# e Gate Thresh: -42 to -30, default -38\n# f Mix: 0.5 to 1, default 0.8\n\nparam a = Chaos Rate [4.0, 18.0]\nparam b = Crush Depth [4.0, 10.0]\nparam c = Fold Asym [0.3, 0.8]\nparam d = Delay Chaos [0.2, 1.5]\nparam e = Gate Thresh [-42, -30]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4  # highpass\nosc1: shape = square; freq = a; depth = 1.0  # S&H LFO\nosc2: shape = triangle; freq = d; depth = 1.0  # delay mod LFO\nfilter2: type = lowpass; cutoff = 400 + osc1 * 3000; resonance = 1.2  # random filter jumps\nstage1: y = bitcrush(y, b + osc1 * 3)  # stepped bitcrush\ndelay1: time = 80; feedback = 0.4 + osc2 * 0.25; mix = 0.35; damp = 5000  # chaos delay\nstage2: y = fold(y, -0.2 * c, 0.6 * c)  # asymmetric fold\nfilter3: type = lowpass; cutoff = 6800; resonance = 0.32  # anti-alias\ngate1: threshold = e; hyst = 6; hold = 0.06; range = -80; attack = 0.001; release = 0.06  # gate",
+    "script": "# zerosum Chaos Grid\n# Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.\n# a Chaos Rate: 4 to 18, default 9\n# b Crush Depth: 4 to 10, default 7\n# c Fold Asym: 0.3 to 0.8, default 0.5\n# d Delay Chaos: 0.2 to 1.5, default 0.6\n# e Gate Thresh: -42 to -30, default -38\n# f Mix: 0.5 to 1, default 0.8\n\nparam a = Chaos Rate [4.0, 18.0]\nparam b = Crush Depth [4.0, 10.0]\nparam c = Fold Asym [0.3, 0.8]\nparam d = Delay Chaos [0.2, 1.5]\nparam e = Gate Thresh [-42, -30]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4\nosc1: shape = square; freq = a; depth = 1.0\nosc2: shape = triangle; freq = d; depth = 1.0\nfilter2: type = lowpass; cutoff = 400 + (0.5 + 0.5 * osc1) * 3000; resonance = 0.85\nstage1: y = bitcrush(x, b + (0.5 + 0.5 * osc1) * 3)\ndelay1: time = 80; feedback = 0.4 + (0.5 + 0.5 * osc2) * 0.25; mix = 0.35; damp = 5000\nstage2: y = fold(x, -0.2 * c, 0.6 * c)\nfilter3: type = lowpass; cutoff = 6800; resonance = 0.32\ngate1: threshold = e; hyst = 6; hold = 0.06; range = -18; attack = 0.001; release = 0.06\nstage3: y = x * f\n",
     "tags": [
       "experimental",
       "glitch",
@@ -12234,7 +12234,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Pulsing Electro\n# Electro/breaks: dual LFOs (sine 1/4 smooth pump + saw 1/16 stutter), filter/drive modulated, rhythmic hardclip ceiling, noise injection, glue comp.\n# a Pump Speed: 1/2 to 1/8, default 1/4\n# b Stutter Speed: 1/8 to 1/32, default 1/16\n# c Filter Range: 1200 to 4000, default 2400\n# d Drive Range: 1.5 to 5, default 3\n# e Noise: 0.08 to 0.18, default 0.12\n# f Glue: 2 to 5, default 3\n\nparam a = Pump Speed [1/2, 1/8]\nparam b = Stutter Speed [1/8, 1/32]\nparam c = Filter Range [1200, 4000]\nparam d = Drive Range [1.5, 5.0]\nparam e = Noise [0.08, 0.18]\nparam f = Glue [2.0, 5.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.38  # highpass\nosc1: shape = sine; sync = a; depth = 1.0  # pump LFO\nosc2: shape = saw; sync = b; depth = 1.0  # stutter LFO\nstage1: y = x * (1 - e) + (x * 3 - 1.5) * e  # noise inject\nfilter2: type = lowpass; cutoff = 400 + osc1 * c; resonance = 0.6  # swept filter\nstage2: y = tube(y, 1 + osc1 * d)  # drive mod\nstage3: y = hardclip(y, 0.4 + osc2 * 0.45)  # rhythmic clip\ncomp1: threshold = -14; ratio = f; attack = 0.005; release = 0.12; makeup = 3  # glue comp\nlimit1: ceiling = -0.25; release = 0.09  # limiter",
+    "script": "# Pulsing Electro\n# Electro/breaks: dual LFOs (sine 1/4 smooth pump + saw 1/16 stutter), filter/drive modulated, rhythmic hardclip ceiling, noise injection, glue comp.\n# a Pump Speed: 0 to 1, default 0.5\n# b Stutter Speed: 0 to 1, default 0.5\n# c Filter Range: 1200 to 4000, default 2400\n# d Drive Range: 1.5 to 5, default 3\n# e Noise: 0.08 to 0.18, default 0.12\n# f Glue: 2 to 5, default 3\n\nparam a = Pump Speed [1/2, 1/8]\nparam b = Stutter Speed [1/8, 1/32]\nparam c = Filter Range [1200, 4000]\nparam d = Drive Range [1.5, 5.0]\nparam e = Noise [0.08, 0.18]\nparam f = Glue [2.0, 5.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.38\nosc1: shape = sine; sync = a; depth = 1.0\nosc2: shape = saw; sync = b; depth = 1.0\nstage1: y = x * (1 - e) + x * e * 1.2\nfilter2: type = lowpass; cutoff = 400 + (0.5 + 0.5 * osc1) * c; resonance = 0.6\nstage2: y = tube(x, 1 + (0.5 + 0.5 * osc1) * d)\nstage3: y = hardclip(x, 0.45 + (0.5 + 0.5 * osc2) * 0.4)\ncomp1: threshold = -14; ratio = f; attack = 0.005; release = 0.12; makeup = 3\nlimit1: ceiling = -0.25; release = 0.09\n",
     "tags": [
       "electro",
       "breaks",
@@ -12291,7 +12291,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vital Saw Morph\n# Synthwave/future bass: asymmetric saw via fold+tube, phase dispersion dual delay, triangle LFO sweeps highshelf, chorus width, light comp.\n# a Morph LFO: 0.4 to 2.5, default 1.2\n# b Phase Spread: 3 to 7, default 5\n# c Shelf Sweep: -6 to 6, default 0\n# d Chorus: 0.15 to 0.4, default 0.25\n# e Width: 0.6 to 1.2, default 0.9\n# f Level: 0.7 to 1.2, default 0.95\n\nparam a = Morph LFO [0.4, 2.5]\nparam b = Phase Spread [3.0, 7.0]\nparam c = Shelf Sweep [-6, 6]\nparam d = Chorus [0.15, 0.4]\nparam e = Width [0.6, 1.2]\nparam f = Level [0.7, 1.2]\nfilter1: type = highpass; cutoff = 60; resonance = 0.32  # highpass\nstage1: y = fold(x, -0.5, 0.6)  # asymmetric fold\nstage2: y = tube(y, 2.2)  # tube shape\ndelay1: time = b; feedback = 0; mix = 0.35; channel = left  # phase L\ndelay2: time = b * 1.4; feedback = 0; mix = 0.35; channel = right  # phase R\nstage3: channel = right; y = y * -1  # invert R\nosc1: shape = triangle; freq = a; depth = 1.0  # LFO\neq1: type = highshelf; freq = 2800; q = 0.7; gain = c + osc1 * 6  # swept shelf\ndelay3: time = 8; feedback = 0.2; mix = d; damp = 6500  # chorus\nwiden1: width = e; delay = 14; bass = 130\ncomp1: threshold = -16; ratio = 2; attack = 0.01; release = 0.15; makeup = 2\nstage4: y = y * f",
+    "script": "# Vital Saw Morph\n# Synthwave/future bass: asymmetric saw via fold+tube, phase dispersion dual delay, triangle LFO sweeps highshelf, chorus width, light comp.\n# a Morph LFO: 0.4 to 2.5, default 1.2\n# b Phase Spread: 3 to 7, default 5\n# c Shelf Sweep: -6 to 6, default 0\n# d Chorus: 0.15 to 0.4, default 0.25\n# e Width: 0.6 to 1.2, default 0.9\n# f Level: 0.7 to 1.2, default 0.95\n\nparam a = Morph LFO [0.4, 2.5]\nparam b = Phase Spread [3.0, 7.0]\nparam c = Shelf Sweep [-6, 6]\nparam d = Chorus [0.15, 0.4]\nparam e = Width [0.6, 1.2]\nparam f = Level [0.7, 1.2]\nfilter1: type = highpass; cutoff = 60; resonance = 0.32  # highpass\nstage1: y = fold(x, -0.5, 0.6)  # asymmetric fold\nstage2: y = tube(x, 2.2)  # tube shape\ndelay1: time = b; feedback = 0; mix = 0.35; channel = left  # phase L\ndelay2: time = b * 1.4; feedback = 0; mix = 0.35; channel = right  # phase R\nstage3: channel = right; y = x * -1  # invert R\nosc1: shape = triangle; freq = a; depth = 1.0  # LFO\neq1: type = highshelf; freq = 2800; q = 0.7; gain = c + osc1 * 6  # swept shelf\ndelay3: time = 8; feedback = 0.2; mix = d; damp = 6500  # chorus\nwiden1: width = e; delay = 14; bass = 130\ncomp1: threshold = -16; ratio = 2; attack = 0.01; release = 0.15; makeup = 2\nstage4: y = x * f",
     "tags": [
       "synthwave",
       "future bass",
@@ -12348,7 +12348,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hard Groove Machine\n# Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.\n# a Gate Rate: 1/4 to 1/16, default 1/8\n# b Drive: 3 to 8, default 5.5\n# c Filter Freq: 800 to 2400, default 1400\n# d Reso: 4 to 8, default 6\n# e Tail: 0.2 to 0.6, default 0.4\n# f Punch: 0 to 6, default 3\n\nparam a = Gate Rate [1/4, 1/16]\nparam b = Drive [3.0, 8.0]\nparam c = Filter Freq [800, 2400]\nparam d = Reso [4.0, 8.0]\nparam e = Tail [0.2, 0.6]\nparam f = Punch [0.0, 6.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.4  # highpass\nosc1: shape = square; sync = a; depth = 1.0  # gate LFO\nstage1: y = x * (0.5 + osc1 * 0.7)  # gate on/off\nstage2: y = tube(y, b)  # drive when open\nfilter2: type = bandpass; center = c; width = 400; resonance = d  # resonant bandpass\nreverb1: size = 0.4; decay = e; damp = 0.5; mix = 0.3 * (1 - osc1)  # tail when closed\nenv1: type = peak; attack = 0.003; release = 0.12  # envelope for punch\nstage3: y = y * (1 + env1 * f * 0.15)  # transient punch\nlimit1: ceiling = -0.4; release = 0.1  # limiter",
+    "script": "# Hard Groove Machine\n# Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.\n# a Gate Rate: 0 to 1, default 0.5\n# b Drive: 3 to 8, default 5.5\n# c Filter Freq: 800 to 2400, default 1400\n# d Reso: 0.4 to 1.2, default 0.7\n# e Tail: 0.2 to 0.6, default 0.4\n# f Punch: 0 to 6, default 3\n\nparam a = Gate Rate [1/4, 1/16]\nparam b = Drive [3.0, 8.0]\nparam c = Filter Freq [800, 2400]\nparam d = Reso [0.4, 1.2]\nparam e = Tail [0.2, 0.6]\nparam f = Punch [0.0, 6.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.4\nosc1: shape = square; sync = a; depth = 1.0\nstage1: y = x * (0.22 + (0.5 + 0.5 * osc1) * 0.78)\nstage2: y = tube(x, b)\nfilter2: type = lowpass; cutoff = c; resonance = d\nreverb1: size = 0.4; decay = e; damp = 0.5; mix = 0.22 * (1 - 0.5 * osc1)\nenv1: type = peak; attack = 0.003; release = 0.12\nstage3: y = x * (1 + env1 * f * 0.15)\nlimit1: ceiling = -0.4; release = 0.1\n",
     "tags": [
       "hardstyle",
       "hard dance",
@@ -12381,9 +12381,9 @@
     },
     "paramD": {
       "name": "Reso",
-      "min": 4,
-      "max": 8,
-      "default": 6
+      "min": 0.4,
+      "max": 1.2,
+      "default": 0.7
     },
     "paramE": {
       "name": "Tail",
@@ -12405,7 +12405,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Resonant Sweep Stab\n# Trance/hard trance: envelope follower controls filter cutoff 150-4500 Hz, LFO saw adds sweep, velocity-sensitive resonance Q 0.7-5.5, stereo widener.\n# a Env Amount: 0.3 to 1.2, default 0.8\n# b LFO Amount: 0 to 1, default 0.5\n# c Reso Env: 1 to 5, default 3\n# d Drive: 2 to 6, default 3.5\n# e Width: 0.5 to 1.2, default 0.9\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Env Amount [0.3, 1.2]\nparam b = LFO Amount [0.0, 1.0]\nparam c = Reso Env [1.0, 5.0]\nparam d = Drive [2.0, 6.0]\nparam e = Width [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35  # highpass\nenv1: type = peak; attack = 0.008; release = 0.25  # envelope follower\nosc1: shape = saw; sync = 1/4; depth = b  # LFO\nstage1: y = softclip(x, d * 0.8)  # soft distortion\nstage2: y = hardclip(y, 0.75)  # hard limit\nfilter2: type = lowpass; cutoff = 150 + env1 * 4350 * a + osc1 * 1000; resonance = 0.7 + env1 * c  # swept resonant LPF\ncomp1: threshold = -16; ratio = 4; attack = 0.005; release = 0.15; makeup = 4  # tame resonance\nwiden1: width = e; delay = 16; bass = 120\nlimit1: ceiling = -0.35; release = 0.1",
+    "script": "# Resonant Sweep Stab\n# Trance/hard trance: envelope follower controls filter cutoff 150-4500 Hz, LFO saw adds sweep, velocity-sensitive resonance Q 0.7-5.5, stereo widener.\n# a Env Amount: 0.3 to 1.2, default 0.8\n# b LFO Amount: 0 to 1, default 0.5\n# c Reso Env: 0.2 to 0.7, default 0.4\n# d Drive: 2 to 6, default 3.5\n# e Width: 0.5 to 1.2, default 0.9\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Env Amount [0.3, 1.2]\nparam b = LFO Amount [0.0, 1.0]\nparam c = Reso Env [0.2, 0.7]\nparam d = Drive [2.0, 6.0]\nparam e = Width [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nenv1: type = peak; attack = 0.008; release = 0.25\nosc1: shape = saw; sync = 1/4; depth = b\nstage1: y = softclip(x, d * 0.8)\nstage2: y = hardclip(x, 0.75)\nfilter2: type = lowpass; cutoff = 250 + env1 * 3500 * a + (0.5 + 0.5 * osc1) * 800; resonance = 0.45 + env1 * c\ncomp1: threshold = -16; ratio = 4; attack = 0.005; release = 0.15; makeup = 4\nwiden1: width = e; delay = 16; bass = 120\nlimit1: ceiling = -0.35; release = 0.1\nstage3: y = x * f\n",
     "tags": [
       "trance",
       "hard trance",
@@ -12432,9 +12432,9 @@
     },
     "paramC": {
       "name": "Reso Env",
-      "min": 1,
-      "max": 5,
-      "default": 3
+      "min": 0.2,
+      "max": 0.7,
+      "default": 0.4
     },
     "paramD": {
       "name": "Drive",
@@ -12462,7 +12462,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Kick Surgery\n# Hardstyle/rawstyle kick: 3-band crossover (sub sine+comp, punch tube+320Hz notch, click transient+air shelf), phase-aligned merge, final limiter -0.3dB.\n# a Sub Level: 0.4 to 1.2, default 0.8\n# b Punch Drive: 1.5 to 5, default 3\n# c Click Bright: 0 to 4, default 2\n# d Scoop Depth: -6 to -1, default -4\n# e Glue Comp: 2 to 6, default 4\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Sub Level [0.4, 1.2]\nparam b = Punch Drive [1.5, 5.0]\nparam c = Click Bright [0.0, 4.0]\nparam d = Scoop Depth [-6, -1]\nparam e = Glue Comp [2.0, 6.0]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 20; resonance = 0.25  # highpass\nxover1: f1 = 85; f2 = 650\n\nbus sub:\n  send: in = 1\n  stage1: y = tanh(y)  # sine shape\n  comp1: threshold = -18; ratio = 4; attack = 0.01; release = 0.15; makeup = 4\n  stage2: y = y * a\n\nbus punch:\n  send: in = 1\n  stage3: y = tube(y, b)\n  eq1: type = peak; freq = 320; q = 2.8; gain = d  # scoop\n\nbus click:\n  send: in = 1\n  env1: type = peak; attack = 0.002; release = 0.08\n  stage4: y = y * (1 + env1 * 0.4)  # transient emphasis\n  eq2: type = highshelf; freq = 6000; q = 0.7; gain = c  # air\n\nout: sub = 1; punch = 1; click = 1\ncomp2: threshold = -12; ratio = e; attack = 0.003; release = 0.08; makeup = 2  # glue\nlimit1: ceiling = -0.3; release = 0.08",
+    "script": "# Kick Surgery\n# Hardstyle/rawstyle kick: 3-band crossover (sub sine+comp, punch tube+320Hz notch, click transient+air shelf), phase-aligned merge, final limiter -0.3dB.\n# a Sub Level: 0.4 to 1.2, default 0.8\n# b Punch Drive: 1.5 to 5, default 3\n# c Click Bright: 0 to 4, default 2\n# d Scoop Depth: -6 to -1, default -4\n# e Glue Comp: 2 to 6, default 4\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Sub Level [0.4, 1.2]\nparam b = Punch Drive [1.5, 5.0]\nparam c = Click Bright [0.0, 4.0]\nparam d = Scoop Depth [-6, -1]\nparam e = Glue Comp [2.0, 6.0]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 20; resonance = 0.25\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 85; resonance = 0.2\n  stage1: y = tanh(x)\n  comp1: threshold = -18; ratio = 4; attack = 0.01; release = 0.15; makeup = 4\n  stage2: y = x * a\n  comp4: threshold = -12; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  limit1: ceiling = -0.3; release = 0.08\n  stage5: y = x * f\nbus punch:\n  send: in = 1\n  filter3: type = highpass; cutoff = 85; resonance = 0.22\n  filter4: type = lowpass; cutoff = 650; resonance = 0.22\n  stage3: y = tube(x, b)\n  eq1: type = peak; freq = 320; q = 2.8; gain = d\n  comp2: threshold = -12; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  limit2: ceiling = -0.3; release = 0.08\n  stage6: y = x * f\nbus click:\n  send: in = 1\n  filter5: type = highpass; cutoff = 650; resonance = 0.22\n  env1: type = peak; attack = 0.002; release = 0.08\n  stage4: y = x * (1 + env1 * 0.4)\n  eq2: type = highshelf; freq = 6000; q = 0.7; gain = c\n  comp3: threshold = -12; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  limit3: ceiling = -0.3; release = 0.08\n  stage7: y = x * f\nout: main = 0; sub = 1; punch = 1; click = 1\n",
     "tags": [
       "kick",
       "drums",
@@ -12519,7 +12519,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Sub Zero Pummel\n# Sub Zero Project hardstyle: dual-path (main HPF 95Hz mid-focus, sub bus LPF 100Hz phase-aligned), sub heavy comp 8:1, parallel OTT, sidechain duck.\n# a Sub Comp: 6 to 12, default 8\n# b Sub Phase: -180 to 180, default 0\n# c OTT Drive: 0.2 to 0.7, default 0.4\n# d Main Punch: 1.5 to 4, default 2.5\n# e Sidechain: 2 to 8, default 4\n# f Balance: 0.5 to 1.2, default 0.85\n\nparam a = Sub Comp [6.0, 12.0]\nparam b = Sub Phase [-180, 180]\nparam c = OTT Drive [0.2, 0.7]\nparam d = Main Punch [1.5, 4.0]\nparam e = Sidechain [2.0, 8.0]\nparam f = Balance [0.5, 1.2]\nfilter1: type = highpass; cutoff = 95; resonance = 0.4  # main HPF\nstage1: y = softclip(x, d)  # main punch\nott1: depth = c; time = 0.015; release = 0.08  # parallel OTT\n\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.45  # sub LPF\n  stage2: y = tanh(y * 1.2)  # sine shape\n  comp1: threshold = -24; ratio = a; attack = 0.015; release = 0.18; makeup = 10  # heavy comp\n  comp2: source = sidechain; threshold = -18; ratio = e; attack = 0.002; release = 0.06  # duck\n  stage3: y = y * f\n\nout: main = 1; sub = 1\nlimit1: ceiling = -0.3; release = 0.1",
+    "script": "# Sub Zero Pummel\n# Sub Zero Project hardstyle: dual-path (main HPF 95Hz mid-focus, sub bus LPF 100Hz phase-aligned), sub heavy comp 8:1, parallel OTT, sidechain duck.\n# a Sub Comp: 6 to 12, default 8\n# b Sub Phase: -180 to 180, default 0\n# c OTT Drive: 0.2 to 0.7, default 0.4\n# d Main Punch: 1.5 to 4, default 2.5\n# e Sidechain: 2 to 8, default 4\n# f Balance: 0.5 to 1.2, default 0.85\n\nparam a = Sub Comp [6.0, 12.0]\nparam b = Sub Phase [-180, 180]\nparam c = OTT Drive [0.2, 0.7]\nparam d = Main Punch [1.5, 4.0]\nparam e = Sidechain [2.0, 8.0]\nparam f = Balance [0.5, 1.2]\nfilter1: type = highpass; cutoff = 95; resonance = 0.4\nstage1: y = softclip(x, d)\nott1: depth = c; time = 0.015\nlimit1: ceiling = -0.3; release = 0.1\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.45\n  stage2: y = tanh(x * 1.2)\n  comp1: threshold = -24; ratio = a; attack = 0.015; release = 0.18; makeup = 10\n  comp2: source = sidechain; threshold = -18; ratio = e; attack = 0.002; release = 0.06\n  stage3: y = x * f\n  delay1: time = 0.05 + abs(b) / 180 * 2; feedback = 0; mix = 1\n  limit2: ceiling = -0.3; release = 0.1\nout: main = 1; sub = 1\n",
     "tags": [
       "hardstyle",
       "edm",
@@ -12576,7 +12576,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Priest Split Authority\n# Holypriest hardcore: amplitude split (quiet<-18dB reverb+chorus, medium -18to-6dB tube, loud>-6dB brick+transient), crossfade recombine.\n# a Quiet Verb: 0.3 to 0.7, default 0.5\n# b Mid Drive: 2 to 6, default 4\n# c Loud Clip: 0.45 to 0.75, default 0.6\n# d Transient: 0 to 6, default 3\n# e Blend: 0.5 to 1, default 0.75\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Quiet Verb [0.3, 0.7]\nparam b = Mid Drive [2.0, 6.0]\nparam c = Loud Clip [0.45, 0.75]\nparam d = Transient [0.0, 6.0]\nparam e = Blend [0.5, 1.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25  # highpass\nenv1: type = rms; attack = 0.01; release = 0.1  # amplitude detector\n\nbus quiet:\n  send: in = 1\n  gate1: threshold = -18; hyst = 6; hold = 0.08; range = 0; attack = 0.02; release = 0.15  # quiet gate\n  reverb1: size = 0.6; decay = a; damp = 0.4; mix = 0.6\n  delay1: time = 6; feedback = 0.2; mix = 0.3; damp = 7000  # chorus\n\nbus medium:\n  send: in = 1\n  gate2: threshold = -18; hyst = 12; hold = 0.04; range = 0; attack = 0.003; release = 0.08  # mid gate\n  stage1: y = tube(y, b)\n\nbus loud:\n  send: in = 1\n  gate3: threshold = -6; hyst = 6; hold = 0.02; range = 0; attack = 0.001; release = 0.05  # loud gate\n  stage2: y = hardclip(softclip(y, 2.5), c)\n  env2: type = peak; attack = 0.002; release = 0.06\n  stage3: y = y * (1 + env2 * d * 0.15)  # transient shape\n\nout: quiet = 0.3; medium = 0.5; loud = e\nstage4: y = y * f",
+    "script": "# Priest Split Authority\n# Holypriest hardcore: amplitude split (quiet<-18dB reverb+chorus, medium -18to-6dB tube, loud>-6dB brick+transient), crossfade recombine.\n# a Quiet Verb: 0.3 to 0.7, default 0.5\n# b Mid Drive: 2 to 6, default 4\n# c Loud Clip: 0.45 to 0.75, default 0.6\n# d Transient: 0 to 6, default 3\n# e Blend: 0.5 to 1, default 0.75\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Quiet Verb [0.3, 0.7]\nparam b = Mid Drive [2.0, 6.0]\nparam c = Loud Clip [0.45, 0.75]\nparam d = Transient [0.0, 6.0]\nparam e = Blend [0.5, 1.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25\nbus quiet:\n  send: in = 1\n  gate1: threshold = -18; hyst = 6; hold = 0.08; range = -12; attack = 0.02; release = 0.15\n  reverb1: size = 0.6; decay = a; damp = 0.4; mix = 0.6\n  delay1: time = 6; feedback = 0.2; mix = 0.3; damp = 7000\n  stage4: y = x * f\nbus medium:\n  send: in = 1\n  gate2: threshold = -18; hyst = 12; hold = 0.04; range = -6; attack = 0.003; release = 0.08\n  stage1: y = tube(x, b)\n  stage5: y = x * f\nbus loud:\n  send: in = 1\n  gate3: threshold = -6; hyst = 6; hold = 0.02; range = -80; attack = 0.001; release = 0.05\n  stage2: y = hardclip(softclip(x, 2.5), c)\n  filter6: type = lowpass; cutoff = 11000; resonance = 0.22\n  env2: type = peak; attack = 0.002; release = 0.06\n  stage3: y = x * (1 + env2 * d * 0.15)\n  stage6: y = x * f\nout: quiet = 0.3; medium = 0.5; loud = e\n",
     "tags": [
       "hardcore",
       "club",
@@ -12633,7 +12633,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Multiband Phase Lock\n# Club/techno: 4-band split (sub 30-80Hz, low 80-250Hz, mid 250-2500Hz, high 2500+Hz), independent matched comp, soft-limit all to -0.5dB, merge.\n# a Sub Comp: 8 to 12, default 10\n# b Low Comp: 3 to 6, default 4\n# c Mid Comp: 2 to 4, default 3\n# d High Comp: 1.5 to 3, default 2\n# e Master Comp: 2 to 5, default 3\n# f Makeup: 0.9 to 1.2, default 1\n\nparam a = Sub Comp [8.0, 12.0]\nparam b = Low Comp [3.0, 6.0]\nparam c = Mid Comp [2.0, 4.0]\nparam d = High Comp [1.5, 3.0]\nparam e = Master Comp [2.0, 5.0]\nparam f = Makeup [0.9, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.22  # highpass\nxover1: f1 = 80; f2 = 250\n\nbus sub:\n  send: in = 1\n  comp1: threshold = -20; ratio = a; attack = 0.02; release = 0.2; makeup = 8\n  stage1: y = hardclip(y, 0.5)\n\nbus low:\n  send: in = 1\n  comp2: threshold = -16; ratio = b; attack = 0.01; release = 0.15; makeup = 5\n  stage2: y = hardclip(y, 0.5)\n\nxover2: f1 = 2500\n\nbus mid:\n  send: sub = 0; low = 0; in = 1\n  comp3: threshold = -12; ratio = c; attack = 0.008; release = 0.1; makeup = 3\n  stage3: y = hardclip(y, 0.5)\n\nbus high:\n  send: sub = 0; low = 0; in = 1\n  comp4: threshold = -8; ratio = d; attack = 0.005; release = 0.08; makeup = 2\n  stage4: y = hardclip(y, 0.5)\n\nout: sub = 1; low = 1; mid = 1; high = 1\ncomp5: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\nstage5: y = y * f",
+    "script": "# Multiband Phase Lock\n# Club/techno: 4-band split (sub 30-80Hz, low 80-250Hz, mid 250-2500Hz, high 2500+Hz), independent matched comp, soft-limit all to -0.5dB, merge.\n# a Sub Comp: 8 to 12, default 10\n# b Low Comp: 3 to 6, default 4\n# c Mid Comp: 2 to 4, default 3\n# d High Comp: 1.5 to 3, default 2\n# e Master Comp: 2 to 5, default 3\n# f Makeup: 0.9 to 1.2, default 1\n\nparam a = Sub Comp [8.0, 12.0]\nparam b = Low Comp [3.0, 6.0]\nparam c = Mid Comp [2.0, 4.0]\nparam d = High Comp [1.5, 3.0]\nparam e = Master Comp [2.0, 5.0]\nparam f = Makeup [0.9, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.22\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 80; resonance = 0.18\n  comp1: threshold = -20; ratio = a; attack = 0.02; release = 0.2; makeup = 8\n  stage1: y = hardclip(x, 0.5)\n  comp5: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage5: y = x * f\nbus low:\n  send: in = 1\n  filter3: type = highpass; cutoff = 80; resonance = 0.18\n  filter4: type = lowpass; cutoff = 250; resonance = 0.18\n  comp2: threshold = -16; ratio = b; attack = 0.01; release = 0.15; makeup = 5\n  stage2: y = hardclip(x, 0.5)\n  comp6: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage6: y = x * f\nbus mid:\n  send: in = 1\n  filter5: type = highpass; cutoff = 250; resonance = 0.18\n  filter6: type = lowpass; cutoff = 2500; resonance = 0.18\n  comp3: threshold = -12; ratio = c; attack = 0.008; release = 0.1; makeup = 3\n  stage3: y = hardclip(x, 0.5)\n  comp7: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage7: y = x * f\nbus high:\n  send: in = 1\n  filter7: type = highpass; cutoff = 2500; resonance = 0.18\n  comp4: threshold = -8; ratio = d; attack = 0.005; release = 0.08; makeup = 2\n  stage4: y = hardclip(x, 0.5)\n  comp8: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage8: y = x * f\nout: main = 0; sub = 1; low = 1; mid = 1; high = 1\n",
     "tags": [
       "club",
       "techno",
@@ -12690,7 +12690,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Bass Fractionator\n# Neurofunk/DnB: sub pure sine phase-locked, body 100-400Hz formant filter, grit 400-1200Hz bitcrush+fold, air 1200+Hz transient, envelope alignment.\n# a Sub Sync: 0 to 1, default 0.8\n# b Body Formant: 150 to 350, default 220\n# c Grit Bits: 5 to 10, default 7\n# d Air Transient: 0 to 5, default 3\n# e Band Balance: 0.5 to 1.2, default 0.85\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Sub Sync [0.0, 1.0]\nparam b = Body Formant [150, 350]\nparam c = Grit Bits [5.0, 10.0]\nparam d = Air Transient [0.0, 5.0]\nparam e = Band Balance [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25  # highpass\nenv1: type = peak; attack = 0.003; release = 0.12  # transient trigger\nxover1: f1 = 100; f2 = 400\n\nbus sub:\n  send: in = 1\n  stage1: y = tanh(y * 1.5)  # sine shape\n  stage2: y = y * (0.3 + env1 * a * 0.7)  # phase lock to transient\n\nbus body:\n  send: in = 1\n  eq1: type = peak; freq = b; q = 4; gain = 6  # formant 1\n  eq2: type = peak; freq = b * 2.8; q = 5; gain = 5  # formant 2\n  stage3: y = tube(y, 2.5)\n\nxover2: f1 = 1200\n\nbus grit:\n  send: sub = 0; body = 0; in = 1\n  stage4: y = bitcrush(y, c)\n  stage5: y = fold(y, -0.35, 0.4)\n  filter2: type = lowpass; cutoff = 6500; resonance = 0.35\n\nbus air:\n  send: sub = 0; body = 0; in = 1\n  env2: type = peak; attack = 0.002; release = 0.05\n  stage6: y = y * (1 + env2 * d * 0.2)  # transient emphasis\n  eq3: type = highshelf; freq = 4000; q = 0.7; gain = 3\n\nout: sub = 1; body = 1; grit = e; air = 1\nlimit1: ceiling = -0.3; release = 0.08",
+    "script": "# Bass Fractionator\n# Neurofunk/DnB: sub pure sine phase-locked, body 100-400Hz formant filter, grit 400-1200Hz bitcrush+fold, air 1200+Hz transient, envelope alignment.\n# a Sub Sync: 0 to 1, default 0.8\n# b Body Formant: 150 to 350, default 220\n# c Grit Bits: 5 to 10, default 7\n# d Air Transient: 0 to 5, default 3\n# e Band Balance: 0.5 to 1.2, default 0.85\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Sub Sync [0.0, 1.0]\nparam b = Body Formant [150, 350]\nparam c = Grit Bits [5.0, 10.0]\nparam d = Air Transient [0.0, 5.0]\nparam e = Band Balance [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25\nenv1: type = peak; attack = 0.003; release = 0.12\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.2\n  stage1: y = tanh(x * 1.5)\n  stage2: y = x * (0.3 + env1 * a * 0.7)\n  limit1: ceiling = -0.3; release = 0.08\n  stage7: y = x * f\nbus body:\n  send: in = 1\n  filter3: type = highpass; cutoff = 100; resonance = 0.2\n  filter4: type = lowpass; cutoff = 400; resonance = 0.2\n  eq1: type = peak; freq = b; q = 4; gain = 6\n  eq2: type = peak; freq = b * 2.8; q = 5; gain = 5\n  stage3: y = tube(x, 2.5)\n  limit2: ceiling = -0.3; release = 0.08\n  stage8: y = x * f\nbus grit:\n  send: in = 1\n  filter5: type = highpass; cutoff = 400; resonance = 0.2\n  filter6: type = lowpass; cutoff = 1200; resonance = 0.2\n  stage4: y = bitcrush(x, c)\n  stage5: y = fold(x, -0.35, 0.4)\n  filter8: type = lowpass; cutoff = 6500; resonance = 0.35\n  limit3: ceiling = -0.3; release = 0.08\n  stage9: y = x * e * f\nbus air:\n  send: in = 1\n  filter7: type = highpass; cutoff = 1200; resonance = 0.2\n  env2: type = peak; attack = 0.002; release = 0.05\n  stage6: y = x * (1 + env2 * d * 0.2)\n  eq3: type = highshelf; freq = 4000; q = 0.7; gain = 3\n  limit4: ceiling = -0.3; release = 0.08\n  stage10: y = x * f\nout: main = 0; sub = 1; body = 1; grit = 1; air = 1\n",
     "tags": [
       "bass",
       "neurofunk",
@@ -12747,7 +12747,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Surgical Snare Designer\n# Multiband transient shaper: 3-band xover (low sustain cut 200-300Hz, mid 300-1500Hz snap boost, high 1500+Hz air), envelope per band, glue comp.\n# a Low Sustain: 0.1 to 0.6, default 0.35\n# b Mid Attack: 0 to 6, default 3\n# c High Air: 0 to 4, default 2\n# d Snap Time: 0.02 to 0.15, default 0.06\n# e Glue: 2 to 5, default 3\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Low Sustain [0.1, 0.6]\nparam b = Mid Attack [0.0, 6.0]\nparam c = High Air [0.0, 4.0]\nparam d = Snap Time [0.02, 0.15]\nparam e = Glue [2.0, 5.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28  # highpass\nxover1: f1 = 200; f2 = 300\n\nbus low:\n  send: in = 1\n  env1: type = rms; attack = 0.01; release = 0.12  # sustain detector\n  gate1: threshold = -24; hyst = 6; hold = 0.05; range = 0; attack = 0.005; release = 0.2  # cut sustain\n  stage1: y = y * a\n\nbus mid:\n  send: in = 1\n  env2: type = peak; attack = 0.002; release = d  # snap\n  stage2: y = y * (1 + env2 * b * 0.15)  # boost attack\n\nxover2: f1 = 1500\n\nbus high:\n  send: low = 0; mid = 0; in = 1\n  eq1: type = highshelf; freq = 4500; q = 0.7; gain = c  # air\n\nout: low = 1; mid = 1; high = 1\ncomp1: threshold = -14; ratio = e; attack = 0.003; release = 0.08; makeup = 2  # glue\nstage3: y = y * f",
+    "script": "# Surgical Snare Designer\n# Multiband transient shaper: 3-band xover (low sustain cut 200-300Hz, mid 300-1500Hz snap boost, high 1500+Hz air), envelope per band, glue comp.\n# a Low Sustain: 0.1 to 0.6, default 0.35\n# b Mid Attack: 0 to 6, default 3\n# c High Air: 0 to 4, default 2\n# d Snap Time: 0.02 to 0.15, default 0.06\n# e Glue: 2 to 5, default 3\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Low Sustain [0.1, 0.6]\nparam b = Mid Attack [0.0, 6.0]\nparam c = High Air [0.0, 4.0]\nparam d = Snap Time [0.02, 0.15]\nparam e = Glue [2.0, 5.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28\nxover1: f1 = 250; f2 = 1500\nbus low:\n  env1: type = rms; attack = 0.01; release = 0.12\n  gate1: threshold = -24; hyst = 6; hold = 0.05; range = -18; attack = 0.005; release = 0.2\n  stage1: y = x * a * (0.45 + env1)\n  comp1: threshold = -14; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage3: y = x * f\nbus mid:\n  env2: type = peak; attack = 0.002; release = d\n  stage2: y = x * (1 + env2 * b * 0.15)\n  comp2: threshold = -14; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage4: y = x * f\nbus high:\n  eq1: type = highshelf; freq = 4500; q = 0.7; gain = c\n  comp3: threshold = -14; ratio = e; attack = 0.003; release = 0.08; makeup = 2\n  stage5: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "snare",
       "drums",
@@ -12804,7 +12804,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Depth Sculptor\n# Psychoacoustic depth: 2-band xover 400Hz (low immediate, high delayed 5-25ms for 3D layback), crossfeed, soft reverb, slight detuning via chorus.\n# a Delay Depth: 5 to 25, default 15\n# b Crossfeed: 0.2 to 0.6, default 0.4\n# c Reverb: 0.15 to 0.5, default 0.3\n# d Detune: 0.15 to 0.35, default 0.25\n# e Width: 0.7 to 1.2, default 0.95\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Delay Depth [5.0, 25.0]\nparam b = Crossfeed [0.2, 0.6]\nparam c = Reverb [0.15, 0.5]\nparam d = Detune [0.15, 0.35]\nparam e = Width [0.7, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3  # highpass\nxover1: f1 = 400\n\nbus low:\n  send: in = 1\n  # immediate\n\nbus high:\n  send: in = 1\n  delay1: time = a; feedback = 0; mix = 1  # layer-back delay\n  delay2: channel = left; time = 2; feedback = 0; mix = b  # crossfeed L\n  delay3: channel = right; time = 2; feedback = 0; mix = b  # crossfeed R\n  stage1: channel = right; y = y + delay2\n  stage2: channel = left; y = y + delay3\n\nout: low = 1; high = 1\nreverb1: size = 0.5; decay = 0.35; damp = 0.6; mix = c  # soft space\ndelay4: time = 7; feedback = 0.18; mix = d; damp = 7500  # detune chorus\nwiden1: width = e; delay = 12; bass = 150\nlimit1: ceiling = -0.4; release = 0.1",
+    "script": "# Depth Sculptor\n# Psychoacoustic depth: 2-band xover 400Hz (low immediate, high delayed 5-25ms for 3D layback), crossfeed, soft reverb, slight detuning via chorus.\n# a Delay Depth: 5 to 25, default 15\n# b Crossfeed: 0.2 to 0.6, default 0.4\n# c Reverb: 0.15 to 0.5, default 0.3\n# d Detune: 0.15 to 0.35, default 0.25\n# e Width: 0.7 to 1.2, default 0.95\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Delay Depth [5.0, 25.0]\nparam b = Crossfeed [0.2, 0.6]\nparam c = Reverb [0.15, 0.5]\nparam d = Detune [0.15, 0.35]\nparam e = Width [0.7, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3\nxover1: f1 = 400\nbus low:\n  limit1: ceiling = -0.4; release = 0.1\n  stage3: y = x * f\nbus high:\n  delay1: time = a; feedback = 0; mix = 1\n  delay2: time = 2; feedback = 0; mix = b; pingpong = true\n  reverb1: size = 0.5; decay = 0.35; damp = 0.6; mix = c\n  delay4: time = 7; feedback = 0.18; mix = d; damp = 7500\n  widen1: width = e; delay = 12; bass = 150\n  limit2: ceiling = -0.4; release = 0.1\n  stage4: y = x * f\nout: low = 1; high = 1\n",
     "tags": [
       "depth",
       "synth",
@@ -12861,7 +12861,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Multiband Punch Enhancer\n# Master bus: 4-band transient processing (sub sub-bass tight, low punch boost, mid clarity, high sparkle), OTT gentle drive, soft limiter -0.3dB.\n# a Sub Tight: 0 to 4, default 2\n# b Low Punch: 0 to 5, default 3\n# c Mid Clarity: 0 to 4, default 2\n# d High Sparkle: 0 to 3, default 1.5\n# e OTT Drive: 0.2 to 0.5, default 0.35\n# f Master: 0.9 to 1.1, default 1\n\nparam a = Sub Tight [0.0, 4.0]\nparam b = Low Punch [0.0, 5.0]\nparam c = Mid Clarity [0.0, 4.0]\nparam d = High Sparkle [0.0, 3.0]\nparam e = OTT Drive [0.2, 0.5]\nparam f = Master [0.9, 1.1]\nfilter1: type = highpass; cutoff = 20; resonance = 0.22  # highpass\nxover1: f1 = 90; f2 = 600\n\nbus sub:\n  send: in = 1\n  env1: type = peak; attack = 0.005; release = 0.08\n  stage1: y = y * (1 + env1 * a * 0.1)  # tighten\n\nbus low:\n  send: in = 1\n  env2: type = peak; attack = 0.003; release = 0.1\n  stage2: y = y * (1 + env2 * b * 0.12)  # punch\n\nxover2: f1 = 3000\n\nbus mid:\n  send: sub = 0; low = 0; in = 1\n  env3: type = peak; attack = 0.002; release = 0.06\n  stage3: y = y * (1 + env3 * c * 0.1)  # clarity\n\nbus high:\n  send: sub = 0; low = 0; in = 1\n  env4: type = peak; attack = 0.001; release = 0.04\n  stage4: y = y * (1 + env4 * d * 0.08)  # sparkle\n\nout: sub = 1; low = 1; mid = 1; high = 1\nott1: depth = e; time = 0.02; release = 0.1  # gentle drive\nlimit1: ceiling = -0.3; release = 0.12  # master\nstage5: y = y * f",
+    "script": "# Multiband Punch Enhancer\n# Master bus: 4-band transient processing (sub sub-bass tight, low punch boost, mid clarity, high sparkle), OTT gentle drive, soft limiter -0.3dB.\n# a Sub Tight: 0 to 4, default 2\n# b Low Punch: 0 to 5, default 3\n# c Mid Clarity: 0 to 4, default 2\n# d High Sparkle: 0 to 3, default 1.5\n# e OTT Drive: 0.2 to 0.5, default 0.35\n# f Master: 0.9 to 1.1, default 1\n\nparam a = Sub Tight [0.0, 4.0]\nparam b = Low Punch [0.0, 5.0]\nparam c = Mid Clarity [0.0, 4.0]\nparam d = High Sparkle [0.0, 3.0]\nparam e = OTT Drive [0.2, 0.5]\nparam f = Master [0.9, 1.1]\nfilter1: type = highpass; cutoff = 20; resonance = 0.22\nxover1: f1 = 90; f2 = 3000\nbus low:\n  env1: type = peak; attack = 0.005; release = 0.08\n  stage1: y = x * (1 + env1 * a * 0.1)\n  env2: type = peak; attack = 0.003; release = 0.1\n  stage2: y = x * (1 + env2 * b * 0.12)\n  ott1: depth = e; time = 0.02\n  limit1: ceiling = -0.3; release = 0.12\n  stage5: y = x * f\nbus mid:\n  env3: type = peak; attack = 0.002; release = 0.06\n  stage3: y = x * (1 + env3 * c * 0.1)\n  ott2: depth = e; time = 0.02\n  limit2: ceiling = -0.3; release = 0.12\n  stage6: y = x * f\nbus high:\n  env4: type = peak; attack = 0.001; release = 0.04\n  stage4: y = x * (1 + env4 * d * 0.08)\n  ott3: depth = e; time = 0.02\n  limit3: ceiling = -0.3; release = 0.12\n  stage7: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "master",
       "mastering",
@@ -12918,7 +12918,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Dynamic Space Former\n# Ambient/pads: 3-band envelope-based expansion (low slow bloom, mid fast decay, high shimmer tail), hall reverb, soft chorus, gentle comp.\n# a Low Bloom: 0.25 to 0.6, default 0.4\n# b Mid Decay: 0.1 to 0.3, default 0.2\n# c High Shimmer: 0.4 to 0.8, default 0.6\n# d Verb Size: 0.6 to 0.95, default 0.8\n# e Chorus: 0.2 to 0.5, default 0.35\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Low Bloom [0.25, 0.6]\nparam b = Mid Decay [0.1, 0.3]\nparam c = High Shimmer [0.4, 0.8]\nparam d = Verb Size [0.6, 0.95]\nparam e = Chorus [0.2, 0.5]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 35; resonance = 0.28  # highpass\nxover1: f1 = 250; f2 = 2500\n\nbus low:\n  send: in = 1\n  env1: type = rms; attack = 0.05; release = a  # slow bloom\n  stage1: y = y * (0.7 + env1 * 0.5)\n\nbus mid:\n  send: in = 1\n  env2: type = rms; attack = 0.01; release = b  # fast decay\n  stage2: y = y * (0.8 + env2 * 0.4)\n\nbus high:\n  send: in = 1\n  env3: type = peak; attack = 0.005; release = c  # shimmer tail\n  stage3: y = y * (0.5 + env3 * 0.8)\n  eq1: type = highshelf; freq = 5000; q = 0.7; gain = 2  # air\n\nout: low = 1; mid = 1; high = 1\nreverb1: size = d; decay = 0.7; damp = 0.3; mix = 0.5  # hall\ndelay1: time = 8; feedback = 0.25; mix = e; damp = 7000  # chorus\ncomp1: threshold = -20; ratio = 1.5; attack = 0.05; release = 0.3; makeup = 1  # gentle\nlimit1: ceiling = -0.5; release = 0.15",
+    "script": "# Dynamic Space Former\n# Ambient/pads: 3-band envelope-based expansion (low slow bloom, mid fast decay, high shimmer tail), hall reverb, soft chorus, gentle comp.\n# a Low Bloom: 0.25 to 0.6, default 0.4\n# b Mid Decay: 0.1 to 0.3, default 0.2\n# c High Shimmer: 0.4 to 0.8, default 0.6\n# d Verb Size: 0.6 to 0.95, default 0.8\n# e Chorus: 0.2 to 0.5, default 0.35\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Low Bloom [0.25, 0.6]\nparam b = Mid Decay [0.1, 0.3]\nparam c = High Shimmer [0.4, 0.8]\nparam d = Verb Size [0.6, 0.95]\nparam e = Chorus [0.2, 0.5]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 35; resonance = 0.28\nxover1: f1 = 250; f2 = 2500\nbus low:\n  env1: type = rms; attack = 0.05; release = a\n  stage1: y = x * (0.7 + env1 * 0.5)\n  limit1: ceiling = -0.5; release = 0.15\n  stage4: y = x * f\nbus mid:\n  env2: type = rms; attack = 0.01; release = b\n  stage2: y = x * (0.8 + env2 * 0.4)\n  limit2: ceiling = -0.5; release = 0.15\n  stage5: y = x * f\nbus high:\n  env3: type = peak; attack = 0.005; release = c\n  stage3: y = x * (0.5 + env3 * 0.8)\n  eq1: type = highshelf; freq = 5000; q = 0.7; gain = 2\n  reverb1: size = d; decay = 0.7; damp = 0.3; mix = 0.5\n  delay1: time = 8; feedback = 0.25; mix = e; damp = 7000\n  comp1: threshold = -20; ratio = 1.5; attack = 0.05; release = 0.3; makeup = 1\n  limit3: ceiling = -0.5; release = 0.15\n  stage6: y = x * f\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "ambient",
       "pads",
@@ -12975,7 +12975,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Metal Percussion\n# SWARM industrial percussion: bitcrush transients only, metallic comb delays (59Hz, 83Hz), resonant peak 1200Hz, envelope-based fold, HPF, limiter.\n# a Bits: 3 to 8, default 5\n# b Comb Mix: 0.3 to 0.7, default 0.5\n# c Metallic: 2 to 6, default 4\n# d Fold Env: 0.2 to 0.8, default 0.5\n# e Tightness: 0.05 to 0.2, default 0.1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Bits [3.0, 8.0]\nparam b = Comb Mix [0.3, 0.7]\nparam c = Metallic [2.0, 6.0]\nparam d = Fold Env [0.2, 0.8]\nparam e = Tightness [0.05, 0.2]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.35  # highpass\nenv1: type = peak; attack = 0.001; release = e  # transient detector\ngate1: threshold = -24; hyst = 8; hold = 0.03; range = 0; attack = 0.001; release = 0.06  # transient gate\nstage1: y = bitcrush(y * env1, a)  # bitcrush transients\ndelay1: time = 16.95; feedback = 0.4; mix = b; damp = 0  # comb 59Hz\ndelay2: time = 12.05; feedback = 0.38; mix = b; damp = 0  # comb 83Hz\neq1: type = peak; freq = 1200; q = 5; gain = c  # metallic resonance\nstage2: y = fold(y, -0.3 - env1 * d, 0.35 + env1 * d)  # envelope fold\ncomp1: threshold = -12; ratio = 4; attack = 0.003; release = 0.08; makeup = 3\nlimit1: ceiling = -0.35; release = 0.1\nstage3: y = y * f",
+    "script": "# Metal Percussion\n# SWARM industrial percussion: bitcrush transients only, metallic comb delays (59Hz, 83Hz), resonant peak 1200Hz, envelope-based fold, HPF, limiter.\n# a Bits: 3 to 8, default 5\n# b Comb Mix: 0.3 to 0.7, default 0.5\n# c Metallic: 2 to 6, default 4\n# d Fold Env: 0.2 to 0.8, default 0.5\n# e Tightness: 0.05 to 0.2, default 0.1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Bits [3.0, 8.0]\nparam b = Comb Mix [0.3, 0.7]\nparam c = Metallic [2.0, 6.0]\nparam d = Fold Env [0.2, 0.8]\nparam e = Tightness [0.05, 0.2]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 80; resonance = 0.35\nenv1: type = peak; attack = 0.001; release = e\nstage1: y = bitcrush(x * (0.45 + env1), a)\ndelay1: time = 16.95; feedback = 0.32; mix = b; damp = 4500\ndelay2: time = 12.05; feedback = 0.28; mix = b * 0.7; damp = 4500\neq1: type = peak; freq = 1200; q = 5; gain = c\nstage2: y = fold(x, -0.3 - env1 * d, 0.35 + env1 * d)\ncomp1: threshold = -12; ratio = 4; attack = 0.003; release = 0.08; makeup = 4\nlimit1: ceiling = -0.35; release = 0.1\nstage3: y = x * f\n",
     "tags": [
       "industrial",
       "percussion",
@@ -13032,7 +13032,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Field Recording Glitch\n# Granular-approximation: 6 parallel short delays 15-85ms with random feedback 0.2-0.5, slight pitch detune -3 to +5 semitones, LPF 7500Hz, reverb tail.\n# a Grain Size: 15 to 85, default 45\n# b Density: 0.3 to 0.8, default 0.55\n# c Pitch Chaos: 0 to 8, default 4\n# d Tail: 0.3 to 0.7, default 0.5\n# e Damp: 0.3 to 0.8, default 0.6\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [15.0, 85.0]\nparam b = Density [0.3, 0.8]\nparam c = Pitch Chaos [0.0, 8.0]\nparam d = Tail [0.3, 0.7]\nparam e = Damp [0.3, 0.8]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3  # highpass\ndelay1: time = a * 0.8; feedback = 0.22; mix = b  # grain 1\ndelay2: time = a * 1.1; feedback = 0.35; mix = b  # grain 2\ndelay3: time = a * 0.6; feedback = 0.28; mix = b  # grain 3\ndelay4: time = a * 1.4; feedback = 0.42; mix = b  # grain 4\ndelay5: time = a * 0.9; feedback = 0.3; mix = b  # grain 5\ndelay6: time = a * 1.2; feedback = 0.38; mix = b  # grain 6\npitch1: shift = -3 + c * 0.5; size = 512; mix = 0.3  # detune 1\npitch2: shift = 2 + c * 0.38; size = 512; mix = 0.25  # detune 2\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.4  # LPF\nreverb1: size = 0.65; decay = d; damp = e; mix = 0.4  # tail\nlimit1: ceiling = -0.4; release = 0.12",
+    "script": "# Field Recording Glitch\n# Granular-approximation: 6 parallel short delays 15-85ms with random feedback 0.2-0.5, slight pitch detune -3 to +5 semitones, LPF 7500Hz, reverb tail.\n# a Grain Size: 15 to 85, default 45\n# b Density: 0.3 to 0.8, default 0.55\n# c Pitch Chaos: 0 to 8, default 4\n# d Tail: 0.3 to 0.7, default 0.5\n# e Damp: 0.3 to 0.8, default 0.6\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [15.0, 85.0]\nparam b = Density [0.3, 0.8]\nparam c = Pitch Chaos [0.0, 8.0]\nparam d = Tail [0.3, 0.7]\nparam e = Damp [0.3, 0.8]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 50; resonance = 0.3\npitch1: shift = -3 + c * 0.5; mix = 0.22\npitch2: shift = 2 + c * 0.38; mix = 0.18\nfilter2: type = lowpass; cutoff = 7500; resonance = 0.4\nreverb1: size = 0.65; decay = d; damp = e; mix = 0.28\nlimit1: ceiling = -0.4; release = 0.12\nstage1: y = x * (0.7 + 0.5 * f)\nbus g1:\n  send: in = 1\n  delay1: time = a * 0.8; feedback = 0.22; mix = 1; damp = 6500\nbus g2:\n  send: in = 1\n  delay2: time = a * 1.1; feedback = 0.35; mix = 1; damp = 6500\nbus g3:\n  send: in = 1\n  delay3: time = a * 0.65; feedback = 0.28; mix = 1; damp = 6500\nout: main = 1; g1 = b * 0.45; g2 = b * 0.4; g3 = b * 0.35\n",
     "tags": [
       "granular",
       "glitch",
@@ -13089,7 +13089,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Downtuned Guitar Industrial\n# DJ Hyper 8-string downtuned guitar: HPF 82Hz (low E), heavy comp 8:1, tube+fold chain, resonant 150Hz body, soft-limit -0.45dB. (IR optional in user path)\n# a Body Reso: 120 to 200, default 150\n# b Comp Ratio: 6 to 12, default 8\n# c Tube Drive: 3 to 8, default 5.5\n# d Fold Amount: 0.3 to 0.8, default 0.55\n# e Presence: -2 to 4, default 1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Body Reso [120, 200]\nparam b = Comp Ratio [6.0, 12.0]\nparam c = Tube Drive [3.0, 8.0]\nparam d = Fold Amount [0.3, 0.8]\nparam e = Presence [-2, 4]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 82; resonance = 0.4  # downtuned E\ncomp1: threshold = -20; ratio = b; attack = 0.008; release = 0.12; makeup = 8  # heavy comp\neq1: type = peak; freq = a; q = 4; gain = 5  # body resonance\nstage1: y = tube(y, c)\nstage2: y = fold(y, -d, d)\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.35  # LPF\neq2: type = highshelf; freq = 3000; q = 0.8; gain = e  # presence\ncomp2: threshold = -10; ratio = 3; attack = 0.003; release = 0.08; makeup = 2  # glue\nlimit1: ceiling = -0.45; release = 0.1\nstage3: y = y * f\n# Note: User can insert IR block for cabinet simulation",
+    "script": "# Downtuned Guitar Industrial\n# DJ Hyper 8-string downtuned guitar: HPF 82Hz (low E), heavy comp 8:1, tube+fold chain, resonant 150Hz body, soft-limit -0.45dB. (IR optional in user path)\n# a Body Reso: 120 to 200, default 150\n# b Comp Ratio: 6 to 12, default 8\n# c Tube Drive: 3 to 8, default 5.5\n# d Fold Amount: 0.3 to 0.8, default 0.55\n# e Presence: -2 to 4, default 1\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Body Reso [120, 200]\nparam b = Comp Ratio [6.0, 12.0]\nparam c = Tube Drive [3.0, 8.0]\nparam d = Fold Amount [0.3, 0.8]\nparam e = Presence [-2, 4]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 82; resonance = 0.4  # downtuned E\ncomp1: threshold = -20; ratio = b; attack = 0.008; release = 0.12; makeup = 8  # heavy comp\neq1: type = peak; freq = a; q = 4; gain = 5  # body resonance\nstage1: y = tube(x, c)\nstage2: y = fold(x, -d, d)\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.35  # LPF\neq2: type = highshelf; freq = 3000; q = 0.8; gain = e  # presence\ncomp2: threshold = -10; ratio = 3; attack = 0.003; release = 0.08; makeup = 2  # glue\nlimit1: ceiling = -0.45; release = 0.1\nstage3: y = x * f\n# Note: User can insert IR block for cabinet simulation",
     "tags": [
       "guitar",
       "industrial",
@@ -13146,7 +13146,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Chaotic Stab Generator\n# Techno chaos stab: random pitch shifts -7 to +7 semitones via dual pitch blocks, resonant BP sweep 400-2400Hz LFO, fold+bitcrush 6-bit, gate, limiter.\n# a Pitch Chaos: 0 to 7, default 4\n# b Sweep Rate: 0.5 to 3, default 1.5\n# c Reso: 5 to 8, default 6.5\n# d Fold: 0.3 to 0.7, default 0.5\n# e Bits: 4 to 8, default 6\n# f Mix: 0.6 to 1, default 0.8\n\nparam a = Pitch Chaos [0.0, 7.0]\nparam b = Sweep Rate [0.5, 3.0]\nparam c = Reso [5.0, 8.0]\nparam d = Fold [0.3, 0.7]\nparam e = Bits [4.0, 8.0]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35  # highpass\npitch1: shift = -a; size = 1024; mix = 0.3  # chaos down\npitch2: shift = a; size = 1024; mix = 0.25  # chaos up\nosc1: shape = triangle; freq = b; depth = 1.0  # sweep LFO\nfilter2: type = bandpass; center = 400 + osc1 * 1000; width = 300; resonance = c  # resonant sweep\nstage1: y = fold(y, -d, d)\nstage2: y = bitcrush(y, e)\nfilter3: type = lowpass; cutoff = 7000; resonance = 0.35  # anti-alias\ngate1: threshold = -36; hyst = 6; hold = 0.04; range = 0; attack = 0.002; release = 0.08\ncomp1: threshold = -12; ratio = 4; attack = 0.005; release = 0.1; makeup = 3\nlimit1: ceiling = -0.4; release = 0.1",
+    "script": "# Chaotic Stab Generator\n# Techno chaos stab: random pitch shifts -7 to +7 semitones via dual pitch blocks, resonant BP sweep 400-2400Hz LFO, fold+bitcrush 6-bit, gate, limiter.\n# a Pitch Chaos: 0 to 7, default 4\n# b Sweep Rate: 0.5 to 3, default 1.5\n# c Reso: 0.4 to 1.1, default 0.75\n# d Fold: 0.3 to 0.7, default 0.5\n# e Bits: 4 to 8, default 6\n# f Mix: 0.6 to 1, default 0.8\n\nparam a = Pitch Chaos [0.0, 7.0]\nparam b = Sweep Rate [0.5, 3.0]\nparam c = Reso [0.4, 1.1]\nparam d = Fold [0.3, 0.7]\nparam e = Bits [4.0, 8.0]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\npitch1: shift = -a; mix = 0.22\npitch2: shift = a; mix = 0.18\nosc1: shape = triangle; freq = b; depth = 1.0\nfilter2: type = lowpass; cutoff = 900 + (0.5 + 0.5 * osc1) * 2400; resonance = c\nstage1: y = fold(x, -d, d)\nstage2: y = bitcrush(x, e)\nfilter3: type = lowpass; cutoff = 7000; resonance = 0.35\ncomp1: threshold = -12; ratio = 4; attack = 0.005; release = 0.1; makeup = 3\nlimit1: ceiling = -0.4; release = 0.1\nstage3: y = x * f\n",
     "tags": [
       "techno",
       "chaos",
@@ -13173,9 +13173,9 @@
     },
     "paramC": {
       "name": "Reso",
-      "min": 5,
-      "max": 8,
-      "default": 6.5
+      "min": 0.4,
+      "max": 1.1,
+      "default": 0.75
     },
     "paramD": {
       "name": "Fold",
@@ -13203,7 +13203,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Granular Smear\n# Ambient granular texture: 6 parallel delays 25-150ms detune -4/+4 semitones, soft LFO sweep each delay time, hall reverb 0.8 decay, soft-limit -0.5dB.\n# a Grain Size: 25 to 150, default 75\n# b Detune: 0 to 4, default 2\n# c LFO Depth: 0 to 20, default 10\n# d LFO Rate: 0.1 to 1.5, default 0.6\n# e Verb Decay: 0.6 to 0.95, default 0.8\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [25.0, 150.0]\nparam b = Detune [0.0, 4.0]\nparam c = LFO Depth [0.0, 20.0]\nparam d = LFO Rate [0.1, 1.5]\nparam e = Verb Decay [0.6, 0.95]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28  # highpass\nosc1: shape = sine; freq = d; depth = 1.0  # LFO 1\nosc2: shape = triangle; freq = d * 1.3; depth = 1.0  # LFO 2\nosc3: shape = softsquare; freq = d * 0.7; depth = 1.0  # LFO 3\ndelay1: time = a * 0.7 + osc1 * c; feedback = 0.25; mix = 0.35  # grain 1\ndelay2: time = a * 1.1 + osc2 * c; feedback = 0.28; mix = 0.35  # grain 2\ndelay3: time = a * 0.85 + osc3 * c; feedback = 0.22; mix = 0.3  # grain 3\ndelay4: time = a * 1.3 + osc1 * c * 0.8; feedback = 0.3; mix = 0.3  # grain 4\ndelay5: time = a * 0.95 + osc2 * c * 0.9; feedback = 0.26; mix = 0.3  # grain 5\ndelay6: time = a * 1.15 + osc3 * c * 0.85; feedback = 0.24; mix = 0.3  # grain 6\npitch1: shift = -b; size = 1024; mix = 0.25  # detune down\npitch2: shift = b; size = 1024; mix = 0.25  # detune up\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.3  # LPF\nreverb1: size = 0.85; decay = e; damp = 0.35; mix = 0.5  # hall\nlimit1: ceiling = -0.5; release = 0.15",
+    "script": "# Granular Smear\n# Ambient granular texture: 6 parallel delays 25-150ms detune -4/+4 semitones, soft LFO sweep each delay time, hall reverb 0.8 decay, soft-limit -0.5dB.\n# a Grain Size: 25 to 150, default 75\n# b Detune: 0 to 4, default 2\n# c LFO Depth: 0 to 20, default 10\n# d LFO Rate: 0.1 to 1.5, default 0.6\n# e Verb Decay: 0.6 to 0.95, default 0.8\n# f Mix: 0.5 to 1, default 0.75\n\nparam a = Grain Size [25.0, 150.0]\nparam b = Detune [0.0, 4.0]\nparam c = LFO Depth [0.0, 20.0]\nparam d = LFO Rate [0.1, 1.5]\nparam e = Verb Decay [0.6, 0.95]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 40; resonance = 0.28\nosc1: shape = sine; freq = d; depth = 1.0\nosc2: shape = triangle; freq = d * 1.3; depth = 1.0\nosc3: shape = softsquare; freq = d * 0.7; depth = 1.0\npitch1: shift = -b; mix = 0.22\npitch2: shift = b; mix = 0.22\nfilter2: type = lowpass; cutoff = 8000; resonance = 0.3\nreverb1: size = 0.85; decay = e; damp = 0.35; mix = 0.35\nlimit1: ceiling = -0.5; release = 0.15\nstage1: y = x * (0.75 + 0.45 * f)\nbus g1:\n  send: in = 1\n  delay1: time = max(8, a * 0.7 + (0.5 + 0.5 * osc1) * c); feedback = 0.25; mix = 1; damp = 7000\nbus g2:\n  send: in = 1\n  delay2: time = max(8, a * 1.1 + (0.5 + 0.5 * osc2) * c); feedback = 0.28; mix = 1; damp = 7000\nbus g3:\n  send: in = 1\n  delay3: time = max(8, a * 0.9 + (0.5 + 0.5 * osc3) * c); feedback = 0.22; mix = 1; damp = 7000\nout: main = 1; g1 = 0.32; g2 = 0.3; g3 = 0.28\n",
     "tags": [
       "granular",
       "ambient",

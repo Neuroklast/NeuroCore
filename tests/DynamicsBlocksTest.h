@@ -466,7 +466,6 @@ public:
                     "midi_gate=0 should attenuate, on=" + juce::String (gatedOn, 3)
                     + " off=" + juce::String (gatedOff, 3));
         }
-    }
 
         beginTest ("pitch block parses and aliases");
         {

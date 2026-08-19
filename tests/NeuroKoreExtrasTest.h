@@ -595,7 +595,7 @@ private:
         }
     }
 
-
+    void testTailTime()
     {
         beginTest("getMaxTailTime: returns 0 for simple stage");
         {
@@ -901,6 +901,48 @@ private:
                     expect (chain.loadScript (entry->script, err),
                             juce::String (name) + " loadScript: " + err);
                 }
+            }
+
+            beginTest ("new genre factory presets load (out last, no forward send)");
+            {
+                auto& lib = FactoryPresetLibrary::getInstance();
+                if (lib.getEntries().empty())
+                    expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+                static const char* names[] = {
+                    "CTZ Kick Master", "Loudness Wall", "Brickwall Techno",
+                    "Master Bus Destroyer", "Kick Surgery", "Sub Zero Pummel",
+                    "Priest Split Authority", "Multiband Phase Lock",
+                    "Bass Fractionator", "Surgical Snare Designer",
+                    "Depth Sculptor", "Multiband Punch Enhancer",
+                    "Dynamic Space Former",
+                    "Zatox Screamer", "Hyper Cyberpunk Sweep", "Speaking Bass",
+                    "Hardstyle Tail Screech", "Acid Morph 303", "Frequency Assassin",
+                    "rekkt Midtempo Pump", "zerosum Chaos Grid", "Pulsing Electro",
+                    "Vital Saw Morph", "Hard Groove Machine", "Resonant Sweep Stab",
+                    "Metal Percussion", "Field Recording Glitch",
+                    "Downtuned Guitar Industrial", "Chaotic Stab Generator",
+                    "Granular Smear"
+                };
+                juce::String firstFail;
+                int ok = 0;
+                for (const char* name : names)
+                {
+                    const auto* entry = lib.findByName (name);
+                    if (entry == nullptr)
+                    {
+                        if (firstFail.isEmpty())
+                            firstFail = juce::String (name) + " missing";
+                        continue;
+                    }
+                    dsl::SignalChain chain;
+                    juce::String err;
+                    if (chain.loadScript (entry->script, err))
+                        ++ok;
+                    else if (firstFail.isEmpty())
+                        firstFail = juce::String (name) + ": " + err;
+                }
+                expectEquals (ok, (int) (sizeof (names) / sizeof (names[0])),
+                              "new genre factory presets must load, first fail: " + firstFail);
             }
 
             int processOk = 0;
