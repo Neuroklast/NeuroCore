@@ -65,10 +65,16 @@ public:
     void clearRuntimeState() noexcept;
 
 private:
+    enum class NodeKind : uint8_t
+    {
+        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain
+    };
+
     struct Block
     {
         juce::String busName { "main" };
         juce::String tapId;
+        NodeKind kind { NodeKind::Generic };
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
         virtual float process(int ch, float x) = 0;
@@ -111,6 +117,7 @@ private:
         size_t idxY{ExpressionEvaluator::invalidIndex};
         size_t idxCh{ExpressionEvaluator::invalidIndex};
         float* yPtr{nullptr};
+        float* tPtr{nullptr};  ///< Cached pointer to variables["t"] — no String hash on audio thread
         ChannelMode channelMode{ChannelMode::Both};
         bool msEncode{false}; ///< Convert L/R → Mid/Side before formula
         bool msDecode{false}; ///< Convert Mid/Side → L/R after formula
@@ -158,7 +165,7 @@ private:
         std::vector<float> modLane;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         float* destSlot { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         ExpressionEvaluator freqExpr;
         ExpressionEvaluator syncExpr;   ///< Optional: sync = map(a,0,1,0.0625,1) or 1/a
         bool useFreqExpr{false};    ///< When true, re-evaluate freq from expression
@@ -215,8 +222,9 @@ private:
         uint8_t coeffPhase{0};
         float lastAppliedFc { -1.f };
         float lastAppliedRes { -1.f };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        float* yPtr { nullptr };  ///< Cached pointer to variables["y"]
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
@@ -243,7 +251,7 @@ private:
         uint8_t coeffPhase { 0 };
         float lastAppliedF { -1.f }, lastAppliedQ { -1.f }, lastAppliedG { 1.0e9f };
         juce::dsp::IIR::Filter<float> filtL, filtR;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -269,7 +277,7 @@ private:
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
@@ -296,7 +304,7 @@ private:
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
@@ -325,7 +333,7 @@ private:
         const float* scR { nullptr };
         int scN { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -343,7 +351,7 @@ private:
         float gain { 1.f };
         float cachedCeil { 1.0e9f }, cachedRel { -1.f };
         float ceilLin { 1.f }, relC { 0.f }, atkC { 1.f };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
@@ -363,7 +371,7 @@ private:
         juce::AudioBuffer<float>* midOut { nullptr };
         juce::AudioBuffer<float>* highOut { nullptr };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         struct Path
         {
@@ -393,7 +401,7 @@ private:
         float cachedTime { -1.f }, atkC { 0.f }, relC { 0.f };
         float envDb[3] { -80.f, -80.f, -80.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         struct Path
         {
@@ -475,7 +483,7 @@ private:
         Ap apL[kNumAp] {}, apR[kNumAp] {};
 
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int channel, float x) override;
@@ -496,7 +504,7 @@ private:
         float sampleRate { 44100.f };
         int latencySamples { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int channel, float x) override;
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -519,9 +527,10 @@ private:
         std::vector<float> value;
         /** Pre-rendered envelope lane for the current audio block (hybrid path). */
         std::vector<float> modLane;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         float* destSlot { nullptr };
+        float* midiGatePtr { nullptr };  ///< Cached pointer to variables["midi_gate"]
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
         bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
@@ -572,7 +581,7 @@ private:
         juce::SmoothedValue<float> delaySm, fbSm, mixSm, dampCoeffSm;
 
         std::unordered_map<juce::String, float>* varPtr = nullptr;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
@@ -684,7 +693,7 @@ private:
 
         juce::SmoothedValue<float> sizeSm, decaySm, dampSm, mixSm, widthSm;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
@@ -718,7 +727,7 @@ private:
         float lastToneHz { -1.f }, toneA { 0.f };
         int minAge { 32 }, maxAge { 2000 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         struct Detector
         {
@@ -772,7 +781,7 @@ private:
         float hpR { 0.f };
         int scHold { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
-        std::vector<std::pair<juce::String, std::string>> varNames;
+        std::vector<std::pair<float*, std::string>> varNames;
 
         const float* scL { nullptr };
         const float* scR { nullptr };
@@ -809,6 +818,7 @@ private:
     void writeMixdown (juce::AudioBuffer<float>& dest, int numChannels, int numSamples);
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
+    std::shared_ptr<std::vector<std::pair<float*, float*>>> aliasPtrs;  // alias src→dst ptr pairs (no String hash on audio thread)
     struct HotSlots
     {
         float* knob[Config::kNumUserParams] {};
