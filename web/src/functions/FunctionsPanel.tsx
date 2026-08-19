@@ -3,7 +3,14 @@ import { addCircuitBlock } from "../assemble/addBlock";
 import { useHostStore } from "../store/hostStore";
 import { categoriesOf, loadFunctions } from "./catalog";
 import { FunctionPlot } from "./FunctionPlot";
-import { plotCaption, kindForName, resolvePlotExpression } from "./plotModel";
+import {
+  plotCaption,
+  kindForName,
+  PREVIEW_WAVES,
+  resolvePlotExpression,
+  showsWavePreview,
+  type PreviewWave,
+} from "./plotModel";
 
 const ALL = loadFunctions();
 
@@ -12,6 +19,7 @@ export function FunctionsPanel() {
   const [cat, setCat] = useState("All");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const [wave, setWave] = useState<PreviewWave>("sine");
   const cats = useMemo(() => categoriesOf(ALL), []);
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -76,11 +84,27 @@ export function FunctionsPanel() {
           <>
             <div className="font-brand text-[22px] text-accent">{current.name}</div>
             <p className="text-[14px] text-ink">{current.description}</p>
-            <p className="text-[13px] text-[#ffb08a]">{current.soundCharacter}</p>
-            <p className="text-[13px] text-[#a8d4a8]">{current.useCases.slice(0, 3).join(" · ")}</p>
-            <pre className="overflow-auto border border-panel bg-well p-2 text-[13px] text-[#c8d0e4]">{current.example}</pre>
-            <p className="text-[13px] text-[#d0d4dc]">{plotCaption(kindForName(current.name))}</p>
-            <FunctionPlot name={current.name} example={current.example} />
+            <p className="text-[13px] text-[var(--nk-warn)]">{current.soundCharacter}</p>
+            <p className="text-[13px] text-[var(--nk-cyan)]">{current.useCases.slice(0, 3).join(" · ")}</p>
+            <pre className="overflow-auto border border-panel bg-well p-2 text-[13px] text-[var(--nk-ink-soft)]">{current.example}</pre>
+            {showsWavePreview(current.name) ? (
+              <>
+                <p className="text-[13px] text-[var(--nk-ink-soft)]">{plotCaption(kindForName(current.name))}</p>
+                <div className="flex gap-1">
+                  {PREVIEW_WAVES.map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      className={`nk-clip min-h-[26px] px-3 text-[11px] ${wave === w ? "on" : ""}`}
+                      onClick={() => setWave(w)}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+                <FunctionPlot name={current.name} example={current.example} wave={wave} />
+              </>
+            ) : null}
             <div className="mt-auto flex gap-2 pt-2">
               <button type="button" className="nk-clip" onClick={insert}>Insert</button>
               <button

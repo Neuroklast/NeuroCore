@@ -1,39 +1,31 @@
-import { useStore, type ConnectionLineComponentProps } from "@xyflow/react";
-import { TUBE } from "./tubeModel";
-import { tubePath, type Obstacle } from "./tubePath";
+import { getStraightPath, type ConnectionLineComponentProps } from "@xyflow/react";
 
+export function dragLinePath(fromX: number, fromY: number, toX: number, toY: number): string {
+  const [d] = getStraightPath({
+    sourceX: fromX,
+    sourceY: fromY,
+    targetX: toX,
+    targetY: toY,
+  });
+  return d;
+}
+
+/** Drag is a free line. PCB routing runs after drop only. */
 export function ConnectionLine({
   fromX,
   fromY,
   toX,
   toY,
-  fromNode,
-  toNode,
 }: ConnectionLineComponentProps) {
-  const obstacles = useStore((s) => {
-    const list: Obstacle[] = [];
-    s.nodeLookup.forEach((n) => {
-      const io = n.type === "io";
-      list.push({
-        id: n.id,
-        x: n.internals.positionAbsolute.x,
-        y: n.internals.positionAbsolute.y,
-        w: n.measured.width ?? n.width ?? (io ? 96 : 220),
-        h: n.measured.height ?? n.height ?? (io ? 56 : 80),
-      });
-    });
-    return list;
-  });
-  const path = tubePath(fromX, fromY, toX, toY, {
-    obstacles,
-    sourceId: fromNode?.id,
-    targetId: toNode?.id,
-  }).d;
+  const d = dragLinePath(fromX, fromY, toX, toY);
   return (
-    <g>
-      <path d={path} fill="none" stroke="#2a0606" strokeWidth={TUBE.audioOuter} strokeLinecap="butt" strokeLinejoin="miter" />
-      <path d={path} fill="none" stroke="#050505" strokeWidth={TUBE.audioGlass} strokeLinecap="butt" strokeLinejoin="miter" />
-      <path d={path} fill="none" stroke="#ff003c" strokeWidth={TUBE.audioBore} strokeLinecap="butt" strokeLinejoin="miter" opacity={0.55} />
-    </g>
+    <path
+      d={d}
+      fill="none"
+      stroke="var(--nk-accent)"
+      strokeWidth={2}
+      strokeLinecap="butt"
+      opacity={0.7}
+    />
   );
 }

@@ -1,11 +1,9 @@
 #include "DSLParserTest.h"
 #include "GraphModelTest.h"
-#include "PcbRouterTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
 #include "SignalChainTest.h"
 #include "WaveShaperTest.h"
-#include "WeightedLayoutTest.h"
 #include "LookupTableSmootherTest.h"
 #include "DSPUtilsTest.h"
 #include "NeuroKoreExtrasTest.h"
@@ -16,14 +14,11 @@
 #include "CrackleFixesTest.h"
 #include "ArchitectureHardeningTest.h"
 #include "BusGraphTest.h"
-#include "CyberFxTest.h"
-#include "EditorUxTest.h"
 #include "LicenseTest.h"
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
 #include "FactoryLoudnessTest.h"
-#include "CircuitContractTest.h"
 #include "AstJsonTest.h"
 #include "WebShellTest.h"
 #include "WebCompileTest.h"
@@ -42,12 +37,10 @@ int main (int argc, char* argv[])
 
   DSLParserTest parserTest;
   GraphModelTest graphModelTest;
-  PcbRouterTest pcbRouterTest;
   ExpressionEvaluatorTest evaluatorTest;
   WaveShaperTest shaperTest;
   SignalChainTest chainTest;
   PresetManagerTest presetTest;
-  WeightedLayoutTest layoutTest;
   LookupTableSmootherTest smootherTest;
   DSPUtilsTest dspUtilsTest;
   NeuroKoreExtrasTest extrasTest;
@@ -58,14 +51,11 @@ int main (int argc, char* argv[])
   CrackleFixesTest crackleFixesTest;
   ArchitectureHardeningTest architectureHardeningTest;
   BusGraphTest busGraphTest;
-  CyberFxTest cyberFxTest;
-  EditorUxTest editorUxTest;
   LicenseTest licenseTest;
   EqSidechainTest eqSidechainTest;
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
-  CircuitContractTest circuitContractTest;
   AstJsonTest astJsonTest;
   WebShellTest webShellTest;
   WebCompileTest webCompileTest;

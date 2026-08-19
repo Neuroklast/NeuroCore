@@ -25,6 +25,14 @@ export function pushScriptHistory(script: string): void {
   future = [];
 }
 
+export function canUndoScript(): boolean {
+  return past.length > 0;
+}
+
+export function canRedoScript(): boolean {
+  return future.length > 0;
+}
+
 export function undoScript(current: string): string | null {
   if (past.length === 0) {
     return null;

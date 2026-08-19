@@ -30,6 +30,17 @@ public:
                     const juce::String& tagsCsv = {});
     bool loadPreset(const juce::File& file);
 
+    struct Info
+    {
+        juce::String name;
+        juce::String author;
+        juce::String category;
+        juce::StringArray tags;
+    };
+
+    /** META fields from an .nrk file. Name falls back to the file stem. */
+    bool readInfo (const juce::File& file, Info& info) const;
+
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;
 
 private:

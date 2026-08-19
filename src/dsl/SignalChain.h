@@ -97,7 +97,7 @@ private:
         std::vector<float> xPrev, yPrev;
         juce::String formula;
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
-        struct VarRef { float* value; size_t index; };
+        struct VarRef { float* value; size_t index; juce::String name; };
         std::vector<VarRef> varRefs;
         std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> paramSmoothers {};
         std::array<size_t, Config::kNumUserParams> paramIndices {
@@ -118,8 +118,11 @@ private:
         bool usesFeedback{false};
         /** Stage reads oscN/envN — needs per-sample mod injection (still local, not whole-chain). */
         bool usesModulation{false};
-        /** softclip/tube/hardclip/diode/tanh/fold — scalar path for ADAA state. */
+        /** softclip/tube/diode/tanh — sequential ADAA. hardclip/fold can SIMD. */
+        bool usesAdaa{false};
+        /** Any shaper. Kept for diagnostics; does not force the sample loop by itself. */
         bool usesNonlinear{false};
+        float* paramSlots[Config::kNumUserParams] {};
         float sampleRate{44100.0f};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
@@ -128,7 +131,7 @@ private:
         /** True when this stage must run sample-wise (not SIMD whole-block). */
         bool needsSampleLoop() const noexcept
         {
-            return usesFeedback || usesTimeVariable || usesModulation || usesNonlinear;
+            return usesFeedback || usesTimeVariable || usesModulation || usesAdaa;
         }
         /** Env/t change every sample — caller must poke varPtr before processPrepared. */
         bool needsPerSampleInject() const noexcept
@@ -136,6 +139,7 @@ private:
             return usesFeedback || usesTimeVariable || usesModulation;
         }
         void prepareBlockEval() noexcept;
+        void bindSlots() noexcept;
         float processPrepared (int ch, float x) noexcept;
 
         std::function<float (const float*)> blockFn;
@@ -153,6 +157,7 @@ private:
         /** Pre-rendered LFO lane for the current audio block (hybrid path). */
         std::vector<float> modLane;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        float* destSlot { nullptr };
         std::vector<std::pair<juce::String, std::string>> varNames;
         ExpressionEvaluator freqExpr;
         ExpressionEvaluator syncExpr;   ///< Optional: sync = map(a,0,1,0.0625,1) or 1/a
@@ -504,8 +509,9 @@ private:
     {
         enum Mode { Peak = 0, Rms };
         Mode mode{ Rms };
-        ExpressionEvaluator attack, release;
+        ExpressionEvaluator attack, release, hold, minV, maxV;
         juce::String name;
+        bool invert { false };
         float sampleRate{44100.0f};
         juce::SmoothedValue<float> atkTime, relTime;
         float atkCoeff{0.0f}, relCoeff{0.0f};
@@ -515,13 +521,21 @@ private:
         std::vector<float> modLane;
         std::vector<std::pair<juce::String, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        float* destSlot { nullptr };
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
         bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
         bool attackLit { false };
         bool releaseLit { false };
+        bool holdLit { true };
+        bool minLit { true };
+        bool maxLit { true };
         float attackFixed { 0.01f };
         float releaseFixed { 0.1f };
+        float holdFixed { 0.f };
+        float minFixed { 0.f };
+        float maxFixed { 1.f };
+        int holdLeft { 0 };
         void prepare(const juce::dsp::ProcessSpec& spec) override;
         float process(int ch, float x) override;
         void processBlock(juce::AudioBuffer<float>& buffer) override;
@@ -700,6 +714,7 @@ private:
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> subSm, upSm, mixSm, toneSm, thrSm;
         float hpR { 0.f }, detLpA { 0.f }, envAtk { 0.f }, envRel { 0.f };
+        float upDcA { 0.f }, upLpA { 0.f };
         float lastToneHz { -1.f }, toneA { 0.f };
         int minAge { 32 }, maxAge { 2000 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
@@ -794,6 +809,17 @@ private:
     void writeMixdown (juce::AudioBuffer<float>& dest, int numChannels, int numSamples);
 
     std::unordered_map<juce::String, float> variables; // env1, osc1 ...
+    struct HotSlots
+    {
+        float* knob[Config::kNumUserParams] {};
+        float* t { nullptr };
+        float* sc { nullptr };
+        float* scL { nullptr };
+        float* scR { nullptr };
+        float* sidechain { nullptr };
+        void bind (std::unordered_map<juce::String, float>& vars) noexcept;
+    };
+    HotSlots hot;
     std::unordered_map<juce::String, juce::StringArray> parameterMappings;
     std::array<juce::SmoothedValue<float>, Config::kNumUserParams> paramSmooth;
     std::array<bool, Config::kNumUserParams> knobIsNote {};
@@ -849,6 +875,9 @@ public:
     bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept;
     /** Live oscillator rate in Hz. False if `id` is not an osc. */
     bool copyLfoHz (const juce::String& id, float& destHz) const noexcept;
+
+    /** Osc / env names that publish a tap (`copyNodeTap`). */
+    juce::StringArray getModNames() const;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;

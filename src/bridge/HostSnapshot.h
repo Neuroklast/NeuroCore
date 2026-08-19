@@ -16,8 +16,11 @@ struct ParamGesture
 
 struct PresetCmd
 {
-    juce::String action; // load | save | prev | next | rate
+    juce::String action; // load | save | prev | next | new
     juce::String name;
+    juce::String author;
+    juce::String category;
+    juce::String tags;
 };
 
 struct ChoiceCmd

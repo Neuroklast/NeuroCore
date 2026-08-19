@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { chipHeight } from "./flowFromAst";
 import {
   countCurves,
+  enforceSegmentAngles,
   inflate,
   isOctilinearDelta,
   midHits,
@@ -9,8 +10,10 @@ import {
   TUBE_STUB,
   minRunOk,
   plugsHorizontal,
+  segmentAngle,
   tubePath,
   polylinesCross,
+  type Pt,
 } from "./tubePath";
 
 describe("tube path — rounded circuit maze", () => {
@@ -101,7 +104,34 @@ describe("tube path — rounded circuit maze", () => {
         const dx = p.points[i].x - p.points[i - 1].x;
         const dy = p.points[i].y - p.points[i - 1].y;
         expect(isOctilinearDelta(dx, dy)).toBe(true);
+        const ang = segmentAngle(dx, dy);
+        expect([0, 45, 90]).toContain(ang);
       }
+    }
+  });
+
+  it("classifies segmentAngle as 0 / 45 / 90 and rewrites 135° / 180° candidates", () => {
+    expect(segmentAngle(40, 0)).toBe(0);
+    expect(segmentAngle(0, 40)).toBe(90);
+    expect(segmentAngle(40, 40)).toBe(45);
+    // Absolute headings 135° (NW) and 180° (west) fold to the canonical set.
+    expect(segmentAngle(-40, 40)).toBe(45);
+    expect(segmentAngle(-40, 0)).toBe(0);
+    // Shallow / steep non-octilinear → rejected.
+    expect(segmentAngle(100, 20)).toBeNull();
+    expect(segmentAngle(20, 100)).toBeNull();
+
+    const dirty: Pt[] = [
+      { x: 0, y: 0 },
+      { x: 100, y: 20 },
+      { x: 200, y: 20 },
+    ];
+    const fixed = enforceSegmentAngles(dirty);
+    for (let i = 1; i < fixed.length; i += 1) {
+      const dx = fixed[i].x - fixed[i - 1].x;
+      const dy = fixed[i].y - fixed[i - 1].y;
+      expect(segmentAngle(dx, dy)).not.toBeNull();
+      expect([0, 45, 90]).toContain(segmentAngle(dx, dy));
     }
   });
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AstJack } from "../bridge/ast";
 import {
-  BIND_RAIL,
   CONTENT_MIN,
   LABEL_COL,
   bindFace,
@@ -9,9 +8,12 @@ import {
   chipBodyHeight,
   chipBox,
   contentWidth,
+  jackAnchor,
   jackCaption,
   snapJackFace,
 } from "./chipLayout";
+import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
+import { handleId } from "./handles";
 
 const audio = (id: string, output: boolean): AstJack => ({ id, label: id, output, kind: "audio" });
 
@@ -28,23 +30,86 @@ describe("chip face, labels, copy", () => {
     expect(jackCaption({ id: "lfo1", label: "lfo1", output: false })).toBe("lfo1");
   });
 
-  it("sizes the chip to the painted body so copy stays inside", () => {
+  it("sizes the chip to minBodyPx so expand does not grow the box", () => {
     const args = { cutoff: "c + lfo1 * b", q: "f", type: "lp" };
     const jacks = [audio("in", false), { id: "lfo1", label: "lfo1", output: false, kind: "mod" } as AstJack, audio("out", true)];
     const name = chipBox("filter", jacks, false, args);
     const detail = chipBox("filter", jacks, true, args);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks));
-    expect(detail.h).toBeGreaterThan(name.h);
+    expect(name.h).toBe(detail.h);
+    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
     expect(contentWidth(name.w)).toBeGreaterThanOrEqual(CONTENT_MIN);
     expect(name.w).toBeGreaterThanOrEqual(LABEL_COL * 2 + CONTENT_MIN);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks) + BIND_RAIL);
+    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
   });
 
-  it("parks knob jacks on the south face, north if the chip is low", () => {
-    expect(bindJackXs(1, 200)).toEqual([100]);
-    expect(bindJackXs(3, 240).length).toBe(3);
-    expect(bindJackXs(3, 240)[0]).toBeLessThan(bindJackXs(3, 240)[1]);
+  it("parks knob jacks on the south face even when the chip sits low", () => {
+    expect(bindJackXs(1, 256)).toEqual([144]);
+    expect(bindJackXs(3, 256).length).toBe(3);
+    expect(bindJackXs(3, 256)[0]).toBeLessThan(bindJackXs(3, 256)[1]);
+    expect(bindJackXs(3, 256).every((x) => onCellCenter(x))).toBe(true);
     expect(bindFace(40, 80, 700)).toBe("bottom");
-    expect(bindFace(560, 80, 700)).toBe("top");
+    expect(bindFace(560, 80, 700)).toBe("bottom");
+    expect(bindFace(2000, 400, 400)).toBe("bottom");
+  });
+
+  it("spaces split/join outs one empty grid cell apart on a taller body", () => {
+    const msJ = [audio("in", false), audio("mid", true), audio("side", true)];
+    const lrJ = [audio("in", false), audio("left", true), audio("right", true)];
+    const mbJ = [audio("in", false), audio("low", true), audio("mid", true), audio("high", true)];
+    const joinJ = [audio("mid", false), audio("side", false), audio("out", true)];
+    const mixJ = [audio("inA", false), audio("inB", false), audio("out", true)];
+    const forks: Array<[string, AstJack[]]> = [
+      ["split_ms", msJ],
+      ["split_lr", lrJ],
+      ["join_ms", joinJ],
+      ["join_lr", [audio("left", false), audio("right", false), audio("out", true)]],
+      ["msplit", mbJ],
+      ["join", mixJ],
+    ];
+    for (const [id, jacks] of forks) {
+      const box = chipBox(id, jacks, false, {});
+      const rails = Math.max(jacks.filter((j) => j.output).length, jacks.filter((j) => ! j.output).length);
+      expect(box.h, id).toBeGreaterThanOrEqual(BOARD_GRID * (rails === 3 ? 7 : 5));
+      const outs = jacks.filter((j) => j.output);
+      const ins = jacks.filter((j) => ! j.output);
+      const side = outs.length >= 2 ? outs : ins;
+      const y0 = jackAnchor({ x: 0, y: 0 }, id, jacks, handleId(side[0]!.id, side[0]!.output), side[0]!.output, box.h, box.w).y;
+      const y1 = jackAnchor({ x: 0, y: 0 }, id, jacks, handleId(side[1]!.id, side[1]!.output), side[1]!.output, box.h, box.w).y;
+      expect(y1 - y0, `${id} ${y0} ${y1} h=${box.h}`).toBe(BOARD_GRID * 2);
+      expect(onCellCenter(y0) && onCellCenter(y1), `${id} ${y0} ${y1}`).toBe(true);
+    }
+  });
+
+  it("sizes IN and OUT so the single jack sits on the vertical midline", () => {
+    const innJ = [audio("out", true)];
+    const outJ = [audio("in", false)];
+    const inn = chipBox("in", innJ, false, {});
+    const out = chipBox("out", outJ, false, {});
+    expect(inn.h).toBeGreaterThanOrEqual(96);
+    expect(out.h).toBe(inn.h);
+    expect(inn.h % BOARD_GRID).toBe(0);
+    const a = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("out", true), true, inn.h, inn.w);
+    const b = jackAnchor({ x: 0, y: 0 }, "out", outJ, handleId("in", false), false, out.h, out.w);
+    expect(a.y).toBe(snapToCellCenter(inn.h * 0.5));
+    expect(b.y).toBe(snapToCellCenter(out.h * 0.5));
+    expect(Math.abs(a.y - inn.h * 0.5)).toBeLessThan(1);
+    expect(Math.abs(b.y - out.h * 0.5)).toBeLessThan(1);
+  });
+
+  it("lands every jack on the board cell when the chip sits on the cell", () => {
+    const jacks = [audio("in", false), audio("out", true), { id: "cut", label: "cut", output: false, kind: "param" as const }];
+    const box = chipBox("filter", jacks, false, { cutoff: "c" });
+    expect(box.w % BOARD_GRID).toBe(0);
+    expect(box.h % BOARD_GRID).toBe(0);
+    expect(snapSize(box.w)).toBe(box.w);
+    const pos = { x: BOARD_GRID, y: BOARD_GRID };
+    const inn = jackAnchor(pos, "filter", jacks, handleId("in", false), false, box.h, box.w);
+    const out = jackAnchor(pos, "filter", jacks, handleId("out", true), true, box.h, box.w);
+    const cut = jackAnchor(pos, "filter", jacks, handleId("cut", false), false, box.h, box.w);
+    expect(onGrid(inn.x) && onCellCenter(inn.y), `${inn.x},${inn.y}`).toBe(true);
+    expect(onGrid(out.x) && onCellCenter(out.y), `${out.x},${out.y}`).toBe(true);
+    expect(onCellCenter(cut.x) && onGrid(cut.y), `${cut.x},${cut.y}`).toBe(true);
+    expect(inn.x).toBe(pos.x);
+    expect(out.x).toBe(pos.x + box.w);
   });
 });

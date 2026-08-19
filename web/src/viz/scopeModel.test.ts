@@ -8,7 +8,16 @@ import {
   sampleAtPx,
   SCOPE_COLOR,
   SCOPE_MENU,
+  barFillPercent,
+  demoLoudness,
   scopeTitle,
+  SPEC_BINS,
+  SPEC_DEPTH,
+  specMag01,
+  spectrogramProject,
+  spectrogramPush,
+  scopeSpectra,
+  techNoise,
   tracesFor,
 } from "./scopeModel";
 
@@ -46,6 +55,48 @@ describe("scope deck model", () => {
     const side = gonioPoint(0.6, -0.6);
     expect(side.x).toBeCloseTo(0.6);
     expect(side.y).toBeCloseTo(0);
+  });
+
+  it("LU bar height follows live rms, not a parked constant", () => {
+    expect(barFillPercent(0.6)).toBeGreaterThan(barFillPercent(0.05));
+    expect(barFillPercent(0)).toBe(2);
+    const a = demoLoudness(0);
+    const b = demoLoudness(30);
+    expect(Math.abs(a.inPeak - b.inPeak) + Math.abs(a.outRms - b.outRms)).toBeGreaterThan(0.05);
+  });
+
+  it("plots IN and OUT as two colours when source is BOTH", () => {
+    expect(scopeSpectra("in")).toEqual(["in"]);
+    expect(scopeSpectra("out")).toEqual(["out"]);
+    expect(scopeSpectra("both")).toEqual(["in", "out"]);
+    expect(SCOPE_COLOR.in).not.toBe(SCOPE_COLOR.out);
+  });
+
+  it("maps spectrum height in dB so a loud but not-full-scale hit still fills", () => {
+    expect(specMag01(1)).toBeGreaterThan(0.95);
+    expect(specMag01(0)).toBe(0);
+    expect(specMag01(0.03)).toBeGreaterThan(0.35);
+    expect(specMag01(0.03)).toBeGreaterThan(specMag01(0.003) + 0.08);
+    expect(specMag01(0.03)).toBeLessThan(specMag01(0.3));
+  });
+
+  it("rolls a spectrogram history and projects older rows into the distance", () => {
+    let hist: number[][] = [];
+    hist = spectrogramPush(hist, [1, 0.5, 0.1]);
+    hist = spectrogramPush(hist, [0.2, 0.8, 0.4]);
+    expect(hist[0]?.[1]).toBeCloseTo(0.8);
+    expect(hist[1]?.[0]).toBeCloseTo(1);
+    for (let i = 0; i < SPEC_DEPTH + 4; i += 1) {
+      hist = spectrogramPush(hist, [0.1]);
+    }
+    expect(hist.length).toBe(SPEC_DEPTH);
+    expect(hist[0]?.length).toBe(SPEC_BINS);
+    const near = spectrogramProject(0, 0, 0, 400, 120);
+    const far = spectrogramProject(0, SPEC_DEPTH - 1, 0, 400, 120);
+    expect(far.y).toBeLessThan(near.y);
+    expect(techNoise(3, 7, 0)).toBeGreaterThanOrEqual(0);
+    expect(techNoise(3, 7, 0)).toBeLessThanOrEqual(1);
+    expect(techNoise(1, 1, 2) + techNoise(8, 4, 9)).toBeLessThan(2);
   });
 
   it("STUDIO chip cycles LIVE, not Settings", () => {

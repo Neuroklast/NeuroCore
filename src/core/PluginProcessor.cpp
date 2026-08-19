@@ -11,13 +11,13 @@
 #include <cmath>
 #include <vector>
 #include "PluginProcessor.h"
-#include "../ui/PluginEditor.h"
 #include "../bridge/WebEditorPolicy.h"
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
 #include "../ui/WebPluginEditor.h"
 #endif
 #include "../utils/PresetManager.h"
 #include "../utils/FactoryPresetLibrary.h"
+#include "../utils/PresetStep.h"
 #include "../utils/FormulaHelper.h"
 #include "../utils/Log.h"
 #include "../utils/Localiser.h"
@@ -517,10 +517,10 @@ bool NeuroKoreAudioProcessor::hasEditor() const
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
-    if (bridge::shouldOpenWebEditor())
-        return createWebEditor (*this);
+    return createWebEditor (*this);
+#else
+    return nullptr;
 #endif
-    return new NeuroKoreAudioProcessorEditor (*this);
 }
 
 //==============================================================================
@@ -1199,43 +1199,43 @@ void NeuroKoreAudioProcessor::stepPreset (int delta)
         return;
     resolvePresetNameFromScript();
 
-    struct Item { juce::String name, category; int loadIndex; };
-    std::vector<Item> items;
+    struct Row { juce::String name, category; int loadIndex; };
+    std::vector<Row> rows;
     const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
     for (int i = 0; i < (int) factory.size(); ++i)
-        items.push_back ({ factory[(size_t) i].name, factory[(size_t) i].category, i });
+        rows.push_back ({ factory[(size_t) i].name, factory[(size_t) i].category, i });
 
     auto base = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                     .getChildFile (Config::kUserPresetFolder);
     auto files = presetManager.getAvailablePresets (base);
     const int factoryN = (int) factory.size();
     for (int i = 0; i < (int) files.size(); ++i)
-        items.push_back ({ files[(size_t) i].getFileNameWithoutExtension(),
-                           juce::String ("User"), factoryN + i });
+        rows.push_back ({ files[(size_t) i].getFileNameWithoutExtension(),
+                          juce::String ("User"), factoryN + i });
 
-    if (items.empty())
+    if (rows.empty())
         return;
 
-    std::sort (items.begin(), items.end(), [] (const Item& a, const Item& b)
-    {
-        const int c = a.category.compareNatural (b.category);
-        if (c != 0)
-            return c < 0;
-        return a.name.compareNatural (b.name) < 0;
-    });
+    std::vector<presetstep::Item> items;
+    items.reserve (rows.size());
+    for (const auto& r : rows)
+        items.push_back ({ r.name, r.category });
+    presetstep::sortItems (items);
 
-    int cur = -1;
-    for (int i = 0; i < (int) items.size(); ++i)
-        if (items[(size_t) i].name == currentPresetName)
-        {
-            cur = i;
-            break;
-        }
-    const int n = (int) items.size();
-    const int next = cur < 0
-        ? (delta > 0 ? 0 : n - 1)
-        : ((cur + delta) % n + n) % n;
-    loadPreset (items[(size_t) next].loadIndex);
+    std::vector<int> loadOf (items.size(), -1);
+    for (size_t i = 0; i < items.size(); ++i)
+        for (const auto& r : rows)
+            if (r.name == items[i].name && r.category == items[i].category)
+            {
+                loadOf[i] = r.loadIndex;
+                break;
+            }
+
+    const int next = presetstep::indexAfterStep (items, currentPresetName,
+                                                 lastPresetBrowserCategory, delta);
+    if (next < 0 || loadOf[(size_t) next] < 0)
+        return;
+    loadPreset (loadOf[(size_t) next]);
     setLastPresetBrowserName (currentPresetName);
     setLastPresetBrowserCategory (items[(size_t) next].category);
 }

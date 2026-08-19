@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "../src/bridge/HostKeys.h"
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
@@ -76,6 +77,24 @@ public:
             expectEquals ((int) hello.getProperty ("scriptLength", -1), 17);
         }
 
+        beginTest ("Space is host transport, never a plugin command");
+        {
+            expect (bridge::isHostTransportKey (juce::KeyPress (juce::KeyPress::spaceKey)));
+            expect (! bridge::isHostTransportKey (juce::KeyPress (juce::KeyPress::spaceKey,
+                                                                 juce::ModifierKeys::ctrlModifier, 0)));
+            expect (! bridge::isHostTransportKey (juce::KeyPress ('a')));
+            expect (bridge::isHostTransportName ("Space"));
+            expect (bridge::isHostTransportName (" "));
+            expect (! bridge::isHostTransportName ("Enter"));
+
+            void* plugin = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x100);
+            void* host = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x200);
+            expect (bridge::chooseHostHwnd (plugin, host, plugin, host) == host);
+            expect (bridge::chooseHostHwnd (plugin, host, host, nullptr) == host);
+            expect (bridge::chooseHostHwnd (plugin, plugin, plugin, nullptr) == nullptr);
+            expect (bridge::chooseHostHwnd (nullptr, host, host, host) == nullptr);
+        }
+
         beginTest ("unknown native name is rejected");
         {
             bridge::WebBridge bridge (0);
@@ -83,20 +102,15 @@ public:
             expect (! bridge.allowOutbound());
         }
 
-        beginTest ("wantWebEditor: env overrides compile default");
+        beginTest ("wantWebEditor is always web — native chrome is retired");
         {
             const auto prev = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_EDITOR", {});
             setEnv ("NEUROKORE_WEB_EDITOR", "0");
-            expect (! bridge::wantWebEditor());
+            expect (bridge::wantWebEditor(), "env 0 no longer opens native");
             setEnv ("NEUROKORE_WEB_EDITOR", "1");
             expect (bridge::wantWebEditor());
-#if NEUROKORE_NATIVE_EDITOR
             setEnv ("NEUROKORE_WEB_EDITOR", "");
-            expect (! bridge::wantWebEditor(), "tests compile with native default");
-#else
-            setEnv ("NEUROKORE_WEB_EDITOR", "");
-            expect (bridge::wantWebEditor(), "plugin compile default is web");
-#endif
+            expect (bridge::wantWebEditor());
             if (prev.isNotEmpty())
                 setEnv ("NEUROKORE_WEB_EDITOR", prev.toRawUTF8());
             else
@@ -105,17 +119,9 @@ public:
 
         beginTest ("shouldOpenWebEditor never selects a dead webview");
         {
-            const auto prev = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_EDITOR", {});
-            setEnv ("NEUROKORE_WEB_EDITOR", "1");
             expect (bridge::wantWebEditor());
             expect (bridge::shouldOpenWebEditor() == bridge::webEditorCanRun(),
-                    "env asking for web must not open a WebView2 install screen");
-            setEnv ("NEUROKORE_WEB_EDITOR", "0");
-            expect (! bridge::shouldOpenWebEditor());
-            if (prev.isNotEmpty())
-                setEnv ("NEUROKORE_WEB_EDITOR", prev.toRawUTF8());
-            else
-                setEnv ("NEUROKORE_WEB_EDITOR", "");
+                    "web must not open a WebView2 install screen");
         }
     }
 

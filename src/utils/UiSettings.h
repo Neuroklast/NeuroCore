@@ -2,7 +2,9 @@
 
 #include <JuceHeader.h>
 #include <atomic>
-#include "../ui/fx/CyberFxTypes.h"
+#include <cstdint>
+
+enum class CyberMotion : uint8_t { Full, Reduced, Off };
 
 /** Persisted UI prefs under userAppData/NEUROKLAST/NeuroKore.
     Message-thread settings; getters are lock-free. */

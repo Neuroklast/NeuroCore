@@ -1,12 +1,16 @@
+import { liveTheme } from "../theme/theme";
+import { BOARD_TRACE } from "./grid";
 export { PLASMA_DRIVER } from "../theme/fx";
 
+/** Outer tube fills one board cell. LFO stays a thin wire in SignalEdge. */
 export const TUBE = {
-  audioOuter: 20,
-  audioGlass: 16,
-  audioBore: 12,
-  modOuter: 12,
-  modGlass: 9,
-  jack: 16,
+  audioOuter: BOARD_TRACE,
+  audioGlass: BOARD_TRACE - 4,
+  audioBore: BOARD_TRACE - 8,
+  audioBoreFill: "#000000",
+  modOuter: BOARD_TRACE,
+  modGlass: BOARD_TRACE - 4,
+  jack: BOARD_TRACE,
 } as const;
 
 /** Glass shell never glows. */
@@ -34,6 +38,12 @@ export function tubeGlow(peak: number, motion: string, reduced: boolean): number
 
 export function plasmaAmp(peak: number, bore: number): number {
   return bore * 0.22 * (0.35 + 0.65 * logAmp(peak));
+}
+
+/** White core, accent halo — same pair as the footer scope wave. Dash runs source → dest. */
+export function plasmaPaint(): { core: string; glow: string; forward: number } {
+  const t = liveTheme();
+  return { core: t.white, glow: t.accent, forward: -28 };
 }
 
 /** Fixed bead pitch along the glass. One long snake makes the tube wobble. */

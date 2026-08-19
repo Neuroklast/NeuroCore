@@ -10,9 +10,53 @@ export function lfoChaseMs(hz: number): number {
   return lfoPeriodMs(hz);
 }
 
-export function lfoDash(pathLen: number, blob = 14): { dash: string; cycle: number } {
-  const gap = Math.max(48, pathLen);
-  return { dash: `${blob} ${gap}`, cycle: blob + gap };
+/** Thin cyan wire. Knob-arc glow sits on the moving dot, not the tube. */
+export const LFO_WIRE = 1.35;
+export const LFO_DOT = 9;
+
+/** Geometric length of an M/L path, not the SVG string length. */
+export function svgPathLength(d: string): number {
+  const pts: Array<{ x: number; y: number }> = [];
+  const re = /[ML]\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/gi;
+  let m: RegExpExecArray | null = re.exec(d);
+  while (m) {
+    pts.push({ x: Number(m[1]), y: Number(m[2]) });
+    m = re.exec(d);
+  }
+  let n = 0;
+  for (let i = 1; i < pts.length; i += 1) {
+    n += Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.y - pts[i - 1]!.y);
+  }
+  return n;
+}
+
+/** One blob, gap ≥ path so a second pulse cannot share the wire. trip = path so one cycle = one crossing. */
+export function lfoDash(pathLen: number, blob = LFO_DOT): { dash: string; cycle: number; trip: number } {
+  const gap = Math.max(1, pathLen);
+  return { dash: `${blob} ${gap}`, cycle: blob + gap, trip: gap };
+}
+
+/** Knob-arc cyan intensity. Depth 0 is a faint ember, 1 is full glow. */
+export function lfoDotGlow(amp: number): number {
+  return 0.28 + 0.72 * logAmp(amp);
+}
+
+export function resolveAmp(
+  expr: string,
+  knobs: Array<{ id: string; value: number }>,
+): number {
+  const t = expr.trim();
+  const n = Number(t);
+  if (Number.isFinite(n)) {
+    return Math.max(0, Math.min(1, n));
+  }
+  if (/^[a-f]$/i.test(t)) {
+    const k = knobs.find((x) => x.id === t.toLowerCase());
+    if (k) {
+      return Math.max(0, Math.min(1, k.value));
+    }
+  }
+  return 1;
 }
 
 /** Wave packets sit on a fixed pixel pitch, not stretched to the cable. */
@@ -66,6 +110,24 @@ export function dotDash(pitch = 24, size = 2.4): string {
 export function dotPeriodMs(peak: number): number {
   const a = logAmp(peak);
   return Math.round(1420 - a * 1200);
+}
+
+/** Always positive px/s. Loud signal travels faster, never reverses. */
+export function plasmaSpeedPxPerSec(peak: number): number {
+  return 52 + logAmp(peak) * 240;
+}
+
+/** Dashoffset only decreases (source → dest). dt ≤ 0 leaves the value unchanged. */
+export function advancePlasmaDash(prev: number, peak: number, dtSec: number): number {
+  const dt = Number.isFinite(dtSec) ? Math.max(0, Math.min(0.05, dtSec)) : 0;
+  const cur = Number.isFinite(prev) ? prev : 0;
+  return cur - plasmaSpeedPxPerSec(peak) * dt;
+}
+
+/** Legacy period helper — do not bind this to CSS animation-duration. */
+export function plasmaPeriodMs(peak: number): number {
+  const a = logAmp(peak);
+  return Math.round(1100 - a * 880);
 }
 
 export function cableLayer(

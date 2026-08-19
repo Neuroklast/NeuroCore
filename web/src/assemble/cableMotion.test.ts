@@ -5,6 +5,11 @@ import {
   dotPeriodMs,
   lfoChaseMs,
   lfoDash,
+  lfoDotGlow,
+  LFO_WIRE,
+  advancePlasmaDash,
+  plasmaSpeedPxPerSec,
+  svgPathLength,
   waveAnimMs,
   waveDash,
   waveDashFromScope,
@@ -20,6 +25,23 @@ describe("cable traffic", () => {
     const { dash, cycle } = lfoDash(200, 14);
     expect(dash.startsWith("14 ")).toBe(true);
     expect(cycle).toBeGreaterThan(200);
+  });
+
+  it("keeps a single glowing dot on the wire for the whole path", () => {
+    const d = "M0 0L100 0L100 80";
+    expect(svgPathLength(d)).toBe(180);
+    expect(svgPathLength("M320 240L368 240L400 272L400 304L448 304")).toBeGreaterThan(100);
+    const len = svgPathLength(d);
+    const { dash, cycle, trip } = lfoDash(len);
+    const [blob, gap] = dash.split(" ").map(Number);
+    expect(blob).toBeLessThan(16);
+    expect(gap).toBeGreaterThanOrEqual(len);
+    expect(cycle).toBe(blob + gap);
+    expect(trip).toBe(len);
+    expect(cycle).toBeGreaterThan(len);
+    expect(lfoDotGlow(1)).toBeGreaterThan(lfoDotGlow(0.1));
+    expect(lfoDotGlow(0)).toBeGreaterThan(0);
+    expect(LFO_WIRE).toBeLessThan(3);
   });
 
   it("keeps the audio wave on a fixed pixel pitch", () => {
@@ -42,6 +64,10 @@ describe("cable traffic", () => {
   it("speeds dots up with loudness and leaves LFO independent of wave/dots", () => {
     expect(dotPeriodMs(1)).toBeLessThan(dotPeriodMs(0.05));
     expect(dotPeriodMs(1)).toBeGreaterThan(150);
+    expect(advancePlasmaDash(0, 0.2, 0.016)).toBeLessThan(0);
+    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(-20);
+    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(advancePlasmaDash(-20, 0, 0.016));
+    expect(plasmaSpeedPxPerSec(1)).toBeGreaterThan(plasmaSpeedPxPerSec(0));
     expect(cableLayer("mod", "dots", true)).toBe("lfo");
     expect(cableLayer("mod", "wave", true)).toBe("lfo");
     expect(cableLayer("audio", "wave", true)).toBe("wave");

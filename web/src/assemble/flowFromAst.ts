@@ -1,7 +1,7 @@
 import { Position, type Edge, type Node } from "@xyflow/react";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
-import { CHIP_GAP, CHIP_W, IO_W, chipBox } from "./chipLayout";
+import { CHIP_GAP, CHIP_W, chipBox } from "./chipLayout";
 import { lettersInExpr } from "./bindLinks";
 import { handleId, tokenInExpr } from "./handles";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
@@ -13,6 +13,7 @@ export type ChipData = {
   type: string;
   jacks: AstJack[];
   letters: string;
+  focus?: "off" | "soft" | "sharp";
   args: Record<string, string>;
   channel: string;
   summary: string;
@@ -31,11 +32,20 @@ function lettersOn(node: AstNode): string {
 
 export type SignalKind = "audio" | "mod";
 
-export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+export function isLfoNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
   const t = (node.type || "").toLowerCase();
   const id = (node.id || "").toLowerCase();
-  return t.startsWith("osc") || t.startsWith("env") || t === "lfo"
-    || id.startsWith("osc") || id.startsWith("env") || id.startsWith("lfo");
+  return t.startsWith("osc") || t === "lfo" || id.startsWith("osc") || id.startsWith("lfo");
+}
+
+export function isEnvNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+  const t = (node.type || "").toLowerCase();
+  const id = (node.id || "").toLowerCase();
+  return t.startsWith("env") || id.startsWith("env");
+}
+
+export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
+  return isLfoNode(node) || isEnvNode(node);
 }
 
 export function inferModLinks(nodes: AstNode[]): AstEdge[] {
@@ -122,43 +132,91 @@ function channelOf(node: AstNode): string {
   return bus.toUpperCase();
 }
 
-export function visibleNodes(ast: AstDocument): AstNode[] {
-  return ast.nodes.filter((n) => n.type !== "bus");
+function isSidechainType(type: string): boolean {
+  const t = type.toLowerCase();
+  return t === "sidechain" || t === "sc" || t === "scin";
 }
 
-export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges: Edge[] } {
+export function visibleNodes(ast: AstDocument, sidechainOn = false): AstNode[] {
+  return ast.nodes.filter((n) => {
+    if (n.type === "bus") {
+      const name = (n.args.name || n.id || "").toLowerCase();
+      return name !== "__park";
+    }
+    if (isSidechainType(n.type) && ! sidechainOn) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export type FlowOpts = {
+  sidechainOn?: boolean;
+};
+
+export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Node<ChipData>[]; edges: Edge[] } {
+  const sidechainOn = Boolean(opts.sidechainOn);
   const nodes: Node<ChipData>[] = [];
   let x = 16;
   const y = 16;
+  const visible = visibleNodes(ast, sidechainOn);
 
+  const inJacks = ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
+  const inBox = chipBox("in", inJacks, false, {});
   nodes.push({
     id: "IN",
     type: "io",
     position: { x: 16, y: 112 },
-    data: { label: "IN", type: "in", jacks: ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }], letters: "", args: {}, channel: "", summary: "", nodeId: "IN" },
+    data: { label: "IN", type: "in", jacks: inJacks, letters: "", args: {}, channel: "", summary: "", nodeId: "IN" },
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
     draggable: false,
-    style: { width: IO_W, height: 56 },
-    width: IO_W,
-    height: 56,
+    style: { width: inBox.w, height: inBox.h },
+    width: inBox.w,
+    height: inBox.h,
   });
-  x += IO_W + CHIP_GAP;
+  x += inBox.w + CHIP_GAP;
 
-  for (const n of visibleNodes(ast)) {
+  if (sidechainOn && ! visible.some((n) => isSidechainType(n.type))) {
+    const scBox = chipBox("sidechain", [{ id: "out", label: "out", output: true, kind: "audio" }], false, {});
+    nodes.push({
+      id: "SC",
+      type: "io",
+      position: { x: 16, y: 112 + scBox.h + 24 },
+      data: {
+        label: "Sidechain",
+        type: "sidechain",
+        jacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
+        letters: "",
+        args: {},
+        channel: "",
+        summary: "",
+        nodeId: "SC",
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      draggable: false,
+      style: { width: scBox.w, height: scBox.h },
+      width: scBox.w,
+      height: scBox.h,
+    });
+  }
+
+  for (const n of visible) {
     const px = n.x != null && Number.isFinite(n.x) ? n.x : x;
     const py = n.y != null && Number.isFinite(n.y) ? n.y : y;
-    const jacks = visualJacksFor(n, visibleNodes(ast)).length
-      ? visualJacksFor(n, visibleNodes(ast))
+    const jacks = visualJacksFor(n, visible).length
+      ? visualJacksFor(n, visible)
       : (n.jacks ?? []);
     const box = chipBox(n.type === "out" ? "out" : n.type, jacks, false, n.args);
+    const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     nodes.push({
       id: n.id,
-      type: n.type === "out" ? "io" : "chip",
+      type: n.type === "out" || isSidechainType(n.type) ? "io" : "chip",
       position: { x: px, y: py },
       data: {
-        label: n.id.toLowerCase().startsWith("custom") ? "CUSTOM" : kindLabel(n.type),
-        type: n.type,
+        label: custom ? n.id : (isSidechainType(n.type) ? "Sidechain" : kindLabel(n.type)),
+        type: isSidechainType(n.type) ? "sidechain" : n.type,
         jacks,
         letters: lettersOn(n),
         args: n.args,
@@ -171,11 +229,13 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
       height: box.h,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
+      draggable: isSidechainType(n.type) ? false : undefined,
     });
     x = px + CHIP_W + CHIP_GAP;
   }
 
   if (! ast.nodes.some((n) => n.type === "out")) {
+    const outBox = chipBox("out", [{ id: "in", label: "in", output: false, kind: "audio" }], false, {});
     nodes.push({
       id: "OUT",
       type: "io",
@@ -192,11 +252,14 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
+      style: { width: outBox.w, height: outBox.h },
+      width: outBox.w,
+      height: outBox.h,
     });
   }
 
-  const explicit = visualAudioEdges(visibleNodes(ast), ast.edges ?? []);
-  const inferred = inferModLinks(visibleNodes(ast));
+  const explicit = visualAudioEdges(visible, ast.edges ?? []);
+  const inferred = inferModLinks(visible);
   const merged: AstEdge[] = [];
   const seen = new Set<string>();
   for (const e of [...explicit, ...inferred]) {
@@ -208,10 +271,13 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
     merged.push(e);
   }
 
-  const byId = new Map(visibleNodes(ast).map((n) => [n.id, n]));
+  const byId = new Map(visible.map((n) => [n.id, n]));
   const jacksOf = (id: string, output: boolean): AstJack[] => {
     if (id === "IN") {
       return ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
+    }
+    if (id === "SC") {
+      return [{ id: "out", label: "out", output: true, kind: "audio" }].filter((j) => j.output === output);
     }
     if (id === "OUT") {
       return [{ id: "in", label: "in", output: false, kind: "audio" }];
@@ -220,7 +286,7 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
     if (! n) {
       return [];
     }
-    const drawn = visualJacksFor(n, visibleNodes(ast));
+    const drawn = visualJacksFor(n, visible);
     return drawn.filter((j) => j.output === output && j.kind !== "knob");
   };
   const edges: Edge[] = merged.filter((e) => {
@@ -231,8 +297,8 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
   }).map((e, i) => {
     const kind = e.kind === "mod" ? "mod" : "audio";
     const src = byId.get(e.from);
-    const freqExpr = src && isModulatorNode(src) ? (src.args.freq ?? src.args.sync ?? "1") : "";
-    const hz = freqExpr ? resolveHz(freqExpr, []) : 0;
+    const freqExpr = src && isLfoNode(src) ? (src.args.freq ?? "1") : "";
+    const syncExpr = src && isLfoNode(src) ? (src.args.sync ?? "off") : "off";
     return {
       id: `e-${e.from}-${e.to}-${e.fromJack}-${e.toJack}-${i}`,
       source: e.from,
@@ -242,10 +308,17 @@ export function flowFromAst(ast: AstDocument): { nodes: Node<ChipData>[]; edges:
       type: "signal",
       animated: false,
       style: {
-        stroke: kind === "mod" ? "#00f0ff" : "#ff003c",
+        stroke: kind === "mod" ? "var(--nk-cyan)" : "var(--nk-accent)",
         strokeWidth: kind === "mod" ? 1 : 1.15,
       },
-      data: { kind, hz, freqExpr, sourceType: src?.type ?? "", sourceId: e.from },
+      data: {
+        kind,
+        freqExpr,
+        syncExpr,
+        depthExpr: src && isLfoNode(src) ? (src.args.depth ?? "1") : "1",
+        sourceType: src?.type ?? "",
+        sourceId: e.from,
+      },
     };
   });
 

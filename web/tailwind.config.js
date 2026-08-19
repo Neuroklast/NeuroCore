@@ -4,20 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#f4f1ea",
-        muted: "#7a7a86",
+        ink: "rgb(var(--nk-ink-rgb) / <alpha-value>)",
+        muted: "rgb(var(--nk-ink-muted-rgb) / <alpha-value>)",
         accent: {
-          DEFAULT: "#ff003c",
-          dim: "#8a0021",
+          DEFAULT: "rgb(var(--nk-accent-rgb) / <alpha-value>)",
+          dim: "rgb(var(--nk-accent-dim-rgb) / <alpha-value>)",
         },
-        warn: "#fcee0a",
-        cyan: "#00f0ff",
+        warn: "rgb(var(--nk-warn-rgb) / <alpha-value>)",
+        cyan: "rgb(var(--nk-cyan-rgb) / <alpha-value>)",
         surface: {
-          DEFAULT: "#0e0e12",
-          high: "#16161c",
+          DEFAULT: "var(--nk-surface)",
+          high: "var(--nk-surface-high)",
         },
-        panel: "#3a1420",
-        well: "#07070a",
+        panel: "var(--nk-panel)",
+        well: "var(--nk-well)",
       },
       fontFamily: {
         brand: ["Apex", "sans-serif"],

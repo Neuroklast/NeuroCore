@@ -1,18 +1,23 @@
-/** Board palette: anthracite + neon red / yellow / cyan. Not a single-red CRT. */
+import { themeOf } from "./theme";
+
+const signal = themeOf("signal");
+
+/** Product copy + default (signal) swatches. Live paint uses the theme engine. */
 export const nk = {
-  accent: "#ff003c",
-  accentDim: "#8a0021",
-  warn: "#fcee0a",
-  cyan: "#00f0ff",
-  surface: "#0e0e12",
-  surfaceHigh: "#16161c",
-  background: "#0a0a0c",
-  ink: "#f4f1ea",
-  inkMuted: "#7a7a86",
-  error: "#ff4d6d",
-  panelBorder: "#3a1420",
-  gridLine: "rgba(255, 0, 60, 0.16)",
-  well: "#07070a",
+  accent: signal.accent,
+  accentDim: signal.accentDim,
+  warn: signal.warn,
+  cyan: signal.cyan,
+  surface: signal.surface,
+  surfaceHigh: signal.surfaceHigh,
+  background: signal.background,
+  ink: signal.ink,
+  inkMuted: signal.inkMuted,
+  inkSoft: signal.inkSoft,
+  error: signal.error,
+  panelBorder: signal.panelBorder,
+  gridLine: `rgba(${signal.accentRgb}, 0.16)`,
+  well: signal.well,
   version: "0.4.8-alpha",
   product: "NEUROKORE",
   company: "Neuroklast",
@@ -34,13 +39,14 @@ export function kindLabel(type: string): string {
   if (t.startsWith("reverb")) return "REVERB";
   if (t.startsWith("ir")) return "CAB";
   if (t === "ott") return "OTT";
-  if (t.startsWith("widen")) return "WIDTH";
+  if (t.startsWith("widen") || t === "width") return "WIDTH";
   if (t === "ms") return "MS";
   if (t === "bus") return "BUS";
   if (t === "send") return "SEND";
-  if (t.startsWith("xover") || t.startsWith("crossover")) return "XOVER";
+  if (t.startsWith("xover") || t.startsWith("crossover") || t === "msplit") return "MB SPLIT";
   if (t === "out") return "OUT";
   if (t === "in") return "IN";
+  if (t === "sidechain" || t === "sc" || t === "scin") return "SC IN";
   if (t.startsWith("octav")) return "OCT";
   if (t.startsWith("vocod")) return "VOC";
   if (t.startsWith("env")) return "ENV";

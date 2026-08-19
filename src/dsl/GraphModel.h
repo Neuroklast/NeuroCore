@@ -100,7 +100,7 @@ struct TidyHint
 inline constexpr int kTidyGrid = 16;
 inline constexpr int kTidyTitleRows = 2;
 inline constexpr int kTidyBottomRows = 1;
-inline constexpr int kTidyCardW = 11 * kTidyGrid; // 176 — same as GraphCanvas kCardWidth
+inline constexpr int kTidyCardW = 11 * kTidyGrid; // 176
 inline constexpr int kTidyCardH = (kTidyTitleRows + 1 + kTidyBottomRows) * kTidyGrid; // 64
 inline constexpr int kTidyIoW = 6 * kTidyGrid;    // 96  — IN / OUT
 inline constexpr int kTidyColGap = 3 * kTidyGrid; // 48
@@ -176,11 +176,22 @@ std::vector<GraphJack> jacksForVirtualOut (const GraphDocument& doc);
 /** Edges drawn in the patcher (bus + mid/side + L/R forks). */
 std::vector<GraphEdge> visualAudioEdges (const GraphDocument& doc);
 
-/** LFO / envelope — control, not audio. */
+/** LFO — no audio in. */
+inline bool isLfo (const GraphNode& n)
+{
+    return n.type.toLowerCase().startsWith ("osc");
+}
+
+/** Envelope follower — audio tap in, mod out. */
+inline bool isEnv (const GraphNode& n)
+{
+    return n.type.toLowerCase().startsWith ("env");
+}
+
+/** LFO / envelope — control, not a serial audio through-node. */
 inline bool isModulator (const GraphNode& n)
 {
-    const auto t = n.type.toLowerCase();
-    return t.startsWith ("osc") || t.startsWith ("env");
+    return isLfo (n) || isEnv (n);
 }
 
 inline juce::String channelRail (const GraphNode& n)
@@ -198,20 +209,98 @@ inline juce::String channelRail (const GraphNode& n)
     return {};
 }
 
-inline bool isMsEncode (const GraphNode& n)
+inline juce::String msModeOf (const GraphNode& n)
 {
-    if (! n.type.equalsIgnoreCase ("ms"))
-        return false;
     const auto it = n.args.find ("mode");
     if (it == n.args.end())
+        return {};
+    return it->second.trim().toLowerCase();
+}
+
+inline bool isJoinMode (const juce::String& mode)
+{
+    return mode == "decode" || mode == "join" || mode == "lr"
+        || mode == "stereo" || mode == "to_lr"
+        || mode == "join_lr" || mode == "lr_join";
+}
+
+/** "ms" (mid/side), "lr" (left/right), or empty if not a split/join chip. */
+inline juce::String splitFamily (const GraphNode& n)
+{
+    const auto t = n.type.toLowerCase();
+    if (t == "split_lr" || t == "join_lr")
+        return "lr";
+    if (t == "split_ms" || t == "join_ms")
+        return "ms";
+    if (! n.type.equalsIgnoreCase ("ms"))
+        return {};
+    auto fam = juce::String();
+    if (auto it = n.args.find ("family"); it != n.args.end())
+        fam = it->second.trim().toLowerCase();
+    if (fam.isEmpty())
+        if (auto it = n.args.find ("rails"); it != n.args.end())
+            fam = it->second.trim().toLowerCase();
+    if (fam == "lr" || fam == "leftright" || fam == "l/r")
+        return "lr";
+    const auto m = msModeOf (n);
+    if (m == "split_lr" || m == "join_lr" || m == "lr_split" || m == "lr_join")
+        return "lr";
+    return "ms";
+}
+
+inline juce::String jackFamily (const juce::String& jack)
+{
+    const auto j = jack.trim().toLowerCase();
+    if (j == "mid" || j == "side") return "ms";
+    if (j == "left" || j == "right") return "lr";
+    return {};
+}
+
+/** Encode stays an alias of split. */
+inline bool isMsEncode (const GraphNode& n)
+{
+    if (n.type.equalsIgnoreCase ("split_ms"))
         return true;
-    const auto m = it->second.trim().toLowerCase();
-    return m != "decode" && m != "lr" && m != "stereo" && m != "to_lr";
+    if (! n.type.equalsIgnoreCase ("ms"))
+        return false;
+    if (splitFamily (n) != "ms")
+        return false;
+    return ! isJoinMode (msModeOf (n));
 }
 
 inline bool isMsDecode (const GraphNode& n)
 {
-    return n.type.equalsIgnoreCase ("ms") && ! isMsEncode (n);
+    if (n.type.equalsIgnoreCase ("join_ms"))
+        return true;
+    return n.type.equalsIgnoreCase ("ms") && splitFamily (n) == "ms" && ! isMsEncode (n);
+}
+
+inline bool isLrSplit (const GraphNode& n)
+{
+    if (n.type.equalsIgnoreCase ("split_lr"))
+        return true;
+    if (n.type.equalsIgnoreCase ("join_lr"))
+        return false;
+    return splitFamily (n) == "lr" && ! isJoinMode (msModeOf (n));
+}
+
+inline bool isLrJoin (const GraphNode& n)
+{
+    if (n.type.equalsIgnoreCase ("join_lr"))
+        return true;
+    if (n.type.equalsIgnoreCase ("split_lr"))
+        return false;
+    return splitFamily (n) == "lr" && isJoinMode (msModeOf (n));
+}
+
+inline bool isForkSplit (const GraphNode& n)
+{
+    return isMsEncode (n) || isLrSplit (n);
+}
+
+inline bool isForkJoin (const GraphNode& n)
+{
+    return isMsDecode (n) || isLrJoin (n);
 }
 
 /** Visual rail id: main, named bus, mid/side, left/right, or mod.

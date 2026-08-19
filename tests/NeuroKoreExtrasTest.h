@@ -15,6 +15,7 @@
 #include "../src/core/PluginProcessor.h"
 #include "../src/core/EffectParameters.h"
 #include "../src/utils/FactoryPresetLibrary.h"
+#include "../src/utils/PresetStep.h"
 #include "../src/utils/FormulaQuality.h"
 #include "TestHelpers.h"
 #include <algorithm>
@@ -628,6 +629,19 @@ private:
             expectEquals (proc.getCurrentPresetName(), order[0].name);
         }
 
+        beginTest ("selected folder is the arrow start when current is outside it");
+        {
+            std::vector<presetstep::Item> items {
+                { "Airy", "Amp" }, { "Alpha", "Club" }, { "Zebra", "Club" }, { "Mid", "Dynamics" }
+            };
+            presetstep::sortItems (items);
+            expectEquals (presetstep::indexAfterStep (items, "Airy", "Club", 1), 1);
+            expectEquals (items[(size_t) presetstep::indexAfterStep (items, "Alpha", "Club", 1)].name,
+                          juce::String ("Zebra"));
+            expectEquals (items[(size_t) presetstep::indexAfterStep (items, "Zebra", "Club", 1)].name,
+                          juce::String ("Mid"));
+        }
+
         beginTest ("stepPreset stays in a category then jumps to the next folder");
         {
             auto& lib = FactoryPresetLibrary::getInstance();
@@ -742,6 +756,24 @@ private:
             }
             expectEquals (loadOk, (int) entries.size(),
                           "all factory scripts must load, first fail: " + firstLoadErr);
+
+            beginTest ("Schranz Multiband and Precision Multiband load");
+            {
+                auto& lib = FactoryPresetLibrary::getInstance();
+                if (lib.getEntries().empty())
+                    expect (lib.loadFromResources (juce::File (NEUROKORE_RESOURCES_DIR)));
+                for (const char* name : { "Schranz Multiband", "Precision Multiband" })
+                {
+                    const auto* entry = lib.findByName (name);
+                    expect (entry != nullptr, juce::String (name) + " missing from factory catalog");
+                    if (entry == nullptr)
+                        continue;
+                    dsl::SignalChain chain;
+                    juce::String err;
+                    expect (chain.loadScript (entry->script, err),
+                            juce::String (name) + " loadScript: " + err);
+                }
+            }
 
             int processOk = 0;
             juce::String firstProcErr;

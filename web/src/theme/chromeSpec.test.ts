@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, chipExpandOffset, chipExpandOutsideBody, framePoints, greebleCode, segmentFill } from "./chromeSpec";
+import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, framePoints, greebleCode, segmentFill, shellBezelCss } from "./chromeSpec";
 
 describe("cyberpunk chrome spec", () => {
   it("cuts two opposite corners at 45 degrees, never rounds", () => {
@@ -27,5 +27,15 @@ describe("cyberpunk chrome spec", () => {
     expect(framePoints(200, 80)).toBe("10,0 200,0 200,70 190,80 0,80 0,10");
     expect(segmentFill("0.850")).toBe(9);
     expect(segmentFill("not a number")).toBe(0);
+  });
+
+  it("draws a thin screen bezel and a bottom-right resize grip", () => {
+    expect(SHELL_BEZEL).toBeGreaterThanOrEqual(5);
+    expect(SHELL_BEZEL).toBeLessThanOrEqual(10);
+    expect(RESIZE_GRIP).toBeGreaterThanOrEqual(20);
+    const css = shellBezelCss();
+    expect(css).toContain("inset");
+    expect(css).toContain("--nk-accent-rgb");
+    expect(css).toMatch(/6px|7px|8px|5px/);
   });
 });

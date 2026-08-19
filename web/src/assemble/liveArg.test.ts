@@ -18,22 +18,23 @@ describe("live node values and chip box", () => {
     expect(f.live).not.toMatch(/\bb\b/);
   });
 
-  it("grows the chip for more jacks and for expand rows", () => {
+  it("keeps expand from growing the box; extra side jacks can still raise it", () => {
     const one = chipBox("filter", [
       { id: "in", label: "in", output: false, kind: "audio" },
       { id: "out", label: "out", output: true, kind: "audio" },
     ], false, { type: "lp" });
     const many = chipBox("filter", [
       { id: "in", label: "in", output: false, kind: "audio" },
-      { id: "lfo1", label: "lfo1", output: false, kind: "mod" },
-      { id: "sc", label: "sc", output: false, kind: "sc" },
+      ...["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"].map((id) => (
+        { id, label: id, output: false, kind: "mod" as const }
+      )),
       { id: "out", label: "out", output: true, kind: "audio" },
     ], false, { type: "lp" });
     const open = chipBox("filter", [
       { id: "in", label: "in", output: false, kind: "audio" },
       { id: "out", label: "out", output: true, kind: "audio" },
-    ], true, { cutoff: "a", q: "b", drive: "c", mix: "d" });
+    ], true, { type: "lp" });
     expect(many.h).toBeGreaterThan(one.h);
-    expect(open.h).toBeGreaterThan(one.h);
+    expect(open.h).toBe(one.h);
   });
 });

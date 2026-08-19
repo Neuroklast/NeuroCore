@@ -103,6 +103,18 @@ static bool expandOneSplit (const juce::String& in, juce::String& out, bool& cha
     const int n = in.length();
     for (int i = 0; i < n; ++i)
     {
+        if (in[i] == '#')
+        {
+            while (i < n && in[i] != '\n')
+                ++i;
+            continue;
+        }
+        if (in[i] == '/' && i + 1 < n && in[i + 1] == '/')
+        {
+            while (i < n && in[i] != '\n')
+                ++i;
+            continue;
+        }
         if (i > 0)
         {
             const auto prev = in[i - 1];
@@ -618,6 +630,32 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "widen";
             if (desc.type == "midside" || desc.type == "mid_side" || desc.type == "mid-side")
                 desc.type = "ms";
+            if (desc.type == "split_ms" || desc.type == "splitms")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "split";
+            }
+            if (desc.type == "join_ms" || desc.type == "joinms")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "join";
+            }
+            if (desc.type == "split_lr" || desc.type == "splitlr")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "split";
+                desc.args["family"] = "lr";
+            }
+            if (desc.type == "join_lr" || desc.type == "joinlr")
+            {
+                desc.type = "ms";
+                if (desc.args.count ("mode") == 0)
+                    desc.args["mode"] = "join";
+                desc.args["family"] = "lr";
+            }
             if (desc.type == "ngate" || desc.type == "noise_gate" || desc.type == "noisegate")
                 desc.type = "noisegate";
             if (desc.type == "probe")
@@ -637,7 +675,8 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "ott" &&
                 desc.type != "widen" && desc.type != "stereo" &&
                 desc.type != "ir" && desc.type != "convolve" &&
-                desc.type != "meter" && desc.type != "sidechain")
+                desc.type != "meter" && desc.type != "sidechain" &&
+                desc.type != "join")
             {
                 error = "Unknown block type on line " + juce::String(i+1);
                 return false;
@@ -649,7 +688,13 @@ bool DSLParser::parse(const juce::String& text,
                 return false;
             }
 
-            desc.busName = currentBus;
+            if (desc.type == "join")
+            {
+                desc.busName = "main";
+                currentBus = "main";
+            }
+            else
+                desc.busName = currentBus;
         }
 
         juce::StringArray argPairs;

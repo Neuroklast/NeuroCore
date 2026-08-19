@@ -138,7 +138,7 @@ const annotateScript = (name, description, script, opts = {}) => {
   const sound = String(opts.sound || description).trim();
   const header = [
     `# ${name}`,
-    `# How it sounds: ${sound}`,
+    `# ${sound}`,
   ];
   for (const [k, v] of [
     ["a", opts.a],
@@ -393,7 +393,7 @@ stage4: y = diode(y, 1.32) * f * 1.35`,
 add(
   "Wave Folder",
   "Distortion",
-  "West-coast fold â†’ diode recovery â†’ LPF (fold is harsh; always band-limit after).",
+  "West-coast fold -> diode recovery -> LPF (fold is harsh; always band-limit after).",
   `param a = Drive [1.5, 12.0]
 param b = Fold [0.2, 0.85]
 param c = Level [0.25, 1.0]
@@ -483,7 +483,7 @@ stage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))`,
 add(
   "Auto-Wah",
   "Modulation",
-  "Envelope follower â†’ resonant bandpass + softclip polish + AA LPF (Res on LPF kept moderate).",
+  "Envelope follower -> resonant bandpass + softclip polish + AA LPF (Res on LPF kept moderate).",
   `param a = Sens [0.8, 5.0]
 param b = Min [180, 700]
 param c = Range [800, 4500]
@@ -577,7 +577,7 @@ filter2: type = lowpass; cutoff = 11000; resonance = 0.3`,
 add(
   "Reso Peak",
   "Filter",
-  "Resonant peak filter â€” Q limited for stability.",
+  "Resonant peak filter - Q limited for stability.",
   `param a = Cutoff [150, 5000]
 param b = Res [0.6, 3.5]
 param c = Drive [1.0, 3.5]
@@ -704,7 +704,7 @@ widen1: width = d`,
 add(
   "Metal Gate",
   "Guitar",
-  "Tight metal: HPF â†’ tube cascade â†’ soft-pre hard knee â†’ cab LPF (filter after clip).",
+  "Tight metal: HPF -> tube cascade -> soft-pre hard knee -> cab LPF (filter after clip).",
   `param a = Drive [4.0, 14.0]
 param b = LowCut [70, 350]
 param c = Level [0.2, 0.85]
@@ -831,7 +831,7 @@ stage1: y = tube(x, a) * c`,
 add(
   "Bass Comp Drive",
   "Bass",
-  "Compress then tube â€” thick DI bass.",
+  "Compress then tube - thick DI bass.",
   `param a = Threshold [-26.0, -8.0]
 param b = Drive [1.3, 5.0]
 param c = Level [0.5, 1.25]
@@ -922,7 +922,7 @@ filter1: type = lowpass; cutoff = 12000; resonance = 0.25`,
 add(
   "Drum Smash",
   "Drums",
-  "Drum bus: tube â†’ soft-pre hard ceiling â†’ glue comp â†’ diode + mild LPF.",
+  "Drum bus: tube -> soft-pre hard ceiling -> glue comp -> diode + mild LPF.",
   `param a = Drive [1.5, 9.0]
 param b = Threshold [-26.0, -6.0]
 param c = Level [0.4, 1.15]
@@ -949,7 +949,7 @@ comp1: threshold = -11; ratio = c; attack = 0.002; release = 0.055`,
 add(
   "Snare Crack",
   "Drums",
-  "Snare crack: HPF â†’ soft-pre hard ceiling â†’ body LPF (filter after clip).",
+  "Snare crack: HPF -> soft-pre hard ceiling -> body LPF (filter after clip).",
   `param a = Crack [1.5, 8.0]
 param b = HPF [140, 550]
 param c = Level [0.4, 1.15]
@@ -982,7 +982,7 @@ filter1: type = lowpass; cutoff = d; resonance = 0.35`,
 add(
   "Hat Sizzle",
   "Drums",
-  "Cymbal sizzle: steep HPF + softclip (drive capped; soft only â€” no hardclip on air).",
+  "Cymbal sizzle: steep HPF + softclip (drive capped; soft only - no hardclip on air).",
   `param a = Drive [1.1, 3.5]
 param b = HPF [2500, 9000]
 param c = Level [0.55, 1.35]
@@ -1025,7 +1025,7 @@ stage2: y = y * (1.0 - b + b * (0.5 + 0.5 * osc1))`,
 add(
   "Lead Scream",
   "Synth",
-  "Lead: tube â†’ restrained LPF â†’ softclip ceiling (clip after filter = less alias).",
+  "Lead: tube -> restrained LPF -> softclip ceiling (clip after filter = less alias).",
   `param a = Drive [1.8, 9.0]
 param b = Cutoff [500, 7000]
 param c = Res [0.6, 2.8]
@@ -1096,7 +1096,7 @@ stage1: y = diode(x * c, 1.02)`,
 add(
   "Air Exciter",
   "Mastering",
-  "HF excite: HPF â†’ softclip (low drive) â†’ blend â€” soft only, no hardclip on air.",
+  "HF excite: HPF -> softclip (low drive) -> blend - soft only, no hardclip on air.",
   `param a = Drive [1.2, 3.5]
 param b = Freq [2500, 9000]
 param c = Blend [0.2, 0.65]
@@ -1112,7 +1112,7 @@ out: main = 1-c; air = c`,
 add(
   "Loudness Clip",
   "Mastering",
-  "Peak clipper best-practice: softclip â†’ soft-knee hard ceiling â†’ gentle AA LPF.",
+  "Peak clipper best-practice: softclip -> soft-knee hard ceiling -> gentle AA LPF.",
   `param a = Ceiling [0.55, 0.98]
 param b = Drive [1.0, 2.2]
 param c = Level [0.75, 1.15]
@@ -1221,7 +1221,7 @@ filter2: type = lowpass; cutoff = 12000; resonance = 0.3`,
 add(
   "Club Clip",
   "EDM",
-  "Club loudness: softclip â†’ hard ceiling â†’ AA LPF (same recipe as Loudness Clip, lower ceiling).",
+  "Club loudness: softclip -> hard ceiling -> AA LPF (same recipe as Loudness Clip, lower ceiling).",
   `param a = Drive [1.2, 4.5]
 param b = Ceiling [0.4, 0.9]
 param c = Level [0.5, 1.05]
@@ -1280,7 +1280,7 @@ filter1: type = lowpass; cutoff = 9000; resonance = 0.3`,
 add(
   "Crystal Edge",
   "Ambient",
-  "Air crystal: HPF â†’ softclip blend (soft only) + mild AA LPF.",
+  "Air crystal: HPF -> softclip blend (soft only) + mild AA LPF.",
   `param a = Freq [1800, 10000]
 param b = Drive [1.2, 3.8]
 param c = Blend [0.25, 0.75]
@@ -1328,7 +1328,7 @@ filter1: type = lowpass; cutoff = 11000; resonance = 0.3`,
 add(
   "Feedback Screamer",
   "Creative",
-  "Controlled feedback (fb capped) â†’ LPF â†’ softclip ceiling (filter before/around clip).",
+  "Controlled feedback (fb capped) -> LPF -> softclip ceiling (filter before/around clip).",
   `param a = Drive [1.3, 6.0]
 param b = Feedback [0.15, 0.55]
 param c = LPF [700, 7000]
@@ -1341,7 +1341,7 @@ stage2: y = softclip(y, 1.2)`,
 add(
   "Fold Universe",
   "Creative",
-  "Deep fold â†’ softclip recovery â†’ lower LPF (fold is HF-heavy; band-limit hard).",
+  "Deep fold -> softclip recovery -> lower LPF (fold is HF-heavy; band-limit hard).",
   `param a = Drive [2.5, 12.0]
 param b = Fold [0.15, 0.7]
 param c = Level [0.25, 0.9]
@@ -1987,7 +1987,7 @@ filter1: type = lowpass; cutoff = 14000; resonance = 0.25`,
 add(
   "Safety Clip",
   "Utility",
-  "Safety peak clip: softclip â†’ hard ceiling â†’ high AA LPF (never bare clamp).",
+  "Safety peak clip: softclip -> hard ceiling -> high AA LPF (never bare clamp).",
   `param a = Ceiling [0.5, 1.0]
 param b = Drive [1.0, 1.8]
 stage1: y = hardclip(softclip(x, b), a)
@@ -1998,7 +1998,7 @@ filter1: type = lowpass; cutoff = 16000; resonance = 0.2`,
 add(
   "Soft Clip Tone",
   "Utility",
-  "Canonical softclip recipe: HPF â†’ softclip(drive) â†’ tone LPF â†’ level.",
+  "Canonical softclip recipe: HPF -> softclip(drive) -> tone LPF -> level.",
   `param a = Drive [0.8, 8.0]
 param b = Tone [800, 9000]
 param c = Level [0.4, 1.2]
@@ -2024,7 +2024,7 @@ filter1: type = lowpass; cutoff = c; resonance = 0.22`,
 add(
   "Parallel Soft Clip",
   "Utility",
-  "Transparent peaks: lerp(dry, softclip) â€” best when you need control without dirt.",
+  "Transparent peaks: lerp(dry, softclip) - best when you need control without dirt.",
   `param a = Drive [1.0, 5.0]
 param b = Blend [0.15, 0.9]
 param c = Level [0.6, 1.15]
@@ -2054,7 +2054,7 @@ stage2: y = y * c`,
 add(
   "Diode Clip Stack",
   "Utility",
-  "Diode soft-knee (asinh) + optional soft ceiling + LPF â€” smooth analog-ish clip.",
+  "Diode soft-knee (asinh) + optional soft ceiling + LPF - smooth analog-ish clip.",
   `param a = Drive [1.0, 8.0]
 param b = Tone [1000, 10000]
 param c = Level [0.4, 1.2]
@@ -2663,6 +2663,140 @@ filter3: type = lowpass; cutoff = 7600; resonance = 0.26`,
     d: p("Tone", 2000, 7800, 4800),
     e: p("Level", 0.85, 1.4, 1.16),
     tags: ["hoover", "rave", "techno", "fold", "club"],
+    outG: 0,
+  }
+);
+
+add(
+  "909 Newstyle",
+  "Club",
+  "909 kick to new-style hardcore: click HPF, 320 Hz scooped, env-bricked mids, side scream, tight tube sub. Insert on the kick, Mix 100.",
+  `param a = Drive [6.0, 18.0]
+param b = Click [90, 220]
+param c = Scoop [-9.0, -2.0]
+param d = Width [0.25, 1.2]
+param e = Sub [0.4, 1.2]
+param f = Level [0.95, 1.45]
+env1: type = peak; attack = 0.0008; release = 0.07
+filter1: type = highpass; cutoff = b; resonance = 0.46
+eq1: type = peak; freq = 320; q = 1.22; gain = c
+eq2: type = peak; freq = 1180; q = 1.4; gain = 7.6
+eq3: type = highshelf; freq = 7800; q = 0.7; gain = 3.4
+stage1: y = hardclip(softclip(x * f * (0.68 + 0.38 * env1), 1.2), 0.22)
+filter2: type = lowpass; cutoff = 10800; resonance = 0.22
+ms1: mode = encode
+stage2: channel = side; y = diode(x * a * 0.15 * d, 1.48)
+stage3: channel = mid; y = x
+ms2: mode = decode
+bus sub:
+  send: in = 1
+  filter3: type = highpass; cutoff = 24; resonance = 0.15
+  filter4: type = lowpass; cutoff = 66; resonance = 0.38
+  stage4: y = tube(x, a * 0.18)
+  stage5: y = hardclip(softclip(y, 1.08), 0.68)
+  filter5: type = lowpass; cutoff = 118; resonance = 0.2
+out: main = 0.94; sub = e`,
+  {
+    a: p("Drive", 6, 18, 13.8),
+    b: p("Click", 90, 220, 148),
+    c: p("Scoop", -9, -2, -5.8),
+    d: p("Width", 0.25, 1.2, 0.82),
+    e: p("Sub", 0.4, 1.2, 0.88),
+    f: p("Level", 0.95, 1.45, 1.22),
+    tags: ["909", "hardcore", "techno", "kick", "club", "mid-side"],
+    outG: 0,
+  }
+);
+
+add(
+  "Crisp Brick",
+  "Club",
+  "Extreme crisp distortion: transient-weighted diode into a low ceiling, then a hard recovery LPF. Kicks, hats, stabs.",
+  `param a = Drive [5.5, 18.0]
+param b = Ceiling [0.12, 0.4]
+param c = Snap [0.35, 1.2]
+param d = Air [2500, 9000]
+param e = Body [80, 220]
+param f = Level [0.95, 1.45]
+env1: type = peak; attack = 0.0006; release = 0.055
+filter1: type = highpass; cutoff = e; resonance = 0.4
+eq1: type = peak; freq = 300; q = 1.15; gain = -5.2
+eq2: type = peak; freq = 3400; q = 1.45; gain = 6.8
+eq3: type = highshelf; freq = d; q = 0.7; gain = 4.2
+stage1: y = diode(x * f * (0.55 + c * env1), a * 0.12)
+stage2: y = hardclip(softclip(y, 1.22), b)
+filter2: type = lowpass; cutoff = 11200; resonance = 0.24
+stage3: y = hardclip(y, 0.92)`,
+  {
+    a: p("Drive", 5.5, 18, 13.2),
+    b: p("Ceiling", 0.12, 0.4, 0.2),
+    c: p("Snap", 0.35, 1.2, 0.92),
+    d: p("Air", 2500, 9000, 7200),
+    e: p("Body", 80, 220, 128),
+    f: p("Level", 0.95, 1.45, 1.2),
+    tags: ["hardcore", "techno", "clip", "club", "crisp"],
+    outG: 0,
+  }
+);
+
+add(
+  "Techno Snap",
+  "Club",
+  "Transient designer for techno: fast peak punch vs slower RMS body. Kicks, hats, claps, stabs.",
+  `param a = Attack [0.4, 2.4]
+param b = Sustain [0.25, 1.4]
+param c = Rel [0.04, 0.28]
+param d = Drive [1.2, 8.0]
+param e = Tone [1800, 8000]
+param f = Level [0.85, 1.35]
+env1: type = peak; attack = 0.0005; release = 0.04
+env2: type = rms; attack = 0.01; release = c
+filter1: type = highpass; cutoff = 42; resonance = 0.22
+stage1: y = x * (1 + env1 * a) / (1 + env2 * b * 0.55)
+stage2: y = softclip(y * f, d * 0.28)
+eq1: type = peak; freq = 320; q = 0.95; gain = -2.4
+eq2: type = highshelf; freq = e; q = 0.7; gain = 2.8
+filter2: type = lowpass; cutoff = 12000; resonance = 0.2
+stage3: y = hardclip(softclip(y, 1.08), 0.88)`,
+  {
+    a: p("Attack", 0.4, 2.4, 1.35),
+    b: p("Sustain", 0.25, 1.4, 0.72),
+    c: p("Rel", 0.04, 0.28, 0.12),
+    d: p("Drive", 1.2, 8, 3.4),
+    e: p("Tone", 1800, 8000, 4600),
+    f: p("Level", 0.85, 1.35, 1.08),
+    tags: ["techno", "transient", "club", "envelope"],
+    outG: 0,
+  }
+);
+
+add(
+  "Side Scream",
+  "Club",
+  "Mid stays punchy. Side is env-crushed diode so width bites without wrecking the kick center.",
+  `param a = Drive [4.0, 16.0]
+param b = Side [0.35, 1.4]
+param c = Mid [0.7, 1.2]
+param d = Air [3000, 9000]
+param e = HPF [80, 280]
+param f = Level [0.9, 1.4]
+env1: type = peak; attack = 0.001; release = 0.09
+filter1: type = highpass; cutoff = e; resonance = 0.32
+ms1: mode = encode
+stage1: channel = mid; y = tube(x * c, 1.15)
+stage2: channel = side; y = diode(x * a * 0.2 * b * (0.2 + 0.8 * env1), 1.55)
+eq1: type = highshelf; freq = d; q = 0.7; gain = 3.6; channel = side
+ms2: mode = decode
+stage3: y = hardclip(softclip(x * f, 1.12), 0.78)
+filter2: type = lowpass; cutoff = 11500; resonance = 0.22`,
+  {
+    a: p("Drive", 4, 16, 11.6),
+    b: p("Side", 0.35, 1.4, 0.95),
+    c: p("Mid", 0.7, 1.2, 1.0),
+    d: p("Air", 3000, 9000, 6400),
+    e: p("HPF", 80, 280, 140),
+    f: p("Level", 0.9, 1.4, 1.16),
+    tags: ["techno", "hardcore", "club", "mid-side", "width"],
     outG: 0,
   }
 );
@@ -4338,5 +4472,15 @@ const cats = {};
 list.forEach((e) => (cats[e.category] = (cats[e.category] || 0) + 1));
 console.log("presets", list.length);
 console.log(cats);
+if (fs.existsSync("resources/factory_presets.json")) {
+  const prev = JSON.parse(fs.readFileSync("resources/factory_presets.json", "utf8"));
+  const keep = new Set(list.map((e) => e.name));
+  const dropped = (Array.isArray(prev) ? prev : [])
+    .filter((e) => e && e.name && ! keep.has(e.name))
+    .map((e) => `${e.name} [${e.category}]`);
+  if (dropped.length) {
+    throw new Error("refusing to drop curated factory presets:\n" + dropped.join("\n"));
+  }
+}
 fs.writeFileSync("resources/factory_presets.json", JSON.stringify(list, null, 2) + "\n");
 console.log("wrote resources/factory_presets.json");

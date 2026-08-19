@@ -34,10 +34,9 @@ export function ValidatePanel() {
       </div>
       {done ? (
         <ul className="flex flex-col gap-1">
-          {report.issues.length === 0 ? <li className="text-muted">No warnings.</li> : null}
-          {report.issues.map((i, n) => (
-            <li key={n} className={i.severity === "error" ? "text-error" : "text-accent"}>
-              {i.severity.toUpperCase()} · {i.message}
+          {report.checks.map((c) => (
+            <li key={c.id} className={c.ok ? "text-muted" : "text-error"}>
+              {c.ok ? "OK" : "FAIL"} · {c.title} — {c.detail}
             </li>
           ))}
         </ul>

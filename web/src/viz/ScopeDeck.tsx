@@ -7,24 +7,27 @@ import { OsContextMenu } from "../overlays/OsContextMenu";
 import { LoudnessMeter } from "./LoudnessMeter";
 import { ScopeCanvas, ScopeMenu } from "./ScopeCanvas";
 import { StereoField } from "./StereoField";
-import type { ScopeSource, ScopeXScale, ScopeYScale } from "./scopeModel";
+import { demoLoudness, type ScopeSource, type ScopeXScale, type ScopeYScale } from "./scopeModel";
 
 function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
   const n = SCOPE_N;
   for (let i = 0; i < n; i += 1) {
     const ph = (i / n) * Math.PI * 2 + t * 0.08;
-    views.scopeIn[i] = Math.sin(ph) * 0.55;
-    views.scopeOut[i] = Math.tanh(Math.sin(ph) * 1.4) * 0.7;
+    views.scopeIn[i] = Math.sin(ph) * 0.45 + Math.sin(ph * 3) * 0.18;
+    views.scopeOut[i] = Math.tanh(Math.sin(ph) * 1.4) * 0.55
+      + Math.sin(ph * 2) * 0.16
+      + Math.sin(ph * 5) * 0.08;
   }
   for (let i = 0; i < views.gonioN; i += 1) {
     const ph = (i / views.gonioN) * Math.PI * 2 + t * 0.08;
     views.gonioX[i] = Math.sin(ph) * 0.55;
     views.gonioY[i] = Math.sin(ph + 0.35) * 0.48;
   }
-  views.inPeak = 0.55;
-  views.outPeak = 0.7;
-  views.inRms = 0.32;
-  views.outRms = 0.4;
+  const lu = demoLoudness(t);
+  views.inPeak = lu.inPeak;
+  views.outPeak = lu.outPeak;
+  views.inRms = lu.inRms;
+  views.outRms = lu.outRms;
 }
 
 export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
@@ -100,7 +103,7 @@ export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
       <div className="h-full w-[148px] shrink-0 border border-accent/55">
         <StereoField gonioL={views.gonioX} gonioR={views.gonioY} scopeIn={views.scopeIn} count={views.gonioN} />
       </div>
-      <LoudnessMeter inPeak={views.inPeak} outPeak={views.outPeak} inRms={views.inRms} outRms={views.outRms} />
+      <LoudnessMeter />
       {menu ? (
         <OsContextMenu left={menu.left} top={menu.top} title="METERS" onDismiss={() => setMenu(null)}>
           <ScopeMenu onPick={onMenu} />

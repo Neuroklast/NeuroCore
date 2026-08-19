@@ -143,6 +143,87 @@ public:
             expect (! decodeIn, json);
         }
 
+        beginTest ("parser accepts mode = split / join as encode / decode aliases");
+        {
+            dsl::GraphDocument splitDoc, joinDoc, encDoc;
+            juce::String error;
+            expect (dsl::parse ("ms1: mode = split\nms2: mode = join\n", splitDoc, error), error);
+            expect (dsl::isMsEncode (splitDoc.nodes[0]), "split should alias encode");
+            expect (dsl::isMsDecode (splitDoc.nodes[1]), "join should alias decode");
+            expect (dsl::parse ("ms1: mode = encode\n", encDoc, error), error);
+            expect (dsl::isMsEncode (encDoc.nodes[0]), "factory encode stays Split");
+
+            const auto splitJ = dsl::jacksFor (splitDoc.nodes[0], &splitDoc);
+            const auto joinJ = dsl::jacksFor (splitDoc.nodes[1], &splitDoc);
+            bool midOut = false, joinMidIn = false, splitOut = false;
+            for (const auto& j : splitJ)
+            {
+                if (j.id == "mid" && j.output) midOut = true;
+                if (j.id == "out") splitOut = true;
+            }
+            for (const auto& j : joinJ)
+                if (j.id == "mid" && ! j.output) joinMidIn = true;
+            expect (midOut && joinMidIn && ! splitOut);
+        }
+
+        beginTest ("L/R split has left/right outs; Join L/R cannot take MS rails");
+        {
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse (
+                        "ms1: mode = split; family = lr\n"
+                        "stage1: y = x\n"
+                        "ms2: mode = join; family = lr\n",
+                        doc, error),
+                    error);
+            expectEquals ((int) doc.nodes.size(), 3);
+            const auto splitJ = dsl::jacksFor (doc.nodes[0], &doc);
+            const auto joinJ = dsl::jacksFor (doc.nodes[2], &doc);
+            bool leftOut = false, rightOut = false, leftIn = false, rightIn = false;
+            for (const auto& j : splitJ)
+            {
+                if (j.id == "left" && j.output) leftOut = true;
+                if (j.id == "right" && j.output) rightOut = true;
+            }
+            for (const auto& j : joinJ)
+            {
+                if (j.id == "left" && ! j.output) leftIn = true;
+                if (j.id == "right" && ! j.output) rightIn = true;
+            }
+            expect (leftOut && rightOut && leftIn && rightIn);
+
+            auto nameOf = [&] (int i) -> juce::String
+            {
+                if (i < 0) return "IN";
+                if (i >= (int) doc.nodes.size()) return "OUT";
+                return doc.nodes[(size_t) i].name;
+            };
+            auto hasEdge = [&] (const juce::String& from, const juce::String& fromJack,
+                                const juce::String& to, const juce::String& toJack) -> bool
+            {
+                for (const auto& e : dsl::visualAudioEdges (doc))
+                    if (nameOf (e.fromIndex) == from && e.fromJack == fromJack
+                        && nameOf (e.toIndex) == to && e.toJack == toJack)
+                        return true;
+                return false;
+            };
+            const auto json = dsl::toJson (doc);
+            expect (hasEdge ("ms1", "left", "stage1", "in"), json);
+            expect (hasEdge ("ms1", "right", "stage1", "in"), json);
+            expect (hasEdge ("stage1", "out", "ms2", "left"), json);
+            expect (hasEdge ("stage1", "out", "ms2", "right"), json);
+
+            dsl::GraphDocument mixed;
+            expect (dsl::parse (
+                        "ms1: mode = split\n"
+                        "ms2: mode = join; family = lr\n",
+                        mixed, error),
+                    error);
+            expect (! dsl::connectJack (mixed, 0, "mid", 1, "left", error),
+                    "Split MS must not connect to Join L/R");
+            expect (error.isNotEmpty());
+        }
+
         beginTest ("fromJson rejects garbage and leaves dest empty");
         {
             dsl::GraphDocument dest;

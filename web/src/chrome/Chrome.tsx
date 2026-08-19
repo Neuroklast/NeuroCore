@@ -207,6 +207,7 @@ export function MixOs() {
   const polisher = useHostStore((s) => s.polisher);
   return (
     <div className="flex h-[28px] shrink-0 items-center gap-3 px-1 text-[11px]">
+      <span className="font-brand text-muted">Input channel</span>
       <InputSwitch />
       <span className="font-brand text-muted">Oversampling</span>
       <select

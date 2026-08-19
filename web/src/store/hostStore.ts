@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_THEME, isThemeId, readStoredTheme, THEME_STORAGE_KEY, type ThemeId } from "../theme/theme";
 
 export interface KnobState {
   id: string;
@@ -8,6 +9,10 @@ export interface KnobState {
   min: number;
   max: number;
   isNote: boolean;
+  /** Display unit from chipSpec.ranges (e.g. Hz, %, dB). Not used by DSP. */
+  unit?: string;
+  /** When set, the knob is an enum detent control (N ticks). */
+  enums?: string[];
 }
 
 export interface HostState {
@@ -50,6 +55,13 @@ export interface HostState {
   scopeY: "linear" | "db";
   scopeGrid: boolean;
   scopeInvertY: boolean;
+  /** Host sidechain bus enabled — Sidechain IN chip is visible only when true. */
+  sidechainOn: boolean;
+  /** Live osc/env tap peaks from the host, keyed by chip id (`env1`, `osc1`). */
+  mods: Record<string, number>;
+  theme: ThemeId;
+  knobGestures: Record<string, true>;
+  setTheme: (id: ThemeId) => void;
   applyParams: (p: Record<string, unknown>) => void;
   applyHost: (p: Record<string, unknown>) => void;
   applyPresets: (p: Record<string, unknown>) => void;
@@ -58,6 +70,10 @@ export interface HostState {
   setOverlay: (name: string | null, inspectId?: string | null) => void;
   setTelemetryPath: (path: string) => void;
   setKnob: (id: string, value: number) => void;
+  beginKnobGesture: (id: string) => void;
+  endKnobGesture: (id: string) => void;
+  patchKnob: (id: string, patch: Partial<KnobState>) => void;
+  activateKnob: (id: string, patch: Partial<KnobState> & { active: true }) => void;
   setMix: (value: number) => void;
   setOs: (index: number) => void;
   setPolisher: (index: number) => void;
@@ -76,12 +92,31 @@ export function osIndexFromFactor(factor: number): number {
   return 0;
 }
 
+function mergeParamsKnobs(
+  current: KnobState[],
+  incoming: KnobState[],
+  gestures: Record<string, true>,
+): KnobState[] {
+  if (Object.keys(gestures).length === 0) {
+    return incoming;
+  }
+  const live = new Map(current.map((k) => [k.id, k]));
+  return incoming.map((k) => {
+    if (! gestures[k.id]) {
+      return k;
+    }
+    const cur = live.get(k.id);
+    return cur ? { ...k, value: cur.value } : k;
+  });
+}
+
 function asKnobs(raw: unknown): KnobState[] {
   if (! Array.isArray(raw)) {
     return [];
   }
   return raw.map((k) => {
     const o = k as Record<string, unknown>;
+    const enums = Array.isArray(o.enums) ? o.enums.map(String) : undefined;
     return {
       id: String(o.id ?? ""),
       name: String(o.name ?? ""),
@@ -90,6 +125,8 @@ function asKnobs(raw: unknown): KnobState[] {
       min: Number(o.min ?? 0),
       max: Number(o.max ?? 1),
       isNote: Boolean(o.isNote),
+      unit: o.unit != null ? String(o.unit) : undefined,
+      enums: enums && enums.length > 0 ? enums : undefined,
     };
   });
 }
@@ -134,9 +171,22 @@ export const useHostStore = create<HostState>((set) => ({
   scopeY: "linear",
   scopeGrid: true,
   scopeInvertY: false,
+  sidechainOn: false,
+  mods: {},
+  theme: (() => {
+    try {
+      if (typeof localStorage === "undefined" || typeof localStorage.getItem !== "function") {
+        return DEFAULT_THEME;
+      }
+      return readStoredTheme(localStorage.getItem(THEME_STORAGE_KEY));
+    } catch {
+      return DEFAULT_THEME;
+    }
+  })(),
+  knobGestures: {} as Record<string, true>,
 
   applyParams: (p) => set((s) => ({
-    knobs: Array.isArray(p.knobs) ? asKnobs(p.knobs) : s.knobs,
+    knobs: Array.isArray(p.knobs) ? mergeParamsKnobs(s.knobs, asKnobs(p.knobs), s.knobGestures) : s.knobs,
     mix: p.mix != null ? Number(p.mix) : s.mix,
     os: p.os != null ? Number(p.os) : s.os,
     osFactor: p.os != null ? osFactorFromIndex(Number(p.os)) : s.osFactor,
@@ -155,6 +205,15 @@ export const useHostStore = create<HostState>((set) => ({
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     scale: Number(p.scale ?? 100),
+    sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
+    mods: Array.isArray(p.mods)
+      ? Object.fromEntries(
+        (p.mods as Array<Record<string, unknown>>).map((m) => [
+          String(m.id ?? ""),
+          Number(m.value ?? 0),
+        ] as [string, number]).filter(([id]) => id.length > 0),
+      )
+      : s.mods,
   })),
   applyPresets: (p) => set((s) => ({
     presetName: String(p.name ?? s.presetName),
@@ -187,6 +246,38 @@ export const useHostStore = create<HostState>((set) => ({
   setKnob: (id, value) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, value: Math.max(0, Math.min(1, value)) } : k)),
   })),
+  beginKnobGesture: (id) => set((s) => (
+    s.knobGestures[id] ? s : { knobGestures: { ...s.knobGestures, [id]: true } }
+  )),
+  endKnobGesture: (id) => set((s) => {
+    if (! s.knobGestures[id]) {
+      return s;
+    }
+    const knobGestures = { ...s.knobGestures };
+    delete knobGestures[id];
+    return { knobGestures };
+  }),
+  patchKnob: (id, patch) => set((s) => ({
+    knobs: s.knobs.map((k) => (k.id === id ? { ...k, ...patch, id: k.id } : k)),
+  })),
+  activateKnob: (id, patch) => set((s) => ({
+    knobs: s.knobs.map((k) => {
+      if (k.id !== id) {
+        return k;
+      }
+      const value = patch.value != null
+        ? Math.max(0, Math.min(1, patch.value))
+        : k.value;
+      return {
+        ...k,
+        ...patch,
+        id: k.id,
+        active: true,
+        value,
+        enums: patch.enums && patch.enums.length > 0 ? patch.enums : undefined,
+      };
+    }),
+  })),
   setMix: (value) => set({ mix: Math.max(0, Math.min(1, value)) }),
   setOs: (index) => {
     const os = Math.max(0, Math.min(3, Math.round(index)));
@@ -194,4 +285,13 @@ export const useHostStore = create<HostState>((set) => ({
   },
   setPolisher: (index) => set({ polisher: Math.max(0, Math.min(2, Math.round(index))) }),
   setInput: (index) => set({ input: Math.max(0, Math.min(2, Math.round(index))) }),
+  setTheme: (id) => {
+    const theme = isThemeId(id) ? id : DEFAULT_THEME;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      /* private mode */
+    }
+    set({ theme });
+  },
 }));

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { jackDiameter, plasmaAmp, plasmaGlow, plasmaWindows, PLASMA_PITCH, PLASMA_SPAN, shellGlow, TUBE } from "./tubeModel";
+import { liveTheme } from "../theme/theme";
+import { jackDiameter, plasmaAmp, plasmaGlow, plasmaPaint, plasmaWindows, PLASMA_PITCH, PLASMA_SPAN, shellGlow, TUBE } from "./tubeModel";
+import { SCOPE_COLOR } from "../viz/scopeModel";
 
 describe("glass tubes and jacks", () => {
   it("audio tubes are wide enough to hold a waveform", () => {
-    expect(TUBE.audioOuter).toBeGreaterThanOrEqual(18);
-    expect(TUBE.audioBore).toBeGreaterThanOrEqual(10);
+    expect(TUBE.audioOuter).toBe(16);
+    expect(TUBE.audioBore).toBeGreaterThanOrEqual(8);
     expect(TUBE.audioBore).toBeLessThan(TUBE.audioOuter);
   });
 
@@ -15,6 +17,14 @@ describe("glass tubes and jacks", () => {
     expect(plasmaGlow(1, "full", false) - plasmaGlow(0.5, "full", false))
       .toBeLessThan(plasmaGlow(0.5, "full", false) - plasmaGlow(0, "full", false));
     expect(plasmaAmp(1, TUBE.audioBore)).toBeGreaterThan(plasmaAmp(0, TUBE.audioBore));
+  });
+
+  it("paints the data stream as a white core with the same accent glow as the scope wave", () => {
+    const paint = plasmaPaint();
+    expect(paint.core).toBe(liveTheme().white);
+    expect(paint.glow).toBe(SCOPE_COLOR.out);
+    expect(paint.forward).toBeLessThan(0);
+    expect(TUBE.audioBoreFill).toBe("#000000");
   });
 
   it("node jacks are large, visible ports", () => {

@@ -4,9 +4,17 @@ import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { isThemeId, THEME_STORAGE_KEY, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { settingsAboutTarget } from "./aboutModel";
-import { inspectRows } from "./inspectModel";
+import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
+import { isIrSlotId } from "../presets/irSlots";
+import {
+  clampInspectArg,
+  inspectArgFields,
+  inspectBlurb,
+  inspectRows,
+} from "./inspectModel";
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
@@ -39,6 +47,16 @@ function Seg({
   );
 }
 
+function setNodeArg(nodeId: string, key: string, value: string): void {
+  void getNativeFunction("graphOp")({
+    origin: "canvas",
+    op: "setArg",
+    node: nodeId,
+    key,
+    value,
+  });
+}
+
 function InspectBody({ nodeId }: { nodeId: string | null }) {
   const ast = useAstStore((s) => s.ast);
   const node = ast?.nodes.find((n) => n.id === nodeId);
@@ -46,6 +64,7 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
   if (! node) {
     return <p>No node selected.</p>;
   }
+  const argFields = inspectArgFields(node);
   const groups = ["meta", "arg", "jack", "param", "var"] as const;
   const label: Record<(typeof groups)[number], string> = {
     meta: "NODE",
@@ -54,9 +73,57 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
     param: "BOUND KNOBS",
     var: "VARIABLES",
   };
+  const blurb = inspectBlurb(node.type);
+  const fieldClass = "h-7 w-full border border-accent/40 bg-black px-1 text-accent";
   return (
     <div className="flex flex-col gap-3 text-[12px]">
       {groups.map((g) => {
+        if (g === "arg") {
+          if (argFields.length === 0) {
+            return null;
+          }
+          return (
+            <section key={g}>
+              <div className="mb-1 text-[11px] tracking-widest text-muted">{label.arg}</div>
+              <table className="w-full border-collapse">
+                <tbody>
+                  {argFields.map((f) => (
+                    <tr key={`arg-${f.key}`} className="border-b border-accent/20">
+                      <td className="w-28 py-1 pr-2 text-muted">{f.key}</td>
+                      <td className="py-1 text-ink">
+                        {f.kind === "enum" ? (
+                          <select
+                            className={fieldClass}
+                            value={f.options.includes(f.value) ? f.value : f.options[0]}
+                            onChange={(e) => setNodeArg(node.id, f.key, e.target.value)}
+                          >
+                            {f.options.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            className={fieldClass}
+                            defaultValue={f.value}
+                            onBlur={(e) => {
+                              const next = clampInspectArg(node.type, f.key, e.target.value);
+                              if (next !== e.target.value) {
+                                e.target.value = next;
+                              }
+                              setNodeArg(node.id, f.key, next);
+                            }}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          );
+        }
         const slice = rows.filter((r) => r.group === g);
         if (slice.length === 0) {
           return null;
@@ -69,23 +136,7 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
                 {slice.map((r) => (
                   <tr key={`${g}-${r.key}`} className="border-b border-accent/20">
                     <td className="w-28 py-1 pr-2 text-muted">{r.key}</td>
-                    <td className="py-1 text-ink">
-                      {g === "arg" ? (
-                        <input
-                          className="h-7 w-full border border-accent/40 bg-black px-1 text-accent"
-                          defaultValue={r.value}
-                          onBlur={(e) => {
-                            void getNativeFunction("graphOp")({
-                              origin: "canvas",
-                              op: "setArg",
-                              node: node.id,
-                              key: r.key,
-                              value: e.target.value,
-                            });
-                          }}
-                        />
-                      ) : r.value}
-                    </td>
+                    <td className="py-1 text-ink">{r.value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -93,6 +144,22 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
           </section>
         );
       })}
+      {blurb ? (
+        <section>
+          <div className="mb-1 text-[11px] tracking-widest text-muted">ABOUT</div>
+          <p className="text-ink">{blurb}</p>
+        </section>
+      ) : null}
+      {isIrSlotId(node.id) || isIrSlotId(node.type) ? (
+        <section>
+          <div className="mb-1 text-[11px] tracking-widest text-muted">CABINET</div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="nk-clip" onClick={() => loadIrFile(node.id)}>Load</button>
+            <button type="button" className="nk-clip" onClick={() => irSlotAction("preview", node.id)}>Play</button>
+            <button type="button" className="nk-clip" onClick={() => irSlotAction("clear", node.id)}>Clear</button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -103,6 +170,7 @@ function SettingsBody() {
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);
   const cables = useHostStore((s) => s.cables);
+  const theme = useHostStore((s) => s.theme) ?? "signal";
   const formulaPt = useHostStore((s) => s.formulaPt);
   const mode = useHostStore((s) => s.mode);
   const setOverlay = useHostStore((s) => s.setOverlay);
@@ -125,6 +193,24 @@ function SettingsBody() {
             const next = id === "live" ? "LIVE" : "STUDIO";
             useHostStore.setState({ mode: next });
             void getNativeFunction("setChoice")({ id: "mode", index: id === "live" ? 1 : 0 });
+          }}
+        />
+      </section>
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">THEME</div>
+        <Seg
+          value={theme}
+          options={themeIds().map((id) => ({ id, label: themeOf(id).label }))}
+          onPick={(id) => {
+            if (! isThemeId(id)) {
+              return;
+            }
+            try {
+              localStorage.setItem(THEME_STORAGE_KEY, id);
+            } catch {
+              /* private mode */
+            }
+            useHostStore.setState({ theme: id });
           }}
         />
       </section>
@@ -189,7 +275,6 @@ export function Overlays() {
   const overlay = useHostStore((s) => s.overlay);
   const motion = useHostStore((s) => s.motion);
   const setOverlay = useHostStore((s) => s.setOverlay);
-  const irSlots = useHostStore((s) => s.irSlots);
   const inspectId = useHostStore((s) => s.inspectId);
   const licensed = useHostStore((s) => s.licensed);
   const shell = useOverlayShell(overlay, motion);
@@ -273,16 +358,7 @@ export function Overlays() {
           )}
 
           {name === "ir" && (
-            <ul>
-              {irSlots.map((s) => (
-                <li key={s.slot} className="mb-2 flex items-center gap-2">
-                  <span>{s.slot}: {s.loaded ? s.name : "empty"}</span>
-                  <button type="button" className="nk-clip" onClick={() => void getNativeFunction("pickFile")({ kind: "ir", slot: s.slot })}>
-                    Load
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <ImpulsePanel focusSlot={inspectId} />
           )}
 
           {name === "inspect" && (

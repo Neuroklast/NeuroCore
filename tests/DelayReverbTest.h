@@ -409,6 +409,28 @@ public:
             expectEquals (flips, 0, "widen flipped L/R polarity");
         }
 
+        beginTest ("ms split/join aliases encode/decode roundtrip");
+        {
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "ms1: mode = split\nms2: mode = join", err), err);
+
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.4f);
+                buf.setSample (1, i, -0.2f);
+            }
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            for (int i = 0; i < 64; ++i)
+            {
+                expectWithinAbsoluteError (buf.getSample (0, i), 0.4f, 1.0e-4f);
+                expectWithinAbsoluteError (buf.getSample (1, i), -0.2f, 1.0e-4f);
+            }
+        }
+
         beginTest ("ms encode/decode roundtrip");
         {
             dsl::SignalChain chain;

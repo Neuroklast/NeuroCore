@@ -1,3 +1,17 @@
+/** Thin screen bezel around the whole editor. Content glows the inner lip. */
+export const SHELL_BEZEL = 6;
+/** Bottom-right hit for host resize. Native corner sits on top of this. */
+export const RESIZE_GRIP = 22;
+
+export function shellBezelCss(): string {
+  return [
+    `inset 0 0 0 1px rgba(var(--nk-accent-rgb), 0.42)`,
+    `inset 0 0 0 ${SHELL_BEZEL}px var(--nk-surface)`,
+    `inset 0 0 16px 2px rgba(var(--nk-accent-rgb), 0.2)`,
+    `inset 0 0 28px 4px rgba(var(--nk-cyan-rgb), 0.06)`,
+  ].join(", ");
+}
+
 /** One chrome spec: high-tech board, not a CRT terminal. */
 
 export const CHIP_CLIP =

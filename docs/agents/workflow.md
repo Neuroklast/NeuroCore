@@ -13,6 +13,7 @@ No code before that.
 
 - One concern. Circuit arrangement is not “also idle CPU and also Settings buttons”.
 - Prefer deleting code (A*, dropMicroJogs, knob cables, per-sample TPT) over adding a helper next to it.
+- Library first on the canvas. Read `@xyflow/react` (Background, snap, `nodesDraggable`, `onConnect`, `Handle`, `getStraightPath`, `getSmoothStepPath`) before inventing a grid, a router, a drag, or a connect overlay. **Chip drag and jack connect are RF.** If RF already does it, use it. Custom code needs the RF API you rejected and the contract it failed.
 - If a test fails: stop. Do not stack another workaround.
 
 ## After

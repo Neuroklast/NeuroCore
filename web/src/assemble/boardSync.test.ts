@@ -22,7 +22,7 @@ describe("board position ownership", () => {
     expect(keepLivePositions("host")).toBe(false);
   });
 
-  it("auto-arranges only the first paint or a newly loaded graph", () => {
+  it("auto-arranges first paint, a new graph, and every preset load", () => {
     expect(shouldAutoArrange({
       origin: "host",
       prevIds: [],
@@ -33,6 +33,12 @@ describe("board position ownership", () => {
       origin: "preset",
       prevIds: ["IN", "stage1", "OUT"],
       nextIds: ["IN", "drive1", "filter1", "OUT"],
+      chipsHavePositions: true,
+    })).toBe(true);
+    expect(shouldAutoArrange({
+      origin: "preset",
+      prevIds: ["IN", "stage1", "filter1", "OUT"],
+      nextIds: ["IN", "stage1", "filter1", "OUT"],
       chipsHavePositions: true,
     })).toBe(true);
     expect(shouldAutoArrange({

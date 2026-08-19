@@ -1,4 +1,56 @@
+import { noteSteps, parseNoteToken, wholeToHz } from "../chrome/noteValue";
+
 export type LfoShape = "sine" | "saw" | "square" | "triangle" | "softsquare";
+
+export type LfoKnob = { id: string; value: number; min: number; max: number; isNote?: boolean };
+
+function isSyncOff(raw: string): boolean {
+  const t = raw.trim().toLowerCase();
+  return ! t || t === "off" || t === "0" || t === "false" || t === "none";
+}
+
+function knobToHz(k: LfoKnob, bpm: number): number {
+  if (k.isNote) {
+    const steps = noteSteps(k.min, k.max);
+    if (steps.length === 0) {
+      return 1;
+    }
+    const i = Math.max(0, Math.min(steps.length - 1, Math.round(k.value * (steps.length - 1))));
+    return wholeToHz(steps[i]!.whole, bpm);
+  }
+  const hz = k.min + k.value * (k.max - k.min);
+  return hz > 0 ? hz : 1;
+}
+
+function exprToHz(expr: string, knobs: LfoKnob[], bpm: number): number | null {
+  const t = expr.trim();
+  if (isSyncOff(t)) {
+    return null;
+  }
+  const whole = parseNoteToken(t);
+  if (whole != null) {
+    return wholeToHz(whole, bpm);
+  }
+  if (/^[a-f]$/i.test(t)) {
+    const k = knobs.find((x) => x.id === t.toLowerCase());
+    return k ? knobToHz(k, bpm) : null;
+  }
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Sync note at host BPM wins; otherwise free-run freq. Lamp and cable share this. */
+export function resolveLfoHz(
+  args: { freq?: string; sync?: string },
+  knobs: LfoKnob[],
+  bpm: number,
+): number {
+  const synced = exprToHz(args.sync ?? "", knobs, bpm);
+  if (synced != null) {
+    return synced;
+  }
+  return exprToHz(args.freq ?? "1", knobs, bpm) ?? 1;
+}
 
 export function parseLfoShape(raw: string): LfoShape {
   const s = raw.trim().toLowerCase();

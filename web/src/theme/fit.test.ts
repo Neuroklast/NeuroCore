@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DESIGN_GRID, DESIGN_H, DESIGN_W, fitForWindow, menuPos, snapUiFitToGrid } from "./fit";
+import { DESIGN_H, DESIGN_W, fitForWindow, fitOrigin, menuPos, snapUiFitToGrid } from "./fit";
 
 describe("design scale", () => {
   it("keeps a 1280x860 canvas", () => {
@@ -7,12 +7,16 @@ describe("design scale", () => {
     expect(DESIGN_H).toBe(860);
   });
 
-  it("snaps fit so fit * 16 is an integer pixel", () => {
-    const fit = snapUiFitToGrid(1.333);
-    expect((fit * DESIGN_GRID) % 1).toBe(0);
+  it("fills a matching-aspect window exactly, no letterbox snap", () => {
     expect(fitForWindow(1280, 860)).toBe(1);
     expect(fitForWindow(2560, 1720)).toBe(2);
     expect(fitForWindow(0, 0)).toBe(1);
+    const fit = fitForWindow(1920, 1290);
+    expect(DESIGN_W * fit).toBeCloseTo(1920, 5);
+    expect(DESIGN_H * fit).toBeCloseTo(1290, 5);
+    expect(fitOrigin(1920, 1290, fit)).toEqual({ x: 0, y: 0 });
+    const snapped = snapUiFitToGrid(1400 / 1280);
+    expect(DESIGN_W * snapped).toBeLessThan(1400);
   });
 
   it("keeps the design aspect after scale", () => {

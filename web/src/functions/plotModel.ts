@@ -40,6 +40,28 @@ export const DEMO_EXPR: Record<string, string> = {
 };
 
 export type PlotKind = "transfer" | "ott" | "widen" | "octaver" | "vocoder";
+export type PreviewWave = "sine" | "square" | "saw" | "triangle";
+export const PREVIEW_WAVES: PreviewWave[] = ["sine", "square", "saw", "triangle"];
+
+/** IN/OUT animation only for sample transfer curves, not time-based blocks. */
+export function showsWavePreview(name: string): boolean {
+  return kindForName(name) === "transfer" && categoryForName(name) !== "Blocks";
+}
+
+/** One cycle, t in radians. */
+export function previewSample(shape: PreviewWave, t: number): number {
+  const p = ((t / (Math.PI * 2)) % 1 + 1) % 1;
+  if (shape === "square") {
+    return p < 0.5 ? 1 : -1;
+  }
+  if (shape === "saw") {
+    return p * 2 - 1;
+  }
+  if (shape === "triangle") {
+    return 1 - 4 * Math.abs(p - 0.5);
+  }
+  return Math.sin(t);
+}
 
 export function kindForName(name: string): PlotKind {
   const n = name.trim().toLowerCase();
@@ -154,7 +176,12 @@ export function evalExpr(expr: string, x: number): number {
   }
 }
 
-export function buildTraces(expr: string, phase: number, n = PLOT_N): { inn: Float32Array; out: Float32Array; ok: boolean } {
+export function buildTraces(
+  expr: string,
+  phase: number,
+  n = PLOT_N,
+  wave: PreviewWave = "sine",
+): { inn: Float32Array; out: Float32Array; ok: boolean } {
   const inn = new Float32Array(n);
   const out = new Float32Array(n);
   let ok = true;
@@ -165,7 +192,7 @@ export function buildTraces(expr: string, phase: number, n = PLOT_N): { inn: Flo
   }
   for (let i = 0; i < n; i += 1) {
     const t = phase + Math.PI * 2 * (i / (n - 1));
-    const xin = Math.sin(t);
+    const xin = previewSample(wave, t);
     inn[i] = xin;
     out[i] = ok ? evalExpr(expr, xin) : 0;
   }

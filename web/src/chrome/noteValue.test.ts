@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatKnobDisplay,
   formatNoteBound,
   noteLabelForMapped,
   noteUnitForRange,
   parseNoteToken,
+  round2,
   typedToMapped,
   wholeToHz,
   wholeToMs,
@@ -40,5 +42,10 @@ describe("knob note values", () => {
     expect(formatNoteBound(1, 0.0625, "min", true)).toBe("1/1");
     expect(formatNoteBound(1, 0.0625, "max", true)).toBe("1/16");
     expect(formatNoteBound(180, 520, "min", false)).toBeNull();
+  });
+
+  it("rounds display to 2 dp and scales percent units", () => {
+    expect(round2(0.35000002)).toBe("0.35");
+    expect(formatKnobDisplay(0.405, "%")).toBe("40.50%");
   });
 });

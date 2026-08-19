@@ -51,3 +51,14 @@ export function optimizeScript(source: string): OptimizeReport {
   }).join("\n");
   return { script: out, original: source, changes, messages };
 }
+
+export function optimizeShowsApply(report: OptimizeReport): boolean {
+  return report.changes > 0;
+}
+
+export function optimizeEmptyMessage(report: OptimizeReport): string {
+  if (report.changes === 0) {
+    return "Script already optimal";
+  }
+  return `${report.changes} safe rewrite(s). Review and Apply.`;
+}

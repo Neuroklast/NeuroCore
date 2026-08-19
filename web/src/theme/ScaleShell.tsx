@@ -42,7 +42,7 @@ export function ScaleShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div ref={host} className="nk-scale-host h-full w-full overflow-hidden bg-black">
+    <div ref={host} className="nk-scale-host h-full w-full overflow-hidden">
       <div
         className="nk-scale-stage"
         style={{

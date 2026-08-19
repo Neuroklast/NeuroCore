@@ -373,6 +373,47 @@ public:
             }
         }
 
+        beginTest ("Bus+Delay+Join emit bus dirt: plus mix and roundtrip");
+        {
+            const juce::String script =
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "delay1: time = 250\n"
+                "join1: mix = 0.5\n";
+
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect (dsl::parse (script, doc, error), error);
+            expectEquals ((int) doc.nodes.size(), 4);
+            expectEquals (doc.nodes[1].type, juce::String ("bus"));
+            expectEquals (doc.nodes[1].name, juce::String ("dirt"));
+            expectEquals (doc.nodes[2].type, juce::String ("delay"));
+            expectEquals (doc.nodes[2].busName, juce::String ("dirt"));
+            expectEquals (doc.nodes[3].type, juce::String ("join"));
+            expectEquals (doc.nodes[3].args.at ("mix"), juce::String ("0.5"));
+            expect (doc.nodes[3].busName.isEmpty() || doc.nodes[3].busName == "main");
+
+            const auto jacks = dsl::jacksFor (doc.nodes[3], &doc);
+            bool inA = false, inB = false, out = false;
+            for (const auto& j : jacks)
+            {
+                if (j.id == "inA" && ! j.output) inA = true;
+                if (j.id == "inB" && ! j.output) inB = true;
+                if (j.id == "out" && j.output) out = true;
+            }
+            expect (inA && inB && out, "Join Signal jacks are inA, inB, out");
+
+            const juce::String emitted = dsl::emit (doc);
+            expect (emitted.contains ("bus dirt:"));
+            expect (emitted.contains ("mix"));
+            expect (! emitted.containsIgnoreCase ("out:"),
+                    "one emit path — join must not also write out:");
+
+            dsl::GraphDocument again;
+            expect (dsl::parse (emitted, again, error), error);
+            expect (dsl::semanticallyEqual (doc, again));
+        }
+
         beginTest ("mid-side and bus jacks split like rails");
         {
             const juce::String script =
@@ -1068,6 +1109,49 @@ public:
                 if (j.output && j.kind == "mod")
                     ++outs;
             expectEquals (outs, 2);
+        }
+
+        beginTest ("env in is an audio tap, LFO still has none");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (
+                        "env1: type = peak; attack = 0.01; release = 0.1\n"
+                        "stage1: y = x * env1\n"
+                        "osc1: shape = sine; freq = 1\n",
+                        doc, err),
+                    err);
+            auto idx = [&] (const juce::String& name) -> int
+            {
+                for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                    if (doc.nodes[(size_t) i].name == name)
+                        return i;
+                return -1;
+            };
+            const int env = idx ("env1");
+            const int stage = idx ("stage1");
+            const int osc = idx ("osc1");
+            expect (env >= 0 && stage >= 0 && osc >= 0);
+            const auto envJ = dsl::jacksFor (doc.nodes[(size_t) env], &doc);
+            bool hasIn = false, hasMod = false;
+            for (const auto& j : envJ)
+            {
+                if (j.id == "in" && ! j.output && j.kind == "audio")
+                    hasIn = true;
+                if (j.id == "mod" && j.output && j.kind == "mod")
+                    hasMod = true;
+            }
+            expect (hasIn, "env must expose audio in");
+            expect (hasMod, "env must expose mod out");
+
+            expect (dsl::connectJack (doc, -1, "out", env, "in", err), err);
+            expectEquals (doc.nodes[(size_t) idx ("env1")].busName, juce::String ("main"));
+            expect (dsl::connectJack (doc, idx ("stage1"), "out", idx ("env1"), "in", err), err);
+
+            expect (! dsl::connectJack (doc, idx ("osc1"), "out", idx ("env1"), "in", err),
+                    "LFO still has no audio out into env");
+            expect (! dsl::connectAudio (doc, idx ("stage1"), idx ("osc1"), err),
+                    "LFO still has no audio in");
         }
 
         beginTest ("tidyLayout puts IN top-left and OUT bottom-right");

@@ -1,5 +1,5 @@
 const CTRL_KEYS = new Set([
-  "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
+  "a", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
   "+", "-", "=", "0",
 ]);
 
@@ -25,4 +25,26 @@ export function shouldBlockBrowserShortcut(e: {
 
 export function shouldBlockWheelZoom(e: { ctrlKey: boolean; metaKey: boolean }): boolean {
   return e.ctrlKey || e.metaKey;
+}
+
+/** Native browser/OS menu is never shown. Our OsContextMenu is the only menu. */
+export function shouldBlockNativeContextMenu(_e?: { target?: unknown }): boolean {
+  return true;
+}
+
+/** Bare Space is Cubase play/pause. Repeat/chords stay with the plugin. */
+export function isHostTransportKey(e: {
+  key: string;
+  code?: string;
+  repeat?: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+}): boolean {
+  if (e.repeat)
+    return false;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey)
+    return false;
+  return e.key === " " || e.key === "Spacebar" || e.code === "Space";
 }

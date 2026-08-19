@@ -3,6 +3,8 @@
 #include <JuceHeader.h>
 #include "../src/bridge/HostSnapshot.h"
 #include "../src/core/Config.h"
+#include "../src/core/PluginProcessor.h"
+#include "../src/utils/PresetLibrary.h"
 
 class HostSnapshotTest : public juce::UnitTest
 {
@@ -67,6 +69,74 @@ public:
             expect (bridge::choiceCmdFromVar (juce::var (p), c, err), err);
             expectEquals (c.id, juce::String ("mode"));
             expectEquals (c.index, 1);
+        }
+
+        beginTest ("hostVar reports sidechainOn from the SC bus");
+        {
+            NeuroKoreAudioProcessor proc;
+            const auto host = bridge::hostVar (proc);
+            expect (host.hasProperty ("sidechainOn"));
+            const bool on = (bool) host.getProperty ("sidechainOn", false);
+            if (auto* bus = proc.getBus (true, 1))
+                expect (on == bus->isEnabled());
+            else
+                expect (! on);
+        }
+
+        beginTest ("save lists and reloads a user preset");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = tanh(x * a)\n", err), err);
+
+            const auto name = juce::String ("NkContractSave_") + juce::String (juce::Time::getMillisecondCounter());
+            bridge::PresetCmd save;
+            save.action = "save";
+            save.name = name;
+            save.author = "Kay";
+            save.category = "Bass";
+            expect (bridge::applyPresetCmd (proc, save, err), err);
+            expectEquals (proc.getCurrentPresetName(), name);
+
+            const auto state = bridge::presetStateVar (proc);
+            const auto list = state.getProperty ("list", juce::var());
+            bool found = false;
+            for (int i = 0; i < list.size(); ++i)
+            {
+                if (list[i].getProperty ("name", "").toString() != name)
+                    continue;
+                found = true;
+                expectEquals ((int) list[i].getProperty ("factory", true), 0);
+                expectEquals (list[i].getProperty ("author", "").toString(), juce::String ("Kay"));
+                expectEquals (list[i].getProperty ("category", "").toString(), juce::String ("Bass"));
+            }
+            expect (found, "user preset must appear in presetState list");
+
+            NeuroKoreAudioProcessor loaded;
+            bridge::PresetCmd load;
+            load.action = "load";
+            load.name = name;
+            expect (bridge::applyPresetCmd (loaded, load, err), err);
+            expect (loaded.getScript().contains ("tanh"), loaded.getScript());
+            expectEquals (loaded.getCurrentPresetName(), name);
+
+            auto file = PresetLibrary::userPresetRoot()
+                            .getChildFile (name + juce::String (Config::kPresetFileExtension));
+            expect (file.existsAsFile(), file.getFullPathName());
+            file.deleteFile();
+        }
+
+        beginTest ("irVar lists compiled IR slots even when empty");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("ir1: mix = 0.3; gain = 0\n", err), err);
+            const auto ir = bridge::irVar (proc);
+            const auto slots = ir.getProperty ("slots", juce::var());
+            expect (slots.isArray(), "ir payload has slots");
+            expect (slots.size() >= 1, "ir1 must appear after compile");
+            expectEquals (slots[0].getProperty ("slot", "").toString(), juce::String ("ir1"));
+            expectEquals ((int) slots[0].getProperty ("loaded", 1), 0);
         }
     }
 };

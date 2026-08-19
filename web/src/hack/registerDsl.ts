@@ -1,4 +1,5 @@
 import type { Monaco } from "@monaco-editor/react";
+import { liveTheme } from "../theme/theme";
 import { complete } from "./dslComplete";
 import { dslMonarch } from "./dslLanguage";
 
@@ -57,25 +58,26 @@ export const DSL_LANGUAGE_ID = LANG;
 
 export const DSL_THEME = "neurokore-dark";
 
-export function defineDslTheme(monaco: Monaco): void {
+export function defineDslTheme(monaco: Monaco, theme = liveTheme()): void {
+  const accent = theme.accent.replace("#", "");
   monaco.editor.defineTheme(DSL_THEME, {
     base: "vs-dark",
     inherit: true,
     rules: [
       { token: "comment", foreground: "c8c8c8" },
-      { token: "keyword", foreground: "ff1a1a" },
-      { token: "knob", foreground: "ff1a1a" },
+      { token: "keyword", foreground: accent },
+      { token: "knob", foreground: accent },
       { token: "number", foreground: "fff5f5" },
       { token: "identifier", foreground: "fff5f5" },
       { token: "operator", foreground: "c8c8c8" },
     ],
     colors: {
-      "editor.background": "#000000",
-      "editor.foreground": "#fff5f5",
-      "editorLineNumber.foreground": "#c8c8c8",
-      "editorCursor.foreground": "#ff003c",
-      "editor.selectionBackground": "#ff003c33",
-      "editorError.foreground": "#ff6b6b",
+      "editor.background": theme.black,
+      "editor.foreground": theme.ink,
+      "editorLineNumber.foreground": theme.inkMuted,
+      "editorCursor.foreground": theme.accent,
+      "editor.selectionBackground": `${theme.accent}33`,
+      "editorError.foreground": theme.error,
     },
   });
 }

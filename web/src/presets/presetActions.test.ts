@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryRows } from "./factoryCatalog";
+import { explorerSession } from "../overlays/explorerSession";
 import { presetAction, seedFactoryPresets } from "./presetActions";
 
 describe("preset actions without the JUCE bridge", () => {
@@ -12,6 +13,7 @@ describe("preset actions without the JUCE bridge", () => {
       knobs: [],
       mix: 1,
     });
+    explorerSession.cat = "";
     useAstStore.setState({
       origin: "bridge",
       ast: null,
@@ -57,6 +59,35 @@ describe("preset actions without the JUCE bridge", () => {
     expect(ast.ast?.nodes.some((n) => n.id === "stage1")).toBe(true);
     expect(ast.ast?.nodes.some((n) => n.type === "filter")).toBe(true);
     expect(ast.lastValidAst?.nodes.length).toBe(ast.ast?.nodes.length);
+  });
+
+  it("saves a user preset and reloads the script", async () => {
+    seedFactoryPresets();
+    const script = "xover1: f1 = 200; f2 = 2000\n";
+    useAstStore.setState({
+      origin: "editor",
+      script,
+      lastValidScript: script,
+      ast: null,
+      lastValidAst: null,
+      diagnostics: [],
+    });
+    useHostStore.setState({ mix: 0.7 });
+
+    await presetAction({ action: "save", name: "My Xover", author: "Kay", category: "User" });
+    const saved = useHostStore.getState().presets.find((p) => p.name === "My Xover");
+    expect(saved?.factory).toBe(false);
+    expect(saved?.author).toBe("Kay");
+    expect(saved?.category).toBe("User");
+    expect(useHostStore.getState().presetName).toBe("My Xover");
+
+    await presetAction({ action: "new" });
+    expect(useAstStore.getState().script).not.toContain("xover1");
+
+    await presetAction({ action: "load", name: "My Xover" });
+    expect(useHostStore.getState().presetName).toBe("My Xover");
+    expect(useAstStore.getState().script).toContain("xover1");
+    expect(useHostStore.getState().mix).toBeCloseTo(0.7, 5);
   });
 });
 

@@ -2,26 +2,13 @@
 
 #include <JuceHeader.h>
 
-#ifndef NEUROKORE_NATIVE_EDITOR
-#define NEUROKORE_NATIVE_EDITOR 0
-#endif
-
 namespace bridge
 {
 
-/** Env wins. Compile default: web unless NEUROKORE_NATIVE_EDITOR=1 (tests). */
+/** Product editor is Web. Env no longer opens the retired native chrome. */
 inline bool wantWebEditor()
 {
-    const auto web = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_EDITOR", {});
-    if (web == "1")
-        return true;
-    if (web == "0")
-        return false;
-#if NEUROKORE_NATIVE_EDITOR
-    return false;
-#else
     return true;
-#endif
 }
 
 /** Probe options only. Must match the backend WebPluginEditor actually constructs. */

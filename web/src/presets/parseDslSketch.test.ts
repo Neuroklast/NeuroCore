@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findFactory } from "./factoryCatalog";
+import { visualJacksFor } from "../assemble/visualEdges";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
 
 const FENDER = `# Fender Clean
@@ -60,6 +61,38 @@ describe("parseDslSketch", () => {
     expect(doc.edges?.some((e) => e.from === "stage2" && e.to === "out")).toBe(true);
   });
 
+  it("keeps indented sync = 1/4 on the LFO, not as a new block", () => {
+    const { doc } = parseDslSketch("osc1: freq = 1\n  sync = 1/4\n  shape = sine\nstage1: y = x");
+    const osc = doc.nodes.find((n) => n.id === "osc1");
+    expect(osc?.args.sync).toBe("1/4");
+    expect(osc?.args.freq).toBe("1");
+    expect(osc?.args.shape).toBe("sine");
+    expect(doc.nodes.some((n) => n.id === "sync")).toBe(false);
+  });
+
+  it("loads Schranz Multiband and Precision Multiband sketches", () => {
+    for (const name of ["Schranz Multiband", "Precision Multiband"] as const) {
+      const preset = findFactory(name);
+      expect(preset, name).toBeTruthy();
+      const { doc } = parseDslSketch(preset!.script);
+      expect(doc.nodes.some((n) => n.type.startsWith("xover")), name).toBe(true);
+      expect(doc.nodes.some((n) => n.type === "out"), name).toBe(true);
+      expect(doc.nodes.filter((n) => n.type === "bus").map((n) => n.id).sort()).toEqual(
+        ["high", "low", "mid"],
+      );
+    }
+  });
+
+  it("ENV sits on the audio rail with in + mod jacks", () => {
+    const { doc } = parseDslSketch("env1: type = peak; attack = 0.01; release = 0.1; min = 0; max = 1\nstage1: y = x * env1");
+    const env = doc.nodes.find((n) => n.id === "env1");
+    expect(env?.type).toBe("env");
+    expect(env?.busName).toBe("main");
+    const jacks = env ? visualJacksFor(env, doc.nodes) : [];
+    expect(jacks.some((j) => j.id === "in" && ! j.output && j.kind === "audio")).toBe(true);
+    expect(jacks.some((j) => j.id === "mod" && j.output && j.kind === "mod")).toBe(true);
+  });
+
   it("parks LFOs off the audio chain and marks note params", () => {
     const { doc } = parseDslSketch(TREM);
     const osc = doc.nodes.find((n) => n.id === "osc1");
@@ -77,6 +110,26 @@ describe("parseDslSketch", () => {
     expect(a?.active).toBe(true);
     expect(a?.value).toBeCloseTo((1.1 - 0.5) / (2.8 - 0.5), 5);
     expect(knobs.find((k) => k.id === "d")?.active).toBe(false);
+  });
+
+  it("Bus+Delay+Join opens the dirt rail and mixes on join", () => {
+    const script = [
+      "stage1: y = x",
+      "bus dirt:",
+      "delay1: time = 250",
+      "join1: mix = 0.5",
+    ].join("\n");
+    const { doc } = parseDslSketch(script);
+    const bus = doc.nodes.find((n) => n.type === "bus");
+    expect(bus?.args.name).toBe("dirt");
+    expect(doc.nodes.find((n) => n.id === "delay1")?.busName).toBe("dirt");
+    const join = doc.nodes.find((n) => n.id === "join1");
+    expect(join?.type).toBe("join");
+    expect(join?.args.mix).toBe("0.5");
+    expect(join?.busName === "main" || join?.busName === "").toBe(true);
+    expect(join?.jacks?.map((j) => j.id)).toEqual(["inA", "inB", "out"]);
+    expect(doc.edges?.some((e) => e.to === "join1" && e.toJack === "inA")).toBe(true);
+    expect(doc.edges?.some((e) => e.from === "delay1" && e.to === "join1" && e.toJack === "inB")).toBe(true);
   });
 
   it("parses a live factory row", () => {

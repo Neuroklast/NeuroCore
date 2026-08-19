@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
+import { chipOverlay } from "../presets/irSlots";
 import { explainDrive, formatParamRange, stageCards, stageHeadline, stageRole } from "./stagesModel";
 
 const ast: AstDocument = {
@@ -47,5 +48,18 @@ describe("stages overlay model", () => {
     expect(cards[1]?.knobs).toEqual([{ id: "a", name: "Drive" }]);
     expect(cards[2]?.label).toBe("LFO");
     expect(formatParamRange(0.10000000149011612, 0.5)).toBe("[0.10 … 0.50]");
+  });
+
+  it("an IR stage is a cab slot, not a generic inspect-only card", () => {
+    const ir = {
+      id: "ir1",
+      type: "ir",
+      busName: "main",
+      args: { mix: "0.3", gain: "0" },
+      trailingComment: "",
+    };
+    expect(stageRole("ir")).toMatch(/cabinet|impulse/i);
+    expect(stageHeadline(ir)).toMatch(/Cab mix/i);
+    expect(chipOverlay(ir.id, ir.type).overlay).toBe("ir");
   });
 });
