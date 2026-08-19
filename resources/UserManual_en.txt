@@ -1,12 +1,14 @@
 # NEUROKORE
 
-NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, crossover, envelope, oscillator).
+NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, pitch, crossover, envelope, oscillator).
+
+Version 0.4.8-alpha. Formats: Standalone, VST3, AU.
 
 30-second path
-1. Click Presets and double-click a factory row (amp, delay, reverb, vocal).
+1. Click the preset name in the top bar. Double-click a factory row (amp, delay, reverb, vocal).
 2. Play audio. Raise Mix until you hear the effect.
 3. Turn knobs a-f. Names and ranges come from the formula.
-4. Want your own sound? Click Edit, change the formula, then Save.
+4. Want your own sound? Open Terminal, click Edit, change the formula, then Save. Or build it on Circuit. Then open the preset name and Save As...
 
 This Help is offline. Pick a chapter on the left. Search filters titles and text.
 
@@ -16,29 +18,34 @@ This Help is offline. Pick a chapter on the left. Search filters titles and text
 
 Put NEUROKORE on a track, or on a send return. On Mac it is an Audio Unit and a VST3; on Windows and Linux it is VST3 or the Standalone app.
 
+Three views
+- Unit: meters, path, and the face. Good for playing.
+- Circuit: the board. Chips, jacks, cables.
+- Terminal: the same sound as text.
+
 Load a preset
-- Click Presets in the top bar.
-- Leave Scope on All or Factory.
+- Click the preset name in the top bar (there is no extra Presets button).
+- Leave All or Factory selected.
 - Double-click a row, or select it and press Load.
-- The chip next to Presets shows the name. Use the < and > buttons on either side to step through the library.
+- Use < and > beside the name to step through the library (factory, then your sounds).
 
 Hear it
 - Mix at 0% is dry (untouched input).
 - Raise Mix. On an insert, start around 40-70%. On a send, push Mix high and use the host send level.
-- L / BOTH / R chooses which input channel the formula hears. BOTH is the default. L or R copies that side onto both channels, so the stereo field becomes a vertical line.
+- L / BOTH / R chooses which input channel the formula hears. BOTH is the default. L or R copies that side onto both channels.
 
 Change the sound
 - Knobs a-f can be automated from the host.
 - If a knob does nothing, that letter is not used in the current formula.
 
 Edit the formula
-- Edit opens the formula editor. Suggestions stay closed until you press Ctrl+Space (Cmd+Space on Mac).
-- Save applies the formula. A red line under the editor explains errors.
-- Copy puts the formula on the clipboard.
+- Open Terminal. Edit opens the formula editor. Suggestions stay closed until you press Ctrl+Space (Cmd+Space on Mac).
+- Save applies the formula. Validate lists Parse / Braces / Enums / Ranges / MS/LR / Bus/Join / Jacks without applying.
+- On Circuit, add chips, drag cables, and change values. That writes the same formula.
 
 Save your own
-- Presets -> Save As...
-- Give it a Name, Author, and Category.
+- Click the preset name -> Save As...
+- Give it a Name, Author, and Category. The file is a .nrk in your user preset folder.
 
 ---
 
@@ -46,47 +53,41 @@ Save your own
 
 Top bar
 - NK + NEUROKORE + by Neuroklast + version: product mark. Click it to open neuroklast.net.
-- Presets: factory and your own sounds. The last category stays selected when you reopen.
-- Current chip: loaded preset name, or Untitled.
-- Current chip: loaded preset name. < / > step through the library.
-- Functions: look up formula words and insert them. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder, octaver).
+- Preset name: click to open the explorer. Untitled if nothing is loaded.
+- < / > step through factory, then user presets. Wraps at both ends.
+- Functions: look up formula words and insert them. Folders on the left: Core, Drive, Crush, Blocks.
 - Stages: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
-- Settings: animation Full / Reduced / Off, Studio / Live processing, UI scale, formula text size, and standalone audio device. Remembered.
-- LIVE / STUDIO: Live uses min-phase oversampling so playing feels instant. Studio uses linear-phase oversampling for mix work.
-- Bypass: forces Mix to 0 (dry) and locks the Mix slider so you cannot sneak wet signal back in. Turn Bypass off and the previous Mix comes back.
-- License: import a signed .lic file. After activation, License shows who this copy is licensed to. Replace license loads a new file.
-- Help: this guide, one chapter at a time. Text is large so you can read it from the chair.
+- Settings: animation, Studio / Live, theme, UI scale, formula text size, circuit cables, tempo, standalone audio device, About / License / Help.
+- LIVE / STUDIO: Live uses min-phase oversampling so playing feels instant. Studio uses linear-phase oversampling for mix work. Same control lives in Settings.
+- Bypass: forces Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
+- Help: this guide, one chapter at a time.
 
-Settings
-Oversampling, Polisher, and Mix sit between Circuit/Terminal and the IN/OUT scopes, not in the top bar.
-- L / BOTH / R: which input channel feeds the formula. Same width as the knobs, on the Circuit / Terminal row.
-- Oversampling: 1x / 2x / 4x / 8x. Default 4x. Drop to 2x or 1x if the computer is struggling.
-- Polisher: None / Hard Clip / Limiter after the formula. Use Limiter if peaks slam.
-- Settings, Tempo: Host follows the DAW BPM. User lets you type a BPM. The footer shows HOST or USER.
-- Settings, Circuit cables: Dots (white/gray orthogonal PCB traces, beads follow the input) or Wave (gray waveform). LFO cables stay static; a running light follows the oscillator rate, brightness follows amplitude.
-- Circuit right-click: Auto-arrange, or Add with category folders. Factory presets open already arranged at the current zoom.
-- Guitar: BOTH copies a silent side from the live side so L/R amps (Stereo Guitar Wall) work from a mono DI. Amp presets have a Width knob (default 0).
-- Text - / +: size of the formula text.
-- Resize the window to scale the UI. The aspect ratio stays locked.
+There is no License button in the top bar. Open Settings -> License.
+
+Workspaces
+- Unit / Circuit / Terminal switch the main window. They share one formula, one Mix, and the same knobs.
 
 Knobs
-- Six knobs in one column: a, b, c, d, e, f from top to bottom.
-- Click the name above a knob to rename it. That updates param a = ... in the script. Change the name in the script and the knob label follows. The formula still uses a-f.
-- Right-click a knob for MIDI Learn.
+- Six knobs a-f. On Circuit they sit in one row under the board (letter above the name). On Terminal they sit in a column on the left.
+- Click the name to rename it. That updates `param a = ...` in the script. Change the name in the script and the label follows. The formula still uses a-f.
+- Scroll the mouse wheel over a knob to turn it. Type a number or a note length (1/4) into the value.
+- Right-click a knob: Name / Min / Max / Unit / Note / MIDI Learn. Never the browser menu.
+- On Circuit, drag from a chip's bottom jack to a knob to bind it. Bound knobs print on the chip. There are no extra knob cables on the board.
 
-Formula area
-- Circuit / Terminal: Circuit is the board. Parts snap to a faint rose-cross grid. The 16 px cells stay on whole pixels at 125 % / 150 % host scale. IN is top-left, OUT is bottom-right. Drag moves a chip without changing the chain order. Double-click opens the node overlay with every parameter. Click the chevron to expand values and jacks. Bound knobs print their letter and name on the chip - no cables from the knob column. Ctrl+wheel zooms. LFO traces carry small pulses at the LFO rate. Terminal is the hack - the same construct as text, with an IR button on that line. The footer shows CPU (0-100), latency, sample rate, 32f, buffer, BPM HOST or USER, OS. Settings, Tempo picks host or a typed BPM.
-- When you are not editing: live view with coloured knobs and current values in brackets. Scroll if the formula is long.
-- Each ir1 / ir2 line has an inline button on that line. Click it to drop, load, change, or clear that impulse. Amp factory presets come with a cabinet already loaded; you can still swap or clear it. Empty slot is dry.
-- Edit, then Save to apply.
-- Optimize: tidy the math without changing the idea. It will refuse a rewrite that sounds worse.
-- Insert / Quick template: drop in a common block.
+Tools row (Circuit and Terminal)
+- L / BOTH / R, Oversampling 1x / 2x / 4x / 8x (default 4x), Polisher None / Hard Clip / Limiter, Mix.
+- Mix drag may flash only inside the slider. Locked while Bypass is on.
 
-Bottom
-- Tools row (between the editor and the scopes): Oversampling, Polisher, Mix. Mix drag may flash only inside the slider. Locked while Bypass is on.
-- Audio device lives in Settings (Standalone only). In a DAW the host owns the sample rate.
-- Footer: NKOS LIVE / STUDIO / BYPASS / SAFE, CPU, latency, sample rate, 32f, buffer, BPM HOST or USER, OS.
-- IN / OUT: wave, stereo field, and loudness on each side. Click << to hide field and loudness; click >> to bring them back.
+Footer
+- LIVE / STUDIO / BYPASS / SAFE, CPU 0-100, latency, sample rate, 32f, buffer, BPM HOST or USER, OS.
+- Far right: LIC when licensed, or DEMO m:ss while the 20-minute demo is running.
+- IN / OUT: wave, stereo field, and loudness. Pick the source IN | OUT | BOTH. CPU is never a host-callback ratio like 173%.
+
+Space bar
+- Space is host play / pause, even while the plugin has focus. Text fields still type a space.
+
+Window
+- The window keeps a 1280:860 ratio. Settings scale 100 / 125 / 150. Fit snaps down so the board never exceeds the host window.
 
 ---
 
@@ -117,62 +118,95 @@ Watch out
 
 ---
 
-## 4. Formula editor
+## 4. Circuit
 
-1. Click Edit. The live view becomes an editor.
-2. Write stages, filters, delay, reverb, compressors, gates, limiters, IR slots, crossovers, envelopes, oscillators.
-3. Press Ctrl+Space (Cmd+Space on Mac) when you want suggestions. They do not pop up while you type. After `type =` on a filter you only get filter types.
-4. Click Save. NEUROKORE checks the formula and starts using it.
-5. If Save fails, read the red line under the editor.
+Circuit is the board. The script is the source of truth. Dragging a chip moves it; it does not reorder the chain.
 
-Other buttons
-- Copy: clipboard only, does not apply.
-- Optimize: safer, simpler math. Watch the overlay for status.
-- Insert / Quick template: delay, reverb, clip plus a darkening filter, and similar blocks.
+Board
+- Dots on a 32 px cell, lines on a 128 px block. Chips snap to the cell.
+- IN stays on the left. OUT stays on the right of the last main chip.
+- Audio tubes and jacks sit on cell midlines. Each jack is labelled.
+- Drag a chip by its body. Click the name or the 26 px details plate to edit values. This is not an accordion.
+- Double-click a chip to inspect every field. Enums are a list. Numbers clamp to the catalog range.
 
-Live view
-- Colours match the knob rings.
-- Values in [brackets] update while you play.
-- You can scroll even when you are not editing.
+Add and remove
+- Right-click empty paper: Add, with folders Dynamics, Tone (includes Pitch), Time, Mod, Routing, Custom.
+- Add on a cable inserts into that path. Add on empty paper drops a disconnected chip. Drag a cable to patch it, including who feeds OUT.
+- Select a chip and Delete / Backspace removes it. Select a cable and Delete / Backspace disconnects it.
+- Ctrl+Z / Ctrl+Y is formula undo / redo.
 
-Undo
-- Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z walk formula history.
+Cables
+- While you drag, the cable is a straight line to the pointer. On drop it becomes an orthogonal PCB trace (stubs, parallel lanes, at most two corners on a free run).
+- Audio is white with a red glow. LFO / bind traces are cyan. LFO traces stay still; a pulse travels at the LFO rate.
+- Settings -> Circuit cables: Dots (beads while audio is present) or Wave (gray waveform after the block).
+
+Arrange
+- Ctrl/Cmd+A Arrange: left-to-right chain with air.
+- Shift+A Compact: wrap the chain into 1-3 rows so tubes stay at least one grid long.
+- Factory presets and first load auto-arrange. Dragging a chip does not re-run Arrange.
+
+Routing chips
+- Split Mid/Side and Join Mid/Side, or Split L/R and Join L/R. Do not mix the families.
+- Untagged chips between a matching split/join sit on both rails.
+- Multiband Split (xover) has in plus mix outs low / mid / high. Mix them with `out: low = 1; mid = 1; high = 1` or leave the implicit mix.
+- Bus opens a named rail (`bus dirt:`). Join Signal mixes two inputs (inA / inB / out) with a bindable mix.
+- Send has in / out plus a bottom ctrl jack.
+- Sidechain IN appears only when the host extra input is enabled.
+- ENV is a tap: audio in, mod out. Patch `env1` onto a parameter (`y = x * env1`) to hear it. It is not an LFO.
+
+IR
+- Add Cabinet IR, or double-click an ir chip. Impulse: Load / Play / Clear. The file stays in host state, not in the formula.
 
 ---
 
-## 5. Presets
+## 5. Terminal
 
-Factory
-- Built into the plugin. Author is NEUROKLAST.
-- The folder you last picked stays selected when you reopen Presets.
+Terminal is the same construct as text.
 
-The Presets window is an explorer
-- Left: folders (All, Distortion, Club, Delay, …) with a count.
+Live view
+- Muted frame, coloured knobs, current values (`a[3.20]`), header `# name` / sound line.
+- IR slots have an inline button on that line. Click it for Impulse (Load / Play / Clear).
+
+Edit
+- Edit turns the view into an editor (accent, caret).
+- Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac). After `type =` on a filter you only get filter types.
+- Save applies the formula. A red line under the editor explains errors.
+- Validate opens the check list: Parse, Braces, Enums, Ranges, MS/LR, Bus/Join, Jacks. It does not apply. Multiband Split is valid without a fake `out` jack.
+- Optimize tidies the math without changing the idea. Empty result: Script already optimal (no Apply).
+- Functions -> Insert drops a word at the caret. There is no separate Quick template bar.
+
+Undo
+- Ctrl/Cmd+Z and Ctrl/Cmd+Y walk formula history.
+
+---
+
+## 6. Presets
+
+Open the explorer by clicking the preset name.
+
+The window
+- Left: folders (All, Distortion, Club, Delay, ...) with a count. The last folder stays selected when you reopen.
 - Top: search, plus All / Factory / User.
-- Middle: the list. Bottom: name, tags, and what the sound does.
-- The number at the top right is how many rows match.
+- Middle: Name / Category / Author. Click a header to sort. Double-click loads.
+- Bottom: name, Factory or User, tags if the file has them, and the description.
+- Buttons: Load, Save As..., New Blank, Import, Close.
 
 Load
 - Double-click a row, or select + Load.
-- Or stay in the editor: < / > beside the preset name steps through factory, then user presets. Wraps at both ends.
-- New Blank starts a simple softclip formula.
+- Or stay in the editor: < / > beside the name. Wraps at both ends.
+- New Blank starts a simple softclip formula named Untitled.
 
-Save your own
-1. Open Presets.
+Save As...
+1. Click the preset name.
 2. Save As...
 3. Name, Author (your name or alias), Category (Guitar, Delay, Vocal, Club, ...).
-   Optional tags (comma-separated) make the sound easier to find later.
+4. Save writes a .nrk into your user preset folder. Same name overwrites that user file. Factory sounds are never overwritten.
 
-The list shows Name / Category / Tags / Source / Author / Rating.
-It opens sorted by Name. Click a column header to change the sort.
-Search looks at the name, tags, description, and the formula itself.
-Type "delay", "kick", "techno", "cyberpunk", or "tape" to find matching sounds.
+Import
+- Import opens a file picker. One .nrk, or a .zip pack.
+- Packs land under Packs / name. They never overwrite factory sounds.
 
-There is no separate builder panel. Write formulas in the editor (templates + Edit).
-
-Share packs with Export as a .zip (visible user presets), or drop a folder of .nrk files.
-Import accepts one .nrk, several files, a folder, or a .zip pack. Packs land in Packs / name
-and never overwrite factory sounds. Drag and drop onto the preset list works the same.
+Search looks at the name, tags, description, and the formula. Type delay, kick, techno, or tape.
 
 Useful factory sounds
 These are mix tools, not a full mastering suite.
@@ -183,18 +217,18 @@ These are mix tools, not a full mastering suite.
 - Vocal Send: dry vocal plus slap and a small room.
 - NY Drum Bus / Parallel Tape: dry plus a smashed or tape-like path. Blend is the mix.
 - Plate Send / Width Delay / Slap Double: dry in the middle, wet on a side path.
-- Haas Width / Loudness Curve / Missing Bass / Speech Band: ear tricks (width, cut-through, implied bass). Not a hearing-lab suite.
+- Haas Width / Loudness Curve / Missing Bass / Speech Band: ear tricks (width, cut-through, implied bass).
 - Mono to Stereo: allpass + Haas. Mid stays the original. Works on a mono send.
 - Trailer Impact / Score Hall / Dialogue Seat / Far Plane / Boom Tail / Wide Canvas / Tension Bed: score, FX, and dialogue processing. Not a trailer sample pack.
-- Stereo Guitar Wall: two DI takes, two amps (dense left / tight right), cabinet IR preloaded. Needs stereo in and BOTH. Not a fake double of one take.
+- Stereo Guitar Wall: two DI takes, two amps, cabinet IR preloaded. Needs stereo in and BOTH. Not a fake double of one take.
 - Cyberpunk Drive / Neon Clip / Chrome Fold / Data Mosher: digital dirt.
-- Glitch Laboratory: crush + fold + a short note-grid delay. No ping-pong, no LFO on the filter.
-- Kick Rumble / Warehouse Rumble: split kick. Main = click+mids (HPF, dip at 320 Hz). Scream = bright hit only (follows the envelope). Body = dark floor (Floor knob, ~60 Hz) into a 15 ms resonator + sub. Insert on the kick, Mix 100.
-- Hardcore Clip / Gabber Drive: same split, more mid bark, 320 Hz scooped so it stays crisp. Acid Hash / Tekno Comb / Industrial Gate / Hoover Dirt: more club tools.
+- Glitch Laboratory: crush + fold + a short note-grid delay.
+- Kick Rumble / Warehouse Rumble: split kick. Insert on the kick, Mix 100.
+- Hardcore Clip / Gabber Drive: same split, more mid bark. Acid Hash / Tekno Comb / Industrial Gate / Hoover Dirt: more club tools.
 
 ---
 
-## 6. Formula language
+## 7. Formula language
 
 Everyday blocks:
 
@@ -212,6 +246,12 @@ eqN: type = peak; freq = ...; q = ...; gain = ...
 
 octaverN: sub = ...; up = ...; mix = ...; tone = ...
     Tracking -1 / +1 octave. thresh sets how hard it locks.
+
+pitchN: semitones = ...; mix = ...; formant = ...; ceiling = ...
+    Phase-vocoder pitch shift (-24 to +24 semitones). formant 1 follows pitch.
+    ceiling is a soft cap on the wet path (default -0.3 dB). Optional sync = 1/8
+    ties the hop to tempo. Adds a little latency (FFT minus hop); the host is told.
+    Aliases: pitchshift, pshift. On Circuit: Add -> Tone -> Pitch.
 
 vocoderN: bands = 8; mix = ...; q = ...; formant = ...; dry = ...
     Analog vocoder. Insert on a synth/pad (carrier). Pin the voice on Sidechain.
@@ -241,31 +281,35 @@ limitN: ceiling = ...; release = ...
     In-chain peak limiter. Instant attack, no extra latency. Not the Polisher (Polisher is last).
 
 xoverN: f1 = ...; f2 = ...
-    Splits into low / mid / high buses (omit f2 for two bands). Then mix them with
+    Splits into low / mid / high mix outs (omit f2 for two bands). Then mix them with
     out: low = 1; mid = 1; high = 1
+    Validate is happy with that. There is no serial xover `out` jack.
 
 irN: mix = ...; gain = ...
-    Convolution cab / room. Each ir line has its own button: drop a WAV or AIFF,
-    Load, see the waveform, or Clear. Several ir1 / ir2 slots are allowed. Empty = dry.
-    Paths stay out of the formula. Max length about 2 seconds.
+    Convolution cab / room. Click the chip or the inline button: Load, Play, Clear.
+    Several ir1 / ir2 slots are allowed. Empty = dry. Paths stay out of the formula.
+    Max length about 2 seconds.
 
-envN: type = peak; attack = ...; release = ...
-    Envelope follower. Use the name (env1) later in the formula.
+envN: type = peak; attack = ...; release = ...; hold = ...; min = ...; max = ...; invert = ...
+    Envelope follower (a tap, not a through chip). Use the name later: `y = x * env1`.
     source = sidechain follows the extra Sidechain input instead of the main path.
 
 Sidechain
     Extra stereo input on the plugin. In a DAW, route a kick or vocal into that pin.
     In the formula: sc (mono mix), sc_l, sc_r. Example: y = x * (1 - abs(sc) * a).
-    Vocoder Bank / Vocoder Lite: put the voice on the Sidechain pin, carrier on this insert.
+    On Circuit, Sidechain IN is visible only when that host input is on.
 
 oscN: type = sine; freq = ...
-    Slow oscillator / LFO.
+    Slow oscillator / LFO. East `mod` jack. Lamp pulses at Hz.
 
 delayN: time = ...; feedback = ...; mix = ...
     Delay. Feedback is limited so it cannot run away. damp darkens repeats.
 
 reverbN: size = ...; mix = ...
     Room / hall.
+
+customN: y = ...
+    Extra math chip. Add extra inputs from Inspect.
 
 Good habits
 - After hardclip, fold, or bitcrush, add a lowpass around 6-12 kHz so it does not get brittle.
@@ -275,11 +319,11 @@ Good habits
 
 ---
 
-## 7. Tips
+## 8. Tips
 
 Functions catalog
-- Open Functions. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder).
-- Pick a word, then Insert.
+- Open Functions. Folders on the left: Core (math), Drive (tube, diode, clip), Crush (fold, bitcrush), Blocks (ott, widen, vocoder, octaver).
+- Pick a word, then Insert (into Terminal).
 
 Send effect
 - Load a delay or reverb, set Mix high, ride the host send.
@@ -301,11 +345,17 @@ Latency
 - Oversampling and some blocks add a little latency. The host is told the amount.
 
 Standalone sample rate
-- Open Settings and click Audio device. In a DAW, follow the host.
+- Settings -> Audio device. In a DAW, follow the host.
+
+Theme
+- Settings -> Theme: Signal (red/cyan), Gold, Azure. Remembered.
+
+Animation
+- Full / Reduced / Off. Reduced skips overlay motion. Off is still chrome.
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 No sound
     Mix at 0? Bypass on? Red error under the editor? Input on the empty channel? Try BOTH and raise Mix.
@@ -325,18 +375,27 @@ Knob does nothing
 Preset will not load
     Your saved file may be damaged. Save As again. Factory sounds are always available.
 
+Cannot find Save
+    Terminal Save applies the formula. To keep a sound, click the preset name -> Save As...
+
+Validate FAIL Jacks on xover
+    Multiband Split outs are low / mid / high. Mix them on OUT. A leftover serial `out` jack is not part of the chip.
+
 High CPU
     Lower oversampling. Use fewer stages and shorter delays. Silence after tails sleeps the wet path (OS / formula); a new hit wakes it.
 
+Space does not type
+    Bare Space is host transport. Click a text field first if you need a space in a name.
+
 ---
 
-## 9. License
+## 10. License
 
-Without a license NEUROKORE is a 20-minute demo. After that Mix is forced to 0 (dry). Your formula stays loaded.
+Without a license NEUROKORE is a 20-minute demo. After that Mix is forced to 0 (dry). Your formula stays loaded. The footer shows DEMO m:ss, then Mix locks dry. After activation the footer shows LIC.
 
 Activate
 1. You receive a .lic file for your email.
-2. Click License in the top bar.
+2. Settings -> License.
 3. Choose the file. Status shows LIC and the email.
 4. After activation, License opens a window: Licensed to, your email, and the issue date if the file has one.
 5. Replace license in that window loads a different file.
@@ -347,12 +406,15 @@ If import fails, the file was edited or is not a NEUROKORE license. Ask for a ne
 
 ---
 
-## 10. Glossary
+## 11. Glossary
 
-Graph
-    The board. Parts snap to rose crosses and look like chips you assemble.
+Unit
+    The face view: meters, path, peaks. Not the board.
 
-Script
+Circuit
+    The board. Chips and cables. Same formula as Terminal.
+
+Terminal
     The hack. The same construct as text. Live view shows knob values in brackets.
 
 Formula
@@ -371,26 +433,33 @@ Factory preset
     A built-in sound from NEUROKLAST.
 
 User preset
-    A sound you saved, with Name / Author / Category.
+    A sound you saved with Save As..., Name / Author / Category, as a .nrk file.
 
 Sidechain pin
     Extra stereo input. Route a kick or a voice there. The formula reads it as sc.
 
 IR slot
-    A cab or room impulse. The file is not written into the formula. Click the ir line.
+    A cab or room impulse. The file is not written into the formula. Click the ir chip or the ir line.
 
 Limit vs Polisher
     limit1 is a block in the chain. Polisher Limiter is the last safety clip.
 
+ENV
+    Envelope tap. Audio in, modulator out. Patch the name onto a parameter.
+
 ---
 
-## 11. Blocks in more detail
+## 12. Blocks in more detail
 
 eq
     Peak, notch, low cut, high cut, low shelf, high shelf. Use this when you want a boost or cut without throwing the rest of the spectrum away. A bandpass filter is for wah / radio / formant, not for a mid bump.
 
 octaver
     Tracking minus-one and plus-one octave. sub / up / mix / tone / thresh. Works best on single notes. Chords fall back to a rougher analog flip.
+
+pitch
+    Phase vocoder. semitones / mix / formant / ceiling. Formant 1 = move with pitch.
+    Use this for musical shift. Octaver is a tracker, not a vocoder.
 
 vocoder
     Carrier is this insert. Voice goes on the Sidechain pin. bands 3-8, mix, q, formant, dry. With no pin it vocodes itself.
@@ -399,22 +468,22 @@ Note times
     param a = Time [1/4, 1/16] snaps the knob to musical lengths. The formula sees milliseconds at the host tempo. Good for delay1: time = a.
 
 Buses
-    bus name: then send: in = 1, then out: main = ... ; name = ...
+    bus name: then send, then Join Signal or out: main = ... ; name = ...
     Use this for parallel grit, send delay, or a ducked echo. Keep dry on main.
 
 xover
     Writes low / high, or low / mid / high if you set f2. Mix with out: low = 1; high = 1
 
 IR
-    ir1 / ir2 are separate slots. Button on that line: drop, Load, waveform, Clear.
+    ir1 / ir2 are separate slots. Chip or line button: Load, Play, Clear.
 
 ---
 
-## 12. Tutorial: first drive
+## 13. Tutorial: first drive
 
 Goal: a simple overdrive you can play through.
 
-1. New Blank, then Edit.
+1. New Blank, then Terminal -> Edit.
 2. Replace the formula with:
 
 param a = Drive [0.8, 6.0]
@@ -426,10 +495,11 @@ filter2: type = lowpass; cutoff = b; resonance = 0.3
 
 3. Save. Mix around 50-70% on an insert.
 4. Drive adds grit. Tone is the cab-like roll-off.
+5. Preset name -> Save As... if you want to keep it.
 
 ---
 
-## 13. Tutorial: send delay
+## 14. Tutorial: send delay
 
 Goal: a slap or eighth-note echo that keeps the dry take.
 
@@ -447,7 +517,7 @@ delay1: time = a; feedback = b; mix = c; damp = d
 
 ---
 
-## 14. Tutorial: ducked delay
+## 15. Tutorial: ducked delay
 
 Goal: echoes that sit down when you play and come up in the gaps.
 
@@ -457,12 +527,12 @@ Goal: echoes that sit down when you play and come up in the gaps.
 
 ---
 
-## 15. Tutorial: sidechain duck
+## 16. Tutorial: sidechain duck
 
 Goal: the insert ducks when a kick hits.
 
 1. In the host, route the kick to NEUROKORE's Sidechain input.
-2. Edit:
+2. Terminal -> Edit:
 
 param a = Depth [0.2, 1.0]
 env1: type = peak; source = sidechain; attack = 0.005; release = 0.16
@@ -470,10 +540,11 @@ stage1: y = x * (1 - env1 * a)
 
 3. Save. Play the kick. Depth is how far the insert ducks.
 4. No pin? env follows this track instead. Check the host routing.
+5. On Circuit, Sidechain IN only shows when the extra input is on.
 
 ---
 
-## 16. Tutorial: vocoder
+## 17. Tutorial: vocoder
 
 Goal: a synth (this track) spoken by a voice (Sidechain pin).
 
@@ -491,7 +562,7 @@ vocoder1: bands = 8; mix = a; q = b; formant = 1; dry = c
 
 ---
 
-## 17. Tutorial: amp stack
+## 18. Tutorial: amp stack
 
 Goal: a guitar or bass amp-like path.
 
@@ -499,14 +570,15 @@ Goal: a guitar or bass amp-like path.
 2. Or write a short stack: highpass, tube or softclip, peak EQ for mid, lowpass cab.
 3. After hardclip always add a lowpass. Presence is a high shelf, not a darker lowpass.
 4. Leave Polisher on None so the hits still move.
+5. Click the ir chip for the cabinet. Amp factory presets already load one.
 
 ---
 
-## 18. Tutorial: gate then limit
+## 19. Tutorial: gate then limit
 
 Goal: clean a noisy DI, then catch peaks in the chain.
 
-1. Edit:
+1. Terminal -> Edit:
 
 param a = Thresh [-50, -12]
 param b = Ceiling [-3, 0]
@@ -518,27 +590,29 @@ limit1: ceiling = b; release = 0.08
 
 ---
 
-## 19. Tutorial: IR cab
+## 20. Tutorial: IR cab
 
 Goal: a cabinet after a drive stage.
 
-1. Edit:
+1. Terminal -> Edit:
 
 param a = Drive [0.8, 6.0]
 param b = Mix [0.4, 1.0]
 stage1: y = tube(x, a)
 ir1: mix = b; gain = 0
 
-2. Save. Click the inline ir1 button on that line.
-3. Amp factory presets already load a matching cabinet. Drop a WAV or AIFF to replace it, or click Load. Clear empties the slot (dry).
-4. Need two cabs? Add ir2: mix = 1 and click its own button. Each slot is separate.
+2. Save. Click the inline ir1 button, or the ir chip on Circuit.
+3. Amp factory presets already load a matching cabinet. Load a WAV or AIFF to replace it. Clear empties the slot (dry).
+4. Need two cabs? Add ir2: mix = 1 and open its own Impulse panel. Each slot is separate.
 
 The formula never contains a file path.
 
 ---
 
-## 20. Support
+## 21. Support
 
 NEUROKORE (c) NEUROKLAST. All rights reserved.
 
-For support, send the host and version, the operating system, the plugin version, the preset or formula, and the steps to reproduce.
+About (Settings -> About) shows version, formats, and contact.
+
+For support, send the host and version, the operating system, the plugin version, the preset or formula, and the steps to reproduce. Contact: info@neuroklast.net / https://neuroklast.net

@@ -39,7 +39,13 @@ describe("shipped manual", () => {
     expect(chapters.length).toBeGreaterThanOrEqual(20);
     expect(chapters[0]?.title).toBe("Overview");
     expect(chapters.some((c) => /Quickstart/i.test(c.title))).toBe(true);
+    expect(chapters.some((c) => /Circuit/i.test(c.title))).toBe(true);
+    expect(chapters.some((c) => /Terminal/i.test(c.title))).toBe(true);
     expect(chapters.some((c) => /Support/i.test(c.title))).toBe(true);
     expect(filterHelp(chapters, "license").length).toBeGreaterThan(0);
+    expect(filterHelp(chapters, "save as").length).toBeGreaterThan(0);
+    expect(filterHelp(chapters, "multiband").length).toBeGreaterThan(0);
+    expect(filterHelp(chapters, "pitch").length).toBeGreaterThan(0);
+    expect(filterHelp(chapters, "DEMO").length).toBeGreaterThan(0);
   });
 });
