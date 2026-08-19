@@ -12454,5 +12454,290 @@
       "max": 1,
       "default": 0.85
     }
+  },
+  {
+    "name": "Kick Surgery",
+    "category": "Drums",
+    "description": "Hardstyle/rawstyle kick: 3-band crossover (sub sine+comp, punch tube+320Hz notch, click transient+air shelf), phase-aligned merge, final limiter -0.3dB.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Kick Surgery\n# Hardstyle/rawstyle kick: 3-band crossover (sub sine+comp, punch tube+320Hz notch, click transient+air shelf), phase-aligned merge, final limiter -0.3dB.\n# a Sub Level: 0.4 to 1.2, default 0.8\n# b Punch Drive: 1.5 to 5, default 3\n# c Click Bright: 0 to 4, default 2\n# d Scoop Depth: -6 to -1, default -4\n# e Glue Comp: 2 to 6, default 4\n# f Mix: 0.7 to 1, default 0.9\n\nparam a = Sub Level [0.4, 1.2]\nparam b = Punch Drive [1.5, 5.0]\nparam c = Click Bright [0.0, 4.0]\nparam d = Scoop Depth [-6, -1]\nparam e = Glue Comp [2.0, 6.0]\nparam f = Mix [0.7, 1.0]\nfilter1: type = highpass; cutoff = 20; resonance = 0.25  # highpass\nxover1: f1 = 85; f2 = 650\n\nbus sub:\n  send: in = 1\n  stage1: y = tanh(y)  # sine shape\n  comp1: threshold = -18; ratio = 4; attack = 0.01; release = 0.15; makeup = 4\n  stage2: y = y * a\n\nbus punch:\n  send: in = 1\n  stage3: y = tube(y, b)\n  eq1: type = peak; freq = 320; q = 2.8; gain = d  # scoop\n\nbus click:\n  send: in = 1\n  env1: type = peak; attack = 0.002; release = 0.08\n  stage4: y = y * (1 + env1 * 0.4)  # transient emphasis\n  eq2: type = highshelf; freq = 6000; q = 0.7; gain = c  # air\n\nout: sub = 1; punch = 1; click = 1\ncomp2: threshold = -12; ratio = e; attack = 0.003; release = 0.08; makeup = 2  # glue\nlimit1: ceiling = -0.3; release = 0.08",
+    "tags": [
+      "kick",
+      "drums",
+      "hardstyle",
+      "rawstyle",
+      "multiband",
+      "xover",
+      "surgery",
+      "sub",
+      "transient",
+      "comp"
+    ],
+    "paramA": {
+      "name": "Sub Level",
+      "min": 0.4,
+      "max": 1.2,
+      "default": 0.8
+    },
+    "paramB": {
+      "name": "Punch Drive",
+      "min": 1.5,
+      "max": 5,
+      "default": 3
+    },
+    "paramC": {
+      "name": "Click Bright",
+      "min": 0,
+      "max": 4,
+      "default": 2
+    },
+    "paramD": {
+      "name": "Scoop Depth",
+      "min": -6,
+      "max": -1,
+      "default": -4
+    },
+    "paramE": {
+      "name": "Glue Comp",
+      "min": 2,
+      "max": 6,
+      "default": 4
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.7,
+      "max": 1,
+      "default": 0.9
+    }
+  },
+  {
+    "name": "Sub Zero Pummel",
+    "category": "EDM",
+    "description": "Sub Zero Project hardstyle: dual-path (main HPF 95Hz mid-focus, sub bus LPF 100Hz phase-aligned), sub heavy comp 8:1, parallel OTT, sidechain duck.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Sub Zero Pummel\n# Sub Zero Project hardstyle: dual-path (main HPF 95Hz mid-focus, sub bus LPF 100Hz phase-aligned), sub heavy comp 8:1, parallel OTT, sidechain duck.\n# a Sub Comp: 6 to 12, default 8\n# b Sub Phase: -180 to 180, default 0\n# c OTT Drive: 0.2 to 0.7, default 0.4\n# d Main Punch: 1.5 to 4, default 2.5\n# e Sidechain: 2 to 8, default 4\n# f Balance: 0.5 to 1.2, default 0.85\n\nparam a = Sub Comp [6.0, 12.0]\nparam b = Sub Phase [-180, 180]\nparam c = OTT Drive [0.2, 0.7]\nparam d = Main Punch [1.5, 4.0]\nparam e = Sidechain [2.0, 8.0]\nparam f = Balance [0.5, 1.2]\nfilter1: type = highpass; cutoff = 95; resonance = 0.4  # main HPF\nstage1: y = softclip(x, d)  # main punch\nott1: depth = c; time = 0.015; release = 0.08  # parallel OTT\n\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.45  # sub LPF\n  stage2: y = tanh(y * 1.2)  # sine shape\n  comp1: threshold = -24; ratio = a; attack = 0.015; release = 0.18; makeup = 10  # heavy comp\n  comp2: source = sidechain; threshold = -18; ratio = e; attack = 0.002; release = 0.06  # duck\n  stage3: y = y * f\n\nout: main = 1; sub = 1\nlimit1: ceiling = -0.3; release = 0.1",
+    "tags": [
+      "hardstyle",
+      "edm",
+      "sub",
+      "multiband",
+      "comp",
+      "sidechain",
+      "ott",
+      "phase",
+      "duck",
+      "pump"
+    ],
+    "paramA": {
+      "name": "Sub Comp",
+      "min": 6,
+      "max": 12,
+      "default": 8
+    },
+    "paramB": {
+      "name": "Sub Phase",
+      "min": -180,
+      "max": 180,
+      "default": 0
+    },
+    "paramC": {
+      "name": "OTT Drive",
+      "min": 0.2,
+      "max": 0.7,
+      "default": 0.4
+    },
+    "paramD": {
+      "name": "Main Punch",
+      "min": 1.5,
+      "max": 4,
+      "default": 2.5
+    },
+    "paramE": {
+      "name": "Sidechain",
+      "min": 2,
+      "max": 8,
+      "default": 4
+    },
+    "paramF": {
+      "name": "Balance",
+      "min": 0.5,
+      "max": 1.2,
+      "default": 0.85
+    }
+  },
+  {
+    "name": "Priest Split Authority",
+    "category": "Club",
+    "description": "Holypriest hardcore: amplitude split (quiet<-18dB reverb+chorus, medium -18to-6dB tube, loud>-6dB brick+transient), crossfade recombine.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Priest Split Authority\n# Holypriest hardcore: amplitude split (quiet<-18dB reverb+chorus, medium -18to-6dB tube, loud>-6dB brick+transient), crossfade recombine.\n# a Quiet Verb: 0.3 to 0.7, default 0.5\n# b Mid Drive: 2 to 6, default 4\n# c Loud Clip: 0.45 to 0.75, default 0.6\n# d Transient: 0 to 6, default 3\n# e Blend: 0.5 to 1, default 0.75\n# f Output: 0.8 to 1.2, default 1\n\nparam a = Quiet Verb [0.3, 0.7]\nparam b = Mid Drive [2.0, 6.0]\nparam c = Loud Clip [0.45, 0.75]\nparam d = Transient [0.0, 6.0]\nparam e = Blend [0.5, 1.0]\nparam f = Output [0.8, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25  # highpass\nenv1: type = rms; attack = 0.01; release = 0.1  # amplitude detector\n\nbus quiet:\n  send: in = 1\n  gate1: threshold = -18; hyst = 6; hold = 0.08; range = 0; attack = 0.02; release = 0.15  # quiet gate\n  reverb1: size = 0.6; decay = a; damp = 0.4; mix = 0.6\n  delay1: time = 6; feedback = 0.2; mix = 0.3; damp = 7000  # chorus\n\nbus medium:\n  send: in = 1\n  gate2: threshold = -18; hyst = 12; hold = 0.04; range = 0; attack = 0.003; release = 0.08  # mid gate\n  stage1: y = tube(y, b)\n\nbus loud:\n  send: in = 1\n  gate3: threshold = -6; hyst = 6; hold = 0.02; range = 0; attack = 0.001; release = 0.05  # loud gate\n  stage2: y = hardclip(softclip(y, 2.5), c)\n  env2: type = peak; attack = 0.002; release = 0.06\n  stage3: y = y * (1 + env2 * d * 0.15)  # transient shape\n\nout: quiet = 0.3; medium = 0.5; loud = e\nstage4: y = y * f",
+    "tags": [
+      "hardcore",
+      "club",
+      "amplitude",
+      "split",
+      "multiband",
+      "gate",
+      "reverb",
+      "tube",
+      "clip",
+      "transient"
+    ],
+    "paramA": {
+      "name": "Quiet Verb",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    "paramB": {
+      "name": "Mid Drive",
+      "min": 2,
+      "max": 6,
+      "default": 4
+    },
+    "paramC": {
+      "name": "Loud Clip",
+      "min": 0.45,
+      "max": 0.75,
+      "default": 0.6
+    },
+    "paramD": {
+      "name": "Transient",
+      "min": 0,
+      "max": 6,
+      "default": 3
+    },
+    "paramE": {
+      "name": "Blend",
+      "min": 0.5,
+      "max": 1,
+      "default": 0.75
+    },
+    "paramF": {
+      "name": "Output",
+      "min": 0.8,
+      "max": 1.2,
+      "default": 1
+    }
+  },
+  {
+    "name": "Multiband Phase Lock",
+    "category": "Club",
+    "description": "Club/techno: 4-band split (sub 30-80Hz, low 80-250Hz, mid 250-2500Hz, high 2500+Hz), independent matched comp, soft-limit all to -0.5dB, merge.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Multiband Phase Lock\n# Club/techno: 4-band split (sub 30-80Hz, low 80-250Hz, mid 250-2500Hz, high 2500+Hz), independent matched comp, soft-limit all to -0.5dB, merge.\n# a Sub Comp: 8 to 12, default 10\n# b Low Comp: 3 to 6, default 4\n# c Mid Comp: 2 to 4, default 3\n# d High Comp: 1.5 to 3, default 2\n# e Master Comp: 2 to 5, default 3\n# f Makeup: 0.9 to 1.2, default 1\n\nparam a = Sub Comp [8.0, 12.0]\nparam b = Low Comp [3.0, 6.0]\nparam c = Mid Comp [2.0, 4.0]\nparam d = High Comp [1.5, 3.0]\nparam e = Master Comp [2.0, 5.0]\nparam f = Makeup [0.9, 1.2]\nfilter1: type = highpass; cutoff = 30; resonance = 0.22  # highpass\nxover1: f1 = 80; f2 = 250\n\nbus sub:\n  send: in = 1\n  comp1: threshold = -20; ratio = a; attack = 0.02; release = 0.2; makeup = 8\n  stage1: y = hardclip(y, 0.5)\n\nbus low:\n  send: in = 1\n  comp2: threshold = -16; ratio = b; attack = 0.01; release = 0.15; makeup = 5\n  stage2: y = hardclip(y, 0.5)\n\nxover2: f1 = 2500\n\nbus mid:\n  send: sub = 0; low = 0; in = 1\n  comp3: threshold = -12; ratio = c; attack = 0.008; release = 0.1; makeup = 3\n  stage3: y = hardclip(y, 0.5)\n\nbus high:\n  send: sub = 0; low = 0; in = 1\n  comp4: threshold = -8; ratio = d; attack = 0.005; release = 0.08; makeup = 2\n  stage4: y = hardclip(y, 0.5)\n\nout: sub = 1; low = 1; mid = 1; high = 1\ncomp5: threshold = -10; ratio = e; attack = 0.003; release = 0.08; makeup = 2\nstage5: y = y * f",
+    "tags": [
+      "club",
+      "techno",
+      "multiband",
+      "phase",
+      "xover",
+      "comp",
+      "lock",
+      "master",
+      "glue",
+      "tight"
+    ],
+    "paramA": {
+      "name": "Sub Comp",
+      "min": 8,
+      "max": 12,
+      "default": 10
+    },
+    "paramB": {
+      "name": "Low Comp",
+      "min": 3,
+      "max": 6,
+      "default": 4
+    },
+    "paramC": {
+      "name": "Mid Comp",
+      "min": 2,
+      "max": 4,
+      "default": 3
+    },
+    "paramD": {
+      "name": "High Comp",
+      "min": 1.5,
+      "max": 3,
+      "default": 2
+    },
+    "paramE": {
+      "name": "Master Comp",
+      "min": 2,
+      "max": 5,
+      "default": 3
+    },
+    "paramF": {
+      "name": "Makeup",
+      "min": 0.9,
+      "max": 1.2,
+      "default": 1
+    }
+  },
+  {
+    "name": "Bass Fractionator",
+    "category": "Bass",
+    "description": "Neurofunk/DnB: sub pure sine phase-locked, body 100-400Hz formant filter, grit 400-1200Hz bitcrush+fold, air 1200+Hz transient, envelope alignment.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Bass Fractionator\n# Neurofunk/DnB: sub pure sine phase-locked, body 100-400Hz formant filter, grit 400-1200Hz bitcrush+fold, air 1200+Hz transient, envelope alignment.\n# a Sub Sync: 0 to 1, default 0.8\n# b Body Formant: 150 to 350, default 220\n# c Grit Bits: 5 to 10, default 7\n# d Air Transient: 0 to 5, default 3\n# e Band Balance: 0.5 to 1.2, default 0.85\n# f Mix: 0.6 to 1, default 0.85\n\nparam a = Sub Sync [0.0, 1.0]\nparam b = Body Formant [150, 350]\nparam c = Grit Bits [5.0, 10.0]\nparam d = Air Transient [0.0, 5.0]\nparam e = Band Balance [0.5, 1.2]\nparam f = Mix [0.6, 1.0]\nfilter1: type = highpass; cutoff = 30; resonance = 0.25  # highpass\nenv1: type = peak; attack = 0.003; release = 0.12  # transient trigger\nxover1: f1 = 100; f2 = 400\n\nbus sub:\n  send: in = 1\n  stage1: y = tanh(y * 1.5)  # sine shape\n  stage2: y = y * (0.3 + env1 * a * 0.7)  # phase lock to transient\n\nbus body:\n  send: in = 1\n  eq1: type = peak; freq = b; q = 4; gain = 6  # formant 1\n  eq2: type = peak; freq = b * 2.8; q = 5; gain = 5  # formant 2\n  stage3: y = tube(y, 2.5)\n\nxover2: f1 = 1200\n\nbus grit:\n  send: sub = 0; body = 0; in = 1\n  stage4: y = bitcrush(y, c)\n  stage5: y = fold(y, -0.35, 0.4)\n  filter2: type = lowpass; cutoff = 6500; resonance = 0.35\n\nbus air:\n  send: sub = 0; body = 0; in = 1\n  env2: type = peak; attack = 0.002; release = 0.05\n  stage6: y = y * (1 + env2 * d * 0.2)  # transient emphasis\n  eq3: type = highshelf; freq = 4000; q = 0.7; gain = 3\n\nout: sub = 1; body = 1; grit = e; air = 1\nlimit1: ceiling = -0.3; release = 0.08",
+    "tags": [
+      "bass",
+      "neurofunk",
+      "dnb",
+      "multiband",
+      "formant",
+      "bitcrush",
+      "fold",
+      "transient",
+      "sub",
+      "phase"
+    ],
+    "paramA": {
+      "name": "Sub Sync",
+      "min": 0,
+      "max": 1,
+      "default": 0.8
+    },
+    "paramB": {
+      "name": "Body Formant",
+      "min": 150,
+      "max": 350,
+      "default": 220
+    },
+    "paramC": {
+      "name": "Grit Bits",
+      "min": 5,
+      "max": 10,
+      "default": 7
+    },
+    "paramD": {
+      "name": "Air Transient",
+      "min": 0,
+      "max": 5,
+      "default": 3
+    },
+    "paramE": {
+      "name": "Band Balance",
+      "min": 0.5,
+      "max": 1.2,
+      "default": 0.85
+    },
+    "paramF": {
+      "name": "Mix",
+      "min": 0.6,
+      "max": 1,
+      "default": 0.85
+    }
   }
 ]
