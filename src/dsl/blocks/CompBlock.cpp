@@ -1,5 +1,6 @@
 #include "../SignalChain.h"
 #include "../../core/Config.h"
+#include "../../dsp/DSPUtils.h"
 #include <cmath>
 
 using namespace dsl;
@@ -145,17 +146,6 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         }
     };
 
-    auto softCeil = [] (float x, float c) noexcept
-    {
-        if (c <= 1.0e-6f)
-            return 0.f;
-        const float a = std::abs (x);
-        if (a <= c)
-            return x;
-        const float over = a - c;
-        return std::copysign (c + over / (1.f + over / juce::jmax (c, 1.0e-3f)), x);
-    };
-
     float thr = juce::jlimit (-80.f, 0.f, thrSm.getCurrentValue());
     float rat = juce::jlimit (1.f, 40.f, ratioSm.getCurrentValue());
     float knee = juce::jlimit (0.f, 24.f, kneeSm.getCurrentValue());
@@ -225,7 +215,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
         for (int c = 0; c < useCh; ++c)
-            out[c][i] = softCeil (out[c][i] * g, ceilLin);
+            out[c][i] = DSPUtils::softCeilSample (out[c][i] * g, ceilLin);
     }
 
     if (! live)

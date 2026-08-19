@@ -14,6 +14,19 @@ namespace DSPUtils
         return (db == 0.0) ? 1.0 : std::exp(db * std::log(10.0) / 20.0);
     }
 
+    /** Soft asymptotic ceiling: transparent below |c|, gently folds overs. */
+    static inline float softCeilSample (float x, float c) noexcept
+    {
+        if (c <= 1.0e-6f)
+            return 0.f;
+        const float a = std::abs (x);
+        if (a <= c)
+            return x;
+        const float over = a - c;
+        const float shaped = c + over / (1.f + over / juce::jmax (c, 1.0e-3f));
+        return std::copysign (shaped, x);
+    }
+
     // Convert linear amplitude to dB. Returns -inf for zero.
     static inline constexpr double linearToDb(double lin) noexcept
     {

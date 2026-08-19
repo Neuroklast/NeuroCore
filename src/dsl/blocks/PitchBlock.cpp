@@ -1,23 +1,12 @@
 #include "../SignalChain.h"
 #include "../../core/Config.h"
+#include "../../dsp/DSPUtils.h"
 #include <cmath>
 
 using namespace dsl;
 
 namespace
 {
-inline float softCeil (float x, float c) noexcept
-{
-    if (c <= 1.0e-6f)
-        return 0.f;
-    const float a = std::abs (x);
-    if (a <= c)
-        return x;
-    const float over = a - c;
-    const float shaped = c + over / (1.f + over / juce::jmax (c, 1.0e-3f));
-    return std::copysign (shaped, x);
-}
-
 inline float wrapPi (float x) noexcept
 {
     constexpr float kPi = juce::MathConstants<float>::pi;
@@ -105,7 +94,7 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     for (int i = 0; i < kFftSize; ++i)
         work[(size_t) i] = c.inFifo[(size_t) i] * window[(size_t) i];
 
-    fft->performRealOnlyForwardTransform (work.data(), true);
+    fft->performRealOnlyForwardTransform (work.data());
 
     for (int k = 0; k < kBins; ++k)
     {
@@ -198,13 +187,13 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     if (n <= 0 || nc <= 0 || fft == nullptr)
         return;
 
-    for (const auto& n : varNames)
+    for (const auto& entry : varNames)
     {
-        const float v = *n.first;
-        semiExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-        formantExpr.setVariable (n.second, v);
-        ceilingDb.setVariable (n.second, v);
+        const float v = *entry.first;
+        semiExpr.setVariable (entry.second, v);
+        mixExpr.setVariable (entry.second, v);
+        formantExpr.setVariable (entry.second, v);
+        ceilingDb.setVariable (entry.second, v);
     }
 
     const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f));
@@ -226,9 +215,6 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     formSm.setTargetValue (formant);
     ceilSm.setTargetValue (ceilLin);
 
-    const float pr = std::pow (2.f, semiSm.getTargetValue() / 12.f);
-    const float fr = formSm.getTargetValue();
-
     float* L = buffer.getWritePointer (0);
     float* R = nc > 1 ? buffer.getWritePointer (1) : nullptr;
 
@@ -236,20 +222,22 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     {
         const float mixV = mixSm.getNextValue();
         const float ceilV = ceilSm.getNextValue();
-        semiSm.skip (1);
-        formSm.skip (1);
+        const float pr = std::pow (2.f, semiSm.getNextValue() / 12.f);
+        float fr = formSm.getNextValue();
+        if (! (fr > 0.f))
+            fr = 1.f;
 
         {
             const float dry = L[i];
             float wet = processSample (ch[0], dry, pr, fr);
-            wet = softCeil (wet, ceilV);
+            wet = DSPUtils::softCeilSample (wet, ceilV);
             L[i] = dry * (1.f - mixV) + wet * mixV;
         }
         if (R != nullptr)
         {
             const float dry = R[i];
             float wet = processSample (ch[1], dry, pr, fr);
-            wet = softCeil (wet, ceilV);
+            wet = DSPUtils::softCeilSample (wet, ceilV);
             R[i] = dry * (1.f - mixV) + wet * mixV;
         }
     }
@@ -260,13 +248,13 @@ float SignalChain::Pitch::process (int channel, float x)
     if (fft == nullptr)
         return x;
 
-    for (const auto& n : varNames)
+    for (const auto& entry : varNames)
     {
-        const float v = *n.first;
-        semiExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-        formantExpr.setVariable (n.second, v);
-        ceilingDb.setVariable (n.second, v);
+        const float v = *entry.first;
+        semiExpr.setVariable (entry.second, v);
+        mixExpr.setVariable (entry.second, v);
+        formantExpr.setVariable (entry.second, v);
+        ceilingDb.setVariable (entry.second, v);
     }
 
     const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f)) / 12.f);
@@ -277,6 +265,6 @@ float SignalChain::Pitch::process (int channel, float x)
     const float ceilDb = juce::jlimit (-24.f, 0.f, ceilingDb.evaluate (0.f));
     const int ci = juce::jlimit (0, 1, channel);
     float wet = processSample (ch[ci], x, pr, fr);
-    wet = softCeil (wet, juce::Decibels::decibelsToGain (ceilDb));
+    wet = DSPUtils::softCeilSample (wet, juce::Decibels::decibelsToGain (ceilDb));
     return x * (1.f - mixV) + wet * mixV;
 }

@@ -2,6 +2,7 @@
 #include "SignalChain.h"
 #include "../core/Config.h"
 #include "../dsp/LookupTables.h"
+#include "../dsp/DSPUtils.h"
 #include "../core/MidiVariableMapper.h"
 #include <atomic>
 #include <cmath>
@@ -2127,16 +2128,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             {
                 auto* data = work.getWritePointer (ch);
                 for (int i = 0; i < numSamples; ++i)
-                {
-                    const float a = std::abs (data[i]);
-                    if (a > kChainCeil)
-                    {
-                        const float over = a - kChainCeil;
-                        const float shaped = kChainCeil
-                            + over / (1.f + over / juce::jmax (kChainCeil, 1.0e-3f));
-                        data[i] = std::copysign (shaped, data[i]);
-                    }
-                }
+                    data[i] = DSPUtils::softCeilSample (data[i], kChainCeil);
             }
         }
 
