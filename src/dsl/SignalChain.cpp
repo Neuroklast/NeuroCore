@@ -1048,7 +1048,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         {
             auto vc = std::make_unique<Vocoder>();
             vc->kind = NodeKind::Vocoder;
-            int bands = 8;
+            int bands = 16;
             if (d.args.count ("bands"))
                 bands = juce::jlimit (3, Vocoder::kMaxBands, d.args.at ("bands").getIntValue());
             vc->numBands = bands;
@@ -1063,10 +1063,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("mix", 0.f, 1.f, "0.85", vc->mixExpr, "mix [0..1]");
-            parseAmt ("q", 0.7f, 8.f, "2.2", vc->qExpr, "q [0.7..8]");
-            parseAmt ("formant", 0.5f, 2.f, "1.0", vc->formantExpr, "formant [0.5..2]");
-            parseAmt ("dry", 0.f, 1.f, "0.15", vc->dryExpr, "dry [0..1]");
+            parseAmt ("mix",     0.f,    1.f,   "0.85",  vc->mixExpr,     "mix [0..1]");
+            parseAmt ("q",       0.7f,   8.f,   "2.2",   vc->qExpr,       "q [0.7..8]");
+            parseAmt ("formant", 0.5f,   2.f,   "1.0",   vc->formantExpr, "formant [0.5..2]");
+            parseAmt ("dry",     0.f,    1.f,   "0.15",  vc->dryExpr,     "dry [0..1]");
+            parseAmt ("attack",  0.001f, 0.1f,  "0.003", vc->attackExpr,  "Env Atk");
+            parseAmt ("release", 0.005f, 0.5f,  "0.030", vc->releaseExpr, "Env Rel");
             vc->varPtr = &variables;
             newChain->push_back (std::move (vc));
         }
@@ -1918,6 +1920,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             {
                 auto* vc = static_cast<Vocoder*> (b.get());
                 vc->scL = extScL; vc->scR = extScR; vc->scN = extScN;
+                vc->voiceL = extVoiceL; vc->voiceR = extVoiceR; vc->voiceN = extVoiceN;
                 break;
             }
             case NodeKind::Gate:
@@ -3419,6 +3422,13 @@ void SignalChain::setExternalSidechain (const float* left, const float* right, i
     extScN = (left != nullptr && numSamples > 0) ? numSamples : 0;
 }
 
+void SignalChain::setVoiceInput (const float* left, const float* right, int numSamples) noexcept
+{
+    extVoiceL = left;
+    extVoiceR = right;
+    extVoiceN = (left != nullptr && numSamples > 0) ? numSamples : 0;
+}
+
 void SignalChain::publishSidechainSample (int sampleIndex) noexcept
 {
     if (extScN <= 0 || extScL == nullptr)
@@ -4364,8 +4374,7 @@ void SignalChain::Vocoder::clearRuntimeState() noexcept
 {
     for (auto& b : bands)
     {
-        b.modL.reset();
-        b.modR.reset();
+        b.modMono.reset();
         b.carL.reset();
         b.carR.reset();
         b.env = 0.f;
@@ -4374,6 +4383,7 @@ void SignalChain::Vocoder::clearRuntimeState() noexcept
     lastForm = -1.f;
     modHpX = modHpY = 0.f;
     scHold = 0;
+    voiceHold = 0;
 }
 
 void SignalChain::Vocoder::applyBands (float q, float formant) noexcept
@@ -4395,8 +4405,7 @@ void SignalChain::Vocoder::applyBands (float q, float formant) noexcept
         if (c == nullptr)
             continue;
         auto& b = bands[(size_t) i];
-        b.modL.coefficients = c;
-        b.modR.coefficients = c;
+        b.modMono.coefficients = c;
         b.carL.coefficients = c;
         b.carR.coefficients = c;
     }
@@ -4410,8 +4419,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     juce::dsp::ProcessSpec mono { spec.sampleRate, spec.maximumBlockSize, 1 };
     for (auto& b : bands)
     {
-        b.modL.prepare (mono);
-        b.modR.prepare (mono);
+        b.modMono.prepare (mono);
         b.carL.prepare (mono);
         b.carR.prepare (mono);
     }
@@ -4458,6 +4466,8 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
             qExpr.setVariable (vn.second, v);
             formantExpr.setVariable (vn.second, v);
             dryExpr.setVariable (vn.second, v);
+            attackExpr.setVariable (vn.second, v);
+            releaseExpr.setVariable (vn.second, v);
         }
     }
 
@@ -4470,13 +4480,39 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     setT (formSm, formantExpr.evaluate (0.f), 1.f);
     setT (drySm, dryExpr.evaluate (0.f), 0.15f);
 
+    // Evaluate per-block envelope times (clamp to safe range)
+    const float atkV = attackExpr.evaluate (0.f);
+    const float relV = releaseExpr.evaluate (0.f);
+    const float atkSec = juce::jlimit (0.001f, 0.1f, std::isfinite (atkV) ? atkV : 0.003f);
+    const float relSec = juce::jlimit (0.005f, 0.5f, std::isfinite (relV) ? relV : 0.030f);
+    const float atk = 1.f - std::exp (-1.f / (atkSec * sampleRate));
+    const float rel = 1.f - std::exp (-1.f / (relSec * sampleRate));
+
     const int nb = juce::jlimit (3, kMaxBands, numBands);
-    const float atk = 1.f - std::exp (-1.f / (0.0035f * sampleRate));
-    const float rel = 1.f - std::exp (-1.f / (0.028f * sampleRate));
     const float makeup = 7.2f / std::sqrt ((float) nb);
+
+    // --- Voice-jack hold (highest priority modulator) ---
+    const bool voiceWired = (voiceL != nullptr && voiceN > 0);
+    float voicePeak = 0.f;
+    if (voiceWired)
+    {
+        for (int i = 0; i < voiceN; ++i)
+        {
+            voicePeak = juce::jmax (voicePeak, std::abs (voiceL[i]));
+            if (voiceR != nullptr)
+                voicePeak = juce::jmax (voicePeak, std::abs (voiceR[i]));
+        }
+    }
+    if (voicePeak > 1.5e-4f)
+        voiceHold = (int) (0.06f * sampleRate);
+    else if (voiceHold > 0)
+        voiceHold = juce::jmax (0, voiceHold - n);
+    const bool useVoice = voiceWired && (voicePeak > 1.5e-4f || voiceHold > 0);
+
+    // --- Sidechain hold (fallback if no voice jack) ---
     const bool scWired = (scL != nullptr && scN > 0);
     float scPeak = 0.f;
-    if (scWired)
+    if (scWired && !useVoice)
     {
         for (int i = 0; i < scN; ++i)
         {
@@ -4484,12 +4520,12 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
             if (scR != nullptr)
                 scPeak = juce::jmax (scPeak, std::abs (scR[i]));
         }
+        if (scPeak > 1.5e-4f)
+            scHold = (int) (0.06f * sampleRate);
+        else if (scHold > 0)
+            scHold = juce::jmax (0, scHold - n);
     }
-    if (scPeak > 1.5e-4f)
-        scHold = (int) (0.06f * sampleRate);
-    else if (scHold > 0)
-        scHold = juce::jmax (0, scHold - n);
-    const bool useSc = scWired && (scPeak > 1.5e-4f || scHold > 0);
+    const bool useSc = !useVoice && scWired && (scPeak > 1.5e-4f || scHold > 0);
 
     const int useCh = juce::jmin (nCh, 2);
     float* dst[2] {};
@@ -4510,14 +4546,22 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     {
         const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
         const float dry = juce::jlimit (0.f, 1.f, drySm.getNextValue());
-        const int si = useSc ? juce::jlimit (0, scN - 1, i) : 0;
 
         const float carL = dst[0][i];
         const float carR = useCh > 1 ? dst[1][i] : carL;
+
+        // Modulator source priority: voice-jack > sidechain > self
         float modL = carL;
         float modR = carR;
-        if (useSc)
+        if (useVoice)
         {
+            const int vi = juce::jlimit (0, voiceN - 1, i);
+            modL = voiceL[vi];
+            modR = voiceR != nullptr ? voiceR[vi] : modL;
+        }
+        else if (useSc)
+        {
+            const int si = juce::jlimit (0, scN - 1, i);
             modL = scL[si];
             modR = scR != nullptr ? scR[si] : modL;
         }
@@ -4532,8 +4576,7 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
         for (int b = 0; b < nb; ++b)
         {
             auto& band = bands[(size_t) b];
-            const float mb = band.modL.processSample (modMono);
-            (void) band.modR.processSample (modMono);
+            const float mb = band.modMono.processSample (modMono);
             const float cbL = band.carL.processSample (carL);
             const float cbR = band.carR.processSample (carR);
             const float ax = std::abs (mb);

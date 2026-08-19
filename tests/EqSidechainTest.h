@@ -294,6 +294,91 @@ public:
             expect (TestHelpers::peakAbs (main) > 0.02f,
                     "empty sidechain must fall back to self-vocode, not mute");
         }
+
+        beginTest ("vocoder voice-jack input acts as modulator");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "vocoder1: bands = 4; mix = 1; q = 2.2; formant = 1; dry = 0",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+
+            juce::AudioBuffer<float> voice (2, 256);
+            juce::AudioBuffer<float> main (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                const float car = 0.35f * std::sin (i * 0.31f);
+                const float mod = 0.5f * std::sin (i * 0.07f);
+                main.setSample (0, i, car);
+                main.setSample (1, i, car);
+                voice.setSample (0, i, mod);
+                voice.setSample (1, i, mod);
+            }
+            for (int w = 0; w < 6; ++w)
+            {
+                chain.setVoiceInput (voice.getReadPointer (0), voice.getReadPointer (1), 256);
+                chain.processBlockSmoothed (main, TestHelpers::nullKnobs());
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float car = 0.35f * std::sin (i * 0.31f);
+                    main.setSample (0, i, car);
+                    main.setSample (1, i, car);
+                }
+            }
+            chain.setVoiceInput (voice.getReadPointer (0), voice.getReadPointer (1), 256);
+            chain.processBlockSmoothed (main, TestHelpers::nullKnobs());
+            float peak = 0.f;
+            for (int i = 0; i < 256; ++i)
+                peak = juce::jmax (peak, std::abs (main.getSample (0, i)));
+            expect (peak > 0.04f, "voice-jack vocoder should imprint, peak="
+                    + juce::String (peak, 3));
+            expect (TestHelpers::countNonFinite (main) == 0, "voice-jack vocoder: no NaN/Inf");
+        }
+
+        beginTest ("vocoder attack/release args parse without error");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "vocoder1: bands = 8; mix = 0.8; q = 2; attack = 0.005; release = 0.08",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                buf.setSample (0, i, 0.2f * std::sin (i * 0.25f));
+                buf.setSample (1, i, 0.2f * std::sin (i * 0.25f));
+            }
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expect (TestHelpers::countNonFinite (buf) == 0, "attack/release args: no NaN/Inf");
+        }
+
+        beginTest ("vocoder kMaxBands = 32 with bands = 32 runs without crash");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "vocoder1: bands = 32; mix = 0.85; q = 2.2; formant = 1; dry = 0.1",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            juce::AudioBuffer<float> buf (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                buf.setSample (0, i, 0.2f * std::sin (i * 0.25f));
+                buf.setSample (1, i, 0.2f * std::sin (i * 0.25f));
+            }
+            for (int w = 0; w < 4; ++w)
+            {
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                for (int i = 0; i < 256; ++i)
+                {
+                    buf.setSample (0, i, 0.2f * std::sin (i * 0.25f));
+                    buf.setSample (1, i, 0.2f * std::sin (i * 0.25f));
+                }
+            }
+            expect (TestHelpers::countNonFinite (buf) == 0, "bands=32: no NaN/Inf");
+        }
     }
 
 private:

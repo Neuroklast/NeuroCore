@@ -402,13 +402,15 @@ add({
   typeCodePrefix: "VC",
   audioIns: ["in", "voice"],
   audioOuts: ["out"],
-  paramJacks: ["bands", "mix", "q"],
+  paramJacks: ["bands", "mix", "q", "attack", "release"],
   ranges: {
-    bands: { min: 3, max: 8 },
+    bands: { min: 3, max: 32 },
     mix: { min: 0, max: 1, unit: "%" },
     q: { min: 0.7, max: 8 },
+    attack: { min: 0.001, max: 0.1 },
+    release: { min: 0.005, max: 0.5 },
   },
-  defaultArgs: { bands: "8", mix: "0.3", q: "2.2" },
+  defaultArgs: { bands: "16", mix: "0.85", q: "2.2", attack: "0.003", release: "0.030" },
   blurb: "Carrier in plus voice/sidechain.",
 });
 

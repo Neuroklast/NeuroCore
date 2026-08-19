@@ -45,6 +45,7 @@ public:
 
     /** Host-rate or OS-rate extra input. Null pointers = silence. */
     void setExternalSidechain (const float* left, const float* right, int numSamples) noexcept;
+    void setVoiceInput (const float* left, const float* right, int numSamples) noexcept;
 
     /** Returns the maximum tail time in seconds across all Comp and Env blocks.
         Used by PluginProcessor::getTailLengthSeconds. */
@@ -768,31 +769,42 @@ private:
     };
 
     /**
-        Analog-style vocoder. Carrier = this insert. Modulator = Sidechain
-        when pinned, otherwise the carrier (self-vocode).
+        Analog-style vocoder. Carrier = this insert. Modulator = voice-jack
+        input (voiceL/R) or sidechain pin (scL/R), otherwise self-vocode.
+        Modulator priority: voiceL > scL > self.
     */
     struct Vocoder : Block
     {
-        static constexpr int kMaxBands = 8;
+        static constexpr int kMaxBands = 32;
 
-        ExpressionEvaluator mixExpr, qExpr, formantExpr, dryExpr;
-        int numBands { 8 };
+        ExpressionEvaluator mixExpr, qExpr, formantExpr, dryExpr, attackExpr, releaseExpr;
+        int numBands { 16 };
         float sampleRate { 44100.f };
         juce::SmoothedValue<float> mixSm, qSm, formSm, drySm;
         float lastQ { -1.f }, lastForm { -1.f };
         float modHpX { 0.f }, modHpY { 0.f };
         float hpR { 0.f };
         int scHold { 0 };
+        int voiceHold { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<float*, std::string>> varNames;
 
+        // Sidechain (host sidechain pin)
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
 
+        // Voice-jack input (second audio input from circuit)
+        const float* voiceL { nullptr };
+        const float* voiceR { nullptr };
+        int voiceN { 0 };
+
         struct Band
         {
-            juce::dsp::IIR::Filter<float> modL, modR, carL, carR;
+            // Modulator: mono only (modR was dead code)
+            juce::dsp::IIR::Filter<float> modMono;
+            // Carrier: stereo
+            juce::dsp::IIR::Filter<float> carL, carR;
             float env { 0.f };
         };
         std::array<Band, kMaxBands> bands {};
@@ -949,6 +961,9 @@ private:
     const float* extScL { nullptr };
     const float* extScR { nullptr };
     int extScN { 0 };
+    const float* extVoiceL { nullptr };
+    const float* extVoiceR { nullptr };
+    int extVoiceN { 0 };
 
     void publishSidechainSample (int sampleIndex) noexcept;
     void writeNodeTap (const juce::String& id, const juce::AudioBuffer<float>& buf) noexcept;
