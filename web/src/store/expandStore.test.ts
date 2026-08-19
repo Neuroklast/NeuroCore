@@ -5,7 +5,7 @@ describe("expandStore mute/solo", () => {
   beforeEach(() => {
     // Reset the store before each test
     useChipViewStore.setState({ 
-      expanded: new Set(),
+      detail: {},
       muted: new Set(),
       soloed: new Set()
     });

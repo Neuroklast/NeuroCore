@@ -7,7 +7,7 @@ import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
 import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
-import { renameCircuitBlock, setCircuitArg, addCircuitBlock, ADDABLE_BLOCKS } from "./addBlock";
+import { renameCircuitBlock, setCircuitArg, addCircuitBlock, insertCircuitBlockBetween, ADDABLE_BLOCKS } from "./addBlock";
 import { bindEndId, lettersInExpr } from "./bindLinks";
 import { bindableArgKeys, handleId } from "./handles";
 import { commitBind } from "./bindModel";
@@ -223,6 +223,7 @@ export function ChipNode({ data, id }: NodeProps) {
   const isAudible = useChipViewStore((s) => s.isAudible(id));
   const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
+  const { getEdges } = useReactFlow();
   const bpm = useHostStore((s) => s.bpm);
   const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
@@ -552,7 +553,17 @@ export function ChipNode({ data, id }: NodeProps) {
                 type="button"
                 className="border border-accent/40 px-2 py-1 text-left text-ink hover:bg-accent/10"
                 onClick={() => {
-                  addCircuitBlock(block.type, block.args);
+                  // Find the first output edge from this node
+                  const edges = getEdges();
+                  const outputEdge = edges.find((e) => e.source === id);
+                  
+                  if (outputEdge) {
+                    // Insert between this node and the target
+                    insertCircuitBlockBetween(block.type, id, outputEdge.target, block.args);
+                  } else {
+                    // No output edge, just add normally
+                    addCircuitBlock(block.type, block.args);
+                  }
                   setShowAddPicker(false);
                 }}
               >

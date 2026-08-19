@@ -223,16 +223,24 @@ export async function redoCircuit(): Promise<boolean> {
 
 export function addCircuitBlock(type: string, args?: string): string | null {
   const cur = useAstStore.getState();
+  const script = cur.lastValidScript || cur.script;
   const spec = ADDABLE_BLOCKS.find((a) => a.type === type);
-  const body = args ?? spec?.args ?? "y = x";
   const kind = spec?.type ?? type;
+  
+  // Bus blocks don't have a returnable ID
   if (kind === "bus" || type === "bus") {
-    publishScript(insertBeforeMixer(cur.lastValidScript || cur.script, `bus ${railNameFromArgs(body, cur.lastValidScript || cur.script)}:`), "canvas");
+    publishScript(scriptAfterAdd(script, type, args), "canvas");
     return null;
   }
-  const taken = [...(cur.lastValidScript || cur.script).matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  
+  // Extract the taken IDs and generate new ID using same logic as scriptAfterAdd
+  const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
   const id = nextBlockId(kind, taken);
-  publishScript(scriptAfterAdd(cur.lastValidScript || cur.script, type, args), "canvas");
+  
+  // Publish the script
+  publishScript(scriptAfterAdd(script, type, args), "canvas");
+  
+  // Return the same ID that scriptAfterAdd generated
   return id;
 }
 
