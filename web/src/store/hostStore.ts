@@ -46,6 +46,7 @@ export interface HostState {
   inspectId: string | null;
   telemetryPath: string;
   bypass: boolean;
+  mixHeld: number;
   motion: "full" | "reduced" | "off";
   cables: "dots" | "wave";
   formulaPt: number;
@@ -75,6 +76,7 @@ export interface HostState {
   patchKnob: (id: string, patch: Partial<KnobState>) => void;
   activateKnob: (id: string, patch: Partial<KnobState> & { active: true }) => void;
   setMix: (value: number) => void;
+  toggleBypass: () => number;
   setOs: (index: number) => void;
   setPolisher: (index: number) => void;
   setInput: (index: number) => void;
@@ -162,6 +164,7 @@ export const useHostStore = create<HostState>((set) => ({
   inspectId: null,
   telemetryPath: "",
   bypass: false,
+  mixHeld: 1,
   motion: "full",
   cables: "wave",
   formulaPt: 18,
@@ -278,7 +281,25 @@ export const useHostStore = create<HostState>((set) => ({
       };
     }),
   })),
-  setMix: (value) => set({ mix: Math.max(0, Math.min(1, value)) }),
+  setMix: (value) => set(() => {
+    const mix = Math.max(0, Math.min(1, value));
+    if (mix > 1e-5) {
+      return { mix, mixHeld: mix, bypass: false };
+    }
+    return { mix, bypass: true };
+  }),
+  toggleBypass: () => {
+    let next = 0;
+    set((s) => {
+      if (s.mix <= 1e-5) {
+        next = s.mixHeld;
+        return { mix: next, bypass: false };
+      }
+      next = 0;
+      return { mixHeld: s.mix, mix: 0, bypass: true };
+    });
+    return next;
+  },
   setOs: (index) => {
     const os = Math.max(0, Math.min(3, Math.round(index)));
     set({ os, osFactor: osFactorFromIndex(os) });

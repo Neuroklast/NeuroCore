@@ -3,6 +3,7 @@ import { presetAction } from "../presets/presetActions";
 import { useHostStore } from "../store/hostStore";
 import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
+import { footerLicenseLabel } from "./footerLicense";
 import { toolbarSlots } from "./toolbarChrome";
 
 export function Hud() {
@@ -101,8 +102,7 @@ export function Toolbar() {
               type="button"
               className={`nk-clip shrink-0 text-[12px] ${bypassed ? "on" : ""}`}
               onClick={() => {
-                const value = bypassed ? 1 : 0;
-                useHostStore.getState().setMix(value);
+                const value = useHostStore.getState().toggleBypass();
                 if (hasJuceBridge()) {
                   void getNativeFunction("setParam")({ id: "dryWet", value, gesture: "change" });
                 }
@@ -282,7 +282,7 @@ export function Footer() {
   const cpu = Math.max(0, Math.min(100, Math.round(h.cpu)));
   const latMs = h.sr > 0 ? (h.lat / h.sr) * 1000 : 0;
   return (
-    <footer className="grid h-[28px] shrink-0 grid-cols-9 items-center border-t border-accent/40 px-2 font-mono text-[12px] text-ink">
+    <footer className="grid h-[28px] shrink-0 grid-cols-10 items-center border-t border-accent/40 px-2 font-mono text-[12px] text-ink">
       <span>NKOS</span>
       <span>{h.mode === "SAFE" ? "SAFE" : h.mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
@@ -292,6 +292,7 @@ export function Footer() {
       <span>BPM {h.bpm.toFixed(1)}</span>
       <span>{h.tempoSource}</span>
       <span>OS {h.osFactor}x</span>
+      <span className="text-right">{footerLicenseLabel(h.licensed, h.demoRemainSec)}</span>
     </footer>
   );
 }

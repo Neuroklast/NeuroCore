@@ -24,6 +24,7 @@ describe("hostStore", () => {
     expect(state.polisher).toBe(0);
   });
 
+  it("clamps host cpu as given 0-100 from the bridge", () => {
     useHostStore.getState().applyHost({ cpu: 100, mode: "SAFE", os: 4 });
     expect(useHostStore.getState().cpu).toBe(100);
     expect(useHostStore.getState().mode).toBe("SAFE");
@@ -52,6 +53,16 @@ describe("hostStore", () => {
     });
     expect(useHostStore.getState().knobs[0]?.id).toBe("a");
     expect(useHostStore.getState().mix).toBe(0.8);
+  });
+
+  it("restores held mix after bypass", () => {
+    useHostStore.getState().setMix(0.42);
+    expect(useHostStore.getState().toggleBypass()).toBe(0);
+    expect(useHostStore.getState().mix).toBe(0);
+    expect(useHostStore.getState().bypass).toBe(true);
+    expect(useHostStore.getState().toggleBypass()).toBeCloseTo(0.42);
+    expect(useHostStore.getState().mix).toBeCloseTo(0.42);
+    expect(useHostStore.getState().bypass).toBe(false);
   });
 
   it("writes mix from the slider without resetting os", () => {
