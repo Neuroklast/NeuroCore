@@ -101,6 +101,7 @@ set(SOURCE_FILES
     src/dsl/blocks/OttBlock.cpp
     src/dsl/blocks/WidenBlock.cpp
     src/dsl/blocks/IrBlock.cpp
+    src/dsl/blocks/PitchBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp

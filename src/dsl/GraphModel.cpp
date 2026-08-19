@@ -1584,11 +1584,12 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
                                      "center", "width", "lowcut", "highcut", "channel", nullptr };
     static const char* kEq[] = { "type", "freq", "q", "gain", "channel", nullptr };
     static const char* kComp[] = { "threshold", "ratio", "attack", "release", "knee",
-                                   "makeup", "source", nullptr };
+                                   "makeup", "ceiling", "source", nullptr };
     static const char* kGate[] = { "threshold", "hyst", "attack", "hold", "release",
-                                   "range", "source", nullptr };
-    static const char* kNoiseGate[] = { "threshold", "attack", "release", nullptr };
+                                   "range", "ceiling", "source", nullptr };
+    static const char* kNoiseGate[] = { "threshold", "attack", "release", "ceiling", nullptr };
     static const char* kLimit[] = { "ceiling", "release", nullptr };
+    static const char* kPitch[] = { "semitones", "shift", "mix", "formant", "ceiling", "sync", nullptr };
     static const char* kDelay[] = { "time", "sync", "feedback", "mix", "damp",
                                     "pingpong", "channel", nullptr };
     static const char* kReverb[] = { "size", "decay", "damp", "mix", "width", nullptr };
@@ -1628,6 +1629,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     else if (t == "ms") keys = kMs;
     else if (t == "join") keys = kJoin;
     else if (t.startsWith ("octav")) keys = kOctaver;
+    else if (t.startsWith ("pitch")) keys = kPitch;
     else if (t.startsWith ("vocod")) keys = kVocoder;
     else if (t.startsWith ("xover") || t.startsWith ("crossover")) keys = kXover;
     else if (t.startsWith ("meter") || t == "probe")

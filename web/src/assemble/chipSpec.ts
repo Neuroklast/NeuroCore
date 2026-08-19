@@ -235,14 +235,15 @@ add({
   typeCodePrefix: "CP",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "ratio", "attack", "release"],
+  paramJacks: ["threshold", "ratio", "attack", "release", "ceiling"],
   ranges: {
     threshold: { min: -60, max: 0, unit: "dB" },
     ratio: { min: 1, max: 20 },
     attack: { min: 0.001, max: 1, unit: "ms" },
     release: { min: 0.001, max: 2, unit: "ms" },
+    ceiling: { min: -12, max: 0, unit: "dB" },
   },
-  defaultArgs: { threshold: "-18", ratio: "4", attack: "0.01", release: "0.1" },
+  defaultArgs: { threshold: "-18", ratio: "4", attack: "0.01", release: "0.1", ceiling: "0" },
   blurb: "Compressor.",
 });
 
@@ -252,13 +253,14 @@ add({
   typeCodePrefix: "GT",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "attack", "release"],
+  paramJacks: ["threshold", "attack", "release", "ceiling"],
   ranges: {
     threshold: { min: -80, max: 0, unit: "dB" },
     attack: { min: 0.001, max: 1, unit: "ms" },
     release: { min: 0.001, max: 2, unit: "ms" },
+    ceiling: { min: -12, max: 0, unit: "dB" },
   },
-  defaultArgs: { threshold: "-18", attack: "0.01", release: "0.1" },
+  defaultArgs: { threshold: "-18", attack: "0.01", release: "0.1", ceiling: "0" },
   blurb: "Noise gate.",
 });
 
@@ -375,6 +377,23 @@ add({
   },
   defaultArgs: { sub: "1", up: "0", mix: "0.3", tone: "120", thresh: "0.05" },
   blurb: "Analog octave.",
+});
+
+add({
+  id: "pitch",
+  label: "Pitch",
+  typeCodePrefix: "PT",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["semitones", "mix", "formant", "ceiling"],
+  ranges: {
+    semitones: { min: -24, max: 24, unit: "st" },
+    mix: { min: 0, max: 1, unit: "%" },
+    formant: { min: 0.25, max: 4 },
+    ceiling: { min: -12, max: 0, unit: "dB" },
+  },
+  defaultArgs: { semitones: "0", mix: "1", formant: "1", ceiling: "-0.3" },
+  blurb: "Phase-vocoder pitch shift.",
 });
 
 add({
@@ -562,6 +581,7 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("xover") || t.startsWith("crossover") || t === "msplit") return "msplit";
   if (t.startsWith("widen") || t === "width") return "width";
   if (t.startsWith("octav")) return "octaver";
+  if (t.startsWith("pitch")) return "pitch";
   if (t.startsWith("vocod")) return "vocoder";
   if (t === "send") return "send";
   if (t === "out") return "out";

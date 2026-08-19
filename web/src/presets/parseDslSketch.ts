@@ -37,6 +37,9 @@ const TYPE_ALIAS: Record<string, string> = {
   limiter: "limit",
   convolve: "ir",
   custom: "custom",
+  pshift: "pitch",
+  pitchshift: "pitch",
+  pitch_shift: "pitch",
 };
 
 function stripComment(line: string): { code: string; comment: string } {

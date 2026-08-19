@@ -32,6 +32,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "widen", label: "Width", args: "width = 1; delay = 12; bass = 140", category: "Routing" },
   { type: "send", label: "Send", args: "kanal = both", category: "Routing" },
   { type: "octaver", label: "Octaver", args: "sub = 1; up = 0; mix = 0.3; tone = 120; thresh = 0.05", category: "Tone" },
+  { type: "pitch", label: "Pitch", args: "semitones = 0; mix = 1; formant = 1; ceiling = -0.3", category: "Tone" },
   { type: "custom", label: "Custom", args: "y = x", category: "Custom" },
 ];
 

@@ -1,5 +1,6 @@
 #include "../SignalChain.h"
 #include "../../core/Config.h"
+#include "../../dsp/DSPUtils.h"
 #include <cmath>
 
 using namespace dsl;
@@ -12,7 +13,8 @@ void SignalChain::Comp::clearRuntimeState() noexcept
     hpfLpL2 = 0.f;
     hpfLpR2 = 0.f;
     cachedAtk = cachedRel = cachedHpf = -1.f;
-    cachedMakeup = 1.0e9f;
+    cachedMakeup = cachedCeil = 1.0e9f;
+    ceilLin = 1.f;
 }
 
 void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
@@ -32,7 +34,9 @@ void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
     resetSm (kneeSm, kneeDb, 0.f);
     resetSm (makeupSm, makeupDb, 0.f);
     resetSm (hpfSm, hpfHz, 0.f);
+    resetSm (ceilSm, ceilingDb, 0.f);
     clearRuntimeState();
+    ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
     varNames.clear();
     yPtr = nullptr;
     if (varPtr != nullptr)
@@ -85,6 +89,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         kneeDb.setVariable (n.second, v);
         makeupDb.setVariable (n.second, v);
         hpfHz.setVariable (n.second, v);
+        ceilingDb.setVariable (n.second, v);
     }
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)
@@ -99,6 +104,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     kneeSm.setTargetValue (ev (kneeDb, 0.f));
     makeupSm.setTargetValue (ev (makeupDb, 0.f));
     hpfSm.setTargetValue (ev (hpfHz, 0.f));
+    ceilSm.setTargetValue (ev (ceilingDb, 0.f));
 
     float* out[2] {};
     const int useCh = juce::jmin (nCh, 2);
@@ -107,9 +113,9 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
 
     const bool live = thrSm.isSmoothing() || ratioSm.isSmoothing() || atkSm.isSmoothing()
                    || relSm.isSmoothing() || kneeSm.isSmoothing() || makeupSm.isSmoothing()
-                   || hpfSm.isSmoothing();
+                   || hpfSm.isSmoothing() || ceilSm.isSmoothing();
 
-    auto refreshCached = [this] (float atk, float rel, float hpf, float makeup) noexcept
+    auto refreshCached = [this] (float atk, float rel, float hpf, float makeup, float ceilDb) noexcept
     {
         if (std::abs (atk - cachedAtk) > 1.0e-6f)
         {
@@ -133,6 +139,11 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             cachedMakeup = makeup;
             makeupLin = juce::Decibels::decibelsToGain (makeup);
         }
+        if (std::abs (ceilDb - cachedCeil) > 1.0e-4f)
+        {
+            cachedCeil = ceilDb;
+            ceilLin = juce::Decibels::decibelsToGain (ceilDb);
+        }
     };
 
     float thr = juce::jlimit (-80.f, 0.f, thrSm.getCurrentValue());
@@ -142,7 +153,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     refreshCached (juce::jmax (0.001f, atkSm.getCurrentValue()),
                    juce::jmax (0.005f, relSm.getCurrentValue()),
                    hpf,
-                   juce::jlimit (-24.f, 24.f, makeupSm.getCurrentValue()));
+                   juce::jlimit (-24.f, 24.f, makeupSm.getCurrentValue()),
+                   juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
 
     for (int i = 0; i < nS; ++i)
     {
@@ -155,7 +167,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             knee = juce::jlimit (0.f, 24.f, kneeSm.getNextValue());
             const float makeup = juce::jlimit (-24.f, 24.f, makeupSm.getNextValue());
             hpf = juce::jlimit (0.f, 800.f, hpfSm.getNextValue());
-            refreshCached (atk, rel, hpf, makeup);
+            const float ceilDb = juce::jlimit (-24.f, 0.f, ceilSm.getNextValue());
+            refreshCached (atk, rel, hpf, makeup, ceilDb);
         }
 
         float detL = 0.f, detR = 0.f;
@@ -202,7 +215,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
         for (int c = 0; c < useCh; ++c)
-            out[c][i] *= g;
+            out[c][i] = DSPUtils::softCeilSample (out[c][i] * g, ceilLin);
     }
 
     if (! live)
@@ -216,6 +229,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             kneeSm.skip (nS);
             makeupSm.skip (nS);
             hpfSm.skip (nS);
+            ceilSm.skip (nS);
         }
     }
 

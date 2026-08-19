@@ -67,7 +67,7 @@ public:
 private:
     enum class NodeKind : uint8_t
     {
-        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain
+        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch
     };
 
     struct Block
@@ -264,8 +264,8 @@ private:
     struct Comp : Block
     {
         ExpressionEvaluator threshold, ratio, attack, release;
-        ExpressionEvaluator kneeDb, makeupDb, hpfHz;
-        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm, kneeSm, makeupSm, hpfSm;
+        ExpressionEvaluator kneeDb, makeupDb, hpfHz, ceilingDb;
+        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm, kneeSm, makeupSm, hpfSm, ceilSm;
         bool followSidechain { false };
         float sampleRate { 44100.f };
         int channels { 1 };
@@ -273,7 +273,8 @@ private:
         float hpfLpL { 0.f }, hpfLpR { 0.f };
         float hpfLpL2 { 0.f }, hpfLpR2 { 0.f };
         float cachedAtk { -1.f }, cachedRel { -1.f }, cachedHpf { -1.f }, cachedMakeup { 1.0e9f };
-        float atkC { 0.f }, relC { 0.f }, hpfA { 0.f }, makeupLin { 1.f };
+        float cachedCeil { 1.0e9f };
+        float atkC { 0.f }, relC { 0.f }, hpfA { 0.f }, makeupLin { 1.f }, ceilLin { 1.f };
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
@@ -290,8 +291,8 @@ private:
     /** Peak noise gate, stereo-linked. Closed gain = range (dB). */
     struct Gate : Block
     {
-        ExpressionEvaluator thresholdDb, hystDb, attack, hold, release, rangeDb;
-        juce::SmoothedValue<float> thrSm, hystSm, atkSm, holdSm, relSm, rangeSm;
+        ExpressionEvaluator thresholdDb, hystDb, attack, hold, release, rangeDb, ceilingDb;
+        juce::SmoothedValue<float> thrSm, hystSm, atkSm, holdSm, relSm, rangeSm, ceilSm;
         bool followSidechain { false };
         float sampleRate { 44100.f };
         int channels { 1 };
@@ -300,8 +301,9 @@ private:
         float holdLeft { 0.f };
         bool open { false };
         float cachedAtk { -1.f }, cachedRel { -1.f }, cachedThr { 1.0e9f };
-        float cachedHyst { -1.f }, cachedRange { 1.0e9f };
+        float cachedHyst { -1.f }, cachedRange { 1.0e9f }, cachedCeil { 1.0e9f };
         float atkC { 0.f }, relC { 0.f }, openLin { 0.f }, closeLin { 0.f }, rangeLin { 0.f };
+        float ceilLin { 1.f };
         const float* scL { nullptr };
         const float* scR { nullptr };
         int scN { 0 };
@@ -800,6 +802,82 @@ private:
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyBands (float q, float formant) noexcept;
+    };
+
+    /**
+        Phase-vocoder pitch shifter. Fixed FFT, RT-safe (all buffers in prepare).
+        `semitones` = shift, optional `sync` locks grain/hop to a note length,
+        `formant` scales spectral copy vs pitch, `ceiling` soft-caps wet peaks.
+    */
+    struct Pitch : Block
+    {
+        static constexpr int kFftOrder = 10;                 // 1024
+        static constexpr int kFftSize  = 1 << kFftOrder;
+        static constexpr int kOsamp    = 4;
+        static constexpr int kHopBase  = kFftSize / kOsamp;  // 256
+        static constexpr int kBins     = kFftSize / 2 + 1;
+
+        ExpressionEvaluator semiExpr, mixExpr, formantExpr, ceilingDb;
+        bool useSync { false };
+        float syncBeats { 0.25f }; ///< quarter-note units when sync is on
+        double currentBpm { Config::kDefaultTempo };
+        float sampleRate { 44100.f };
+        juce::SmoothedValue<float> semiSm, mixSm, formSm, ceilSm;
+        float cachedCeil { 1.0e9f };
+        float ceilLin { 1.f };
+        int latencySamples { 0 };
+        int hop { kHopBase };
+        std::unique_ptr<juce::dsp::FFT> fft;
+        std::vector<float> window;
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<float*, std::string>> varNames;
+
+        struct Chan
+        {
+            std::vector<float> inFifo;     // kFftSize
+            std::vector<float> outFifo;    // kFftSize
+            std::vector<float> outAccum;   // 2 * kFftSize
+            std::vector<float> lastPhase;  // kBins
+            std::vector<float> sumPhase;   // kBins
+            std::vector<float> anaMagn;    // kBins
+            std::vector<float> anaFreq;    // kBins
+            std::vector<float> synMagn;    // kBins
+            std::vector<float> synFreq;    // kBins
+            std::vector<float> fftWork;    // 2 * kFftSize
+            int rover { kFftSize - kHopBase };
+            void ensure()
+            {
+                inFifo.assign ((size_t) kFftSize, 0.f);
+                outFifo.assign ((size_t) kFftSize, 0.f);
+                outAccum.assign ((size_t) (2 * kFftSize), 0.f);
+                lastPhase.assign ((size_t) kBins, 0.f);
+                sumPhase.assign ((size_t) kBins, 0.f);
+                anaMagn.assign ((size_t) kBins, 0.f);
+                anaFreq.assign ((size_t) kBins, 0.f);
+                synMagn.assign ((size_t) kBins, 0.f);
+                synFreq.assign ((size_t) kBins, 0.f);
+                fftWork.assign ((size_t) (2 * kFftSize), 0.f);
+                rover = kFftSize - kHopBase;
+            }
+            void clear (int hopSz) noexcept
+            {
+                std::fill (inFifo.begin(), inFifo.end(), 0.f);
+                std::fill (outFifo.begin(), outFifo.end(), 0.f);
+                std::fill (outAccum.begin(), outAccum.end(), 0.f);
+                std::fill (lastPhase.begin(), lastPhase.end(), 0.f);
+                std::fill (sumPhase.begin(), sumPhase.end(), 0.f);
+                rover = kFftSize - juce::jmax (1, hopSz);
+            }
+        };
+        Chan ch[2];
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void applyTempo (double bpm) noexcept;
+        void processFrame (Chan& c, float pitchRatio, float formantRatio) noexcept;
+        float processSample (Chan& c, float x, float pitchRatio, float formantRatio) noexcept;
     };
 
     using Chain   = std::vector<std::unique_ptr<Block>>;

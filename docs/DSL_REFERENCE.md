@@ -158,6 +158,27 @@ Wie ein OC-2/OC-5: **eine** Mid-Clock, Flip-Flop auf −1 (Pitch = Nulldurchgän
 
 ---
 
+## `pitch` – Phase-Vocoder Pitch-Shift
+
+```
+pitch1: semitones = 7; mix = 1; formant = 1; ceiling = -0.3
+pitch2: semitones = -12; mix = 0.5; formant = 1.2; sync = 1/8
+```
+
+STFT phase vocoder (FFT 1024, hop 256). Shift in Semitones; optional `formant` skaliert die Spektralkopie unabhängig vom Pitch. `sync` koppelt den Hop an eine Notenlänge (wie Delay). `ceiling` soft-capped den Wet-Pfad (Default −0.3 dB). Latenz ≈ FFT − hop (wird an den Host gemeldet).
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `semitones` / `shift` | −24…24 | Pitch-Verschiebung |
+| `mix` | 0–1 | Nassanteil |
+| `formant` | 0.25–4 | Formant-Skalierung (1 = mit Pitch) |
+| `ceiling` / `ceil` | −24…0 dB | Soft-Ceiling auf Wet (Default −0.3) |
+| `sync` | `1/4`, `1/8`, … | Optional: hop an Tempo koppeln |
+
+Aliases: `pitchshift`, `pshift`.
+
+---
+
 ## `widen` – Mono → Stereo
 
 ```
@@ -236,9 +257,10 @@ stage1: y = x * (1 - env1 * a)
 ```
 gate1: threshold = -42; hyst = 3; attack = 0.001; hold = 0.04; release = 0.08; range = -70
 gate1: source = sidechain
+gate1: threshold = -24; ceiling = -0.3
 ```
 
-Stereo-verkoppelt. Öffnet bei `threshold`, schließt bei `threshold - hyst`. `range` ist die geschlossene Verstärkung in dB.
+Stereo-verkoppelt. Öffnet bei `threshold`, schließt bei `threshold - hyst`. `range` ist die geschlossene Verstärkung in dB. Optionales `ceiling` / `ceil` (dB, Default 0) soft-capped den Ausgang.
 
 ## `split` – Mid/Side, L/R, Bänder, parallel
 
@@ -302,6 +324,7 @@ Dieselbe Engine wie `gate`, aber im Circuit-Overlay und in der Autocomplete nur 
 | `threshold` / `thresh` | dB | Öffnungsschwelle (Standard -42) |
 | `attack` | s | optional, Öffnungszeit |
 | `release` | s | optional, Schließzeit |
+| `ceiling` / `ceil` | dB | optional, Soft-Ceiling (Standard 0) |
 
 ---
 
@@ -364,7 +387,10 @@ Alte Skripte (nur threshold/ratio/attack/release) bleiben gültig. Attack-Floor 
 | `knee` | Soft-Knee in dB (0 = hart, optional) |
 | `makeup` / `gain` | Ausgangs-Anhebung in dB (optional) |
 | `hpf` | Detektor-Hochpass in Hz, 0 = aus (optional) |
+| `ceiling` / `ceil` | Soft-Ceiling in dB nach Makeup (optional, Standard 0) |
 | `source` | `sidechain` duckt vom Extra-Input (optional) |
+
+Chainwide: nach der Kette soft-shapet die Engine nur echte Overs (`|x| > 1`); musikalische Pegel bleiben unangetastet. Host-seitige Peak-Safety bleibt `OutputSanitizer`.
 
 ---
 

@@ -48,6 +48,7 @@ export function kindLabel(type: string): string {
   if (t === "in") return "IN";
   if (t === "sidechain" || t === "sc" || t === "scin") return "SC IN";
   if (t.startsWith("octav")) return "OCT";
+  if (t.startsWith("pitch")) return "PITCH";
   if (t.startsWith("vocod")) return "VOC";
   if (t.startsWith("env")) return "ENV";
   if (t.startsWith("osc")) return "LFO";
