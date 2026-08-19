@@ -32,7 +32,11 @@ export function shouldBlockNativeContextMenu(_e?: { target?: unknown }): boolean
   return true;
 }
 
-/** Bare Space is Cubase play/pause. Repeat/chords stay with the plugin. */
+/**
+ * Keys that the plugin never owns and must always forward to the DAW host.
+ * Bare Space = play/pause; numpad 0, 1, / = Cubase locate/loop transport.
+ * Repeat events and any modifier chord stay with the plugin.
+ */
 export function isHostTransportKey(e: {
   key: string;
   code?: string;
@@ -46,5 +50,14 @@ export function isHostTransportKey(e: {
     return false;
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey)
     return false;
-  return e.key === " " || e.key === "Spacebar" || e.code === "Space";
+  if (e.key === " " || e.key === "Spacebar" || e.code === "Space")
+    return true;
+  // Cubase numpad transport: Numpad0 = return-to-zero, Numpad1 = go to left
+  // locator, NumpadDivide = activate/deactivate loop.
+  if (e.code === "Numpad0" || e.code === "Numpad1" || e.code === "NumpadDivide")
+    return true;
+  // Fallback for synthetic test events that omit `code`.
+  if (! e.code && (e.key === "0" || e.key === "1" || e.key === "/"))
+    return true;
+  return false;
 }

@@ -35,4 +35,20 @@ describe("browser shortcuts are banned", () => {
     expect(isHostTransportKey({ ...bare, shiftKey: true })).toBe(false);
     expect(isHostTransportKey({ ...bare, key: "a", code: "KeyA" })).toBe(false);
   });
+
+  it("treats numpad 0, 1 and / as host transport keys (Cubase locate/loop)", () => {
+    const mod = { ctrlKey: false, metaKey: false, altKey: false, shiftKey: false };
+    expect(isHostTransportKey({ ...mod, key: "0", code: "Numpad0" })).toBe(true);
+    expect(isHostTransportKey({ ...mod, key: "1", code: "Numpad1" })).toBe(true);
+    expect(isHostTransportKey({ ...mod, key: "/", code: "NumpadDivide" })).toBe(true);
+    // With code omitted (synthetic/test events) still recognised via key value
+    expect(isHostTransportKey({ ...mod, key: "0" })).toBe(true);
+    expect(isHostTransportKey({ ...mod, key: "1" })).toBe(true);
+    expect(isHostTransportKey({ ...mod, key: "/" })).toBe(true);
+    // Digits on main keyboard (code present) must NOT be swallowed
+    expect(isHostTransportKey({ ...mod, key: "0", code: "Digit0" })).toBe(false);
+    expect(isHostTransportKey({ ...mod, key: "1", code: "Digit1" })).toBe(false);
+    // Modifier chords are never forwarded
+    expect(isHostTransportKey({ ...mod, key: "0", code: "Numpad0", ctrlKey: true })).toBe(false);
+  });
 });

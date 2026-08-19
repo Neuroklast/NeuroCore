@@ -24,22 +24,35 @@
 namespace
 {
 #if JUCE_WINDOWS
-bool postSpaceToHost (void* hostNative)
+/** Map a JS KeyboardEvent.key value to a Windows virtual-key code, or 0 if unknown. */
+static WORD keyNameToVK (const juce::String& keyName) noexcept
+{
+    if (keyName.equalsIgnoreCase ("Space") || keyName == " ")  return VK_SPACE;
+    if (keyName == "0")  return VK_NUMPAD0;
+    if (keyName == "1")  return VK_NUMPAD1;
+    if (keyName == "/")  return VK_DIVIDE;
+    return 0;
+}
+
+bool postKeyToHost (void* hostNative, WORD vk)
 {
     auto* hwnd = static_cast<HWND> (hostNative);
-    if (hwnd == nullptr || ! IsWindow (hwnd))
+    if (hwnd == nullptr || ! IsWindow (hwnd) || vk == 0)
         return false;
-    const auto sc = MapVirtualKeyW (VK_SPACE, MAPVK_VK_TO_VSC);
+    const auto sc = MapVirtualKeyW (vk, MAPVK_VK_TO_VSC);
     const LPARAM down = 1 | (static_cast<LPARAM> (sc) << 16);
     const LPARAM up = down | (1L << 30) | (1L << 31);
-    if (PostMessageW (hwnd, WM_KEYDOWN, VK_SPACE, down) == 0)
+    if (PostMessageW (hwnd, WM_KEYDOWN, vk, down) == 0)
         return false;
-    PostMessageW (hwnd, WM_KEYUP, VK_SPACE, up);
+    PostMessageW (hwnd, WM_KEYUP, vk, up);
     return true;
 }
 
-bool forwardSpaceToHost (juce::Component& editor)
+bool forwardKeyToHost (juce::Component& editor, const juce::String& keyName)
 {
+    const WORD vk = keyNameToVK (keyName);
+    if (vk == 0)
+        return false;
     auto* peer = editor.getPeer();
     if (peer == nullptr)
         return false;
@@ -52,12 +65,12 @@ bool forwardSpaceToHost (juce::Component& editor)
     auto* dest = static_cast<HWND> (bridge::chooseHostHwnd (plugin, rootOwner, root, owner));
     if (dest == nullptr || dest == plugin)
         return false;
-    return postSpaceToHost (dest);
+    return postKeyToHost (dest, vk);
 }
 #else
-bool forwardSpaceToHost (juce::Component& editor)
+bool forwardKeyToHost (juce::Component& editor, const juce::String& keyName)
 {
-    juce::ignoreUnused (editor);
+    juce::ignoreUnused (editor, keyName);
     return false;
 }
 #endif
@@ -69,21 +82,26 @@ struct QuietCorner : public juce::ResizableCornerComponent
 
 juce::File resolveDistRoot()
 {
-#ifdef NEUROKORE_WEB_DIST_DIR
-    const juce::File fromCMake (NEUROKORE_WEB_DIST_DIR);
-    if (fromCMake.getChildFile ("index.html").existsAsFile())
-        return fromCMake;
-#endif
-    auto here = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
-                    .getParentDirectory();
-    for (int i = 0; i < 8; ++i)
+    // Issue 3: cache the filesystem walk so reopening the editor window is fast.
+    static const juce::File cached = []() -> juce::File
     {
-        const auto sibling = here.getChildFile ("web").getChildFile ("dist");
-        if (sibling.getChildFile ("index.html").existsAsFile())
-            return sibling;
-        here = here.getParentDirectory();
-    }
-    return {};
+#ifdef NEUROKORE_WEB_DIST_DIR
+        const juce::File fromCMake (NEUROKORE_WEB_DIST_DIR);
+        if (fromCMake.getChildFile ("index.html").existsAsFile())
+            return fromCMake;
+#endif
+        auto here = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
+                        .getParentDirectory();
+        for (int i = 0; i < 8; ++i)
+        {
+            const auto sibling = here.getChildFile ("web").getChildFile ("dist");
+            if (sibling.getChildFile ("index.html").existsAsFile())
+                return sibling;
+            here = here.getParentDirectory();
+        }
+        return {};
+    }();
+    return cached;
 }
 
 juce::WebBrowserComponent::Resource toResource (const bridge::WebAsset& asset)
@@ -363,7 +381,7 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
                             else if (args.size() > 0)
                                 key = args[0].toString();
                             if (bridge::isHostTransportName (key))
-                                forwardSpaceToHost (*this);
+                                forwardKeyToHost (*this, key);
                             complete (juce::var (true));
                         })
                     .withNativeFunction ("applyLayout",

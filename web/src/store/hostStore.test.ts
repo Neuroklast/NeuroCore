@@ -12,7 +12,18 @@ describe("hostStore", () => {
     });
   });
 
-  it("clamps host cpu as given 0-100 from the bridge", () => {
+  it("initial os/osFactor/polisher match APVTS defaults (Issue 5: no cross-instance flash)", () => {
+    // The store initialises with values that match the plugin's APVTS defaults:
+    //   kDefaultOversamplingIndex = 2  →  4×  (index 2, factor 4)
+    //   polisherMode default          =  0   (None)
+    // If these were wrong (e.g. 3/8/2) a new instance would briefly display the
+    // previous instance's settings before the bridge pushHost() update arrives.
+    const state = useHostStore.getInitialState();
+    expect(state.os).toBe(2);
+    expect(state.osFactor).toBe(4);
+    expect(state.polisher).toBe(0);
+  });
+
     useHostStore.getState().applyHost({ cpu: 100, mode: "SAFE", os: 4 });
     expect(useHostStore.getState().cpu).toBe(100);
     expect(useHostStore.getState().mode).toBe("SAFE");

@@ -3152,16 +3152,19 @@ float SignalChain::Env::process(int ch, float x)
     }
     else
         out = relCoeff * out + (1.0f - relCoeff) * input;
-    if (mode == Rms)
-        out = std::sqrt(out);
+    // Issue 6: keep value[ch] in the same domain as `input` so the next-sample
+    // comparison stays domain-consistent (power vs power for RMS, amplitude vs
+    // amplitude for Peak).  Apply sqrt only when computing the output.
     if (! std::isfinite (out) || out < 0.f)
         out = 0.f;
+    value[ch] = out; // power domain for RMS, amplitude for Peak
+    const float outAmp = (mode == Rms) ? std::sqrt (out) : out;
+    float display = std::isfinite (outAmp) ? outAmp : 0.f;
     // Peak |x| can exceed 1. Gain formulas (1-env*k) then invert → periodic click.
-    out = juce::jlimit (0.0f, 1.0f, out);
-    if (std::abs (out) < 1.0e-20f)
-        out = 0.f;
-    value[ch] = out;
-    float y = invert ? (1.f - out) : out;
+    display = juce::jlimit (0.0f, 1.0f, display);
+    if (std::abs (display) < 1.0e-20f)
+        display = 0.f;
+    float y = invert ? (1.f - display) : display;
     const float lo = minFixed;
     const float hi = maxFixed;
     y = lo + (hi - lo) * y;
