@@ -976,6 +976,7 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     valid = false;
     varIndices.clear();
     variables.fill(0.0f);
+    cachedXIndex = invalidIndex;
     errorMessage.clear();
     skipWhitespace();
 
@@ -1005,6 +1006,9 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
         valid = root != nullptr;
         if (valid)
         {
+            auto xIt = varIndices.find ("x");
+            if (xIt != varIndices.end())
+                cachedXIndex = xIt->second;
             LookupTables::prepareFromScript(formula);
             compiled = [ptr = root.get()](const float* vars) noexcept { return ptr->eval(vars); };
             compiledSimd = [ptr = root.get()](const juce::dsp::SIMDRegister<float>* vars) noexcept { return ptr->evalSimd(vars); };
@@ -1044,9 +1048,8 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
         varsCopy   = variables; // copy current variables quickly
     }
 
-    auto it = varIndices.find("x");
-    if (it != varIndices.end())
-        varsCopy[it->second] = xValue;
+    if (cachedXIndex != invalidIndex)
+        varsCopy[cachedXIndex] = xValue;
 
     // Single-shot API: reset ADAA so sequential evaluate() calls don't bleed state
     // (audio block path resets once per channel, then streams samples).
@@ -1064,9 +1067,8 @@ float ExpressionEvaluator::evaluateLive (float xValue) const noexcept
     if (! valid || ! root)
         return 0.0f;
     VarArray varsCopy = variables;
-    auto it = varIndices.find ("x");
-    if (it != varIndices.end())
-        varsCopy[it->second] = xValue;
+    if (cachedXIndex != invalidIndex)
+        varsCopy[cachedXIndex] = xValue;
     const float result = root->eval (varsCopy.data());
     return std::isfinite (result) ? result : 0.0f;
 }

@@ -3,7 +3,10 @@
 #include <JuceHeader.h>
 #include "../src/dsl/SignalChain.h"
 #include "../src/dsl/DSLParser.h"
+#include "../src/core/Config.h"
+#include "../src/core/MidiVariableMapper.h"
 #include "TestHelpers.h"
+#include <array>
 #include <cmath>
 
 class DynamicsBlocksTest : public juce::UnitTest
@@ -364,6 +367,104 @@ public:
             expect (std::abs (buf.getSample (0, 200) - 0.1f) < 0.02f,
                     "full SC mix should follow the extra input, y="
                     + juce::String (buf.getSample (0, 200), 3));
+        }
+
+        // Contract: external blocks (Comp/Gate/Limit/Widen/Ott/Xover/Ir) inject
+        // knobs via cached float* slots. A wrong pair type / map lookup crashes or
+        // freezes coeffs — modulated threshold must still move GR.
+        beginTest ("contract: knob-modulated external dynamics stay finite and react");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "param a = Ctrl [0, 1]\n"
+                "comp1: threshold = map(a,0,1,-60,-6); ratio = 8; attack = 0.001; release = 0.05\n"
+                "limit1: ceiling = -0.3; release = 0.05\n"
+                "gate1: threshold = -60; range = -80\n"
+                "widen1: width = a\n"
+                "ott1: depth = a\n",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+
+            std::array<juce::SmoothedValue<float>, Config::kNumUserParams> knobs {};
+            for (auto& k : knobs)
+            {
+                k.reset (48000.0, 0.01);
+                k.setCurrentAndTargetValue (0.f);
+            }
+            std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs {};
+            for (int i = 0; i < Config::kNumUserParams; ++i)
+                knobPtrs[(size_t) i] = &knobs[(size_t) i];
+
+            juce::AudioBuffer<float> buf (2, 256);
+            auto fillTone = [&] (float amp)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = amp * std::sin (2.f * juce::MathConstants<float>::pi
+                                                   * 440.f * (float) i / 48000.f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+            };
+
+            knobs[0].setCurrentAndTargetValue (0.f); // open threshold → little GR
+            fillTone (0.5f);
+            for (int b = 0; b < 8; ++b)
+                chain.processBlockSmoothed (buf, knobPtrs);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            const float openPeak = TestHelpers::peakAbs (buf);
+
+            knobs[0].setCurrentAndTargetValue (1.f); // threshold → -6 dB, heavy GR
+            fillTone (0.5f);
+            for (int b = 0; b < 16; ++b)
+                chain.processBlockSmoothed (buf, knobPtrs);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            const float closedPeak = TestHelpers::peakAbs (buf);
+            expect (closedPeak < openPeak * 0.85f,
+                    "modulated comp threshold must reduce peak: open="
+                    + juce::String (openPeak, 4) + " closed=" + juce::String (closedPeak, 4));
+        }
+
+        // Contract: MIDI vars write through HotSlots pointers after prepare.
+        beginTest ("contract: setMidiVariables reaches env via hot slots");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "env1: type = peak; attack = 0.001; release = 0.05\n"
+                "stage1: y = x * (0.1 + 0.9 * midi_gate)\n",
+                err), err);
+            chain.prepare ({ 48000.0, 128, 1 });
+
+            MidiVariableMapper midi;
+            juce::MidiBuffer notes;
+            notes.addEvent (juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100), 0);
+            midi.processMidi (notes);
+            chain.setMidiVariables (midi);
+
+            juce::AudioBuffer<float> buf (1, 128);
+            for (int i = 0; i < 128; ++i)
+                buf.setSample (0, i, 0.5f);
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            const float gatedOn = TestHelpers::peakAbs (buf);
+            expect (gatedOn > 0.35f, "midi_gate=1 should pass most of the tone, peak="
+                    + juce::String (gatedOn, 3));
+
+            juce::MidiBuffer off;
+            off.addEvent (juce::MidiMessage::noteOff (1, 60), 0);
+            midi.processMidi (off);
+            chain.setMidiVariables (midi);
+            for (int i = 0; i < 128; ++i)
+                buf.setSample (0, i, 0.5f);
+            for (int b = 0; b < 4; ++b)
+                chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            const float gatedOff = TestHelpers::peakAbs (buf);
+            expect (gatedOff < gatedOn * 0.5f,
+                    "midi_gate=0 should attenuate, on=" + juce::String (gatedOn, 3)
+                    + " off=" + juce::String (gatedOff, 3));
         }
     }
 

@@ -40,7 +40,7 @@ void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr != nullptr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Gate::process (int ch, float x)
@@ -56,18 +56,15 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if (varPtr != nullptr)
+    for (const auto& n : varNames)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = (*varPtr)[n.first];
-            thresholdDb.setVariable (n.second, v);
-            hystDb.setVariable (n.second, v);
-            attack.setVariable (n.second, v);
-            hold.setVariable (n.second, v);
-            release.setVariable (n.second, v);
-            rangeDb.setVariable (n.second, v);
-        }
+        const float v = *n.first;
+        thresholdDb.setVariable (n.second, v);
+        hystDb.setVariable (n.second, v);
+        attack.setVariable (n.second, v);
+        hold.setVariable (n.second, v);
+        release.setVariable (n.second, v);
+        rangeDb.setVariable (n.second, v);
     }
 
     auto evalOr = [] (ExpressionEvaluator& e, float fallback) -> float

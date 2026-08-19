@@ -51,6 +51,12 @@ void SignalChain::HotSlots::bind (std::unordered_map<juce::String, float>& vars)
     scL = &vars["sc_l"];
     scR = &vars["sc_r"];
     sidechain = &vars["sidechain"];
+    midiNote = &vars["midi_note"];
+    midiFreq = &vars["midi_freq"];
+    midiVel  = &vars["midi_vel"];
+    midiGate = &vars["midi_gate"];
+    midiBend = &vars["midi_bend"];
+    midiMod  = &vars["midi_mod"];
 }
 
 void SignalChain::setValueTreeState(juce::AudioProcessorValueTreeState* vts) noexcept
@@ -1719,7 +1725,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     const int numChannels = buffer.getNumChannels();
     if (numSamples <= 0 || numChannels <= 0)
         return;
-    hot.bind (variables);
+    // hot.* slots are bound in prepare/loadScript — never re-hash the map here.
 
     // Mono DI / silent side: copy the live channel so channel=left/right both hear it.
     if (numChannels >= 2)
@@ -2545,8 +2551,6 @@ float SignalChain::Osc::process(int ch, float x)
         }
         if (destSlot != nullptr)
             *destSlot = v;
-        else if (varPtr)
-            (*varPtr)[name] = v;
         if (! last.empty())
             last[0] = v;
         pushViz (v);
@@ -2557,8 +2561,6 @@ float SignalChain::Osc::process(int ch, float x)
         last[(size_t) ch] = last[0];
         if (destSlot != nullptr)
             *destSlot = last[0];
-        else if (varPtr)
-            (*varPtr)[name] = last[0];
     }
     return x; // oscillators are modulation sources — never replace the audio path
 }
@@ -3318,7 +3320,18 @@ void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexc
 
 void SignalChain::setMidiVariables(const MidiVariableMapper& mapper)
 {
-    mapper.applyToVariables(variables);
+    // Prefer cached slots (no juce::String hash on the audio thread).
+    if (hot.midiNote != nullptr)
+    {
+        *hot.midiNote = mapper.getMidiNote();
+        *hot.midiFreq = mapper.getMidiFreq();
+        *hot.midiVel  = mapper.getMidiVel();
+        *hot.midiGate = mapper.getMidiGate();
+        *hot.midiBend = mapper.getMidiBend();
+        *hot.midiMod  = mapper.getMidiMod();
+        return;
+    }
+    mapper.applyToVariables (variables);
 }
 
 void SignalChain::setExternalSidechain (const float* left, const float* right, int numSamples) noexcept

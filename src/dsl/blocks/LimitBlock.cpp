@@ -28,7 +28,7 @@ void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr != nullptr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Limit::process (int ch, float x)
@@ -47,14 +47,11 @@ void SignalChain::Limit::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if (varPtr != nullptr)
+    for (const auto& n : varNames)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = (*varPtr)[n.first];
-            ceilingDb.setVariable (n.second, v);
-            release.setVariable (n.second, v);
-        }
+        const float v = *n.first;
+        ceilingDb.setVariable (n.second, v);
+        release.setVariable (n.second, v);
     }
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)

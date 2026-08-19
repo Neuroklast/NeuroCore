@@ -279,6 +279,7 @@ private:
         int scN { 0 };
         std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
+        float* yPtr { nullptr };  ///< Cached variables["y"] — no String hash on audio thread
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x) override;
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -827,6 +828,13 @@ private:
         float* scL { nullptr };
         float* scR { nullptr };
         float* sidechain { nullptr };
+        float* midiNote { nullptr };
+        float* midiFreq { nullptr };
+        float* midiVel { nullptr };
+        float* midiGate { nullptr };
+        float* midiBend { nullptr };
+        float* midiMod { nullptr };
+        /** Resolve once after the variables map is stable (prepare / loadScript). */
         void bind (std::unordered_map<juce::String, float>& vars) noexcept;
     };
     HotSlots hot;

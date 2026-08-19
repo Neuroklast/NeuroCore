@@ -1,8 +1,8 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-18 (audio thread: bound var slots, no String hash; hardclip SIMD)  
+**Stand:** 2026-08-19 (audio thread: external blocks + MIDI via float* slots; no per-block hot.bind)  
 **Version:** 0.4.8-alpha  
-**Branch:** `ui-overhaul`
+**Branch:** `master`
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
