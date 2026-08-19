@@ -995,6 +995,54 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             oc->varPtr = &variables;
             newChain->push_back (std::move (oc));
         }
+        else if (d.type.startsWith ("pitch") || d.type == "pitchshift" || d.type == "pshift")
+        {
+            auto pt = std::make_unique<Pitch>();
+            pt->kind = NodeKind::Pitch;
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("semitones", "shift", -24.f, 24.f, "0", pt->semiExpr, "semitones [-24..24]");
+            parseAmt ("mix", nullptr, 0.f, 1.f, "1", pt->mixExpr, "mix [0..1]");
+            parseAmt ("formant", nullptr, 0.25f, 4.f, "1", pt->formantExpr, "formant [0.25..4]");
+            {
+                const auto ceilRaw = d.args.count ("ceiling") ? d.args.at ("ceiling")
+                                   : (d.args.count ("ceil") ? d.args.at ("ceil")
+                                                           : juce::String ("-0.3"));
+                pt->ceilingDb.parseFormula (addDefaultMap (ceilRaw, -24.f, 0.f).toStdString());
+                if (auto pn = findParam (ceilRaw); pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " ceiling [dB]");
+            }
+            if (d.args.count ("sync"))
+            {
+                const auto syncStr = d.args.at ("sync").trim();
+                float noteFrac = 0.f;
+                if (parseNoteDivision (syncStr, noteFrac))
+                {
+                    pt->useSync = true;
+                    // noteFrac is fraction of a whole note; convert to quarter-note beats.
+                    pt->syncBeats = juce::jlimit (0.03125f, 8.0f, noteFrac * 4.0f);
+                }
+                else if (syncStr.containsAnyOf ("0123456789"))
+                {
+                    pt->useSync = true;
+                    pt->syncBeats = juce::jlimit (0.03125f, 8.0f, syncStr.getFloatValue());
+                }
+            }
+            pt->currentBpm = hostBpm > 0.0 ? hostBpm : (double) Config::kDefaultTempo;
+            pt->varPtr = &variables;
+            newChain->push_back (std::move (pt));
+        }
         else if (d.type.startsWith ("vocoder"))
         {
             auto vc = std::make_unique<Vocoder>();
@@ -1085,6 +1133,15 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             else
                 co->hpfHz.parseFormula ("0.0");
+            if (d.args.count ("ceiling") || d.args.count ("ceil"))
+            {
+                const auto raw = d.args.count ("ceiling") ? d.args.at ("ceiling") : d.args.at ("ceil");
+                co->ceilingDb.parseFormula (addDefaultMap (raw, -24.f, 0.f).toStdString());
+                if (auto pn = findParam (raw); pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " ceiling [dB]");
+            }
+            else
+                co->ceilingDb.parseFormula ("0.0");
             if (d.args.count ("source"))
             {
                 const auto src = d.args.at ("source").trim().toLowerCase();
@@ -1120,6 +1177,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             parseAmt ("hold", nullptr, 0.f, 0.5f, simpleNg ? "0" : "0.04", gt->hold, "hold [s]");
             parseAmt ("release", nullptr, 0.005f, 0.5f, "0.08", gt->release, "release [s]");
             parseAmt ("range", nullptr, -90.f, 0.f, "-80", gt->rangeDb, "range [dB]");
+            parseAmt ("ceiling", "ceil", -24.f, 0.f, "0", gt->ceilingDb, "ceiling [dB]");
             if (d.args.count ("source"))
             {
                 const auto src = d.args.at ("source").trim().toLowerCase();
@@ -1483,8 +1541,12 @@ int SignalChain::getIrLatencySamples() const noexcept
         return 0;
     int n = 0;
     for (const auto& b : *c)
+    {
         if (auto* ir = dynamic_cast<const Ir*> (b.get()))
             n += ir->latencySamples;
+        if (auto* pt = dynamic_cast<const Pitch*> (b.get()))
+            n += juce::jmax (0, pt->latencySamples);
+    }
     return n;
 }
 
@@ -2057,6 +2119,27 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (b->tapId.isNotEmpty())
                 writeNodeTap (b->tapId, work);
         }
+        // Chainwide FS safety ceiling: soft-shape only true overs (abs > 1).
+        // Musical levels stay untouched; OutputSanitizer remains the final host-side pad.
+        {
+            constexpr float kChainCeil = 1.0f;
+            for (int ch = 0; ch < workCh; ++ch)
+            {
+                auto* data = work.getWritePointer (ch);
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    const float a = std::abs (data[i]);
+                    if (a > kChainCeil)
+                    {
+                        const float over = a - kChainCeil;
+                        const float shaped = kChainCeil
+                            + over / (1.f + over / juce::jmax (kChainCeil, 1.0e-3f));
+                        data[i] = std::copysign (shaped, data[i]);
+                    }
+                }
+            }
+        }
+
         if (onlyBus.isEmpty() || onlyBus == "main")
             writeNodeTap ("__out__", work);
     };
@@ -3315,6 +3398,9 @@ void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexc
         if (auto* dl = dynamic_cast<Delay*>(b.get()))
             if (dl->useSync)
                 dl->applyTempo(bpm);
+        if (auto* pt = dynamic_cast<Pitch*> (b.get()))
+            if (pt->useSync)
+                pt->applyTempo (bpm);
     }
 }
 

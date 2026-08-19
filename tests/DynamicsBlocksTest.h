@@ -468,6 +468,105 @@ public:
         }
     }
 
+        beginTest ("pitch block parses and aliases");
+        {
+            dsl::DSLParser parser;
+            std::vector<dsl::BlockDesc> blocks;
+            std::unordered_map<juce::String, juce::String> aliases;
+            std::vector<dsl::ParamDesc> params;
+            juce::String err;
+            expect (parser.parse ("pitch1: semitones = 7; mix = 1; formant = 1; ceiling = -0.3",
+                                  blocks, aliases, params, err), err);
+            expectEquals ((int) blocks.size(), 1);
+            expectEquals (blocks[0].type, juce::String ("pitch"));
+            blocks.clear();
+            expect (parser.parse ("pshift1: shift = -12; sync = 1/8",
+                                  blocks, aliases, params, err), err);
+            expectEquals (blocks[0].type, juce::String ("pitch"));
+        }
+
+        beginTest ("pitch unity mix stays finite and near dry after latency");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "pitch1: semitones = 0; mix = 1; formant = 1; ceiling = 0", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            // Flush STFT latency (~fft - hop), then measure.
+            const float peak = tonePeak (chain, 0.5f, 440.f, 48000.f, 16);
+            juce::AudioBuffer<float> z (2, 256);
+            z.clear();
+            chain.processBlock (z);
+            expectEquals (TestHelpers::countNonFinite (z), 0);
+            expect (peak > 0.15f && peak < 0.85f,
+                    "unity pitch should pass energy, peak=" + juce::String (peak, 3));
+            expect (chain.getIrLatencySamples() > 0, "pitch must report STFT latency");
+        }
+
+        beginTest ("pitch ceiling soft-caps wet peaks");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "pitch1: semitones = 0; mix = 1; formant = 1; ceiling = -6", err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            const float peak = tonePeak (chain, 1.0f, 440.f, 48000.f, 16);
+            const float ceilLin = juce::Decibels::decibelsToGain (-6.f);
+            expect (peak <= ceilLin * 1.15f + 0.05f,
+                    "ceiling -6 dB, peak=" + juce::String (peak, 3));
+        }
+
+        beginTest ("comp ceiling soft-caps makeup boost");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "comp1: threshold = -6; ratio = 1.1; attack = 0.001; release = 0.05; makeup = 12; ceiling = -6",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            const float peak = tonePeak (chain, 0.5f, 1000.f, 48000.f, 6);
+            expect (peak < 0.7f, "comp ceiling should hold makeup, peak=" + juce::String (peak, 3));
+        }
+
+        beginTest ("gate ceiling soft-caps open path");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "gate1: threshold = -60; range = 0; attack = 0.001; release = 0.02; ceiling = -6",
+                err), err);
+            chain.prepare ({ 48000.0, 256, 2 });
+            const float peak = tonePeak (chain, 1.0f, 200.f, 48000.f, 6);
+            expect (peak < 0.7f, "gate ceiling should hold, peak=" + juce::String (peak, 3));
+        }
+
+        beginTest ("chainwide soft-ceiling shapes true overs only");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("stage1: y = x * 2", err), err);
+            chain.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> buf (1, 256);
+            for (int i = 0; i < 256; ++i)
+                buf.setSample (0, i, 0.8f);
+            chain.processBlock (buf);
+            const float peak = TestHelpers::peakAbs (buf);
+            // 0.8 * 2 = 1.6 → soft-shaped above 1.0, must stay finite and below raw 1.6
+            expect (peak < 1.55f && peak > 1.0f,
+                    "overs soft-shaped, peak=" + juce::String (peak, 3));
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+
+            expect (chain.loadScript ("stage1: y = x * 0.5", err), err);
+            chain.prepare ({ 48000.0, 256, 1 });
+            for (int i = 0; i < 256; ++i)
+                buf.setSample (0, i, 0.5f);
+            chain.processBlock (buf);
+            const float quiet = TestHelpers::peakAbs (buf);
+            expect (quiet > 0.24f && quiet < 0.26f,
+                    "sub-FS chain must stay untouched, peak=" + juce::String (quiet, 3));
+        }
+    }
+
 private:
     static float tonePeak (dsl::SignalChain& chain, float amp, float hz, float sr, int blocks)
     {

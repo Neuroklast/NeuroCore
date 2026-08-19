@@ -1,7 +1,7 @@
 export const DSL_KEYWORDS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit", "limiter",
   "delay", "reverb", "ir", "ott", "widen", "osc", "env", "bus", "send",
-  "out", "ms", "vocoder", "octaver", "xover", "convolve", "noisegate",
+  "out", "ms", "vocoder", "octaver", "pitch", "xover", "convolve", "noisegate",
   "split", "custom",
 ] as const;
 
@@ -196,7 +196,7 @@ export const dslMonarch = {
       [/\/\/.*$/, "comment"],
       [/\b[a-f]\b/, "knob"],
       [/\b\d+(\.\d+)?([eE][-+]?\d+)?\b/, "number"],
-      [/\b(?:param|stage|filter|eq|comp|gate|limit|limiter|delay|reverb|ir|ott|widen|osc|env|bus|send|out|ms|vocoder|octaver|xover|convolve|noisegate|split|custom)\d*\b/, "keyword"],
+      [/\b(?:param|stage|filter|eq|comp|gate|limit|limiter|delay|reverb|ir|ott|widen|osc|env|bus|send|out|ms|vocoder|octaver|pitch|xover|convolve|noisegate|split|custom)\d*\b/, "keyword"],
       [/\b[A-Za-z_][A-Za-z0-9_]*\b/, "identifier"],
       [/[=:;,*+\-(){}\[\]]/, "operator"],
     ],

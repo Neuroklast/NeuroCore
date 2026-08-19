@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-19 (audio thread: external blocks + MIDI via float* slots; no per-block hot.bind)  
+**Stand:** 2026-08-19 (phase-vocoder `pitch` + gate/comp/chainwide ceilings)  
 **Version:** 0.4.8-alpha  
 **Branch:** `master`
 
@@ -28,6 +28,11 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 1. Native canvas/FX/chrome is gone (`PcbRouter` too). Left in `src/ui`: WebPluginEditor, StandaloneAudioSettings, MidiLearnManager.
 2. Per-Block-DSP-Welle (heute IN/OUT-Telemetrie, Glow log-Amplitude).
 3. ENV is a bus tap (audio in + mod out), not an LFO. Circuit draws IN/prev → env.in. Patch `env1` onto a param (`y = x * env1`) to hear it.
+
+## DSP (0.4.8-alpha)
+
+- **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
+- **Ceilings**: optional `ceiling` on `gate` / `comp` (default 0 dB soft-cap). Chainwide soft-shape only for `|x| > 1`.
 
 Delay liest linear mit Integer-Wrap (`delayRead`). Hermite-4-Punkt hat jedes Delay-Intervall Index 0 mit `N-1` gemischt — das war das periodische Knacken.
 

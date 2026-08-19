@@ -11,7 +11,8 @@ void SignalChain::Gate::clearRuntimeState() noexcept
     holdLeft = 0.f;
     open = false;
     cachedAtk = cachedRel = cachedHyst = -1.f;
-    cachedThr = cachedRange = 1.0e9f;
+    cachedThr = cachedRange = cachedCeil = 1.0e9f;
+    ceilLin = 1.f;
 }
 
 void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
@@ -24,6 +25,7 @@ void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
     holdSm.reset (sampleRate, Config::kSmoothingTime);
     relSm.reset (sampleRate, Config::kSmoothingTime);
     rangeSm.reset (sampleRate, Config::kSmoothingTime);
+    ceilSm.reset (sampleRate, Config::kSmoothingTime);
     auto snap = [] (ExpressionEvaluator& e, float fallback) -> float
     {
         const float v = e.evaluate (0.f);
@@ -35,8 +37,10 @@ void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
     holdSm.setCurrentAndTargetValue (snap (hold, 0.04f));
     relSm.setCurrentAndTargetValue (snap (release, 0.08f));
     rangeSm.setCurrentAndTargetValue (snap (rangeDb, -80.f));
+    ceilSm.setCurrentAndTargetValue (snap (ceilingDb, 0.f));
     clearRuntimeState();
     gain = juce::Decibels::decibelsToGain (juce::jlimit (-90.f, 0.f, rangeSm.getCurrentValue()));
+    ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
     varNames.clear();
     if (varPtr != nullptr)
         for (const auto& kv : *varPtr)
@@ -65,6 +69,7 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         hold.setVariable (n.second, v);
         release.setVariable (n.second, v);
         rangeDb.setVariable (n.second, v);
+        ceilingDb.setVariable (n.second, v);
     }
 
     auto evalOr = [] (ExpressionEvaluator& e, float fallback) -> float
@@ -79,6 +84,7 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
     holdSm.setTargetValue (evalOr (hold, 0.04f));
     relSm.setTargetValue (evalOr (release, 0.08f));
     rangeSm.setTargetValue (evalOr (rangeDb, -80.f));
+    ceilSm.setTargetValue (evalOr (ceilingDb, 0.f));
 
     const float invSr = 1.f / sampleRate;
 
@@ -86,6 +92,17 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
     const int useCh = juce::jmin (nCh, 2);
     for (int c = 0; c < useCh; ++c)
         out[c] = buffer.getWritePointer (c);
+
+    auto softCeil = [] (float x, float c) noexcept
+    {
+        if (c <= 1.0e-6f)
+            return 0.f;
+        const float a = std::abs (x);
+        if (a <= c)
+            return x;
+        const float over = a - c;
+        return std::copysign (c + over / (1.f + over / juce::jmax (c, 1.0e-3f)), x);
+    };
 
     for (int i = 0; i < nS; ++i)
     {
@@ -95,6 +112,7 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         const float holdS = juce::jlimit (0.f, 1.f, holdSm.getNextValue());
         const float relS  = juce::jlimit (0.002f, 1.f, relSm.getNextValue());
         const float rngDb = juce::jlimit (-90.f, 0.f, rangeSm.getNextValue());
+        const float ceilDb = juce::jlimit (-24.f, 0.f, ceilSm.getNextValue());
 
         if (std::abs (atkS - cachedAtk) > 1.0e-7f)
         {
@@ -117,6 +135,11 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         {
             cachedRange = rngDb;
             rangeLin = juce::Decibels::decibelsToGain (rngDb);
+        }
+        if (std::abs (ceilDb - cachedCeil) > 1.0e-4f)
+        {
+            cachedCeil = ceilDb;
+            ceilLin = juce::Decibels::decibelsToGain (ceilDb);
         }
 
         float det = 0.f;
@@ -159,6 +182,6 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         gain = juce::jlimit (0.f, 1.f, gain);
 
         for (int c = 0; c < useCh; ++c)
-            out[c][i] *= gain;
+            out[c][i] = softCeil (out[c][i] * gain, ceilLin);
     }
 }

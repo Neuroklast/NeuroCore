@@ -2,8 +2,8 @@
 #include "../../core/Config.h"
 #include <cmath>
 
-namespace neurokore
-{
+using namespace dsl;
+
 namespace
 {
 inline float softCeil (float x, float c) noexcept
@@ -60,6 +60,10 @@ void SignalChain::Pitch::prepare (const juce::dsp::ProcessSpec& spec)
     ceilSm.setCurrentAndTargetValue (1.f);
     cachedCeil = 1.0e9f;
     ceilLin = 1.f;
+    varNames.clear();
+    if (varPtr != nullptr)
+        for (const auto& kv : *varPtr)
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 void SignalChain::Pitch::applyTempo (double bpm) noexcept
@@ -194,18 +198,23 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     if (n <= 0 || nc <= 0 || fft == nullptr)
         return;
 
-    if (varPtr != nullptr)
-        for (auto& [ptr, name] : varNames)
-            *ptr = (*varPtr)[name];
+    for (const auto& n : varNames)
+    {
+        const float v = *n.first;
+        semiExpr.setVariable (n.second, v);
+        mixExpr.setVariable (n.second, v);
+        formantExpr.setVariable (n.second, v);
+        ceilingDb.setVariable (n.second, v);
+    }
 
-    const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluate());
-    const float mixT = juce::jlimit (0.f, 1.f, mixExpr.evaluate());
-    float formant = formantExpr.evaluate();
+    const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f));
+    const float mixT = juce::jlimit (0.f, 1.f, mixExpr.evaluate (0.f));
+    float formant = formantExpr.evaluate (0.f);
     if (! (formant > 0.f))
         formant = 1.f;
     formant = juce::jlimit (0.25f, 4.f, formant);
 
-    const float ceilDb = ceilingDb.evaluate();
+    const float ceilDb = ceilingDb.evaluate (0.f);
     if (std::abs (ceilDb - cachedCeil) > 1.0e-5f)
     {
         cachedCeil = ceilDb;
@@ -251,20 +260,23 @@ float SignalChain::Pitch::process (int channel, float x)
     if (fft == nullptr)
         return x;
 
-    if (varPtr != nullptr)
-        for (auto& [ptr, name] : varNames)
-            *ptr = (*varPtr)[name];
+    for (const auto& n : varNames)
+    {
+        const float v = *n.first;
+        semiExpr.setVariable (n.second, v);
+        mixExpr.setVariable (n.second, v);
+        formantExpr.setVariable (n.second, v);
+        ceilingDb.setVariable (n.second, v);
+    }
 
-    const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluate()) / 12.f);
-    float fr = formantExpr.evaluate();
+    const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f)) / 12.f);
+    float fr = formantExpr.evaluate (0.f);
     if (! (fr > 0.f)) fr = 1.f;
     fr = juce::jlimit (0.25f, 4.f, fr);
-    const float mixV = juce::jlimit (0.f, 1.f, mixExpr.evaluate());
-    const float ceilDb = juce::jlimit (-24.f, 0.f, ceilingDb.evaluate());
+    const float mixV = juce::jlimit (0.f, 1.f, mixExpr.evaluate (0.f));
+    const float ceilDb = juce::jlimit (-24.f, 0.f, ceilingDb.evaluate (0.f));
     const int ci = juce::jlimit (0, 1, channel);
     float wet = processSample (ch[ci], x, pr, fr);
     wet = softCeil (wet, juce::Decibels::decibelsToGain (ceilDb));
     return x * (1.f - mixV) + wet * mixV;
 }
-
-} // namespace neurokore

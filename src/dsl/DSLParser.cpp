@@ -658,6 +658,8 @@ bool DSLParser::parse(const juce::String& text,
             }
             if (desc.type == "ngate" || desc.type == "noise_gate" || desc.type == "noisegate")
                 desc.type = "noisegate";
+            if (desc.type == "pitchshift" || desc.type == "pshift" || desc.type == "pitch_shift")
+                desc.type = "pitch";
             if (desc.type == "probe")
                 desc.type = "meter";
             if (desc.type == "sc" || desc.type == "scin" || desc.type == "side_chain")
@@ -669,6 +671,7 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "comp"  && desc.type != "osc" && desc.type != "env" &&
                 desc.type != "delay" && desc.type != "reverb" && desc.type != "ms" &&
                 desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
+                desc.type != "pitch" &&
                 desc.type != "gate" && desc.type != "noisegate" &&
                 desc.type != "limit" && desc.type != "limiter" &&
                 desc.type != "xover" && desc.type != "crossover" &&
@@ -888,6 +891,24 @@ juce::String dsl::formatBlockSummary(const BlockDesc& block)
         if (const auto m = arg ("mix"); m.isNotEmpty())
             parts.add ("mix=" + m);
         return parts.isEmpty() ? juce::String ("octaver") : parts.joinIntoString (", ");
+    }
+
+    if (block.type == "pitch")
+    {
+        juce::StringArray parts;
+        if (const auto s = arg ("semitones"); s.isNotEmpty())
+            parts.add ("semi=" + s);
+        else if (const auto s = arg ("shift"); s.isNotEmpty())
+            parts.add ("semi=" + s);
+        if (const auto m = arg ("mix"); m.isNotEmpty())
+            parts.add ("mix=" + m);
+        if (const auto f = arg ("formant"); f.isNotEmpty())
+            parts.add ("form=" + f);
+        if (const auto c = arg ("ceiling"); c.isNotEmpty())
+            parts.add ("ceil=" + c);
+        if (const auto sy = arg ("sync"); sy.isNotEmpty())
+            parts.add ("sync=" + sy);
+        return parts.isEmpty() ? juce::String ("pitch") : parts.joinIntoString (", ");
     }
 
     if (block.type == "vocoder")

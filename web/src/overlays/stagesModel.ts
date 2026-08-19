@@ -64,6 +64,7 @@ export function stageRole(type: string): string {
   if (t === "ott") return "OTT — 3-band up and down compression.";
   if (t === "ms") return "Mid/side — splits or joins the stereo image.";
   if (t.startsWith("octav")) return "Octave — adds a pitch an octave away.";
+  if (t.startsWith("pitch")) return "Pitch — phase-vocoder shift in semitones.";
   if (t.startsWith("vocod")) return "Vocoder — imprints one spectrum onto another.";
   return `Block of type ${type}.`;
 }

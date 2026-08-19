@@ -13,7 +13,7 @@ export interface CompleteItem {
 
 const BLOCKS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit",
-  "osc", "env", "delay", "reverb", "ms", "octaver", "vocoder",
+  "osc", "env", "delay", "reverb", "ms", "octaver", "pitch", "vocoder",
   "xover", "ott", "widen", "ir", "bus", "out", "split", "custom",
 ] as const;
 
@@ -28,8 +28,9 @@ const PROPS: Record<string, string[]> = {
   out: ["main", "mid", "low", "high"],
   osc: ["shape", "freq", "sync", "depth"],
   env: ["type", "attack", "release", "hold", "min", "max", "invert"],
-  comp: ["threshold", "ratio", "attack", "release"],
-  gate: ["threshold", "attack", "release"],
+  comp: ["threshold", "ratio", "attack", "release", "ceiling"],
+  gate: ["threshold", "attack", "release", "ceiling"],
+  pitch: ["semitones", "shift", "mix", "formant", "ceiling", "sync"],
   ms: ["mode"],
   xover: ["f1", "f2"],
   custom: ["y"],
