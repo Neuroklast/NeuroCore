@@ -4480,13 +4480,11 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     setT (formSm, formantExpr.evaluate (0.f), 1.f);
     setT (drySm, dryExpr.evaluate (0.f), 0.15f);
 
-    // Evaluate per-block envelope times (clamp to safe range, RT-safe: no alloc)
-    const float atkSec = juce::jlimit (0.001f, 0.1f,
-        [this] { const float v = attackExpr.evaluate (0.f);
-                 return std::isfinite (v) ? v : 0.003f; }());
-    const float relSec = juce::jlimit (0.005f, 0.5f,
-        [this] { const float v = releaseExpr.evaluate (0.f);
-                 return std::isfinite (v) ? v : 0.030f; }());
+    // Evaluate per-block envelope times (clamp to safe range)
+    const float atkV = attackExpr.evaluate (0.f);
+    const float relV = releaseExpr.evaluate (0.f);
+    const float atkSec = juce::jlimit (0.001f, 0.1f, std::isfinite (atkV) ? atkV : 0.003f);
+    const float relSec = juce::jlimit (0.005f, 0.5f, std::isfinite (relV) ? relV : 0.030f);
     const float atk = 1.f - std::exp (-1.f / (atkSec * sampleRate));
     const float rel = 1.f - std::exp (-1.f / (relSec * sampleRate));
 
@@ -4522,11 +4520,11 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
             if (scR != nullptr)
                 scPeak = juce::jmax (scPeak, std::abs (scR[i]));
         }
+        if (scPeak > 1.5e-4f)
+            scHold = (int) (0.06f * sampleRate);
+        else if (scHold > 0)
+            scHold = juce::jmax (0, scHold - n);
     }
-    if (scPeak > 1.5e-4f)
-        scHold = (int) (0.06f * sampleRate);
-    else if (scHold > 0)
-        scHold = juce::jmax (0, scHold - n);
     const bool useSc = !useVoice && scWired && (scPeak > 1.5e-4f || scHold > 0);
 
     const int useCh = juce::jmin (nCh, 2);
