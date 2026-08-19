@@ -278,6 +278,8 @@ private:
 
     std::unordered_map<std::string, size_t> varIndices;
     std::array<float, MaxVariables> variables{};
+    /** Set at parse time — evaluate/evaluateLive must not hash "x" on the audio path. */
+    size_t cachedXIndex { invalidIndex };
 };
 
 template<typename PreFn, typename PostFn>

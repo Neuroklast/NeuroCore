@@ -79,7 +79,7 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
     varNames.clear();
     if (varPtr != nullptr)
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 float SignalChain::Ott::tailSeconds() const noexcept
@@ -99,19 +99,18 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if (varPtr != nullptr)
-        for (const auto& n : varNames)
-        {
-            const float v = (*varPtr)[n.first];
-            depthExpr.setVariable (n.second, v);
-            timeExpr.setVariable (n.second, v);
-            inExpr.setVariable (n.second, v);
-            lowExpr.setVariable (n.second, v);
-            midExpr.setVariable (n.second, v);
-            highExpr.setVariable (n.second, v);
-            f1Expr.setVariable (n.second, v);
-            f2Expr.setVariable (n.second, v);
-        }
+    for (const auto& n : varNames)
+    {
+        const float v = *n.first;
+        depthExpr.setVariable (n.second, v);
+        timeExpr.setVariable (n.second, v);
+        inExpr.setVariable (n.second, v);
+        lowExpr.setVariable (n.second, v);
+        midExpr.setVariable (n.second, v);
+        highExpr.setVariable (n.second, v);
+        f1Expr.setVariable (n.second, v);
+        f2Expr.setVariable (n.second, v);
+    }
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {

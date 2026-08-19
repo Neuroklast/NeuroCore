@@ -34,9 +34,13 @@ void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
     resetSm (hpfSm, hpfHz, 0.f);
     clearRuntimeState();
     varNames.clear();
+    yPtr = nullptr;
     if (varPtr != nullptr)
+    {
         for (const auto& kv : *varPtr)
-            varNames.emplace_back (kv.first, kv.first.toStdString());
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
+        yPtr = &(*varPtr)["y"];
+    }
 }
 
 float SignalChain::Comp::computeGrDb (float levelDb, float thrDb, float ratio, float knee) const noexcept
@@ -71,19 +75,16 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if (varPtr != nullptr)
+    for (const auto& n : varNames)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = (*varPtr)[n.first];
-            threshold.setVariable (n.second, v);
-            ratio.setVariable (n.second, v);
-            attack.setVariable (n.second, v);
-            release.setVariable (n.second, v);
-            kneeDb.setVariable (n.second, v);
-            makeupDb.setVariable (n.second, v);
-            hpfHz.setVariable (n.second, v);
-        }
+        const float v = *n.first;
+        threshold.setVariable (n.second, v);
+        ratio.setVariable (n.second, v);
+        attack.setVariable (n.second, v);
+        release.setVariable (n.second, v);
+        kneeDb.setVariable (n.second, v);
+        makeupDb.setVariable (n.second, v);
+        hpfHz.setVariable (n.second, v);
     }
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)
@@ -218,6 +219,6 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         }
     }
 
-    if (varPtr != nullptr)
-        (*varPtr)["y"] = buffer.getSample (0, nS - 1);
+    if (yPtr != nullptr)
+        *yPtr = buffer.getSample (0, nS - 1);
 }
