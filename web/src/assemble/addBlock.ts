@@ -2,6 +2,7 @@ import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
 import { muteScriptHistory, pushScriptHistory, redoScript, undoScript } from "../store/scriptHistory";
+import { stripMuteComments } from "./muteSolo";
 
 export type AddableBlock = {
   type: string;
@@ -167,7 +168,8 @@ export function scriptAfterRename(script: string, oldId: string, newId: string):
 }
 
 export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "canvas"): void {
-  const { doc } = parseDslSketch(script);
+  const shown = stripMuteComments(script);
+  const { doc } = parseDslSketch(shown);
   useAstStore.getState().applyAstEvent({
     origin,
     script,

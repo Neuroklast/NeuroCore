@@ -23,6 +23,9 @@ import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
 import { bindDocumentTheme } from "../theme/themeBind";
 import { seedFactoryPresets } from "../presets/presetActions";
+import { parseDslSketch } from "../presets/parseDslSketch";
+import { stripMuteComments } from "../assemble/muteSolo";
+import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { knobBindEnabled, knobRail, type Workspace } from "./workspace";
 
 export function App() {
@@ -42,7 +45,14 @@ export function App() {
       if (! rec || typeof rec.astJson !== "string") {
         return;
       }
-      useAstStore.getState().applyAstEvent(rec, {
+      if (rec.origin === "preset" || rec.origin === "host") {
+        resetMuteSolo();
+      }
+      const clean = typeof rec.script === "string" ? stripMuteComments(rec.script) : rec.script;
+      const astJson = clean && clean !== rec.script
+        ? JSON.stringify(parseDslSketch(clean).doc)
+        : rec.astJson;
+      useAstStore.getState().applyAstEvent({ ...rec, astJson }, {
         updateScript: shouldHydrate("editor", rec.origin as Origin),
       });
     });

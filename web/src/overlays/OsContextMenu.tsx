@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ADD_CATEGORIES } from "../assemble/addBlock";
 import { addPickerBlocks } from "./addPicker";
 
@@ -16,6 +16,32 @@ export function OsContextMenu({
   onDismiss: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left, top });
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (! el) {
+      return;
+    }
+    const host = el.offsetParent as HTMLElement | null;
+    if (! host) {
+      return;
+    }
+    const hr = host.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    let x = left;
+    let y = top;
+    if (r.bottom > hr.bottom) {
+      y = Math.max(0, top - (r.bottom - hr.bottom));
+    }
+    if (r.right > hr.right) {
+      x = Math.max(0, left - (r.right - hr.right));
+    }
+    if (x !== left || y !== top) {
+      setPos({ left: x, top: y });
+    } else {
+      setPos({ left, top });
+    }
+  }, [left, top]);
   useEffect(() => {
     const close = (e: PointerEvent) => {
       if (root.current && ! root.current.contains(e.target as Node)) {
@@ -39,7 +65,7 @@ export function OsContextMenu({
   }, [onDismiss]);
 
   return (
-    <div ref={root} className="nk-ctx" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
+    <div ref={root} className="nk-ctx" style={{ left: pos.left, top: pos.top }} onPointerDown={(e) => e.stopPropagation()}>
       {title ? <div className="nk-ctx-id">{title}</div> : null}
       {children}
     </div>

@@ -8,6 +8,8 @@ import { peakToDb } from "../bridge/telemetry";
 import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
 import { renameCircuitBlock, setCircuitArg, addCircuitBlock, insertCircuitBlockBetween, ADDABLE_BLOCKS } from "./addBlock";
+import { isFlowBlockId } from "./muteSolo";
+import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { bindEndId, lettersInExpr } from "./bindLinks";
 import { bindableArgKeys, handleId } from "./handles";
 import { commitBind } from "./bindModel";
@@ -216,8 +218,7 @@ export function ChipNode({ data, id }: NodeProps) {
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const toggle = useChipViewStore((s) => s.toggle);
   const setDetail = useChipViewStore((s) => s.setDetail);
-  const toggleMute = useChipViewStore((s) => s.toggleMute);
-  const toggleSolo = useChipViewStore((s) => s.toggleSolo);
+
   const isMuted = useChipViewStore((s) => s.isMuted(id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(id));
   const isAudible = useChipViewStore((s) => s.isAudible(id));
@@ -249,14 +250,12 @@ export function ChipNode({ data, id }: NodeProps) {
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   const absY = useStore((s) => s.nodeLookup.get(id)?.internals.positionAbsolute.y ?? 0);
+  const paneH = useStore((s) => s.height);
   const shape = lfo ? parseLfoShape(d.args.shape ?? d.args.wave ?? "sine") : "sine";
   const lampMs = lfo ? lfoPeriodMs(hz) : 0;
   const expandAt = chipExpandOffset();
   
-  // Check if block has both input and output (eligible for mute/solo)
-  const hasInput = ins.length > 0 || topJacks.some((j) => ! j.output) || bottomJacks.some((j) => ! j.output);
-  const hasOutput = outs.length > 0 || topJacks.some((j) => j.output) || bottomJacks.some((j) => j.output);
-  const canMuteSolo = hasInput && hasOutput && ! lfo && ! env;
+  const canMuteSolo = ! isFlowBlockId(id);
 
   useLayoutEffect(() => {
     setNodes((ns) => {
@@ -417,22 +416,22 @@ export function ChipNode({ data, id }: NodeProps) {
               <>
                 <button
                   type="button"
-                  className={`nodrag nopan text-[9px] px-1 py-0.5 border ${isMuted ? "bg-warn/20 border-warn text-warn" : "border-accent/40 text-muted hover:text-ink"}`}
+                  className={`nodrag nopan min-h-[26px] min-w-[26px] px-1 text-[11px] border ${isMuted ? "bg-warn/20 border-warn text-warn" : "border-accent/40 text-muted hover:text-ink"}`}
                   title="Mute block"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleMute(id);
+                    toggleChipMute(id);
                   }}
                 >
                   M
                 </button>
                 <button
                   type="button"
-                  className={`nodrag nopan text-[9px] px-1 py-0.5 border ${isSoloed ? "bg-accent/20 border-accent text-accent" : "border-accent/40 text-muted hover:text-ink"}`}
+                  className={`nodrag nopan min-h-[26px] min-w-[26px] px-1 text-[11px] border ${isSoloed ? "bg-accent/20 border-accent text-accent" : "border-accent/40 text-muted hover:text-ink"}`}
                   title="Solo block"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleSolo(id);
+                    toggleChipSolo(id);
                   }}
                 >
                   S
@@ -442,7 +441,7 @@ export function ChipNode({ data, id }: NodeProps) {
             {detail ? (
               <button
                 type="button"
-                className="nodrag nopan text-[9px] px-1 py-0.5 border border-accent/40 text-accent hover:text-ink ml-auto"
+                className="nodrag nopan ml-auto min-h-[26px] min-w-[26px] border border-accent/40 px-1 text-[14px] text-accent hover:text-ink"
                 title="Add block after this one"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -541,8 +540,13 @@ export function ChipNode({ data, id }: NodeProps) {
       
       {showAddPicker && detail ? (
         <div
-          className="nodrag nopan absolute z-10 mt-1 max-h-48 overflow-y-auto border border-accent bg-black p-2 text-[11px]"
-          style={{ top: box.h, left: 0, minWidth: box.w }}
+          className="nodrag nopan absolute z-10 max-h-48 overflow-y-auto border border-accent bg-black p-2 text-[11px]"
+          style={{
+            top: absY + box.h + 200 > paneH ? undefined : box.h,
+            bottom: absY + box.h + 200 > paneH ? box.h : undefined,
+            left: 0,
+            minWidth: Math.max(box.w, 168),
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-1 text-muted">Add block after {id}:</div>

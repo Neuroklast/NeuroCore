@@ -5,6 +5,8 @@ import { factoryExplorerRows, factoryRows, findFactory } from "./factoryCatalog"
 import { stepPresetName } from "./presetStep";
 import { explorerSession } from "../overlays/explorerSession";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
+import { stripMuteComments } from "../assemble/muteSolo";
+import { resetMuteSolo, withCleanScriptForSave } from "../assemble/muteSoloApply";
 
 type UserSnap = {
   name: string;
@@ -58,7 +60,16 @@ export async function presetAction(cmd: {
   tags?: string;
 }): Promise<void> {
   if (hasJuceBridge()) {
+    if (cmd.action === "save" || cmd.action === "saveas") {
+      await withCleanScriptForSave(async () => {
+        await getNativeFunction("preset")(cmd);
+      });
+      return;
+    }
     await getNativeFunction("preset")(cmd);
+    if (cmd.action === "load" || cmd.action === "prev" || cmd.action === "next" || cmd.action === "new") {
+      resetMuteSolo();
+    }
     return;
   }
   const names = factoryRows().map((p) => p.name);
@@ -67,7 +78,7 @@ export async function presetAction(cmd: {
     if (! name) {
       return;
     }
-    const script = useAstStore.getState().lastValidScript || useAstStore.getState().script;
+    const script = stripMuteComments(useAstStore.getState().lastValidScript || useAstStore.getState().script);
     const snap: UserSnap = {
       name,
       author: (cmd.author ?? "").trim(),
@@ -103,12 +114,14 @@ export async function presetAction(cmd: {
       });
       return;
     }
+    resetMuteSolo();
     applyLocal(cmd.name);
     return;
   }
   if ((cmd.action === "prev" || cmd.action === "next") && names.length > 0) {
     const rows = useHostStore.getState().presets;
     const walk = rows.length > 0 ? rows : factoryRows();
+    resetMuteSolo();
     applyLocal(stepPresetName(
       walk,
       useHostStore.getState().presetName,
@@ -118,6 +131,7 @@ export async function presetAction(cmd: {
     return;
   }
   if (cmd.action === "new") {
+    resetMuteSolo();
     const script = "// New preset\nparam a = Drive [0.5, 4.0]\nstage1: y = softclip(x, a)\n";
     const { doc } = parseDslSketch(script);
     useHostStore.getState().applyPresets({ name: "Untitled", list: factoryExplorerRows() });

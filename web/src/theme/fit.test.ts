@@ -51,4 +51,15 @@ describe("design scale", () => {
     expect(pos.top + 176).toBeLessThanOrEqual(860);
     expect(pos.left).toBeGreaterThanOrEqual(0);
   });
+
+  it("flips a tall context menu up when it would clip the board", () => {
+    const el = {
+      offsetWidth: 640,
+      offsetHeight: 400,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 400 }),
+    };
+    const pos = menuPos(40, 380, el, 188, 280);
+    expect(pos.top + 280).toBeLessThanOrEqual(400);
+    expect(pos.top).toBeGreaterThanOrEqual(0);
+  });
 });

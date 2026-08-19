@@ -44,6 +44,8 @@ import { flowFromAst, visibleNodes, type ChipData } from "./flowFromAst";
 import { parseHandle } from "./handles";
 import { isValidLink } from "./validateLink";
 import { addCircuitBlock, publishScript, removeCircuitBlock, insertCircuitBlockBetween } from "./addBlock";
+import { isFlowBlockId } from "./muteSolo";
+import { clearChipSolo, toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { chipOverlay, isIrSlotId } from "../presets/irSlots";
 import { openImpulse } from "../overlays/ImpulsePanel";
 
@@ -404,7 +406,7 @@ function Board() {
     if (! pane) {
       return;
     }
-    setMenu({ kind: "node", id: node.id, ...menuPos(event.clientX, event.clientY, pane) });
+    setMenu({ kind: "node", id: node.id, ...menuPos(event.clientX, event.clientY, pane, 188, 280) });
   }, []);
 
   const onEdgeClick = useCallback((event: MouseEvent, edge: Edge) => {
@@ -549,16 +551,16 @@ function Board() {
               closeMenu();
             }}>Details</OsMenuItem>
           ) : null}
-          {menu.kind === "node" && menu.id !== "IN" && menu.id !== "OUT" ? (
+          {menu.kind === "node" && ! isFlowBlockId(menu.id) ? (
             <>
               <OsMenuItem onClick={() => {
-                useChipViewStore.getState().toggleMute(menu.id);
+                toggleChipMute(menu.id);
                 closeMenu();
               }}>
                 {isMuted(menu.id) ? "Unmute" : "Mute"}
               </OsMenuItem>
               <OsMenuItem onClick={() => {
-                useChipViewStore.getState().toggleSolo(menu.id);
+                toggleChipSolo(menu.id);
                 closeMenu();
               }}>
                 {isSoloed(menu.id) ? "Unsolo" : "Solo"}
@@ -598,7 +600,7 @@ function Board() {
           <OsMenuItem onClick={() => { void arrange(); closeMenu(); }}>Arrange</OsMenuItem>
           <OsMenuItem onClick={() => { void compactBoard(); closeMenu(); }}>Compact</OsMenuItem>
           {soloedSize > 0 ? (
-            <OsMenuItem onClick={() => { useChipViewStore.getState().clearSolo(); closeMenu(); }}>Clear Solo</OsMenuItem>
+            <OsMenuItem onClick={() => { clearChipSolo(); closeMenu(); }}>Clear Solo</OsMenuItem>
           ) : null}
         </OsContextMenu>
       ) : null}
