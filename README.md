@@ -67,7 +67,7 @@ Full language notes: in-plugin **Help**, `docs/USER_MANUAL.md`, `docs/DSL_REFERE
 
 ## Agent workflow
 
-See `AGENTS.md` and `docs/AGENT_WORKFLOW.md`. Every coding session: plan first, small changes, tests, update `docs/DEVELOPMENT_STATUS.md` and `docs/LESSONS_LEARNED.md`.
+See `AGENTS.md` and `docs/agents/workflow.md`. Every coding session: plan first, small changes, tests, update `docs/DEVELOPMENT_STATUS.md` and `docs/LESSONS_LEARNED.md`.
 
 ## License
 

@@ -379,6 +379,11 @@ terminals/
 docs/superpowers/
 *.afphoto
 build/package/
+.vite/
+/package-lock.json
+feeback/
+NEUROKORE Alpha Test Package*/
+web/NUL
 
 # Third-party IR dumps. Shipped cabs live in resources/irs/ with their license.
 /IR/

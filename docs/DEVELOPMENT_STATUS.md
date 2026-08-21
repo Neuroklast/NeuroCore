@@ -25,7 +25,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 
 ## Offen
 
-1. Native canvas/FX/chrome is gone (`PcbRouter` too). Left in `src/ui`: WebPluginEditor, StandaloneAudioSettings, MidiLearnManager.
+1. Native canvas/FX/chrome is gone (`PcbRouter` and `WaveformCapture` too). Scopes read NKTM telemetry. Left in `src/ui`: WebPluginEditor, StandaloneAudioSettings, MidiLearnManager.
 2. Per-Block-DSP-Welle (heute IN/OUT-Telemetrie, Glow log-Amplitude).
 3. ENV is a bus tap (audio in + mod out), not an LFO. Circuit draws IN/prev → env.in. Patch `env1` onto a param (`y = x * env1`) to hear it.
 

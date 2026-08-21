@@ -25,8 +25,6 @@
 #include "../dsp/InputRouter.h"
 #include "../dsp/SanitationChain.h"
 #include "../dsp/LatencyAlignedSidechain.h"
-
-class WaveformCapture;
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../dsl/SignalChain.h"
@@ -110,9 +108,6 @@ public:
     AudioDiagnostics& getDiagnostics() noexcept { return diagnostics; }
     const AudioDiagnostics& getDiagnostics() const noexcept { return diagnostics; }
 
-    /** IN scopes tap here (after L/BOTH/R, before gain / formula). */
-    void setInputWaveformTap (class WaveformCapture* tap) noexcept { inputWaveTap = tap; }
-
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
     InputGain&      getInputGain()      noexcept { return inputGain; }
     int getSanitationLatency() const noexcept { return sanitation.limiterLatencySamples(); }
@@ -130,7 +125,6 @@ private:
     InputGain inputGain;
     SanitationChain sanitation;
     InputRouter inputRouter;
-    WaveformCapture* inputWaveTap { nullptr };
 
     juce::SmoothedValue<float> wetValue;
 
