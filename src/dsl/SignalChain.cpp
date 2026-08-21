@@ -70,10 +70,9 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
     currentSpec = spec;
     variables["sr"] = static_cast<float>(spec.sampleRate);
     sampleCounter = 0;
-    const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
-    for (auto& lane : knobLanes)
-        if (lane.capacity() < laneN)
-            lane.reserve (laneN);
+    knobLaneN = (int) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
+    for (int p = 0; p < Config::kNumUserParams; ++p)
+        knobLane[(size_t) p] = DSPUtils::alignedRing (knobLaneStorage[(size_t) p], knobLaneN);
     hot.bind (variables);
     for (auto& s : paramSmooth)
         s.reset(spec.sampleRate, Config::kSmoothingTime);
@@ -1632,8 +1631,8 @@ float SignalChain::resolveBusGain (const juce::String& expr, int sampleIndex) co
     {
         if (idx < 0 || idx >= Config::kNumUserParams)
             return 0.0f;
-        if (sampleIndex >= 0 && (int) knobLanes[(size_t) idx].size() > sampleIndex)
-            return knobLanes[(size_t) idx][(size_t) sampleIndex];
+        if (sampleIndex >= 0 && sampleIndex < knobLaneN && knobLane[(size_t) idx] != nullptr)
+            return knobLane[(size_t) idx][(size_t) sampleIndex];
         return paramSmooth[(size_t) idx].getCurrentValue();
     };
 
@@ -1813,30 +1812,27 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                         ? (1.0f / static_cast<float>(currentSpec.sampleRate))
                         : 0.0f;
 
-    // ---- Knob lanes at sample rate (architecture: continuous control, no block steps) ----
-    for (int p = 0; p < Config::kNumUserParams; ++p)
-    {
-        if ((int) knobLanes[(size_t) p].size() < numSamples)
-            knobLanes[(size_t) p].resize ((size_t) numSamples);
-    }
+    // ---- Knob lanes at sample rate (sized in prepare — never resize here) ----
+    const int nLane = juce::jmin (numSamples, juce::jmax (0, knobLaneN));
 
     if (haveLock)
     {
-        for (int i = 0; i < numSamples; ++i)
+        for (int i = 0; i < nLane; ++i)
         {
             for (int p = 0; p < Config::kNumUserParams; ++p)
             {
                 float v = hot.knob[p] != nullptr ? *hot.knob[p] : 0.f;
                 if (params[(size_t) p] != nullptr)
                     v = params[(size_t) p]->getNextValue();
-                knobLanes[(size_t) p][(size_t) i] = publishedKnobValue (p, v);
+                if (knobLane[(size_t) p] != nullptr)
+                    knobLane[(size_t) p][(size_t) i] = publishedKnobValue (p, v);
             }
         }
         // Block-path filters use mid-block snapshot (stable coeffs for SIMD)
-        const int mid = numSamples / 2;
+        const int mid = (nLane > 0) ? (nLane / 2) : 0;
         for (int p = 0; p < Config::kNumUserParams; ++p)
-            if (hot.knob[p] != nullptr)
-                *hot.knob[p] = knobLanes[(size_t) p][(size_t) mid];
+            if (hot.knob[p] != nullptr && knobLane[(size_t) p] != nullptr && nLane > 0)
+                *hot.knob[p] = knobLane[(size_t) p][(size_t) mid];
 
         if (apPtr && ! apPtr->empty())
             for (auto& [src, dst] : *apPtr)
@@ -1847,14 +1843,15 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     }
     else
     {
-        for (int i = 0; i < numSamples; ++i)
+        for (int i = 0; i < nLane; ++i)
         {
             for (int p = 0; p < Config::kNumUserParams; ++p)
             {
                 float v = hot.knob[p] != nullptr ? *hot.knob[p] : 0.f;
                 if (params[(size_t) p] != nullptr)
                     v = params[(size_t) p]->getNextValue();
-                knobLanes[(size_t) p][(size_t) i] = publishedKnobValue (p, v);
+                if (knobLane[(size_t) p] != nullptr)
+                    knobLane[(size_t) p][(size_t) i] = publishedKnobValue (p, v);
             }
         }
         if (hot.t != nullptr)
@@ -1863,9 +1860,10 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
     auto injectKnobsAt = [&] (int i) noexcept
     {
+        const int idx = (nLane > 0) ? juce::jlimit (0, nLane - 1, i) : 0;
         for (int p = 0; p < Config::kNumUserParams; ++p)
-            if (hot.knob[p] != nullptr)
-                *hot.knob[p] = knobLanes[(size_t) p][(size_t) i];
+            if (hot.knob[p] != nullptr && knobLane[(size_t) p] != nullptr && nLane > 0)
+                *hot.knob[p] = knobLane[(size_t) p][(size_t) idx];
         if (apPtr && ! apPtr->empty())
             for (auto& [src, dst] : *apPtr)
                 *dst = *src;
@@ -2015,7 +2013,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                             const size_t firstCh = (st->channelMode == Stage::ChannelMode::Right) ? 1 : 0;
                             const size_t lastCh  = (st->channelMode == Stage::ChannelMode::Left)
                                                        ? 1
-                                                       : (size_t) juce::jmin (workCh, (int) st->xPrev.size());
+                                                       : (size_t) juce::jmin (workCh, st->histCh);
 
                             for (int i = 0; i < numSamples; ++i)
                             {
@@ -2024,8 +2022,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                                 else
                                 {
                                     for (int p = 0; p < Config::kNumUserParams; ++p)
-                                        if (hot.knob[p] != nullptr)
-                                            *hot.knob[p] = knobLanes[(size_t) p][(size_t) i];
+                                        if (hot.knob[p] != nullptr && knobLane[(size_t) p] != nullptr && i < nLane)
+                                            *hot.knob[p] = knobLane[(size_t) p][(size_t) i];
                                     if (st->usesModulation)
                                         publishSidechainSample (i);
                                 }
@@ -2091,8 +2089,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                             const int n = juce::jmin (stride, numSamples - i);
                             const int mid = i + n / 2;
                             for (int p = 0; p < Config::kNumUserParams; ++p)
-                                if (hot.knob[p] != nullptr)
-                                    *hot.knob[p] = knobLanes[(size_t) p][(size_t) mid];
+                                if (hot.knob[p] != nullptr && knobLane[(size_t) p] != nullptr && mid < nLane)
+                                    *hot.knob[p] = knobLane[(size_t) p][(size_t) mid];
                             publishSidechainSample (mid);
                             writeModsAt (mid);
 
@@ -2192,17 +2190,17 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
 void SignalChain::Stage::clearRuntimeState() noexcept
 {
-    std::fill (xPrev.begin(), xPrev.end(), 0.0f);
-    std::fill (yPrev.begin(), yPrev.end(), 0.0f);
+    std::fill (xPrev, xPrev + Config::kMaxChannels, 0.0f);
+    std::fill (yPrev, yPrev + Config::kMaxChannels, 0.0f);
     eval.resetRuntimeState();
 }
 
 void SignalChain::Stage::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float>(spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
-    const int stageCh = juce::jmax (2, (int) spec.numChannels);
-    xPrev.assign ((size_t) stageCh, 0.0f);
-    yPrev.assign ((size_t) stageCh, 0.0f);
+    histCh = juce::jlimit (1, Config::kMaxChannels, juce::jmax (2, (int) spec.numChannels));
+    std::fill (xPrev, xPrev + Config::kMaxChannels, 0.0f);
+    std::fill (yPrev, yPrev + Config::kMaxChannels, 0.0f);
     // Fresh formula / prepare: clear ADAA so we don't blend old shaper state
     eval.resetRuntimeState();
 
@@ -2258,7 +2256,7 @@ void SignalChain::Stage::bindSlots() noexcept
 
 float SignalChain::Stage::process(int ch, float x)
 {
-    if (! varPtr || ch >= static_cast<int>(xPrev.size()))
+    if (! varPtr || ch < 0 || ch >= histCh)
         return x;
 
     // Channel mode filter
@@ -2327,7 +2325,7 @@ void SignalChain::Stage::prepareBlockEval() noexcept
 
 float SignalChain::Stage::processPrepared (int ch, float x) noexcept
 {
-    if (! blockEvalReady || ! varPtr || ch >= static_cast<int>(xPrev.size()))
+    if (! blockEvalReady || ! varPtr || ch < 0 || ch >= histCh)
         return process (ch, x);
 
     if (channelMode == ChannelMode::Left  && ch != 0) return x;
@@ -2397,11 +2395,11 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     // Determine channel range based on channelMode
     const size_t firstCh = (channelMode == ChannelMode::Right) ? 1 : 0;
     const size_t lastCh  = (channelMode == ChannelMode::Left)  ? 1
-                         : juce::jmin(block.getNumChannels(), xPrev.size());
+                         : juce::jmin (block.getNumChannels(), (size_t) histCh);
 
     // y_prev / ADAA / t / mod: serial sample dependency — SIMD is wrong.
     // Only THIS stage runs scalar; filters stay on the hybrid block path.
-    if (needsSampleLoop())
+    if (needsSampleLoop() || eval.hasLiveTape())
     {
         const float invSr = (sampleRate > 0.0f) ? (1.0f / sampleRate) : (1.0f / 44100.0f);
         const float t0 = tPtr != nullptr ? *tPtr : 0.0f;
@@ -2776,8 +2774,8 @@ void SignalChain::Osc::applyTempo(double bpm) noexcept
 void SignalChain::Filter::clearRuntimeState() noexcept
 {
     filter.reset();
-    std::fill (xPrev.begin(), xPrev.end(), 0.f);
-    std::fill (yPrev.begin(), yPrev.end(), 0.f);
+    std::fill (xPrev, xPrev + Config::kMaxChannels, 0.f);
+    std::fill (yPrev, yPrev + Config::kMaxChannels, 0.f);
     lastAppliedFc = -1.f;
     lastAppliedRes = -1.f;
 }
@@ -2790,9 +2788,9 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     filter.prepare(filtSpec);
     sampleRate = spec.sampleRate;
     filter.setType(type);
-    channels = juce::jmax (2, (int) spec.numChannels);
-    xPrev.assign ((size_t) channels, 0.0f);
-    yPrev.assign ((size_t) channels, 0.0f);
+    channels = juce::jlimit (1, Config::kMaxChannels, juce::jmax (2, (int) spec.numChannels));
+    std::fill (xPrev, xPrev + Config::kMaxChannels, 0.0f);
+    std::fill (yPrev, yPrev + Config::kMaxChannels, 0.0f);
     const double filtSm = modulated ? Config::kModSmoothingTime : Config::kSmoothingTime;
     cutoffSm.reset(sampleRate, filtSm);
     resSm.reset(sampleRate, filtSm);
@@ -2892,14 +2890,12 @@ float SignalChain::Filter::processSampleOnly (int ch, float x) noexcept
     if (channelMode == Stage::ChannelMode::Left  && ch != 0) return x;
     if (channelMode == Stage::ChannelMode::Right && ch != 1) return x;
 
-    if (ch < (int) xPrev.size())
-        xPrev[(size_t) ch] = x;
+    xPrev[(size_t) ch] = x;
 
     float y = filter.processSample (ch, x);
     if (! std::isfinite (y))
-        y = (ch < (int) yPrev.size()) ? yPrev[(size_t) ch] : 0.f;
-    if (ch < (int) yPrev.size())
-        yPrev[(size_t) ch] = y;
+        y = yPrev[(size_t) ch];
+    yPrev[(size_t) ch] = y;
     if (varPtr)
         if (yPtr) *yPtr = y;
     return y;
@@ -3007,16 +3003,17 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < numSamples; ++i)
     {
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int ch = 0; ch < numChannels && ch < 2 && ch < channels; ++ch)
         {
             if (channelMode == Stage::ChannelMode::Left  && ch != 0) continue;
             if (channelMode == Stage::ChannelMode::Right && ch != 1) continue;
             auto* d = chPtr[ch];
+            if (d == nullptr) continue;
             float y = filter.processSample (ch, d[i]);
             if (! std::isfinite (y))
-                y = (ch < (int) yPrev.size()) ? yPrev[(size_t) ch] : 0.f;
+                y = (ch < channels) ? yPrev[(size_t) ch] : 0.f;
             d[i] = y;
-            if (ch < (int) xPrev.size())
+            if (ch < channels)
             {
                 xPrev[(size_t) ch] = d[i];
                 yPrev[(size_t) ch] = y;
@@ -3514,9 +3511,9 @@ inline float flushDenorm (float x) noexcept
 
 /** Linear read, integer wrap. Hermite's 4-tap window crossed index 0 every
     delay period (i0 = N-1 next to a live sample) and clicked. */
-inline float delayRead (const std::vector<float>& buf, int writePos, float delaySamps, int N) noexcept
+NK_FORCEINLINE float delayRead (const float* NK_RESTRICT buf, int writePos, float delaySamps, int N) noexcept
 {
-    if (N < 4 || buf.size() < (size_t) N)
+    if (buf == nullptr || N < 4)
         return 0.f;
     const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
     const int di = (int) d;
@@ -3527,7 +3524,7 @@ inline float delayRead (const std::vector<float>& buf, int writePos, float delay
     int i1 = i0 - 1;
     if (i1 < 0)
         i1 += N;
-    return buf[(size_t) i0] + f * (buf[(size_t) i1] - buf[(size_t) i0]);
+    return buf[i0] + f * (buf[i1] - buf[i0]);
 }
 } // namespace
 
@@ -3535,8 +3532,9 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
     maxDelaySamples = juce::jmax (8, (int) std::ceil (sampleRate * kMaxDelaySec) + 4);
-    bufL.assign ((size_t) maxDelaySamples, 0.f);
-    bufR.assign ((size_t) maxDelaySamples, 0.f);
+    delayN = maxDelaySamples;
+    delayL = DSPUtils::alignedRing (storageL, delayN);
+    delayR = DSPUtils::alignedRing (storageR, delayN);
     writePos = 0;
     dampStateL = dampStateR = 0.f;
     dcBlockL = dcBlockR = 0.f;
@@ -3583,8 +3581,10 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
 
 void SignalChain::Delay::clearRuntimeState() noexcept
 {
-    std::fill (bufL.begin(), bufL.end(), 0.f);
-    std::fill (bufR.begin(), bufR.end(), 0.f);
+    if (delayL != nullptr && delayN > 0)
+        std::fill (delayL, delayL + delayN, 0.f);
+    if (delayR != nullptr && delayN > 0)
+        std::fill (delayR, delayR + delayN, 0.f);
     writePos = 0;
     dampStateL = dampStateR = 0.f;
     dcBlockL = dcBlockR = 0.f;
@@ -3641,7 +3641,7 @@ float SignalChain::Delay::tailSeconds() const noexcept
 float SignalChain::Delay::process (int ch, float x)
 {
     // Validation / scalar path — no heap; mono circular buffer on L
-    if (maxDelaySamples <= 2 || bufL.empty())
+    if (maxDelaySamples <= 2 || delayL == nullptr)
         return x;
 
     if (varPtr != nullptr)
@@ -3664,8 +3664,8 @@ float SignalChain::Delay::process (int ch, float x)
     if (! std::isfinite (wet)) wet = 0.35f;
     wet = juce::jlimit (0.f, 1.f, wet);
 
-    auto& buf = (ch == 1 && ! bufR.empty()) ? bufR : bufL;
-    float delayed = delayRead (buf, writePos, dSamps, maxDelaySamples);
+    float* NK_RESTRICT buf = (ch == 1 && delayR != nullptr) ? delayR : delayL;
+    float delayed = delayRead (buf, writePos, dSamps, delayN);
     if (! std::isfinite (delayed))
         delayed = 0.f;
 
@@ -3678,11 +3678,11 @@ float SignalChain::Delay::process (int ch, float x)
     float w = x + dState * fb;
     if (! std::isfinite (w)) w = 0.f;
     else if (std::abs (w) > 1.5f) w = 1.5f * std::tanh (w / 1.5f);
-    buf[(size_t) writePos] = w;
+    buf[writePos] = w;
     // advance write only on last channel to keep stereo in sync when process() is used
-    if (ch == 0 || bufR.empty())
+    if (ch == 0 || delayR == nullptr)
     {
-        if (++writePos >= maxDelaySamples)
+        if (++writePos >= delayN)
             writePos = 0;
     }
     return x * (1.f - wet) + delayed * wet;
@@ -3721,7 +3721,7 @@ void SignalChain::Delay::syncFromVariables() noexcept
 
 void SignalChain::Delay::processFrame (float& left, float* right) noexcept
 {
-    if (maxDelaySamples <= 2 || bufL.empty())
+    if (maxDelaySamples <= 2 || delayL == nullptr || delayR == nullptr)
         return;
 
     // Control-rate only in processBlock / the chain's once-per-block sync.
@@ -3745,8 +3745,8 @@ void SignalChain::Delay::processFrame (float& left, float* right) noexcept
     const float dryG   = 1.0f - wet;
     const float dampA_ = dampCoeffSm.getNextValue();
 
-    float wetL = delayRead (bufL, writePos, dSamps, maxDelaySamples);
-    float wetR = delayRead (bufR, writePos, dSamps, maxDelaySamples);
+    float wetL = delayRead (delayL, writePos, dSamps, delayN);
+    float wetR = delayRead (delayR, writePos, dSamps, delayN);
     if (! std::isfinite (wetL)) wetL = 0.f;
     if (! std::isfinite (wetR)) wetR = 0.f;
 
@@ -3778,9 +3778,9 @@ void SignalChain::Delay::processFrame (float& left, float* right) noexcept
     if (std::abs (wL) > 1.5f) wL = 1.5f * std::tanh (wL / 1.5f);
     if (std::abs (wR) > 1.5f) wR = 1.5f * std::tanh (wR / 1.5f);
 
-    bufL[(size_t) writePos] = wL;
-    bufR[(size_t) writePos] = wR;
-    if (++writePos >= maxDelaySamples)
+    delayL[writePos] = wL;
+    delayR[writePos] = wR;
+    if (++writePos >= delayN)
         writePos = 0;
 
     float outWetL = wetL;
@@ -3818,19 +3818,13 @@ void SignalChain::Reverb::clearRuntimeState() noexcept
 {
     for (int i = 0; i < kNumCombs; ++i)
     {
-        std::fill (combL[(size_t) i].buf.begin(), combL[(size_t) i].buf.end(), 0.f);
-        std::fill (combR[(size_t) i].buf.begin(), combR[(size_t) i].buf.end(), 0.f);
-        combL[(size_t) i].writePos = 0;
-        combR[(size_t) i].writePos = 0;
-        combL[(size_t) i].filterStore = 0.f;
-        combR[(size_t) i].filterStore = 0.f;
+        combL[(size_t) i].clear();
+        combR[(size_t) i].clear();
     }
     for (int i = 0; i < kNumAllpass; ++i)
     {
-        std::fill (apL[(size_t) i].buf.begin(), apL[(size_t) i].buf.end(), 0.f);
-        std::fill (apR[(size_t) i].buf.begin(), apR[(size_t) i].buf.end(), 0.f);
-        apL[(size_t) i].writePos = 0;
-        apR[(size_t) i].writePos = 0;
+        apL[(size_t) i].clear();
+        apR[(size_t) i].clear();
     }
 }
 

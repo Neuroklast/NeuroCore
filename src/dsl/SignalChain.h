@@ -8,6 +8,7 @@
 #include "../utils/ExpressionEvaluator.h"
 #include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
+#include "../dsp/DSPUtils.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
 #include <array>
@@ -78,21 +79,9 @@ private:
         NodeKind kind { NodeKind::Generic };
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
-        virtual float process(int ch, float x) = 0;
         virtual void clearRuntimeState() noexcept {}
-        virtual void processBlock(juce::AudioBuffer<float>& buffer)
-        {
-            juce::dsp::AudioBlock<float> block(buffer);
-            const size_t numSamples  = block.getNumSamples();
-            const size_t numChannels = block.getNumChannels();
-
-            for (size_t ch = 0; ch < numChannels; ++ch)
-            {
-                auto* data = block.getChannelPointer(ch);
-                for (size_t i = 0; i < numSamples; ++i)
-                    data[i] = process(static_cast<int>(ch), data[i]);
-            }
-        }
+        /** One virtual per block per callback — never per sample. */
+        virtual void processBlock(juce::AudioBuffer<float>& buffer) = 0;
     };
 
     struct Stage : Block
@@ -101,7 +90,9 @@ private:
         enum class ChannelMode { Both = 0, Left, Right };
 
         ExpressionEvaluator eval;
-        std::vector<float> xPrev, yPrev;
+        alignas (64) float xPrev[Config::kMaxChannels] {};
+        alignas (64) float yPrev[Config::kMaxChannels] {};
+        int histCh { Config::kMaxChannels };
         juce::String formula;
         std::unordered_map<juce::String, float>* varPtr = nullptr; // shared variables
         struct VarRef { float* value; size_t index; juce::String name; };
@@ -133,7 +124,7 @@ private:
         float* paramSlots[Config::kNumUserParams] {};
         float sampleRate{44100.0f};
         void prepare(const juce::dsp::ProcessSpec& spec) override;
-        float process(int ch, float x) override;
+        float process(int ch, float x);
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         /** True when this stage must run sample-wise (not SIMD whole-block). */
@@ -191,7 +182,7 @@ private:
         void pushViz (float v) noexcept;
         bool copyViz (float* dest, int destN) const noexcept;
         void prepare(const juce::dsp::ProcessSpec& spec) override;
-        float process(int ch, float x) override;
+        float process(int ch, float x);
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         /** Fill modLane[0..n) once per block — does not touch the audio buffer. */
         void renderModBlock (int numSamples) noexcept;
@@ -218,7 +209,8 @@ private:
         Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
         float sampleRate{44100.0f};
         int channels{1};
-        std::vector<float> xPrev, yPrev;
+        alignas (64) float xPrev[Config::kMaxChannels] {};
+        alignas (64) float yPrev[Config::kMaxChannels] {};
         juce::SmoothedValue<float> cutoffSm, resSm;
         uint8_t coeffPhase{0};
         float lastAppliedFc { -1.f };
@@ -227,7 +219,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         float* yPtr { nullptr };  ///< Cached pointer to variables["y"]
         void prepare(const juce::dsp::ProcessSpec& spec) override;
-        float process(int ch, float x) override;
+        float process(int ch, float x);
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
 
@@ -256,7 +248,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyCoeffs (float fHz, float qVal, float gDb) noexcept;
@@ -283,7 +275,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         float* yPtr { nullptr };  ///< Cached variables["y"] — no String hash on audio thread
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         float computeGrDb (float levelDb, float thrDb, float ratio, float knee) const noexcept;
@@ -311,7 +303,7 @@ private:
         std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
@@ -323,7 +315,7 @@ private:
         Mode mode { Mode::Loudness };
         std::atomic<float> readingDb { -100.f };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
@@ -339,7 +331,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<float*, std::string>> varNames;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void syncMixFromVars() noexcept;
@@ -358,7 +350,7 @@ private:
         std::vector<std::pair<float*, std::string>> varNames;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
@@ -385,7 +377,7 @@ private:
         Path ch[2];
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyCoeffs (float f1, float f2) noexcept;
@@ -415,7 +407,7 @@ private:
         Path ch[2];
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyCoeffs (float f1, float f2) noexcept;
@@ -441,20 +433,23 @@ private:
 
         struct Ap
         {
-            std::vector<float> buf;
+            std::vector<float> storage;
+            float* buf { nullptr };
+            int cap { 0 };
             int writePos { 0 };
             int delayLen { 2 };
             int delayTarget { 2 };
             void allocate (int n)
             {
-                buf.assign ((size_t) juce::jmax (8, n), 0.f);
+                cap = juce::jmax (8, n);
+                buf = DSPUtils::alignedRing (storage, cap);
                 writePos = 0;
-                delayLen = juce::jmin (delayLen, (int) buf.size() - 1);
+                delayLen = juce::jmin (delayLen, cap - 1);
                 delayTarget = delayLen;
             }
             void setDelayTarget (int n) noexcept
             {
-                delayTarget = juce::jlimit (2, juce::jmax (2, (int) buf.size() - 1), n);
+                delayTarget = juce::jlimit (2, juce::jmax (2, cap - 1), n);
             }
             void slewDelay() noexcept
             {
@@ -463,11 +458,11 @@ private:
             }
             float process (float input) noexcept
             {
-                if (buf.empty())
+                if (buf == nullptr || cap < 4)
                     return input;
                 constexpr float g = 0.42f;
                 int rp = writePos - delayLen;
-                const int N = (int) buf.size();
+                const int N = cap;
                 if (rp < 0) rp += N;
                 const float y = buf[(size_t) rp];
                 float w = input + y * g;
@@ -480,7 +475,8 @@ private:
             }
             void clear() noexcept
             {
-                std::fill (buf.begin(), buf.end(), 0.f);
+                if (buf != nullptr && cap > 0)
+                    std::fill (buf, buf + cap, 0.f);
                 writePos = 0;
             }
         };
@@ -490,7 +486,7 @@ private:
         std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
@@ -510,7 +506,7 @@ private:
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         std::vector<std::pair<float*, std::string>> varNames;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void loadImpulse (const juce::AudioBuffer<float>& ir, double irSr);
@@ -550,7 +546,7 @@ private:
         float maxFixed { 1.f };
         int holdLeft { 0 };
         void prepare(const juce::dsp::ProcessSpec& spec) override;
-        float process(int ch, float x) override;
+        float process(int ch, float x);
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         /** Fill modLane from stereo sidechain (max |L|,|R|; right may be null). */
@@ -577,7 +573,10 @@ private:
         int maxDelaySamples { 0 };
         int writePos { 0 };
 
-        std::vector<float> bufL, bufR;
+        std::vector<float> storageL, storageR;
+        float* delayL { nullptr };
+        float* delayR { nullptr };
+        int delayN { 0 };
         float dampStateL { 0.f }, dampStateR { 0.f };
         float dcBlockL { 0.f }, dcBlockR { 0.f }; ///< Feedback HPF state (stability in loop)
         float lastDelaySamples { -1.f };           ///< Slew limit state for delay time
@@ -588,7 +587,7 @@ private:
         std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyTempo (double bpm) noexcept;
@@ -614,27 +613,37 @@ private:
         /** Fixed-max ring; delay length is variable (no realloc/clear on size change). */
         struct Comb
         {
-            std::vector<float> buf;
+            std::vector<float> storage;
+            float* buf { nullptr };
+            int cap { 0 };
             int writePos { 0 };
             int delayLen { 2 };
             float filterStore { 0.f };
             void allocate (int maxN)
             {
-                buf.assign ((size_t) juce::jmax (4, maxN), 0.f);
+                cap = juce::jmax (4, maxN);
+                buf = DSPUtils::alignedRing (storage, cap);
                 writePos = 0;
                 filterStore = 0.f;
-                delayLen = juce::jmin (delayLen, (int) buf.size() - 1);
+                delayLen = juce::jmin (delayLen, cap - 1);
             }
             void setDelayLen (int n) noexcept
             {
-                delayLen = juce::jlimit (2, juce::jmax (2, (int) buf.size() - 1), n);
+                delayLen = juce::jlimit (2, juce::jmax (2, cap - 1), n);
+            }
+            void clear() noexcept
+            {
+                if (buf != nullptr && cap > 0)
+                    std::fill (buf, buf + cap, 0.f);
+                writePos = 0;
+                filterStore = 0.f;
             }
             float process (float input, float feedback, float damp) noexcept
             {
-                if (buf.empty())
+                if (buf == nullptr || cap < 4)
                     return 0.f;
                 int readPos = writePos - delayLen;
-                const int N = (int) buf.size();
+                const int N = cap;
                 if (readPos < 0)
                     readPos += N;
                 const float y = buf[(size_t) readPos];
@@ -656,26 +665,35 @@ private:
 
         struct Allpass
         {
-            std::vector<float> buf;
+            std::vector<float> storage;
+            float* buf { nullptr };
+            int cap { 0 };
             int writePos { 0 };
             int delayLen { 2 };
             void allocate (int maxN)
             {
-                buf.assign ((size_t) juce::jmax (4, maxN), 0.f);
+                cap = juce::jmax (4, maxN);
+                buf = DSPUtils::alignedRing (storage, cap);
                 writePos = 0;
-                delayLen = juce::jmin (delayLen, (int) buf.size() - 1);
+                delayLen = juce::jmin (delayLen, cap - 1);
             }
             void setDelayLen (int n) noexcept
             {
-                delayLen = juce::jlimit (2, juce::jmax (2, (int) buf.size() - 1), n);
+                delayLen = juce::jlimit (2, juce::jmax (2, cap - 1), n);
+            }
+            void clear() noexcept
+            {
+                if (buf != nullptr && cap > 0)
+                    std::fill (buf, buf + cap, 0.f);
+                writePos = 0;
             }
             float process (float input) noexcept
             {
-                if (buf.empty())
+                if (buf == nullptr || cap < 4)
                     return input;
                 constexpr float g = 0.5f;
                 int readPos = writePos - delayLen;
-                const int N = (int) buf.size();
+                const int N = cap;
                 if (readPos < 0)
                     readPos += N;
                 const float bufOut = buf[(size_t) readPos];
@@ -700,7 +718,7 @@ private:
         std::vector<std::pair<float*, std::string>> varNames;
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int ch, float x) override;
+        float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void allocateMaxBuffers() noexcept;
@@ -713,7 +731,7 @@ private:
     {
         bool encode { true }; ///< true = L/R→M/S, false = M/S→L/R
         void prepare (const juce::dsp::ProcessSpec&) override {}
-        float process (int, float x) override { return x; }
+        float process (int, float x) { return x; }
         void processBlock (juce::AudioBuffer<float>& buffer) override;
     };
 
@@ -757,7 +775,7 @@ private:
         Chan ch[2];
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void tickDetector (float mid, float thr) noexcept;
@@ -810,7 +828,7 @@ private:
         std::array<Band, kMaxBands> bands {};
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyBands (float q, float formant) noexcept;
@@ -884,7 +902,7 @@ private:
         Chan ch[2];
 
         void prepare (const juce::dsp::ProcessSpec& spec) override;
-        float process (int channel, float x) override;
+        float process (int channel, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void applyTempo (double bpm) noexcept;
@@ -955,8 +973,10 @@ private:
     // Sample counter for global 't' variable (time in seconds)
     int64_t sampleCounter{0};
 
-    /** Per-block knob lanes (sample-rate continuous). Avoids block-constant steps. */
-    std::array<std::vector<float>, Config::kNumUserParams> knobLanes {};
+    /** Per-block knob lanes (sample-rate continuous). Sized in prepare, never on the audio thread. */
+    std::array<std::vector<float>, Config::kNumUserParams> knobLaneStorage {};
+    std::array<float*, Config::kNumUserParams> knobLane {};
+    int knobLaneN { 0 };
 
     const float* extScL { nullptr };
     const float* extScR { nullptr };

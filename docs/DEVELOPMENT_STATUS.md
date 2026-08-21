@@ -32,6 +32,9 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 ## DSP (0.4.10-alpha)
 
 - **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
+- **Formel-Live**: AST nur noch Parser/Fold. `evaluateLive` läuft über `ExprTape` (flache Opcodes, keine vtables). SIMD-Stage ohne Tape-Fallback bleibt der alte Baum.
+- **Chain-Dispatch**: `Block::process(ch,x)` ist nicht mehr virtuell. Audio ruft nur `processBlock` (eine Virtual pro Chip pro Buffer).
+- **Audio-Layout**: Stage/Filter-History `alignas(64)`. Delay/Comb/Allpass/Widen-Ringe und Knob-Lanes über `DSPUtils::alignedRing` (Wrap-Länge unverändert, Padding nur für den Pointer). Knob-Lanes in `prepare`, kein `resize` im Callback. LUT-Interp und Tape-Slots auf `float*` + `NK_RESTRICT`.
 - **Sanitation**: fixed engine chain after DSL, not a DSL block. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak brickwall **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction. Soft Clip is the only user switch (replaces Polisher None/Hard Clip/Limiter).
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB soft-cap). Chainwide soft-shape only for `|x| > 1`. DSL `limit` stays a graph tool.
 

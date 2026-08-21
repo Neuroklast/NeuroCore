@@ -6,6 +6,7 @@
 */
 
 #include <JuceHeader.h>
+#include "ExprTape.h"
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -29,6 +30,8 @@ public:
 
     /** Audio-thread eval: no parse lock, no ADAA reset. Formula is immutable after load. */
     float evaluateLive (float x) const noexcept;
+    bool hasLiveTape() const noexcept { return liveTape.n > 0; }
+    int liveTapeOps() const noexcept { return liveTape.n; }
 
     /** Returns a callable functor that evaluates the parsed expression using
         the given variable array. The functor is thread-safe and immutable. */
@@ -157,6 +160,7 @@ private:
         Func func;
         SimdFunc simdFunc;
         NodePtr child;
+        uint8_t tapeFn { 0 };
     };
 
     struct Func2Node : Node
@@ -172,6 +176,7 @@ private:
         }
         Func func;
         NodePtr left, right;
+        uint8_t tapeFn { 0 };
     };
 
     /** 1st-order anti-derivative anti-aliasing wrapper for 2-arg waveshapers. */
@@ -199,6 +204,7 @@ private:
         F f;
         AF Fint;
         NodePtr x, p;
+        uint8_t tapeFn { 0 };
         // Per-channel state — survives block boundaries (reset only on formula load)
         mutable float xPrev[kAdaaChannels] {};
         mutable float FPrev[kAdaaChannels] {};
@@ -226,6 +232,7 @@ private:
         Func func;
         SimdFunc simdFunc;
         NodePtr x, y, z;
+        uint8_t tapeFn { 0 };
     };
 
     struct Func5Node : Node
@@ -245,6 +252,7 @@ private:
         }
         Func func;
         NodePtr a, b, c, d, e;
+        uint8_t tapeFn { 0 };
     };
 
     static bool isConstant(const Node* node) noexcept;
@@ -264,6 +272,8 @@ private:
     NodePtr parseUnary();
     NodePtr parsePrimary();
     NodePtr parseFunction(const std::string& name);
+    bool lowerToTape (Node* node) noexcept;
+    int emitTapeNode (Node* node, uint8_t& nextSlot) noexcept;
     void skipWhitespace() noexcept;
     bool expect(char c);
 
@@ -274,6 +284,7 @@ private:
     NodePtr root;
     std::function<float(const float*)> compiled;
     std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> compiledSimd;
+    mutable ExprTape liveTape;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
 
     std::unordered_map<std::string, size_t> varIndices;

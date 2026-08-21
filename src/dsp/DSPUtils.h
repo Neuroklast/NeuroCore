@@ -5,9 +5,45 @@
     Developed by Kay Schäfer and Simon Seifried
 */
 #include <JuceHeader.h>
+#include "../core/Config.h"
+#include <cstdint>
+#include <vector>
 
 namespace DSPUtils
 {
+    /** True when `p` sits on a `Config::kDspAlign` boundary. */
+    NK_FORCEINLINE static bool isAligned64 (const void* p) noexcept
+    {
+        return p != nullptr
+            && (reinterpret_cast<std::uintptr_t> (p) & (Config::kDspAlign - 1)) == 0;
+    }
+
+    /**
+        Grow `storage` so a cache-line-aligned ring of `n` floats fits.
+        Wrap length is `n` (padding is only for the pointer). Audio-thread
+        callers must not call this — prepare only.
+    */
+    NK_FORCEINLINE static float* alignedRing (std::vector<float>& storage, int n) noexcept
+    {
+        const int cap = juce::jmax (4, n);
+        const int pad = (int) (Config::kDspAlign / sizeof (float));
+        storage.assign ((size_t) cap + (size_t) pad, 0.f);
+        const auto raw = reinterpret_cast<std::uintptr_t> (storage.data());
+        const auto mask = (std::uintptr_t) (Config::kDspAlign - 1);
+        return reinterpret_cast<float*> ((raw + mask) & ~mask);
+    }
+
+    /** Linear LUT tap on a raw table — no vector in the inner loop. */
+    NK_FORCEINLINE static float lutInterp (const float* NK_RESTRICT table, int size, float pos) noexcept
+    {
+        if (table == nullptr || size < 2)
+            return 0.f;
+        const int idx = (int) pos;
+        const int next = (idx + 1) % size;
+        const float frac = pos - (float) idx;
+        return table[idx] + frac * (table[next] - table[idx]);
+    }
+
     // Convert dB to linear amplitude
     static inline constexpr double dbToLinear(double db) noexcept
     {
@@ -15,7 +51,7 @@ namespace DSPUtils
     }
 
     /** Atan soft-clip used by engine sanitation (same family as DSL softclip). */
-    static inline float sanitationSoftClip (float x) noexcept
+    NK_FORCEINLINE static float sanitationSoftClip (float x) noexcept
     {
         constexpr float k = 1.57079632679f;
         constexpr float s = 0.63661977237f;

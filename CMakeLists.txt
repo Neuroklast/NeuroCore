@@ -105,6 +105,7 @@ set(SOURCE_FILES
     src/dsl/blocks/IrBlock.cpp
     src/dsl/blocks/PitchBlock.cpp
     src/utils/ExpressionEvaluator.cpp
+    src/utils/ExprTape.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseCrypto.cpp

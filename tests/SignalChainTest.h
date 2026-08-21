@@ -6,6 +6,7 @@
 #include "../src/dsl/SignalChain.h"
 #include "../src/core/Config.h"
 #include "../src/utils/FactoryPresetLibrary.h"
+#include "TestHelpers.h"
 
 class SignalChainTest : public juce::UnitTest
 {
@@ -30,6 +31,26 @@ public:
         chain.setParameter(0, 0.5f);
         chain.processBlock(buffer);
         expectWithinAbsoluteError(buffer.getSample(0,0), 0.5f, 1e-5f);
+
+        beginTest("stage filter limit processBlock not per-sample virtual");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript (
+                "stage1: y = x\nfilter1: type = lowpass; cutoff = 18000\nlimit1: ceiling = -0.3; release = 0.05",
+                e), e);
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.4f);
+                buf.setSample (1, i, 0.4f);
+            }
+            c.processBlock (buf);
+            const float pk = std::max (std::abs (buf.getSample (0, 32)), std::abs (buf.getSample (1, 32)));
+            expect (pk > 0.2f && pk < 0.5f, "peak=" + juce::String (pk, 3));
+            expect (TestHelpers::countNonFinite (buf) == 0);
+        }
 
         beginTest("Filter block with high cutoff");
         {
