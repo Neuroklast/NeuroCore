@@ -35,6 +35,8 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 - **Formel-Live**: AST nur noch Parser/Fold. `evaluateLive` läuft über `ExprTape` (flache Opcodes, keine vtables). SIMD-Stage ohne Tape-Fallback bleibt der alte Baum.
 - **Chain-Dispatch**: `Block::process(ch,x)` ist nicht mehr virtuell. Audio ruft nur `processBlock` (eine Virtual pro Chip pro Buffer).
 - **Audio-Layout**: Stage/Filter-History `alignas(64)`. Delay/Comb/Allpass/Widen-Ringe und Knob-Lanes über `DSPUtils::alignedRing` (Wrap-Länge unverändert, Padding nur für den Pointer). Knob-Lanes in `prepare`, kein `resize` im Callback. LUT-Interp und Tape-Slots auf `float*` + `NK_RESTRICT`.
+- **Oversampling**: JUCE half-band FIR (Studio) / polyphase IIR (Live). FIR convolution already strides `k += 2`. Custom skip-zeros OS not added.
+- **Release-LTO**: plugin targets only (`INTERPROCEDURAL_OPTIMIZATION_RELEASE`). Tests stay non-LTO. No global `/fp:fast`.
 - **Sanitation**: fixed engine chain after DSL, not a DSL block. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak brickwall **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction. Soft Clip is the only user switch (replaces Polisher None/Hard Clip/Limiter).
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB soft-cap). Chainwide soft-shape only for `|x| > 1`. DSL `limit` stays a graph tool.
 

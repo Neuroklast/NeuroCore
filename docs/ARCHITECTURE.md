@@ -18,6 +18,8 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
 | **DSL Multi-Bus** | `BusGraph` + `SignalChain` | Max. 4 Named Buses + `in`/`main`. Send nur rückwärts (DAG). Mixdown **in** der DSL, eine Engine-Timeline. |
 | **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
+| **Oversampling** | `juce::dsp::Oversampling` | Studio FIR / Live IIR. FIR skippt Null-Taps (`k += 2`). Kein zweites Half-Band. |
+| **Release-LTO** | CMake IPO on plugin | `INTERPROCEDURAL_OPTIMIZATION_RELEASE` on NeuroKore + Standalone/VST3/AU. Never global `/fp:fast`. |
 
 Defaults: OS **4×** (`Config::kDefaultOversamplingIndex = 2`), Diagnostics **off**, AutoGain **off**.
 

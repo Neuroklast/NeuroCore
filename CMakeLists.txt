@@ -253,6 +253,22 @@ if(TARGET NeuroKore_AU)
     set_target_properties(NeuroKore_AU PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
 endif()
 
+# Phase 0: Release LTO on the plugin only. Never /fp:fast (breaks isfinite / NaN-hold).
+# Tests stay non-LTO so the suite does not pay LTCG link time.
+include(CheckIPOSupported)
+check_ipo_supported (RESULT NK_IPO_OK OUTPUT NK_IPO_MSG LANGUAGES CXX)
+if (NK_IPO_OK)
+    message (STATUS "Release LTO enabled for NEUROKORE plugin targets")
+    set_property (TARGET NeuroKore PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+    foreach (_nk_ipo_tgt NeuroKore_Standalone NeuroKore_VST3 NeuroKore_AU)
+        if (TARGET ${_nk_ipo_tgt})
+            set_property (TARGET ${_nk_ipo_tgt} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+        endif()
+    endforeach()
+else()
+    message (STATUS "Release LTO not available: ${NK_IPO_MSG}")
+endif()
+
 if(TARGET NeuroKore_Standalone)
     add_custom_command(TARGET NeuroKore_Standalone POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

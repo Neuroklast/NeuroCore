@@ -75,6 +75,13 @@ public:
             expectEquals (Config::kDefaultOversamplingIndex, 2);
         }
 
+        beginTest ("footer CPU stays 0-100 after LTO (host ratio is not the meter)");
+        {
+            expectEquals (Config::cpuDisplayPercent (1.73f), 100);
+            expectEquals (Config::cpuDisplayPercent (0.42f), 42);
+            expectEquals (Config::cpuDisplayPercent (0.0f), 0);
+        }
+
         beginTest ("meter ballistics are fast enough for the UI");
         {
             expect (Config::kMeterAttackSec <= 0.020f);
