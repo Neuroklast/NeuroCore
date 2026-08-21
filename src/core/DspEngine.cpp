@@ -101,6 +101,10 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     scHostBuffer.clear();
     scHostAlign.prepare (2, (int) currentSpec.maximumBlockSize, osLatencySamples);
     scHostAlign.reset();
+    preparedHostMax = juce::jmin (dryBuffer.getNumSamples(), (int) lastOsBankBlock);
+    if (preparedHostMax <= 0)
+        preparedHostMax = (int) currentSpec.maximumBlockSize;
+    preparedOsN = scriptBuffer.getNumSamples();
 
     outputGain.prepare(currentSpec);
     outputGain.setGainLinear(1.0f);
@@ -260,6 +264,52 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     if (! apvts)
         return;
 
+    const int hostN = buffer.getNumSamples();
+    const int nCh = buffer.getNumChannels();
+    const int maxN = juce::jmax (1, preparedHostMax);
+    if (hostN <= maxN || nCh <= 0)
+    {
+        processPreparedBlock (buffer, signalChain);
+        return;
+    }
+
+    // Cubase ASIO Guard can exceed prepare. Slice at the prepared ceiling; never setSize.
+    silentSec = 0.0;
+    const float* savedScL = hostScL;
+    const float* savedScR = hostScR;
+    const int savedScN = hostScN;
+    int offset = 0;
+    while (offset < hostN)
+    {
+        const int n = juce::jmin (hostN - offset, maxN);
+        juce::AudioBuffer<float> slice (buffer.getArrayOfWritePointers(), nCh, offset, n);
+        if (savedScL != nullptr && savedScN > offset)
+        {
+            hostScL = savedScL + offset;
+            hostScR = savedScR != nullptr ? savedScR + offset : nullptr;
+            hostScN = juce::jmin (n, savedScN - offset);
+        }
+        else
+        {
+            hostScL = nullptr;
+            hostScR = nullptr;
+            hostScN = 0;
+        }
+        processPreparedBlock (slice, signalChain);
+        offset += n;
+    }
+    hostScL = savedScL;
+    hostScR = savedScR;
+    hostScN = savedScN;
+}
+
+void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
+                                      dsl::SignalChain& signalChain)
+{
+    jassert(apvts != nullptr);
+    if (! apvts)
+        return;
+
     const auto totalNumInputChannels  = buffer.getNumChannels();
     const auto totalNumOutputChannels = buffer.getNumChannels();
 
@@ -318,8 +368,9 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
 
     auto block = juce::dsp::AudioBlock<float>(buffer);
 
+    const int nDry = juce::jmin (buffer.getNumSamples(), dryBuffer.getNumSamples());
     for (int ch = 0; ch < totalNumOutputChannels; ++ch)
-        dryBuffer.copyFrom(ch, 0, buffer, ch, 0, buffer.getNumSamples());
+        dryBuffer.copyFrom (ch, 0, buffer, ch, 0, nDry);
 
     const int hostN = buffer.getNumSamples();
     const float inPeak = hostN > 0 ? buffer.getMagnitude (0, hostN) : 0.f;
@@ -478,47 +529,51 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Process DSL via scriptBuffer (OS domain) — never the leftover capacity.
     const int osN = (int) upBlock.getNumSamples();
-    if (scriptBuffer.getNumChannels() != (int) upBlock.getNumChannels()
-        || scriptBuffer.getNumSamples() < osN)
-        scriptBuffer.setSize ((int) upBlock.getNumChannels(), osN, false, true, true);
+    const int osCap = juce::jmin (scriptBuffer.getNumSamples(), preparedOsN);
+    const int workN = juce::jmin (osN, osCap);
+    jassert (osN <= osCap);
 
     upBlock.copyTo (scriptBuffer);
     {
         if (hostScN > 0 && hostScL != nullptr)
         {
-            if (scOsBuffer.getNumSamples() < osN)
-                scOsBuffer.setSize (2, osN, false, false, true);
-            const int hn = hostScN;
-            if (scHostBuffer.getNumSamples() < hn || scHostBuffer.getNumChannels() < 2)
-                scHostBuffer.setSize (2, hn, false, false, true);
-            scHostBuffer.copyFrom (0, 0, hostScL, hn);
-            if (hostScR != nullptr)
-                scHostBuffer.copyFrom (1, 0, hostScR, hn);
-            else
-                scHostBuffer.copyFrom (1, 0, hostScL, hn);
-            // Studio FIR OS delays the main path; raw host SC would duck early.
-            scHostAlign.pushAndRead (scHostBuffer, hn);
-            const auto& scAligned = scHostAlign.getAligned();
-            const float* sl = scAligned.getReadPointer (0);
-            const float* sr = scAligned.getNumChannels() > 1
-                                  ? scAligned.getReadPointer (1) : sl;
-            const float scale = (hn > 1 && osN > 1) ? ((float) (hn - 1) / (float) (osN - 1)) : 0.f;
-            for (int i = 0; i < osN; ++i)
+            const int hn = juce::jmin (hostScN, scHostBuffer.getNumSamples());
+            const int osScN = juce::jmin (workN, scOsBuffer.getNumSamples());
+            if (hn > 0 && osScN > 0 && scHostBuffer.getNumChannels() >= 2)
             {
-                const float pos = (float) i * scale;
-                int i0 = (int) pos;
-                if (i0 >= hn - 1) i0 = hn - 1;
-                const int i1 = juce::jmin (hn - 1, i0 + 1);
-                const float f = pos - (float) i0;
-                const float sl0 = sl[i0];
-                const float sl1 = sl[i1];
-                const float sr0 = sr[i0];
-                const float sr1 = sr[i1];
-                scOsBuffer.setSample (0, i, sl0 + f * (sl1 - sl0));
-                scOsBuffer.setSample (1, i, sr0 + f * (sr1 - sr0));
+                scHostBuffer.copyFrom (0, 0, hostScL, hn);
+                if (hostScR != nullptr)
+                    scHostBuffer.copyFrom (1, 0, hostScR, hn);
+                else
+                    scHostBuffer.copyFrom (1, 0, hostScL, hn);
+                // Studio FIR OS delays the main path; raw host SC would duck early.
+                scHostAlign.pushAndRead (scHostBuffer, hn);
+                const auto& scAligned = scHostAlign.getAligned();
+                const float* sl = scAligned.getReadPointer (0);
+                const float* sr = scAligned.getNumChannels() > 1
+                                      ? scAligned.getReadPointer (1) : sl;
+                const float scale = (hn > 1 && osScN > 1) ? ((float) (hn - 1) / (float) (osScN - 1)) : 0.f;
+                for (int i = 0; i < osScN; ++i)
+                {
+                    const float pos = (float) i * scale;
+                    int i0 = (int) pos;
+                    if (i0 >= hn - 1) i0 = hn - 1;
+                    const int i1 = juce::jmin (hn - 1, i0 + 1);
+                    const float f = pos - (float) i0;
+                    const float sl0 = sl[i0];
+                    const float sl1 = sl[i1];
+                    const float sr0 = sr[i0];
+                    const float sr1 = sr[i1];
+                    scOsBuffer.setSample (0, i, sl0 + f * (sl1 - sl0));
+                    scOsBuffer.setSample (1, i, sr0 + f * (sr1 - sr0));
+                }
+                signalChain.setExternalSidechain (scOsBuffer.getReadPointer (0),
+                                                  scOsBuffer.getReadPointer (1), osScN);
             }
-            signalChain.setExternalSidechain (scOsBuffer.getReadPointer (0),
-                                              scOsBuffer.getReadPointer (1), osN);
+            else
+            {
+                signalChain.setExternalSidechain (nullptr, nullptr, 0);
+            }
         }
         else
         {
@@ -531,7 +586,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         juce::AudioBuffer<float> osWork (scriptBuffer.getArrayOfWritePointers(),
                                          juce::jmin (scriptBuffer.getNumChannels(),
                                                      (int) upBlock.getNumChannels()),
-                                         osN);
+                                         workN);
         signalChain.processBlockSmoothed (osWork, knobPtrs);
     }
     upBlock.copyFrom (scriptBuffer);

@@ -279,6 +279,9 @@ public:
     // Returns the last process specification
     juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return dspEngine.getCurrentSpec(); }
 
+    /** Test hook: OS working buffer length. processBlock must not grow this. */
+    int getScriptBufferNumSamples() const noexcept { return dspEngine.getScriptBufferNumSamples(); }
+
 private:
     // Sub-components (extracted from the God-Class)
     DspEngine       dspEngine;

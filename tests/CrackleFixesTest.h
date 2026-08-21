@@ -1420,5 +1420,40 @@ public:
             expect (! proc.isDspIdle(), "a transient must wake the wet path on the same block");
             proc.releaseResources();
         }
+
+        beginTest ("ASIO Guard overflow does not grow scriptBuffer");
+        {
+            // Cubase ASIO Guard may process 256/1024 after prepare(64).
+            // processBlock must slice at the prepared ceiling — no setSize.
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x * 0.5", err), err);
+
+            const int scriptN0 = proc.getScriptBufferNumSamples();
+            expect (scriptN0 > 0);
+
+            juce::MidiBuffer midi;
+            auto runOverflow = [&] (int n)
+            {
+                juce::AudioBuffer<float> buf (2, n);
+                for (int i = 0; i < n; ++i)
+                {
+                    const float s = 0.4f * std::sin ((float) i * 0.07f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                expectEquals (TestHelpers::countNonFinite (buf), 0,
+                              "overflow n=" + juce::String (n) + " produced NaN/Inf");
+                expect (TestHelpers::peakAbs (buf) < 8.f);
+                expectEquals (proc.getScriptBufferNumSamples(), scriptN0,
+                              "scriptBuffer grew on n=" + juce::String (n));
+            };
+            runOverflow (256);
+            runOverflow (1024);
+            proc.releaseResources();
+        }
     }
 };

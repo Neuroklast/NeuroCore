@@ -52,6 +52,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## DSP / CPU
 
 - Footer CPU is 0–100. Host-callback ratio > 1 is not a percent of the machine.
+- Cubase ASIO Guard can deliver host `n` > `prepareToPlay` `samplesPerBlock`. Never `setSize` / `new` / `juce::String` copy on the audio thread; slice at the prepared host ceiling before OS.
 - After a trip, do not decay the wet EMA to 0 (fake recovery). Do not leave 1.73 on the meter during SAFE-hold (`noteHoldDisplay`).
 - LFO Hz is not audio rate. Filter coeffs: stride + smoother, not `setCutoff` every sample at 8×.
 - `evaluate()` (lock) is not an inner-loop call. Use `evaluateLive`.

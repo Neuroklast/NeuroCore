@@ -69,6 +69,8 @@ Alte Chains (JIT-Code, Delay-Ringe) hängen an `retiredChain` und sterben auf de
 
 Studio = JUCE half-band FIR Equiripple, Live = polyphase IIR. Die FIR-Convolution läuft bereits `k += 2` (Null-Taps ausgelassen). Eigenes Skip-Zero-OS entfällt — sonst zwei Owner neben der Sanitation-AA. Idle-Skip gibt **latenz-alignierte Dry**, nicht `memset` Nullen (Host-PDC / Mix=0).
 
+Prepare legt die Decke: Host-Puffer auf `maximumBlockSize`, OS-Bank auf `jmax(maximumBlockSize, 1024)` × 8. `processBlock` ruft kein `setSize` / `new` auf. Wenn der Host `n` > Prepare liefert (Cubase ASIO Guard), wird **vor** `processSamplesUp` in Scheiben `≤ preparedHostMax` geschnitten — dieselbe Wet-Kette, kein zweiter OS. Vertrag: `tests/CrackleFixesTest.h` (prepare 64, process 256 und 1024, `scriptBuffer` wächst nicht).
+
 ### Compiler
 
 Release-LTO (`INTERPROCEDURAL_OPTIMIZATION_RELEASE`) nur auf NeuroKore + Standalone/VST3/AU. Tests bleiben ohne LTCG. **Kein** globales `/fp:fast` (bricht `isfinite`, NaN-Hold, ADAA). PGO nicht im Baum.

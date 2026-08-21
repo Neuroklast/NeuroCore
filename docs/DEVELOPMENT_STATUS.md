@@ -35,6 +35,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 - **Sanitation**: fixed engine chain after DSL. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction.
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
+- **ASIO Guard**: `processBlock` never grows buffers (`setSize` / `new`). Overflow host `n` is sliced at the prepared ceiling before oversampling. Idle stays latency-aligned dry.
 
 ### Performance — was gebaut wurde (Phasen 0–5)
 
