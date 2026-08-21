@@ -133,7 +133,8 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
             const bool hardNl = rhs.containsIgnoreCase ("hardclip")
                              || rhs.containsIgnoreCase ("bitcrush")
                              || rhs.containsIgnoreCase ("fold")
-                             || rhs.containsIgnoreCase ("quantize");
+                             || rhs.containsIgnoreCase ("quantize")
+                             || rhs.containsIgnoreCase ("round(");
             const bool softHeavy = rhs.containsIgnoreCase ("tube")
                                 || rhs.containsIgnoreCase ("softclip")
                                 || usesYPrev;

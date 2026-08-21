@@ -10,6 +10,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 - One logical change. A screenshot bug is not a license to also rewrite CPU, Settings, and the pack script.
 - Never run `scripts/generate_factory_presets.mjs` against the shipping catalog. It rebuilds from the generator and drops curated Vocals/legacy. Append to `resources/factory_presets.json` and embed. The generator must refuse to write if it would drop existing names.
+- Factory inserts: Level/Output default near unity (≥ ~0.85). Guitar/distortion cab LPF ≥ ~6.5 kHz unless the filter *is* the sound (RAT, muff, acid). Interstage `round()` is a DAC step — recovery LPF after, same as bitcrush. Amp stacks stay SIMD (`tube`/`round`/`bitcrush`, no `y_prev`) unless regen is the patch. “A bit of bit” is `round(y*512)/512` and `bitcrush(y, 13)`, not Grid 32 / 8-bit. That is a crush pedal.
 - Do not tick DEVELOPMENT_STATUS against a screenshot that still fails.
 - `umsetzen` means code. The tester PDF is a source, not a deliverable.
 - **Library first.** Before writing canvas geometry (grid, snap, edge path, drag line, layout), open the React Flow docs and the `@xyflow/react` exports already in the file. Use what it ships. Invent only the constraint RF cannot express. If you cannot name the RF API you rejected and the contract it failed, you do not get a new helper.
