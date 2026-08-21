@@ -12,15 +12,13 @@
 #include "../dsl/GraphModel.h"
 #include "../ui/StandaloneAudioSettings.h"
 
-#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
 #if JUCE_WINDOWS
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <windows.h>
-#elif JUCE_MAC
+#elif JUCE_MAC && defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
 #include <CoreGraphics/CoreGraphics.h>
-#endif
 #endif
 
 namespace bridge
@@ -253,7 +251,7 @@ struct WebViewHolder::Impl : private juce::Timer,
     {
         if (attachedTo == &editor)
         {
-            tryEmbed();
+            syncNative (editor);
             return;
         }
         if (attachedTo != nullptr)
@@ -263,7 +261,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         editor.addComponentListener (this);
 
 #if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
-        tryEmbed();
+        syncNative (editor);
 #else
         if (surface != nullptr)
         {
@@ -294,6 +292,7 @@ struct WebViewHolder::Impl : private juce::Timer,
 
     void layout (juce::Rectangle<int> inner)
     {
+        lastInner = inner;
         if (surface == nullptr)
             return;
 #if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
@@ -301,18 +300,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         {
             park->setSize (juce::jmax (1, inner.getWidth()), juce::jmax (1, inner.getHeight()));
             surface->setBounds (0, 0, inner.getWidth(), inner.getHeight());
-            if (auto* parkPeer = park->getPeer())
-            {
-                auto* child = static_cast<HWND> (parkPeer->getNativeHandle());
-                if (child != nullptr && attachedTo != nullptr && attachedTo->getPeer() != nullptr)
-                {
-                    UINT flags = SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_SHOWWINDOW;
-                    SetWindowPos (child, HWND_TOP,
-                                  inner.getX(), inner.getY(),
-                                  inner.getWidth(), inner.getHeight(),
-                                  flags);
-                }
-            }
+            positionPark (inner);
         }
 #else
         surface->setBounds (inner);
@@ -342,6 +330,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         park = std::make_unique<ParkWindow>();
         park->addAndMakeVisible (*browser);
         ensureOwnerHwnd();
+        parkNative(); // HWND lives under ownerHwnd from birth — never under IPlugView
 #else
         browser->setVisible (false);
 #endif
@@ -759,13 +748,27 @@ struct WebViewHolder::Impl : private juce::Timer,
     void componentParentHierarchyChanged (juce::Component& c) override
     {
         if (&c == attachedTo)
-            tryEmbed();
+            syncNative (c);
     }
 
     void componentVisibilityChanged (juce::Component& c) override
     {
         if (&c == attachedTo)
+            syncNative (c);
+    }
+
+    void syncNative (juce::Component& editor)
+    {
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
+        if (attachedTo != &editor)
+            return;
+        if (! editor.isShowing() || editor.getPeer() == nullptr)
+            parkNative();
+        else
             tryEmbed();
+#else
+        juce::ignoreUnused (editor);
+#endif
     }
 
     void tryEmbed()
@@ -778,20 +781,43 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (edPeer == nullptr || parkPeer == nullptr)
             return;
         auto* child = static_cast<HWND> (parkPeer->getNativeHandle());
-        auto* parent = static_cast<HWND> (edPeer->getNativeHandle());
-        if (child == nullptr || parent == nullptr || ! IsWindow (child) || ! IsWindow (parent))
+        auto* editorHwnd = static_cast<HWND> (edPeer->getNativeHandle());
+        if (child == nullptr || editorHwnd == nullptr || ! IsWindow (child) || ! IsWindow (editorHwnd))
             return;
         ensureOwnerHwnd();
+        auto* parent = static_cast<HWND> (WebViewHolder::parkParentForEditor (editorHwnd, ownerHwnd));
+        // Never WS_CHILD of IPlugView — DestroyWindow(plugin) would take the WebView with it.
+        if (parent == nullptr || parent == editorHwnd)
+            parent = ownerHwnd;
+        if (parent == nullptr || parent == editorHwnd)
+            return;
+
         auto style = GetWindowLongPtr (child, GWL_STYLE);
         using FlagType = decltype (style);
-        style &= ~(FlagType) WS_POPUP;
-        style |= (FlagType) WS_CHILD;
+        if (parent == ownerHwnd)
+        {
+            style &= ~(FlagType) WS_CHILD;
+            style |= (FlagType) WS_POPUP;
+        }
+        else
+        {
+            style &= ~(FlagType) WS_POPUP;
+            style |= (FlagType) WS_CHILD;
+        }
         SetWindowLongPtr (child, GWL_STYLE, style);
         SetParent (child, parent);
+        if (IsChild (editorHwnd, child) || GetParent (child) == editorHwnd)
+        {
+            parkNative();
+            return;
+        }
         park->setVisible (true);
         if (surface != nullptr)
             surface->setVisible (true);
         ShowWindow (child, SW_SHOWNA);
+        positionPark (lastInner.isEmpty() && attachedTo != nullptr
+                          ? attachedTo->getLocalBounds().reduced (8)
+                          : lastInner);
 #endif
         juce::ignoreUnused (this);
     }
@@ -820,10 +846,43 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (child == nullptr || ! IsWindow (child))
             return;
         ensureOwnerHwnd();
+        auto style = GetWindowLongPtr (child, GWL_STYLE);
+        using FlagType = decltype (style);
+        style &= ~(FlagType) WS_CHILD;
+        style |= (FlagType) WS_POPUP;
+        SetWindowLongPtr (child, GWL_STYLE, style);
         ShowWindow (child, SW_HIDE);
         if (ownerHwnd != nullptr)
             SetParent (child, ownerHwnd);
         park->setVisible (false);
+    }
+
+    void positionPark (juce::Rectangle<int> inner)
+    {
+        if (park == nullptr || attachedTo == nullptr || inner.isEmpty())
+            return;
+        auto* parkPeer = park->getPeer();
+        auto* edPeer = attachedTo->getPeer();
+        if (parkPeer == nullptr || edPeer == nullptr)
+            return;
+        auto* child = static_cast<HWND> (parkPeer->getNativeHandle());
+        auto* editorHwnd = static_cast<HWND> (edPeer->getNativeHandle());
+        if (child == nullptr || editorHwnd == nullptr || ! IsWindow (child) || ! IsWindow (editorHwnd))
+            return;
+        POINT tl { inner.getX(), inner.getY() };
+        POINT br { inner.getRight(), inner.getBottom() };
+        ClientToScreen (editorHwnd, &tl);
+        ClientToScreen (editorHwnd, &br);
+        auto* parent = GetParent (child);
+        if (parent != nullptr && (GetWindowLongPtr (child, GWL_STYLE) & WS_CHILD) != 0)
+        {
+            ScreenToClient (parent, &tl);
+            ScreenToClient (parent, &br);
+        }
+        SetWindowPos (child, HWND_TOP, tl.x, tl.y,
+                      juce::jmax (1, (int) (br.x - tl.x)),
+                      juce::jmax (1, (int) (br.y - tl.y)),
+                      SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
     }
 
     HWND ownerHwnd { nullptr };
@@ -842,6 +901,7 @@ struct WebViewHolder::Impl : private juce::Timer,
     juce::File distRoot;
     std::unique_ptr<juce::Component> surface;
     juce::Component* attachedTo { nullptr };
+    juce::Rectangle<int> lastInner;
     bool didNavigate { false };
 };
 
@@ -901,5 +961,27 @@ void WebViewHolder::layout (juce::Rectangle<int> inner)
 {
     impl->layout (inner);
 }
+
+void WebViewHolder::syncNativeAttachment (juce::Component& editor)
+{
+    impl->syncNative (editor);
+}
+
+#if JUCE_WINDOWS
+void* WebViewHolder::parkParentForEditor (void* editorHwnd, void* ownerHwnd) noexcept
+{
+    auto* owner = static_cast<HWND> (ownerHwnd);
+    auto* editor = static_cast<HWND> (editorHwnd);
+    if (editor == nullptr || ! IsWindow (editor))
+        return owner;
+    HWND parent = GetParent (editor);
+    // VST3 IPlugView HWND is destroyed in removeFromDesktop *before* ~Editor.
+    // Parent the park as a sibling (host systemWindow) or under ownerHwnd — never
+    // as a child of the editor HWND.
+    if (parent == nullptr || parent == editor)
+        return owner;
+    return parent;
+}
+#endif
 
 } // namespace bridge

@@ -35,6 +35,7 @@ private:
     std::unique_ptr<juce::MemoryInputStream> stream;
     std::unique_ptr<juce::ZipFile> zip;
     std::unordered_map<std::string, int> byName;
+    mutable juce::CriticalSection zipLock; // WebView2 thread vs message thread
     int builds { 0 };
 };
 

@@ -12,6 +12,8 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void parentHierarchyChanged() override;
+    void visibilityChanged() override;
     float getDesktopScaleFactor() const override { return 1.0f; }
 
 private:

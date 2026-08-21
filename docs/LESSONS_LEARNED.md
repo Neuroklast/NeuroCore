@@ -39,6 +39,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 - WebView2 eats OS key events before JUCE sees them. Non-text keys must be forwarded from JS (`shouldForwardToHost` → `hostKey`) and posted to the DAW HWND (`PostMessage` on Windows; `CGEventPost` on Mac VST3/AU). Do not send `juce::KeyPress` to the top-level component as the Windows path. Text fields, plugin chords, and overlays stay in the plugin.
 - JUCE destroys the `IPlugView` / `AudioProcessorEditor` on close. Keep the `WebBrowserComponent` on the processor. Editor close is `removeChild` / native unparent, never `delete` the browser. WebView2 is bound to the peer HWND at create time — park that HWND, do not let the editor peer die while it is still the parent.
+- VST3 `removed()` calls `removeFromDesktop()` → `DestroyWindow(plugin HWND)` **before** `~Editor`. `removeFromDesktop` does not notify children first. Never make the WebView HWND a `WS_CHILD` of IPlugView; sibling of the plugin HWND (host parent) or a processor-owned window. `~WebPluginEditor` is too late to `SetParent` away from a child.
 - ENV is a follower. LFO lamp/chase is only for `osc`. Do not feed env cables a fake 1 Hz `freq`.
 - ENV is a bus tap (audio `in`, mod `out`). LFO has no audio in. `connectAudio` must not treat env as osc. Draw IN/prev → env.in; env is never a through node.
 - Osc writes a node tap; env must too. Circuit glow is that tap (`host.mods`), not a fake 1 Hz chase. "follow" with no level is a dead cable.

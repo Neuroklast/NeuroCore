@@ -89,6 +89,16 @@ void WebPluginEditor::paint (juce::Graphics& g)
     }
 }
 
+void WebPluginEditor::parentHierarchyChanged()
+{
+    audioProcessor.getWebView().syncNativeAttachment (*this);
+}
+
+void WebPluginEditor::visibilityChanged()
+{
+    audioProcessor.getWebView().syncNativeAttachment (*this);
+}
+
 void WebPluginEditor::resized()
 {
     auto r = getLocalBounds();

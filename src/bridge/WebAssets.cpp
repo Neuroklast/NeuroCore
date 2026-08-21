@@ -226,6 +226,9 @@ std::optional<WebAsset> WebZipIndex::load (const juce::String& url) const
     if (it == byName.end())
         return std::nullopt;
 
+    // createStreamForEntry / ZipFile is not thread-safe. Resource provider
+    // runs on the WebView2 thread; UI serve() on the message thread.
+    const juce::ScopedLock sl (zipLock);
     std::unique_ptr<juce::InputStream> in (zip->createStreamForEntry (it->second));
     if (in == nullptr)
         return std::nullopt;

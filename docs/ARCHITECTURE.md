@@ -123,7 +123,8 @@ Input
 
 ### WebView lifetime
 - Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
-- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it (Windows parks the WebView2 parent HWND so the JS heap survives Cubase close).
+- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
+- Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`) or owned by a processor-lifetime HWND. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists.
 - Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
 - Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).
 

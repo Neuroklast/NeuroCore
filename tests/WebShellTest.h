@@ -13,7 +13,14 @@
 
 #ifdef _WIN32
 #include <stdlib.h>
+#ifndef NOMINMAX
+#define NOMINMAX
 #endif
+#include <windows.h>
+#endif
+#include <atomic>
+#include <thread>
+#include <vector>
 
 /** WP2 contracts: asset map, UI_READY gate, editor policy. No WebView required. */
 class WebShellTest : public juce::UnitTest
@@ -291,6 +298,83 @@ public:
             expect (holder.serve ("/").has_value());
             expectEquals (holder.zipIndexBuildCount(), builds);
             holder.detach (frame2);
+        }
+
+        beginTest ("WebZipIndex load is serialized across threads");
+        {
+            bridge::WebZipIndex index;
+            expect (index.buildCount() >= 1);
+            std::atomic<int> hits { 0 };
+            std::vector<std::thread> threads;
+            threads.reserve (4);
+            for (int t = 0; t < 4; ++t)
+            {
+                threads.emplace_back ([&index, &hits]
+                {
+                    for (int i = 0; i < 32; ++i)
+                        if (index.load ("/").has_value())
+                            hits.fetch_add (1, std::memory_order_relaxed);
+                });
+            }
+            for (auto& th : threads)
+                th.join();
+            expectEquals (index.buildCount(), 1, "index is not rebuilt under concurrent load");
+            if (index.load ("/").has_value())
+                expectEquals (hits.load(), 128);
+        }
+
+        beginTest ("park HWND is never a child of the IPlugView HWND");
+        {
+#if JUCE_WINDOWS
+            auto* inst = GetModuleHandleW (nullptr);
+            HWND owner = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                          L"nk-park-owner", WS_POPUP, -32000, -32000, 8, 8,
+                                          nullptr, nullptr, inst, nullptr);
+            HWND host = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                         L"nk-host", WS_POPUP, -32000, -32000, 400, 300,
+                                         nullptr, nullptr, inst, nullptr);
+            HWND editor = CreateWindowExW (0, L"STATIC", L"nk-iplugview",
+                                           WS_CHILD | WS_VISIBLE, 0, 0, 400, 300,
+                                           host, nullptr, inst, nullptr);
+            HWND park = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                         L"nk-park", WS_POPUP, -32000, -32000, 80, 60,
+                                         nullptr, nullptr, inst, nullptr);
+            expect (owner != nullptr && host != nullptr && editor != nullptr && park != nullptr);
+
+            auto* chosen = static_cast<HWND> (
+                bridge::WebViewHolder::parkParentForEditor (editor, owner));
+            expect (chosen == host, "VST3 park parent is the host systemWindow");
+            expect (chosen != editor, "park parent is never IPlugView");
+            expect (bridge::WebViewHolder::parkParentForEditor (editor, owner) != editor);
+
+            auto style = GetWindowLongPtr (park, GWL_STYLE);
+            using FlagType = decltype (style);
+            style &= ~(FlagType) WS_POPUP;
+            style |= (FlagType) WS_CHILD;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, chosen);
+            expect (GetParent (park) == host);
+            expect (GetParent (park) != editor);
+            expect (! IsChild (editor, park), "park is a sibling of IPlugView, not a child");
+
+            const auto id = (juce::int64) (juce::pointer_sized_int) park;
+            DestroyWindow (editor);
+            expect (IsWindow (park) != 0, "park HWND survives DestroyWindow(IPlugView)");
+            expectEquals ((juce::int64) (juce::pointer_sized_int) park, id);
+
+            style = GetWindowLongPtr (park, GWL_STYLE);
+            style &= ~(FlagType) WS_CHILD;
+            style |= (FlagType) WS_POPUP;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, owner);
+            DestroyWindow (host);
+            expect (IsWindow (park) != 0, "park HWND survives host destroy after park-to-owner");
+
+            DestroyWindow (park);
+            DestroyWindow (owner);
+#else
+            expect (true);
+#endif
         }
     }
 

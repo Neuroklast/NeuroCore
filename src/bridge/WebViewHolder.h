@@ -34,7 +34,15 @@ public:
     bool isAttached() const noexcept;
     juce::Component* browserComponent() noexcept;
 
+    /** Park or embed from editor parent/visibility/peer changes. Must run while the IPlugView HWND still exists. */
+    void syncNativeAttachment (juce::Component& editor);
+
     void layout (juce::Rectangle<int> inner);
+
+#if JUCE_WINDOWS
+    /** HWND that should parent the park surface. Never the editor / IPlugView HWND. */
+    static void* parkParentForEditor (void* editorHwnd, void* ownerHwnd) noexcept;
+#endif
 
 private:
     class Impl;
