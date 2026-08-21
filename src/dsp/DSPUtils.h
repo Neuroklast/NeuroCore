@@ -14,6 +14,14 @@
 
 namespace DSPUtils
 {
+    /** FTZ + DAZ for the audio callback. JUCE already owns the CSR (SSE 0x8040 / ARM FZ). */
+    struct ScopedDenormalsAreZero
+    {
+        ScopedDenormalsAreZero() noexcept = default;
+        ~ScopedDenormalsAreZero() noexcept = default;
+        juce::ScopedNoDenormals impl;
+    };
+
     /** True when `p` sits on a `Config::kDspAlign` boundary. */
     NK_FORCEINLINE static bool isAligned64 (const void* p) noexcept
     {

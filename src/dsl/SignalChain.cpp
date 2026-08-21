@@ -3510,11 +3510,6 @@ float SignalChain::getMaxTailTime() const noexcept
 
 namespace
 {
-inline float flushDenorm (float x) noexcept
-{
-    return (std::abs (x) < 1.0e-20f) ? 0.f : x;
-}
-
 /** Linear read, integer wrap. Hermite's 4-tap window crossed index 0 every
     delay period (i0 = N-1 next to a live sample) and clicked. */
 NK_FORCEINLINE float delayRead (const float* NK_RESTRICT buf, int writePos, float delaySamps, int N) noexcept
@@ -3773,10 +3768,8 @@ void SignalChain::Delay::processFrame (float& left, float* right) noexcept
     dcBlockL = dcA * dcBlockL + (1.f - dcA) * fbInL;
     dcBlockR = dcA * dcBlockR + (1.f - dcA) * fbInR;
 
-    dampStateL = flushDenorm (dampA_ * dampStateL + (1.f - dampA_) * hpL);
-    dampStateR = flushDenorm (dampA_ * dampStateR + (1.f - dampA_) * hpR);
-    dcBlockL = flushDenorm (dcBlockL);
-    dcBlockR = flushDenorm (dcBlockR);
+    dampStateL = dampA_ * dampStateL + (1.f - dampA_) * hpL;
+    dampStateR = dampA_ * dampStateR + (1.f - dampA_) * hpR;
 
     float wL = inL + dampStateL * fbk;
     float wR = inR + dampStateR * fbk;
@@ -4158,13 +4151,11 @@ void SignalChain::Octaver::tickDetector (float mid, float thr) noexcept
 {
     const float hp = mid - det.hpX + hpR * det.hpY;
     det.hpX = mid;
-    det.hpY = flushDenorm (hp);
+    det.hpY = hp;
     det.lp += detLpA * (det.hpY - det.lp);
-    det.lp = flushDenorm (det.lp);
 
     const float ax = std::abs (det.lp);
     det.env += (ax > det.env ? envAtk : envRel) * (ax - det.env);
-    det.env = flushDenorm (det.env);
 
     const float hys = juce::jmax (0.006f, juce::jlimit (0.008f, 0.28f, thr) * (0.22f + 0.9f * det.env));
     ++det.age;
@@ -4243,8 +4234,6 @@ float SignalChain::Octaver::renderUp (Chan& c, float x) noexcept
     c.fwrDc += upDcA * (rect - c.fwrDc);
     const float ac = rect - c.fwrDc;
     c.fwrLp += upLpA * (ac - c.fwrLp);
-    c.fwrDc = flushDenorm (c.fwrDc);
-    c.fwrLp = flushDenorm (c.fwrLp);
     return c.fwrLp * c.env;
 }
 
@@ -4255,7 +4244,6 @@ float SignalChain::Octaver::processChan (Chan& c, float x,
     tickDetector (x, thr);
     const float ax = std::abs (x);
     c.env += (ax > c.env ? envAtk : envRel) * (ax - c.env);
-    c.env = flushDenorm (c.env);
 
     const float fc = juce::jlimit (70.f, 4000.f, toneHz);
     if (std::abs (fc - lastToneHz) > 0.5f)
@@ -4268,8 +4256,6 @@ float SignalChain::Octaver::processChan (Chan& c, float x,
                     + renderUp (c, x) * juce::jlimit (0.f, 1.6f, upAmt);
     c.tone1 += toneA * (wet - c.tone1);
     c.tone2 += toneA * (c.tone1 - c.tone2);
-    c.tone1 = flushDenorm (c.tone1);
-    c.tone2 = flushDenorm (c.tone2);
 
     const float m = juce::jlimit (0.f, 1.f, mixAmt);
     float y = x * (1.f - m) + c.tone2 * m;
@@ -4352,13 +4338,10 @@ void SignalChain::Octaver::processBlock (juce::AudioBuffer<float>& buffer)
             const float x = dst[c][i];
             const float ax = std::abs (x);
             slot.env += (ax > slot.env ? envAtk : envRel) * (ax - slot.env);
-            slot.env = flushDenorm (slot.env);
             const float wet = subWave
                 + (upAmtN > 1.0e-4f ? renderUp (slot, x) * upAmtN : 0.f);
             slot.tone1 += toneA * (wet - slot.tone1);
             slot.tone2 += toneA * (slot.tone1 - slot.tone2);
-            slot.tone1 = flushDenorm (slot.tone1);
-            slot.tone2 = flushDenorm (slot.tone2);
             float y = x * (1.f - m) + slot.tone2 * m;
             if (! std::isfinite (y))
                 y = 0.f;

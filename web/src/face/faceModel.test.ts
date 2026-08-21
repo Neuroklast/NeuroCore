@@ -6,7 +6,6 @@ import {
   astChecksum,
   bandRms,
   coreTempC,
-  cursorReadout,
   dataRainLines,
   driveAmount,
   dspEvalMs,
@@ -156,8 +155,6 @@ describe("unit face logo reactive from bands + host", () => {
     expect(lines).toHaveLength(6);
     expect(lines[0]).toMatch(/[0-9A-F]{4,}/);
     expect(dataRainLines("0x4F9A8C", 4, 6).join()).not.toBe(lines.join());
-
-    expect(cursorReadout(140.4, 220.6)).toBe("X: 140  Y: 221");
   });
 });
 

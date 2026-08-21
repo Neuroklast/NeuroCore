@@ -20,7 +20,6 @@ import {
   astChecksum,
   bandRms,
   coreTempC,
-  cursorReadout,
   dataRainLines,
   driveAmount,
   dspEvalMs,
@@ -82,7 +81,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
     kind: "idle",
     seed: 0,
   });
-  const [cursor, setCursor] = useState<string | null>(null);
   const prevPeak = useRef(0);
   const sliceHold = useRef(0);
 
@@ -127,11 +125,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   return (
     <section
       className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]"
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        setCursor(cursorReadout(e.clientX - r.left, e.clientY - r.top));
-      }}
-      onMouseLeave={() => setCursor(null)}
     >
       <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
         <FaceRow k="AST_CHECKSUM" v={checksum} />
@@ -201,8 +194,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
       <div className="flex min-h-0 flex-1">
         <UnitAnalyzer />
       </div>
-
-      {cursor ? <div className="nk-face-cursor">{cursor}</div> : null}
     </section>
   );
 }

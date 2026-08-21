@@ -267,6 +267,7 @@ void DspEngine::processHostBypass(juce::AudioBuffer<float>& buffer,
 void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
                              dsl::SignalChain& signalChain)
 {
+    DSPUtils::ScopedDenormalsAreZero denormals;
     jassert(apvts != nullptr);
     if (! apvts)
         return;
@@ -435,23 +436,19 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     if (bypassActive || idle)
     {
         // Advance knob smoothers at host rate so automation stays continuous
-        for (size_t i = 0; i < numSamplesEarly; ++i)
-            for (int p = 0; p < Config::kNumUserParams; ++p)
-                smoothedParams[(size_t) p].getNextValue();
-        for (size_t i = 0; i < numSamplesEarly; ++i)
-            wetValue.getNextValue();
+        const int nSkip = (int) numSamplesEarly;
+        for (int p = 0; p < Config::kNumUserParams; ++p)
+            smoothedParams[(size_t) p].skip (nSkip);
+        wetValue.skip (nSkip);
 
         gainCompValue.setTargetValue (1.0f);
-        for (size_t i = 0; i < numSamplesEarly; ++i)
-            gainCompValue.getNextValue();
+        gainCompValue.skip (nSkip);
 
         userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
                                            getParam(EffectParameters::outputGain)));
         if (numSamplesEarly > 0)
         {
-            float outGain = userGainValue.getCurrentValue();
-            for (size_t i = 0; i < numSamplesEarly; ++i)
-                outGain = userGainValue.getNextValue();
+            const float outGain = userGainValue.skip (nSkip);
             if (std::abs (outGain - 1.0f) > 1.0e-4f || userGainValue.isSmoothing())
             {
                 userOutputGain.setGainLinear(outGain);

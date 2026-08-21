@@ -22,7 +22,7 @@ On **macOS** also build the AU (Logic, GarageBand, Ableton AU slot):
 cmake --build build --config Release --target NeuroKore_AU
 ```
 
-Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.5.0-alpha.exe`, `VST3/NEUROKORE-0.5.0-alpha.vst3`, and on macOS `AU/NEUROKORE-0.5.0-alpha.component`). The web editor is embedded in those binaries. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
+Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.5.1-alpha.exe`, `VST3/NEUROKORE-0.5.1-alpha.vst3`, and on macOS `AU/NEUROKORE-0.5.1-alpha.component`). The web editor is embedded in those binaries. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
 
 Audio Units are an Apple format: a Windows or Linux CMake run still lists `AU` in `FORMATS`, but JUCE skips the target. You cannot produce a `.component` on Windows.
 
@@ -36,7 +36,7 @@ Windows zip / installer (after a Release build):
 powershell -File scripts/package_windows.ps1
 ```
 
-That stages `NEUROKORE-0.5.0-alpha.vst3` and `NEUROKORE-0.5.0-alpha.exe`, writes `build/package/NEUROKORE-0.5.0-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.5.0-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`. Testers only need the VST3 and the exe — no `web/` folder.
+That stages `NEUROKORE-0.5.1-alpha.vst3` and `NEUROKORE-0.5.1-alpha.exe`, writes `build/package/NEUROKORE-0.5.1-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.5.1-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`. Testers only need the VST3 and the exe — no `web/` folder.
 
 Oversampling defaults to **4×**. Drop to 2× or 1× if the CPU is tight.
 
@@ -63,7 +63,7 @@ Full language notes: in-plugin **Help**, `docs/USER_MANUAL.md`, `docs/DSL_REFERE
 
 ## Factory content
 
-300 factory presets covering professional production techniques. Includes amp models, analog octaver, vocoder (voice on Sidechain), OTT Smash, Mono to Stereo (`widen`), 3-band glue, and hardware-character comps/delays/rooms (1176, LA-2A, SSL bus, Fairchild, dbx 160, CL 1B, Space Echo, Memory Man, EMT 140, Lexicon hall, AMS NonLin). Dual-DI metal (`Stereo Guitar Wall`) and digital guitar dirt (`Cyberpunk Drive`) are factory rows. **New:** 30 advanced genre-specific presets for hardstyle, cyberpunk, midtempo, and industrial (Zatox, DJ Hyper, Sub Zero Project, rekkt, zerosum, SWARM styles) featuring pre-distortion EQ sweeps, clip-to-zero loudness, LFO grooves, phase alignment, multiband processing, transient shaping, and granular effects. Each preset has tags inferred from the formula; the Presets search matches name, tags, and DSL. Templates live in `resources/templates.json`.
+305 factory presets covering professional production techniques. Includes amp models, analog octaver, vocoder (voice on Sidechain), OTT Smash, Mono to Stereo (`widen`), 3-band glue, and hardware-character comps/delays/rooms (1176, LA-2A, SSL bus, Fairchild, dbx 160, CL 1B, Space Echo, Memory Man, EMT 140, Lexicon hall, AMS NonLin). Dual-DI metal (`Stereo Guitar Wall`), digital guitar dirt (`Cyberpunk Drive`), and five cyberpunk Mesa-style amps (`Neon Rectifier`, `Night City Stack`, `Chrome Bit Mesa`, `Roundhouse Lead`, `Priest Bit Split`) are factory rows. **New:** 30 advanced genre-specific presets for hardstyle, cyberpunk, midtempo, and industrial (Zatox, DJ Hyper, Sub Zero Project, rekkt, zerosum, SWARM styles) featuring pre-distortion EQ sweeps, clip-to-zero loudness, LFO grooves, phase alignment, multiband processing, transient shaping, and granular effects. Each preset has tags inferred from the formula; the Presets search matches name, tags, and DSL. Templates live in `resources/templates.json`.
 
 ## Agent workflow
 

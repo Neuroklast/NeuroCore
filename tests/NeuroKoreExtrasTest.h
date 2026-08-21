@@ -858,7 +858,9 @@ private:
                     "Vital Saw Morph", "Hard Groove Machine", "Resonant Sweep Stab",
                     "Metal Percussion", "Field Recording Glitch",
                     "Downtuned Guitar Industrial", "Chaotic Stab Generator",
-                    "Granular Smear"
+                    "Granular Smear",
+                    "Neon Rectifier", "Night City Stack", "Chrome Bit Mesa",
+                    "Roundhouse Lead", "Priest Bit Split", "Cyberpunk Stab"
                 };
                 juce::String firstFail;
                 int ok = 0;
@@ -1061,6 +1063,27 @@ private:
             requireBlock ("Cyberpunk Drive", "fold");
             requireBlock ("Cyberpunk Drive", "lowpass");
             requireBlock ("Cyberpunk Drive", "Level");
+            requireBlock ("Neon Rectifier", "tube");
+            requireBlock ("Neon Rectifier", "round(");
+            requireBlock ("Neon Rectifier", "bitcrush");
+            requireBlock ("Neon Rectifier", "lowpass");
+            requireBlock ("Neon Rectifier", "Grid [128, 2048]");
+            requireBlock ("Neon Rectifier", "Bits [11, 16]");
+            requireBlock ("Night City Stack", "round(");
+            requireBlock ("Night City Stack", "Grid [96, 1536]");
+            requireBlock ("Chrome Bit Mesa", "round(");
+            requireBlock ("Chrome Bit Mesa", "ir1");
+            requireBlock ("Chrome Bit Mesa", "Grid [192, 2048]");
+            requireBlock ("Roundhouse Lead", "round(");
+            requireBlock ("Roundhouse Lead", "Grid [128, 2048]");
+            requireBlock ("Priest Bit Split", "bus");
+            requireBlock ("Priest Bit Split", "round(");
+            requireBlock ("Priest Bit Split", "out:");
+            requireBlock ("Priest Bit Split", "Grid [128, 1536]");
+            requireBlock ("Chaotic Stab Generator", "fold");
+            requireBlock ("Cyberpunk Stab", "octaver");
+            requireBlock ("Cyberpunk Stab", "reverb");
+            requireBlock ("Cyberpunk Stab", "hall = 0.1");
             requireBlock ("Glitch Laboratory", "Level");
             requireBlock ("Glitch Laboratory", "delay");
             requireBlock ("Kick Rumble", "bus");

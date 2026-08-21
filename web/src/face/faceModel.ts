@@ -238,10 +238,6 @@ export function dataRainLines(checksum: string, tick: number, count = 8): string
   return lines;
 }
 
-export function cursorReadout(x: number, y: number): string {
-  return `X: ${Math.round(x)}  Y: ${Math.round(y)}`;
-}
-
 export function logoReactiveStyle(
   split: { redX: number; cyanY: number },
   pulseMs: number,

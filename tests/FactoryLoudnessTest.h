@@ -79,8 +79,16 @@ public:
                     continue;
                 }
                 ++insertN;
-                const float peakFloor = e.category.equalsIgnoreCase ("Filter") ? 0.08f : 0.12f;
-                const float rmsFloor  = e.category.equalsIgnoreCase ("Filter") ? 0.025f : 0.038f;
+                const bool ampish = (e.category.equalsIgnoreCase ("Distortion")
+                                  || e.category.equalsIgnoreCase ("Guitar"))
+                    && ! e.name.containsIgnoreCase ("vibe")
+                    && ! e.name.containsIgnoreCase ("rotary")
+                    && ! e.name.containsIgnoreCase ("swell")
+                    && ! e.name.containsIgnoreCase ("ambient");
+                const float peakFloor = e.category.equalsIgnoreCase ("Filter") ? 0.08f
+                                      : (ampish ? 0.18f : 0.12f);
+                const float rmsFloor  = e.category.equalsIgnoreCase ("Filter") ? 0.025f
+                                      : (ampish ? 0.055f : 0.038f);
                 if (peak < peakFloor || rms < rmsFloor)
                 {
                     ++quietN;
