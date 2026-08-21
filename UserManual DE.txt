@@ -2,7 +2,7 @@
 
 NEUROKORE ist ein Insert- oder Send-Effekt von Neuroklast. Lade einen Factory-Sound, drehe die Regler a–f, oder schreibe eine kurze Formel (Drive, Filter, Delay, Reverb, Kompressor, Gate, Limiter, IR-Cab, Pitch, Crossover, Envelope, Oszillator).
 
-Version 0.4.10-alpha. Formate: Standalone, VST3, AU.
+Version 0.4.11-alpha. Formate: Standalone, VST3, AU.
 
 Die Oberfläche ist auf Englisch. Dieses Dokument ist die deutsche Bedienhilfe. Die In-Plugin-Hilfe (Help) bleibt Englisch.
 

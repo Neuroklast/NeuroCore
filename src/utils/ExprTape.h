@@ -66,3 +66,12 @@ struct ExprTape
 
 void exprTapeSetAdaaChannel (int ch) noexcept;
 float exprTapeEval (ExprTape& tape, const float* vars) noexcept;
+
+float exprTapeFinite (float y) noexcept;
+float exprTapeDiv (float a, float b) noexcept;
+float exprTapePow (float a, float b) noexcept;
+float exprTapeCall1 (uint32_t fn, float x) noexcept;
+float exprTapeCall2 (uint32_t fn, float a, float b) noexcept;
+float exprTapeCall3 (uint32_t fn, float a, float b, float c) noexcept;
+float exprTapeCall5 (float v, float in0, float in1, float out0, float out1) noexcept;
+float exprTapeCallAdaa (ExprTape* tape, uint32_t fn, float x, float p, uint32_t st) noexcept;

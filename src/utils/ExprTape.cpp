@@ -278,6 +278,54 @@ void exprTapeSetAdaaChannel (int ch) noexcept
     gTapeAdaaCh = juce::jlimit (0, ExprTape::kAdaaCh - 1, ch);
 }
 
+float exprTapeFinite (float y) noexcept
+{
+    return std::isfinite (y) ? y : 0.f;
+}
+
+float exprTapeDiv (float a, float b) noexcept
+{
+    return (std::abs (b) > 1.0e-12f) ? (a / b) : 0.f;
+}
+
+float exprTapePow (float a, float b) noexcept
+{
+    if (a < 0.f && std::abs (b - std::round (b)) > 1.0e-6f)
+        return 0.f;
+    return finiteOrZero (std::pow (a, b));
+}
+
+float exprTapeCall1 (uint32_t fn, float x) noexcept
+{
+    return call1 ((ExprFn) fn, x);
+}
+
+float exprTapeCall2 (uint32_t fn, float a, float b) noexcept
+{
+    return call2 ((ExprFn) fn, a, b);
+}
+
+float exprTapeCall3 (uint32_t fn, float a, float b, float c) noexcept
+{
+    return call3 ((ExprFn) fn, a, b, c);
+}
+
+float exprTapeCall5 (float v, float in0, float in1, float out0, float out1) noexcept
+{
+    return juce::jmap (v, in0, in1, out0, out1);
+}
+
+float exprTapeCallAdaa (ExprTape* tape, uint32_t fn, float x, float p, uint32_t st) noexcept
+{
+    if (tape == nullptr || st >= (uint32_t) ExprTape::kMaxAdaa)
+        return x;
+    const int ch = gTapeAdaaCh;
+    return callAdaa ((ExprFn) fn, x, p,
+                     tape->adaaXPrev[st][ch],
+                     tape->adaaFPrev[st][ch],
+                     tape->adaaPrimed[st][ch]);
+}
+
 float exprTapeEval (ExprTape& tape, const float* vars) noexcept
 {
     alignas (64) float s[ExprTape::kMaxSlots] {};

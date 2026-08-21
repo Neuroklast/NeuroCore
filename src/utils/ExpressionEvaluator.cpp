@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "ExpressionEvaluator.h"
+#include "ExprTapeJit.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
 #include "Localiser.h"
@@ -14,7 +15,10 @@ void ExpressionEvaluator::skipWhitespace() noexcept
         ++pos;
 }
 
-ExpressionEvaluator::~ExpressionEvaluator() = default;
+ExpressionEvaluator::~ExpressionEvaluator()
+{
+    exprTapeJitRelease (liveJit);
+}
 
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
 static bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
@@ -987,6 +991,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     variables.fill(0.0f);
     cachedXIndex = invalidIndex;
     errorMessage.clear();
+    exprTapeJitRelease (liveJit);
+    liveTape.clear();
     skipWhitespace();
 
     try
@@ -1022,8 +1028,12 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
             liveTape.clear();
             if (! lowerToTape (root.get()))
                 liveTape.clear();
+            if (liveTape.n > 0)
+                exprTapeJitCompile (liveJit, liveTape);
             compiled = [this] (const float* vars) noexcept
             {
+                if (liveJit.fn != nullptr)
+                    return liveJit.fn (&liveTape, vars);
                 if (liveTape.n > 0)
                     return exprTapeEval (liveTape, vars);
                 return root ? root->eval (vars) : 0.f;
@@ -1073,7 +1083,9 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
     localRoot->resetRuntime();
     liveTape.resetAdaa();
     float result = 0.f;
-    if (liveTape.n > 0)
+    if (liveJit.fn != nullptr)
+        result = liveJit.fn (&liveTape, varsCopy.data());
+    else if (liveTape.n > 0)
         result = exprTapeEval (liveTape, varsCopy.data());
     else
         result = localRoot->eval (varsCopy.data());
@@ -1091,9 +1103,10 @@ float ExpressionEvaluator::evaluateLive (float xValue) const noexcept
     VarArray varsCopy = variables;
     if (cachedXIndex != invalidIndex)
         varsCopy[cachedXIndex] = xValue;
-    const float result = (liveTape.n > 0)
-        ? exprTapeEval (liveTape, varsCopy.data())
-        : root->eval (varsCopy.data());
+    const float result = (liveJit.fn != nullptr)
+        ? liveJit.fn (&liveTape, varsCopy.data())
+        : (liveTape.n > 0 ? exprTapeEval (liveTape, varsCopy.data())
+                          : root->eval (varsCopy.data()));
     return std::isfinite (result) ? result : 0.0f;
 }
 

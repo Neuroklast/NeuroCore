@@ -7,6 +7,7 @@
 
 #include <JuceHeader.h>
 #include "ExprTape.h"
+#include "ExprTapeJit.h"
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -31,6 +32,7 @@ public:
     /** Audio-thread eval: no parse lock, no ADAA reset. Formula is immutable after load. */
     float evaluateLive (float x) const noexcept;
     bool hasLiveTape() const noexcept { return liveTape.n > 0; }
+    bool hasLiveJit() const noexcept { return liveJit.fn != nullptr; }
     int liveTapeOps() const noexcept { return liveTape.n; }
 
     /** Returns a callable functor that evaluates the parsed expression using
@@ -285,6 +287,7 @@ private:
     std::function<float(const float*)> compiled;
     std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> compiledSimd;
     mutable ExprTape liveTape;
+    mutable ExprJitCode liveJit;
     mutable juce::SpinLock lock; // guards parse, variable access and evaluation
 
     std::unordered_map<std::string, size_t> varIndices;

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-set(NEUROKORE_VERSION_NUMERIC "0.4.10")
-set(NEUROKORE_VERSION_LABEL "0.4.10-alpha")
+set(NEUROKORE_VERSION_NUMERIC "0.4.11")
+set(NEUROKORE_VERSION_LABEL "0.4.11-alpha")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
@@ -81,6 +81,24 @@ if(NOT _JUCE_FETCHED)
     endif()
 endif()
 
+# Phase 5: asmjit JIT for live formulas (Windows x64). Tape remains fallback.
+set (NK_HAS_EXPR_JIT 0)
+if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set (ASMJIT_STATIC ON CACHE BOOL "" FORCE)
+    set (ASMJIT_TEST OFF CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_FOREIGN ON CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_AARCH64 ON CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_INSTALL ON CACHE BOOL "" FORCE)
+    FetchContent_Declare (asmjit
+        GIT_REPOSITORY https://github.com/asmjit/asmjit.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable (asmjit)
+    set (NK_HAS_EXPR_JIT 1)
+    message (STATUS "ExprTape JIT: asmjit (Windows x64)")
+endif()
+
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
     src/dsp/InputRouter.cpp
@@ -106,6 +124,7 @@ set(SOURCE_FILES
     src/dsl/blocks/PitchBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/ExprTape.cpp
+    src/utils/ExprTapeJit.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseCrypto.cpp
@@ -236,6 +255,11 @@ target_link_libraries(NeuroKore PRIVATE
     juce::juce_product_unlocking
 )
 
+if (NK_HAS_EXPR_JIT)
+    target_link_libraries (NeuroKore PRIVATE asmjit::asmjit)
+    target_compile_definitions (NeuroKore PRIVATE NK_HAS_EXPR_JIT=1)
+endif()
+
 # Copy resources next to every built binary (SharedCode dir + Standalone + VST3)
 add_custom_command(TARGET NeuroKore POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -362,6 +386,11 @@ target_link_libraries(NeuroKoreTests PRIVATE
     juce::juce_opengl
     resourcesBinary
 )
+
+if (NK_HAS_EXPR_JIT)
+    target_link_libraries (NeuroKoreTests PRIVATE asmjit::asmjit)
+    target_compile_definitions (NeuroKoreTests PRIVATE NK_HAS_EXPR_JIT=1)
+endif()
 
 if (MSVC)
     target_link_options (NeuroKoreTests PRIVATE /STACK:8388608)

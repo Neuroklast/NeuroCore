@@ -8,7 +8,7 @@ This is the same text the plugin shows under **Help** (`resources/UserManual_en.
 
 NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, pitch, crossover, envelope, oscillator).
 
-Version 0.4.10-alpha. Formats: Standalone, VST3, AU.
+Version 0.4.11-alpha. Formats: Standalone, VST3, AU.
 
 30-second path
 1. Click the preset name in the top bar. Double-click a factory row (amp, delay, reverb, vocal).

@@ -95,6 +95,22 @@ public:
             expectWithinAbsoluteError (eval.evaluateLive (0.3f), 1.6f, 1e-6f);
         }
 
+        beginTest("jit x*2+1 matches tape; emit is at parse not evaluateLive");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("x * 2 + 1"));
+            expect (eval.hasLiveTape());
+#if defined(NK_HAS_EXPR_JIT) && NK_HAS_EXPR_JIT
+            expect (eval.hasLiveJit(), "Windows x64 should emit native code at parse");
+#endif
+            expectWithinAbsoluteError (eval.evaluateLive (0.3f), 1.6f, 1e-6f);
+            expectWithinAbsoluteError (eval.evaluateLive (-1.0f), -1.0f, 1e-6f);
+            ExpressionEvaluator other;
+            expect (other.parseFormula ("softclip(x, 2.2)"));
+            expect (std::isfinite (other.evaluateLive (0.5f)));
+            expect (std::abs (other.evaluateLive (10.0f)) <= 1.0f + 1e-3f);
+        }
+
         beginTest("softclip tape matches tree and stays finite");
         {
             ExpressionEvaluator eval;

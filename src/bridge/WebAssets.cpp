@@ -207,7 +207,7 @@ juce::String fallbackIndexHtml()
                        && window.__JUCE__.initialisationData.__juce__functions) || [];
         if (names.indexOf('UI_READY') >= 0) {
           window.__JUCE__.backend.emitEvent('__juce__invoke', {
-            name: 'UI_READY', params: [{ build: '0.4.10-alpha', scale: 1 }], resultId: 0
+            name: 'UI_READY', params: [{ build: '0.4.11-alpha', scale: 1 }], resultId: 0
           });
         }
         window.__JUCE__.backend.addEventListener('hello', (payload) => {

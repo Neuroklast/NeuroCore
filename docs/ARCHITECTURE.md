@@ -12,7 +12,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **AutoGain optional** | APVTS `autoGain` 0…1 | Default **0** (off). Strength skaliert mildes RMS-Match. |
 | **Kontinuierliche Control-Rate** | knob lanes + `mixDryWetContinuous` | Knobs und Dry/Wet sample-rate, nicht block-constant. |
 | **Filter-Timebase** | `advanceCoeffsOnce` + `processSample(ch)` | Coeff 1×/Sample; pro Kanal eigener SVF-State. |
-| **Formel-Live** | `ExprTape` | Parse/Fold/CSE auf dem Message-Thread; `evaluateLive` ist ein flaches Opcode-Array, kein virtueller AST. |
+| **Formel-Live** | `ExprTape` + asmjit | Parse/Fold/CSE auf dem Message-Thread; Tape ist IR. Windows x64 JITtet Load/Add/Sub/Mul/Neg bei Load. Call/ADAA bleiben Interpreter. Audio ruft den Funktionszeiger oder Tape. |
 | **Chain-Dispatch** | `Block::processBlock` | Eine Virtual pro Chip pro Callback. Kein `process(ch,x)` mehr in der Basisklasse / per Sample. |
 | **Audio-Layout** | `alignas(64)` + `DSPUtils::alignedRing` | History und Delay-Ringe cache-line aligned. Innere Sample-Schleife auf `float*` + `NK_RESTRICT`, kein `std::vector` dort. Knob-Lanes in `prepare`. |
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
