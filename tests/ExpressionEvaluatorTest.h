@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include "../src/utils/ExpressionEvaluator.h"
 #include "../src/utils/ExprTape.h"
+#include "../src/dsp/LookupTables.h"
 
 class ExpressionEvaluatorTest : public juce::UnitTest
 {
@@ -132,6 +133,86 @@ public:
             vars[0] = 1.0f;
             expect (std::isfinite (exprTapeEval (t, vars)));
             expectWithinAbsoluteError (exprTapeEval (t, vars), 0.0f, 1e-6f);
+        }
+
+        beginTest("tape SIMD matches scalar and keeps impulse phase");
+        {
+            LookupTables::initialise();
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("x * 2 + 1"));
+            expect (eval.hasLiveTape());
+            expect (eval.liveTapeCanSimd(), "arithmetic tape must SIMD");
+
+            constexpr int N = 16;
+            float scalar[N], simdBuf[N], impulse[N];
+            for (int i = 0; i < N; ++i)
+            {
+                scalar[i] = (i == 3) ? 0.4f : 0.f;
+                simdBuf[i] = scalar[i];
+                impulse[i] = scalar[i];
+            }
+            eval.evaluateBlock (scalar, (size_t) N);
+            eval.evaluateBlockSimd (simdBuf, (size_t) N);
+
+            int peakS = 0, peakV = 0;
+            float maxS = 0.f, maxV = 0.f, maxDiff = 0.f;
+            for (int i = 0; i < N; ++i)
+            {
+                maxDiff = juce::jmax (maxDiff, std::abs (scalar[i] - simdBuf[i]));
+                if (std::abs (scalar[i]) > maxS) { maxS = std::abs (scalar[i]); peakS = i; }
+                if (std::abs (simdBuf[i]) > maxV) { maxV = std::abs (simdBuf[i]); peakV = i; }
+            }
+            expect (maxDiff < 1.0e-5f, "SIMD vs scalar maxDiff=" + juce::String (maxDiff, 8));
+            expectEquals (peakS, 3);
+            expectEquals (peakV, peakS);
+            expectWithinAbsoluteError (scalar[3], impulse[3] * 2.f + 1.f, 1e-5f);
+
+            ExpressionEvaluator shaper;
+            expect (shaper.parseFormula ("tanh(x)"));
+            expect (shaper.liveTapeCanSimd());
+            float ts[8], tv[8];
+            for (int i = 0; i < 8; ++i) { ts[i] = tv[i] = 0.2f * (float) i - 0.6f; }
+            shaper.evaluateBlock (ts, 8);
+            shaper.evaluateBlockSimd (tv, 8);
+            float d2 = 0.f;
+            for (int i = 0; i < 8; ++i)
+                d2 = juce::jmax (d2, std::abs (ts[i] - tv[i]));
+            expect (d2 < 2.0e-4f, "tanh SIMD vs scalar " + juce::String (d2, 8));
+
+            ExpressionEvaluator adaa;
+            expect (adaa.parseFormula ("softclip(x, 2)"));
+            expect (adaa.hasLiveTape());
+            expect (! adaa.liveTapeCanSimd(), "ADAA tape stays serial");
+        }
+
+        beginTest("jit compiles div pow call and adaa; matches tape; factory-safe");
+        {
+            LookupTables::initialise();
+            const char* formulas[] = {
+                "x / 2", "pow(x, 2)", "sin(x)", "tanh(x)",
+                "softclip(x, 2.2)", "tube(x, 3)", "diode(x, 2)"
+            };
+            for (const char* f : formulas)
+            {
+                ExpressionEvaluator eval;
+                expect (eval.parseFormula (f), f);
+                expect (eval.hasLiveTape(), f);
+#if defined(NK_HAS_EXPR_JIT) && NK_HAS_EXPR_JIT
+                expect (eval.hasLiveJit(), juce::String ("jit ") + f);
+#endif
+                float y = 0.f;
+                for (int i = 0; i < 64; ++i)
+                {
+                    y = eval.evaluateLive (0.15f * (float) (i % 7) - 0.4f);
+                    expect (std::isfinite (y), juce::String (f) + " nonfinite");
+                }
+                ExpressionEvaluator again;
+                expect (again.parseFormula (f));
+                const float a = eval.evaluate (0.35f);
+                const float b = again.evaluate (0.35f);
+                expect (std::isfinite (a) && std::isfinite (b));
+                expectWithinAbsoluteError (a, b, 2.0e-4f);
+            }
         }
 
         beginTest("softclip tape matches tree and stays finite");

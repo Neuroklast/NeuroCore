@@ -36,23 +36,6 @@ bool exprTapeJitCompile (ExprJitCode& code, const ExprTape& tape) noexcept
     if (tape.n <= 0 || tape.n > ExprTape::kMaxOps)
         return false;
 
-    for (int i = 0; i < tape.n; ++i)
-    {
-        switch (tape.op[i])
-        {
-            case ExprOp::LoadImm:
-            case ExprOp::LoadVar:
-            case ExprOp::Add:
-            case ExprOp::Sub:
-            case ExprOp::Mul:
-            case ExprOp::Neg:
-            case ExprOp::End:
-                break;
-            default:
-                return false;
-        }
-    }
-
     ExprJitCode::Fn added = nullptr;
     try
     {
@@ -67,7 +50,6 @@ bool exprTapeJitCompile (ExprJitCode& code, const ExprTape& tape) noexcept
         x86::Gp pVars = cc.new_gp_ptr();
         func->set_arg (0, pTape);
         func->set_arg (1, pVars);
-        (void) pTape;
 
         x86::Vec s[ExprTape::kMaxSlots];
         for (int i = 0; i < ExprTape::kMaxSlots; ++i)
@@ -76,6 +58,57 @@ bool exprTapeJitCompile (ExprJitCode& code, const ExprTape& tape) noexcept
         auto slotOk = [] (uint8_t v) noexcept
         {
             return v < (uint8_t) ExprTape::kMaxSlots;
+        };
+
+        auto callF2 = [&] (float (*fn)(float, float), uint8_t da, uint8_t db, uint8_t ds) -> bool
+        {
+            if (! slotOk (da) || ! slotOk (db) || fn == nullptr)
+                return false;
+            InvokeNode* inv = nullptr;
+            if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) fn,
+                           FuncSignature::build<float, float, float>()) != Error::kOk
+                || inv == nullptr)
+                return false;
+            inv->set_arg (0, s[da]);
+            inv->set_arg (1, s[db]);
+            inv->set_ret (0, s[ds]);
+            return true;
+        };
+
+        auto callU32F = [&] (float (*fn)(uint32_t, float), uint32_t id, uint8_t da, uint8_t ds) -> bool
+        {
+            if (! slotOk (da) || fn == nullptr)
+                return false;
+            x86::Gp gid = cc.new_gp32();
+            cc.mov (gid, id);
+            InvokeNode* inv = nullptr;
+            if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) fn,
+                           FuncSignature::build<float, uint32_t, float>()) != Error::kOk
+                || inv == nullptr)
+                return false;
+            inv->set_arg (0, gid);
+            inv->set_arg (1, s[da]);
+            inv->set_ret (0, s[ds]);
+            return true;
+        };
+
+        auto callU32FF = [&] (float (*fn)(uint32_t, float, float), uint32_t id,
+                              uint8_t da, uint8_t db, uint8_t ds) -> bool
+        {
+            if (! slotOk (da) || ! slotOk (db) || fn == nullptr)
+                return false;
+            x86::Gp gid = cc.new_gp32();
+            cc.mov (gid, id);
+            InvokeNode* inv = nullptr;
+            if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) fn,
+                           FuncSignature::build<float, uint32_t, float, float>()) != Error::kOk
+                || inv == nullptr)
+                return false;
+            inv->set_arg (0, gid);
+            inv->set_arg (1, s[da]);
+            inv->set_arg (2, s[db]);
+            inv->set_ret (0, s[ds]);
+            return true;
         };
 
         bool ok = true;
@@ -112,11 +145,80 @@ bool exprTapeJitCompile (ExprJitCode& code, const ExprTape& tape) noexcept
                     cc.movss (s[ds], s[a]);
                     cc.mulss (s[ds], s[b]);
                     break;
+                case ExprOp::Div:
+                    ok = callF2 (exprTapeDiv, a, b, ds);
+                    break;
+                case ExprOp::Pow:
+                    ok = callF2 (exprTapePow, a, b, ds);
+                    break;
                 case ExprOp::Neg:
                     if (! slotOk (a)) { ok = false; break; }
                     cc.movss (s[ds], s[a]);
                     cc.mulss (s[ds], cc.new_float_const (ConstPoolScope::kLocal, -1.0f));
                     break;
+                case ExprOp::Call1:
+                    ok = callU32F (exprTapeCall1, tape.fn[i], a, ds);
+                    break;
+                case ExprOp::Call2:
+                    ok = callU32FF (exprTapeCall2, tape.fn[i], a, b, ds);
+                    break;
+                case ExprOp::Call3:
+                {
+                    if (! slotOk (a) || ! slotOk (b) || ! slotOk (tape.c[i]))
+                    { ok = false; break; }
+                    x86::Gp gid = cc.new_gp32();
+                    cc.mov (gid, (uint32_t) tape.fn[i]);
+                    InvokeNode* inv = nullptr;
+                    if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) exprTapeCall3,
+                                   FuncSignature::build<float, uint32_t, float, float, float>()) != Error::kOk
+                        || inv == nullptr)
+                    { ok = false; break; }
+                    inv->set_arg (0, gid);
+                    inv->set_arg (1, s[a]);
+                    inv->set_arg (2, s[b]);
+                    inv->set_arg (3, s[tape.c[i]]);
+                    inv->set_ret (0, s[ds]);
+                    break;
+                }
+                case ExprOp::Call5:
+                {
+                    if (! slotOk (a) || ! slotOk (b) || ! slotOk (tape.c[i])
+                        || ! slotOk (tape.d[i]) || ! slotOk (tape.e[i]))
+                    { ok = false; break; }
+                    InvokeNode* inv = nullptr;
+                    if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) exprTapeCall5,
+                                   FuncSignature::build<float, float, float, float, float, float>()) != Error::kOk
+                        || inv == nullptr)
+                    { ok = false; break; }
+                    inv->set_arg (0, s[a]);
+                    inv->set_arg (1, s[b]);
+                    inv->set_arg (2, s[tape.c[i]]);
+                    inv->set_arg (3, s[tape.d[i]]);
+                    inv->set_arg (4, s[tape.e[i]]);
+                    inv->set_ret (0, s[ds]);
+                    break;
+                }
+                case ExprOp::Adaa2:
+                {
+                    if (! slotOk (a) || ! slotOk (b))
+                    { ok = false; break; }
+                    x86::Gp gid = cc.new_gp32();
+                    x86::Gp gst = cc.new_gp32();
+                    cc.mov (gid, (uint32_t) tape.fn[i]);
+                    cc.mov (gst, (uint32_t) tape.d[i]);
+                    InvokeNode* inv = nullptr;
+                    if (cc.invoke (Out (inv), (uint64_t) (uintptr_t) exprTapeCallAdaa,
+                                   FuncSignature::build<float, ExprTape*, uint32_t, float, float, uint32_t>()) != Error::kOk
+                        || inv == nullptr)
+                    { ok = false; break; }
+                    inv->set_arg (0, pTape);
+                    inv->set_arg (1, gid);
+                    inv->set_arg (2, s[a]);
+                    inv->set_arg (3, s[b]);
+                    inv->set_arg (4, gst);
+                    inv->set_ret (0, s[ds]);
+                    break;
+                }
                 case ExprOp::End:
                     i = tape.n;
                     break;

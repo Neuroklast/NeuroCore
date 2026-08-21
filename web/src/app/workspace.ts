@@ -20,6 +20,11 @@ export function knobRail(_w: Workspace): "left" | "bottom" | "none" {
   return "bottom";
 }
 
+/** Unit keeps ~60 Hz DSP telemetry. Circuit/Terminal only need glow ticks. */
+export function telemetryIntervalMs(w: Workspace): number {
+  return w === "face" ? 16 : 500;
+}
+
 export type TerminalAction = "edit" | "validate" | "optimize";
 
 /** Script tools that live on the Terminal chrome, not only the header. */

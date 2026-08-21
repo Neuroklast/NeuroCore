@@ -1,5 +1,6 @@
 import { advancePlasmaDash } from "../assemble/cableMotion";
 import { useTelemetryStore } from "../store/telemetryStore";
+import { subscribeVizClock } from "./vizClock";
 
 /** Smooth expo-out. Chrome motion is never `steps()`. */
 export const MOTION_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -30,7 +31,6 @@ export function bindPeakCss(el: HTMLElement): () => void {
   let dashIn = 0;
   let dashOut = 0;
   let last = 0;
-  let raf = 0;
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const tick = (now: number) => {
@@ -47,8 +47,6 @@ export function bindPeakCss(el: HTMLElement): () => void {
     for (const [k, v] of Object.entries(vars)) {
       el.style.setProperty(k, v);
     }
-    raf = window.requestAnimationFrame(tick);
   };
-  raf = window.requestAnimationFrame(tick);
-  return () => window.cancelAnimationFrame(raf);
+  return subscribeVizClock(tick);
 }

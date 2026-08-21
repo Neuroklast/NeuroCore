@@ -257,6 +257,14 @@ void DspEngine::setHostSidechain (const float* left, const float* right, int num
     hostScN = (left != nullptr && numSamples > 0) ? numSamples : 0;
 }
 
+void DspEngine::processHostBypass(juce::AudioBuffer<float>& buffer,
+                                  dsl::SignalChain& signalChain)
+{
+    hostBypass = true;
+    processBlock (buffer, signalChain);
+    hostBypass = false;
+}
+
 void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
                              dsl::SignalChain& signalChain)
 {
@@ -350,9 +358,10 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     // Pure dry only when mix target AND smoother are fully at 0.
     // Architecture: never run wet DSL into the buffer when user wants dry-only
     // (previous bug: mix 0% still processed DSL → crackle / wrong signal).
-    const bool wetNeeded = dryWet > 1.0e-5f
-                        || wetValue.isSmoothing()
-                        || wetValue.getCurrentValue() > 1.0e-5f;
+    const bool wetNeeded = ! hostBypass
+                        && (dryWet > 1.0e-5f
+                            || wetValue.isSmoothing()
+                            || wetValue.getCurrentValue() > 1.0e-5f);
     bypassActive = ! wetNeeded;
 
     for (int i = totalNumInputChannels; i < totalNumOutputChannels; ++i)

@@ -36,14 +36,14 @@ Das Audio-Thread-Modell ist **eine Kette, eine Timeline, kein Heap im Callback**
 | Parse → AST | Message | `ExpressionEvaluator::parseFormula` |
 | Constant-Fold + CSE | Message | gleicher Parse |
 | Absenkung auf Opcode-Tape | Message | `lowerToTape` → `ExprTape` (max. 256 Ops, 32 Slots, `alignas(64)`) |
-| Optional JIT | Message, nur Windows x64 | `exprTapeJitCompile` wenn die Tape **nur** LoadImm/LoadVar/Add/Sub/Mul/Neg/End enthält |
+| Optional JIT | Message, nur Windows x64 | `exprTapeJitCompile`: arithmetik inlined (`ss`); Div/Pow/Call/ADAA = `call` to `exprTape*` C helpers. No asmjit Invoke into C++ shapers. |
 | Live-Eval | Audio | `liveJit.fn` **oder** `exprTapeEval` (kein virtueller AST, kein `evaluate()`-Lock) |
 
 Dateien: `src/utils/ExprTape.h/.cpp`, `src/utils/ExprTapeJit.h/.cpp`, `src/utils/ExpressionEvaluator.h/.cpp`.
 
 **Warum Tape vor JIT:** Der alte Live-Pfad war ein virtueller AST (`Node::eval`) plus `std::function`. JIT ohne flaches IR hätte zwei Runtimes erzeugt. Das Tape ist die ABI; asmjit emittiert daraus nativen x64-Code in einen RWX-Puffer **beim Load**, nicht im Callback.
 
-**Warum Call/ADAA/Div/Pow nicht gejittet sind:** Factory-Load mit asmjit-`invoke` in den C-Shaper ist abgestürzt. Der Interpreter bleibt für `softclip`/`tube`/`diode` (ADAA-State auf dem Tape), `sin`/`tanh` (LUT), Div/Pow. `evaluateLive` macht `isfinite` nach dem JIT; der JIT ruft dafür **kein** C mehr pro Sample.
+**JIT Call/ADAA:** Emit `call` to `exprTapeDiv` / `exprTapePow` / `exprTapeCall1/2/3/5` / `exprTapeCallAdaa` (noexcept C helpers). Do not `invoke` into C++ shapers — that crashed factory load. Failed emit leaves `fn == nullptr` (interpreter).
 
 **macOS VST3/AU:** `NK_HAS_EXPR_JIT=0`. Kein asmjit, kein RWX in der AU-Sandbox. Dieselbe Tape-Maschine.
 
@@ -77,9 +77,11 @@ Release-LTO (`INTERPROCEDURAL_OPTIMIZATION_RELEASE`) nur auf NeuroKore + Standal
 
 ### Bewusst nicht gebaut
 
-PGO-Skript, LLVM, Call/ADAA-JIT, zweites Half-Band, Prefetch, globales FMA/`fast-math`. SIMD-Stage ohne Tape bleibt der alte `evalSimd`-Baum.
+PGO-Skript, LLVM, SIMD-JIT (`ps` 4-wide), zweites Half-Band, globales FMA/`fast-math`.
 
-Verträge: `tests/ExpressionEvaluatorTest.h` (Tape-Identität, JIT `x*2+1` / `-x`, LoadVar-OOB), `tests/ArchitectureHardeningTest.h` (64-Align, Delay-Wrap, Knob-Lanes, CPU 0–100), `tests/DelayReverbTest.h`, `tests/WebShellTest.h` (JIT-Flag, Mac-Zip-Pfad).
+**Tape SIMD:** `exprTapeEvalSimd` is the SIMD path. Arithmetic + LUT (`sin`/`tanh`/…) is lane-independent. ADAA (`softclip`/`tube`/`diode`) stays serial (`exprTapeCanSimd` false, `needsSampleLoop`). Delay rings and saturation LUTs are 64-byte aligned and SIMD-padded. Phase: SIMD vs scalar peak index identical. Contract: `ExpressionEvaluatorTest` “tape SIMD matches scalar and keeps impulse phase”.
+
+Verträge: `tests/ExpressionEvaluatorTest.h` (Tape-Identität, JIT `x*2+1` / `-x`, LoadVar-OOB, Tape-SIMD), `tests/ArchitectureHardeningTest.h` (64-Align, Delay-Wrap, Knob-Lanes, CPU 0–100), `tests/DelayReverbTest.h`, `tests/WebShellTest.h` (JIT-Flag, Mac-Zip-Pfad).
 
 ## Signalkette
 
@@ -126,7 +128,7 @@ Input
 ### WebView lifetime
 - Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
 - Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
-- Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`) or owned by a processor-lifetime HWND. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists.
+- Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`). Standalone has no IPlugView — the editor peer **is** the app window, so that HWND is the park parent. The hidden processor-owned HWND is only for detach/close. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists. Each instance gets its own WebView2 user-data folder (`NEUROKORE-webview2/i<id>`).
 - Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
 - Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).
 

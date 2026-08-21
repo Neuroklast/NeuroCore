@@ -330,6 +330,60 @@ public:
             proc.releaseResources();
         }
 
+        beginTest ("host bypass dry is delayed by reported host latency");
+        {
+            // Cubase host-bypass calls processBlockBypassed. JUCE default does
+            // not delay; PDC then shifts the track. Same timeline as mix 0.
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f)); // 4×
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (1.f);
+
+            const int lat = proc.getLatencySamples();
+            expect (lat > 0, "studio 4× must report PDC");
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlockBypassed (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            proc.processBlockBypassed (buf, midi);
+            int peakAt = -1;
+            float peak = 0.f;
+            int sample = 0;
+            for (int b = 0; b < 16; ++b)
+            {
+                if (b > 0)
+                {
+                    buf.clear();
+                    proc.processBlockBypassed (buf, midi);
+                }
+                for (int i = 0; i < 128; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    if (a > peak)
+                    {
+                        peak = a;
+                        peakAt = sample;
+                    }
+                }
+            }
+            expect (peak > 0.25f, "bypassed impulse must appear, peak=" + juce::String (peak, 3));
+            expect (std::abs (peakAt - lat) <= 2,
+                    "bypass peakAt=" + juce::String (peakAt) + " lat=" + juce::String (lat));
+            proc.releaseResources();
+        }
+
         beginTest ("LatencyAlignedSidechain delay equals configured latency");
         {
             for (int lat : { 0, 1, 26, 64, 128 })

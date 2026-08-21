@@ -32,7 +32,9 @@ public:
     /** Audio-thread eval: no parse lock, no ADAA reset. Formula is immutable after load. */
     float evaluateLive (float x) const noexcept;
     bool hasLiveTape() const noexcept { return liveTape.n > 0; }
+    bool liveTapeCanSimd() const noexcept { return exprTapeCanSimd (liveTape); }
     bool hasLiveJit() const noexcept { return liveJit.fn != nullptr; }
+    void prefetchLiveTape() const noexcept;
     int liveTapeOps() const noexcept { return liveTape.n; }
 
     /** Returns a callable functor that evaluates the parsed expression using

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { TelemetryViews } from "../bridge/telemetry";
+import { subscribeVizClock } from "../theme/vizClock";
 
 const VS = `attribute vec2 a; void main(){ gl_Position = vec4(a,0.0,1.0); gl_PointSize = 2.0; }`;
 const FS = `precision mediump float; void main(){ gl_FragColor = vec4(1.0,0.102,0.102,0.85); }`;
@@ -38,7 +39,6 @@ export function GonioGl({ views, title }: { views: TelemetryViews; title: string
     gl.linkProgram(prog);
     const buf = gl.createBuffer();
     const packed = new Float32Array(256);
-    let raf = 0;
     const draw = () => {
       const v = viewsRef.current;
       const n = Math.min(v.gonioN, 128);
@@ -56,10 +56,8 @@ export function GonioGl({ views, title }: { views: TelemetryViews; title: string
       gl.enableVertexAttribArray(loc);
       gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.POINTS, 0, n);
-      raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    return subscribeVizClock(draw);
   }, []);
 
   return (

@@ -39,14 +39,20 @@ public:
     static juce::dsp::SIMDRegister<float> fastLogSimd (const juce::dsp::SIMDRegister<float>& x) noexcept;
     static juce::dsp::SIMDRegister<float> fastPowSimd (const juce::dsp::SIMDRegister<float>& x, float exponent) noexcept;
 
+    /** 64-byte-aligned saturation / trig tables. Size is the logical LUT length. */
+    static const float* sinData() noexcept;
+    static const float* tanhData() noexcept;
+    static int size() noexcept;
+
 private:
     static int tableSize;
-    static std::vector<float> sinTable;
-    static std::vector<float> cosTable;
-    static std::vector<float> tanhTable;
-    static std::vector<float> expTable;
-    static std::vector<float> logTable;
-    static std::unordered_map<int, std::vector<float>> powTables;
+    static std::vector<float> sinStore, cosStore, tanhStore, expStore, logStore;
+    static float* sinTable;
+    static float* cosTable;
+    static float* tanhTable;
+    static float* expTable;
+    static float* logTable;
+    static std::unordered_map<int, std::pair<std::vector<float>, float*>> powTables;
     static SmoothingOptions smoothing;
 };
 

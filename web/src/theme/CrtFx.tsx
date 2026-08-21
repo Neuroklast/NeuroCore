@@ -5,6 +5,7 @@ import { paintTechNoise } from "../viz/scopeModel";
 import { liveTheme } from "./theme";
 import { bindPeakCss } from "./fx";
 import { motionAllows } from "./motionPolicy";
+import { subscribeVizClock } from "./vizClock";
 
 export type CrtLayer = "scan" | "sweep" | "chroma" | "vignette" | "bloom" | "techNoise";
 
@@ -49,7 +50,6 @@ export function PaneTechNoise() {
     if (! ctx) {
       return;
     }
-    let raf = 0;
     let frame = 0;
     const draw = () => {
       const { w, h, scale } = fitCanvas(canvas);
@@ -57,10 +57,8 @@ export function PaneTechNoise() {
       ctx.clearRect(0, 0, w, h);
       paintTechNoise(ctx, w, h, frame, liveTheme().cyan);
       frame += 1;
-      raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    return subscribeVizClock(draw);
   }, [on]);
 
   if (! on || crtHost("techNoise") !== "pane") {

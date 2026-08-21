@@ -26,7 +26,7 @@ import { seedFactoryPresets } from "../presets/presetActions";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
-import { knobBindEnabled, type Workspace } from "./workspace";
+import { knobBindEnabled, telemetryIntervalMs, type Workspace } from "./workspace";
 
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("face");
@@ -155,9 +155,11 @@ export function App() {
       </div>
       <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
-          <div className={workspace === "face" ? "h-full min-h-0" : "hidden"}>
-            <FaceView open={setWorkspace} />
-          </div>
+          {workspace === "face" ? (
+            <div className="h-full min-h-0">
+              <FaceView open={setWorkspace} />
+            </div>
+          ) : null}
           <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
             <AssembleView />
           </div>
@@ -172,7 +174,7 @@ export function App() {
         {workspace === "assemble" ? <BindCables /> : null}
         <BindDragGhost />
       </div>
-      <TelemetryPump telemetryPath={telemetryPath} />
+      <TelemetryPump telemetryPath={telemetryPath} intervalMs={telemetryIntervalMs(workspace)} />
       <Footer />
       <Overlays />
 

@@ -4,6 +4,7 @@
 #include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
 #include "../src/dsp/DSPUtils.h"
+#include "../src/dsp/LookupTables.h"
 #include "../src/dsp/OutputSanitizer.h"
 #include "../src/dsp/LatencyAlignedSidechain.h"
 #include "../src/dsl/SignalChain.h"
@@ -219,6 +220,11 @@ public:
             float* p = DSPUtils::alignedRing (storage, 480);
             expect (p != nullptr);
             expect (DSPUtils::isAligned64 (p));
+            expectEquals (DSPUtils::simdPadded (7) % DSPUtils::simdCount(), 0);
+            LookupTables::initialise();
+            expect (DSPUtils::isAligned64 (LookupTables::tanhData()));
+            expect (DSPUtils::isAligned64 (LookupTables::sinData()));
+            expect (LookupTables::size() >= 256);
             p[479] = 1.f;
             expect (storage.data() + storage.size() > p + 479);
 
