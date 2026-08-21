@@ -2,6 +2,7 @@
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../core/PluginProcessor.h"
+#include "../licensing/HardwareFingerprint.h"
 #include "../utils/FactoryPresetLibrary.h"
 #include "../utils/PresetLibrary.h"
 #include "../utils/UiSettings.h"
@@ -376,6 +377,8 @@ juce::var licenseVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("demoLocked", proc.isDemoMixLocked());
     root->setProperty ("demoRemainSec", proc.demoSecondsRemaining());
     root->setProperty ("error", proc.licenseError());
+    root->setProperty ("email", proc.licensedEmail());
+    root->setProperty ("systemId", HardwareFingerprint::generate());
     return juce::var (root);
 }
 

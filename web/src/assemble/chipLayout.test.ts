@@ -9,6 +9,7 @@ import {
   TITLE_H,
   bindFace,
   bindJackCaption,
+  bindCaptionMaxPx,
   bindJackXs,
   chipBodyHeight,
   chipBodyInset,
@@ -44,6 +45,10 @@ describe("chip face, labels, copy", () => {
     expect(bindJackCaption("gain")).toBe("GAIN");
     expect(bindJackCaption("type")).toBe("TYPE");
     expect(bindJackCaption("freq")).toBe("FREQ");
+    expect(bindJackCaption("tonethresh")).toBe("TONETHRESH");
+    const w = bindCaptionMaxPx(5, 256);
+    expect(w).toBeLessThan(bindJackXs(5, 256)[1]! - bindJackXs(5, 256)[0]!);
+    expect(w).toBeGreaterThanOrEqual(28);
   });
 
   it("widens the chip so highshelf fits the value field", () => {

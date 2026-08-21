@@ -26,8 +26,8 @@ function paintAxisLabel(
   y: number,
   fill: string,
 ): void {
-  ctx.font = "13px 'JetBrains Mono', ui-monospace, monospace";
-  ctx.lineWidth = 5;
+  ctx.font = "9px Apex, 'JetBrains Mono', ui-monospace, monospace";
+  ctx.lineWidth = 3;
   ctx.strokeStyle = "#000000";
   ctx.lineJoin = "round";
   ctx.strokeText(text, x, y);
@@ -41,8 +41,15 @@ function paintSpectrogramAxes(
   h: number,
   sr: number,
   ink: string,
+  xScale: "samples" | "time" | "freq",
 ): void {
-  const freq = logFreqMarks(sr);
+  const freq = logFreqMarks(sr).map((m) => (
+    xScale === "time"
+      ? { ...m, label: m.label.replace("k", "k").replace(/Hz/i, "") }
+      : xScale === "samples"
+        ? { ...m, label: String(Math.round(Number(m.label.replace("k", "000")) || 0)) }
+        : m
+  ));
   const db = specDbMarks();
   ctx.strokeStyle = "rgba(244,241,234,0.45)";
   ctx.lineWidth = 1;
@@ -73,7 +80,10 @@ function paintSpectrogramAxes(
   }
 }
 
-function liftBins(raw: number[]): number[] {
+function liftBins(raw: number[], yScale: "linear" | "db"): number[] {
+  if (yScale === "linear") {
+    return raw.map((v) => Math.max(0, Math.min(1, Math.abs(v) * 8)));
+  }
   return raw.map((v) => specMag01(v));
 }
 
@@ -120,22 +130,11 @@ export function ScopeCanvas({
       for (const id of ids) {
         const samples = id === "in" ? inRef.current : outRef.current;
         const hist = id === "in" ? histIn : histOut;
-        hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS)));
+        hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS), yScale));
       }
       frame.current += 1;
       ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = themeRgba("cyan", 0.08, theme);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let r = 0; r < SPEC_DEPTH; r += 4) {
-        const a = spectrogramProject(0, r, 0, w, h);
-        const b = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-      }
-      ctx.stroke();
 
       for (const id of ids) {
         const rows = (id === "in" ? histIn : histOut).current;
@@ -172,7 +171,20 @@ export function ScopeCanvas({
       const f = frame.current;
       paintTechNoise(ctx, w, h, f, theme.cyan);
 
-      paintSpectrogramAxes(ctx, w, h, sr, theme.ink);
+      if (grid) {
+        ctx.strokeStyle = themeRgba("cyan", 0.08, theme);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let r = 0; r < SPEC_DEPTH; r += 4) {
+          const a = spectrogramProject(0, r, 0, w, h);
+          const b = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+        }
+        ctx.stroke();
+      }
+
+      paintSpectrogramAxes(ctx, w, h, sr, theme.cyan, xScale);
     };
     return subscribeVizClock(draw);
   }, [count, grid, invertY, source, sr, themeId, xScale, yScale]);

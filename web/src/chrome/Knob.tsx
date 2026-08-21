@@ -471,7 +471,10 @@ function KnobEditMenu({
         />
       ) : null}
       {fields.includes("note") ? (
-        <OsMenuItem onClick={() => commitKnobMeta(knob.id, { isNote: ! knob.isNote })}>
+        <OsMenuItem onClick={() => {
+          commitKnobMeta(knob.id, { isNote: ! knob.isNote });
+          onClose();
+        }}>
           {knob.isNote ? "Note range: ON" : "Note range: OFF"}
         </OsMenuItem>
       ) : null}

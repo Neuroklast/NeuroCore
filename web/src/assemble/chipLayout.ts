@@ -91,6 +91,16 @@ export function bindJackCaption(key: string): string {
   return key.trim().toUpperCase();
 }
 
+/** Caption column so neighbouring south labels cannot paint over each other. */
+export function bindCaptionMaxPx(count: number, width: number): number {
+  if (count <= 1) {
+    return Math.min(96, Math.max(32, width - 24));
+  }
+  const xs = bindJackXs(count, width);
+  const gap = xs[1]! - xs[0]!;
+  return Math.max(28, gap - 6);
+}
+
 export function contentWidth(chipW: number): number {
   return chipW - LABEL_COL * 2;
 }

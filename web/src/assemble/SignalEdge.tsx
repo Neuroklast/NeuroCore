@@ -86,8 +86,9 @@ export function SignalEdge({
   const path = step.d;
   const len = pathLength(step.points);
   const lfo = lfoDash(len, LFO_DOT);
-  const showPlasma = ! temp && kind === "audio" && cables === "wave" && motionAllows("pipeWave", motion, reduced);
-  const showDots = ! temp && kind === "audio" && cables === "dots" && motionAllows("pipeWave", motion, reduced);
+  const showPlasma = ! temp && kind === "audio" && cables === "wave";
+  const showDots = ! temp && kind === "audio" && cables === "dots";
+  const animateCables = motionAllows("pipeWave", motion, reduced);
   const chase = ! temp && kind === "mod" && lfoSrc && motionAllows("lfoChase", motion, reduced);
   const accent = cableAccent(kind);
   const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
@@ -199,7 +200,7 @@ export function SignalEdge({
             strokeLinecap="butt"
             strokeLinejoin="miter"
             data-src={srcKey}
-            className="nk-plasma-glow"
+            className={`nk-plasma-glow${animateCables ? "" : " nk-cable-still"}`}
           />
           <path
             d={path}
@@ -209,7 +210,7 @@ export function SignalEdge({
             strokeLinecap="butt"
             strokeLinejoin="miter"
             data-src={srcKey}
-            className="nk-plasma"
+            className={`nk-plasma${animateCables ? "" : " nk-cable-still"}`}
           />
         </>
       ) : null}
@@ -222,7 +223,7 @@ export function SignalEdge({
           strokeLinecap="round"
           strokeLinejoin="miter"
           data-src={srcKey}
-          className="nk-dots"
+          className={`nk-dots${animateCables ? "" : " nk-cable-still"}`}
         />
       ) : null}
     </g>

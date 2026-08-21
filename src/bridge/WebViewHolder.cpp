@@ -527,12 +527,22 @@ struct WebViewHolder::Impl : private juce::Timer,
                             {
                                 juce::String kind = "ir";
                                 juce::String slot = "ir1";
+                                juce::String path;
                                 if (args.size() > 0 && args[0].isObject())
                                 {
                                     kind = args[0].getProperty ("kind", "ir").toString();
                                     slot = args[0].getProperty ("slot", "ir1").toString();
+                                    path = args[0].getProperty ("path", "").toString();
                                 }
-                                pickFile (kind, slot);
+                                if (path.isNotEmpty())
+                                {
+                                    const juce::File f (path);
+                                    if (f.existsAsFile() && kind.equalsIgnoreCase ("license"))
+                                        proc.importProductLicense (f);
+                                    pushHost();
+                                }
+                                else
+                                    pickFile (kind, slot);
                                 complete (juce::var (true));
                             })
                         .withNativeFunction ("irSlot",

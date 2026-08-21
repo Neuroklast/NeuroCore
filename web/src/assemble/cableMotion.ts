@@ -135,11 +135,8 @@ export function cableLayer(
   style: CableStyle,
   motionOn: boolean,
 ): CableLayer {
-  if (! motionOn) {
-    return "still";
-  }
   if (kind === "mod") {
-    return "lfo";
+    return motionOn ? "lfo" : "still";
   }
   return style === "dots" ? "dots" : "wave";
 }

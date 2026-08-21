@@ -40,7 +40,7 @@ describe("about document", () => {
 
   it("shows only user-facing fields, no plugin codes", () => {
     const keys = aboutUserFields().map((r) => r.key);
-    expect(keys).toEqual(["Version", "Formats", "Web", "Mail"]);
+    expect(keys).toEqual(["Version", "Formats", "Contact"]);
     expect(keys.join(" ")).not.toMatch(/code|target|category|grain|noise/i);
   });
 });

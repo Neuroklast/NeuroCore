@@ -3,6 +3,7 @@ import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { presetAction } from "../presets/presetActions";
 import { useHostStore } from "../store/hostStore";
 import { explorerSession, patchExplorer, type ExplorerScope } from "./explorerSession";
+import { readPresetStars, writePresetStar } from "../presets/presetStars";
 
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
@@ -17,6 +18,7 @@ export function PresetExplorer() {
   const [cat, setCat] = useState(explorerSession.cat);
   const [sel, setSel] = useState(explorerSession.sel);
   const [sortKey, setSortKey] = useState<"name" | "category">(explorerSession.sortKey);
+  const [stars, setStars] = useState(readPresetStars);
   const folderRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +154,7 @@ export function PresetExplorer() {
                 <th className="cursor-pointer px-2 py-1" onClick={() => persist({ sortKey: "name" })}>Name</th>
                 <th className="cursor-pointer px-2 py-1" onClick={() => persist({ sortKey: "category" })}>Category</th>
                 <th className="px-2 py-1">Author</th>
+                <th className="px-2 py-1">★</th>
               </tr>
             </thead>
             <tbody>
@@ -165,6 +168,18 @@ export function PresetExplorer() {
                   <td className={`px-2 py-1 ${p.name === current ? "text-accent" : "text-ink"}`}>{p.name}</td>
                   <td className="px-2 py-1 text-muted">{p.category}</td>
                   <td className="px-2 py-1 text-muted">{p.author || "Neuroklast"}</td>
+                  <td className="px-2 py-1 text-cyan" onClick={(e) => e.stopPropagation()}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        className="px-0.5"
+                        onClick={() => setStars(writePresetStar(p.name, n, stars))}
+                      >
+                        {n <= (stars[p.name] ?? 0) ? "★" : "☆"}
+                      </button>
+                    ))}
+                  </td>
                 </tr>
               ))}
             </tbody>

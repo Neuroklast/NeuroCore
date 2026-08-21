@@ -122,7 +122,7 @@ export function UnitAnalyzer() {
       </div>
       <div className="nk-unit-rule" aria-hidden />
       <aside className="nk-unit-meters flex h-full w-[168px] shrink-0 flex-col gap-2">
-        <div className="aspect-square w-full shrink-0 overflow-hidden">
+        <div className="aspect-square w-full shrink-0 overflow-hidden border-b border-[var(--nk-line)]">
           <StereoField gonioL={gonioL} gonioR={gonioR} count={gonioL.length} />
         </div>
         <div className="min-h-0 min-w-0 flex-1">

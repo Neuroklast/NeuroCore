@@ -41,6 +41,9 @@ export interface HostState {
   }>;
   licensed: boolean;
   demoRemainSec: number;
+  licenseEmail: string;
+  systemId: string;
+  licenseError: string;
   irSlots: Array<{ slot: string; name: string; loaded: boolean }>;
   overlay: string | null;
   inspectId: string | null;
@@ -62,6 +65,7 @@ export interface HostState {
   mods: Record<string, number>;
   theme: ThemeId;
   knobGestures: Record<string, true>;
+  knobMeta: Record<string, Partial<KnobState>>;
   setTheme: (id: ThemeId) => void;
   applyParams: (p: Record<string, unknown>) => void;
   applyHost: (p: Record<string, unknown>) => void;
@@ -98,6 +102,7 @@ function mergeParamsKnobs(
   current: KnobState[],
   incoming: KnobState[],
   gestures: Record<string, true>,
+  meta: Record<string, Partial<KnobState>>,
 ): KnobState[] {
   const live = new Map(current.map((k) => [k.id, k]));
   return incoming.map((k) => {
@@ -108,6 +113,10 @@ function mergeParamsKnobs(
     }
     if (gestures[k.id] && cur) {
       next = { ...next, value: cur.value };
+    }
+    const lock = meta[k.id];
+    if (lock) {
+      next = { ...next, ...lock, id: k.id, value: next.value };
     }
     return next;
   });
@@ -160,6 +169,9 @@ export const useHostStore = create<HostState>((set) => ({
   presets: [],
   licensed: true,
   demoRemainSec: 0,
+  licenseEmail: "",
+  systemId: "",
+  licenseError: "",
   irSlots: [],
   overlay: null,
   inspectId: null,
@@ -188,9 +200,10 @@ export const useHostStore = create<HostState>((set) => ({
     }
   })(),
   knobGestures: {} as Record<string, true>,
+  knobMeta: {} as Record<string, Partial<KnobState>>,
 
   applyParams: (p) => set((s) => ({
-    knobs: Array.isArray(p.knobs) ? mergeParamsKnobs(s.knobs, asKnobs(p.knobs), s.knobGestures) : s.knobs,
+    knobs: Array.isArray(p.knobs) ? mergeParamsKnobs(s.knobs, asKnobs(p.knobs), s.knobGestures, s.knobMeta) : s.knobs,
     mix: p.mix != null ? Number(p.mix) : s.mix,
     os: p.os != null ? Number(p.os) : s.os,
     osFactor: p.os != null ? osFactorFromIndex(Number(p.os)) : s.osFactor,
@@ -219,8 +232,12 @@ export const useHostStore = create<HostState>((set) => ({
       )
       : s.mods,
   })),
-  applyPresets: (p) => set((s) => ({
-    presetName: String(p.name ?? s.presetName),
+  applyPresets: (p) => set((s) => {
+    const name = String(p.name ?? s.presetName);
+    const nameChanged = name !== s.presetName;
+    return {
+    presetName: name,
+    knobMeta: nameChanged ? {} : s.knobMeta,
     presets: Array.isArray(p.list)
       ? (p.list as Array<Record<string, unknown>>).map((e) => ({
           name: String(e.name ?? ""),
@@ -231,10 +248,14 @@ export const useHostStore = create<HostState>((set) => ({
           tags: Array.isArray(e.tags) ? e.tags.map(String) : [],
         }))
       : s.presets,
-  })),
+  };
+  }),
   applyLicense: (p) => set({
     licensed: Boolean(p.licensed),
     demoRemainSec: Number(p.demoRemainSec ?? 0),
+    licenseEmail: String(p.email ?? ""),
+    systemId: String(p.systemId ?? ""),
+    licenseError: String(p.error ?? ""),
   }),
   applyIr: (p) => set({
     irSlots: Array.isArray(p.slots)
@@ -263,6 +284,7 @@ export const useHostStore = create<HostState>((set) => ({
   }),
   patchKnob: (id, patch) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, ...patch, id: k.id } : k)),
+    knobMeta: { ...s.knobMeta, [id]: { ...s.knobMeta[id], ...patch } },
   })),
   activateKnob: (id, patch) => set((s) => ({
     knobs: s.knobs.map((k) => {
