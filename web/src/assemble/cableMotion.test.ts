@@ -72,6 +72,7 @@ describe("cable traffic", () => {
     expect(cableLayer("mod", "wave", true)).toBe("lfo");
     expect(cableLayer("audio", "wave", true)).toBe("wave");
     expect(cableLayer("audio", "dots", true)).toBe("dots");
-    expect(cableLayer("audio", "wave", false)).toBe("still");
+    expect(cableLayer("audio", "wave", false)).toBe("wave");
+    expect(cableLayer("audio", "dots", false)).toBe("dots");
   });
 });

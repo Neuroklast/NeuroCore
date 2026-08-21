@@ -101,7 +101,6 @@ export function aboutUserFields(): Array<{ key: string; value: string }> {
   return [
     { key: "Version", value: ABOUT.version },
     { key: "Formats", value: ABOUT.formats.join(" · ") },
-    { key: "Web", value: ABOUT.website },
-    { key: "Mail", value: ABOUT.email },
+    { key: "Contact", value: ABOUT.email },
   ];
 }

@@ -1949,8 +1949,30 @@ body,
   color: var(--nk-cyan);
   line-height: 1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
   pointer-events: none;
   text-shadow: 0 0 4px #000, 0 1px 0 #000;
+}
+
+.nk-chip .react-flow__handle {
+  background: transparent;
+  border: 1px solid var(--nk-accent);
+  border-radius: 0;
+  width: var(--nk-trace, 16px);
+  height: var(--nk-trace, 16px);
+  min-width: 16px;
+  min-height: 16px;
+}
+
+.nk-chip .react-flow__handle::before,
+.nk-chip .react-flow__handle::after {
+  display: none;
+}
+
+.nk-cable-still {
+  animation: none !important;
 }
 
 .nk-bind-rail[data-bind-face="top"] .nk-bind-jack-cap {

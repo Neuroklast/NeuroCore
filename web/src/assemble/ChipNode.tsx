@@ -14,7 +14,7 @@ import { bindEndId } from "./bindLinks";
 import { handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
-import { bindFace, bindJackCaption, bindJackXs, chipBox, chipChromeVars, chipOverlayStackPx, jackCaption, jackTopPx, LABEL_COL, TITLE_H } from "./chipLayout";
+import { bindFace, bindJackCaption, bindCaptionMaxPx, bindJackXs, chipBox, chipChromeVars, chipOverlayStackPx, jackCaption, jackTopPx, LABEL_COL, TITLE_H } from "./chipLayout";
 import { CHIP_PAD_Y } from "./chipMetrics";
 import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
@@ -167,6 +167,7 @@ function BindRail({
   rows: Array<{ key: string; formula: string; live: string }>;
 }) {
   const xs = bindJackXs(rows.length, width);
+  const capW = bindCaptionMaxPx(rows.length, width);
   const dragging = useBindStore((s) => s.letter);
   return (
     <div className="nk-bind-rail" data-bind-face={face} data-chip-keep-open="" style={face === "top" ? { top: 0 } : { bottom: 0 }}>
@@ -201,7 +202,9 @@ function BindRail({
             {letters.map((L) => (
               <span key={L} data-bind-end={bindEndId(L, nodeId)} className="nk-bind-end" />
             ))}
-            <span className="nk-bind-jack-cap">{bindJackCaption(row.key)}</span>
+            <span className="nk-bind-jack-cap" style={{ maxWidth: capW }} title={bindJackCaption(row.key)}>
+              {bindJackCaption(row.key)}
+            </span>
           </button>
         );
       })}

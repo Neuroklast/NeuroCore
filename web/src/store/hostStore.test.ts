@@ -93,6 +93,20 @@ describe("hostStore", () => {
     expect(useHostStore.getState().knobs[0]?.value).toBeCloseTo(0.55);
   });
 
+  it("keeps note-range and min/max from the knob menu across host echoes", () => {
+    useHostStore.setState({
+      knobs: [{ id: "d", name: "d", value: 0, active: true, min: 0, max: 1, isNote: false }],
+      knobMeta: {},
+    });
+    useHostStore.getState().patchKnob("d", { isNote: true, name: "Delay" });
+    useHostStore.getState().applyParams({
+      knobs: [{ id: "d", name: "d", value: 0.2, active: true, min: 0, max: 1, isNote: false }],
+    });
+    expect(useHostStore.getState().knobs[0]?.isNote).toBe(true);
+    expect(useHostStore.getState().knobs[0]?.name).toBe("Delay");
+    expect(useHostStore.getState().knobs[0]?.value).toBeCloseTo(0.2);
+  });
+
   it("keeps enum detents when the host params echo omits enums", () => {
     useHostStore.setState({
       knobs: [{

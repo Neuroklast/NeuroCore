@@ -26,9 +26,7 @@ export function AboutPanel() {
             <tr key={r.key} className="border-b border-accent/20">
               <td className="w-28 py-1 text-muted">{r.key}</td>
               <td className="py-1 text-ink">
-                {r.key === "Web" ? (
-                  <a href={r.value} target="_blank" rel="noreferrer" className="text-accent">{r.value}</a>
-                ) : r.key === "Mail" ? (
+                {r.key === "Contact" ? (
                   <a href={`mailto:${r.value}`} className="text-accent">{r.value}</a>
                 ) : r.value}
               </td>

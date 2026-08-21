@@ -6,6 +6,7 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { isThemeId, THEME_STORAGE_KEY, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
+import { LicensePanel } from "./LicensePanel";
 import { settingsAboutTarget } from "./aboutModel";
 import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
 import { isIrSlotId } from "../presets/irSlots";
@@ -171,9 +172,40 @@ function SettingsBody() {
   const cables = useHostStore((s) => s.cables);
   const theme = useHostStore((s) => s.theme) ?? "signal";
   const mode = useHostStore((s) => s.mode);
+  const os = useHostStore((s) => s.os);
+  const licensed = useHostStore((s) => s.licensed);
   const setOverlay = useHostStore((s) => s.setOverlay);
   return (
     <div className="flex flex-col gap-4 text-[13px]">
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">OVERSAMPLING</div>
+        <Seg
+          value={String(os)}
+          options={[
+            { id: "0", label: "1×" },
+            { id: "1", label: "2×" },
+            { id: "2", label: "4×" },
+            { id: "3", label: "8×" },
+          ]}
+          onPick={(id) => {
+            const index = Number(id);
+            useHostStore.getState().setOs(index);
+            void getNativeFunction("setChoice")({ id: "os", index });
+          }}
+        />
+      </section>
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">LICENSE</div>
+        <div className="mb-2 text-[12px] text-muted">
+          {licensed ? "Licensed" : "Demo — mix goes dry after 20 minutes"}
+        </div>
+        <div className="flex gap-2">
+          <button type="button" className="nk-clip flex-1" onClick={() => setOverlay("license")}>License…</button>
+          <button type="button" className="nk-clip flex-1" onClick={() => void getNativeFunction("pickFile")({ kind: "license" })}>
+            Install .lic
+          </button>
+        </div>
+      </section>
       <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">ANIMATION</div>
         <Seg
@@ -260,7 +292,6 @@ export function Overlays() {
   const motion = useHostStore((s) => s.motion);
   const setOverlay = useHostStore((s) => s.setOverlay);
   const inspectId = useHostStore((s) => s.inspectId);
-  const licensed = useHostStore((s) => s.licensed);
   const shell = useOverlayShell(overlay, motion);
   const name = shell.name;
 
@@ -338,12 +369,7 @@ export function Overlays() {
           {name === "help" && <HelpPanel />}
 
           {name === "license" && (
-            <div>
-              <p>{licensed ? "Licensed" : "Demo / unlicensed"}</p>
-              <button type="button" className="nk-clip mt-3" onClick={() => void getNativeFunction("pickFile")({ kind: "license" })}>
-                Install .lic
-              </button>
-            </div>
+            <LicensePanel />
           )}
 
           {name === "ir" && (

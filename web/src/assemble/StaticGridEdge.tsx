@@ -53,8 +53,9 @@ export function StaticGridEdge({
   const bore = kind === "audio" ? TUBE.audioBore : TUBE.modGlass - 2;
   const len = svgPathLength(path);
   const lfo = lfoDash(Math.max(len, 1), LFO_DOT);
-  const showPlasma = ! temp && kind === "audio" && cables === "wave" && motionAllows("pipeWave", motion, reduced);
-  const showDots = ! temp && kind === "audio" && cables === "dots" && motionAllows("pipeWave", motion, reduced);
+  const showPlasma = ! temp && kind === "audio" && cables === "wave";
+  const showDots = ! temp && kind === "audio" && cables === "dots";
+  const animateCables = motionAllows("pipeWave", motion, reduced);
   const chase = ! temp && kind === "mod" && lfoSrc && motionAllows("lfoChase", motion, reduced);
   const accent = cableAccent(kind);
   const tubeClass = kind === "mod" ? "nk-tube-mod" : kind === "param" ? "nk-tube-param" : "";
@@ -109,11 +110,11 @@ export function StaticGridEdge({
       <path d={path} fill="none" stroke={kind === "audio" ? "var(--nk-black)" : accent} strokeWidth={bore} data-src={srcKey} className={`nk-tube-bore ${tubeClass}`} />
       {showPlasma ? (
         <>
-          <path d={path} fill="none" stroke="var(--nk-accent)" strokeWidth="2.4" data-src={srcKey} className="nk-plasma-glow" />
-          <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="1.2" data-src={srcKey} className="nk-plasma" />
+          <path d={path} fill="none" stroke="var(--nk-accent)" strokeWidth="2.4" data-src={srcKey} className={`nk-plasma-glow${animateCables ? "" : " nk-cable-still"}`} />
+          <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="1.2" data-src={srcKey} className={`nk-plasma${animateCables ? "" : " nk-cable-still"}`} />
         </>
       ) : null}
-      {showDots ? <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="2.2" strokeLinecap="round" data-src={srcKey} className="nk-dots" /> : null}
+      {showDots ? <path d={path} fill="none" stroke="var(--nk-white)" strokeWidth="2.2" strokeLinecap="round" data-src={srcKey} className={`nk-dots${animateCables ? "" : " nk-cable-still"}`} /> : null}
     </g>
   );
 }
