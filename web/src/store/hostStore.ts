@@ -183,7 +183,7 @@ export const useHostStore = create<HostState>((set) => ({
   formulaPt: 18,
   scopeSource: "both",
   scopeDelta: false,
-  scopeX: "samples",
+  scopeX: "freq",
   scopeY: "linear",
   scopeGrid: true,
   scopeInvertY: false,

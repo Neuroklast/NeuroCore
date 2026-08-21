@@ -25,9 +25,11 @@ import {
   spectrogramPush,
   logFreqMarks,
   scopeSpectra,
+  scopePlot,
   techNoise,
   paintTechNoise,
   tracesFor,
+  waveXMarks,
 } from "./scopeModel";
 
 describe("scope deck model", () => {
@@ -55,6 +57,23 @@ describe("scope deck model", () => {
     const b = marks.find((m) => m.hz === 1000)!;
     const c = marks.find((m) => m.hz === 10000)!;
     expect(Math.abs((b.bin - a.bin) - (c.bin - b.bin))).toBeLessThan(3);
+  });
+
+  it("time X is the scope window in ms, samples are 0..n-1, freq stays a spectrogram", () => {
+    expect(scopePlot("freq")).toBe("spectrogram");
+    expect(scopePlot("time")).toBe("wave");
+    expect(scopePlot("samples")).toBe("wave");
+    const time = waveXMarks("time", 256, 48000);
+    expect(time[0]?.t).toBe(0);
+    expect(time[0]?.label).toBe("0ms");
+    expect(time[time.length - 1]?.t).toBe(1);
+    expect(time[time.length - 1]?.label).toBe("5.3ms");
+    const samp = waveXMarks("samples", 256, 48000);
+    expect(samp[0]?.label).toBe("0");
+    expect(samp[samp.length - 1]?.label).toBe("255");
+    const freq = logFreqMarks(48000).map((m) => m.label);
+    expect(freq).toEqual(expect.arrayContaining(["5k", "10k"]));
+    expect(freq.join()).not.toMatch(/5000|5\.3ms/);
   });
 
   it("keeps native titles and the old context-menu surface", () => {

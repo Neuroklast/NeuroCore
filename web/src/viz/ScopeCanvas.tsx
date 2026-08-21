@@ -8,6 +8,7 @@ import {
   SCOPE_MENU,
   SPEC_BINS,
   SPEC_DEPTH,
+  sampleAtPx,
   scopeSpectra,
   specMag01,
   spectrogramProject,
@@ -15,8 +16,11 @@ import {
   specRowFade,
   logFreqMarks,
   specDbMarks,
+  specInner,
   SPEC_PAD,
   paintTechNoise,
+  tracesFor,
+  waveXMarks,
 } from "./scopeModel";
 
 function paintAxisLabel(
@@ -41,15 +45,8 @@ function paintSpectrogramAxes(
   h: number,
   sr: number,
   ink: string,
-  xScale: "samples" | "time" | "freq",
 ): void {
-  const freq = logFreqMarks(sr).map((m) => (
-    xScale === "time"
-      ? { ...m, label: m.label.replace("k", "k").replace(/Hz/i, "") }
-      : xScale === "samples"
-        ? { ...m, label: String(Math.round(Number(m.label.replace("k", "000")) || 0)) }
-        : m
-  ));
+  const freq = logFreqMarks(sr);
   const db = specDbMarks();
   ctx.strokeStyle = "rgba(244,241,234,0.45)";
   ctx.lineWidth = 1;
@@ -80,6 +77,109 @@ function paintSpectrogramAxes(
   }
 }
 
+function waveY(
+  v: number,
+  innerY: number,
+  innerH: number,
+  yScale: "linear" | "db",
+  invertY: boolean,
+): number {
+  if (yScale === "db") {
+    const mag = specMag01(Math.abs(v));
+    const ny = invertY ? 1 - mag : mag;
+    return innerY + innerH * (1 - ny);
+  }
+  const a = invertY ? -v : v;
+  return innerY + innerH * 0.5 - a * innerH * 0.42;
+}
+
+function paintWaveform(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  sr: number,
+  n: number,
+  scopeIn: Float32Array,
+  scopeOut: Float32Array,
+  source: "in" | "out" | "both",
+  delta: boolean,
+  xScale: "samples" | "time",
+  yScale: "linear" | "db",
+  invertY: boolean,
+  grid: boolean,
+  ink: string,
+): void {
+  const inner = specInner(w, h);
+  const traces = tracesFor(source, delta, scopeIn, scopeOut, n);
+  const marks = waveXMarks(xScale, n, sr);
+
+  if (grid) {
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.10)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const mark of marks) {
+      const x = inner.x + mark.t * inner.w;
+      ctx.moveTo(x, inner.y);
+      ctx.lineTo(x, inner.y + inner.h);
+    }
+    const mids = yScale === "db" ? [0, 0.33, 0.66, 1] : [0, 0.5, 1];
+    for (const t of mids) {
+      const y = inner.y + t * inner.h;
+      ctx.moveTo(inner.x, y);
+      ctx.lineTo(inner.x + inner.w, y);
+    }
+    ctx.stroke();
+  }
+
+  for (const tr of traces) {
+    ctx.beginPath();
+    const span = Math.max(2, inner.w);
+    for (let px = 0; px < span; px += 1) {
+      const v = sampleAtPx(tr.samples, n, px, span);
+      const x = inner.x + px;
+      const y = waveY(v, inner.y, inner.h, yScale, invertY);
+      if (px === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.strokeStyle = tr.color;
+    ctx.shadowColor = tr.color;
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.strokeStyle = "rgba(244,241,234,0.45)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(inner.x, inner.y);
+  ctx.lineTo(inner.x, inner.y + inner.h);
+  ctx.lineTo(inner.x + inner.w, inner.y + inner.h);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (const mark of marks) {
+    const x = inner.x + mark.t * inner.w;
+    paintAxisLabel(ctx, mark.label, x, Math.min(h - 14, inner.y + inner.h + 4), ink);
+  }
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  if (yScale === "db") {
+    for (const mark of specDbMarks()) {
+      const y = inner.y + inner.h * (1 - mark.mag);
+      paintAxisLabel(ctx, `${mark.label} dB`, SPEC_PAD.l - 8, y, ink);
+    }
+  } else {
+    paintAxisLabel(ctx, "+1", SPEC_PAD.l - 8, waveY(1, inner.y, inner.h, "linear", false), ink);
+    paintAxisLabel(ctx, "0", SPEC_PAD.l - 8, waveY(0, inner.y, inner.h, "linear", false), ink);
+    paintAxisLabel(ctx, "−1", SPEC_PAD.l - 8, waveY(-1, inner.y, inner.h, "linear", false), ink);
+  }
+}
+
 function liftBins(raw: number[], yScale: "linear" | "db"): number[] {
   if (yScale === "linear") {
     return raw.map((v) => Math.max(0, Math.min(1, Math.abs(v) * 8)));
@@ -100,6 +200,7 @@ export function ScopeCanvas({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const source = useHostStore((s) => s.scopeSource);
+  const delta = useHostStore((s) => s.scopeDelta);
   const xScale = useHostStore((s) => s.scopeX);
   const yScale = useHostStore((s) => s.scopeY);
   const grid = useHostStore((s) => s.scopeGrid);
@@ -126,15 +227,26 @@ export function ScopeCanvas({
       const theme = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      frame.current += 1;
+      ctx.fillStyle = theme.black;
+      ctx.fillRect(0, 0, w, h);
+
+      if (xScale !== "freq") {
+        paintWaveform(
+          ctx, w, h, sr, Math.max(2, inRef.current.length),
+          inRef.current, outRef.current, source, delta,
+          xScale, yScale, invertY, grid, theme.cyan,
+        );
+        paintTechNoise(ctx, w, h, frame.current, theme.cyan);
+        return;
+      }
+
       const ids = scopeSpectra(source);
       for (const id of ids) {
         const samples = id === "in" ? inRef.current : outRef.current;
         const hist = id === "in" ? histIn : histOut;
         hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS), yScale));
       }
-      frame.current += 1;
-      ctx.fillStyle = theme.black;
-      ctx.fillRect(0, 0, w, h);
 
       for (const id of ids) {
         const rows = (id === "in" ? histIn : histOut).current;
@@ -168,8 +280,7 @@ export function ScopeCanvas({
       for (let y = 2; y < h; y += 3) {
         ctx.fillRect(1, y, w - 2, 1);
       }
-      const f = frame.current;
-      paintTechNoise(ctx, w, h, f, theme.cyan);
+      paintTechNoise(ctx, w, h, frame.current, theme.cyan);
 
       if (grid) {
         ctx.strokeStyle = themeRgba("cyan", 0.08, theme);
@@ -184,10 +295,10 @@ export function ScopeCanvas({
         ctx.stroke();
       }
 
-      paintSpectrogramAxes(ctx, w, h, sr, theme.cyan, xScale);
+      paintSpectrogramAxes(ctx, w, h, sr, theme.cyan);
     };
     return subscribeVizClock(draw);
-  }, [count, grid, invertY, source, sr, themeId, xScale, yScale]);
+  }, [count, delta, grid, invertY, source, sr, themeId, xScale, yScale]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

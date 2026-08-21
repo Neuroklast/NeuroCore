@@ -151,6 +151,37 @@ export function specRowFade(row: number): number {
   return Math.pow(1 - recede, 2);
 }
 
+/** Frequency X is the 3D spectrogram. Time/samples X is a live waveform. */
+export function scopePlot(xScale: ScopeXScale): "spectrogram" | "wave" {
+  return xScale === "freq" ? "spectrogram" : "wave";
+}
+
+function formatScopeMs(ms: number): string {
+  if (ms < 0.05) {
+    return "0ms";
+  }
+  if (ms < 10) {
+    return `${ms.toFixed(1)}ms`;
+  }
+  return `${Math.round(ms)}ms`;
+}
+
+/** X ticks for the waveform: sample index or milliseconds of the captured window. */
+export function waveXMarks(
+  scale: "samples" | "time",
+  n: number,
+  sr: number,
+): Array<{ t: number; label: string }> {
+  const count = Math.max(2, n);
+  const secs = count / Math.max(1, sr);
+  return [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    if (scale === "samples") {
+      return { t, label: String(Math.round(t * (count - 1))) };
+    }
+    return { t, label: formatScopeMs(t * secs * 1000) };
+  });
+}
+
 /** Log-Hz ticks on a 20 Hz … Nyquist span, mapped onto SPEC_BINS. */
 export function logFreqMarks(sr: number, bins = SPEC_BINS): Array<{ bin: number; hz: number; label: string }> {
   const nyq = sr > 0 ? sr * 0.5 : 24000;
