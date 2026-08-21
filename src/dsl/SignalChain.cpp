@@ -2401,9 +2401,11 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
     const size_t lastCh  = (channelMode == ChannelMode::Left)  ? 1
                          : juce::jmin (block.getNumChannels(), (size_t) histCh);
 
+    eval.prefetchLiveTape();
+
     // y_prev / ADAA / t / mod: serial sample dependency — SIMD is wrong.
-    // Only THIS stage runs scalar; filters stay on the hybrid block path.
-    if (needsSampleLoop() || eval.hasLiveTape())
+    // Arithmetic + LUT tape is lane-independent and runs exprTapeEvalSimd.
+    if (needsSampleLoop() || (eval.hasLiveTape() && ! eval.liveTapeCanSimd()))
     {
         const float invSr = (sampleRate > 0.0f) ? (1.0f / sampleRate) : (1.0f / 44100.0f);
         const float t0 = tPtr != nullptr ? *tPtr : 0.0f;
@@ -3519,6 +3521,7 @@ NK_FORCEINLINE float delayRead (const float* NK_RESTRICT buf, int writePos, floa
 {
     if (buf == nullptr || N < 4)
         return 0.f;
+    DSPUtils::prefetchRead (buf + ((writePos + 16) % N));
     const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
     const int di = (int) d;
     const float f = d - (float) di;

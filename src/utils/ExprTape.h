@@ -67,6 +67,10 @@ struct ExprTape
 
 void exprTapeSetAdaaChannel (int ch) noexcept;
 float exprTapeEval (ExprTape& tape, const float* vars) noexcept;
+/** True when every op is lane-independent (no ADAA). SIMD across consecutive samples is then phase-stable. */
+bool exprTapeCanSimd (const ExprTape& tape) noexcept;
+juce::dsp::SIMDRegister<float> exprTapeEvalSimd (ExprTape& tape,
+                                                 const juce::dsp::SIMDRegister<float>* vars) noexcept;
 
 float exprTapeFinite (float y) noexcept;
 float exprTapeDiv (float a, float b) noexcept;

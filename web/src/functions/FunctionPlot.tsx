@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
 import { useTheme } from "../theme/themeBind";
+import { subscribeVizClock } from "../theme/vizClock";
 import {
   buildTraces,
   PHASE_STEP,
@@ -32,7 +33,6 @@ export function FunctionPlot({
     }
     const expr = resolvePlotExpression(name, example);
     let phase = 0;
-    let raf = 0;
     let last = performance.now();
     const drawWave = (y0: number, h: number, samples: Float32Array, color: string, tag: string) => {
       ctx.fillStyle = theme.surfaceHigh;
@@ -75,10 +75,8 @@ export function FunctionPlot({
       drawWave(8, canvas.height * 0.46, inn, theme.cyan, `IN  ${wave}`);
       drawWave(canvas.height * 0.52, canvas.height * 0.46, out, ok ? theme.accent : theme.inkMuted,
         ok ? `OUT  ${name || "f(x)"}` : "OUT  (no demo)");
-      raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return subscribeVizClock(tick);
   }, [example, motion, name, theme, wave]);
 
   return <canvas ref={ref} width={520} height={220} className="h-[220px] w-full" />;

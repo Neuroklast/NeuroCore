@@ -422,3 +422,155 @@ float exprTapeEval (ExprTape& tape, const float* vars) noexcept
     const float y = (rs < ExprTape::kMaxSlots) ? s[rs] : 0.f;
     return std::isfinite (y) ? y : 0.f;
 }
+
+bool exprTapeCanSimd (const ExprTape& tape) noexcept
+{
+    if (tape.n <= 0)
+        return false;
+    const int n = juce::jmin (tape.n, ExprTape::kMaxOps);
+    for (int i = 0; i < n; ++i)
+        if (tape.op[i] == ExprOp::Adaa2)
+            return false;
+    return true;
+}
+
+namespace
+{
+using V = juce::dsp::SIMDRegister<float>;
+
+template <typename Fn>
+V mapLanes (V a, Fn&& fn) noexcept
+{
+    constexpr size_t w = V::SIMDNumElements;
+    alignas (16) float x[w];
+    a.copyToRawArray (x);
+    for (size_t i = 0; i < w; ++i)
+        x[i] = fn (x[i]);
+    return V::fromRawArray (x);
+}
+
+template <typename Fn>
+V mapLanes2 (V a, V b, Fn&& fn) noexcept
+{
+    constexpr size_t w = V::SIMDNumElements;
+    alignas (16) float x[w], y[w];
+    a.copyToRawArray (x);
+    b.copyToRawArray (y);
+    for (size_t i = 0; i < w; ++i)
+        x[i] = fn (x[i], y[i]);
+    return V::fromRawArray (x);
+}
+
+V call1Simd (ExprFn id, V x) noexcept
+{
+    switch (id)
+    {
+        case ExprFn::Sin:  return LookupTables::fastSinSimd (x);
+        case ExprFn::Cos:  return LookupTables::fastCosSimd (x);
+        case ExprFn::Tanh: return LookupTables::fastTanhSimd (x);
+        case ExprFn::Exp:  return LookupTables::fastExpSimd (x);
+        case ExprFn::Log:  return LookupTables::fastLogSimd (x);
+        case ExprFn::Abs:  return V::max (x, x * V (-1.0f));
+        default:           return mapLanes (x, [id] (float v) noexcept { return call1 (id, v); });
+    }
+}
+
+V finiteSimd (V y) noexcept
+{
+    return mapLanes (y, [] (float v) noexcept { return std::isfinite (v) ? v : 0.f; });
+}
+} // namespace
+
+juce::dsp::SIMDRegister<float> exprTapeEvalSimd (ExprTape& tape,
+                                                 const juce::dsp::SIMDRegister<float>* vars) noexcept
+{
+    alignas (64) V s[ExprTape::kMaxSlots] {};
+    const int n = juce::jmin (tape.n, ExprTape::kMaxOps);
+    const ExprOp* NK_RESTRICT ops = tape.op;
+    const float* NK_RESTRICT imms = tape.imm;
+    for (int i = 0; i < n; ++i)
+    {
+        const uint8_t ds = tape.dst[i];
+        if (ds >= ExprTape::kMaxSlots)
+            continue;
+        switch (ops[i])
+        {
+            case ExprOp::LoadImm: s[ds] = V (imms[i]); break;
+            case ExprOp::LoadVar:
+                s[ds] = (vars != nullptr && tape.a[i] < ExprTape::kMaxVars)
+                            ? vars[tape.a[i]] : V (0.f);
+                break;
+            case ExprOp::Add:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] + s[tape.b[i]] : V (0.f);
+                break;
+            case ExprOp::Sub:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] - s[tape.b[i]] : V (0.f);
+                break;
+            case ExprOp::Mul:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] * s[tape.b[i]] : V (0.f);
+                break;
+            case ExprOp::Div:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? mapLanes2 (s[tape.a[i]], s[tape.b[i]],
+                                         [] (float l, float r) noexcept { return exprTapeDiv (l, r); })
+                            : V (0.f);
+                break;
+            case ExprOp::Pow:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? mapLanes2 (s[tape.a[i]], s[tape.b[i]],
+                                         [] (float l, float r) noexcept { return exprTapePow (l, r); })
+                            : V (0.f);
+                break;
+            case ExprOp::Neg:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots) ? (s[tape.a[i]] * V (-1.0f)) : V (0.f);
+                break;
+            case ExprOp::Call1:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots)
+                            ? call1Simd ((ExprFn) tape.fn[i], s[tape.a[i]]) : V (0.f);
+                break;
+            case ExprOp::Call2:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? mapLanes2 (s[tape.a[i]], s[tape.b[i]],
+                                         [id = (ExprFn) tape.fn[i]] (float l, float r) noexcept
+                                         { return call2 (id, l, r); })
+                            : V (0.f);
+                break;
+            case ExprOp::Call3:
+            {
+                constexpr size_t w = V::SIMDNumElements;
+                alignas (16) float xa[w], ya[w], za[w];
+                s[tape.a[i]].copyToRawArray (xa);
+                s[tape.b[i]].copyToRawArray (ya);
+                s[tape.c[i]].copyToRawArray (za);
+                const auto id = (ExprFn) tape.fn[i];
+                for (size_t k = 0; k < w; ++k)
+                    xa[k] = call3 (id, xa[k], ya[k], za[k]);
+                s[ds] = V::fromRawArray (xa);
+                break;
+            }
+            case ExprOp::Call5:
+            {
+                constexpr size_t w = V::SIMDNumElements;
+                alignas (16) float va[w], i0[w], i1[w], o0[w], o1[w];
+                s[tape.a[i]].copyToRawArray (va);
+                s[tape.b[i]].copyToRawArray (i0);
+                s[tape.c[i]].copyToRawArray (i1);
+                s[tape.d[i]].copyToRawArray (o0);
+                s[tape.e[i]].copyToRawArray (o1);
+                for (size_t k = 0; k < w; ++k)
+                    va[k] = juce::jmap (va[k], i0[k], i1[k], o0[k], o1[k]);
+                s[ds] = V::fromRawArray (va);
+                break;
+            }
+            case ExprOp::Adaa2:
+            case ExprOp::End:
+                i = n;
+                break;
+        }
+    }
+    const uint8_t rs = tape.resultSlot;
+    return finiteSimd ((rs < ExprTape::kMaxSlots) ? s[rs] : V (0.f));
+}

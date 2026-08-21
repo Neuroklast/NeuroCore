@@ -31,8 +31,15 @@ function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
 }
 
 /** Keeps telemetryStore live on every workspace. Analyzers read the store. */
-export function TelemetryPump({ telemetryPath }: { telemetryPath: string }) {
+export function TelemetryPump({
+  telemetryPath,
+  intervalMs = 16,
+}: {
+  telemetryPath: string;
+  intervalMs?: number;
+}) {
   const views = useRef(createTelemetryViews()).current;
+  const ms = Math.max(16, intervalMs);
   useEffect(() => {
     let live = true;
     let t = 0;
@@ -55,14 +62,14 @@ export function TelemetryPump({ telemetryPath }: { telemetryPath: string }) {
           t += 1;
         }
         useTelemetryStore.getState().applyViews(views);
-        await new Promise((r) => window.setTimeout(r, 16));
+        await new Promise((r) => window.setTimeout(r, ms));
       }
     };
     void tick();
     return () => {
       live = false;
     };
-  }, [telemetryPath, views]);
+  }, [telemetryPath, views, ms]);
   return null;
 }
 

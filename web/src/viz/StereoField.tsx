@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
 import { liveTheme, themeRgba } from "../theme/theme";
+import { subscribeVizClock } from "../theme/vizClock";
 import { fitCanvas } from "./canvasFit";
 import { gonioPoint, SCOPE_COLOR } from "./scopeModel";
 
@@ -16,6 +17,10 @@ export function StereoField({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const theme = useHostStore((s) => s.theme);
+  const lRef = useRef(gonioL);
+  const rRef = useRef(gonioR);
+  lRef.current = gonioL;
+  rRef.current = gonioR;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -26,7 +31,6 @@ export function StereoField({
     if (! ctx) {
       return;
     }
-    let raf = 0;
     const draw = () => {
       const t = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
@@ -57,23 +61,23 @@ export function StereoField({
       ctx.lineTo(x0 + 6, y0 + side - 6);
       ctx.stroke();
 
-      const n = Math.max(0, Math.min(count, gonioL.length, gonioR.length));
+      const L = lRef.current;
+      const R = rRef.current;
+      const n = Math.max(0, Math.min(count, L.length, R.length));
       const ink = SCOPE_COLOR.out;
       ctx.fillStyle = ink;
       ctx.shadowColor = ink;
       ctx.shadowBlur = 5;
       for (let i = 0; i < n; i += 1) {
-        const p = gonioPoint(gonioL[i] ?? 0, gonioR[i] ?? 0);
+        const p = gonioPoint(L[i] ?? 0, R[i] ?? 0);
         const x = cx + p.x * rad;
         const y = cy + p.y * rad;
         ctx.fillRect(x - 0.8, y - 0.8, 1.6, 1.6);
       }
       ctx.shadowBlur = 0;
-      raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, [count, gonioL, gonioR, theme]);
+    return subscribeVizClock(draw);
+  }, [count, theme]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

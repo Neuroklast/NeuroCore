@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { spectrumBins } from "../face/faceModel";
 import { useHostStore } from "../store/hostStore";
 import { liveTheme, themeRgba } from "../theme/theme";
+import { subscribeVizClock } from "../theme/vizClock";
 import { fitCanvas } from "./canvasFit";
 import {
   SCOPE_MENU,
@@ -97,6 +98,10 @@ export function ScopeCanvas({
   const histIn = useRef<number[][]>([]);
   const histOut = useRef<number[][]>([]);
   const frame = useRef(0);
+  const inRef = useRef(scopeIn);
+  const outRef = useRef(scopeOut);
+  inRef.current = scopeIn;
+  outRef.current = scopeOut;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -107,14 +112,13 @@ export function ScopeCanvas({
     if (! ctx) {
       return;
     }
-    let raf = 0;
     const draw = () => {
       const theme = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
       const ids = scopeSpectra(source);
       for (const id of ids) {
-        const samples = id === "in" ? scopeIn : scopeOut;
+        const samples = id === "in" ? inRef.current : outRef.current;
         const hist = id === "in" ? histIn : histOut;
         hist.current = spectrogramPush(hist.current, liftBins(spectrumBins(samples, SPEC_BINS)));
       }
@@ -169,11 +173,9 @@ export function ScopeCanvas({
       paintTechNoise(ctx, w, h, f, theme.cyan);
 
       paintSpectrogramAxes(ctx, w, h, sr, theme.ink);
-      raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, [count, grid, invertY, scopeIn, scopeOut, source, sr, themeId, xScale, yScale]);
+    return subscribeVizClock(draw);
+  }, [count, grid, invertY, source, sr, themeId, xScale, yScale]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

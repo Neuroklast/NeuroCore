@@ -310,11 +310,6 @@ struct WebViewHolder::Impl : private juce::Timer,
     void constructSurface()
     {
 #if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
-#if JUCE_WINDOWS
-        juce::File::getSpecialLocation (juce::File::tempDirectory)
-            .getChildFile ("NEUROKORE-webview2")
-            .createDirectory();
-#endif
         auto options = makeOptions();
         if (! juce::WebBrowserComponent::areOptionsSupported (options))
         {
@@ -354,7 +349,8 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (devUrl.isNotEmpty())
             origin = juce::URL (devUrl).getOrigin();
 
-        auto opts = webEditorProbeOptions()
+        const auto identity = (juce::int64) (juce::pointer_sized_int) &proc;
+        auto opts = webEditorProbeOptions (identity)
                         .withKeepPageLoadedWhenBrowserIsHidden()
                         .withNativeIntegrationEnabled()
                         .withNativeFunction ("UI_READY",
@@ -786,10 +782,9 @@ struct WebViewHolder::Impl : private juce::Timer,
             return;
         ensureOwnerHwnd();
         auto* parent = static_cast<HWND> (WebViewHolder::parkParentForEditor (editorHwnd, ownerHwnd));
-        // Never WS_CHILD of IPlugView — DestroyWindow(plugin) would take the WebView with it.
-        if (parent == nullptr || parent == editorHwnd)
+        if (parent == nullptr)
             parent = ownerHwnd;
-        if (parent == nullptr || parent == editorHwnd)
+        if (parent == nullptr)
             return;
 
         auto style = GetWindowLongPtr (child, GWL_STYLE);
@@ -806,7 +801,12 @@ struct WebViewHolder::Impl : private juce::Timer,
         }
         SetWindowLongPtr (child, GWL_STYLE, style);
         SetParent (child, parent);
-        if (IsChild (editorHwnd, child) || GetParent (child) == editorHwnd)
+        // VST3 only: IPlugView is a child window. A park under that HWND dies
+        // in DestroyWindow before ~Editor. Standalone's editor peer *is* the
+        // app window — parenting there is the embed.
+        HWND editorParent = GetParent (editorHwnd);
+        const bool editorIsPluginView = editorParent != nullptr && editorParent != editorHwnd;
+        if (editorIsPluginView && (IsChild (editorHwnd, child) || GetParent (child) == editorHwnd))
         {
             parkNative();
             return;
@@ -866,13 +866,13 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (parkPeer == nullptr || edPeer == nullptr)
             return;
         auto* child = static_cast<HWND> (parkPeer->getNativeHandle());
-        auto* editorHwnd = static_cast<HWND> (edPeer->getNativeHandle());
-        if (child == nullptr || editorHwnd == nullptr || ! IsWindow (child) || ! IsWindow (editorHwnd))
+        if (child == nullptr || ! IsWindow (child))
             return;
-        POINT tl { inner.getX(), inner.getY() };
-        POINT br { inner.getRight(), inner.getBottom() };
-        ClientToScreen (editorHwnd, &tl);
-        ClientToScreen (editorHwnd, &br);
+        // Editor-local inner → screen. Standalone editor is a lightweight
+        // child of the DocumentWindow; the peer HWND is the whole app window.
+        const auto global = attachedTo->localAreaToGlobal (inner);
+        POINT tl { global.getX(), global.getY() };
+        POINT br { global.getRight(), global.getBottom() };
         auto* parent = GetParent (child);
         if (parent != nullptr && (GetWindowLongPtr (child, GWL_STYLE) & WS_CHILD) != 0)
         {
@@ -976,11 +976,12 @@ void* WebViewHolder::parkParentForEditor (void* editorHwnd, void* ownerHwnd) noe
         return owner;
     HWND parent = GetParent (editor);
     // VST3 IPlugView HWND is destroyed in removeFromDesktop *before* ~Editor.
-    // Parent the park as a sibling (host systemWindow) or under ownerHwnd — never
-    // as a child of the editor HWND.
-    if (parent == nullptr || parent == editor)
-        return owner;
-    return parent;
+    // Parent the park as a sibling of IPlugView (host systemWindow).
+    if (parent != nullptr && parent != editor)
+        return parent;
+    // Standalone: the editor peer *is* the app window. That HWND lives for the
+    // session. The hidden owner is only for detach / close.
+    return editor;
 }
 #endif
 

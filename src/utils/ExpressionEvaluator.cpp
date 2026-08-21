@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "ExpressionEvaluator.h"
 #include "ExprTapeJit.h"
+#include "../dsp/DSPUtils.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
 #include "Localiser.h"
@@ -21,6 +22,12 @@ void ExpressionEvaluator::skipWhitespace() noexcept
 ExpressionEvaluator::~ExpressionEvaluator()
 {
     exprTapeJitRelease (liveJit);
+}
+
+void ExpressionEvaluator::prefetchLiveTape() const noexcept
+{
+    DSPUtils::prefetchRead (liveTape.op);
+    DSPUtils::prefetchRead (liveTape.imm);
 }
 
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
@@ -1041,7 +1048,16 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
                     return exprTapeEval (liveTape, vars);
                 return root ? root->eval (vars) : 0.f;
             };
-            compiledSimd = [ptr = root.get()](const juce::dsp::SIMDRegister<float>* vars) noexcept { return ptr->evalSimd(vars); };
+            compiledSimd = [this] (const juce::dsp::SIMDRegister<float>* vars) noexcept
+            {
+                if (liveTape.n > 0)
+                {
+                    if (exprTapeCanSimd (liveTape))
+                        return exprTapeEvalSimd (liveTape, vars);
+                    return juce::dsp::SIMDRegister<float> (0.f);
+                }
+                return root ? root->evalSimd (vars) : juce::dsp::SIMDRegister<float> (0.f);
+            };
         }
         return valid;
     }

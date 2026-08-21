@@ -40,7 +40,9 @@ public:
     void layout (juce::Rectangle<int> inner);
 
 #if JUCE_WINDOWS
-    /** HWND that should parent the park surface. Never the editor / IPlugView HWND. */
+    /** HWND that should parent the park surface.
+     *  VST3: host systemWindow (sibling of IPlugView). Never IPlugView itself.
+     *  Standalone: the top-level editor peer — that is the durable app window. */
     static void* parkParentForEditor (void* editorHwnd, void* ownerHwnd) noexcept;
 #endif
 

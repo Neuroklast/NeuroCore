@@ -61,6 +61,10 @@ public:
     void processBlock(juce::AudioBuffer<float>& buffer,
                       dsl::SignalChain& signalChain);
 
+    /** Host bypass: delayed dry only. Same PDC as mix 0 / reported latency. */
+    void processHostBypass(juce::AudioBuffer<float>& buffer,
+                           dsl::SignalChain& signalChain);
+
     /** Extra input (host rate). Copied/held into the oversampled block. */
     void setHostSidechain (const float* left, const float* right, int numSamples) noexcept;
 
@@ -165,6 +169,7 @@ private:
     /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
     juce::SmoothedValue<float> switchRamp;
     bool bypassActive { false };
+    bool hostBypass { false };
     double silentSec { 0.0 };
     std::atomic<bool> idleActive { false };
 

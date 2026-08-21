@@ -8,6 +8,9 @@
 #include "../core/Config.h"
 #include <cstdint>
 #include <vector>
+#if defined(_MSC_VER) && defined(_M_X64)
+#include <xmmintrin.h>
+#endif
 
 namespace DSPUtils
 {
@@ -18,19 +21,56 @@ namespace DSPUtils
             && (reinterpret_cast<std::uintptr_t> (p) & (Config::kDspAlign - 1)) == 0;
     }
 
-    /**
-        Grow `storage` so a cache-line-aligned ring of `n` floats fits.
-        Wrap length is `n` (padding is only for the pointer). Audio-thread
-        callers must not call this — prepare only.
-    */
-    NK_FORCEINLINE static float* alignedRing (std::vector<float>& storage, int n) noexcept
+    NK_FORCEINLINE static void prefetchRead (const void* p) noexcept
     {
-        const int cap = juce::jmax (4, n);
-        const int pad = (int) (Config::kDspAlign / sizeof (float));
+        if (p == nullptr)
+            return;
+#if defined(_MSC_VER) && defined(_M_X64)
+        _mm_prefetch (static_cast<const char*> (p), _MM_HINT_T0);
+#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+        __builtin_prefetch (p, 0, 3);
+#else
+        (void) p;
+#endif
+    }
+
+    NK_FORCEINLINE static int simdCount() noexcept
+    {
+        return (int) juce::dsp::SIMDRegister<float>::SIMDNumElements;
+    }
+
+    /** Round length up so a SIMD store/load covers the wrap without a ragged tail. */
+    NK_FORCEINLINE static int simdPadded (int n) noexcept
+    {
+        const int w = simdCount();
+        return juce::jmax (w, ((juce::jmax (1, n) + w - 1) / w) * w);
+    }
+
+    NK_FORCEINLINE static float* alignPointer (std::vector<float>& storage, int logicalN, int extra) noexcept
+    {
+        const int cap = juce::jmax (4, logicalN);
+        const int pad = (int) (Config::kDspAlign / sizeof (float)) + juce::jmax (0, extra);
         storage.assign ((size_t) cap + (size_t) pad, 0.f);
         const auto raw = reinterpret_cast<std::uintptr_t> (storage.data());
         const auto mask = (std::uintptr_t) (Config::kDspAlign - 1);
         return reinterpret_cast<float*> ((raw + mask) & ~mask);
+    }
+
+    /**
+        Grow `storage` so a cache-line-aligned ring of `n` floats fits.
+        Wrap length is SIMD-padded `n` (padding beyond that is only for the pointer).
+        Audio-thread callers must not call this — prepare only.
+    */
+    NK_FORCEINLINE static float* alignedRing (std::vector<float>& storage, int n) noexcept
+    {
+        const int cap = simdPadded (n);
+        return alignPointer (storage, cap, simdCount());
+    }
+
+    /** LUT: logical length `n`, 64-byte pointer, SIMD-lane tail so the last tap vector-loads. */
+    NK_FORCEINLINE static float* alignedTable (std::vector<float>& storage, int n) noexcept
+    {
+        return alignPointer (storage, juce::jmax (2, n), simdCount());
     }
 
     /** Linear LUT tap on a raw table — no vector in the inner loop. */
@@ -38,9 +78,9 @@ namespace DSPUtils
     {
         if (table == nullptr || size < 2)
             return 0.f;
-        const int idx = (int) pos;
-        const int next = (idx + 1) % size;
-        const float frac = pos - (float) idx;
+        const int idx = juce::jlimit (0, size - 1, (int) pos);
+        const int next = idx + 1 < size ? idx + 1 : 0;
+        const float frac = pos - (float) (int) pos;
         return table[idx] + frac * (table[next] - table[idx]);
     }
 

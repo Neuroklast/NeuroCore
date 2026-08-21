@@ -522,6 +522,46 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
 }
 
+void NeuroKoreAudioProcessor::processBlockBypassed (juce::AudioBuffer<float>& buffer,
+                                                    juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    juce::ignoreUnused (midiMessages);
+
+    if (getSampleRate() <= 0.0 || buffer.getNumSamples() == 0)
+    {
+        buffer.clear();
+        return;
+    }
+
+    auto main = getBusCount (true) > 0 ? getBusBuffer (buffer, true, 0) : buffer;
+    telemetryPump.noteInput (main);
+
+    struct TryLock
+    {
+        juce::CriticalSection& c;
+        bool held;
+        explicit TryLock (juce::CriticalSection& cs) : c (cs), held (cs.tryEnter()) {}
+        ~TryLock() { if (held) c.exit(); }
+    };
+
+    TryLock lock (scriptManager.getProcessLock());
+    if (lock.held)
+    {
+        dspEngine.processHostBypass (main, scriptManager.signalChain);
+        fadeInAfterGap (main);
+        storeContinuity (main);
+    }
+    else
+    {
+        replayContinuity (main);
+        fadeInRemain = juce::jmax (fadeInRemain, main.getNumSamples());
+    }
+
+    waveformCapture.pushOutput (main);
+    telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
+}
+
 //==============================================================================
 bool NeuroKoreAudioProcessor::hasEditor() const
 {

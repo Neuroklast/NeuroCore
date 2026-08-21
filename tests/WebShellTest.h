@@ -376,6 +376,66 @@ public:
             expect (true);
 #endif
         }
+
+        beginTest ("standalone top-level editor HWND is the park parent");
+        {
+#if JUCE_WINDOWS
+            auto* inst = GetModuleHandleW (nullptr);
+            HWND owner = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                          L"nk-park-owner-sa", WS_POPUP, -32000, -32000, 8, 8,
+                                          nullptr, nullptr, inst, nullptr);
+            HWND standalone = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                               L"nk-standalone", WS_POPUP, -32000, -32000, 400, 300,
+                                               nullptr, nullptr, inst, nullptr);
+            HWND park = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                         L"nk-park-sa", WS_POPUP, -32000, -32000, 80, 60,
+                                         nullptr, nullptr, inst, nullptr);
+            expect (owner != nullptr && standalone != nullptr && park != nullptr);
+            expect (GetParent (standalone) == nullptr, "Standalone peer is a top-level window");
+
+            auto* chosen = static_cast<HWND> (
+                bridge::WebViewHolder::parkParentForEditor (standalone, owner));
+            expect (chosen == standalone,
+                    "Standalone park parent is the app window, not the hidden owner");
+            expect (chosen != owner, "hidden owner is only for VST3 close / detach");
+
+            auto style = GetWindowLongPtr (park, GWL_STYLE);
+            using FlagType = decltype (style);
+            style &= ~(FlagType) WS_POPUP;
+            style |= (FlagType) WS_CHILD;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, chosen);
+            expect (GetParent (park) == standalone);
+            expect (IsChild (standalone, park) != 0);
+
+            style = GetWindowLongPtr (park, GWL_STYLE);
+            style &= ~(FlagType) WS_CHILD;
+            style |= (FlagType) WS_POPUP;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, owner);
+            DestroyWindow (standalone);
+            expect (IsWindow (park) != 0, "park HWND survives standalone close after park-to-owner");
+
+            DestroyWindow (park);
+            DestroyWindow (owner);
+#else
+            expect (true);
+#endif
+        }
+
+        beginTest ("each plugin instance gets its own WebView2 user data folder");
+        {
+#if JUCE_WINDOWS
+            const auto a = bridge::webView2UserDataFolder (0x111);
+            const auto b = bridge::webView2UserDataFolder (0x222);
+            expect (a != b, "two instances must not share a WebView2 profile");
+            expect (a.getParentDirectory() == b.getParentDirectory());
+            expect (bridge::webView2UserDataFolder (0).getFileName() == "probe");
+            expect (a.getFileName() != "probe");
+#else
+            expect (true);
+#endif
+        }
     }
 
 private:

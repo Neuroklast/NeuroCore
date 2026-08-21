@@ -40,6 +40,9 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - WebView2 eats OS key events before JUCE sees them. Non-text keys must be forwarded from JS (`shouldForwardToHost` → `hostKey`) and posted to the DAW HWND (`PostMessage` on Windows; `CGEventPost` on Mac VST3/AU). Do not send `juce::KeyPress` to the top-level component as the Windows path. Text fields, plugin chords, and overlays stay in the plugin.
 - JUCE destroys the `IPlugView` / `AudioProcessorEditor` on close. Keep the `WebBrowserComponent` on the processor. Editor close is `removeChild` / native unparent, never `delete` the browser. WebView2 is bound to the peer HWND at create time — park that HWND, do not let the editor peer die while it is still the parent.
 - VST3 `removed()` calls `removeFromDesktop()` → `DestroyWindow(plugin HWND)` **before** `~Editor`. `removeFromDesktop` does not notify children first. Never make the WebView HWND a `WS_CHILD` of IPlugView; sibling of the plugin HWND (host parent) or a processor-owned window. `~WebPluginEditor` is too late to `SetParent` away from a child.
+- Standalone has no IPlugView. `editor.getPeer()` is the app window (`GetParent` is null). That HWND is the park parent. Parenting to the hidden owner HWND hides the WebView for the whole session. The VST3 “never child of the editor HWND” rule does not apply when the editor peer **is** the top-level window.
+- Host bypass is `processBlockBypassed`. JUCE’s default does not delay. If `getLatencySamples() > 0`, bypassed dry must use the same PDC delay as mix 0 or the track jumps.
+- Two VST3 instances in one host process must not share a WebView2 user-data folder. One profile for all instances serializes Chromium and stutters both UIs.
 - Cubase track change / ASIO Guard calls `setNonRealtime` and VST3 `setProcessing`. Half-band OS, sanitation, and delay rings must `reset()` on that flag change (same as `PluginProcessor::reset`, including the 256-sample fade-in). Do not leave filter memory from the previous realtime/lookahead path.
 - ENV is a follower. LFO lamp/chase is only for `osc`. Do not feed env cables a fake 1 Hz `freq`.
 - ENV is a bus tap (audio `in`, mod `out`). LFO has no audio in. `connectAudio` must not treat env as osc. Draw IN/prev → env.in; env is never a through node.
@@ -61,6 +64,9 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - `evaluate()` (lock) is not an inner-loop call. Use `evaluateLive`.
 - CPU-hold / lock-miss: last wet or silence, never raw input.
 - Live formula IR is `ExprTape`. JIT (asmjit) only after the tape exists, only for Load/Add/Sub/Mul/Neg, only Windows x64. Call/ADAA `invoke` crashed factory load — keep the interpreter.
+- SIMD for tape is `exprTapeEvalSimd`, not the AST `evalSimd` tree. ADAA is sequential — `softclip`/`tube`/`diode` stay on the sample loop. `hasLiveTape()` must not force scalar for `y = x * a`.
+- JIT Call/ADAA is `call` into `exprTapeDiv` / `exprTapeCallAdaa` and friends. asmjit Invoke into C++ shapers crashed factory load. Failed emit leaves `fn` null.
+- `display: none` does not stop rAF or React. Unmount Unit analyzers. One viz clock; last subscriber cancels the frame.
 - Do not `xorps` against a 4-byte const pool entry. SSE reads 16 bytes. Negate with `mulss -1`.
 - Do not `JitRuntime::release` / destroy delay rings when `processBlock`'s local `shared_ptr` dies. Retire the old chain on the next `loadScript` (message thread).
 - JUCE half-band FIR already strides `k += 2`. Do not dual-own OS next to sanitation AA.

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAstStore } from "../store/astStore";
 import { useBindStore } from "../store/telemetryStore";
+import { subscribeVizClock } from "../theme/vizClock";
 import { bindCableVisible, bindEndId, bindSmoothPath, bindTargets } from "./bindLinks";
 
 function scaleOf(hostEl: HTMLElement, host: DOMRect): { sx: number; sy: number } {
@@ -54,7 +55,6 @@ export function BindCables() {
   }>({ paths: [], frame: { x: 0, y: 0, w: 0, h: 0 } });
 
   useEffect(() => {
-    let raf = 0;
     const tick = () => {
       const hostEl = (document.querySelector(".nk-bind-host") ?? document.querySelector(".nk-circuit")) as HTMLElement | null;
       const next: Array<{ id: string; letter: string; d: string }> = [];
@@ -118,10 +118,8 @@ export function BindCables() {
           && prev.frame.w === frame.w && prev.frame.h === frame.h;
         return same ? prev : { paths: next, frame };
       });
-      raf = window.requestAnimationFrame(tick);
     };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
+    return subscribeVizClock(tick);
   }, [drag, hover, targets]);
 
   if (paint.paths.length === 0 || paint.frame.w < 1) {

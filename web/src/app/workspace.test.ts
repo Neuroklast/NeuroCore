@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOpenBoard, knobBindEnabled, knobRail, terminalActions, WORKSPACES } from "./workspace";
+import { isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, terminalActions, WORKSPACES } from "./workspace";
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -17,5 +17,11 @@ describe("workspace modes", () => {
 
   it("exposes validate and optimize on the terminal", () => {
     expect(terminalActions()).toEqual(["edit", "validate", "optimize"]);
+  });
+
+  it("polls telemetry at 60 Hz on Unit and 2 Hz off Unit", () => {
+    expect(telemetryIntervalMs("face")).toBe(16);
+    expect(telemetryIntervalMs("assemble")).toBe(500);
+    expect(telemetryIntervalMs("hack")).toBe(500);
   });
 });
