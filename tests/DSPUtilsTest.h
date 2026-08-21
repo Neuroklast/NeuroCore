@@ -13,6 +13,16 @@ public:
 
     void runTest() override
     {
+        beginTest ("ScopedDenormalsAreZero sets FTZ/DAZ and restores");
+        {
+            const bool before = juce::FloatVectorOperations::areDenormalsDisabled();
+            {
+                DSPUtils::ScopedDenormalsAreZero scope;
+                expect (juce::FloatVectorOperations::areDenormalsDisabled());
+            }
+            expect (juce::FloatVectorOperations::areDenormalsDisabled() == before);
+        }
+
         beginTest("alignedRing returns 64-byte pointer; lutInterp is linear");
         {
             expectEquals ((int) Config::kDspAlign, 64);

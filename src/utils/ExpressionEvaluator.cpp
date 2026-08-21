@@ -281,22 +281,19 @@ float ExpressionEvaluator::AdaaFunc2Node::eval (const float* vars) const noexcep
 juce::dsp::SIMDRegister<float> ExpressionEvaluator::AdaaFunc2Node::evalSimd (
     const juce::dsp::SIMDRegister<float>* vars) const noexcept
 {
-    // ADAA is sequential — scalar fallback per lane using active channel bank
+    // ADAA is sequential — scalar per lane. get/set stay in the SIMD type.
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas (16) float res[width];
     auto xv = x ? x->evalSimd (vars) : juce::dsp::SIMDRegister<float> (0.0f);
     auto pv = p ? p->evalSimd (vars) : juce::dsp::SIMDRegister<float> (1.0f);
-    alignas (16) float xa[width], pa[width];
-    xv.copyToRawArray (xa);
-    pv.copyToRawArray (pa);
     const int c = juce::jlimit (0, kAdaaChannels - 1, gAdaaChannel);
+    juce::dsp::SIMDRegister<float> res {};
     for (size_t i = 0; i < width; ++i)
     {
-        const float fn = f (xa[i], pa[i]);
-        const float Fn = Fint (xa[i], pa[i]);
-        res[i] = adaaStep (xa[i], Fn, xPrev[c], FPrev[c], primed[c], fn);
+        const float xi = xv.get (i);
+        const float pi = pv.get (i);
+        res.set (i, adaaStep (xi, Fint (xi, pi), xPrev[c], FPrev[c], primed[c], f (xi, pi)));
     }
-    return juce::dsp::SIMDRegister<float>::fromRawArray (res);
+    return res;
 }
 
 float ExpressionEvaluator::BinaryNode::eval(const float* vars) const noexcept
