@@ -93,6 +93,25 @@ describe("hostStore", () => {
     expect(useHostStore.getState().knobs[0]?.value).toBeCloseTo(0.55);
   });
 
+  it("keeps enum detents when the host params echo omits enums", () => {
+    useHostStore.setState({
+      knobs: [{
+        id: "a",
+        name: "Type",
+        value: 0,
+        active: true,
+        min: 0,
+        max: 1,
+        isNote: false,
+        enums: ["lowpass", "highpass", "bandpass"],
+      }],
+    });
+    useHostStore.getState().applyParams({
+      knobs: [{ id: "a", name: "Type", value: 0, active: true, min: 0, max: 1, isNote: false }],
+    });
+    expect(useHostStore.getState().knobs[0]?.enums).toEqual(["lowpass", "highpass", "bandpass"]);
+  });
+
   it("footer OS factor follows the mix dropdown index", () => {
     useHostStore.setState({ os: 3, osFactor: 4 });
     useHostStore.getState().setOs(3);

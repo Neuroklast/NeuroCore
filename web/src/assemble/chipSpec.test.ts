@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { chipBox, SOCKET_H } from "./chipLayout";
+import { chipBox, chipOverlayStackPx, SOCKET_H } from "./chipLayout";
 import {
-  SOUTH_JACK_GAP,
-  TITLE_H,
-  TYPECODE_H,
+  bindableJackKeys,
   chipSpec,
   collapsedFace,
+  paintedBindKeys,
   paramJackSlots,
+  essentialParamKeys,
+  advancedParamKeys,
+  faceParamKeys,
+  overlayParamKeys,
   typeCode,
 } from "./chipSpec";
 
@@ -99,13 +102,15 @@ describe("ChipSpec registry", () => {
     expect(chipSpec("ms").label).toBe("Split Mid/Side");
   });
 
-  it("gives filter a taller min body than reverb because its expanded param UI is taller", () => {
-    const filter = chipSpec("filter");
-    const reverb = chipSpec("reverb");
-    expect(
-      filter.minBodyPx,
-      `filter ${filter.minBodyPx} params=${filter.paramJacks.length} vs reverb ${reverb.minBodyPx} params=${reverb.paramJacks.length}`,
-    ).toBeGreaterThan(reverb.minBodyPx);
+  it("keeps CHANNEL off the closed face and in the overlay, without growing the box", () => {
+    const jacks = [
+      { id: "in", label: "in", output: false, kind: "audio" as const },
+      { id: "out", label: "out", output: true, kind: "audio" as const },
+    ];
+    const args = chipSpec("filter").defaultArgs;
+    expect(overlayParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance", "channel"]);
+    expect(faceParamKeys(chipSpec("filter"))).toEqual([]);
+    expect(chipBox("filter", jacks, true, args).h).toBe(chipBox("filter", jacks, false, args).h);
   });
 });
 
@@ -124,12 +129,28 @@ describe("typeCode and collapsed face", () => {
 });
 
 describe("param jacks on the south edge", () => {
-  it("labels every param jack and parks it on the bottom edge inside the clip", () => {
+  it("only paints knobs that compile as key = a (ranges and sonic enums)", () => {
+    expect(bindableJackKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance"]);
+    expect(bindableJackKeys(chipSpec("filter"))).not.toContain("channel");
+    expect(bindableJackKeys(chipSpec("stage"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("custom"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("bus"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("send"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("eq"))).toEqual(["type", "freq", "q", "gain"]);
+    expect(bindableJackKeys(chipSpec("env"))).toEqual([
+      "type", "attack", "release", "hold", "min", "max", "invert",
+    ]);
+    expect(paintedBindKeys("custom", { y: "x", in2: "0" })).toEqual(["in2"]);
+    expect(paintedBindKeys("stage", { y: "x" })).toEqual([]);
+    expect(paintedBindKeys("stage", { y: "tube(x, a * 0.5)" })).toEqual(["y"]);
+  });
+
+  it("labels every bindable jack and parks it on the bottom edge inside the clip", () => {
     for (const row of CATALOG) {
       const spec = chipSpec(row.id);
       const box = { w: 236, h: spec.minBodyPx };
       const slots = paramJackSlots(spec, box);
-      expect(slots.map((s) => s.key), dump(row.id)).toEqual(spec.paramJacks);
+      expect(slots.map((s) => s.key), dump(row.id)).toEqual(bindableJackKeys(spec));
       for (const slot of slots) {
         expect(slot.label.trim().length, `${row.id}.${slot.key}`).toBeGreaterThan(0);
         expect(slot.y, `${row.id}.${slot.key} y=${slot.y} h=${box.h}`).toBeGreaterThanOrEqual(box.h - 16);
@@ -141,25 +162,26 @@ describe("param jacks on the south edge", () => {
   });
 });
 
-describe("chipBox height ignores expand", () => {
-  it("fits the expanded socket stack inside the chip for filter, ott, and octaver", () => {
-    const header = TITLE_H + TYPECODE_H;
+describe("chip overlay lists hidden params; box stays the closed face", () => {
+  it("fits hidden sockets in the overlay stack, not the layout box, for filter, ott, and octaver", () => {
     const jacks = [
       { id: "in", label: "in", output: false, kind: "audio" as const },
       { id: "out", label: "out", output: true, kind: "audio" as const },
     ];
+    const face = chipBox("filter", jacks, false, chipSpec("filter").defaultArgs);
     for (const id of ["filter", "ott", "octaver"] as const) {
       const spec = chipSpec(id);
       const box = chipBox(id, jacks, true, spec.defaultArgs);
-      const stack = spec.paramJacks.length * SOCKET_H + header + SOUTH_JACK_GAP;
+      const hidden = overlayParamKeys(spec);
+      expect(box, id).toEqual(face);
       expect(
-        box.h,
-        `${id} stack=${stack} (n=${spec.paramJacks.length} * ${SOCKET_H} + ${header} + gap ${SOUTH_JACK_GAP}) h=${box.h} min=${spec.minBodyPx}`,
-      ).toBeGreaterThanOrEqual(stack);
+        chipOverlayStackPx(hidden.length),
+        `${id} hidden=${hidden.join(",")} overlay=${chipOverlayStackPx(hidden.length)}`,
+      ).toBeGreaterThanOrEqual(hidden.length * SOCKET_H);
     }
   });
 
-  it("keeps collapsed filter height equal to expanded", () => {
+  it("puts every filter param in the overlay; compact face stays the identity plate", () => {
     const jacks = [
       { id: "in", label: "in", output: false, kind: "audio" as const },
       { id: "out", label: "out", output: true, kind: "audio" as const },
@@ -167,7 +189,11 @@ describe("chipBox height ignores expand", () => {
     const args = { type: "bandpass", cutoff: "900", resonance: "0.4", channel: "both" };
     const shut = chipBox("filter", jacks, false, args);
     const open = chipBox("filter", jacks, true, args);
-    expect(shut.h).toBe(open.h);
+    expect(open.h).toBe(shut.h);
     expect(shut.h).toBeGreaterThanOrEqual(chipSpec("filter").minBodyPx);
+    expect(essentialParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance"]);
+    expect(advancedParamKeys(chipSpec("filter"))).toEqual(["channel"]);
+    expect(overlayParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance", "channel"]);
+    expect(faceParamKeys(chipSpec("filter"))).toEqual([]);
   });
 });

@@ -22,13 +22,13 @@ On **macOS** also build the AU (Logic, GarageBand, Ableton AU slot):
 cmake --build build --config Release --target NeuroKore_AU
 ```
 
-Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.4.11-alpha.exe`, `VST3/NEUROKORE-0.4.11-alpha.vst3`, and on macOS `AU/NEUROKORE-0.4.11-alpha.component`). The web editor is embedded in those binaries. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
+Artefacts land in `build/NeuroKore_artefacts/Release/` (`Standalone/NEUROKORE-0.5.0-alpha.exe`, `VST3/NEUROKORE-0.5.0-alpha.vst3`, and on macOS `AU/NEUROKORE-0.5.0-alpha.component`). The web editor is embedded in those binaries. A macOS build also copies the AU to `~/Library/Audio/Plug-Ins/Components/`.
 
 Audio Units are an Apple format: a Windows or Linux CMake run still lists `AU` in `FORMATS`, but JUCE skips the target. You cannot produce a `.component` on Windows.
 
 Without a Mac, use GitHub Actions: the **AU (macOS)** job builds, signs, runs `auval -v aumf NRKO NRKL`, and uploads `NEUROKORE-AU-macOS`. Trigger it with a push/PR or **Actions → Build → Run workflow**. Download the artifact, then copy `NEUROKORE.component` to `~/Library/Audio/Plug-Ins/Components/` on the Mac that will load it.
 
-On Windows, `build_debug.bat` / `build_release.bat` use Ninja Multi-Config if you prefer that over the Visual Studio generator.
+On Windows, double-click `build_release.bat` (or `build_debug.bat`). That configures `build/` if needed and builds `NeuroKore_All` — VST3 + Standalone + embedded Vite UI. Pass `/nopause` for scripts. Keep the `.bat` version string in sync with `NEUROKORE_VERSION_LABEL` in `CMakeLists.txt`.
 
 Windows zip / installer (after a Release build):
 
@@ -36,7 +36,7 @@ Windows zip / installer (after a Release build):
 powershell -File scripts/package_windows.ps1
 ```
 
-That stages `NEUROKORE-0.4.11-alpha.vst3` and `NEUROKORE-0.4.11-alpha.exe`, writes `build/package/NEUROKORE-0.4.11-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.4.11-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`. Testers only need the VST3 and the exe — no `web/` folder.
+That stages `NEUROKORE-0.5.0-alpha.vst3` and `NEUROKORE-0.5.0-alpha.exe`, writes `build/package/NEUROKORE-0.5.0-alpha-win64.zip`, fills the portable kit `NEUROKORE-0.5.0-alpha/` in the repo root (VST3, Standalone, Docs, EULA), and compiles `installer/NeuroKore.iss` if [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed (`ISCC.exe`). The installer copies the VST3 to `C:\Program Files\Common Files\VST3\`. Testers only need the VST3 and the exe — no `web/` folder.
 
 Oversampling defaults to **4×**. Drop to 2× or 1× if the CPU is tight.
 

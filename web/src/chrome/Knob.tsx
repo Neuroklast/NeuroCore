@@ -16,8 +16,10 @@ import {
   KNOB_CARD_CLIP,
   KNOB_CX,
   KNOB_CY,
+  enumAbbrev,
   enumLabelAt01,
   knobArcLen,
+  knobBindFace,
   knobArcOffset,
   knobCircumference,
   knobInteractive,
@@ -79,14 +81,17 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const scaleMode = knobScaleMode(enums);
   const mapped = mappedValue(knob.value, knob.min, knob.max);
   const noteReadout = noteLabelForMapped(mapped, knob.min, knob.max, bpm, knob.isNote, knob.value);
-  const enumReadout = enums && enums.length > 0 ? enumLabelAt01(knob.value, enums) : null;
+  const enumFull = enums && enums.length > 0 ? enumLabelAt01(knob.value, enums) : null;
+  const enumReadout = enumFull ? enumAbbrev(enumFull) : null;
   const readout = noteReadout ?? enumReadout ?? formatKnobDisplay(mapped, knob.unit);
   const minTxt = enums && enums.length > 0
-    ? enums[0]!
+    ? enumAbbrev(enums[0]!)
     : (formatNoteBound(knob.min, knob.max, "min", knob.isNote) ?? formatBound(knob.min));
   const maxTxt = enums && enums.length > 0
-    ? enums[enums.length - 1]!
+    ? enumAbbrev(enums[enums.length - 1]!)
     : (formatNoteBound(knob.min, knob.max, "max", knob.isNote) ?? formatBound(knob.max));
+  const bindLetter = useBindStore((s) => s.letter);
+  const bindFace = knobBindFace(knob.id, bindLetter);
   const angle = START + knob.value * (END - START);
   const p1x = KNOB_CX + 22 * Math.sin(angle);
   const p1y = KNOB_CY - 22 * Math.cos(angle);
@@ -199,8 +204,9 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   return (
     <div
       ref={root}
-      className={`nk-prm relative flex h-full flex-col items-center justify-between px-1 pb-0.5 ${hud ? "nk-prm-drag" : ""} ${liveKnob ? "" : "nk-prm-off"}`}
+      className={`nk-prm relative flex h-full flex-col items-center justify-between px-1 pb-0.5 ${hud ? "nk-prm-drag" : ""} ${liveKnob ? "" : "nk-prm-off"} ${bindFace === "src" ? "nk-prm-bind" : ""} ${bindFace === "dim" ? "nk-prm-bind-dim" : ""}`}
       data-knob={knob.id}
+      data-bind-face={bindFace}
       aria-disabled={! liveKnob}
       data-plug={plugPlace}
       style={{ clipPath: KNOB_CARD_CLIP, paddingTop: knobTitleInset(plugPlace) }}
@@ -322,7 +328,9 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
           onBlur={() => {
             if (enums && enums.length > 0 && edit != null) {
               const raw = edit.trim().toLowerCase();
-              const idx = enums.findIndex((o) => o.toLowerCase() === raw);
+              const idx = enums.findIndex((o) => (
+                o.toLowerCase() === raw || enumAbbrev(o).toLowerCase() === raw
+              ));
               if (idx >= 0) {
                 send(enums.length <= 1 ? 0 : idx / (enums.length - 1), "end");
               }
@@ -348,12 +356,12 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
         <button
           type="button"
           className="font-mono text-[12px] text-accent"
-          title="Type a value or a note (1/4, 1/8, 1/2.)"
+          title={enumFull ?? "Type a value or a note (1/4, 1/8, 1/2.)"}
           disabled={! liveKnob}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => {
             if (liveKnob) {
-              setEdit(readout);
+              setEdit(enumFull ?? readout);
             }
           }}
         >

@@ -2,6 +2,7 @@ import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
 import { muteScriptHistory, pushScriptHistory, redoScript, undoScript } from "../store/scriptHistory";
+import { parkNodeInScript } from "./connectModel";
 import { stripMuteComments } from "./muteSolo";
 
 export type AddableBlock = {
@@ -103,7 +104,27 @@ export function scriptAfterAdd(script: string, type: string, args?: string): str
   }
   const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
   const id = nextBlockId(kind, taken);
-  return insertBeforeMixer(script, `${id}: ${body}`);
+  return parkNodeInScript(insertBeforeMixer(script, `${id}: ${body}`), id);
+}
+
+/** Patch a new chip immediately after `afterId` in the serial script (not parked). */
+export function scriptAfterInsertAfter(script: string, afterId: string, type: string, args?: string): string {
+  const spec = ADDABLE_BLOCKS.find((a) => a.type === type);
+  const body = args ?? spec?.args ?? "y = x";
+  const kind = spec?.type ?? type;
+  if (kind === "bus" || type === "bus") {
+    return insertBeforeMixer(script, `bus ${railNameFromArgs(body, script)}:`);
+  }
+  const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  const id = nextBlockId(kind, taken);
+  const line = `${id}: ${body}`;
+  const lines = script.replace(/\s+$/u, "").split("\n");
+  const at = lines.findIndex((l) => new RegExp(`^\\s*${afterId}\\s*:`, "i").test(l));
+  if (at < 0) {
+    return parkNodeInScript(insertBeforeMixer(script, line), id);
+  }
+  lines.splice(at + 1, 0, line);
+  return `${lines.join("\n")}\n`;
 }
 
 export function scriptAfterRemove(script: string, id: string): string {

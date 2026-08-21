@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ADD_CATEGORIES } from "../assemble/addBlock";
-import { addPickerBlocks } from "./addPicker";
+import { addPickerSearch } from "./addPicker";
 
 export function OsContextMenu({
   left,
@@ -75,12 +75,14 @@ export function OsContextMenu({
 export function OsMenuItem({
   children,
   onClick,
+  danger = false,
 }: {
   children: ReactNode;
   onClick: () => void;
+  danger?: boolean;
 }) {
   return (
-    <button type="button" className="nk-ctx-item" onClick={onClick}>
+    <button type="button" className={`nk-ctx-item${danger ? " nk-ctx-danger" : ""}`} onClick={onClick}>
       {children}
     </button>
   );
@@ -120,31 +122,46 @@ export function OsAddPicker({
   onPick: (type: string, args: string) => void;
 }) {
   const [cat, setCat] = useState<string>(ADD_CATEGORIES[0]);
+  const [q, setQ] = useState("");
+  const blocks = addPickerSearch(q, q.trim() ? undefined : cat);
   return (
     <div className="nk-add-pick" data-add-picker="1">
-      <div className="nk-add-cats">
-        {ADD_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className={`nk-ctx-item ${c === cat ? "nk-add-on" : ""}`}
-            onClick={() => setCat(c)}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-      <div className="nk-add-list">
-        {addPickerBlocks(cat).map((b) => (
-          <button
-            key={`${b.label}:${b.args}`}
-            type="button"
-            className="nk-ctx-item"
-            onClick={() => onPick(b.type, b.args)}
-          >
-            {b.label}
-          </button>
-        ))}
+      <input
+        className="nk-add-search"
+        value={q}
+        placeholder="Search modules"
+        autoFocus
+        onChange={(e) => setQ(e.target.value)}
+        onPointerDown={(e) => e.stopPropagation()}
+      />
+      <div className="nk-add-body">
+        <div className="nk-add-cats">
+          {ADD_CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`nk-ctx-item ${c === cat ? "nk-add-on" : ""}`}
+              onClick={() => {
+                setCat(c);
+                setQ("");
+              }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="nk-add-list">
+          {blocks.map((b) => (
+            <button
+              key={`${b.label}:${b.args}`}
+              type="button"
+              className="nk-ctx-item"
+              onClick={() => onPick(b.type, b.args)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

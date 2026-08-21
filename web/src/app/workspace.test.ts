@@ -11,8 +11,8 @@ describe("workspace modes", () => {
     expect(knobBindEnabled("assemble")).toBe(true);
     expect(knobBindEnabled("hack")).toBe(false);
     expect(knobRail("assemble")).toBe("bottom");
-    expect(knobRail("hack")).toBe("left");
-    expect(knobRail("face")).toBe("none");
+    expect(knobRail("hack")).toBe("bottom");
+    expect(knobRail("face")).toBe("bottom");
   });
 
   it("exposes validate and optimize on the terminal", () => {

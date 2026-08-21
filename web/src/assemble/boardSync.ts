@@ -4,6 +4,11 @@ export function keepLivePositions(origin: Origin): boolean {
   return origin === "canvas" || origin === "elk";
 }
 
+/** User owns pan/zoom. fitView only when auto-arrange actually ran (preset / first graph). */
+export function shouldFitView(_origin: Origin, autoArrange: boolean): boolean {
+  return autoArrange;
+}
+
 export function shouldAutoArrange(opts: {
   origin: Origin;
   prevIds: readonly string[];

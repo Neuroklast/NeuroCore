@@ -11,7 +11,7 @@ import {
   TUBE_RAIL,
 } from "./audioStep";
 import { allChipSpecs, chipSpec } from "./chipSpec";
-import { chipBox, jackAnchor, jackTopPx } from "./chipLayout";
+import { chipBox, dspFaceSize, jackAnchor, jackTopPx } from "./chipLayout";
 import { flowFromAst } from "./flowFromAst";
 import { handleId } from "./handles";
 import { lfoPeriodMs, resolveLfoHz } from "./lfoLamp";
@@ -20,7 +20,7 @@ import { routeBoard } from "./routeBoard";
 import { inflate, midHits, TUBE_CLEAR } from "./tubePath";
 import { cableFace } from "./validateLink";
 import { visualJacksFor } from "./visualEdges";
-import { snapToGrid } from "./grid";
+import { BOARD_GRID, CHIP_AIR_X, snapToGrid } from "./grid";
 
 function dumpPts(pts: Array<{ x: number; y: number }>): string {
   return pts.map((p) => `(${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(" ");
@@ -155,8 +155,8 @@ describe("split mid/side visual", () => {
       leadingComments: [],
       params: [],
       nodes: [
-        nodeOf("ms1", "ms", { mode: "encode" }, { x: 240, y: 80 }),
-        nodeOf("stage1", "stage", { y: "x" }, { x: 560, y: 40 }),
+        nodeOf("ms1", "ms", { mode: "encode" }, { x: BOARD_GRID * 8, y: BOARD_GRID * 4 }),
+        nodeOf("stage1", "stage", { y: "x" }, { x: BOARD_GRID * 8 + dspFaceSize().w + CHIP_AIR_X * 2, y: BOARD_GRID * 4 }),
       ],
       edges: [
         { from: "IN", to: "ms1", kind: "audio", fromJack: "out", toJack: "in" },

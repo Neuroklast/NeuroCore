@@ -22,7 +22,8 @@ import { useHostStore } from "../store/hostStore";
 import { menuPos } from "../theme/fit";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
 import { addPickerSize } from "../overlays/addPicker";
-import { useChipViewStore } from "../store/expandStore";
+import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
+import { useBindStore } from "../store/telemetryStore";
 import { ChipNode, IoNode } from "./ChipNode";
 import { ConnectionLine } from "./ConnectionLine";
 import { StaticGridEdge } from "./StaticGridEdge";
@@ -36,7 +37,7 @@ import {
   type JackPoint,
 } from "./connectModel";
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
-import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange } from "./boardSync";
+import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
 import { jackTopPx } from "./chipLayout";
 import { applyLayoutResult, requestLayout } from "./layout/layoutClient";
 import type { LayoutMode } from "./layout/types";
@@ -160,11 +161,13 @@ function Board() {
       setNodes(next.nodes);
       setEdges(next.edges);
       next.nodes.forEach((n) => updateInternals(n.id));
-      requestAnimationFrame(() => {
-        if (! cancel && gen === layoutGen.current && (paneRef.current?.clientWidth ?? 0) > 40) {
-          void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
-        }
-      });
+      if (shouldFitView(origin, auto)) {
+        requestAnimationFrame(() => {
+          if (! cancel && gen === layoutGen.current && (paneRef.current?.clientWidth ?? 0) > 40) {
+            void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
+          }
+        });
+      }
     });
     return () => {
       cancel = true;
@@ -338,17 +341,41 @@ function Board() {
   const onNodeDrag = useCallback((_: unknown, node: Node) => {
     const pair = closestPair(node);
     setEdges((es) => {
-      const next = es.filter((e) => e.className !== "temp");
-      if (pair && ! alreadyLinked(next, pair.source, pair.target, pair.sourceHandle, pair.targetHandle)) {
-        next.push({
+      let hadTemp = false;
+      let tempOk = false;
+      const live: typeof es = [];
+      for (const e of es) {
+        if (e.className === "temp") {
+          hadTemp = true;
+          if (pair
+            && e.source === pair.source
+            && e.target === pair.target
+            && e.sourceHandle === pair.sourceHandle
+            && e.targetHandle === pair.targetHandle) {
+            tempOk = true;
+            live.push(e);
+          }
+          continue;
+        }
+        live.push(e);
+      }
+      if (pair && ! alreadyLinked(live, pair.source, pair.target, pair.sourceHandle, pair.targetHandle) && ! tempOk) {
+        live.push({
           id: `temp-${pair.source}-${pair.target}`,
           ...pair,
           ...defaultEdgeOptions,
           className: "temp",
           data: { temp: true },
         });
+        return live;
       }
-      return next;
+      if (! pair && ! hadTemp) {
+        return es;
+      }
+      if (pair && tempOk) {
+        return es;
+      }
+      return live;
     });
   }, [closestPair, setEdges]);
 
@@ -503,9 +530,12 @@ function Board() {
         onNodeContextMenu={onNodeContextMenu}
         onEdgeClick={onEdgeClick}
         onPaneContextMenu={onPaneContextMenu}
-        onPaneClick={() => {
+        onPaneClick={(e) => {
           setHoverNodeId(null);
           closeMenu();
+          if (shouldCollapseChipDetail(e.target, useBindStore.getState().letter)) {
+            useChipViewStore.getState().collapseAll();
+          }
         }}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}

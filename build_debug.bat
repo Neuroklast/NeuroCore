@@ -1,97 +1,81 @@
 @echo off
-setlocal
+setlocal EnableExtensions
+cd /d "%~dp0"
 
-REM NeuroCore Debug Build - verwendet Ninja (in VS2022 Build Tools enthalten)
-REM JUCE_DIR anpassen falls noetig!
+REM Windows Debug. Same tree as AGENTS.md (`build/`), Debug config.
 
-if not defined JUCE_DIR (
-    set "JUCE_DIR=D:\JUCE"
-    echo JUCE_DIR nicht gesetzt, verwende Default: D:\JUCE
-    echo (bei Bedarf JUCE_DIR als Umgebungsvariable setzen oder direkt im Skript aendern)
-)
+set "VERSION_LABEL=0.5.0-alpha"
+set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
+set "BUILD_DIR=build"
+set "CONFIG=Debug"
+set "TARGET=NeuroKore_All"
+if /i "%~1"=="/nopause" set "NOPAUSE=1"
+
 echo ===========================================
-echo  NeuroCore DEBUG Build
-echo  JUCE_DIR=%JUCE_DIR%
+echo  NEUROKORE DEBUG
+echo  %VERSION_LABEL%  target %TARGET%
 echo ===========================================
 
-REM Ninja-Pfad aus VS2022 Build Tools
-REM Annahme: VS2022 Build Tools sind im Standardpfad installiert.
-set "VS_NINJA=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja"
-set "VS_CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
-set "VS_VCVARS=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call :find_cmake
+if errorlevel 1 exit /b 1
 
-if not exist "%VS_NINJA%\ninja.exe" (
-    echo FEHLER: Ninja wurde nicht unter "%VS_NINJA%\ninja.exe" gefunden.
-    echo Passe VS_NINJA im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
-    pause
-    exit /b 1
-)
-
-if not exist "%VS_CMAKE%\cmake.exe" (
-    echo FEHLER: CMake wurde nicht unter "%VS_CMAKE%\cmake.exe" gefunden.
-    echo Passe VS_CMAKE im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
-    pause
-    exit /b 1
-)
-
-REM PATH um Ninja erweitern
-set "PATH=%VS_NINJA%;%VS_CMAKE%;%PATH%"
-
-REM Pruefe ob Ninja vorhanden
-where ninja >nul 2>&1
-if errorlevel 1 (
-    echo FEHLER: Ninja nicht gefunden!
-    echo Stelle sicher dass VS2022 Build Tools installiert sind.
-    pause
-    exit /b 1
-)
-
-REM Build-Verzeichnis
-set "BUILD_DIR=out\build\x64-Debug-Ninja"
-
-REM Cache loeschen fuer sauberen Build
-if exist "%BUILD_DIR%\CMakeCache.txt" (
-    echo Loesche alten CMake Cache...
-    del /f /q "%BUILD_DIR%\CMakeCache.txt"
-)
-
-REM VS2022 Developer-Umgebung aktivieren fuer cl.exe
-if not exist "%VS_VCVARS%" (
-    echo FEHLER: vcvars64.bat nicht gefunden: %VS_VCVARS%
-    echo Passe VS_VCVARS im Skript an, falls VS Build Tools an einem anderen Ort installiert sind.
-    pause
-    exit /b 1
-)
-call "%VS_VCVARS%" >nul 2>&1
-if errorlevel 1 (
-    echo FEHLER: Konnte VS2022 Developer-Umgebung nicht initialisieren (vcvars64.bat).
-    pause
-    exit /b 1
-)
-
-REM Konfigurieren mit Ninja
-echo.
-echo [1/2] Konfiguriere CMake mit Ninja...
-cmake -B "%BUILD_DIR%" -S . -G "Ninja Multi-Config" -DJUCE_DIR="%JUCE_DIR%"
-if errorlevel 1 (
-    echo FEHLER: CMake Konfiguration fehlgeschlagen!
-    pause
-    exit /b 1
-)
-
-REM Bauen
-echo.
-echo [2/2] Baue NEUROKORE Debug...
-cmake --build "%BUILD_DIR%" --config Debug --target NeuroKore
-if errorlevel 1 (
-    echo FEHLER: Build fehlgeschlagen!
-    pause
-    exit /b 1
+if not exist "%BUILD_DIR%\CMakeCache.txt" (
+    echo.
+    echo [1/2] cmake -B %BUILD_DIR% -S .
+    "%CMAKE%" -B "%BUILD_DIR%" -S .
+    if errorlevel 1 (
+        echo FEHLER: CMake configure fehlgeschlagen.
+        call :maybe_pause
+        exit /b 1
+    )
+) else (
+    echo [1/2] %BUILD_DIR%\CMakeCache.txt vorhanden — configure uebersprungen.
 )
 
 echo.
+echo [2/2] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
+"%CMAKE%" --build "%BUILD_DIR%" --config %CONFIG% --target %TARGET%
+if errorlevel 1 (
+    echo FEHLER: Debug-Build fehlgeschlagen.
+    call :maybe_pause
+    exit /b 1
+)
+
+set "VST3=%BUILD_DIR%\NeuroKore_artefacts\%CONFIG%\VST3\%FILE_STEM%.vst3"
+set "VST3_BUNDLE=%BUILD_DIR%\NeuroKore_artefacts\%CONFIG%\VST3\NEUROKORE.vst3"
+set "EXE=%BUILD_DIR%\NeuroKore_artefacts\%CONFIG%\Standalone\%FILE_STEM%.exe"
+
+echo.
 echo ===========================================
-echo  Build erfolgreich!
-echo  VST3: %BUILD_DIR%\NeuroKore_artefacts\Debug\VST3\NEUROKORE.vst3
+echo  Debug OK
+if exist "%VST3%" echo  VST3: %VST3%
+if exist "%VST3_BUNDLE%" echo  VST3: %VST3_BUNDLE%
+if exist "%EXE%" echo  EXE:  %EXE%
 echo ===========================================
+call :maybe_pause
+exit /b 0
+
+:find_cmake
+where cmake >nul 2>&1
+if not errorlevel 1 (
+    set "CMAKE=cmake"
+    exit /b 0
+)
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist "%VSWHERE%" (
+    for /f "usebackq delims=" %%I in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.CMake.Project -find CMake\bin\cmake.exe`) do (
+        if exist "%%I" (
+            set "CMAKE=%%I"
+            exit /b 0
+        )
+    )
+)
+echo FEHLER: cmake nicht im PATH und nicht in Visual Studio gefunden.
+call :maybe_pause
+exit /b 1
+
+:maybe_pause
+if defined NOPAUSE exit /b 0
+if defined CI exit /b 0
 pause
+exit /b 0

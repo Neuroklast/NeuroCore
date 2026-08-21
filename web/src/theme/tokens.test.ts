@@ -7,11 +7,11 @@ describe("board tokens", () => {
     expect(nk.warn).toBe("#fcee0a");
     expect(nk.cyan).toBe("#00f0ff");
     expect(nk.background).toBe("#0a0a0c");
-    expect(nk.surface).toBe("#0e0e12");
-    expect(nk.surfaceHigh).toBe("#16161c");
+    expect(nk.surface).toBe("#14141c");
+    expect(nk.surfaceHigh).toBe("#1c1c26");
     expect(nk.ink).toBe("#f4f1ea");
-    expect(nk.inkMuted).toBe("#7a7a86");
-    expect(nk.version).toBe("0.4.11-alpha");
+    expect(nk.inkMuted).toBe("#8a909c");
+    expect(nk.version).toBe("0.5.0-alpha");
   });
 
   it("maps chip types like the native kindLabel", () => {

@@ -14,7 +14,9 @@ import {
   knobTitleInset,
   round2,
   snapEnum01,
+  enumAbbrev,
   enumLabelAt01,
+  knobBindFace,
   applyWheel01,
   wheelStep01,
 } from "./knobChrome";
@@ -64,6 +66,24 @@ describe("circuit knob chrome", () => {
     expect(snapEnum01(0.4, 3)).toBe(0.5);
     expect(snapEnum01(0.9, 3)).toBe(1);
     expect(enumLabelAt01(0.5, opts)).toBe("highpass");
+  });
+
+  it("abbreviates enum tokens so the knob face does not overflow", () => {
+    expect(enumAbbrev("lowpass")).toBe("LP");
+    expect(enumAbbrev("highpass")).toBe("HP");
+    expect(enumAbbrev("bandpass")).toBe("BP");
+    expect(enumAbbrev("lowshelf")).toBe("LS");
+    expect(enumAbbrev("highshelf")).toBe("HS");
+    expect(enumAbbrev("peak")).toBe("PK");
+    expect(enumAbbrev("triangle")).toBe("TRI");
+    expect(enumAbbrev("1/4")).toBe("1/4");
+    expect(enumAbbrev("off")).toBe("OFF");
+  });
+
+  it("marks the source knob while a bind drag is live", () => {
+    expect(knobBindFace("a", "a")).toBe("src");
+    expect(knobBindFace("b", "a")).toBe("dim");
+    expect(knobBindFace("a", null)).toBe("idle");
   });
 
   it("maps one wheel notch to a fixed 0..1 step and ignores a zero delta", () => {

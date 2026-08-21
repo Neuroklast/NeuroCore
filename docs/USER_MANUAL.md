@@ -8,7 +8,7 @@ This is the same text the plugin shows under **Help** (`resources/UserManual_en.
 
 NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, pitch, crossover, envelope, oscillator).
 
-Version 0.4.11-alpha. Formats: Standalone, VST3, AU.
+Version 0.5.0-alpha. Formats: Standalone, VST3, AU.
 
 30-second path
 1. Click the preset name in the top bar. Double-click a factory row (amp, delay, reverb, vocal).
@@ -63,7 +63,7 @@ Top bar
 - < / > step through factory, then user presets. Wraps at both ends.
 - Functions: look up formula words and insert them. Folders on the left: Core, Drive, Crush, Blocks.
 - Stages: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
-- Settings: animation, Studio / Live, theme, UI scale, formula text size, circuit cables, tempo, standalone audio device, About / License / Help.
+- Settings: animation, Studio / Live, theme, circuit cables, tempo, standalone audio device, About / License / Help. Window size is drag-resize.
 - LIVE / STUDIO: Live uses min-phase oversampling so playing feels instant. Studio uses linear-phase oversampling for mix work. Same control lives in Settings.
 - Bypass: forces Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
 - Help: this guide, one chapter at a time.

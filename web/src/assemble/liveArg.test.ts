@@ -34,7 +34,7 @@ describe("live node values and chip box", () => {
       { id: "in", label: "in", output: false, kind: "audio" },
       { id: "out", label: "out", output: true, kind: "audio" },
     ], true, { type: "lp" });
-    expect(many.h).toBeGreaterThan(one.h);
+    expect(many.h).toBe(one.h);
     expect(open.h).toBe(one.h);
   });
 });

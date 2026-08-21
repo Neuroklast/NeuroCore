@@ -2,21 +2,19 @@ import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
 import { liveTheme, themeRgba } from "../theme/theme";
 import { fitCanvas } from "./canvasFit";
-import { fieldTitle, gonioPoint, SCOPE_COLOR } from "./scopeModel";
+import { gonioPoint, SCOPE_COLOR } from "./scopeModel";
 
+/** Output L/R as a vector-scope cloud. Never a filled IN scribble. */
 export function StereoField({
   gonioL,
   gonioR,
-  scopeIn,
   count,
 }: {
   gonioL: Float32Array;
   gonioR: Float32Array;
-  scopeIn: Float32Array;
   count: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const source = useHostStore((s) => s.scopeSource);
   const theme = useHostStore((s) => s.theme);
 
   useEffect(() => {
@@ -29,37 +27,22 @@ export function StereoField({
       return;
     }
     let raf = 0;
-    const drawTrace = (color: string, get: (i: number) => { x: number; y: number }, n: number, cx: number, cy: number, hx: number, hy: number) => {
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.22;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      for (let i = 0; i < n; i += 1) {
-        const p = get(i);
-        const x = cx + p.x * hx;
-        const y = cy + p.y * hy;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 0.95;
-      ctx.lineWidth = 1.1;
-      ctx.stroke();
-    };
     const draw = () => {
+      const t = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = liveTheme().black;
+      ctx.fillStyle = t.black;
       ctx.fillRect(0, 0, w, h);
-      const side = Math.min(w - 12, h - 28);
+      const pad = 8;
+      const side = Math.max(8, Math.min(w, h) - pad * 2);
       const x0 = (w - side) / 2;
-      const y0 = 16;
-      ctx.strokeStyle = themeRgba("accent", 0.55);
-      ctx.strokeRect(x0 + 0.5, y0 + 0.5, side - 1, side - 1);
+      const y0 = (h - side) / 2;
       const cx = x0 + side / 2;
       const cy = y0 + side / 2;
-      ctx.strokeStyle = themeRgba("accent", 0.22);
+      const rad = side * 0.38;
+      ctx.strokeStyle = themeRgba("cyan", 0.35, t);
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(cx, y0);
       ctx.lineTo(cx, y0 + side);
@@ -67,36 +50,30 @@ export function StereoField({
       ctx.lineTo(x0 + side, cy);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(cx, cy, side * 0.42, 0, Math.PI * 2);
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x0 + side, y0 + side);
-      ctx.moveTo(x0 + side, y0);
-      ctx.lineTo(x0, y0 + side);
+      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+      ctx.moveTo(x0 + 6, y0 + 6);
+      ctx.lineTo(x0 + side - 6, y0 + side - 6);
+      ctx.moveTo(x0 + side - 6, y0 + 6);
+      ctx.lineTo(x0 + 6, y0 + side - 6);
       ctx.stroke();
 
-      const n = Math.max(2, Math.min(count, gonioL.length, gonioR.length));
-      const hx = side * 0.46;
-      const hy = side * 0.46;
-      if (source === "in" || source === "both") {
-        const inn = Math.min(n, scopeIn.length);
-        drawTrace(SCOPE_COLOR.in, (i) => {
-          const s = scopeIn[i] ?? 0;
-          return gonioPoint(s, s);
-        }, inn, cx, cy, hx, hy);
+      const n = Math.max(0, Math.min(count, gonioL.length, gonioR.length));
+      const ink = SCOPE_COLOR.out;
+      ctx.fillStyle = ink;
+      ctx.shadowColor = ink;
+      ctx.shadowBlur = 5;
+      for (let i = 0; i < n; i += 1) {
+        const p = gonioPoint(gonioL[i] ?? 0, gonioR[i] ?? 0);
+        const x = cx + p.x * rad;
+        const y = cy + p.y * rad;
+        ctx.fillRect(x - 0.8, y - 0.8, 1.6, 1.6);
       }
-      if (source === "out" || source === "both") {
-        drawTrace(SCOPE_COLOR.out, (i) => gonioPoint(gonioL[i] ?? 0, gonioR[i] ?? 0), n, cx, cy, hx, hy);
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = SCOPE_COLOR.out;
-      ctx.font = "10px 'JetBrains Mono', monospace";
-      ctx.fillText(fieldTitle(source), 6, 12);
+      ctx.shadowBlur = 0;
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [count, gonioL, gonioR, scopeIn, source, theme]);
+  }, [count, gonioL, gonioR, theme]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

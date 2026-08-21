@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
-import { jackTopPx } from "./chipLayout";
+import { jackTopPx, titleJackY } from "./chipLayout";
 import {
   activateKnobPatch,
   bindHit,
@@ -13,9 +13,9 @@ import {
 import { applyKnobBind } from "./handles";
 
 describe("jack align and knob bind", () => {
-  it("moves jack Y when the chip height changes", () => {
-    expect(jackTopPx(0, 1, 80)).toBe(48);
-    expect(jackTopPx(0, 1, 160)).toBe(80);
+  it("keeps processing IN/OUT on the title lane independent of chip height", () => {
+    expect(jackTopPx(0, 1, 80)).toBe(titleJackY());
+    expect(jackTopPx(0, 1, 160)).toBe(titleJackY());
     expect(jackTopPx(0, 2, 120)).toBeLessThan(jackTopPx(1, 2, 120));
   });
 
@@ -51,6 +51,38 @@ describe("jack align and knob bind", () => {
     expect(profile.min).toBe(0);
     expect(profile.max).toBe(1);
     expect(activateKnobPatch(profile).enums).toEqual(profile.enums);
+  });
+
+  it("commitBind on an enum key snaps the knob to N options", () => {
+    useHostStore.setState({
+      knobs: [
+        { id: "b", name: "", value: 0, active: false, min: 0, max: 1, isNote: false },
+      ],
+    });
+    useAstStore.setState({
+      origin: "canvas",
+      ast: {
+        version: 1,
+        leadingComments: [],
+        params: [],
+        nodes: [{
+          id: "filter1",
+          type: "filter",
+          busName: "main",
+          args: { type: "lowpass", cutoff: "1000", resonance: "0.4", channel: "both" },
+          trailingComment: "",
+        }],
+      },
+      lastValidAst: null,
+      lastValidScript: "",
+      script: "",
+      diagnostics: [],
+    });
+    commitBind("filter1", "type", "b");
+    const knob = useHostStore.getState().knobs.find((k) => k.id === "b");
+    expect(knob?.enums).toEqual(["lowpass", "highpass", "bandpass"]);
+    expect(knob?.enums).toHaveLength(3);
+    expect(knob?.active).toBe(true);
   });
 
   it("commitBind activates an inactive knob and writes the letter", () => {

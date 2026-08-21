@@ -1,21 +1,22 @@
 import { Handle, Position, useReactFlow, useStore, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
 import type { AstJack } from "../bridge/ast";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
 import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
-import { barcodeBits, CHIP_FRAME_DASH, chipExpandOffset, DETAIL_HIT, framePoints, segmentFill } from "../theme/chromeSpec";
+import { barcodeBits, CHIP_CLIP, chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, greebleCode, satLampOn } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
-import { renameCircuitBlock, setCircuitArg, addCircuitBlock, insertCircuitBlockBetween, ADDABLE_BLOCKS } from "./addBlock";
+import { renameCircuitBlock, setCircuitArg } from "./addBlock";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
-import { bindEndId, lettersInExpr } from "./bindLinks";
-import { bindableArgKeys, handleId } from "./handles";
+import { bindEndId } from "./bindLinks";
+import { handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
-import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
-import { collapsedFace } from "./chipSpec";
+import { bindFace, bindJackCaption, bindJackXs, chipBox, chipChromeVars, chipOverlayStackPx, jackCaption, jackTopPx, LABEL_COL, TITLE_H } from "./chipLayout";
+import { CHIP_PAD_Y } from "./chipMetrics";
+import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
 import { isLfoNode, isEnvNode, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
@@ -93,6 +94,7 @@ function ParamSocket({
       className={`nk-sock nodrag ${dragging ? "nk-sock-hot" : ""} ${bound ? "nk-sock-on" : ""}`}
       data-bind-node={nodeId}
       data-bind-key={argKey}
+      data-chip-keep-open=""
     >
       <button
         type="button"
@@ -108,16 +110,9 @@ function ParamSocket({
           setPick((v) => ! v);
         }}
       >
-        <span className="nk-sock-meta">
-          <span className="nk-sock-key">{argKey}</span>
-          <span className="nk-sock-letter">{bound || "·"}</span>
-        </span>
-        <span className="nk-seg" aria-hidden>
-          {Array.from({ length: 10 }, (_, i) => (
-            <i key={i} className={i < segmentFill(live) ? "on" : ""} />
-          ))}
-        </span>
+        <span className="nk-sock-key">{argKey}</span>
       </button>
+      <div className="nk-sock-row">
       <input
         className="nk-sock-live nodrag font-mono"
         defaultValue={formula}
@@ -136,6 +131,8 @@ function ParamSocket({
           }
         }}
       />
+      {bound ? <span className="nk-bind-badge">{bound}</span> : null}
+      </div>
       {pick ? (
         <div className="nk-sock-pick">
           {["a", "b", "c", "d", "e", "f"].map((L) => (
@@ -172,7 +169,7 @@ function BindRail({
   const xs = bindJackXs(rows.length, width);
   const dragging = useBindStore((s) => s.letter);
   return (
-    <div className="nk-bind-rail" data-bind-face={face} style={face === "top" ? { top: 0 } : { bottom: 0 }}>
+    <div className="nk-bind-rail" data-bind-face={face} data-chip-keep-open="" style={face === "top" ? { top: 0 } : { bottom: 0 }}>
       {rows.map((row, i) => {
         const bound = /^[a-f]$/i.test(row.formula.trim()) ? row.formula.trim().toLowerCase() : "";
         const letters = bound ? [bound] : [];
@@ -204,7 +201,7 @@ function BindRail({
             {letters.map((L) => (
               <span key={L} data-bind-end={bindEndId(L, nodeId)} className="nk-bind-end" />
             ))}
-            <span className="nk-bind-jack-cap">{(bound || row.key).slice(0, 4).toUpperCase()}</span>
+            <span className="nk-bind-jack-cap">{bindJackCaption(row.key)}</span>
           </button>
         );
       })}
@@ -212,19 +209,16 @@ function BindRail({
   );
 }
 
-export function ChipNode({ data, id }: NodeProps) {
+export function ChipNode({ data, id, selected }: NodeProps) {
   const d = data as ChipData;
   const focus = String((data as { focus?: string }).focus ?? "off");
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const toggle = useChipViewStore((s) => s.toggle);
-  const setDetail = useChipViewStore((s) => s.setDetail);
 
   const isMuted = useChipViewStore((s) => s.isMuted(id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(id));
   const isAudible = useChipViewStore((s) => s.isAudible(id));
-  const dragging = useBindStore((s) => s.letter);
   const knobs = useHostStore((s) => s.knobs);
-  const { getEdges } = useReactFlow();
   const bpm = useHostStore((s) => s.bpm);
   const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
   const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
@@ -233,24 +227,22 @@ export function ChipNode({ data, id }: NodeProps) {
   const topJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "top");
   const ins = sideJacks.filter((j) => ! j.output);
   const outs = sideJacks.filter((j) => j.output);
-  const binds = [...new Set([
-    ...bindableArgKeys(d.args),
-    ...Object.keys(d.args).filter((k) => lettersInExpr(d.args[k]).length > 0),
-  ])];
+  const typeId = isCustomNode(d.type, id) ? "custom" : d.type;
+  const binds = paintedBindKeys(typeId, d.args);
   const lfo = isLfoNode({ type: d.type, id });
   const env = isEnvNode({ type: d.type, id });
   const envLevel = useHostStore((s) => s.mods[id] ?? 0);
   const hz = lfo ? resolveLfoHz(d.args, knobs, bpm) : 0;
   const extra = useMemo(() => detailArgs(isCustomNode(d.type, id) ? "custom" : d.type, d.args), [d.args, d.type, id]);
-  const box = chipBox(isCustomNode(d.type, id) ? "custom" : d.type, d.jacks, detail, d.args);
+  const box = chipBox(isCustomNode(d.type, id) ? "custom" : d.type, d.jacks, false, d.args);
   const liveRows = extra.map((row) => ({ key: row.key, ...liveArg(row.value, knobs), bind: binds.includes(row.key) }));
+  const overlayRows = liveRows;
   const custom = isCustomNode(d.type, id);
+  const overlayH = chipOverlayStackPx(overlayRows.length + (custom ? 1 : 0) + 1);
   const [rename, setRename] = useState(false);
-  const [showAddPicker, setShowAddPicker] = useState(false);
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   const absY = useStore((s) => s.nodeLookup.get(id)?.internals.positionAbsolute.y ?? 0);
-  const paneH = useStore((s) => s.height);
   const shape = lfo ? parseLfoShape(d.args.shape ?? d.args.wave ?? "sine") : "sine";
   const lampMs = lfo ? lfoPeriodMs(hz) : 0;
   const expandAt = chipExpandOffset();
@@ -284,17 +276,14 @@ export function ChipNode({ data, id }: NodeProps) {
       data-node-id={id}
       data-bind-node={id}
       data-focus={focus}
+      data-selected={selected ? "on" : "off"}
       data-audible={isAudible ? "on" : "off"}
+      data-detail={detail ? "on" : "off"}
       style={{
         width: box.w,
         height: box.h,
-        ["--nk-label-col" as string]: `${LABEL_COL}px`,
+        ...(chipChromeVars() as CSSProperties),
         opacity: isAudible ? 1 : 0.4,
-      }}
-      onPointerEnter={() => {
-        if (dragging) {
-          setDetail(id, true);
-        }
       }}
     >
       <div className="nk-chip-fill" />
@@ -302,6 +291,7 @@ export function ChipNode({ data, id }: NodeProps) {
         type="button"
         className="nk-chip-expand nodrag nopan"
         data-chip-expand={id}
+        data-chip-keep-open=""
         aria-expanded={detail}
         title={detail ? "Hide details" : "Show details"}
         style={{
@@ -325,14 +315,24 @@ export function ChipNode({ data, id }: NodeProps) {
         <polygon
           points={framePoints(box.w, box.h)}
           fill="none"
-          stroke="var(--nk-accent)"
-          strokeWidth="1.15"
-          strokeDasharray={CHIP_FRAME_DASH}
+          stroke={selected ? "var(--nk-accent)" : "var(--nk-ink-muted)"}
+          strokeWidth="1.4"
           strokeLinejoin="miter"
         />
+        {frameCorners(box.w, box.h).map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke={selected ? "var(--nk-accent)" : "var(--nk-ink-soft)"}
+            strokeWidth="2.7"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
+          />
+        ))}
       </svg>
       <div className="nk-chip-body">
-        <div className="flex h-[26px] w-full items-center justify-between gap-2">
+        <div className="flex w-full items-center justify-between gap-2" style={{ height: TITLE_H }}>
           <span className="nk-chip-grip" aria-hidden title="Drag" />
           {custom && rename ? (
             <input
@@ -389,6 +389,7 @@ export function ChipNode({ data, id }: NodeProps) {
         </div>
         <div className="mt-0.5 flex items-end justify-between gap-2">
           <span className="nk-chip-typecode">{face.code}</span>
+          <span className="nk-greeble-id">{greebleCode(id)}</span>
           {isIrSlotId(id) ? (
             <button
               type="button"
@@ -410,99 +411,123 @@ export function ChipNode({ data, id }: NodeProps) {
           )}
         </div>
 
-        {canMuteSolo || detail ? (
-          <div className="mt-1 flex items-center gap-1">
-            {canMuteSolo ? (
-              <>
-                <button
-                  type="button"
-                  className={`nodrag nopan min-h-[26px] min-w-[26px] px-1 text-[11px] border ${isMuted ? "bg-warn/20 border-warn text-warn" : "border-accent/40 text-muted hover:text-ink"}`}
-                  title="Mute block"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleChipMute(id);
-                  }}
-                >
-                  M
-                </button>
-                <button
-                  type="button"
-                  className={`nodrag nopan min-h-[26px] min-w-[26px] px-1 text-[11px] border ${isSoloed ? "bg-accent/20 border-accent text-accent" : "border-accent/40 text-muted hover:text-ink"}`}
-                  title="Solo block"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleChipSolo(id);
-                  }}
-                >
-                  S
-                </button>
-              </>
-            ) : null}
-            {detail ? (
+        {canMuteSolo ? (
+          <>
+            <div className="nk-chip-rule" />
+            <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="nodrag nopan ml-auto min-h-[26px] min-w-[26px] border border-accent/40 px-1 text-[14px] text-accent hover:text-ink"
-                title="Add block after this one"
+                className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`}
+                title="Mute block"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowAddPicker((v) => ! v);
+                  toggleChipMute(id);
                 }}
               >
-                +
+                M
               </button>
-            ) : null}
-          </div>
+              <button
+                type="button"
+                className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`}
+                title="Solo block"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleChipSolo(id);
+                }}
+              >
+                S
+              </button>
+            </div>
+          </>
         ) : null}
 
-        {detail ? (
-          <div className="nk-sock-list">
-            {liveRows.map((row) => (
-              <ParamSocket
-                key={row.key}
-                nodeId={id}
-                argKey={row.key}
-                formula={row.formula}
-                live={row.live}
+      </div>
+
+      {detail ? (
+        <div
+          className="nk-chip-overlay nodrag nopan nowheel"
+          data-chip-keep-open=""
+          style={{ height: overlayH, clipPath: CHIP_CLIP }}
+        >
+          <div className="nk-chip-overlay-fill" />
+          <svg className="nk-chip-frame" width={box.w} height={overlayH} viewBox={`0 0 ${box.w} ${overlayH}`} aria-hidden>
+            <polygon
+              points={framePoints(box.w, overlayH)}
+              fill="none"
+              stroke={selected ? "var(--nk-accent)" : "var(--nk-ink-muted)"}
+              strokeWidth="1.4"
+              strokeLinejoin="miter"
+            />
+            {frameCorners(box.w, overlayH).map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                fill="none"
+                stroke={selected ? "var(--nk-accent)" : "var(--nk-ink-soft)"}
+                strokeWidth="2.7"
+                strokeLinejoin="miter"
+                strokeLinecap="square"
               />
             ))}
-            {custom ? (
-              <button
-                type="button"
-                className="nk-chip-add-in nodrag nopan"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const key = nextCustomInput(d.args);
-                  setCircuitArg(id, key, "0");
-                }}
-              >
-                + input
-              </button>
-            ) : null}
+          </svg>
+          <div className="nk-chip-overlay-body">
+            <div className="nk-sock-list">
+              {overlayRows.map((row) => (
+                <ParamSocket
+                  key={row.key}
+                  nodeId={id}
+                  argKey={row.key}
+                  formula={row.formula}
+                  live={row.live}
+                />
+              ))}
+              {custom ? (
+                <button
+                  type="button"
+                  className="nk-chip-add-in nodrag nopan"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const key = nextCustomInput(d.args);
+                    setCircuitArg(id, key, "0");
+                  }}
+                >
+                  + input
+                </button>
+              ) : null}
+            </div>
+            <div className="nk-chip-overlay-meta truncate">
+              {lfo ? `hz ${formatMapped(hz)}` : env ? `env ${envLevel.toFixed(2)}` : `peak ${peakToDb(peak).toFixed(1)} dB`}
+            </div>
           </div>
-        ) : null}
-
-        {detail ? (
-          <div className="mt-1 truncate text-[10px] text-muted">
-            {lfo ? `hz ${formatMapped(hz)}` : env ? `env ${envLevel.toFixed(2)}` : `peak ${peakToDb(peak).toFixed(1)} dB`}
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {binds.length > 0 ? (
         <BindRail
           nodeId={id}
           face={bindFace(absY, box.h)}
           width={box.w}
-          rows={liveRows.filter((r) => r.bind)}
+          rows={binds.map((key) => {
+            const row = liveRows.find((r) => r.key === key);
+            return row
+              ? { key: row.key, formula: row.formula, live: row.live }
+              : { key, ...liveArg(d.args[key] ?? "", knobs) };
+          })}
         />
       ) : null}
 
       {ins.map((j, i) => (
-        <JackPort key={`in-${j.id}`} jack={j} output={false} top={jackTopPx(i, Math.max(ins.length, 1), box.h)} />
+        <JackPort key={`in-${j.id}`} jack={j} output={false} top={jackTopPx(i, Math.max(ins.length, 1), box.h, typeId)} />
       ))}
-      {outs.map((j, i) => (
-        <JackPort key={`out-${j.id}`} jack={j} output top={jackTopPx(i, Math.max(outs.length, 1), box.h)} />
-      ))}
+      {outs.map((j, i) => {
+        const top = jackTopPx(i, Math.max(outs.length, 1), box.h, typeId);
+        return (
+          <span key={`out-${j.id}`}>
+            <JackPort jack={j} output top={top} />
+            <i className={`nk-sat${satLampOn(peakToDb(peak)) ? " is-hot" : ""}`} style={{ top: `${top}px` }} />
+          </span>
+        );
+      })}
       {bottomJacks.map((j, i) => (
         <JackPort
           key={`bot-${j.id}`}
@@ -527,63 +552,17 @@ export function ChipNode({ data, id }: NodeProps) {
         <JackPort
           jack={{ id: primaryJackId(d.jacks, false), label: "in", output: false, kind: "audio" }}
           output={false}
-          top={jackTopPx(0, 1, box.h)}
+          top={jackTopPx(0, 1, box.h, typeId)}
         />
       ) : null}
       {outs.length === 0 && ! bottomJacks.some((j) => j.output) && ! topJacks.some((j) => j.output) ? (
         <JackPort
           jack={{ id: primaryJackId(d.jacks, true), label: "out", output: true, kind: "audio" }}
           output
-          top={jackTopPx(0, 1, box.h)}
+          top={jackTopPx(0, 1, box.h, typeId)}
         />
       ) : null}
       
-      {showAddPicker && detail ? (
-        <div
-          className="nodrag nopan absolute z-10 max-h-48 overflow-y-auto border border-accent bg-black p-2 text-[11px]"
-          style={{
-            top: absY + box.h + 200 > paneH ? undefined : box.h,
-            bottom: absY + box.h + 200 > paneH ? box.h : undefined,
-            left: 0,
-            minWidth: Math.max(box.w, 168),
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="mb-1 text-muted">Add block after {id}:</div>
-          <div className="grid grid-cols-2 gap-1">
-            {ADDABLE_BLOCKS.filter((b) => b.category !== "Mod").slice(0, 12).map((block) => (
-              <button
-                key={block.type + block.label}
-                type="button"
-                className="border border-accent/40 px-2 py-1 text-left text-ink hover:bg-accent/10"
-                onClick={() => {
-                  // Find the first output edge from this node
-                  const edges = getEdges();
-                  const outputEdge = edges.find((e) => e.source === id);
-                  
-                  if (outputEdge) {
-                    // Insert between this node and the target
-                    insertCircuitBlockBetween(block.type, id, outputEdge.target, block.args);
-                  } else {
-                    // No output edge, just add normally
-                    addCircuitBlock(block.type, block.args);
-                  }
-                  setShowAddPicker(false);
-                }}
-              >
-                {block.label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="mt-2 w-full border border-accent/40 py-1 text-muted hover:text-ink"
-            onClick={() => setShowAddPicker(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -595,7 +574,7 @@ export function IoNode({ data, id }: NodeProps) {
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
   const knobs = useHostStore((s) => s.knobs);
   const extra = useMemo(() => detailArgs(d.type, d.args), [d.args, d.type]);
-  const box = chipBox(d.type, d.jacks, detail, d.args);
+  const box = chipBox(d.type, d.jacks, false, d.args);
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   useLayoutEffect(() => {
@@ -610,12 +589,13 @@ export function IoNode({ data, id }: NodeProps) {
     <div
       className={`nk-chip-io relative flex flex-col items-center justify-center text-[15px] text-ink ${isIn ? "nk-chip-locked" : ""}`}
       data-focus={focus}
+      data-detail={detail ? "on" : "off"}
       style={{
         width: box.w,
         height: box.h,
-        paddingLeft: isIn ? 12 : LABEL_COL,
-        paddingRight: isIn ? LABEL_COL : 12,
-        ["--nk-label-col" as string]: `${LABEL_COL}px`,
+        paddingLeft: isIn ? CHIP_PAD_Y : LABEL_COL,
+        paddingRight: isIn ? LABEL_COL : CHIP_PAD_Y,
+        ...(chipChromeVars() as CSSProperties),
       }}
     >
       <div className="nk-chip-fill" />
@@ -623,29 +603,48 @@ export function IoNode({ data, id }: NodeProps) {
         <polygon
           points={framePoints(box.w, box.h)}
           fill="none"
-          stroke={isIn ? "var(--nk-cyan)" : "var(--nk-warn)"}
-          strokeWidth="1.15"
-          strokeDasharray={CHIP_FRAME_DASH}
+          stroke={isIn ? "var(--nk-cyan)" : "var(--nk-ink-muted)"}
+          strokeWidth="1.4"
           strokeLinejoin="miter"
         />
+        {frameCorners(box.w, box.h).map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke={isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"}
+            strokeWidth="2.7"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
+          />
+        ))}
       </svg>
       <div className="relative z-[2] flex w-full items-center justify-center gap-1">
         <span className="nk-chip-title truncate">{d.type === "sidechain" ? "Sidechain" : d.label}</span>
       </div>
-      {detail ? (
-        <div className="nk-sock-list relative z-[2] w-full px-1">
-          {extra.map((row) => {
-            const live = liveArg(row.value, knobs);
-            return (
-              <ParamSocket
-                key={row.key}
-                nodeId={id}
-                argKey={row.key}
-                formula={live.formula}
-                live={live.live}
-              />
-            );
-          })}
+      {detail && extra.length > 0 ? (
+        <div
+          className="nk-chip-overlay nodrag nopan nowheel"
+          data-chip-keep-open=""
+          style={{ height: chipOverlayStackPx(extra.length), clipPath: CHIP_CLIP }}
+        >
+          <div className="nk-chip-overlay-fill" />
+          <div className="nk-chip-overlay-body">
+            <div className="nk-sock-list">
+              {extra.map((row) => {
+                const live = liveArg(row.value, knobs);
+                return (
+                  <ParamSocket
+                    key={row.key}
+                    nodeId={id}
+                    argKey={row.key}
+                    formula={live.formula}
+                    live={live.live}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
       {d.jacks.map((j, i) => (
@@ -653,7 +652,7 @@ export function IoNode({ data, id }: NodeProps) {
           key={j.id}
           jack={j}
           output={j.output}
-          top={jackTopPx(i, Math.max(d.jacks.length, 1), box.h)}
+          top={jackTopPx(i, Math.max(d.jacks.length, 1), box.h, d.type)}
         />
       ))}
     </div>

@@ -11,6 +11,11 @@ export function toolbarFixedMinPx(): number {
   return 220 + 34 + 34 + 111 + 85 + 100 + 66 + 148 + 80 + 72 + 24;
 }
 
+/** Active workspace is a hairline, never a filled accent slab. */
+export function workspaceTabClass(active: boolean): string {
+  return active ? "nk-tab is-on" : "nk-tab";
+}
+
 /** Header after the mark: prev / current program / next, then tools. Validate/Optimize live in Terminal. */
 export function toolbarSlots(): ToolbarSlot[] {
   return [

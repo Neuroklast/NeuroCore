@@ -43,7 +43,8 @@ export function tokenInExpr(expr: string, token: string): boolean {
 export function bindableArgKeys(args: Record<string, string>): string[] {
   return Object.keys(args).filter((k) => {
     const low = k.toLowerCase();
-    return low !== "y" && low !== "type" && low !== "shape" && low !== "mode" && low !== "channel";
+    return low !== "y" && low !== "mode" && low !== "channel" && low !== "kanal"
+      && low !== "name" && low !== "family";
   });
 }
 

@@ -12,7 +12,7 @@ import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { HackView } from "../hack/HackView";
 import "../hack/monacoEnv";
 import { Overlays } from "../overlays/Overlays";
-import { ScopeDeck } from "../viz/ScopeDeck";
+import { TelemetryPump } from "../viz/ScopeDeck";
 import { useAstStore } from "../store/astStore";
 
 import { useHostStore } from "../store/hostStore";
@@ -26,7 +26,7 @@ import { seedFactoryPresets } from "../presets/presetActions";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
-import { knobBindEnabled, knobRail, type Workspace } from "./workspace";
+import { knobBindEnabled, type Workspace } from "./workspace";
 
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("face");
@@ -132,7 +132,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.4.11-alpha", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: "0.5.0-alpha", scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }
@@ -153,31 +153,26 @@ export function App() {
           <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {knobRail(workspace) === "left" ? (
-          <aside className="flex w-[148px] shrink-0 flex-col overflow-hidden border-r border-panel">
-            <Knobs bind={knobBindEnabled(workspace)} rail="left" />
-          </aside>
-        ) : null}
-        <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-accent/35">
-            {workspace === "face" && <FaceView open={setWorkspace} />}
-            <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
-              <AssembleView />
-            </div>
-            {workspace === "hack" && <HackView />}
-            <PaneTechNoise />
-            <PaneVignette />
+      <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
+          <div className={workspace === "face" ? "h-full min-h-0" : "hidden"}>
+            <FaceView open={setWorkspace} />
           </div>
-          {knobRail(workspace) === "bottom" ? (
-            <Knobs bind={knobBindEnabled(workspace)} rail="bottom" />
-          ) : null}
-          {workspace === "assemble" ? <BindCables /> : null}
-          <BindDragGhost />
-          <MixOs />
+          <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
+            <AssembleView />
+          </div>
+          <div className={workspace === "hack" ? "h-full min-h-0" : "hidden"}>
+            <HackView />
+          </div>
+          <PaneTechNoise />
+          <PaneVignette />
         </div>
+        <MixOs />
+        <Knobs bind={knobBindEnabled(workspace)} rail="bottom" />
+        {workspace === "assemble" ? <BindCables /> : null}
+        <BindDragGhost />
       </div>
-      <ScopeDeck telemetryPath={telemetryPath} />
+      <TelemetryPump telemetryPath={telemetryPath} />
       <Footer />
       <Overlays />
 

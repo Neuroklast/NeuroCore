@@ -113,3 +113,47 @@ export function enumLabelAt01(value01: number, enums: string[]): string {
   }
   return enums[enumIndexAt01(value01, enums.length)] ?? "";
 }
+
+const ENUM_ABBREV: Record<string, string> = {
+  lowpass: "LP",
+  highpass: "HP",
+  bandpass: "BP",
+  lowshelf: "LS",
+  highshelf: "HS",
+  peak: "PK",
+  rms: "RMS",
+  sine: "SIN",
+  triangle: "TRI",
+  square: "SQR",
+  saw: "SAW",
+  noise: "NZ",
+  off: "OFF",
+  on: "ON",
+  both: "LR",
+  left: "L",
+  right: "R",
+  mid: "M",
+  side: "S",
+  env: "ENV",
+};
+
+/** Face/min/max captions. Full token stays in title and in the type-in field. */
+export function enumAbbrev(token: string): string {
+  const key = token.toLowerCase().replace(/[\s_-]+/g, "");
+  if (ENUM_ABBREV[key]) {
+    return ENUM_ABBREV[key]!;
+  }
+  if (token.length <= 3) {
+    return token.toUpperCase();
+  }
+  return token.slice(0, 3).toUpperCase();
+}
+
+export type KnobBindFace = "src" | "dim" | "idle";
+
+export function knobBindFace(id: string, dragging: string | null): KnobBindFace {
+  if (! dragging) {
+    return "idle";
+  }
+  return dragging === id ? "src" : "dim";
+}

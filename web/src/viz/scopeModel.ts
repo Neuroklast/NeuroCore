@@ -92,6 +92,16 @@ export function barFillPercent(linear: number): number {
   return Math.max(2, Math.min(100, ((db + 60) / 60) * 100));
 }
 
+export const LU_LINES = 48;
+
+/** Stacked-line LUFS: how many traces are lit from the floor. */
+export function luLitLines(linear: number, n = LU_LINES): number {
+  if (! Number.isFinite(linear) || linear <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(n, Math.round((barFillPercent(linear) / 100) * n)));
+}
+
 /** Demo telemetry must move the LU bars, not park them on a constant. */
 export function demoLoudness(t: number): {
   inPeak: number;
@@ -111,6 +121,12 @@ export function gonioPoint(l: number, r: number): { x: number; y: number } {
   return { x: 0.5 * (left - right), y: -0.5 * (left + right) };
 }
 
+/** Demo L/R for the goniometer. Native telemetry is also raw L/R, not plot x/y. */
+export function demoGonioLr(i: number, n: number, t: number): { l: number; r: number } {
+  const ph = (i / Math.max(1, n)) * Math.PI * 2 + t * 0.08;
+  return { l: Math.sin(ph) * 0.72, r: Math.sin(ph + 0.32) * 0.58 };
+}
+
 export function nextProcessMode(mode: string): "STUDIO" | "LIVE" {
   return mode === "LIVE" ? "STUDIO" : "LIVE";
 }
@@ -120,7 +136,42 @@ export function processModeIndex(mode: string): number {
 }
 
 export const SPEC_BINS = 48;
-export const SPEC_DEPTH = 28;
+export const SPEC_DEPTH = 56;
+export const SPEC_PAD = { l: 56, r: 10, t: 18, b: 22 };
+
+export function specInner(w: number, h: number): { x: number; y: number; w: number; h: number; cx: number } {
+  const iw = Math.max(1, w - SPEC_PAD.l - SPEC_PAD.r);
+  const ih = Math.max(1, h - SPEC_PAD.t - SPEC_PAD.b);
+  return { x: SPEC_PAD.l, y: SPEC_PAD.t, w: iw, h: ih, cx: SPEC_PAD.l + iw * 0.5 };
+}
+
+/** Older history is more transparent. Front row is 1. */
+export function specRowFade(row: number): number {
+  const recede = row / Math.max(1, SPEC_DEPTH - 1);
+  return Math.pow(1 - recede, 2);
+}
+
+/** Log-Hz ticks on a 20 Hz … Nyquist span, mapped onto SPEC_BINS. */
+export function logFreqMarks(sr: number, bins = SPEC_BINS): Array<{ bin: number; hz: number; label: string }> {
+  const nyq = sr > 0 ? sr * 0.5 : 24000;
+  const fMin = 20;
+  const span = Math.log(nyq / fMin);
+  const raw = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+  const out: Array<{ bin: number; hz: number; label: string }> = [];
+  for (const hz of raw) {
+    if (hz < fMin || hz >= nyq) {
+      continue;
+    }
+    const t = Math.log(hz / fMin) / span;
+    const bin = Math.max(0, Math.min(bins - 1, Math.round(t * (bins - 1))));
+    const label = hz >= 1000 ? `${hz / 1000}k` : `${hz}`;
+    if (out.some((m) => m.bin === bin)) {
+      continue;
+    }
+    out.push({ bin, hz, label });
+  }
+  return out;
+}
 
 /** Which spectra to paint. BOTH is IN (cyan) then OUT (accent), never a single mix. */
 export function scopeSpectra(source: ScopeSource): Array<"in" | "out"> {
@@ -152,7 +203,10 @@ export function spectrogramPush(hist: number[][], bins: ArrayLike<number>): numb
   return next;
 }
 
-/** row 0 = now (front/bottom). Farther rows recede up and pinch in. */
+/**
+ * Camera on the horizontal midpoint, pitched down, wide FOV.
+ * Near row is the front floor; far rows recede toward the vanishing point.
+ */
 export function spectrogramProject(
   bin: number,
   row: number,
@@ -160,17 +214,28 @@ export function spectrogramProject(
   w: number,
   h: number,
 ): { x: number; y: number } {
+  const inner = specInner(w, h);
   const recede = row / Math.max(1, SPEC_DEPTH - 1);
-  const left = w * 0.05;
-  const span = w * 0.9;
-  const x0 = left + recede * span * 0.2;
-  const x1 = left + span - recede * span * 0.06;
+  const nearHalf = inner.w * 0.46;
+  const farHalf = inner.w * 0.34;
+  const half = nearHalf + (farHalf - nearHalf) * recede;
   const t = bin / Math.max(1, SPEC_BINS - 1);
-  const x = x0 + t * (x1 - x0);
-  const floor = h * 0.88;
-  const rise = mag * h * 0.5 * (1 - recede * 0.28);
-  const y = floor - recede * h * 0.58 - rise;
-  return { x, y };
+  const x = inner.cx + (t - 0.5) * 2 * half;
+  const nearY = inner.y + inner.h * 0.90;
+  const farY = inner.y + inner.h * 0.32;
+  const floor = nearY + (farY - nearY) * recede;
+  const rise = mag * inner.h * 0.28 * (1 - recede * 0.28);
+  return { x, y: floor - rise };
+}
+
+/** dB ticks on the near-plane Y axis. Floor is −72 dB (specMag01). */
+export function specDbMarks(): Array<{ mag: number; label: string }> {
+  return [
+    { mag: 1, label: "0" },
+    { mag: 48 / 72, label: "-24" },
+    { mag: 24 / 72, label: "-48" },
+    { mag: 0, label: "-72" },
+  ];
 }
 
 /** Sparse 0..1 grain. Most cells stay 0 so the overlay stays a speckle, not snow. */

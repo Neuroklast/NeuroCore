@@ -7,7 +7,7 @@ import { OsContextMenu } from "../overlays/OsContextMenu";
 import { LoudnessMeter } from "./LoudnessMeter";
 import { ScopeCanvas, ScopeMenu } from "./ScopeCanvas";
 import { StereoField } from "./StereoField";
-import { demoLoudness, type ScopeSource, type ScopeXScale, type ScopeYScale } from "./scopeModel";
+import { demoGonioLr, demoLoudness, type ScopeSource, type ScopeXScale, type ScopeYScale } from "./scopeModel";
 
 function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
   const n = SCOPE_N;
@@ -19,9 +19,9 @@ function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
       + Math.sin(ph * 5) * 0.08;
   }
   for (let i = 0; i < views.gonioN; i += 1) {
-    const ph = (i / views.gonioN) * Math.PI * 2 + t * 0.08;
-    views.gonioX[i] = Math.sin(ph) * 0.55;
-    views.gonioY[i] = Math.sin(ph + 0.35) * 0.48;
+    const lr = demoGonioLr(i, views.gonioN, t);
+    views.gonioX[i] = lr.l;
+    views.gonioY[i] = lr.r;
   }
   const lu = demoLoudness(t);
   views.inPeak = lu.inPeak;
@@ -30,12 +30,9 @@ function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
   views.outRms = lu.outRms;
 }
 
-export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
+/** Keeps telemetryStore live on every workspace. Analyzers read the store. */
+export function TelemetryPump({ telemetryPath }: { telemetryPath: string }) {
   const views = useRef(createTelemetryViews()).current;
-  const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
-  const host = useRef<HTMLDivElement>(null);
-  const sr = useHostStore((s) => s.sr);
-
   useEffect(() => {
     let live = true;
     let t = 0;
@@ -66,6 +63,19 @@ export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
       live = false;
     };
   }, [telemetryPath, views]);
+  return null;
+}
+
+export function UnitAnalyzer() {
+  const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
+  const host = useRef<HTMLDivElement>(null);
+  const sr = useHostStore((s) => s.sr);
+  const scopeIn = useTelemetryStore((s) => s.scopeIn);
+  const scopeOut = useTelemetryStore((s) => s.scopeOut);
+  const gonioL = useTelemetryStore((s) => s.gonioL);
+  const gonioR = useTelemetryStore((s) => s.gonioR);
+  const tick = useTelemetryStore((s) => s.tick);
+  void tick;
 
   const onMenu = (kind: "source" | "x" | "y" | "flag", id: string) => {
     if (kind === "source") {
@@ -87,7 +97,7 @@ export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
   return (
     <div
       ref={host}
-      className="relative flex h-[128px] shrink-0 items-stretch gap-2 border-t border-accent/40 bg-black px-2 py-1"
+      className="relative flex h-full min-h-0 min-w-0 flex-1 items-stretch bg-black"
       onContextMenu={(e) => {
         e.preventDefault();
         const pane = host.current;
@@ -97,13 +107,21 @@ export function ScopeDeck({ telemetryPath }: { telemetryPath: string }) {
         setMenu(menuPos(e.clientX, e.clientY, pane, 200, 320));
       }}
     >
-      <div className="min-w-0 flex-1 border border-accent/55">
-        <ScopeCanvas scopeIn={views.scopeIn} scopeOut={views.scopeOut} count={views.scopeN} sr={sr} />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1" aria-hidden />
+        <div className="nk-spec-fade min-h-0 flex-1">
+          <ScopeCanvas scopeIn={scopeIn} scopeOut={scopeOut} count={scopeOut.length} sr={sr} />
+        </div>
       </div>
-      <div className="h-full w-[148px] shrink-0 border border-accent/55">
-        <StereoField gonioL={views.gonioX} gonioR={views.gonioY} scopeIn={views.scopeIn} count={views.gonioN} />
-      </div>
-      <LoudnessMeter />
+      <div className="nk-unit-rule" aria-hidden />
+      <aside className="nk-unit-meters flex h-full w-[168px] shrink-0 flex-col gap-2">
+        <div className="aspect-square w-full shrink-0 overflow-hidden">
+          <StereoField gonioL={gonioL} gonioR={gonioR} count={gonioL.length} />
+        </div>
+        <div className="min-h-0 min-w-0 flex-1">
+          <LoudnessMeter />
+        </div>
+      </aside>
       {menu ? (
         <OsContextMenu left={menu.left} top={menu.top} title="METERS" onDismiss={() => setMenu(null)}>
           <ScopeMenu onPick={onMenu} />

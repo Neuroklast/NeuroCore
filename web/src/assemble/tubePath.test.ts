@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chipHeight } from "./flowFromAst";
+import { dspFaceSize } from "./chipLayout";
 import {
   countCurves,
   enforceSegmentAngles,
@@ -153,9 +154,10 @@ describe("tube path — rounded circuit maze", () => {
     expect(polylinesCross(first.points, second.points)).toBe(false);
   });
 
-  it("grows the chip when there are several jacks", () => {
-    expect(chipHeight(1, 1)).toBe(80);
-    expect(chipHeight(3, 1)).toBeGreaterThan(chipHeight(1, 1));
-    expect(chipHeight(2, 4)).toBeGreaterThan(chipHeight(2, 1));
+  it("keeps every DSP chip on one face even with several jacks", () => {
+    const face = dspFaceSize().h;
+    expect(chipHeight(1, 1)).toBe(face);
+    expect(chipHeight(3, 1)).toBe(face);
+    expect(chipHeight(2, 4)).toBe(face);
   });
 });

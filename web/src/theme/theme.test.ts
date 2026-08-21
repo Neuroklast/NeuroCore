@@ -58,12 +58,14 @@ describe("theme engine", () => {
       "--nk-cyan", "--nk-cyan-rgb", "--nk-warn", "--nk-warn-rgb",
       "--nk-ink", "--nk-ink-muted", "--nk-ink-soft",
       "--nk-bg", "--nk-surface", "--nk-surface-high", "--nk-well",
-      "--nk-panel", "--nk-error", "--nk-white", "--nk-black",
+      "--nk-panel", "--nk-line", "--nk-line-rgb", "--nk-error", "--nk-white", "--nk-black",
     ];
     for (const k of keys) {
       expect(gold[k], k).toBeTruthy();
     }
     expect(gold["--nk-accent"]).not.toBe(signal["--nk-accent"]);
+    expect(signal["--nk-line"]).toBe("#2a3038");
+    expect(signal["--nk-line-rgb"]).toMatch(/^\d+, \d+, \d+$/);
     expect(themeRgba("accent", 0.42, themeOf("gold"))).toBe("rgba(252, 238, 10, 0.42)");
     expect(themeRgba("cyan", 0.1, themeOf("azure"))).toBe("rgba(0, 240, 255, 0.1)");
   });

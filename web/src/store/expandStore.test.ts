@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { useChipViewStore } from "./expandStore";
+import { shouldCollapseChipDetail, useChipViewStore } from "./expandStore";
 
 describe("expandStore mute/solo", () => {
   beforeEach(() => {
@@ -92,5 +92,22 @@ describe("expandStore mute/solo", () => {
     store.toggleMute("block2");
     expect(store.isAudible("block1")).toBe(false);
     expect(store.isAudible("block2")).toBe(false);
+  });
+
+  it("collapses every open chip on an empty-board click, not during bind drag", () => {
+    const store = useChipViewStore.getState();
+    store.setDetail("filter1", true);
+    store.setDetail("eq1", true);
+    store.collapseAll();
+    expect(useChipViewStore.getState().isDetail("filter1")).toBe(false);
+    expect(useChipViewStore.getState().isDetail("eq1")).toBe(false);
+
+    const pane = { closest: () => null };
+    const sock = { closest: (sel: string) => (sel.includes("data-chip-keep-open") ? sock : null) };
+    const knob = { closest: (sel: string) => (sel.includes("data-knob-bind") ? knob : null) };
+    expect(shouldCollapseChipDetail(pane, null)).toBe(true);
+    expect(shouldCollapseChipDetail(sock, null)).toBe(false);
+    expect(shouldCollapseChipDetail(knob, null)).toBe(false);
+    expect(shouldCollapseChipDetail(pane, "a")).toBe(false);
   });
 });

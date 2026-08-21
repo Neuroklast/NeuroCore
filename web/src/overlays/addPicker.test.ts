@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ADDABLE_BLOCKS, ADD_CATEGORIES } from "../assemble/addBlock";
-import { addMenuOverflow, addPickerBlocks, addPickerListsEveryBlock, addPickerSize } from "./addPicker";
+import { addMenuOverflow, addPickerBlocks, addPickerListsEveryBlock, addPickerSearch, addPickerSize } from "./addPicker";
 
 describe("circuit add picker", () => {
   it("lists every addable chip in one panel — no nested flyout", () => {
@@ -27,5 +27,12 @@ describe("circuit add picker", () => {
     expect(size.h).toBeGreaterThanOrEqual(ADD_CATEGORIES.length * 28);
     expect(size.w).toBeGreaterThan(200);
     expect(size.h).toBeLessThan(420);
+  });
+
+  it("filters the catalog from a spotlight query without a flyout", () => {
+    const hits = addPickerSearch("filt");
+    expect(hits.map((b) => b.label)).toEqual(expect.arrayContaining(["Filter"]));
+    expect(hits.every((b) => /filt/i.test(b.label) || /filt/i.test(b.type))).toBe(true);
+    expect(addPickerSearch("").length).toBe(ADDABLE_BLOCKS.length);
   });
 });
