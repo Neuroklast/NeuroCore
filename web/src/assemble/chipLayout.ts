@@ -140,7 +140,7 @@ export function chipContentHeight(
 
 export function chipBox(
   type: string,
-  jacks: AstJack[],
+  _jacks: AstJack[],
   _detail: boolean,
   args: Record<string, string> | number = {},
 ): { w: number; h: number } {
