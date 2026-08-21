@@ -549,7 +549,7 @@ Der Blockname (`osc1`) ist die Variable in Formeln. Ausgabe: ca. -1.0 … +1.0.
 | `fold`, `wrap` | `fold(x, lo, hi)` | Wavefold/Wrap — **immer LPF + ≥4× OS** |
 | `lerp`, `map`, `step`, `smoothstep`, `noise` | siehe Beispiele | Utility / Modulation |
 
-**Engine-Safeguards:** Filter-Cutoff ∈ [20, Nyquist), Resonanz ∈ [0.1, 4.5], Stage Soft-Ceiling algebraisch, Default-Oversampling **4× FIR**, Sanitation-Kette: 1-Pol-DC 5 Hz → AA 96/128 dB/oct (fc = 0.45·hostSr) vor Downsample → optional Soft Clip → True-Peak −0.3 dBTP → TPDF-Dither nur bei Integer-Bit-Reduktion. Residual-Mute im OutputSanitizer.
+**Engine-Safeguards:** Filter-Cutoff ∈ [20, Nyquist), Resonanz ∈ [0.1, 4.5], Default-Oversampling **4× FIR**. Live-Formeln: AST nur Parser; Audio ist `ExprTape` (Windows x64 zusätzlich asmjit für `+ - *` und Loads). Sanitation-Kette: 1-Pol-DC 5 Hz → AA 96/128 dB/oct (fc = 0.45·hostSr) vor Downsample → optional Soft Clip → True-Peak −0.3 dBTP → TPDF-Dither nur bei Integer-Bit-Reduktion. Residual-Mute im OutputSanitizer. Runtime-Detail: `docs/ARCHITECTURE.md` § Audio-Runtime.
 
 ### Clipper ohne Knistern (Best Practice)
 

@@ -12,7 +12,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **AutoGain optional** | APVTS `autoGain` 0…1 | Default **0** (off). Strength skaliert mildes RMS-Match. |
 | **Kontinuierliche Control-Rate** | knob lanes + `mixDryWetContinuous` | Knobs und Dry/Wet sample-rate, nicht block-constant. |
 | **Filter-Timebase** | `advanceCoeffsOnce` + `processSample(ch)` | Coeff 1×/Sample; pro Kanal eigener SVF-State. |
-| **Formel-Live** | `ExprTape` + asmjit | Parse/Fold/CSE auf dem Message-Thread; Tape ist IR. Windows x64 JITtet Load/Add/Sub/Mul/Neg bei Load. Call/ADAA bleiben Interpreter. Audio ruft den Funktionszeiger oder Tape. |
+| **Formel-Live** | `ExprTape` + asmjit | Parse/Fold/CSE auf dem Message-Thread; Tape ist IR. Windows x64 JITtet Load/Add/Sub/Mul/Neg. macOS VST3/AU: nur Tape (kein asmjit, AU-Sandbox). |
 | **Chain-Dispatch** | `Block::processBlock` | Eine Virtual pro Chip pro Callback. Kein `process(ch,x)` mehr in der Basisklasse / per Sample. |
 | **Audio-Layout** | `alignas(64)` + `DSPUtils::alignedRing` | History und Delay-Ringe cache-line aligned. Innere Sample-Schleife auf `float*` + `NK_RESTRICT`, kein `std::vector` dort. Knob-Lanes in `prepare`. |
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
@@ -24,6 +24,60 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 Defaults: OS **4×** (`Config::kDefaultOversamplingIndex = 2`), Diagnostics **off**, AutoGain **off**.
 
 Diagnose-Heuristik: Crackle an `smp≈latency` → Timeline. `smp=0` → Control-Rate/State.
+
+## Audio-Runtime (0.4.11) — Implementierung und Performance
+
+Das Audio-Thread-Modell ist **eine Kette, eine Timeline, kein Heap im Callback**. Compile/Parse/Fold laufen auf dem Message-Thread. `processBlock` liest vorbereitete Pointer und feste Arrays.
+
+### Formel-Pfad
+
+| Schritt | Thread | Code |
+|---|---|---|
+| Parse → AST | Message | `ExpressionEvaluator::parseFormula` |
+| Constant-Fold + CSE | Message | gleicher Parse |
+| Absenkung auf Opcode-Tape | Message | `lowerToTape` → `ExprTape` (max. 256 Ops, 32 Slots, `alignas(64)`) |
+| Optional JIT | Message, nur Windows x64 | `exprTapeJitCompile` wenn die Tape **nur** LoadImm/LoadVar/Add/Sub/Mul/Neg/End enthält |
+| Live-Eval | Audio | `liveJit.fn` **oder** `exprTapeEval` (kein virtueller AST, kein `evaluate()`-Lock) |
+
+Dateien: `src/utils/ExprTape.h/.cpp`, `src/utils/ExprTapeJit.h/.cpp`, `src/utils/ExpressionEvaluator.h/.cpp`.
+
+**Warum Tape vor JIT:** Der alte Live-Pfad war ein virtueller AST (`Node::eval`) plus `std::function`. JIT ohne flaches IR hätte zwei Runtimes erzeugt. Das Tape ist die ABI; asmjit emittiert daraus nativen x64-Code in einen RWX-Puffer **beim Load**, nicht im Callback.
+
+**Warum Call/ADAA/Div/Pow nicht gejittet sind:** Factory-Load mit asmjit-`invoke` in den C-Shaper ist abgestürzt. Der Interpreter bleibt für `softclip`/`tube`/`diode` (ADAA-State auf dem Tape), `sin`/`tanh` (LUT), Div/Pow. `evaluateLive` macht `isfinite` nach dem JIT; der JIT ruft dafür **kein** C mehr pro Sample.
+
+**macOS VST3/AU:** `NK_HAS_EXPR_JIT=0`. Kein asmjit, kein RWX in der AU-Sandbox. Dieselbe Tape-Maschine.
+
+Alte Chains (JIT-Code, Delay-Ringe) hängen an `retiredChain` und sterben auf dem **Message-Thread** beim nächsten `loadScript`, nicht wenn `processBlock` seinen `shared_ptr` fallen lässt.
+
+### Chain-Dispatch
+
+`SignalChain::Block` hat genau eine virtuelle Audio-API: `processBlock`. `process(ch, x)` ist eine nicht-virtuelle Hilfsfunktion für Tests. Eine Virtual pro Chip pro Host-Callback, nicht pro Sample.
+
+### Speicher / innere Schleife
+
+| Was | Modell |
+|---|---|
+| Stage/Filter `xPrev`/`yPrev` | `alignas(64) float[kMaxChannels]`, kein `vector::assign` |
+| Delay/Comb/Allpass/Widen-Ringe | `DSPUtils::alignedRing`: Pointer 64-Byte, **Wrap-Länge = n** (Padding nur vor dem Pointer) |
+| Knob-Lanes | Größe in `prepare` (`maximumBlockSize × 8`), kein `resize` im Callback |
+| LUT | `DSPUtils::lutInterp(const float* NK_RESTRICT, int, float)` |
+| Macros | `NK_FORCEINLINE` / `NK_RESTRICT` in `Config.h` |
+
+`delayRead` ist **linear + Integer-Wrap** auf `float*`. Hermite-4-Punkt mischte Index 0 mit `N-1` und knackte einmal pro Periode.
+
+### Oversampling (gemessen, nicht ersetzt)
+
+Studio = JUCE half-band FIR Equiripple, Live = polyphase IIR. Die FIR-Convolution läuft bereits `k += 2` (Null-Taps ausgelassen). Eigenes Skip-Zero-OS entfällt — sonst zwei Owner neben der Sanitation-AA. Idle-Skip gibt **latenz-alignierte Dry**, nicht `memset` Nullen (Host-PDC / Mix=0).
+
+### Compiler
+
+Release-LTO (`INTERPROCEDURAL_OPTIMIZATION_RELEASE`) nur auf NeuroKore + Standalone/VST3/AU. Tests bleiben ohne LTCG. **Kein** globales `/fp:fast` (bricht `isfinite`, NaN-Hold, ADAA). PGO nicht im Baum.
+
+### Bewusst nicht gebaut
+
+PGO-Skript, LLVM, Call/ADAA-JIT, zweites Half-Band, Prefetch, globales FMA/`fast-math`. SIMD-Stage ohne Tape bleibt der alte `evalSimd`-Baum.
+
+Verträge: `tests/ExpressionEvaluatorTest.h` (Tape-Identität, JIT `x*2+1` / `-x`, LoadVar-OOB), `tests/ArchitectureHardeningTest.h` (64-Align, Delay-Wrap, Knob-Lanes, CPU 0–100), `tests/DelayReverbTest.h`, `tests/WebShellTest.h` (JIT-Flag, Mac-Zip-Pfad).
 
 ## Signalkette
 
@@ -58,17 +112,14 @@ Input
 
 ### `PluginProcessor` (`src/core/PluginProcessor.h/.cpp`)
 - Zentraler `juce::AudioProcessor`-Erbe
-- Hält den **APVTS** (AudioProcessorValueTreeState) mit allen Host-automatisierbaren Parametern
-- `processBlock()` führt die gesamte DSP-Kette aus
-- Verwaltet `SignalChain`, `PresetManager`, `LicenseManager`, Waveform-Capture und Validierungs-Logik
-- ⚠️ God-Class (~34 KB) – Refactoring geplant (siehe `docs/ROADMAP.md`)
+- Hält den **APVTS** mit Host-Parametern; DSP liegt in `DspEngine` + `SignalChain`
+- `processBlock()` misst CPU, ruft die Engine, schreibt Telemetrie
+- Editor: **nur** `WebPluginEditor` (`src/ui/WebPluginEditor.*`). Native `PluginEditor` ist nicht der Produkt-Default.
 
-### `PluginEditor` (`src/ui/PluginEditor.h/.cpp`)
-- `juce::AudioProcessorEditor`-Erbe
-- Instanziiert alle UI-Komponenten und verbindet sie mit dem APVTS
-- Workspace: **Graph** (Platine, Snap, Chips) und **Script** (Text-Hack, Live-`[value]`)
-- L/Both/R sitzt in der Knob-Spalte, gleiche Breite, gleiche Zeile wie Graph/Script
-- Fenster skalierbar bei festem Seitenverhältnis (Settings 100 / 125 / 150)
+### `WebPluginEditor` (`src/ui/WebPluginEditor.h/.cpp`)
+- WebView-Host (Windows WebView2, macOS WKWebView)
+- Circuit/Terminal/Unit leben in `web/` (React Flow + elkjs)
+- Web-Assets: Windows RCDATA `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`
 
 ### `Config.h` (`src/core/Config.h`)
 Zentrale Konfigurationskonstanten in anonymen Namespaces:
@@ -101,16 +152,11 @@ Parameter-IDs für den APVTS:
 - Blöcke: `stage`, `filter`, `eq`, `comp`, `gate`, `limit`, `delay`, `reverb`, `ir`, `ott`, `widen`, `ms`, `xover`, `bus`/`send`/`out`, `env`, `osc`, `param`
 - Liefert strukturierte Fehler mit Zeilen-/Spaltenangabe
 
-### `PcbRouter` (`src/dsl/PcbRouter.h/.cpp`)
-- UI-freier orthogonaler Router für Circuit-Kabel (keine JUCE-Typen)
-- A* auf einem 4-Nachbar-Gitter; State ist Zelle + Ankunftsrichtung
-- Kantengewicht `1 + turnPenalty` bei Richtungswechsel; Heuristik ist Manhattan
-- Hindernisse: Achsen-parallele Node-Boxen. Boxen, die Start oder Ziel enthalten, bleiben passierbar
-- Nachbearbeitung: colineare Punkte entfernen, 90°-Ecken als quadratische Beziers, paralleler Lane-Offset bei geteilten Tracks
-- Ausgabe: `PcbRoute` mit Waypoints und `Move`/`Line`/`Quad`-Kommandos. Das Canvas mapped das auf `juce::Path`
+### `PcbRouter` (nicht der Editor)
+- Native Circuit-Router. Produkt-Layout ist elkjs + A* in `web/`. Nicht anfassen für neue Circuit-Arbeit.
 
 ### `GraphModel` (`src/dsl/GraphModel.h/.cpp`)
-- Editor-Datenmodell für den 2D Node-Patcher (`GraphCanvasComponent`)
+- Editor-Datenmodell (Document). Layout/Routing ist `web/` (React Flow + elkjs), nicht native Canvas
 - `parse` nutzt `DSLParser` und hängt `#`-Header/Trailing-Kommentare inkl. `@x,y` an
 - `emit` schreibt kanonische DSL; Formel bleibt Source of Truth
 - `jacksFor` / `jacksForInput` / `jacksForVirtualOut`: sichtbare Ports (Audio, Mix-Bus, Knob, SC, Mod, MID/SIDE, L/R, Xover)
@@ -120,31 +166,23 @@ Parameter-IDs für den APVTS:
 - `semanticallyEqual` vergleicht Typ/Name/Bus/Args und Param-Ranges, ignoriert Kommentartext
 - `moveNode` verschiebt Blöcke mit Bus-Regeln (`send` nur im Named Bus, `out` zuletzt)
 
-### `GraphCanvasComponent` (`src/ui/GraphCanvasComponent.h/.cpp`)
-- Circuit-Modus: Platine. Karten rasten auf 16 px (`snap` / `snapPoint`). Ctrl+Rad zoomt (0.55–2.4)
-- Karten-Drag schreibt nur `@x,y` (`setPosition`). Reihenfolge nur Overlay/Kabel, nie `commitNodeDrop`
-- Audio-Kabel: weiss/grau, orthogonal über `PcbRouter` (gerundete 90°-Ecken, Bus-Lanes). Energie aus WaveformCapture (gleiche Quelle wie die Scopes); optional Tap-Welle
-- Bus-Kopf ist verdrahtet: IN -> BUS -> send
-- Live-Knobwerte stehen rot auf dem Chip
-- Doppelklick öffnet `NodeInspectComponent` (alle Args, a–f, Apply/Remove)
-- Terminal bleibt der Text-Hack desselben Konstrukts
+### Circuit-UI
+- Produkt: React Flow in `web/` (`nodesDraggable`, `onConnect`, stored `data.route`). C++ `GraphModel` bleibt Document/emit/parse.
 
 ### `SignalChain` (`src/dsl/SignalChain.h/.cpp`)
-- Führt die geparsten Blöcke als Audio-Processing-Chain aus
-- Delay: Hermite-Interpolation, samplegenaue Zeit/Feedback/Mix/Damp, Write-Head ≥ 8 Samples
-- Studio-Oversampling: Host-Nyquist-AA-LPF läuft immer vor dem Downsample (auch bei 8× FIR)
-- Innere Klassen: Stage, Filter, Comp, Gate / noisegate, Limit, Delay, Reverb, IR, Ott, Widen, MS, Xover, Env, Osc
-- Nach jedem Block: `writeNodeTap` (64 Samples) für die Circuit-Kabel
-- Formelwechsel über `switchRamp` (kein Dual-Chain-Blend im Audio-Thread)
+- Führt die geparsten Blöcke aus. Audio: nur `processBlock` (eine Virtual / Chip / Callback)
+- Neue Kette wird gebaut, dann atomar veröffentlicht. Die vorherige hängt an `retiredChain` (Message-Thread)
+- Delay: linearer Tap, Integer-Wrap, 64-aligned Ring (`DSPUtils::alignedRing`)
+- Sanitation-AA sitzt in der Engine **vor** dem Downsample, nicht im DSL-Delay
+- Nach jedem Block: `writeNodeTap` (64 Samples) für Circuit-Glow
+- Formelwechsel: `switchRamp` in `DspEngine` (kein Dual-Chain-Blend)
 
-### `ExpressionEvaluator` (`src/dsl/ExpressionEvaluator.h/.cpp`)
-- AST-basierter Mathe-Parser
-- **Optimierungen:**
-  - Constant Folding (Konstanten werden zur Parse-Zeit berechnet)
-  - CSE-Elimination (Common Subexpression Elimination)
-  - SIMD-Support (evaluateBlockSimd für Blöcke)
-- Hauptmethoden: `parseFormula()`, `evaluateBlock()`, `evaluateBlockSimd()`
-- Unterstützte Funktionen: siehe `docs/DSL_REFERENCE.md`
+### `ExpressionEvaluator` (`src/utils/ExpressionEvaluator.h/.cpp`)
+- Parser/Fold/CSE auf dem Message-Thread. AST ist nicht der Live-Pfad
+- Live: `ExprTape` → optional asmjit (Windows x64, nur Arithmetik) → sonst Interpreter
+- `evaluateLive` / `bindCompiledUnlocked`: kein Parse-Lock, kein ADAA-Reset pro Sample
+- SIMD-`evalSimd` nur für Stage ohne Tape-Sample-Loop (kein Feedback/t/mod/ADAA)
+- Funktionen: `docs/DSL_REFERENCE.md`
 
 ---
 
@@ -157,21 +195,24 @@ Parameter-IDs für den APVTS:
 | `WaveShaper` | `WaveShaper.h` | Waveshaping via LookupTable |
 | `SanitationChain` | `SanitationChain.h` | DC → AA → optional clip → True-Peak → residual → dither |
 | `LowPassFilter` | `LowPassFilter.h` | Einfacher Tiefpass |
-| `DSPUtils` | `DSPUtils.h` | Hilfs-Algorithmen (siehe unten) |
+| `DSPUtils` | `DSPUtils.h` | RMS/Kahan, AutoGain, LUT-Interp, `alignedRing`, Soft-Clip |
+| `LookupTables` | `LookupTables.cpp` | sin/cos/tanh/exp/log; Interp auf `float*` |
 
-### `DSPUtils` – Algorithmen
-- **Kahan-Summation RMS** – numerisch stabile RMS-Berechnung
-- **DC-Offset-Erkennung** – Analyse auf Gleichspannungsanteil
-- **Auto-Gain-Compensation** (`autoGainCompensate`) – ⚠️ per-Sample SubBlock (Performance-Bottleneck)
-- **FFT-Analyse** – Frequenzspektrum-Berechnung
-- **LUFS-Berechnung** – Loudness-Messung nach EBU R128
+### `DSPUtils`
+- **alignedRing** — `prepare`-only; Wrap-Länge unverändert
+- **lutInterp** — lineare LUT auf raw `float*`
+- **autoGainCompensate** — optional, default strength 0; mutet nie
+- **Kahan RMS / DC** — Meter, nicht Audio-Hot-Path
 
 ---
 
 ## UI-Komponenten (`src/ui/`)
 
+Produkt-Editor ist `WebPluginEditor` + `web/`. Die native Tabelle darunter ist Altbestand im Tree, nicht der Default.
+
 | Komponente | Beschreibung |
 |---|---|
+| `WebPluginEditor` | WebView-Host. Circuit/Terminal in `web/` |
 | `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
 | `DslTerminalEditor` | Code-Editor (Terminal-Edit). IR-Button in Zeilenhöhe. Keine Live-`[value]`-Annotation |
 | `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, orthogonale PCB-Kabel |
@@ -196,6 +237,10 @@ Cyber-UI-Regeln: kein Audio-Thread, kein WebView, kein Vollfenster-`repaint()` o
 ---
 
 ## Utils (`src/utils/`)
+
+### `ExprTape` / `ExprTapeJit`
+- Flache Opcode-Maschine für `evaluateLive`. Interpreter immer; asmjit nur Windows x64 Arithmetik
+- ADAA-State (`softclip`/`tube`/`diode`) lebt auf dem Tape, Reset nur bei Parse/prepare
 
 ### `PresetManager`
 - Speichert/lädt Presets als Dateien

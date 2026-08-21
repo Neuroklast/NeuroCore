@@ -22,7 +22,9 @@ inline juce::WebBrowserComponent::Options webEditorProbeOptions()
         .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2 {}
                                      .withUserDataFolder (userData));
 #else
-    return {};
+    // WKWebView (VST3 + AU). Native integration is required for UI_READY / compile.
+    return juce::WebBrowserComponent::Options {}
+        .withNativeIntegrationEnabled();
 #endif
 }
 

@@ -23,8 +23,11 @@ std::optional<WebAsset> loadWebAssetFromZip (const void* zipData, size_t zipSize
 /** Windows RCDATA id for the packed web/dist zip. Must match scripts/pack_web_dist.mjs. */
 inline constexpr int kWebDistResourceId = 41001;
 
-/** Windows: zip compiled into the VST3/Standalone as RCDATA kWebDistResourceId. */
+/** Windows RCDATA, or macOS Contents/Resources/neurokore_web_dist.zip (or next to the binary). */
 std::optional<WebAsset> loadEmbeddedWebAsset (const juce::String& url);
+
+/** Expected on-disk zip for the Mac bundle / test exe. Empty on Windows (RCDATA). */
+juce::File expectedEmbeddedWebZip();
 
 /** Disk dist if present (dev), otherwise the binary-embedded zip. */
 std::optional<WebAsset> resolveEditorAsset (const juce::File& diskRoot, const juce::String& url);

@@ -56,6 +56,13 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - LFO Hz is not audio rate. Filter coeffs: stride + smoother, not `setCutoff` every sample at 8×.
 - `evaluate()` (lock) is not an inner-loop call. Use `evaluateLive`.
 - CPU-hold / lock-miss: last wet or silence, never raw input.
+- Live formula IR is `ExprTape`. JIT (asmjit) only after the tape exists, only for Load/Add/Sub/Mul/Neg, only Windows x64. Call/ADAA `invoke` crashed factory load — keep the interpreter.
+- Do not `xorps` against a 4-byte const pool entry. SSE reads 16 bytes. Negate with `mulss -1`.
+- Do not `JitRuntime::release` / destroy delay rings when `processBlock`'s local `shared_ptr` dies. Retire the old chain on the next `loadScript` (message thread).
+- JUCE half-band FIR already strides `k += 2`. Do not dual-own OS next to sanitation AA.
+- No global `/fp:fast`. It breaks `isfinite`, sanitation NaN-hold, and ADAA.
+- `alignedRing` padding must not change wrap length. A 10 ms delay impulse stays near 480 samples @ 48 kHz.
+- macOS VST3/AU: tape only (`NK_HAS_EXPR_JIT=0`). No asmjit, no WebView2 defines, web zip in `Contents/Resources`.
 
 ## Factory / sound
 

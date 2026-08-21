@@ -2,6 +2,10 @@
 
 #include "ExprTape.h"
 
+#ifndef NK_HAS_EXPR_JIT
+ #define NK_HAS_EXPR_JIT 0
+#endif
+
 /** Native function emitted at parse/load. Audio thread only calls `fn`. */
 struct ExprJitCode
 {

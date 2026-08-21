@@ -191,9 +191,11 @@ juce::File FactoryPresetLibrary::resolveResourcesDir(const juce::File& hint)
     candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
 
     // Bundle layout: NeuroKore.vst3/Contents/x86_64-win/NeuroKore.vst3
-    // resources next to the binary, or under Contents/Resources
+    // macOS AU/VST3: Contents/MacOS/<bin> → Contents/Resources/resources
     candidates.add(moduleDir.getChildFile(Config::kResourceFolder));
     candidates.add(moduleDir.getParentDirectory().getChildFile("Resources"));
+    candidates.add(moduleDir.getParentDirectory().getChildFile("Resources")
+                       .getChildFile(Config::kResourceFolder));
     candidates.add(moduleDir.getParentDirectory().getChildFile(Config::kResourceFolder));
     candidates.add(moduleDir.getParentDirectory().getParentDirectory().getChildFile(Config::kResourceFolder));
 

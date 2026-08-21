@@ -122,6 +122,25 @@ std::optional<WebAsset> loadWebAssetFromZip (const void* zipData, size_t zipSize
     return asset;
 }
 
+juce::File expectedEmbeddedWebZip()
+{
+#if JUCE_MAC
+    const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    const auto dir = exe.getParentDirectory();
+    const auto inBundle = dir.getParentDirectory()
+                              .getChildFile ("Resources")
+                              .getChildFile ("neurokore_web_dist.zip");
+    if (inBundle.existsAsFile())
+        return inBundle;
+    const auto beside = dir.getChildFile ("neurokore_web_dist.zip");
+    if (beside.existsAsFile())
+        return beside;
+    return inBundle;
+#else
+    return {};
+#endif
+}
+
 static bool lockEmbeddedWebZip (const void*& data, size_t& size)
 {
     data = nullptr;
@@ -143,6 +162,18 @@ static bool lockEmbeddedWebZip (const void*& data, size_t& size)
     data = blob.first;
     size = blob.second;
     return data != nullptr && size > 0;
+#elif JUCE_MAC
+    static juce::MemoryBlock zipBlob;
+    static const bool ok = []()
+    {
+        const auto zip = expectedEmbeddedWebZip();
+        return zip.existsAsFile() && zip.loadFileAsData (zipBlob) && zipBlob.getSize() > 0;
+    }();
+    if (! ok)
+        return false;
+    data = zipBlob.getData();
+    size = (size_t) zipBlob.getSize();
+    return true;
 #else
     juce::ignoreUnused (data, size);
     return false;
