@@ -659,9 +659,12 @@ void NeuroKoreAudioProcessor::refreshReportedLatency()
     // Convolution reports latency in the rate it was prepared at (OS domain).
     const int irOs = scriptManager.signalChain.getIrLatencySamples();
     const int irHost = (osF > 1) ? (irOs + osF / 2) / osF : irOs;
-    const int lat = osLat + juce::jmax (0, irHost);
+    // Dry/wet mix sits before the True-Peak lookahead. Align dry to OS+IR only;
+    // reported host PDC includes the limiter so mix-0 and other tracks stay in time.
+    const int wetLat = osLat + juce::jmax (0, irHost);
+    const int lat = wetLat + dspEngine.getSanitationLatency();
     setLatencySamples (lat);
-    dspEngine.setDryAlignLatency (lat);
+    dspEngine.setDryAlignLatency (wetLat);
 }
 
 bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
@@ -1049,7 +1052,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroKoreAudioProcessor::cre
     addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     // Default None — Limiter flattened every preset's dynamics ("pressed" amp sims)
-    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Polisher", juce::StringArray { "None", "Hard Clip", "Limiter" }, 0));
+    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Soft Clip", juce::StringArray { "Off", "Soft Clip" }, 0));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
     // Stereo hosts: process both channels by default
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));

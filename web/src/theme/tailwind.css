@@ -180,7 +180,7 @@ body,
   padding: 0 !important;
 }
 
-/* Circuit DoF: soft plane when data-dof=on (motion full only). No grain. */
+/* Circuit DoF: soft plane when data-dof=on (motion full only). */
 [data-dof="on"] .nk-chip[data-focus="soft"],
 [data-dof="on"] .nk-chip-io[data-focus="soft"],
 [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
@@ -1361,6 +1361,15 @@ body,
   border: 1px solid var(--nk-accent);
   background: #141414;
   pointer-events: auto;
+}
+
+.nk-frame > .nk-tech-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .nk-frame > .nk-crt-vignette {

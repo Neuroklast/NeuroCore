@@ -15,7 +15,7 @@ describe("hostStore", () => {
   it("initial os/osFactor/polisher match APVTS defaults (Issue 5: no cross-instance flash)", () => {
     // The store initialises with values that match the plugin's APVTS defaults:
     //   kDefaultOversamplingIndex = 2  →  4×  (index 2, factor 4)
-    //   polisherMode default          =  0   (None)
+    //   polisherMode default          =  0   (Soft Clip Off)
     // If these were wrong (e.g. 3/8/2) a new instance would briefly display the
     // previous instance's settings before the bridge pushHost() update arrives.
     const state = useHostStore.getInitialState();
@@ -66,13 +66,13 @@ describe("hostStore", () => {
   });
 
   it("writes mix from the slider without resetting os", () => {
-    useHostStore.setState({ mix: 1, os: 3, polisher: 2, input: 1 });
+    useHostStore.setState({ mix: 1, os: 3, polisher: 1, input: 1 });
     useHostStore.getState().setMix(0.35);
     expect(useHostStore.getState().mix).toBe(0.35);
     useHostStore.getState().applyParams({ knobs: [], mix: 0.5 });
     expect(useHostStore.getState().mix).toBe(0.5);
     expect(useHostStore.getState().os).toBe(3);
-    expect(useHostStore.getState().polisher).toBe(2);
+    expect(useHostStore.getState().polisher).toBe(1);
     expect(useHostStore.getState().input).toBe(1);
   });
 

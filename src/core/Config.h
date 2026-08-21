@@ -228,6 +228,15 @@ namespace Config
 
     /// Default oversampling choice index: 0=1×, 1=2×, 2=4×, 3=8×.
     inline constexpr int   kDefaultOversamplingIndex    = 2; // 4× — gold-standard clip/filter HQ
+
+    /// Engine sanitation (fixed order, not a DSL block).
+    inline constexpr float  kSanitationDcHz          = 5.0f;
+    inline constexpr double kSanitationAaPassRatio   = 0.45;
+    inline constexpr int    kSanitationAaOrderLive   = 16;  // 96 dB/oct
+    inline constexpr int    kSanitationAaOrderStudio = 22;  // 132 dB/oct
+    inline constexpr float  kSanitationCeilingDbTp   = -0.3f;
+    inline constexpr int    kSanitationLookaheadHost = 64;
+    inline constexpr int    kSanitationTpFactor      = 4;
     /// Soft-trip when the load EMA stays above this (host callback overrun, not "% of machine").
     inline constexpr float kCpuTripRatio     = 1.15f;
     /// Hard-trip only if the EMA (not a single sample) stays this far over budget.
@@ -313,7 +322,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.4.8-alpha"
+#define PLUGIN_VERSION    "0.4.10-alpha"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

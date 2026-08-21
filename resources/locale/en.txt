@@ -28,7 +28,7 @@ MixLabel=MIX
 OutputGainLabel=OUTPUT GAIN
 CurrentPreset=Preset
 LanguageLabel=Language
-PolisherLabel=Polisher
+PolisherLabel=Soft Clip
 KnobGroupLabel=Parameters
 
 ParameterEdit=Edit Mapping

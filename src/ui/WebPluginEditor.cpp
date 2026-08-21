@@ -85,13 +85,19 @@ juce::File resolveDistRoot()
     // Issue 3: cache the filesystem walk so reopening the editor window is fast.
     static const juce::File cached = []() -> juce::File
     {
+        if (! bridge::wantDiskWebAssets())
+            return {};
 #ifdef NEUROKORE_WEB_DIST_DIR
         const juce::File fromCMake (NEUROKORE_WEB_DIST_DIR);
         if (fromCMake.getChildFile ("index.html").existsAsFile())
             return fromCMake;
 #endif
-        auto here = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
-                        .getParentDirectory();
+        const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+        const auto bundled = exe.getParentDirectory().getParentDirectory()
+                                 .getChildFile ("Resources").getChildFile ("web");
+        if (bundled.getChildFile ("index.html").existsAsFile())
+            return bundled;
+        auto here = exe.getParentDirectory();
         for (int i = 0; i < 8; ++i)
         {
             const auto sibling = here.getChildFile ("web").getChildFile ("dist");
@@ -423,8 +429,8 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
 std::optional<juce::WebBrowserComponent::Resource>
 WebPluginEditor::provideResource (const juce::String& url)
 {
-    if (auto fromDisk = bridge::loadWebAsset (distRoot, url))
-        return toResource (*fromDisk);
+    if (auto fromEditor = bridge::resolveEditorAsset (distRoot, url))
+        return toResource (*fromEditor);
 
     const auto path = url.upToFirstOccurrenceOf ("?", false, false);
     if (path == "/" || path == "/index.html" || path.isEmpty())

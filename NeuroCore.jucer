@@ -88,10 +88,22 @@
         <FILE id="vZHbuT" name="LowPassFilter.cpp" compile="1" resource="0"
               file="src/dsp/LowPassFilter.cpp"/>
         <FILE id="vwHqqE" name="LowPassFilter.h" compile="0" resource="0" file="src/dsp/LowPassFilter.h"/>
-        <FILE id="K2MZZB" name="SignalPolisher.cpp" compile="1" resource="0"
-              file="src/dsp/SignalPolisher.cpp"/>
-        <FILE id="qhJ0Wl" name="SignalPolisher.h" compile="0" resource="0"
-              file="src/dsp/SignalPolisher.h"/>
+        <FILE id="NkAa01" name="AntiAliasLowpass.cpp" compile="1" resource="0"
+              file="src/dsp/AntiAliasLowpass.cpp"/>
+        <FILE id="NkAa02" name="AntiAliasLowpass.h" compile="0" resource="0"
+              file="src/dsp/AntiAliasLowpass.h"/>
+        <FILE id="NkDc01" name="DcBlocker1p.h" compile="0" resource="0"
+              file="src/dsp/DcBlocker1p.h"/>
+        <FILE id="NkTp01" name="TruePeakLimiter.cpp" compile="1" resource="0"
+              file="src/dsp/TruePeakLimiter.cpp"/>
+        <FILE id="NkTp02" name="TruePeakLimiter.h" compile="0" resource="0"
+              file="src/dsp/TruePeakLimiter.h"/>
+        <FILE id="NkTd01" name="TpdfDither.h" compile="0" resource="0"
+              file="src/dsp/TpdfDither.h"/>
+        <FILE id="NkSc01" name="SanitationChain.cpp" compile="1" resource="0"
+              file="src/dsp/SanitationChain.cpp"/>
+        <FILE id="NkSc02" name="SanitationChain.h" compile="0" resource="0"
+              file="src/dsp/SanitationChain.h"/>
         <FILE id="svvaAO" name="WaveShaper.cpp" compile="1" resource="0" file="src/dsp/WaveShaper.cpp"/>
         <FILE id="RtztmE" name="WaveShaper.h" compile="0" resource="0" file="src/dsp/WaveShaper.h"/>
       </GROUP>

@@ -3,9 +3,8 @@
 /*
     NeuroKore - Copyright (c) 2024 NEUROKLAST
 
-    Sole end-of-chain safety boundary (do not re-implement elsewhere):
+    Residual / NaN boundary (peak safety is SanitationChain True-Peak brickwall):
       - NaN/Inf hold (never hard-zero)
-      - Soft peak limiter (smooth GR near full scale)
       - Residual mute ONLY when dry AND wet are both at denoise floor
       - Denormal flush
 
@@ -13,11 +12,13 @@
       - AutoGain / NoiseGate / stage soft-ceil MUST NOT also mute residual
       - Musical character (drive, sustain, delay tails) is NOT managed here
       - Sidechain dry MUST be latency-aligned (LatencyAlignedSidechain)
+      - Peak ceiling belongs to TruePeakLimiter, not this class
       - Crackle → fix timeline/state, do not raise/lower these floors ad-hoc
 */
 
 #include <JuceHeader.h>
 #include <array>
+#include <atomic>
 #include <cmath>
 
 class OutputSanitizer
@@ -27,11 +28,6 @@ public:
     {
         sampleRate = spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0;
         numChannels = juce::jlimit (1, 8, (int) spec.numChannels);
-
-        const double limAtkSec = 0.003;
-        const double limRelSec = 0.100;
-        limAtk = (float) std::exp (-1.0 / (limAtkSec * sampleRate));
-        limRel = (float) std::exp (-1.0 / (limRelSec * sampleRate));
 
         const double envAtkSec = 0.002;
         const double envRelSec = 0.080;
@@ -51,15 +47,10 @@ public:
         for (int ch = 0; ch < 8; ++ch)
         {
             lastGood[ch] = 0.f;
-            grEnv[ch]    = 1.f;
         }
         dryEnv = wetEnv = 0.f;
         gateGain = 1.f;
     }
-
-    /** When false, skip soft-peak stage (upstream polisher owns musical ceiling). */
-    void setPeakSafetyEnabled (bool enabled) noexcept { peakSafetyEnabled = enabled; }
-    bool isPeakSafetyEnabled() const noexcept { return peakSafetyEnabled; }
 
     /**
         @param dry   Latency-aligned pre-FX reference (same timeline as mixed)
@@ -76,9 +67,6 @@ public:
         const auto dryCh = dry.getNumChannels() > 0 ? dry.getNumChannels() : 0;
         const bool hasDry = dryCh > 0 && dry.getNumSamples() >= nS;
 
-        // Peak region only — leave program dynamics alone until true ceiling
-        constexpr float kneeStart = 0.97f;
-        constexpr float softCeil  = 0.999f;
         constexpr float residualFloor = 1.0e-4f;
 
         for (size_t i = 0; i < nS; ++i)
@@ -122,34 +110,6 @@ public:
                     hitInvalid = true;
                 }
 
-                if (peakSafetyEnabled)
-                {
-                    const float absV = std::abs (v);
-                    float needed = 1.f;
-                    if (absV > kneeStart)
-                    {
-                        const float over = absV - kneeStart;
-                        const float room = softCeil - kneeStart;
-                        const float compressed = kneeStart
-                            + room * std::tanh (over / juce::jmax (1.0e-6f, room));
-                        needed = compressed / juce::jmax (absV, 1.0e-12f);
-                        if (needed < 0.92f)
-                            hitLimiter = true;
-                    }
-
-                    float& gr = grEnv[ch];
-                    if (needed < gr)
-                        gr = limAtk * gr + (1.f - limAtk) * needed;
-                    else
-                        gr = limRel * gr + (1.f - limRel) * needed;
-                    v *= gr;
-
-                    if (v > softCeil)
-                        v = softCeil + 0.01f * std::tanh (v - softCeil);
-                    else if (v < -softCeil)
-                        v = -softCeil + 0.01f * std::tanh (v + softCeil);
-                }
-
                 if (std::abs (v) < 1.0e-15f)
                     v = 0.f;
 
@@ -159,24 +119,19 @@ public:
         }
     }
 
-    bool consumeLimiterHit() noexcept  { return hitLimiter.exchange (false); }
     bool consumeInvalid() noexcept     { return hitInvalid.exchange (false); }
 
 private:
     double sampleRate { 44100.0 };
     int numChannels { 2 };
 
-    float limAtk { 0.f }, limRel { 0.f };
     float gateAtk { 0.f }, gateRel { 0.f };
     float envAtk { 0.f }, envRel { 0.f };
 
     float dryEnv { 0.f };
     float wetEnv { 0.f };
     float gateGain { 1.f };
-    bool peakSafetyEnabled { true };
     std::array<float, 8> lastGood {};
-    std::array<float, 8> grEnv { 1,1,1,1,1,1,1,1 };
 
-    std::atomic<bool> hitLimiter { false };
     std::atomic<bool> hitInvalid { false };
 };

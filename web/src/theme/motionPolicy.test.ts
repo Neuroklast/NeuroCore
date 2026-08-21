@@ -8,6 +8,10 @@ describe("motion policy", () => {
     expect(motionAllows("pipeWave", "full", false)).toBe(true);
     expect(motionAllows("chipReact", "full", false)).toBe(true);
     expect(motionAllows("crtScan", "full", false)).toBe(true);
+    expect(motionAllows("techNoise", "full", false)).toBe(true);
+    expect(motionAllows("techNoise", "reduced", false)).toBe(false);
+    expect(motionAllows("techNoise", "off", false)).toBe(false);
+    expect(motionAllows("techNoise", "full", true)).toBe(false);
   });
 
   it("reduced keeps scan and chip highlight only", () => {

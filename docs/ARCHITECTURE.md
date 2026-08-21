@@ -7,8 +7,8 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | Vertrag | Owner | Regel |
 |--------|--------|--------|
 | **Eine Timeline** | `LatencyAlignedSidechain` | Dry-Sidechain-Delay == OS-Wet-Latenz. AutoGain/Sanitizer/Mix vergleichen nie raw Dry mit delayed Wet. |
-| **Eine Residual-Policy** | `OutputSanitizer` | Nur hier Residual-Mute. AutoGain **nie** muten. Kein NoiseGate in der Chain. |
-| **Eine Peak-Safety** | `OutputSanitizer` wenn Polisher=None | Polisher Limiter/HardClip → Sanitizer Peak **aus** (`setPeakSafetyEnabled`). |
+| **Eine Residual-Policy** | `OutputSanitizer` (via `SanitationChain`) | Nur hier Residual-Mute. AutoGain **nie** muten. Kein NoiseGate in der Chain. |
+| **Eine Peak-Safety** | `SanitationChain` True-Peak brickwall (−0.3 dBTP) | Immer an. Soft-Clip ist optional davor. Reihenfolge ist fest. |
 | **AutoGain optional** | APVTS `autoGain` 0…1 | Default **0** (off). Strength skaliert mildes RMS-Match. |
 | **Kontinuierliche Control-Rate** | knob lanes + `mixDryWetContinuous` | Knobs und Dry/Wet sample-rate, nicht block-constant. |
 | **Filter-Timebase** | `advanceCoeffsOnce` + `processSample(ch)` | Coeff 1×/Sample; pro Kanal eigener SVF-State. |
@@ -31,16 +31,20 @@ Input
                     └─► DSL SignalChain (nur current; kein Dual-Run)
                           optional: in-snapshot → main + named buses (Send-DAG) → out mixdown
                           └─► Post-DSL NaN-hold only
-                                └─► DC-Blocker
-                                      └─► SignalPolisher (optional musical ceiling)
-                                            └─► LPF anti-alias
-                                                  └─► [Oversampling ↓]
-                                                        └─► mixDryWetContinuous (aligned dry × wet)
-                                                              └─► AutoGain (strength, default off)
-                                                                    └─► OutputGain
-                                                                          └─► OutputSanitizer (aligned dry)
-                                                                                └─► switchRamp
-                                                                                      └─► Output
+                                └─► SanitationChain::processOversampled
+                                      1. 1-pole DC (5 Hz)
+                                      2. AA LPF (96 dB/oct Live / 128 dB/oct Studio, fc = 0.45·hostSr)
+                                            └─► [Oversampling ↓]  (only after AA)
+                                                  └─► mixDryWetContinuous (aligned dry × wet)
+                                                        └─► AutoGain (strength, default off)
+                                                              └─► OutputGain
+                                                                    └─► SanitationChain::processHost
+                                                                          3. optional Soft Clip
+                                                                          4. True-Peak brickwall (−0.3 dBTP)
+                                                                          5. residual mute + NaN hold
+                                                                          6. TPDF dither IFF integer bit-depth drop
+                                                                            └─► switchRamp
+                                                                                  └─► Output
 ```
 
 ---
@@ -146,7 +150,7 @@ Parameter-IDs für den APVTS:
 | `InputGain` | `InputGain.h` | Eingangs-Verstärkung mit Smoothing |
 | `InputRouter` | `InputRouter.h` | Kanal-Routing (Mono/Stereo) |
 | `WaveShaper` | `WaveShaper.h` | Waveshaping via LookupTable |
-| `SignalPolisher` | `SignalPolisher.h` | Noise-Gate + DC-Filter |
+| `SanitationChain` | `SanitationChain.h` | DC → AA → optional clip → True-Peak → residual → dither |
 | `LowPassFilter` | `LowPassFilter.h` | Einfacher Tiefpass |
 | `DSPUtils` | `DSPUtils.h` | Hilfs-Algorithmen (siehe unten) |
 

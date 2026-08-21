@@ -111,8 +111,6 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     wetValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
     wetValue.setCurrentAndTargetValue(1.0f);
 
-    outputSanitizer.prepare(currentSpec);
-
     for (auto& s : smoothedParams)
     {
         s.reset(currentSpec.sampleRate * osFactor, Config::kSmoothingTime);
@@ -120,24 +118,13 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     }
 
     inputRouter.prepare(currentSpec);
+    inputGain.prepare(currentSpec);
 
     juce::dsp::ProcessSpec osSpec{ currentSpec.sampleRate * osFactor,
                                    osHostBlock * (juce::uint32) osFactor,
                                    currentSpec.numChannels };
-    chain.prepare(osSpec);
-
-    lowpassFilter.prepare(osSpec);
-    {
-        const double hostNyquist = currentSpec.sampleRate * 0.5;
-        const double osNyquist   = osSpec.sampleRate * 0.5;
-        const double aaHz = juce::jlimit (1000.0, osNyquist * 0.49, hostNyquist * 0.92);
-        *lowpassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass (
-            osSpec.sampleRate, aaHz);
-    }
-    dcBlocker.prepare(osSpec);
-    *dcBlocker.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(osSpec.sampleRate, 12.0f);
-    lowpassFilter.reset();
-    dcBlocker.reset();
+    sanitation.prepare (currentSpec, osSpec,
+                        liveMode.load (std::memory_order_relaxed));
 
     lastLoudness.store (-100.0f, std::memory_order_relaxed);
     silentSec = 0.0;
@@ -169,9 +156,7 @@ void DspEngine::reset(double sampleRate, int blockSize)
 
     if (oversampler)
         oversampler->reset();
-    lowpassFilter.reset();
-    dcBlocker.reset();
-    outputSanitizer.reset();
+    sanitation.reset();
     drySidechain.reset();
     scHostAlign.reset();
     postDslLastGood.fill (0.0f);
@@ -211,11 +196,9 @@ void DspEngine::onFormulaChanged()
     // next preset (even a dry one) does not keep crackling.
     if (oversampler)
         oversampler->reset();
-    lowpassFilter.reset();
-    dcBlocker.reset();
+    sanitation.reset();
     drySidechain.reset();
     scHostAlign.reset();
-    outputSanitizer.reset();
     postDslLastGood.fill (0.0f);
     gainCompValue.setCurrentAndTargetValue (1.0f);
     silentSec = 0.0;
@@ -236,6 +219,11 @@ void DspEngine::setLiveMode (bool enabled) noexcept
     osLatencySamples = oversampler
         ? juce::roundToInt (oversampler->getLatencyInSamples())
         : 0;
+    const size_t osFactor = oversampler ? oversampler->getOversamplingFactor() : 1;
+    juce::dsp::ProcessSpec osSpec { currentSpec.sampleRate * (double) osFactor,
+                                    currentSpec.maximumBlockSize * (juce::uint32) osFactor,
+                                    currentSpec.numChannels };
+    sanitation.prepare (currentSpec, osSpec, enabled);
 }
 
 size_t DspEngine::getOversamplingFactor() const noexcept
@@ -299,13 +287,11 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     inputRouter.setUseLeft (getParam(EffectParameters::useInputLeft)  > 0.5f);
     inputRouter.setUseRight(getParam(EffectParameters::useInputRight) > 0.5f);
 
-    chain.get<0>().setParameter(EffectParameters::inputGain,
-                                clamp(EffectParameters::inputGain, getParam(EffectParameters::inputGain)));
+    inputGain.setParameter(EffectParameters::inputGain,
+                           clamp(EffectParameters::inputGain, getParam(EffectParameters::inputGain)));
     const float polisherParam = clamp(EffectParameters::polisherMode,
                                       getParam(EffectParameters::polisherMode));
-    chain.get<1>().setParameter(EffectParameters::polisherMode, polisherParam);
-    // Single peak boundary: sanitizer peaking only when polisher is None
-    outputSanitizer.setPeakSafetyEnabled (polisherParam < 0.5f);
+    sanitation.setSoftClipEnabled (polisherParam >= 0.5f);
 
     const float dryWet = clamp(EffectParameters::dryWet, getParam(EffectParameters::dryWet));
     wetValue.setTargetValue(dryWet);
@@ -326,7 +312,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         inputWaveTap->pushInput (buffer);
 
     // Input Gain BEFORE dry split
-    chain.get<0>().processBlock(buffer);
+    inputGain.processBlock(buffer);
 
     auto block = juce::dsp::AudioBlock<float>(buffer);
 
@@ -429,10 +415,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
             auto dryConst = juce::dsp::AudioBlock<const float> (aligned)
                                 .getSubBlock (0, numSamplesEarly);
             auto mixed    = block.getSubBlock (0, numSamplesEarly);
-            const bool peakWas = outputSanitizer.isPeakSafetyEnabled();
-            outputSanitizer.setPeakSafetyEnabled (true);
-            outputSanitizer.process (dryConst, mixed);
-            outputSanitizer.setPeakSafetyEnabled (peakWas);
+            sanitation.processHost (dryConst, mixed);
         }
 
         if (numSamplesEarly > 0 && (switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f))
@@ -591,18 +574,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         }
     }
 
-    juce::dsp::ProcessContextReplacing<float> ctxDC(upBlock);
-    dcBlocker.process(ctxDC);
-    juce::dsp::ProcessContextReplacing<float> ctxPolish(upBlock);
-    chain.get<1>().process(ctxPolish);
-
-    // Always lowpass at host Nyquist before downsample. FIR half-band is not
-    // brick-wall enough after tube/clip + delay feedback — leftover images
-    // beat as a periodic tone at 8×. 1× / Live IIR need this too.
-    {
-        juce::dsp::ProcessContextReplacing<float> ctxFilter(upBlock);
-        lowpassFilter.process(ctxFilter);
-    }
+    sanitation.processOversampled (upBlock);
 
     if (oversampler)
         oversampler->processSamplesDown(block);
@@ -657,7 +629,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         auto dryConst = juce::dsp::AudioBlock<const float> (drySidechain.getAligned())
                             .getSubBlock (0, numSamples);
         auto mixed    = block.getSubBlock(0, numSamples);
-        outputSanitizer.process(dryConst, mixed);
+        sanitation.processHost (dryConst, mixed);
     }
 
     if (numSamples > 0 && (switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f))
@@ -701,8 +673,7 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         db = -100.0f;
     publishLoudness (db, (int) numSamples);
 
-    const bool limHitNow = chain.get<1>().wasLimiterHit()
-                        || outputSanitizer.consumeLimiterHit()
+    const bool limHitNow = sanitation.consumeLimiterHit()
                         || peak >= 0.99f;
     if (limHitNow)
         limiterHoldBlocks = 24;
@@ -714,9 +685,8 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
         limiterHoldBlocks = 0;
     limiterActive.store (limiterHoldBlocks > 0, std::memory_order_relaxed);
 
-    const bool polisherBad = chain.get<1>().wasInvalidSample();
-    const bool sanitBad    = outputSanitizer.consumeInvalid();
-    if (polisherBad || sanitBad || badSamples >= 4)
+    const bool sanitBad    = sanitation.consumeInvalid();
+    if (sanitBad || badSamples >= 4)
         invalidFlag.store(true, std::memory_order_relaxed);
 
     if (diagnostics.isEnabled() && numSamples > 0)

@@ -11,7 +11,7 @@ cmake --build build --target NeuroKoreTests --config Release
 .\build\NeuroKoreTests_artefacts\Release\NeuroKoreTests.exe
 ```
 
-Version is **0.4.8-alpha**. Do not invent a new one.
+Version is **0.4.10-alpha**. Do not invent a new one.
 
 ## Read before you touch code
 

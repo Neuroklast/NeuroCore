@@ -18,7 +18,7 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { shouldPlayBoot } from "../theme/boot";
 import { RESIZE_GRIP } from "../theme/chromeSpec";
-import { CrtFx, PaneVignette } from "../theme/CrtFx";
+import { CrtFx, PaneTechNoise, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
 import { bindDocumentTheme } from "../theme/themeBind";
@@ -114,7 +114,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.4.8-alpha", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: "0.4.10-alpha", scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }
@@ -148,6 +148,7 @@ export function App() {
               <AssembleView />
             </div>
             {workspace === "hack" && <HackView />}
+            <PaneTechNoise />
             <PaneVignette />
           </div>
           {knobRail(workspace) === "bottom" ? (

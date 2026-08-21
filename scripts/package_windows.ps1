@@ -5,7 +5,7 @@
 $ErrorActionPreference = "Stop"
 if (-not $PSScriptRoot) { $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.4.7-alpha"
+$version = "0.4.10-alpha"
 $stem = "NEUROKORE-$version"
 $art = Join-Path $root "build\NeuroKore_artefacts\Release"
 $stage = Join-Path $root "build\package\stage"

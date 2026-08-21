@@ -193,7 +193,7 @@ export const useHostStore = create<HostState>((set) => ({
     mix: p.mix != null ? Number(p.mix) : s.mix,
     os: p.os != null ? Number(p.os) : s.os,
     osFactor: p.os != null ? osFactorFromIndex(Number(p.os)) : s.osFactor,
-    polisher: p.polisher != null ? Number(p.polisher) : s.polisher,
+    polisher: p.polisher != null ? Math.max(0, Math.min(1, Number(p.polisher))) : s.polisher,
     input: p.input != null ? Number(p.input) : s.input,
     bypass: p.bypass != null ? Boolean(p.bypass) : s.bypass,
   })),
@@ -304,7 +304,7 @@ export const useHostStore = create<HostState>((set) => ({
     const os = Math.max(0, Math.min(3, Math.round(index)));
     set({ os, osFactor: osFactorFromIndex(os) });
   },
-  setPolisher: (index) => set({ polisher: Math.max(0, Math.min(2, Math.round(index))) }),
+  setPolisher: (index) => set({ polisher: Math.max(0, Math.min(1, Math.round(index))) }),
   setInput: (index) => set({ input: Math.max(0, Math.min(2, Math.round(index))) }),
   setTheme: (id) => {
     const theme = isThemeId(id) ? id : DEFAULT_THEME;

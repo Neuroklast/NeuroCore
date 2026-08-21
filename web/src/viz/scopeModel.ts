@@ -180,6 +180,27 @@ export function techNoise(x: number, y: number, frame: number): number {
   return f > 0.972 ? (f - 0.972) / 0.028 : 0;
 }
 
+/** Same 1px speckle as the footer spectrograph. */
+export function paintTechNoise(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  frame: number,
+  fillStyle: string,
+): void {
+  ctx.fillStyle = fillStyle;
+  for (let y = 2; y < h; y += 5) {
+    for (let x = 2; x < w; x += 7) {
+      const n = techNoise(x, y, frame);
+      if (n > 0) {
+        ctx.globalAlpha = 0.18 + n * 0.45;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
 export const SCOPE_MENU = {
   x: [
     { id: "samples", label: "Scale Samples" },

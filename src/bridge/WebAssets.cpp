@@ -1,5 +1,12 @@
 #include "WebAssets.h"
 
+#include <memory>
+#include <utility>
+
+#if JUCE_WINDOWS
+#include <windows.h>
+#endif
+
 namespace bridge
 {
 namespace
@@ -70,6 +77,104 @@ std::optional<WebAsset> loadWebAsset (const juce::File& root, const juce::String
     return asset;
 }
 
+std::optional<WebAsset> loadWebAssetFromZip (const void* zipData, size_t zipSize, const juce::String& url)
+{
+    if (zipData == nullptr || zipSize == 0)
+        return std::nullopt;
+
+    const auto rel = normalisedPath (url);
+    if (! isSafeRelative (rel))
+        return std::nullopt;
+
+    juce::MemoryInputStream stream (zipData, zipSize, false);
+    juce::ZipFile zip (stream);
+
+    const auto wanted = rel.replaceCharacter ('\\', '/');
+    int index = -1;
+    for (int i = 0; i < zip.getNumEntries(); ++i)
+    {
+        const auto* entry = zip.getEntry (i);
+        if (entry == nullptr)
+            continue;
+        auto name = entry->filename.replaceCharacter ('\\', '/');
+        if (name.startsWith ("./"))
+            name = name.substring (2);
+        if (name == wanted)
+        {
+            index = i;
+            break;
+        }
+    }
+    if (index < 0)
+        return std::nullopt;
+
+    std::unique_ptr<juce::InputStream> in (zip.createStreamForEntry (index));
+    if (in == nullptr)
+        return std::nullopt;
+
+    juce::MemoryBlock block;
+    in->readIntoMemoryBlock (block);
+
+    WebAsset asset;
+    asset.mimeType = mimeForPath (wanted);
+    const auto* p = static_cast<const std::byte*> (block.getData());
+    asset.data.assign (p, p + block.getSize());
+    return asset;
+}
+
+static bool lockEmbeddedWebZip (const void*& data, size_t& size)
+{
+    data = nullptr;
+    size = 0;
+#if JUCE_WINDOWS
+    static const auto blob = []() -> std::pair<const void*, size_t>
+    {
+        auto* mod = static_cast<HMODULE> (juce::Process::getCurrentModuleInstanceHandle());
+        if (mod == nullptr)
+            return { nullptr, 0 };
+        auto* res = FindResource (mod, MAKEINTRESOURCE (kWebDistResourceId), RT_RCDATA);
+        if (res == nullptr)
+            return { nullptr, 0 };
+        auto* glob = LoadResource (mod, res);
+        if (glob == nullptr)
+            return { nullptr, 0 };
+        return { LockResource (glob), (size_t) SizeofResource (mod, res) };
+    }();
+    data = blob.first;
+    size = blob.second;
+    return data != nullptr && size > 0;
+#else
+    juce::ignoreUnused (data, size);
+    return false;
+#endif
+}
+
+std::optional<WebAsset> loadEmbeddedWebAsset (const juce::String& url)
+{
+    const void* data = nullptr;
+    size_t size = 0;
+    if (! lockEmbeddedWebZip (data, size))
+        return std::nullopt;
+    return loadWebAssetFromZip (data, size, url);
+}
+
+bool wantDiskWebAssets()
+{
+    const auto v = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_DISK", {});
+    if (v == "0" || v.equalsIgnoreCase ("off") || v.equalsIgnoreCase ("false")
+        || v.equalsIgnoreCase ("embed"))
+        return false;
+    return true;
+}
+
+std::optional<WebAsset> resolveEditorAsset (const juce::File& diskRoot, const juce::String& url)
+{
+    if (wantDiskWebAssets())
+        if (auto fromDisk = loadWebAsset (diskRoot, url))
+            return fromDisk;
+    return loadEmbeddedWebAsset (url);
+}
+
 juce::String fallbackIndexHtml()
 {
     return R"HTML(<!DOCTYPE html>
@@ -102,7 +207,7 @@ juce::String fallbackIndexHtml()
                        && window.__JUCE__.initialisationData.__juce__functions) || [];
         if (names.indexOf('UI_READY') >= 0) {
           window.__JUCE__.backend.emitEvent('__juce__invoke', {
-            name: 'UI_READY', params: [{ build: '0.4.8-alpha', scale: 1 }], resultId: 0
+            name: 'UI_READY', params: [{ build: '0.4.10-alpha', scale: 1 }], resultId: 0
           });
         }
         window.__JUCE__.backend.addEventListener('hello', (payload) => {

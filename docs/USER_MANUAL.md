@@ -8,7 +8,7 @@ This is the same text the plugin shows under **Help** (`resources/UserManual_en.
 
 NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn knobs a-f, or write a short formula (drive, filter, delay, reverb, compressor, gate, limiter, IR cab, pitch, crossover, envelope, oscillator).
 
-Version 0.4.8-alpha. Formats: Standalone, VST3, AU.
+Version 0.4.10-alpha. Formats: Standalone, VST3, AU.
 
 30-second path
 1. Click the preset name in the top bar. Double-click a factory row (amp, delay, reverb, vocal).
@@ -81,7 +81,7 @@ Knobs
 - On Circuit, drag from a chip's bottom jack to a knob to bind it. Bound knobs print on the chip. There are no extra knob cables on the board.
 
 Tools row (Circuit and Terminal)
-- L / BOTH / R, Oversampling 1x / 2x / 4x / 8x (default 4x), Polisher None / Hard Clip / Limiter, Mix.
+- L / BOTH / R, Oversampling 1x / 2x / 4x / 8x (default 4x), Soft Clip Off / On, Mix.
 - Mix drag may flash only inside the slider. Locked while Bypass is on.
 
 Footer
@@ -284,7 +284,7 @@ gateN: threshold = ...; hyst = ...; hold = ...; range = ...
     Noise gate. Opens at threshold, closes threshold-hyst below. source = sidechain is optional.
 
 limitN: ceiling = ...; release = ...
-    In-chain peak limiter. Instant attack, no extra latency. Not the Polisher (Polisher is last).
+    In-chain peak limiter. Instant attack, no extra latency. Not the engine True-Peak brickwall (that always sits last).
 
 xoverN: f1 = ...; f2 = ...
     Splits into low / mid / high mix outs (omit f2 for two bands). Then mix them with
@@ -335,7 +335,7 @@ Send effect
 - Load a delay or reverb, set Mix high, ride the host send.
 
 Amp-like
-- Drive + softclip + lowpass. Leave Polisher on None so hits still breathe.
+- Drive + softclip + lowpass. Leave Soft Clip off so hits still breathe.
 
 Harsh digital
 - Raise oversampling to 4x or 8x. Add a lowpass after clip or fold.
@@ -432,8 +432,8 @@ Stage
 Mix
     Blend of dry input and the processed sound.
 
-Polisher
-    Optional Hard Clip or Limiter after the formula.
+Soft Clip
+    Optional atan rounding of extreme transients, before the engine True-Peak brickwall.
 
 Factory preset
     A built-in sound from NEUROKLAST.
@@ -447,8 +447,8 @@ Sidechain pin
 IR slot
     A cab or room impulse. The file is not written into the formula. Click the ir chip or the ir line.
 
-Limit vs Polisher
-    limit1 is a block in the chain. Polisher Limiter is the last safety clip.
+Limit vs engine ceiling
+    limit1 is a block in the chain. The engine True-Peak brickwall (−0.3 dBTP) is always last.
 
 ENV
     Envelope tap. Audio in, modulator out. Patch the name onto a parameter.
@@ -575,7 +575,7 @@ Goal: a guitar or bass amp-like path.
 1. Load Mid Boost OD, Hot British Lead, or Foldback Bass and play.
 2. Or write a short stack: highpass, tube or softclip, peak EQ for mid, lowpass cab.
 3. After hardclip always add a lowpass. Presence is a high shelf, not a darker lowpass.
-4. Leave Polisher on None so the hits still move.
+4. Leave Soft Clip off so the hits still move.
 5. Click the ir chip for the cabinet. Amp factory presets already load one.
 
 ---
@@ -591,8 +591,8 @@ param b = Ceiling [-3, 0]
 gate1: threshold = a; hyst = 6; hold = 0.04; range = -80
 limit1: ceiling = b; release = 0.08
 
-2. Save. Gate closes the hiss between notes. Limit is the chain ceiling, not the Polisher.
-3. Polisher Limiter can still sit last as a safety clip.
+2. Save. Gate closes the hiss between notes. Limit is the chain ceiling, not the engine brickwall.
+3. The engine True-Peak brickwall still sits last as a safety clip.
 
 ---
 

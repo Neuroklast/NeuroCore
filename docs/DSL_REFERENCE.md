@@ -339,7 +339,7 @@ Dieselbe Engine wie `gate`, aber im Circuit-Overlay und in der Autocomplete nur 
 limit1: ceiling = -0.3; release = 0.08
 ```
 
-In der Kette, **nicht** der Polisher danach. Instant Attack, kein Lookahead (keine Extra-Latenz). Alias: `limiter1`.
+In der Kette, **nicht** der Engine-True-Peak-Brickwall danach. Instant Attack, kein Lookahead in diesem Block. Alias: `limiter1`.
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
@@ -549,7 +549,7 @@ Der Blockname (`osc1`) ist die Variable in Formeln. Ausgabe: ca. -1.0 … +1.0.
 | `fold`, `wrap` | `fold(x, lo, hi)` | Wavefold/Wrap — **immer LPF + ≥4× OS** |
 | `lerp`, `map`, `step`, `smoothstep`, `noise` | siehe Beispiele | Utility / Modulation |
 
-**Engine-Safeguards:** Filter-Cutoff ∈ [20, Nyquist), Resonanz ∈ [0.1, 4.5], Stage Soft-Ceiling algebraisch, Default-Oversampling **4× FIR**, AA-LPF ≈ 0.88× Host-Nyquist auf OS-Buffer, Polisher Default Limiter, Silence-Duck im OutputSanitizer.
+**Engine-Safeguards:** Filter-Cutoff ∈ [20, Nyquist), Resonanz ∈ [0.1, 4.5], Stage Soft-Ceiling algebraisch, Default-Oversampling **4× FIR**, Sanitation-Kette: 1-Pol-DC 5 Hz → AA 96/128 dB/oct (fc = 0.45·hostSr) vor Downsample → optional Soft Clip → True-Peak −0.3 dBTP → TPDF-Dither nur bei Integer-Bit-Reduktion. Residual-Mute im OutputSanitizer.
 
 ### Clipper ohne Knistern (Best Practice)
 

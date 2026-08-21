@@ -226,7 +226,7 @@ export function MixOs() {
         <option value={2}>4x</option>
         <option value={3}>8x</option>
       </select>
-      <span className="font-brand text-muted">Polisher</span>
+      <span className="font-brand text-muted">Soft Clip</span>
       <select
         className="h-[26px] border border-accent/45 bg-surface-high px-1 text-ink"
         value={polisher}
@@ -238,9 +238,8 @@ export function MixOs() {
           }
         }}
       >
-        <option value={0}>None</option>
-        <option value={1}>Hard Clip</option>
-        <option value={2}>Limiter</option>
+        <option value={0}>Off</option>
+        <option value={1}>On</option>
       </select>
       <span className="font-brand text-ink">MIX</span>
       <div
