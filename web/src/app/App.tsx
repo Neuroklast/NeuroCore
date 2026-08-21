@@ -132,7 +132,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.5.0-alpha", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: "0.5.1-alpha", scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }
