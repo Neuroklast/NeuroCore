@@ -82,51 +82,21 @@ public:
             expect (Config::kMeterUiHz >= 40);
         }
 
-        // ---- A5: single peak boundary ----
-        beginTest ("sanitizer applies soft peak when peak safety enabled");
+        // ---- A5: peak safety is sanitation brickwall, not sanitizer ----
+        beginTest ("peak safety is sanitation brickwall not sanitizer");
         {
             OutputSanitizer san;
             san.prepare ({ 48000.0, 64, 1 });
-            san.setPeakSafetyEnabled (true);
             juce::AudioBuffer<float> dry (1, 64), wet (1, 64);
-            dry.clear();
-            for (int i = 0; i < 64; ++i)
-                wet.setSample (0, i, 2.0f);
-            for (int b = 0; b < 8; ++b)
-            {
-                auto d = juce::dsp::AudioBlock<const float> (dry);
-                auto w = juce::dsp::AudioBlock<float> (wet);
-                san.process (d, w);
-            }
-            float peak = 0.f;
-            for (int i = 0; i < 64; ++i)
-                peak = juce::jmax (peak, std::abs (wet.getSample (0, i)));
-            expect (peak < 1.05f);
-        }
-
-        beginTest ("sanitizer skips peak stage when peak owned upstream");
-        {
-            OutputSanitizer san;
-            san.prepare ({ 48000.0, 64, 1 });
-            san.setPeakSafetyEnabled (false);
-            juce::AudioBuffer<float> dry (1, 64), wet (1, 64);
-            // dry must have energy so residual gate stays open
             for (int i = 0; i < 64; ++i)
             {
                 dry.setSample (0, i, 0.5f);
                 wet.setSample (0, i, 2.0f);
             }
-            for (int b = 0; b < 4; ++b)
-            {
-                auto d = juce::dsp::AudioBlock<const float> (dry);
-                auto w = juce::dsp::AudioBlock<float> (wet);
-                san.process (d, w);
-            }
-            float peak = 0.f;
-            for (int i = 0; i < 64; ++i)
-                peak = juce::jmax (peak, std::abs (wet.getSample (0, i)));
-            // No peak soft-ceil → still near 2.0
-            expect (peak > 1.5f);
+            auto d = juce::dsp::AudioBlock<const float> (dry);
+            auto w = juce::dsp::AudioBlock<float> (wet);
+            san.process (d, w);
+            expect (TestHelpers::peakAbs (wet) > 1.5f);
         }
 
         // ---- A7: silence leak only on feedback stages ----

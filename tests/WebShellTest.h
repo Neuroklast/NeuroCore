@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <cstring>
 #include "../src/bridge/HostKeys.h"
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
@@ -57,6 +58,53 @@ public:
             root.deleteRecursively();
         }
 
+        beginTest ("zip assets serve the editor without a web folder");
+        {
+            juce::MemoryOutputStream zipOut;
+            juce::ZipFile::Builder builder;
+            const char* html = "<html><div id=\"root\">nk-app</div></html>";
+            builder.addEntry (new juce::MemoryInputStream (html, (size_t) std::strlen (html), false),
+                              9, "index.html", juce::Time::getCurrentTime());
+            const char* js = "console.log(1)";
+            builder.addEntry (new juce::MemoryInputStream (js, (size_t) std::strlen (js), false),
+                              9, "assets/app.js", juce::Time::getCurrentTime());
+            expect (builder.writeToStream (zipOut, nullptr));
+
+            const auto* data = zipOut.getData();
+            const auto n = (size_t) zipOut.getDataSize();
+            const juce::File emptyRoot;
+
+            expect (! bridge::loadWebAsset (emptyRoot, "/").has_value(),
+                    "testers have no sibling web/ folder");
+
+            const auto index = bridge::loadWebAssetFromZip (data, n, "/");
+            expect (index.has_value());
+            expectEquals (index->mimeType, juce::String ("text/html"));
+            const auto htmlOut = juce::String::fromUTF8 (
+                reinterpret_cast<const char*> (index->data.data()), (int) index->data.size());
+            expect (htmlOut.contains ("id=\"root\""));
+            expect (htmlOut.contains ("nk-app"));
+
+            const auto jsAsset = bridge::loadWebAssetFromZip (data, n, "/assets/app.js");
+            expect (jsAsset.has_value());
+            expectEquals (jsAsset->mimeType, juce::String ("text/javascript"));
+
+            expect (! bridge::loadWebAssetFromZip (data, n, "/missing.css").has_value());
+            expect (! bridge::loadWebAssetFromZip (data, n, "/../index.html").has_value());
+            expect (! bridge::loadWebAssetFromZip (data, n, "/assets/../../index.html").has_value());
+
+            const auto resolved = bridge::resolveEditorAsset (emptyRoot, "/");
+#if JUCE_WINDOWS
+            expect (resolved.has_value(), "RCDATA 41001 must serve index without a web folder");
+            const auto embeddedHtml = juce::String::fromUTF8 (
+                reinterpret_cast<const char*> (resolved->data.data()), (int) resolved->data.size());
+            expect (embeddedHtml.contains ("id=\"root\""));
+            expect (! embeddedHtml.contains ("web shell"));
+#else
+            juce::ignoreUnused (resolved);
+#endif
+        }
+
         beginTest ("fallback index mentions UI_READY");
         {
             const auto html = bridge::fallbackIndexHtml();
@@ -100,6 +148,23 @@ public:
             bridge::WebBridge bridge (0);
             expect (! bridge.handleNative ("notAFunction", {}));
             expect (! bridge.allowOutbound());
+        }
+
+        beginTest ("NEUROKORE_WEB_DISK=0 skips the sibling web folder");
+        {
+            const auto prev = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_DISK", {});
+            setEnv ("NEUROKORE_WEB_DISK", "0");
+            expect (! bridge::wantDiskWebAssets(), "0 is tester mode: embed only");
+            setEnv ("NEUROKORE_WEB_DISK", "embed");
+            expect (! bridge::wantDiskWebAssets());
+            setEnv ("NEUROKORE_WEB_DISK", "1");
+            expect (bridge::wantDiskWebAssets());
+            setEnv ("NEUROKORE_WEB_DISK", "");
+            expect (bridge::wantDiskWebAssets(), "unset keeps disk for local builds");
+            if (prev.isNotEmpty())
+                setEnv ("NEUROKORE_WEB_DISK", prev.toRawUTF8());
+            else
+                setEnv ("NEUROKORE_WEB_DISK", "");
         }
 
         beginTest ("wantWebEditor is always web — native chrome is retired");

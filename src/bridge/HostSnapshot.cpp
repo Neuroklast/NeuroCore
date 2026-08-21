@@ -117,7 +117,7 @@ bool applyChoice (NeuroKoreAudioProcessor& proc, const ChoiceCmd& c, juce::Strin
     {
         if (auto* p = proc.apvts.getParameter (EffectParameters::polisherMode))
         {
-            p->setValueNotifyingHost (p->convertTo0to1 ((float) juce::jmax (0, c.index)));
+            p->setValueNotifyingHost (p->convertTo0to1 ((float) juce::jlimit (0, 1, c.index)));
             return true;
         }
     }

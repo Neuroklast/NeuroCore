@@ -192,7 +192,7 @@ for (size_t i = 0; i < numSamples; ++i)
 | Feature | Priorität | Status |
 |---|---|---|
 | Oversampling UI-Control | ✅ | 1× / 2× / 4× / 8× in Settings + Statuszeile |
-| DC-Blocker | ✅ | Nach der DSL-Kette, vor Polisher |
+| DC-Blocker | ✅ | 1-Pol 5 Hz, erstes Glied der Sanitation-Kette nach DSL |
 | Latenz-Reporting | 🟡 Mittel | `getLatencyCompensationInSamples()` fehlt |
 | Tail-Time | 🟡 Mittel | `getTailLengthSeconds()` gibt 0 zurück |
 | Sample-Rate Adaptation | 🟡 Mittel | Filter-Koeffizienten bei Rate-Änderung? |

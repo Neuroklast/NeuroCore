@@ -2,6 +2,10 @@
 
 Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it is **new**.
 
+## DSP
+
+- Peak safety is the engine True-Peak brickwall. Residual mute is `OutputSanitizer` only. Do not re-split those two into Polisher vs sanitizer modes.
+
 ## Process
 
 - One logical change. A screenshot bug is not a license to also rewrite CPU, Settings, and the pack script.
@@ -10,6 +14,8 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - `umsetzen` means code. The tester PDF is a source, not a deliverable.
 - **Library first.** Before writing canvas geometry (grid, snap, edge path, drag line, layout), open the React Flow docs and the `@xyflow/react` exports already in the file. Use what it ships. Invent only the constraint RF cannot express. If you cannot name the RF API you rejected and the contract it failed, you do not get a new helper.
 - A plugin build that skips `npm run build` ships yesterday’s UI. `NeuroKoreWeb` is a hard dependency of `NeuroKore` / VST3 / Standalone. Missing `npm` is a configure error. Do not add an optional web target again.
+- Testers get a single `.vst3` and `.exe`. The editor must live inside those files (`NEUROKORE_WEB_DIST` zip resource), not in a sibling `web/` folder. Copying `web/dist` next to the artefact is dev-only.
+- Windows `.rc` string names in quotes keep the quote characters. FindResource then misses. Use an integer ID (`41001 RCDATA`), not `"NEUROKORE_WEB_DIST"`.
 
 ## Circuit
 

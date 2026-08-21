@@ -14,6 +14,14 @@ namespace DSPUtils
         return (db == 0.0) ? 1.0 : std::exp(db * std::log(10.0) / 20.0);
     }
 
+    /** Atan soft-clip used by engine sanitation (same family as DSL softclip). */
+    static inline float sanitationSoftClip (float x) noexcept
+    {
+        constexpr float k = 1.57079632679f;
+        constexpr float s = 0.63661977237f;
+        return s * std::atan (k * juce::jlimit (-40.0f, 40.0f, x));
+    }
+
     /** Soft asymptotic ceiling: transparent below |c|, gently folds overs. */
     static inline float softCeilSample (float x, float c) noexcept
     {

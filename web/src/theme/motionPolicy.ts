@@ -10,7 +10,8 @@ export type MotionFeature =
   | "faceGlow"
   | "overlay"
   | "bloom"
-  | "dof";
+  | "dof"
+  | "techNoise";
 
 export function motionAllows(
   feature: MotionFeature,

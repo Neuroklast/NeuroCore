@@ -13,7 +13,7 @@ import {
   specMag01,
   spectrogramProject,
   spectrogramPush,
-  techNoise,
+  paintTechNoise,
 } from "./scopeModel";
 
 function liftBins(raw: number[]): number[] {
@@ -119,17 +119,7 @@ export function ScopeCanvas({
         ctx.fillRect(1, y, w - 2, 1);
       }
       const f = frame.current;
-      ctx.fillStyle = theme.cyan;
-      for (let y = 2; y < h; y += 5) {
-        for (let x = 2; x < w; x += 7) {
-          const n = techNoise(x, y, f);
-          if (n > 0) {
-            ctx.globalAlpha = 0.18 + n * 0.45;
-            ctx.fillRect(x, y, 1, 1);
-          }
-        }
-      }
-      ctx.globalAlpha = 1;
+      paintTechNoise(ctx, w, h, f, theme.cyan);
 
       ctx.strokeStyle = themeRgba("accent", 0.55, theme);
       ctx.strokeRect(0.5, 0.5, w - 1, h - 1);

@@ -18,6 +18,7 @@ import {
   spectrogramPush,
   scopeSpectra,
   techNoise,
+  paintTechNoise,
   tracesFor,
 } from "./scopeModel";
 
@@ -97,6 +98,22 @@ describe("scope deck model", () => {
     expect(techNoise(3, 7, 0)).toBeGreaterThanOrEqual(0);
     expect(techNoise(3, 7, 0)).toBeLessThanOrEqual(1);
     expect(techNoise(1, 1, 2) + techNoise(8, 4, 9)).toBeLessThan(2);
+  });
+
+  it("paints spectrograph speckle as sparse 1px cells", () => {
+    const cells: Array<{ x: number; y: number; w: number; h: number }> = [];
+    const ctx = {
+      globalAlpha: 1,
+      fillStyle: "",
+      fillRect(x: number, y: number, w: number, h: number) {
+        cells.push({ x, y, w, h });
+      },
+    };
+    paintTechNoise(ctx as CanvasRenderingContext2D, 80, 40, 3, "#00f0ff");
+    const slots = Math.ceil(78 / 7) * Math.ceil(38 / 5);
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.length).toBeLessThan(slots * 0.2);
+    expect(cells.every((c) => c.w === 1 && c.h === 1)).toBe(true);
   });
 
   it("STUDIO chip cycles LIVE, not Settings", () => {

@@ -12,21 +12,18 @@
     Owns:
     - Oversampling (juce::dsp::Oversampling)
     - InputGain (host rate, before dry split)
-    - SignalPolisher (post-DSL, oversampled)
     - InputRouter
-    - DC-blocker and anti-alias LPF (oversampled)
+    - SanitationChain (DC + AA oversampled; clip / True-Peak / residual / dither at host)
     - LatencyAlignedSidechain dry (timeline == OS wet latency)
     - Continuous dry/wet mix
     - AutoGain (strength from APVTS, default off)
-    - OutputSanitizer (sole peak safety when polisher is None)
     - Working buffers + switchRamp
 */
 
 #include <JuceHeader.h>
 #include "../dsp/InputGain.h"
 #include "../dsp/InputRouter.h"
-#include "../dsp/SignalPolisher.h"
-#include "../dsp/OutputSanitizer.h"
+#include "../dsp/SanitationChain.h"
 #include "../dsp/LatencyAlignedSidechain.h"
 
 class WaveformCapture;
@@ -113,8 +110,8 @@ public:
     void setInputWaveformTap (class WaveformCapture* tap) noexcept { inputWaveTap = tap; }
 
     InputRouter&    getInputRouter()    noexcept { return inputRouter; }
-    InputGain&      getInputGain()      noexcept { return chain.get<0>(); }
-    SignalPolisher& getPolisher()       noexcept { return chain.get<1>(); }
+    InputGain&      getInputGain()      noexcept { return inputGain; }
+    int getSanitationLatency() const noexcept { return sanitation.limiterLatencySamples(); }
 
 private:
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
@@ -123,15 +120,10 @@ private:
 
     juce::AudioProcessorValueTreeState* apvts { nullptr };
 
-    // ProcessorChain: [0] InputGain, [1] SignalPolisher
-    juce::dsp::ProcessorChain<InputGain, SignalPolisher> chain;
+    InputGain inputGain;
+    SanitationChain sanitation;
     InputRouter inputRouter;
     WaveformCapture* inputWaveTap { nullptr };
-
-    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
-                                   juce::dsp::IIR::Coefficients<float>> lowpassFilter;
-    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
-                                   juce::dsp::IIR::Coefficients<float>> dcBlocker;
 
     juce::SmoothedValue<float> wetValue;
 
@@ -139,8 +131,6 @@ private:
     juce::dsp::Gain<float>     outputGain;
     juce::dsp::Gain<float>     userOutputGain;
     juce::SmoothedValue<float> userGainValue;
-
-    OutputSanitizer outputSanitizer;
 
     std::array<float, Config::kMaxChannels> postDslLastGood {};
 

@@ -13,6 +13,7 @@
 #include "DelayReverbTest.h"
 #include "CrackleFixesTest.h"
 #include "ArchitectureHardeningTest.h"
+#include "SanitationChainTest.h"
 #include "BusGraphTest.h"
 #include "LicenseTest.h"
 #include "EqSidechainTest.h"
@@ -61,6 +62,7 @@ int main (int argc, char* argv[])
   WebCompileTest webCompileTest;
   HostSnapshotTest hostSnapshotTest;
   TelemetryPumpTest telemetryPumpTest;
+  SanitationChainTest sanitationChainTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

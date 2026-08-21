@@ -7,6 +7,7 @@
 #include "../src/utils/ExpressionEvaluator.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/core/CpuProtect.h"
+#include "../src/core/Config.h"
 #include "../src/core/EffectParameters.h"
 #include "../src/utils/FactoryPresetLibrary.h"
 #include "TestHelpers.h"
@@ -719,11 +720,11 @@ public:
                 // the same way handleAsyncUpdate / prepareToPlay does in the host.
                 proc.prepareToPlay (48000.0, 128);
                 const int lat = proc.getLatencySamples();
-                expect (lat >= 0);
+                expect (lat >= Config::kSanitationLookaheadHost);
                 if (idx == 0)
-                    expectEquals (lat, 0);
+                    expectEquals (lat, Config::kSanitationLookaheadHost);
                 else
-                    expect (lat > 0);
+                    expect (lat > Config::kSanitationLookaheadHost);
                 lastLat = lat;
                 for (int b = 0; b < 8; ++b)
                 {
