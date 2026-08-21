@@ -1,3 +1,5 @@
+import { CHIP_PAD_X, CHIP_PAD_Y } from "../assemble/chipMetrics";
+
 /** Thin screen bezel around the whole editor. Content glows the inner lip. */
 export const SHELL_BEZEL = 6;
 /** Bottom-right hit for host resize. Native corner sits on top of this. */
@@ -19,6 +21,7 @@ export const CHIP_CLIP =
 
 export const CHIP_FRAME_DASH = "16 5 3 5 22 6";
 export const CHIP_CUT = 10;
+export const CHIP_CORNER = 14;
 /** Details plate on a chip. ui-ux: hit ≥ 26 px, not a ghost chevron. */
 export const DETAIL_HIT = 26;
 
@@ -26,7 +29,7 @@ export const DETAIL_HIT = 26;
 export const chipExpandOutsideBody = true;
 
 export function chipExpandOffset(): { top: number; right: number; size: number } {
-  return { top: 6, right: 10, size: DETAIL_HIT };
+  return { top: CHIP_PAD_Y, right: CHIP_PAD_X, size: DETAIL_HIT };
 }
 
 export function greebleCode(id: string): string {
@@ -55,6 +58,21 @@ export function framePoints(w: number, h: number, cut = CHIP_CUT): string {
     `0,${h}`,
     `0,${cut}`,
   ].join(" ");
+}
+
+/** Four hard L-brackets. Solid frame, not a dashed marquee. */
+export function frameCorners(w: number, h: number, cut = CHIP_CUT, arm = CHIP_CORNER): string[] {
+  return [
+    `M 0 ${cut + arm} L 0 ${cut} L ${cut} 0 L ${cut + arm} 0`,
+    `M ${w - arm} 0 L ${w} 0 L ${w} ${arm}`,
+    `M ${w} ${h - cut - arm} L ${w} ${h - cut} L ${w - cut} ${h} L ${w - cut - arm} ${h}`,
+    `M ${arm} ${h} L 0 ${h} L 0 ${h - arm}`,
+  ];
+}
+
+/** Output sat lamp: true-peak ceiling neighbourhood. */
+export function satLampOn(db: number): boolean {
+  return Number.isFinite(db) && db >= -0.3;
 }
 
 export function segmentFill(live: string, segments = 10): number {

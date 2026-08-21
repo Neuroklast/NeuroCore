@@ -1,54 +1,79 @@
 import type { AstJack } from "../bridge/ast";
-import { lettersInExpr } from "./bindLinks";
-import { chipSpec, JACK_PITCH, SOCKET_H, paintedBindKeys, sideJackPitch } from "./chipSpec";
-import { BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
+import { chipSpec, sideJackPitch } from "./chipSpec";
+import {
+  BIND_JACK_MIN,
+  BIND_RAIL,
+  CHIP_H,
+  CHIP_PAD_X,
+  CHIP_PAD_Y,
+  CHIP_W,
+  CONTENT_MIN,
+  IO_H,
+  IO_W,
+  JACK_PITCH,
+  LABEL_COL,
+  MS_ROW,
+  RULE_H,
+  SOCKET_H,
+  SOUTH_JACK_GAP,
+  TITLE_H,
+  TYPECODE_H,
+  chipBodyInset,
+  chipChromeVars,
+  chipFaceStackPx,
+  chipOverlayStackPx,
+  dspFaceSize,
+  ioFaceSize,
+  isUtilityIo,
+  longestValuePx,
+  titleJackY,
+} from "./chipMetrics";
+import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
 import { parseHandle } from "./handles";
 import { cableFace } from "./validateLink";
 
-export { SOCKET_H };
+export {
+  BIND_JACK_MIN,
+  BIND_RAIL,
+  CHIP_H,
+  CHIP_PAD_X,
+  CHIP_PAD_Y,
+  CHIP_W,
+  CONTENT_MIN,
+  IO_H,
+  IO_W,
+  JACK_PITCH,
+  LABEL_COL,
+  MS_ROW,
+  RULE_H,
+  SOCKET_H,
+  SOUTH_JACK_GAP,
+  TITLE_H,
+  TYPECODE_H,
+  chipBodyInset,
+  chipChromeVars,
+  chipFaceStackPx,
+  chipOverlayStackPx,
+  dspFaceSize,
+  ioFaceSize,
+  isUtilityIo,
+  longestValuePx,
+  titleJackY,
+};
 
-export const LABEL_COL = 44;
-export const CONTENT_MIN = 148;
-export const CHIP_W = LABEL_COL * 2 + CONTENT_MIN;
-/** One south bind jack: two grid cells so a 4-letter caption stays readable. */
-export const BIND_JACK_MIN = BOARD_GRID * 2;
+export const CHIP_GAP = BOARD_BLOCK + CHIP_PAD_Y;
 
-export function chipWidthForBindCount(n: number): number {
-  if (n <= 0) {
-    return snapSize(CHIP_W);
-  }
-  const pad = BOARD_GRID;
-  return snapSize(Math.max(CHIP_W, pad * 2 + n * BIND_JACK_MIN));
-}
-export const CHIP_H = 80;
-export const IO_W = LABEL_COL + 80;
-export const CHIP_GAP = 140;
-export { JACK_PITCH };
-export const TAG_ROW = 18;
-export const BODY_PAD = 10;
-/** South (or north) rail for knob bind jacks. */
-export const BIND_RAIL = 32;
-/** First side jack sits in the cell under the title (cell midline). */
-const JACK_TOP_CLEAR = BOARD_GRID + BOARD_HALF;
-
-export function chipHeight(inCount: number, outCount: number, expanded = false): number {
-  const n = Math.max(inCount, outCount, 1);
-  const pitch = sideJackPitch(n);
-  const body = n <= 1
-    ? CHIP_H
-    : Math.max(CHIP_H, JACK_TOP_CLEAR + (n - 1) * pitch + BOARD_GRID + BOARD_HALF);
-  return expanded ? Math.max(body, 160) : body;
-}
-
-export function ioHeight(jackCount: number): number {
-  const n = Math.max(jackCount, 1);
-  const pitch = sideJackPitch(n);
-  return n <= 1 ? 96 : Math.max(96, JACK_TOP_CLEAR + (n - 1) * pitch + BOARD_GRID);
+export function chipWidthForBindCount(_n: number): number {
+  return dspFaceSize().w;
 }
 
-export const TITLE_H = 26;
-export const ROW_H = 16;
-export const GUTTER = 34;
+export function chipHeight(_inCount: number, _outCount: number, _expanded = false): number {
+  return dspFaceSize().h;
+}
+
+export function ioHeight(_jackCount: number): number {
+  return ioFaceSize().h;
+}
 
 export function countSides(jacks: AstJack[]): { ins: number; outs: number } {
   const ins = jacks.filter((j) => ! j.output && j.kind !== "knob").length;
@@ -102,7 +127,15 @@ export function chipBodyHeight(
   _jacks: AstJack[],
   type = "",
 ): number {
-  return chipSpec(type, args).minBodyPx;
+  return chipBox(type, _jacks, false, args).h;
+}
+
+export function chipContentHeight(
+  spec: { paramJacks: string[] },
+  _detail: boolean,
+  _bindCount: number,
+): number {
+  return isUtilityIo((spec as { id?: string }).id ?? "") ? ioFaceSize().h : dspFaceSize().h;
 }
 
 export function chipBox(
@@ -115,33 +148,21 @@ export function chipBox(
     ? Object.fromEntries(Array.from({ length: args }, (_, i) => [`k${i}`, "1"]))
     : args;
   const spec = chipSpec(type, rec);
-  if (spec.id === "in" || spec.id === "out" || spec.id === "sidechain") {
-    return {
-      w: snapSize(IO_W),
-      h: snapSize(Math.max(spec.minBodyPx, ioHeight(Math.max(jacks.length, 1)))),
-    };
+  if (isUtilityIo(spec.id)) {
+    return ioFaceSize();
   }
-  const { ins, outs } = countSides(jacks);
-  const ports = chipHeight(ins, outs, false);
-  const bindKeys = paintedBindKeys(spec.id, rec);
-  const rail = bindKeys.length > 0
-    || Object.values(rec).some((v) => lettersInExpr(v).length > 0)
-    ? BIND_RAIL
-    : 0;
-  return {
-    w: chipWidthForBindCount(bindKeys.length),
-    h: snapSize(Math.max(spec.minBodyPx, ports) + rail),
-  };
+  return dspFaceSize();
 }
 
-export function jackTopPx(index: number, count: number, height: number): number {
-  if (count <= 1) {
-    const mid = snapToCellCenter(height * 0.5);
-    return mid < JACK_TOP_CLEAR ? JACK_TOP_CLEAR : mid;
+export function jackTopPx(index: number, count: number, height: number, type = ""): number {
+  if (isUtilityIo(type)) {
+    return snapToCellCenter(height * 0.5);
   }
   const pitch = sideJackPitch(count);
-  const span = (count - 1) * pitch;
-  const start = Math.max(JACK_TOP_CLEAR, snapToCellCenter((height - span) * 0.5));
+  const start = titleJackY();
+  if (count <= 1) {
+    return start;
+  }
   return start + index * pitch;
 }
 
@@ -178,6 +199,6 @@ export function jackAnchor(
   const index = Math.max(0, side.findIndex((j) => j.id === id));
   return {
     x: snapToGrid(output ? pos.x + width : pos.x),
-    y: snapToCellCenter(pos.y + jackTopPx(index < 0 ? 0 : index, count, height)),
+    y: snapToCellCenter(pos.y + jackTopPx(index < 0 ? 0 : index, count, height, _type)),
   };
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, framePoints, greebleCode, segmentFill, shellBezelCss } from "./chromeSpec";
+import { CHIP_PAD_X, CHIP_PAD_Y } from "../assemble/chipMetrics";
+import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, frameCorners, framePoints, greebleCode, satLampOn, segmentFill, shellBezelCss } from "./chromeSpec";
 
 describe("cyberpunk chrome spec", () => {
   it("cuts two opposite corners at 45 degrees, never rounds", () => {
@@ -21,10 +22,16 @@ describe("cyberpunk chrome spec", () => {
     expect(DETAIL_HIT).toBeGreaterThanOrEqual(26);
     expect(chipExpandOutsideBody).toBe(true);
     expect(chipExpandOffset().size).toBeGreaterThanOrEqual(26);
+    expect(chipExpandOffset().top).toBe(CHIP_PAD_Y);
+    expect(chipExpandOffset().right).toBe(CHIP_PAD_X);
   });
 
   it("draws the cut frame in board space and maps live values to bars", () => {
     expect(framePoints(200, 80)).toBe("10,0 200,0 200,70 190,80 0,80 0,10");
+    expect(frameCorners(200, 80)).toHaveLength(4);
+    expect(frameCorners(200, 80).every((d) => d.startsWith("M "))).toBe(true);
+    expect(satLampOn(-0.3)).toBe(true);
+    expect(satLampOn(-1)).toBe(false);
     expect(segmentFill("0.850")).toBe(9);
     expect(segmentFill("not a number")).toBe(0);
   });

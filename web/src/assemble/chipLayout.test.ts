@@ -2,19 +2,29 @@ import { describe, expect, it } from "vitest";
 import type { AstJack } from "../bridge/ast";
 import {
   BIND_JACK_MIN,
+  CHIP_PAD_X,
+  CHIP_PAD_Y,
   CONTENT_MIN,
   LABEL_COL,
+  TITLE_H,
   bindFace,
   bindJackCaption,
   bindJackXs,
   chipBodyHeight,
+  chipBodyInset,
   chipBox,
+  chipOverlayStackPx,
   contentWidth,
+  dspFaceSize,
+  ioFaceSize,
   jackAnchor,
   jackCaption,
+  jackTopPx,
+  longestValuePx,
   snapJackFace,
+  titleJackY,
 } from "./chipLayout";
-import { chipSpec } from "./chipSpec";
+import { chipSpec, overlayParamKeys } from "./chipSpec";
 import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
 
@@ -36,16 +46,38 @@ describe("chip face, labels, copy", () => {
     expect(bindJackCaption("freq")).toBe("FREQ");
   });
 
-  it("sizes the chip to minBodyPx so expand does not grow the box", () => {
-    const args = { cutoff: "c + lfo1 * b", q: "f", type: "lp" };
-    const jacks = [audio("in", false), { id: "lfo1", label: "lfo1", output: false, kind: "mod" } as AstJack, audio("out", true)];
-    const name = chipBox("filter", jacks, false, args);
-    const detail = chipBox("filter", jacks, true, args);
-    expect(name.h).toBe(detail.h);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
-    expect(contentWidth(name.w)).toBeGreaterThanOrEqual(CONTENT_MIN);
-    expect(name.w).toBeGreaterThanOrEqual(LABEL_COL * 2 + CONTENT_MIN);
-    expect(name.h).toBeGreaterThanOrEqual(chipBodyHeight(false, args, jacks, "filter"));
+  it("widens the chip so highshelf fits the value field", () => {
+    const eq = chipBox("eq", [audio("in", false), audio("out", true)], true, chipSpec("eq").defaultArgs);
+    expect(longestValuePx(chipSpec("eq").enums)).toBeGreaterThanOrEqual("highshelf".length * 9);
+    expect(eq.w).toBeGreaterThanOrEqual(CHIP_PAD_X * 2 + longestValuePx(chipSpec("eq").enums));
+  });
+
+  it("keeps IN/OUT in the title band so they never sit on typecode", () => {
+    const tall = chipBox("filter", [audio("in", false), audio("out", true)], true, chipSpec("filter").defaultArgs);
+    const y = jackTopPx(0, 1, tall.h, "filter");
+    expect(y).toBe(titleJackY());
+    expect(y).toBeGreaterThanOrEqual(CHIP_PAD_Y + TITLE_H);
+    expect(jackTopPx(0, 1, 400, "filter")).toBe(jackTopPx(0, 1, 200, "filter"));
+    expect(jackTopPx(0, 1, ioFaceSize().h, "in")).toBe(snapToCellCenter(ioFaceSize().h * 0.5));
+    const gutter = chipBodyInset();
+    expect(gutter.left).toBe(LABEL_COL);
+    expect(gutter.right).toBe(LABEL_COL);
+  });
+
+  it("keeps every primary DSP module on one closed face; expand does not change the box", () => {
+    const jacks = [audio("in", false), audio("out", true)];
+    const face = dspFaceSize();
+    const ids = ["filter", "eq", "delay", "stage", "env", "comp"] as const;
+    for (const id of ids) {
+      const shut = chipBox(id, jacks, false, chipSpec(id).defaultArgs);
+      const open = chipBox(id, jacks, true, chipSpec(id).defaultArgs);
+      expect(shut, id).toEqual(face);
+      expect(open, `${id} open`).toEqual(shut);
+    }
+    expect(contentWidth(face.w)).toBeGreaterThanOrEqual(CONTENT_MIN);
+    expect(overlayParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance", "channel"]);
+    expect(chipOverlayStackPx(overlayParamKeys(chipSpec("filter")).length)).toBeGreaterThan(0);
+    expect(chipBodyHeight(true, chipSpec("filter").defaultArgs, jacks, "filter")).toBe(face.h);
   });
 
   it("parks knob jacks on the south face even when the chip sits low", () => {
@@ -74,8 +106,7 @@ describe("chip face, labels, copy", () => {
     ];
     for (const [id, jacks] of forks) {
       const box = chipBox(id, jacks, false, {});
-      const rails = Math.max(jacks.filter((j) => j.output).length, jacks.filter((j) => ! j.output).length);
-      expect(box.h, id).toBeGreaterThanOrEqual(BOARD_GRID * (rails === 3 ? 7 : 5));
+      expect(box, id).toEqual(dspFaceSize());
       const outs = jacks.filter((j) => j.output);
       const ins = jacks.filter((j) => ! j.output);
       const side = outs.length >= 2 ? outs : ins;
@@ -119,17 +150,26 @@ describe("chip face, labels, copy", () => {
     expect(out.x).toBe(pos.x + box.w);
   });
 
-  it("widens the chip when south bind jacks would crowd captions", () => {
-    const envJ = [audio("in", false), audio("mod", true)];
-    const env = chipBox("env", envJ, false, chipSpec("env").defaultArgs);
+  it("parks IN and OUT as compact utility tiles outside the DSP face", () => {
+    const inn = chipBox("in", [audio("out", true)], false, {});
+    const out = chipBox("out", [audio("in", false)], false, {});
+    const dsp = dspFaceSize();
+    expect(inn).toEqual(ioFaceSize());
+    expect(out).toEqual(inn);
+    expect(inn.h).toBeLessThan(dsp.h);
+    expect(inn.w).toBeLessThan(dsp.w);
+  });
+
+  it("spreads south bind jacks across the shared DSP face without widening it", () => {
+    const env = chipBox("env", [audio("in", false), audio("mod", true)], false, chipSpec("env").defaultArgs);
     const drive = chipBox("stage", [audio("in", false), audio("out", true)], false, { y: "x" });
-    expect(env.w).toBeGreaterThan(drive.w);
-    expect(env.w).toBeGreaterThanOrEqual(LABEL_COL * 2 + CONTENT_MIN);
+    expect(env).toEqual(drive);
+    expect(env).toEqual(dspFaceSize());
     const n = 7;
-    expect(env.w).toBeGreaterThanOrEqual(BOARD_GRID * 2 + n * BIND_JACK_MIN);
     const xs = bindJackXs(n, env.w);
     for (let i = 1; i < xs.length; i += 1) {
       expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(BOARD_GRID);
     }
+    expect(env.w).toBeGreaterThanOrEqual(BIND_JACK_MIN);
   });
 });

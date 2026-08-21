@@ -5,6 +5,7 @@ import {
   blocksInCategory,
   nextBlockId,
   scriptAfterAdd,
+  scriptAfterInsertAfter,
   scriptAfterRemove,
   scriptAfterRename,
   scriptAfterSetArg,
@@ -21,6 +22,14 @@ describe("circuit add/remove", () => {
     expect(next.indexOf("stage1:")).toBeLessThan(next.indexOf("bus __park:"));
     expect(next.indexOf("filter1")).toBeLessThan(next.indexOf("out:"));
     expect(nextBlockId("stage", ["stage1"])).toBe("stage2");
+  });
+
+  it("inserts after a chip in the serial chain, not on bus __park", () => {
+    const next = scriptAfterInsertAfter("stage1: y = x\nout: main = 1\n", "stage1", "filter");
+    expect(next).toMatch(/stage1:[\s\S]*filter1:/);
+    expect(next.indexOf("stage1:")).toBeLessThan(next.indexOf("filter1:"));
+    expect(next.indexOf("filter1:")).toBeLessThan(next.indexOf("out:"));
+    expect(next).not.toContain("bus __park:");
   });
 
   it("groups Add items by category and inserts a custom formula block", () => {

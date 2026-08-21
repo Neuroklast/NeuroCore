@@ -18,7 +18,7 @@ export const nk = {
   panelBorder: signal.panelBorder,
   gridLine: `rgba(${signal.accentRgb}, 0.16)`,
   well: signal.well,
-  version: "0.4.11-alpha",
+  version: "0.5.0-alpha",
   product: "NEUROKORE",
   company: "Neuroklast",
   byline: "by Neuroklast",

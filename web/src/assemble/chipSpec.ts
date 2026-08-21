@@ -1,4 +1,26 @@
 import { BOARD_GRID } from "./grid";
+import {
+  FORK_PITCH,
+  JACK_PITCH,
+  SOCKET_H,
+  SOUTH_JACK_GAP,
+  TITLE_H,
+  TYPECODE_H,
+  dspFaceSize,
+  ioFaceSize,
+  isUtilityIo,
+  sideJackPitch,
+} from "./chipMetrics";
+
+export {
+  FORK_PITCH,
+  JACK_PITCH,
+  SOCKET_H,
+  SOUTH_JACK_GAP,
+  TITLE_H,
+  TYPECODE_H,
+  sideJackPitch,
+};
 
 /** One catalog for circuit chips: jacks, enums, typecode, min body. */
 
@@ -27,24 +49,7 @@ export type ParamJackSlot = {
   y: number;
 };
 
-export const TITLE_H = 26;
-export const TYPECODE_H = 14;
-export const SOCKET_H = 40;
-const BODY_PAD = 10;
-/** Air between the last detail row and the south param jacks + captions. */
-export const SOUTH_JACK_GAP = 52;
-const SOUTH_BAND = SOUTH_JACK_GAP;
-const ENUM_EXTRA = 8;
-const BODY_FLOOR = 80;
-const IO_BODY = 96;
-export const JACK_PITCH = BOARD_GRID;
-/** Two+ side rails: one empty cell between tube midlines so forks are not a knot. */
-export const FORK_PITCH = BOARD_GRID * 2;
 
-export function sideJackPitch(count: number): number {
-  return count >= 2 ? FORK_PITCH : JACK_PITCH;
-}
-const PARAM_JACK_EDGE = 10;
 
 const CHANNEL = ["both", "left", "right", "mid", "side"] as const;
 const NOTES = [
@@ -86,6 +91,24 @@ type Draft = Omit<ChipSpec, "minBodyPx" | "paramJackLabels" | "modIns" | "enums"
   defaultArgs?: Record<string, string>;
 };
 
+const ADVANCED_KEYS = new Set(["channel", "kanal", "name"]);
+
+export function essentialParamKeys(spec: { paramJacks: string[] }): string[] {
+  return spec.paramJacks.filter((k) => ! ADVANCED_KEYS.has(k));
+}
+
+export function advancedParamKeys(spec: { paramJacks: string[] }): string[] {
+  return spec.paramJacks.filter((k) => ADVANCED_KEYS.has(k));
+}
+
+export function faceParamKeys(_spec: { paramJacks: string[] }): string[] {
+  return [];
+}
+
+export function overlayParamKeys(spec: { paramJacks: string[] }): string[] {
+  return [...spec.paramJacks];
+}
+
 export function computeMinBodyPx(spec: {
   id: string;
   paramJacks: string[];
@@ -93,20 +116,7 @@ export function computeMinBodyPx(spec: {
   audioIns: string[];
   audioOuts: string[];
 }): number {
-  if (spec.id === "in" || spec.id === "out" || spec.id === "sidechain") {
-    return IO_BODY;
-  }
-  const n = spec.paramJacks.length;
-  const enumRows = spec.paramJacks.filter((k) => (spec.enums[k] ?? []).length > 0).length;
-  const sides = Math.max(spec.audioIns.length, spec.audioOuts.length, 1);
-  const header = TITLE_H + TYPECODE_H + BODY_PAD;
-  const sockets = n * SOCKET_H;
-  const south = n === 0 ? 0 : SOUTH_BAND;
-  const pitch = sideJackPitch(sides);
-  const sideBand = sides <= 1
-    ? BODY_FLOOR
-    : Math.max(BODY_FLOOR, BOARD_GRID + BOARD_GRID / 2 + (sides - 1) * pitch + BOARD_GRID + BOARD_GRID / 2);
-  return Math.max(BODY_FLOOR, header + sockets + enumRows * ENUM_EXTRA + south, sideBand);
+  return isUtilityIo(spec.id) ? ioFaceSize().h : dspFaceSize().h;
 }
 
 function spec(init: Draft): ChipSpec {
@@ -636,18 +646,33 @@ export function bindableJackKeys(spec: ChipSpec): string[] {
   });
 }
 
-/** Catalog bind keys plus extra Custom inputs (`+ input`), never `y`. */
+function formulaUsesKnob(value: string): boolean {
+  return /\b[a-f]\b/i.test(value);
+}
+
+/** Catalog bind keys, Custom extras, and formula fields that already reference a–f. */
 export function paintedBindKeys(type: string, args: Record<string, string> = {}): string[] {
   const spec = chipSpec(type, args);
-  const keys = bindableJackKeys(spec);
-  if (spec.id !== "custom") {
-    return keys;
+  const keys = [...bindableJackKeys(spec)];
+  const skip = new Set(["channel", "kanal", "name", "mode", "family"]);
+  for (const [k, v] of Object.entries(args)) {
+    if (! formulaUsesKnob(String(v))) {
+      continue;
+    }
+    if (skip.has(k.toLowerCase()) || keys.includes(k)) {
+      continue;
+    }
+    keys.push(k);
   }
-  const extra = Object.keys(args).filter((k) => {
-    const low = k.toLowerCase();
-    return ! NOT_KNOB_CODE.has(low) && ! keys.includes(k);
-  });
-  return [...keys, ...extra];
+  if (spec.id === "custom") {
+    for (const k of Object.keys(args)) {
+      const low = k.toLowerCase();
+      if (! skip.has(low) && low !== "y" && ! keys.includes(k) && ! formulaUsesKnob(String(args[k] ?? ""))) {
+        keys.push(k);
+      }
+    }
+  }
+  return keys;
 }
 
 export function allChipSpecs(): ChipSpec[] {
@@ -722,11 +747,11 @@ export function paramJackSlots(spec: ChipSpec, box: { w: number; h: number }): P
   if (n === 0) {
     return [];
   }
-  const pad = 36;
+  const pad = BOARD_GRID;
   const xs = n === 1
     ? [box.w * 0.5]
-    : Array.from({ length: n }, (_, i) => pad + ((i + 0.5) / n) * Math.max(12, box.w - pad * 2));
-  const y = box.h - PARAM_JACK_EDGE;
+    : Array.from({ length: n }, (_, i) => pad + ((i + 0.5) / n) * Math.max(BOARD_GRID, box.w - pad * 2));
+  const y = box.h;
   return keys.map((key, i) => ({
     key,
     label: spec.paramJackLabels[key] || key,

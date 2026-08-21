@@ -20,6 +20,20 @@ export function addPickerBlocks(category: string): AddableBlock[] {
   return blocksInCategory(category);
 }
 
+/** Spotlight filter. Empty query lists the category (or the whole catalog). */
+export function addPickerSearch(query: string, category?: string): AddableBlock[] {
+  const q = query.trim().toLowerCase();
+  const pool = category ? blocksInCategory(category) : ADDABLE_BLOCKS;
+  if (! q) {
+    return pool;
+  }
+  return pool.filter((b) => (
+    b.label.toLowerCase().includes(q)
+    || b.type.toLowerCase().includes(q)
+    || b.category.toLowerCase().includes(q)
+  ));
+}
+
 export function addPickerListsEveryBlock(): string[] {
   return ADDABLE_BLOCKS.map((b) => b.label);
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
-import { jackTopPx } from "./chipLayout";
+import { jackTopPx, titleJackY } from "./chipLayout";
 import {
   activateKnobPatch,
   bindHit,
@@ -13,9 +13,9 @@ import {
 import { applyKnobBind } from "./handles";
 
 describe("jack align and knob bind", () => {
-  it("moves jack Y when the chip height changes", () => {
-    expect(jackTopPx(0, 1, 80)).toBe(48);
-    expect(jackTopPx(0, 1, 160)).toBe(80);
+  it("keeps processing IN/OUT on the title lane independent of chip height", () => {
+    expect(jackTopPx(0, 1, 80)).toBe(titleJackY());
+    expect(jackTopPx(0, 1, 160)).toBe(titleJackY());
     expect(jackTopPx(0, 2, 120)).toBeLessThan(jackTopPx(1, 2, 120));
   });
 

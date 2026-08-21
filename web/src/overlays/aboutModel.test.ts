@@ -8,7 +8,7 @@ describe("about document", () => {
     expect(ABOUT.website).toBe("https://neuroklast.net");
     expect(ABOUT.email).toBe("info@neuroklast.net");
     expect(ABOUT.product).toBe("NEUROKORE");
-    expect(ABOUT.version).toBe("0.4.11-alpha");
+    expect(ABOUT.version).toBe("0.5.0-alpha");
     expect(ABOUT.formats).toEqual(["Standalone", "VST3", "AU"]);
     expect(ABOUT.logos.manufacturer).toBe("./img/neuroklast.png");
     expect(ABOUT.logos.product).toBe("./img/neurokore.png");

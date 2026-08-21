@@ -1,6 +1,6 @@
 # NeuroKore – Entwicklungs-Roadmap
 
-**Produkt-Version:** 0.4.11-alpha  
+**Produkt-Version:** 0.5.0-alpha  
 **Diese Datei:** historische Wunschliste (Stand 2026-04). **Ist-Architektur und DSP-Runtime:** `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT_STATUS.md`.
 
 Bereits geliefert (nicht mehr als offen behandeln): Sanitation-Kette, Web-Editor, Offline-Lizenz, Delay/Reverb/IR/Ott, Oversampling-UI 1/2/4/8, CPU-Footer 0–100, ExprTape + Block-`processBlock` + `alignas(64)` + Plugin-LTO + arithmetisches asmjit (Windows x64). macOS VST3/AU compile-ready (Tape, WKWebView, Bundle-Resources). PGO, Call-JIT, LLVM, CLAP/AAX sind weiter offen.

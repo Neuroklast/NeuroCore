@@ -1,11 +1,25 @@
 import { create } from "zustand";
+import { CHIP_KEEP_OPEN_SEL } from "../assemble/chipMetrics";
 
-/** Name (title + jacks) or detail (all live values). No accordion. */
+/** Close only on click (never mousedown) so a bind drag cannot collapse the overlay. */
+export function shouldCollapseChipDetail(target: unknown, bindLetter: string | null): boolean {
+  if (bindLetter) {
+    return false;
+  }
+  const el = target as { closest?: (sel: string) => unknown } | null;
+  if (! el || typeof el.closest !== "function") {
+    return true;
+  }
+  return ! el.closest(CHIP_KEEP_OPEN_SEL);
+}
+
+/** Name (title + jacks) or detail (all live values). Overlay is not layout. */
 export const useChipViewStore = create<{
   detail: Record<string, boolean>;
   isDetail: (id: string) => boolean;
   toggle: (id: string) => void;
   setDetail: (id: string, on: boolean) => void;
+  collapseAll: () => void;
   muted: Set<string>;
   soloed: Set<string>;
   toggleMute: (id: string) => void;
@@ -19,6 +33,7 @@ export const useChipViewStore = create<{
   isDetail: (id) => Boolean(get().detail[id]),
   toggle: (id) => set((s) => ({ detail: { ...s.detail, [id]: ! s.detail[id] } })),
   setDetail: (id, on) => set((s) => ({ detail: { ...s.detail, [id]: on } })),
+  collapseAll: () => set({ detail: {} }),
   muted: new Set(),
   soloed: new Set(),
   toggleMute: (id) => set((s) => {

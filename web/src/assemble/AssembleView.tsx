@@ -22,7 +22,8 @@ import { useHostStore } from "../store/hostStore";
 import { menuPos } from "../theme/fit";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
 import { addPickerSize } from "../overlays/addPicker";
-import { useChipViewStore } from "../store/expandStore";
+import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
+import { useBindStore } from "../store/telemetryStore";
 import { ChipNode, IoNode } from "./ChipNode";
 import { ConnectionLine } from "./ConnectionLine";
 import { StaticGridEdge } from "./StaticGridEdge";
@@ -529,9 +530,12 @@ function Board() {
         onNodeContextMenu={onNodeContextMenu}
         onEdgeClick={onEdgeClick}
         onPaneContextMenu={onPaneContextMenu}
-        onPaneClick={() => {
+        onPaneClick={(e) => {
           setHoverNodeId(null);
           closeMenu();
+          if (shouldCollapseChipDetail(e.target, useBindStore.getState().letter)) {
+            useChipViewStore.getState().collapseAll();
+          }
         }}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
