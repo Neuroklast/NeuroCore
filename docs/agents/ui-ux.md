@@ -65,4 +65,4 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 ## Settings / scale
 
 - Theme engine: `signal` (red/cyan/black/white, default), `gold` (yellow/cyan/black), `azure` (blue/cyan/black). Paint is `--nk-*` / `themeOf(id)` — no private hex in UI code. Settings → THEME.
-- Window scale 100 / 125 / 150. `getDesktopScaleFactor() == 1`. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.
+- Window fit is drag-resize. No Settings zoom or formula-pt control. `getDesktopScaleFactor() == 1`. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.

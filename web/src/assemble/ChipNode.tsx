@@ -10,12 +10,12 @@ import { formatMapped } from "../theme/tokens";
 import { renameCircuitBlock, setCircuitArg, addCircuitBlock, insertCircuitBlockBetween, ADDABLE_BLOCKS } from "./addBlock";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
-import { bindEndId, lettersInExpr } from "./bindLinks";
-import { bindableArgKeys, handleId } from "./handles";
+import { bindEndId } from "./bindLinks";
+import { handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
-import { bindFace, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
-import { collapsedFace } from "./chipSpec";
+import { bindFace, bindJackCaption, bindJackXs, chipBox, jackCaption, jackTopPx, LABEL_COL } from "./chipLayout";
+import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
 import { isLfoNode, isEnvNode, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
@@ -204,7 +204,7 @@ function BindRail({
             {letters.map((L) => (
               <span key={L} data-bind-end={bindEndId(L, nodeId)} className="nk-bind-end" />
             ))}
-            <span className="nk-bind-jack-cap">{(bound || row.key).slice(0, 4).toUpperCase()}</span>
+            <span className="nk-bind-jack-cap">{bindJackCaption(row.key)}</span>
           </button>
         );
       })}
@@ -233,10 +233,8 @@ export function ChipNode({ data, id }: NodeProps) {
   const topJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "top");
   const ins = sideJacks.filter((j) => ! j.output);
   const outs = sideJacks.filter((j) => j.output);
-  const binds = [...new Set([
-    ...bindableArgKeys(d.args),
-    ...Object.keys(d.args).filter((k) => lettersInExpr(d.args[k]).length > 0),
-  ])];
+  const typeId = isCustomNode(d.type, id) ? "custom" : d.type;
+  const binds = paintedBindKeys(typeId, d.args);
   const lfo = isLfoNode({ type: d.type, id });
   const env = isEnvNode({ type: d.type, id });
   const envLevel = useHostStore((s) => s.mods[id] ?? 0);
@@ -493,7 +491,12 @@ export function ChipNode({ data, id }: NodeProps) {
           nodeId={id}
           face={bindFace(absY, box.h)}
           width={box.w}
-          rows={liveRows.filter((r) => r.bind)}
+          rows={binds.map((key) => {
+            const row = liveRows.find((r) => r.key === key);
+            return row
+              ? { key: row.key, formula: row.formula, live: row.live }
+              : { key, ...liveArg(d.args[key] ?? "", knobs) };
+          })}
         />
       ) : null}
 

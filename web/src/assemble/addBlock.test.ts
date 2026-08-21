@@ -16,6 +16,9 @@ describe("circuit add/remove", () => {
     expect(ADDABLE_BLOCKS.some((b) => b.type === "filter")).toBe(true);
     const next = scriptAfterAdd("stage1: y = x\nout: main = 1\n", "filter");
     expect(next).toContain("filter1: type = lowpass");
+    expect(next).toContain("bus __park:");
+    expect(next.indexOf("bus __park:")).toBeLessThan(next.indexOf("filter1:"));
+    expect(next.indexOf("stage1:")).toBeLessThan(next.indexOf("bus __park:"));
     expect(next.indexOf("filter1")).toBeLessThan(next.indexOf("out:"));
     expect(nextBlockId("stage", ["stage1"])).toBe("stage2");
   });

@@ -4,8 +4,10 @@ import {
   SOUTH_JACK_GAP,
   TITLE_H,
   TYPECODE_H,
+  bindableJackKeys,
   chipSpec,
   collapsedFace,
+  paintedBindKeys,
   paramJackSlots,
   typeCode,
 } from "./chipSpec";
@@ -124,12 +126,26 @@ describe("typeCode and collapsed face", () => {
 });
 
 describe("param jacks on the south edge", () => {
-  it("labels every param jack and parks it on the bottom edge inside the clip", () => {
+  it("only paints knobs that compile as key = a (ranges and sonic enums)", () => {
+    expect(bindableJackKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance"]);
+    expect(bindableJackKeys(chipSpec("filter"))).not.toContain("channel");
+    expect(bindableJackKeys(chipSpec("stage"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("custom"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("bus"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("send"))).toEqual([]);
+    expect(bindableJackKeys(chipSpec("eq"))).toEqual(["type", "freq", "q", "gain"]);
+    expect(bindableJackKeys(chipSpec("env"))).toEqual([
+      "type", "attack", "release", "hold", "min", "max", "invert",
+    ]);
+    expect(paintedBindKeys("custom", { y: "x", in2: "0" })).toEqual(["in2"]);
+  });
+
+  it("labels every bindable jack and parks it on the bottom edge inside the clip", () => {
     for (const row of CATALOG) {
       const spec = chipSpec(row.id);
       const box = { w: 236, h: spec.minBodyPx };
       const slots = paramJackSlots(spec, box);
-      expect(slots.map((s) => s.key), dump(row.id)).toEqual(spec.paramJacks);
+      expect(slots.map((s) => s.key), dump(row.id)).toEqual(bindableJackKeys(spec));
       for (const slot of slots) {
         expect(slot.label.trim().length, `${row.id}.${slot.key}`).toBeGreaterThan(0);
         expect(slot.y, `${row.id}.${slot.key} y=${slot.y} h=${box.h}`).toBeGreaterThanOrEqual(box.h - 16);

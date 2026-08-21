@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange } from "./boardSync";
+import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
 
 describe("board position ownership", () => {
   it("does not auto-arrange after a user drag or explicit Arrange", () => {
@@ -68,5 +68,17 @@ describe("board position ownership", () => {
     expect(nextSeenIds([], ids, true)).toEqual([]);
     expect(nextSeenIds([], ids, false)).toEqual(ids);
     expect(nextSeenIds(ids, ids, false)).toEqual(ids);
+  });
+
+  it("fits the camera only for auto-arrange, never after drag or bind", () => {
+    expect(shouldFitView("canvas", false)).toBe(false);
+    expect(shouldFitView("elk", false)).toBe(false);
+    expect(shouldFitView("undo", false)).toBe(false);
+    expect(shouldFitView("host", false)).toBe(false);
+    expect(shouldFitView("bridge", false)).toBe(false);
+    expect(shouldFitView("editor", false)).toBe(false);
+    expect(shouldFitView("preset", true)).toBe(true);
+    expect(shouldFitView("host", true)).toBe(true);
+    expect(keepLivePositions("canvas")).toBe(true);
   });
 });

@@ -4,17 +4,73 @@ import { useHostStore } from "../store/hostStore";
 import { liveTheme, themeRgba } from "../theme/theme";
 import { fitCanvas } from "./canvasFit";
 import {
-  SCOPE_COLOR,
   SCOPE_MENU,
   SPEC_BINS,
   SPEC_DEPTH,
   scopeSpectra,
-  scopeTitle,
   specMag01,
   spectrogramProject,
   spectrogramPush,
+  specRowFade,
+  logFreqMarks,
+  specDbMarks,
+  SPEC_PAD,
   paintTechNoise,
 } from "./scopeModel";
+
+function paintAxisLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  fill: string,
+): void {
+  ctx.font = "13px 'JetBrains Mono', ui-monospace, monospace";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#000000";
+  ctx.lineJoin = "round";
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, x, y);
+}
+
+function paintSpectrogramAxes(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  sr: number,
+  ink: string,
+): void {
+  const freq = logFreqMarks(sr);
+  const db = specDbMarks();
+  ctx.strokeStyle = "rgba(244,241,234,0.45)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const mark of freq) {
+    const a = spectrogramProject(mark.bin, SPEC_DEPTH - 1, 0, w, h);
+    const c = spectrogramProject(mark.bin, 0, 0, w, h);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(c.x, c.y);
+  }
+  for (const mark of db) {
+    const p = spectrogramProject(0, 0, mark.mag, w, h);
+    ctx.moveTo(SPEC_PAD.l - 5, p.y);
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (const mark of freq) {
+    const p = spectrogramProject(mark.bin, 0, 0, w, h);
+    paintAxisLabel(ctx, mark.label, p.x, Math.min(h - 14, p.y + 6), ink);
+  }
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (const mark of db) {
+    const p = spectrogramProject(0, 0, mark.mag, w, h);
+    paintAxisLabel(ctx, `${mark.label} dB`, SPEC_PAD.l - 8, p.y, ink);
+  }
+}
 
 function liftBins(raw: number[]): number[] {
   return raw.map((v) => specMag01(v));
@@ -33,7 +89,6 @@ export function ScopeCanvas({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const source = useHostStore((s) => s.scopeSource);
-  const delta = useHostStore((s) => s.scopeDelta);
   const xScale = useHostStore((s) => s.scopeX);
   const yScale = useHostStore((s) => s.scopeY);
   const grid = useHostStore((s) => s.scopeGrid);
@@ -67,24 +122,16 @@ export function ScopeCanvas({
       ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, w, h);
 
-      if (grid) {
-        ctx.strokeStyle = themeRgba("accent", 0.14, theme);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let r = 0; r < SPEC_DEPTH; r += 4) {
-          const a = spectrogramProject(0, r, 0, w, h);
-          const b = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
-        for (let b = 0; b < SPEC_BINS; b += 8) {
-          const a = spectrogramProject(b, SPEC_DEPTH - 1, 0, w, h);
-          const c = spectrogramProject(b, 0, 0, w, h);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(c.x, c.y);
-        }
-        ctx.stroke();
+      ctx.strokeStyle = themeRgba("cyan", 0.08, theme);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let r = 0; r < SPEC_DEPTH; r += 4) {
+        const a = spectrogramProject(0, r, 0, w, h);
+        const b = spectrogramProject(SPEC_BINS - 1, r, 0, w, h);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
       }
+      ctx.stroke();
 
       for (const id of ids) {
         const rows = (id === "in" ? histIn : histOut).current;
@@ -92,7 +139,7 @@ export function ScopeCanvas({
         const token = id === "in" ? "cyan" : "accent";
         for (let r = rows.length - 1; r >= 0; r -= 1) {
           const row = rows[r]!;
-          const fade = 1 - r / Math.max(1, SPEC_DEPTH);
+          const fade = specRowFade(r);
           const pts = row.map((mag, b) => spectrogramProject(b, r, invertY ? 1 - mag : mag, w, h));
           ctx.beginPath();
           const floorL = spectrogramProject(0, r, 0, w, h);
@@ -103,12 +150,12 @@ export function ScopeCanvas({
           }
           ctx.lineTo(floorR.x, floorR.y);
           ctx.closePath();
-          ctx.fillStyle = themeRgba(token, 0.04 + fade * 0.12, theme);
+          ctx.fillStyle = themeRgba(token, fade * 0.16, theme);
           ctx.fill();
-          ctx.strokeStyle = r === 0 ? ink : themeRgba(token, 0.16 + fade * 0.5, theme);
+          ctx.strokeStyle = r === 0 ? ink : themeRgba(token, 0.05 + fade * 0.55, theme);
           ctx.shadowColor = r === 0 ? ink : "transparent";
           ctx.shadowBlur = r === 0 ? 6 : 0;
-          ctx.lineWidth = r === 0 ? 1.4 : 0.8;
+          ctx.lineWidth = r === 0 ? 1.6 : 0.7;
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
@@ -121,21 +168,12 @@ export function ScopeCanvas({
       const f = frame.current;
       paintTechNoise(ctx, w, h, f, theme.cyan);
 
-      ctx.strokeStyle = themeRgba("accent", 0.55, theme);
-      ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
-      ctx.fillStyle = SCOPE_COLOR.out;
-      ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.fillText(`${scopeTitle(source, delta)}  SPEC`, 8, 12);
-      ctx.fillStyle = theme.inkSoft;
-      ctx.font = "9px 'JetBrains Mono', monospace";
-      const hz = sr > 0 ? `${(sr * 0.5).toFixed(0)} Hz` : "NYQ";
-      ctx.fillText("0", 6, h - 4);
-      ctx.fillText(hz, w - 40, h - 4);
+      paintSpectrogramAxes(ctx, w, h, sr, theme.ink);
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [count, delta, grid, invertY, scopeIn, scopeOut, source, sr, themeId, xScale, yScale]);
+  }, [count, grid, invertY, scopeIn, scopeOut, source, sr, themeId, xScale, yScale]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

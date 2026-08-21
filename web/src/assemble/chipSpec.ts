@@ -32,7 +32,7 @@ export const TYPECODE_H = 14;
 export const SOCKET_H = 40;
 const BODY_PAD = 10;
 /** Air between the last detail row and the south param jacks + captions. */
-export const SOUTH_JACK_GAP = 40;
+export const SOUTH_JACK_GAP = 52;
 const SOUTH_BAND = SOUTH_JACK_GAP;
 const ENUM_EXTRA = 8;
 const BODY_FLOOR = 80;
@@ -617,6 +617,39 @@ export function chipSpec(type: string, args: Record<string, string> = {}): ChipS
   return SPECS[id] ?? fallbackSpec(id);
 }
 
+/** Not a knob letter in the DSL: formula body, bus name, routing, split family. */
+const NOT_KNOB_CODE = new Set(["y", "channel", "kanal", "name", "mode", "family"]);
+
+/**
+ * South bind jacks: numeric ranges and sonic enums that compile as `key = a`.
+ * Routing/name/formula fields stay off the rail.
+ */
+export function bindableJackKeys(spec: ChipSpec): string[] {
+  return spec.paramJacks.filter((k) => {
+    if (NOT_KNOB_CODE.has(k.toLowerCase())) {
+      return false;
+    }
+    if (spec.ranges[k]) {
+      return true;
+    }
+    return (spec.enums[k] ?? []).length > 0;
+  });
+}
+
+/** Catalog bind keys plus extra Custom inputs (`+ input`), never `y`. */
+export function paintedBindKeys(type: string, args: Record<string, string> = {}): string[] {
+  const spec = chipSpec(type, args);
+  const keys = bindableJackKeys(spec);
+  if (spec.id !== "custom") {
+    return keys;
+  }
+  const extra = Object.keys(args).filter((k) => {
+    const low = k.toLowerCase();
+    return ! NOT_KNOB_CODE.has(low) && ! keys.includes(k);
+  });
+  return [...keys, ...extra];
+}
+
 export function allChipSpecs(): ChipSpec[] {
   return Object.values(SPECS);
 }
@@ -684,7 +717,8 @@ export function collapsedFace(
 }
 
 export function paramJackSlots(spec: ChipSpec, box: { w: number; h: number }): ParamJackSlot[] {
-  const n = spec.paramJacks.length;
+  const keys = bindableJackKeys(spec);
+  const n = keys.length;
   if (n === 0) {
     return [];
   }
@@ -693,7 +727,7 @@ export function paramJackSlots(spec: ChipSpec, box: { w: number; h: number }): P
     ? [box.w * 0.5]
     : Array.from({ length: n }, (_, i) => pad + ((i + 0.5) / n) * Math.max(12, box.w - pad * 2));
   const y = box.h - PARAM_JACK_EDGE;
-  return spec.paramJacks.map((key, i) => ({
+  return keys.map((key, i) => ({
     key,
     label: spec.paramJackLabels[key] || key,
     x: xs[i] ?? box.w * 0.5,

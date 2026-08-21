@@ -2,6 +2,7 @@ import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
 import { muteScriptHistory, pushScriptHistory, redoScript, undoScript } from "../store/scriptHistory";
+import { parkNodeInScript } from "./connectModel";
 import { stripMuteComments } from "./muteSolo";
 
 export type AddableBlock = {
@@ -103,7 +104,7 @@ export function scriptAfterAdd(script: string, type: string, args?: string): str
   }
   const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
   const id = nextBlockId(kind, taken);
-  return insertBeforeMixer(script, `${id}: ${body}`);
+  return parkNodeInScript(insertBeforeMixer(script, `${id}: ${body}`), id);
 }
 
 export function scriptAfterRemove(script: string, id: string): string {

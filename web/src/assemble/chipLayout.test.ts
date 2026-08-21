@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { AstJack } from "../bridge/ast";
 import {
+  BIND_JACK_MIN,
   CONTENT_MIN,
   LABEL_COL,
   bindFace,
+  bindJackCaption,
   bindJackXs,
   chipBodyHeight,
   chipBox,
@@ -12,6 +14,7 @@ import {
   jackCaption,
   snapJackFace,
 } from "./chipLayout";
+import { chipSpec } from "./chipSpec";
 import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
 
@@ -28,6 +31,9 @@ describe("chip face, labels, copy", () => {
     expect(jackCaption({ id: "out", label: "", output: true })).toBe("out");
     expect(jackCaption({ id: "", label: "", output: false })).toBe("in");
     expect(jackCaption({ id: "lfo1", label: "lfo1", output: false })).toBe("lfo1");
+    expect(bindJackCaption("gain")).toBe("GAIN");
+    expect(bindJackCaption("type")).toBe("TYPE");
+    expect(bindJackCaption("freq")).toBe("FREQ");
   });
 
   it("sizes the chip to minBodyPx so expand does not grow the box", () => {
@@ -111,5 +117,19 @@ describe("chip face, labels, copy", () => {
     expect(onCellCenter(cut.x) && onGrid(cut.y), `${cut.x},${cut.y}`).toBe(true);
     expect(inn.x).toBe(pos.x);
     expect(out.x).toBe(pos.x + box.w);
+  });
+
+  it("widens the chip when south bind jacks would crowd captions", () => {
+    const envJ = [audio("in", false), audio("mod", true)];
+    const env = chipBox("env", envJ, false, chipSpec("env").defaultArgs);
+    const drive = chipBox("stage", [audio("in", false), audio("out", true)], false, { y: "x" });
+    expect(env.w).toBeGreaterThan(drive.w);
+    expect(env.w).toBeGreaterThanOrEqual(LABEL_COL * 2 + CONTENT_MIN);
+    const n = 7;
+    expect(env.w).toBeGreaterThanOrEqual(BOARD_GRID * 2 + n * BIND_JACK_MIN);
+    const xs = bindJackXs(n, env.w);
+    for (let i = 1; i < xs.length; i += 1) {
+      expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(BOARD_GRID);
+    }
   });
 });

@@ -99,16 +99,17 @@ function mergeParamsKnobs(
   incoming: KnobState[],
   gestures: Record<string, true>,
 ): KnobState[] {
-  if (Object.keys(gestures).length === 0) {
-    return incoming;
-  }
   const live = new Map(current.map((k) => [k.id, k]));
   return incoming.map((k) => {
-    if (! gestures[k.id]) {
-      return k;
-    }
     const cur = live.get(k.id);
-    return cur ? { ...k, value: cur.value } : k;
+    let next = k;
+    if (cur && (! k.enums || k.enums.length === 0) && cur.enums && cur.enums.length > 0) {
+      next = { ...next, enums: cur.enums };
+    }
+    if (gestures[k.id] && cur) {
+      next = { ...next, value: cur.value };
+    }
+    return next;
   });
 }
 

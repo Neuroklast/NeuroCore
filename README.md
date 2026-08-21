@@ -28,7 +28,7 @@ Audio Units are an Apple format: a Windows or Linux CMake run still lists `AU` i
 
 Without a Mac, use GitHub Actions: the **AU (macOS)** job builds, signs, runs `auval -v aumf NRKO NRKL`, and uploads `NEUROKORE-AU-macOS`. Trigger it with a push/PR or **Actions → Build → Run workflow**. Download the artifact, then copy `NEUROKORE.component` to `~/Library/Audio/Plug-Ins/Components/` on the Mac that will load it.
 
-On Windows, `build_debug.bat` / `build_release.bat` use Ninja Multi-Config if you prefer that over the Visual Studio generator.
+On Windows, double-click `build_release.bat` (or `build_debug.bat`). That configures `build/` if needed and builds `NeuroKore_All` — VST3 + Standalone + embedded Vite UI. Pass `/nopause` for scripts. Keep the `.bat` version string in sync with `NEUROKORE_VERSION_LABEL` in `CMakeLists.txt`.
 
 Windows zip / installer (after a Release build):
 

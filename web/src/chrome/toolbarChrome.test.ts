@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRESET_MIN_PX, toolbarFixedMinPx, toolbarSlots } from "./toolbarChrome";
+import { PRESET_MIN_PX, toolbarFixedMinPx, toolbarSlots, workspaceTabClass } from "./toolbarChrome";
 
 describe("toolbar preset chrome", () => {
   it("has no separate Presets button", () => {
@@ -22,6 +22,15 @@ describe("toolbar preset chrome", () => {
     const ids = toolbarSlots().map((s) => s.id);
     expect(ids).not.toContain("validate");
     expect(ids).not.toContain("optimize");
+  });
+});
+
+describe("header paint hierarchy", () => {
+  it("marks the active tab with a class, never a filled accent block", () => {
+    expect(workspaceTabClass(true)).toBe("nk-tab is-on");
+    expect(workspaceTabClass(false)).toBe("nk-tab");
+    expect(workspaceTabClass(true)).not.toMatch(/bg-accent|accent/);
+    expect(workspaceTabClass(false)).not.toMatch(/accent/);
   });
 });
 

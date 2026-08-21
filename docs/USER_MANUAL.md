@@ -63,7 +63,7 @@ Top bar
 - < / > step through factory, then user presets. Wraps at both ends.
 - Functions: look up formula words and insert them. Folders on the left: Core, Drive, Crush, Blocks.
 - Stages: the blocks in the current formula, and which knobs they use. Select an IR block to open that cab slot.
-- Settings: animation, Studio / Live, theme, UI scale, formula text size, circuit cables, tempo, standalone audio device, About / License / Help.
+- Settings: animation, Studio / Live, theme, circuit cables, tempo, standalone audio device, About / License / Help. Window size is drag-resize.
 - LIVE / STUDIO: Live uses min-phase oversampling so playing feels instant. Studio uses linear-phase oversampling for mix work. Same control lives in Settings.
 - Bypass: forces Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
 - Help: this guide, one chapter at a time.

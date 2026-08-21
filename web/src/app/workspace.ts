@@ -15,15 +15,9 @@ export function knobBindEnabled(w: Workspace): boolean {
   return w === "assemble";
 }
 
-/** Circuit parks the six knobs on a bottom rail; Terminal keeps the left stack. */
-export function knobRail(w: Workspace): "left" | "bottom" | "none" {
-  if (w === "assemble") {
-    return "bottom";
-  }
-  if (w === "hack") {
-    return "left";
-  }
-  return "none";
+/** One macro bar: knobs A–F always bottom. Bind plugs only in Circuit. */
+export function knobRail(_w: Workspace): "left" | "bottom" | "none" {
+  return "bottom";
 }
 
 export type TerminalAction = "edit" | "validate" | "optimize";

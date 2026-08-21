@@ -1,7 +1,7 @@
 import { Position, type Edge, type Node } from "@xyflow/react";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
-import { CHIP_GAP, CHIP_W, chipBox } from "./chipLayout";
+import { CHIP_GAP, chipBox } from "./chipLayout";
 import { lettersInExpr } from "./bindLinks";
 import { handleId, tokenInExpr } from "./handles";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
@@ -231,7 +231,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       targetPosition: Position.Left,
       draggable: isSidechainType(n.type) ? false : undefined,
     });
-    x = px + CHIP_W + CHIP_GAP;
+    x = px + box.w + CHIP_GAP;
   }
 
   if (! ast.nodes.some((n) => n.type === "out")) {

@@ -165,13 +165,11 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
 }
 
 function SettingsBody() {
-  const scale = useHostStore((s) => s.scale);
   const tempo = useHostStore((s) => s.tempoSource);
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);
   const cables = useHostStore((s) => s.cables);
   const theme = useHostStore((s) => s.theme) ?? "signal";
-  const formulaPt = useHostStore((s) => s.formulaPt);
   const mode = useHostStore((s) => s.mode);
   const setOverlay = useHostStore((s) => s.setOverlay);
   return (
@@ -213,20 +211,6 @@ function SettingsBody() {
             useHostStore.setState({ theme: id });
           }}
         />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">DISPLAY</div>
-        <Seg
-          value={String(scale)}
-          options={[{ id: "100", label: "100%" }, { id: "125", label: "125%" }, { id: "150", label: "150%" }]}
-          onPick={(id) => void getNativeFunction("setUi")({ scale: Number(id) })}
-        />
-        <div className="mt-2 flex items-center gap-2">
-          <span>Formula text size</span>
-          <button type="button" className="nk-clip" onClick={() => useHostStore.setState({ formulaPt: Math.max(12, formulaPt - 1) })}>Aa-</button>
-          <span>{formulaPt} pt</span>
-          <button type="button" className="nk-clip" onClick={() => useHostStore.setState({ formulaPt: Math.min(24, formulaPt + 1) })}>Aa+</button>
-        </div>
       </section>
       <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">CIRCUIT CABLES</div>

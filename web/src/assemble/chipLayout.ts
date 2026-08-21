@@ -1,8 +1,8 @@
 import type { AstJack } from "../bridge/ast";
 import { lettersInExpr } from "./bindLinks";
-import { chipSpec, JACK_PITCH, SOCKET_H, sideJackPitch } from "./chipSpec";
+import { chipSpec, JACK_PITCH, SOCKET_H, paintedBindKeys, sideJackPitch } from "./chipSpec";
 import { BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
-import { bindableArgKeys, parseHandle } from "./handles";
+import { parseHandle } from "./handles";
 import { cableFace } from "./validateLink";
 
 export { SOCKET_H };
@@ -10,6 +10,16 @@ export { SOCKET_H };
 export const LABEL_COL = 44;
 export const CONTENT_MIN = 148;
 export const CHIP_W = LABEL_COL * 2 + CONTENT_MIN;
+/** One south bind jack: two grid cells so a 4-letter caption stays readable. */
+export const BIND_JACK_MIN = BOARD_GRID * 2;
+
+export function chipWidthForBindCount(n: number): number {
+  if (n <= 0) {
+    return snapSize(CHIP_W);
+  }
+  const pad = BOARD_GRID;
+  return snapSize(Math.max(CHIP_W, pad * 2 + n * BIND_JACK_MIN));
+}
 export const CHIP_H = 80;
 export const IO_W = LABEL_COL + 80;
 export const CHIP_GAP = 140;
@@ -49,6 +59,11 @@ export function countSides(jacks: AstJack[]): { ins: number; outs: number } {
 export function jackCaption(jack: Pick<AstJack, "id" | "label" | "output">): string {
   const s = (jack.label || jack.id || "").trim();
   return s || (jack.output ? "out" : "in");
+}
+
+/** South bind caption sits above the jack. Full key, never a 4-letter stump. */
+export function bindJackCaption(key: string): string {
+  return key.trim().toUpperCase();
 }
 
 export function contentWidth(chipW: number): number {
@@ -108,12 +123,15 @@ export function chipBox(
   }
   const { ins, outs } = countSides(jacks);
   const ports = chipHeight(ins, outs, false);
-  const rail = spec.paramJacks.length > 0
-    || bindableArgKeys(rec).length > 0
+  const bindKeys = paintedBindKeys(spec.id, rec);
+  const rail = bindKeys.length > 0
     || Object.values(rec).some((v) => lettersInExpr(v).length > 0)
     ? BIND_RAIL
     : 0;
-  return { w: snapSize(CHIP_W), h: snapSize(Math.max(spec.minBodyPx, ports) + rail) };
+  return {
+    w: chipWidthForBindCount(bindKeys.length),
+    h: snapSize(Math.max(spec.minBodyPx, ports) + rail),
+  };
 }
 
 export function jackTopPx(index: number, count: number, height: number): number {

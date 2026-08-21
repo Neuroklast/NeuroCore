@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Knob } from "../chrome/Knob";
+import { useEffect, useRef, useState } from "react";
 import { bloomFilter } from "../overlays/overlayMotion";
+import { UnitAnalyzer } from "../viz/ScopeDeck";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
@@ -24,18 +24,14 @@ import {
   dataRainLines,
   driveAmount,
   dspEvalMs,
-  faceFftBar,
-  faceFftFrame,
   formatDbfs,
   formatLufs,
   logoPulsePeriodMs,
   logoReactiveStyle,
   logoRgbSplit,
-  minimapGraph,
   osModeLabel,
   rainHot,
   rainSpeed,
-  spectrumBins,
   stereoMetrics,
   transientHit,
 } from "./faceModel";
@@ -50,7 +46,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   const sr = useHostStore((s) => s.sr);
   const bpm = useHostStore((s) => s.bpm);
   const osFactor = useHostStore((s) => s.osFactor);
-  const mix = useHostStore((s) => s.mix);
   const peak = useTelemetryStore((s) => s.outPeak);
   const outRms = useTelemetryStore((s) => s.outRms);
   const scopeOut = useTelemetryStore((s) => s.scopeOut);
@@ -72,7 +67,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   const bloom = motionAllows("bloom", motion, reduced);
   const scan = motionAllows("crtScan", motion, reduced);
   const jit = motionAllows("jitter", motion, reduced);
-  const live = knobs.filter((k) => k.active);
   const cpu01 = Math.max(0, Math.min(1, cpu / 100));
   const drive01 = driveAmount(knobs);
   const temp = coreTempC(drive01, cpu01);
@@ -83,8 +77,6 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   const rain = rainSpeed(cpu01, drive01);
   const hot = rainHot(cpu01, drive01);
   const rainLines = dataRainLines(checksum, tick, 22);
-  const bins = spectrumBins(scopeOut, 48);
-  const mini = useMemo(() => minimapGraph(ast, mix <= 1e-5), [ast, mix]);
 
   const [glitch, setGlitch] = useState<{ kind: FaceGlitchKind; seed: number }>({
     kind: "idle",
@@ -134,45 +126,34 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
 
   return (
     <section
-      className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)] px-8"
+      className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]"
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         setCursor(cursorReadout(e.clientX - r.left, e.clientY - r.top));
       }}
       onMouseLeave={() => setCursor(null)}
     >
-      <FaceFft bins={bins} />
-
-      <aside className="nk-face-tele nk-face-tele-l" aria-label="signal metrics">
+      <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
+        <FaceRow k="AST_CHECKSUM" v={checksum} />
+        <FaceRow k="DSP_EVAL_TIME" v={`${evalMs.toFixed(2)} ms`} />
+        <FaceRow k="BUFFER_SIZE" v={`${buf > 0 ? buf : "—"} SMP`} />
+        <FaceRow k="CORE_TEMP" v={`${temp.temp}°C${temp.warn ? " [WARN]" : ""}`} warn={temp.warn} />
+        <FaceRow k="OVERSAMPLING_MODE" v={osModeLabel(osFactor)} />
+        <FaceRow k="CPU" v={`${Math.round(cpu)}%`} />
+      </aside>
+      <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
         <FaceRow k="PEAK_L" v={`${formatDbfs(stereo.peakL)} dBFS`} />
         <FaceRow k="PEAK_R" v={`${formatDbfs(stereo.peakR)} dBFS`} />
         <FaceRow k="RMS" v={`${formatLufs(outRms)} LUFS`} />
         <FaceRow k="PHASE_CORRELATION" v={stereo.corr.toFixed(2)} />
       </aside>
 
-      <aside className="nk-face-tele nk-face-tele-r" aria-label="engine status">
-        <FaceRow k="AST_CHECKSUM" v={checksum} />
-        <FaceRow k="DSP_EVAL_TIME" v={`${evalMs.toFixed(2)} ms`} />
-        <FaceRow k="BUFFER_SIZE" v={`${buf > 0 ? buf : "—"} SMP`} />
-        <FaceRow
-          k="CORE_TEMP"
-          v={`${temp.temp}°C${temp.warn ? " [WARN]" : ""}`}
-          warn={temp.warn}
-        />
-        <FaceRow k="OVERSAMPLING_MODE" v={osModeLabel(osFactor)} />
-      </aside>
-
-      <FaceMinimap nodes={mini.nodes} edges={mini.edges} />
-
-      {cursor ? <div className="nk-face-cursor">{cursor}</div> : null}
-
-      <div className="relative z-[1] min-h-0 flex-1">
-        <button
-          type="button"
-          className="nk-face-logo"
-          onClick={() => open("assemble")}
-          title="Open circuit"
-        >
+      <button
+        type="button"
+        className="nk-face-logo"
+        onClick={() => open("assemble")}
+        title="Open circuit"
+      >
           <span
             className={[
               "nk-face-fx",
@@ -215,14 +196,13 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
               </>
             ) : null}
           </span>
-        </button>
+      </button>
+
+      <div className="flex min-h-0 flex-1">
+        <UnitAnalyzer />
       </div>
 
-      <div className="relative z-[1] mb-6 flex max-w-[960px] flex-wrap items-stretch justify-center gap-3 self-center pb-2">
-        {live.map((k) => (
-          <FaceKnob key={k.id} id={k.id} />
-        ))}
-      </div>
+      {cursor ? <div className="nk-face-cursor">{cursor}</div> : null}
     </section>
   );
 }
@@ -235,107 +215,3 @@ function FaceRow({ k, v, warn = false }: { k: string; v: string; warn?: boolean 
     </div>
   );
 }
-
-function FaceFft({ bins }: { bins: number[] }) {
-  const hold = useRef<number[]>([]);
-  if (hold.current.length !== bins.length) {
-    hold.current = bins.slice();
-  } else {
-    for (let i = 0; i < bins.length; i += 1) {
-      hold.current[i] = Math.max(bins[i] ?? 0, (hold.current[i] ?? 0) * 0.82);
-    }
-  }
-  const raw = hold.current;
-  const shown = raw.map((v, i) => (
-    (raw[i - 1] ?? 0) * 0.22 + v * 0.56 + (raw[i + 1] ?? 0) * 0.22
-  ));
-  const w = 960;
-  const h = 400;
-  const gap = 1.15;
-  const barW = w / shown.length;
-  const frame = faceFftFrame();
-  return (
-    <svg
-      className="nk-face-fft"
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      aria-hidden
-      style={{ top: frame.top, bottom: frame.bottom, height: "100%" }}
-    >
-      {shown.map((v, i) => {
-        const bar = faceFftBar(v, h);
-        return (
-          <rect
-            key={i}
-            x={i * barW + gap * 0.35}
-            y={bar.y}
-            width={Math.max(0.7, barW - gap)}
-            height={bar.h}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function FaceMinimap({
-  nodes,
-  edges,
-}: {
-  nodes: ReturnType<typeof minimapGraph>["nodes"];
-  edges: ReturnType<typeof minimapGraph>["edges"];
-}) {
-  const W = 196;
-  const H = 64;
-  const px = (x: number) => 10 + x * (W - 20);
-  const py = (y: number) => 12 + y * (H - 24);
-  return (
-    <div className="nk-face-mini" aria-label="signal path">
-      <div className="nk-face-mini-tag">SIGNAL_PATH</div>
-      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H}>
-        {edges.map((e, i) => {
-          const a = nodes.find((n) => n.id === e.from);
-          const b = nodes.find((n) => n.id === e.to);
-          if (! a || ! b) {
-            return null;
-          }
-          return (
-            <line
-              key={`${e.from}-${e.to}-${i}`}
-              x1={px(a.x)}
-              y1={py(a.y)}
-              x2={px(b.x)}
-              y2={py(b.y)}
-              className={e.live ? "is-live" : "is-dead"}
-            />
-          );
-        })}
-        {nodes.map((n) => (
-          <circle
-            key={n.id}
-            cx={px(n.x)}
-            cy={py(n.y)}
-            r={2.4}
-            className={n.live ? "is-live" : "is-dead"}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-const FaceKnob = memo(function FaceKnob({ id }: { id: string }) {
-  const knob = useHostStore((s) => s.knobs.find((k) => k.id === id));
-  if (! knob) {
-    return null;
-  }
-  return (
-    <div className="nk-face-knob h-[168px] w-[128px]">
-      <span className="nk-face-aim nk-face-aim-tl" aria-hidden>+</span>
-      <span className="nk-face-aim nk-face-aim-tr" aria-hidden>+</span>
-      <span className="nk-face-aim nk-face-aim-bl" aria-hidden>+</span>
-      <span className="nk-face-aim nk-face-aim-br" aria-hidden>+</span>
-      <Knob knob={knob} bind={false} />
-    </div>
-  );
-});

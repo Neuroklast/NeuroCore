@@ -53,6 +53,38 @@ describe("jack align and knob bind", () => {
     expect(activateKnobPatch(profile).enums).toEqual(profile.enums);
   });
 
+  it("commitBind on an enum key snaps the knob to N options", () => {
+    useHostStore.setState({
+      knobs: [
+        { id: "b", name: "", value: 0, active: false, min: 0, max: 1, isNote: false },
+      ],
+    });
+    useAstStore.setState({
+      origin: "canvas",
+      ast: {
+        version: 1,
+        leadingComments: [],
+        params: [],
+        nodes: [{
+          id: "filter1",
+          type: "filter",
+          busName: "main",
+          args: { type: "lowpass", cutoff: "1000", resonance: "0.4", channel: "both" },
+          trailingComment: "",
+        }],
+      },
+      lastValidAst: null,
+      lastValidScript: "",
+      script: "",
+      diagnostics: [],
+    });
+    commitBind("filter1", "type", "b");
+    const knob = useHostStore.getState().knobs.find((k) => k.id === "b");
+    expect(knob?.enums).toEqual(["lowpass", "highpass", "bandpass"]);
+    expect(knob?.enums).toHaveLength(3);
+    expect(knob?.active).toBe(true);
+  });
+
   it("commitBind activates an inactive knob and writes the letter", () => {
     useHostStore.setState({
       knobs: [
