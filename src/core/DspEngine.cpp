@@ -274,7 +274,6 @@ void DspEngine::processBlock(juce::AudioBuffer<float>& buffer,
     }
 
     // Cubase ASIO Guard can exceed prepare. Slice at the prepared ceiling; never setSize.
-    silentSec = 0.0;
     const float* savedScL = hostScL;
     const float* savedScR = hostScR;
     const int savedScN = hostScN;

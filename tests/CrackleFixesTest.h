@@ -1411,6 +1411,11 @@ public:
             }
             expect (proc.isDspIdle(), "wet OS/DSL must sleep after silence + tail flush");
 
+            juce::AudioBuffer<float> overflow (2, 1024);
+            overflow.clear();
+            proc.processBlock (overflow, midi);
+            expect (proc.isDspIdle(), "silent ASIO Guard overflow must not wake wet OS/DSL");
+
             for (int i = 0; i < 128; ++i)
             {
                 buf.setSample (0, i, 0.4f);
@@ -1432,7 +1437,9 @@ public:
             expect (proc.applyFormula ("stage1: y = x * 0.5", err), err);
 
             const int scriptN0 = proc.getScriptBufferNumSamples();
+            const int contN0 = proc.getContinuityBufferNumSamples();
             expect (scriptN0 > 0);
+            expect (contN0 > 0, "prepare must allocate a continuityBuf ceiling");
 
             juce::MidiBuffer midi;
             auto runOverflow = [&] (int n)
@@ -1450,6 +1457,8 @@ public:
                 expect (TestHelpers::peakAbs (buf) < 8.f);
                 expectEquals (proc.getScriptBufferNumSamples(), scriptN0,
                               "scriptBuffer grew on n=" + juce::String (n));
+                expectEquals (proc.getContinuityBufferNumSamples(), contN0,
+                              "continuityBuf grew on n=" + juce::String (n));
             };
             runOverflow (256);
             runOverflow (1024);

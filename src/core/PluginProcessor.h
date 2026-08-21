@@ -282,6 +282,9 @@ public:
     /** Test hook: OS working buffer length. processBlock must not grow this. */
     int getScriptBufferNumSamples() const noexcept { return dspEngine.getScriptBufferNumSamples(); }
 
+    /** Test hook: last-wet continuity length. processBlock must not grow this. */
+    int getContinuityBufferNumSamples() const noexcept { return continuityBuf.getNumSamples(); }
+
 private:
     // Sub-components (extracted from the God-Class)
     DspEngine       dspEngine;
