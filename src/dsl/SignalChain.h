@@ -915,6 +915,13 @@ private:
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
     std::shared_ptr<BusGraph> busGraph;
+    /** Previous published graphs. Dropped on the next loadScript (message thread),
+        not when processBlock's local shared_ptr expires (that would free JIT/rings
+        on the audio thread). */
+    std::shared_ptr<Chain> retiredChain;
+    std::shared_ptr<AliasMap> retiredAliases;
+    std::shared_ptr<BusGraph> retiredBusGraph;
+    std::shared_ptr<std::vector<std::pair<float*, float*>>> retiredAliasPtrs;
     std::vector<ParamDesc> paramInfo;
 
     juce::AudioBuffer<float> inSnapshot;

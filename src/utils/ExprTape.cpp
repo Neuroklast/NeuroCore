@@ -342,18 +342,33 @@ float exprTapeEval (ExprTape& tape, const float* vars) noexcept
         switch (ops[i])
         {
             case ExprOp::LoadImm: s[ds] = imms[i]; break;
-            case ExprOp::LoadVar: s[ds] = (v != nullptr) ? v[tape.a[i]] : 0.f; break;
-            case ExprOp::Add: s[ds] = s[tape.a[i]] + s[tape.b[i]]; break;
-            case ExprOp::Sub: s[ds] = s[tape.a[i]] - s[tape.b[i]]; break;
-            case ExprOp::Mul: s[ds] = s[tape.a[i]] * s[tape.b[i]]; break;
+            case ExprOp::LoadVar:
+                s[ds] = (v != nullptr && tape.a[i] < ExprTape::kMaxVars) ? v[tape.a[i]] : 0.f;
+                break;
+            case ExprOp::Add:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] + s[tape.b[i]] : 0.f;
+                break;
+            case ExprOp::Sub:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] - s[tape.b[i]] : 0.f;
+                break;
+            case ExprOp::Mul:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots && tape.b[i] < ExprTape::kMaxSlots)
+                            ? s[tape.a[i]] * s[tape.b[i]] : 0.f;
+                break;
             case ExprOp::Div:
             {
+                if (tape.a[i] >= ExprTape::kMaxSlots || tape.b[i] >= ExprTape::kMaxSlots)
+                { s[ds] = 0.f; break; }
                 const float r = s[tape.b[i]];
                 s[ds] = (std::abs (r) > 1.0e-12f) ? (s[tape.a[i]] / r) : 0.f;
                 break;
             }
             case ExprOp::Pow:
             {
+                if (tape.a[i] >= ExprTape::kMaxSlots || tape.b[i] >= ExprTape::kMaxSlots)
+                { s[ds] = 0.f; break; }
                 const float l = s[tape.a[i]], r = s[tape.b[i]];
                 if (l < 0.f && std::abs (r - std::round (r)) > 1.0e-6f)
                     s[ds] = 0.f;
@@ -361,8 +376,13 @@ float exprTapeEval (ExprTape& tape, const float* vars) noexcept
                     s[ds] = finiteOrZero (std::pow (l, r));
                 break;
             }
-            case ExprOp::Neg: s[ds] = -s[tape.a[i]]; break;
-            case ExprOp::Call1: s[ds] = call1 ((ExprFn) tape.fn[i], s[tape.a[i]]); break;
+            case ExprOp::Neg:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots) ? -s[tape.a[i]] : 0.f;
+                break;
+            case ExprOp::Call1:
+                s[ds] = (tape.a[i] < ExprTape::kMaxSlots)
+                            ? call1 ((ExprFn) tape.fn[i], s[tape.a[i]]) : 0.f;
+                break;
             case ExprOp::Call2:
             {
                 const auto id = (ExprFn) tape.fn[i];

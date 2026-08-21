@@ -111,6 +111,29 @@ public:
             expect (std::abs (other.evaluateLive (10.0f)) <= 1.0f + 1e-3f);
         }
 
+        beginTest("jit neg x matches tape; loadVar OOB stays finite");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("-x"));
+            expect (eval.hasLiveTape());
+#if defined(NK_HAS_EXPR_JIT) && NK_HAS_EXPR_JIT
+            expect (eval.hasLiveJit(), "neg should stay on the arithmetic JIT");
+#endif
+            expectWithinAbsoluteError (eval.evaluateLive (0.4f), -0.4f, 1e-6f);
+            expectWithinAbsoluteError (eval.evaluateLive (-0.25f), 0.25f, 1e-6f);
+            for (int i = 0; i < 64; ++i)
+                expectWithinAbsoluteError (eval.evaluateLive (0.1f), -0.1f, 1e-6f);
+
+            ExprTape t;
+            t.op[0] = ExprOp::LoadVar; t.a[0] = 200; t.dst[0] = 0;
+            t.n = 1;
+            t.resultSlot = 0;
+            float vars[16] {};
+            vars[0] = 1.0f;
+            expect (std::isfinite (exprTapeEval (t, vars)));
+            expectWithinAbsoluteError (exprTapeEval (t, vars), 0.0f, 1e-6f);
+        }
+
         beginTest("softclip tape matches tree and stays finite");
         {
             ExpressionEvaluator eval;

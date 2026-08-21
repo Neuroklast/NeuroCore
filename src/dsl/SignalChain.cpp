@@ -1406,6 +1406,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (xo->threeBand)
                     ensureGraphBus (newGraph, "mid");
             }
+        retiredBusGraph = std::atomic_load (&busGraph);
         std::atomic_store (&busGraph, std::make_shared<BusGraph> (std::move (newGraph)));
     }
 
@@ -1483,6 +1484,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             newAliasPtrs->push_back ({ &itSrc->second, &itDst->second });
     }
 
+    retiredAliases   = std::atomic_load (&aliases);
+    retiredAliasPtrs = std::atomic_load (&aliasPtrs);
+    retiredChain     = std::atomic_load (&chain);
     std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
     std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
     std::atomic_store (&chain, newChain);

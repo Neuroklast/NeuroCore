@@ -32,7 +32,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 ## DSP (0.4.11-alpha)
 
 - **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
-- **Formel-Live**: AST nur noch Parser/Fold. Windows x64 JITtet Load/Add/Sub/Mul/Neg nach Tape-Absenkung (asmjit); Call/ADAA/Div/Pow bleiben Tape-Interpreter. Emit nur bei Parse/Load.
+- **Formel-Live**: AST nur noch Parser/Fold. Windows x64 JITtet Load/Add/Sub/Mul/Neg nach Tape-Absenkung (asmjit); Call/ADAA/Div/Pow bleiben Tape-Interpreter. Emit nur bei Parse/Load. Alte Chain/JIT wird auf dem Message-Thread retired, nicht am Ende von `processBlock`.
 - **Chain-Dispatch**: `Block::process(ch,x)` ist nicht mehr virtuell. Audio ruft nur `processBlock` (eine Virtual pro Chip pro Buffer).
 - **Audio-Layout**: Stage/Filter-History `alignas(64)`. Delay/Comb/Allpass/Widen-Ringe und Knob-Lanes über `DSPUtils::alignedRing` (Wrap-Länge unverändert, Padding nur für den Pointer). Knob-Lanes in `prepare`, kein `resize` im Callback. LUT-Interp und Tape-Slots auf `float*` + `NK_RESTRICT`.
 - **Oversampling**: JUCE half-band FIR (Studio) / polyphase IIR (Live). FIR convolution already strides `k += 2`. Custom skip-zeros OS not added.

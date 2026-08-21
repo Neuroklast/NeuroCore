@@ -7,6 +7,9 @@
 
 using namespace juce;
 
+static_assert (ExpressionEvaluator::MaxVariables <= (size_t) ExprTape::kMaxVars,
+               "tape LoadVar index must fit ExprTape::kMaxVars");
+
 ExpressionEvaluator::ExpressionEvaluator() = default;
 
 void ExpressionEvaluator::skipWhitespace() noexcept

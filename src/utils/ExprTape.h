@@ -29,6 +29,7 @@ struct ExprTape
 {
     static constexpr int kMaxOps = 256;
     static constexpr int kMaxSlots = 32;
+    static constexpr int kMaxVars = 16;
     static constexpr int kMaxAdaa = 8;
     static constexpr int kAdaaCh = 2;
 
