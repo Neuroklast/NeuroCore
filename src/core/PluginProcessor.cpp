@@ -91,7 +91,6 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
 
     // Load initial script into ScriptManager
     scriptManager.setValueTreeState(&apvts);
-    dspEngine.setInputWaveformTap (&waveformCapture);
     juce::String err;
     scriptManager.applyFormula("stage1: y = tanh(x)", err);
     dspEngine.getDiagnostics().setEnabled (Config::kAudioDiagnosticsEnabled);
@@ -258,7 +257,6 @@ void NeuroKoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 void NeuroKoreAudioProcessor::releaseResources()
 {
     dspEngine.release();
-    waveformCapture.reset();
     continuityN = 0;
     continuityCh = 0;
 }
@@ -267,7 +265,6 @@ void NeuroKoreAudioProcessor::reset()
 {
     cpuProtect.reset();
     dspEngine.reset(getSampleRate(), getBlockSize());
-    waveformCapture.reset();
     continuityN = 0;
     continuityDecay = 0.f;
     // Issue 4: apply a short fade-in so the oversampler filter's initial-state
@@ -434,9 +431,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         cpuProtect.noteHoldDisplay();
         replayContinuity (main);
         fadeInRemain = juce::jmax (fadeInRemain, nSamp);
-        waveformCapture.pushInput (main);
         dspEngine.publishOutputMeter (main);
-        waveformCapture.pushOutput (main);
         telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
         return;
     }
@@ -488,14 +483,12 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                     if (! std::isfinite (d[i]))
                         d[i] = 0.f;
             }
-            waveformCapture.pushInput (main);
             dspEngine.publishOutputMeter (main);
         }
         else
         {
             replayContinuity (main);
             fadeInRemain = juce::jmax (fadeInRemain, nSamp);
-            waveformCapture.pushInput (main);
             dspEngine.publishOutputMeter (main);
         }
     }
@@ -518,7 +511,6 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         main.applyGain (juce::jlimit (0.f, 1.f, g));
 
     mixIrPreview (main);
-    waveformCapture.pushOutput (main);
     telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
 }
 
@@ -558,7 +550,6 @@ void NeuroKoreAudioProcessor::processBlockBypassed (juce::AudioBuffer<float>& bu
         fadeInRemain = juce::jmax (fadeInRemain, main.getNumSamples());
     }
 
-    waveformCapture.pushOutput (main);
     telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
 }
 
@@ -1164,7 +1155,6 @@ void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     scriptManager.prepare(dslSpec);
     refreshReportedLatency();
 
-    waveformCapture.prepare(channels, Config::kWaveformDisplaySamples);
     // Same host ceiling as the OS bank — ASIO Guard can exceed samplesPerBlock.
     const int contN = juce::jmax (blockSize, 1024);
     if (continuityBuf.getNumChannels() < channels || continuityBuf.getNumSamples() < contN)

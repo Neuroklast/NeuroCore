@@ -27,7 +27,6 @@
 #include "../utils/FormulaQuality.h"
 #include "../core/DspEngine.h"
 #include "../core/ScriptManager.h"
-#include "../core/WaveformCapture.h"
 #include "../core/MidiVariableMapper.h"
 #include "../licensing/LicenseManager.h"
 #include "../ui/MidiLearnManager.h"
@@ -152,19 +151,6 @@ public:
 
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable) { dspEngine.setValidationBypass(enable); }
-
-    void getInputWaveform(juce::AudioBuffer<float>& dest)  { waveformCapture.getInputWaveform(dest); }
-    void getOutputWaveform(juce::AudioBuffer<float>& dest) { waveformCapture.getOutputWaveform(dest); }
-
-    /** Shared scope align offset (samples). IN writes it; OUT reads it for true before/after. */
-    void setWaveformAlignOffset (int samples) noexcept
-    {
-        waveformAlignOffset.store (juce::jmax (0, samples), std::memory_order_relaxed);
-    }
-    int getWaveformAlignOffset() const noexcept
-    {
-        return waveformAlignOffset.load (std::memory_order_relaxed);
-    }
 
     /** Returns the names of all available user presets. */
     juce::StringArray getPresetNames() const;
@@ -295,7 +281,6 @@ private:
     DspEngine       dspEngine;
     ScriptManager   scriptManager;
     CpuProtect      cpuProtect;
-    WaveformCapture waveformCapture;
     bridge::TelemetryPump telemetryPump;
     MidiVariableMapper midiVariableMapper;
 
@@ -304,9 +289,6 @@ private:
     juce::String lastPresetBrowserName;
     juce::String lastPresetBrowserCategory;
     int lastPresetBrowserScope { 1 };
-
-    /** Rising zero-cross index from the input scope — shared so OUT stays time-locked to IN. */
-    std::atomic<int> waveformAlignOffset { 0 };
 
     // Licensing
     LicenseManager     licenseManager;

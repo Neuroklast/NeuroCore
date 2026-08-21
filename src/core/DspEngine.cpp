@@ -4,7 +4,6 @@
 */
 
 #include "DspEngine.h"
-#include "WaveformCapture.h"
 #include "../dsp/DSPUtils.h"
 #include "../utils/Log.h"
 
@@ -368,8 +367,6 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
         buffer.clear(i, 0, buffer.getNumSamples());
 
     inputRouter.processBlock(buffer);
-    if (inputWaveTap != nullptr)
-        inputWaveTap->pushInput (buffer);
 
     // Input Gain BEFORE dry split
     inputGain.processBlock(buffer);

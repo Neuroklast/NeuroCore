@@ -10,7 +10,6 @@
 #include "../src/dsl/DSLParser.h"
 #include "../src/core/Config.h"
 #include "../src/core/MidiVariableMapper.h"
-#include "../src/core/WaveformCapture.h"
 #include "../src/core/ScriptManager.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/core/EffectParameters.h"
@@ -41,7 +40,6 @@ public:
         testEnvMidiTrigger();
         testEnvAttackReleaseTiming();
         testTailTime();
-        testWaveformCapture();
         testScriptManagerDelegation();
         testProcessorStateRoundTrip();
         testFactoryPresetLibrary();
@@ -613,67 +611,6 @@ private:
             expect(chain.loadScript("stage1: y = x\ncomp1: threshold = -20; ratio = 4; attack = 10; release = 2000", err));
             chain.prepare({ 44100.0, 512, 1 });
             expectGreaterOrEqual(chain.getMaxTailTime(), 0.0f);
-        }
-    }
-
-    void testWaveformCapture()
-    {
-        beginTest("WaveformCapture: pushInput stores data, getInputWaveform retrieves it");
-        {
-            WaveformCapture capture;
-            capture.prepare(2, 1024);
-
-            juce::AudioBuffer<float> src(2, 256);
-            for (int ch = 0; ch < 2; ++ch)
-                for (int i = 0; i < 256; ++i)
-                    src.setSample(ch, i, (float)i / 255.f);
-
-            capture.pushInput(src);
-
-            juce::AudioBuffer<float> dest(2, 256);
-            dest.clear();
-            capture.getInputWaveform(dest);
-
-            expectWithinAbsoluteError(dest.getSample(0, 255), 1.0f, 0.01f);
-        }
-
-        beginTest("WaveformCapture: pushOutput stores data");
-        {
-            WaveformCapture capture;
-            capture.prepare(1, 512);
-
-            juce::AudioBuffer<float> src(1, 128);
-            src.clear();
-            for (int i = 0; i < 128; ++i)
-                src.setSample(0, i, 0.5f);
-
-            capture.pushOutput(src);
-
-            juce::AudioBuffer<float> dest(1, 128);
-            dest.clear();
-            capture.getOutputWaveform(dest);
-
-            expectWithinAbsoluteError(dest.getSample(0, 127), 0.5f, 0.01f);
-        }
-
-        beginTest("WaveformCapture: reset clears buffers");
-        {
-            WaveformCapture capture;
-            capture.prepare(1, 512);
-
-            juce::AudioBuffer<float> src(1, 128);
-            for (int i = 0; i < 128; ++i)
-                src.setSample(0, i, 1.0f);
-            capture.pushInput(src);
-
-            capture.reset();
-
-            juce::AudioBuffer<float> dest(1, 128);
-            dest.clear();
-            capture.getInputWaveform(dest);
-
-            for (int i = 0; i < 128; ++i)
-                expectWithinAbsoluteError(dest.getSample(0, i), 0.0f, 0.01f);
         }
     }
 

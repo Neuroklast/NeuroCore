@@ -142,7 +142,6 @@ set(SOURCE_FILES
     src/dsp/LookupTableSmoother.cpp
     src/ui/MidiLearnManager.cpp
     src/core/MidiVariableMapper.cpp
-    src/core/WaveformCapture.cpp
     src/core/ScriptManager.cpp
     src/core/DspEngine.cpp
     src/core/PluginProcessor.cpp
@@ -264,8 +263,6 @@ target_link_libraries(NeuroKore PRIVATE
     juce::juce_graphics
     juce::juce_gui_basics
     juce::juce_gui_extra
-    juce::juce_opengl
-    juce::juce_osc
     juce::juce_product_unlocking
 )
 
@@ -397,7 +394,6 @@ target_link_libraries(NeuroKoreTests PRIVATE
     juce::juce_events
     juce::juce_graphics
     juce::juce_cryptography
-    juce::juce_opengl
     resourcesBinary
 )
 

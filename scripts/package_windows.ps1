@@ -54,7 +54,6 @@ New-Item -ItemType Directory -Force -Path $docsStage | Out-Null
     "docs\USER_MANUAL.md",
     "docs\DSL_REFERENCE.md",
     "resources\UserManual_en.txt",
-    "UserManual EN.txt",
     "UserManual DE.txt"
 ) | ForEach-Object {
     $src = Join-Path $root $_
