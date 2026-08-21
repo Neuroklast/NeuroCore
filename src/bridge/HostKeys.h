@@ -62,6 +62,19 @@ inline int hostKeyNameToVk (const juce::String& keyName,
     if (code == "NumpadDecimal")  return 0x6E;
     if (code == "NumpadDivide" || (code.isEmpty() && keyName == "/")) return 0x6F;
 
+    // Main-keyboard punctuation (VK_OEM_*). Slash must not black-hole vs NumpadDivide.
+    if (code == "Slash" || keyName == "/") return 0xBF; // VK_OEM_2
+    if (code == "Period"  || keyName == ".") return 0xBE; // VK_OEM_PERIOD
+    if (code == "Comma"   || keyName == ",") return 0xBC; // VK_OEM_COMMA
+    if (code == "Semicolon" || keyName == ";") return 0xBA; // VK_OEM_1
+    if (code == "Quote"   || keyName == "'") return 0xDE; // VK_OEM_7
+    if (code == "BracketLeft"  || keyName == "[") return 0xDB; // VK_OEM_4
+    if (code == "BracketRight" || keyName == "]") return 0xDD; // VK_OEM_6
+    if (code == "Backslash" || keyName == "\\") return 0xDC; // VK_OEM_5
+    if (code == "Minus" || keyName == "-") return 0xBD; // VK_OEM_MINUS
+    if (code == "Equal" || keyName == "=") return 0xBB; // VK_OEM_PLUS
+    if (code == "Backquote" || keyName == "`") return 0xC0; // VK_OEM_3
+
     // Legacy hostKey({ key: "0" }) without code — Cubase numpad transport.
     if (code.isEmpty() && keyName == "0") return 0x60;
     if (code.isEmpty() && keyName == "1") return 0x61;
@@ -136,6 +149,18 @@ inline int hostKeyNameToCgKeyCode (const juce::String& keyName,
     if (code == "NumpadDivide" || (code.isEmpty() && keyName == "/")) return 0x4B;
     if (code == "Digit0") return 0x1D;
     if (code == "KeyA" || keyName.equalsIgnoreCase ("a")) return 0x00;
+
+    if (code == "Slash" || keyName == "/") return 0x2C;
+    if (code == "Period"  || keyName == ".") return 0x2F;
+    if (code == "Comma"   || keyName == ",") return 0x2B;
+    if (code == "Semicolon" || keyName == ";") return 0x29;
+    if (code == "Quote"   || keyName == "'") return 0x27;
+    if (code == "BracketLeft"  || keyName == "[") return 0x21;
+    if (code == "BracketRight" || keyName == "]") return 0x1E;
+    if (code == "Backslash" || keyName == "\\") return 0x2A;
+    if (code == "Minus" || keyName == "-") return 0x1B;
+    if (code == "Equal" || keyName == "=") return 0x18;
+    if (code == "Backquote" || keyName == "`") return 0x32;
 
     if (keyName.length() == 1)
     {

@@ -6,7 +6,7 @@ import { AssembleView } from "../assemble/AssembleView";
 import { BindCables, BindDragGhost } from "../assemble/BindCables";
 
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
-import { circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
+import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { HackView } from "../hack/HackView";
@@ -87,6 +87,9 @@ export function App() {
         overlayOpen: useHostStore.getState().overlay != null,
       };
       if (shouldForwardToHost(e, hostCtx)) {
+        // Only swallow keys native can map — otherwise plugin and Cubase both lose them.
+        if (! canForwardHostKey(e))
+          return;
         e.preventDefault();
         e.stopPropagation();
         if (hasJuceBridge()) {
@@ -109,7 +112,9 @@ export function App() {
       }
       if (shouldBlockBrowserShortcut(e)) {
         e.preventDefault();
-        e.stopPropagation();
+        // Ctrl/Cmd+A Arrange: block browser select-all but let AssembleView bubble-handle.
+        if (browserShortcutStopsPropagation(e, { textTarget: hostCtx.textTarget }))
+          e.stopPropagation();
       }
     };
     const onWheel = (e: WheelEvent) => {

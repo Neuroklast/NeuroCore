@@ -176,8 +176,11 @@ public:
             expectEquals (bridge::hostKeyNameToVk ("a"), 0x41);
             expectEquals (bridge::hostKeyNameToVk ("0", "Numpad0"), 0x60);
             expectEquals (bridge::hostKeyNameToVk ("0", "Digit0"), 0x30);
+            expectEquals (bridge::hostKeyNameToVk ("/", "Slash"), 0xBF);
+            expect (bridge::canForwardHostKey ("/", "Slash"));
             expectEquals (bridge::hostKeyNameToCgKeyCode ("ArrowDown"), 0x7D);
             expectEquals (bridge::hostKeyNameToCgKeyCode (" "), 0x31);
+            expectEquals (bridge::hostKeyNameToCgKeyCode ("/", "Slash"), 0x2C);
 
             void* plugin = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x100);
             void* host = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x200);

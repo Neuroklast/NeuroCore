@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  browserShortcutStopsPropagation,
+  canForwardHostKey,
   isHostTransportKey,
   shouldBlockBrowserShortcut,
   shouldBlockNativeContextMenu,
@@ -116,5 +118,24 @@ describe("non-text keys reach the DAW host", () => {
   it("still treats Digit0 as typing-side, not Cubase numpad transport", () => {
     expect(isHostTransportKey({ ...bare, key: "0", code: "Digit0" })).toBe(false);
     expect(shouldForwardToHost({ ...bare, key: "0", code: "Digit0" }, none)).toBe(true);
+  });
+
+  it("forwards main-keyboard Slash when not plugin-owned and only when mappable", () => {
+    expect(shouldForwardToHost({ ...bare, key: "/", code: "Slash" }, none)).toBe(true);
+    expect(canForwardHostKey({ key: "/", code: "Slash" })).toBe(true);
+    expect(canForwardHostKey({ key: "Unidentified", code: "AudioVolumeMute" })).toBe(false);
+  });
+
+  it("keeps Ctrl/Cmd+A plugin-owned but lets Arrange bubble past the capture blocker", () => {
+    expect(shouldForwardToHost({ ...bare, key: "a", ctrlKey: true }, none)).toBe(false);
+    expect(shouldBlockBrowserShortcut({ key: "a", ctrlKey: true, metaKey: false, altKey: false })).toBe(true);
+    expect(browserShortcutStopsPropagation(
+      { key: "a", ctrlKey: true, metaKey: false, altKey: false },
+      { textTarget: false },
+    )).toBe(false);
+    expect(browserShortcutStopsPropagation(
+      { key: "s", ctrlKey: true, metaKey: false, altKey: false },
+      { textTarget: false },
+    )).toBe(true);
   });
 });
