@@ -1,7 +1,7 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-21 (web UI embedded in VST3 + Standalone; sanitation chain)  
-**Version:** 0.4.10-alpha  
+**Stand:** 2026-08-21 (DSP-Runtime 0.4.11: Tape / Block-Dispatch / Align / LTO / arithmetisches JIT; Mac VST3+AU compile-ready)  
+**Version:** 0.4.11-alpha  
 **Branch:** `master`
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
@@ -29,11 +29,25 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 2. Per-Block-DSP-Welle (heute IN/OUT-Telemetrie, Glow log-Amplitude).
 3. ENV is a bus tap (audio in + mod out), not an LFO. Circuit draws IN/prev → env.in. Patch `env1` onto a param (`y = x * env1`) to hear it.
 
-## DSP (0.4.10-alpha)
+## DSP (0.4.11-alpha)
 
 - **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
-- **Sanitation**: fixed engine chain after DSL, not a DSL block. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak brickwall **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction. Soft Clip is the only user switch (replaces Polisher None/Hard Clip/Limiter).
-- **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB soft-cap). Chainwide soft-shape only for `|x| > 1`. DSL `limit` stays a graph tool.
+- **Sanitation**: fixed engine chain after DSL. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction.
+- **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
+- **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
+
+### Performance — was gebaut wurde (Phasen 0–5)
+
+| Phase | Was | Wie die CPU runtergeht | Nicht |
+|---|---|---|---|
+| **1 Tape** | `ExprTape` nach Fold/CSE | Keine vtable/`std::function` pro Sample in `evaluateLive` | LLVM |
+| **2 Dispatch** | nur `Block::processBlock` virtuell | Eine Virtual / Chip / Callback statt / Sample | Tagged union für alle Blocks |
+| **3 Layout** | `alignas(64)`, `alignedRing`, Knob-Lanes in `prepare` | Cache-Line, kein `vector::resize` im Callback | Prefetch, Delay-SoA über alle Chips |
+| **4 OS** | gemessen: JUCE FIR `k += 2` | Nichts — JUCE skippt Null-Taps schon | Eigenes Half-Band |
+| **0 LTO** | IPO Release auf Plugin-Targets | Cross-TU inlining (Tape + Chain + LUT) | Tests-LTO, `/fp:fast`, PGO |
+| **5 JIT** | asmjit x64 für Load/Add/Sub/Mul/Neg | Interpreter-Schleife entfällt auf `y = x * a` | Call/ADAA/Div/Pow-JIT (Factory-Crash); Mac |
+
+Detail und Dateien: `docs/ARCHITECTURE.md` § Audio-Runtime. Verträge: ExpressionEvaluatorTest, ArchitectureHardening, DelayReverb, WebShell (JIT-Flag / Mac-Zip).
 
 Delay liest linear mit Integer-Wrap (`delayRead`). Hermite-4-Punkt hat jedes Delay-Intervall Index 0 mit `N-1` gemischt — das war das periodische Knacken.
 
@@ -66,6 +80,6 @@ cmake --build build --config Release --target NeuroKore_All
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-`NeuroKore_All` / VST3 / Standalone **always** run `npm run build` first (`NeuroKoreWeb` is a hard dependency). Missing `npm` fails configure. `web/dist` is packed into the binary (Windows RCDATA id `41001`; `Contents/Resources/web` on macOS). Testers need only the `.vst3` / `.exe`. A sibling `web/` folder is optional (dev). `NEUROKORE_WEB_DISK=0` ignores disk and serves the embed (local tester-mode). Quoted RC names do not FindResource — integer ID only. `factory_presets.json` is a configure depend of BinaryData.
+`NeuroKore_All` / VST3 / Standalone **always** run `npm run build` first (`NeuroKoreWeb` is a hard dependency). Missing `npm` fails configure. `web/dist` is packed into the binary (Windows RCDATA id `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`). Testers need only the `.vst3` / `.exe` / `.component`. A sibling `web/` folder is optional (dev). `NEUROKORE_WEB_DISK=0` ignores disk and serves the embed (local tester-mode). Quoted RC names do not FindResource — integer ID only. `factory_presets.json` is a configure depend of BinaryData.
 
-Gate 2026-08-21: **0.4.10-alpha**. Sanitation-Kette nach DSL (DC → AA → Soft Clip optional → True-Peak −0.3 dBTP → Dither nur Integer). Web-Editor sitzt in VST3 und Standalone (kein extra `web/`-Ordner). Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.4.10-alpha.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE-0.4.10-alpha.vst3`.
+Gate 2026-08-21: **0.4.11-alpha**. Sanitation-Kette nach DSL. DSP-Runtime: Tape → optional asmjit (Win x64 Arithmetik) → `processBlock`-Dispatch → 64-align Ringe → Plugin-LTO. macOS: VST3+AU, Tape, WKWebView. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.4.11-alpha.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE-0.4.11-alpha.vst3` (Mac: plus `.component`).

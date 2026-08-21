@@ -1,8 +1,9 @@
 # NeuroKore – Entwicklungs-Roadmap
 
-**Version:** 0.1.0  
-**Stand:** 2026-04-01  
-**Ziel:** Professionelles, veröffentlichungsreifes Audio-Plugin
+**Produkt-Version:** 0.4.11-alpha  
+**Diese Datei:** historische Wunschliste (Stand 2026-04). **Ist-Architektur und DSP-Runtime:** `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT_STATUS.md`.
+
+Bereits geliefert (nicht mehr als offen behandeln): Sanitation-Kette, Web-Editor, Offline-Lizenz, Delay/Reverb/IR/Ott, Oversampling-UI 1/2/4/8, CPU-Footer 0–100, ExprTape + Block-`processBlock` + `alignas(64)` + Plugin-LTO + arithmetisches asmjit (Windows x64). macOS VST3/AU compile-ready (Tape, WKWebView, Bundle-Resources). PGO, Call-JIT, LLVM, CLAP/AAX sind weiter offen.
 
 ---
 
@@ -23,10 +24,10 @@ Diese Phase behebt alle kritischen Bugs und legt das Fundament für professionel
 - [ ] CI/CD: GitHub Actions Workflow für Matrix-Build (Windows/macOS/Linux)
 
 ### DSP-Korrektheit
-- [ ] DC-Blocker in Signalkette einbauen (nach OutputGain oder als optionaler Stage)
-- [ ] Latenz-Reporting: `getLatencyCompensationInSamples()` korrekt implementieren
-- [ ] `autoGainCompensate()` optimieren: per-Sample SubBlock durch direkte Multiplikation ersetzen
-- [ ] Oversampling UI-Control implementieren (Dropdown im Editor)
+- [x] DC-Blocker: Teil der `SanitationChain` (1-Pol 5 Hz), nicht optionaler DSL-Block
+- [x] Latenz: OS + True-Peak-Lookahead an den Host; Dry über `LatencyAlignedSidechain`
+- [ ] `autoGainCompensate()` weiter vereinfachen (mutet nicht; default strength 0)
+- [x] Oversampling-UI 1× / 2× / 4× / 8× (Default 4×)
 
 ### Licensing
 - [x] Offline RSA-`.lic` + `NeuroKoreIssuer` (E-Mail → Datei)
@@ -52,7 +53,7 @@ Diese Phase bringt NeuroKore auf den Stand eines professionell vertriebenen Plug
 - [ ] Echtzeit-Parameterwert-Anzeige über den Knobs (a=1.23)
 
 ### Distribution
-- [ ] Windows-Installer (NSIS oder WiX)
+- [x] Windows-Installer (Inno `installer/NeuroKore.iss`)
 - [ ] macOS-Installer (pkgbuild / DMG)
 - [ ] Code-Signing (Gatekeeper + SmartScreen)
 - [ ] pluginval-Integration in CI/CD (automatische VST3-Validierung)
@@ -70,19 +71,19 @@ Diese Phase bringt NeuroKore auf den Stand eines professionell vertriebenen Plug
 Diese Phase hebt NeuroKore über den Stand typischer kommerzieller Plugins.
 
 ### Erweiterte DSL
-- [ ] `delay`-Block: Delay-Line mit Feedback
-- [ ] `reverb`-Block: einfacher Algorithmic-Reverb
-- [ ] `sidechain`-Block: Sidechain-Input-Routing
+- [x] `delay`-Block (linear wrap, aligned ring)
+- [x] `reverb`-Block (Comb + Allpass)
+- [x] Sidechain-Bus + `LatencyAlignedSidechain`
 - [ ] Mehr integrierte Funktionen: `comb`, `allpass`, `rms_window`
 
 ### Editor-Integration
-- [ ] WebView-Integration für DSL-Editor: Monaco-Editor (Syntax-Highlighting) via `juce::WebBrowserComponent`
+- [x] Web-Editor: Monaco + React Flow in VST3/Standalone/AU-Bundle
 - [ ] visageui als npm-Package im WebView für Preset-Browser und Panels
 - [ ] Hot-Reloading der DSL während Entwicklung
 
 ### Performance
-- [ ] JIT-Compilation für Formeln (LLVM oder custom Bytecode-VM)
-- [ ] Block-Processing im `ExpressionEvaluator` vollständig ausbauen (SIMD für alle Operationen)
+- [x] Opcode-Tape + arithmetisches asmjit (Windows x64). Call/ADAA bleiben Interpreter. Kein LLVM.
+- [ ] SIMD-Tape / Call-JIT / PGO (siehe `docs/ARCHITECTURE.md` § Audio-Runtime)
 
 ### Community & Sharing
 - [ ] Preset-Sharing: Export/Import via URL (Base64-kodiertes Preset)

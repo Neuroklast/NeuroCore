@@ -3,6 +3,7 @@
 
 #include <JuceHeader.h>
 #include "../src/utils/ExpressionEvaluator.h"
+#include "../src/utils/ExprTape.h"
 
 class ExpressionEvaluatorTest : public juce::UnitTest
 {
@@ -70,6 +71,76 @@ public:
             expect(std::isfinite(eval.evaluate(0.0f)));
             expect(eval.parseFormula("pow(x, 0.5)"));
             expect(std::isfinite(eval.evaluate(-2.0f))); // negative base, non-int exp
+        }
+
+        beginTest("tape identity LoadVar * LoadImm");
+        {
+            ExprTape t;
+            t.op[0] = ExprOp::LoadVar; t.a[0] = 0; t.dst[0] = 0;
+            t.op[1] = ExprOp::LoadImm; t.imm[1] = 2.f; t.dst[1] = 1;
+            t.op[2] = ExprOp::Mul; t.a[2] = 0; t.b[2] = 1; t.dst[2] = 2;
+            t.n = 3;
+            t.resultSlot = 2;
+            float vars[16] {};
+            vars[0] = 0.5f;
+            expectWithinAbsoluteError (exprTapeEval (t, vars), 1.0f, 1e-6f);
+        }
+
+        beginTest("parse lowers x*2+1 to tape matching evaluate");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("x * 2 + 1"));
+            expect (eval.hasLiveTape(), "tape ops=" + juce::String (eval.liveTapeOps()));
+            expectWithinAbsoluteError (eval.evaluate (0.3f), 1.6f, 1e-6f);
+            expectWithinAbsoluteError (eval.evaluateLive (0.3f), 1.6f, 1e-6f);
+        }
+
+        beginTest("jit x*2+1 matches tape; emit is at parse not evaluateLive");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("x * 2 + 1"));
+            expect (eval.hasLiveTape());
+#if defined(NK_HAS_EXPR_JIT) && NK_HAS_EXPR_JIT
+            expect (eval.hasLiveJit(), "Windows x64 should emit native code at parse");
+#endif
+            expectWithinAbsoluteError (eval.evaluateLive (0.3f), 1.6f, 1e-6f);
+            expectWithinAbsoluteError (eval.evaluateLive (-1.0f), -1.0f, 1e-6f);
+            ExpressionEvaluator other;
+            expect (other.parseFormula ("softclip(x, 2.2)"));
+            expect (std::isfinite (other.evaluateLive (0.5f)));
+            expect (std::abs (other.evaluateLive (10.0f)) <= 1.0f + 1e-3f);
+        }
+
+        beginTest("jit neg x matches tape; loadVar OOB stays finite");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("-x"));
+            expect (eval.hasLiveTape());
+#if defined(NK_HAS_EXPR_JIT) && NK_HAS_EXPR_JIT
+            expect (eval.hasLiveJit(), "neg should stay on the arithmetic JIT");
+#endif
+            expectWithinAbsoluteError (eval.evaluateLive (0.4f), -0.4f, 1e-6f);
+            expectWithinAbsoluteError (eval.evaluateLive (-0.25f), 0.25f, 1e-6f);
+            for (int i = 0; i < 64; ++i)
+                expectWithinAbsoluteError (eval.evaluateLive (0.1f), -0.1f, 1e-6f);
+
+            ExprTape t;
+            t.op[0] = ExprOp::LoadVar; t.a[0] = 200; t.dst[0] = 0;
+            t.n = 1;
+            t.resultSlot = 0;
+            float vars[16] {};
+            vars[0] = 1.0f;
+            expect (std::isfinite (exprTapeEval (t, vars)));
+            expectWithinAbsoluteError (exprTapeEval (t, vars), 0.0f, 1e-6f);
+        }
+
+        beginTest("softclip tape matches tree and stays finite");
+        {
+            ExpressionEvaluator eval;
+            expect (eval.parseFormula ("softclip(x, 2.2)"));
+            expect (eval.hasLiveTape());
+            expect (std::isfinite (eval.evaluate (0.5f)));
+            expect (std::abs (eval.evaluate (10.0f)) <= 1.0f + 1e-3f);
         }
 
         beginTest("Fehlende Funktionsargumente");

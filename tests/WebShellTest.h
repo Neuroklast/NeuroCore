@@ -2,10 +2,12 @@
 
 #include <JuceHeader.h>
 #include <cstring>
+#include <cstdlib>
 #include "../src/bridge/HostKeys.h"
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
+#include "../src/utils/ExprTapeJit.h"
 
 #ifdef _WIN32
 #include <stdlib.h>
@@ -102,6 +104,29 @@ public:
             expect (! embeddedHtml.contains ("web shell"));
 #else
             juce::ignoreUnused (resolved);
+#endif
+        }
+
+        beginTest ("mac bundle web zip lives under Contents/Resources");
+        {
+            const auto zip = bridge::expectedEmbeddedWebZip();
+#if JUCE_MAC
+            expectEquals (zip.getFileName(), juce::String ("neurokore_web_dist.zip"));
+            expect (zip.getFullPathName().contains ("Resources")
+                    || zip.getParentDirectory() == juce::File::getSpecialLocation (
+                           juce::File::currentExecutableFile).getParentDirectory(),
+                    zip.getFullPathName());
+#else
+            expect (zip == juce::File());
+#endif
+        }
+
+        beginTest ("expr JIT is Windows x64 only; Mac AU/VST3 uses tape");
+        {
+#if JUCE_WINDOWS && JUCE_64BIT
+            expectEquals ((int) NK_HAS_EXPR_JIT, 1);
+#else
+            expectEquals ((int) NK_HAS_EXPR_JIT, 0);
 #endif
         }
 

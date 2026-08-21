@@ -1,10 +1,14 @@
 #include <JuceHeader.h>
 #include "ExpressionEvaluator.h"
+#include "ExprTapeJit.h"
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
 #include "Localiser.h"
 
 using namespace juce;
+
+static_assert (ExpressionEvaluator::MaxVariables <= (size_t) ExprTape::kMaxVars,
+               "tape LoadVar index must fit ExprTape::kMaxVars");
 
 ExpressionEvaluator::ExpressionEvaluator() = default;
 
@@ -14,7 +18,10 @@ void ExpressionEvaluator::skipWhitespace() noexcept
         ++pos;
 }
 
-ExpressionEvaluator::~ExpressionEvaluator() = default;
+ExpressionEvaluator::~ExpressionEvaluator()
+{
+    exprTapeJitRelease (liveJit);
+}
 
 static bool isIdentifierStart(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
 static bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
@@ -244,12 +251,14 @@ thread_local int gAdaaChannel = 0;
 void ExpressionEvaluator::setProcessingChannel (int channel) noexcept
 {
     gAdaaChannel = juce::jlimit (0, AdaaFunc2Node::kAdaaChannels - 1, channel);
+    exprTapeSetAdaaChannel (channel);
 }
 
 void ExpressionEvaluator::resetRuntimeState() const noexcept
 {
     if (root)
         root->resetRuntime();
+    liveTape.resetAdaa();
 }
 
 float ExpressionEvaluator::AdaaFunc2Node::eval (const float* vars) const noexcept
@@ -643,6 +652,37 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
 
     auto args = parseArgs();
 
+    auto tag1 = [] (NodePtr n, ExprFn id) -> NodePtr
+    {
+        if (auto* p = dynamic_cast<FunctionNode*> (n.get()))
+            p->tapeFn = (uint8_t) id;
+        return n;
+    };
+    auto tag2 = [] (NodePtr n, ExprFn id) -> NodePtr
+    {
+        if (auto* p = dynamic_cast<Func2Node*> (n.get()))
+            p->tapeFn = (uint8_t) id;
+        return n;
+    };
+    auto tag3 = [] (NodePtr n, ExprFn id) -> NodePtr
+    {
+        if (auto* p = dynamic_cast<Func3Node*> (n.get()))
+            p->tapeFn = (uint8_t) id;
+        return n;
+    };
+    auto tag5 = [] (NodePtr n, ExprFn id) -> NodePtr
+    {
+        if (auto* p = dynamic_cast<Func5Node*> (n.get()))
+            p->tapeFn = (uint8_t) id;
+        return n;
+    };
+    auto tagA = [] (NodePtr n, ExprFn id) -> NodePtr
+    {
+        if (auto* p = dynamic_cast<AdaaFunc2Node*> (n.get()))
+            p->tapeFn = (uint8_t) id;
+        return n;
+    };
+
     auto notEnoughArgs = [this, &name, &args](size_t n)
     {
         if (args.size() < n)
@@ -653,72 +693,59 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
         return false;
     };
 
-    if (name == "sin")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]), &LookupTables::fastSinSimd); }
-    if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]), &LookupTables::fastCosSimd); }
-    if (name == "tan")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0])); }
-    if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]), &LookupTables::fastTanhSimd); }
+    if (name == "sin")  { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(&LookupTables::fastSin,  std::move(args[0]), &LookupTables::fastSinSimd), ExprFn::Sin); }
+    if (name == "cos")  { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(&LookupTables::fastCos,  std::move(args[0]), &LookupTables::fastCosSimd), ExprFn::Cos); }
+    if (name == "tan")  { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::tan), std::move(args[0])), ExprFn::Tan); }
+    if (name == "tanh") { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(&LookupTables::fastTanh, std::move(args[0]), &LookupTables::fastTanhSimd), ExprFn::Tanh); }
     if (name == "sqrt")
     {
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float v)
+        return tag1 (std::make_shared<FunctionNode>([](float v)
         {
             if (! std::isfinite (v) || v < 0.0f)
                 return 0.0f;
             return finiteOrZero (std::sqrt (v));
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Sqrt);
     }
     if (name == "abs")
     {
         if (notEnoughArgs(1))
             return nullptr;
-        return std::make_shared<FunctionNode>(
+        return tag1 (std::make_shared<FunctionNode>(
             static_cast<float(*)(float)>(std::fabs),
             std::move(args[0]),
             [](juce::dsp::SIMDRegister<float> x)
             {
                 auto negX = x * juce::dsp::SIMDRegister<float>(-1.0f);
                 return juce::dsp::SIMDRegister<float>::max(x, negX);
-            });
+            }), ExprFn::Abs);
     }
-    if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])); }
-    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(&LookupTables::fastExp, std::move(args[0]), &LookupTables::fastExpSimd); }
+    if (name == "sign") { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>([](float v) { return v > 0.f ? 1.f : (v < 0.f ? -1.f : 0.f); }, std::move(args[0])), ExprFn::Sign); }
+    if (name == "exp")  { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(&LookupTables::fastExp, std::move(args[0]), &LookupTables::fastExpSimd), ExprFn::Exp); }
     if (name == "log")
     {
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float v)
+        return tag1 (std::make_shared<FunctionNode>([](float v)
         {
-            // Domain-safe log: never NaN/Inf into the audio path
             return LookupTables::fastLog (juce::jmax (1.0e-12f, v));
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Log);
     }
     if (name == "log10")
     {
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float v)
+        return tag1 (std::make_shared<FunctionNode>([](float v)
         {
             return std::log10 (juce::jmax (1.0e-12f, v));
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Log10);
     }
-    if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])); }
-    if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])); }
-    if (name == "round") { if (notEnoughArgs(1)) return nullptr; return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])); }
+    if (name == "floor") { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::floor), std::move(args[0])), ExprFn::Floor); }
+    if (name == "ceil")  { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::ceil), std::move(args[0])), ExprFn::Ceil); }
+    if (name == "round") { if (notEnoughArgs(1)) return nullptr; return tag1 (std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::round), std::move(args[0])), ExprFn::Round); }
 
     if (name == "pow")
     {
         if (notEnoughArgs(2)) return nullptr;
-        if (auto* val = dynamic_cast<ValueNode*>(args[1].get()))
-        {
-            const float exp = val->value;
-            return std::make_shared<FunctionNode>([exp](float x)
-            {
-                if (! std::isfinite (x))
-                    return 0.0f;
-                if (x < 0.0f && std::abs (exp - std::round (exp)) > 1.0e-6f)
-                    return 0.0f;
-                return finiteOrZero (LookupTables::fastPow (x, exp));
-            }, std::move(args[0]));
-        }
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float x, float e)
             {
                 if (! std::isfinite (x) || ! std::isfinite (e))
@@ -727,40 +754,40 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
                     return 0.0f;
                 return finiteOrZero (std::pow (x, e));
             },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Pow2);
     }
-    if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])); }
-    if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])); }
+    if (name == "min")  { if (notEnoughArgs(2)) return nullptr; return tag2 (std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmin<float>), std::move(args[0]), std::move(args[1])), ExprFn::Min); }
+    if (name == "max")  { if (notEnoughArgs(2)) return nullptr; return tag2 (std::make_shared<Func2Node>(static_cast<float(*)(float, float)>(juce::jmax<float>), std::move(args[0]), std::move(args[1])), ExprFn::Max); }
     if (name == "fmod")
     {
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float a, float b)
             {
                 if (! std::isfinite (a) || ! std::isfinite (b) || std::abs (b) < 1.0e-12f)
                     return 0.0f;
                 return finiteOrZero (std::fmod (a, b));
             },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Fmod);
     }
     if (name == "mod")
     {
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float a, float b)
             {
                 if (! std::isfinite (a) || ! std::isfinite (b) || std::abs (b) < 1.0e-12f)
                     return 0.0f;
                 return finiteOrZero (std::fmod (a, b));
             },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Fmod);
     }
 
     if (name == "clamp")
     {
         if (notEnoughArgs(3))
             return nullptr;
-        return std::make_shared<Func3Node>(
+        return tag3 (std::make_shared<Func3Node>(
             juce::jlimit<float>,
             [](juce::dsp::SIMDRegister<float> v,
                juce::dsp::SIMDRegister<float> lo,
@@ -768,91 +795,87 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
             {
                 return juce::dsp::SIMDRegister<float>::min(juce::dsp::SIMDRegister<float>::max(v, lo), hi);
             },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2])), ExprFn::Clamp);
     }
 
     if (name == "map")
     {
         if (notEnoughArgs(5))
             return nullptr;
-        return std::make_shared<Func5Node>(
+        return tag5 (std::make_shared<Func5Node>(
             [](float v, float in0, float in1, float out0, float out1)
             { return juce::jmap(v, in0, in1, out0, out1); },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]), std::move(args[3]), std::move(args[4]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2]), std::move(args[3]), std::move(args[4])), ExprFn::Map);
     }
 
     // --- Waveshaping / pro modeling (were documented but missing) ---
     if (name == "atan")
     {
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::atan), std::move(args[0]));
+        return tag1 (std::make_shared<FunctionNode>(static_cast<float(*)(float)>(std::atan), std::move(args[0])), ExprFn::Atan);
     }
     if (name == "asinh")
     {
         // Smooth analog-style saturation: asinh(x) grows slower than tanh at extremes
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float v)
+        return tag1 (std::make_shared<FunctionNode>([](float v)
         {
             if (! std::isfinite (v))
                 return 0.0f;
             return finiteOrZero (std::asinh (juce::jlimit (-1.0e6f, 1.0e6f, v)));
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Asinh);
     }
     if (name == "hardclip")
     {
         // hardclip(x, limit) — wide soft-knee, NO ADAA (piecewise F was unstable)
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [] (float x, float lim) { return hardClipSoftKnee (x, lim); },
-            std::move (args[0]), std::move (args[1]));
+            std::move (args[0]), std::move (args[1])), ExprFn::Hardclip);
     }
     if (name == "softclip")
     {
         // softclip(x) / softclip(x, drive) — atan soft-sat + exact 1st-order ADAA
         if (args.size() == 1)
         {
-            return std::make_shared<AdaaFunc2Node>(
+            return tagA (std::make_shared<AdaaFunc2Node>(
                 [] (float x, float) { return softClipSmooth (x); },
                 [] (float x, float) { return softClipIntegral (x); },
-                std::move (args[0]), std::make_shared<ValueNode> (1.0f));
+                std::move (args[0]), std::make_shared<ValueNode> (1.0f)), ExprFn::Softclip);
         }
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<AdaaFunc2Node>(
+        return tagA (std::make_shared<AdaaFunc2Node>(
             [] (float x, float drive) { return softClipDriven (x, drive); },
             [] (float x, float drive) { return softClipDrivenIntegral (x, drive); },
-            std::move (args[0]), std::move (args[1]));
+            std::move (args[0]), std::move (args[1])), ExprFn::Softclip);
     }
     if (name == "tube")
     {
-        // tube(x, drive) — 12AX7-ish + ADAA (kills the harsh crackle on high gain)
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<AdaaFunc2Node>(
+        return tagA (std::make_shared<AdaaFunc2Node>(
             [] (float x, float drive) { return tubeTransfer (x, drive); },
             [] (float x, float drive) { return tubeIntegral (x, drive); },
-            std::move (args[0]), std::move (args[1]));
+            std::move (args[0]), std::move (args[1])), ExprFn::Tube);
     }
     if (name == "diode")
     {
-        // diode(x, drive) — asinh soft clip + ADAA
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<AdaaFunc2Node>(
+        return tagA (std::make_shared<AdaaFunc2Node>(
             [] (float x, float drive) { return diodeTransfer (x, drive); },
             [] (float x, float drive) { return diodeIntegral (x, drive); },
-            std::move (args[0]), std::move (args[1]));
+            std::move (args[0]), std::move (args[1])), ExprFn::Diode);
     }
     if (name == "fold")
     {
         // fold(x, lo, hi) — triangular wavefolding between lo and hi
         if (notEnoughArgs(3)) return nullptr;
-        return std::make_shared<Func3Node>(
+        return tag3 (std::make_shared<Func3Node>(
             [](float x, float lo, float hi)
             {
                 float a = juce::jmin(lo, hi);
                 float b = juce::jmax(lo, hi);
                 if (b - a < 1.0e-6f)
                     return juce::jlimit(a, b, x);
-                // Reflect into [a,b]
-                float range = b - a;
                 float y = x;
                 for (int i = 0; i < 8; ++i)
                 {
@@ -862,12 +885,12 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
                 }
                 return juce::jlimit(a, b, y);
             },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2])), ExprFn::Fold);
     }
     if (name == "wrap")
     {
         if (notEnoughArgs(3)) return nullptr;
-        return std::make_shared<Func3Node>(
+        return tag3 (std::make_shared<Func3Node>(
             [](float x, float lo, float hi)
             {
                 float a = juce::jmin(lo, hi);
@@ -878,13 +901,12 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
                 if (y < 0.0f) y += r;
                 return y + a;
             },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2])), ExprFn::Wrap);
     }
     if (name == "bitcrush")
     {
-        // bitcrush(x, bits) — mid-riser quantizer, bits in [1..24]
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float x, float bits)
             {
                 const float b = juce::jlimit(1.0f, 24.0f, bits);
@@ -892,76 +914,70 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::parseFunction(const std::strin
                 const float xn = juce::jlimit(-1.0f, 1.0f, x);
                 return std::round(xn * levels) / levels;
             },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Bitcrush);
     }
     if (name == "quantize")
     {
-        // quantize(x, steps) — steps quantization levels across [-1,1]
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float x, float steps)
             {
                 const float s = juce::jmax(1.0f, steps);
                 const float xn = juce::jlimit(-1.0f, 1.0f, x);
                 return std::round(xn * s) / s;
             },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Quantize);
     }
     if (name == "lerp")
     {
         if (notEnoughArgs(3)) return nullptr;
-        return std::make_shared<Func3Node>(
+        return tag3 (std::make_shared<Func3Node>(
             [](float a, float b, float t)
             {
                 return a + (b - a) * t;
             },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2])), ExprFn::Lerp);
     }
     if (name == "step")
     {
-        // step(edge, x) — Heaviside
         if (notEnoughArgs(2)) return nullptr;
-        return std::make_shared<Func2Node>(
+        return tag2 (std::make_shared<Func2Node>(
             [](float edge, float x) { return x < edge ? 0.0f : 1.0f; },
-            std::move(args[0]), std::move(args[1]));
+            std::move(args[0]), std::move(args[1])), ExprFn::Step);
     }
     if (name == "smoothstep")
     {
-        // smoothstep(edge0, edge1, x)
         if (notEnoughArgs(3)) return nullptr;
-        return std::make_shared<Func3Node>(
+        return tag3 (std::make_shared<Func3Node>(
             [](float e0, float e1, float x)
             {
                 if (e0 == e1) return x < e0 ? 0.0f : 1.0f;
                 float t = juce::jlimit(0.0f, 1.0f, (x - e0) / (e1 - e0));
                 return t * t * (3.0f - 2.0f * t);
             },
-            std::move(args[0]), std::move(args[1]), std::move(args[2]));
+            std::move(args[0]), std::move(args[1]), std::move(args[2])), ExprFn::Smoothstep);
     }
     if (name == "noise")
     {
-        // noise(x) — deterministic hash noise in [-1,1] (stable for same x)
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float x)
+        return tag1 (std::make_shared<FunctionNode>([](float x)
         {
-            // Integer hash of float bits
             union { float f; uint32_t u; } bits { x };
             uint32_t h = bits.u * 747796405u + 2891336453u;
             h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
             h = (h >> 22u) ^ h;
-            // map to [-1,1]
             return (static_cast<float>(h) / 2147483648.0f) - 1.0f;
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Noise);
     }
     if (name == "log2")
     {
         if (notEnoughArgs(1)) return nullptr;
-        return std::make_shared<FunctionNode>([](float v)
+        return tag1 (std::make_shared<FunctionNode>([](float v)
         {
             if (! std::isfinite (v) || v <= 0.0f)
                 return 0.0f;
             return finiteOrZero (std::log2 (v));
-        }, std::move(args[0]));
+        }, std::move(args[0])), ExprFn::Log2);
     }
 
     return nullptr;
@@ -978,6 +994,8 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
     variables.fill(0.0f);
     cachedXIndex = invalidIndex;
     errorMessage.clear();
+    exprTapeJitRelease (liveJit);
+    liveTape.clear();
     skipWhitespace();
 
     try
@@ -1010,7 +1028,19 @@ bool ExpressionEvaluator::parseFormula(const std::string& formula)
             if (xIt != varIndices.end())
                 cachedXIndex = xIt->second;
             LookupTables::prepareFromScript(formula);
-            compiled = [ptr = root.get()](const float* vars) noexcept { return ptr->eval(vars); };
+            liveTape.clear();
+            if (! lowerToTape (root.get()))
+                liveTape.clear();
+            if (liveTape.n > 0)
+                exprTapeJitCompile (liveJit, liveTape);
+            compiled = [this] (const float* vars) noexcept
+            {
+                if (liveJit.fn != nullptr)
+                    return liveJit.fn (&liveTape, vars);
+                if (liveTape.n > 0)
+                    return exprTapeEval (liveTape, vars);
+                return root ? root->eval (vars) : 0.f;
+            };
             compiledSimd = [ptr = root.get()](const juce::dsp::SIMDRegister<float>* vars) noexcept { return ptr->evalSimd(vars); };
         }
         return valid;
@@ -1054,7 +1084,14 @@ float ExpressionEvaluator::evaluate(float xValue) const noexcept
     // Single-shot API: reset ADAA so sequential evaluate() calls don't bleed state
     // (audio block path resets once per channel, then streams samples).
     localRoot->resetRuntime();
-    auto result = localRoot->eval(varsCopy.data());
+    liveTape.resetAdaa();
+    float result = 0.f;
+    if (liveJit.fn != nullptr)
+        result = liveJit.fn (&liveTape, varsCopy.data());
+    else if (liveTape.n > 0)
+        result = exprTapeEval (liveTape, varsCopy.data());
+    else
+        result = localRoot->eval (varsCopy.data());
 
     if (std::isfinite (result))
         return result;
@@ -1069,7 +1106,10 @@ float ExpressionEvaluator::evaluateLive (float xValue) const noexcept
     VarArray varsCopy = variables;
     if (cachedXIndex != invalidIndex)
         varsCopy[cachedXIndex] = xValue;
-    const float result = root->eval (varsCopy.data());
+    const float result = (liveJit.fn != nullptr)
+        ? liveJit.fn (&liveTape, varsCopy.data())
+        : (liveTape.n > 0 ? exprTapeEval (liveTape, varsCopy.data())
+                          : root->eval (varsCopy.data()));
     return std::isfinite (result) ? result : 0.0f;
 }
 
@@ -1305,6 +1345,8 @@ std::string ExpressionEvaluator::nodeKey(const Node* node)
         return "F3" + std::to_string(f3->func.target_type().hash_code()) + '(' + nodeKey(f3->x.get()) + ',' + nodeKey(f3->y.get()) + ',' + nodeKey(f3->z.get()) + ')';
     if (auto* f5 = dynamic_cast<const Func5Node*>(node))
         return "F5" + std::to_string(f5->func.target_type().hash_code()) + '(' + nodeKey(f5->a.get()) + ',' + nodeKey(f5->b.get()) + ',' + nodeKey(f5->c.get()) + ',' + nodeKey(f5->d.get()) + ',' + nodeKey(f5->e.get()) + ')';
+    if (auto* ad = dynamic_cast<const AdaaFunc2Node*>(node))
+        return "A" + std::to_string (ad->tapeFn) + '(' + nodeKey (ad->x.get()) + ',' + nodeKey (ad->p.get()) + ')';
     return "";
 }
 
@@ -1341,6 +1383,11 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::eliminateCSE(NodePtr node, std
         f5->d = eliminateCSE(f5->d, cache);
         f5->e = eliminateCSE(f5->e, cache);
     }
+    else if (auto* ad = dynamic_cast<AdaaFunc2Node*>(node.get()))
+    {
+        ad->x = eliminateCSE (ad->x, cache);
+        ad->p = eliminateCSE (ad->p, cache);
+    }
 
     auto key = nodeKey(node.get());
     auto it  = cache.find(key);
@@ -1348,4 +1395,153 @@ ExpressionEvaluator::NodePtr ExpressionEvaluator::eliminateCSE(NodePtr node, std
         return it->second;
     cache[key] = node;
     return node;
+}
+
+int ExpressionEvaluator::emitTapeNode (Node* node, uint8_t& nextSlot) noexcept
+{
+    if (node == nullptr || nextSlot >= ExprTape::kMaxSlots || liveTape.n >= ExprTape::kMaxOps - 1)
+        return -1;
+
+    auto emit = [this, &nextSlot] (ExprOp kind) -> int
+    {
+        if (nextSlot >= ExprTape::kMaxSlots || liveTape.n >= ExprTape::kMaxOps)
+            return -1;
+        const int i = liveTape.n++;
+        liveTape.op[i] = kind;
+        liveTape.dst[i] = nextSlot;
+        return i;
+    };
+
+    if (auto* v = dynamic_cast<ValueNode*> (node))
+    {
+        const int i = emit (ExprOp::LoadImm);
+        if (i < 0) return -1;
+        liveTape.imm[i] = v->value;
+        return nextSlot++;
+    }
+    if (auto* var = dynamic_cast<VarNode*> (node))
+    {
+        const int i = emit (ExprOp::LoadVar);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) juce::jmin ((size_t) 255, var->index);
+        return nextSlot++;
+    }
+    if (auto* u = dynamic_cast<UnaryNode*> (node))
+    {
+        const int c = emitTapeNode (u->child.get(), nextSlot);
+        if (c < 0) return -1;
+        if (u->op == UnaryNode::plus)
+            return c;
+        const int i = emit (ExprOp::Neg);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) c;
+        return nextSlot++;
+    }
+    if (auto* b = dynamic_cast<BinaryNode*> (node))
+    {
+        const int l = emitTapeNode (b->left.get(), nextSlot);
+        const int r = emitTapeNode (b->right.get(), nextSlot);
+        if (l < 0 || r < 0) return -1;
+        ExprOp k = ExprOp::Add;
+        switch (b->op)
+        {
+            case BinaryNode::add: k = ExprOp::Add; break;
+            case BinaryNode::sub: k = ExprOp::Sub; break;
+            case BinaryNode::mul: k = ExprOp::Mul; break;
+            case BinaryNode::div: k = ExprOp::Div; break;
+            case BinaryNode::pow: k = ExprOp::Pow; break;
+        }
+        const int i = emit (k);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) l;
+        liveTape.b[i] = (uint8_t) r;
+        return nextSlot++;
+    }
+    if (auto* f = dynamic_cast<FunctionNode*> (node))
+    {
+        if (f->tapeFn == 0) return -1;
+        const int c = emitTapeNode (f->child.get(), nextSlot);
+        if (c < 0) return -1;
+        const int i = emit (ExprOp::Call1);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) c;
+        liveTape.fn[i] = f->tapeFn;
+        return nextSlot++;
+    }
+    if (auto* f2 = dynamic_cast<Func2Node*> (node))
+    {
+        if (f2->tapeFn == 0) return -1;
+        const int l = emitTapeNode (f2->left.get(), nextSlot);
+        const int r = emitTapeNode (f2->right.get(), nextSlot);
+        if (l < 0 || r < 0) return -1;
+        const int i = emit (ExprOp::Call2);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) l;
+        liveTape.b[i] = (uint8_t) r;
+        liveTape.fn[i] = f2->tapeFn;
+        return nextSlot++;
+    }
+    if (auto* ad = dynamic_cast<AdaaFunc2Node*> (node))
+    {
+        if (ad->tapeFn == 0 || liveTape.adaaCount >= ExprTape::kMaxAdaa) return -1;
+        const int x = emitTapeNode (ad->x.get(), nextSlot);
+        const int p = emitTapeNode (ad->p.get(), nextSlot);
+        if (x < 0 || p < 0) return -1;
+        const int i = emit (ExprOp::Adaa2);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) x;
+        liveTape.b[i] = (uint8_t) p;
+        liveTape.fn[i] = ad->tapeFn;
+        liveTape.d[i] = liveTape.adaaCount++;
+        return nextSlot++;
+    }
+    if (auto* f3 = dynamic_cast<Func3Node*> (node))
+    {
+        if (f3->tapeFn == 0) return -1;
+        const int x = emitTapeNode (f3->x.get(), nextSlot);
+        const int y = emitTapeNode (f3->y.get(), nextSlot);
+        const int z = emitTapeNode (f3->z.get(), nextSlot);
+        if (x < 0 || y < 0 || z < 0) return -1;
+        const int i = emit (ExprOp::Call3);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) x;
+        liveTape.b[i] = (uint8_t) y;
+        liveTape.c[i] = (uint8_t) z;
+        liveTape.fn[i] = f3->tapeFn;
+        return nextSlot++;
+    }
+    if (auto* f5 = dynamic_cast<Func5Node*> (node))
+    {
+        if (f5->tapeFn == 0) return -1;
+        const int a = emitTapeNode (f5->a.get(), nextSlot);
+        const int b = emitTapeNode (f5->b.get(), nextSlot);
+        const int c = emitTapeNode (f5->c.get(), nextSlot);
+        const int d = emitTapeNode (f5->d.get(), nextSlot);
+        const int e = emitTapeNode (f5->e.get(), nextSlot);
+        if (a < 0 || b < 0 || c < 0 || d < 0 || e < 0) return -1;
+        const int i = emit (ExprOp::Call5);
+        if (i < 0) return -1;
+        liveTape.a[i] = (uint8_t) a;
+        liveTape.b[i] = (uint8_t) b;
+        liveTape.c[i] = (uint8_t) c;
+        liveTape.d[i] = (uint8_t) d;
+        liveTape.e[i] = (uint8_t) e;
+        liveTape.fn[i] = f5->tapeFn;
+        return nextSlot++;
+    }
+    return -1;
+}
+
+bool ExpressionEvaluator::lowerToTape (Node* node) noexcept
+{
+    liveTape.clear();
+    uint8_t next = 0;
+    const int slot = emitTapeNode (node, next);
+    if (slot < 0)
+    {
+        liveTape.clear();
+        return false;
+    }
+    liveTape.resultSlot = (uint8_t) slot;
+    return liveTape.n > 0;
 }

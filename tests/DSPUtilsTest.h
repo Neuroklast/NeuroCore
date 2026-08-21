@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include "../src/dsp/DSPUtils.h"
 #include "../src/core/Config.h"
+#include <vector>
 
 class DSPUtilsTest : public juce::UnitTest
 {
@@ -12,6 +13,17 @@ public:
 
     void runTest() override
     {
+        beginTest("alignedRing returns 64-byte pointer; lutInterp is linear");
+        {
+            expectEquals ((int) Config::kDspAlign, 64);
+            std::vector<float> storage;
+            float* p = DSPUtils::alignedRing (storage, 32);
+            expect (DSPUtils::isAligned64 (p));
+            expect (p + 31 < storage.data() + storage.size());
+            const float t[4] = { 0.f, 1.f, 2.f, 3.f };
+            expectWithinAbsoluteError (DSPUtils::lutInterp (t, 4, 1.5f), 1.5f, 1.0e-6f);
+        }
+
         beginTest("autoGainCompensate scales samples toward dry RMS");
 
         juce::AudioBuffer<float> dryBuffer(2, 4);

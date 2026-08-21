@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "LookupTables.h"
+#include "DSPUtils.h"
 #include <unordered_map>
 #include <cmath>
 
@@ -67,15 +68,6 @@ void LookupTables::initialise (int size)
     LookupTableSmoother::smooth(tanhTable, smoothing);
 }
 
-static inline float interp (const std::vector<float>& table, float pos)
-{
-    const int size = static_cast<int> (table.size());
-    const int idx = static_cast<int> (pos);
-    const int next = (idx + 1) % size;
-    const float frac = pos - static_cast<float> (idx);
-    return table[idx] + frac * (table[next] - table[idx]);
-}
-
 float LookupTables::fastSin (float x) noexcept
 {
     if (tableSize == 0)
@@ -86,7 +78,7 @@ float LookupTables::fastSin (float x) noexcept
     if (x < 0.0f)
         x += twoPi;
     const float pos = (x / twoPi) * static_cast<float> (tableSize - 1);
-    return interp (sinTable, pos);
+    return DSPUtils::lutInterp (sinTable.data(), (int) sinTable.size(), pos);
 }
 
 float LookupTables::fastCos (float x) noexcept
@@ -99,7 +91,7 @@ float LookupTables::fastCos (float x) noexcept
     if (x < 0.0f)
         x += twoPi;
     const float pos = (x / twoPi) * static_cast<float> (tableSize - 1);
-    return interp (cosTable, pos);
+    return DSPUtils::lutInterp (cosTable.data(), (int) cosTable.size(), pos);
 }
 
 float LookupTables::fastTanh (float x) noexcept
@@ -110,7 +102,7 @@ float LookupTables::fastTanh (float x) noexcept
     const float range = 4.0f;
     x = juce::jlimit (-range, range, x);
     const float pos = ((x + range) / (2.0f * range)) * static_cast<float> (tableSize - 1);
-    return interp (tanhTable, pos);
+    return DSPUtils::lutInterp (tanhTable.data(), (int) tanhTable.size(), pos);
 }
 
 float LookupTables::fastExp (float x) noexcept
@@ -131,7 +123,7 @@ float LookupTables::fastExp (float x) noexcept
 
     x = juce::jlimit (-range, range, x);
     const float pos = juce::jmap (x, -range, range, 0.f, static_cast<float> (tableSize - 1));
-    return interp (expTable, pos);
+    return DSPUtils::lutInterp (expTable.data(), (int) expTable.size(), pos);
 }
 
 float LookupTables::fastLog (float x) noexcept
@@ -153,7 +145,7 @@ float LookupTables::fastLog (float x) noexcept
 
     x = juce::jlimit (minV, maxV, x);
     const float pos = juce::jmap (x, minV, maxV, 0.f, static_cast<float> (tableSize - 1));
-    return interp (logTable, pos);
+    return DSPUtils::lutInterp (logTable.data(), (int) logTable.size(), pos);
 }
 
 float LookupTables::fastPow (float x, float exponent) noexcept
@@ -176,7 +168,7 @@ float LookupTables::fastPow (float x, float exponent) noexcept
 
     x = juce::jlimit (-range, range, x);
     const float pos = juce::jmap (x, -range, range, 0.f, static_cast<float> (tableSize - 1));
-    return interp (table, pos);
+    return DSPUtils::lutInterp (table.data(), (int) table.size(), pos);
 }
 
 juce::dsp::SIMDRegister<float> LookupTables::fastSinSimd(const juce::dsp::SIMDRegister<float>& x) noexcept

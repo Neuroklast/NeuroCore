@@ -47,6 +47,8 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     {
         auto makeOs = [channels, osHostBlock] (int stages, bool live)
         {
+            // JUCE FIR half-band already strides k += 2 (zero taps skipped).
+            // Custom skip-zero OS is not a win on top of this (Phase 4 closed).
             auto os = std::make_unique<juce::dsp::Oversampling<float>>(
                 (size_t) channels,
                 (size_t) stages,

@@ -114,7 +114,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.4.10-alpha", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: "0.4.11-alpha", scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }

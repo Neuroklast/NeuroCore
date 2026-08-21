@@ -1,6 +1,15 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
+
+#if defined(_MSC_VER)
+ #define NK_FORCEINLINE __forceinline
+ #define NK_RESTRICT    __restrict
+#else
+ #define NK_FORCEINLINE inline __attribute__((always_inline))
+ #define NK_RESTRICT    __restrict__
+#endif
 
 /*
     NeuroKore - Copyright (c) 2024 NEUROKLAST
@@ -143,6 +152,8 @@ namespace Config
 
     /// Number of audio channels supported.
     inline constexpr int   kMaxChannels        = 2;
+    /// SIMD / cache-line alignment for DSP buffers.
+    inline constexpr std::size_t kDspAlign     = 64;
 
 
     /// Minimum valid input sample value.
@@ -322,7 +333,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.4.10-alpha"
+#define PLUGIN_VERSION    "0.4.11-alpha"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

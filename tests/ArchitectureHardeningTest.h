@@ -75,6 +75,13 @@ public:
             expectEquals (Config::kDefaultOversamplingIndex, 2);
         }
 
+        beginTest ("footer CPU stays 0-100 after LTO (host ratio is not the meter)");
+        {
+            expectEquals (Config::cpuDisplayPercent (1.73f), 100);
+            expectEquals (Config::cpuDisplayPercent (0.42f), 42);
+            expectEquals (Config::cpuDisplayPercent (0.0f), 0);
+        }
+
         beginTest ("meter ballistics are fast enough for the UI");
         {
             expect (Config::kMeterAttackSec <= 0.020f);
@@ -201,6 +208,68 @@ public:
             expect (eHigh > eLow * 1.5f,
                     "high FB energy=" + juce::String (eHigh, 6)
                         + " low FB energy=" + juce::String (eLow, 6));
+        }
+
+        // ---- Phase 3: SoA / alignas(64) / no vector in the inner audio loop ----
+        beginTest ("dsp inner layout is 64-aligned; delay wrap length ignores pad");
+        {
+            expectEquals ((int) Config::kDspAlign, 64);
+
+            std::vector<float> storage;
+            float* p = DSPUtils::alignedRing (storage, 480);
+            expect (p != nullptr);
+            expect (DSPUtils::isAligned64 (p));
+            p[479] = 1.f;
+            expect (storage.data() + storage.size() > p + 479);
+
+            juce::dsp::ProcessSpec spec { 48000.0, 512, 2 };
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 10; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+
+            float peakPos = 0.f, peakVal = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                const float a = std::abs (buf.getSample (0, i));
+                if (a > peakVal)
+                {
+                    peakVal = a;
+                    peakPos = (float) i;
+                }
+            }
+            expect (peakVal > 0.3f);
+            expect (peakPos > 400.f && peakPos < 520.f,
+                    "aligned pad must not change wrap length, peakPos="
+                        + juce::String (peakPos, 1));
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+        }
+
+        beginTest ("knob lanes sized in prepare survive 64 then 512 then 8");
+        {
+            juce::dsp::ProcessSpec spec { 48000.0, 512, 2 };
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript ("stage1: y = x * a", err), err);
+            for (int n : { 64, 512, 8 })
+            {
+                juce::AudioBuffer<float> buf (2, n);
+                for (int i = 0; i < n; ++i)
+                {
+                    buf.setSample (0, i, 0.4f);
+                    buf.setSample (1, i, 0.4f);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+            }
         }
 
         // ---- A8: sidechain block path preserves latency ----

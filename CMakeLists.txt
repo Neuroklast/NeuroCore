@@ -2,8 +2,13 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-set(NEUROKORE_VERSION_NUMERIC "0.4.10")
-set(NEUROKORE_VERSION_LABEL "0.4.10-alpha")
+# Must be set before project() so Xcode/Ninja AU+VST3 target the same floor.
+if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set (CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS for VST3/AU")
+endif()
+
+set(NEUROKORE_VERSION_NUMERIC "0.4.11")
+set(NEUROKORE_VERSION_LABEL "0.4.11-alpha")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
@@ -81,6 +86,27 @@ if(NOT _JUCE_FETCHED)
     endif()
 endif()
 
+# Phase 5: asmjit only on Windows x64. Apple VST3/AU (Intel + Apple Silicon)
+# compile the tape interpreter — no asmjit headers, no RWX on AU sandbox.
+set (NK_HAS_EXPR_JIT 0)
+if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set (ASMJIT_STATIC ON CACHE BOOL "" FORCE)
+    set (ASMJIT_TEST OFF CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_FOREIGN ON CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_AARCH64 ON CACHE BOOL "" FORCE)
+    set (ASMJIT_NO_INSTALL ON CACHE BOOL "" FORCE)
+    FetchContent_Declare (asmjit
+        GIT_REPOSITORY https://github.com/asmjit/asmjit.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable (asmjit)
+    set (NK_HAS_EXPR_JIT 1)
+    message (STATUS "ExprTape JIT: asmjit (Windows x64)")
+else()
+    message (STATUS "ExprTape JIT: tape interpreter (Mac/AU and non-x64)")
+endif()
+
 set(SOURCE_FILES
     src/dsp/InputGain.cpp
     src/dsp/InputRouter.cpp
@@ -105,6 +131,8 @@ set(SOURCE_FILES
     src/dsl/blocks/IrBlock.cpp
     src/dsl/blocks/PitchBlock.cpp
     src/utils/ExpressionEvaluator.cpp
+    src/utils/ExprTape.cpp
+    src/utils/ExprTapeJit.cpp
     src/utils/Localiser.cpp
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseCrypto.cpp
@@ -188,12 +216,17 @@ target_compile_features(NeuroKore PRIVATE cxx_std_17)
 target_compile_definitions(NeuroKore
     PUBLIC
         JUCE_WEB_BROWSER=1
-        JUCE_USE_WIN_WEBVIEW2=1
-        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
     PRIVATE
         NEUROKORE_HAS_WEB_EDITOR=1
         NEUROKORE_WEB_DIST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/web/dist"
+        NK_HAS_EXPR_JIT=${NK_HAS_EXPR_JIT}
 )
+if (WIN32)
+    target_compile_definitions (NeuroKore PUBLIC
+        JUCE_USE_WIN_WEBVIEW2=1
+        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
+    )
+endif()
 
 # Reconfigure when the factory catalog changes so juceaide re-embeds it.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
@@ -235,6 +268,10 @@ target_link_libraries(NeuroKore PRIVATE
     juce::juce_product_unlocking
 )
 
+if (NK_HAS_EXPR_JIT)
+    target_link_libraries (NeuroKore PRIVATE asmjit::asmjit)
+endif()
+
 # Copy resources next to every built binary (SharedCode dir + Standalone + VST3)
 add_custom_command(TARGET NeuroKore POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -250,6 +287,22 @@ if(TARGET NeuroKore_VST3)
 endif()
 if(TARGET NeuroKore_AU)
     set_target_properties(NeuroKore_AU PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
+endif()
+
+# Phase 0: Release LTO on the plugin only. Never /fp:fast (breaks isfinite / NaN-hold).
+# Tests stay non-LTO so the suite does not pay LTCG link time.
+include(CheckIPOSupported)
+check_ipo_supported (RESULT NK_IPO_OK OUTPUT NK_IPO_MSG LANGUAGES CXX)
+if (NK_IPO_OK)
+    message (STATUS "Release LTO enabled for NEUROKORE plugin targets")
+    set_property (TARGET NeuroKore PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+    foreach (_nk_ipo_tgt NeuroKore_Standalone NeuroKore_VST3 NeuroKore_AU)
+        if (TARGET ${_nk_ipo_tgt})
+            set_property (TARGET ${_nk_ipo_tgt} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+        endif()
+    endforeach()
+else()
+    message (STATUS "Release LTO not available: ${NK_IPO_MSG}")
 endif()
 
 if(TARGET NeuroKore_Standalone)
@@ -326,6 +379,7 @@ target_compile_features(NeuroKoreTests PRIVATE cxx_std_17)
 target_compile_definitions(NeuroKoreTests PRIVATE
     NEUROKORE_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
     NEUROKORE_SKIP_LICENSE_ENFORCEMENT=1
+    NK_HAS_EXPR_JIT=${NK_HAS_EXPR_JIT}
 )
 
 target_link_libraries(NeuroKoreTests PRIVATE
@@ -345,6 +399,10 @@ target_link_libraries(NeuroKoreTests PRIVATE
     juce::juce_opengl
     resourcesBinary
 )
+
+if (NK_HAS_EXPR_JIT)
+    target_link_libraries (NeuroKoreTests PRIVATE asmjit::asmjit)
+endif()
 
 if (MSVC)
     target_link_options (NeuroKoreTests PRIVATE /STACK:8388608)
@@ -494,16 +552,32 @@ if (APPLE)
         if (NOT TARGET ${tgt})
             return()
         endif()
+        add_dependencies (${tgt} NeuroKoreWebEmbed)
         add_custom_command(TARGET ${tgt} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${_nk_web_dir}/dist"
                 "$<TARGET_BUNDLE_CONTENT_DIR:${tgt}>/Resources/web"
-            COMMENT "Copy web/dist into ${tgt} bundle Resources/web"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${_nk_web_zip}"
+                "$<TARGET_BUNDLE_CONTENT_DIR:${tgt}>/Resources/neurokore_web_dist.zip"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/resources"
+                "$<TARGET_BUNDLE_CONTENT_DIR:${tgt}>/Resources/resources"
+            COMMENT "Copy web + resources into ${tgt} bundle Contents/Resources"
         )
     endfunction()
     nk_bundle_web(NeuroKore_Standalone)
     nk_bundle_web(NeuroKore_VST3)
     nk_bundle_web(NeuroKore_AU)
+    if (TARGET NeuroKoreTests)
+        add_dependencies (NeuroKoreTests NeuroKoreWebEmbed)
+        add_custom_command (TARGET NeuroKoreTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${_nk_web_zip}"
+                "$<TARGET_FILE_DIR:NeuroKoreTests>/neurokore_web_dist.zip"
+            COMMENT "Copy web zip next to NeuroKoreTests (Mac embed contract)"
+        )
+    endif()
 endif()
 
 function(nk_copy_web_dist tgt)
