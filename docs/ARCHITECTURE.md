@@ -17,7 +17,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **Audio-Layout** | `alignas(64)` + `DSPUtils::alignedRing` | History und Delay-Ringe cache-line aligned. Innere Sample-Schleife auf `float*` + `NK_RESTRICT`, kein `std::vector` dort. Knob-Lanes in `prepare`. |
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
 | **DSL Multi-Bus** | `BusGraph` + `SignalChain` | Max. 4 Named Buses + `in`/`main`. Send nur rückwärts (DAG). Mixdown **in** der DSL, eine Engine-Timeline. |
-| **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
+| **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. VST3 sleep/wake (`setNonRealtime` change, JUCE `setProcessing` → `reset`) clears OS/sanitation/rings and fades 256 samples. |
 | **Oversampling** | `juce::dsp::Oversampling` | Studio FIR / Live IIR. FIR skippt Null-Taps (`k += 2`). Kein zweites Half-Band. |
 | **Release-LTO** | CMake IPO on plugin | `INTERPROCEDURAL_OPTIMIZATION_RELEASE` on NeuroKore + Standalone/VST3/AU. Never global `/fp:fast`. |
 

@@ -1464,5 +1464,44 @@ public:
             runOverflow (1024);
             proc.releaseResources();
         }
+
+        beginTest ("VST3 suspend/wake reset leaves finite sine; double wake is safe");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x", err), err);
+
+            juce::MidiBuffer midi;
+            auto runSine = [&] (int blocks)
+            {
+                int bad = 0;
+                for (int b = 0; b < blocks; ++b)
+                {
+                    juce::AudioBuffer<float> buf (2, 64);
+                    for (int i = 0; i < 64; ++i)
+                    {
+                        const float s = 0.4f * std::sin ((float) (b * 64 + i) * 0.07f);
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    proc.processBlock (buf, midi);
+                    bad += TestHelpers::countNonFinite (buf);
+                    expect (TestHelpers::peakAbs (buf) < 8.f);
+                }
+                return bad;
+            };
+
+            expectEquals (runSine (4), 0);
+            proc.reset();
+            expectEquals (runSine (4), 0);
+            proc.reset();
+            expectEquals (runSine (4), 0);
+            proc.setNonRealtime (true);
+            proc.setNonRealtime (false);
+            expectEquals (runSine (4), 0);
+            proc.releaseResources();
+        }
     }
 };

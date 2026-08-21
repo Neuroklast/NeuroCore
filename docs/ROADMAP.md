@@ -9,7 +9,7 @@ Bereits geliefert (nicht mehr als offen behandeln): Sanitation-Kette, Web-Editor
 
 - [x] **Phase 1 — Host keyboard pass-through** — non-text keys → DAW (`shouldForwardToHost` + `hostKey`); Windows `PostMessage`, Mac VST3/AU `CGEventPost`. See `docs/ARCHITECTURE.md` (Host / Cubase keyboard).
 - [x] **Phase 2 — ASIO Guard** — `processBlock` never `setSize` / alloc; slice if host `n` > prepare ceiling.
-- [ ] **Phase 3 — VST3 suspend / wake** — Cubase track/ASIO Guard lifecycle.
+- [x] **Phase 3 — VST3 suspend / wake** — `setNonRealtime` change = `reset()` (OS/sanitation/rings + fade-in).
 - [x] **Phase 4 — Persistent WebView** — processor owns the browser; editor close hides it; reopen is 0 ms.
 
 ---

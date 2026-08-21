@@ -275,6 +275,16 @@ void NeuroKoreAudioProcessor::reset()
     fadeInRemain = 256;
 }
 
+void NeuroKoreAudioProcessor::setNonRealtime (bool isNonRealtimeProc) noexcept
+{
+    // Cubase ASIO Guard / VST3 setProcessing maps here. Flag change = sleep or
+    // wake: same reset as PluginProcessor::reset (OS, sanitation, rings + fade).
+    const bool changed = isNonRealtimeProc != isNonRealtime();
+    AudioProcessor::setNonRealtime (isNonRealtimeProc);
+    if (changed)
+        reset();
+}
+
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
