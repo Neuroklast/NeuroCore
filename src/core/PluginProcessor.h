@@ -33,6 +33,8 @@
 #include "../ui/MidiLearnManager.h"
 #include "../bridge/TelemetryPump.h"
 
+namespace bridge { class WebViewHolder; }
+
 
 //==============================================================================
 /**
@@ -61,6 +63,7 @@ public:
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
+    bridge::WebViewHolder& getWebView();
 
     //==============================================================================
     const juce::String getName() const override;
@@ -332,6 +335,9 @@ private:
                     const juce::String& displayName, juce::String& error);
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
+
+    std::unique_ptr<bridge::WebViewHolder> webViewHolder;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroKoreAudioProcessor)
 };
 

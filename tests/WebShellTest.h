@@ -7,6 +7,8 @@
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
+#include "../src/bridge/WebViewHolder.h"
+#include "../src/core/PluginProcessor.h"
 #include "../src/utils/ExprTapeJit.h"
 
 #ifdef _WIN32
@@ -234,6 +236,61 @@ public:
             expect (bridge::wantWebEditor());
             expect (bridge::shouldOpenWebEditor() == bridge::webEditorCanRun(),
                     "web must not open a WebView2 install screen");
+        }
+
+        beginTest ("processor WebView holder outlives editor; zip index and UI_READY persist");
+        {
+            // NeuroKoreTests cannot spin a real WebView (no NEUROKORE_HAS_WEB_EDITOR).
+            // Contract is the ownership API: holder identity + zip index + latch.
+            NeuroKoreAudioProcessor proc;
+            auto& holder = proc.getWebView();
+            expectEquals ((juce::int64) holder.browserIdentity(),
+                          (juce::int64) proc.getWebView().browserIdentity(),
+                          "getWebView returns the same holder");
+            expect (holder.browserIdentity() != 0);
+
+            const auto first = holder.serve ("/");
+            expect (first.has_value(), "resource provider serves /");
+            const int builds = holder.zipIndexBuildCount();
+            expect (builds >= 1);
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), builds,
+                          "serve does not rebuild the zip index");
+
+            juce::Component frame1;
+            holder.attach (frame1);
+            expect (holder.isAttached());
+            expect (holder.browserComponent() != nullptr);
+            expect (holder.browserComponent()->getParentComponent() == &frame1);
+
+            expect (holder.bridge().handleNative ("UI_READY", {}));
+            expect (holder.bridge().allowOutbound());
+
+            holder.detach (frame1);
+            expect (! holder.isAttached());
+            expect (holder.browserComponent() != nullptr);
+            expect (holder.browserComponent()->getParentComponent() != &frame1);
+            expect (holder.bridge().allowOutbound(), "UI_READY latch survives editor dtor");
+            expectEquals (holder.zipIndexBuildCount(), builds);
+
+            const auto id = holder.browserIdentity();
+            {
+                juce::Component dying;
+                holder.attach (dying);
+                expectEquals ((juce::int64) holder.browserIdentity(), (juce::int64) id);
+                holder.detach (dying);
+            }
+
+            juce::Component frame2;
+            holder.attach (frame2);
+            expectEquals ((juce::int64) holder.browserIdentity(), (juce::int64) id,
+                          "second editor reuses browser identity");
+            expectEquals (holder.zipIndexBuildCount(), builds,
+                          "second createEditor does not rebuild the zip index");
+            expect (holder.bridge().allowOutbound(), "UI_READY is not required again");
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), builds);
+            holder.detach (frame2);
         }
     }
 

@@ -2,7 +2,10 @@
 
 #include <JuceHeader.h>
 #include <cstddef>
+#include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace bridge
@@ -19,6 +22,21 @@ std::optional<WebAsset> loadWebAsset (const juce::File& root, const juce::String
 
 /** Serve a path from an in-memory zip (no web/ folder on disk). */
 std::optional<WebAsset> loadWebAssetFromZip (const void* zipData, size_t zipSize, const juce::String& url);
+
+/** Central-directory map for the embedded web zip. Built once per instance. */
+class WebZipIndex
+{
+public:
+    WebZipIndex();
+    int buildCount() const noexcept { return builds; }
+    std::optional<WebAsset> load (const juce::String& url) const;
+
+private:
+    std::unique_ptr<juce::MemoryInputStream> stream;
+    std::unique_ptr<juce::ZipFile> zip;
+    std::unordered_map<std::string, int> byName;
+    int builds { 0 };
+};
 
 /** Windows RCDATA id for the packed web/dist zip. Must match scripts/pack_web_dist.mjs. */
 inline constexpr int kWebDistResourceId = 41001;
