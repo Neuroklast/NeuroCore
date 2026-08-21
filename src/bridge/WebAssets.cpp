@@ -189,6 +189,60 @@ std::optional<WebAsset> loadEmbeddedWebAsset (const juce::String& url)
     return loadWebAssetFromZip (data, size, url);
 }
 
+WebZipIndex::WebZipIndex()
+{
+    ++builds;
+    const void* data = nullptr;
+    size_t size = 0;
+    if (! lockEmbeddedWebZip (data, size))
+        return;
+
+    stream = std::make_unique<juce::MemoryInputStream> (data, size, false);
+    zip = std::make_unique<juce::ZipFile> (*stream);
+    for (int i = 0; i < zip->getNumEntries(); ++i)
+    {
+        const auto* entry = zip->getEntry (i);
+        if (entry == nullptr)
+            continue;
+        auto name = entry->filename.replaceCharacter ('\\', '/');
+        if (name.startsWith ("./"))
+            name = name.substring (2);
+        if (name.isNotEmpty() && ! name.endsWithChar ('/'))
+            byName.emplace (name.toStdString(), i);
+    }
+}
+
+std::optional<WebAsset> WebZipIndex::load (const juce::String& url) const
+{
+    if (zip == nullptr)
+        return std::nullopt;
+
+    const auto rel = normalisedPath (url);
+    if (! isSafeRelative (rel))
+        return std::nullopt;
+
+    const auto wanted = rel.replaceCharacter ('\\', '/');
+    const auto it = byName.find (wanted.toStdString());
+    if (it == byName.end())
+        return std::nullopt;
+
+    // createStreamForEntry / ZipFile is not thread-safe. Resource provider
+    // runs on the WebView2 thread; UI serve() on the message thread.
+    const juce::ScopedLock sl (zipLock);
+    std::unique_ptr<juce::InputStream> in (zip->createStreamForEntry (it->second));
+    if (in == nullptr)
+        return std::nullopt;
+
+    juce::MemoryBlock block;
+    in->readIntoMemoryBlock (block);
+
+    WebAsset asset;
+    asset.mimeType = mimeForPath (wanted);
+    const auto* p = static_cast<const std::byte*> (block.getData());
+    asset.data.assign (p, p + block.getSize());
+    return asset;
+}
+
 bool wantDiskWebAssets()
 {
     const auto v = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_DISK", {});

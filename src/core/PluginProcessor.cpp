@@ -12,6 +12,7 @@
 #include <vector>
 #include "PluginProcessor.h"
 #include "../bridge/WebEditorPolicy.h"
+#include "../bridge/WebViewHolder.h"
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
 #include "../ui/WebPluginEditor.h"
 #endif
@@ -176,6 +177,7 @@ NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
     // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
     // destroyed processor → access violation after setValueNotifyingHost / OS changes.
     cancelPendingUpdate();
+    webViewHolder.reset();
 
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.removeParameterListener (EffectParameters::userParams[i], this);
@@ -516,9 +518,17 @@ bool NeuroKoreAudioProcessor::hasEditor() const
     return true;
 }
 
+bridge::WebViewHolder& NeuroKoreAudioProcessor::getWebView()
+{
+    if (webViewHolder == nullptr)
+        webViewHolder = std::make_unique<bridge::WebViewHolder> (*this);
+    return *webViewHolder;
+}
+
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
+    getWebView();
     return createWebEditor (*this);
 #else
     return nullptr;

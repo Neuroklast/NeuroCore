@@ -116,12 +116,19 @@ Input
 - Zentraler `juce::AudioProcessor`-Erbe
 - Hält den **APVTS** mit Host-Parametern; DSP liegt in `DspEngine` + `SignalChain`
 - `processBlock()` misst CPU, ruft die Engine, schreibt Telemetrie
-- Editor: **nur** `WebPluginEditor` (`src/ui/WebPluginEditor.*`). Native `PluginEditor` ist nicht der Produkt-Default.
+- Editor: **nur** `WebPluginEditor` (`src/ui/WebPluginEditor.*`), a thin frame. The `WebBrowserComponent` is owned by `WebViewHolder` on this processor so it outlives IPlugView. Native `PluginEditor` ist nicht der Produkt-Default.
 
 ### `WebPluginEditor` (`src/ui/WebPluginEditor.h/.cpp`)
-- WebView-Host (Windows WebView2, macOS WKWebView)
+- Thin frame around the processor-owned WebView (Windows WebView2, macOS WKWebView)
 - Circuit/Terminal/Unit leben in `web/` (React Flow + elkjs)
 - Web-Assets: Windows RCDATA `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`
+
+### WebView lifetime
+- Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
+- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
+- Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`) or owned by a processor-lifetime HWND. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists.
+- Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
+- Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).
 
 ### Host / Cubase keyboard
 - **Intercept + forward**, not focus theft. While the plugin WebView is focused, non-text keys still reach the DAW.
@@ -221,7 +228,7 @@ Produkt-Editor ist `WebPluginEditor` + `web/`. Die native Tabelle darunter ist A
 
 | Komponente | Beschreibung |
 |---|---|
-| `WebPluginEditor` | WebView-Host. Circuit/Terminal in `web/` |
+| `WebPluginEditor` | Thin editor frame. Browser lives on the processor (`WebViewHolder`). Circuit/Terminal in `web/` |
 | `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
 | `DslTerminalEditor` | Code-Editor (Terminal-Edit). IR-Button in Zeilenhöhe. Keine Live-`[value]`-Annotation |
 | `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, orthogonale PCB-Kabel |
