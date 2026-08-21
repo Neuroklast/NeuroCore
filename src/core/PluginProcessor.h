@@ -33,6 +33,8 @@
 #include "../ui/MidiLearnManager.h"
 #include "../bridge/TelemetryPump.h"
 
+namespace bridge { class WebViewHolder; }
+
 
 //==============================================================================
 /**
@@ -51,6 +53,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void reset() override;
+    void setNonRealtime (bool isNonRealtimeProc) noexcept override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
@@ -61,6 +64,7 @@ public:
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
+    bridge::WebViewHolder& getWebView();
 
     //==============================================================================
     const juce::String getName() const override;
@@ -279,6 +283,12 @@ public:
     // Returns the last process specification
     juce::dsp::ProcessSpec getCurrentSpec() const noexcept { return dspEngine.getCurrentSpec(); }
 
+    /** Test hook: OS working buffer length. processBlock must not grow this. */
+    int getScriptBufferNumSamples() const noexcept { return dspEngine.getScriptBufferNumSamples(); }
+
+    /** Test hook: last-wet continuity length. processBlock must not grow this. */
+    int getContinuityBufferNumSamples() const noexcept { return continuityBuf.getNumSamples(); }
+
 private:
     // Sub-components (extracted from the God-Class)
     DspEngine       dspEngine;
@@ -332,6 +342,9 @@ private:
                     const juce::String& displayName, juce::String& error);
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
+
+    std::unique_ptr<bridge::WebViewHolder> webViewHolder;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroKoreAudioProcessor)
 };
 

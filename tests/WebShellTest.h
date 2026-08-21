@@ -7,11 +7,20 @@
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
+#include "../src/bridge/WebViewHolder.h"
+#include "../src/core/PluginProcessor.h"
 #include "../src/utils/ExprTapeJit.h"
 
 #ifdef _WIN32
 #include <stdlib.h>
+#ifndef NOMINMAX
+#define NOMINMAX
 #endif
+#include <windows.h>
+#endif
+#include <atomic>
+#include <thread>
+#include <vector>
 
 /** WP2 contracts: asset map, UI_READY gate, editor policy. No WebView required. */
 class WebShellTest : public juce::UnitTest
@@ -160,6 +169,28 @@ public:
             expect (bridge::isHostTransportName (" "));
             expect (! bridge::isHostTransportName ("Enter"));
 
+            expect (bridge::hostKeyNameToVk ("ArrowDown") != 0, "ArrowDown must map");
+            expect (bridge::hostKeyNameToVk ("ArrowUp", "ArrowUp") != 0);
+            expect (bridge::hostKeyNameToVk ("Enter") != 0, "Enter must map");
+            expect (bridge::hostKeyNameToVk ("a") != 0, "letter must map");
+            expect (bridge::hostKeyNameToVk ("A", "KeyA") != 0);
+            expect (bridge::hostKeyNameToVk ("0", "Numpad0") != 0);
+            expect (bridge::hostKeyNameToVk ("0", "Digit0") != 0);
+            expect (bridge::canForwardHostKey ("ArrowDown"));
+            expect (bridge::canForwardHostKey ("Enter"));
+            expect (bridge::canForwardHostKey ("a"));
+            expect (! bridge::canForwardHostKey ({}));
+            expectEquals (bridge::hostKeyNameToVk ("ArrowDown"), 0x28);
+            expectEquals (bridge::hostKeyNameToVk ("Enter"), 0x0D);
+            expectEquals (bridge::hostKeyNameToVk ("a"), 0x41);
+            expectEquals (bridge::hostKeyNameToVk ("0", "Numpad0"), 0x60);
+            expectEquals (bridge::hostKeyNameToVk ("0", "Digit0"), 0x30);
+            expectEquals (bridge::hostKeyNameToVk ("/", "Slash"), 0xBF);
+            expect (bridge::canForwardHostKey ("/", "Slash"));
+            expectEquals (bridge::hostKeyNameToCgKeyCode ("ArrowDown"), 0x7D);
+            expectEquals (bridge::hostKeyNameToCgKeyCode (" "), 0x31);
+            expectEquals (bridge::hostKeyNameToCgKeyCode ("/", "Slash"), 0x2C);
+
             void* plugin = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x100);
             void* host = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x200);
             expect (bridge::chooseHostHwnd (plugin, host, plugin, host) == host);
@@ -212,6 +243,138 @@ public:
             expect (bridge::wantWebEditor());
             expect (bridge::shouldOpenWebEditor() == bridge::webEditorCanRun(),
                     "web must not open a WebView2 install screen");
+        }
+
+        beginTest ("processor WebView holder outlives editor; zip index and UI_READY persist");
+        {
+            // NeuroKoreTests cannot spin a real WebView (no NEUROKORE_HAS_WEB_EDITOR).
+            // Contract is the ownership API: holder identity + zip index + latch.
+            NeuroKoreAudioProcessor proc;
+            auto& holder = proc.getWebView();
+            expectEquals ((juce::int64) holder.browserIdentity(),
+                          (juce::int64) proc.getWebView().browserIdentity(),
+                          "getWebView returns the same holder");
+            expect (holder.browserIdentity() != 0);
+
+            const auto first = holder.serve ("/");
+            expect (first.has_value(), "resource provider serves /");
+            const int builds = holder.zipIndexBuildCount();
+            expect (builds >= 1);
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), builds,
+                          "serve does not rebuild the zip index");
+
+            juce::Component frame1;
+            holder.attach (frame1);
+            expect (holder.isAttached());
+            expect (holder.browserComponent() != nullptr);
+            expect (holder.browserComponent()->getParentComponent() == &frame1);
+
+            expect (holder.bridge().handleNative ("UI_READY", {}));
+            expect (holder.bridge().allowOutbound());
+
+            holder.detach (frame1);
+            expect (! holder.isAttached());
+            expect (holder.browserComponent() != nullptr);
+            expect (holder.browserComponent()->getParentComponent() != &frame1);
+            expect (holder.bridge().allowOutbound(), "UI_READY latch survives editor dtor");
+            expectEquals (holder.zipIndexBuildCount(), builds);
+
+            const auto id = holder.browserIdentity();
+            {
+                juce::Component dying;
+                holder.attach (dying);
+                expectEquals ((juce::int64) holder.browserIdentity(), (juce::int64) id);
+                holder.detach (dying);
+            }
+
+            juce::Component frame2;
+            holder.attach (frame2);
+            expectEquals ((juce::int64) holder.browserIdentity(), (juce::int64) id,
+                          "second editor reuses browser identity");
+            expectEquals (holder.zipIndexBuildCount(), builds,
+                          "second createEditor does not rebuild the zip index");
+            expect (holder.bridge().allowOutbound(), "UI_READY is not required again");
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), builds);
+            holder.detach (frame2);
+        }
+
+        beginTest ("WebZipIndex load is serialized across threads");
+        {
+            bridge::WebZipIndex index;
+            expect (index.buildCount() >= 1);
+            std::atomic<int> hits { 0 };
+            std::vector<std::thread> threads;
+            threads.reserve (4);
+            for (int t = 0; t < 4; ++t)
+            {
+                threads.emplace_back ([&index, &hits]
+                {
+                    for (int i = 0; i < 32; ++i)
+                        if (index.load ("/").has_value())
+                            hits.fetch_add (1, std::memory_order_relaxed);
+                });
+            }
+            for (auto& th : threads)
+                th.join();
+            expectEquals (index.buildCount(), 1, "index is not rebuilt under concurrent load");
+            if (index.load ("/").has_value())
+                expectEquals (hits.load(), 128);
+        }
+
+        beginTest ("park HWND is never a child of the IPlugView HWND");
+        {
+#if JUCE_WINDOWS
+            auto* inst = GetModuleHandleW (nullptr);
+            HWND owner = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                          L"nk-park-owner", WS_POPUP, -32000, -32000, 8, 8,
+                                          nullptr, nullptr, inst, nullptr);
+            HWND host = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                         L"nk-host", WS_POPUP, -32000, -32000, 400, 300,
+                                         nullptr, nullptr, inst, nullptr);
+            HWND editor = CreateWindowExW (0, L"STATIC", L"nk-iplugview",
+                                           WS_CHILD | WS_VISIBLE, 0, 0, 400, 300,
+                                           host, nullptr, inst, nullptr);
+            HWND park = CreateWindowExW (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, L"STATIC",
+                                         L"nk-park", WS_POPUP, -32000, -32000, 80, 60,
+                                         nullptr, nullptr, inst, nullptr);
+            expect (owner != nullptr && host != nullptr && editor != nullptr && park != nullptr);
+
+            auto* chosen = static_cast<HWND> (
+                bridge::WebViewHolder::parkParentForEditor (editor, owner));
+            expect (chosen == host, "VST3 park parent is the host systemWindow");
+            expect (chosen != editor, "park parent is never IPlugView");
+            expect (bridge::WebViewHolder::parkParentForEditor (editor, owner) != editor);
+
+            auto style = GetWindowLongPtr (park, GWL_STYLE);
+            using FlagType = decltype (style);
+            style &= ~(FlagType) WS_POPUP;
+            style |= (FlagType) WS_CHILD;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, chosen);
+            expect (GetParent (park) == host);
+            expect (GetParent (park) != editor);
+            expect (! IsChild (editor, park), "park is a sibling of IPlugView, not a child");
+
+            const auto id = (juce::int64) (juce::pointer_sized_int) park;
+            DestroyWindow (editor);
+            expect (IsWindow (park) != 0, "park HWND survives DestroyWindow(IPlugView)");
+            expectEquals ((juce::int64) (juce::pointer_sized_int) park, id);
+
+            style = GetWindowLongPtr (park, GWL_STYLE);
+            style &= ~(FlagType) WS_CHILD;
+            style |= (FlagType) WS_POPUP;
+            SetWindowLongPtr (park, GWL_STYLE, style);
+            SetParent (park, owner);
+            DestroyWindow (host);
+            expect (IsWindow (park) != 0, "park HWND survives host destroy after park-to-owner");
+
+            DestroyWindow (park);
+            DestroyWindow (owner);
+#else
+            expect (true);
+#endif
         }
     }
 

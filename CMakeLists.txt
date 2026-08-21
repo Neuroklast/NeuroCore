@@ -150,6 +150,7 @@ set(SOURCE_FILES
     src/bridge/GraphOps.cpp
     src/bridge/TelemetryFrame.cpp
     src/bridge/WebAssets.cpp
+    src/bridge/WebViewHolder.cpp
     src/bridge/WebBridge.cpp
     src/bridge/CompileSession.cpp
     src/bridge/HostSnapshot.cpp

@@ -5,6 +5,13 @@
 
 Bereits geliefert (nicht mehr als offen behandeln): Sanitation-Kette, Web-Editor, Offline-Lizenz, Delay/Reverb/IR/Ott, Oversampling-UI 1/2/4/8, CPU-Footer 0–100, ExprTape + Block-`processBlock` + `alignas(64)` + Plugin-LTO + arithmetisches asmjit (Windows x64). macOS VST3/AU compile-ready (Tape, WKWebView, Bundle-Resources). PGO, Call-JIT, LLVM, CLAP/AAX sind weiter offen.
 
+### Cubase WebView host (current)
+
+- [x] **Phase 1 — Host keyboard pass-through** — non-text keys → DAW (`shouldForwardToHost` + `hostKey`); Windows `PostMessage`, Mac VST3/AU `CGEventPost`. See `docs/ARCHITECTURE.md` (Host / Cubase keyboard).
+- [x] **Phase 2 — ASIO Guard** — `processBlock` never `setSize` / alloc; slice if host `n` > prepare ceiling.
+- [x] **Phase 3 — VST3 suspend / wake** — `setNonRealtime` change = `reset()` (OS/sanitation/rings + fade-in).
+- [x] **Phase 4 — Persistent WebView** — processor owns the browser; editor close hides it; reopen is 0 ms.
+
 ---
 
 ## Phase 1 – Stabilität (2–4 Wochen)

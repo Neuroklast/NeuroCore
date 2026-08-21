@@ -6,7 +6,7 @@ import { AssembleView } from "../assemble/AssembleView";
 import { BindCables, BindDragGhost } from "../assemble/BindCables";
 
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
-import { isHostTransportKey, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom } from "../chrome/shortcuts";
+import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { HackView } from "../hack/HackView";
@@ -81,11 +81,27 @@ export function App() {
         void (isUndoKey(e) ? undoCircuit() : redoCircuit());
         return;
       }
-      if (isHostTransportKey(e) && ! undoTargetIsText(e.target)) {
+      const hostCtx = {
+        textTarget: undoTargetIsText(e.target),
+        circuitHasSelection: circuitHasSelection(),
+        overlayOpen: useHostStore.getState().overlay != null,
+      };
+      if (shouldForwardToHost(e, hostCtx)) {
+        // Only swallow keys native can map — otherwise plugin and Cubase both lose them.
+        if (! canForwardHostKey(e))
+          return;
         e.preventDefault();
         e.stopPropagation();
-        if (hasJuceBridge())
-          void getNativeFunction("hostKey")({ key: e.key }).catch(() => undefined);
+        if (hasJuceBridge()) {
+          void getNativeFunction("hostKey")({
+            key: e.key,
+            code: e.code,
+            ctrl: e.ctrlKey,
+            alt: e.altKey,
+            shift: e.shiftKey,
+            meta: e.metaKey,
+          }).catch(() => undefined);
+        }
         return;
       }
       // Issue 2: Ctrl+A inside the DSL code editor (Monaco / any text input) must
@@ -96,7 +112,9 @@ export function App() {
       }
       if (shouldBlockBrowserShortcut(e)) {
         e.preventDefault();
-        e.stopPropagation();
+        // Ctrl/Cmd+A Arrange: block browser select-all but let AssembleView bubble-handle.
+        if (browserShortcutStopsPropagation(e, { textTarget: hostCtx.textTarget }))
+          e.stopPropagation();
       }
     };
     const onWheel = (e: WheelEvent) => {

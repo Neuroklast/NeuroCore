@@ -17,7 +17,7 @@ Wenn Knistern/Crackle auftritt: **Architektur härten**, keine Magic-Number-Work
 | **Audio-Layout** | `alignas(64)` + `DSPUtils::alignedRing` | History und Delay-Ringe cache-line aligned. Innere Sample-Schleife auf `float*` + `NK_RESTRICT`, kein `std::vector` dort. Knob-Lanes in `prepare`. |
 | **Kein Dual-Chain-Audio** | `DspEngine` | Nur `signalChain`; Formula-Wechsel = `switchRamp`, kein old+new Blend. |
 | **DSL Multi-Bus** | `BusGraph` + `SignalChain` | Max. 4 Named Buses + `in`/`main`. Send nur rückwärts (DAG). Mixdown **in** der DSL, eine Engine-Timeline. |
-| **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. |
+| **State-Reset** | `clearRuntimeState` / prepare | ADAA/Delay/Reverb nur bei Formula-Load/prepare, nie pro Block. VST3 sleep/wake (`setNonRealtime` change, JUCE `setProcessing` → `reset`) clears OS/sanitation/rings and fades 256 samples. |
 | **Oversampling** | `juce::dsp::Oversampling` | Studio FIR / Live IIR. FIR skippt Null-Taps (`k += 2`). Kein zweites Half-Band. |
 | **Release-LTO** | CMake IPO on plugin | `INTERPROCEDURAL_OPTIMIZATION_RELEASE` on NeuroKore + Standalone/VST3/AU. Never global `/fp:fast`. |
 
@@ -69,6 +69,8 @@ Alte Chains (JIT-Code, Delay-Ringe) hängen an `retiredChain` und sterben auf de
 
 Studio = JUCE half-band FIR Equiripple, Live = polyphase IIR. Die FIR-Convolution läuft bereits `k += 2` (Null-Taps ausgelassen). Eigenes Skip-Zero-OS entfällt — sonst zwei Owner neben der Sanitation-AA. Idle-Skip gibt **latenz-alignierte Dry**, nicht `memset` Nullen (Host-PDC / Mix=0).
 
+Prepare legt die Decke: Host-Puffer auf `maximumBlockSize`, OS-Bank auf `jmax(maximumBlockSize, 1024)` × 8. `processBlock` ruft kein `setSize` / `new` auf. Wenn der Host `n` > Prepare liefert (Cubase ASIO Guard), wird **vor** `processSamplesUp` in Scheiben `≤ preparedHostMax` geschnitten — dieselbe Wet-Kette, kein zweiter OS. Vertrag: `tests/CrackleFixesTest.h` (prepare 64, process 256 und 1024, `scriptBuffer` wächst nicht).
+
 ### Compiler
 
 Release-LTO (`INTERPROCEDURAL_OPTIMIZATION_RELEASE`) nur auf NeuroKore + Standalone/VST3/AU. Tests bleiben ohne LTCG. **Kein** globales `/fp:fast` (bricht `isfinite`, NaN-Hold, ADAA). PGO nicht im Baum.
@@ -114,12 +116,26 @@ Input
 - Zentraler `juce::AudioProcessor`-Erbe
 - Hält den **APVTS** mit Host-Parametern; DSP liegt in `DspEngine` + `SignalChain`
 - `processBlock()` misst CPU, ruft die Engine, schreibt Telemetrie
-- Editor: **nur** `WebPluginEditor` (`src/ui/WebPluginEditor.*`). Native `PluginEditor` ist nicht der Produkt-Default.
+- Editor: **nur** `WebPluginEditor` (`src/ui/WebPluginEditor.*`), a thin frame. The `WebBrowserComponent` is owned by `WebViewHolder` on this processor so it outlives IPlugView. Native `PluginEditor` ist nicht der Produkt-Default.
 
 ### `WebPluginEditor` (`src/ui/WebPluginEditor.h/.cpp`)
-- WebView-Host (Windows WebView2, macOS WKWebView)
+- Thin frame around the processor-owned WebView (Windows WebView2, macOS WKWebView)
 - Circuit/Terminal/Unit leben in `web/` (React Flow + elkjs)
 - Web-Assets: Windows RCDATA `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`
+
+### WebView lifetime
+- Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
+- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
+- Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`) or owned by a processor-lifetime HWND. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists.
+- Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
+- Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).
+
+### Host / Cubase keyboard
+- **Intercept + forward**, not focus theft. While the plugin WebView is focused, non-text keys still reach the DAW.
+- Capture `keydown` in `web/`; `shouldForwardToHost` keeps text fields, plugin chords (undo / Arrange / Compact / Circuit Delete with selection / overlay / blocked browser chords), and modifier-only keys in the plugin.
+- Native `hostKey` payload is `{ key, code, ctrl, alt, shift, meta }`. C++ maps `{ key, code }` via `bridge::HostKeys` (`hostKeyNameToVk` / `hostKeyNameToCgKeyCode`).
+- **Windows:** `PostMessage` `WM_KEYDOWN`/`WM_KEYUP` to the Cubase HWND from `chooseHostHwnd` (standalone → nullptr, no-op). Do not synthesise `juce::KeyPress` to the top-level component — WebView2 already consumed the OS event.
+- **Mac VST3/AU:** `CGEventPost` with Carbon key codes. **Mac Standalone:** no-op.
 
 ### `Config.h` (`src/core/Config.h`)
 Zentrale Konfigurationskonstanten in anonymen Namespaces:
@@ -212,7 +228,7 @@ Produkt-Editor ist `WebPluginEditor` + `web/`. Die native Tabelle darunter ist A
 
 | Komponente | Beschreibung |
 |---|---|
-| `WebPluginEditor` | WebView-Host. Circuit/Terminal in `web/` |
+| `WebPluginEditor` | Thin editor frame. Browser lives on the processor (`WebViewHolder`). Circuit/Terminal in `web/` |
 | `PluginLookAndFeel` (NeuroKoreLookAndFeel) | Globaler Look & Feel, Farben, Schriften |
 | `DslTerminalEditor` | Code-Editor (Terminal-Edit). IR-Button in Zeilenhöhe. Keine Live-`[value]`-Annotation |
 | `GraphCanvasComponent` | Circuit-Platine: Snap, Zoom, rose Kreuze, Chip-Karten, orthogonale PCB-Kabel |

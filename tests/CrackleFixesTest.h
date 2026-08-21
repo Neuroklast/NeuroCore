@@ -1411,6 +1411,11 @@ public:
             }
             expect (proc.isDspIdle(), "wet OS/DSL must sleep after silence + tail flush");
 
+            juce::AudioBuffer<float> overflow (2, 1024);
+            overflow.clear();
+            proc.processBlock (overflow, midi);
+            expect (proc.isDspIdle(), "silent ASIO Guard overflow must not wake wet OS/DSL");
+
             for (int i = 0; i < 128; ++i)
             {
                 buf.setSample (0, i, 0.4f);
@@ -1418,6 +1423,84 @@ public:
             }
             proc.processBlock (buf, midi);
             expect (! proc.isDspIdle(), "a transient must wake the wet path on the same block");
+            proc.releaseResources();
+        }
+
+        beginTest ("ASIO Guard overflow does not grow scriptBuffer");
+        {
+            // Cubase ASIO Guard may process 256/1024 after prepare(64).
+            // processBlock must slice at the prepared ceiling — no setSize.
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x * 0.5", err), err);
+
+            const int scriptN0 = proc.getScriptBufferNumSamples();
+            const int contN0 = proc.getContinuityBufferNumSamples();
+            expect (scriptN0 > 0);
+            expect (contN0 > 0, "prepare must allocate a continuityBuf ceiling");
+
+            juce::MidiBuffer midi;
+            auto runOverflow = [&] (int n)
+            {
+                juce::AudioBuffer<float> buf (2, n);
+                for (int i = 0; i < n; ++i)
+                {
+                    const float s = 0.4f * std::sin ((float) i * 0.07f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                proc.processBlock (buf, midi);
+                expectEquals (TestHelpers::countNonFinite (buf), 0,
+                              "overflow n=" + juce::String (n) + " produced NaN/Inf");
+                expect (TestHelpers::peakAbs (buf) < 8.f);
+                expectEquals (proc.getScriptBufferNumSamples(), scriptN0,
+                              "scriptBuffer grew on n=" + juce::String (n));
+                expectEquals (proc.getContinuityBufferNumSamples(), contN0,
+                              "continuityBuf grew on n=" + juce::String (n));
+            };
+            runOverflow (256);
+            runOverflow (1024);
+            proc.releaseResources();
+        }
+
+        beginTest ("VST3 suspend/wake reset leaves finite sine; double wake is safe");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = x", err), err);
+
+            juce::MidiBuffer midi;
+            auto runSine = [&] (int blocks)
+            {
+                int bad = 0;
+                for (int b = 0; b < blocks; ++b)
+                {
+                    juce::AudioBuffer<float> buf (2, 64);
+                    for (int i = 0; i < 64; ++i)
+                    {
+                        const float s = 0.4f * std::sin ((float) (b * 64 + i) * 0.07f);
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    proc.processBlock (buf, midi);
+                    bad += TestHelpers::countNonFinite (buf);
+                    expect (TestHelpers::peakAbs (buf) < 8.f);
+                }
+                return bad;
+            };
+
+            expectEquals (runSine (4), 0);
+            proc.reset();
+            expectEquals (runSine (4), 0);
+            proc.reset();
+            expectEquals (runSine (4), 0);
+            proc.setNonRealtime (true);
+            proc.setNonRealtime (false);
+            expectEquals (runSine (4), 0);
             proc.releaseResources();
         }
     }

@@ -113,6 +113,9 @@ public:
     InputGain&      getInputGain()      noexcept { return inputGain; }
     int getSanitationLatency() const noexcept { return sanitation.limiterLatencySamples(); }
 
+    /** Allocated OS working length after prepare. processBlock must not grow this. */
+    int getScriptBufferNumSamples() const noexcept { return scriptBuffer.getNumSamples(); }
+
 private:
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
                                          static_cast<juce::uint32>(Config::kDefaultBlockSize),
@@ -156,6 +159,8 @@ private:
     juce::uint32 lastOsBankCh { 0 };
     bool preparedOnce { false };
     static constexpr int kMaxOsFactor = 8;
+    int preparedHostMax { 0 };
+    int preparedOsN { 0 };
 
     /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
     juce::SmoothedValue<float> switchRamp;
@@ -177,4 +182,6 @@ private:
     std::array<float, Config::kMaxChannels> diagLastOut {};
 
     void publishLoudness (float instantDb, int numSamples) noexcept;
+    void processPreparedBlock (juce::AudioBuffer<float>& buffer,
+                               dsl::SignalChain& signalChain);
 };

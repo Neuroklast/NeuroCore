@@ -12,6 +12,7 @@
 #include <vector>
 #include "PluginProcessor.h"
 #include "../bridge/WebEditorPolicy.h"
+#include "../bridge/WebViewHolder.h"
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
 #include "../ui/WebPluginEditor.h"
 #endif
@@ -176,6 +177,7 @@ NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
     // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
     // destroyed processor → access violation after setValueNotifyingHost / OS changes.
     cancelPendingUpdate();
+    webViewHolder.reset();
 
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.removeParameterListener (EffectParameters::userParams[i], this);
@@ -273,6 +275,16 @@ void NeuroKoreAudioProcessor::reset()
     fadeInRemain = 256;
 }
 
+void NeuroKoreAudioProcessor::setNonRealtime (bool isNonRealtimeProc) noexcept
+{
+    // Cubase ASIO Guard / VST3 setProcessing maps here. Flag change = sleep or
+    // wake: same reset as PluginProcessor::reset (OS, sanitation, rings + fade).
+    const bool changed = isNonRealtimeProc != isNonRealtime();
+    AudioProcessor::setNonRealtime (isNonRealtimeProc);
+    if (changed)
+        reset();
+}
+
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
@@ -307,16 +319,16 @@ void NeuroKoreAudioProcessor::storeContinuity (const juce::AudioBuffer<float>& s
 {
     const int n = src.getNumSamples();
     const int ch = src.getNumChannels();
-    if (n <= 0 || ch <= 0)
+    const int capN = continuityBuf.getNumSamples();
+    const int capCh = continuityBuf.getNumChannels();
+    if (n <= 0 || ch <= 0 || capN <= 0 || capCh <= 0)
         return;
-    if (continuityBuf.getNumChannels() < ch || continuityBuf.getNumSamples() < n)
-        continuityBuf.setSize (juce::jmax (ch, continuityBuf.getNumChannels()),
-                               juce::jmax (n, continuityBuf.getNumSamples()),
-                               false, false, true);
-    for (int c = 0; c < ch; ++c)
-        continuityBuf.copyFrom (c, 0, src, c, 0, n);
-    continuityN = n;
-    continuityCh = ch;
+    const int copyN = juce::jmin (n, capN);
+    const int copyCh = juce::jmin (ch, capCh);
+    for (int c = 0; c < copyCh; ++c)
+        continuityBuf.copyFrom (c, 0, src, c, 0, copyN);
+    continuityN = copyN;
+    continuityCh = copyCh;
     continuityDecay = 1.f;
 }
 
@@ -516,9 +528,17 @@ bool NeuroKoreAudioProcessor::hasEditor() const
     return true;
 }
 
+bridge::WebViewHolder& NeuroKoreAudioProcessor::getWebView()
+{
+    if (webViewHolder == nullptr)
+        webViewHolder = std::make_unique<bridge::WebViewHolder> (*this);
+    return *webViewHolder;
+}
+
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
+    getWebView();
     return createWebEditor (*this);
 #else
     return nullptr;
@@ -1105,6 +1125,12 @@ void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     refreshReportedLatency();
 
     waveformCapture.prepare(channels, Config::kWaveformDisplaySamples);
+    // Same host ceiling as the OS bank — ASIO Guard can exceed samplesPerBlock.
+    const int contN = juce::jmax (blockSize, 1024);
+    if (continuityBuf.getNumChannels() < channels || continuityBuf.getNumSamples() < contN)
+        continuityBuf.setSize (juce::jmax (channels, continuityBuf.getNumChannels()),
+                               juce::jmax (contN, continuityBuf.getNumSamples()),
+                               false, true, true);
 }
 
 void NeuroKoreAudioProcessor::handleAsyncUpdate()
