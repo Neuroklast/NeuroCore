@@ -121,6 +121,13 @@ Input
 - Circuit/Terminal/Unit leben in `web/` (React Flow + elkjs)
 - Web-Assets: Windows RCDATA `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`
 
+### Host / Cubase keyboard
+- **Intercept + forward**, not focus theft. While the plugin WebView is focused, non-text keys still reach the DAW.
+- Capture `keydown` in `web/`; `shouldForwardToHost` keeps text fields, plugin chords (undo / Arrange / Compact / Circuit Delete with selection / overlay / blocked browser chords), and modifier-only keys in the plugin.
+- Native `hostKey` payload is `{ key, code, ctrl, alt, shift, meta }`. C++ maps `{ key, code }` via `bridge::HostKeys` (`hostKeyNameToVk` / `hostKeyNameToCgKeyCode`).
+- **Windows:** `PostMessage` `WM_KEYDOWN`/`WM_KEYUP` to the Cubase HWND from `chooseHostHwnd` (standalone → nullptr, no-op). Do not synthesise `juce::KeyPress` to the top-level component — WebView2 already consumed the OS event.
+- **Mac VST3/AU:** `CGEventPost` with Carbon key codes. **Mac Standalone:** no-op.
+
 ### `Config.h` (`src/core/Config.h`)
 Zentrale Konfigurationskonstanten in anonymen Namespaces:
 

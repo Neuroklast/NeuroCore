@@ -160,6 +160,25 @@ public:
             expect (bridge::isHostTransportName (" "));
             expect (! bridge::isHostTransportName ("Enter"));
 
+            expect (bridge::hostKeyNameToVk ("ArrowDown") != 0, "ArrowDown must map");
+            expect (bridge::hostKeyNameToVk ("ArrowUp", "ArrowUp") != 0);
+            expect (bridge::hostKeyNameToVk ("Enter") != 0, "Enter must map");
+            expect (bridge::hostKeyNameToVk ("a") != 0, "letter must map");
+            expect (bridge::hostKeyNameToVk ("A", "KeyA") != 0);
+            expect (bridge::hostKeyNameToVk ("0", "Numpad0") != 0);
+            expect (bridge::hostKeyNameToVk ("0", "Digit0") != 0);
+            expect (bridge::canForwardHostKey ("ArrowDown"));
+            expect (bridge::canForwardHostKey ("Enter"));
+            expect (bridge::canForwardHostKey ("a"));
+            expect (! bridge::canForwardHostKey ({}));
+            expectEquals (bridge::hostKeyNameToVk ("ArrowDown"), 0x28);
+            expectEquals (bridge::hostKeyNameToVk ("Enter"), 0x0D);
+            expectEquals (bridge::hostKeyNameToVk ("a"), 0x41);
+            expectEquals (bridge::hostKeyNameToVk ("0", "Numpad0"), 0x60);
+            expectEquals (bridge::hostKeyNameToVk ("0", "Digit0"), 0x30);
+            expectEquals (bridge::hostKeyNameToCgKeyCode ("ArrowDown"), 0x7D);
+            expectEquals (bridge::hostKeyNameToCgKeyCode (" "), 0x31);
+
             void* plugin = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x100);
             void* host = reinterpret_cast<void*> ((juce::pointer_sized_int) 0x200);
             expect (bridge::chooseHostHwnd (plugin, host, plugin, host) == host);

@@ -1,7 +1,25 @@
+import { isRedoKey, isUndoKey } from "./undoModel";
+
 const CTRL_KEYS = new Set([
   "a", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
   "+", "-", "=", "0",
 ]);
+
+export type HostKeyEvent = {
+  key: string;
+  code?: string;
+  repeat?: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+};
+
+export type HostKeyContext = {
+  textTarget: boolean;
+  circuitHasSelection?: boolean;
+  overlayOpen?: boolean;
+};
 
 export function shouldBlockBrowserShortcut(e: {
   key: string;
@@ -60,4 +78,50 @@ export function isHostTransportKey(e: {
   if (! e.code && (e.key === "0" || e.key === "1" || e.key === "/"))
     return true;
   return false;
+}
+
+const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta", "AltGraph"]);
+
+/** Ctrl/Cmd+A Arrange, Shift+A Compact, undo, blocked browser chords, Circuit delete, overlay modal. */
+export function isPluginOwnedKey(e: HostKeyEvent, ctx: HostKeyContext): boolean {
+  if (ctx.overlayOpen)
+    return true;
+  if (isUndoKey(e) || isRedoKey(e))
+    return true;
+  if (shouldBlockBrowserShortcut(e))
+    return true;
+  if (! e.ctrlKey && ! e.metaKey && ! e.altKey && e.shiftKey && e.key.toLowerCase() === "a")
+    return true;
+  if ((e.key === "Delete" || e.key === "Backspace") && ctx.circuitHasSelection)
+    return true;
+  return false;
+}
+
+/**
+ * Cubase must receive keys while the plugin window is focused, except when
+ * the user is typing or using a plugin chord. Forward everything else.
+ */
+export function shouldForwardToHost(e: HostKeyEvent, ctx: HostKeyContext): boolean {
+  if (ctx.textTarget)
+    return false;
+  if (isPluginOwnedKey(e, ctx))
+    return false;
+  if (MODIFIER_KEYS.has(e.key))
+    return false;
+  if (isHostTransportKey(e))
+    return true;
+  const space = e.key === " " || e.key === "Spacebar" || e.code === "Space";
+  if (space)
+    return false;
+  return true;
+}
+
+/** React Flow marks selected chips/edges with `.selected` inside `.nk-circuit`. */
+export function circuitHasSelection(root: ParentNode | null = typeof document !== "undefined" ? document : null): boolean {
+  if (root == null)
+    return false;
+  const pane = root.querySelector(".nk-circuit");
+  if (pane == null)
+    return false;
+  return pane.querySelector(".selected") != null;
 }

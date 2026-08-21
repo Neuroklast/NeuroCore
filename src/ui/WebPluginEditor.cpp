@@ -19,28 +19,22 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#elif JUCE_MAC
+#include <CoreGraphics/CoreGraphics.h>
 #endif
 
 namespace
 {
 #if JUCE_WINDOWS
-/** Map a JS KeyboardEvent.key value to a Windows virtual-key code, or 0 if unknown. */
-static WORD keyNameToVK (const juce::String& keyName) noexcept
-{
-    if (keyName.equalsIgnoreCase ("Space") || keyName == " ")  return VK_SPACE;
-    if (keyName == "0")  return VK_NUMPAD0;
-    if (keyName == "1")  return VK_NUMPAD1;
-    if (keyName == "/")  return VK_DIVIDE;
-    return 0;
-}
-
 bool postKeyToHost (void* hostNative, WORD vk)
 {
     auto* hwnd = static_cast<HWND> (hostNative);
     if (hwnd == nullptr || ! IsWindow (hwnd) || vk == 0)
         return false;
     const auto sc = MapVirtualKeyW (vk, MAPVK_VK_TO_VSC);
-    const LPARAM down = 1 | (static_cast<LPARAM> (sc) << 16);
+    LPARAM down = 1 | (static_cast<LPARAM> (sc) << 16);
+    if (bridge::isExtendedVk ((int) vk))
+        down |= (1L << 24);
     const LPARAM up = down | (1L << 30) | (1L << 31);
     if (PostMessageW (hwnd, WM_KEYDOWN, vk, down) == 0)
         return false;
@@ -48,9 +42,11 @@ bool postKeyToHost (void* hostNative, WORD vk)
     return true;
 }
 
-bool forwardKeyToHost (juce::Component& editor, const juce::String& keyName)
+bool forwardKeyToHost (juce::Component& editor,
+                       const juce::String& keyName,
+                       const juce::String& code)
 {
-    const WORD vk = keyNameToVK (keyName);
+    const auto vk = (WORD) bridge::hostKeyNameToVk (keyName, code);
     if (vk == 0)
         return false;
     auto* peer = editor.getPeer();
@@ -67,10 +63,41 @@ bool forwardKeyToHost (juce::Component& editor, const juce::String& keyName)
         return false;
     return postKeyToHost (dest, vk);
 }
-#else
-bool forwardKeyToHost (juce::Component& editor, const juce::String& keyName)
+#elif JUCE_MAC
+bool forwardKeyToHost (juce::Component& editor,
+                       const juce::String& keyName,
+                       const juce::String& code)
 {
-    juce::ignoreUnused (editor, keyName);
+    juce::ignoreUnused (editor);
+   #if JucePlugin_Build_Standalone
+    juce::ignoreUnused (keyName, code);
+    return false;
+   #else
+    const int cg = bridge::hostKeyNameToCgKeyCode (keyName, code);
+    if (cg == 0xFFFF)
+        return false;
+    const auto kc = static_cast<CGKeyCode> (cg);
+    CGEventRef down = CGEventCreateKeyboardEvent (nullptr, kc, true);
+    CGEventRef up   = CGEventCreateKeyboardEvent (nullptr, kc, false);
+    if (down == nullptr || up == nullptr)
+    {
+        if (down != nullptr) CFRelease (down);
+        if (up != nullptr) CFRelease (up);
+        return false;
+    }
+    CGEventPost (kCGSessionEventTap, down);
+    CGEventPost (kCGSessionEventTap, up);
+    CFRelease (down);
+    CFRelease (up);
+    return true;
+   #endif
+}
+#else
+bool forwardKeyToHost (juce::Component& editor,
+                       const juce::String& keyName,
+                       const juce::String& code)
+{
+    juce::ignoreUnused (editor, keyName, code);
     return false;
 }
 #endif
@@ -382,12 +409,18 @@ juce::WebBrowserComponent::Options WebPluginEditor::makeOptions()
                         [this] (const juce::Array<juce::var>& args, auto complete)
                         {
                             juce::String key = "Space";
+                            juce::String code;
                             if (args.size() > 0 && args[0].isObject())
-                                key = args[0].getProperty ("key", "Space").toString();
+                            {
+                                key  = args[0].getProperty ("key", "Space").toString();
+                                code = args[0].getProperty ("code", "").toString();
+                            }
                             else if (args.size() > 0)
+                            {
                                 key = args[0].toString();
-                            if (bridge::isHostTransportName (key))
-                                forwardKeyToHost (*this, key);
+                            }
+                            if (bridge::canForwardHostKey (key, code))
+                                forwardKeyToHost (*this, key, code);
                             complete (juce::var (true));
                         })
                     .withNativeFunction ("applyLayout",
