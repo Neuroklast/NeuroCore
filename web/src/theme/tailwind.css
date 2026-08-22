@@ -587,9 +587,9 @@ body,
 
 .nk-face-mark {
   display: block;
-  max-height: 168px;
+  max-height: var(--nk-face-mark-h, 168px);
   width: auto;
-  max-width: 780px;
+  max-width: 1170px;
 }
 
 .nk-face-ghost,
@@ -715,8 +715,8 @@ body,
     rgba(0, 0, 0, 0.28) 3px
   );
   opacity: 0.45;
-  -webkit-mask-image: url("/img/neurokore.png");
-  mask-image: url("/img/neurokore.png");
+  -webkit-mask-image: var(--nk-face-mark);
+  mask-image: var(--nk-face-mark);
   -webkit-mask-size: contain;
   mask-size: contain;
   -webkit-mask-repeat: no-repeat;
@@ -872,8 +872,8 @@ body,
   color: var(--nk-cyan);
   opacity: 0.7;
   mix-blend-mode: screen;
-  -webkit-mask-image: url("/img/neurokore.png");
-  mask-image: url("/img/neurokore.png");
+  -webkit-mask-image: var(--nk-face-mark);
+  mask-image: var(--nk-face-mark);
   -webkit-mask-size: contain;
   mask-size: contain;
   -webkit-mask-repeat: no-repeat;
