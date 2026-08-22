@@ -72,6 +72,13 @@ export interface HostState {
   mods: Record<string, number>;
   /** Post-chip peak, keyed by node id (`stage1`, `IN`, `OUT`). */
   clips: Record<string, number>;
+  /** Isolated left/right post-chip peaks. Fallback is `clips` when the host omits them. */
+  clipsL: Record<string, number>;
+  clipsR: Record<string, number>;
+  /** Block RMS, same keys. Fallback is the matching peak when the host omits it. */
+  clipsRms: Record<string, number>;
+  clipsRmsL: Record<string, number>;
+  clipsRmsR: Record<string, number>;
   theme: ThemeId;
   knobGestures: Record<string, true>;
   knobMeta: Record<string, Partial<KnobState>>;
@@ -94,6 +101,63 @@ export interface HostState {
   setOs: (index: number) => void;
   setPolisher: (index: number) => void;
   setInput: (index: number) => void;
+}
+
+function aliasIoPeak(next: Record<string, number>, id: string, peak: number): void {
+  next[id] = peak;
+  if (id === "__out__") {
+    next.OUT = peak;
+  }
+  if (id === "OUT") {
+    next.__out__ = peak;
+  }
+  if (id === "__in__") {
+    next.IN = peak;
+  }
+  if (id === "IN") {
+    next.__in__ = peak;
+  }
+}
+
+function finiteOr(raw: unknown, fallback: number): number {
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
+  peak: Record<string, number>;
+  peakL: Record<string, number>;
+  peakR: Record<string, number>;
+  rms: Record<string, number>;
+  rmsL: Record<string, number>;
+  rmsR: Record<string, number>;
+} {
+  const peak: Record<string, number> = {};
+  const peakL: Record<string, number> = {};
+  const peakR: Record<string, number> = {};
+  const rms: Record<string, number> = {};
+  const rmsL: Record<string, number> = {};
+  const rmsR: Record<string, number> = {};
+  for (const raw of rows) {
+    const id = String(raw.id ?? "");
+    if (! id) {
+      continue;
+    }
+    const p = Number(raw.peak ?? 0);
+    const l = raw.peakL != null && Number.isFinite(Number(raw.peakL)) ? Number(raw.peakL) : p;
+    const r = raw.peakR != null && Number.isFinite(Number(raw.peakR)) ? Number(raw.peakR) : p;
+    const hasRms = raw.rms != null || raw.rmsL != null || raw.rmsR != null;
+    const e = hasRms ? finiteOr(raw.rms, Math.max(l, r)) : p;
+    const eL = hasRms ? finiteOr(raw.rmsL, e) : l;
+    const eR = hasRms ? finiteOr(raw.rmsR, e) : r;
+    aliasIoPeak(peak, id, p);
+    aliasIoPeak(peakL, id, l);
+    aliasIoPeak(peakR, id, r);
+    aliasIoPeak(rms, id, e);
+    aliasIoPeak(rmsL, id, eL);
+    aliasIoPeak(rmsR, id, eR);
+  }
+  return { peak, peakL, peakR, rms, rmsL, rmsR };
 }
 
 export function osFactorFromIndex(index: number): number {
@@ -219,6 +283,11 @@ export const useHostStore = create<HostState>((set) => ({
   sidechainOn: false,
   mods: {},
   clips: {},
+  clipsL: {},
+  clipsR: {},
+  clipsRms: {},
+  clipsRmsL: {},
+  clipsRmsR: {},
   theme: (() => {
     try {
       if (typeof localStorage === "undefined" || typeof localStorage.getItem !== "function") {
@@ -249,6 +318,9 @@ export const useHostStore = create<HostState>((set) => ({
       frameRate: s.frameRate,
       discardPrompt: s.discardPrompt,
     });
+    const parsedClips = Array.isArray(p.clips)
+      ? parseClipPeaks(p.clips as Array<Record<string, unknown>>)
+      : null;
     return {
     cpu: Number(p.cpu ?? 0),
     mode: String(p.mode ?? "STUDIO"),
@@ -274,32 +346,12 @@ export const useHostStore = create<HostState>((set) => ({
         ] as [string, number]).filter(([id]) => id.length > 0),
       )
       : s.mods,
-    clips: Array.isArray(p.clips)
-      ? (() => {
-        const next: Record<string, number> = {};
-        for (const raw of p.clips as Array<Record<string, unknown>>) {
-          const id = String(raw.id ?? "");
-          if (! id) {
-            continue;
-          }
-          const peak = Number(raw.peak ?? 0);
-          next[id] = peak;
-          if (id === "__out__") {
-            next.OUT = peak;
-          }
-          if (id === "OUT") {
-            next.__out__ = peak;
-          }
-          if (id === "__in__") {
-            next.IN = peak;
-          }
-          if (id === "IN") {
-            next.__in__ = peak;
-          }
-        }
-        return next;
-      })()
-      : s.clips,
+    clips: parsedClips ? parsedClips.peak : s.clips,
+    clipsL: parsedClips ? parsedClips.peakL : s.clipsL,
+    clipsR: parsedClips ? parsedClips.peakR : s.clipsR,
+    clipsRms: parsedClips ? parsedClips.rms : s.clipsRms,
+    clipsRmsL: parsedClips ? parsedClips.rmsL : s.clipsRmsL,
+    clipsRmsR: parsedClips ? parsedClips.rmsR : s.clipsRmsR,
   };
   }),
   applyPresets: (p) => set((s) => {

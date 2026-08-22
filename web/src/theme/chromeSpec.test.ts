@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHIP_PAD_X, CHIP_PAD_Y } from "../assemble/chipMetrics";
-import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, frameCorners, framePoints, greebleCode, satLampOn, segmentFill, shellBezelCss } from "./chromeSpec";
+import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, frameCorners, framePoints, greebleCode, headbandEndPad, satLampOn, segmentFill, shellBezelCss } from "./chromeSpec";
 
 describe("cyberpunk chrome spec", () => {
   it("cuts two opposite corners at 45 degrees, never rounds", () => {
@@ -24,6 +24,12 @@ describe("cyberpunk chrome spec", () => {
     expect(chipExpandOffset().size).toBeGreaterThanOrEqual(26);
     expect(chipExpandOffset().top).toBe(CHIP_PAD_Y);
     expect(chipExpandOffset().right).toBe(CHIP_PAD_X);
+  });
+
+  it("reserves the expand plate at the end of the title band so the lamp is not under the chevron", () => {
+    expect(headbandEndPad(false)).toBe(0);
+    expect(headbandEndPad(true)).toBe(DETAIL_HIT);
+    expect(headbandEndPad(true)).toBe(chipExpandOffset().size);
   });
 
   it("draws the cut frame in board space and maps live values to bars", () => {

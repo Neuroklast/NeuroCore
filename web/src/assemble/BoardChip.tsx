@@ -1,11 +1,19 @@
 import type { CSSProperties } from "react";
-import { chipExpandOffset, DETAIL_HIT, frameCorners, framePoints } from "../theme/chromeSpec";
+import { CHIP_CUT, chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../theme/chromeSpec";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
 import { BindDropPad, BindRail } from "./BindRail";
 import { chipExpandAction } from "./boardEdit";
-import { bindRailVisible, closedChipChrome } from "./chipFace";
-import { bindFace, chipChromeVars, ioBodyInset, TITLE_H } from "./chipLayout";
+import {
+  bindRailVisible,
+  chipFootLine,
+  chipFootPeak,
+  clipWarnMark,
+  closedChipChrome,
+  overloadLabel,
+  portBracket,
+} from "./chipFace";
+import { bindFace, chipChromeVars, ioBodyInset } from "./chipLayout";
 import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
@@ -32,6 +40,8 @@ export function BoardChip({
   const isSoloed = useChipViewStore((s) => s.isSoloed(node.id));
   const isAudible = useChipViewStore((s) => s.isAudible(node.id));
   const peak = useHostStore((s) => s.clips[node.id] ?? 0);
+  const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
+  const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
@@ -60,7 +70,10 @@ export function BoardChip({
         height: node.h,
         opacity: isAudible ? 1 : 0.4,
         overflow: "visible",
-        ...(chipChromeVars() as CSSProperties),
+        ...({
+          ...chipChromeVars(node.role),
+          "--nk-chip-cut": `${CHIP_CUT}px`,
+        } as CSSProperties),
         ...(ioInset
           ? {
             "--nk-label-col": `${ioInset.left}px`,
@@ -70,6 +83,27 @@ export function BoardChip({
       }}
     >
       <div className="nk-chip-fill" style={bindOpen ? { opacity: 0.25 } : undefined} />
+      {node.role === "chip" ? <div className="nk-chip-pads" aria-hidden /> : null}
+      <div
+        className="nk-chip-headband"
+        style={{
+          visibility: bindOpen ? "hidden" : "visible",
+          ...({ "--nk-head-end": `${headbandEndPad(showExpand)}px` } as CSSProperties),
+        }}
+      >
+        {node.role === "chip" ? (
+          chrome.lamp === "clip" ? (
+            <span className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`} aria-hidden />
+          ) : chrome.lamp === "env" ? (
+            <span className="nk-env-lamp" aria-hidden />
+          ) : (
+            <span className="nk-lfo-lamp nk-lfo-sine" aria-hidden />
+          )
+        ) : null}
+        <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
+          {title}
+        </span>
+      </div>
       <svg className="nk-chip-frame" width={node.w} height={node.h} viewBox={`0 0 ${node.w} ${node.h}`} aria-hidden>
         <polygon
           points={framePoints(node.w, node.h)}
@@ -82,32 +116,19 @@ export function BoardChip({
         ))}
       </svg>
       <div className="nk-chip-body" style={{ pointerEvents: "none", visibility: bindOpen ? "hidden" : "visible" }}>
-        <div className="flex w-full items-center justify-between gap-2" style={{ height: TITLE_H }}>
-          <span
-            className="nk-chip-title min-w-0 flex-1 truncate text-ink"
-            style={showExpand ? { paddingRight: DETAIL_HIT } : undefined}
-          >
-            {title}
-          </span>
-          {node.role === "chip" ? (
-            chrome.lamp === "clip" ? (
-              <span className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`} aria-hidden />
-            ) : chrome.lamp === "env" ? (
-              <span className="nk-env-lamp" aria-hidden />
-            ) : (
-              <span className="nk-lfo-lamp nk-lfo-sine" aria-hidden />
-            )
-          ) : null}
-        </div>
         {node.role === "chip" ? (
           <span className="nk-chip-typecode">{face.code}</span>
         ) : null}
         {canMs ? (
-          <div className="mt-1 flex items-center gap-1" style={{ pointerEvents: "auto" }}>
+          <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
             <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
             <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
           </div>
         ) : null}
+      </div>
+      <div className="nk-chip-foot" title={chipFootLine(node.id, peak)} style={{ visibility: bindOpen ? "hidden" : "visible" }}>
+        <span>{node.id}</span>
+        <span>{chipFootPeak(peak)}</span>
       </div>
       {showExpand && ! bindOpen ? (
         <button
@@ -146,7 +167,7 @@ export function BoardChip({
             type="button"
             className={`nk-port ${p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
             data-port-id={p.id}
-            data-tip={p.jackId}
+            data-tip={portBracket(p.jackId)}
             style={{
               top: loc.y,
               width: BOARD_HIT,
@@ -154,13 +175,58 @@ export function BoardChip({
             }}
           >
             <i className="nk-port-contact" />
+            <span className="nk-port-cap">{portBracket(p.jackId)}</span>
           </button>
+        );
+      })}
+      {ports.map((p) => {
+        if (! p.east || p.kind !== "audio") {
+          return null;
+        }
+        const loc = portLocal(node, p);
+        const j = p.jackId.toLowerCase();
+        const jackPeak = j === "mid" || j === "left" || j === "l"
+          ? peakL
+          : j === "side" || j === "right" || j === "r"
+            ? peakR
+            : peak;
+        const hot = overloadLabel(jackPeak);
+        if (! hot) {
+          return null;
+        }
+        return (
+          <span
+            key={`warn-${p.id}`}
+            className="nk-overload"
+            aria-hidden
+            style={{ top: p.count > 1 ? loc.y : "50%" }}
+          >
+            <ClipWarnSvg />
+            <em>{hot}</em>
+          </span>
         );
       })}
       {bindOpen ? (
         <BindDropPad nodeId={node.id} keys={binds} args={node.args} w={node.w} h={node.h} local={bindLocal} />
       ) : null}
     </div>
+  );
+}
+
+function ClipWarnSvg() {
+  const mark = clipWarnMark();
+  return (
+    <svg viewBox={mark.viewBox} aria-hidden>
+      <polygon
+        points={mark.triangle}
+        fill={mark.fill}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="miter"
+      />
+      <path d={mark.stem} fill={mark.fill} stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+      <circle cx={mark.dot.cx} cy={mark.dot.cy} r={mark.dot.r} fill="currentColor" />
+    </svg>
   );
 }
 

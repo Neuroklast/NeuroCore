@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { hasJuceBridge } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
-import { useHostStore } from "../store/hostStore";
+import { parseClipPeaks, useHostStore } from "../store/hostStore";
+import { subscribeVizClock } from "../theme/vizClock";
 import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
 import { useBindStore } from "../store/telemetryStore";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
@@ -9,12 +11,13 @@ import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, insertCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
 import { cameraMatrix, fitCamera, worldFromScreen } from "./boardCamera";
-import { commitBoardConnect, commitBoardCut, layoutBoard } from "./boardCommit";
+import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, hitBoardEdge } from "./boardEdit";
 import { graphToLayout, portGlobal, type BoardPort } from "./boardModel";
 import { useBoardStore } from "./boardStore";
 import { CableCanvas } from "./CableCanvas";
+import { demoClipRows } from "./demoClips";
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
@@ -64,6 +67,38 @@ export function BoardView() {
       useChipViewStore.getState().collapseAll();
     }
   }, [ast, origin, sidechainOn]);
+
+  useEffect(() => {
+    if (hasJuceBridge()) {
+      return;
+    }
+    return subscribeVizClock((now) => {
+      const list = Object.values(useBoardStore.getState().nodes)
+        .sort((a, b) => a.x - b.x || a.y - b.y)
+        .map((n) => n.id);
+      const parsed = parseClipPeaks(demoClipRows(list, now / 1000));
+      const hold = (window as unknown as { __nkClipHold?: Record<string, number> }).__nkClipHold;
+      if (hold) {
+        for (const [id, p] of Object.entries(hold)) {
+          parsed.peak[id] = p;
+          parsed.peakL[id] = p;
+          parsed.peakR[id] = p;
+          const e = Math.min(1, p) * Math.SQRT1_2;
+          parsed.rms[id] = e;
+          parsed.rmsL[id] = e;
+          parsed.rmsR[id] = e;
+        }
+      }
+      useHostStore.setState({
+        clips: parsed.peak,
+        clipsL: parsed.peakL,
+        clipsR: parsed.peakR,
+        clipsRms: parsed.rms,
+        clipsRmsL: parsed.rmsL,
+        clipsRmsR: parsed.rmsR,
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const place = placeRef.current;
@@ -272,6 +307,9 @@ export function BoardView() {
     connectDragRef.current = null;
     paneRef.current?.querySelectorAll(".nk-port-hot").forEach((el) => el.classList.remove("nk-port-hot"));
     panRef.current = null;
+    if (dragRef.current) {
+      rerouteBoard();
+    }
     dragRef.current = null;
   }, []);
 

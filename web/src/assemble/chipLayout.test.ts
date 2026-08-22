@@ -3,8 +3,12 @@ import type { AstJack } from "../bridge/ast";
 import {
   BIND_JACK_MIN,
   CHIP_PAD_X,
+  CHIP_PAD_Y,
   CONTENT_MIN,
   LABEL_COL,
+  SOUTH_JACK_GAP,
+  TITLE_H,
+  TYPECODE_H,
   bindFace,
   bindJackCaption,
   bindCaptionMaxPx,
@@ -12,6 +16,7 @@ import {
   chipBodyHeight,
   chipBodyInset,
   ioBodyInset,
+  chipPadInset,
   chipBox,
   chipOverlayStackPx,
   contentWidth,
@@ -31,6 +36,18 @@ import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./
 import { handleId } from "./handles";
 
 const audio = (id: string, output: boolean): AstJack => ({ id, label: id, output, kind: "audio" });
+
+describe("chip pad field", () => {
+  it("parks the dot array under typecode/M-S and above the south rail", () => {
+    const dsp = chipPadInset("chip");
+    const io = chipPadInset("io");
+    expect(dsp.top).toBeGreaterThan(dsp.left);
+    expect(dsp.bottom).toBe(SOUTH_JACK_GAP + TYPECODE_H);
+    expect(dsp.left).toBe(LABEL_COL);
+    expect(io.top).toBeLessThan(dsp.top);
+    expect(io.left).toBe(CHIP_PAD_X);
+  });
+});
 
 describe("chip face, labels, copy", () => {
   it("snaps the tube to the node face so a gap cannot exist", () => {
@@ -69,8 +86,8 @@ describe("chip face, labels, copy", () => {
     const y1 = jackTopPx(1, 2, io.h, "in");
     expect(y0).toBeLessThan(snapToCellCenter(io.h * 0.5));
     expect(y1).toBeGreaterThan(snapToCellCenter(io.h * 0.5));
-    expect(y0).toBeGreaterThan(0);
-    expect(y1).toBeLessThan(io.h);
+    expect(y0).toBeGreaterThanOrEqual(TITLE_H);
+    expect(y1).toBeLessThanOrEqual(io.h - CHIP_PAD_Y);
     const gutter = chipBodyInset();
     expect(gutter.left).toBe(LABEL_COL);
     expect(gutter.right).toBe(LABEL_COL);

@@ -36,13 +36,16 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Chips do not overlap | `nodeRectsClash` after tidy |
 | ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column |
 | Dest stub is 32 px east, never a U-turn | Any audio path point with `x > dest jack x`, or a west-then-east jog at the IN jack |
-| IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or a **single** side jack (OUT in, DSP in/out) not on that chip’s vertical midline. IN `out`/`sc` pitch around the same midline |
+| IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or a **single** side jack (OUT in, DSP in/out) not on that chip’s vertical midline. IN `out`/`sc` sit in the **body band** (below `TITLE_H`, above the foot), one-cell pitch around that midline — never in the hazard title or on the footer |
 | Chip paint ⊂ AABB | Handle centres, titles, captions, lamps, or a face widget sit outside `chipBox`. Closed IN/OUT have no range/select. Text ellipsizes in the label column. Closed DSP: no TRG/barcode/grip/fake jacks |
 | IN sources east only | Any target handle on IN (including React Flow’s default left handle). `sc` is an east **output** (host sidechain). OUT targets west only; gain is overlay-only |
 | Camera fits the chain | After preset/Arrange the pane still shows the previous graph, or `<ReactFlow minZoom>` ≠ `fitView` minZoom |
 | Overlay vs south rail | Open detail still paints south bind captions under the overlay |
-| Audio plasma is a white core with red glow | Stream stroke not `#ffffff`, or glow not the scope-out red; dashoffset must run source → dest (never positive) |
-| Cable beads follow that chip | Dots/dashes move at a speed from the **source** chip peak. ≤ −60 dBFS or silence = still. Louder = faster |
+| Stereo bus is L cyan + R accent, packets `[2, 5]`, ±4 px | One A* then `parallelOffset`. Split mid/side is not L/R. Stored route has no curves. Dashoffset source → dest |
+| Port labels are `[ MID ]` / `[ SIDE ]` | Caption is `mid` or a fake UUID / `REV.45-B` |
+| Chip foot is `node.id` + live dB | Invented UGID, barcode, TRG, or grip greeble |
+| Cable beads follow that chip | **RMS** of the source lane sets packet **gap** (still `[2,10]` → hot `[2,2]`) and **dashoffset** speed. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** is the 3-pass chroma glitch. ≤ −60 dBFS RMS = still. Do not drive glow from RMS or density from peak |
+| Clip lamp and hazard are uncovered chrome | Peak LED sits **left of the title** with `CHIP_PAD_X` gap, not under the chevron. Hazard stripes clip on a `::before` layer; the band itself is `overflow: visible`. Clip warn is an outlined Δ + bang at the east jack (`left: 100%`), size `TITLE_H` |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
 | Param cables follow the board router | Bind path through a chip, no 32 px stubs, lightning, or dest jack above the knob with an empty path |
 

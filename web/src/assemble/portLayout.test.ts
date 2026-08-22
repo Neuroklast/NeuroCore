@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dspFaceSize, ioFaceSize } from "./chipMetrics";
+import { CHIP_PAD_Y, dspFaceSize, ioFaceSize, JACK_PITCH, TITLE_H } from "./chipMetrics";
 import { BOARD_GRID, BOARD_HALF, BOARD_TRACE, snapToCellCenter } from "./grid";
 import { chipBox, jackAnchor, jackTopPx } from "./chipLayout";
 import { handleId } from "./handles";
@@ -27,8 +27,9 @@ describe("side port pack", () => {
       }
     }
     const inn = sidePortLocals(2, io, true);
-    expect(inn[0]!.y).toBeGreaterThanOrEqual(BOARD_HALF);
-    expect(inn[1]!.y).toBeLessThanOrEqual(io.h - BOARD_HALF);
+    expect(inn[0]!.y).toBeGreaterThanOrEqual(TITLE_H);
+    expect(inn[1]!.y).toBeLessThanOrEqual(io.h - CHIP_PAD_Y);
+    expect(inn[1]!.y - inn[0]!.y).toBe(JACK_PITCH);
     expect(inn[0]!.y).toBeGreaterThanOrEqual(BOARD_TRACE / 2);
     expect(inn[1]!.y + BOARD_TRACE / 2).toBeLessThanOrEqual(io.h);
   });

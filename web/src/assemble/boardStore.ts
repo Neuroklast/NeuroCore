@@ -56,9 +56,16 @@ export const useBoardStore = create<BoardState>((set) => ({
     if (! n || n.locked) {
       return s;
     }
+    const edges = { ...s.edges };
+    for (const [eid, e] of Object.entries(edges)) {
+      if (e.sourceNodeId === id || e.targetNodeId === id) {
+        edges[eid] = { ...e, route: [] };
+      }
+    }
     return {
       userMoved: true,
       nodes: { ...s.nodes, [id]: { ...n, x: snapToGrid(x), y: snapToGrid(y) } },
+      edges,
     };
   }),
   applyLayout: (placed, routes) => set((s) => ({

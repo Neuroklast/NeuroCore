@@ -1003,6 +1003,10 @@ private:
         std::array<char, 48> id {};
         std::array<float, kNodeTapSamples> wave {};
         std::atomic<float> peak { 0.f };
+        std::atomic<float> peakL { 0.f };
+        std::atomic<float> peakR { 0.f };
+        std::atomic<float> rmsL { 0.f };
+        std::atomic<float> rmsR { 0.f };
         std::atomic<uint32_t> gen { 0 };
     };
     std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
@@ -1020,6 +1024,7 @@ public:
 
     /** Peak after each chip. UI thread. `id` is the tap name (`stage1`, `__out__`). */
     bool copyTapPeak (const juce::String& id, float& dest) const noexcept;
+    bool copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept;
     void appendClipPeaks (juce::Array<juce::var>& dest) const;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */

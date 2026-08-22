@@ -31,8 +31,19 @@ export const PLUG_LABEL_INSET = BOARD_TRACE;
 export const JACK_PITCH = BOARD_GRID;
 export const FORK_PITCH = BOARD_GRID * 2;
 
-export function sideJackPitch(count: number): number {
-  return count >= 2 ? FORK_PITCH : JACK_PITCH;
+/** Body band: below the title, above the foot. Side jacks live here. */
+export function sideJackBand(boxH: number): { top: number; innerH: number; mid: number } {
+  const top = TITLE_H;
+  const innerH = Math.max(0, boxH - TITLE_H - CHIP_PAD_Y);
+  return { top, innerH, mid: snapToCellCenter(top + innerH * 0.5) };
+}
+
+/** Fork pitch when it fits the body band; otherwise one cell so IN out/sc stay off the title and foot. */
+export function sideJackPitch(count: number, innerH = Number.POSITIVE_INFINITY): number {
+  if (count < 2) {
+    return JACK_PITCH;
+  }
+  return (count - 1) * FORK_PITCH <= innerH ? FORK_PITCH : JACK_PITCH;
 }
 
 export function longestValuePx(enums: Record<string, string[]>): number {
@@ -91,15 +102,39 @@ export function ioBodyInset(): { top: number; right: number; bottom: number; lef
   };
 }
 
-export function chipChromeVars(): Record<string, string> {
+/** Empty plate under typecode/M-S and above the south rail — the pad array lives here. */
+export function chipPadInset(role: "io" | "chip"): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  if (role === "io") {
+    return { top: TITLE_H, right: CHIP_PAD_X, bottom: CHIP_PAD_Y, left: CHIP_PAD_X };
+  }
+  return {
+    top: TITLE_H + TYPECODE_H + RULE_H + MS_ROW,
+    right: LABEL_COL,
+    bottom: SOUTH_JACK_GAP + TYPECODE_H,
+    left: LABEL_COL,
+  };
+}
+
+export function chipChromeVars(role: "io" | "chip" = "chip"): Record<string, string> {
+  const pad = chipPadInset(role);
   return {
     "--nk-label-col": `${LABEL_COL}px`,
     "--nk-chip-pad-x": `${CHIP_PAD_X}px`,
     "--nk-chip-pad-y": `${CHIP_PAD_Y}px`,
     "--nk-title-h": `${TITLE_H}px`,
+    "--nk-char-px": `${CHAR_PX}px`,
     "--nk-socket-h": `${SOCKET_H}px`,
     "--nk-sock-gap": `${SOCK_GAP}px`,
     "--nk-south-gap": `${SOUTH_JACK_GAP}px`,
+    "--nk-pad-top": `${pad.top}px`,
+    "--nk-pad-right": `${pad.right}px`,
+    "--nk-pad-bottom": `${pad.bottom}px`,
+    "--nk-pad-left": `${pad.left}px`,
     "--nk-plug-label-inset": `${PLUG_LABEL_INSET}px`,
     "--nk-overlay-max": `${OVERLAY_MAX_H}px`,
   };

@@ -1,21 +1,21 @@
-import { BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
+import { CHIP_PAD_Y, JACK_PITCH, sideJackBand, sideJackPitch, TITLE_H } from "./chipMetrics";
+import { BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
 
 /** Centre of a jack, relative to the node top-left. Never a global. */
 export type PortLocal = { x: number; y: number };
-
-const PITCH = BOARD_GRID * 2;
 
 export function sidePortMinHeight(count: number): number {
   const n = Math.max(1, count);
   if (n <= 1) {
     return BOARD_HALF * 2;
   }
-  return BOARD_HALF * 2 + (n - 1) * PITCH;
+  return TITLE_H + CHIP_PAD_Y + (n - 1) * JACK_PITCH;
 }
 
 /**
  * 1..N jacks on the west (x=0) or east (x=w) face.
- * Centres only. Equal pitch. Inside the box. Cell midlines.
+ * One jack: chip midline. Two+: equal pitch around the body-band midline
+ * (below the title, above the foot) so IN out/sc are not in the hazard or footer.
  */
 export function sidePortLocals(
   count: number,
@@ -27,12 +27,15 @@ export function sidePortLocals(
     return [];
   }
   const x = east ? box.w : 0;
-  const pitch = n >= 2 ? PITCH : 0;
-  const mid = snapToCellCenter(box.h * 0.5);
-  return Array.from({ length: n }, (_, i) => {
-    const y = snapToCellCenter(mid + (i - (n - 1) / 2) * pitch);
-    return { x, y };
-  });
+  if (n === 1) {
+    return [{ x, y: snapToCellCenter(box.h * 0.5) }];
+  }
+  const band = sideJackBand(box.h);
+  const pitch = sideJackPitch(n, band.innerH);
+  return Array.from({ length: n }, (_, i) => ({
+    x,
+    y: band.mid + (i - (n - 1) / 2) * pitch,
+  }));
 }
 
 export function globalPort(

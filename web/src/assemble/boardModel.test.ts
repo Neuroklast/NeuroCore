@@ -62,4 +62,27 @@ describe("headless board model", () => {
     expect(ranks.IN).toBe(0);
     expect(ranks.stage1).toBeGreaterThanOrEqual(1);
   });
+
+  it("gives an MS split two east ports and no combined out", () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [{
+        id: "ms1",
+        type: "ms",
+        busName: "main",
+        args: { mode: "encode" },
+        trailingComment: "",
+        x: 240,
+        y: 32,
+        jacks: [],
+      }],
+      edges: [{ from: "IN", to: "ms1", kind: "audio", fromJack: "out", toJack: "in" }],
+    };
+    const g = hydrateBoard(ast);
+    const east = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && p.east);
+    const west = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && ! p.east);
+    expect(east.map((p) => p.jackId).sort()).toEqual(["mid", "side"]);
+    expect(west.map((p) => p.jackId)).toEqual(["in"]);
+    expect(east.some((p) => p.jackId === "out")).toBe(false);
+  });
 });
