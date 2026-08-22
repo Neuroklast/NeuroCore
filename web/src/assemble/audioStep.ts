@@ -1,4 +1,4 @@
-import { Position } from "@xyflow/react";
+import { Position } from "./flowTypes";
 import { BOARD_GRID, BOARD_HALF, BOARD_PAD, BOARD_RAIL, snapToCellCenter } from "./grid";
 import { inflate, midHits, segmentAngle, type Obstacle } from "./tubePath";
 

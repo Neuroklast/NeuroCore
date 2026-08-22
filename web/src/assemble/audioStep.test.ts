@@ -1,4 +1,4 @@
-import { Position } from "@xyflow/react";
+import { Position } from "./flowTypes";
 import { describe, expect, it } from "vitest";
 import {
   audioStepPath,

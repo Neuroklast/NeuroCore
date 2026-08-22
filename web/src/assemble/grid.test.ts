@@ -12,7 +12,7 @@ import {
   snapSize,
   snapToGrid,
 } from "./grid";
-import { dragLinePath } from "./ConnectionLine";
+import { dragLinePath } from "./boardPath";
 import { TUBE } from "./tubeModel";
 import { cableAccent, cableFace, isValidLink } from "./validateLink";
 

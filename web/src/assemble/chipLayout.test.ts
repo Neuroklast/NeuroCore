@@ -3,16 +3,15 @@ import type { AstJack } from "../bridge/ast";
 import {
   BIND_JACK_MIN,
   CHIP_PAD_X,
-  CHIP_PAD_Y,
   CONTENT_MIN,
   LABEL_COL,
-  TITLE_H,
   bindFace,
   bindJackCaption,
   bindCaptionMaxPx,
   bindJackXs,
   chipBodyHeight,
   chipBodyInset,
+  ioBodyInset,
   chipBox,
   chipOverlayStackPx,
   contentWidth,
@@ -23,9 +22,11 @@ import {
   jackTopPx,
   longestValuePx,
   snapJackFace,
-  titleJackY,
+
 } from "./chipLayout";
 import { chipSpec, overlayParamKeys } from "./chipSpec";
+import { CHAR_PX } from "./chipMetrics";
+import { DETAIL_HIT } from "../theme/chromeSpec";
 import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
 
@@ -57,13 +58,19 @@ describe("chip face, labels, copy", () => {
     expect(eq.w).toBeGreaterThanOrEqual(CHIP_PAD_X * 2 + longestValuePx(chipSpec("eq").enums));
   });
 
-  it("keeps IN/OUT in the title band so they never sit on typecode", () => {
-    const tall = chipBox("filter", [audio("in", false), audio("out", true)], true, chipSpec("filter").defaultArgs);
-    const y = jackTopPx(0, 1, tall.h, "filter");
-    expect(y).toBe(titleJackY());
-    expect(y).toBeGreaterThanOrEqual(CHIP_PAD_Y + TITLE_H);
-    expect(jackTopPx(0, 1, 400, "filter")).toBe(jackTopPx(0, 1, 200, "filter"));
-    expect(jackTopPx(0, 1, ioFaceSize().h, "in")).toBe(snapToCellCenter(ioFaceSize().h * 0.5));
+  it("puts a single side jack on the React Flow side midline", () => {
+    const dsp = dspFaceSize();
+    const io = ioFaceSize();
+    expect(jackTopPx(0, 1, dsp.h, "filter")).toBe(snapToCellCenter(dsp.h * 0.5));
+    expect(jackTopPx(0, 1, io.h, "out")).toBe(snapToCellCenter(io.h * 0.5));
+    expect(jackTopPx(0, 1, io.h, "in")).toBe(snapToCellCenter(io.h * 0.5));
+    expect(jackTopPx(0, 1, 400, "filter")).toBe(snapToCellCenter(400 * 0.5));
+    const y0 = jackTopPx(0, 2, io.h, "in");
+    const y1 = jackTopPx(1, 2, io.h, "in");
+    expect(y0).toBeLessThan(snapToCellCenter(io.h * 0.5));
+    expect(y1).toBeGreaterThan(snapToCellCenter(io.h * 0.5));
+    expect(y0).toBeGreaterThan(0);
+    expect(y1).toBeLessThan(io.h);
     const gutter = chipBodyInset();
     expect(gutter.left).toBe(LABEL_COL);
     expect(gutter.right).toBe(LABEL_COL);
@@ -155,6 +162,14 @@ describe("chip face, labels, copy", () => {
     expect(onCellCenter(cut.x) && onGrid(cut.y), `${cut.x},${cut.y}`).toBe(true);
     expect(inn.x).toBe(pos.x);
     expect(out.x).toBe(pos.x + box.w);
+  });
+
+  it("gives IN/OUT a title column that fits OUT plus the expand hit", () => {
+    const inset = ioBodyInset();
+    expect(inset.left).toBeLessThan(LABEL_COL);
+    expect(inset.right).toBeLessThan(LABEL_COL);
+    const col = ioFaceSize().w - inset.left - inset.right;
+    expect(col).toBeGreaterThanOrEqual("OUT".length * CHAR_PX + DETAIL_HIT);
   });
 
   it("parks IN and OUT as compact utility tiles outside the DSP face", () => {

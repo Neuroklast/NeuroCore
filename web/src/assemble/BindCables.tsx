@@ -31,15 +31,23 @@ export function BindDragGhost() {
   const letter = useBindStore((s) => s.letter);
   const x = useBindStore((s) => s.x);
   const y = useBindStore((s) => s.y);
+  useEffect(() => {
+    if (! letter) {
+      return;
+    }
+    const prev = document.body.style.cursor;
+    document.body.style.cursor = "none";
+    return () => {
+      document.body.style.cursor = prev;
+    };
+  }, [letter]);
   if (! letter) {
     return null;
   }
   return (
-    <div
-      className="nk-bind-ghost pointer-events-none fixed z-50 flex h-7 w-7 items-center justify-center rounded-sm border border-cyan bg-black text-[12px] text-cyan"
-      style={{ left: x + 10, top: y + 10 }}
-    >
-      {letter.toUpperCase()}
+    <div className="nk-bind-ghost pointer-events-none" style={{ left: x, top: y }}>
+      <i className="nk-bind-cross" aria-hidden />
+      <span className="nk-bind-ghost-letter">{letter.toUpperCase()}</span>
     </div>
   );
 }

@@ -37,6 +37,7 @@ describe("paint stays inside the chip box", () => {
     const { nodes } = flowFromAst(emptyAst());
     const inn = nodes.find((n) => n.id === "IN");
     expect(inn).toBeTruthy();
+    expect(inn!.targetPosition).toBeUndefined();
     const jacks = inn!.data.jacks;
     expect(jacks.map((j) => j.id)).toEqual(["out", "sc"]);
     expect(jacks.every((j) => j.output === true)).toBe(true);

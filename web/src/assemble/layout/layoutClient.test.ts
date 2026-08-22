@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from "vitest";
 import { requestLayout, setLayoutWorkerFactory, setLayoutWorkerTimeoutMs } from "./layoutClient";
-import type { Node, Edge } from "@xyflow/react";
+import type { Node, Edge } from "../flowTypes";
 import type { ChipData } from "../flowFromAst";
 
 afterEach(() => {

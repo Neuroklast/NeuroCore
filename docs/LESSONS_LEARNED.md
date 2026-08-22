@@ -20,7 +20,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 ## Circuit
 
-- React Flow owns the canvas chrome: `Background` (Dots / Lines / Cross, `gap`, stack two), `snapToGrid` + `snapGrid`, `Handle` + `Position`, `nodesDraggable`, `onConnect`, `BaseEdge`, `getStraightPath` for audio drag/temp, `getSmoothStepPath` for knob-bind preview. We own only PCB constraints RF does not have **after drop**: east/west stubs, obstacle boxes, parallel rail pitch, equal air to chips. A second drag model, `BoardGrid` SVG, a second router next to `tubePath`, and a drag-preview that PCB-routes while the product rule says “drag = free line” are the failure mode.
+- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`.
 - ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps into 1–3 rows (PCB, not a meter-long sausage) with 32 px air so every tube is at least one grid long. A* writes the stored SVG `d`. React Flow only paints `data.route` (`StaticGridEdge`).
 - HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.
@@ -35,6 +35,14 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Split/join is one fork: 1-in/2-out or 2-in/1-out. Family is MS (`mid`/`side`) or LR (`left`/`right`). `encode`=`split`, `decode`=`join`. Never patch MS rails to L/R rails.
 - A Bus chip is `bus <name>:` and following audio sits on that rail. Join Signal (`inA`/`inB`/`out`, mix default 0.5) is the mixer. Emit that as `joinN: mix = …`, never also as `out: main=…; dirt=…` for the same mix.
 - User chip xy is owned by the board until Arrange or a new graph. A host echo is not a second owner.
+- Closed DSP plate is identity + one lamp. No TRG/barcode/grip/fake jacks. Expand overlay hides the south bind rail.
+- Compact wrap: `finishHalo` makes the cell around a chip solid. CHIP_AIR_Y (one cell) is not a cable. Row gap is WRAP_AIR = pad + rail + pad. Wrap edges ride `wrapRailRoute` on that rail, never A* around the hull.
+- Circuit selection is `data-selected="on"` on `.nk-board-chip`. Delete/Backspace is plugin-owned only while that is set. Do not look for React Flow `.selected`.
+- Circuit is not a text document: `user-select: none` on `.nk-board`, except input/textarea. Knob bind is chrome jack → south `data-bind-key`, not a graph cable.
+- Chevron inspects. Knob-drag over a DSP chip fills that chip with `bindPadCells` (inside the AABB). Ghost crosshair sits on the cursor (hot = 0,0); the letter is a label above it. The pad under the cursor glows.
+- IO tiles do not use the DSP label-column gutter. That gutter is 44 px each side and clips "OUT" to "O._".
+- Side jacks are local centres (`sidePortLocals`). Global = node origin + local. Paint (RF Handle `top` = centre + translate -50%) and A* read the same vector. Never derive a port from the DOM. Equal pitch, inside the AABB.
+- `fitView` waits until the pane has a box (Circuit is `hidden` on Unit, not unmounted) and the laid-out node ids are on the board. React Flow `minZoom` and `fitView` minZoom are the same constant. Do not invent a second zoom floor to hide a missed fit.
 
 ## Chrome / knobs
 

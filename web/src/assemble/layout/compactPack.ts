@@ -1,7 +1,9 @@
-import { BOARD_GRID, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
+import { BOARD_GRID, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
 export const COMPACT_GAP = CHIP_AIR_X;
+/** Halo + rail + halo. finishHalo solidifies one cell around each chip, so CHIP_AIR_Y is not a cable. */
+export const WRAP_AIR = BOARD_PAD + BOARD_GRID + BOARD_PAD;
 export type BoardView = { w: number; h: number };
 
 export function serialIds(
@@ -116,18 +118,42 @@ export function separateChips(
   return out;
 }
 
+/** How many modules fit in one L→R row before wrapping. At least 1. */
+export function wrapFits(
+  widths: readonly number[],
+  viewW: number,
+  gapX: number,
+  pad: number,
+): number {
+  if (widths.length === 0) {
+    return 1;
+  }
+  let x = pad;
+  let n = 0;
+  for (const w of widths) {
+    const start = n === 0 ? pad : x + gapX;
+    if (n > 0 && start + w + pad > viewW) {
+      break;
+    }
+    x = start + w;
+    n += 1;
+  }
+  return Math.max(1, n);
+}
+
 export function packRows(
   nodes: LayoutNode[],
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
   const gapX = CHIP_AIR_X;
-  const gapY = CHIP_AIR_Y;
-  const pad = gapY;
+  const gapY = WRAP_AIR;
+  const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
   const order = serialIds(nodes, edges, start);
-  const colsN = Math.max(1, Math.ceil(order.length / compactRowTarget(order.length)));
+  const widths = order.map((id) => snapSize(byId.get(id)?.w ?? BOARD_GRID));
+  const colsN = wrapFits(widths, view.w, gapX, pad);
   const slots: Array<{ id: string; row: number; col: number; w: number; h: number }> = [];
   for (let i = 0; i < order.length; i += 1) {
     const n = byId.get(order[i]!);
@@ -160,7 +186,6 @@ export function packRows(
     rowY[r] = snapToGrid(y);
     y += (rowH[r] ?? 0) + gapY;
   }
-  void view;
   const jackLocal = (id: string): number => {
     const n = byId.get(id);
     return n?.outs[0]?.y ?? n?.ins[0]?.y ?? BOARD_GRID + BOARD_GRID * 0.5;

@@ -1,4 +1,4 @@
-import { Position, type Edge, type Node } from "@xyflow/react";
+import { Position, type Edge, type Node } from "./flowTypes";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";

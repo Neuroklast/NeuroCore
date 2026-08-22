@@ -1,4 +1,4 @@
-import type { Edge, Node } from "@xyflow/react";
+import type { Edge, Node } from "./flowTypes";
 import { BOARD_PAD } from "./grid";
 import type { ChipData } from "./flowFromAst";
 import { requestLayout } from "./layout/layoutClient";

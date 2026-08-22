@@ -120,11 +120,20 @@ export function scriptAfterInsertAfter(script: string, afterId: string, type: st
   const line = `${id}: ${body}`;
   const lines = script.replace(/\s+$/u, "").split("\n");
   const at = lines.findIndex((l) => new RegExp(`^\\s*${afterId}\\s*:`, "i").test(l));
-  if (at < 0) {
-    return parkNodeInScript(insertBeforeMixer(script, line), id);
+  if (at >= 0) {
+    lines.splice(at + 1, 0, line);
+    return `${lines.join("\n")}\n`;
   }
-  lines.splice(at + 1, 0, line);
-  return `${lines.join("\n")}\n`;
+  if (afterId.toLowerCase() === "in") {
+    const first = lines.findIndex((l) => (
+      /^\s*[a-z][a-z0-9]*\s*:/i.test(l)
+      && ! /^\s*(in|out|param|bus)\s*:/i.test(l)
+    ));
+    const idx = first < 0 ? lines.length : first;
+    lines.splice(idx, 0, line);
+    return `${lines.join("\n")}\n`;
+  }
+  return parkNodeInScript(insertBeforeMixer(script, line), id);
 }
 
 export function scriptAfterRemove(script: string, id: string): string {
@@ -244,19 +253,26 @@ export async function redoCircuit(): Promise<boolean> {
   return true;
 }
 
+function newBlockId(scriptBefore: string, scriptAfter: string): string | null {
+  const beforeIds = new Set([...scriptBefore.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!.toLowerCase()));
+  const afterIds = [...scriptAfter.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
+  return afterIds.find((id) => ! beforeIds.has(id.toLowerCase())) ?? null;
+}
+
 export function addCircuitBlock(type: string, args?: string): string | null {
   const cur = useAstStore.getState();
   const scriptBefore = cur.lastValidScript || cur.script;
   const scriptAfter = scriptAfterAdd(scriptBefore, type, args);
-  
   publishScript(scriptAfter, "canvas");
-  
-  // Extract the new block ID by diffing the scripts
-  const beforeIds = new Set([...scriptBefore.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!.toLowerCase()));
-  const afterIds = [...scriptAfter.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
-  const newId = afterIds.find((id) => ! beforeIds.has(id.toLowerCase()));
-  
-  return newId ?? null;
+  return newBlockId(scriptBefore, scriptAfter);
+}
+
+export function insertCircuitBlockAfter(afterId: string, type: string, args?: string): string | null {
+  const cur = useAstStore.getState();
+  const scriptBefore = cur.lastValidScript || cur.script;
+  const scriptAfter = scriptAfterInsertAfter(scriptBefore, afterId, type, args);
+  publishScript(scriptAfter, "canvas");
+  return newBlockId(scriptBefore, scriptAfter);
 }
 
 export function insertCircuitBlockBetween(type: string, sourceId: string, targetId: string, args?: string): void {

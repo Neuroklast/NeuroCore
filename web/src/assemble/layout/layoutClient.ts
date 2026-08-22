@@ -1,4 +1,4 @@
-import type { Edge, Node } from "@xyflow/react";
+import type { Edge, Node } from "../flowTypes";
 import type { ChipData } from "../flowFromAst";
 import { flowToLayout } from "./fromFlow";
 import { runLayout } from "./runLayout";

@@ -1,4 +1,4 @@
-import { Position, type Edge, type Node } from "@xyflow/react";
+import { Position, type Edge, type Node } from "./flowTypes";
 import { audioStepPath, verticalRails, type Obstacle, type Pt } from "./audioStep";
 import { chipBox, jackAnchor } from "./chipLayout";
 import type { ChipData } from "./flowFromAst";

@@ -32,6 +32,13 @@ describe("circuit add/remove", () => {
     expect(next).not.toContain("bus __park:");
   });
 
+  it("inserts after IN at the head of the chain, not on the park bus", () => {
+    const next = scriptAfterInsertAfter("stage1: y = x\nout: main = 1\n", "IN", "filter");
+    expect(next).not.toContain("bus __park:");
+    expect(next.indexOf("filter1:")).toBeLessThan(next.indexOf("stage1:"));
+    expect(next.indexOf("filter1:")).toBeLessThan(next.indexOf("out:"));
+  });
+
   it("groups Add items by category and inserts a custom formula block", () => {
     expect([...ADD_CATEGORIES]).toEqual(expect.arrayContaining(["Dynamics", "Tone", "Custom"]));
     expect(blocksInCategory("Custom").map((b) => b.type)).toEqual(["custom"]);

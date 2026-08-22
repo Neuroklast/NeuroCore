@@ -34,5 +34,5 @@ Do **not** read `docs/archive/` or the old session log unless you are hunting a 
 3. Do not claim done unless a **contract test** failed first and now passes. Screenshots are the spec for UI.
 4. Never allocate or copy `juce::String` on the audio thread.
 5. Footer CPU is 0–100. Never print host-callback ratio as 173 %.
-6. **Drag and connect are React Flow.** Chip move = `nodesDraggable` + `snapToGrid`. Audio jack connect = `onConnect` + `Handle` + `getStraightPath` while dragging. Knob bind lives outside the graph (chrome knobs) — preview is RF `getSmoothStepPath` via `bindSmoothPath`, not a second A*. If RF already does it, use it.
+6. **Circuit is a headless graph.** `boardStore` holds nodes/ports/edges (ports are local centres). Chips are DOM; cables are one canvas. Camera is one matrix. Drag coordinates live in refs until pointerup. Connect is magnetic hitboxes, not React Flow Handles. After drop, Manhattan A* + 45° chamfer. DSL emit on commit only. Knob bind stays chrome, not graph cables.
 7. User-facing change updates `docs/manual/NEUROKORE.md` (and `resources/UserManual_en.txt`) in the same change.

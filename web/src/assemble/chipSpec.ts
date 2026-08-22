@@ -328,10 +328,11 @@ add({
   typeCodePrefix: "EV",
   audioIns: ["in"],
   audioOuts: ["mod"],
-  paramJacks: ["type", "attack", "release", "hold", "min", "max", "invert"],
+  paramJacks: ["type", "attack", "release", "hold", "min", "max", "invert", "source"],
   enums: {
     type: ["peak", "rms"],
     invert: ["off", "on"],
+    source: ["in", "sidechain"],
   },
   ranges: {
     attack: { min: 0.001, max: 1, unit: "s" },
@@ -348,6 +349,7 @@ add({
     min: "0",
     max: "1",
     invert: "off",
+    source: "in",
   },
   blurb: "Envelope follower. Audio in, mod out. Attack/hold/release, then map to min..max.",
 });

@@ -81,6 +81,16 @@ export function chipBodyInset(): { top: number; right: number; bottom: number; l
   };
 }
 
+/** Utility IN/OUT: pad only. DSP label-column gutters clip "OUT". */
+export function ioBodyInset(): { top: number; right: number; bottom: number; left: number } {
+  return {
+    top: CHIP_PAD_Y,
+    right: CHIP_PAD_X,
+    bottom: CHIP_PAD_Y,
+    left: CHIP_PAD_X,
+  };
+}
+
 export function chipChromeVars(): Record<string, string> {
   return {
     "--nk-label-col": `${LABEL_COL}px`,

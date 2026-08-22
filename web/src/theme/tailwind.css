@@ -208,6 +208,72 @@ body,
   background: linear-gradient(180deg, #16161e 0%, #0c0c10 42%, #07070a 100%);
 }
 
+.nk-board {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.nk-board input,
+.nk-board textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.nk-board-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  z-index: 1;
+}
+.nk-board-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.nk-port {
+  position: absolute;
+  z-index: 5;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  cursor: crosshair;
+}
+.nk-port-east { left: 100%; }
+.nk-port-west { left: 0; }
+.nk-port-contact {
+  display: block;
+  width: 4px;
+  height: 14px;
+  margin: 5px auto;
+  background: var(--nk-accent);
+  box-shadow: 0 0 8px var(--nk-accent);
+}
+.nk-port-mod .nk-port-contact {
+  background: var(--nk-cyan);
+  box-shadow: 0 0 8px var(--nk-cyan);
+}
+.nk-port-sc .nk-port-contact {
+  background: #e8c44a;
+  box-shadow: 0 0 8px #e8c44a;
+}
+.nk-port:hover .nk-port-contact,
+.nk-port:focus .nk-port-contact,
+.nk-port-hot .nk-port-contact {
+  box-shadow: 0 0 14px currentColor;
+  filter: brightness(1.4);
+}
+
+.nk-board-chip[data-focus="soft"] {
+  opacity: 0.28;
+  filter: blur(0.35px);
+}
+.nk-board-chip[data-focus="sharp"] {
+  opacity: 1;
+  filter: none;
+}
+
 .nk-chip-frame {
   position: absolute;
   inset: 0;
@@ -368,20 +434,11 @@ body,
   border: 1px solid var(--nk-accent);
   background: transparent;
   box-shadow: none;
+  margin: 0 !important;
 }
 
 .react-flow__handle.nk-plug:not(.nk-plug-face) {
-  margin-top: 0;
-}
-
-.react-flow__handle.nk-plug-in {
-  left: 0 !important;
-  margin-left: calc(var(--nk-trace, 16px) / -2);
-}
-.react-flow__handle.nk-plug-out {
-  right: 0 !important;
-  left: auto !important;
-  margin-right: calc(var(--nk-trace, 16px) / -2);
+  margin: 0 !important;
 }
 
 .react-flow__handle.nk-plug.connected,
@@ -1144,6 +1201,20 @@ body,
   box-shadow: 0 0 8px var(--nk-error);
 }
 
+.nk-env-lamp {
+  display: inline-block;
+  width: 9px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--nk-cyan);
+  background: linear-gradient(
+    to top,
+    var(--nk-cyan) calc(var(--nk-env, 0) * 100%),
+    transparent calc(var(--nk-env, 0) * 100%)
+  );
+  opacity: 0.85;
+}
+
 .nk-lfo-lamp.is-off {
   animation: none;
   opacity: 0.2;
@@ -1558,9 +1629,18 @@ body,
   white-space: nowrap;
 }
 
-.react-flow__node-io > .react-flow__handle:not(.nk-plug),
-.react-flow__node-chip > .react-flow__handle:not(.nk-plug) {
+.react-flow__node-io .react-flow__handle:not(.nk-plug),
+.react-flow__node-chip .react-flow__handle:not(.nk-plug),
+.nk-chip-io[data-io="in"] .react-flow__handle.target,
+.nk-chip-io[data-io="in"] .react-flow__handle-left {
   display: none !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
 }
 
 .nk-greeble {
@@ -2047,6 +2127,124 @@ body,
 .nk-bind-rail[data-bind-face="top"] .nk-bind-jack-cap {
   bottom: auto;
   top: calc(100% + 4px);
+}
+
+.nk-bind-pad {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: auto;
+  isolation: isolate;
+  background: #050508;
+}
+.nk-bind-cell {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  margin: 0;
+  border: 2px solid var(--nk-cyan);
+  background: #14141c;
+  color: var(--nk-cyan);
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.nk-bind-cell.is-wired {
+  background: #101820;
+}
+.nk-bind-cell.is-hot {
+  background: #1a2a32;
+  color: #fff;
+  box-shadow:
+    0 0 16px rgb(var(--nk-cyan-rgb) / 0.85),
+    inset 0 0 14px rgb(var(--nk-cyan-rgb) / 0.35);
+}
+.nk-bind-well {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--nk-cyan);
+  background: #000;
+  box-shadow: inset 0 0 6px rgb(var(--nk-cyan-rgb) / 0.5);
+  pointer-events: none;
+}
+.nk-bind-cell.is-hot .nk-bind-well {
+  background: var(--nk-cyan);
+  box-shadow: 0 0 10px var(--nk-cyan);
+}
+.nk-bind-cell-key {
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  text-align: center;
+  pointer-events: none;
+}
+.nk-bind-cell-letter {
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--nk-cyan);
+  pointer-events: none;
+}
+.nk-bind-cell .nk-bind-end {
+  inset: auto;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.nk-bind-ghost {
+  position: fixed;
+  z-index: 50;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.nk-bind-cross {
+  position: absolute;
+  inset: 0;
+}
+.nk-bind-cross::before,
+.nk-bind-cross::after {
+  content: "";
+  position: absolute;
+  background: var(--nk-cyan);
+  box-shadow: 0 0 6px var(--nk-cyan);
+}
+.nk-bind-cross::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+.nk-bind-cross::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+.nk-bind-ghost-letter {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -4px);
+  padding: 1px 5px;
+  border: 1px solid var(--nk-cyan);
+  background: #000;
+  color: var(--nk-cyan);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
 }
 
 .nk-sock {
