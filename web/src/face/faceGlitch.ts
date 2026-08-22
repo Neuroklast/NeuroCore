@@ -2,6 +2,14 @@ import type { MotionPref } from "../theme/motionPolicy";
 
 export type FaceGlitchKind = "idle" | "slice" | "flash" | "noise";
 
+export const UNIT_MARK_DEFAULT = "./img/neurokore.png";
+export const UNIT_MARK_DIGICIDE = "./img/digicide.png";
+
+/** DIGICIDE theme uses the Digicide mask. Every other theme keeps the Neurokore mark. */
+export function unitMarkSrc(themeId: string): string {
+  return themeId === "digicide" ? UNIT_MARK_DIGICIDE : UNIT_MARK_DEFAULT;
+}
+
 export type LogoMotion = {
   glow: number;
   chromaPx: number;

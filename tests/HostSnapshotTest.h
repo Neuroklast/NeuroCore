@@ -83,6 +83,9 @@ public:
             NeuroKoreAudioProcessor proc;
             const auto host = bridge::hostVar (proc);
             expectEquals (host.getProperty ("theme", "").toString(), juce::String ("gold"));
+            UiSettings::get().setThemeId ("digicide");
+            const auto hostDigi = bridge::hostVar (proc);
+            expectEquals (hostDigi.getProperty ("theme", "").toString(), juce::String ("digicide"));
             expectEquals ((int) host.getProperty ("frameRate", 0), 30);
             expectEquals ((int) host.getProperty ("discardPrompt", true), 0);
             expectEquals (host.getProperty ("cables", "").toString(), juce::String ("dots"));

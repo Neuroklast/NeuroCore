@@ -14,6 +14,7 @@ import {
   logoOverlayMask,
   pickFaceGlitch,
   scheduleFaceGlitch,
+  unitMarkSrc,
   type FaceGlitchKind,
 } from "./faceGlitch";
 import {
@@ -37,10 +38,10 @@ import {
   transientHit,
 } from "./faceModel";
 
-const MARK = "./img/neurokore.png";
-
 export function FaceView() {
   const knobs = useHostStore((s) => s.knobs);
+  const theme = useHostStore((s) => s.theme);
+  const mark = unitMarkSrc(theme);
   const motion = useHostStore((s) => s.motion);
   const cpu = useHostStore((s) => s.cpu);
   const buf = useHostStore((s) => s.buf);
@@ -173,22 +174,22 @@ export function FaceView() {
               ))}
             </span>
             <img
-              src={MARK}
-              alt="NEUROKORE"
+              src={mark}
+              alt={theme === "digicide" ? "DIGICIDE" : "NEUROKORE"}
               className="nk-face-mark"
               style={{ filter: bloomFilter(drive.glow, bloom) }}
             />
             {jit || rgb.redX > 0 || rgb.cyanY > 0 || drive.chromaPx > 0 ? (
               <>
-                <img src={MARK} alt="" className="nk-face-ghost nk-face-ghost-r" />
-                <img src={MARK} alt="" className="nk-face-ghost nk-face-ghost-c" />
+                <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-r" />
+                <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-c" />
               </>
             ) : null}
-            <span className="nk-face-pulse" style={logoOverlayMask(MARK)} aria-hidden />
+            <span className="nk-face-pulse" style={logoOverlayMask(mark)} aria-hidden />
             {jit ? (
               <>
-                <span className="nk-face-bars" style={logoOverlayMask(MARK)} aria-hidden />
-                <span className="nk-face-static" style={logoOverlayMask(MARK)} aria-hidden />
+                <span className="nk-face-bars" style={logoOverlayMask(mark)} aria-hidden />
+                <span className="nk-face-static" style={logoOverlayMask(mark)} aria-hidden />
               </>
             ) : null}
           </span>

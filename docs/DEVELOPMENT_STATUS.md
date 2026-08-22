@@ -1,7 +1,7 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-22 (boot splash uses the same NK mark as the header)  
-**Version:** 0.6.0-beta  
+**Stand:** 2026-08-22 (DIGICIDE theme + Unit mask; send presets: IN→bus→send)  
+**Version:** 0.6.1-beta  
 **Branch:** `fix/0.5.1-bugfixing`
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
@@ -89,4 +89,4 @@ Windows: `build_release.bat` / `build_debug.bat` — same `build/` tree and `Neu
 
 `NeuroKore_All` / VST3 / Standalone **always** run `npm run build` first (`NeuroKoreWeb` is a hard dependency). Missing `npm` fails configure. `web/dist` is packed into the binary (Windows RCDATA id `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`). Testers need only the `.vst3` / `.exe` / `.component`. A sibling `web/` folder is optional (dev). `NEUROKORE_WEB_DISK=0` ignores disk and serves the embed (local tester-mode). Quoted RC names do not FindResource — integer ID only. `factory_presets.json` is a configure depend of BinaryData.
 
-Gate 2026-08-22: **0.6.0-beta**. Sanitation-Kette nach DSL. DSP-Runtime: Tape → optional asmjit (Win x64 Arithmetik) → `processBlock`-Dispatch → 64-align Ringe → Plugin-LTO. macOS: VST3+AU, Tape, WKWebView. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.6.0-beta.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE-0.6.0-beta.vst3` (Mac: plus `.component`).
+Gate 2026-08-22: **0.6.1-beta**. DIGICIDE theme (steel/teal) plus send-bus Circuit fix. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.6.1-beta.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE-0.6.1-beta.vst3` (Mac: plus `.component`).

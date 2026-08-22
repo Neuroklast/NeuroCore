@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.0-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.1-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 This file is the operator guide. The same text is what Help shows inside the plugin.
 
@@ -17,7 +17,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.0-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.1-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
@@ -53,7 +53,7 @@ Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
 - Functions — look up formula words and insert them.
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme, frame rate, unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine and are kept after you close the DAW. Resize the window by dragging the frame.
+- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate, unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
@@ -89,15 +89,15 @@ The board is the same sound as Unit and Terminal.
 Cables
 - Drag a chip by its body. Audio jacks are the squares on the sides. Drag from an output (right) to an input (left).
 - The line follows your pointer until you drop. After you drop, the board draws a clean path.
-- Dots or dashes on a cable show that block’s output: they stand still with no signal or below −60 dB, and run faster as that chip gets louder.
+- Dots or dashes on a cable show that block’s output: they stand still with no signal or below −60 dB, and run faster as that chip gets louder. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
 - Right-click empty board to add a block. Right-click a cable to insert a block on that run. Right-click a chip for Details / Mute / Solo / Delete.
 
 IN and OUT
 - **IN** is locked on the left. Two outputs on the right: **out** is the track, **sc** is the host sidechain. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
-- **OUT** is the mix back to the host. Expand it (chevron or right-click Details) for **gain** (−24 to +12 dB). Gain is not a slider on the closed tile.
+- **OUT** is the mix back to the host. Named buses (a Send row) land on their own west mix jacks — `main`, then each bus — not a leftover `in`. Expand it (chevron or right-click Details) for **gain** (−24 to +12 dB). Gain is not a slider on the closed tile.
 
 Arrange and Compact
-- Right-click the board → Arrange (spread) or Compact (tighten). Loading a preset also lays the board out. A small “Arranging…” tag can appear; the window stays usable.
+- Right-click the board → Arrange (spread) or Compact (tighten). Loading a preset also lays the board out. A small “Arranging…” tag can appear; the window stays usable. Compact keeps a Send bus on its own row under the main chain and parks OUT at the right. It does not snake the mix around the board.
 
 Expand a chip for hidden parameters. The chip size does not jump.
 

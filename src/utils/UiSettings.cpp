@@ -17,7 +17,7 @@ namespace
 
     juce::String clampTheme (const juce::String& id)
     {
-        if (id == "gold" || id == "azure")
+        if (id == "gold" || id == "azure" || id == "digicide")
             return id;
         return "signal";
     }

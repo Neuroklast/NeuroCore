@@ -10,9 +10,9 @@ import {
 } from "./theme";
 
 describe("theme engine", () => {
-  it("ships signal as default red/cyan/black/white and two more looks", () => {
+  it("ships signal as default red/cyan/black/white plus gold, azure, and DIGICIDE", () => {
     expect(DEFAULT_THEME).toBe("signal");
-    expect(themeIds()).toEqual(["signal", "gold", "azure"]);
+    expect(themeIds()).toEqual(["signal", "gold", "azure", "digicide"]);
     const signal = themeOf("signal");
     expect(signal.accent).toBe("#ff003c");
     expect(signal.cyan).toBe("#00f0ff");
@@ -28,7 +28,14 @@ describe("theme engine", () => {
     expect(azure.accent).toBe("#2f6bff");
     expect(azure.cyan).toBe("#00f0ff");
     expect(azure.accent).not.toBe(azure.cyan);
+    const digicide = themeOf("digicide");
+    expect(digicide.label).toBe("DIGICIDE");
+    expect(digicide.accent).toBe("#6399A6");
+    expect(digicide.cyan).toBe("#AFCACF");
+    expect(digicide.background).toBe("#0D0D0D");
+    expect(digicide.accent).not.toBe(signal.accent);
     expect(isThemeId("gold")).toBe(true);
+    expect(isThemeId("digicide")).toBe(true);
     expect(isThemeId("pink")).toBe(false);
     expect(themeOf("nope").id).toBe("signal");
   });

@@ -7,6 +7,9 @@ import {
   logoOverlayMask,
   pickFaceGlitch,
   scheduleFaceGlitch,
+  unitMarkSrc,
+  UNIT_MARK_DEFAULT,
+  UNIT_MARK_DIGICIDE,
 } from "./faceGlitch";
 
 describe("unit logo glitch", () => {
@@ -35,6 +38,16 @@ describe("unit logo glitch", () => {
     const mask = logoOverlayMask("./img/neurokore.png");
     expect(mask.maskImage).toContain("neurokore.png");
     expect(mask.maskSize).toBe("contain");
+  });
+
+  it("uses the Digicide mask only on the DIGICIDE theme", () => {
+    expect(unitMarkSrc("digicide")).toBe(UNIT_MARK_DIGICIDE);
+    expect(unitMarkSrc("signal")).toBe(UNIT_MARK_DEFAULT);
+    expect(unitMarkSrc("gold")).toBe(UNIT_MARK_DEFAULT);
+    expect(unitMarkSrc("azure")).toBe(UNIT_MARK_DEFAULT);
+    expect(unitMarkSrc("")).toBe(UNIT_MARK_DEFAULT);
+    expect(UNIT_MARK_DIGICIDE).toContain("digicide.png");
+    expect(UNIT_MARK_DEFAULT).toContain("neurokore.png");
   });
 });
 
