@@ -1,7 +1,7 @@
 {
   "name": "neurokore-web",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "embed-presets": "node ../scripts/embed_factory_catalog.mjs",

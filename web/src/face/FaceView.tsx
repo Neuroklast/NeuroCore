@@ -5,7 +5,7 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { motionAllows } from "../theme/motionPolicy";
-import type { Workspace } from "../app/workspace";
+
 import {
   estimateBands,
   faceGlitchStyle,
@@ -25,6 +25,7 @@ import {
   driveAmount,
   dspEvalMs,
   formatDbfs,
+  formatHudFixed,
   formatLufs,
   logoPulsePeriodMs,
   logoReactiveStyle,
@@ -38,7 +39,7 @@ import {
 
 const MARK = "./img/neurokore.png";
 
-export function FaceView({ open }: { open: (w: Workspace) => void }) {
+export function FaceView() {
   const knobs = useHostStore((s) => s.knobs);
   const motion = useHostStore((s) => s.motion);
   const cpu = useHostStore((s) => s.cpu);
@@ -135,25 +136,20 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
     >
       <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
         <FaceRow k="AST_CHECKSUM" v={checksum} />
-        <FaceRow k="DSP_EVAL_TIME" v={`${evalMs.toFixed(2)} ms`} />
-        <FaceRow k="BUFFER_SIZE" v={`${buf > 0 ? buf : "—"} SMP`} />
+        <FaceRow k="DSP_EVAL_TIME" num={formatHudFixed(evalMs, 2, 2)} unit="ms" />
+        <FaceRow k="BUFFER_SIZE" num={buf > 0 ? String(buf).padStart(4, "\u2007") : "—"} unit="SMP" />
         <FaceRow k="CORE_TEMP" v={`${temp.temp}°C${temp.warn ? " [WARN]" : ""}`} warn={temp.warn} />
         <FaceRow k="OVERSAMPLING_MODE" v={osModeLabel(osFactor)} />
         <FaceRow k="CPU" v={`${Math.round(cpu)}%`} />
       </aside>
       <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
-        <FaceRow k="PEAK_L" v={`${formatDbfs(stereo.peakL)} dBFS`} />
-        <FaceRow k="PEAK_R" v={`${formatDbfs(stereo.peakR)} dBFS`} />
-        <FaceRow k="RMS" v={`${formatLufs(outRms)} LUFS`} />
-        <FaceRow k="PHASE_CORRELATION" v={stereo.corr.toFixed(2)} />
+        <FaceRow k="PEAK_L" num={formatHudFixed(Number(formatDbfs(stereo.peakL)), 2, 3)} unit="dBFS" />
+        <FaceRow k="PEAK_R" num={formatHudFixed(Number(formatDbfs(stereo.peakR)), 2, 3)} unit="dBFS" />
+        <FaceRow k="RMS" num={formatHudFixed(Number(formatLufs(outRms)), 1, 3)} unit="LUFS" />
+        <FaceRow k="PHASE_CORRELATION" num={formatHudFixed(stereo.corr, 2, 2)} />
       </aside>
 
-      <button
-        type="button"
-        className="nk-face-logo"
-        onClick={() => open("assemble")}
-        title="Open circuit"
-      >
+      <div className="nk-face-logo">
           <span
             className={[
               "nk-face-fx",
@@ -196,7 +192,7 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
               </>
             ) : null}
           </span>
-      </button>
+      </div>
 
       <div className="flex min-h-0 flex-1">
         <UnitAnalyzer />
@@ -207,11 +203,18 @@ export function FaceView({ open }: { open: (w: Workspace) => void }) {
   );
 }
 
-function FaceRow({ k, v, warn = false }: { k: string; v: string; warn?: boolean }) {
+function FaceRow({ k, v, num, unit, warn = false }: { k: string; v?: string; num?: string; unit?: string; warn?: boolean }) {
   return (
     <div className={`nk-face-row${warn ? " is-warn" : ""}`}>
       <span>{k}</span>
-      <span>{v}</span>
+      {num != null ? (
+        <span className="nk-face-val">
+          <span className="nk-face-num">{num}</span>
+          {unit ? <span className="nk-face-unit">{unit}</span> : null}
+        </span>
+      ) : (
+        <span>{v}</span>
+      )}
     </div>
   );
 }

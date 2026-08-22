@@ -6,29 +6,71 @@ import type { LayoutMode, LayoutResult, LayoutView } from "./types";
 
 let worker: Worker | null = null;
 let nextId = 1;
-const pending = new Map<number, { resolve: (r: LayoutResult) => void; reject: (e: Error) => void }>();
+const pending = new Map<number, { resolve: (r: LayoutResult) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+let workerFactory: (() => Worker | null) | null = null;
+let workerDead = false;
+let workerTimeoutMs = 2500;
+
+/** Tests inject a fake Worker so ELK never runs on the caller. Pass null to restore. */
+export function setLayoutWorkerFactory(factory: (() => Worker | null) | null): void {
+  workerFactory = factory;
+  worker = null;
+  workerDead = false;
+}
+
+export function setLayoutWorkerTimeoutMs(ms: number | null): void {
+  workerTimeoutMs = ms == null ? 2500 : ms;
+}
+
+function failWorker(): void {
+  workerDead = true;
+  try {
+    worker?.terminate();
+  } catch {
+    /* already gone */
+  }
+  worker = null;
+}
+
+function bindWorker(w: Worker): Worker {
+  w.onmessage = (ev: MessageEvent<LayoutResult & { reqId: number; ok?: boolean; error?: string }>) => {
+    const job = pending.get(ev.data.reqId);
+    if (! job) {
+      return;
+    }
+    pending.delete(ev.data.reqId);
+    clearTimeout(job.timer);
+    if (ev.data.ok === false) {
+      job.reject(new Error(ev.data.error || "layout failed"));
+      return;
+    }
+    job.resolve({ nodes: ev.data.nodes, edgePaths: ev.data.edgePaths });
+  };
+  w.onerror = () => failWorker();
+  w.onmessageerror = () => failWorker();
+  return w;
+}
 
 function getWorker(): Worker | null {
+  if (workerDead) {
+    return null;
+  }
   if (worker) {
+    return worker;
+  }
+  if (workerFactory) {
+    const w = workerFactory();
+    if (! w) {
+      return null;
+    }
+    worker = bindWorker(w);
     return worker;
   }
   if (typeof Worker === "undefined") {
     return null;
   }
   try {
-    worker = new Worker(new URL("./layout.worker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (ev: MessageEvent<LayoutResult & { reqId: number; ok?: boolean; error?: string }>) => {
-      const job = pending.get(ev.data.reqId);
-      if (! job) {
-        return;
-      }
-      pending.delete(ev.data.reqId);
-      if (ev.data.ok === false) {
-        job.reject(new Error(ev.data.error || "layout failed"));
-        return;
-      }
-      job.resolve({ nodes: ev.data.nodes, edgePaths: ev.data.edgePaths });
-    };
+    worker = bindWorker(new Worker(new URL("./layout.worker.ts", import.meta.url), { type: "module" }));
     return worker;
   } catch {
     return null;
@@ -67,12 +109,26 @@ export async function requestLayout(
   view: LayoutView = { w: 960, h: 420 },
 ): Promise<LayoutResult> {
   const payload = flowToLayout(nodes, edges);
-  const local = runLayout(mode, payload.nodes, payload.edges, view);
   const w = getWorker();
   if (w) {
     const reqId = nextId;
     nextId += 1;
-    w.postMessage({ type: mode, nodes: payload.nodes, edges: payload.edges, view, reqId });
+    return new Promise<LayoutResult>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(reqId);
+        failWorker();
+        void runLayout(mode, payload.nodes, payload.edges, view).then(resolve, reject);
+      }, workerTimeoutMs);
+      pending.set(reqId, { resolve, reject, timer });
+      try {
+        w.postMessage({ type: mode, nodes: payload.nodes, edges: payload.edges, view, reqId });
+      } catch {
+        clearTimeout(timer);
+        pending.delete(reqId);
+        failWorker();
+        void runLayout(mode, payload.nodes, payload.edges, view).then(resolve, reject);
+      }
+    });
   }
-  return local;
+  return runLayout(mode, payload.nodes, payload.edges, view);
 }

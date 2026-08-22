@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
+import { fitViewOpts, keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
 
 describe("board position ownership", () => {
   it("does not auto-arrange after a user drag or explicit Arrange", () => {
@@ -77,6 +77,9 @@ describe("board position ownership", () => {
     expect(shouldFitView("host", false)).toBe(false);
     expect(shouldFitView("bridge", false)).toBe(false);
     expect(shouldFitView("editor", false)).toBe(false);
+    expect(fitViewOpts("full", false).duration).toBe(280);
+    expect(fitViewOpts("off", false).duration).toBe(0);
+    expect(fitViewOpts("full", true).duration).toBe(0);
     expect(shouldFitView("preset", true)).toBe(true);
     expect(shouldFitView("host", true)).toBe(true);
     expect(keepLivePositions("canvas")).toBe(true);

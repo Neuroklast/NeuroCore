@@ -389,3 +389,6 @@ web/NUL
 /IR/
 /Origin Effects - IR-Cab Library V3/
 resources/irs/
+
+# Microsoft Evergreen bootstrapper, fetched at package time
+installer/MicrosoftEdgeWebView2RuntimeInstallerX64.exe

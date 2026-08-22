@@ -31,6 +31,15 @@ describe("hostStore", () => {
     expect(useHostStore.getState().osFactor).toBe(4);
   });
 
+  it("stores per-chip clip peaks from the host snapshot", () => {
+    useHostStore.getState().applyHost({
+      clips: [{ id: "stage1", peak: 1.2 }, { id: "__out__", peak: 0.4 }],
+    });
+    expect(useHostStore.getState().clips.stage1).toBeCloseTo(1.2);
+    expect(useHostStore.getState().clips.OUT).toBeCloseTo(0.4);
+    expect(useHostStore.getState().clips.__out__).toBeCloseTo(0.4);
+  });
+
   it("stores env tap peaks from host.mods", () => {
     useHostStore.getState().applyHost({
       mods: [{ id: "env1", value: 0.62 }, { id: "osc1", value: 0.4 }],
@@ -44,6 +53,15 @@ describe("hostStore", () => {
     expect(useHostStore.getState().sidechainOn).toBe(true);
     useHostStore.getState().applyHost({ sidechainOn: false });
     expect(useHostStore.getState().sidechainOn).toBe(false);
+  });
+
+  it("marks dirty until a preset load clears it", () => {
+    useHostStore.setState({ presetDirty: false, originName: "", discardPrompt: true });
+    useHostStore.getState().markDirty();
+    expect(useHostStore.getState().presetDirty).toBe(true);
+    useHostStore.getState().applyPresets({ name: "Airy Clean", list: [] });
+    expect(useHostStore.getState().presetDirty).toBe(false);
+    expect(useHostStore.getState().originName).toBe("Airy Clean");
   });
 
   it("stores knob letters and mix", () => {

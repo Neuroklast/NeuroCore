@@ -23,7 +23,12 @@ import {
   specDbMarks,
   specRowFade,
   spectrogramPush,
+  standingWaveRow,
+  triggerAlign,
   logFreqMarks,
+  scopeYMarks,
+  shouldPushScopeRow,
+  shouldResetScopeHist,
   scopeSpectra,
   techNoise,
   paintTechNoise,
@@ -97,6 +102,38 @@ describe("scope deck model", () => {
     expect(scopeSpectra("out")).toEqual(["out"]);
     expect(scopeSpectra("both")).toEqual(["in", "out"]);
     expect(SCOPE_COLOR.in).not.toBe(SCOPE_COLOR.out);
+  });
+
+  it("does not wrap the trigger so the standing wave has no seam", () => {
+    const raw = Float32Array.from({ length: 16 }, (_, i) => (i < 4 ? 0.4 : Math.sin(((i - 4) / 12) * Math.PI)));
+    const aligned = triggerAlign(raw);
+    expect(aligned[0]!).toBeLessThanOrEqual(0);
+    expect(aligned[15]!).toBe(0);
+    expect(aligned[0]!).not.toBe(raw[0]);
+  });
+
+  it("uses bipolar amplitude marks for time/samples and dB for frequency", () => {
+    expect(scopeYMarks("freq", "db").some((m) => m.label.includes("dB") || m.label === "0")).toBe(true);
+    const wave = scopeYMarks("time", "linear");
+    expect(wave.map((m) => m.label)).toEqual(["+1", "0", "−1"]);
+    expect(shouldResetScopeHist("freq", "time")).toBe(true);
+    expect(shouldResetScopeHist("time", "samples")).toBe(false);
+    expect(shouldPushScopeRow(4, 4)).toBe(false);
+    expect(shouldPushScopeRow(5, 4)).toBe(true);
+  });
+
+  it("builds a standing-wave row from a triggered waveform, not an FFT", () => {
+    const n = 64;
+    const sine = Float32Array.from({ length: n }, (_, i) => Math.sin((i / n) * Math.PI * 2));
+    const aligned = triggerAlign(sine);
+    expect(aligned[0]!).toBeLessThan(0.15);
+    expect(aligned[1]!).toBeGreaterThan(aligned[0]!);
+    const row = standingWaveRow(sine, SPEC_BINS, "linear");
+    expect(row.length).toBe(SPEC_BINS);
+    const mid = row[Math.floor(SPEC_BINS / 4)]!;
+    const node = row[0]!;
+    expect(mid).toBeGreaterThan(node);
+    expect(Math.max(...row)).toBeGreaterThan(0.6);
   });
 
   it("maps spectrum height in dB so a loud but not-full-scale hit still fills", () => {

@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 REM Windows Debug. Same tree as AGENTS.md (`build/`), Debug config.
 
-set "VERSION_LABEL=0.5.0-alpha"
+set "VERSION_LABEL=0.6.0-beta"
 set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 set "BUILD_DIR=build"
 set "CONFIG=Debug"

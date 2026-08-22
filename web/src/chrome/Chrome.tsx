@@ -1,5 +1,6 @@
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
-import { presetAction } from "../presets/presetActions";
+import { requestPresetAction } from "../presets/presetActions";
+import { presetTitle } from "../presets/presetDirty";
 import { useHostStore } from "../store/hostStore";
 import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
@@ -21,17 +22,24 @@ export function Hud() {
 
 export function Toolbar() {
   const name = useHostStore((s) => s.presetName);
+  const dirty = useHostStore((s) => s.presetDirty);
   const mode = useHostStore((s) => s.mode);
   const mix = useHostStore((s) => s.mix);
   const setOverlay = useHostStore((s) => s.setOverlay);
   const bypassed = mix <= 1e-5;
   return (
     <header className="flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
-      <a
-        href="https://neuroklast.net"
-        target="_blank"
-        rel="noreferrer"
-        className="mr-2 flex shrink-0 items-center gap-3 no-underline"
+      <button
+        type="button"
+        className="mr-2 flex shrink-0 items-center gap-3 border-0 bg-transparent p-0 text-left"
+        data-tip="neuroklast.net"
+        onClick={() => {
+          if (hasJuceBridge()) {
+            void getNativeFunction("openUrl")({ url: "https://neuroklast.net" }).catch(() => undefined);
+            return;
+          }
+          window.open("https://neuroklast.net", "_blank", "noopener,noreferrer");
+        }}
       >
         <img src="./img/nk_logo.png" alt="" className="h-11 w-auto" />
         <span className="leading-tight">
@@ -40,11 +48,11 @@ export function Toolbar() {
             {nk.byline} <span className="text-muted">{nk.version}</span>
           </span>
         </span>
-      </a>
+      </button>
       {toolbarSlots().map((slot) => {
         if (slot.id === "presetPrev") {
           return (
-            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void presetAction({ action: "prev" })}>
+            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void requestPresetAction({ action: "prev" })}>
               &lt;
             </button>
           );
@@ -55,16 +63,16 @@ export function Toolbar() {
               key={slot.id}
               type="button"
               className={slot.className}
-              title="Open preset explorer"
+              data-tip="Open preset explorer"
               onClick={() => setOverlay(slot.opens)}
             >
-              {name || "untitled"}
+              {presetTitle(name, dirty)}
             </button>
           );
         }
         if (slot.id === "presetNext") {
           return (
-            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void presetAction({ action: "next" })}>
+            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void requestPresetAction({ action: "next" })}>
               &gt;
             </button>
           );

@@ -34,6 +34,7 @@ struct BusGraph
 {
     std::vector<BusDef> buses;   ///< [0] is always main
     std::vector<OutTap> outTaps; ///< empty = output main
+    juce::String outGainDb { "0" };
 
     bool hasExplicitOut() const noexcept { return ! outTaps.empty(); }
 };
@@ -214,6 +215,11 @@ inline bool buildBusGraph (const std::vector<BlockDesc>& desc, BusGraph& out, ju
             afterOut = true;
             for (const auto& kv : d.args)
             {
+                if (kv.first.equalsIgnoreCase ("gain"))
+                {
+                    out.outGainDb = kv.second;
+                    continue;
+                }
                 const int idx = findBusIndex (out, kv.first);
                 if (idx < 0 || idx == kReservedBusIn)
                 {

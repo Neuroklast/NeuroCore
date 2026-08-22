@@ -16,7 +16,7 @@ describe("jack handles", () => {
   });
 
   it("binds a knob letter onto a numeric or letter arg", () => {
-    expect(bindableArgKeys({ cutoff: "b", type: "lp", y: "x" })).toEqual(["cutoff"]);
+    expect(bindableArgKeys({ cutoff: "b", type: "lp", y: "x" })).toEqual(["cutoff", "type"]);
     expect(bindableArgKeys({ cutoff: "c + lfo1 * b", q: "f" })).toEqual(["cutoff", "q"]);
     expect(applyKnobBind({ cutoff: "800" }, "cutoff", "e").cutoff).toBe("e");
   });

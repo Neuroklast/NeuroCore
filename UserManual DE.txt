@@ -2,7 +2,11 @@
 
 NEUROKORE ist ein Insert- oder Send-Effekt von Neuroklast. Lade einen Factory-Sound, drehe die Regler a–f, oder schreibe eine kurze Formel (Drive, Filter, Delay, Reverb, Kompressor, Gate, Limiter, IR-Cab, Pitch, Crossover, Envelope, Oszillator).
 
-Version 0.5.0-alpha. Formate: Standalone, VST3, AU.
+Version 0.6.0-beta. Formate: Standalone, VST3, AU.
+
+Die Demo läuft 14 Tage ab dem ersten Start auf diesem Rechner. Statuszeile und Settings → License zeigen das Enddatum. Danach bleibt Mix trocken, bis eine Lizenz liegt.
+
+IN auf Circuit hat zwei Ausgänge rechts: out (Spur) und sc (Host-Sidechain). sc ist kein Eingang. OUT-Gain sitzt hinter Details, nicht als Schieberegler auf der geschlossenen Kachel.
 
 Die Oberfläche ist auf Englisch. Dieses Dokument ist die deutsche Bedienhilfe. Die In-Plugin-Hilfe (Help) bleibt Englisch.
 
@@ -18,7 +22,7 @@ Diese Hilfe ist offline. Links ein Kapitel wählen. Suche filtert Titel und Text
 
 ## 1. Schnellstart
 
-NEUROKORE auf eine Spur oder einen Send legen. macOS: AU und VST3. Windows/Linux: VST3 oder Standalone.
+NEUROKORE auf eine Spur oder einen Send legen. macOS: AU und VST3. Windows: Setup.exe als Administrator, VST3 liegt fest unter `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (kein neuer Ordner pro Version). Linux: VST3 oder Standalone.
 
 Drei Sichten
 - Unit: Meter, Pfad, Face. Zum Spielen.
@@ -82,7 +86,7 @@ Tools-Zeile (Circuit und Terminal)
 
 Fußzeile
 - LIVE / STUDIO / BYPASS / SAFE, CPU 0–100, Latenz, Samplerate, 32f, Buffer, BPM HOST oder USER, OS.
-- Ganz rechts: LIC wenn lizenziert, sonst DEMO m:ss solange die 20-Minuten-Demo läuft.
+- Ganz rechts: LIC wenn lizenziert, sonst DEMO und Resttage plus Enddatum (14 Tage ab erstem Start).
 - IN / OUT: Welle, Stereofeld, Loudness. Quelle IN | OUT | BOTH. CPU ist nie ein Host-Callback-Verhältnis wie 173 %.
 
 Leertaste
@@ -390,7 +394,7 @@ Leertaste schreibt nicht
 
 ## 10. Lizenz
 
-Ohne Lizenz: 20-Minuten-Demo, danach Mix = 0 (trocken). Die Formel bleibt geladen. Die Fußzeile zeigt DEMO m:ss, dann sperrt Mix auf dry. Nach Aktivierung steht LIC.
+Ohne Lizenz: 14-Tage-Demo ab dem ersten Start auf diesem Rechner, danach Mix = 0 (trocken). Die Formel bleibt geladen. Die Fußzeile zeigt Resttage und das Enddatum. Nach Aktivierung steht LIC.
 
 Aktivieren
 1. Du bekommst eine .lic für deine E-Mail.

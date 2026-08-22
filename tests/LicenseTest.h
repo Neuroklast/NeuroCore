@@ -12,10 +12,20 @@ public:
 
     void runTest() override
     {
-        beginTest ("demo window is 20 minutes and licensing is on");
+        beginTest ("demo window is 14 calendar days and licensing is on");
         {
             expect (Config::kEnableLicensing);
-            expectWithinAbsoluteError (Config::kDemoDurationSeconds, 20.0 * 60.0, 0.01);
+            expectWithinAbsoluteError (Config::kDemoDurationSeconds, 14.0 * 24.0 * 60.0 * 60.0, 0.01);
+            expectEquals (Config::demoSecondsLeft (0.0, 0.0), (int) std::ceil (Config::kDemoDurationSeconds));
+            expectEquals (Config::demoSecondsLeft (0.0, Config::kDemoDurationSeconds * 1000.0 + 1.0), 0);
+            const auto stamp = LicenseManager::getDemoStampFile();
+            expect (stamp.getFullPathName().containsIgnoreCase ("NEUROKLAST"));
+            expectEquals (stamp.getFileName(), juce::String ("demo_started.txt"));
+            const double t0 = 1.0e12;
+            expectEquals (Config::demoSecondsLeft (t0, t0 + 1000.0),
+                          Config::demoSecondsLeft (t0, t0 + 1000.0));
+            expect (Config::demoSecondsLeft (t0, t0 + 1000.0)
+                    < Config::demoSecondsLeft (t0, t0));
         }
 
         beginTest ("email normalisation");

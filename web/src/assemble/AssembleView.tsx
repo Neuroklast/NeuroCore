@@ -37,7 +37,7 @@ import {
   type JackPoint,
 } from "./connectModel";
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
-import { keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
+import { fitViewOpts, keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
 import { jackTopPx } from "./chipLayout";
 import { applyLayoutResult, requestLayout } from "./layout/layoutClient";
 import type { LayoutMode } from "./layout/types";
@@ -96,6 +96,8 @@ function Board() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
   const [menu, setMenu] = useState<{ kind: "node" | "pane" | "edge"; id: string; left: number; top: number; edge?: Edge } | null>(null);
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+  const [layoutBusy, setLayoutBusy] = useState(false);
+  const [layoutBusyLabel, setLayoutBusyLabel] = useState("Arranging…");
   const paneRef = useRef<HTMLDivElement>(null);
   const prevIdsRef = useRef<string[]>([]);
   const layoutGen = useRef(0);
@@ -150,6 +152,10 @@ function Board() {
       w: paneRef.current?.clientWidth || 960,
       h: paneRef.current?.clientHeight || 420,
     };
+    if (auto) {
+      setLayoutBusy(true);
+      setLayoutBusyLabel("Arranging…");
+    }
     void requestLayout(mode, auto ? built.nodes : merged, liveEdges, view).then((laid) => {
       if (cancel || gen !== layoutGen.current) {
         return;
@@ -164,9 +170,13 @@ function Board() {
       if (shouldFitView(origin, auto)) {
         requestAnimationFrame(() => {
           if (! cancel && gen === layoutGen.current && (paneRef.current?.clientWidth ?? 0) > 40) {
-            void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
+            void fitView({ ...fitViewOpts(motion, prefersReduced) });
           }
         });
+      }
+    }).finally(() => {
+      if (! cancel && gen === layoutGen.current) {
+        setLayoutBusy(false);
       }
     });
     return () => {
@@ -198,24 +208,35 @@ function Board() {
   ) => {
     const gen = layoutGen.current + 1;
     layoutGen.current = gen;
+    const showBusy = mode === "ARRANGE" || mode === "COMPACT";
+    if (showBusy) {
+      setLayoutBusy(true);
+      setLayoutBusyLabel(mode === "COMPACT" ? "Compacting…" : "Arranging…");
+    }
     const live = es.filter((e) => e.className !== "temp");
     const view = {
       w: paneRef.current?.clientWidth || 960,
       h: paneRef.current?.clientHeight || 420,
     };
-    const laid = await requestLayout(mode, ns, live, view);
-    if (gen !== layoutGen.current) {
+    try {
+      const laid = await requestLayout(mode, ns, live, view);
+      if (gen !== layoutGen.current) {
+        return laid;
+      }
+      setNodes((cur) => applyLayoutResult(laid, cur, [], moveNodes).nodes);
+      setEdges((cur) => applyLayoutResult(laid, [], cur, false).edges);
+      if (moveNodes) {
+        requestAnimationFrame(() => {
+          void fitView({ ...fitViewOpts(motion, prefersReduced) });
+        });
+      }
       return laid;
+    } finally {
+      if (showBusy && gen === layoutGen.current) {
+        setLayoutBusy(false);
+      }
     }
-    setNodes((cur) => applyLayoutResult(laid, cur, [], moveNodes).nodes);
-    setEdges((cur) => applyLayoutResult(laid, [], cur, false).edges);
-    if (moveNodes) {
-      requestAnimationFrame(() => {
-        void fitView({ padding: 0.1, duration: 0, minZoom: 0.4, maxZoom: 1 });
-      });
-    }
-    return laid;
-  }, [fitView, setEdges, setNodes]);
+  }, [fitView, motion, prefersReduced, setEdges, setNodes]);
 
   const commitConnect = useCallback((c: Connection) => {
     if (! isValidConnection(c)) {
@@ -572,6 +593,16 @@ function Board() {
           color="rgba(var(--nk-accent-rgb), 0.10)"
         />
       </ReactFlow>
+      {layoutBusy ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center"
+          data-layout-busy=""
+        >
+          <span className="border border-accent/50 bg-black/80 px-3 py-1 text-[11px] tracking-widest text-cyan">
+            {layoutBusyLabel}
+          </span>
+        </div>
+      ) : null}
 
       {menu ? (
         <OsContextMenu left={menu.left} top={menu.top} title={menu.kind === "node" ? menu.id : menu.kind === "edge" ? "INSERT BLOCK" : "NKOS // BOARD"} onDismiss={closeMenu}>

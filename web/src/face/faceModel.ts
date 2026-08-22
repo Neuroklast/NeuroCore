@@ -33,6 +33,19 @@ export function formatLufs(rms: number): string {
   return peakToDb(rms).toFixed(1);
 }
 
+const FIG = "\u2007";
+
+/** Fixed-width signed readout so the unit never walks. */
+export function formatHudFixed(n: number, digits: number, intWidth: number): string {
+  const v = Number.isFinite(n) ? n : 0;
+  const sign = v < 0 ? "−" : FIG;
+  const abs = Math.abs(v).toFixed(digits);
+  const dot = abs.indexOf(".");
+  const i = dot >= 0 ? abs.slice(0, dot) : abs;
+  const f = dot >= 0 ? abs.slice(dot) : "";
+  return sign + i.padStart(intWidth, FIG) + f;
+}
+
 /** Reconstruct L/R from gonio mid/side (x = 0.5(L−R), y = −0.5(L+R)). */
 export function stereoMetrics(
   gonioX: ArrayLike<number>,

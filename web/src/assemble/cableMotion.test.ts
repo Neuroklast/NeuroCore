@@ -61,13 +61,18 @@ describe("cable traffic", () => {
     expect(firstLoud).toBeGreaterThan(firstQuiet);
   });
 
-  it("speeds dots up with loudness and leaves LFO independent of wave/dots", () => {
-    expect(dotPeriodMs(1)).toBeLessThan(dotPeriodMs(0.05));
-    expect(dotPeriodMs(1)).toBeGreaterThan(150);
+  it("holds still at silence or -60 dBFS and runs faster as the source chip gets louder", () => {
+    expect(plasmaSpeedPxPerSec(0)).toBe(0);
+    expect(plasmaSpeedPxPerSec(0.001)).toBe(0);
+    expect(plasmaSpeedPxPerSec(10 ** (-60 / 20))).toBe(0);
+    expect(plasmaSpeedPxPerSec(10 ** (-59 / 20))).toBeGreaterThan(0);
+    expect(plasmaSpeedPxPerSec(1)).toBeGreaterThan(plasmaSpeedPxPerSec(0.1));
+    expect(plasmaSpeedPxPerSec(0.1)).toBeGreaterThan(plasmaSpeedPxPerSec(0.01));
+    expect(advancePlasmaDash(-20, 0, 0.016)).toBe(-20);
+    expect(advancePlasmaDash(-20, 0.001, 0.016)).toBe(-20);
     expect(advancePlasmaDash(0, 0.2, 0.016)).toBeLessThan(0);
-    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(-20);
-    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(advancePlasmaDash(-20, 0, 0.016));
-    expect(plasmaSpeedPxPerSec(1)).toBeGreaterThan(plasmaSpeedPxPerSec(0));
+    expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(advancePlasmaDash(-20, 0.05, 0.016));
+    expect(dotPeriodMs(1)).toBeLessThan(dotPeriodMs(0.05));
     expect(cableLayer("mod", "dots", true)).toBe("lfo");
     expect(cableLayer("mod", "wave", true)).toBe("lfo");
     expect(cableLayer("audio", "wave", true)).toBe("wave");

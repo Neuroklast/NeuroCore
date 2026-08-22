@@ -317,6 +317,44 @@ public:
                 expectWithinAbsoluteError (out.getSample (0, i), 0.25f, 1.0e-6f);
         }
 
+        beginTest ("phase-free mix keeps energy when wet is inverted dry");
+        {
+            juce::AudioBuffer<float> dry (1, 32), wet (1, 32), out (1, 32);
+            for (int i = 0; i < 32; ++i)
+            {
+                dry.setSample (0, i, 0.5f);
+                wet.setSample (0, i, -0.5f);
+            }
+            DSPUtils::DryWetMixState st;
+            st.polarity = -1.f;
+            st.corrAbs = 1.f;
+            DSPUtils::mixDryWetPhaseFree (dry, wet, out, 0.5f, 0.5f, st);
+            float peak = 0.f;
+            for (int i = 0; i < 32; ++i)
+                peak = juce::jmax (peak, std::abs (out.getSample (0, i)));
+            expect (peak > 0.25f, "inverted 50% mix must not null");
+            DSPUtils::mixDryWetPhaseFree (dry, wet, out, 0.0f, 0.0f, st);
+            for (int i = 0; i < 32; ++i)
+                expectWithinAbsoluteError (out.getSample (0, i), 0.5f, 1.0e-5f);
+            DSPUtils::mixDryWetPhaseFree (dry, wet, out, 1.0f, 1.0f, st);
+            for (int i = 0; i < 32; ++i)
+                expectWithinAbsoluteError (out.getSample (0, i), -0.5f, 1.0e-5f);
+        }
+
+        beginTest ("mastering mix is loudness-neutral when wet equals dry");
+        {
+            juce::AudioBuffer<float> dry (1, 32), wet (1, 32), out (1, 32);
+            for (int i = 0; i < 32; ++i)
+            {
+                dry.setSample (0, i, 0.5f);
+                wet.setSample (0, i, 0.5f);
+            }
+            DSPUtils::DryWetMixState st;
+            DSPUtils::mixDryWetPhaseFree (dry, wet, out, 0.5f, 0.5f, st);
+            for (int i = 0; i < 32; ++i)
+                expectWithinAbsoluteError (out.getSample (0, i), 0.5f, 0.02f);
+        }
+
         // ---- More than 4 knobs ----
         beginTest ("engine supports 6 user params a-f");
         {

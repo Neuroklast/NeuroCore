@@ -4,7 +4,7 @@ import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
-import { isThemeId, THEME_STORAGE_KEY, themeIds, themeOf } from "../theme/theme";
+import { isThemeId, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { LicensePanel } from "./LicensePanel";
 import { settingsAboutTarget } from "./aboutModel";
@@ -19,7 +19,9 @@ import {
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
+import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
+import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
 import { ValidatePanel } from "./ValidatePanel";
 
@@ -172,32 +174,16 @@ function SettingsBody() {
   const cables = useHostStore((s) => s.cables);
   const theme = useHostStore((s) => s.theme) ?? "signal";
   const mode = useHostStore((s) => s.mode);
-  const os = useHostStore((s) => s.os);
   const licensed = useHostStore((s) => s.licensed);
+  const frameRate = useHostStore((s) => s.frameRate);
+  const discardPrompt = useHostStore((s) => s.discardPrompt);
   const setOverlay = useHostStore((s) => s.setOverlay);
   return (
     <div className="flex flex-col gap-4 text-[13px]">
       <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">OVERSAMPLING</div>
-        <Seg
-          value={String(os)}
-          options={[
-            { id: "0", label: "1×" },
-            { id: "1", label: "2×" },
-            { id: "2", label: "4×" },
-            { id: "3", label: "8×" },
-          ]}
-          onPick={(id) => {
-            const index = Number(id);
-            useHostStore.getState().setOs(index);
-            void getNativeFunction("setChoice")({ id: "os", index });
-          }}
-        />
-      </section>
-      <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">LICENSE</div>
         <div className="mb-2 text-[12px] text-muted">
-          {licensed ? "Licensed" : "Demo — mix goes dry after 20 minutes"}
+          {licensed ? "Licensed" : "Demo — Mix goes dry after 14 days"}
         </div>
         <div className="flex gap-2">
           <button type="button" className="nk-clip flex-1" onClick={() => setOverlay("license")}>License…</button>
@@ -211,7 +197,27 @@ function SettingsBody() {
         <Seg
           value={motion}
           options={[{ id: "full", label: "Full" }, { id: "reduced", label: "Reduced" }, { id: "off", label: "Off" }]}
-          onPick={(id) => useHostStore.setState({ motion: id as typeof motion })}
+          onPick={(id) => persistUi({ motion: id as typeof motion })}
+        />
+      </section>
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">FRAME RATE</div>
+        <Seg
+          value={String(frameRate)}
+          options={[
+            { id: "30", label: "30" },
+            { id: "60", label: "60" },
+            { id: "0", label: "Display" },
+          ]}
+          onPick={(id) => persistUi({ frameRate: Number(id) as 0 | 30 | 60 })}
+        />
+      </section>
+      <section>
+        <div className="mb-1 text-[11px] tracking-widest text-ink">UNSAVED PROMPT</div>
+        <Seg
+          value={discardPrompt ? "on" : "off"}
+          options={[{ id: "on", label: "On" }, { id: "off", label: "Off" }]}
+          onPick={(id) => persistUi({ discardPrompt: id === "on" })}
         />
       </section>
       <section>
@@ -225,6 +231,9 @@ function SettingsBody() {
             void getNativeFunction("setChoice")({ id: "mode", index: id === "live" ? 1 : 0 });
           }}
         />
+        <p className="mt-2 text-[11px] leading-snug text-muted">
+          Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work — more delay, the host reports it as latency. CPU in the status bar is 0–100. SAFE means the plugin went dry to protect the session, not a percent over 100.
+        </p>
       </section>
       <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">THEME</div>
@@ -235,12 +244,7 @@ function SettingsBody() {
             if (! isThemeId(id)) {
               return;
             }
-            try {
-              localStorage.setItem(THEME_STORAGE_KEY, id);
-            } catch {
-              /* private mode */
-            }
-            useHostStore.setState({ theme: id });
+            persistUi({ theme: id });
           }}
         />
       </section>
@@ -249,7 +253,7 @@ function SettingsBody() {
         <Seg
           value={cables}
           options={[{ id: "dots", label: "Dots" }, { id: "wave", label: "Wave" }]}
-          onPick={(id) => useHostStore.setState({ cables: id as typeof cables })}
+          onPick={(id) => persistUi({ cables: id as typeof cables })}
         />
       </section>
       <section>
@@ -301,6 +305,10 @@ export function Overlays() {
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (name === "discard") {
+          cancelDiscard();
+          return;
+        }
         setOverlay(null);
       }
     };
@@ -322,6 +330,7 @@ export function Overlays() {
     : name === "validate" ? "Validate"
     : name === "optimize" ? "Optimize"
     : name === "ir" ? "Impulse"
+    : name === "discard" ? "Unsaved"
     : "Inspect";
 
   return (
@@ -330,9 +339,14 @@ export function Overlays() {
       data-phase={shell.phase}
       onClick={() => {
         // Only close via X button for inspect overlay
-        if (name !== "inspect") {
-          setOverlay(null);
+        if (name === "inspect") {
+          return;
         }
+        if (name === "discard") {
+          cancelDiscard();
+          return;
+        }
+        setOverlay(null);
       }}
     >
       <div
@@ -347,7 +361,7 @@ export function Overlays() {
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-accent px-3">
           <span className="nk-overlay-led inline-block h-2 w-2 rounded-full bg-accent" />
           <span className="text-[14px] text-ink">{title}</span>
-          <button type="button" className="nk-clip px-3" onClick={() => setOverlay(null)}>X</button>
+          <button type="button" className="nk-clip px-3" onClick={() => (name === "discard" ? cancelDiscard() : setOverlay(null))}>X</button>
         </div>
         <div className={`min-h-0 flex-1 p-5 text-ink ${
           overlayBodyOverflow(name) === "hidden" ? "flex overflow-hidden" : "overflow-auto"
@@ -378,6 +392,16 @@ export function Overlays() {
 
           {name === "inspect" && (
             <InspectBody nodeId={inspectId} />
+          )}
+
+          {name === "discard" && (
+            <div className="flex flex-col gap-4 text-[13px]">
+              <p>Discard unsaved plugin?</p>
+              <div className="flex gap-2">
+                <button type="button" className="nk-clip flex-1" onClick={() => cancelDiscard()}>Keep editing</button>
+                <button type="button" className="nk-clip flex-1" onClick={() => void confirmDiscard()}>Discard</button>
+              </div>
+            </div>
           )}
         </div>
         {overlayShowsHostClose(name) ? (

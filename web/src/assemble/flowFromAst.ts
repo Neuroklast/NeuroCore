@@ -4,6 +4,7 @@ import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
 import { lettersInExpr } from "./bindLinks";
 import { handleId, tokenInExpr } from "./handles";
+import { canonicalIoJacks } from "./ioPaint";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
 
 export { CHIP_GAP, CHIP_H, CHIP_W, IO_W, chipHeight, ioHeight } from "./chipLayout";
@@ -137,13 +138,13 @@ function isSidechainType(type: string): boolean {
   return t === "sidechain" || t === "sc" || t === "scin";
 }
 
-export function visibleNodes(ast: AstDocument, sidechainOn = false): AstNode[] {
+export function visibleNodes(ast: AstDocument, _sidechainOn = false): AstNode[] {
   return ast.nodes.filter((n) => {
     if (n.type === "bus") {
       const name = (n.args.name || n.id || "").toLowerCase();
       return name !== "__park";
     }
-    if (isSidechainType(n.type) && ! sidechainOn) {
+    if (isSidechainType(n.type)) {
       return false;
     }
     return true;
@@ -161,7 +162,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   const y = 16;
   const visible = visibleNodes(ast, sidechainOn);
 
-  const inJacks = ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
+  const inJacks = canonicalIoJacks("in");
   const inBox = chipBox("in", inJacks, false, {});
   nodes.push({
     id: "IN",
@@ -169,38 +170,12 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
     position: { x: 16, y: 112 },
     data: { label: "IN", type: "in", jacks: inJacks, letters: "", args: {}, channel: "", summary: "", nodeId: "IN" },
     sourcePosition: Position.Right,
-    targetPosition: Position.Left,
     draggable: false,
     style: { width: inBox.w, height: inBox.h },
     width: inBox.w,
     height: inBox.h,
   });
   x += inBox.w + CHIP_GAP;
-
-  if (sidechainOn && ! visible.some((n) => isSidechainType(n.type))) {
-    const scBox = chipBox("sidechain", [{ id: "out", label: "out", output: true, kind: "audio" }], false, {});
-    nodes.push({
-      id: "SC",
-      type: "io",
-      position: { x: 16, y: 112 + scBox.h + 24 },
-      data: {
-        label: "Sidechain",
-        type: "sidechain",
-        jacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
-        letters: "",
-        args: {},
-        channel: "",
-        summary: "",
-        nodeId: "SC",
-      },
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-      draggable: false,
-      style: { width: scBox.w, height: scBox.h },
-      width: scBox.w,
-      height: scBox.h,
-    });
-  }
 
   for (const n of visible) {
     const px = n.x != null && Number.isFinite(n.x) ? n.x : x;
@@ -235,7 +210,8 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
   }
 
   if (! ast.nodes.some((n) => n.type === "out")) {
-    const outBox = chipBox("out", [{ id: "in", label: "in", output: false, kind: "audio" }], false, {});
+    const outJacks = canonicalIoJacks("out");
+    const outBox = chipBox("out", outJacks, false, {});
     nodes.push({
       id: "OUT",
       type: "io",
@@ -243,7 +219,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       data: {
         label: "OUT",
         type: "out",
-        jacks: [{ id: "in", label: "in", output: false, kind: "audio" }],
+        jacks: outJacks,
         letters: "",
         args: {},
         channel: "MAIN",
@@ -270,17 +246,25 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
     seen.add(key);
     merged.push(e);
   }
+  for (const n of visible) {
+    const src = (n.args.source || n.args.sidechain || "").toLowerCase();
+    const vocoder = n.type.toLowerCase().startsWith("vocod");
+    if (src === "sidechain" || src === "sc" || vocoder) {
+      const key = `IN>${n.id}>sc>in`;
+      if (! seen.has(key)) {
+        seen.add(key);
+        merged.push({ from: "IN", to: n.id, kind: "audio", fromJack: "sc", toJack: "in" });
+      }
+    }
+  }
 
   const byId = new Map(visible.map((n) => [n.id, n]));
   const jacksOf = (id: string, output: boolean): AstJack[] => {
     if (id === "IN") {
-      return ast.inJacks ?? [{ id: "out", label: "out", output: true, kind: "audio" }];
-    }
-    if (id === "SC") {
-      return [{ id: "out", label: "out", output: true, kind: "audio" }].filter((j) => j.output === output);
+      return canonicalIoJacks("in").filter((j) => j.output === output);
     }
     if (id === "OUT") {
-      return [{ id: "in", label: "in", output: false, kind: "audio" }];
+      return canonicalIoJacks("out").filter((j) => j.output === output);
     }
     const n = byId.get(id);
     if (! n) {

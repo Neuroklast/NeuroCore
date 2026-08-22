@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { applyUiPrefs } from "../chrome/persistUi";
 import { DEFAULT_THEME, isThemeId, readStoredTheme, THEME_STORAGE_KEY, type ThemeId } from "../theme/theme";
 
 export interface KnobState {
@@ -31,6 +32,11 @@ export interface HostState {
   osFactor: number;
   scale: number;
   presetName: string;
+  originName: string;
+  presetDirty: boolean;
+  discardPrompt: boolean;
+  frameRate: 0 | 30 | 60;
+  pendingPreset: { action: string; name?: string; author?: string; category?: string; tags?: string } | null;
   presets: Array<{
     name: string;
     category: string;
@@ -46,6 +52,7 @@ export interface HostState {
   licenseError: string;
   irSlots: Array<{ slot: string; name: string; loaded: boolean }>;
   overlay: string | null;
+  overlayReturn: string | null;
   inspectId: string | null;
   telemetryPath: string;
   bypass: boolean;
@@ -63,6 +70,8 @@ export interface HostState {
   sidechainOn: boolean;
   /** Live osc/env tap peaks from the host, keyed by chip id (`env1`, `osc1`). */
   mods: Record<string, number>;
+  /** Post-chip peak, keyed by node id (`stage1`, `IN`, `OUT`). */
+  clips: Record<string, number>;
   theme: ThemeId;
   knobGestures: Record<string, true>;
   knobMeta: Record<string, Partial<KnobState>>;
@@ -78,6 +87,7 @@ export interface HostState {
   beginKnobGesture: (id: string) => void;
   endKnobGesture: (id: string) => void;
   patchKnob: (id: string, patch: Partial<KnobState>) => void;
+  markDirty: () => void;
   activateKnob: (id: string, patch: Partial<KnobState> & { active: true }) => void;
   setMix: (value: number) => void;
   toggleBypass: () => number;
@@ -166,6 +176,24 @@ export const useHostStore = create<HostState>((set) => ({
   osFactor: 4,
   scale: 100,
   presetName: "",
+  originName: "",
+  presetDirty: false,
+  discardPrompt: (() => {
+    try {
+      return localStorage.getItem("nk-discard-prompt") !== "0";
+    } catch {
+      return true;
+    }
+  })(),
+  frameRate: (() => {
+    try {
+      const n = Number(localStorage.getItem("nk-fps") ?? "0");
+      return n === 30 || n === 60 ? n : 0;
+    } catch {
+      return 0;
+    }
+  })(),
+  pendingPreset: null,
   presets: [],
   licensed: true,
   demoRemainSec: 0,
@@ -174,6 +202,7 @@ export const useHostStore = create<HostState>((set) => ({
   licenseError: "",
   irSlots: [],
   overlay: null,
+  overlayReturn: null,
   inspectId: null,
   telemetryPath: "",
   bypass: false,
@@ -189,6 +218,7 @@ export const useHostStore = create<HostState>((set) => ({
   scopeInvertY: false,
   sidechainOn: false,
   mods: {},
+  clips: {},
   theme: (() => {
     try {
       if (typeof localStorage === "undefined" || typeof localStorage.getItem !== "function") {
@@ -211,7 +241,15 @@ export const useHostStore = create<HostState>((set) => ({
     input: p.input != null ? Number(p.input) : s.input,
     bypass: p.bypass != null ? Boolean(p.bypass) : s.bypass,
   })),
-  applyHost: (p) => set((s) => ({
+  applyHost: (p) => set((s) => {
+    const prefs = applyUiPrefs(p, {
+      motion: s.motion,
+      cables: s.cables,
+      theme: s.theme,
+      frameRate: s.frameRate,
+      discardPrompt: s.discardPrompt,
+    });
+    return {
     cpu: Number(p.cpu ?? 0),
     mode: String(p.mode ?? "STUDIO"),
     lat: Number(p.lat ?? 0),
@@ -222,6 +260,11 @@ export const useHostStore = create<HostState>((set) => ({
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     scale: Number(p.scale ?? 100),
+    motion: prefs.motion ?? s.motion,
+    cables: prefs.cables ?? s.cables,
+    theme: prefs.theme ?? s.theme,
+    frameRate: prefs.frameRate ?? s.frameRate,
+    discardPrompt: prefs.discardPrompt ?? s.discardPrompt,
     sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
     mods: Array.isArray(p.mods)
       ? Object.fromEntries(
@@ -231,12 +274,42 @@ export const useHostStore = create<HostState>((set) => ({
         ] as [string, number]).filter(([id]) => id.length > 0),
       )
       : s.mods,
-  })),
+    clips: Array.isArray(p.clips)
+      ? (() => {
+        const next: Record<string, number> = {};
+        for (const raw of p.clips as Array<Record<string, unknown>>) {
+          const id = String(raw.id ?? "");
+          if (! id) {
+            continue;
+          }
+          const peak = Number(raw.peak ?? 0);
+          next[id] = peak;
+          if (id === "__out__") {
+            next.OUT = peak;
+          }
+          if (id === "OUT") {
+            next.__out__ = peak;
+          }
+          if (id === "__in__") {
+            next.IN = peak;
+          }
+          if (id === "IN") {
+            next.__in__ = peak;
+          }
+        }
+        return next;
+      })()
+      : s.clips,
+  };
+  }),
   applyPresets: (p) => set((s) => {
     const name = String(p.name ?? s.presetName);
     const nameChanged = name !== s.presetName;
     return {
     presetName: name,
+    originName: nameChanged ? name : (s.originName || name),
+    presetDirty: nameChanged ? false : s.presetDirty,
+    pendingPreset: nameChanged ? null : s.pendingPreset,
     knobMeta: nameChanged ? {} : s.knobMeta,
     presets: Array.isArray(p.list)
       ? (p.list as Array<Record<string, unknown>>).map((e) => ({
@@ -266,11 +339,13 @@ export const useHostStore = create<HostState>((set) => ({
         }))
       : [],
   }),
-  setOverlay: (name, inspectId) => set({ overlay: name, inspectId: inspectId ?? null }),
+  setOverlay: (name, inspectId) => set({ overlay: name, overlayReturn: null, inspectId: inspectId ?? null }),
   setTelemetryPath: (telemetryPath: string) => set({ telemetryPath }),
   setKnob: (id, value) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, value: Math.max(0, Math.min(1, value)) } : k)),
+    presetDirty: true,
   })),
+  markDirty: () => set({ presetDirty: true }),
   beginKnobGesture: (id) => set((s) => (
     s.knobGestures[id] ? s : { knobGestures: { ...s.knobGestures, [id]: true } }
   )),
@@ -285,6 +360,7 @@ export const useHostStore = create<HostState>((set) => ({
   patchKnob: (id, patch) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, ...patch, id: k.id } : k)),
     knobMeta: { ...s.knobMeta, [id]: { ...s.knobMeta[id], ...patch } },
+    presetDirty: true,
   })),
   activateKnob: (id, patch) => set((s) => ({
     knobs: s.knobs.map((k) => {
@@ -307,9 +383,9 @@ export const useHostStore = create<HostState>((set) => ({
   setMix: (value) => set(() => {
     const mix = Math.max(0, Math.min(1, value));
     if (mix > 1e-5) {
-      return { mix, mixHeld: mix, bypass: false };
+      return { mix, mixHeld: mix, bypass: false, presetDirty: true };
     }
-    return { mix, bypass: true };
+    return { mix, bypass: true, presetDirty: true };
   }),
   toggleBypass: () => {
     let next = 0;

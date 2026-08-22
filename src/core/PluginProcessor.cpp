@@ -158,8 +158,7 @@ int NeuroKoreAudioProcessor::demoSecondsRemaining() const noexcept
 {
     if (! Config::kEnableLicensing || isLicensed.load())
         return 0;
-    const double elapsed = ((double) juce::Time::currentTimeMillis() - demoStartMs) / 1000.0;
-    return juce::jmax (0, (int) std::ceil (Config::kDemoDurationSeconds - elapsed));
+    return Config::demoSecondsLeft (demoStartMs, (double) juce::Time::currentTimeMillis());
 }
 
 bool NeuroKoreAudioProcessor::importProductLicense (const juce::File& file)

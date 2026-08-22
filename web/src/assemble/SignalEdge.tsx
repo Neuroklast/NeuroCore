@@ -2,6 +2,7 @@ import { BaseEdge, useStore, type EdgeProps } from "@xyflow/react";
 import { useHostStore } from "../store/hostStore";
 import { motionAllows } from "../theme/motionPolicy";
 import { TUBE } from "./tubeModel";
+import { CableTraffic } from "./CableTraffic";
 import { lfoChaseMs, lfoDash, lfoDotGlow, resolveAmp, LFO_DOT, LFO_WIRE } from "./cableMotion";
 import { audioStepPath, pathLength, type Obstacle } from "./audioStep";
 import { resolveLfoHz } from "./lfoLamp";
@@ -190,41 +191,42 @@ export function SignalEdge({
         data-src={srcKey}
         className={`nk-tube-bore ${tubeClass}`}
       />
-      {showPlasma ? (
-        <>
-          <path
-            d={path}
-            fill="none"
-            stroke="var(--nk-accent)"
-            strokeWidth="2.4"
-            strokeLinecap="butt"
-            strokeLinejoin="miter"
-            data-src={srcKey}
-            className={`nk-plasma-glow${animateCables ? "" : " nk-cable-still"}`}
-          />
-          <path
-            d={path}
-            fill="none"
-            stroke="var(--nk-white)"
-            strokeWidth="1.2"
-            strokeLinecap="butt"
-            strokeLinejoin="miter"
-            data-src={srcKey}
-            className={`nk-plasma${animateCables ? "" : " nk-cable-still"}`}
-          />
-        </>
-      ) : null}
-      {showDots ? (
-        <path
-          d={path}
-          fill="none"
-          stroke="var(--nk-white)"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="miter"
-          data-src={srcKey}
-          className={`nk-dots${animateCables ? "" : " nk-cable-still"}`}
-        />
+      {showPlasma || showDots ? (
+        <CableTraffic sourceId={sourceId || source}>
+          {showPlasma ? (
+            <>
+              <path
+                d={path}
+                fill="none"
+                stroke="var(--nk-accent)"
+                strokeWidth="2.4"
+                strokeLinecap="butt"
+                strokeLinejoin="miter"
+                className={`nk-plasma-glow${animateCables ? "" : " nk-cable-still"}`}
+              />
+              <path
+                d={path}
+                fill="none"
+                stroke="var(--nk-white)"
+                strokeWidth="1.2"
+                strokeLinecap="butt"
+                strokeLinejoin="miter"
+                className={`nk-plasma${animateCables ? "" : " nk-cable-still"}`}
+              />
+            </>
+          ) : null}
+          {showDots ? (
+            <path
+              d={path}
+              fill="none"
+              stroke="var(--nk-white)"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="miter"
+              className={`nk-dots${animateCables ? "" : " nk-cable-still"}`}
+            />
+          ) : null}
+        </CableTraffic>
       ) : null}
     </g>
   );

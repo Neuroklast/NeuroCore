@@ -11,6 +11,23 @@ namespace
     constexpr const char* kHostTempoKey = "useHostTempo";
     constexpr const char* kUserBpmKey   = "userBpm";
     constexpr const char* kCableWaveKey = "cableWaveform";
+    constexpr const char* kThemeKey = "theme";
+    constexpr const char* kFpsKey = "frameRate";
+    constexpr const char* kDiscardKey = "discardPrompt";
+
+    juce::String clampTheme (const juce::String& id)
+    {
+        if (id == "gold" || id == "azure")
+            return id;
+        return "signal";
+    }
+
+    int clampFps (int fps)
+    {
+        if (fps == 30 || fps == 60)
+            return fps;
+        return 0;
+    }
 }
 
 UiSettings& UiSettings::get()
@@ -44,6 +61,9 @@ UiSettings::UiSettings()
                                  (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo)),
                    std::memory_order_relaxed);
     cableWave.store (props->getBoolValue (kCableWaveKey, false), std::memory_order_relaxed);
+    fpsCap.store (clampFps (props->getIntValue (kFpsKey, 0)), std::memory_order_relaxed);
+    unsavedPrompt.store (props->getBoolValue (kDiscardKey, true), std::memory_order_relaxed);
+    theme = clampTheme (props->getValue (kThemeKey, "signal"));
 
     if (props->containsKey (kMotionKey))
         motionValue.store ((int) clampMotion (props->getIntValue (kMotionKey, 0)),
@@ -152,6 +172,43 @@ void UiSettings::setCableWaveform (bool enabled)
     persist();
 }
 
+juce::String UiSettings::themeId() const
+{
+    const juce::ScopedLock sl (lock);
+    return theme;
+}
+
+void UiSettings::setThemeId (const juce::String& id)
+{
+    {
+        const juce::ScopedLock sl (lock);
+        theme = clampTheme (id);
+    }
+    persist();
+}
+
+int UiSettings::frameRate() const noexcept
+{
+    return fpsCap.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setFrameRate (int fps)
+{
+    fpsCap.store (clampFps (fps), std::memory_order_relaxed);
+    persist();
+}
+
+bool UiSettings::discardPrompt() const noexcept
+{
+    return unsavedPrompt.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setDiscardPrompt (bool enabled)
+{
+    unsavedPrompt.store (enabled, std::memory_order_relaxed);
+    persist();
+}
+
 int UiSettings::clampScale (int percent) noexcept
 {
     if (percent >= Config::kUiScalePercentMax)
@@ -199,5 +256,8 @@ void UiSettings::persist() const
     props->setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));
     props->setValue (kUserBpmKey, (double) bpmUser.load (std::memory_order_relaxed));
     props->setValue (kCableWaveKey, cableWave.load (std::memory_order_relaxed));
+    props->setValue (kThemeKey, theme);
+    props->setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
+    props->setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));
     props->saveIfNeeded();
 }

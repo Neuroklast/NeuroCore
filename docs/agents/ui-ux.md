@@ -41,8 +41,11 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Chips do not overlap | `nodeRectsClash` after tidy |
 | ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column |
 | Dest stub is 32 px east, never a U-turn | Any audio path point with `x > dest jack x`, or a west-then-east jog at the IN jack |
-| IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or the single jack not on the vertical midline |
+| IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or OUT’s single jack not on the vertical midline |
+| Chip paint ⊂ AABB | Handle centres, titles, captions, lamps, or a face widget sit outside `chipBox`. Closed IN/OUT have no range/select. Text ellipsizes in the label column |
+| IN sources east only | Any target handle on IN. `sc` is an east **output** (host sidechain). OUT targets west only; gain is overlay-only |
 | Audio plasma is a white core with red glow | Stream stroke not `#ffffff`, or glow not the scope-out red; dashoffset must run source → dest (never positive) |
+| Cable beads follow that chip | Dots/dashes move at a speed from the **source** chip peak. ≤ −60 dBFS or silence = still. Louder = faster |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
 | Param cables follow the board router | Bind path through a chip, no 32 px stubs, lightning, or dest jack above the knob with an empty path |
 

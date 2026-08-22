@@ -166,7 +166,13 @@ export function chipBox(
 
 export function jackTopPx(index: number, count: number, height: number, type = ""): number {
   if (isUtilityIo(type)) {
-    return snapToCellCenter(height * 0.5);
+    if (count <= 1) {
+      return snapToCellCenter(height * 0.5);
+    }
+    const pitch = sideJackPitch(count);
+    const span = (count - 1) * pitch;
+    const start = snapToCellCenter((height - span) * 0.5);
+    return start + index * pitch;
   }
   const pitch = sideJackPitch(count);
   const start = titleJackY();

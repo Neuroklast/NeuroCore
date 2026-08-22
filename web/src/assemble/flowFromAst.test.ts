@@ -11,7 +11,10 @@ function emptyAst(nodes: AstDocument["nodes"] = []): AstDocument {
     params: [],
     nodes,
     edges: [],
-    inJacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
+    inJacks: [
+      { id: "out", label: "out", output: true, kind: "audio" },
+      { id: "sc", label: "sc", output: true, kind: "audio" },
+    ],
   };
 }
 
@@ -326,16 +329,14 @@ describe("flowFromAst", () => {
     }
   });
 
-  it("shows a Sidechain IN chip only when host.sidechainOn", () => {
+  it("puts a sc jack on IN and never a separate Sidechain tile", () => {
     const off = flowFromAst(emptyAst(), { sidechainOn: false });
-    expect(off.nodes.some((n) => n.data.type === "sidechain")).toBe(false);
+    const inn = off.nodes.find((n) => n.id === "IN");
+    expect(inn?.data.jacks.some((j) => j.output && j.id === "sc")).toBe(true);
+    expect(off.nodes.some((n) => n.data.type === "sidechain" || n.id === "SC")).toBe(false);
 
     const on = flowFromAst(emptyAst(), { sidechainOn: true });
-    const sc = on.nodes.find((n) => n.data.type === "sidechain");
-    expect(sc).toBeTruthy();
-    expect(sc?.type).toBe("io");
-    expect(sc?.draggable).toBe(false);
-    expect(sc?.data.jacks.some((j) => j.output && j.id === "out")).toBe(true);
-    expect(sc?.data.label.toLowerCase()).toMatch(/sidechain|sc/);
+    expect(on.nodes.some((n) => n.data.type === "sidechain" || n.id === "SC")).toBe(false);
+    expect(on.nodes.find((n) => n.id === "IN")?.data.jacks.some((j) => j.id === "sc")).toBe(true);
   });
 });

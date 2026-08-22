@@ -1715,6 +1715,9 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
         dest.clear();
         for (int ch = 0; ch < srcCh; ++ch)
             dest.copyFrom (ch, 0, busScratch[0], ch, 0, srcSm);
+        const float db0 = graphPtr->outGainDb.getFloatValue();
+        if (std::abs (db0) > 1.0e-4f)
+            dest.applyGain (0, smUse, std::pow (10.f, db0 / 20.f));
         return;
     }
 
@@ -1741,6 +1744,9 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
         mixdown (mixed, srcs, gains);
         for (int ch = 0; ch < chUse; ++ch)
             dest.copyFrom (ch, 0, mixed, ch, 0, smUse);
+        const float db = graphPtr->outGainDb.getFloatValue();
+        if (std::abs (db) > 1.0e-4f)
+            dest.applyGain (0, smUse, std::pow (10.f, db / 20.f));
         return;
     }
 
@@ -1757,6 +1763,9 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
                 dest.addSample (ch, i, src.getSample (ch, i) * g);
         }
     }
+    const float dbV = graphPtr->outGainDb.getFloatValue();
+    if (std::abs (dbV) > 1.0e-4f)
+        dest.applyGain (0, smUse, std::pow (10.f, dbV / 20.f));
 }
 
 void SignalChain::processBlock(juce::AudioBuffer<float>& buffer)
@@ -2701,6 +2710,40 @@ bool SignalChain::copyLfoHz (const juce::String& id, float& destHz) const noexce
                 return true;
             }
     return false;
+}
+
+bool SignalChain::copyTapPeak (const juce::String& id, float& dest) const noexcept
+{
+    if (id.isEmpty())
+        return false;
+    for (int i = 0; i < kMaxNodeTaps; ++i)
+    {
+        const auto& t = nodeTaps[(size_t) i];
+        if (id != juce::String (t.id.data()))
+            continue;
+        dest = t.peak.load (std::memory_order_relaxed);
+        return true;
+    }
+    return false;
+}
+
+void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
+{
+    for (int i = 0; i < kMaxNodeTaps; ++i)
+    {
+        const auto& t = nodeTaps[(size_t) i];
+        if (t.id[0] == 0)
+            continue;
+        juce::String id (t.id.data());
+        if (id == "__out__")
+            id = "OUT";
+        else if (id == "__in__")
+            id = "IN";
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("id", id);
+        o->setProperty ("peak", t.peak.load (std::memory_order_relaxed));
+        dest.add (juce::var (o));
+    }
 }
 
 juce::StringArray SignalChain::getModNames() const
@@ -4628,8 +4671,17 @@ void SignalChain::writeNodeTap (const juce::String& id, const juce::AudioBuffer<
     const int n = buf.getNumSamples();
     const float* s = buf.getReadPointer (0);
     const float step = (float) n / (float) kNodeTapSamples;
+    float pk = 0.f;
+    for (int c = 0; c < buf.getNumChannels(); ++c)
+    {
+        const float* ch = buf.getReadPointer (c);
+        for (int i = 0; i < n; ++i)
+            pk = juce::jmax (pk, std::abs (ch[i]));
+    }
     for (int i = 0; i < kNodeTapSamples; ++i)
         t.wave[(size_t) i] = s[juce::jmin (n - 1, (int) (i * step))];
+    const float held = t.peak.load (std::memory_order_relaxed);
+    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
     t.gen.fetch_add (1, std::memory_order_release);
 }
 
@@ -4655,8 +4707,13 @@ void SignalChain::writeNodeTapLane (const juce::String& id, const float* src, in
     std::memset (t.id.data(), 0, t.id.size());
     std::strncpy (t.id.data(), utf, t.id.size() - 1);
     const float step = (float) n / (float) kNodeTapSamples;
+    float pk = 0.f;
+    for (int i = 0; i < n; ++i)
+        pk = juce::jmax (pk, std::abs (src[i]));
     for (int i = 0; i < kNodeTapSamples; ++i)
         t.wave[(size_t) i] = src[juce::jmin (n - 1, (int) (i * step))];
+    const float held = t.peak.load (std::memory_order_relaxed);
+    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
     t.gen.fetch_add (1, std::memory_order_release);
 }
 

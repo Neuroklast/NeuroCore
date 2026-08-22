@@ -32,6 +32,22 @@ public:
         chain.processBlock(buffer);
         expectWithinAbsoluteError(buffer.getSample(0,0), 0.5f, 1e-5f);
 
+        beginTest("tap peak reports clip after a hot stage");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript ("stage1: y = x * 4\n", e), e);
+            juce::dsp::ProcessSpec spec { 48000.0, 64, 1 };
+            c.prepare (spec);
+            juce::AudioBuffer<float> buf (1, 64);
+            for (int i = 0; i < 64; ++i)
+                buf.setSample (0, i, 0.6f);
+            c.processBlock (buf);
+            float pk = 0.f;
+            expect (c.copyTapPeak ("stage1", pk));
+            expect (pk >= 0.99f);
+        }
+
         beginTest("stage filter limit processBlock not per-sample virtual");
         {
             dsl::SignalChain c;

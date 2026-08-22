@@ -20,9 +20,12 @@ export function knobRail(_w: Workspace): "left" | "bottom" | "none" {
   return "bottom";
 }
 
-/** Unit keeps ~60 Hz DSP telemetry. Circuit/Terminal only need glow ticks. */
-export function telemetryIntervalMs(w: Workspace): number {
-  return w === "face" ? 16 : 500;
+/** Unit keeps DSP telemetry near the UI frame cap. Circuit/Terminal only need glow ticks. */
+export function telemetryIntervalMs(w: Workspace, fps = 0): number {
+  if (w !== "face") {
+    return 500;
+  }
+  return fps === 30 ? 33 : 16;
 }
 
 export type TerminalAction = "edit" | "validate" | "optimize";

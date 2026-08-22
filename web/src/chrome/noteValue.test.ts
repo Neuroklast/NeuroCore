@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   formatKnobDisplay,
   formatNoteBound,
+  labelForWhole,
   noteLabelForMapped,
+  noteRangeToTime,
   noteUnitForRange,
   parseNoteToken,
   round2,
+  timeRangeToNote,
   typedToMapped,
   wholeToHz,
   wholeToMs,
@@ -47,5 +50,20 @@ describe("knob note values", () => {
   it("rounds display to 2 dp and scales percent units", () => {
     expect(round2(0.35000002)).toBe("0.35");
     expect(formatKnobDisplay(0.405, "%")).toBe("40.50%");
+  });
+
+  it("converts a ms range to note wholes and back at 120 BPM", () => {
+    const notes = timeRangeToNote(20, 2000, 120, "ms");
+    expect(notes.min).toBeCloseTo(0.0625, 3);
+    expect(notes.max).toBeCloseTo(1, 3);
+    const ms = noteRangeToTime(notes.min, notes.max, 120, "ms");
+    expect(ms.min).toBeCloseTo(125, 0);
+    expect(ms.max).toBeCloseTo(2000, 0);
+  });
+
+  it("converts an Hz LFO range onto the note grid", () => {
+    const notes = timeRangeToNote(0.05, 6, 120, "Hz");
+    expect(notes.min).toBeGreaterThan(notes.max);
+    expect(labelForWhole(notes.max)).toBe("1/12");
   });
 });

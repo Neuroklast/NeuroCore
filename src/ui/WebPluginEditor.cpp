@@ -74,7 +74,7 @@ WebPluginEditor::~WebPluginEditor()
 void WebPluginEditor::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
-    g.fillAll (juce::Colour (0xff0e0e12));
+    g.fillAll (juce::Colours::black);
     g.setColour (juce::Colour (0x88ff003c));
     g.drawRect (r.reduced (0.5f), 1.0f);
     g.setColour (juce::Colour (0x33ff003c));

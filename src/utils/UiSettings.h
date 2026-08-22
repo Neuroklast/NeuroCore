@@ -38,6 +38,15 @@ public:
     bool cableWaveform() const noexcept;
     void setCableWaveform (bool enabled);
 
+    juce::String themeId() const;
+    void setThemeId (const juce::String& id);
+
+    int frameRate() const noexcept;
+    void setFrameRate (int fps);
+
+    bool discardPrompt() const noexcept;
+    void setDiscardPrompt (bool enabled);
+
     static int clampScale (int percent) noexcept;
     static CyberMotion clampMotion (int stored) noexcept;
     static const char* motionKey (CyberMotion motion) noexcept;
@@ -61,4 +70,7 @@ private:
     std::atomic<bool>  hostTempo { true };
     std::atomic<float> bpmUser { 120.f };
     std::atomic<bool>  cableWave { false };
+    std::atomic<int>   fpsCap { 0 };
+    std::atomic<bool>  unsavedPrompt { true };
+    juce::String       theme { "signal" };
 };

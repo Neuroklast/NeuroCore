@@ -13,6 +13,7 @@ import {
   faceFftBar,
   faceFftFrame,
   formatDbfs,
+  formatHudFixed,
   formatLufs,
   knobLfo,
   lfoScopePath,
@@ -96,6 +97,8 @@ describe("unit face stereo metrics from gonio", () => {
 
     expect(formatDbfs(0.781)).toBe(peakToDb(0.781).toFixed(2));
     expect(formatLufs(0.195)).toMatch(/^-?\d+\.\d$/);
+    expect(formatHudFixed(-1.2, 2, 3).length).toBe(formatHudFixed(12.34, 2, 3).length);
+    expect(formatHudFixed(-1.2, 2, 3).startsWith("−")).toBe(true);
   });
 });
 

@@ -152,6 +152,24 @@ export function specRowFade(row: number): number {
 }
 
 /** Log-Hz ticks on a 20 Hz … Nyquist span, mapped onto SPEC_BINS. */
+export function waveTimeMarks(sr: number, nSamples: number, bins = SPEC_BINS): Array<{ bin: number; label: string }> {
+  const dur = sr > 0 ? nSamples / sr : 0;
+  const ms = dur * 1000;
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  return ticks.map((t) => ({
+    bin: Math.round(t * (bins - 1)),
+    label: `${(ms * t).toFixed(ms >= 10 ? 0 : 1)}ms`,
+  }));
+}
+
+export function waveSampleMarks(nSamples: number, bins = SPEC_BINS): Array<{ bin: number; label: string }> {
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  return ticks.map((t) => ({
+    bin: Math.round(t * (bins - 1)),
+    label: String(Math.round(t * Math.max(0, nSamples - 1))),
+  }));
+}
+
 export function logFreqMarks(sr: number, bins = SPEC_BINS): Array<{ bin: number; hz: number; label: string }> {
   const nyq = sr > 0 ? sr * 0.5 : 24000;
   const fMin = 20;
@@ -190,6 +208,82 @@ export function specMag01(linear: number): number {
   return Math.max(0, Math.min(1, (db + 72) / 72));
 }
 
+/** First rising zero-cross to index 0. Tail is silence — never wrap (no seam). */
+export function triggerAlign(samples: ArrayLike<number>): Float32Array {
+  const n = samples.length;
+  const out = new Float32Array(n);
+  if (n < 3) {
+    for (let i = 0; i < n; i += 1) {
+      out[i] = Number(samples[i] ?? 0);
+    }
+    return out;
+  }
+  let cut = 0;
+  for (let i = 1; i < n; i += 1) {
+    const a = Number(samples[i - 1] ?? 0);
+    const b = Number(samples[i] ?? 0);
+    if (a <= 0 && b > 0.02) {
+      cut = i - 1;
+      break;
+    }
+  }
+  const keep = n - cut;
+  for (let i = 0; i < keep; i += 1) {
+    out[i] = Number(samples[cut + i] ?? 0);
+  }
+  return out;
+}
+
+export function shouldResetScopeHist(prev: ScopeXScale, next: ScopeXScale): boolean {
+  const kind = (x: ScopeXScale) => (x === "freq" ? "freq" : "wave");
+  return kind(prev) !== kind(next);
+}
+
+export function shouldPushScopeRow(tick: number, lastTick: number): boolean {
+  return tick !== lastTick;
+}
+
+export function scopeYMarks(
+  xScale: ScopeXScale,
+  yScale: ScopeYScale,
+): Array<{ mag: number; label: string }> {
+  if (xScale === "freq" || yScale === "db") {
+    return specDbMarks();
+  }
+  return [
+    { mag: 1, label: "+1" },
+    { mag: 0.5, label: "0" },
+    { mag: 0, label: "−1" },
+  ];
+}
+
+export function isWaveScope(xScale: ScopeXScale): boolean {
+  return xScale !== "freq";
+}
+
+/** Time/sample 3D row: triggered waveform, 0.5 = silence, peaks toward 0/1. */
+export function standingWaveRow(
+  samples: ArrayLike<number>,
+  bins = SPEC_BINS,
+  yScale: ScopeYScale = "linear",
+): number[] {
+  const aligned = triggerAlign(samples);
+  const n = Math.max(1, aligned.length);
+  const row = new Array<number>(bins);
+  for (let b = 0; b < bins; b += 1) {
+    const i0 = Math.floor((b / Math.max(1, bins - 1)) * (n - 1));
+    const i1 = Math.min(n - 1, i0 + 1);
+    const f = ((b / Math.max(1, bins - 1)) * (n - 1)) - i0;
+    const x = (aligned[i0] ?? 0) * (1 - f) + (aligned[i1] ?? 0) * f;
+    if (yScale === "db") {
+      row[b] = specMag01(Math.abs(x));
+    } else {
+      row[b] = Math.max(0, Math.min(1, 0.5 + 0.5 * x));
+    }
+  }
+  return row;
+}
+
 export function spectrogramPush(hist: number[][], bins: ArrayLike<number>): number[][] {
   const row = new Array<number>(SPEC_BINS);
   for (let i = 0; i < SPEC_BINS; i += 1) {
@@ -226,6 +320,29 @@ export function spectrogramProject(
   const floor = nearY + (farY - nearY) * recede;
   const rise = mag * inner.h * 0.28 * (1 - recede * 0.28);
   return { x, y: floor - rise };
+}
+
+/** mag 0.5 is the zero line; 1 is +peak, 0 is −peak. */
+export function waveProject(
+  bin: number,
+  row: number,
+  mag: number,
+  w: number,
+  h: number,
+): { x: number; y: number } {
+  const signed = (mag - 0.5) * 2;
+  const inner = specInner(w, h);
+  const recede = row / Math.max(1, SPEC_DEPTH - 1);
+  const nearHalf = inner.w * 0.46;
+  const farHalf = inner.w * 0.34;
+  const half = nearHalf + (farHalf - nearHalf) * recede;
+  const t = bin / Math.max(1, SPEC_BINS - 1);
+  const x = inner.cx + (t - 0.5) * 2 * half;
+  const nearY = inner.y + inner.h * 0.90;
+  const farY = inner.y + inner.h * 0.32;
+  const floor = nearY + (farY - nearY) * recede;
+  const amp = inner.h * 0.28 * (1 - recede * 0.28);
+  return { x, y: floor - signed * amp };
 }
 
 /** dB ticks on the near-plane Y axis. Floor is −72 dB (specMag01). */

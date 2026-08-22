@@ -9,6 +9,7 @@
 #include "HostSnapshot.h"
 #include "TelemetryPump.h"
 #include "WebEditorPolicy.h"
+#include "WebNav.h"
 #include "../dsl/GraphModel.h"
 #include "../ui/StandaloneAudioSettings.h"
 
@@ -159,13 +160,14 @@ struct PageBrowser : juce::WebBrowserComponent
     using juce::WebBrowserComponent::WebBrowserComponent;
     bool pageAboutToLoad (const juce::String& newURL) override
     {
-        if (newURL == getResourceProviderRoot())
+        if (isPluginPage (newURL, getResourceProviderRoot(), allowedDevUrl))
             return true;
-        if (allowedDevUrl.isNotEmpty() && newURL.startsWith (allowedDevUrl))
-            return true;
-        if (newURL.startsWith ("http://localhost:") || newURL.startsWith ("http://127.0.0.1:"))
-            return true;
-        return newURL.startsWith (getResourceProviderRoot());
+        if (isExternalHttp (newURL))
+        {
+            juce::URL (newURL).launchInDefaultBrowser();
+            return false;
+        }
+        return false;
     }
     juce::String allowedDevUrl;
 };
@@ -443,6 +445,38 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 pushOutcome (out);
                                 complete (session.toCompileResultVar (out));
                             })
+                        .withNativeFunction ("openUrl",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                juce::String url;
+                                if (args.size() > 0 && args[0].isObject())
+                                    url = args[0].getProperty ("url", "").toString();
+                                else if (args.size() > 0)
+                                    url = args[0].toString();
+                                if (isExternalHttp (url))
+                                    juce::URL (url).launchInDefaultBrowser();
+                                complete (juce::var (true));
+                            })
+                        .withNativeFunction ("setKnobMeta",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                juce::String error;
+                                KnobMetaCmd c;
+                                if (! knobMetaFromVar (args.size() ? args[0] : juce::var(), c, error)
+                                    || ! applyKnobMeta (proc, c, error))
+                                {
+                                    complete (failVar (error));
+                                    return;
+                                }
+                                auto seeded = session.seed (proc.getScript());
+                                seeded.origin = "canvas";
+                                pushOutcome (seeded);
+                                pushHost();
+                                if (browser != nullptr && bridge.allowOutbound())
+                                    browser->emitEventIfBrowserIsVisible ("params",
+                                                                          paramsVar (proc));
+                                complete (juce::var (true));
+                            })
                         .withNativeFunction ("setParam",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {
@@ -507,6 +541,25 @@ struct WebViewHolder::Impl : private juce::Timer,
                                     if (! o.getProperty ("explorerCat", juce::var()).isVoid())
                                         proc.setLastPresetBrowserCategory (
                                             o.getProperty ("explorerCat", "").toString());
+                                    if (! o.getProperty ("motion", juce::var()).isVoid())
+                                    {
+                                        const auto m = o.getProperty ("motion", "full").toString();
+                                        if (m == "reduced")
+                                            UiSettings::get().setMotion (CyberMotion::Reduced);
+                                        else if (m == "off")
+                                            UiSettings::get().setMotion (CyberMotion::Off);
+                                        else
+                                            UiSettings::get().setMotion (CyberMotion::Full);
+                                    }
+                                    if (! o.getProperty ("cables", juce::var()).isVoid())
+                                        UiSettings::get().setCableWaveform (
+                                            o.getProperty ("cables", "wave").toString() == "wave");
+                                    if (! o.getProperty ("theme", juce::var()).isVoid())
+                                        UiSettings::get().setThemeId (o.getProperty ("theme", "signal").toString());
+                                    if (! o.getProperty ("frameRate", juce::var()).isVoid())
+                                        UiSettings::get().setFrameRate ((int) o.getProperty ("frameRate", 0));
+                                    if (! o.getProperty ("discardPrompt", juce::var()).isVoid())
+                                        UiSettings::get().setDiscardPrompt ((bool) o.getProperty ("discardPrompt", true));
                                 }
                                 pushHost();
                                 complete (juce::var (true));
@@ -747,6 +800,8 @@ struct WebViewHolder::Impl : private juce::Timer,
             stopTimer();
             return;
         }
+        if (proc.isLiveMode() != UiSettings::get().liveMode())
+            proc.setLiveMode (UiSettings::get().liveMode());
         pushHost();
 #endif
     }

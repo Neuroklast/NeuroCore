@@ -7,6 +7,7 @@ import type {
   Origin,
 } from "../bridge/ast";
 import { parseAstJson } from "../bridge/ast";
+import { useHostStore } from "./hostStore";
 
 export interface AstState {
   origin: Origin;
@@ -45,6 +46,12 @@ export const useAstStore = create<AstState>((set) => ({
       script: opts?.updateScript === false ? state.script : payload.script,
       diagnostics: payload.diagnostics,
     }));
+    if (payload.origin === "canvas" || payload.origin === "editor" || payload.origin === "undo") {
+      useHostStore.getState().markDirty();
+    }
+    if (payload.origin === "preset" || payload.origin === "host") {
+      useHostStore.setState({ presetDirty: false });
+    }
   },
 
   applyCompileResult: (payload) => {

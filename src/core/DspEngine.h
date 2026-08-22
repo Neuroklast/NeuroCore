@@ -127,6 +127,7 @@ private:
     InputRouter inputRouter;
 
     juce::SmoothedValue<float> wetValue;
+    DSPUtils::DryWetMixState dryWetMix;
 
     juce::SmoothedValue<float> gainCompValue;
     juce::dsp::Gain<float>     outputGain;

@@ -535,9 +535,9 @@ add({
   label: "IN",
   typeCodePrefix: "IN",
   audioIns: [],
-  audioOuts: ["out"],
+  audioOuts: ["out", "sc"],
   paramJacks: [],
-  blurb: "Locked input.",
+  blurb: "Locked input. sc is the host sidechain (silent when the pin is off).",
 });
 
 add({
@@ -556,8 +556,10 @@ add({
   typeCodePrefix: "OU",
   audioIns: ["in"],
   audioOuts: [],
-  paramJacks: [],
-  blurb: "Output, mix-ins optional.",
+  paramJacks: ["gain"],
+  ranges: { gain: { min: -24, max: 12, unit: "dB" } },
+  defaultArgs: { gain: "0" },
+  blurb: "Output mix-ins plus output gain.",
 });
 
 export function resolveChipId(type: string, args: Record<string, string> = {}): string {
