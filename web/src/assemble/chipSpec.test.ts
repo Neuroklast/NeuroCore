@@ -29,7 +29,7 @@ const CATALOG: Array<{
   { id: "limit", label: "Limit", params: ["ceiling", "release"] },
   { id: "ott", label: "OTT", params: ["depth", "time", "low", "mid", "high"] },
   { id: "ir", label: "IR", params: ["mix", "gain"] },
-  { id: "env", label: "ENV", params: ["type", "attack", "release", "hold", "min", "max", "invert"] },
+  { id: "env", label: "ENV", params: ["type", "attack", "release", "hold", "min", "max", "invert", "source"] },
   { id: "osc", label: "LFO", params: ["shape", "freq", "sync", "depth"] },
   { id: "octaver", label: "Octaver", params: ["sub", "up", "mix", "tone", "thresh"] },
   { id: "vocoder", label: "Vocoder", params: ["bands", "mix", "q", "attack", "release"] },
@@ -72,9 +72,11 @@ describe("ChipSpec registry", () => {
     const spec = chipSpec("env");
     expect(spec.audioIns).toEqual(["in"]);
     expect(spec.audioOuts).toEqual(["mod"]);
-    expect(spec.paramJacks).toEqual(["type", "attack", "release", "hold", "min", "max", "invert"]);
+    expect(spec.paramJacks).toEqual(["type", "attack", "release", "hold", "min", "max", "invert", "source"]);
     expect(spec.enums.type).toEqual(["peak", "rms"]);
     expect(spec.enums.invert).toEqual(["off", "on"]);
+    expect(spec.enums.source).toEqual(["in", "sidechain"]);
+    expect(spec.defaultArgs.source).toBe("in");
     expect(spec.ranges.min).toEqual({ min: 0, max: 1 });
     expect(spec.ranges.max).toEqual({ min: 0, max: 1 });
     expect(spec.defaultArgs.min).toBe("0");
@@ -138,7 +140,7 @@ describe("param jacks on the south edge", () => {
     expect(bindableJackKeys(chipSpec("send"))).toEqual([]);
     expect(bindableJackKeys(chipSpec("eq"))).toEqual(["type", "freq", "q", "gain"]);
     expect(bindableJackKeys(chipSpec("env"))).toEqual([
-      "type", "attack", "release", "hold", "min", "max", "invert",
+      "type", "attack", "release", "hold", "min", "max", "invert", "source",
     ]);
     expect(paintedBindKeys("custom", { y: "x", in2: "0" })).toEqual(["in2"]);
     expect(paintedBindKeys("stage", { y: "x" })).toEqual([]);

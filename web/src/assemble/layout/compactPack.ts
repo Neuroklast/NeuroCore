@@ -1,7 +1,9 @@
-import { BOARD_GRID, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
+import { BOARD_GRID, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
 export const COMPACT_GAP = CHIP_AIR_X;
+/** Halo + rail + halo. finishHalo solidifies one cell around each chip, so CHIP_AIR_Y is not a cable. */
+export const WRAP_AIR = BOARD_PAD + BOARD_GRID + BOARD_PAD;
 export type BoardView = { w: number; h: number };
 
 export function serialIds(
@@ -116,6 +118,29 @@ export function separateChips(
   return out;
 }
 
+/** How many modules fit in one L→R row before wrapping. At least 1. */
+export function wrapFits(
+  widths: readonly number[],
+  viewW: number,
+  gapX: number,
+  pad: number,
+): number {
+  if (widths.length === 0) {
+    return 1;
+  }
+  let x = pad;
+  let n = 0;
+  for (const w of widths) {
+    const start = n === 0 ? pad : x + gapX;
+    if (n > 0 && start + w + pad > viewW) {
+      break;
+    }
+    x = start + w;
+    n += 1;
+  }
+  return Math.max(1, n);
+}
+
 export function nodeRail(n: LayoutNode): string {
   const r = (n.rail || "").toLowerCase();
   if (n.id === "IN" || n.id === "in") {
@@ -140,8 +165,10 @@ function placeOrder(
   pad: number,
   gapX: number,
   gapY: number,
+  viewW: number,
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  const colsN = Math.max(1, Math.ceil(order.length / compactRowTarget(order.length)));
+  const widths = order.map((id) => snapSize(byId.get(id)?.w ?? BOARD_GRID));
+  const colsN = wrapFits(widths, viewW, gapX, pad);
   const slots: Array<{ id: string; row: number; col: number; w: number; h: number }> = [];
   for (let i = 0; i < order.length; i += 1) {
     const n = byId.get(order[i]!);
@@ -211,15 +238,22 @@ export function packRows(
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  void view;
   const gapX = CHIP_AIR_X;
-  const gapY = CHIP_AIR_Y;
-  const pad = gapY;
+  const gapY = WRAP_AIR;
+  const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const namedRails = [...new Set(nodes.map(nodeRail).filter((r) => r !== "main" && r !== "out" && r !== "mod"))];
   if (namedRails.length === 0) {
     const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
-    return separateChips(placeOrder(serialIds(nodes, edges, start), byId, pad, pad, gapX, gapY));
+    return separateChips(placeOrder(
+      serialIds(nodes, edges, start),
+      byId,
+      pad,
+      pad,
+      gapX,
+      gapY,
+      view.w,
+    ));
   }
 
   const groups = new Map<string, LayoutNode[]>();
@@ -246,9 +280,8 @@ export function packRows(
     const start = rail === "main"
       ? (members.find((n) => n.id === "IN")?.id ?? members[0]!.id)
       : (members.find((n) => n.id === rail)?.id ?? members[0]!.id);
-    const subset = members;
-    const subEdges = edges.filter((e) => subset.some((n) => n.id === e.source) && subset.some((n) => n.id === e.target));
-    const chunk = placeOrder(serialIds(subset, subEdges, start), byId, y, pad, gapX, gapY);
+    const subEdges = edges.filter((e) => members.some((n) => n.id === e.source) && members.some((n) => n.id === e.target));
+    const chunk = placeOrder(serialIds(members, subEdges, start), byId, y, pad, gapX, gapY, view.w);
     for (const [id, p] of Object.entries(chunk)) {
       placed[id] = p;
       maxRight = Math.max(maxRight, p.x + p.w);

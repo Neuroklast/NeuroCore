@@ -6,6 +6,7 @@ import { parseDslSketch } from "../../presets/parseDslSketch";
 import { findFactory } from "../../presets/factoryCatalog";
 import { handleId } from "../handles";
 import { firstLastHorizontal, hasLightning } from "./chamfer";
+import { packRows, rowCount } from "./compactPack";
 import { arrange, bboxArea, compact, pathLength, pinJackStubs, reroute } from "./runLayout";
 import { requestLayout } from "./layoutClient";
 import type { LayoutEdge, LayoutNode } from "./types";
@@ -103,6 +104,51 @@ describe("arrange vs compact", () => {
     const r = await compact(nodes, edges);
     expect(r.edgePaths.e0).toBeTruthy();
     expect(r.edgePaths.e1).toBeTruthy();
+  });
+});
+
+describe("compact wrap rail", () => {
+  it("sends the wrap cable between the two rows, not around the hull", async () => {
+    const jack = (id: string, y: number) => ({ id, y });
+    const nodes: LayoutNode[] = [
+      { id: "IN", w: 128, h: 64, ins: [], outs: [jack("out", 48)] },
+    ];
+    const edges: LayoutEdge[] = [];
+    let prev = "IN";
+    for (let i = 0; i < 5; i += 1) {
+      const id = `c${i}`;
+      nodes.push({
+        id,
+        w: 256,
+        h: 96,
+        ins: [jack("in", 48)],
+        outs: [jack("out", 48)],
+      });
+      edges.push({ id: `e${i}`, source: prev, target: id, fromJack: "out", toJack: "in" });
+      prev = id;
+    }
+    nodes.push({ id: "OUT", w: 128, h: 64, ins: [jack("in", 48)], outs: [] });
+    edges.push({ id: "e5", source: prev, target: "OUT", fromJack: "out", toJack: "in" });
+    const view = { w: 700, h: 420 };
+    const packed = packRows(nodes, edges, view);
+    expect(rowCount(packed)).toBeGreaterThan(1);
+    const r = await compact(nodes, edges, view);
+    const wrap = edges.find((e) => {
+      const s = r.nodes[e.source];
+      const t = r.nodes[e.target];
+      return s && t && t.x < s.x && t.y > s.y + s.h * 0.5;
+    });
+    expect(wrap, "a wrap edge").toBeTruthy();
+    const pts = parsePath(r.edgePaths[wrap!.id]!);
+    const s = r.nodes[wrap!.source]!;
+    const t = r.nodes[wrap!.target]!;
+    const minX = Math.min(...Object.values(r.nodes).map((n) => n.x));
+    const maxY = Math.max(...Object.values(r.nodes).map((n) => n.y + n.h));
+    const railHits = pts.filter((p) => p.y >= s.y + s.h && p.y <= t.y);
+    expect(railHits.length, r.edgePaths[wrap!.id]).toBeGreaterThan(0);
+    expect(Math.min(...pts.map((p) => p.x))).toBeGreaterThanOrEqual(minX - BOARD_GRID);
+    expect(Math.max(...pts.map((p) => p.y))).toBeLessThanOrEqual(maxY + BOARD_GRID);
+    expect(packed.IN!.x).toBe(packed[wrap!.target]?.x ?? packed.IN!.x);
   });
 });
 

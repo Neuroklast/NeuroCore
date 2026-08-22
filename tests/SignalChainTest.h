@@ -46,6 +46,88 @@ public:
             float pk = 0.f;
             expect (c.copyTapPeak ("stage1", pk));
             expect (pk >= 0.99f);
+            float pkL = 0.f, pkR = 0.f;
+            expect (c.copyTapPeakLR ("stage1", pkL, pkR));
+            expect (std::abs (pkL - pkR) < 0.05f);
+        }
+
+        beginTest("stereo tap keeps L and R isolated");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript ("stage1: y = x\n", e), e);
+            juce::dsp::ProcessSpec spec2 { 48000.0, 64, 2 };
+            c.prepare (spec2);
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.8f);
+                buf.setSample (1, i, 0.0f);
+            }
+            c.processBlock (buf);
+            float pkL = 0.f, pkR = 0.f;
+            expect (c.copyTapPeakLR ("stage1", pkL, pkR));
+            expect (pkL > 0.5f, "left tap silent after hard pan");
+            expect (pkR < 0.05f, "right tap should stay quiet");
+            juce::Array<juce::var> clips;
+            c.appendClipPeaks (clips);
+            bool found = false;
+            for (const auto& v : clips)
+            {
+                if (auto* o = v.getDynamicObject())
+                {
+                    if (o->getProperty ("id").toString() == "stage1")
+                    {
+                        found = true;
+                        expect (o->hasProperty ("peakL"));
+                        expect (o->hasProperty ("peakR"));
+                        expect (o->hasProperty ("rmsL"));
+                        expect (o->hasProperty ("rmsR"));
+                        expect ((float) o->getProperty ("peakL") > 0.5f);
+                        expect ((float) o->getProperty ("peakR") < 0.05f);
+                        expect ((float) o->getProperty ("rmsL") > 0.5f);
+                        expect ((float) o->getProperty ("rmsR") < 0.05f);
+                    }
+                }
+            }
+            expect (found);
+        }
+
+        beginTest("clip tap rms is block energy, not a copy of peak");
+        {
+            dsl::SignalChain c;
+            juce::String e;
+            expect (c.loadScript ("stage1: y = x\n", e), e);
+            juce::dsp::ProcessSpec specSine { 48000.0, 64, 2 };
+            c.prepare (specSine);
+            juce::AudioBuffer<float> buf (2, 64);
+            const float twoPi = juce::MathConstants<float>::twoPi;
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.8f * std::sin (twoPi * (float) i / 64.f));
+                buf.setSample (1, i, 0.0f);
+            }
+            c.processBlock (buf);
+            juce::Array<juce::var> clips;
+            c.appendClipPeaks (clips);
+            bool found = false;
+            for (const auto& v : clips)
+            {
+                if (auto* o = v.getDynamicObject())
+                {
+                    if (o->getProperty ("id").toString() == "stage1")
+                    {
+                        found = true;
+                        const float peakL = (float) o->getProperty ("peakL");
+                        const float rmsL = (float) o->getProperty ("rmsL");
+                        const float rmsR = (float) o->getProperty ("rmsR");
+                        expect (peakL > 0.7f, "sine peak missing");
+                        expect (rmsL > 0.4f && rmsL < peakL - 0.05f, "rms must sit below peak on a sine");
+                        expect (rmsR < 0.05f, "right rms should stay quiet");
+                    }
+                }
+            }
+            expect (found);
         }
 
         beginTest("stage filter limit processBlock not per-sample virtual");

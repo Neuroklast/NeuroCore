@@ -68,7 +68,8 @@ describe("circuit visual — every catalog chip", () => {
         const y0 = jackTopPx(0, audioOuts.length, box.h);
         const y1 = jackTopPx(1, audioOuts.length, box.h);
         expect(y1 - y0, `${spec.id} out pitch ${y0} ${y1} h=${box.h}`).toBeGreaterThanOrEqual(TUBE_RAIL - 0.5);
-        expect(y0, `${spec.id} first out under chevron`).toBeGreaterThanOrEqual(36);
+        expect(y0, `${spec.id} first out`).toBeGreaterThan(0);
+        expect(jackTopPx(audioOuts.length - 1, audioOuts.length, box.h), `${spec.id} last out`).toBeLessThan(box.h);
       }
     }
   });

@@ -1,5 +1,8 @@
 import type { Origin } from "../bridge/ast";
 
+/** One floor for `<ReactFlow>` and `fitView`. Different values make fitView a no-op. */
+export const BOARD_MIN_ZOOM = 0.4;
+
 export function keepLivePositions(origin: Origin): boolean {
   return origin === "canvas" || origin === "elk";
 }
@@ -13,9 +16,34 @@ export function fitViewOpts(motion: string, reduced: boolean) {
   return {
     padding: 0.1,
     duration: motion === "off" || reduced ? 0 : 280,
-    minZoom: 0.4,
+    minZoom: BOARD_MIN_ZOOM,
     maxZoom: 1,
   };
+}
+
+/** Hidden Circuit tab reports 0×0. fitView then is a no-op. */
+export function paneCanFit(width: number): boolean {
+  return width > 0;
+}
+
+/** Do not fit the previous graph: wait until the laid-out ids are on the board. */
+export function boardIdsMatch(live: readonly string[], expected: readonly string[]): boolean {
+  if (expected.length === 0) {
+    return live.length > 0;
+  }
+  if (live.length !== expected.length) {
+    return false;
+  }
+  const a = [...live].sort();
+  const b = [...expected].sort();
+  return a.every((id, i) => id === b[i]);
+}
+
+/** Positions must commit before fitView, or the camera stays on the last graph. */
+export function scheduleFitView(run: () => void): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(run);
+  });
 }
 
 export function shouldAutoArrange(opts: {

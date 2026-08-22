@@ -32,6 +32,11 @@ export function chipExpandOffset(): { top: number; right: number; size: number }
   return { top: CHIP_PAD_Y, right: CHIP_PAD_X, size: DETAIL_HIT };
 }
 
+/** Title-band chrome (peak lamp) ends where the expand plate begins. */
+export function headbandEndPad(showExpand: boolean): number {
+  return showExpand ? DETAIL_HIT : 0;
+}
+
 export function greebleCode(id: string): string {
   let h = 2166136261;
   for (let i = 0; i < id.length; i += 1) {

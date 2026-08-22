@@ -63,6 +63,7 @@ Knobs
 - Click the name to rename it. Scroll the wheel to turn. Type a number or a note length (`1/4`) into the value.
 - Right-click a knob: Name / Min / Max / Unit / Note / MIDI Learn. Not the browser menu.
 - If a knob does nothing, that letter is not used in the current sound.
+- On Circuit, drag the jack on top of a knob onto a chip. The chip fills with drop boxes for every bindable key. The crosshair is the drop point; the box under it glows. That is not an audio cable.
 
 Oversampling (OS)
 - 1×, 2×, 4×, 8×. Higher OS is cleaner on heavy drive, and costs CPU and delay.
@@ -87,17 +88,23 @@ Click the preset name.
 The board is the same sound as Unit and Terminal.
 
 Cables
-- Drag a chip by its body. Audio jacks are the squares on the sides. Drag from an output (right) to an input (left).
-- The line follows your pointer until you drop. After you drop, the board draws a clean path.
-- Dots or dashes on a cable show that block’s output: they stand still with no signal or below −60 dB, and run faster as that chip gets louder. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
-- Right-click empty board to add a block. Right-click a cable to insert a block on that run. Right-click a chip for Details / Mute / Solo / Delete.
+- Drag a chip by its body. Contacts sit on the left and right frame, equally spaced. Drag from an output (right) to an input (left).
+- While you drag, the cable is a free curve and snaps to a contact from 30 px away. After you drop, the board etches a PCB path (right angles, 45° corners). Alt+click a contact to cut. Dropping on a busy input replaces the old cable.
+- A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Packet spacing and speed follow that channel’s RMS; brightness follows the peak. Below −60 dB the stream freezes. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
+- Right-click empty board to add a block (parked, no cable). Right-click a cable or click it to insert a block on that run. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face.
+- Circuit titles are not selectable text. Search and inspect fields still are.
 
 IN and OUT
-- **IN** is locked on the left. Two outputs on the right: **out** is the track, **sc** is the host sidechain. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
+- **IN** is locked on the left. Two outputs on the right, stacked in the middle of the tile: **out** is the track, **sc** is the host sidechain. They sit under the title stripe and above the footer. There is no input jack on IN. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
 - **OUT** is the mix back to the host. Named buses (a Send row) land on their own west mix jacks — `main`, then each bus — not a leftover `in`. Expand it (chevron or right-click Details) for **gain** (−24 to +12 dB). Gain is not a slider on the closed tile.
 
+Blocks
+- A closed chip is a lamp to the left of the name, then a type code, mute/solo. Contacts are labelled `[ IN ]` `[ OUT ]` `[ MID ]` `[ SIDE ]`. The footer line is the instance id and live peak, not a fake serial — it sits above the south parameter sockets. The chevron opens Inspect (every parameter). Dragging a knob over the chip opens the bind list; south labels hide while that list is open.
+- Envelope: the lamp fills with the live level. Open it to pick **source** (`in` or `sidechain`).
+- Loading a preset closes open details and fits the whole chain above the mix bar.
+
 Arrange and Compact
-- Right-click the board → Arrange (spread) or Compact (tighten). Loading a preset also lays the board out. A small “Arranging…” tag can appear; the window stays usable. Compact keeps a Send bus on its own row under the main chain and parks OUT at the right. It does not snake the mix around the board.
+- Right-click empty board → Arrange (one row, left to right) or Compact (wrap to the window, still left to right — never a snake). The wrap cable runs between the rows, not around the whole board. Compact keeps a Send bus on its own row under the main chain and parks OUT at the right. Ctrl+A Arrange, Shift+A Compact. Loading a preset arranges, and wraps only if the chain is wider than the window. Dragging a chip stops auto-layout until you Arrange/Compact again.
 
 Expand a chip for hidden parameters. The chip size does not jump.
 

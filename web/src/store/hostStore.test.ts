@@ -38,6 +38,38 @@ describe("hostStore", () => {
     expect(useHostStore.getState().clips.stage1).toBeCloseTo(1.2);
     expect(useHostStore.getState().clips.OUT).toBeCloseTo(0.4);
     expect(useHostStore.getState().clips.__out__).toBeCloseTo(0.4);
+    expect(useHostStore.getState().clipsL.stage1).toBeCloseTo(1.2);
+    expect(useHostStore.getState().clipsR.stage1).toBeCloseTo(1.2);
+  });
+
+  it("keeps L and R clip peaks isolated when the host sends both", () => {
+    useHostStore.getState().applyHost({
+      clips: [{ id: "stage1", peak: 0.8, peakL: 0.8, peakR: 0.02 }],
+    });
+    expect(useHostStore.getState().clips.stage1).toBeCloseTo(0.8);
+    expect(useHostStore.getState().clipsL.stage1).toBeCloseTo(0.8);
+    expect(useHostStore.getState().clipsR.stage1).toBeCloseTo(0.02);
+  });
+
+  it("stores per-lane rms from the host tap tuple, not a copy of peak", () => {
+    useHostStore.getState().applyHost({
+      clips: [{ id: "stage1", peak: 0.8, peakL: 0.8, peakR: 0.02, rms: 0.56, rmsL: 0.56, rmsR: 0.01 }],
+    });
+    const s = useHostStore.getState();
+    expect(s.clipsRms.stage1).toBeCloseTo(0.56);
+    expect(s.clipsRmsL.stage1).toBeCloseTo(0.56);
+    expect(s.clipsRmsR.stage1).toBeCloseTo(0.01);
+    expect(s.clipsRmsL.stage1).toBeLessThan(s.clipsL.stage1);
+  });
+
+  it("falls back to peak when the host omits rms so old snapshots still stream", () => {
+    useHostStore.getState().applyHost({
+      clips: [{ id: "stage1", peak: 0.5, peakL: 0.5, peakR: 0.1 }],
+    });
+    const s = useHostStore.getState();
+    expect(s.clipsRms.stage1).toBeCloseTo(0.5);
+    expect(s.clipsRmsL.stage1).toBeCloseTo(0.5);
+    expect(s.clipsRmsR.stage1).toBeCloseTo(0.1);
   });
 
   it("stores env tap peaks from host.mods", () => {

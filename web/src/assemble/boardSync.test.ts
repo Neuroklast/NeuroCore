@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitViewOpts, keepLivePositions, mergeBoardNodes, nextSeenIds, shouldAutoArrange, shouldFitView } from "./boardSync";
+import { BOARD_MIN_ZOOM, boardIdsMatch, fitViewOpts, keepLivePositions, mergeBoardNodes, nextSeenIds, paneCanFit, scheduleFitView, shouldAutoArrange, shouldFitView } from "./boardSync";
 
 describe("board position ownership", () => {
   it("does not auto-arrange after a user drag or explicit Arrange", () => {
@@ -83,5 +83,33 @@ describe("board position ownership", () => {
     expect(shouldFitView("preset", true)).toBe(true);
     expect(shouldFitView("host", true)).toBe(true);
     expect(keepLivePositions("canvas")).toBe(true);
+    expect(fitViewOpts("full", false).minZoom).toBe(BOARD_MIN_ZOOM);
+    expect(fitViewOpts("full", false).padding).toBe(0.1);
+    expect(paneCanFit(0)).toBe(false);
+    expect(paneCanFit(1)).toBe(true);
+    expect(boardIdsMatch(["IN", "eq1"], ["eq1", "IN"])).toBe(true);
+    expect(boardIdsMatch(["IN", "filter1"], ["IN", "eq1"])).toBe(false);
+    expect(boardIdsMatch(["IN"], ["IN", "OUT"])).toBe(false);
+  });
+
+  it("runs fitView after two frames so node positions have committed", () => {
+    const queue: FrameRequestCallback[] = [];
+    const orig = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      queue.push(cb);
+      return queue.length;
+    }) as typeof requestAnimationFrame;
+    let ran = 0;
+    scheduleFitView(() => {
+      ran += 1;
+    });
+    expect(ran).toBe(0);
+    expect(queue).toHaveLength(1);
+    queue.shift()?.(0);
+    expect(ran).toBe(0);
+    expect(queue).toHaveLength(1);
+    queue.shift()?.(0);
+    expect(ran).toBe(1);
+    globalThis.requestAnimationFrame = orig;
   });
 });

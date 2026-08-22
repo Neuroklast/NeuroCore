@@ -171,12 +171,12 @@ export function shouldForwardToHost(e: HostKeyEvent, ctx: HostKeyContext): boole
   return true;
 }
 
-/** React Flow marks selected chips/edges with `.selected` inside `.nk-circuit`. */
+/** Headless board marks the selected chip with `data-selected="on"`. */
 export function circuitHasSelection(root: ParentNode | null = typeof document !== "undefined" ? document : null): boolean {
   if (root == null)
     return false;
   const pane = root.querySelector(".nk-circuit");
   if (pane == null)
     return false;
-  return pane.querySelector(".selected") != null;
+  return pane.querySelector("[data-selected=\"on\"]") != null;
 }

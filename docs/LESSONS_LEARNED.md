@@ -20,8 +20,8 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 ## Circuit
 
-- React Flow owns the canvas chrome: `Background` (Dots / Lines / Cross, `gap`, stack two), `snapToGrid` + `snapGrid`, `Handle` + `Position`, `nodesDraggable`, `onConnect`, `BaseEdge`, `getStraightPath` for audio drag/temp, `getSmoothStepPath` for knob-bind preview. We own only PCB constraints RF does not have **after drop**: east/west stubs, obstacle boxes, parallel rail pitch, equal air to chips. A second drag model, `BoardGrid` SVG, a second router next to `tubePath`, and a drag-preview that PCB-routes while the product rule says “drag = free line” are the failure mode.
-- ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps a serial chain into 1–3 rows, and packs named send/bus rails as their own rows, with 32 px air so every tube is at least one grid long. A* writes the stored SVG `d`. React Flow only paints `data.route` (`StaticGridEdge`).
+- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`.
+- ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps a serial chain to the window (never a snake) and packs named send/bus rails as their own rows. Row gap is WRAP_AIR. A* writes the stored SVG `d`. The cable canvas paints that string.
 - HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.
 - IN top-left, OUT bottom-right. Wrap the **chain**, never fold OUT to x = margin.
@@ -36,6 +36,20 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - A Bus chip is `bus <name>:` and following audio sits on that rail. Join Signal (`inA`/`inB`/`out`, mix default 0.5) is the mixer. Emit that as `joinN: mix = …`, never also as `out: main=…; dirt=…` for the same mix.
 - Send is a tap, not a DSP source. Cables are IN → bus → send → chain. Never send back into the bus header. OUT mix-ins are `main` plus each named bus, never a leftover `in`. Compact packs each rail as its own row; do not DFS-snake a send graph. Plasma on send/bus follows IN — those chips have no tap.
 - User chip xy is owned by the board until Arrange or a new graph. A host echo is not a second owner.
+- Closed DSP plate is identity + one lamp. No TRG/barcode/grip/fake jacks. Expand overlay hides the south bind rail.
+- Compact wrap: `finishHalo` makes the cell around a chip solid. CHIP_AIR_Y (one cell) is not a cable. Row gap is WRAP_AIR = pad + rail + pad. Wrap edges ride `wrapRailRoute` on that rail, never A* around the hull.
+- Circuit selection is `data-selected="on"` on `.nk-board-chip`. Delete/Backspace is plugin-owned only while that is set. Do not look for React Flow `.selected`.
+- Stereo bus is one stored route, painted as two packet lanes ±4 px on the normal. Do not A* twice. The host tap is `{ rmsL, rmsR, peakL, peakR }`. RMS fills and drives the packets; peak flashes them; peak > 1.0 is the glitch. Split chips have no combined `out`. Mid/Side is not L/R: Mid keeps the main stroke, Side breaks 45° with a short dash. Port labels are `[ MID ]`. Microtext is `node.id` / typecode / peak dB — never a fake UUID.
+- Side jacks use fork pitch only when `(n-1)*FORK` fits **under the title and above the foot**. On a short IO tile that is one-cell pitch around the body midline. Do not park IN `out` on the hazard band or `sc` on the footer.
+- Chip fill is black. The foot (`node.id` + dB) sits on `--nk-south-gap`, in the pad field, never on the south bind sockets. The peak lamp leads the title (`CHIP_PAD_X` gap), it is not a trailing pip under the chevron.
+- Circuit paint uses chip/grid constants (`TITLE_H`, `LABEL_COL`, `BOARD_BLOCK`). No magic px, no graph-paper lattice, no cell-X copper, no idle packet crawl without a tap. Packets are ink cores with cyan/accent glow. Hazard stripes live on a title-band `::before` (clip-path only there). Do not `overflow:hidden` the headband — that eats the peak lamp and its glow. The expand plate owns `DETAIL_HIT` at the top-right; `headbandEndPad` keeps the lamp out of that slot. Clip warn is an outlined Δ + bang at the east jack, never a filled pip in the header. The pad array is `chipPadInset`, not a fill texture.
+- Circuit is not a text document: `user-select: none` on `.nk-board`, except input/textarea. Knob bind is chrome jack → south `data-bind-key`, not a graph cable.
+- Chevron inspects. Knob-drag over a DSP chip fills that chip with `bindPadCells` (inside the AABB). Ghost crosshair sits on the cursor (hot = 0,0); the letter is a label above it. The pad under the cursor glows.
+- IO tiles do not use the DSP label-column gutter. That gutter is 44 px each side and clips "OUT" to "O._".
+- Side jacks are local centres (`sidePortLocals`). Global = node origin + local. Paint (RF Handle `top` = centre + translate -50%) and A* read the same vector. Never derive a port from the DOM. Equal pitch, inside the AABB.
+- `fitView` waits until the pane has a box (Circuit is `hidden` on Unit, not unmounted) and the laid-out node ids are on the board. React Flow `minZoom` and `fitView` minZoom are the same constant. Do not invent a second zoom floor to hide a missed fit.
+
+- Unit sample/time traces use the spectrogram camera: mag 0 is the 3D floor (−1), mag 1 is +peak. Do not run a second signed `waveProject` — that punches −1 through the floor. Paint the live buffer. A trigger lock (or holding the last row) freezes the wave and looks laggy; a first-crossing hunt flickers.
 
 ## Chrome / knobs
 

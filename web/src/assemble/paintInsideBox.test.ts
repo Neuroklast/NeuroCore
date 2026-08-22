@@ -9,7 +9,10 @@ import {
   jackCaption,
   jackTopPx,
   LABEL_COL,
+  TITLE_H,
+  CHIP_PAD_Y,
 } from "./chipLayout";
+import { portBracket } from "./chipFace";
 import { chipSpec, overlayParamKeys } from "./chipSpec";
 import { dspFaceSize } from "./chipMetrics";
 import { BOARD_GRID } from "./grid";
@@ -37,6 +40,7 @@ describe("paint stays inside the chip box", () => {
     const { nodes } = flowFromAst(emptyAst());
     const inn = nodes.find((n) => n.id === "IN");
     expect(inn).toBeTruthy();
+    expect(inn!.targetPosition).toBeUndefined();
     const jacks = inn!.data.jacks;
     expect(jacks.map((j) => j.id)).toEqual(["out", "sc"]);
     expect(jacks.every((j) => j.output === true)).toBe(true);
@@ -63,8 +67,8 @@ describe("paint stays inside the chip box", () => {
     const y0 = jackTopPx(0, 2, box.h, "in");
     const y1 = jackTopPx(1, 2, box.h, "in");
     expect(y0).not.toBe(y1);
-    expect(y0).toBeGreaterThan(0);
-    expect(y1).toBeLessThan(box.h);
+    expect(y0).toBeGreaterThanOrEqual(TITLE_H);
+    expect(y1).toBeLessThanOrEqual(box.h - CHIP_PAD_Y);
     const jacks = canonicalIoJacks("in");
     const a = jackAnchor({ x: 0, y: 0 }, "in", jacks, handleId("out", true), true, box.h, box.w);
     const b = jackAnchor({ x: 0, y: 0 }, "in", jacks, handleId("sc", true), true, box.h, box.w);
@@ -81,6 +85,8 @@ describe("paint stays inside the chip box", () => {
   it("jack captions and titles fit the label column", () => {
     expect(captionFitsCol(jackCaption({ id: "sc", label: "sc", output: true }), LABEL_COL)).toBe(true);
     expect(captionFitsCol(jackCaption({ id: "out", label: "out", output: true }), LABEL_COL)).toBe(true);
+    expect(captionFitsCol(portBracket("mid"), LABEL_COL, 5)).toBe(true);
+    expect(captionFitsCol(portBracket("side"), LABEL_COL, 5)).toBe(true);
     expect(captionFitsCol("IN", LABEL_COL + 8)).toBe(true);
     const w = bindCaptionMaxPx(3, dspFaceSize().w);
     expect(captionFitsCol(bindJackCaption("gain"), w)).toBe(true);

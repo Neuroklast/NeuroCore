@@ -2727,6 +2727,22 @@ bool SignalChain::copyTapPeak (const juce::String& id, float& dest) const noexce
     return false;
 }
 
+bool SignalChain::copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept
+{
+    if (id.isEmpty())
+        return false;
+    for (int i = 0; i < kMaxNodeTaps; ++i)
+    {
+        const auto& t = nodeTaps[(size_t) i];
+        if (id != juce::String (t.id.data()))
+            continue;
+        destL = t.peakL.load (std::memory_order_relaxed);
+        destR = t.peakR.load (std::memory_order_relaxed);
+        return true;
+    }
+    return false;
+}
+
 void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
 {
     for (int i = 0; i < kMaxNodeTaps; ++i)
@@ -2741,7 +2757,16 @@ void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
             id = "IN";
         auto* o = new juce::DynamicObject();
         o->setProperty ("id", id);
+        const float peakL = t.peakL.load (std::memory_order_relaxed);
+        const float peakR = t.peakR.load (std::memory_order_relaxed);
+        const float rmsL = t.rmsL.load (std::memory_order_relaxed);
+        const float rmsR = t.rmsR.load (std::memory_order_relaxed);
         o->setProperty ("peak", t.peak.load (std::memory_order_relaxed));
+        o->setProperty ("peakL", peakL);
+        o->setProperty ("peakR", peakR);
+        o->setProperty ("rms", juce::jmax (rmsL, rmsR));
+        o->setProperty ("rmsL", rmsL);
+        o->setProperty ("rmsR", rmsR);
         dest.add (juce::var (o));
     }
 }
@@ -4671,17 +4696,50 @@ void SignalChain::writeNodeTap (const juce::String& id, const juce::AudioBuffer<
     const int n = buf.getNumSamples();
     const float* s = buf.getReadPointer (0);
     const float step = (float) n / (float) kNodeTapSamples;
-    float pk = 0.f;
-    for (int c = 0; c < buf.getNumChannels(); ++c)
+    float pkL = 0.f;
+    float pkR = 0.f;
+    float sumSqL = 0.f;
+    float sumSqR = 0.f;
+    const float* ch0 = buf.getReadPointer (0);
+    for (int i = 0; i < n; ++i)
     {
-        const float* ch = buf.getReadPointer (c);
-        for (int i = 0; i < n; ++i)
-            pk = juce::jmax (pk, std::abs (ch[i]));
+        const float x = ch0[i];
+        pkL = juce::jmax (pkL, std::abs (x));
+        sumSqL += x * x;
     }
+    if (buf.getNumChannels() > 1)
+    {
+        const float* ch1 = buf.getReadPointer (1);
+        for (int i = 0; i < n; ++i)
+        {
+            const float x = ch1[i];
+            pkR = juce::jmax (pkR, std::abs (x));
+            sumSqR += x * x;
+        }
+    }
+    else
+    {
+        pkR = pkL;
+        sumSqR = sumSqL;
+    }
+    const float invN = 1.f / (float) n;
+    const float blockRmsL = std::sqrt (sumSqL * invN);
+    const float blockRmsR = std::sqrt (sumSqR * invN);
+    const float pk = juce::jmax (pkL, pkR);
     for (int i = 0; i < kNodeTapSamples; ++i)
         t.wave[(size_t) i] = s[juce::jmin (n - 1, (int) (i * step))];
     const float held = t.peak.load (std::memory_order_relaxed);
+    const float heldL = t.peakL.load (std::memory_order_relaxed);
+    const float heldR = t.peakR.load (std::memory_order_relaxed);
+    const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
+    const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
+    const float nextL = pkL >= heldL ? pkL : heldL * 0.88f;
+    const float nextR = pkR >= heldR ? pkR : heldR * 0.88f;
+    t.peakL.store (nextL, std::memory_order_relaxed);
+    t.peakR.store (nextR, std::memory_order_relaxed);
     t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
+    t.rmsL.store (blockRmsL >= heldRmsL ? blockRmsL : heldRmsL * 0.88f, std::memory_order_relaxed);
+    t.rmsR.store (blockRmsR >= heldRmsR ? blockRmsR : heldRmsR * 0.88f, std::memory_order_relaxed);
     t.gen.fetch_add (1, std::memory_order_release);
 }
 
@@ -4708,12 +4766,27 @@ void SignalChain::writeNodeTapLane (const juce::String& id, const float* src, in
     std::strncpy (t.id.data(), utf, t.id.size() - 1);
     const float step = (float) n / (float) kNodeTapSamples;
     float pk = 0.f;
+    float sumSq = 0.f;
     for (int i = 0; i < n; ++i)
-        pk = juce::jmax (pk, std::abs (src[i]));
+    {
+        const float x = src[i];
+        pk = juce::jmax (pk, std::abs (x));
+        sumSq += x * x;
+    }
+    const float blockRms = std::sqrt (sumSq / (float) n);
     for (int i = 0; i < kNodeTapSamples; ++i)
         t.wave[(size_t) i] = src[juce::jmin (n - 1, (int) (i * step))];
     const float held = t.peak.load (std::memory_order_relaxed);
-    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
+    const float heldL = t.peakL.load (std::memory_order_relaxed);
+    const float heldR = t.peakR.load (std::memory_order_relaxed);
+    const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
+    const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
+    const float next = pk >= held ? pk : held * 0.88f;
+    t.peakL.store (pk >= heldL ? pk : heldL * 0.88f, std::memory_order_relaxed);
+    t.peakR.store (pk >= heldR ? pk : heldR * 0.88f, std::memory_order_relaxed);
+    t.peak.store (next, std::memory_order_relaxed);
+    t.rmsL.store (blockRms >= heldRmsL ? blockRms : heldRmsL * 0.88f, std::memory_order_relaxed);
+    t.rmsR.store (blockRms >= heldRmsR ? blockRms : heldRmsR * 0.88f, std::memory_order_relaxed);
     t.gen.fetch_add (1, std::memory_order_release);
 }
 

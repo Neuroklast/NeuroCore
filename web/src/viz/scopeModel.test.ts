@@ -20,6 +20,7 @@ import {
   specInner,
   specMag01,
   spectrogramProject,
+  waveProject,
   specDbMarks,
   specRowFade,
   spectrogramPush,
@@ -112,6 +113,36 @@ describe("scope deck model", () => {
     expect(aligned[0]!).not.toBe(raw[0]);
   });
 
+  it("locks the rising edge and ignores zero chatter so the wave does not hunt", () => {
+    const n = 64;
+    const noisy = Float32Array.from({ length: n }, (_, i) => {
+      const s = Math.sin((i / n) * Math.PI * 2) * 0.5;
+      return s + (i < 6 ? (i % 2 === 0 ? -0.02 : 0.02) : 0);
+    });
+    const aligned = triggerAlign(noisy);
+    expect(aligned[0]!).toBeLessThanOrEqual(0);
+    expect(aligned[2]!).toBeGreaterThan(aligned[0]!);
+    const a = triggerAlign(noisy);
+    const b = triggerAlign(noisy);
+    expect(a[0]).toBeCloseTo(b[0]);
+    expect(a[8]).toBeCloseTo(b[8]);
+  });
+
+  it("keeps bipolar sample/time traces on the 3D floor, never below 0", () => {
+    const w = 800;
+    const h = 400;
+    const floor = spectrogramProject(0, 0, 0, w, h);
+    const zero = spectrogramProject(0, 0, 0.5, w, h);
+    const peak = spectrogramProject(0, 0, 1, w, h);
+    expect(floor.y).toBeGreaterThan(zero.y);
+    expect(zero.y).toBeGreaterThan(peak.y);
+    expect(waveProject(0, 0, 0, w, h).y).toBe(floor.y);
+    expect(waveProject(0, 0, 0, w, h).y).toBeLessThanOrEqual(floor.y);
+    const row = standingWaveRow(Float32Array.from([-1, 0, 1, 0.4]), SPEC_BINS, "linear");
+    expect(Math.min(...row)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...row)).toBeLessThanOrEqual(1);
+  });
+
   it("uses bipolar amplitude marks for time/samples and dB for frequency", () => {
     expect(scopeYMarks("freq", "db").some((m) => m.label.includes("dB") || m.label === "0")).toBe(true);
     const wave = scopeYMarks("time", "linear");
@@ -122,18 +153,20 @@ describe("scope deck model", () => {
     expect(shouldPushScopeRow(5, 4)).toBe(true);
   });
 
-  it("builds a standing-wave row from a triggered waveform, not an FFT", () => {
+  it("builds a sample/time row from the live buffer, not a locked trigger", () => {
     const n = 64;
-    const sine = Float32Array.from({ length: n }, (_, i) => Math.sin((i / n) * Math.PI * 2));
-    const aligned = triggerAlign(sine);
-    expect(aligned[0]!).toBeLessThan(0.15);
-    expect(aligned[1]!).toBeGreaterThan(aligned[0]!);
-    const row = standingWaveRow(sine, SPEC_BINS, "linear");
-    expect(row.length).toBe(SPEC_BINS);
-    const mid = row[Math.floor(SPEC_BINS / 4)]!;
-    const node = row[0]!;
-    expect(mid).toBeGreaterThan(node);
-    expect(Math.max(...row)).toBeGreaterThan(0.6);
+    const a = Float32Array.from({ length: n }, (_, i) => Math.sin((i / n) * Math.PI * 2));
+    const b = Float32Array.from({ length: n }, (_, i) => Math.sin((i / n) * Math.PI * 2 + 0.8));
+    const ra = standingWaveRow(a, SPEC_BINS, "linear");
+    const rb = standingWaveRow(b, SPEC_BINS, "linear");
+    expect(ra.length).toBe(SPEC_BINS);
+    expect(Math.max(...ra)).toBeGreaterThan(0.6);
+    expect(Math.min(...ra)).toBeGreaterThanOrEqual(0);
+    let diff = 0;
+    for (let i = 0; i < ra.length; i += 1) {
+      diff += Math.abs(ra[i]! - rb[i]!);
+    }
+    expect(diff).toBeGreaterThan(2);
   });
 
   it("maps spectrum height in dB so a loud but not-full-scale hit still fills", () => {

@@ -1,5 +1,5 @@
 import type { AstJack } from "../bridge/ast";
-import { chipSpec, sideJackPitch } from "./chipSpec";
+import { chipSpec } from "./chipSpec";
 import {
   BIND_JACK_MIN,
   BIND_RAIL,
@@ -19,6 +19,8 @@ import {
   TITLE_H,
   TYPECODE_H,
   chipBodyInset,
+  ioBodyInset,
+  chipPadInset,
   chipChromeVars,
   chipFaceStackPx,
   chipOverlayStackPx,
@@ -30,6 +32,7 @@ import {
 } from "./chipMetrics";
 import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
 import { parseHandle } from "./handles";
+import { globalPort, sidePortLocals } from "./portLayout";
 import { cableFace } from "./validateLink";
 
 export {
@@ -51,6 +54,8 @@ export {
   TITLE_H,
   TYPECODE_H,
   chipBodyInset,
+  ioBodyInset,
+  chipPadInset,
   chipChromeVars,
   chipFaceStackPx,
   chipOverlayStackPx,
@@ -164,22 +169,11 @@ export function chipBox(
   return dspFaceSize();
 }
 
-export function jackTopPx(index: number, count: number, height: number, type = ""): number {
-  if (isUtilityIo(type)) {
-    if (count <= 1) {
-      return snapToCellCenter(height * 0.5);
-    }
-    const pitch = sideJackPitch(count);
-    const span = (count - 1) * pitch;
-    const start = snapToCellCenter((height - span) * 0.5);
-    return start + index * pitch;
-  }
-  const pitch = sideJackPitch(count);
-  const start = titleJackY();
-  if (count <= 1) {
-    return start;
-  }
-  return start + index * pitch;
+/** Centre Y of a side jack. Same numbers as `sidePortLocals`. */
+export function jackTopPx(index: number, count: number, height: number, _type = ""): number {
+  const ports = sidePortLocals(Math.max(1, count), { w: 0, h: height }, false);
+  const i = Math.max(0, Math.min(ports.length - 1, index));
+  return ports[i]!.y;
 }
 
 export function jackIndex(jacks: AstJack[], id: string, output: boolean): number {
@@ -213,8 +207,7 @@ export function jackAnchor(
   const side = jacks.filter((j) => j.output === output && j.kind !== "knob" && cableFace(j.kind) === "side");
   const count = Math.max(side.length, 1);
   const index = Math.max(0, side.findIndex((j) => j.id === id));
-  return {
-    x: snapToGrid(output ? pos.x + width : pos.x),
-    y: snapToCellCenter(pos.y + jackTopPx(index < 0 ? 0 : index, count, height, _type)),
-  };
+  const local = sidePortLocals(count, { w: width, h: height }, output)[index]
+    ?? { x: output ? width : 0, y: snapToCellCenter(height * 0.5) };
+  return globalPort(pos, local);
 }

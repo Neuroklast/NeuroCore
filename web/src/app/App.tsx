@@ -27,6 +27,7 @@ import { seedFactoryPresets } from "../presets/presetActions";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
+import { useChipViewStore } from "../store/expandStore";
 import { knobBindEnabled, telemetryIntervalMs, type Workspace } from "./workspace";
 
 export function App() {
@@ -52,6 +53,7 @@ export function App() {
       }
       if (rec.origin === "preset" || rec.origin === "host") {
         resetMuteSolo();
+        useChipViewStore.getState().collapseAll();
       }
       const clean = typeof rec.script === "string" ? stripMuteComments(rec.script) : rec.script;
       const astJson = clean && clean !== rec.script

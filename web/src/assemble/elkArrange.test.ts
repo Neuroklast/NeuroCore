@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Edge, Node } from "@xyflow/react";
+import type { Edge, Node } from "./flowTypes";
 import { arrangeElk, ARR_CHIP_GAP, ARR_LAYER_GAP, chipChipGap } from "./elkArrange";
 import { chipBox } from "./chipLayout";
 import { inflate, midHits } from "./tubePath";

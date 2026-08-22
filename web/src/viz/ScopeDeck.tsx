@@ -12,7 +12,7 @@ import { demoGonioLr, demoLoudness, type ScopeSource, type ScopeXScale, type Sco
 function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
   const n = SCOPE_N;
   for (let i = 0; i < n; i += 1) {
-    const ph = (i / n) * Math.PI * 2 + t * 0.08;
+    const ph = (i / n) * Math.PI * 2 + t * 0.35;
     views.scopeIn[i] = Math.sin(ph) * 0.45 + Math.sin(ph * 3) * 0.18;
     views.scopeOut[i] = Math.tanh(Math.sin(ph) * 1.4) * 0.55
       + Math.sin(ph * 2) * 0.16

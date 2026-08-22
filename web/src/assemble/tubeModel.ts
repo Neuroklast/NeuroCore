@@ -2,7 +2,7 @@ import { liveTheme } from "../theme/theme";
 import { BOARD_TRACE } from "./grid";
 export { PLASMA_DRIVER } from "../theme/fx";
 
-/** Outer tube fills one board cell. LFO stays a thin wire in SignalEdge. */
+/** Outer tube fills one board cell. LFO stays a thin wire. */
 export const TUBE = {
   audioOuter: BOARD_TRACE,
   audioGlass: BOARD_TRACE - 4,

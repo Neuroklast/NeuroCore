@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
-import { jackTopPx, titleJackY } from "./chipLayout";
+import { jackTopPx } from "./chipLayout";
+import { snapToCellCenter } from "./grid";
 import {
   activateKnobPatch,
   bindHit,
@@ -10,12 +11,13 @@ import {
   defaultBindKey,
   resolveBindKey,
 } from "./bindModel";
+import { bindCellAt, bindGhostHot, bindPadCells, bindPadCols, boundLetters } from "./BindRail";
 import { applyKnobBind } from "./handles";
 
 describe("jack align and knob bind", () => {
-  it("keeps processing IN/OUT on the title lane independent of chip height", () => {
-    expect(jackTopPx(0, 1, 80)).toBe(titleJackY());
-    expect(jackTopPx(0, 1, 160)).toBe(titleJackY());
+  it("keeps a single side jack on the RF midline of that chip", () => {
+    expect(jackTopPx(0, 1, 80)).toBe(snapToCellCenter(40));
+    expect(jackTopPx(0, 1, 160)).toBe(snapToCellCenter(80));
     expect(jackTopPx(0, 2, 120)).toBeLessThan(jackTopPx(1, 2, 120));
   });
 
@@ -27,6 +29,33 @@ describe("jack align and knob bind", () => {
     expect(defaultBindKey("stage")).toBe("y");
     expect(defaultBindKey("filter")).toBe("cutoff");
     expect(applyKnobBind({ cutoff: "800" }, "cutoff", "b").cutoff).toBe("b");
+    expect(boundLetters("b")).toEqual(["b"]);
+    expect(boundLetters("a * 0.5")).toEqual(["a"]);
+    expect(boundLetters("800")).toEqual([]);
+  });
+
+  it("packs bind pads inside the chip and hits the cell under the cursor", () => {
+    expect(bindGhostHot()).toEqual({ x: 0, y: 0 });
+    const box = { w: 256, h: 192 };
+    expect(bindPadCols(1)).toBe(1);
+    expect(bindPadCols(3)).toBe(2);
+    expect(bindPadCols(4)).toBe(2);
+    expect(bindPadCols(5)).toBe(3);
+    const cells = bindPadCells(3, box);
+    expect(cells).toHaveLength(3);
+    expect(new Set(cells.map((c) => Math.round(c.x))).size).toBe(2);
+    expect(new Set(cells.map((c) => Math.round(c.y))).size).toBe(2);
+    for (const c of cells) {
+      expect(c.x).toBeGreaterThanOrEqual(0);
+      expect(c.y).toBeGreaterThanOrEqual(0);
+      expect(c.x + c.w).toBeLessThanOrEqual(box.w);
+      expect(c.y + c.h).toBeLessThanOrEqual(box.h);
+      expect(c.w).toBeGreaterThanOrEqual(26);
+      expect(c.h).toBeGreaterThanOrEqual(26);
+    }
+    const mid = cells[0]!;
+    expect(bindCellAt({ x: mid.x + mid.w * 0.5, y: mid.y + mid.h * 0.5 }, cells)).toBe(0);
+    expect(bindCellAt({ x: -1, y: -1 }, cells)).toBe(-1);
   });
 
   it("pulls default range and unit from chipSpec for a numeric bind", () => {

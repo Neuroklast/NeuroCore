@@ -1,3 +1,4 @@
+import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
 import { BOARD_GRID } from "../grid";
 import { aroundFallback, astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
 import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
@@ -133,27 +134,40 @@ export async function runLayout(
 
   const edgePaths: Record<string, string> = {};
   for (const job of jobs) {
-    let cells = astarRoute(map, job.start, job.goal, DIR_E, false, job.e.id);
-    if (! cells || cells.length === 0) {
-      cells = astarRoute(map, job.start, job.goal, DIR_W, true, job.e.id);
-    }
+    const srcBox = placed[job.e.source];
+    const dstBox = placed[job.e.target];
+    const wrap = mode === "COMPACT"
+      && srcBox
+      && dstBox
+      && dstBox.y >= srcBox.y + srcBox.h
+      && isWrapJack(job.from, job.to);
     let pts: Pt[];
-    if (cells && cells.length > 0) {
-      map.occupy(cells, pathTurns(cells));
-      pts = [job.from, ...cellsToPoints(map, cells), job.to];
+    if (wrap && srcBox && dstBox) {
+      pts = wrapRailRoute(job.from, job.to, wrapRailY(srcBox, dstBox));
     } else {
-      const aroundY = job.from.y < job.to.y
-        ? Math.min(job.from.y, job.to.y) - BOARD_GRID * 2
-        : Math.max(job.from.y, job.to.y) + BOARD_GRID * 2;
-      pts = aroundFallback(job.from, job.to, aroundY);
+      let cells = astarRoute(map, job.start, job.goal, DIR_E, false, job.e.id);
+      if (! cells || cells.length === 0) {
+        cells = astarRoute(map, job.start, job.goal, DIR_W, true, job.e.id);
+      }
+      if (cells && cells.length > 0) {
+        map.occupy(cells, pathTurns(cells));
+        pts = [job.from, ...cellsToPoints(map, cells), job.to];
+      } else {
+        const aroundY = job.from.y < job.to.y
+          ? Math.min(job.from.y, job.to.y) - BOARD_GRID * 2
+          : Math.max(job.from.y, job.to.y) + BOARD_GRID * 2;
+        pts = aroundFallback(job.from, job.to, aroundY);
+      }
+      if (pathLength(pts) < BOARD_GRID) {
+        pts = hvhFallback(job.from, job.to);
+      }
+      pts = pinJackStubs(job.from, job.to, pts);
     }
-    if (pathLength(pts) < BOARD_GRID) {
-      pts = hvhFallback(job.from, job.to);
-    }
-    pts = pinJackStubs(job.from, job.to, pts);
     const cut = chamferWaypoints(pts);
     pts = hasLightning(cut) ? pts : cut;
-    pts = pinJackStubs(job.from, job.to, pts);
+    if (! wrap) {
+      pts = pinJackStubs(job.from, job.to, pts);
+    }
     edgePaths[job.e.id] = waypointToSvgPath(pts);
   }
 

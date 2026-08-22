@@ -4,7 +4,7 @@ import { chipChipGap } from "../elkArrange";
 import { flowFromAst } from "../flowFromAst";
 import { findFactory } from "../../presets/factoryCatalog";
 import { parseDslSketch } from "../../presets/parseDslSketch";
-import { packRows, rowCount } from "./compactPack";
+import { packRows, rowCount, WRAP_AIR, wrapFits } from "./compactPack";
 import { flowToLayout } from "./fromFlow";
 import type { LayoutEdge, LayoutNode } from "./types";
 
@@ -45,14 +45,16 @@ function chain(n: number): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
 }
 
 describe("compact packRows", () => {
-  it("wraps a long chain into two column-aligned rows", () => {
+  it("wraps L→R when the chain is wider than the view, no snake", () => {
+    expect(wrapFits([128, 256, 256, 256], 400, 64, 32)).toBe(1);
+    expect(wrapFits([128, 256], 2000, 64, 32)).toBe(2);
     const { nodes, edges } = chain(5);
-    const packed = packRows(nodes, edges, { w: 2400, h: 420 });
+    const packed = packRows(nodes, edges, { w: 700, h: 420 });
+    expect(rowCount(packed)).toBeGreaterThan(1);
     expect(packed.IN!.y).toBeLessThan(packed.OUT!.y);
-    expect(packed.OUT!.y - packed.IN!.y).toBeGreaterThanOrEqual(BOARD_GRID * 3);
-    expect(packed.IN!.x).toBe(packed.c3!.x);
-    expect(packed.c0!.x).toBe(packed.c4!.x);
-    expect(packed.c1!.x).toBe(packed.OUT!.x);
+    expect(packed.IN!.x).toBeLessThanOrEqual(packed.c1!.x);
+    expect(packed.c1!.x).toBeLessThanOrEqual(packed.c3!.x);
+    expect(packed.IN!.x).toBe(packed.c1!.x);
     const gap = packed.c0!.x - (packed.IN!.x + packed.IN!.w);
     expect(gap).toBeGreaterThanOrEqual(BOARD_GRID * 2);
   });
@@ -75,6 +77,20 @@ describe("compact packRows", () => {
         expect(chipChipGap(a, b), `${a.id}↔${b.id}`).toBeGreaterThanOrEqual(need);
       }
     }
+  });
+
+  it("leaves pad+rail+pad between wrapped rows so a cable can sit off both chips", () => {
+    const { nodes, edges } = chain(5);
+    const packed = packRows(nodes, edges, { w: 700, h: 420 });
+    expect(rowCount(packed)).toBeGreaterThan(1);
+    const list = Object.values(packed);
+    const first = [...list].sort((a, b) => a.y - b.y)[0]!;
+    const upper = list.filter((p) => Math.min(p.y + p.h, first.y + first.h) - Math.max(p.y, first.y) > 0);
+    const upperBottom = Math.max(...upper.map((p) => p.y + p.h));
+    const lower = list.filter((p) => p.y >= upperBottom);
+    expect(lower.length).toBeGreaterThan(0);
+    const gap = Math.min(...lower.map((p) => p.y)) - upperBottom;
+    expect(gap, `row gap ${gap}`).toBeGreaterThanOrEqual(WRAP_AIR);
   });
 
   it("keeps a short chain on one row and snaps to 32", () => {
