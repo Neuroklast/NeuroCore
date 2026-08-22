@@ -5,6 +5,7 @@ import { useHostStore } from "../store/hostStore";
 import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
 import { footerLicenseLabel } from "./footerLicense";
+import { footerBuf, footerSr } from "./footerStatus";
 import { toolbarSlots, workspaceTabClass } from "./toolbarChrome";
 
 export function Hud() {
@@ -294,8 +295,8 @@ export function Footer() {
       <span>{h.mode === "SAFE" ? "SAFE" : h.mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
       <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${h.lat}smp` : `${h.lat}smp`}</span>
-      <span>SR {h.sr || "-"} 32f</span>
-      <span>BUF {h.buf || "-"}</span>
+      <span>SR {footerSr(h.sr)}</span>
+      <span>BUF {footerBuf(h.buf)}</span>
       <span>BPM {h.bpm.toFixed(1)}</span>
       <span>{h.tempoSource}</span>
       <span>OS {h.osFactor}x</span>

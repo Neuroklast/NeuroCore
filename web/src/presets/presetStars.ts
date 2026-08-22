@@ -20,13 +20,34 @@ export function readPresetStars(): Record<string, number> {
   }
 }
 
-export function writePresetStar(name: string, stars: number, prev = readPresetStars()): Record<string, number> {
-  const n = Math.max(1, Math.min(5, Math.round(stars)));
-  const next = { ...prev, [name]: n };
+export function starGlyphs(n: number): string {
+  const v = Math.max(0, Math.min(5, Math.round(n)));
+  return "★".repeat(v) + "☆".repeat(5 - v);
+}
+
+function persistStars(next: Record<string, number>): Record<string, number> {
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
     /* private mode */
   }
   return next;
+}
+
+export function writePresetStar(name: string, stars: number, prev = readPresetStars()): Record<string, number> {
+  const n = Math.max(1, Math.min(5, Math.round(stars)));
+  return persistStars({ ...prev, [name]: n });
+}
+
+/** One list cell. Click cycles empty → 1…5 → empty. */
+export function cyclePresetStar(name: string, prev = readPresetStars()): Record<string, number> {
+  const cur = prev[name] ?? 0;
+  const n = cur >= 5 ? 0 : cur + 1;
+  const next = { ...prev };
+  if (n === 0) {
+    delete next[name];
+  } else {
+    next[name] = n;
+  }
+  return persistStars(next);
 }
