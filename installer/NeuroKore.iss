@@ -3,10 +3,10 @@
 ; VST3 always goes to Common Files. Standalone is optional.
 
 #ifndef MyAppVersion
-  #define MyAppVersion "0.6.0-beta"
+  #define MyAppVersion "0.6.1-beta"
 #endif
 #ifndef MyAppNumeric
-  #define MyAppNumeric "0.6.0"
+  #define MyAppNumeric "0.6.1"
 #endif
 #ifndef NcStage
   #define NcStage "..\build\package\stage"

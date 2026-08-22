@@ -128,6 +128,23 @@ export function dotPeriodMs(peak: number): number {
   return Math.round(1000 * 16 / spd);
 }
 
+/** Send and bus chips have no DSP tap. Their tubes follow IN. */
+export function cableSourcePeak(
+  sourceId: string,
+  sourceType: string,
+  clips: Record<string, number>,
+): number {
+  const t = (sourceType || "").toLowerCase();
+  const id = sourceId || "";
+  if (t === "send" || t === "bus" || t === "in" || id === "IN") {
+    return clips.IN ?? clips.__in__ ?? clips[id] ?? 0;
+  }
+  if (t === "out" || id === "OUT" || id === "out") {
+    return clips.OUT ?? clips.__out__ ?? clips.out ?? clips[id] ?? 0;
+  }
+  return clips[id] ?? 0;
+}
+
 /** 0 when silent or ≤ −60 dBFS. Faster as this chip’s peak rises toward 0 dBFS. Never reverses. */
 export function plasmaSpeedPxPerSec(peak: number): number {
   const db = peakDb(peak);

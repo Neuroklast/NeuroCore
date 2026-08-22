@@ -1,4 +1,4 @@
-export type ThemeId = "signal" | "gold" | "azure";
+export type ThemeId = "signal" | "gold" | "azure" | "digicide";
 
 export interface ThemePalette {
   id: ThemeId;
@@ -116,14 +116,42 @@ const THEMES: Record<ThemeId, ThemePalette> = {
     white: "#ffffff",
     black: "#000000",
   },
+  digicide: {
+    id: "digicide",
+    label: "DIGICIDE",
+    accent: "#6399A6",
+    accentDim: "#3A5E66",
+    accentDimRgb: "58, 94, 102",
+    accentDeep: "#0F1A1C",
+    accentRgb: "99, 153, 166",
+    cyan: "#AFCACF",
+    cyanRgb: "175, 202, 207",
+    warn: "#A3BCC5",
+    warnRgb: "163, 188, 197",
+    ink: "#AFCACF",
+    inkRgb: "175, 202, 207",
+    inkMuted: "#8DADB4",
+    inkMutedRgb: "141, 173, 180",
+    inkSoft: "#C5D4D8",
+    background: "#0D0D0D",
+    surface: "#1C1F1F",
+    surfaceHigh: "#252A2A",
+    well: "#050505",
+    panelBorder: "#67767B",
+    line: "#67767B",
+    lineRgb: "103, 118, 123",
+    error: "#8D5A5A",
+    white: "#E4EEEF",
+    black: "#000000",
+  },
 };
 
 export function isThemeId(id: string): id is ThemeId {
-  return id === "signal" || id === "gold" || id === "azure";
+  return id === "signal" || id === "gold" || id === "azure" || id === "digicide";
 }
 
 export function themeIds(): ThemeId[] {
-  return ["signal", "gold", "azure"];
+  return ["signal", "gold", "azure", "digicide"];
 }
 
 export function themeOf(id: string): ThemePalette {

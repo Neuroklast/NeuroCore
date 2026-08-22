@@ -101,6 +101,26 @@ describe("flowFromAst", () => {
     expect((mod?.data as { freqExpr?: string } | undefined)?.freqExpr).toBe("a");
   });
 
+  it("keeps Far Plane send mix cables onto OUT main/hall, not a phantom in", () => {
+    const row = findFactory("Far Plane");
+    expect(row, "missing Far Plane").toBeTruthy();
+    const { doc } = parseDslSketch(row!.script);
+    const { nodes, edges } = flowFromAst(doc);
+    const send = nodes.find((n) => n.data.type === "send");
+    const bus = nodes.find((n) => n.data.type === "bus");
+    const out = nodes.find((n) => n.data.type === "out");
+    expect(send, "send chip").toBeTruthy();
+    expect(bus, "bus chip").toBeTruthy();
+    expect(out, "out chip").toBeTruthy();
+    expect(out!.data.jacks.filter((j) => ! j.output).map((j) => j.id)).toEqual(["main", "hall"]);
+    expect(edges.some((e) => e.source === "IN" && e.target === bus!.id)).toBe(true);
+    expect(edges.some((e) => e.source === bus!.id && e.target === send!.id)).toBe(true);
+    expect(edges.some((e) => e.source === send!.id && e.target === bus!.id)).toBe(false);
+    expect(edges.some((e) => e.target === out!.id && String(e.targetHandle).includes("main"))).toBe(true);
+    expect(edges.some((e) => e.target === out!.id && String(e.targetHandle).includes("hall"))).toBe(true);
+    expect((edges.find((e) => e.source === send!.id)?.data as { sourceType?: string })?.sourceType).toBe("send");
+  });
+
   it("Kick Rumble draws env1 to every stage that reads it", () => {
     const row = findFactory("Kick Rumble");
     expect(row, "missing Kick Rumble").toBeTruthy();

@@ -8,7 +8,7 @@ REM   cmake --build build --config Release --target NeuroKore_All
 REM When the version label or artefact names change, update the echo paths below
 REM AND CMakeLists.txt NEUROKORE_VERSION_LABEL.
 
-set "VERSION_LABEL=0.6.0-beta"
+set "VERSION_LABEL=0.6.1-beta"
 set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 set "BUILD_DIR=build"
 set "CONFIG=Release"

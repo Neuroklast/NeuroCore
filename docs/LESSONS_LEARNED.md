@@ -21,7 +21,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## Circuit
 
 - React Flow owns the canvas chrome: `Background` (Dots / Lines / Cross, `gap`, stack two), `snapToGrid` + `snapGrid`, `Handle` + `Position`, `nodesDraggable`, `onConnect`, `BaseEdge`, `getStraightPath` for audio drag/temp, `getSmoothStepPath` for knob-bind preview. We own only PCB constraints RF does not have **after drop**: east/west stubs, obstacle boxes, parallel rail pitch, equal air to chips. A second drag model, `BoardGrid` SVG, a second router next to `tubePath`, and a drag-preview that PCB-routes while the product rule says “drag = free line” are the failure mode.
-- ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps into 1–3 rows (PCB, not a meter-long sausage) with 32 px air so every tube is at least one grid long. A* writes the stored SVG `d`. React Flow only paints `data.route` (`StaticGridEdge`).
+- ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps a serial chain into 1–3 rows, and packs named send/bus rails as their own rows, with 32 px air so every tube is at least one grid long. A* writes the stored SVG `d`. React Flow only paints `data.route` (`StaticGridEdge`).
 - HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.
 - IN top-left, OUT bottom-right. Wrap the **chain**, never fold OUT to x = margin.
@@ -34,6 +34,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - MS chips do not have a serial `out`/`in`. Mid/Side jacks without `channel=` in the document are scenery. Circuit must write `channel=`. An untagged chip between encode/decode sits on both rails (DSP: L=mid, R=side). An edge whose handle is not in `visualJacksFor` is not drawn — React Flow returns null, not a tube.
 - Split/join is one fork: 1-in/2-out or 2-in/1-out. Family is MS (`mid`/`side`) or LR (`left`/`right`). `encode`=`split`, `decode`=`join`. Never patch MS rails to L/R rails.
 - A Bus chip is `bus <name>:` and following audio sits on that rail. Join Signal (`inA`/`inB`/`out`, mix default 0.5) is the mixer. Emit that as `joinN: mix = …`, never also as `out: main=…; dirt=…` for the same mix.
+- Send is a tap, not a DSP source. Cables are IN → bus → send → chain. Never send back into the bus header. OUT mix-ins are `main` plus each named bus, never a leftover `in`. Compact packs each rail as its own row; do not DFS-snake a send graph. Plasma on send/bus follows IN — those chips have no tap.
 - User chip xy is owned by the board until Arrange or a new graph. A host echo is not a second owner.
 
 ## Chrome / knobs

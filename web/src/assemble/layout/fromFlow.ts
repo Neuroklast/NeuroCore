@@ -6,6 +6,28 @@ import { snapSize } from "../grid";
 import { cableFace } from "../validateLink";
 import type { LayoutEdge, LayoutNode } from "./types";
 
+function chipRail(n: Node<ChipData>): string {
+  const d = n.data;
+  const id = n.id;
+  if (d.type === "out" || id === "OUT" || id === "out") {
+    return "out";
+  }
+  if (d.type === "in" || id === "IN") {
+    return "main";
+  }
+  if (d.type === "bus") {
+    return (d.args.name || id).toLowerCase();
+  }
+  const ch = (d.channel || "").toLowerCase();
+  if (ch) {
+    return ch;
+  }
+  if (d.type.startsWith("osc") || d.type === "lfo") {
+    return "mod";
+  }
+  return "main";
+}
+
 export function flowToLayout(
   nodes: Node<ChipData>[],
   edges: Edge[],
@@ -23,6 +45,7 @@ export function flowToLayout(
       y: n.position.y,
       w,
       h,
+      rail: chipRail(n),
       ins: sideIn.map((j) => ({
         id: j.id,
         y: jackAnchor({ x: 0, y: 0 }, n.data.type, n.data.jacks, handleId(j.id, false), false, h, w).y,

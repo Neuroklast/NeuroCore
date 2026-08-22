@@ -168,8 +168,48 @@ function jack(id: string, output: boolean, kind: string): AstJack {
   return { id, label: id, output, kind };
 }
 
+function outMixJackIds(node: AstNode, nodes: AstNode[]): string[] {
+  const ids: string[] = [];
+  const add = (id: string) => {
+    const k = id.trim();
+    if (! k || k === "gain" || k === "__park" || ids.includes(k)) {
+      return;
+    }
+    ids.push(k);
+  };
+  const buses = nodes
+    .filter((n) => n.type === "bus")
+    .map((n) => (n.args.name || n.id).trim())
+    .filter((n) => n && n !== "__park");
+  const named = buses.length > 0
+    || Object.keys(node.args).some((k) => k !== "gain");
+  if (! named) {
+    add("in");
+    return ids;
+  }
+  add("main");
+  for (const b of buses) {
+    add(b);
+  }
+  for (const n of nodes) {
+    if (! isXover(n)) {
+      continue;
+    }
+    add("low");
+    add("mid");
+    add("high");
+  }
+  for (const k of Object.keys(node.args)) {
+    add(k);
+  }
+  return ids;
+}
+
 /** Jacks the circuit actually draws — split is 1 in / 2 out, join is 2 in / 1 out. */
-export function visualJacksFor(node: AstNode, _nodes: AstNode[] = []): AstJack[] {
+export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] {
+  if (node.type.toLowerCase() === "out") {
+    return outMixJackIds(node, nodes).map((id) => jack(id, false, "mix"));
+  }
   if (isMsEncode(node) || node.type.toLowerCase() === "split_ms") {
     return [jack("in", false, "audio"), jack("mid", true, "audio"), jack("side", true, "audio")];
   }
@@ -372,21 +412,23 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     if (kids.length === 0) {
       continue;
     }
-    const fed = next.some((e) => e.to === b.id);
-    if (! fed) {
-      const send = kids.find(isSend);
-      if (send) {
-        push({ from: send.id, to: b.id, kind: "audio", fromJack: "out", toJack: "in" });
-      } else {
-        push({ from: "IN", to: b.id, kind: "audio", fromJack: "out", toJack: "in" });
-      }
+    const send = kids.find(isSend);
+    next = next.filter((e) => ! (send && e.from === send.id && e.to === b.id));
+    if (! next.some((e) => e.to === b.id && e.kind !== "mod")) {
+      push({ from: "IN", to: b.id, kind: "send", fromJack: "out", toJack: "in" });
     }
-    const first = kids.find((n) => ! isSend(n) && ! isEnvChip(n))
-      ?? kids.find((n) => ! isSend(n))
-      ?? kids[0];
-    if (first && ! next.some((e) => e.from === b.id && e.to === first.id)) {
-      strip("IN", first.id);
-      push({ from: b.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
+    if (send) {
+      strip("IN", send.id);
+      next = next.filter((e) => ! (e.from === b.id && e.to !== send.id && e.kind !== "mod"));
+      if (! next.some((e) => e.from === b.id && e.to === send.id)) {
+        push({ from: b.id, to: send.id, kind: "audio", fromJack: "out", toJack: "in" });
+      }
+    } else {
+      const first = kids.find((n) => ! isEnvChip(n)) ?? kids[0];
+      if (first && ! next.some((e) => e.from === b.id && e.to === first.id)) {
+        strip("IN", first.id);
+        push({ from: b.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
+      }
     }
   }
 
