@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-22 (circuit cable beads: per-source-chip peak, still at ≤ −60 dBFS)  
+**Stand:** 2026-08-22 (boot splash uses the same NK mark as the header)  
 **Version:** 0.6.0-beta  
 **Branch:** `fix/0.5.1-bugfixing`
 
