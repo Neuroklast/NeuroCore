@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-22 (Circuit rewrite: in-chip bind pads + cursor crosshair drop)  
+**Stand:** 2026-08-22 (Circuit Gemini-PCB + RMS/peak cable taps; Unit sample/time Y on the 3D floor, live buffer)  
 **Version:** 0.6.0-beta  
 **Branch:** `feat/circuit-board-polish`
 

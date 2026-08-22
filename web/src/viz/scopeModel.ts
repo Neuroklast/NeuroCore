@@ -208,7 +208,30 @@ export function specMag01(linear: number): number {
   return Math.max(0, Math.min(1, (db + 72) / 72));
 }
 
-/** First rising zero-cross to index 0. Tail is silence — never wrap (no seam). */
+/** Rising edge that stays positive — skip harmonic/zero chatter that hunts the standing wave. */
+export function triggerCut(samples: ArrayLike<number>): number | null {
+  const n = samples.length;
+  if (n < 10) {
+    return null;
+  }
+  for (let i = 1; i < n - 8; i += 1) {
+    const a = Number(samples[i - 1] ?? 0);
+    const b = Number(samples[i] ?? 0);
+    if (! (a <= 0 && b > 0.02)) {
+      continue;
+    }
+    let sum = 0;
+    for (let k = 0; k < 8; k += 1) {
+      sum += Number(samples[i + k] ?? 0);
+    }
+    if (sum > 0.4) {
+      return i - 1;
+    }
+  }
+  return null;
+}
+
+/** First confirmed rising zero-cross to index 0. Tail is silence — never wrap (no seam). */
 export function triggerAlign(samples: ArrayLike<number>): Float32Array {
   const n = samples.length;
   const out = new Float32Array(n);
@@ -218,15 +241,7 @@ export function triggerAlign(samples: ArrayLike<number>): Float32Array {
     }
     return out;
   }
-  let cut = 0;
-  for (let i = 1; i < n; i += 1) {
-    const a = Number(samples[i - 1] ?? 0);
-    const b = Number(samples[i] ?? 0);
-    if (a <= 0 && b > 0.02) {
-      cut = i - 1;
-      break;
-    }
-  }
+  const cut = triggerCut(samples) ?? 0;
   const keep = n - cut;
   for (let i = 0; i < keep; i += 1) {
     out[i] = Number(samples[cut + i] ?? 0);
@@ -261,20 +276,19 @@ export function isWaveScope(xScale: ScopeXScale): boolean {
   return xScale !== "freq";
 }
 
-/** Time/sample 3D row: triggered waveform, 0.5 = silence, peaks toward 0/1. */
+/** Time/sample 3D row from the live buffer. No trigger lock — that froze the wave. */
 export function standingWaveRow(
   samples: ArrayLike<number>,
   bins = SPEC_BINS,
   yScale: ScopeYScale = "linear",
 ): number[] {
-  const aligned = triggerAlign(samples);
-  const n = Math.max(1, aligned.length);
+  const n = Math.max(1, samples.length);
   const row = new Array<number>(bins);
   for (let b = 0; b < bins; b += 1) {
     const i0 = Math.floor((b / Math.max(1, bins - 1)) * (n - 1));
     const i1 = Math.min(n - 1, i0 + 1);
     const f = ((b / Math.max(1, bins - 1)) * (n - 1)) - i0;
-    const x = (aligned[i0] ?? 0) * (1 - f) + (aligned[i1] ?? 0) * f;
+    const x = Number(samples[i0] ?? 0) * (1 - f) + Number(samples[i1] ?? 0) * f;
     if (yScale === "db") {
       row[b] = specMag01(Math.abs(x));
     } else {
@@ -322,7 +336,7 @@ export function spectrogramProject(
   return { x, y: floor - rise };
 }
 
-/** mag 0.5 is the zero line; 1 is +peak, 0 is −peak. */
+/** Same camera as the spectrogram: mag 0 is the floor (−1), mag 1 is +peak. Never below the plane. */
 export function waveProject(
   bin: number,
   row: number,
@@ -330,19 +344,7 @@ export function waveProject(
   w: number,
   h: number,
 ): { x: number; y: number } {
-  const signed = (mag - 0.5) * 2;
-  const inner = specInner(w, h);
-  const recede = row / Math.max(1, SPEC_DEPTH - 1);
-  const nearHalf = inner.w * 0.46;
-  const farHalf = inner.w * 0.34;
-  const half = nearHalf + (farHalf - nearHalf) * recede;
-  const t = bin / Math.max(1, SPEC_BINS - 1);
-  const x = inner.cx + (t - 0.5) * 2 * half;
-  const nearY = inner.y + inner.h * 0.90;
-  const farY = inner.y + inner.h * 0.32;
-  const floor = nearY + (farY - nearY) * recede;
-  const amp = inner.h * 0.28 * (1 - recede * 0.28);
-  return { x, y: floor - signed * amp };
+  return spectrogramProject(bin, row, mag, w, h);
 }
 
 /** dB ticks on the near-plane Y axis. Floor is −72 dB (specMag01). */

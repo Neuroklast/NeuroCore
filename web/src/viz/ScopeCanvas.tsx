@@ -25,7 +25,6 @@ import {
   shouldResetScopeHist,
   SPEC_PAD,
   paintTechNoise,
-  waveProject,
 } from "./scopeModel";
 
 function paintAxisLabel(
@@ -60,13 +59,13 @@ function paintSpectrogramAxes(
       ? waveTimeMarks(sr, nSamples)
       : waveSampleMarks(nSamples);
   const yMarks = scopeYMarks(xScale, yScale);
-  const project = isWaveScope(xScale) && yScale === "linear" ? waveProject : spectrogramProject;
+  const project = spectrogramProject;
   ctx.strokeStyle = "rgba(244,241,234,0.45)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (const mark of xMarks) {
-    const a = project(mark.bin, SPEC_DEPTH - 1, isWaveScope(xScale) && yScale === "linear" ? 0.5 : 0, w, h);
-    const c = project(mark.bin, 0, isWaveScope(xScale) && yScale === "linear" ? 0.5 : 0, w, h);
+    const a = project(mark.bin, SPEC_DEPTH - 1, 0, w, h);
+    const c = project(mark.bin, 0, 0, w, h);
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(c.x, c.y);
   }
@@ -79,7 +78,7 @@ function paintSpectrogramAxes(
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   for (const mark of xMarks) {
-    const p = project(mark.bin, 0, isWaveScope(xScale) && yScale === "linear" ? 0.5 : 0, w, h);
+    const p = project(mark.bin, 0, 0, w, h);
     paintAxisLabel(ctx, mark.label, p.x, Math.min(h - 14, p.y + 6), ink);
   }
   ctx.textAlign = "right";
@@ -152,8 +151,8 @@ export function ScopeCanvas({
       prevX.current = xScale;
       const ids = scopeSpectra(source);
       const wave = isWaveScope(xScale) && yScale === "linear";
-      const project = wave ? waveProject : spectrogramProject;
-      const zeroMag = wave ? 0.5 : 0;
+      const project = spectrogramProject;
+      const zeroMag = 0;
       if (shouldPushScopeRow(tickRef.current, lastTick.current)) {
         lastTick.current = tickRef.current;
         for (const id of ids) {
