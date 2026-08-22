@@ -22,6 +22,7 @@ import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
 import { isLfoNode, isEnvNode, type ChipData } from "./flowFromAst";
 import { lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { liveArg } from "./liveArg";
+import { cableSourcePeak } from "./cableMotion";
 import { cableFace } from "./validateLink";
 import { isIrSlotId } from "../presets/irSlots";
 import { openImpulse } from "../overlays/ImpulsePanel";
@@ -225,7 +226,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
-  const peak = useHostStore((s) => s.clips[id] ?? s.clips[d.nodeId] ?? 0);
+  const peak = useHostStore((s) => cableSourcePeak(id, d.type, s.clips));
   const sideJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "side");
   const bottomJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
   const topJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "top");

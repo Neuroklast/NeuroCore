@@ -10,6 +10,8 @@ export type LayoutNode = {
   h: number;
   ins: LayoutPort[];
   outs: LayoutPort[];
+  /** Named bus / "main" / "mod". Compact packs each rail as its own row. */
+  rail?: string;
 };
 
 export type LayoutEdge = {

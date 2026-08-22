@@ -263,8 +263,15 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
     if (id === "IN") {
       return canonicalIoJacks("in").filter((j) => j.output === output);
     }
-    if (id === "OUT") {
-      return canonicalIoJacks("out").filter((j) => j.output === output);
+    if (id === "OUT" || id === "out") {
+      const outNode = byId.get("out") ?? byId.get("OUT") ?? {
+        id: "OUT",
+        type: "out",
+        busName: "",
+        args: {},
+        trailingComment: "",
+      };
+      return visualJacksFor(outNode, visible).filter((j) => j.output === output && j.kind !== "knob");
     }
     const n = byId.get(id);
     if (! n) {

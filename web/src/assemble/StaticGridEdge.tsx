@@ -111,7 +111,7 @@ export function StaticGridEdge({
       <path d={path} fill="none" stroke="#050505" strokeWidth={glass} opacity={0.94} />
       <path d={path} fill="none" stroke={kind === "audio" ? "var(--nk-black)" : accent} strokeWidth={bore} data-src={srcKey} className={`nk-tube-bore ${tubeClass}`} />
       {showPlasma || showDots ? (
-        <CableTraffic sourceId={sourceId || source}>
+        <CableTraffic sourceId={sourceId || source} sourceType={sourceType}>
           {showPlasma ? (
             <>
               <path d={path} fill="none" stroke="var(--nk-accent)" strokeWidth="2.4" className={`nk-plasma-glow${animateCables ? "" : " nk-cable-still"}`} />

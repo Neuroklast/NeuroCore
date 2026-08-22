@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstEdge, AstNode } from "../bridge/ast";
+import { findFactory } from "../presets/factoryCatalog";
+import { parseDslSketch } from "../presets/parseDslSketch";
 import { isValidLink } from "./validateLink";
 import { isMsEncode, visualAudioEdges, visualJacksFor } from "./visualEdges";
 
@@ -221,5 +223,48 @@ describe("visualAudioEdges", () => {
       .toEqual(["in", "low", "mid", "high"]);
     expect(visualJacksFor(node("msplit1", "msplit", { f1: "200", f2: "2000" })).map((j) => j.id))
       .toEqual(["in", "low", "mid", "high"]);
+  });
+
+  it("feeds a named bus from IN into Send, then the bus chain — never Send back into the header", () => {
+    const nodes = [
+      node("stage1", "stage", { y: "x" }),
+      { ...node("dirt", "bus", { name: "dirt" }), busName: "" },
+      { ...node("send", "send", { in: "1" }), busName: "dirt" },
+      { ...node("stage2", "stage", { y: "x" }), busName: "dirt" },
+      node("out", "out", { main: "1", dirt: "c" }),
+    ];
+    const vis = visualAudioEdges(nodes, [
+      { from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage1", to: "out", kind: "audio", fromJack: "out", toJack: "main" },
+      { from: "send", to: "stage2", kind: "audio", fromJack: "out", toJack: "in" },
+      { from: "stage2", to: "out", kind: "mix", fromJack: "out", toJack: "dirt" },
+    ]);
+    expect(vis.some((e) => e.from === "IN" && e.to === "dirt" && e.toJack === "in")).toBe(true);
+    expect(vis.some((e) => e.from === "dirt" && e.to === "send" && e.fromJack === "out" && e.toJack === "in")).toBe(true);
+    expect(vis.some((e) => e.from === "send" && e.to === "stage2")).toBe(true);
+    expect(vis.some((e) => e.from === "send" && e.to === "dirt")).toBe(false);
+    expect(vis.some((e) => e.from === "dirt" && e.to === "stage2")).toBe(false);
+    const outJ = visualJacksFor(nodes[4]!, nodes);
+    expect(outJ.filter((j) => ! j.output).map((j) => j.id)).toEqual(["main", "dirt"]);
+    expect(outJ.some((j) => j.id === "in")).toBe(false);
+  });
+
+  it("Far Plane: IN → hall bus → send → delay, mix onto OUT main/hall", () => {
+    const row = findFactory("Far Plane");
+    expect(row, "missing Far Plane").toBeTruthy();
+    const { doc } = parseDslSketch(row!.script);
+    const vis = visualAudioEdges(doc.nodes, doc.edges ?? []);
+    const bus = doc.nodes.find((n) => n.type === "bus");
+    const send = doc.nodes.find((n) => n.type === "send");
+    const out = doc.nodes.find((n) => n.type === "out");
+    expect(bus?.id).toBe("hall");
+    expect(send).toBeTruthy();
+    expect(vis.some((e) => e.from === "IN" && e.to === "hall")).toBe(true);
+    expect(vis.some((e) => e.from === "hall" && e.to === send!.id)).toBe(true);
+    expect(vis.some((e) => e.from === send!.id && e.to === "hall")).toBe(false);
+    const outJ = visualJacksFor(out!, doc.nodes);
+    expect(outJ.filter((j) => ! j.output).map((j) => j.id)).toEqual(["main", "hall"]);
+    expect(vis.some((e) => e.to === out!.id && e.toJack === "main")).toBe(true);
+    expect(vis.some((e) => e.to === out!.id && e.toJack === "hall")).toBe(true);
   });
 });

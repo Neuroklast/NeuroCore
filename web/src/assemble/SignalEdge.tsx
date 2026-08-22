@@ -192,7 +192,7 @@ export function SignalEdge({
         className={`nk-tube-bore ${tubeClass}`}
       />
       {showPlasma || showDots ? (
-        <CableTraffic sourceId={sourceId || source}>
+        <CableTraffic sourceId={sourceId || source} sourceType={sourceType}>
           {showPlasma ? (
             <>
               <path

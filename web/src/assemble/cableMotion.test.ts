@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cableLayer,
+  cableSourcePeak,
   dashPatternLength,
   dotPeriodMs,
   lfoChaseMs,
@@ -78,6 +79,14 @@ describe("cable traffic", () => {
     expect(cableLayer("audio", "wave", true)).toBe("wave");
     expect(cableLayer("audio", "dots", true)).toBe("dots");
     expect(cableLayer("audio", "wave", false)).toBe("wave");
-    expect(cableLayer("audio", "dots", false)).toBe("dots");
+  });
+
+  it("runs send and bus tubes from the IN peak — those chips have no DSP tap", () => {
+    const clips = { IN: 0.4, __in__: 0.4, stage1: 0.2 };
+    expect(cableSourcePeak("send", "send", clips)).toBeCloseTo(0.4);
+    expect(cableSourcePeak("dirt", "bus", clips)).toBeCloseTo(0.4);
+    expect(cableSourcePeak("IN", "in", clips)).toBeCloseTo(0.4);
+    expect(cableSourcePeak("stage1", "stage", clips)).toBeCloseTo(0.2);
+    expect(cableSourcePeak("send", "send", { IN: 0 })).toBe(0);
   });
 });

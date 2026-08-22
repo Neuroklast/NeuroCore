@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BOARD_GRID } from "../grid";
 import { chipChipGap } from "../elkArrange";
+import { flowFromAst } from "../flowFromAst";
+import { findFactory } from "../../presets/factoryCatalog";
+import { parseDslSketch } from "../../presets/parseDslSketch";
 import { packRows, rowCount } from "./compactPack";
+import { flowToLayout } from "./fromFlow";
 import type { LayoutEdge, LayoutNode } from "./types";
 
 function chain(n: number): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
@@ -82,6 +86,73 @@ describe("compact packRows", () => {
     for (const n of Object.values(packed)) {
       expect(n.x % BOARD_GRID).toBe(0);
       expect(n.y % BOARD_GRID).toBe(0);
+    }
+  });
+
+  it("keeps a send bus on its own row and OUT at the bottom-right", () => {
+    const jack = (id: string, y: number) => ({ id, y });
+    const n = (
+      id: string,
+      rail: string,
+      w = 256,
+      h = 96,
+    ): LayoutNode => ({
+      id,
+      w,
+      h,
+      rail,
+      ins: id === "IN" ? [] : [jack("in", 48)],
+      outs: id === "OUT" ? [] : [jack("out", 48)],
+    });
+    const nodes: LayoutNode[] = [
+      n("IN", "main", 128, 64),
+      n("stage1", "main"),
+      n("dirt", "dirt"),
+      n("send", "dirt"),
+      n("stage2", "dirt"),
+      n("OUT", "out", 128, 96),
+    ];
+    const edges: LayoutEdge[] = [
+      { id: "e0", source: "IN", target: "stage1", fromJack: "out", toJack: "in" },
+      { id: "e1", source: "stage1", target: "OUT", fromJack: "out", toJack: "main" },
+      { id: "e2", source: "IN", target: "dirt", fromJack: "out", toJack: "in" },
+      { id: "e3", source: "dirt", target: "send", fromJack: "out", toJack: "in" },
+      { id: "e4", source: "send", target: "stage2", fromJack: "out", toJack: "in" },
+      { id: "e5", source: "stage2", target: "OUT", fromJack: "out", toJack: "dirt" },
+    ];
+    const packed = packRows(nodes, edges, { w: 960, h: 420 });
+    expect(packed.dirt!.y).toBeGreaterThan(packed.IN!.y);
+    expect(packed.send!.y).toBe(packed.dirt!.y);
+    expect(packed.stage2!.y).toBe(packed.dirt!.y);
+    expect(packed.stage1!.y).toBe(packed.IN!.y);
+    expect(packed.OUT!.x).toBeGreaterThanOrEqual(packed.stage1!.x + packed.stage1!.w);
+    expect(packed.OUT!.x).toBeGreaterThanOrEqual(packed.stage2!.x + packed.stage2!.w);
+    expect(packed.OUT!.y).toBeGreaterThanOrEqual(packed.IN!.y);
+    for (const id of ["IN", "stage1", "dirt", "send", "stage2"]) {
+      const p = packed[id]!;
+      expect(p.x < packed.OUT!.x || p.y < packed.OUT!.y, `${id} is not left or above OUT`).toBe(true);
+    }
+  });
+
+  it("compacts Far Plane with the hall send row below main and OUT on the right", () => {
+    const row = findFactory("Far Plane");
+    expect(row, "missing Far Plane").toBeTruthy();
+    const { doc } = parseDslSketch(row!.script);
+    const { nodes, edges } = flowFromAst(doc);
+    const layout = flowToLayout(nodes, edges);
+    const packed = packRows(layout.nodes, layout.edges, { w: 960, h: 420 });
+    const send = nodes.find((n) => n.data.type === "send")!.id;
+    const bus = nodes.find((n) => n.data.type === "bus")!.id;
+    const out = nodes.find((n) => n.data.type === "out")!.id;
+    expect(packed[bus]!.y).toBeGreaterThan(packed.IN!.y);
+    expect(packed[send]!.y).toBe(packed[bus]!.y);
+    expect(packed[out]!.x).toBeGreaterThan(packed.IN!.x);
+    expect(packed[out]!.x).toBeGreaterThanOrEqual(packed[send]!.x);
+    for (const [id, p] of Object.entries(packed)) {
+      if (id === out) {
+        continue;
+      }
+      expect(p.x < packed[out]!.x || p.y < packed[out]!.y, `${id} must sit left or above OUT`).toBe(true);
     }
   });
 });

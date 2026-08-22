@@ -116,17 +116,31 @@ export function separateChips(
   return out;
 }
 
-export function packRows(
-  nodes: LayoutNode[],
-  edges: LayoutEdge[],
-  view: BoardView = { w: 960, h: 420 },
+export function nodeRail(n: LayoutNode): string {
+  const r = (n.rail || "").toLowerCase();
+  if (n.id === "IN" || n.id === "in") {
+    return "main";
+  }
+  if (n.id === "OUT" || n.id === "out" || r === "out") {
+    return "out";
+  }
+  if (r === "mod") {
+    return "mod";
+  }
+  if (r && r !== "main") {
+    return r;
+  }
+  return "main";
+}
+
+function placeOrder(
+  order: string[],
+  byId: Map<string, LayoutNode>,
+  originY: number,
+  pad: number,
+  gapX: number,
+  gapY: number,
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  const gapX = CHIP_AIR_X;
-  const gapY = CHIP_AIR_Y;
-  const pad = gapY;
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
-  const order = serialIds(nodes, edges, start);
   const colsN = Math.max(1, Math.ceil(order.length / compactRowTarget(order.length)));
   const slots: Array<{ id: string; row: number; col: number; w: number; h: number }> = [];
   for (let i = 0; i < order.length; i += 1) {
@@ -155,12 +169,11 @@ export function packRows(
     x += (colW[c] ?? 0) + gapX;
   }
   const rowY: number[] = [];
-  let y = pad;
+  let y = originY;
   for (let r = 0; r < rowH.length; r += 1) {
     rowY[r] = snapToGrid(y);
     y += (rowH[r] ?? 0) + gapY;
   }
-  void view;
   const jackLocal = (id: string): number => {
     const n = byId.get(id);
     return n?.outs[0]?.y ?? n?.ins[0]?.y ?? BOARD_GRID + BOARD_GRID * 0.5;
@@ -176,11 +189,11 @@ export function packRows(
     const rail = jackLocal(list[0]!.id);
     let minY = Infinity;
     const placed = list.map((s) => {
-      const y = snapToGrid((rowY[r] ?? pad) + (rail - jackLocal(s.id)));
-      minY = Math.min(minY, y);
-      return { s, y };
+      const py = snapToGrid((rowY[r] ?? originY) + (rail - jackLocal(s.id)));
+      minY = Math.min(minY, py);
+      return { s, y: py };
     });
-    const lift = minY < pad ? pad - minY : 0;
+    const lift = minY < originY ? originY - minY : 0;
     for (const p of placed) {
       out[p.s.id] = {
         x: colX[p.s.col] ?? pad,
@@ -190,7 +203,67 @@ export function packRows(
       };
     }
   }
-  return separateChips(out);
+  return out;
+}
+
+export function packRows(
+  nodes: LayoutNode[],
+  edges: LayoutEdge[],
+  view: BoardView = { w: 960, h: 420 },
+): Record<string, { x: number; y: number; w: number; h: number }> {
+  void view;
+  const gapX = CHIP_AIR_X;
+  const gapY = CHIP_AIR_Y;
+  const pad = gapY;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const namedRails = [...new Set(nodes.map(nodeRail).filter((r) => r !== "main" && r !== "out" && r !== "mod"))];
+  if (namedRails.length === 0) {
+    const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
+    return separateChips(placeOrder(serialIds(nodes, edges, start), byId, pad, pad, gapX, gapY));
+  }
+
+  const groups = new Map<string, LayoutNode[]>();
+  let outNode: LayoutNode | undefined;
+  for (const n of nodes) {
+    const r = nodeRail(n);
+    if (r === "out") {
+      outNode = n;
+      continue;
+    }
+    const list = groups.get(r) ?? [];
+    list.push(n);
+    groups.set(r, list);
+  }
+  const railOrder = ["main", ...namedRails, ...(groups.has("mod") ? ["mod"] : [])];
+  const placed: Record<string, { x: number; y: number; w: number; h: number }> = {};
+  let y = pad;
+  let maxRight = pad;
+  for (const rail of railOrder) {
+    const members = groups.get(rail);
+    if (! members || members.length === 0) {
+      continue;
+    }
+    const start = rail === "main"
+      ? (members.find((n) => n.id === "IN")?.id ?? members[0]!.id)
+      : (members.find((n) => n.id === rail)?.id ?? members[0]!.id);
+    const subset = members;
+    const subEdges = edges.filter((e) => subset.some((n) => n.id === e.source) && subset.some((n) => n.id === e.target));
+    const chunk = placeOrder(serialIds(subset, subEdges, start), byId, y, pad, gapX, gapY);
+    for (const [id, p] of Object.entries(chunk)) {
+      placed[id] = p;
+      maxRight = Math.max(maxRight, p.x + p.w);
+      y = Math.max(y, p.y + p.h + gapY);
+    }
+  }
+  if (outNode) {
+    placed[outNode.id] = {
+      x: snapToGrid(maxRight + gapX),
+      y: placed.IN?.y ?? pad,
+      w: snapSize(outNode.w),
+      h: snapSize(outNode.h),
+    };
+  }
+  return separateChips(placed);
 }
 
 export function rowCount(
