@@ -122,8 +122,8 @@ describe("chip face, labels, copy", () => {
     }
   });
 
-  it("sizes IN and OUT so the single jack sits on the vertical midline", () => {
-    const innJ = [audio("out", true)];
+  it("sizes IN and OUT so a single jack sits on the vertical midline; IN.sc is a second east source", () => {
+    const innJ = [audio("out", true), audio("sc", true)];
     const outJ = [audio("in", false)];
     const inn = chipBox("in", innJ, false, {});
     const out = chipBox("out", outJ, false, {});
@@ -131,10 +131,12 @@ describe("chip face, labels, copy", () => {
     expect(out.h).toBe(inn.h);
     expect(inn.h % BOARD_GRID).toBe(0);
     const a = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("out", true), true, inn.h, inn.w);
+    const sc = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("sc", true), true, inn.h, inn.w);
     const b = jackAnchor({ x: 0, y: 0 }, "out", outJ, handleId("in", false), false, out.h, out.w);
-    expect(a.y).toBe(snapToCellCenter(inn.h * 0.5));
+    expect(a.x).toBe(inn.w);
+    expect(sc.x).toBe(inn.w);
+    expect(a.y).not.toBe(sc.y);
     expect(b.y).toBe(snapToCellCenter(out.h * 0.5));
-    expect(Math.abs(a.y - inn.h * 0.5)).toBeLessThan(1);
     expect(Math.abs(b.y - out.h * 0.5)).toBeLessThan(1);
   });
 

@@ -3,7 +3,7 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryRows } from "./factoryCatalog";
 import { explorerSession } from "../overlays/explorerSession";
-import { presetAction, seedFactoryPresets } from "./presetActions";
+import { presetAction, requestPresetAction, seedFactoryPresets } from "./presetActions";
 
 describe("preset actions without the JUCE bridge", () => {
   beforeEach(() => {
@@ -88,6 +88,26 @@ describe("preset actions without the JUCE bridge", () => {
     expect(useHostStore.getState().presetName).toBe("My Xover");
     expect(useAstStore.getState().script).toContain("xover1");
     expect(useHostStore.getState().mix).toBeCloseTo(0.7, 5);
+  });
+
+  it("refuses to save over a factory name", async () => {
+    seedFactoryPresets();
+    await presetAction({ action: "load", name: "Blues Break OD" });
+    await presetAction({ action: "save", name: "Blues Break OD" });
+    const row = useHostStore.getState().presets.find((p) => p.name === "Blues Break OD");
+    expect(row?.factory).not.toBe(false);
+  });
+
+  it("keeps the unsaved prompt and does not load when the explorer asks to switch", async () => {
+    seedFactoryPresets();
+    await presetAction({ action: "load", name: "Airy Clean" });
+    useHostStore.setState({ presetDirty: true, discardPrompt: true, overlay: "presets" });
+    const ran = await requestPresetAction({ action: "load", name: "Blues Break OD" });
+    expect(ran).toBe(false);
+    expect(useHostStore.getState().overlay).toBe("discard");
+    expect(useHostStore.getState().overlayReturn).toBe("presets");
+    expect(useHostStore.getState().pendingPreset).toEqual({ action: "load", name: "Blues Break OD" });
+    expect(useHostStore.getState().presetName).toBe("Airy Clean");
   });
 });
 

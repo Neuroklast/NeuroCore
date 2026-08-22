@@ -1600,7 +1600,7 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     static const char* kEnv[] = { "type", "attack", "hold", "release", "min", "max",
                                   "invert", "depth", "source", "trigger", nullptr };
     static const char* kSend[] = { "in", "main", nullptr };
-    static const char* kOut[] = { "main", nullptr };
+    static const char* kOut[] = { "main", "gain", nullptr };
     static const char* kMs[] = { "mode", nullptr };
     static const char* kOctaver[] = { "sub", "up", "mix", "tone", "thresh", nullptr };
     static const char* kVocoder[] = { "bands", "mix", "q", "formant", "dry", nullptr };
@@ -1821,6 +1821,7 @@ std::vector<GraphJack> jacksForInput()
 {
     std::vector<GraphJack> jacks;
     addJack (jacks, "out", true, "audio");
+    addJack (jacks, "sc", true, "audio");
     return jacks;
 }
 
@@ -1892,13 +1893,13 @@ juce::String rewriteParamDisplayName (const juce::String& script, int knobIndex,
 }
 
 juce::String rewriteParamRange (const juce::String& script, int knobIndex,
-                                float newMin, float newMax)
+                                float newMin, float newMax, bool isNote)
 {
     if (knobIndex < 0 || knobIndex > 5 || ! std::isfinite (newMin) || ! std::isfinite (newMax))
         return script;
-    if (newMax < newMin)
+    if (! isNote && newMax < newMin)
         std::swap (newMin, newMax);
-    if (std::abs (newMax - newMin) < 1.0e-9f)
+    if (! isNote && std::abs (newMax - newMin) < 1.0e-9f)
         newMax = newMin + 1.f;
 
     auto boundTxt = [] (float v) -> juce::String
@@ -1918,7 +1919,9 @@ juce::String rewriteParamRange (const juce::String& script, int knobIndex,
         return s;
     };
     const auto letter = juce::String::charToString ((juce::juce_wchar) ('a' + knobIndex));
-    const auto bounds = juce::String ("[") + boundTxt (newMin) + ", " + boundTxt (newMax) + "]";
+    const auto bounds = isNote
+        ? juce::String ("[") + NoteValues::labelFor (newMin) + ", " + NoteValues::labelFor (newMax) + "]"
+        : juce::String ("[") + boundTxt (newMin) + ", " + boundTxt (newMax) + "]";
     juce::StringArray lines;
     lines.addLines (script);
     bool found = false;

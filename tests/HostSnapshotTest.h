@@ -4,7 +4,9 @@
 #include "../src/bridge/HostSnapshot.h"
 #include "../src/core/Config.h"
 #include "../src/core/PluginProcessor.h"
+#include "../src/utils/FactoryPresetLibrary.h"
 #include "../src/utils/PresetLibrary.h"
+#include "../src/utils/UiSettings.h"
 
 class HostSnapshotTest : public juce::UnitTest
 {
@@ -69,6 +71,36 @@ public:
             expect (bridge::choiceCmdFromVar (juce::var (p), c, err), err);
             expectEquals (c.id, juce::String ("mode"));
             expectEquals (c.index, 1);
+        }
+
+        beginTest ("hostVar carries shared UI prefs");
+        {
+            UiSettings::get().setThemeId ("gold");
+            UiSettings::get().setFrameRate (30);
+            UiSettings::get().setDiscardPrompt (false);
+            UiSettings::get().setCableWaveform (false);
+            UiSettings::get().setMotion (CyberMotion::Reduced);
+            NeuroKoreAudioProcessor proc;
+            const auto host = bridge::hostVar (proc);
+            expectEquals (host.getProperty ("theme", "").toString(), juce::String ("gold"));
+            expectEquals ((int) host.getProperty ("frameRate", 0), 30);
+            expectEquals ((int) host.getProperty ("discardPrompt", true), 0);
+            expectEquals (host.getProperty ("cables", "").toString(), juce::String ("dots"));
+            expectEquals (host.getProperty ("motion", "").toString(), juce::String ("reduced"));
+            UiSettings::get().setThemeId ("signal");
+            UiSettings::get().setFrameRate (0);
+            UiSettings::get().setDiscardPrompt (true);
+            UiSettings::get().setMotion (CyberMotion::Full);
+        }
+
+        beginTest ("footer lat is the same number the host uses for PDC");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.prepareToPlay (48000.0, 512);
+            const auto host = bridge::hostVar (proc);
+            const int lat = (int) host.getProperty ("lat", -1);
+            expectEquals (lat, proc.getLatencySamples());
+            expect (lat >= proc.getOversamplingLatencySamples());
         }
 
         beginTest ("hostVar reports sidechainOn from the SC bus");
@@ -137,6 +169,39 @@ public:
             expect (slots.size() >= 1, "ir1 must appear after compile");
             expectEquals (slots[0].getProperty ("slot", "").toString(), juce::String ("ir1"));
             expectEquals ((int) slots[0].getProperty ("loaded", 1), 0);
+        }
+
+        beginTest ("save refuses to overwrite a factory preset name");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            auto& lib = FactoryPresetLibrary::getInstance();
+            if (lib.getEntries().empty())
+                lib.loadFromEmbedded();
+            expect (lib.getEntries().size() > 0);
+            const auto factoryName = lib.getEntries().front().name;
+            bridge::PresetCmd save;
+            save.action = "save";
+            save.name = factoryName;
+            expect (! bridge::applyPresetCmd (proc, save, err));
+            expect (err.containsIgnoreCase ("factory"));
+        }
+
+        beginTest ("applyKnobMeta writes note range into the script");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("param a = Time [20, 2000]\ndelay1: time = a\n", err), err);
+            bridge::KnobMetaCmd m;
+            m.id = "a";
+            m.hasMin = true;
+            m.hasMax = true;
+            m.hasNote = true;
+            m.min = 1.f;
+            m.max = 0.0625f;
+            m.isNote = true;
+            expect (bridge::applyKnobMeta (proc, m, err), err);
+            expect (proc.getScript().contains ("[1/1, 1/16]"), proc.getScript());
         }
     }
 };

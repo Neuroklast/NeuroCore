@@ -21,6 +21,7 @@ describe("workspace modes", () => {
 
   it("polls telemetry at 60 Hz on Unit and 2 Hz off Unit", () => {
     expect(telemetryIntervalMs("face")).toBe(16);
+    expect(telemetryIntervalMs("face", 30)).toBe(33);
     expect(telemetryIntervalMs("assemble")).toBe(500);
     expect(telemetryIntervalMs("hack")).toBe(500);
   });

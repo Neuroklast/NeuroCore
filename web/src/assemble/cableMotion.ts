@@ -106,15 +106,36 @@ export function dotDash(pitch = 24, size = 2.4): string {
   return `${size} ${Math.max(8, pitch - size)}`;
 }
 
-/** Loud signal → shorter period → faster dots. */
-export function dotPeriodMs(peak: number): number {
-  const a = logAmp(peak);
-  return Math.round(1420 - a * 1200);
+/** Linear peak at −60 dBFS. At or below this the beads do not move. */
+export const CABLE_STILL_AMP = 10 ** (-60 / 20);
+export const CABLE_STILL_DB = -60;
+const CABLE_MAX_PX_PER_SEC = 280;
+
+export function peakDb(peak: number): number {
+  const p = Math.abs(Number(peak));
+  if (! Number.isFinite(p) || p <= 0) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  return 20 * Math.log10(p);
 }
 
-/** Always positive px/s. Loud signal travels faster, never reverses. */
+/** Loud signal → shorter period → faster dots. Still at −60 dBFS. */
+export function dotPeriodMs(peak: number): number {
+  const spd = plasmaSpeedPxPerSec(peak);
+  if (spd <= 0) {
+    return 0;
+  }
+  return Math.round(1000 * 16 / spd);
+}
+
+/** 0 when silent or ≤ −60 dBFS. Faster as this chip’s peak rises toward 0 dBFS. Never reverses. */
 export function plasmaSpeedPxPerSec(peak: number): number {
-  return 52 + logAmp(peak) * 240;
+  const db = peakDb(peak);
+  if (! Number.isFinite(db) || db <= CABLE_STILL_DB) {
+    return 0;
+  }
+  const t = Math.min(1, (db - CABLE_STILL_DB) / -CABLE_STILL_DB);
+  return t * CABLE_MAX_PX_PER_SEC;
 }
 
 /** Dashoffset only decreases (source → dest). dt ≤ 0 leaves the value unchanged. */

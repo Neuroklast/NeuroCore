@@ -6,6 +6,7 @@
 */
 #include <JuceHeader.h>
 #include "../core/Config.h"
+#include <cmath>
 #include <cstdint>
 #include <vector>
 #if defined(_MSC_VER) && defined(_M_X64)
@@ -359,6 +360,99 @@ namespace DSPUtils
         for (int ch = 0; ch < nCh; ++ch)
             out.copyFrom (ch, 0, wet, ch, 0, nS);
         mixDryWetContinuous (dry, out, wStart, wEnd);
+    }
+
+    /** Equal-power mix. Polarity follows dry/wet correlation so 50% inverted signals
+        do not null. Mix 0 is dry, mix 1 is wet unchanged. */
+    struct DryWetMixState
+    {
+        float polarity { 1.f };
+        float corrAbs { 1.f };
+    };
+
+    /** Mastering insert mix: linear when dry/wet are correlated (loudness-neutral),
+        equal-power when uncorrelated, polarity latch so anti-phase does not null.
+        Mix 0 is dry, mix 1 is wet unchanged. */
+    template <typename FloatType>
+    static inline void mixDryWetPhaseFree (const juce::AudioBuffer<FloatType>& dry,
+                                           juce::AudioBuffer<FloatType>& wetInOut,
+                                           FloatType wStart,
+                                           FloatType wEnd,
+                                           DryWetMixState& st) noexcept
+    {
+        const int nS  = wetInOut.getNumSamples();
+        const int nCh = juce::jmin (dry.getNumChannels(), wetInOut.getNumChannels());
+        if (nS <= 0 || nCh <= 0)
+            return;
+
+        double accDW = 0.0, accD2 = 0.0, accW2 = 0.0;
+        for (int ch = 0; ch < nCh; ++ch)
+        {
+            const FloatType* d = dry.getReadPointer (ch);
+            const FloatType* v = wetInOut.getReadPointer (ch);
+            for (int i = 0; i < nS; ++i)
+            {
+                const double a = (double) d[i];
+                const double b = (double) v[i];
+                accDW += a * b;
+                accD2 += a * a;
+                accW2 += b * b;
+            }
+        }
+        const double den = std::sqrt (accD2 * accW2);
+        const float r = den > 1.0e-12 ? (float) (accDW / den) : 1.f;
+        float polTarget = st.polarity >= 0.f ? 1.f : -1.f;
+        if (r < -0.35f)
+            polTarget = -1.f;
+        else if (r > 0.2f)
+            polTarget = 1.f;
+        st.polarity += 0.12f * (polTarget - st.polarity);
+        st.polarity = juce::jlimit (-1.f, 1.f, st.polarity);
+        st.corrAbs += 0.18f * (std::abs (r) - st.corrAbs);
+        st.corrAbs = juce::jlimit (0.f, 1.f, st.corrAbs);
+
+        const FloatType denom = nS > 1 ? FloatType (nS - 1) : FloatType (1);
+        const FloatType halfPi = FloatType (1.5707963267948966);
+        const float aLin = st.corrAbs * st.corrAbs;
+        for (int i = 0; i < nS; ++i)
+        {
+            const FloatType t = FloatType (i) / denom;
+            const FloatType w = juce::jlimit (FloatType (0), FloatType (1),
+                                              wStart + (wEnd - wStart) * t);
+            const FloatType gDlin = FloatType (1) - w;
+            const FloatType gWlin = w;
+            const FloatType theta = w * halfPi;
+            const FloatType gDpow = std::cos (theta);
+            const FloatType gWpow = std::sin (theta);
+            const FloatType gD = FloatType (aLin) * gDlin + FloatType (1 - aLin) * gDpow;
+            const FloatType gW = FloatType (aLin) * gWlin + FloatType (1 - aLin) * gWpow;
+            const float wm = (float) (w * (FloatType (1) - w) * FloatType (4));
+            const FloatType p = FloatType (1) + FloatType (st.polarity - 1.f) * FloatType (wm);
+            for (int ch = 0; ch < nCh; ++ch)
+            {
+                const FloatType d = dry.getSample (ch, i);
+                const FloatType v = wetInOut.getSample (ch, i);
+                wetInOut.setSample (ch, i, d * gD + v * p * gW);
+            }
+        }
+    }
+
+    template <typename FloatType>
+    static inline void mixDryWetPhaseFree (const juce::AudioBuffer<FloatType>& dry,
+                                           const juce::AudioBuffer<FloatType>& wet,
+                                           juce::AudioBuffer<FloatType>& out,
+                                           FloatType wStart,
+                                           FloatType wEnd,
+                                           DryWetMixState& st) noexcept
+    {
+        const int nS  = juce::jmin (out.getNumSamples(), wet.getNumSamples());
+        const int nCh = juce::jmin (out.getNumChannels(),
+                                    juce::jmin (dry.getNumChannels(), wet.getNumChannels()));
+        if (nS <= 0 || nCh <= 0)
+            return;
+        for (int ch = 0; ch < nCh; ++ch)
+            out.copyFrom (ch, 0, wet, ch, 0, nS);
+        mixDryWetPhaseFree (dry, out, wStart, wEnd, st);
     }
 
     // Perform FFT analysis on a single channel. Magnitudes will contain fftSize/2 values.

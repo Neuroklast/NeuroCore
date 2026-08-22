@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--nk-accent-rgb), 0.55) var(--nk-bg);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--nk-bg);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(var(--nk-accent-rgb), 0.55);
+  border: 1px solid rgba(var(--nk-accent-rgb), 0.35);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--nk-accent);
+}
+
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 80;
+  white-space: nowrap;
+  padding: 4px 8px;
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--nk-cyan);
+  background: var(--nk-bg);
+  border: 1px solid var(--nk-accent);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  pointer-events: none;
+}
+
 @font-face {
   font-family: "Apex";
   src: url("/fonts/apex.otf") format("opentype");
@@ -502,7 +549,8 @@ body,
   background: transparent;
   border: 0;
   padding: 0;
-  cursor: pointer;
+  cursor: default;
+  pointer-events: none;
 }
 
 .nk-face-fx {
@@ -743,6 +791,24 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
+.nk-face-val {
+  display: inline-flex;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nk-face-num {
+  min-width: 7ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.nk-face-unit {
+  min-width: 4ch;
+  text-align: left;
+  color: rgba(var(--nk-cyan-rgb), 0.78);
+}
+
 .nk-face-tele-r .nk-face-row { flex-direction: row-reverse; }
 
 .nk-face-row span:first-child {
@@ -927,13 +993,12 @@ body,
 .nk-dots {
   stroke-dasharray: 2 14;
   animation: none;
+  stroke-dashoffset: var(--nk-dash, 0);
   filter:
     drop-shadow(0 0 3px var(--nk-accent))
     drop-shadow(0 0 8px rgba(var(--nk-accent-rgb), 0.8));
   pointer-events: none;
 }
-.nk-dots[data-src="in"] { stroke-dashoffset: var(--nk-dash-in, 0); }
-.nk-dots[data-src="out"] { stroke-dashoffset: var(--nk-dash-out, 0); }
 
 @keyframes nk-dots-run {
   to { stroke-dashoffset: -16; }
@@ -1035,6 +1100,7 @@ body,
 .nk-plasma-glow {
   stroke-dasharray: 10 18;
   animation: none;
+  stroke-dashoffset: var(--nk-dash, 0);
   pointer-events: none;
 }
 
@@ -1049,34 +1115,38 @@ body,
   filter: drop-shadow(0 0 1px #ffffff);
 }
 
-.nk-plasma[data-src="in"],
-.nk-plasma-glow[data-src="in"] {
-  stroke-dashoffset: var(--nk-dash-in, 0);
+.nk-plasma {
+  opacity: 0.85;
 }
 
-.nk-plasma[data-src="out"],
-.nk-plasma-glow[data-src="out"] {
-  stroke-dashoffset: var(--nk-dash-out, 0);
-}
-
-.nk-plasma[data-src="in"] {
-  opacity: calc(0.45 + var(--nk-in) * 0.55);
-}
-
-.nk-plasma[data-src="out"] {
-  opacity: calc(0.45 + var(--nk-out) * 0.55);
-}
-
-.nk-plasma-glow[data-src="in"] {
-  opacity: calc(0.35 + var(--nk-in) * 0.65);
-}
-
-.nk-plasma-glow[data-src="out"] {
-  opacity: calc(0.35 + var(--nk-out) * 0.65);
+.nk-plasma-glow {
+  opacity: 0.7;
 }
 
 @keyframes nk-plasma-run {
   to { stroke-dashoffset: -28; }
+}
+
+.nk-clip-lamp {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--nk-ink-muted);
+  background: var(--nk-accent-deep);
+  opacity: 0.45;
+}
+
+.nk-clip-lamp.is-clip {
+  opacity: 1;
+  border-color: var(--nk-error);
+  background: var(--nk-error);
+  box-shadow: 0 0 8px var(--nk-error);
+}
+
+.nk-lfo-lamp.is-off {
+  animation: none;
+  opacity: 0.2;
 }
 
 .nk-lfo-lamp {
@@ -1326,17 +1396,7 @@ body,
   box-shadow: 0 0 0 1px rgba(var(--nk-accent-rgb), 0.28), 0 0 28px rgba(var(--nk-accent-rgb), 0.12);
 }
 
-.nk-overlay ::-webkit-scrollbar {
-  width: 8px;
-}
 
-.nk-overlay ::-webkit-scrollbar-track {
-  background: #000;
-}
-
-.nk-overlay ::-webkit-scrollbar-thumb {
-  background: #990000;
-}
 
 .nk-os {
   box-shadow:
@@ -1492,6 +1552,15 @@ body,
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.react-flow__node-io > .react-flow__handle:not(.nk-plug),
+.react-flow__node-chip > .react-flow__handle:not(.nk-plug) {
+  display: none !important;
 }
 
 .nk-greeble {

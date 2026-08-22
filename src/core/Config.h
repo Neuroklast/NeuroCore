@@ -320,10 +320,16 @@ namespace Config
     //==========================================================================
     // Licensing
     //==========================================================================
-    /// Offline RSA license + 20-minute demo (Mix forced to 0). Tests compile this off.
+    /// Offline RSA license + 14-day calendar demo (Mix forced to 0 after expiry).
     inline constexpr bool  kEnableLicensing      = true;
-    /// Duration in seconds for the unlicensed demo window.
-    inline constexpr double kDemoDurationSeconds = 20.0 * 60.0;
+    /// Duration in seconds for the unlicensed demo window (first launch timestamp is persisted).
+    inline constexpr double kDemoDurationSeconds = 14.0 * 24.0 * 60.0 * 60.0;
+
+    inline int demoSecondsLeft (double startMs, double nowMs) noexcept
+    {
+        const double elapsed = (nowMs - startMs) / 1000.0;
+        return juce::jmax (0, (int) std::ceil (kDemoDurationSeconds - elapsed));
+    }
 
 } // namespace Config
 
@@ -332,7 +338,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.5.0-alpha"
+#define PLUGIN_VERSION    "0.6.0-beta"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

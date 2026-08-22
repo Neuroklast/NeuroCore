@@ -44,7 +44,7 @@ const CATALOG: Array<{
   { id: "send", label: "Send", params: ["kanal"] },
   { id: "in", label: "IN", params: [] },
   { id: "sidechain", label: "Sidechain", params: [] },
-  { id: "out", label: "OUT", params: [] },
+  { id: "out", label: "OUT", params: ["gain"] },
 ];
 
 const dump = (id: string) => {

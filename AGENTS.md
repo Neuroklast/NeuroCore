@@ -13,7 +13,7 @@ cmake --build build --target NeuroKoreTests --config Release
 
 Windows one-click: `build_release.bat` (Debug: `build_debug.bat`). Same tree (`build/`) and target (`NeuroKore_All`). If you bump `NEUROKORE_VERSION_LABEL` or the Release target, update those `.bat` files in the same change.
 
-Version is **0.5.0-alpha**. Do not invent a new one.
+Version is **0.6.0-beta**. Do not invent a new one.
 
 ## Read before you touch code
 
@@ -35,3 +35,4 @@ Do **not** read `docs/archive/` or the old session log unless you are hunting a 
 4. Never allocate or copy `juce::String` on the audio thread.
 5. Footer CPU is 0–100. Never print host-callback ratio as 173 %.
 6. **Drag and connect are React Flow.** Chip move = `nodesDraggable` + `snapToGrid`. Audio jack connect = `onConnect` + `Handle` + `getStraightPath` while dragging. Knob bind lives outside the graph (chrome knobs) — preview is RF `getSmoothStepPath` via `bindSmoothPath`, not a second A*. If RF already does it, use it.
+7. User-facing change updates `docs/manual/NEUROKORE.md` (and `resources/UserManual_en.txt`) in the same change.

@@ -244,6 +244,11 @@ public:
         return scriptManager.signalChain.getModNames();
     }
 
+    void appendClipPeaks (juce::Array<juce::var>& dest) const
+    {
+        scriptManager.signalChain.appendClipPeaks (dest);
+    }
+
     bool copyLfoViz (const juce::String& id, float* dest, int destN) const noexcept
     {
         return scriptManager.signalChain.copyLfoViz (id, dest, destN);

@@ -7,6 +7,7 @@ import { explorerSession } from "../overlays/explorerSession";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo, withCleanScriptForSave } from "../assemble/muteSoloApply";
+import { needsDiscardConfirm, originForStep } from "./presetDirty";
 
 type UserSnap = {
   name: string;
@@ -52,6 +53,37 @@ function applyLocal(name: string): void {
   });
 }
 
+export async function requestPresetAction(cmd: {
+  action: string;
+  name?: string;
+  author?: string;
+  category?: string;
+  tags?: string;
+}): Promise<boolean> {
+  const host = useHostStore.getState();
+  const leaving = cmd.action === "load" || cmd.action === "prev" || cmd.action === "next" || cmd.action === "new";
+  if (leaving && needsDiscardConfirm(host.presetDirty, host.discardPrompt)) {
+    const ret = host.overlay === "discard" ? host.overlayReturn : host.overlay;
+    useHostStore.setState({ pendingPreset: cmd, overlay: "discard", overlayReturn: ret });
+    return false;
+  }
+  await presetAction(cmd);
+  return true;
+}
+
+export async function confirmDiscard(): Promise<void> {
+  const pending = useHostStore.getState().pendingPreset;
+  useHostStore.setState({ overlay: null, overlayReturn: null, pendingPreset: null, presetDirty: false });
+  if (pending) {
+    await presetAction(pending);
+  }
+}
+
+export function cancelDiscard(): void {
+  const ret = useHostStore.getState().overlayReturn;
+  useHostStore.setState({ overlay: ret, overlayReturn: null, pendingPreset: null });
+}
+
 export async function presetAction(cmd: {
   action: string;
   name?: string;
@@ -76,6 +108,9 @@ export async function presetAction(cmd: {
   if (cmd.action === "save" || cmd.action === "saveas") {
     const name = (cmd.name ?? "").trim();
     if (! name) {
+      return;
+    }
+    if (findFactory(name) != null) {
       return;
     }
     const script = stripMuteComments(useAstStore.getState().lastValidScript || useAstStore.getState().script);
@@ -122,9 +157,10 @@ export async function presetAction(cmd: {
     const rows = useHostStore.getState().presets;
     const walk = rows.length > 0 ? rows : factoryRows();
     resetMuteSolo();
+    const host = useHostStore.getState();
     applyLocal(stepPresetName(
       walk,
-      useHostStore.getState().presetName,
+      originForStep(host.originName, host.presetName),
       cmd.action === "next" ? 1 : -1,
       explorerSession.cat,
     ));

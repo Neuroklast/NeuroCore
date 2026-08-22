@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { footerLicenseLabel } from "./footerLicense";
+import { demoEndDateLabel, footerLicenseLabel } from "./footerLicense";
 
-describe("footer license slot", () => {
-  it("shows LIC when licensed, else remaining demo time", () => {
+describe("footerLicenseLabel", () => {
+  it("shows LIC when licensed, else remaining days and end date", () => {
     expect(footerLicenseLabel(true, 0)).toBe("LIC");
-    expect(footerLicenseLabel(false, 125)).toBe("DEMO 2:05");
-    expect(footerLicenseLabel(false, 0)).toBe("DEMO 0:00");
+    expect(footerLicenseLabel(false, 0)).toBe("DEMO ended");
+    const now = Date.UTC(2026, 7, 22);
+    expect(footerLicenseLabel(false, 14 * 86400, now)).toBe("DEMO 14d · 5 Sep 2026");
+    expect(demoEndDateLabel(14 * 86400, now)).toBe("5 Sep 2026");
+    expect(footerLicenseLabel(false, 86400, now)).toMatch(/^DEMO 1d · /);
   });
 });

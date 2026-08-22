@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
 import type { AstJack } from "../bridge/ast";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
-import { useBindStore, useTelemetryStore } from "../store/telemetryStore";
+import { useBindStore } from "../store/telemetryStore";
 import { peakToDb } from "../bridge/telemetry";
 import { barcodeBits, CHIP_CLIP, chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, greebleCode, satLampOn } from "../theme/chromeSpec";
 import { formatMapped } from "../theme/tokens";
@@ -15,6 +15,7 @@ import { handleId } from "./handles";
 import { commitBind } from "./bindModel";
 import { primaryJackId } from "./connectModel";
 import { bindFace, bindJackCaption, bindCaptionMaxPx, bindJackXs, chipBox, chipChromeVars, chipOverlayStackPx, jackCaption, jackTopPx, LABEL_COL, TITLE_H } from "./chipLayout";
+import { canonicalIoJacks, ioFaceWidgets } from "./ioPaint";
 import { CHIP_PAD_Y } from "./chipMetrics";
 import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { detailArgs, isCustomNode, nextCustomInput } from "./detailSchema";
@@ -61,7 +62,7 @@ function JackPort({
         style={style}
         isConnectableStart={output}
         isConnectableEnd={! output}
-        title={jack.label || jack.id}
+        data-tip={jack.label || jack.id}
       />
       {showLabel && face === "side" ? (
         <span
@@ -99,7 +100,7 @@ function ParamSocket({
       <button
         type="button"
         className="nk-sock-hit nodrag"
-        title={`bind ${argKey}`}
+        data-tip={`bind ${argKey}`}
         onClick={(e) => {
           e.stopPropagation();
           if (dragging) {
@@ -116,7 +117,7 @@ function ParamSocket({
       <input
         className="nk-sock-live nodrag font-mono"
         defaultValue={formula}
-        title={live}
+        data-tip={live}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onBlur={(e) => {
@@ -190,7 +191,7 @@ function BindRail({
             style={{ left: xs[i] }}
             data-bind-node={nodeId}
             data-bind-key={row.key}
-            title={`plug ${row.key}`}
+            data-tip={`plug ${row.key}`}
             onClick={(e) => {
               e.stopPropagation();
               if (dragging) {
@@ -202,7 +203,7 @@ function BindRail({
             {letters.map((L) => (
               <span key={L} data-bind-end={bindEndId(L, nodeId)} className="nk-bind-end" />
             ))}
-            <span className="nk-bind-jack-cap" style={{ maxWidth: capW }} title={bindJackCaption(row.key)}>
+            <span className="nk-bind-jack-cap" style={{ maxWidth: capW }} data-tip={bindJackCaption(row.key)}>
               {bindJackCaption(row.key)}
             </span>
           </button>
@@ -224,7 +225,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const irLoaded = useHostStore((s) => s.irSlots.some((slot) => slot.slot === id && slot.loaded));
-  const peak = useTelemetryStore((s) => (d.type === "in" ? s.inPeak : s.outPeak));
+  const peak = useHostStore((s) => s.clips[id] ?? s.clips[d.nodeId] ?? 0);
   const sideJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "side");
   const bottomJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
   const topJacks = d.jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "top");
@@ -296,7 +297,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
         data-chip-expand={id}
         data-chip-keep-open=""
         aria-expanded={detail}
-        title={detail ? "Hide details" : "Show details"}
+        data-tip={detail ? "Hide details" : "Show details"}
         style={{
           position: "absolute",
           top: expandAt.top,
@@ -336,7 +337,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
       </svg>
       <div className="nk-chip-body">
         <div className="flex w-full items-center justify-between gap-2" style={{ height: TITLE_H }}>
-          <span className="nk-chip-grip" aria-hidden title="Drag" />
+          <span className="nk-chip-grip" aria-hidden data-tip="Drag" />
           {custom && rename ? (
             <input
               className="nk-chip-title-edit nodrag nopan min-w-0 flex-1 truncate font-mono text-ink"
@@ -363,7 +364,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
           ) : (
             <span
               className={`nk-chip-title min-w-0 flex-1 truncate text-ink ${custom ? "nodrag" : ""}`}
-              title={custom ? "Click to rename" : undefined}
+              data-tip={custom ? "Click to rename" : undefined}
               onClick={(e) => {
                 if (! custom) {
                   return;
@@ -380,11 +381,17 @@ export function ChipNode({ data, id, selected }: NodeProps) {
               <span
                 className={`nk-lfo-lamp nk-lfo-${shape}`}
                 style={{ ["--nk-lfo-ms" as string]: `${lampMs}ms` }}
-                title={`${shape} ${formatMapped(hz)} Hz`}
+                data-tip={`${shape} ${formatMapped(hz)} Hz`}
                 aria-hidden
               />
-            ) : null}
-            {warn ? <span className="nk-warn-tri" title="hot" /> : null}
+            ) : (
+              <span
+                className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`}
+                data-tip={peak >= 1 ? "clip" : "clip lamp"}
+                aria-hidden
+              />
+            )}
+            {warn ? <span className="nk-warn-tri" data-tip="hot" /> : null}
             {d.channel ? (
               <span className="text-[9px] text-muted">{d.channel}</span>
             ) : null}
@@ -397,7 +404,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
             <button
               type="button"
               className="nk-clip nodrag nopan px-1 text-[10px]"
-              title="Load cabinet IR"
+              data-tip="Load cabinet IR"
               onClick={(e) => {
                 e.stopPropagation();
                 openImpulse(id);
@@ -421,7 +428,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
               <button
                 type="button"
                 className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`}
-                title="Mute block"
+                data-tip="Mute block"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleChipMute(id);
@@ -432,7 +439,7 @@ export function ChipNode({ data, id, selected }: NodeProps) {
               <button
                 type="button"
                 className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`}
-                title="Solo block"
+                data-tip="Solo block"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleChipSolo(id);
@@ -575,9 +582,17 @@ export function IoNode({ data, id }: NodeProps) {
   const focus = String((data as { focus?: string }).focus ?? "off");
   const isIn = d.type === "in" || d.type === "sidechain";
   const detail = useChipViewStore((s) => Boolean(s.detail[id]));
+  const toggle = useChipViewStore((s) => s.toggle);
   const knobs = useHostStore((s) => s.knobs);
+  const sidechainOn = useHostStore((s) => s.sidechainOn);
+  const peak = useHostStore((s) => s.clips[id] ?? s.clips[isIn ? "IN" : "OUT"] ?? 0);
   const extra = useMemo(() => detailArgs(d.type, d.args), [d.args, d.type]);
-  const box = chipBox(d.type, d.jacks, false, d.args);
+  const jacks = d.jacks.length ? d.jacks : canonicalIoJacks(d.type);
+  const ins = isIn ? [] : jacks.filter((j) => ! j.output);
+  const outs = isIn ? jacks.filter((j) => j.output) : [];
+  const box = chipBox(d.type, jacks, false, d.args);
+  const expandAt = chipExpandOffset();
+  const canExpand = extra.length > 0;
   const updateInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow();
   useLayoutEffect(() => {
@@ -593,6 +608,7 @@ export function IoNode({ data, id }: NodeProps) {
       className={`nk-chip-io relative flex flex-col items-center justify-center text-[15px] text-ink ${isIn ? "nk-chip-locked" : ""}`}
       data-focus={focus}
       data-detail={detail ? "on" : "off"}
+      data-face-widgets={ioFaceWidgets(d.type, false).join(",") || "none"}
       style={{
         width: box.w,
         height: box.h,
@@ -602,6 +618,32 @@ export function IoNode({ data, id }: NodeProps) {
       }}
     >
       <div className="nk-chip-fill" />
+      {canExpand ? (
+        <button
+          type="button"
+          className="nk-chip-expand nodrag nopan"
+          data-chip-expand={id}
+          data-chip-keep-open=""
+          aria-expanded={detail}
+          data-tip={detail ? "Hide details" : "Show details"}
+          style={{
+            position: "absolute",
+            top: expandAt.top,
+            right: expandAt.right,
+            zIndex: 6,
+            minWidth: DETAIL_HIT,
+            minHeight: DETAIL_HIT,
+            width: expandAt.size,
+            height: expandAt.size,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle(id);
+          }}
+        >
+          {detail ? "▴" : "▾"}
+        </button>
+      ) : null}
       <svg className="nk-chip-frame" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden>
         <polygon
           points={framePoints(box.w, box.h)}
@@ -610,10 +652,10 @@ export function IoNode({ data, id }: NodeProps) {
           strokeWidth="1.4"
           strokeLinejoin="miter"
         />
-        {frameCorners(box.w, box.h).map((d, i) => (
+        {frameCorners(box.w, box.h).map((path, i) => (
           <path
             key={i}
-            d={d}
+            d={path}
             fill="none"
             stroke={isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"}
             strokeWidth="2.7"
@@ -622,8 +664,21 @@ export function IoNode({ data, id }: NodeProps) {
           />
         ))}
       </svg>
-      <div className="relative z-[2] flex w-full items-center justify-center gap-1">
+      <div className="relative z-[2] flex min-w-0 w-full items-center justify-center gap-1 overflow-hidden px-1">
         <span className="nk-chip-title truncate">{d.type === "sidechain" ? "Sidechain" : d.label}</span>
+        {isIn ? (
+          <span
+            className={`nk-lfo-lamp nk-lfo-sine${sidechainOn ? "" : " is-off"}`}
+            data-tip="host sidechain"
+            aria-hidden
+          />
+        ) : (
+          <span
+            className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`}
+            data-tip={peak >= 1 ? "clip" : "clip lamp"}
+            aria-hidden
+          />
+        )}
       </div>
       {detail && extra.length > 0 ? (
         <div
@@ -650,12 +705,20 @@ export function IoNode({ data, id }: NodeProps) {
           </div>
         </div>
       ) : null}
-      {d.jacks.map((j, i) => (
+      {ins.map((j, i) => (
         <JackPort
-          key={j.id}
+          key={`in-${j.id}`}
           jack={j}
-          output={j.output}
-          top={jackTopPx(i, Math.max(d.jacks.length, 1), box.h, d.type)}
+          output={false}
+          top={jackTopPx(i, Math.max(ins.length, 1), box.h, d.type)}
+        />
+      ))}
+      {outs.map((j, i) => (
+        <JackPort
+          key={`out-${j.id}`}
+          jack={j}
+          output
+          top={jackTopPx(i, Math.max(outs.length, 1), box.h, d.type)}
         />
       ))}
     </div>

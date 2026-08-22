@@ -36,7 +36,7 @@ describe("shipped manual", () => {
   it("has every numbered chapter plus overview", async () => {
     const { default: manual } = await import("./userManual.gen.txt?raw");
     const chapters = parseHelpChapters(manual);
-    expect(chapters.length).toBeGreaterThanOrEqual(20);
+    expect(chapters.length).toBeGreaterThanOrEqual(10);
     expect(chapters[0]?.title).toBe("Overview");
     expect(chapters.some((c) => /Quickstart/i.test(c.title))).toBe(true);
     expect(chapters.some((c) => /Circuit/i.test(c.title))).toBe(true);

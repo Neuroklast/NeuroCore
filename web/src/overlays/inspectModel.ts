@@ -1,5 +1,6 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
 import { chipSpec } from "../assemble/chipSpec";
+import { labelForWhole } from "../chrome/noteValue";
 
 export interface InspectRow {
   group: "meta" | "arg" | "jack" | "param" | "var";
@@ -121,7 +122,9 @@ export function boundKnobRows(node: AstNode | undefined, doc: AstDocument | null
       continue;
     }
     const unit = unitForLetter(node, letter);
-    const value = `${p.name} [${formatBound2(p.min)} … ${formatBound2(p.max)}]${unit ? ` ${unit}` : ""}`;
+    const lo = p.isNote ? labelForWhole(p.min) : formatBound2(p.min);
+    const hi = p.isNote ? labelForWhole(p.max) : formatBound2(p.max);
+    const value = `${p.name} [${lo} … ${hi}]${unit && ! p.isNote ? ` ${unit}` : ""}`;
     rows.push({ letter, name: p.name, unit, value });
   }
   return rows;

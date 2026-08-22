@@ -167,3 +167,32 @@ export function formatNoteBound(min: number, max: number, end: "min" | "max", is
   }
   return labelForWhole(end === "min" ? min : max);
 }
+
+export function boundKind(unit?: string): "ms" | "hz" {
+  return (unit ?? "").toLowerCase() === "hz" ? "hz" : "ms";
+}
+
+export function nearestWhole(value: number, bpm: number, kind: "ms" | "hz"): number {
+  let best = NOTE_GRID[0]!.whole;
+  let err = Number.POSITIVE_INFINITY;
+  for (const g of NOTE_GRID) {
+    const mapped = kind === "hz" ? wholeToHz(g.whole, bpm) : wholeToMs(g.whole, bpm);
+    const e = Math.abs(mapped - value);
+    if (e < err) {
+      err = e;
+      best = g.whole;
+    }
+  }
+  return best;
+}
+
+/** Map a time or Hz min/max onto the note grid. Order is preserved. */
+export function timeRangeToNote(min: number, max: number, bpm: number, unit?: string): { min: number; max: number } {
+  const kind = boundKind(unit);
+  return { min: nearestWhole(min, bpm, kind), max: nearestWhole(max, bpm, kind) };
+}
+
+export function noteRangeToTime(minWhole: number, maxWhole: number, bpm: number, unit?: string): { min: number; max: number } {
+  const conv = boundKind(unit) === "hz" ? wholeToHz : wholeToMs;
+  return { min: conv(minWhole, bpm), max: conv(maxWhole, bpm) };
+}

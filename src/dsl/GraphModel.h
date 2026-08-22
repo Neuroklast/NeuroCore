@@ -157,9 +157,10 @@ std::vector<KnobBinding> knobBindings (const GraphNode& node);
 juce::String rewriteParamDisplayName (const juce::String& script, int knobIndex,
                                       const juce::String& newName);
 
-/** Rewrite `param a = Name [min, max]` bounds. Creates the line if missing. */
+/** Rewrite `param a = Name [min, max]` bounds. Creates the line if missing.
+    When isNote, emit musical tokens (1/1, 1/16) and keep the given order. */
 juce::String rewriteParamRange (const juce::String& script, int knobIndex,
-                                float newMin, float newMax);
+                                float newMin, float newMax, bool isNote = false);
 
 /** Fill names[0..5] from `param a = …` lines. Missing letters stay empty. */
 void collectParamDisplayNames (const juce::String& script, juce::String* names, int numNames);
@@ -167,7 +168,7 @@ void collectParamDisplayNames (const juce::String& script, juce::String* names, 
 /** Ports this block actually has (audio + mix + sc + referenced mods). Knob binds are labels, not jacks. */
 std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc = nullptr);
 
-/** Virtual IN: one audio output. */
+/** Virtual IN: main out + sidechain out. */
 std::vector<GraphJack> jacksForInput();
 
 /** Virtual OUT when the script has no `out:` block. */

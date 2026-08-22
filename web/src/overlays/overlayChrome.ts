@@ -9,7 +9,7 @@ export function overlayIsWide(name: string): boolean {
 
 /** Preset explorer already has Load / Close. Host footer Close would stack. */
 export function overlayShowsHostClose(name: string): boolean {
-  return name !== "presets";
+  return name !== "presets" && name !== "discard";
 }
 
 /** Host body: split panels lock overflow so the folder column cannot ride the list. */

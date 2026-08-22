@@ -165,6 +165,8 @@ void DspEngine::reset(double sampleRate, int blockSize)
     drySidechain.reset();
     scHostAlign.reset();
     postDslLastGood.fill (0.0f);
+    dryWetMix.polarity = 1.f;
+    dryWetMix.corrAbs = 1.f;
 }
 
 void DspEngine::release()
@@ -651,7 +653,7 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
 
         // Align dry to wet timeline (OS latency), continuous dry/wet
         drySidechain.pushAndRead (dryBuffer, (int) numSamples);
-        DSPUtils::mixDryWetContinuous (drySidechain.getAligned(), buffer, wetStart, wetEnd);
+        DSPUtils::mixDryWetPhaseFree (drySidechain.getAligned(), buffer, wetStart, wetEnd, dryWetMix);
     }
 
     // AutoGain strength from APVTS (default 0 = off) — skip work when off and not smoothing

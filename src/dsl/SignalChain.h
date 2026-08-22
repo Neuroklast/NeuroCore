@@ -1002,6 +1002,7 @@ private:
     {
         std::array<char, 48> id {};
         std::array<float, kNodeTapSamples> wave {};
+        std::atomic<float> peak { 0.f };
         std::atomic<uint32_t> gen { 0 };
     };
     std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
@@ -1016,6 +1017,10 @@ public:
 
     /** Osc / env names that publish a tap (`copyNodeTap`). */
     juce::StringArray getModNames() const;
+
+    /** Peak after each chip. UI thread. `id` is the tap name (`stage1`, `__out__`). */
+    bool copyTapPeak (const juce::String& id, float& dest) const noexcept;
+    void appendClipPeaks (juce::Array<juce::var>& dest) const;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;

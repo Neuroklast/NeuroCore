@@ -16,12 +16,13 @@ import { TelemetryPump } from "../viz/ScopeDeck";
 import { useAstStore } from "../store/astStore";
 
 import { useHostStore } from "../store/hostStore";
-import { shouldPlayBoot } from "../theme/boot";
+
 import { RESIZE_GRIP } from "../theme/chromeSpec";
 import { CrtFx, PaneTechNoise, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
 import { bindDocumentTheme } from "../theme/themeBind";
+import { setVizFpsCap } from "../theme/vizClock";
 import { seedFactoryPresets } from "../presets/presetActions";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
@@ -31,14 +32,18 @@ import { knobBindEnabled, telemetryIntervalMs, type Workspace } from "./workspac
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("face");
   const telemetryPath = useHostStore((s) => s.telemetryPath);
-  const motion = useHostStore((s) => s.motion);
-  const reduced = typeof window !== "undefined"
-    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-  const boot = shouldPlayBoot(reduced, motion);
+  const frameRate = useHostStore((s) => s.frameRate);
   const theme = useHostStore((s) => s.theme) ?? "signal";
   useEffect(() => {
     bindDocumentTheme(theme);
+    requestAnimationFrame(() => {
+      document.documentElement.dataset.nkReady = "1";
+      document.getElementById("nk-splash")?.remove();
+    });
   }, [theme]);
+  useEffect(() => {
+    setVizFpsCap(frameRate);
+  }, [frameRate]);
   useEffect(() => {
     onNativeEvent("ast", (payload) => {
       const rec = payload as AstEventPayload;
@@ -132,7 +137,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.5.0-alpha", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: "0.6.0-beta", scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }
@@ -145,7 +150,7 @@ export function App() {
 
   return (
     <ScaleShell>
-    <main data-ws={workspace} className={`nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink ${boot ? "nk-boot" : ""}`}>
+    <main data-ws={workspace} className="nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink">
       <Hud />
       <Toolbar />
       <div className="flex h-[28px] shrink-0 items-stretch">
@@ -157,7 +162,7 @@ export function App() {
         <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
           {workspace === "face" ? (
             <div className="h-full min-h-0">
-              <FaceView open={setWorkspace} />
+              <FaceView />
             </div>
           ) : null}
           <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
@@ -174,7 +179,7 @@ export function App() {
         {workspace === "assemble" ? <BindCables /> : null}
         <BindDragGhost />
       </div>
-      <TelemetryPump telemetryPath={telemetryPath} intervalMs={telemetryIntervalMs(workspace)} />
+      <TelemetryPump telemetryPath={telemetryPath} intervalMs={telemetryIntervalMs(workspace, frameRate)} />
       <Footer />
       <Overlays />
 

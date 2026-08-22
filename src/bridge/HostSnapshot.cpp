@@ -2,6 +2,7 @@
 #include "../core/Config.h"
 #include "../core/EffectParameters.h"
 #include "../core/PluginProcessor.h"
+#include "../dsl/GraphModel.h"
 #include "../licensing/HardwareFingerprint.h"
 #include "../utils/FactoryPresetLibrary.h"
 #include "../utils/PresetLibrary.h"
@@ -142,6 +143,77 @@ bool applyChoice (NeuroKoreAudioProcessor& proc, const ChoiceCmd& c, juce::Strin
     return false;
 }
 
+bool knobMetaFromVar (const juce::var& v, KnobMetaCmd& out, juce::String& error)
+{
+    if (! v.isObject())
+    {
+        error = "setKnobMeta must be an object";
+        return false;
+    }
+    out = {};
+    out.id = v.getProperty ("id", "").toString().trim().toLowerCase();
+    if (out.id.length() != 1 || out.id[0] < 'a' || out.id[0] > 'f')
+    {
+        error = "setKnobMeta needs id a-f";
+        return false;
+    }
+    if (! v.getProperty ("name", juce::var()).isVoid())
+    {
+        out.hasName = true;
+        out.name = v.getProperty ("name", "").toString();
+    }
+    if (! v.getProperty ("min", juce::var()).isVoid())
+    {
+        out.hasMin = true;
+        out.min = (float) v.getProperty ("min", 0.0);
+    }
+    if (! v.getProperty ("max", juce::var()).isVoid())
+    {
+        out.hasMax = true;
+        out.max = (float) v.getProperty ("max", 1.0);
+    }
+    if (! v.getProperty ("isNote", juce::var()).isVoid())
+    {
+        out.hasNote = true;
+        out.isNote = (bool) v.getProperty ("isNote", false);
+    }
+    return true;
+}
+
+bool applyKnobMeta (NeuroKoreAudioProcessor& proc, const KnobMetaCmd& c, juce::String& error)
+{
+    const int idx = (int) (c.id[0] - 'a');
+    auto script = proc.getScript();
+    if (c.hasName)
+        script = dsl::rewriteParamDisplayName (script, idx, c.name);
+
+    float min = c.min;
+    float max = c.max;
+    bool isNote = c.isNote;
+    if (! c.hasMin || ! c.hasMax || ! c.hasNote)
+    {
+        dsl::GraphDocument doc;
+        juce::String parseErr;
+        if (dsl::parse (script, doc, parseErr))
+        {
+            for (const auto& p : doc.params)
+                if (p.alias.equalsIgnoreCase (c.id))
+                {
+                    if (! c.hasMin) min = p.min;
+                    if (! c.hasMax) max = p.max;
+                    if (! c.hasNote) isNote = p.isNote;
+                    break;
+                }
+        }
+    }
+    if (c.hasMin || c.hasMax || c.hasNote || c.hasName)
+        script = dsl::rewriteParamRange (script, idx, min, max, isNote);
+
+    if (! proc.setFormula (script, error, true))
+        return false;
+    return true;
+}
+
 bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::String& error)
 {
     if (c.action == "prev")
@@ -173,6 +245,14 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
         if (name.isEmpty())
         {
             error = "save needs name";
+            return false;
+        }
+        auto& factory = FactoryPresetLibrary::getInstance();
+        if (factory.getEntries().empty())
+            factory.loadFromEmbedded();
+        if (factory.findByName (name) != nullptr)
+        {
+            error = "Factory presets cannot be overwritten";
             return false;
         }
         auto dir = PresetLibrary::userPresetRoot();
@@ -291,7 +371,7 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
 {
     const auto spec = proc.getCurrentSpec();
     const int sr = (int) spec.sampleRate;
-    const int lat = proc.getOversamplingLatencySamples();
+    const int lat = proc.getLatencySamples();
     const bool safe = proc.isCpuProtectActive();
     const int osIdx = choiceIndex (proc.apvts, EffectParameters::oversampling);
     const int os = osFactorFromIndex (osIdx);
@@ -306,6 +386,11 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("tempoSource", proc.isHostTempo() ? "HOST" : "USER");
     root->setProperty ("os", os);
     root->setProperty ("scale", UiSettings::get().uiScalePercent());
+    root->setProperty ("motion", juce::String (UiSettings::motionKey (UiSettings::get().motion())));
+    root->setProperty ("cables", UiSettings::get().cableWaveform() ? "wave" : "dots");
+    root->setProperty ("theme", UiSettings::get().themeId());
+    root->setProperty ("frameRate", UiSettings::get().frameRate());
+    root->setProperty ("discardPrompt", UiSettings::get().discardPrompt());
     bool sidechainOn = false;
     if (auto* scBus = proc.getBus (true, 1))
         sidechainOn = scBus->isEnabled();
@@ -325,6 +410,9 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
         mods.add (juce::var (m));
     }
     root->setProperty ("mods", mods);
+    juce::Array<juce::var> clips;
+    proc.appendClipPeaks (clips);
+    root->setProperty ("clips", clips);
     return juce::var (root);
 }
 
@@ -376,6 +464,8 @@ juce::var licenseVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("licensed", proc.isProductLicensed());
     root->setProperty ("demoLocked", proc.isDemoMixLocked());
     root->setProperty ("demoRemainSec", proc.demoSecondsRemaining());
+    root->setProperty ("demoEndsMs", (juce::int64) (juce::Time::currentTimeMillis()
+        + (juce::int64) proc.demoSecondsRemaining() * 1000));
     root->setProperty ("error", proc.licenseError());
     root->setProperty ("email", proc.licensedEmail());
     root->setProperty ("systemId", HardwareFingerprint::generate());

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
-import { presetAction } from "../presets/presetActions";
+import { presetAction, requestPresetAction } from "../presets/presetActions";
+import { findFactory } from "../presets/factoryCatalog";
 import { useHostStore } from "../store/hostStore";
 import { explorerSession, patchExplorer, type ExplorerScope } from "./explorerSession";
 import { readPresetStars, writePresetStar } from "../presets/presetStars";
@@ -74,8 +75,11 @@ export function PresetExplorer() {
   const row = filtered[Math.min(sel, Math.max(0, filtered.length - 1))];
 
   const load = (name: string) => {
-    void presetAction({ action: "load", name });
-    setOverlay(null);
+    void requestPresetAction({ action: "load", name }).then((ok) => {
+      if (ok) {
+        setOverlay(null);
+      }
+    });
   };
 
   const openSave = () => {
@@ -87,7 +91,7 @@ export function PresetExplorer() {
 
   const commitSave = () => {
     const name = saveName.trim();
-    if (! name) {
+    if (! name || findFactory(name) != null) {
       return;
     }
     void presetAction({
@@ -226,7 +230,7 @@ export function PresetExplorer() {
         <div className="flex shrink-0 flex-wrap gap-2">
           <button type="button" className="nk-clip" disabled={! row} onClick={() => row && load(row.name)}>Load</button>
           <button type="button" className="nk-clip" onClick={openSave}>Save As…</button>
-          <button type="button" className="nk-clip" onClick={() => void presetAction({ action: "new" })}>New Blank</button>
+          <button type="button" className="nk-clip" onClick={() => void requestPresetAction({ action: "new" })}>New Blank</button>
           <button type="button" className="nk-clip" onClick={() => void getNativeFunction("pickFile")({ kind: "preset" })}>Import</button>
           <button type="button" className="nk-clip" onClick={() => setOverlay(null)}>Close</button>
         </div>

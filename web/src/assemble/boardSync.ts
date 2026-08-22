@@ -9,6 +9,15 @@ export function shouldFitView(_origin: Origin, autoArrange: boolean): boolean {
   return autoArrange;
 }
 
+export function fitViewOpts(motion: string, reduced: boolean) {
+  return {
+    padding: 0.1,
+    duration: motion === "off" || reduced ? 0 : 280,
+    minZoom: 0.4,
+    maxZoom: 1,
+  };
+}
+
 export function shouldAutoArrange(opts: {
   origin: Origin;
   prevIds: readonly string[];

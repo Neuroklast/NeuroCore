@@ -7,6 +7,7 @@
 #include "../src/bridge/WebAssets.h"
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
+#include "../src/bridge/WebNav.h"
 #include "../src/bridge/WebViewHolder.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/utils/ExprTapeJit.h"
@@ -137,6 +138,13 @@ public:
 #else
             expectEquals ((int) NK_HAS_EXPR_JIT, 0);
 #endif
+        }
+
+        beginTest ("external brand URLs stay out of the WebView");
+        {
+            expect (bridge::isPluginPage ("http://localhost:5173/", {}, "http://localhost:5173"));
+            expect (! bridge::isPluginPage ("https://neuroklast.net", "https://juce.local/", {}));
+            expect (bridge::isExternalHttp ("https://neuroklast.net"));
         }
 
         beginTest ("fallback index mentions UI_READY");

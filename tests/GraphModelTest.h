@@ -527,9 +527,11 @@ public:
             expect (dsl::parse (script, doc, error), error);
 
             const auto inJ = dsl::jacksForInput();
-            expectEquals ((int) inJ.size(), 1);
+            expectEquals ((int) inJ.size(), 2);
             expect (inJ[0].output);
             expectEquals (inJ[0].id, juce::String ("out"));
+            expect (inJ[1].output);
+            expectEquals (inJ[1].id, juce::String ("sc"));
 
             int filter = -1, stage = -1, osc = -1, comp = -1, out = -1;
             for (int i = 0; i < (int) doc.nodes.size(); ++i)
@@ -642,6 +644,36 @@ public:
             expect (keys.contains ("mix"));
             expect (keys.contains ("damp"));
             expect (keys.contains ("pingpong"));
+        }
+
+        beginTest ("virtual IN exposes main out and sidechain sc");
+        {
+            const auto jacks = dsl::jacksForInput();
+            bool hasOut = false, hasSc = false;
+            for (const auto& j : jacks)
+            {
+                if (j.id == "out" && j.output) hasOut = true;
+                if (j.id == "sc" && j.output) hasSc = true;
+            }
+            expect (hasOut);
+            expect (hasSc);
+        }
+
+        beginTest ("rewriteParamRange note tokens stay longest-to-shortest 1/1, 1/16");
+        {
+            const juce::String script =
+                "param a = Time [20, 2000]\n"
+                "delay1: time = a\n";
+            const auto next = dsl::rewriteParamRange (script, 0, 1.f, 0.0625f, true);
+            expect (next.contains ("param a = Time [1/1, 1/16]"), next);
+            expect (! next.contains ("[1, 0"), next);
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (next, doc, err), err);
+            expect (doc.params.size() >= 1);
+            expect (doc.params[0].isNote);
+            expect (std::abs (doc.params[0].min - 1.f) < 1.0e-4f);
+            expect (std::abs (doc.params[0].max - 0.0625f) < 1.0e-4f);
         }
 
         beginTest ("tidyLayout places a chain left to right without reordering");

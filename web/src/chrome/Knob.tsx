@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { getNativeFunction } from "../bridge/juce";
+import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { menuPos } from "../theme/fit";
 import { OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
-import { applyKnobEdit, knobMenuFields, parseKnobBound } from "./knobMenu";
+import { applyKnobEdit, knobMenuFields, parseKnobBound, rewriteParamLine } from "./knobMenu";
+import { publishScript } from "../assemble/addBlock";
 import { bindTargets } from "../assemble/bindLinks";
 import { bindHit, commitBind, resolveBindKey } from "../assemble/bindModel";
 import { useAstStore } from "../store/astStore";
@@ -392,9 +393,17 @@ function commitKnobMeta(id: string, edit: Parameters<typeof applyKnobEdit>[1]) {
   if (! cur) {
     return;
   }
-  const next = applyKnobEdit(cur, edit);
+  const bpm = useHostStore.getState().bpm;
+  const next = applyKnobEdit(cur, edit, bpm);
   useHostStore.getState().patchKnob(id, next);
-  void getNativeFunction("setKnobMeta")({ id, ...edit }).catch(() => undefined);
+  const payload = { id, name: next.name, min: next.min, max: next.max, unit: next.unit, isNote: next.isNote };
+  if (hasJuceBridge()) {
+    void getNativeFunction("setKnobMeta")(payload).catch(() => undefined);
+    return;
+  }
+  const ast = useAstStore.getState();
+  const script = ast.lastValidScript || ast.script;
+  publishScript(rewriteParamLine(script, id, payload), "canvas");
 }
 
 function KnobField({
@@ -452,15 +461,15 @@ function KnobEditMenu({
       {fields.includes("min") ? (
         <KnobField
           label="Min"
-          value={String(knob.min)}
-          onCommit={(raw) => commitKnobMeta(knob.id, { min: parseKnobBound(raw, knob.min) })}
+          value={formatNoteBound(knob.min, knob.max, "min", Boolean(knob.isNote)) ?? String(knob.min)}
+          onCommit={(raw) => commitKnobMeta(knob.id, { min: parseKnobBound(raw, knob.min, Boolean(knob.isNote)) })}
         />
       ) : null}
       {fields.includes("max") ? (
         <KnobField
           label="Max"
-          value={String(knob.max)}
-          onCommit={(raw) => commitKnobMeta(knob.id, { max: parseKnobBound(raw, knob.max) })}
+          value={formatNoteBound(knob.min, knob.max, "max", Boolean(knob.isNote)) ?? String(knob.max)}
+          onCommit={(raw) => commitKnobMeta(knob.id, { max: parseKnobBound(raw, knob.max, Boolean(knob.isNote)) })}
         />
       ) : null}
       {fields.includes("unit") ? (

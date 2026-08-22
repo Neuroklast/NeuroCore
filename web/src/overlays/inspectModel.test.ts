@@ -88,4 +88,27 @@ describe("inspect enums / ranges / blurb / bindings", () => {
     expect(a.value).toContain("2500.00");
     expect(a.value).toContain("Hz");
   });
+
+  it("shows note tokens for a note-range bound knob", () => {
+    const doc: AstDocument = {
+      version: 1,
+      leadingComments: [],
+      params: [
+        { alias: "a", name: "Time", min: 1, max: 0.0625, isNote: true, noteWholes: [1, 0.0625], noteLabels: ["1/1", "1/16"] },
+      ],
+      nodes: [
+        {
+          id: "delay1",
+          type: "delay",
+          busName: "main",
+          args: { time: "a" },
+          trailingComment: "",
+        },
+      ],
+    };
+    const a = boundKnobRows(doc.nodes[0], doc).find((k) => k.letter === "a")!;
+    expect(a.value).toContain("1/1");
+    expect(a.value).toContain("1/16");
+    expect(a.value).not.toContain("0.06");
+  });
 });

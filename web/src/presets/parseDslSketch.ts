@@ -468,7 +468,7 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
       params,
       nodes,
       edges,
-      inJacks: [jack("out", true, "audio")],
+      inJacks: [jack("out", true, "audio"), jack("sc", true, "audio")],
     },
   };
 }
