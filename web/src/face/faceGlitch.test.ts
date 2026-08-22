@@ -7,9 +7,13 @@ import {
   logoOverlayMask,
   pickFaceGlitch,
   scheduleFaceGlitch,
+  unitMarkCssVars,
+  unitMarkMaxHeight,
   unitMarkSrc,
   UNIT_MARK_DEFAULT,
   UNIT_MARK_DIGICIDE,
+  UNIT_MARK_DIGICIDE_H,
+  UNIT_MARK_H,
 } from "./faceGlitch";
 
 describe("unit logo glitch", () => {
@@ -48,6 +52,19 @@ describe("unit logo glitch", () => {
     expect(unitMarkSrc("")).toBe(UNIT_MARK_DEFAULT);
     expect(UNIT_MARK_DIGICIDE).toContain("digicide.png");
     expect(UNIT_MARK_DEFAULT).toContain("neurokore.png");
+  });
+
+  it("clips rain/scan to the live mark and grows DIGICIDE by half", () => {
+    expect(unitMarkMaxHeight("digicide")).toBe(UNIT_MARK_DIGICIDE_H);
+    expect(unitMarkMaxHeight("signal")).toBe(UNIT_MARK_H);
+    expect(UNIT_MARK_DIGICIDE_H).toBe(Math.round(UNIT_MARK_H * 1.5));
+    const digi = unitMarkCssVars(UNIT_MARK_DIGICIDE, "digicide");
+    expect(digi["--nk-face-mark"]).toContain("digicide.png");
+    expect(digi["--nk-face-mark"]).not.toContain("neurokore.png");
+    expect(digi["--nk-face-mark-h"]).toBe("252px");
+    const signal = unitMarkCssVars(UNIT_MARK_DEFAULT, "signal");
+    expect(signal["--nk-face-mark"]).toContain("neurokore.png");
+    expect(signal["--nk-face-mark-h"]).toBe("168px");
   });
 });
 

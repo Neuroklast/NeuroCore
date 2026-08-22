@@ -14,6 +14,7 @@ import {
   logoOverlayMask,
   pickFaceGlitch,
   scheduleFaceGlitch,
+  unitMarkCssVars,
   unitMarkSrc,
   type FaceGlitchKind,
 } from "./faceGlitch";
@@ -124,6 +125,7 @@ export function FaceView() {
     ...faceGlitchStyle(glitch.kind, glitch.seed),
     ...logoMotionStyle(drive),
     ...logoReactiveStyle(rgb, pulseMs, rain),
+    ...unitMarkCssVars(mark, theme),
   };
 
   return (

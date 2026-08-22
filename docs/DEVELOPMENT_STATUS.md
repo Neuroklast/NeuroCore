@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-22 (DIGICIDE theme + Unit mask; send presets: IN→bus→send)  
+**Stand:** 2026-08-22 (DIGICIDE Unit: no Neurokore overlay mask; mark 1.5×)  
 **Version:** 0.6.1-beta  
 **Branch:** `fix/0.5.1-bugfixing`
 

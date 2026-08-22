@@ -4,10 +4,24 @@ export type FaceGlitchKind = "idle" | "slice" | "flash" | "noise";
 
 export const UNIT_MARK_DEFAULT = "./img/neurokore.png";
 export const UNIT_MARK_DIGICIDE = "./img/digicide.png";
+export const UNIT_MARK_H = 168;
+export const UNIT_MARK_DIGICIDE_H = 252;
 
 /** DIGICIDE theme uses the Digicide mask. Every other theme keeps the Neurokore mark. */
 export function unitMarkSrc(themeId: string): string {
   return themeId === "digicide" ? UNIT_MARK_DIGICIDE : UNIT_MARK_DEFAULT;
+}
+
+export function unitMarkMaxHeight(themeId: string): number {
+  return themeId === "digicide" ? UNIT_MARK_DIGICIDE_H : UNIT_MARK_H;
+}
+
+/** Rain / scan overlays must clip to this theme’s mark — never a leftover Neurokore silhouette. */
+export function unitMarkCssVars(src: string, themeId = ""): Record<string, string> {
+  return {
+    "--nk-face-mark": `url("${src}")`,
+    "--nk-face-mark-h": `${unitMarkMaxHeight(themeId)}px`,
+  };
 }
 
 export type LogoMotion = {
