@@ -29,8 +29,9 @@ export function formatDbfs(linear: number): string {
   return peakToDb(linear).toFixed(2);
 }
 
-export function formatLufs(rms: number): string {
-  return peakToDb(rms).toFixed(1);
+/** Block RMS as dBFS. Not LUFS — no K-weight, no gate. */
+export function rmsReadout(rms: number): { value: string; unit: "dBFS" } {
+  return { value: peakToDb(rms).toFixed(1), unit: "dBFS" };
 }
 
 const FIG = "\u2007";
