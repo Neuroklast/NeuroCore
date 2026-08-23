@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { spectrumBins } from "../face/faceModel";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { liveTheme, themeRgba } from "../theme/theme";
@@ -12,12 +11,14 @@ import {
   deltaSamples,
   isWaveScope,
   scopeSpectra,
-  specMag01,
+  scopeRecordIds,
   spectrogramProject,
   spectrogramPush,
   standingWaveRow,
   specRowFade,
   logFreqMarks,
+  logSpectrumBins,
+  liftScopeMags,
   waveSampleMarks,
   waveTimeMarks,
   scopeYMarks,
@@ -90,13 +91,6 @@ function paintSpectrogramAxes(
   }
 }
 
-function liftBins(raw: number[], yScale: "linear" | "db"): number[] {
-  if (yScale === "linear") {
-    return raw.map((v) => Math.max(0, Math.min(1, Math.abs(v) * 8)));
-  }
-  return raw.map((v) => specMag01(v));
-}
-
 export function ScopeCanvas({
   scopeIn,
   scopeOut,
@@ -123,6 +117,7 @@ export function ScopeCanvas({
   const frame = useRef(0);
   const lastTick = useRef(-1);
   const prevX = useRef(xScale);
+  const prevY = useRef(yScale);
   const tickRef = useRef(tick);
   const inRef = useRef(scopeIn);
   const outRef = useRef(scopeOut);
@@ -143,30 +138,31 @@ export function ScopeCanvas({
       const theme = liveTheme();
       const { w, h, scale } = fitCanvas(canvas);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      if (shouldResetScopeHist(prevX.current, xScale)) {
+      if (shouldResetScopeHist(prevX.current, xScale, prevY.current, yScale)) {
         histIn.current = [];
         histOut.current = [];
         histDelta.current = [];
       }
       prevX.current = xScale;
+      prevY.current = yScale;
       const ids = scopeSpectra(source);
       const wave = isWaveScope(xScale) && yScale === "linear";
       const project = spectrogramProject;
       const zeroMag = 0;
       if (shouldPushScopeRow(tickRef.current, lastTick.current)) {
         lastTick.current = tickRef.current;
-        for (const id of ids) {
+        for (const id of scopeRecordIds()) {
           const samples = id === "in" ? inRef.current : outRef.current;
           const hist = id === "in" ? histIn : histOut;
           const row = xScale === "freq"
-            ? liftBins(spectrumBins(samples, SPEC_BINS), yScale)
+            ? liftScopeMags(logSpectrumBins(samples, sr, SPEC_BINS), xScale, yScale)
             : standingWaveRow(samples, SPEC_BINS, yScale);
           hist.current = spectrogramPush(hist.current, row);
         }
         if (delta) {
           const d = deltaSamples(outRef.current, inRef.current, outRef.current.length);
           const row = xScale === "freq"
-            ? liftBins(spectrumBins(d, SPEC_BINS), yScale)
+            ? liftScopeMags(logSpectrumBins(d, sr, SPEC_BINS), xScale, yScale)
             : standingWaveRow(d, SPEC_BINS, yScale);
           histDelta.current = spectrogramPush(histDelta.current, row);
         } else {
