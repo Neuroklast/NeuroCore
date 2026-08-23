@@ -28,7 +28,7 @@ import {
   dspEvalMs,
   formatDbfs,
   formatHudFixed,
-  formatLufs,
+  rmsReadout,
   logoPulsePeriodMs,
   logoReactiveStyle,
   logoRgbSplit,
@@ -121,6 +121,7 @@ export function FaceView() {
     return () => window.clearTimeout(handle);
   }, [jit]);
 
+  const rms = rmsReadout(outRms);
   const fxStyle = {
     ...faceGlitchStyle(glitch.kind, glitch.seed),
     ...logoMotionStyle(drive),
@@ -148,7 +149,7 @@ export function FaceView() {
       <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
         <FaceRow k="PEAK_L" num={formatHudFixed(Number(formatDbfs(stereo.peakL)), 2, 3)} unit="dBFS" />
         <FaceRow k="PEAK_R" num={formatHudFixed(Number(formatDbfs(stereo.peakR)), 2, 3)} unit="dBFS" />
-        <FaceRow k="RMS" num={formatHudFixed(Number(formatLufs(outRms)), 1, 3)} unit="LUFS" />
+        <FaceRow k="RMS" num={formatHudFixed(Number(rms.value), 1, 3)} unit={rms.unit} />
         <FaceRow k="PHASE_CORRELATION" num={formatHudFixed(stereo.corr, 2, 2)} />
       </aside>
 

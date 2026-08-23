@@ -72,6 +72,7 @@ Oversampling (OS)
 Unit meters
 - Right-click the floor plot: Input / Output / Both, Samples / Time / Frequency, Linear / Decibel, grid, invert Y, delta.
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
+- The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
 
 ---
 

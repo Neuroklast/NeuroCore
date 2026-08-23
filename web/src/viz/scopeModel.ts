@@ -78,12 +78,12 @@ export function fieldTitle(source: ScopeSource): string {
 
 export function loudTitle(source: ScopeSource): string {
   if (source === "in") {
-    return "IN LU";
+    return "IN dB";
   }
   if (source === "out") {
-    return "OUT LU";
+    return "OUT dB";
   }
-  return "LU";
+  return "dB";
 }
 
 /** 0..100 bar height from linear peak/rms. Silence sits on the floor. */
@@ -94,7 +94,7 @@ export function barFillPercent(linear: number): number {
 
 export const LU_LINES = 48;
 
-/** Stacked-line LUFS: how many traces are lit from the floor. */
+/** Stacked-line dB: how many traces are lit from the floor. */
 export function luLitLines(linear: number, n = LU_LINES): number {
   if (! Number.isFinite(linear) || linear <= 0) {
     return 0;

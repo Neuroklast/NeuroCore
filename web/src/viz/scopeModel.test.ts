@@ -13,6 +13,7 @@ import {
   luLitLines,
   LU_LINES,
   demoLoudness,
+  loudTitle,
   scopeTitle,
   SPEC_BINS,
   SPEC_DEPTH,
@@ -95,6 +96,9 @@ describe("scope deck model", () => {
     expect(scopeTitle("in", false)).toBe("IN // PRE");
     expect(scopeTitle("both", true)).toContain("Δ");
     expect(fieldTitle("out")).toBe("OUT FIELD");
+    expect(loudTitle("in")).toBe("IN dB");
+    expect(loudTitle("out")).toBe("OUT dB");
+    expect(loudTitle("both")).toBe("dB");
     expect(SCOPE_MENU.x.map((x) => x.id)).toEqual(["samples", "time", "freq"]);
     expect(SCOPE_MENU.y.map((y) => y.id)).toEqual(["linear", "db"]);
     expect(SCOPE_MENU.flags.map((f) => f.id)).toEqual(["grid", "invertY", "delta"]);

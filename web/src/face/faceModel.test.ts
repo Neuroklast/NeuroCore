@@ -14,7 +14,7 @@ import {
   faceFftFrame,
   formatDbfs,
   formatHudFixed,
-  formatLufs,
+  rmsReadout,
   knobLfo,
   lfoScopePath,
   logoPulsePeriodMs,
@@ -96,7 +96,9 @@ describe("unit face stereo metrics from gonio", () => {
     expect(anti.corr).toBeLessThan(-0.9);
 
     expect(formatDbfs(0.781)).toBe(peakToDb(0.781).toFixed(2));
-    expect(formatLufs(0.195)).toMatch(/^-?\d+\.\d$/);
+    const rms = rmsReadout(0.195);
+    expect(rms.unit).toBe("dBFS");
+    expect(rms.value).toBe(peakToDb(0.195).toFixed(1));
     expect(formatHudFixed(-1.2, 2, 3).length).toBe(formatHudFixed(12.34, 2, 3).length);
     expect(formatHudFixed(-1.2, 2, 3).startsWith("−")).toBe(true);
   });
