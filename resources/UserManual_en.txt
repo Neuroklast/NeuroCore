@@ -69,6 +69,10 @@ Oversampling (OS)
 - 1×, 2×, 4×, 8×. Higher OS is cleaner on heavy drive, and costs CPU and delay.
 - Pick OS on the Unit face. Studio vs Live is how that OS is built, not a second OS menu.
 
+Unit meters
+- Right-click the floor plot: Input / Output / Both, Samples / Time / Frequency, Linear / Decibel, grid, invert Y, delta.
+- Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
+
 ---
 
 ## Presets

@@ -170,6 +170,87 @@ export function waveSampleMarks(nSamples: number, bins = SPEC_BINS): Array<{ bin
   }));
 }
 
+function dftMagnitudes(samples: ArrayLike<number>): { mags: number[]; n: number } {
+  const n = Math.min(samples.length, 256);
+  const half = Math.max(0, Math.floor(n / 2));
+  const mags = new Array<number>(half + 1).fill(0);
+  if (n < 2) {
+    return { mags, n };
+  }
+  for (let k = 0; k <= half; k += 1) {
+    let re = 0;
+    let im = 0;
+    const w = (-2 * Math.PI * k) / n;
+    for (let i = 0; i < n; i += 1) {
+      const x = Number(samples[i] ?? 0);
+      re += x * Math.cos(w * i);
+      im += x * Math.sin(w * i);
+    }
+    mags[k] = Math.sqrt(re * re + im * im) / n;
+  }
+  return { mags, n };
+}
+
+function magAt(mags: number[], k: number): number {
+  if (mags.length < 1) {
+    return 0;
+  }
+  const x = Math.max(0, Math.min(mags.length - 1, k));
+  const i0 = Math.floor(x);
+  const i1 = Math.min(mags.length - 1, i0 + 1);
+  const f = x - i0;
+  return (mags[i0] ?? 0) * (1 - f) + (mags[i1] ?? 0) * f;
+}
+
+/** Display bins on the same 20 Hz … Nyquist log map as `logFreqMarks`. */
+export function logSpectrumBins(samples: ArrayLike<number>, sr: number, bins = SPEC_BINS): number[] {
+  const count = Math.max(1, Math.floor(bins));
+  const out = new Array<number>(count).fill(0);
+  const { mags, n } = dftMagnitudes(samples);
+  if (n < 2 || mags.length < 2) {
+    return out;
+  }
+  const nyq = sr > 0 ? sr * 0.5 : 24000;
+  const rate = sr > 0 ? sr : 48000;
+  const fMin = 20;
+  const span = Math.log(nyq / fMin);
+  const hzPerBin = rate / n;
+  const hzOf = (bin: number) => {
+    const t = Math.max(0, Math.min(1, bin / Math.max(1, count - 1)));
+    return fMin * Math.exp(span * t);
+  };
+  for (let b = 0; b < count; b += 1) {
+    const kLo = hzOf(b - 0.5) / hzPerBin;
+    const kHi = hzOf(b + 0.5) / hzPerBin;
+    let peak = magAt(mags, (kLo + kHi) * 0.5);
+    const i0 = Math.max(1, Math.ceil(kLo));
+    const i1 = Math.min(mags.length - 1, Math.floor(kHi));
+    for (let i = i0; i <= i1; i += 1) {
+      const v = mags[i] ?? 0;
+      if (v > peak) {
+        peak = v;
+      }
+    }
+    out[b] = peak;
+  }
+  return out;
+}
+
+/** Frequency always uses dB height so the grid (−72…0) matches the row. */
+export function liftScopeMags(
+  raw: ArrayLike<number>,
+  xScale: ScopeXScale,
+  yScale: ScopeYScale,
+): number[] {
+  const out = new Array<number>(raw.length);
+  const asDb = xScale === "freq" || yScale === "db";
+  for (let i = 0; i < raw.length; i += 1) {
+    const v = Number(raw[i] ?? 0);
+    out[i] = asDb ? specMag01(v) : Math.max(0, Math.min(1, Math.abs(v) * 8));
+  }
+  return out;
+}
+
 export function logFreqMarks(sr: number, bins = SPEC_BINS): Array<{ bin: number; hz: number; label: string }> {
   const nyq = sr > 0 ? sr * 0.5 : 24000;
   const fMin = 20;
@@ -197,6 +278,11 @@ export function scopeSpectra(source: ScopeSource): Array<"in" | "out"> {
     return ["in", "out"];
   }
   return source === "in" ? ["in"] : ["out"];
+}
+
+/** Always roll IN and OUT history so switching source is not a frozen tail. */
+export function scopeRecordIds(): Array<"in" | "out"> {
+  return ["in", "out"];
 }
 
 /** Linear FFT bin → 0..1 display. Floor −72 dB so a loud hit still fills. */
@@ -249,9 +335,17 @@ export function triggerAlign(samples: ArrayLike<number>): Float32Array {
   return out;
 }
 
-export function shouldResetScopeHist(prev: ScopeXScale, next: ScopeXScale): boolean {
+export function shouldResetScopeHist(
+  prev: ScopeXScale,
+  next: ScopeXScale,
+  prevY?: ScopeYScale,
+  nextY?: ScopeYScale,
+): boolean {
   const kind = (x: ScopeXScale) => (x === "freq" ? "freq" : "wave");
-  return kind(prev) !== kind(next);
+  if (kind(prev) !== kind(next)) {
+    return true;
+  }
+  return prevY !== undefined && nextY !== undefined && prevY !== nextY;
 }
 
 export function shouldPushScopeRow(tick: number, lastTick: number): boolean {

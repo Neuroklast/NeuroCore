@@ -27,10 +27,13 @@ import {
   standingWaveRow,
   triggerAlign,
   logFreqMarks,
+  logSpectrumBins,
+  liftScopeMags,
   scopeYMarks,
   shouldPushScopeRow,
   shouldResetScopeHist,
   scopeSpectra,
+  scopeRecordIds,
   techNoise,
   paintTechNoise,
   tracesFor,
@@ -61,6 +64,31 @@ describe("scope deck model", () => {
     const b = marks.find((m) => m.hz === 1000)!;
     const c = marks.find((m) => m.hz === 10000)!;
     expect(Math.abs((b.bin - a.bin) - (c.bin - b.bin))).toBeLessThan(3);
+  });
+
+  it("puts a 200 Hz tone under the 200 tick and 4 kHz under 2k–5k, not both on the left wall", () => {
+    const sr = 48000;
+    const n = 256;
+    const tone = (hz: number) => Float32Array.from({ length: n }, (_, i) => Math.sin((2 * Math.PI * hz * i) / sr));
+    const peakOf = (row: number[]) => row.reduce((p, v, i) => (v > (row[p] ?? 0) ? i : p), 0);
+    const marks = logFreqMarks(sr);
+    const mark = (hz: number) => marks.find((m) => m.hz === hz)!;
+    const bass = peakOf(logSpectrumBins(tone(187.5), sr, SPEC_BINS));
+    const treble = peakOf(logSpectrumBins(tone(4000), sr, SPEC_BINS));
+    expect(Math.abs(bass - mark(200).bin)).toBeLessThan(4);
+    expect(bass).toBeGreaterThan(6);
+    expect(treble).toBeGreaterThanOrEqual(mark(2000).bin - 2);
+    expect(treble).toBeLessThanOrEqual(mark(5000).bin + 2);
+    expect(treble).toBeGreaterThan(mark(200).bin + 8);
+  });
+
+  it("maps frequency height in dB even when Y is set to linear", () => {
+    const row = liftScopeMags([0.03, 0.3, 1], "freq", "linear");
+    expect(row[0]).toBeCloseTo(specMag01(0.03));
+    expect(row[1]).toBeCloseTo(specMag01(0.3));
+    expect(row[2]).toBeCloseTo(specMag01(1));
+    const wave = liftScopeMags([0.1], "time", "linear");
+    expect(wave[0]).toBeCloseTo(Math.min(1, 0.1 * 8));
   });
 
   it("keeps native titles and the old context-menu surface", () => {
@@ -103,6 +131,7 @@ describe("scope deck model", () => {
     expect(scopeSpectra("out")).toEqual(["out"]);
     expect(scopeSpectra("both")).toEqual(["in", "out"]);
     expect(SCOPE_COLOR.in).not.toBe(SCOPE_COLOR.out);
+    expect(scopeRecordIds()).toEqual(["in", "out"]);
   });
 
   it("does not wrap the trigger so the standing wave has no seam", () => {
@@ -149,6 +178,8 @@ describe("scope deck model", () => {
     expect(wave.map((m) => m.label)).toEqual(["+1", "0", "−1"]);
     expect(shouldResetScopeHist("freq", "time")).toBe(true);
     expect(shouldResetScopeHist("time", "samples")).toBe(false);
+    expect(shouldResetScopeHist("time", "time", "linear", "db")).toBe(true);
+    expect(shouldResetScopeHist("freq", "freq", "db", "db")).toBe(false);
     expect(shouldPushScopeRow(4, 4)).toBe(false);
     expect(shouldPushScopeRow(5, 4)).toBe(true);
   });
