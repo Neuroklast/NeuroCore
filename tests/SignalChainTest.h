@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include <cmath>
 #include "../src/dsl/SignalChain.h"
+#include "../src/dsp/InputRouter.h"
 #include "../src/core/Config.h"
 #include "../src/utils/FactoryPresetLibrary.h"
 #include "TestHelpers.h"
@@ -479,6 +480,15 @@ public:
 
         beginTest("mono guitar in feeds both L and R channel paths");
         {
+            InputRouter router;
+            router.prepare ({ 48000.0, 64, 2 });
+            router.setUseLeft (true);
+            router.setUseRight (true);
+            juce::AudioBuffer<float> warm (2, 64);
+            warm.clear();
+            for (int b = 0; b < 32; ++b)
+                router.processBlock (warm);
+
             dsl::SignalChain c;
             juce::String e;
             expect (c.loadScript (
@@ -491,6 +501,7 @@ public:
                 buf.setSample (0, i, 0.4f);
                 buf.setSample (1, i, 0.f);
             }
+            router.processBlock (buf);
             c.processBlock (buf);
             float lPeak = 0.f, rPeak = 0.f;
             for (int i = 0; i < 64; ++i)

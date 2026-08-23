@@ -118,6 +118,11 @@ describe("circuit add/remove", () => {
 
     expect(byLabel("Octaver")?.type).toBe("octaver");
     expect(chipSpec("octaver").paramJacks).toEqual(["sub", "up", "mix", "tone", "thresh"]);
+
+    expect(byLabel("Phaser")?.type).toBe("phaser");
+    expect(chipSpec("phaser").paramJacks).toEqual(["stages", "rate", "depth", "center", "feedback", "mix"]);
+    expect(byLabel("Flanger")?.type).toBe("flanger");
+    expect(chipSpec("flanger").enums.invert).toEqual(["off", "on"]);
   });
 
   it("offers Cabinet IR and emits ir1: mix / gain", () => {

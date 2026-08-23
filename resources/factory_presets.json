@@ -1855,23 +1855,15 @@
   {
     "name": "Phaser Lab",
     "category": "Modulation",
-    "description": "LFO swirl: HP stays below LP, no 1-sample feedback. Rate, depth, center, drive, wet.",
+    "description": "Real allpass phaser. Rate, depth, center, feedback, mix, stages.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Phaser Lab\n# LFO swirl: HP stays below LP, no 1-sample feedback. Rate, depth, center, drive, wet.\n# a Rate: 0.05 to 6, default 0.35\n# b Depth: 200 to 2500, default 900\n# c Center: 400 to 4000, default 1200\n# d Drive: 0.8 to 1.6, default 1.12\n# e Mix: 0.25 to 0.95, default 0.7\n# f Resonance: 0.35 to 1.1, default 0.65\n\nparam a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Drive [0.8, 1.6]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.35, 1.1]\nosc1: shape = sine; freq = a; depth = 1.0  # LFO\nstage1: y = x  # waveshape / mix\nbus swirl:\n  send: in = 1  # feed this bus from the input\n  filter1: type = highpass; cutoff = c + (0.5 + 0.5 * osc1) * (b * 0.22); resonance = f  # highpass\n  filter2: type = lowpass; cutoff = c + b * 0.55 + (0.5 + 0.5 * osc1) * (b * 0.35); resonance = 0.5  # lowpass\n  stage2: y = softclip(x, d)  # soft clip\n  filter3: type = lowpass; cutoff = 12000; resonance = 0.28  # lowpass\nout: main = 1-e; swirl = e  # mix buses back to the output",
+    "script": "# Phaser Lab\n# Real allpass phaser. Rate, depth, center, feedback, mix, stages.\n# a Rate: 0.05 to 6, default 0.35\n# b Depth: 0.15 to 1.2, default 0.7\n# c Center: 200 to 2500, default 800\n# d Feedback: 0 to 0.75, default 0.35\n# e Mix: 0.25 to 0.95, default 0.7\n# f Stages: 2 to 12, default 6\n\nparam a = Rate [0.05, 6.0]\nparam b = Depth [0.15, 1.2]\nparam c = Center [200, 2500]\nparam d = Feedback [0.0, 0.75]\nparam e = Mix [0.25, 0.95]\nparam f = Stages [2, 12]\nphaser1: stages = f; rate = a; depth = b; center = c; feedback = d; mix = e  # phaser",
     "tags": [
-      "bus",
-      "clip",
-      "drive",
-      "filter",
-      "highpass",
       "lfo",
-      "lowpass",
       "modulation",
-      "parallel",
-      "phaser",
-      "send"
+      "phaser"
     ],
     "paramA": {
       "name": "Rate",
@@ -1881,21 +1873,21 @@
     },
     "paramB": {
       "name": "Depth",
-      "min": 200,
-      "max": 2500,
-      "default": 900
+      "min": 0.15,
+      "max": 1.2,
+      "default": 0.7
     },
     "paramC": {
       "name": "Center",
-      "min": 400,
-      "max": 4000,
-      "default": 1200
+      "min": 200,
+      "max": 2500,
+      "default": 800
     },
     "paramD": {
-      "name": "Drive",
-      "min": 0.8,
-      "max": 1.6,
-      "default": 1.12
+      "name": "Feedback",
+      "min": 0,
+      "max": 0.75,
+      "default": 0.35
     },
     "paramE": {
       "name": "Mix",
@@ -1904,10 +1896,60 @@
       "default": 0.7
     },
     "paramF": {
-      "name": "Resonance",
-      "min": 0.35,
-      "max": 1.1,
-      "default": 0.65
+      "name": "Stages",
+      "min": 2,
+      "max": 12,
+      "default": 6
+    }
+  },
+  {
+    "name": "Analog Flanger",
+    "category": "Modulation",
+    "description": "Short delay comb. Invert is through-zero. Rate, depth, delay, feedback, mix, invert.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Analog Flanger\n# Short delay comb. Invert is through-zero. Rate, depth, delay, feedback, mix, invert.\n# a Rate: 0.05 to 2, default 0.22\n# b Depth: 0.2 to 1, default 0.72\n# c Delay: 0.4 to 8, default 1.8\n# d Feedback: 0.1 to 0.85, default 0.48\n# e Mix: 0.25 to 0.8, default 0.5\n# f Invert: 0 to 1, default 1\n\nparam a = Rate [0.05, 2.0]\nparam b = Depth [0.2, 1.0]\nparam c = Delay [0.4, 8.0]\nparam d = Feedback [0.1, 0.85]\nparam e = Mix [0.25, 0.8]\nparam f = Invert [0, 1]\nflanger1: rate = a; depth = b; delay = c; feedback = d; mix = e; invert = f  # flanger",
+    "tags": [
+      "flanger",
+      "lfo",
+      "modulation"
+    ],
+    "paramA": {
+      "name": "Rate",
+      "min": 0.05,
+      "max": 2,
+      "default": 0.22
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.72
+    },
+    "paramC": {
+      "name": "Delay",
+      "min": 0.4,
+      "max": 8,
+      "default": 1.8
+    },
+    "paramD": {
+      "name": "Feedback",
+      "min": 0.1,
+      "max": 0.85,
+      "default": 0.48
+    },
+    "paramE": {
+      "name": "Mix",
+      "min": 0.25,
+      "max": 0.8,
+      "default": 0.5
+    },
+    "paramF": {
+      "name": "Invert",
+      "min": 0,
+      "max": 1,
+      "default": 1
     }
   },
   {

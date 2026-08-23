@@ -494,7 +494,8 @@ juce::var catalogVar()
     juce::Array<juce::var> blocks;
     const char* types[] = {
         "stage", "filter", "eq", "comp", "gate", "limit", "delay", "reverb",
-        "ott", "widen", "ir", "osc", "env", "xover", "octaver", "vocoder"
+        "ott", "widen", "ir", "osc", "env", "xover", "octaver", "vocoder",
+        "phaser", "flanger", "pitch"
     };
     for (auto* t : types)
     {

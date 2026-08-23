@@ -41,6 +41,8 @@ SignalChain::SignalChain()
     // sr is set in prepare()
     variables["sr"] = static_cast<float>(Config::kDefaultSampleRate);
     hot.bind (variables);
+    setNodeTapId (kTapSlotIn, "__in__");
+    setNodeTapId (kTapSlotOut, "__out__");
 }
 
 void SignalChain::HotSlots::bind (std::unordered_map<juce::String, float>& vars) noexcept
@@ -805,7 +807,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             auto fi = std::make_unique<Filter>();
             fi->kind = NodeKind::Filter;
             auto t = d.args.count("type") ? d.args.at("type").toLowerCase() : "lowpass";
-            fi->type = parseFilterType(t);
+            fi->allpass = (t == "allpass" || t == "ap" || t == "apf");
+            if (! fi->allpass)
+                fi->type = parseFilterType(t);
             if (d.args.count ("channel"))
             {
                 auto ch = d.args.at ("channel").trim().toLowerCase();
@@ -1277,6 +1281,68 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             ot->varPtr = &variables;
             newChain->push_back (std::move (ot));
         }
+        else if (d.type.startsWith ("phaser"))
+        {
+            auto ph = std::make_unique<Phaser>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("stages", "n", 2.f, 12.f, "6", ph->stagesExpr, "stages [2..12]");
+            parseAmt ("rate", "freq", 0.f, 8.f, "0.4", ph->rateExpr, "rate [Hz]");
+            parseAmt ("depth", nullptr, 0.f, 1.5f, "0.7", ph->depthExpr, "depth [0..1.5]");
+            parseAmt ("center", "cutoff", 80.f, 4000.f, "800", ph->centerExpr, "center [Hz]");
+            parseAmt ("feedback", "fb", 0.f, 0.95f, "0.3", ph->feedbackExpr, "feedback [0..0.95]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "0.5", ph->mixExpr, "mix [0..1]");
+            ph->varPtr = &variables;
+            newChain->push_back (std::move (ph));
+        }
+        else if (d.type.startsWith ("flanger") || d.type.startsWith ("flange"))
+        {
+            auto fl = std::make_unique<Flanger>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", "freq", 0.f, 8.f, "0.25", fl->rateExpr, "rate [Hz]");
+            parseAmt ("depth", nullptr, 0.f, 1.f, "0.7", fl->depthExpr, "depth [0..1]");
+            parseAmt ("delay", "time", 0.1f, 20.f, "2", fl->delayExpr, "delay [ms]");
+            parseAmt ("feedback", "fb", 0.f, 0.95f, "0.45", fl->feedbackExpr, "feedback [0..0.95]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "0.5", fl->mixExpr, "mix [0..1]");
+            if (d.args.count ("invert") || d.args.count ("polarity"))
+            {
+                const auto inv = (d.args.count ("invert") ? d.args.at ("invert")
+                                                          : d.args.at ("polarity")).trim().toLowerCase();
+                if (inv == "on" || inv == "true" || inv == "yes")
+                    fl->invertExpr.parseFormula ("1");
+                else if (inv == "off" || inv == "false" || inv == "no")
+                    fl->invertExpr.parseFormula ("0");
+                else
+                    fl->invertExpr.parseFormula (addDefaultMap (inv, 0.f, 1.f).toStdString());
+            }
+            else
+                fl->invertExpr.parseFormula ("0");
+            fl->varPtr = &variables;
+            newChain->push_back (std::move (fl));
+        }
         else if (d.type.startsWith ("widen") || d.type.startsWith ("stereo"))
         {
             auto wd = std::make_unique<Widen>();
@@ -1344,6 +1410,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             {
                 const auto inv = d.args.at ("invert").trim().toLowerCase();
                 en->invert = (inv == "on" || inv == "true" || inv == "1" || inv == "yes");
+            }
+            if (d.args.count ("unit") || d.args.count ("mode"))
+            {
+                const auto u = (d.args.count ("unit") ? d.args.at ("unit")
+                                                      : d.args.at ("mode")).trim().toLowerCase();
+                en->unitDb = (u == "db" || u == "dbfs" || u == "dB");
             }
             en->name = d.name;
             en->varPtr = &variables;
@@ -1483,6 +1555,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (itSrc != variables.end() && itDst != variables.end())
             newAliasPtrs->push_back ({ &itSrc->second, &itDst->second });
     }
+
+    bindNodeTaps (*newChain);
 
     retiredAliases   = std::atomic_load (&aliases);
     retiredAliasPtrs = std::atomic_load (&aliasPtrs);
@@ -1803,23 +1877,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     if (numSamples <= 0 || numChannels <= 0)
         return;
     // hot.* slots are bound in prepare/loadScript — never re-hash the map here.
-
-    // Mono DI / silent side: copy the live channel so channel=left/right both hear it.
-    if (numChannels >= 2)
-    {
-        const float* L = buffer.getReadPointer (0);
-        const float* R = buffer.getReadPointer (1);
-        float lE = 0.f, rE = 0.f;
-        for (int i = 0; i < numSamples; ++i)
-        {
-            lE = juce::jmax (lE, std::abs (L[i]));
-            rE = juce::jmax (rE, std::abs (R[i]));
-        }
-        if (rE < 1.0e-5f && lE > 1.0e-5f)
-            buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-        else if (lE < 1.0e-5f && rE > 1.0e-5f)
-            buffer.copyFrom (0, 0, buffer, 1, 0, numSamples);
-    }
+    // Silent-side seed for a mono DI is InputRouter (plugin input). This graph
+    // keeps L/R as given — a hard pan must stay a hard pan on the taps.
 
     const float invSr = (currentSpec.sampleRate > 0.0)
                         ? (1.0f / static_cast<float>(currentSpec.sampleRate))
@@ -1919,7 +1978,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     {
         oscs[i]->renderModBlock (numSamples);
         if (! oscs[i]->modLane.empty())
-            writeNodeTapLane (oscs[i]->name, oscs[i]->modLane.data(),
+            writeNodeTapLane (oscs[i]->tapSlot, oscs[i]->modLane.data(),
                               (int) oscs[i]->modLane.size());
     }
 
@@ -1977,7 +2036,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             else
                 envs[i]->renderModBlock (envL, envR, numSamples);
             if (! envs[i]->modLane.empty())
-                writeNodeTapLane (envs[i]->name, envs[i]->modLane.data(),
+                writeNodeTapLane (envs[i]->tapSlot, envs[i]->modLane.data(),
                                   (int) envs[i]->modLane.size());
         }
     };
@@ -1986,7 +2045,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     {
         const int workCh = work.getNumChannels();
         if (onlyBus.isEmpty() || onlyBus == "main")
-            writeNodeTap ("__in__", work);
+            writeNodeTap (kTapSlotIn, work);
         for (auto& b : *chainPtr)
         {
             if (onlyBus.isNotEmpty() && ! b->busName.equalsIgnoreCase (onlyBus))
@@ -2070,8 +2129,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                             s[i] = r;
                         }
                     }
-                    if (b->tapId.isNotEmpty())
-                        writeNodeTap (b->tapId, work);
+                    if (b->tapSlot >= 0)
+                        writeNodeTap (b->tapSlot, work);
                     continue;
                 }
 
@@ -2086,8 +2145,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     dl->syncFromVariables();
                     for (int i = 0; i < numSamples; ++i)
                         dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
-                    if (b->tapId.isNotEmpty())
-                        writeNodeTap (b->tapId, work);
+                    if (b->tapSlot >= 0)
+                        writeNodeTap (b->tapSlot, work);
                     continue;
                 }
 
@@ -2121,8 +2180,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     {
                         fi->processBlock (work);
                     }
-                    if (b->tapId.isNotEmpty())
-                        writeNodeTap (b->tapId, work);
+                    if (b->tapSlot >= 0)
+                        writeNodeTap (b->tapSlot, work);
                     continue;
                 }
 
@@ -2131,8 +2190,8 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             }
 
             b->processBlock (work);
-            if (b->tapId.isNotEmpty())
-                writeNodeTap (b->tapId, work);
+            if (b->tapSlot >= 0)
+                writeNodeTap (b->tapSlot, work);
         }
         // Chainwide FS safety ceiling: soft-shape only true overs (abs > 1).
         // Musical levels stay untouched; OutputSanitizer remains the final host-side pad.
@@ -2147,7 +2206,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         }
 
         if (onlyBus.isEmpty() || onlyBus == "main")
-            writeNodeTap ("__out__", work);
+            writeNodeTap (kTapSlotOut, work);
     };
 
     if (! multi)
@@ -2195,7 +2254,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     *envs[i]->destSlot = envs[i]->modLane[(size_t) numSamples - 1];
 
         writeMixdown (buffer, numChannels, numSamples);
-        writeNodeTap ("__out__", buffer);
+        writeNodeTap (kTapSlotOut, buffer);
     }
 
     sampleCounter += numSamples;
@@ -2714,33 +2773,27 @@ bool SignalChain::copyLfoHz (const juce::String& id, float& destHz) const noexce
 
 bool SignalChain::copyTapPeak (const juce::String& id, float& dest) const noexcept
 {
-    if (id.isEmpty())
+    const int slot = findNodeTap (id);
+    if (slot < 0)
         return false;
-    for (int i = 0; i < kMaxNodeTaps; ++i)
-    {
-        const auto& t = nodeTaps[(size_t) i];
-        if (id != juce::String (t.id.data()))
-            continue;
-        dest = t.peak.load (std::memory_order_relaxed);
-        return true;
-    }
-    return false;
+    const auto& t = nodeTaps[(size_t) slot];
+    if (t.gen.load (std::memory_order_acquire) == 0)
+        return false;
+    dest = t.peak.load (std::memory_order_relaxed);
+    return true;
 }
 
 bool SignalChain::copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept
 {
-    if (id.isEmpty())
+    const int slot = findNodeTap (id);
+    if (slot < 0)
         return false;
-    for (int i = 0; i < kMaxNodeTaps; ++i)
-    {
-        const auto& t = nodeTaps[(size_t) i];
-        if (id != juce::String (t.id.data()))
-            continue;
-        destL = t.peakL.load (std::memory_order_relaxed);
-        destR = t.peakR.load (std::memory_order_relaxed);
-        return true;
-    }
-    return false;
+    const auto& t = nodeTaps[(size_t) slot];
+    if (t.gen.load (std::memory_order_acquire) == 0)
+        return false;
+    destL = t.peakL.load (std::memory_order_relaxed);
+    destR = t.peakR.load (std::memory_order_relaxed);
+    return true;
 }
 
 void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
@@ -2748,7 +2801,7 @@ void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
     for (int i = 0; i < kMaxNodeTaps; ++i)
     {
         const auto& t = nodeTaps[(size_t) i];
-        if (t.id[0] == 0)
+        if (t.id[0] == 0 || t.gen.load (std::memory_order_acquire) == 0)
             continue;
         juce::String id (t.id.data());
         if (id == "__out__")
@@ -2850,6 +2903,8 @@ void SignalChain::Filter::clearRuntimeState() noexcept
     filter.reset();
     std::fill (xPrev, xPrev + Config::kMaxChannels, 0.f);
     std::fill (yPrev, yPrev + Config::kMaxChannels, 0.f);
+    std::fill (apZ, apZ + Config::kMaxChannels, 0.f);
+    apCoeff = 0.f;
     lastAppliedFc = -1.f;
     lastAppliedRes = -1.f;
 }
@@ -2865,6 +2920,8 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     channels = juce::jlimit (1, Config::kMaxChannels, juce::jmax (2, (int) spec.numChannels));
     std::fill (xPrev, xPrev + Config::kMaxChannels, 0.0f);
     std::fill (yPrev, yPrev + Config::kMaxChannels, 0.0f);
+    std::fill (apZ, apZ + Config::kMaxChannels, 0.0f);
+    apCoeff = 0.f;
     const double filtSm = modulated ? Config::kModSmoothingTime : Config::kSmoothingTime;
     cutoffSm.reset(sampleRate, filtSm);
     resSm.reset(sampleRate, filtSm);
@@ -2872,6 +2929,8 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     resSm.setCurrentAndTargetValue(resonance.evaluate(0.f));
     lastAppliedFc = -1.f;
     lastAppliedRes = -1.f;
+    if (allpass)
+        apCoeff = DSPUtils::onePoleAllpassA (cutoffSm.getCurrentValue(), sampleRate);
     varNames.clear();
     if (varPtr)
     {
@@ -2947,11 +3006,16 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
     const bool jumped = lastAppliedFc < 0.f
                      || std::abs (fcSm - lastAppliedFc) > 0.18f
                      || std::abs (rqSm - lastAppliedRes) > 0.004f;
-    // Control-rate TPT rebuild. LFO at a few Hz does not need every audio sample.
+    // Control-rate TPT / allpass rebuild. LFO at a few Hz does not need every audio sample.
     if (jumped || (coeffPhase++ & 7) == 0)
     {
-        filter.setCutoffFrequency (fcSm);
-        filter.setResonance (rqSm);
+        if (allpass)
+            apCoeff = DSPUtils::onePoleAllpassA (fcSm, sampleRate);
+        else
+        {
+            filter.setCutoffFrequency (fcSm);
+            filter.setResonance (rqSm);
+        }
         lastAppliedFc = fcSm;
         lastAppliedRes = rqSm;
     }
@@ -2966,9 +3030,15 @@ float SignalChain::Filter::processSampleOnly (int ch, float x) noexcept
 
     xPrev[(size_t) ch] = x;
 
-    float y = filter.processSample (ch, x);
-    if (! std::isfinite (y))
-        y = yPrev[(size_t) ch];
+    float y;
+    if (allpass)
+        y = DSPUtils::onePoleAllpassTick (x, apCoeff, apZ[(size_t) ch]);
+    else
+    {
+        y = filter.processSample (ch, x);
+        if (! std::isfinite (y))
+            y = yPrev[(size_t) ch];
+    }
     yPrev[(size_t) ch] = y;
     if (varPtr)
         if (yPtr) *yPtr = y;
@@ -3057,8 +3127,13 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
         || std::abs (fcSm - lastAppliedFc) > 0.18f
         || std::abs (rqSm - lastAppliedRes) > 0.004f)
     {
-        filter.setCutoffFrequency (fcSm);
-        filter.setResonance (rqSm);
+        if (allpass)
+            apCoeff = DSPUtils::onePoleAllpassA (fcSm, sampleRate);
+        else
+        {
+            filter.setCutoffFrequency (fcSm);
+            filter.setResonance (rqSm);
+        }
         lastAppliedFc = fcSm;
         lastAppliedRes = rqSm;
     }
@@ -3083,9 +3158,15 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
             if (channelMode == Stage::ChannelMode::Right && ch != 1) continue;
             auto* d = chPtr[ch];
             if (d == nullptr) continue;
-            float y = filter.processSample (ch, d[i]);
-            if (! std::isfinite (y))
-                y = (ch < channels) ? yPrev[(size_t) ch] : 0.f;
+            float y;
+            if (allpass)
+                y = DSPUtils::onePoleAllpassTick (d[i], apCoeff, apZ[(size_t) ch]);
+            else
+            {
+                y = filter.processSample (ch, d[i]);
+                if (! std::isfinite (y))
+                    y = (ch < channels) ? yPrev[(size_t) ch] : 0.f;
+            }
             d[i] = y;
             if (ch < channels)
             {
@@ -3369,17 +3450,25 @@ float SignalChain::Env::process(int ch, float x)
         out = 0.f;
     value[ch] = out; // power domain for RMS, amplitude for Peak
     const float outAmp = (mode == Rms) ? std::sqrt (out) : out;
-    float display = std::isfinite (outAmp) ? outAmp : 0.f;
-    // Peak |x| can exceed 1. Gain formulas (1-env*k) then invert → periodic click.
-    display = juce::jlimit (0.0f, 1.0f, display);
-    if (std::abs (display) < 1.0e-20f)
-        display = 0.f;
-    float y = invert ? (1.f - display) : display;
-    const float lo = minFixed;
-    const float hi = maxFixed;
-    y = lo + (hi - lo) * y;
-    if (! std::isfinite (y))
-        y = lo;
+    float y;
+    if (unitDb)
+    {
+        constexpr float kDbScale = 8.685889638f; // 20 / ln(10)
+        y = kDbScale * LookupTables::fastLog (juce::jmax (1.0e-8f, outAmp));
+        y = juce::jlimit (-80.f, 12.f, y);
+    }
+    else
+    {
+        float display = std::isfinite (outAmp) ? outAmp : 0.f;
+        // Peak |x| can exceed 1. Gain formulas (1-env*k) then invert → periodic click.
+        display = juce::jlimit (0.0f, 1.0f, display);
+        if (std::abs (display) < 1.0e-20f)
+            display = 0.f;
+        y = invert ? (1.f - display) : display;
+        y = minFixed + (maxFixed - minFixed) * y;
+        if (! std::isfinite (y))
+            y = minFixed;
+    }
     if (destSlot != nullptr)
         *destSlot = y;
     return x;
@@ -4672,147 +4761,154 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     }
 }
 
-void SignalChain::writeNodeTap (const juce::String& id, const juce::AudioBuffer<float>& buf) noexcept
+void SignalChain::setNodeTapId (int slot, const juce::String& id) noexcept
 {
-    if (id.isEmpty() || buf.getNumSamples() <= 0 || buf.getNumChannels() <= 0)
+    if (slot < 0 || slot >= kMaxNodeTaps)
         return;
-    int slot = -1;
+    auto& t = nodeTaps[(size_t) slot];
+    std::memset (t.id.data(), 0, t.id.size());
+    if (id.isNotEmpty())
+        std::strncpy (t.id.data(), id.toRawUTF8(), t.id.size() - 1);
+}
+
+void SignalChain::bindNodeTaps (Chain& c) noexcept
+{
     for (int i = 0; i < kMaxNodeTaps; ++i)
     {
-        if (id == juce::String (nodeTaps[(size_t) i].id.data()))
-        {
-            slot = i;
-            break;
-        }
-        if (slot < 0 && nodeTaps[(size_t) i].id[0] == 0)
-            slot = i;
+        auto& t = nodeTaps[(size_t) i];
+        t.id.fill (0);
+        t.wave.fill (0.f);
+        t.peak.store (0.f, std::memory_order_relaxed);
+        t.peakL.store (0.f, std::memory_order_relaxed);
+        t.peakR.store (0.f, std::memory_order_relaxed);
+        t.rmsL.store (0.f, std::memory_order_relaxed);
+        t.rmsR.store (0.f, std::memory_order_relaxed);
+        t.gen.store (0, std::memory_order_relaxed);
     }
-    if (slot < 0)
-        slot = 0;
-    auto& t = nodeTaps[(size_t) slot];
-    const auto utf = id.toRawUTF8();
-    std::memset (t.id.data(), 0, t.id.size());
-    std::strncpy (t.id.data(), utf, t.id.size() - 1);
+    setNodeTapId (kTapSlotIn, "__in__");
+    setNodeTapId (kTapSlotOut, "__out__");
+    int next = kTapSlotFirstChip;
+    for (auto& b : c)
+    {
+        if (b->tapId.isEmpty() || next >= kMaxNodeTaps)
+        {
+            b->tapSlot = -1;
+            continue;
+        }
+        setNodeTapId (next, b->tapId);
+        b->tapSlot = next;
+        ++next;
+    }
+}
+
+int SignalChain::findNodeTap (const juce::String& id) const noexcept
+{
+    if (id.isEmpty())
+        return -1;
+    const char* key = id.toRawUTF8();
+    for (int i = 0; i < kMaxNodeTaps; ++i)
+    {
+        const auto& t = nodeTaps[(size_t) i];
+        if (t.id[0] == 0)
+            continue;
+        if (std::strncmp (t.id.data(), key, t.id.size()) == 0)
+            return i;
+    }
+    return -1;
+}
+
+void SignalChain::storeTapLevels (NodeTapSlot& t, float pkL, float pkR, float rmsL, float rmsR) noexcept
+{
+    const float pk = juce::jmax (pkL, pkR);
+    const float held = t.peak.load (std::memory_order_relaxed);
+    const float heldL = t.peakL.load (std::memory_order_relaxed);
+    const float heldR = t.peakR.load (std::memory_order_relaxed);
+    const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
+    const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
+    t.peakL.store (pkL >= heldL ? pkL : heldL * 0.88f, std::memory_order_relaxed);
+    t.peakR.store (pkR >= heldR ? pkR : heldR * 0.88f, std::memory_order_relaxed);
+    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
+    t.rmsL.store (rmsL >= heldRmsL ? rmsL : heldRmsL * 0.88f, std::memory_order_relaxed);
+    t.rmsR.store (rmsR >= heldRmsR ? rmsR : heldRmsR * 0.88f, std::memory_order_relaxed);
+    t.gen.fetch_add (1, std::memory_order_release);
+}
+
+void SignalChain::writeNodeTap (int slot, const juce::AudioBuffer<float>& buf) noexcept
+{
+    if (slot < 0 || slot >= kMaxNodeTaps)
+        return;
     const int n = buf.getNumSamples();
-    const float* s = buf.getReadPointer (0);
-    const float step = (float) n / (float) kNodeTapSamples;
-    float pkL = 0.f;
-    float pkR = 0.f;
-    float sumSqL = 0.f;
-    float sumSqR = 0.f;
+    const int nCh = buf.getNumChannels();
+    if (n <= 0 || nCh <= 0)
+        return;
+
+    auto& t = nodeTaps[(size_t) slot];
     const float* ch0 = buf.getReadPointer (0);
-    for (int i = 0; i < n; ++i)
+    const float* ch1 = nCh > 1 ? buf.getReadPointer (1) : nullptr;
+    const float step = (float) n / (float) kNodeTapSamples;
+    float pkL = 0.f, pkR = 0.f, sumSqL = 0.f, sumSqR = 0.f;
+    for (int i = 0; i < kNodeTapSamples; ++i)
     {
-        const float x = ch0[i];
-        pkL = juce::jmax (pkL, std::abs (x));
-        sumSqL += x * x;
-    }
-    if (buf.getNumChannels() > 1)
-    {
-        const float* ch1 = buf.getReadPointer (1);
-        for (int i = 0; i < n; ++i)
+        const int idx = juce::jmin (n - 1, (int) (i * step));
+        const float xL = ch0[idx];
+        t.wave[(size_t) i] = xL;
+        pkL = juce::jmax (pkL, std::abs (xL));
+        sumSqL += xL * xL;
+        if (ch1 != nullptr)
         {
-            const float x = ch1[i];
-            pkR = juce::jmax (pkR, std::abs (x));
-            sumSqR += x * x;
+            const float xR = ch1[idx];
+            pkR = juce::jmax (pkR, std::abs (xR));
+            sumSqR += xR * xR;
         }
     }
-    else
+    if (ch1 == nullptr)
     {
         pkR = pkL;
         sumSqR = sumSqL;
     }
-    const float invN = 1.f / (float) n;
-    const float blockRmsL = std::sqrt (sumSqL * invN);
-    const float blockRmsR = std::sqrt (sumSqR * invN);
-    const float pk = juce::jmax (pkL, pkR);
-    for (int i = 0; i < kNodeTapSamples; ++i)
-        t.wave[(size_t) i] = s[juce::jmin (n - 1, (int) (i * step))];
-    const float held = t.peak.load (std::memory_order_relaxed);
-    const float heldL = t.peakL.load (std::memory_order_relaxed);
-    const float heldR = t.peakR.load (std::memory_order_relaxed);
-    const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
-    const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
-    const float nextL = pkL >= heldL ? pkL : heldL * 0.88f;
-    const float nextR = pkR >= heldR ? pkR : heldR * 0.88f;
-    t.peakL.store (nextL, std::memory_order_relaxed);
-    t.peakR.store (nextR, std::memory_order_relaxed);
-    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
-    t.rmsL.store (blockRmsL >= heldRmsL ? blockRmsL : heldRmsL * 0.88f, std::memory_order_relaxed);
-    t.rmsR.store (blockRmsR >= heldRmsR ? blockRmsR : heldRmsR * 0.88f, std::memory_order_relaxed);
-    t.gen.fetch_add (1, std::memory_order_release);
+    const float inv = 1.f / (float) kNodeTapSamples;
+    storeTapLevels (t, pkL, pkR, std::sqrt (sumSqL * inv), std::sqrt (sumSqR * inv));
 }
 
-void SignalChain::writeNodeTapLane (const juce::String& id, const float* src, int n) noexcept
+void SignalChain::writeNodeTapLane (int slot, const float* src, int n) noexcept
 {
-    if (id.isEmpty() || src == nullptr || n <= 0)
+    if (slot < 0 || slot >= kMaxNodeTaps || src == nullptr || n <= 0)
         return;
-    int slot = -1;
-    for (int i = 0; i < kMaxNodeTaps; ++i)
-    {
-        if (id == juce::String (nodeTaps[(size_t) i].id.data()))
-        {
-            slot = i;
-            break;
-        }
-        if (slot < 0 && nodeTaps[(size_t) i].id[0] == 0)
-            slot = i;
-    }
-    if (slot < 0)
-        slot = 0;
+
     auto& t = nodeTaps[(size_t) slot];
-    const auto utf = id.toRawUTF8();
-    std::memset (t.id.data(), 0, t.id.size());
-    std::strncpy (t.id.data(), utf, t.id.size() - 1);
     const float step = (float) n / (float) kNodeTapSamples;
-    float pk = 0.f;
-    float sumSq = 0.f;
-    for (int i = 0; i < n; ++i)
+    float pk = 0.f, sumSq = 0.f;
+    for (int i = 0; i < kNodeTapSamples; ++i)
     {
-        const float x = src[i];
+        const float x = src[juce::jmin (n - 1, (int) (i * step))];
+        t.wave[(size_t) i] = x;
         pk = juce::jmax (pk, std::abs (x));
         sumSq += x * x;
     }
-    const float blockRms = std::sqrt (sumSq / (float) n);
-    for (int i = 0; i < kNodeTapSamples; ++i)
-        t.wave[(size_t) i] = src[juce::jmin (n - 1, (int) (i * step))];
-    const float held = t.peak.load (std::memory_order_relaxed);
-    const float heldL = t.peakL.load (std::memory_order_relaxed);
-    const float heldR = t.peakR.load (std::memory_order_relaxed);
-    const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
-    const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
-    const float next = pk >= held ? pk : held * 0.88f;
-    t.peakL.store (pk >= heldL ? pk : heldL * 0.88f, std::memory_order_relaxed);
-    t.peakR.store (pk >= heldR ? pk : heldR * 0.88f, std::memory_order_relaxed);
-    t.peak.store (next, std::memory_order_relaxed);
-    t.rmsL.store (blockRms >= heldRmsL ? blockRms : heldRmsL * 0.88f, std::memory_order_relaxed);
-    t.rmsR.store (blockRms >= heldRmsR ? blockRms : heldRmsR * 0.88f, std::memory_order_relaxed);
-    t.gen.fetch_add (1, std::memory_order_release);
+    const float rms = std::sqrt (sumSq / (float) kNodeTapSamples);
+    storeTapLevels (t, pk, pk, rms, rms);
 }
 
 bool SignalChain::copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept
 {
-    if (dest == nullptr || destN <= 0 || id.isEmpty())
+    if (dest == nullptr || destN <= 0)
         return false;
-    for (int i = 0; i < kMaxNodeTaps; ++i)
+    const int slot = findNodeTap (id);
+    if (slot < 0)
+        return false;
+    const auto& t = nodeTaps[(size_t) slot];
+    if (t.gen.load (std::memory_order_acquire) == 0)
+        return false;
+    for (int s = 0; s < destN; ++s)
     {
-        const auto& t = nodeTaps[(size_t) i];
-        if (id != juce::String (t.id.data()))
-            continue;
-        const auto gen = t.gen.load (std::memory_order_acquire);
-        juce::ignoreUnused (gen);
-        for (int s = 0; s < destN; ++s)
-        {
-            const float u = (destN <= 1) ? 0.f : (float) s / (float) (destN - 1);
-            const float idx = u * (float) (kNodeTapSamples - 1);
-            const int i0 = (int) idx;
-            const int i1 = juce::jmin (kNodeTapSamples - 1, i0 + 1);
-            const float f = idx - (float) i0;
-            dest[s] = t.wave[(size_t) i0] * (1.f - f) + t.wave[(size_t) i1] * f;
-        }
-        return true;
+        const float u = (destN <= 1) ? 0.f : (float) s / (float) (destN - 1);
+        const float idx = u * (float) (kNodeTapSamples - 1);
+        const int i0 = (int) idx;
+        const int i1 = juce::jmin (kNodeTapSamples - 1, i0 + 1);
+        const float f = idx - (float) i0;
+        dest[s] = t.wave[(size_t) i0] * (1.f - f) + t.wave[(size_t) i1] * f;
     }
-    return false;
+    return true;
 }
 
 void SignalChain::Meter::prepare (const juce::dsp::ProcessSpec&) {}

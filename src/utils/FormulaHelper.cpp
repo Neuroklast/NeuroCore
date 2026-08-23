@@ -750,6 +750,8 @@ static juce::String optimizeScriptLines (const juce::String& script,
         // Filter / other blocks: light cleanup on simple numeric junk only
         if (lower.startsWith ("filter") || lower.startsWith ("comp")
             || lower.startsWith ("osc") || lower.startsWith ("env")
+            || lower.startsWith ("phaser") || lower.startsWith ("flanger")
+            || lower.startsWith ("flange")
             || lower.startsWith ("param"))
         {
             if (lower.startsWith ("filter") && lower.contains ("lowpass"))

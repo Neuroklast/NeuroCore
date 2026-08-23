@@ -76,6 +76,7 @@ private:
     {
         juce::String busName { "main" };
         juce::String tapId;
+        int tapSlot { -1 };
         NodeKind kind { NodeKind::Generic };
         virtual ~Block() = default;
         virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
@@ -205,12 +206,15 @@ private:
         bool modulated { false };
         /** Osc (not env) on cutoff. Still control-rate: LFO Hz << audio. */
         bool modulatedByOsc { false };
+        bool allpass { false };
         juce::dsp::StateVariableTPTFilterType type{ juce::dsp::StateVariableTPTFilterType::lowpass };
         Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
         float sampleRate{44100.0f};
         int channels{1};
         alignas (64) float xPrev[Config::kMaxChannels] {};
         alignas (64) float yPrev[Config::kMaxChannels] {};
+        alignas (64) float apZ[Config::kMaxChannels] {};
+        float apCoeff { 0.f };
         juce::SmoothedValue<float> cutoffSm, resSm;
         uint8_t coeffPhase{0};
         float lastAppliedFc { -1.f };
@@ -414,6 +418,59 @@ private:
         float tailSeconds() const noexcept;
     };
 
+    /** Multi-stage 1-pole allpass phaser. Internal LFO. Feedback is inside the chip. */
+    struct Phaser : Block
+    {
+        static constexpr int kMaxStages = 12;
+
+        ExpressionEvaluator stagesExpr, rateExpr, depthExpr, centerExpr, feedbackExpr, mixExpr;
+        juce::SmoothedValue<float> stagesSm, rateSm, depthSm, centerSm, fbSm, mixSm;
+        float sampleRate { 44100.f };
+        float invSr { 1.f / 44100.f };
+        float phase { 0.f };
+        float apA { 0.f };
+        float lastFc { -1.f };
+        int nStages { 6 };
+        alignas (64) float zL[kMaxStages] {};
+        alignas (64) float zR[kMaxStages] {};
+        float lastYL { 0.f }, lastYR { 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<float*, std::string>> varNames;
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Short modulated delay + invert. Through-zero when invert is on and delay nears 0. */
+    struct Flanger : Block
+    {
+        static constexpr float kMaxDelaySec = 0.04f;
+
+        ExpressionEvaluator rateExpr, depthExpr, delayExpr, feedbackExpr, mixExpr, invertExpr;
+        juce::SmoothedValue<float> rateSm, depthSm, delaySm, fbSm, mixSm, invertSm, dSampSm;
+        float sampleRate { 44100.f };
+        float invSr { 1.f / 44100.f };
+        float phase { 0.f };
+        float fbLatch { 0.45f }, mixLatch { 0.5f };
+        int maxDelaySamples { 0 };
+        int writePos { 0 };
+        int delayN { 0 };
+        std::vector<float> storageL, storageR;
+        float* delayL { nullptr };
+        float* delayR { nullptr };
+        float lastDelaySamples { -1.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        std::vector<std::pair<float*, std::string>> varNames;
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        void processFrame (float& left, float* right, float pol) noexcept;
+    };
+
     /**
         Mono-compatible stereoizer. Mid stays the source; side is allpass
         decorrelation above the bass. No discrete Haas slap (that clicked
@@ -533,6 +590,7 @@ private:
         float* midiGatePtr { nullptr };  ///< Cached pointer to variables["midi_gate"]
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
         bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
+        bool unitDb { false };         ///< Output dBFS instead of 0–1 amplitude
         float prevMidiGate{0.0f};      ///< Last midi_gate value for edge detection
         bool attackLit { false };
         bool releaseLit { false };
@@ -992,12 +1050,11 @@ private:
     const float* extVoiceR { nullptr };
     int extVoiceN { 0 };
 
-    void publishSidechainSample (int sampleIndex) noexcept;
-    void writeNodeTap (const juce::String& id, const juce::AudioBuffer<float>& buf) noexcept;
-    void writeNodeTapLane (const juce::String& id, const float* src, int n) noexcept;
-
     static constexpr int kNodeTapSamples = 64;
     static constexpr int kMaxNodeTaps = 32;
+    static constexpr int kTapSlotIn = 0;
+    static constexpr int kTapSlotOut = 1;
+    static constexpr int kTapSlotFirstChip = 2;
     struct NodeTapSlot
     {
         std::array<char, 48> id {};
@@ -1010,6 +1067,14 @@ private:
         std::atomic<uint32_t> gen { 0 };
     };
     std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
+
+    void publishSidechainSample (int sampleIndex) noexcept;
+    void bindNodeTaps (Chain& c) noexcept;
+    void setNodeTapId (int slot, const juce::String& id) noexcept;
+    int findNodeTap (const juce::String& id) const noexcept;
+    void storeTapLevels (NodeTapSlot& t, float pkL, float pkR, float rmsL, float rmsR) noexcept;
+    void writeNodeTap (int slot, const juce::AudioBuffer<float>& buf) noexcept;
+    void writeNodeTapLane (int slot, const float* src, int n) noexcept;
 
 public:
 

@@ -75,6 +75,55 @@ namespace DSPUtils
     }
 
     /** Linear LUT tap on a raw table — no vector in the inner loop. */
+    NK_FORCEINLINE static float flushDenorm (float x) noexcept
+    {
+        return (std::abs (x) < 1.0e-20f) ? 0.f : x;
+    }
+
+    /** Bilinear 1-pole allpass coefficient for cutoff `fcHz`. */
+    NK_FORCEINLINE static float onePoleAllpassA (float fcHz, float sampleRate) noexcept
+    {
+        const float ny = sampleRate * 0.45f;
+        fcHz = juce::jlimit (20.f, ny, fcHz);
+        const float w = juce::MathConstants<float>::pi * fcHz / sampleRate;
+        const float g = std::tan (juce::jlimit (1.0e-5f, 1.55f, w));
+        // (g-1)/(g+1) < 0 below sr/4 — that's the −90° point. (1-g)/(1+g) sits near Nyquist.
+        return (g - 1.f) / (g + 1.f);
+    }
+
+    NK_FORCEINLINE static float onePoleAllpassTick (float x, float a, float& z) noexcept
+    {
+        const float y = a * x + z;
+        z = x - a * y;
+        return y;
+    }
+
+    /** Linear delay tap. Same wrap as `Delay::delayRead` — no Hermite across index 0.
+        Hot path: `buf` live, `N >= 4`. */
+    NK_FORCEINLINE static float delayReadLinear (const float* NK_RESTRICT buf, int writePos,
+                                                float delaySamps, int N) noexcept
+    {
+        prefetchRead (buf + ((writePos + 16) % N));
+        const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
+        const int di = (int) d;
+        const float f = d - (float) di;
+        int i0 = writePos - di;
+        if (i0 < 0)
+            i0 += N;
+        int i1 = i0 - 1;
+        if (i1 < 0)
+            i1 += N;
+        return buf[i0] + f * (buf[i1] - buf[i0]);
+    }
+
+    /** Feedback limiter. Transparent below 1.5 — same threshold as Delay. */
+    NK_FORCEINLINE static float satFb (float x) noexcept
+    {
+        if (std::abs (x) <= 1.5f)
+            return x;
+        return 1.5f * std::tanh (x * (1.f / 1.5f));
+    }
+
     NK_FORCEINLINE static float lutInterp (const float* NK_RESTRICT table, int size, float pos) noexcept
     {
         if (table == nullptr || size < 2)

@@ -130,6 +130,8 @@ set(SOURCE_FILES
     src/dsl/blocks/WidenBlock.cpp
     src/dsl/blocks/IrBlock.cpp
     src/dsl/blocks/PitchBlock.cpp
+    src/dsl/blocks/PhaserBlock.cpp
+    src/dsl/blocks/FlangerBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/ExprTape.cpp
     src/utils/ExprTapeJit.cpp

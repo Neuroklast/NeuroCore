@@ -96,7 +96,7 @@ describe("chip face, labels, copy", () => {
   it("keeps every primary DSP module on one closed face; expand does not change the box", () => {
     const jacks = [audio("in", false), audio("out", true)];
     const face = dspFaceSize();
-    const ids = ["filter", "eq", "delay", "stage", "env", "comp"] as const;
+    const ids = ["filter", "eq", "delay", "stage", "env", "comp", "phaser", "flanger"] as const;
     for (const id of ids) {
       const shut = chipBox(id, jacks, false, chipSpec(id).defaultArgs);
       const open = chipBox(id, jacks, true, chipSpec(id).defaultArgs);

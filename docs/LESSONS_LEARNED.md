@@ -5,6 +5,8 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## DSP
 
 - Peak safety is the engine True-Peak brickwall. Residual mute is `OutputSanitizer` only. Do not re-split those two into Polisher vs sanitizer modes.
+- Silent-side seed for a mono DI is `InputRouter` (plugin input, BOTH). `SignalChain` must not copy L↔R — chip taps and a hard pan stay honest.
+- Node taps are slots bound in `loadScript`. Never construct `juce::String` to find a tap on the audio thread. Overflow must not land on slot 0 (`__in__`). Wave/peak/rms come from the 64-sample viz tap, not a second OS-rate scan.
 
 ## Process
 
@@ -93,4 +95,4 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## Factory / sound
 
 - Clip chains end with an LPF. Predelay is a wet-bus delay at mix 1, not a slap in series.
-- Phaser: HP stays below LP. Env output is 0–1.
+- Phaser is an allpass cascade (`phaser` or `filter type = allpass`), not HP+LP. Env is 0–1 unless `unit = db`.

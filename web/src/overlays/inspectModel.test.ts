@@ -46,8 +46,8 @@ describe("inspect rows", () => {
 });
 
 describe("inspect enums / ranges / blurb / bindings", () => {
-  it("filter type options are lowpass/highpass/bandpass from chipSpec", () => {
-    expect(inspectEnumOptions("filter", "type")).toEqual(["lowpass", "highpass", "bandpass"]);
+  it("filter type options are lowpass/highpass/bandpass/allpass from chipSpec", () => {
+    expect(inspectEnumOptions("filter", "type")).toEqual(["lowpass", "highpass", "bandpass", "allpass"]);
     expect(inspectEnumOptions("filter", "cutoff")).toEqual([]);
   });
 

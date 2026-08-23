@@ -61,6 +61,8 @@ const ENUM_ABBR: Record<string, string> = {
   lowpass: "LP", lpf: "LP", lp: "LP",
   highpass: "HP", hpf: "HP", hp: "HP",
   bandpass: "BP", bpf: "BP", bp: "BP",
+  allpass: "AP", apf: "AP", ap: "AP",
+  db: "DB", dbfs: "DB", lin: "LN",
   peak: "PK",
   lowshelf: "LS",
   highshelf: "HS",
@@ -148,7 +150,7 @@ add({
   paramJacks: ["type", "cutoff", "resonance", "channel"],
   modIns: [],
   enums: {
-    type: ["lowpass", "highpass", "bandpass"],
+    type: ["lowpass", "highpass", "bandpass", "allpass"],
     channel: [...CHANNEL],
   },
   ranges: {
@@ -328,9 +330,10 @@ add({
   typeCodePrefix: "EV",
   audioIns: ["in"],
   audioOuts: ["mod"],
-  paramJacks: ["type", "attack", "release", "hold", "min", "max", "invert", "source"],
+  paramJacks: ["type", "unit", "attack", "release", "hold", "min", "max", "invert", "source"],
   enums: {
     type: ["peak", "rms"],
+    unit: ["lin", "db"],
     invert: ["off", "on"],
     source: ["in", "sidechain"],
   },
@@ -343,6 +346,7 @@ add({
   },
   defaultArgs: {
     type: "peak",
+    unit: "lin",
     attack: "0.01",
     release: "0.1",
     hold: "0",
@@ -351,7 +355,7 @@ add({
     invert: "off",
     source: "in",
   },
-  blurb: "Envelope follower. Audio in, mod out. Attack/hold/release, then map to min..max.",
+  blurb: "Envelope follower. Audio in, mod out. lin is 0–1; db is dBFS for a DIY compressor.",
 });
 
 add({
@@ -371,6 +375,44 @@ add({
   },
   defaultArgs: { shape: "sine", freq: "1", sync: "off", depth: "1" },
   blurb: "LFO, no audio in. Bind only.",
+});
+
+add({
+  id: "phaser",
+  label: "Phaser",
+  typeCodePrefix: "PH",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["stages", "rate", "depth", "center", "feedback", "mix"],
+  ranges: {
+    stages: { min: 2, max: 12 },
+    rate: { min: 0.05, max: 8, unit: "Hz" },
+    depth: { min: 0, max: 1.5 },
+    center: { min: 80, max: 4000, unit: "Hz" },
+    feedback: { min: 0, max: 0.95 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { stages: "6", rate: "0.4", depth: "0.7", center: "800", feedback: "0.3", mix: "0.5" },
+  blurb: "Allpass cascade. Rate, depth, center, feedback, mix.",
+});
+
+add({
+  id: "flanger",
+  label: "Flanger",
+  typeCodePrefix: "FG",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "depth", "delay", "feedback", "mix", "invert"],
+  enums: { invert: ["off", "on"] },
+  ranges: {
+    rate: { min: 0.05, max: 8, unit: "Hz" },
+    depth: { min: 0, max: 1 },
+    delay: { min: 0.1, max: 20, unit: "ms" },
+    feedback: { min: 0, max: 0.95 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { rate: "0.25", depth: "0.7", delay: "2", feedback: "0.45", mix: "0.5", invert: "on" },
+  blurb: "Short modulated delay. Invert is through-zero.",
 });
 
 add({
@@ -598,6 +640,8 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("widen") || t === "width") return "width";
   if (t.startsWith("octav")) return "octaver";
   if (t.startsWith("pitch")) return "pitch";
+  if (t.startsWith("phaser")) return "phaser";
+  if (t.startsWith("flanger") || t.startsWith("flange")) return "flanger";
   if (t.startsWith("vocod")) return "vocoder";
   if (t === "send") return "send";
   if (t === "out") return "out";

@@ -1,6 +1,6 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-23 (Unit meters: log-Hz scope; peak/RMS labelled dB / dBFS, not LUFS)  
+**Stand:** 2026-08-23 (node taps are compile-bound slots; viz meters from the 64-sample tap)  
 **Version:** 0.6.1-beta  
 **Branch:** `master`
 
@@ -32,6 +32,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 ## DSP (0.4.11-alpha)
 
 - **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
+- **`phaser` / `flanger` / `filter type = allpass`**: 1-pole allpass cascade (internal LFO, feedback in-chip); short delay comb with invert; env `unit = db` is dBFS. Coeffs at `kFilterCoeffStride`. Phaser: unrolled 2/4/6/8/10/12 cascade, mix/fb latched, denorm on z per stride. Flanger: Delay-shaped `processFrame` (slew tap), mix/fb latched, invert is a smoothed ±1 gain. Feedback sat at 1.5 like Delay. No per-sample `evaluate`.
 - **Sanitation**: fixed engine chain after DSL. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction.
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
@@ -51,6 +52,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 | **5 JIT** | asmjit x64: arithmetik `ss` + `call` to tape C helpers (Div/Pow/Call/ADAA) | Shaper chains leave the opcode switch | SIMD-JIT; Mac (Tape only) |
 | **Tape SIMD** | `exprTapeEvalSimd` + aligned LUT taps; AST `evalSimd` not the live path when a tape exists | Block SIMD for `y=x*a` / `tanh` | ADAA stays sample-serial |
 | **Prefetch** | `_mm_prefetch` next delay line + tape `op`/`imm` | Hide L1 miss after virtual `processBlock` | Not a second graph walker |
+| **Taps** | Slot index from `loadScript` (`__in__`/`__out__` reserved). Wave/peak/rms from 64 viz samples | No `juce::String` lookup or OS-rate scan per chip | Bus-name intern |
 
 Detail und Dateien: `docs/ARCHITECTURE.md` § Audio-Runtime. Verträge: ExpressionEvaluatorTest, ArchitectureHardening, DelayReverb, WebShell (JIT-Flag / Mac-Zip).
 
@@ -76,7 +78,7 @@ Quelle: `screenshots/Screenshot 2026-08-16 231501.png` (Phaser Lab), `231939.png
 | GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. |
 | CpuProtect / Footer | Anzeige soll 0–100 sein. 8× + LFO-Filter kann den Guard trotzdem trippen. |
 | Tests | Zu viele Sample-`expect`. Neue Arbeit = Contracts. |
-| Rest | Factory: `resources/factory_presets.json` (300 = 270 original + 30 genre-specific). `out` is last — post-mix limit/glue lives on each bus, not after `out`. Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). |
+| Rest | Factory: `resources/factory_presets.json` (301). `out` is last — post-mix limit/glue lives on each bus, not after `out`. Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). Phaser is an allpass cascade (`phaser` / `filter type = allpass`), not HP+LP. Flanger is a short delay comb. Env `unit = db` is dBFS for a DIY compressor. Coeffs are control-rate (`kFilterCoeffStride`). Node taps: slot index from `loadScript`, viz meters from 64 samples. |
 
 ## Build
 

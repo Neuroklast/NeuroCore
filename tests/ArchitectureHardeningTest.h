@@ -7,6 +7,7 @@
 #include "../src/dsp/LookupTables.h"
 #include "../src/dsp/OutputSanitizer.h"
 #include "../src/dsp/LatencyAlignedSidechain.h"
+#include "../src/dsp/InputRouter.h"
 #include "../src/dsl/SignalChain.h"
 #include "TestHelpers.h"
 #include <cmath>
@@ -20,6 +21,76 @@ public:
 
     void runTest() override
     {
+        beginTest ("InputRouter BOTH seeds a silent host side; SignalChain does not");
+        {
+            InputRouter router;
+            router.prepare ({ 48000.0, 64, 2 });
+            router.setUseLeft (true);
+            router.setUseRight (true);
+            juce::AudioBuffer<float> warm (2, 64);
+            warm.clear();
+            for (int b = 0; b < 32; ++b)
+                router.processBlock (warm);
+            juce::AudioBuffer<float> host (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                host.setSample (0, i, 0.8f);
+                host.setSample (1, i, 0.0f);
+            }
+            router.processBlock (host);
+            expect (TestHelpers::peakAbs (host) > 0.5f);
+            float rPk = 0.f;
+            for (int i = 0; i < 64; ++i)
+                rPk = juce::jmax (rPk, std::abs (host.getSample (1, i)));
+            expect (rPk > 0.5f, "BOTH must seed R from L so channel=right still hears a mono DI");
+
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("stage1: y = x", err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> pan (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                pan.setSample (0, i, 0.8f);
+                pan.setSample (1, i, 0.0f);
+            }
+            chain.processBlock (pan);
+            float pkL = 0.f, pkR = 0.f;
+            expect (chain.copyTapPeakLR ("stage1", pkL, pkR));
+            expect (pkL > 0.5f);
+            expect (pkR < 0.05f, "chain taps keep a hard pan");
+        }
+
+        beginTest ("node taps are bound slots; IN/OUT survive a chain longer than the tap table");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            juce::String script;
+            for (int i = 0; i < 40; ++i)
+                script += "stage" + juce::String (i) + ": y = x\n";
+            expect (chain.loadScript (script, err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.5f);
+                buf.setSample (1, i, 0.5f);
+            }
+            chain.processBlock (buf);
+            float dest[64];
+            expect (chain.copyNodeTap ("__in__", dest, 64),
+                    "IN tap must not be clobbered when chips exceed the table");
+            expect (chain.copyNodeTap ("__out__", dest, 64), "OUT tap is reserved");
+            expect (chain.copyNodeTap ("stage0", dest, 64), "first chip still publishes");
+            float pk = 0.f;
+            expect (chain.copyTapPeak ("__in__", pk));
+            expect (pk > 0.4f, "IN peak comes from the viz tap");
+            float pkL = 0.f, pkR = 0.f;
+            expect (chain.copyTapPeakLR ("stage0", pkL, pkR));
+            expect (pkL > 0.4f);
+            expect (std::abs (pkL - 0.5f) < 0.05f);
+        }
+
         // ---- A1: diagnostics default off ----
         beginTest ("diagnostics disabled by default");
         {

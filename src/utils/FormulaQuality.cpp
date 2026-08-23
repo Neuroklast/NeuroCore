@@ -150,7 +150,9 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
                  || b.type.startsWith ("ott") || b.type.startsWith ("widen")
                  || b.type.startsWith ("stereo") || b.type.startsWith ("delay")
                  || b.type.startsWith ("reverb") || b.type == "verb"
-                 || b.type.startsWith ("ir") || b.type.startsWith ("convolve"))
+                 || b.type.startsWith ("ir") || b.type.startsWith ("convolve")
+                 || b.type.startsWith ("phaser") || b.type.startsWith ("flanger")
+                 || b.type.startsWith ("flange") || b.type.startsWith ("pitch"))
         {
             hasAudioPath = true;
             const auto typeStr = b.args.count ("type") ? b.args.at ("type").toLowerCase()

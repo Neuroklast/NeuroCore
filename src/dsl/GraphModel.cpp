@@ -1597,8 +1597,10 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", "f1", "f2", nullptr };
     static const char* kWiden[] = { "width", "delay", "bass", nullptr };
     static const char* kOsc[] = { "shape", "freq", "sync", "depth", nullptr };
-    static const char* kEnv[] = { "type", "attack", "hold", "release", "min", "max",
+    static const char* kEnv[] = { "type", "unit", "attack", "hold", "release", "min", "max",
                                   "invert", "depth", "source", "trigger", nullptr };
+    static const char* kPhaser[] = { "stages", "rate", "depth", "center", "feedback", "mix", nullptr };
+    static const char* kFlanger[] = { "rate", "depth", "delay", "feedback", "mix", "invert", nullptr };
     static const char* kSend[] = { "in", "main", nullptr };
     static const char* kOut[] = { "main", "gain", nullptr };
     static const char* kMs[] = { "mode", nullptr };
@@ -1624,6 +1626,8 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     else if (t.startsWith ("widen")) keys = kWiden;
     else if (t.startsWith ("osc")) keys = kOsc;
     else if (t.startsWith ("env")) keys = kEnv;
+    else if (t.startsWith ("phaser")) keys = kPhaser;
+    else if (t.startsWith ("flanger") || t.startsWith ("flange")) keys = kFlanger;
     else if (t == "send") keys = kSend;
     else if (t == "out") keys = kOut;
     else if (t == "ms") keys = kMs;
@@ -2118,7 +2122,9 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
 
     const bool extraParams = t.startsWith ("octav") || t.startsWith ("vocod")
                           || t.startsWith ("noisegate") || t == "noise_gate"
-                          || t.startsWith ("ott") || t.startsWith ("widen");
+                          || t.startsWith ("ott") || t.startsWith ("widen")
+                          || t.startsWith ("phaser") || t.startsWith ("flanger")
+                          || t.startsWith ("flange");
     if (extraParams)
     {
         for (const auto& key : editableArgKeys (node))

@@ -110,7 +110,7 @@ filter2: type = bandpass; center = 1000; width = 500
 
 | Argument | Typ | Beschreibung |
 |---|---|---|
-| `type` | `lowpass` \| `highpass` \| `bandpass` | Filtertyp (Kurzformen: `lpf`, `hpf`, `bpf`) |
+| `type` | `lowpass` \| `highpass` \| `bandpass` \| `allpass` | Filtertyp (Kurzformen: `lpf`, `hpf`, `bpf`, `apf`) |
 | `cutoff` | Hz / Formel | Grenzfrequenz |
 | `resonance` | 0.1–10 | Gütefaktor |
 | `center` | Hz | Mittenfrequenz (Bandpass) |
@@ -119,6 +119,46 @@ filter2: type = bandpass; center = 1000; width = 500
 | `channel` | `left`/`mid` \| `right`/`side` \| `both` | Nur diesen Kanal filtern (nützlich nach `ms encode`) |
 
 Bandpass erfordert entweder `center` + `width` oder `lowcut` + `highcut`.
+
+`allpass` ist ein 1-Pol-Allpass (Cutoff = −90°-Punkt). Resonance wird ignoriert. Zwei in Serie + Dry (`out: main = 0.5; wet = 0.5`) ergeben eine Kerbe bei der Cutoff-Frequenz. Mehrstufiges Feedback gehört in den `phaser`-Block — Bus-Loops sind verboten.
+
+---
+
+## `phaser` – Allpass-Kaskade
+
+```
+phaser1: stages = 6; rate = 0.4; depth = 0.7; center = 800; feedback = 0.3; mix = 0.5
+```
+
+Internes Sinus-LFO. `rate = 0` friert die Kerben. `depth` ist Oktaven (±1.5 bei 1). Feedback sitzt im Chip.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `stages` | 2–12 | Allpass-Stufen (gerade Zahlen klingen klassisch) |
+| `rate` | Hz / Formel | LFO. 0 = statisch |
+| `depth` | 0–1.5 | Sweep in Oktaven |
+| `center` | Hz / Formel | Mittenfrequenz |
+| `feedback` / `fb` | 0–0.95 | Rückkopplung um die Kaskade |
+| `mix` / `wet` | 0–1 | Nassanteil |
+
+---
+
+## `flanger` – kurzes moduliertes Delay
+
+```
+flanger1: rate = 0.25; depth = 0.7; delay = 2; feedback = 0.45; mix = 0.5; invert = on
+```
+
+Delay 0.1–20 ms, LFO auf die Laufzeit. `invert = on` dreht den Nassanteil (Through-Zero / Jet). `rate = 0` friert den Kamm.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `rate` | Hz / Formel | LFO. 0 = statisch |
+| `depth` | 0–1 | Sweep um `delay` |
+| `delay` / `time` | ms | Zentrum (0.1–20) |
+| `feedback` / `fb` | 0–0.95 | Kamm-Resonanz |
+| `mix` / `wet` | 0–1 | Nassanteil |
+| `invert` / `polarity` | `on`/`off` oder 0–1 | Nass-Polarität |
 
 ---
 
@@ -409,11 +449,19 @@ env2: type = peak; trigger = midi_gate
 | Argument | Werte | Beschreibung |
 |---|---|---|
 | `type` | `rms` \| `peak` | Messmethode |
+| `unit` | `lin` (Default) \| `db` / `dbfs` | `lin` = 0–1 Amplitude. `db` = dBFS (−80…+12), für DIY-Kompressor |
 | `attack` | Sekunden / Formel | Anstiegszeit |
 | `release` | Sekunden / Formel | Abklingzeit |
 | `trigger` | `midi_gate` | Attack bei MIDI-Note-On neu starten |
 
-Der Blockname (`env1`) ist die Variable in nachfolgenden `stage`-Formeln. Ausgabe: 0.0–1.0.
+Der Blockname (`env1`) ist die Variable in nachfolgenden `stage`-Formeln. Default-Ausgabe: 0.0–1.0. Mit `unit = db` kommt dBFS, `min`/`max`/`invert` greifen dann nicht.
+
+DIY-Kompressor ohne `comp`:
+
+```
+env1: type = peak; unit = db; attack = 0.001; release = 0.12
+stage1: y = x * pow(10, -max(0, env1 - a) * (1 - 1/b) / 20)
+```
 
 ---
 

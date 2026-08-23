@@ -870,6 +870,42 @@
       "category": "Blocks"
     },
     {
+      "name": "phaser",
+      "description": "Allpass cascade with an internal LFO. Stages 2–12. Feedback lives in the chip (bus loops are forbidden).",
+      "soundCharacter": "Moving notches. More stages = denser comb. Feedback makes it whoosh.",
+      "useCases": [
+        "Guitar / keys swirl",
+        "Static 2-stage notch at center (rate = 0)",
+        "Build one yourself with filter type = allpass"
+      ],
+      "dangersAndLimits": {
+        "domain": "center 80–4000 Hz, feedback 0–0.95",
+        "aliasing": "Low; coeff updates at control rate",
+        "performance": "N 1-pole allpasses, stride 8"
+      },
+      "example": "phaser1: stages = 6; rate = a; depth = b; center = c; feedback = d; mix = e",
+      "keywords": ["phaser", "allpass", "lfo", "modulation", "notch"],
+      "category": "Blocks"
+    },
+    {
+      "name": "flanger",
+      "description": "Short modulated delay (0.1–20 ms). invert = on flips the wet path for through-zero jets.",
+      "soundCharacter": "Metallic comb. Short delay + invert = jet. Longer delay leans chorus.",
+      "useCases": [
+        "Guitar jet",
+        "Frozen comb (rate = 0)",
+        "Stereo thicken with invert off"
+      ],
+      "dangersAndLimits": {
+        "domain": "delay 0.1–20 ms, feedback 0–0.95",
+        "aliasing": "Low; delay tap is linear",
+        "performance": "Same ring as delay, LFO at control rate"
+      },
+      "example": "flanger1: rate = a; depth = b; delay = c; feedback = d; mix = e; invert = on",
+      "keywords": ["flanger", "delay", "comb", "through-zero", "modulation"],
+      "category": "Blocks"
+    },
+    {
       "name": "widen",
       "description": "Mono-to-stereo. Mid stays the original. Side is allpass + Haas. Bass stays mono so the mix still collapses.",
       "soundCharacter": "Wide without chorus swirl. Lows stay centered.",

@@ -395,14 +395,30 @@
   {
     "name": "phaser lab",
     "category": "modulation",
-    "description": "LFO bandpass swirl with feedback and mix. Six knobs a–f.",
+    "description": "Real allpass phaser. Rate, depth, center, feedback, mix, stages.",
     "formulas": [
-      "osc",
-      "bandpass",
-      "y_prev",
-      "lerp"
+      "phaser"
     ],
-    "formula": "// phaser lab\nparam a = Rate [0.05, 6.0]\nparam b = Depth [200, 2500]\nparam c = Center [400, 4000]\nparam d = Feedback [0.05, 0.55]\nparam e = Mix [0.25, 0.95]\nparam f = Resonance [0.4, 2.2]\nosc1: type = sine; freq = a\nfilter1: type = bandpass; center = c + osc1 * b; width = 600; resonance = f\nstage1: y = softclip(x + y_prev * d, 1.2)\nstage2: y = lerp(x, y, e) * 1.0\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.28"
+    "formula": "// phaser lab\nparam a = Rate [0.05, 6.0]\nparam b = Depth [0.15, 1.2]\nparam c = Center [200, 2500]\nparam d = Feedback [0.0, 0.75]\nparam e = Mix [0.25, 0.95]\nparam f = Stages [2, 12]\nphaser1: stages = f; rate = a; depth = b; center = c; feedback = d; mix = e"
+  },
+  {
+    "name": "flanger",
+    "category": "modulation",
+    "description": "Short delay comb. Invert is through-zero.",
+    "formulas": [
+      "flanger"
+    ],
+    "formula": "// flanger\nparam a = Rate [0.05, 2.0]\nparam b = Depth [0.2, 1.0]\nparam c = Delay [0.4, 8.0]\nparam d = Feedback [0.1, 0.85]\nparam e = Mix [0.25, 0.8]\nparam f = Invert [0, 1]\nflanger1: rate = a; depth = b; delay = c; feedback = d; mix = e; invert = f"
+  },
+  {
+    "name": "env compressor",
+    "category": "dynamics",
+    "description": "Downward compressor from env in dB plus a VCA stage. No comp block.",
+    "formulas": [
+      "env unit=db",
+      "stage VCA"
+    ],
+    "formula": "// env compressor\nparam a = Threshold [-28.0, -6.0]\nparam b = Ratio [2.0, 10.0]\nparam c = Attack [0.0005, 0.04]\nenv1: type = peak; unit = db; attack = c; release = 0.12\nstage1: y = x * pow(10, -max(0, env1 - a) * (1 - 1/b) / 20)"
   },
   {
     "name": "glitch lab",

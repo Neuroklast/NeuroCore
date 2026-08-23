@@ -43,7 +43,7 @@ The first unlicensed launch starts a **14-day demo**. Help → License shows the
 
 On an insert, start Mix around 40–70%. On a send, push Mix high and use the host send level.
 
-L / BOTH / R chooses which input side the sound hears. BOTH is the default.
+L / BOTH / R chooses which input side the sound hears. BOTH is the default. A dead host side under BOTH is filled before the chain so a mono guitar still hits left and right stages. Inside the chain, L and R stay as they are — a hard pan stays a hard pan on the chip lamps.
 
 ---
 
@@ -105,7 +105,8 @@ IN and OUT
 
 Blocks
 - A closed chip is a lamp to the left of the name, then a type code, mute/solo. Contacts are labelled `[ IN ]` `[ OUT ]` `[ MID ]` `[ SIDE ]`. The footer line is the instance id and live peak, not a fake serial — it sits above the south parameter sockets. The chevron opens Inspect (every parameter). Dragging a knob over the chip opens the bind list; south labels hide while that list is open.
-- Envelope: the lamp fills with the live level. Open it to pick **source** (`in` or `sidechain`).
+- Envelope: the lamp fills with the live level. Open it to pick **source** (`in` or `sidechain`) and **unit** (`lin` 0–1, or `db` for a compressor built from env + a formula stage).
+- Phaser is a real allpass cascade (rate, depth, center, feedback, mix, stages). Flanger is a short delay comb; invert is through-zero. Filter **allpass** is one phaser stage if you want to stack them yourself.
 - Loading a preset closes open details and fits the whole chain above the mix bar.
 
 Arrange and Compact

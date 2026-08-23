@@ -14,7 +14,7 @@ export interface CompleteItem {
 const BLOCKS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit",
   "osc", "env", "delay", "reverb", "ms", "octaver", "pitch", "vocoder",
-  "xover", "ott", "widen", "ir", "bus", "out", "split", "custom",
+  "xover", "ott", "widen", "ir", "phaser", "flanger", "bus", "out", "split", "custom",
 ] as const;
 
 const PROPS: Record<string, string[]> = {
@@ -27,7 +27,9 @@ const PROPS: Record<string, string[]> = {
   ir: ["mix", "gain"],
   out: ["main", "mid", "low", "high"],
   osc: ["shape", "freq", "sync", "depth"],
-  env: ["type", "attack", "release", "hold", "min", "max", "invert"],
+  env: ["type", "unit", "attack", "release", "hold", "min", "max", "invert"],
+  phaser: ["stages", "rate", "depth", "center", "feedback", "mix"],
+  flanger: ["rate", "depth", "delay", "feedback", "mix", "invert"],
   comp: ["threshold", "ratio", "attack", "release", "ceiling"],
   gate: ["threshold", "attack", "release", "ceiling"],
   pitch: ["semitones", "shift", "mix", "formant", "ceiling", "sync"],
@@ -42,7 +44,9 @@ const SNIPPETS: Record<string, string> = {
   delay: "delay1: time = 1/4; feedback = 0.35; mix = 0.3",
   stage: "stage1: y = tanh(x * a)",
   osc: "osc1: shape = sine; freq = 2",
-  env: "env1: type = peak; attack = 0.01; release = 0.1; min = 0; max = 1",
+  env: "env1: type = peak; unit = lin; attack = 0.01; release = 0.1; min = 0; max = 1",
+  phaser: "phaser1: stages = 6; rate = 0.4; depth = 0.7; center = 800; feedback = 0.3; mix = 0.5",
+  flanger: "flanger1: rate = 0.25; depth = 0.7; delay = 2; feedback = 0.45; mix = 0.5; invert = on",
   custom: "custom1: y = x",
 };
 
@@ -154,21 +158,19 @@ export function complete(text: string, caret: number): CompleteItem[] {
   const kind = lineBlockKind(head);
   const items: CompleteItem[] = [];
 
-  // Only while the caret is on the type value — not after `type = lowpass; cut…`
-  if (/type\s*=\s*$/.test(head)) {
-    const values = kind === "eq"
-      ? ["peak", "notch", "lowcut", "highcut"]
-      : kind === "osc"
-        ? ["sine", "saw", "triangle", "square"]
-        : kind === "env"
-          ? ["peak", "rms"]
-        : kind === "ms"
-          ? ["encode", "decode"]
-          : ["lowpass", "highpass", "bandpass"];
-    for (const v of values) {
-      add(items, { label: v, insertText: v, detail: "type", kind: "value" }, prefix);
+  // Only while the caret is on an enum value — not after `type = lowpass; cut…`
+  const enumKey = head.match(/\b([a-z]+)\s*=\s*$/i)?.[1]?.toLowerCase();
+  if (enumKey && kind) {
+    const values = chipSpec(kind).enums[enumKey]
+      ?? (enumKey === "type" && kind === "filter"
+        ? ["lowpass", "highpass", "bandpass", "allpass"]
+        : undefined);
+    if (values && values.length > 0) {
+      for (const v of values) {
+        add(items, { label: v, insertText: v, detail: enumKey, kind: "value" }, prefix);
+      }
+      return compileSafe(text, caret, items).slice(0, 24);
     }
-    return compileSafe(text, caret, items).slice(0, 24);
   }
 
   if (kind && (head.includes(":") || /;\s*$/.test(head))) {

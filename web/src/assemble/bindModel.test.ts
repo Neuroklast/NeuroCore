@@ -76,7 +76,7 @@ describe("jack align and knob bind", () => {
 
   it("enum bind profiles expose N options for detents", () => {
     const profile = bindProfile("filter", "type");
-    expect(profile.enums).toEqual(["lowpass", "highpass", "bandpass"]);
+    expect(profile.enums).toEqual(["lowpass", "highpass", "bandpass", "allpass"]);
     expect(profile.min).toBe(0);
     expect(profile.max).toBe(1);
     expect(activateKnobPatch(profile).enums).toEqual(profile.enums);
@@ -109,8 +109,8 @@ describe("jack align and knob bind", () => {
     });
     commitBind("filter1", "type", "b");
     const knob = useHostStore.getState().knobs.find((k) => k.id === "b");
-    expect(knob?.enums).toEqual(["lowpass", "highpass", "bandpass"]);
-    expect(knob?.enums).toHaveLength(3);
+    expect(knob?.enums).toEqual(["lowpass", "highpass", "bandpass", "allpass"]);
+    expect(knob?.enums).toHaveLength(4);
     expect(knob?.active).toBe(true);
   });
 

@@ -1,7 +1,7 @@
 export const DSL_KEYWORDS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit", "limiter",
   "delay", "reverb", "ir", "ott", "widen", "osc", "env", "bus", "send",
-  "out", "ms", "vocoder", "octaver", "pitch", "xover", "convolve", "noisegate",
+  "out", "ms", "vocoder", "octaver", "pitch", "phaser", "flanger", "xover", "convolve", "noisegate",
   "split", "custom",
 ] as const;
 

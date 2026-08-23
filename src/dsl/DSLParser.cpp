@@ -615,6 +615,11 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "filter";
                 desc.args["type"] = "lowpass";
             }
+            else if (desc.type == "apf" || desc.type == "ap" || desc.type == "allpass")
+            {
+                desc.type = "filter";
+                desc.args["type"] = "allpass";
+            }
 
             if (seen.contains(id))
             {
@@ -660,6 +665,8 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "noisegate";
             if (desc.type == "pitchshift" || desc.type == "pshift" || desc.type == "pitch_shift")
                 desc.type = "pitch";
+            if (desc.type == "flange")
+                desc.type = "flanger";
             if (desc.type == "probe")
                 desc.type = "meter";
             if (desc.type == "sc" || desc.type == "scin" || desc.type == "side_chain")
@@ -672,6 +679,7 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "delay" && desc.type != "reverb" && desc.type != "ms" &&
                 desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
                 desc.type != "pitch" &&
+                desc.type != "phaser" && desc.type != "flanger" && desc.type != "flange" &&
                 desc.type != "gate" && desc.type != "noisegate" &&
                 desc.type != "limit" && desc.type != "limiter" &&
                 desc.type != "xover" && desc.type != "crossover" &&

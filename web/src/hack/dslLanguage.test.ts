@@ -99,7 +99,7 @@ describe("dsl complete", () => {
     const text = "filter1: type = ";
     const items = complete(text, text.length);
     expect(items.map((i) => i.label)).toEqual(
-      expect.arrayContaining(["lowpass", "highpass", "bandpass"]),
+      expect.arrayContaining(["lowpass", "highpass", "bandpass", "allpass"]),
     );
   });
 
@@ -107,7 +107,7 @@ describe("dsl complete", () => {
     const text = "filter1: type = ";
     const items = complete(text, text.length);
     const labels = items.map((i) => i.label);
-    expect(labels.sort()).toEqual(["bandpass", "highpass", "lowpass"]);
+    expect(labels.sort()).toEqual(["allpass", "bandpass", "highpass", "lowpass"]);
     expect(items.every((i) => i.kind === "value")).toBe(true);
     for (const it of items) {
       expect(stillParsesAfterInsert(text, text.length, it)).toBe(true);
