@@ -27,7 +27,6 @@ inline juce::WebBrowserComponent::Options webEditorProbeOptions (juce::int64 ide
 {
 #if JUCE_WINDOWS
     const auto userData = webView2UserDataFolder (identity);
-    userData.createDirectory();
     return juce::WebBrowserComponent::Options {}
         .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
         .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2 {}
@@ -43,7 +42,8 @@ inline juce::WebBrowserComponent::Options webEditorProbeOptions (juce::int64 ide
 inline bool webEditorCanRun()
 {
 #if JUCE_WEB_BROWSER
-    return juce::WebBrowserComponent::areOptionsSupported (webEditorProbeOptions());
+    static const bool cached = juce::WebBrowserComponent::areOptionsSupported (webEditorProbeOptions());
+    return cached;
 #else
     return false;
 #endif
