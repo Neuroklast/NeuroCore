@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, terminalActions, WORKSPACES } from "./workspace";
+import { isOpenBoard, knobBindEnabled, knobRail, paneShowsTechNoise, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -24,5 +24,17 @@ describe("workspace modes", () => {
     expect(telemetryIntervalMs("face", 30)).toBe(33);
     expect(telemetryIntervalMs("assemble")).toBe(500);
     expect(telemetryIntervalMs("hack")).toBe(500);
+  });
+
+  it("mounts Terminal only on that tab so Monaco is not born inside display:none", () => {
+    expect(terminalMounted("face")).toBe(false);
+    expect(terminalMounted("assemble")).toBe(false);
+    expect(terminalMounted("hack")).toBe(true);
+  });
+
+  it("keeps spectrograph speckle on Unit and off Circuit/Terminal", () => {
+    expect(paneShowsTechNoise("face")).toBe(true);
+    expect(paneShowsTechNoise("assemble")).toBe(false);
+    expect(paneShowsTechNoise("hack")).toBe(false);
   });
 });

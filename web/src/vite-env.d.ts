@@ -5,6 +5,11 @@ declare module "*.txt?raw" {
   export default content;
 }
 
+declare module "*.tsx?raw" {
+  const content: string;
+  export default content;
+}
+
 declare module "*?worker" {
   const WorkerFactory: {
     new (): Worker;

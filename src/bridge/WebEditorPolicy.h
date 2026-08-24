@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <cstdint>
 
 namespace bridge
 {
@@ -52,6 +53,18 @@ inline bool webEditorCanRun()
 inline bool shouldOpenWebEditor()
 {
     return wantWebEditor() && webEditorCanRun();
+}
+
+/** Chromium is a backend, not IPlugView.
+ *  Realize only after the host callback stack has unwound, and only if the
+ *  view is still attached with a peer. Scan is attached+removed on one stack:
+ *  the pending ticket is stale. */
+inline bool shouldRealizeChromium (bool stillAttached,
+                                   bool hasPeer,
+                                   std::uint32_t ticket,
+                                   std::uint32_t epoch) noexcept
+{
+    return stillAttached && hasPeer && ticket == epoch;
 }
 
 } // namespace bridge

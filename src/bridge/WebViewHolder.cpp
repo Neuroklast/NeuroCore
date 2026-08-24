@@ -12,6 +12,7 @@
 #include "WebNav.h"
 #include "../dsl/GraphModel.h"
 #include "../ui/StandaloneAudioSettings.h"
+#include <cstdint>
 
 #if JUCE_WINDOWS
 #ifndef NOMINMAX
@@ -204,11 +205,11 @@ struct WebViewHolder::Impl : private juce::Timer,
           distRoot (resolveDistRoot())
     {
         session.seed (p.getScript());
-        constructSurface();
     }
 
     ~Impl() override
     {
+        ++spawnEpoch;
         stopTimer();
         if (attachedTo != nullptr)
         {
@@ -232,7 +233,7 @@ struct WebViewHolder::Impl : private juce::Timer,
 
     std::uint64_t identity() const noexcept
     {
-        return (std::uint64_t) (juce::pointer_sized_int) surface.get();
+        return (std::uint64_t) (juce::pointer_sized_int) this;
     }
 
     std::optional<WebAsset> serve (const juce::String& url)
@@ -261,23 +262,14 @@ struct WebViewHolder::Impl : private juce::Timer,
 
         attachedTo = &editor;
         editor.addComponentListener (this);
-
-#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
         syncNative (editor);
-#else
-        if (surface != nullptr)
-        {
-            editor.addAndMakeVisible (*surface);
-            surface->setVisible (true);
-        }
-#endif
-        onEditorShown();
     }
 
     void detach (juce::Component& editor)
     {
         if (attachedTo != &editor)
             return;
+        ++spawnEpoch;
         stopTimer();
         editor.removeComponentListener (this);
 
@@ -306,6 +298,72 @@ struct WebViewHolder::Impl : private juce::Timer,
         }
 #else
         surface->setBounds (inner);
+#endif
+    }
+
+    void ensureSurface()
+    {
+        if (surface != nullptr)
+            return;
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
+        if (attachedTo == nullptr || attachedTo->getPeer() == nullptr)
+            return;
+#endif
+        constructSurface();
+    }
+
+    void scheduleChromium()
+    {
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
+        const auto ticket = spawnEpoch;
+        juce::WeakReference<Impl> weak (this);
+        juce::MessageManager::callAsync ([weak, ticket]
+        {
+            if (weak == nullptr)
+                return;
+            auto* self = weak.get();
+            const bool hasPeer = self->attachedTo != nullptr
+                              && self->attachedTo->getPeer() != nullptr;
+            if (! shouldRealizeChromium (self->attachedTo != nullptr, hasPeer,
+                                         ticket, self->spawnEpoch))
+                return;
+            self->realizeChromium();
+        });
+#else
+        ensureSurface();
+        if (surface != nullptr && attachedTo != nullptr)
+        {
+            if (surface->getParentComponent() != attachedTo)
+                attachedTo->addAndMakeVisible (*surface);
+            surface->setVisible (true);
+        }
+#endif
+    }
+
+    void realizeChromium()
+    {
+        ensureSurface();
+        if (attachedTo != nullptr)
+            embedOrPark (*attachedTo);
+        onEditorShown();
+    }
+
+    void embedOrPark (juce::Component& editor)
+    {
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
+        if (surface == nullptr)
+            return;
+        if (! editor.isShowing() || editor.getPeer() == nullptr)
+            parkNative();
+        else
+            tryEmbed();
+#else
+        if (surface != nullptr)
+        {
+            if (surface->getParentComponent() != attachedTo)
+                editor.addAndMakeVisible (*surface);
+            surface->setVisible (true);
+        }
 #endif
     }
 
@@ -800,8 +858,6 @@ struct WebViewHolder::Impl : private juce::Timer,
             stopTimer();
             return;
         }
-        if (proc.isLiveMode() != UiSettings::get().liveMode())
-            proc.setLiveMode (UiSettings::get().liveMode());
         pushHost();
 #endif
     }
@@ -820,15 +876,17 @@ struct WebViewHolder::Impl : private juce::Timer,
 
     void syncNative (juce::Component& editor)
     {
-#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER && JUCE_WINDOWS
         if (attachedTo != &editor)
             return;
-        if (! editor.isShowing() || editor.getPeer() == nullptr)
-            parkNative();
-        else
-            tryEmbed();
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
+        if (surface == nullptr)
+        {
+            scheduleChromium();
+            return;
+        }
+        embedOrPark (editor);
 #else
-        juce::ignoreUnused (editor);
+        scheduleChromium();
 #endif
     }
 
@@ -967,7 +1025,10 @@ struct WebViewHolder::Impl : private juce::Timer,
     std::unique_ptr<juce::Component> surface;
     juce::Component* attachedTo { nullptr };
     juce::Rectangle<int> lastInner;
+    std::uint32_t spawnEpoch { 0 };
     bool didNavigate { false };
+
+    JUCE_DECLARE_WEAK_REFERENCEABLE (Impl)
 };
 
 WebViewHolder::WebViewHolder (NeuroKoreAudioProcessor& p)
@@ -1025,6 +1086,13 @@ juce::Component* WebViewHolder::browserComponent() noexcept
 void WebViewHolder::layout (juce::Rectangle<int> inner)
 {
     impl->layout (inner);
+}
+
+void WebViewHolder::pushHost()
+{
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
+    impl->pushHost();
+#endif
 }
 
 void WebViewHolder::syncNativeAttachment (juce::Component& editor)

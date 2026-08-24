@@ -8,7 +8,7 @@ Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
 - **Unit** — meters, Mix, knobs, and the live path. Play here.
 - **Circuit** — the board. Blocks, jacks, cables.
-- **Terminal** — the same sound as text. Edit, then Save.
+- **Terminal** — the same sound as text. Edit, then Save. The editor is inside the plugin; it does not load from the internet.
 
 Click the wordmark to open neuroklast.net in your browser. There is no address bar inside the plugin.
 
@@ -53,8 +53,8 @@ Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
 - Functions — look up formula words and insert them.
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate, unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
-- LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings.
+- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
+- LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
 
@@ -125,6 +125,8 @@ The text is the sound.
 - **Save** applies the text. If it does not parse, you stay on the last good sound.
 - **Validate** lists checks without applying.
 
+The code editor is packaged in the plug-in. Opening Terminal does not need a network connection.
+
 You never have to use Terminal. Circuit writes the same text for you.
 
 ---
@@ -162,6 +164,8 @@ Status bar (left to right)
 
 If something is wrong
 - Empty window on Windows: install Microsoft Edge WebView2, then reopen the plugin.
+- Cubase hangs while scanning plug-ins: you have an old 0.6.1. This build does not start the web view during scan — copy only `NEUROKORE-0.6.1-beta.vst3` into Common Files, not the whole artefact folder, then rescan.
+- Terminal stuck on Loading: same, old build. This one uses the packaged editor.
 - No sound: Mix, Bypass, and SAFE. If SAFE, lower OS or simplify, then keep playing — it retries.
 - Sidechain silent: enable the extra input in the DAW, then cable IN **sc**.
 - Preset name has a star: you have unsaved edits. Save As... before you load another factory row.

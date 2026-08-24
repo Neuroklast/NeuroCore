@@ -21,11 +21,21 @@ export function knobRail(_w: Workspace): "left" | "bottom" | "none" {
 }
 
 /** Unit keeps DSP telemetry near the UI frame cap. Circuit/Terminal only need glow ticks. */
-export function telemetryIntervalMs(w: Workspace, fps = 0): number {
+export function telemetryIntervalMs(w: Workspace, fps = 60): number {
   if (w !== "face") {
     return 500;
   }
   return fps === 30 ? 33 : 16;
+}
+
+/** Monaco cannot init in display:none. Terminal mounts only on that tab. */
+export function terminalMounted(w: Workspace): boolean {
+  return w === "hack";
+}
+
+/** Spectrograph speckle stays on Unit. Circuit and Terminal stay clean. */
+export function paneShowsTechNoise(w: Workspace): boolean {
+  return w === "face";
 }
 
 export type TerminalAction = "edit" | "validate" | "optimize";

@@ -1,6 +1,7 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { editor } from "monaco-editor";
+import "./monacoEnv";
 import { publishScript } from "../assemble/addBlock";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { terminalActions } from "../app/workspace";
@@ -175,6 +176,7 @@ export function HackView() {
           height="100%"
           language={DSL_LANGUAGE_ID}
           theme={DSL_THEME}
+          loading={null}
           value={shown}
           onChange={(v) => {
             if (editing) {
@@ -202,3 +204,5 @@ export function HackView() {
     </section>
   );
 }
+
+export default HackView;

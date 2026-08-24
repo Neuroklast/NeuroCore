@@ -14,7 +14,10 @@ namespace bridge
 
 /**
  * Processor-owned WebView surface. Outlives IPlugView / WebPluginEditor.
- * Editor attach reparents/shows; detach is removeChild without deleting the browser.
+ * IPlugView is a frame (size, HWND). Chromium is a backend: never on the
+ * host callback stack (createView / attached). A message-tick later it
+ * realizes only if the view is still attached with a peer — scan already
+ * called removed(). Detach is removeChild without deleting the browser.
  */
 class WebViewHolder
 {
@@ -38,6 +41,7 @@ public:
     void syncNativeAttachment (juce::Component& editor);
 
     void layout (juce::Rectangle<int> inner);
+    void pushHost();
 
 #if JUCE_WINDOWS
     /** HWND that should parent the park surface.

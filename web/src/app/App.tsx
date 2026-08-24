@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
 import type { AstEventPayload, CompileResultPayload, Origin } from "../bridge/ast";
 import { shouldHydrate } from "../bridge/ast";
@@ -9,8 +9,6 @@ import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chr
 import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
-import { HackView } from "../hack/HackView";
-import "../hack/monacoEnv";
 import { Overlays } from "../overlays/Overlays";
 import { TelemetryPump } from "../viz/ScopeDeck";
 import { useAstStore } from "../store/astStore";
@@ -28,7 +26,9 @@ import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
-import { knobBindEnabled, telemetryIntervalMs, type Workspace } from "./workspace";
+import { knobBindEnabled, paneShowsTechNoise, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
+
+const HackView = lazy(() => import("../hack/HackView"));
 
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("face");
@@ -170,10 +170,14 @@ export function App() {
           <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
             <AssembleView />
           </div>
-          <div className={workspace === "hack" ? "h-full min-h-0" : "hidden"}>
-            <HackView />
-          </div>
-          <PaneTechNoise />
+          {terminalMounted(workspace) ? (
+            <div className="h-full min-h-0">
+              <Suspense fallback={null}>
+                <HackView />
+              </Suspense>
+            </div>
+          ) : null}
+          {paneShowsTechNoise(workspace) ? <PaneTechNoise /> : null}
           <PaneVignette />
         </div>
         <MixOs />

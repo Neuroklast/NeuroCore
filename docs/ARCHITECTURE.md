@@ -127,7 +127,8 @@ Input
 
 ### WebView lifetime
 - Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
-- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
+- Three lifetimes: processor (scan-safe), IPlugView frame (`getSize`, HWND, splash), Chromium backend. Chromium is never constructed on the host callback stack (`createView` / `attached`). `MessageManager::callAsync` later realizes it only if `shouldRealizeChromium` (still attached, has peer, ticket == epoch). Scan is attached+removed on one stack — the ticket is stale.
+- Editor construct: reparent/show the existing browser (or spawn it if this is the first peer). Editor destruct: `removeChild` without deleting it.
 - Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`). Standalone has no IPlugView — the editor peer **is** the app window, so that HWND is the park parent. The hidden processor-owned HWND is only for detach/close. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists. Each instance gets its own WebView2 user-data folder (`NEUROKORE-webview2/i<id>`).
 - Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
 - Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).

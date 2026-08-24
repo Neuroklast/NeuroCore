@@ -253,6 +253,43 @@ public:
                     "web must not open a WebView2 install screen");
         }
 
+        beginTest ("chromium realizes off the host stack only if the view survived");
+        {
+            expect (bridge::shouldRealizeChromium (true, true, 1, 1),
+                    "real UI: still attached, has peer, ticket matches");
+            expect (! bridge::shouldRealizeChromium (false, true, 1, 1),
+                    "Cubase scan attached+removed before the message tick");
+            expect (! bridge::shouldRealizeChromium (true, false, 1, 1),
+                    "createView without attached has no peer");
+            expect (! bridge::shouldRealizeChromium (true, true, 1, 2),
+                    "detach invalidates the pending ticket");
+            expect (! bridge::shouldRealizeChromium (false, false, 0, 0));
+        }
+
+        beginTest ("holder ctor does not spawn a browser (Cubase createView / scan)");
+        {
+            NeuroKoreAudioProcessor proc;
+            auto& holder = proc.getWebView();
+            expect (holder.browserComponent() == nullptr,
+                    "WebView2 must not exist in the holder ctor / createView");
+            expect (holder.browserIdentity() != 0,
+                    "holder identity is the Impl, not Chromium");
+            expect (holder.zipIndexBuildCount() >= 1);
+            expect (holder.serve ("/").has_value());
+
+            juce::Component frame;
+            holder.attach (frame);
+            expect (holder.isAttached());
+            expect (holder.browserComponent() != nullptr,
+                    "test dummy surface is born on attach, not in the ctor");
+            expectEquals ((juce::int64) holder.browserIdentity(),
+                          (juce::int64) proc.getWebView().browserIdentity(),
+                          "identity survives first surface");
+            holder.detach (frame);
+            expect (holder.browserComponent() != nullptr,
+                    "close parks; it does not delete the surface");
+        }
+
         beginTest ("processor WebView holder outlives editor; zip index and UI_READY persist");
         {
             // NeuroKoreTests cannot spin a real WebView (no NEUROKORE_HAS_WEB_EDITOR).
