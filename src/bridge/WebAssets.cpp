@@ -191,7 +191,19 @@ std::optional<WebAsset> loadEmbeddedWebAsset (const juce::String& url)
 
 WebZipIndex::WebZipIndex()
 {
+    // Intentionally empty — index is built lazily on first load() call,
+    // not during WebViewHolder construction (which runs on the Cubase scan stack).
+}
+
+void WebZipIndex::ensureBuilt() const
+{
+    if (built)
+        return;
+    // Mark built before construction: embedded resource data is immutable,
+    // so a failure here (e.g. missing RCDATA) is permanent — no retry needed.
+    built = true;
     ++builds;
+
     const void* data = nullptr;
     size_t size = 0;
     if (! lockEmbeddedWebZip (data, size))
@@ -214,6 +226,9 @@ WebZipIndex::WebZipIndex()
 
 std::optional<WebAsset> WebZipIndex::load (const juce::String& url) const
 {
+    const juce::ScopedLock sl (zipLock);
+    ensureBuilt(); // lazy: first call builds the index
+
     if (zip == nullptr)
         return std::nullopt;
 
@@ -228,7 +243,7 @@ std::optional<WebAsset> WebZipIndex::load (const juce::String& url) const
 
     // createStreamForEntry / ZipFile is not thread-safe. Resource provider
     // runs on the WebView2 thread; UI serve() on the message thread.
-    const juce::ScopedLock sl (zipLock);
+    // zipLock is already held by the ScopedLock at the top of this function.
     std::unique_ptr<juce::InputStream> in (zip->createStreamForEntry (it->second));
     if (in == nullptr)
         return std::nullopt;
