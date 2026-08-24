@@ -23,7 +23,7 @@ std::optional<WebAsset> loadWebAsset (const juce::File& root, const juce::String
 /** Serve a path from an in-memory zip (no web/ folder on disk). */
 std::optional<WebAsset> loadWebAssetFromZip (const void* zipData, size_t zipSize, const juce::String& url);
 
-/** Central-directory map for the embedded web zip. Built once per instance. */
+/** Central-directory map for the embedded web zip. Built lazily on first load() call. */
 class WebZipIndex
 {
 public:
@@ -32,11 +32,14 @@ public:
     std::optional<WebAsset> load (const juce::String& url) const;
 
 private:
-    std::unique_ptr<juce::MemoryInputStream> stream;
-    std::unique_ptr<juce::ZipFile> zip;
-    std::unordered_map<std::string, int> byName;
+    void ensureBuilt() const; // lazy init — called under zipLock inside load()
+
+    mutable std::unique_ptr<juce::MemoryInputStream> stream;
+    mutable std::unique_ptr<juce::ZipFile> zip;
+    mutable std::unordered_map<std::string, int> byName;
     mutable juce::CriticalSection zipLock; // WebView2 thread vs message thread
-    int builds { 0 };
+    mutable int builds { 0 };
+    mutable bool built { false };
 };
 
 /** Windows RCDATA id for the packed web/dist zip. Must match scripts/pack_web_dist.mjs. */

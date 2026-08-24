@@ -572,7 +572,9 @@ bridge::WebViewHolder& NeuroKoreAudioProcessor::getWebView()
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
-    getWebView();
+    // Do NOT call getWebView() here — that builds WebZipIndex synchronously
+    // on the Cubase scan stack. WebPluginEditor::ctor calls
+    // audioProcessor.getWebView().attach(*this) which lazily creates the holder.
     return createWebEditor (*this);
 #else
     return nullptr;
