@@ -7,9 +7,9 @@ let raf = 0;
 let fpsCap = 0;
 let lastEmit = 0;
 
-/** 0 = every display refresh. */
+/** 30 or 60. Anything else becomes 60. */
 export function setVizFpsCap(fps: number): void {
-  fpsCap = fps > 0 ? fps : 0;
+  fpsCap = fps === 30 ? 30 : 60;
 }
 
 export function vizFpsCap(): number {

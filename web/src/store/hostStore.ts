@@ -35,7 +35,7 @@ export interface HostState {
   originName: string;
   presetDirty: boolean;
   discardPrompt: boolean;
-  frameRate: 0 | 30 | 60;
+  frameRate: 30 | 60;
   pendingPreset: { action: string; name?: string; author?: string; category?: string; tags?: string } | null;
   presets: Array<{
     name: string;
@@ -251,10 +251,10 @@ export const useHostStore = create<HostState>((set) => ({
   })(),
   frameRate: (() => {
     try {
-      const n = Number(localStorage.getItem("nk-fps") ?? "0");
-      return n === 30 || n === 60 ? n : 0;
+      const n = Number(localStorage.getItem("nk-fps") ?? "60");
+      return n === 30 ? 30 : 60;
     } catch {
-      return 0;
+      return 60;
     }
   })(),
   pendingPreset: null,

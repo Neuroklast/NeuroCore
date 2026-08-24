@@ -22,18 +22,27 @@ namespace
         return "signal";
     }
 
-    int clampFps (int fps)
-    {
-        if (fps == 30 || fps == 60)
-            return fps;
-        return 0;
-    }
 }
 
 UiSettings& UiSettings::get()
 {
     static UiSettings instance;
     return instance;
+}
+
+void UiSettings::addListener (Listener* listener)
+{
+    listeners.add (listener);
+}
+
+void UiSettings::removeListener (Listener* listener)
+{
+    listeners.remove (listener);
+}
+
+void UiSettings::notifyListeners() const
+{
+    listeners.call ([] (Listener& l) { l.uiSettingsChanged(); });
 }
 
 UiSettings::UiSettings()
@@ -61,7 +70,7 @@ UiSettings::UiSettings()
                                  (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo)),
                    std::memory_order_relaxed);
     cableWave.store (props->getBoolValue (kCableWaveKey, false), std::memory_order_relaxed);
-    fpsCap.store (clampFps (props->getIntValue (kFpsKey, 0)), std::memory_order_relaxed);
+    fpsCap.store (clampFrameRate (props->getIntValue (kFpsKey, 60)), std::memory_order_relaxed);
     unsavedPrompt.store (props->getBoolValue (kDiscardKey, true), std::memory_order_relaxed);
     theme = clampTheme (props->getValue (kThemeKey, "signal"));
 
@@ -89,6 +98,7 @@ void UiSettings::setMotion (CyberMotion m)
 {
     motionValue.store ((int) clampMotion ((int) m), std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 bool UiSettings::calmUi() const noexcept
@@ -110,6 +120,7 @@ void UiSettings::setUiScalePercent (int percent)
 {
     scalePercent.store (clampScale (percent), std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 float UiSettings::uiScaleFactor() const noexcept
@@ -126,6 +137,7 @@ void UiSettings::setEditorFontPt (float pt)
 {
     fontPt.store (clampFont (pt), std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 bool UiSettings::liveMode() const noexcept
@@ -137,6 +149,7 @@ void UiSettings::setLiveMode (bool enabled)
 {
     live.store (enabled, std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 bool UiSettings::useHostTempo() const noexcept
@@ -148,6 +161,7 @@ void UiSettings::setUseHostTempo (bool enabled)
 {
     hostTempo.store (enabled, std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 float UiSettings::userBpm() const noexcept
@@ -159,6 +173,7 @@ void UiSettings::setUserBpm (float bpm)
 {
     bpmUser.store (juce::jlimit (20.f, 400.f, bpm), std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 bool UiSettings::cableWaveform() const noexcept
@@ -170,6 +185,7 @@ void UiSettings::setCableWaveform (bool enabled)
 {
     cableWave.store (enabled, std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 juce::String UiSettings::themeId() const
@@ -185,6 +201,7 @@ void UiSettings::setThemeId (const juce::String& id)
         theme = clampTheme (id);
     }
     persist();
+    notifyListeners();
 }
 
 int UiSettings::frameRate() const noexcept
@@ -194,8 +211,14 @@ int UiSettings::frameRate() const noexcept
 
 void UiSettings::setFrameRate (int fps)
 {
-    fpsCap.store (clampFps (fps), std::memory_order_relaxed);
+    fpsCap.store (clampFrameRate (fps), std::memory_order_relaxed);
     persist();
+    notifyListeners();
+}
+
+int UiSettings::clampFrameRate (int fps) noexcept
+{
+    return fps == 30 ? 30 : 60;
 }
 
 bool UiSettings::discardPrompt() const noexcept
@@ -207,6 +230,7 @@ void UiSettings::setDiscardPrompt (bool enabled)
 {
     unsavedPrompt.store (enabled, std::memory_order_relaxed);
     persist();
+    notifyListeners();
 }
 
 int UiSettings::clampScale (int percent) noexcept

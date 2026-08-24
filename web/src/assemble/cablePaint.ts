@@ -348,12 +348,13 @@ export function glowForPeak(peak: number): number {
   return streamBlur(peak);
 }
 
-function tapAliases(sourceId: string): string[] {
-  if (sourceId === "IN") {
-    return [sourceId, "__in__"];
+function tapAliases(sourceId: string, sourceType = ""): string[] {
+  const t = sourceType.toLowerCase();
+  if (t === "send" || t === "bus" || t === "in" || sourceId === "IN") {
+    return ["IN", "__in__", sourceId];
   }
-  if (sourceId === "OUT") {
-    return [sourceId, "__out__"];
+  if (t === "out" || sourceId === "OUT" || sourceId === "out") {
+    return ["OUT", "__out__", sourceId];
   }
   return [sourceId];
 }
@@ -364,8 +365,9 @@ export function tapForLane(
   mono: Record<string, number>,
   left: Record<string, number>,
   right: Record<string, number>,
+  sourceType = "",
 ): number {
-  const aliases = tapAliases(sourceId);
+  const aliases = tapAliases(sourceId, sourceType);
   const pick = (map: Record<string, number>) => {
     for (const id of aliases) {
       if (map[id] != null) {
@@ -389,8 +391,9 @@ export function peakForLane(
   clips: Record<string, number>,
   clipsL: Record<string, number>,
   clipsR: Record<string, number>,
+  sourceType = "",
 ): number {
-  return tapForLane(lane, sourceId, clips, clipsL, clipsR);
+  return tapForLane(lane, sourceId, clips, clipsL, clipsR, sourceType);
 }
 
 export function rmsForLane(
@@ -399,8 +402,9 @@ export function rmsForLane(
   rms: Record<string, number>,
   rmsL: Record<string, number>,
   rmsR: Record<string, number>,
+  sourceType = "",
 ): number {
-  return tapForLane(lane, sourceId, rms, rmsL, rmsR);
+  return tapForLane(lane, sourceId, rms, rmsL, rmsR, sourceType);
 }
 
 export type CameraTransform = {

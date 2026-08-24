@@ -3,11 +3,18 @@ import { useHostStore } from "../store/hostStore";
 import { isThemeId, type ThemeId } from "../theme/theme";
 import { setVizFpsCap } from "../theme/vizClock";
 
+export const FRAME_RATES = [30, 60] as const;
+export type FrameRate = (typeof FRAME_RATES)[number];
+
+export function clampFrameRate(n: unknown): FrameRate {
+  return n === 30 ? 30 : 60;
+}
+
 export type UiPrefs = {
   motion?: "full" | "reduced" | "off";
   cables?: "dots" | "wave";
   theme?: ThemeId;
-  frameRate?: 0 | 30 | 60;
+  frameRate?: FrameRate;
   discardPrompt?: boolean;
 };
 
@@ -23,7 +30,7 @@ export function applyUiPrefs(p: Record<string, unknown>, current: UiPrefs): UiPr
     next.theme = p.theme;
   }
   if (p.frameRate === 0 || p.frameRate === 30 || p.frameRate === 60) {
-    next.frameRate = p.frameRate;
+    next.frameRate = clampFrameRate(p.frameRate);
   }
   if (typeof p.discardPrompt === "boolean") {
     next.discardPrompt = p.discardPrompt;
@@ -42,7 +49,7 @@ export function persistUi(partial: UiPrefs): void {
   if (partial.theme) {
     patch.theme = partial.theme;
   }
-  if (partial.frameRate === 0 || partial.frameRate === 30 || partial.frameRate === 60) {
+  if (partial.frameRate === 30 || partial.frameRate === 60) {
     patch.frameRate = partial.frameRate;
     setVizFpsCap(partial.frameRate);
   }

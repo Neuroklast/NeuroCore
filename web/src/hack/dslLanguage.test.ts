@@ -53,6 +53,16 @@ describe("terminal header comments", () => {
     expect(out).toContain("# tube saturation");
     expect(out).toContain("# @16,32");
   });
+
+  it("does not eat mute overlay lines as a factory header", () => {
+    const script = [
+      "# nk-ms osc1: shape = sine; freq = 1",
+      "filter1: type = highpass; cutoff = 80",
+    ].join("\n");
+    const out = withHeaderComments(script, "Mute Lab", "quiet");
+    expect(out).toContain("# nk-ms osc1: shape = sine; freq = 1");
+    expect(out).toContain("filter1: type = highpass; cutoff = 80");
+  });
 });
 
 describe("knob inlays", () => {

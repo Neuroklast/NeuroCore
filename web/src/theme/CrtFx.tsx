@@ -9,7 +9,7 @@ import { subscribeVizClock } from "./vizClock";
 
 export type CrtLayer = "scan" | "sweep" | "chroma" | "vignette" | "bloom" | "techNoise";
 
-/** Scan/chroma/bloom sit on the OS chrome. Vignette + speckle stay on Unit/Circuit/Terminal. */
+/** Scan/chroma/bloom sit on the OS chrome. Vignette stays on the workspace pane. Speckle is Unit-only. */
 export function crtHost(layer: CrtLayer): "os" | "pane" {
   return layer === "vignette" || layer === "techNoise" ? "pane" : "os";
 }

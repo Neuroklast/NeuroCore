@@ -141,6 +141,9 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
         demoStartMs = (double) juce::Time::currentTimeMillis();
 #endif
     }
+
+    UiSettings::get().addListener (this);
+    dspEngine.setLiveMode (UiSettings::get().liveMode());
 }
 
 bool NeuroKoreAudioProcessor::isDemoMixLocked() const noexcept
@@ -171,6 +174,7 @@ bool NeuroKoreAudioProcessor::importProductLicense (const juce::File& file)
 
 NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
 {
+    UiSettings::get().removeListener (this);
     // Drop any pending prepare-on-message-thread work before tearing down members.
     // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
     // destroyed processor → access violation after setValueNotifyingHost / OS changes.
@@ -746,19 +750,29 @@ int NeuroKoreAudioProcessor::getOversamplingLatencySamples() const noexcept
 
 void NeuroKoreAudioProcessor::setLiveMode (bool enabled)
 {
-    if (dspEngine.isLiveMode() == enabled)
-        return;
     UiSettings::get().setLiveMode (enabled);
-    cpuProtect.reset();
-    if (getSampleRate() > 0.0)
+}
+
+void NeuroKoreAudioProcessor::uiSettingsChanged()
+{
+    const bool enabled = UiSettings::get().liveMode();
+    if (dspEngine.isLiveMode() != enabled)
     {
-        const juce::ScopedLock pl (scriptManager.getProcessLock());
-        dspEngine.setLiveMode (enabled);
-        updateProcessingSpec (getSampleRate(), juce::jmax (1, getBlockSize()));
-        return;
+        cpuProtect.reset();
+        if (getSampleRate() > 0.0)
+        {
+            const juce::ScopedLock pl (scriptManager.getProcessLock());
+            dspEngine.setLiveMode (enabled);
+            updateProcessingSpec (getSampleRate(), juce::jmax (1, getBlockSize()));
+        }
+        else
+        {
+            dspEngine.setLiveMode (enabled);
+            triggerAsyncUpdate();
+        }
     }
-    dspEngine.setLiveMode (enabled);
-    triggerAsyncUpdate();
+    if (webViewHolder != nullptr)
+        webViewHolder->pushHost();
 }
 
 juce::String NeuroKoreAudioProcessor::getIrName (const juce::String& slot) const

@@ -31,6 +31,7 @@
 #include "../licensing/LicenseManager.h"
 #include "../ui/MidiLearnManager.h"
 #include "../bridge/TelemetryPump.h"
+#include "../utils/UiSettings.h"
 
 namespace bridge { class WebViewHolder; }
 
@@ -41,7 +42,8 @@ namespace bridge { class WebViewHolder; }
 class NeuroKoreAudioProcessor  : public juce::AudioProcessor,
                                  public juce::ChangeBroadcaster,
                                  private juce::AudioProcessorValueTreeState::Listener,
-                                 private juce::AsyncUpdater
+                                 private juce::AsyncUpdater,
+                                 private UiSettings::Listener
 {
 public:
     //==============================================================================
@@ -266,6 +268,7 @@ public:
 
     bool isLiveMode() const noexcept;
     void setLiveMode (bool enabled);
+    void uiSettingsChanged() override;
     bool isDspIdle() const noexcept { return dspEngine.isIdle(); }
     int getOversamplingLatencySamples() const noexcept;
 

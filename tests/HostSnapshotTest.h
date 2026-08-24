@@ -91,9 +91,36 @@ public:
             expectEquals (host.getProperty ("cables", "").toString(), juce::String ("dots"));
             expectEquals (host.getProperty ("motion", "").toString(), juce::String ("reduced"));
             UiSettings::get().setThemeId ("signal");
-            UiSettings::get().setFrameRate (0);
+            UiSettings::get().setFrameRate (60);
             UiSettings::get().setDiscardPrompt (true);
             UiSettings::get().setMotion (CyberMotion::Full);
+        }
+
+        beginTest ("LIVE on one processor applies to another without an editor");
+        {
+            UiSettings::get().setLiveMode (false);
+            NeuroKoreAudioProcessor a;
+            NeuroKoreAudioProcessor b;
+            a.prepareToPlay (48000.0, 512);
+            b.prepareToPlay (48000.0, 512);
+            expect (! a.isLiveMode());
+            expect (! b.isLiveMode());
+            a.setLiveMode (true);
+            expect (a.isLiveMode());
+            expect (b.isLiveMode());
+            UiSettings::get().setLiveMode (false);
+            expect (! a.isLiveMode());
+            expect (! b.isLiveMode());
+        }
+
+        beginTest ("frame rate is 30 or 60, never display-uncapped");
+        {
+            expectEquals (UiSettings::clampFrameRate (0), 60);
+            expectEquals (UiSettings::clampFrameRate (30), 30);
+            expectEquals (UiSettings::clampFrameRate (60), 60);
+            expectEquals (UiSettings::clampFrameRate (120), 60);
+            UiSettings::get().setFrameRate (0);
+            expectEquals (UiSettings::get().frameRate(), 60);
         }
 
         beginTest ("footer lat is the same number the host uses for PDC");

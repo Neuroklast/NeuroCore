@@ -11,7 +11,16 @@ enum class CyberMotion : uint8_t { Full, Reduced, Off };
 class UiSettings
 {
 public:
+    struct Listener
+    {
+        virtual ~Listener() = default;
+        virtual void uiSettingsChanged() = 0;
+    };
+
     static UiSettings& get();
+
+    void addListener (Listener* listener);
+    void removeListener (Listener* listener);
 
     CyberMotion motion() const noexcept;
     void setMotion (CyberMotion motion);
@@ -48,6 +57,7 @@ public:
     void setDiscardPrompt (bool enabled);
 
     static int clampScale (int percent) noexcept;
+    static int clampFrameRate (int fps) noexcept;
     static CyberMotion clampMotion (int stored) noexcept;
     static const char* motionKey (CyberMotion motion) noexcept;
 
@@ -60,8 +70,10 @@ private:
 
     static float clampFont (float pt) noexcept;
     void persist() const;
+    void notifyListeners() const;
 
     juce::CriticalSection lock;
+    mutable juce::ListenerList<Listener> listeners;
     std::unique_ptr<juce::PropertiesFile> props;
     std::atomic<int>   motionValue { (int) CyberMotion::Full };
     std::atomic<int>   scalePercent { 100 };
@@ -70,7 +82,7 @@ private:
     std::atomic<bool>  hostTempo { true };
     std::atomic<float> bpmUser { 120.f };
     std::atomic<bool>  cableWave { false };
-    std::atomic<int>   fpsCap { 0 };
+    std::atomic<int>   fpsCap { 60 };
     std::atomic<bool>  unsavedPrompt { true };
     juce::String       theme { "signal" };
 };

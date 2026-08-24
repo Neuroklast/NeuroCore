@@ -116,6 +116,9 @@ function isHeaderCommentLine(line: string): boolean {
   if (body.startsWith("@")) {
     return false;
   }
+  if (body.startsWith("nk-ms")) {
+    return false;
+  }
   return true;
 }
 

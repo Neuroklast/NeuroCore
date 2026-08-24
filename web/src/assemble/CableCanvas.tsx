@@ -206,8 +206,8 @@ export function CableCanvas({
         const dim = hot && hot.size > 0 && ! hot.has(e.id);
         for (const lane of lanes) {
           const painted = lane.offset !== 0 ? parallelOffset(pts, lane.offset) : pts;
-          const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR);
-          const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR);
+          const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type);
+          const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type);
           const key = `${e.id}:${lane.id}`;
           let off = offsets.get(key) ?? 0;
           const spd = streamSpeed(energy);

@@ -103,6 +103,17 @@ describe("mid/side vs L/R language", () => {
 });
 
 describe("lane telemetry", () => {
+  it("runs send and bus tubes from the IN tap — those chips have no DSP meter", () => {
+    const clips = { IN: 0.4, __in__: 0.4, stage1: 0.2 };
+    const clipsL = { IN: 0.4, __in__: 0.4 };
+    const clipsR = { IN: 0.35, __in__: 0.35 };
+    expect(peakForLane("L", "send", clips, clipsL, clipsR, "send")).toBeCloseTo(0.4);
+    expect(peakForLane("R", "send", clips, clipsL, clipsR, "send")).toBeCloseTo(0.35);
+    expect(peakForLane("L", "dirt", clips, clipsL, clipsR, "bus")).toBeCloseTo(0.4);
+    expect(rmsForLane("mono", "send", { IN: 0.22 }, { IN: 0.22 }, { IN: 0.22 }, "send")).toBeCloseTo(0.22);
+    expect(peakForLane("L", "send", { stage1: 0.9 }, { stage1: 0.9 }, { stage1: 0.9 }, "send")).toBe(0);
+  });
+
   it("reads L and R separately so a hard pan left dims the right lane", () => {
     const clips = { stage1: 0.8 };
     const clipsL = { stage1: 0.8 };

@@ -203,13 +203,12 @@ function SettingsBody() {
       <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">FRAME RATE</div>
         <Seg
-          value={String(frameRate)}
+          value={String(frameRate === 30 ? 30 : 60)}
           options={[
             { id: "30", label: "30" },
             { id: "60", label: "60" },
-            { id: "0", label: "Display" },
           ]}
-          onPick={(id) => persistUi({ frameRate: Number(id) as 0 | 30 | 60 })}
+          onPick={(id) => persistUi({ frameRate: Number(id) === 30 ? 30 : 60 })}
         />
       </section>
       <section>
