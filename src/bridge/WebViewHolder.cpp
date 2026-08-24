@@ -377,6 +377,10 @@ struct WebViewHolder::Impl : private juce::Timer,
             return;
         }
 
+#if JUCE_WINDOWS
+        webView2UserDataFolder ((juce::int64) (juce::pointer_sized_int) &proc).createDirectory();
+#endif
+
         auto page = std::make_unique<PageBrowser> (std::move (options));
         const auto devUrl = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_DEV_URL", {});
         page->allowedDevUrl = devUrl;
