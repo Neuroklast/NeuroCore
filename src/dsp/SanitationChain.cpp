@@ -48,3 +48,8 @@ void SanitationChain::processHost (const juce::dsp::AudioBlock<const float>& dry
     sanitizer.process (dry, mixed);
     dither.process (mixed, integerBits);
 }
+
+void SanitationChain::processHostBypass (juce::dsp::AudioBlock<float>& mixed) noexcept
+{
+    limiter.processDelayOnly (mixed);
+}

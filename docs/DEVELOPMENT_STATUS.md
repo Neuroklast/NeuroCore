@@ -37,7 +37,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
 - **ASIO Guard**: `processBlock` never grows buffers (`setSize` / `new`), including `continuityBuf`. Overflow host `n` is sliced at the prepared ceiling before oversampling. Idle stays latency-aligned dry; silent overflow does not wake the wet path.
-- **VST3 suspend/wake**: `setNonRealtime` change and `reset()` clear OS/sanitation/sidechain rings and apply a 256-sample fade-in. Double wake stays finite. Host bypass (`processBlockBypassed`) delays dry by `getLatencySamples()` — same timeline as mix 0. Cubase dummy-bypass must not skip PDC.
+- **VST3 suspend/wake**: `setNonRealtime` change and `reset()` clear OS/sanitation/sidechain rings and apply a 256-sample fade-in. Double wake stays finite. Host bypass (`processBlockBypassed`) delays dry by `getLatencySamples()` — same timeline as mix 0. Mix 0 / host bypass / idle skip OS, True-Peak GR, soft clip, and dither; the limiter delay line still advances so PDC does not jump. Cubase dummy-bypass must not skip PDC.
 - **WebView2 profile**: each processor instance uses `NEUROKORE-webview2/i<id>/`. Two plugins in one Cubase process must not share one user-data folder.
 
 ### Performance — was gebaut wurde (Phasen 0–5)

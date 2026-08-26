@@ -11,6 +11,8 @@ public:
     void prepare (const juce::dsp::ProcessSpec& hostSpec, int osFactor) noexcept;
     void reset() noexcept;
     void process (juce::dsp::AudioBlock<float>& hostBlock) noexcept;
+    /** Advance the lookahead ring with no Catmull / GR. Same delay as process(). */
+    void processDelayOnly (juce::dsp::AudioBlock<float>& hostBlock) noexcept;
     int latencySamples() const noexcept { return latency; }
     bool consumeHit() noexcept { return hit.exchange (false); }
 
