@@ -274,8 +274,13 @@ public:
                     "WebView2 must not exist in the holder ctor / createView");
             expect (holder.browserIdentity() != 0,
                     "holder identity is the Impl, not Chromium");
-            expect (holder.zipIndexBuildCount() >= 1);
+            expectEquals (holder.zipIndexBuildCount(), 0,
+                          "zip index is lazy; holder ctor does not parse the embedded zip");
             expect (holder.serve ("/").has_value());
+            const int afterServe = holder.zipIndexBuildCount();
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), afterServe,
+                          "serve does not rebuild the zip index");
 
             juce::Component frame;
             holder.attach (frame);
@@ -304,7 +309,6 @@ public:
             const auto first = holder.serve ("/");
             expect (first.has_value(), "resource provider serves /");
             const int builds = holder.zipIndexBuildCount();
-            expect (builds >= 1);
             expect (holder.serve ("/").has_value());
             expectEquals (holder.zipIndexBuildCount(), builds,
                           "serve does not rebuild the zip index");
@@ -348,7 +352,9 @@ public:
         beginTest ("WebZipIndex load is serialized across threads");
         {
             bridge::WebZipIndex index;
-            expect (index.buildCount() >= 1);
+            expectEquals (index.buildCount(), 0, "ctor does not parse the zip");
+            (void) index.load ("/");
+            expectEquals (index.buildCount(), 1, "first load builds once");
             std::atomic<int> hits { 0 };
             std::vector<std::thread> threads;
             threads.reserve (4);

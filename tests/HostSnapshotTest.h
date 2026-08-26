@@ -96,6 +96,31 @@ public:
             UiSettings::get().setMotion (CyberMotion::Full);
         }
 
+        beginTest ("shared UI prefs persist to AppData and hostVar on every instance");
+        {
+            UiSettings::get().setThemeId ("azure");
+            UiSettings::get().setFrameRate (30);
+            const auto f = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                               .getChildFile ("NEUROKLAST")
+                               .getChildFile (Config::kAppDataFolder)
+                               .getChildFile ("ui.settings");
+            expect (f.existsAsFile(), f.getFullPathName());
+            const auto xml = f.loadFileAsString();
+            expect (xml.containsIgnoreCase ("azure"), xml);
+            expect (xml.contains ("30"), xml);
+
+            NeuroKoreAudioProcessor a;
+            NeuroKoreAudioProcessor b;
+            expectEquals (bridge::hostVar (a).getProperty ("theme", "").toString(),
+                          juce::String ("azure"));
+            expectEquals (bridge::hostVar (b).getProperty ("theme", "").toString(),
+                          juce::String ("azure"));
+            expectEquals ((int) bridge::hostVar (b).getProperty ("frameRate", 0), 30);
+
+            UiSettings::get().setThemeId ("signal");
+            UiSettings::get().setFrameRate (60);
+        }
+
         beginTest ("LIVE on one processor applies to another without an editor");
         {
             UiSettings::get().setLiveMode (false);

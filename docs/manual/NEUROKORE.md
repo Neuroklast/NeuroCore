@@ -53,7 +53,7 @@ Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
 - Functions — look up formula words and insert them.
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
+- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Mix, OS, knobs, and the formula stay with the insert. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.

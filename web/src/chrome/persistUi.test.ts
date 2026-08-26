@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applyUiPrefs, clampFrameRate, FRAME_RATES } from "./persistUi";
+import { useHostStore } from "../store/hostStore";
+import { applyUiPrefs, clampFrameRate, FRAME_RATES, persistUi } from "./persistUi";
 
 describe("shared UI prefs", () => {
   it("takes motion, cables, theme, fps, and unsaved prompt from the host snapshot", () => {
@@ -23,6 +24,30 @@ describe("shared UI prefs", () => {
     expect(clampFrameRate(60)).toBe(60);
     expect(clampFrameRate(120)).toBe(60);
     expect(applyUiPrefs({ frameRate: 0 }, { frameRate: 30 }).frameRate).toBe(60);
+  });
+
+  it("does not persist shared prefs through WebView2 localStorage", () => {
+    const writes: string[] = [];
+    const previous = (globalThis as { localStorage?: Storage }).localStorage;
+    (globalThis as { localStorage?: Pick<Storage, "getItem" | "setItem" | "removeItem"> }).localStorage = {
+      getItem: () => "gold",
+      setItem: (k) => {
+        writes.push(k);
+      },
+      removeItem: () => undefined,
+    };
+    persistUi({ theme: "azure", frameRate: 30, discardPrompt: false, cables: "dots" });
+    expect(writes).toEqual([]);
+    const s = useHostStore.getState();
+    expect(s.theme).toBe("azure");
+    expect(s.frameRate).toBe(30);
+    expect(s.discardPrompt).toBe(false);
+    expect(s.cables).toBe("dots");
+    if (previous) {
+      (globalThis as { localStorage?: Storage }).localStorage = previous;
+    } else {
+      delete (globalThis as { localStorage?: Storage }).localStorage;
+    }
   });
 
   it("ignores missing keys so a telemetry tick cannot wipe prefs", () => {
