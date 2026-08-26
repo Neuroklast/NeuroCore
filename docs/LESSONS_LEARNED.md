@@ -22,7 +22,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 ## Circuit
 
-- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`.
+- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`. Camera pan/zoom writes the CSS matrix and canvas `camRef` in the pointer event; `setCamera` is pointerup / fit, never every move.
 - ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps a serial chain to the window (never a snake) and packs named send/bus rails as their own rows. Row gap is WRAP_AIR. A* writes the stored SVG `d`. The cable canvas paints that string.
 - HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.
@@ -61,7 +61,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - JUCE destroys the `IPlugView` / `AudioProcessorEditor` on close. Keep the `WebBrowserComponent` on the processor. Editor close is `removeChild` / native unparent, never `delete` the browser. WebView2 is bound to the peer HWND at create time — park that HWND, do not let the editor peer die while it is still the parent.
 - VST3 `removed()` calls `removeFromDesktop()` → `DestroyWindow(plugin HWND)` **before** `~Editor`. `removeFromDesktop` does not notify children first. Never make the WebView HWND a `WS_CHILD` of IPlugView; sibling of the plugin HWND (host parent) or a processor-owned window. `~WebPluginEditor` is too late to `SetParent` away from a child.
 - Standalone has no IPlugView. `editor.getPeer()` is the app window (`GetParent` is null). That HWND is the park parent. Parenting to the hidden owner HWND hides the WebView for the whole session. The VST3 “never child of the editor HWND” rule does not apply when the editor peer **is** the top-level window.
-- Host bypass is `processBlockBypassed`. JUCE’s default does not delay. If `getLatencySamples() > 0`, bypassed dry must use the same PDC delay as mix 0 or the track jumps.
+- Host bypass is `processBlockBypassed`. JUCE’s default does not delay. If `getLatencySamples() > 0`, bypassed dry must use the same PDC delay as mix 0 or the track jumps. OS, True-Peak GR, soft clip, and dither do not run; the limiter delay line still advances.
 - Two VST3 instances in one host process must not share a WebView2 user-data folder. One profile for all instances serializes Chromium and stutters both UIs.
 - Cubase track change / ASIO Guard calls `setNonRealtime` and VST3 `setProcessing`. Half-band OS, sanitation, and delay rings must `reset()` on that flag change (same as `PluginProcessor::reset`, including the 256-sample fade-in). Do not leave filter memory from the previous realtime/lookahead path.
 - ENV is a follower. LFO lamp/chase is only for `osc`. Do not feed env cables a fake 1 Hz `freq`.

@@ -472,10 +472,8 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
             for (int ch = 0; ch < nCh; ++ch)
                 buffer.copyFrom (ch, 0, aligned, ch, 0, (int) numSamplesEarly);
 
-            auto dryConst = juce::dsp::AudioBlock<const float> (aligned)
-                                .getSubBlock (0, numSamplesEarly);
-            auto mixed    = block.getSubBlock (0, numSamplesEarly);
-            sanitation.processHost (dryConst, mixed);
+            auto mixed = block.getSubBlock (0, numSamplesEarly);
+            sanitation.processHostBypass (mixed);
         }
 
         if (numSamplesEarly > 0 && (switchRamp.isSmoothing() || switchRamp.getCurrentValue() < 0.999f))

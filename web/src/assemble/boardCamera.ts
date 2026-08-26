@@ -5,6 +5,28 @@ export function cameraMatrix(c: BoardCamera): string {
   return `matrix(${c.scale}, 0, 0, ${c.scale}, ${c.tx}, ${c.ty})`;
 }
 
+export function panCamera(c: BoardCamera, dx: number, dy: number): BoardCamera {
+  return { ...c, tx: c.tx + dx, ty: c.ty + dy };
+}
+
+export function zoomCamera(
+  c: BoardCamera,
+  sx: number,
+  sy: number,
+  factor: number,
+): BoardCamera {
+  const before = worldFromScreen(c, sx, sy);
+  const scale = Math.min(BOARD_MAX_SCALE, Math.max(BOARD_MIN_SCALE, c.scale * factor));
+  return { scale, tx: sx - before.x * scale, ty: sy - before.y * scale };
+}
+
+export function applyCameraTransform(
+  world: { style: { transform: string } },
+  cam: BoardCamera,
+): void {
+  world.style.transform = cameraMatrix(cam);
+}
+
 export function worldFromScreen(
   c: BoardCamera,
   sx: number,

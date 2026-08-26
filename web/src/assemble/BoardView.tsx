@@ -10,13 +10,13 @@ import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, insertCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
-import { cameraMatrix, fitCamera, worldFromScreen } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, worldFromScreen, zoomCamera } from "./boardCamera";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, hitBoardEdge } from "./boardEdit";
 import { graphToLayout, portGlobal, type BoardPort } from "./boardModel";
 import { useBoardStore } from "./boardStore";
-import { CableCanvas } from "./CableCanvas";
+import { CableCanvas, paintCablesNow } from "./CableCanvas";
 import { demoClipRows } from "./demoClips";
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
@@ -39,9 +39,11 @@ export function BoardView() {
   const nodes = useBoardStore((s) => s.nodes);
   const ports = useBoardStore((s) => s.ports);
   const edges = useBoardStore((s) => s.edges);
-  const camera = useBoardStore((s) => s.camera);
   const userMoved = useBoardStore((s) => s.userMoved);
   const paneRef = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
+  const camLive = useRef(useBoardStore.getState().camera);
+  const camGesture = useRef(false);
   const [size, setSize] = useState({ w: 960, h: 420 });
   const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
@@ -159,6 +161,33 @@ export function BoardView() {
     useBoardStore.getState().setCamera(fitCamera(ns, size));
   }, [nodes, userMoved, size.w, size.h]);
 
+  const applyLiveCamera = useCallback((cam: typeof camLive.current, commit = false) => {
+    camLive.current = cam;
+    if (worldRef.current) {
+      applyCameraTransform(worldRef.current, cam);
+    }
+    paintCablesNow();
+    if (commit) {
+      useBoardStore.getState().setCamera(cam);
+    }
+  }, []);
+
+  useEffect(() => {
+    const apply = (cam: typeof camLive.current) => {
+      if (camGesture.current) {
+        return;
+      }
+      applyLiveCamera(cam);
+    };
+    apply(useBoardStore.getState().camera);
+    return useBoardStore.subscribe((s, prev) => {
+      if (s.camera === prev.camera) {
+        return;
+      }
+      apply(s.camera);
+    });
+  }, [applyLiveCamera]);
+
   useEffect(() => {
     if (userMoved || Object.keys(nodes).length === 0) {
       return;
@@ -189,7 +218,7 @@ export function BoardView() {
       return;
     }
     const rect = pane.getBoundingClientRect();
-    const cam = useBoardStore.getState().camera;
+    const cam = camLive.current;
     const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
     const portEl = (e.target as HTMLElement).closest("[data-port-id]");
     const portIdHit = portEl?.getAttribute("data-port-id");
@@ -230,6 +259,7 @@ export function BoardView() {
         return;
       }
       panRef.current = { x: e.clientX, y: e.clientY, tx: cam.tx, ty: cam.ty };
+      camGesture.current = true;
       pane.setPointerCapture(e.pointerId);
       return;
     }
@@ -256,7 +286,7 @@ export function BoardView() {
     if (! pane) {
       return;
     }
-    const cam = useBoardStore.getState().camera;
+    const cam = camLive.current;
     if (connectDragRef.current) {
       const rect = pane.getBoundingClientRect();
       const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
@@ -274,14 +304,15 @@ export function BoardView() {
       if (snap) {
         pane.querySelector(`[data-port-id="${snap.id}"]`)?.classList.add("nk-port-hot");
       }
+      paintCablesNow();
       return;
     }
     if (panRef.current) {
-      useBoardStore.getState().setCamera({
-        ...cam,
-        tx: panRef.current.tx + (e.clientX - panRef.current.x),
-        ty: panRef.current.ty + (e.clientY - panRef.current.y),
-      });
+      applyLiveCamera(panCamera(
+        { scale: cam.scale, tx: panRef.current.tx, ty: panRef.current.ty },
+        e.clientX - panRef.current.x,
+        e.clientY - panRef.current.y,
+      ));
       return;
     }
     const over = (e.target as HTMLElement).closest("[data-node-id]");
@@ -294,7 +325,7 @@ export function BoardView() {
     const rect = pane.getBoundingClientRect();
     const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
     useBoardStore.getState().moveNode(drag.id, snapToGrid(world.x - drag.dx), snapToGrid(world.y - drag.dy));
-  }, []);
+  }, [applyLiveCamera]);
 
   const onPointerUp = useCallback(() => {
     const drag = connectDragRef.current;
@@ -306,6 +337,11 @@ export function BoardView() {
     }
     connectDragRef.current = null;
     paneRef.current?.querySelectorAll(".nk-port-hot").forEach((el) => el.classList.remove("nk-port-hot"));
+    if (panRef.current) {
+      camGesture.current = false;
+      useBoardStore.getState().setCamera(camLive.current);
+      paintCablesNow();
+    }
     panRef.current = null;
     if (dragRef.current) {
       rerouteBoard();
@@ -360,16 +396,11 @@ export function BoardView() {
     if (! pane) {
       return;
     }
-    const cam = useBoardStore.getState().camera;
     const rect = pane.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
-    const before = worldFromScreen(cam, sx, sy);
-    const nextScale = Math.min(1, Math.max(0.4, cam.scale * (e.deltaY > 0 ? 0.92 : 1.08)));
-    const tx = sx - before.x * nextScale;
-    const ty = sy - before.y * nextScale;
-    useBoardStore.getState().setCamera({ scale: nextScale, tx, ty });
-  }, []);
+    applyLiveCamera(zoomCamera(camLive.current, sx, sy, e.deltaY > 0 ? 0.92 : 1.08), true);
+  }, [applyLiveCamera]);
 
   const graph = { nodes, ports, edges };
   const bindAim = useMemo(() => {
@@ -381,14 +412,14 @@ export function BoardView() {
       return null;
     }
     const box = pane.getBoundingClientRect();
-    const world = worldFromScreen(camera, bindX - box.left, bindY - box.top);
+    const world = worldFromScreen(camLive.current, bindX - box.left, bindY - box.top);
     const id = chipAtWorld(Object.values(nodes), world);
     const n = id ? nodes[id] : undefined;
     if (! n) {
       return null;
     }
     return { id, local: { x: world.x - n.x, y: world.y - n.y } };
-  }, [bindLetter, bindX, bindY, camera, nodes]);
+  }, [bindLetter, bindX, bindY, nodes]);
   const plane = useMemo(() => focusPlane({
     selectedNodeIds: selected ? [selected] : [],
     selectedEdgeIds: [],
@@ -423,8 +454,7 @@ export function BoardView() {
           return;
         }
         const box = pane.getBoundingClientRect();
-        const cam = useBoardStore.getState().camera;
-        const world = worldFromScreen(cam, e.clientX - box.left, e.clientY - box.top);
+        const world = worldFromScreen(camLive.current, e.clientX - box.left, e.clientY - box.top);
         const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
         const hit = boardContextHit(chipId, world, useBoardStore.getState());
         const at = { left: e.clientX - box.left, top: e.clientY - box.top };
@@ -450,12 +480,17 @@ export function BoardView() {
     >
       <CableCanvas
         graph={graph}
-        camera={camera}
+        cameraRef={camLive}
+        gestureRef={camGesture}
         width={size.w}
         height={size.h}
         focusEdgeIds={dofAllowed && plane.active ? plane.edges : null}
       />
-      <div className="nk-board-world" style={{ transform: cameraMatrix(camera) }}>
+      <div
+        ref={worldRef}
+        className="nk-board-world"
+        style={{ transform: cameraMatrix(camLive.current) }}
+      >
         {Object.values(nodes).map((n) => (
           <BoardChip
             key={n.id}

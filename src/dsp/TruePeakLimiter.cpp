@@ -86,3 +86,31 @@ void TruePeakLimiter::process (juce::dsp::AudioBlock<float>& hostBlock) noexcept
         writePos = (writePos + 1) % delayLen;
     }
 }
+
+void TruePeakLimiter::processDelayOnly (juce::dsp::AudioBlock<float>& hostBlock) noexcept
+{
+    const int chN = juce::jmin (nCh, (int) hostBlock.getNumChannels());
+    const int nS = (int) hostBlock.getNumSamples();
+    if (chN <= 0 || nS <= 0 || delayLen <= 0)
+        return;
+
+    gr = 1.f;
+    hit.store (false, std::memory_order_relaxed);
+
+    for (int i = 0; i < nS; ++i)
+    {
+        for (int ch = 0; ch < chN; ++ch)
+            delay.setSample (ch, writePos, hostBlock.getChannelPointer ((size_t) ch)[i]);
+
+        const int outPos = (writePos - latency + delayLen) % delayLen;
+        for (int ch = 0; ch < chN; ++ch)
+        {
+            float y = delay.getSample (ch, outPos);
+            if (! std::isfinite (y))
+                y = 0.f;
+            hostBlock.getChannelPointer ((size_t) ch)[i] = y;
+        }
+
+        writePos = (writePos + 1) % delayLen;
+    }
+}

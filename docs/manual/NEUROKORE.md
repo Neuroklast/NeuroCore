@@ -55,7 +55,7 @@ Top bar
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
 - Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine.
-- Bypass — Mix to 0 (dry) and locks the Mix slider. Turn Bypass off and the previous Mix comes back.
+- Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
 
 Knobs
@@ -98,6 +98,7 @@ Cables
 - A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Packet spacing and speed follow that channel’s RMS; brightness follows the peak. Below −60 dB the stream freezes. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
 - Right-click empty board to add a block (parked, no cable). Right-click a cable or click it to insert a block on that run. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face.
 - Circuit titles are not selectable text. Search and inspect fields still are.
+- Pan the board on empty pane, middle mouse, or space+drag. Wheel zooms under the cursor. Chips and cables move together; the camera is not a React re-render.
 
 IN and OUT
 - **IN** is locked on the left. Two outputs on the right, stacked in the middle of the tile: **out** is the track, **sc** is the host sidechain. They sit under the title stripe and above the footer. There is no input jack on IN. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.

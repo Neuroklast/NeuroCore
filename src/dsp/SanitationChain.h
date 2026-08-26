@@ -25,6 +25,9 @@ public:
     void processHost (const juce::dsp::AudioBlock<const float>& dry,
                       juce::dsp::AudioBlock<float>& mixed) noexcept;
 
+    /** Mix 0 / host bypass / idle: lookahead delay only. No clip, GR, or dither. */
+    void processHostBypass (juce::dsp::AudioBlock<float>& mixed) noexcept;
+
     int limiterLatencySamples() const noexcept { return limiter.latencySamples(); }
     bool consumeLimiterHit() noexcept { return limiter.consumeHit(); }
     bool consumeInvalid() noexcept { return sanitizer.consumeInvalid(); }

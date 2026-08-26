@@ -384,6 +384,82 @@ public:
             proc.releaseResources();
         }
 
+        beginTest ("mix 0 hot impulse is not true-peak clipped");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f)); // 4×
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.f);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.5f);
+            buf.setSample (1, 0, 1.5f);
+            proc.processBlock (buf, midi);
+            float peak = 0.f;
+            for (int b = 0; b < 16; ++b)
+            {
+                if (b > 0)
+                {
+                    buf.clear();
+                    proc.processBlock (buf, midi);
+                }
+                peak = juce::jmax (peak, buf.getMagnitude (0, 128));
+            }
+            expect (peak > 1.1f, "mix0 must skip clipper, peak=" + juce::String (peak, 3));
+            proc.releaseResources();
+        }
+
+        beginTest ("host bypass hot impulse is not true-peak clipped");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f)); // 4×
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (1.f);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlockBypassed (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.5f);
+            buf.setSample (1, 0, 1.5f);
+            proc.processBlockBypassed (buf, midi);
+            float peak = 0.f;
+            for (int b = 0; b < 16; ++b)
+            {
+                if (b > 0)
+                {
+                    buf.clear();
+                    proc.processBlockBypassed (buf, midi);
+                }
+                peak = juce::jmax (peak, buf.getMagnitude (0, 128));
+            }
+            expect (peak > 1.1f, "host bypass must skip clipper, peak=" + juce::String (peak, 3));
+            proc.releaseResources();
+        }
+
         beginTest ("LatencyAlignedSidechain delay equals configured latency");
         {
             for (int lat : { 0, 1, 26, 64, 128 })

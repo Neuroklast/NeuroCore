@@ -37,7 +37,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
 - **ASIO Guard**: `processBlock` never grows buffers (`setSize` / `new`), including `continuityBuf`. Overflow host `n` is sliced at the prepared ceiling before oversampling. Idle stays latency-aligned dry; silent overflow does not wake the wet path.
-- **VST3 suspend/wake**: `setNonRealtime` change and `reset()` clear OS/sanitation/sidechain rings and apply a 256-sample fade-in. Double wake stays finite. Host bypass (`processBlockBypassed`) delays dry by `getLatencySamples()` — same timeline as mix 0. Cubase dummy-bypass must not skip PDC.
+- **VST3 suspend/wake**: `setNonRealtime` change and `reset()` clear OS/sanitation/sidechain rings and apply a 256-sample fade-in. Double wake stays finite. Host bypass (`processBlockBypassed`) delays dry by `getLatencySamples()` — same timeline as mix 0. Mix 0 / host bypass / idle skip OS, True-Peak GR, soft clip, and dither; the limiter delay line still advances so PDC does not jump. Cubase dummy-bypass must not skip PDC.
 - **WebView2 profile**: each processor instance uses `NEUROKORE-webview2/i<id>/`. Two plugins in one Cubase process must not share one user-data folder.
 
 ### Performance — was gebaut wurde (Phasen 0–5)
@@ -75,7 +75,7 @@ Quelle: `screenshots/Screenshot 2026-08-16 231501.png` (Phaser Lab), `231939.png
 
 | Modul | Wahrheit |
 |---|---|
-| GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. |
+| GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. Circuit camera is a live CSS matrix (ref); Zustand commits on pointerup. |
 | CpuProtect / Footer | Anzeige soll 0–100 sein. 8× + LFO-Filter kann den Guard trotzdem trippen. |
 | Tests | Zu viele Sample-`expect`. Neue Arbeit = Contracts. |
 | Rest | Factory: `resources/factory_presets.json` (301). `out` is last — post-mix limit/glue lives on each bus, not after `out`. Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). Phaser is an allpass cascade (`phaser` / `filter type = allpass`), not HP+LP. Flanger is a short delay comb. Env `unit = db` is dBFS for a DIY compressor. Coeffs are control-rate (`kFilterCoeffStride`). Node taps: slot index from `loadScript`, viz meters from 64 samples. |

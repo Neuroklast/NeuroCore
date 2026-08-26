@@ -231,6 +231,22 @@ public:
             expect (TestHelpers::peakAbs (wet) <= ceilLin + 1.0e-4f);
         }
 
+        beginTest ("bypass host path delays without clipping");
+        {
+            SanitationChain chain;
+            juce::dsp::ProcessSpec host { 48000.0, 256, 1 };
+            chain.prepare (host, host, true);
+            chain.setSoftClipEnabled (true);
+            juce::AudioBuffer<float> wet (1, 256);
+            wet.clear();
+            wet.setSample (0, 0, 1.5f);
+            auto w = juce::dsp::AudioBlock<float> (wet);
+            chain.processHostBypass (w);
+            const float pk = TestHelpers::peakAbs (wet);
+            expect (pk > 1.1f, "bypass must not true-peak clip, peak=" + juce::String (pk, 4));
+            expectEquals (TestHelpers::countNonFinite (wet), 0);
+        }
+
         beginTest ("1x chain: DC gone, peak <= ceiling, float dither off");
         {
             SanitationChain chain;

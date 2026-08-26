@@ -7,7 +7,7 @@ Source of truth for Circuit is the **script**. The board is a headless graph (`b
 | Need | Model |
 |---|---|
 | Chip drag | Pointer coords in a ref; store + DSL on `pointerup`, snap 32 |
-| Camera | One `{tx,ty,scale}` matrix on the world layer and the canvas |
+| Camera | Live `{tx,ty,scale}` in a ref + CSS matrix on `.nk-board-world` and the canvas `camRef`. Zustand commits on pointerup / after fit. Do not subscribe React to `camera` |
 | Ports | Flush contact on the frame; 24 px hit; 30 px magnet. Equal pitch, inside AABB |
 | Drag cable | Cubic bezier, east/west normals. No A* while the pointer is down |
 | After drop | ELK places chips. A* Manhattan, 45° chamfer. Canvas paints `edge.route` |
