@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
 import { subscribeVizClock } from "../theme/vizClock";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
@@ -9,6 +9,7 @@ import {
   edgePaintKind,
   PACKET_CORE,
   parallelOffset,
+  cablePaintPass,
   drawBackgroundTraces,
   peakForLane,
   rmsForLane,
@@ -69,6 +70,7 @@ function strokeStream(
   dash: number[],
   dashOffset: number,
   peak: number,
+  bloom: boolean,
 ): void {
   ctx.lineCap = "butt";
   ctx.lineJoin = "miter";
@@ -106,7 +108,7 @@ function strokeStream(
   } else {
     ctx.globalAlpha = streamAlpha(peak);
     ctx.shadowColor = glow;
-    ctx.shadowBlur = streamBlur(peak);
+    ctx.shadowBlur = bloom ? streamBlur(peak) : 0;
     ctx.strokeStyle = core;
     tracePath(ctx, pts);
     ctx.stroke();
@@ -116,25 +118,31 @@ function strokeStream(
   ctx.setLineDash([]);
 }
 
+let drawNow: (() => void) | null = null;
+
+export function paintCablesNow(): void {
+  drawNow?.();
+}
+
 export function CableCanvas({
   graph,
-  camera,
+  cameraRef,
+  gestureRef,
   width,
   height,
   focusEdgeIds,
 }: {
   graph: BoardGraph;
-  camera: BoardCamera;
+  cameraRef: MutableRefObject<BoardCamera>;
+  gestureRef: MutableRefObject<boolean>;
   width: number;
   height: number;
   focusEdgeIds?: Set<string> | null;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef(graph);
-  const camRef = useRef(camera);
   const focusRef = useRef(focusEdgeIds);
   graphRef.current = graph;
-  camRef.current = camera;
   focusRef.current = focusEdgeIds;
 
   useEffect(() => {
@@ -150,7 +158,8 @@ export function CableCanvas({
     const palette: Record<LaneColor, string> = { ...FALLBACK };
     const draw = () => {
       const g = graphRef.current;
-      const cam = camRef.current;
+      const cam = cameraRef.current;
+      const pass = cablePaintPass(gestureRef.current);
       const dpr = window.devicePixelRatio || 1;
       if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
         canvas.width = Math.floor(width * dpr);
@@ -167,13 +176,15 @@ export function CableCanvas({
         palette[k] = resolveColor(COLOR_VAR[k], FALLBACK[k]);
       });
 
-      drawBackgroundTraces(ctx, {
-        tx: cam.tx,
-        ty: cam.ty,
-        scale: cam.scale,
-        width,
-        height,
-      });
+      if (pass.traces) {
+        drawBackgroundTraces(ctx, {
+          tx: cam.tx,
+          ty: cam.ty,
+          scale: cam.scale,
+          width,
+          height,
+        });
+      }
 
       const host = useHostStore.getState();
       const clips = host.clips;
@@ -228,6 +239,7 @@ export function CableCanvas({
             streamDash(lane.dash, energy),
             off,
             peak,
+            pass.glow,
           );
           ctx.restore();
         }
@@ -239,7 +251,7 @@ export function CableCanvas({
         ctx.save();
         ctx.strokeStyle = col;
         ctx.shadowColor = col;
-        ctx.shadowBlur = 4;
+        ctx.shadowBlur = pass.glow ? 4 : 0;
         ctx.lineWidth = 2.2;
         ctx.setLineDash([]);
         ctx.beginPath();
@@ -250,10 +262,16 @@ export function CableCanvas({
       }
       ctx.restore();
     };
+    drawNow = draw;
     const off = subscribeVizClock(draw);
     draw();
-    return off;
-  }, [width, height]);
+    return () => {
+      if (drawNow === draw) {
+        drawNow = null;
+      }
+      off();
+    };
+  }, [width, height, cameraRef, gestureRef]);
 
   return <canvas ref={ref} className="nk-board-canvas" aria-hidden />;
 }

@@ -75,7 +75,7 @@ Quelle: `screenshots/Screenshot 2026-08-16 231501.png` (Phaser Lab), `231939.png
 
 | Modul | Wahrheit |
 |---|---|
-| GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. |
+| GraphModel / web circuit | Document + emit stay in C++. Layout/routing is elkjs + A* in `web/`. Circuit camera is a live CSS matrix (ref); Zustand commits on pointerup. |
 | CpuProtect / Footer | Anzeige soll 0–100 sein. 8× + LFO-Filter kann den Guard trotzdem trippen. |
 | Tests | Zu viele Sample-`expect`. Neue Arbeit = Contracts. |
 | Rest | Factory: `resources/factory_presets.json` (301). `out` is last — post-mix limit/glue lives on each bus, not after `out`. Vocals 45 bleiben. Nie `generate_factory_presets.mjs` gegen den Shipping-Katalog. CMake/Vite binden erst beim Build. `split` expander ignores `#` / `//` comments (`# d Split:` is not a split block). Phaser is an allpass cascade (`phaser` / `filter type = allpass`), not HP+LP. Flanger is a short delay comb. Env `unit = db` is dBFS for a DIY compressor. Coeffs are control-rate (`kFilterCoeffStride`). Node taps: slot index from `loadScript`, viz meters from 64 samples. |

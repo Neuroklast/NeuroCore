@@ -22,7 +22,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 ## Circuit
 
-- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`.
+- Circuit is headless (`boardStore` + DOM chips + one cable canvas). Do not wire AssembleView back to React Flow. Layout adapters use local `flowTypes`, not `@xyflow/react`. Camera pan/zoom writes the CSS matrix and canvas `camRef` in the pointer event; `setCamera` is pointerup / fit, never every move.
 - ELK (layered RIGHT) places chips in a worker for Arrange. Compact wraps a serial chain to the window (never a snake) and packs named send/bus rails as their own rows. Row gap is WRAP_AIR. A* writes the stored SVG `d`. The cable canvas paints that string.
 - HVH is the blocked-channel fallback only. A* is the live router. Corners are 45° chamfers of one cell, not long diagonals.
 - Pins on the 16 px grid. No `dropMicroJogs`, no 2 px jack inset.

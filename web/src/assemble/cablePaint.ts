@@ -37,6 +37,11 @@ export const STREAM_GAP_HOT = 2;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
+/** Pan/zoom: skip copper traces and shadowBlur. Packets still move. */
+export function cablePaintPass(gesture: boolean): { traces: boolean; glow: boolean } {
+  return gesture ? { traces: false, glow: false } : { traces: true, glow: true };
+}
+
 function isXoverType(type: string): boolean {
   const t = type.toLowerCase();
   return t.startsWith("xover") || t.startsWith("crossover") || t === "msplit";

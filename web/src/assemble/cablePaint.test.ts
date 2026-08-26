@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { peakToDb } from "../bridge/telemetry";
 import {
+  cablePaintPass,
   edgeLanes,
   edgePaintKind,
   MAIN_DASH,
@@ -147,6 +148,11 @@ describe("lane telemetry", () => {
 });
 
 describe("pcb background traces", () => {
+  it("drops traces and glow while the camera is moving", () => {
+    expect(cablePaintPass(false)).toEqual({ traces: true, glow: true });
+    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false });
+  });
+
   it("gates cells by a pan-stable hash and culls to the camera", () => {
     expect(gridHash(3, 5)).toBe(gridHash(3, 5));
     expect(gridHash(3, 5)).not.toBe(gridHash(4, 5));
