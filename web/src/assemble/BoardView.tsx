@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import { hasJuceBridge } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
 import { parseClipPeaks, useHostStore } from "../store/hostStore";
@@ -14,12 +14,13 @@ import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, worldFromScre
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, hitBoardEdge } from "./boardEdit";
-import { graphToLayout, hydrateBoard, portGlobal, type BoardPort } from "./boardModel";
+import { graphToLayout, portGlobal, previewBoardIds, type BoardPort } from "./boardModel";
+import { applyChipDragStyle, chipDragRef, type ChipDrag } from "./boardDrag";
 import { useBoardStore } from "./boardStore";
 import { keepBoardXy } from "./boardSync";
 import { CableCanvas, paintCablesNow } from "./CableCanvas";
 import { demoClipRows } from "./demoClips";
-import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
+import { applyBoardFocus, boardFocusEdgesRef, boardHoverRef, circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
 
@@ -33,7 +34,7 @@ function inspectChip(id: string, type: string): void {
   useHostStore.getState().setOverlay(o.overlay, o.inspectId);
 }
 
-export function BoardView() {
+export function BoardView({ active = true }: { active?: boolean }) {
   const ast = useAstStore((s) => s.ast);
   const origin = useAstStore((s) => s.origin);
   const sidechainOn = useHostStore((s) => s.sidechainOn);
@@ -47,12 +48,11 @@ export function BoardView() {
   const camGesture = useRef(false);
   const [size, setSize] = useState({ w: 960, h: 420 });
   const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
-  const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number } | null>(null);
   const spaceRef = useRef(false);
   const [selected, setSelected] = useState<string | null>(null);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selected;
-  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const [menu, setMenu] = useState<BoardMenu | null>(null);
   const placeRef = useRef<{ x: number; y: number } | { afterId: string } | null>(null);
   const idsRef = useRef<Set<string>>(new Set());
@@ -64,13 +64,32 @@ export function BoardView() {
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const dofAllowed = circuitDofAllowed(motion, prefersReduced);
 
+  const paintFocus = useCallback(() => {
+    const pane = paneRef.current;
+    const g = useBoardStore.getState();
+    const plane = focusPlane({
+      selectedNodeIds: selectedRef.current ? [selectedRef.current] : [],
+      selectedEdgeIds: [],
+      hoverNodeId: boardHoverRef.current,
+      edges: Object.values(g.edges).map((e) => ({
+        id: e.id,
+        source: e.sourceNodeId,
+        target: e.targetNodeId,
+      })),
+    });
+    boardFocusEdgesRef.current = dofAllowed && plane.active ? plane.edges : null;
+    if (pane) {
+      applyBoardFocus(pane.querySelectorAll("[data-node-id]"), (id) => focusAttr(dofAllowed, plane, id));
+    }
+    paintCablesNow();
+  }, [dofAllowed]);
+
   useEffect(() => {
     const prevIds = Object.keys(useBoardStore.getState().nodes);
-    const nextIds = ast ? Object.keys(hydrateBoard(ast, sidechainOn).nodes) : [];
     const keep = keepBoardXy({
       origin,
       prevIds,
-      nextIds,
+      nextIds: previewBoardIds(ast, sidechainOn),
       chipsHavePositions: true,
     });
     useBoardStore.getState().hydrate(ast, sidechainOn, keep);
@@ -197,6 +216,10 @@ export function BoardView() {
     });
   }, [applyLiveCamera]);
 
+  useLayoutEffect(() => {
+    paintFocus();
+  }, [selected, nodes, paintFocus]);
+
   useEffect(() => {
     if (userMoved || Object.keys(nodes).length === 0) {
       return;
@@ -285,7 +308,7 @@ export function BoardView() {
       setSelected(id);
       return;
     }
-    dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y };
+    dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y };
     setSelected(id);
     pane.setPointerCapture(e.pointerId);
   }, []);
@@ -326,15 +349,28 @@ export function BoardView() {
     }
     const over = (e.target as HTMLElement).closest("[data-node-id]");
     const hid = over?.getAttribute("data-node-id") ?? null;
-    setHoverNodeId((cur) => (cur === hid ? cur : hid));
+    if (boardHoverRef.current !== hid) {
+      boardHoverRef.current = hid;
+      paintFocus();
+    }
     const drag = dragRef.current;
     if (! drag) {
       return;
     }
     const rect = pane.getBoundingClientRect();
     const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
-    useBoardStore.getState().moveNode(drag.id, snapToGrid(world.x - drag.dx), snapToGrid(world.y - drag.dy));
-  }, [applyLiveCamera]);
+    const live: ChipDrag = {
+      id: drag.id,
+      x: snapToGrid(world.x - drag.dx),
+      y: snapToGrid(world.y - drag.dy),
+    };
+    chipDragRef.current = live;
+    const el = pane.querySelector(`[data-node-id="${drag.id}"]`);
+    if (el) {
+      applyChipDragStyle(el as HTMLElement, live, { x: drag.originX, y: drag.originY }, drag.id);
+    }
+    paintCablesNow();
+  }, [applyLiveCamera, paintFocus]);
 
   const onPointerUp = useCallback(() => {
     const drag = connectDragRef.current;
@@ -352,7 +388,15 @@ export function BoardView() {
       paintCablesNow();
     }
     panRef.current = null;
-    if (dragRef.current) {
+    const chipDrag = dragRef.current;
+    const live = chipDragRef.current;
+    if (chipDrag && live) {
+      useBoardStore.getState().moveNode(chipDrag.id, live.x, live.y);
+      const el = paneRef.current?.querySelector(`[data-node-id="${chipDrag.id}"]`);
+      if (el) {
+        applyChipDragStyle(el as HTMLElement, null, { x: chipDrag.originX, y: chipDrag.originY }, chipDrag.id);
+      }
+      chipDragRef.current = null;
       rerouteBoard();
     }
     dragRef.current = null;
@@ -412,6 +456,13 @@ export function BoardView() {
   }, [applyLiveCamera]);
 
   const graph = { nodes, ports, edges };
+  const portsByNode = useMemo(() => {
+    const m: Record<string, BoardPort[]> = {};
+    for (const p of Object.values(ports)) {
+      (m[p.nodeId] ??= []).push(p);
+    }
+    return m;
+  }, [ports]);
   const bindAim = useMemo(() => {
     if (! bindLetter) {
       return null;
@@ -429,16 +480,6 @@ export function BoardView() {
     }
     return { id, local: { x: world.x - n.x, y: world.y - n.y } };
   }, [bindLetter, bindX, bindY, nodes]);
-  const plane = useMemo(() => focusPlane({
-    selectedNodeIds: selected ? [selected] : [],
-    selectedEdgeIds: [],
-    hoverNodeId,
-    edges: Object.values(edges).map((e) => ({
-      id: e.id,
-      source: e.sourceNodeId,
-      target: e.targetNodeId,
-    })),
-  }), [selected, hoverNodeId, edges]);
 
   return (
     <div
@@ -493,7 +534,7 @@ export function BoardView() {
         gestureRef={camGesture}
         width={size.w}
         height={size.h}
-        focusEdgeIds={dofAllowed && plane.active ? plane.edges : null}
+        active={active}
       />
       <div
         ref={worldRef}
@@ -504,9 +545,8 @@ export function BoardView() {
           <BoardChip
             key={n.id}
             node={n}
-            ports={Object.values(ports).filter((p) => p.nodeId === n.id)}
+            ports={portsByNode[n.id] ?? []}
             selected={selected === n.id}
-            focus={focusAttr(dofAllowed, plane, n.id)}
             bindOver={bindAim?.id === n.id}
             bindLocal={bindAim?.id === n.id ? bindAim.local : { x: 0, y: 0 }}
             onInspect={() => inspectChip(n.id, n.type)}

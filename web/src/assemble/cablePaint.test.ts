@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { peakToDb } from "../bridge/telemetry";
 import {
+  buildCableLanes,
+  cableGeomStamp,
   cablePaintPass,
   edgeLanes,
   edgePaintKind,
@@ -151,6 +153,23 @@ describe("pcb background traces", () => {
   it("drops traces and glow while the camera is moving", () => {
     expect(cablePaintPass(false)).toEqual({ traces: true, glow: true });
     expect(cablePaintPass(true)).toEqual({ traces: false, glow: false });
+  });
+
+  it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
+    expect(cablePaintPass(false, "full")).toEqual({ traces: true, glow: true });
+    expect(cablePaintPass(false, "reduced")).toEqual({ traces: true, glow: false });
+    expect(cablePaintPass(false, "off")).toEqual({ traces: false, glow: false });
+    const from = { x: 0, y: 16 };
+    const to = { x: 128, y: 16 };
+    const route = [from, { x: 64, y: 16 }, to];
+    const a = cableGeomStamp("e0", route, from, to, "audio", "out");
+    const b = cableGeomStamp("e0", route, from, to, "audio", "out");
+    const c = cableGeomStamp("e0", route, from, { x: 160, y: 16 }, "audio", "out");
+    expect(a).toBe(b);
+    expect(a).not.toBe(c);
+    const lanes = buildCableLanes(from, to, route, "audio", "out");
+    expect(lanes.length).toBe(2);
+    expect(lanes[0]![0]).toEqual(expect.objectContaining({ x: from.x }));
   });
 
   it("gates cells by a pan-stable hash and culls to the camera", () => {

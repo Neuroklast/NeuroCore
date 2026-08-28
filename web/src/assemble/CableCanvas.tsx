@@ -2,18 +2,19 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
 import { subscribeVizClock } from "../theme/vizClock";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
+import { chipDragRef, nodeWithDrag } from "./boardDrag";
 import { bezierPreview, connectDragRef } from "./boardConnect";
-import { paintRoute } from "./boardPath";
+import { boardFocusEdgesRef } from "./circuitDof";
 import {
+  buildCableLanes,
+  cableGeomStamp,
+  cablePaintPass,
+  drawBackgroundTraces,
   edgeLanes,
   edgePaintKind,
   PACKET_CORE,
-  parallelOffset,
-  cablePaintPass,
-  drawBackgroundTraces,
   peakForLane,
   rmsForLane,
-  sideBreakaway,
   streamAlpha,
   streamBlur,
   streamDash,
@@ -21,7 +22,7 @@ import {
   streamSpeed,
   type LaneColor,
 } from "./cablePaint";
-import { chamferWaypoints } from "./layout/chamfer";
+import type { Pt } from "./layout/types";
 
 const COLOR_VAR: Record<LaneColor, string> = {
   cyan: "var(--nk-cyan)",
@@ -130,24 +131,22 @@ export function CableCanvas({
   gestureRef,
   width,
   height,
-  focusEdgeIds,
+  active = true,
 }: {
   graph: BoardGraph;
   cameraRef: MutableRefObject<BoardCamera>;
   gestureRef: MutableRefObject<boolean>;
   width: number;
   height: number;
-  focusEdgeIds?: Set<string> | null;
+  active?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef(graph);
-  const focusRef = useRef(focusEdgeIds);
   graphRef.current = graph;
-  focusRef.current = focusEdgeIds;
 
   useEffect(() => {
     const canvas = ref.current;
-    if (! canvas) {
+    if (! canvas || ! active) {
       return;
     }
     const ctx = canvas.getContext("2d");
@@ -156,10 +155,13 @@ export function CableCanvas({
     }
     const offsets = new Map<string, number>();
     const palette: Record<LaneColor, string> = { ...FALLBACK };
+    const geom = new Map<string, { stamp: string; lanes: Pt[][] }>();
+    let paletteTheme = "";
+    const coreInk = () => resolveColor(PACKET_CORE, "#ffffff");
+    let core = FALLBACK.accent;
     const draw = () => {
       const g = graphRef.current;
       const cam = cameraRef.current;
-      const pass = cablePaintPass(gestureRef.current);
       const dpr = window.devicePixelRatio || 1;
       if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
         canvas.width = Math.floor(width * dpr);
@@ -172,9 +174,15 @@ export function CableCanvas({
       ctx.save();
       ctx.setTransform(dpr * cam.scale, 0, 0, dpr * cam.scale, dpr * cam.tx, dpr * cam.ty);
 
-      (Object.keys(COLOR_VAR) as LaneColor[]).forEach((k) => {
-        palette[k] = resolveColor(COLOR_VAR[k], FALLBACK[k]);
-      });
+      const host = useHostStore.getState();
+      if (host.theme !== paletteTheme) {
+        paletteTheme = host.theme;
+        (Object.keys(COLOR_VAR) as LaneColor[]).forEach((k) => {
+          palette[k] = resolveColor(COLOR_VAR[k], FALLBACK[k]);
+        });
+        core = coreInk();
+      }
+      const pass = cablePaintPass(gestureRef.current, host.motion);
 
       if (pass.traces) {
         drawBackgroundTraces(ctx, {
@@ -186,37 +194,42 @@ export function CableCanvas({
         });
       }
 
-      const host = useHostStore.getState();
       const clips = host.clips;
       const clipsL = host.clipsL;
       const clipsR = host.clipsR;
       const rms = host.clipsRms;
       const rmsL = host.clipsRmsL;
       const rmsR = host.clipsRmsR;
+      const live = chipDragRef.current;
+      const hot = boardFocusEdgesRef.current;
       for (const e of Object.values(g.edges)) {
-        const sn = g.nodes[e.sourceNodeId];
-        const tn = g.nodes[e.targetNodeId];
+        const sn0 = g.nodes[e.sourceNodeId];
+        const tn0 = g.nodes[e.targetNodeId];
         const sp = g.ports[e.sourcePortId];
         const tp = g.ports[e.targetPortId];
-        if (! sn || ! tn || ! sp || ! tp) {
+        if (! sn0 || ! tn0 || ! sp || ! tp) {
           continue;
         }
+        const sn = nodeWithDrag(sn0, live);
+        const tn = nodeWithDrag(tn0, live);
         const from = portGlobal(sn, sp);
         const to = portGlobal(tn, tp);
-        const raw = paintRoute(from, to, e.route);
-        let pts = chamferWaypoints(raw);
-        if (pts.length < 2) {
+        const stamp = cableGeomStamp(e.id, e.route, from, to, e.kind, sp.jackId);
+        let cached = geom.get(e.id);
+        if (! cached || cached.stamp !== stamp) {
+          cached = { stamp, lanes: buildCableLanes(from, to, e.route, e.kind, sp.jackId) };
+          geom.set(e.id, cached);
+        }
+        if (cached.lanes.length === 0) {
           continue;
         }
-        const kind = edgePaintKind(sp, sn);
-        if (kind === "side") {
-          pts = sideBreakaway(pts);
-        }
-        const lanes = edgeLanes(kind, sp.jackId);
-        const hot = focusRef.current;
+        const spec = edgeLanes(edgePaintKind(sp, sn), sp.jackId);
         const dim = hot && hot.size > 0 && ! hot.has(e.id);
-        for (const lane of lanes) {
-          const painted = lane.offset !== 0 ? parallelOffset(pts, lane.offset) : pts;
+        cached.lanes.forEach((painted, i) => {
+          const lane = spec[i];
+          if (! lane) {
+            return;
+          }
           const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type);
           const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type);
           const key = `${e.id}:${lane.id}`;
@@ -234,7 +247,7 @@ export function CableCanvas({
             ctx,
             painted,
             palette[lane.color],
-            resolveColor(PACKET_CORE, "#ffffff"),
+            core,
             lane.width,
             streamDash(lane.dash, energy),
             off,
@@ -242,7 +255,7 @@ export function CableCanvas({
             pass.glow,
           );
           ctx.restore();
-        }
+        });
       }
       const drag = connectDragRef.current;
       if (drag) {
@@ -271,7 +284,7 @@ export function CableCanvas({
       }
       off();
     };
-  }, [width, height, cameraRef, gestureRef]);
+  }, [width, height, cameraRef, gestureRef, active]);
 
   return <canvas ref={ref} className="nk-board-canvas" aria-hidden />;
 }

@@ -1,8 +1,9 @@
 import { peakToDb } from "../bridge/telemetry";
 import type { PortKind } from "./boardModel";
+import { paintRoute } from "./boardPath";
 import { CABLE_STILL_DB, plasmaSpeedPxPerSec } from "./cableMotion";
 import { BOARD_BLOCK, BOARD_HALF } from "./grid";
-import { hasLightning } from "./layout/chamfer";
+import { chamferWaypoints, hasLightning } from "./layout/chamfer";
 import type { Pt } from "./layout/types";
 
 export type EdgePaintKind = "stereo" | "mono" | "mid" | "side" | "mod" | "sc";
@@ -37,9 +38,33 @@ export const STREAM_GAP_HOT = 2;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
-/** Pan/zoom: skip copper traces and shadowBlur. Packets still move. */
-export function cablePaintPass(gesture: boolean): { traces: boolean; glow: boolean } {
-  return gesture ? { traces: false, glow: false } : { traces: true, glow: true };
+/** Pan/zoom: skip copper traces and shadowBlur. Packets still move. Glow is Full only. */
+export function cablePaintPass(
+  gesture: boolean,
+  motion: "full" | "reduced" | "off" = "full",
+): { traces: boolean; glow: boolean } {
+  if (gesture || motion === "off") {
+    return { traces: false, glow: false };
+  }
+  if (motion === "reduced") {
+    return { traces: true, glow: false };
+  }
+  return { traces: true, glow: true };
+}
+
+export function cableGeomStamp(
+  id: string,
+  route: Pt[],
+  from: Pt,
+  to: Pt,
+  kind: string,
+  jackId: string,
+): string {
+  let s = `${id}|${kind}|${jackId}|${from.x},${from.y}|${to.x},${to.y}`;
+  for (const p of route) {
+    s += `|${p.x},${p.y}`;
+  }
+  return s;
 }
 
 function isXoverType(type: string): boolean {
@@ -73,6 +98,32 @@ export function edgePaintKind(port: PaintPort, node?: PaintNode): EdgePaintKind 
     return "mono";
   }
   return "stereo";
+}
+
+/** Chamfer + stereo offset once per geometry stamp. Frame loop only animates ink. */
+export function buildCableLanes(
+  from: Pt,
+  to: Pt,
+  route: Pt[],
+  kindHint: PortKind | string,
+  jackId: string,
+): Pt[][] {
+  const raw = paintRoute(from, to, route);
+  let pts = chamferWaypoints(raw);
+  const port: PaintPort = {
+    jackId,
+    kind: kindHint === "mod" ? "mod" : kindHint === "sc" ? "sc" : "audio",
+  };
+  const kind = edgePaintKind(port);
+  if (kind === "side") {
+    pts = sideBreakaway(pts);
+  }
+  if (pts.length < 2) {
+    return [];
+  }
+  return edgeLanes(kind, jackId).map((lane) => (
+    lane.offset !== 0 ? parallelOffset(pts, lane.offset) : pts
+  ));
 }
 
 export function edgeLanes(kind: EdgePaintKind, jackId = ""): CableLane[] {

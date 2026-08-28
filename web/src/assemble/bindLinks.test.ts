@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoAst } from "./demoAst";
 import { BOARD_GRID } from "./grid";
-import { bindCableVisible, bindHitsKnobs, bindLinks, bindPathDirs, bindSmoothPath, bindTargets, bindTurnCount, firstRunVertical, lastRunVertical, svgPathPoints } from "./bindLinks";
+import { bindCableVisible, bindHitsKnobs, bindJackWorld, bindLinks, bindPathDirs, bindSmoothPath, bindTargets, bindTurnCount, firstRunVertical, hostPointFromWorld, lastRunVertical, svgPathPoints } from "./bindLinks";
 
 describe("knob-to-node binds", () => {
   it("lists every a–f token on a node, including formulas", () => {
@@ -25,6 +25,19 @@ describe("knob-to-node binds", () => {
       { letter: "f", node: "filter1" },
     ]));
     expect(bindTargets(demoAst.doc.nodes).filter((t) => t.node === "filter1" && t.letter === "b")).toHaveLength(1);
+  });
+
+  it("places the south bind jack in board world, not from getBoundingClientRect", () => {
+    const node = { x: 320, y: 96, w: 192, h: 128 };
+    const a = bindJackWorld(node, "cutoff", ["cutoff", "q"]);
+    const b = bindJackWorld(node, "q", ["cutoff", "q"]);
+    expect(a.y).toBe(node.y + node.h);
+    expect(b.y).toBe(node.y + node.h);
+    expect(a.x).toBeLessThan(b.x);
+    expect(a.x).toBeGreaterThan(node.x);
+    expect(b.x).toBeLessThan(node.x + node.w);
+    const host = hostPointFromWorld(a, { tx: 10, ty: 20, scale: 1 }, { x: 5, y: 7 });
+    expect(host).toEqual({ x: 5 + 10 + a.x, y: 7 + 20 + a.y });
   });
 
   it("uses only W/N/E with few corners, never A* or south", () => {

@@ -1,6 +1,6 @@
 {
   "Name": "NEUROKORE",
-  "Version": "0.6.1-beta",
+  "Version": "0.6.2-beta",
   "Factory Info": {
     "Vendor": "Neuroklast",
     "URL": "https://neuroklast.net",
@@ -17,7 +17,7 @@
       "Category": "Audio Module Class",
       "Name": "NEUROKORE",
       "Vendor": "Neuroklast",
-      "Version": "0.6.1-beta",
+      "Version": "0.6.2-beta",
       "SDKVersion": "VST 3.7.12",
       "Sub Categories": ["Fx", "Distortion"],
       "Class Flags": 0,
@@ -29,7 +29,7 @@
       "Category": "Component Controller Class",
       "Name": "NEUROKORE",
       "Vendor": "Neuroklast",
-      "Version": "0.6.1-beta",
+      "Version": "0.6.2-beta",
       "SDKVersion": "VST 3.7.12",
       "Sub Categories": ["Fx", "Distortion"],
       "Class Flags": 0,

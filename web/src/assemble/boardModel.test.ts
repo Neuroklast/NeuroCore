@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
-import { assignRanks, hydrateBoard, portGlobal, portId } from "./boardModel";
+import { assignRanks, hydrateBoard, portGlobal, portId, previewBoardIds } from "./boardModel";
 import { BOARD_HALF } from "./grid";
 
 function emptyAst(): AstDocument {
@@ -85,6 +85,23 @@ describe("headless board model", () => {
     expect(g.nodes.stage1!.x).toBeLessThan(800);
     expect(g.nodes.stage1!.y).toBeLessThan(400);
     expect(Object.values(g.edges).every((e) => e.route.length === 0)).toBe(true);
+  });
+
+  it("previews board ids without building ports so hydrate runs once", () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [{
+        id: "stage1",
+        type: "stage",
+        busName: "main",
+        args: { y: "x" },
+        trailingComment: "",
+        jacks: [],
+      }],
+      edges: [],
+    };
+    expect(previewBoardIds(ast).sort()).toEqual(["IN", "OUT", "stage1"].sort());
+    expect(previewBoardIds(null)).toEqual([]);
   });
 
   it("gives an MS split two east ports and no combined out", () => {

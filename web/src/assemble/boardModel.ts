@@ -142,6 +142,23 @@ function makeNode(
   };
 }
 
+export function previewBoardIds(ast: AstDocument | null, sidechainOn = false): string[] {
+  if (! ast) {
+    return [];
+  }
+  const vis = visibleNodes(ast, sidechainOn);
+  const ids: string[] = ["IN"];
+  for (const n of vis) {
+    if (n.id !== "IN" && n.type !== "in") {
+      ids.push(n.id);
+    }
+  }
+  if (! vis.some((n) => n.type === "out")) {
+    ids.push("OUT");
+  }
+  return ids;
+}
+
 export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph {
   const visible = visibleNodes(ast, sidechainOn);
   const nodes: Record<string, BoardNode> = {};

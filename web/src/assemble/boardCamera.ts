@@ -38,6 +38,17 @@ export function worldFromScreen(
   };
 }
 
+export function screenFromWorld(
+  c: BoardCamera,
+  wx: number,
+  wy: number,
+): { x: number; y: number } {
+  return {
+    x: wx * c.scale + c.tx,
+    y: wy * c.scale + c.ty,
+  };
+}
+
 export function fitCamera(
   nodes: Iterable<BoardNode>,
   view: { w: number; h: number },

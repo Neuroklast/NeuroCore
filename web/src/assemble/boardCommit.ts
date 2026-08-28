@@ -8,7 +8,7 @@ import { parseRoutePath } from "./boardPath";
 import { edgesAfterConnect, edgesAfterCutPort } from "./boardConnect";
 import { scriptAfterDisconnect } from "./connectModel";
 import { useBoardStore } from "./boardStore";
-import { runLayout } from "./layout/runLayout";
+import { requestGraphLayout } from "./layout/layoutClient";
 
 function astEdgesAfterConnect(edges: AstEdge[], src: BoardPort, dst: BoardPort): AstEdge[] {
   const kind = src.kind === "mod" ? "mod" : "audio";
@@ -46,7 +46,7 @@ export async function layoutBoard(
   const epoch = useBoardStore.getState().layoutEpoch;
   const g = useBoardStore.getState();
   const payload = graphToLayout(g);
-  const laid = await runLayout(mode, payload.nodes, payload.edges, view);
+  const laid = await requestGraphLayout(mode, payload.nodes, payload.edges, view);
   const live = useBoardStore.getState();
   if (live.layoutEpoch !== epoch) {
     return;
@@ -68,7 +68,7 @@ export async function layoutBoard(
 export function rerouteBoard(): void {
   const g = useBoardStore.getState();
   const payload = graphToLayout(g);
-  void runLayout("REROUTE", payload.nodes, payload.edges).then((laid) => {
+  void requestGraphLayout("REROUTE", payload.nodes, payload.edges).then((laid) => {
     const routes: Record<string, Array<{ x: number; y: number }>> = {};
     for (const [id, d] of Object.entries(laid.edgePaths)) {
       routes[id] = parseRoutePath(d);

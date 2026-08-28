@@ -85,7 +85,7 @@ function moduleInfo (version, windows) {
 
 const args = process.argv.slice (2);
 let endian = process.platform === "win32" ? "windows" : "apple";
-let version = "0.6.1-beta";
+let version = "0.6.2-beta";
 let out = "";
 for (let i = 0; i < args.length; i += 1) {
   if (args[i] === "--endian" && args[i + 1]) {
