@@ -11,7 +11,7 @@ describe("board tokens", () => {
     expect(nk.surfaceHigh).toBe("#1c1c26");
     expect(nk.ink).toBe("#f4f1ea");
     expect(nk.inkMuted).toBe("#8a909c");
-    expect(nk.version).toBe("0.6.1-beta");
+    expect(nk.version).toBe("0.6.2-beta");
   });
 
   it("maps chip types like the native kindLabel", () => {

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAstStore } from "../store/astStore";
 import { useBindStore } from "../store/telemetryStore";
-import { subscribeVizClock } from "../theme/vizClock";
-import { bindCableVisible, bindEndId, bindSmoothPath, bindTargets } from "./bindLinks";
+import { useBoardStore } from "./boardStore";
+import { paintedBindKeys } from "./chipSpec";
+import { bindCableVisible, bindJackWorld, bindLinks, bindSmoothPath, bindTargets, hostPointFromWorld } from "./bindLinks";
 
 function scaleOf(hostEl: HTMLElement, host: DOMRect): { sx: number; sy: number } {
   return {
@@ -63,12 +64,16 @@ export function BindCables() {
   }>({ paths: [], frame: { x: 0, y: 0, w: 0, h: 0 } });
 
   useEffect(() => {
-    const tick = () => {
+    if (! drag && ! hover) {
+      setPaint({ paths: [], frame: { x: 0, y: 0, w: 0, h: 0 } });
+      return;
+    }
+    const compute = () => {
       const hostEl = (document.querySelector(".nk-bind-host") ?? document.querySelector(".nk-circuit")) as HTMLElement | null;
+      const pane = document.querySelector(".nk-circuit") as HTMLElement | null;
       const next: Array<{ id: string; letter: string; d: string }> = [];
       let frame = { x: 0, y: 0, w: 0, h: 0 };
-      const active = drag || hover;
-      if (hostEl && active) {
+      if (hostEl && pane) {
         const host = hostEl.getBoundingClientRect();
         const { sx, sy } = scaleOf(hostEl, host);
         const boxOf = (el: Element) => {
@@ -84,36 +89,51 @@ export function BindCables() {
         if (frameEl) {
           frame = boxOf(frameEl);
         }
-        const boxes = [...document.querySelectorAll(".nk-chip, .nk-chip-io")].map(boxOf);
+        const paneBox = pane.getBoundingClientRect();
+        const paneInHost = {
+          x: (paneBox.left - host.left) / sx,
+          y: (paneBox.top - host.top) / sy,
+        };
+        const board = useBoardStore.getState();
+        const cam = board.camera;
+        const boxes = Object.values(board.nodes).map((n) => ({
+          x: paneInHost.x + n.x * cam.scale + cam.tx,
+          y: paneInHost.y + n.y * cam.scale + cam.ty,
+          w: n.w * cam.scale,
+          h: n.h * cam.scale,
+        }));
         const knobs = [...hostEl.querySelectorAll(".nk-prm")].map(boxOf);
+        const links = bindLinks(Object.values(board.nodes));
         for (const t of targets) {
           if (! bindCableVisible(t.letter, hover, drag)) {
             continue;
           }
-          const src = document.querySelector(`[data-knob-bind="${t.letter}"]`);
-          const dst = document.querySelector(`[data-bind-end="${bindEndId(t.letter, t.node)}"]`);
-          if (! src || ! dst) {
+          const src = hostEl.querySelector(`[data-knob-bind="${t.letter}"]`);
+          if (! src) {
             continue;
           }
-          const a = src.getBoundingClientRect();
-          const b = dst.getBoundingClientRect();
-          if (a.width < 1 || b.width < 1) {
+          const node = board.nodes[t.node];
+          if (! node) {
             continue;
           }
+          const key = links.find((l) => l.letter === t.letter && l.node === t.node)?.key
+            ?? paintedBindKeys(node.type, node.args)[0];
+          if (! key) {
+            continue;
+          }
+          const keys = paintedBindKeys(node.type, node.args);
+          const destWorld = bindJackWorld(node, key, keys.length ? keys : [key]);
+          const dest = hostPointFromWorld(destWorld, cam, paneInHost);
           const letterIndex = "abcdef".indexOf(t.letter);
-          const jack = dst.closest(".nk-bind-jack") ?? dst;
-          const face = (dst.closest("[data-bind-face]") as HTMLElement | null)?.dataset.bindFace === "top"
-            ? "top"
-            : "bottom";
           next.push({
             id: `${t.letter}:${t.node}`,
             letter: t.letter,
             d: bindSmoothPath(
               localPoint(src, hostEl, host, "top"),
-              localPoint(jack, hostEl, host, face),
+              dest,
               Math.max(0, letterIndex),
               boxes,
-              face,
+              "bottom",
               knobs,
             ),
           });
@@ -127,7 +147,8 @@ export function BindCables() {
         return same ? prev : { paths: next, frame };
       });
     };
-    return subscribeVizClock(tick);
+    compute();
+    return useBoardStore.subscribe(compute);
   }, [drag, hover, targets]);
 
   if (paint.paths.length === 0 || paint.frame.w < 1) {

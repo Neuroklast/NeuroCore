@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { BOARD_MIN_SCALE, type BoardNode } from "./boardModel";
 
 function node(id: string, x: number, y: number, w: number, h: number): BoardNode {
@@ -37,5 +37,14 @@ describe("board camera", () => {
     const world = { style: { transform: "" } };
     applyCameraTransform(world, { tx: 8, ty: 4, scale: 1 });
     expect(world.style.transform).toBe("matrix(1, 0, 0, 1, 8, 4)");
+  });
+
+  it("screenFromWorld is the inverse of worldFromScreen", () => {
+    const cam = { tx: 40, ty: 20, scale: 0.5 };
+    const s = screenFromWorld(cam, 100, 80);
+    const w = worldFromScreen(cam, s.x, s.y);
+    expect(s).toEqual({ x: 90, y: 60 });
+    expect(Math.abs(w.x - 100)).toBeLessThan(1e-9);
+    expect(Math.abs(w.y - 80)).toBeLessThan(1e-9);
   });
 });

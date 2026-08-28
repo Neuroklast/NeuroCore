@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.1-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.2-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 This file is the operator guide. The same text is what Help shows inside the plugin.
 
@@ -17,7 +17,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.1-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.2-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
@@ -98,7 +98,7 @@ Cables
 - A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Packet spacing and speed follow that channel’s RMS; brightness follows the peak. Below −60 dB the stream freezes. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
 - Right-click empty board to add a block (parked, no cable). Right-click a cable or click it to insert a block on that run. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face.
 - Circuit titles are not selectable text. Search and inspect fields still are.
-- Pan the board on empty pane, middle mouse, or space+drag. Wheel zooms under the cursor. Chips and cables move together; the camera is not a React re-render.
+- Pan the board on empty pane, middle mouse, or space+drag. Wheel zooms under the cursor. Drag a chip — it follows the pointer; cables meet it. The board stores the new place when you drop, then etches the PCB. The camera is not a React re-render.
 
 IN and OUT
 - **IN** is locked on the left. Two outputs on the right, stacked in the middle of the tile: **out** is the track, **sc** is the host sidechain. They sit under the title stripe and above the footer. There is no input jack on IN. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
@@ -165,7 +165,7 @@ Status bar (left to right)
 
 If something is wrong
 - Empty window on Windows: install Microsoft Edge WebView2, then reopen the plugin.
-- Cubase hangs while scanning plug-ins: you have an old 0.6.1. This build does not start the web view during scan — copy only `NEUROKORE-0.6.1-beta.vst3` into Common Files, not the whole artefact folder, then rescan.
+- Cubase hangs while scanning plug-ins: you have an old 0.6.1. This build does not start the web view during scan — copy only `NEUROKORE-0.6.2-beta.vst3` into Common Files, not the whole artefact folder, then rescan.
 - Terminal stuck on Loading: same, old build. This one uses the packaged editor.
 - No sound: Mix, Bypass, and SAFE. If SAFE, lower OS or simplify, then keep playing — it retries.
 - Sidechain silent: enable the extra input in the DAW, then cable IN **sc**.

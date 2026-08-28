@@ -2,7 +2,7 @@ import type { Edge, Node } from "../flowTypes";
 import type { ChipData } from "../flowFromAst";
 import { flowToLayout } from "./fromFlow";
 import { runLayout } from "./runLayout";
-import type { LayoutMode, LayoutResult, LayoutView } from "./types";
+import type { LayoutEdge, LayoutMode, LayoutNode, LayoutResult, LayoutView } from "./types";
 
 let worker: Worker | null = null;
 let nextId = 1;
@@ -102,13 +102,12 @@ export function applyLayoutResult<
   return { nodes: nextNodes, edges: nextEdges };
 }
 
-export async function requestLayout(
+function postGraphLayout(
   mode: LayoutMode,
-  nodes: Node<ChipData>[],
-  edges: Edge[],
-  view: LayoutView = { w: 960, h: 420 },
+  nodes: LayoutNode[],
+  edges: LayoutEdge[],
+  view: LayoutView,
 ): Promise<LayoutResult> {
-  const payload = flowToLayout(nodes, edges);
   const w = getWorker();
   if (w) {
     const reqId = nextId;
@@ -117,18 +116,37 @@ export async function requestLayout(
       const timer = setTimeout(() => {
         pending.delete(reqId);
         failWorker();
-        void runLayout(mode, payload.nodes, payload.edges, view).then(resolve, reject);
+        void runLayout(mode, nodes, edges, view).then(resolve, reject);
       }, workerTimeoutMs);
       pending.set(reqId, { resolve, reject, timer });
       try {
-        w.postMessage({ type: mode, nodes: payload.nodes, edges: payload.edges, view, reqId });
+        w.postMessage({ type: mode, nodes, edges, view, reqId });
       } catch {
         clearTimeout(timer);
         pending.delete(reqId);
         failWorker();
-        void runLayout(mode, payload.nodes, payload.edges, view).then(resolve, reject);
+        void runLayout(mode, nodes, edges, view).then(resolve, reject);
       }
     });
   }
-  return runLayout(mode, payload.nodes, payload.edges, view);
+  return runLayout(mode, nodes, edges, view);
+}
+
+export async function requestLayout(
+  mode: LayoutMode,
+  nodes: Node<ChipData>[],
+  edges: Edge[],
+  view: LayoutView = { w: 960, h: 420 },
+): Promise<LayoutResult> {
+  const payload = flowToLayout(nodes, edges);
+  return postGraphLayout(mode, payload.nodes, payload.edges, view);
+}
+
+export async function requestGraphLayout(
+  mode: LayoutMode,
+  nodes: LayoutNode[],
+  edges: LayoutEdge[],
+  view: LayoutView = { w: 960, h: 420 },
+): Promise<LayoutResult> {
+  return postGraphLayout(mode, nodes, edges, view);
 }

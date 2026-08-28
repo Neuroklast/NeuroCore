@@ -1,3 +1,4 @@
+import { bindJackXs } from "./chipLayout";
 import { BOARD_GRID } from "./grid";
 import { waypointToSvgPath } from "./layout/chamfer";
 import type { Pt } from "./layout/types";
@@ -40,6 +41,30 @@ export function bindLinks(nodes: Array<{ id: string; args: Record<string, unknow
     }
   }
   return out;
+}
+
+export function bindJackWorld(
+  node: { x: number; y: number; w: number; h: number },
+  key: string,
+  keys: string[],
+): Pt {
+  const i = Math.max(0, keys.indexOf(key));
+  const xs = bindJackXs(Math.max(keys.length, 1), node.w);
+  return {
+    x: node.x + (xs[i] ?? node.w * 0.5),
+    y: node.y + node.h,
+  };
+}
+
+export function hostPointFromWorld(
+  world: Pt,
+  cam: { tx: number; ty: number; scale: number },
+  paneInHost: { x: number; y: number },
+): Pt {
+  return {
+    x: paneInHost.x + world.x * cam.scale + cam.tx,
+    y: paneInHost.y + world.y * cam.scale + cam.ty,
+  };
 }
 
 export function bindTargets(nodes: Array<{ id: string; args: Record<string, unknown> }>): BindTarget[] {

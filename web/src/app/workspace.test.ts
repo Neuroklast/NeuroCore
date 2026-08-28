@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOpenBoard, knobBindEnabled, knobRail, paneShowsTechNoise, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
+import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, paneShowsTechNoise, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -36,5 +36,13 @@ describe("workspace modes", () => {
     expect(paneShowsTechNoise("face")).toBe(true);
     expect(paneShowsTechNoise("assemble")).toBe(false);
     expect(paneShowsTechNoise("hack")).toBe(false);
+  });
+
+  it("paints Circuit cables only on that tab with a real pane", () => {
+    expect(circuitPaintActive("assemble", 960, 420)).toBe(true);
+    expect(circuitPaintActive("face", 960, 420)).toBe(false);
+    expect(circuitPaintActive("hack", 960, 420)).toBe(false);
+    expect(circuitPaintActive("assemble", 0, 420)).toBe(false);
+    expect(circuitPaintActive("assemble", 960, 0)).toBe(false);
   });
 });

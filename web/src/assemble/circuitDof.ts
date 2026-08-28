@@ -12,6 +12,9 @@ export function circuitDofAllowed(motion: MotionPref, prefersReduced: boolean): 
   return motionAllows("dof", motion, prefersReduced);
 }
 
+export const boardHoverRef: { current: string | null } = { current: null };
+export const boardFocusEdgesRef: { current: Set<string> | null } = { current: null };
+
 /** Selected chain ∪ hover path (node + incident edges + neighbors). */
 export function focusPlane(input: {
   selectedNodeIds: readonly string[];
@@ -57,6 +60,23 @@ export function focusPlane(input: {
     nodes,
     edges: edgeSet,
   };
+}
+
+export function applyBoardFocus(
+  chips: ArrayLike<{ id: string; attr: string } | { getAttribute: (k: string) => string | null; setAttribute: (k: string, v: string) => void }>,
+  attrFor: (id: string) => string,
+): void {
+  for (let i = 0; i < chips.length; i += 1) {
+    const el = chips[i]!;
+    if ("attr" in el) {
+      el.attr = attrFor(el.id);
+      continue;
+    }
+    const id = el.getAttribute("data-node-id");
+    if (id) {
+      el.setAttribute("data-focus", attrFor(id));
+    }
+  }
 }
 
 export function focusAttr(

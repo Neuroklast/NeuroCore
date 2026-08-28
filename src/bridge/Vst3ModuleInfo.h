@@ -24,7 +24,7 @@ inline juce::String vst3ModuleInfoJson()
 #if defined (JucePlugin_VersionString)
     const auto version = juce::String (JucePlugin_VersionString);
 #else
-    const auto version = juce::String ("0.6.1");
+    const auto version = juce::String ("0.6.2");
 #endif
     return juce::String()
         + "{\n"

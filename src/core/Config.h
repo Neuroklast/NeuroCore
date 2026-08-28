@@ -338,7 +338,7 @@ namespace Config
 //==============================================================================
 
 #define PLUGIN_NAME       "NEUROKORE"
-#define PLUGIN_VERSION    "0.6.1-beta"
+#define PLUGIN_VERSION    "0.6.2-beta"
 #define PLUGIN_VENDOR     "Neuroklast"
 #define PLUGIN_ID         "nrko01"
 #define PLUGIN_BUILD_DATE __DATE__

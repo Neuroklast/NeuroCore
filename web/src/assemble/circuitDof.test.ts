@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { motionAllows } from "../theme/motionPolicy";
 import {
+  applyBoardFocus,
   circuitDofAllowed,
   focusAttr,
   focusPlane,
@@ -37,6 +38,22 @@ describe("circuit depth of field", () => {
     expect(focusAttr(true, plane, "IN")).toBe("soft");
     expect(focusAttr(true, plane, "e-a-b", "edge")).toBe("sharp");
     expect(focusAttr(true, plane, "e-in-a", "edge")).toBe("soft");
+  });
+
+  it("writes data-focus on chip nodes without a React hover state", () => {
+    const chips = [
+      { id: "a", attr: "" },
+      { id: "IN", attr: "" },
+    ];
+    const plane = focusPlane({
+      selectedNodeIds: ["a"],
+      selectedEdgeIds: [],
+      hoverNodeId: null,
+      edges,
+    });
+    applyBoardFocus(chips, (id) => focusAttr(true, plane, id));
+    expect(chips[0]?.attr).toBe("sharp");
+    expect(chips[1]?.attr).toBe("soft");
   });
 
   it("hover path expands to incident edges and neighbor chips", () => {
