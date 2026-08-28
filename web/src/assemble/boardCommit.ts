@@ -66,15 +66,19 @@ export async function layoutBoard(
 }
 
 export function rerouteBoard(): void {
+  const epoch = useBoardStore.getState().layoutEpoch;
   const g = useBoardStore.getState();
   const payload = graphToLayout(g);
   void requestGraphLayout("REROUTE", payload.nodes, payload.edges).then((laid) => {
+    if (useBoardStore.getState().layoutEpoch !== epoch) {
+      return;
+    }
     const routes: Record<string, Array<{ x: number; y: number }>> = {};
     for (const [id, d] of Object.entries(laid.edgePaths)) {
       routes[id] = parseRoutePath(d);
     }
-    useBoardStore.getState().applyLayout(laid.nodes, routes);
-  });
+    useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
+  }).catch(() => undefined);
 }
 
 export function commitBoardConnect(src: BoardPort, dst: BoardPort): void {

@@ -73,4 +73,16 @@ describe("requestLayout stays off the UI thread when a worker exists", () => {
     const laid = await requestLayout("REROUTE", nodes, [], { w: 400, h: 200 });
     expect(laid.nodes).toBeTruthy();
   });
+
+  it("rejects other in-flight jobs when one request times out", async () => {
+    setLayoutWorkerTimeoutMs(20);
+    const fake = { postMessage() {}, terminate() {} };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    const nodes = [{ id: "IN", ins: [], outs: [] as Array<{ id: string; y: number }>, w: 96, h: 96 }];
+    const a = requestGraphLayout("REROUTE", nodes, [], { w: 400, h: 200 });
+    const b = requestGraphLayout("REROUTE", nodes, [], { w: 400, h: 200 });
+    await expect(b).rejects.toThrow(/layout worker/);
+    const laid = await a;
+    expect(laid.nodes).toBeTruthy();
+  });
 });

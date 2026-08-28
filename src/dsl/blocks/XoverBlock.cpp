@@ -82,7 +82,7 @@ void SignalChain::Xover::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fb;
     };
     f1Sm.setTargetValue (ev (f1Hz, 120.f));

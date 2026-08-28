@@ -75,6 +75,7 @@ private:
     struct Block
     {
         juce::String busName { "main" };
+        int busIndex { 0 };
         juce::String tapId;
         int tapSlot { -1 };
         NodeKind kind { NodeKind::Generic };
@@ -986,6 +987,8 @@ private:
     std::array<juce::AudioBuffer<float>, Config::kMaxNamedBuses + 1> busScratch;
 
     void ensureBusBuffers (int numChannels, int numSamples);
+    void bindBusGains (BusGraph& g) const noexcept;
+    float readBoundGain (const BoundGain& g, int sampleIndex) const noexcept;
     float resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept;
     bool isNumericGain (const juce::String& expr) const noexcept;
     void applyBusSends (int busIndex, int numChannels, int numSamples);
@@ -1091,6 +1094,11 @@ public:
     bool copyTapPeak (const juce::String& id, float& dest) const noexcept;
     bool copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept;
     void appendClipPeaks (juce::Array<juce::var>& dest) const;
+
+    /** Prepare ceiling. processBlock must not grow these (ASIO Guard / multi-bus). */
+    int getInSnapshotNumSamples() const noexcept { return inSnapshot.getNumSamples(); }
+    int getBusScratchNumSamples() const noexcept { return busScratch[0].getNumSamples(); }
+    int getIrDryScratchNumSamples() const noexcept;
 
     /** Latest meter chip reading in dB. False if `id` is not a meter. */
     bool copyMeterReading (const juce::String& id, float& destDb) const noexcept;

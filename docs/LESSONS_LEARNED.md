@@ -17,6 +17,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - **Library first.** Before writing canvas geometry (grid, snap, edge path, drag line, layout), open the React Flow docs and the `@xyflow/react` exports already in the file. Use what it ships. Invent only the constraint RF cannot express. If you cannot name the RF API you rejected and the contract it failed, you do not get a new helper.
 - A plugin build that skips `npm run build` ships yesterday’s UI. `NeuroKoreWeb` is a hard dependency of `NeuroKore` / VST3 / Standalone. Missing `npm` is a configure error. Do not add an optional web target again.
 - The build is CMake (`NeuroKore_All`). Do not restore Projucer `Builds/`, `JuceLibraryCode/`, or `NeuroCore.jucer`. CMake generates BinaryData; native knob PNGs and melatonin_inspector are not part of the editor.
+- Version is one string: CMake `NEUROKORE_VERSION_LABEL`, `PLUGIN_VERSION`, `nk.version`, Inno `MyAppVersion`, and `scripts/package_windows.ps1`. `UI_READY` sends `nk.version`, not a leftover 0.6.1. Do not invent a new label.
 - Testers get a single `.vst3` and `.exe`. The editor must live inside those files (`NEUROKORE_WEB_DIST` zip resource), not in a sibling `web/` folder. Copying `web/dist` next to the artefact is dev-only.
 - Windows `.rc` string names in quotes keep the quote characters. FindResource then misses. Use an integer ID (`41001 RCDATA`), not `"NEUROKORE_WEB_DIST"`.
 
@@ -63,7 +64,8 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Standalone has no IPlugView. `editor.getPeer()` is the app window (`GetParent` is null). That HWND is the park parent. Parenting to the hidden owner HWND hides the WebView for the whole session. The VST3 “never child of the editor HWND” rule does not apply when the editor peer **is** the top-level window.
 - Host bypass is `processBlockBypassed`. JUCE’s default does not delay. If `getLatencySamples() > 0`, bypassed dry must use the same PDC delay as mix 0 or the track jumps. OS, True-Peak GR, soft clip, and dither do not run; the limiter delay line still advances.
 - Two VST3 instances in one host process must not share a WebView2 user-data folder. One profile for all instances serializes Chromium and stutters both UIs. That folder is also `localStorage`: never store machine-wide Settings there. Theme/motion/fps live in `UiSettings` (`%AppData%/NEUROKLAST/NeuroKore/ui.settings`) and ride the host snapshot. Mix, OS, knobs, and the formula stay host state per insert. `emitEventIfBrowserIsVisible` is a no-op when `Component::isVisible` is false — do not hide the parked WebView if shared prefs must reach it. Another process writes the same file: reload on change, do not keep a stale singleton.
-- A preset load that starts ELK/A* must not apply that result after a newer hydrate. Stamp `layoutEpoch` on replace; drop stale `applyLayout`. Host echo of the same chip ids keeps live xy. Stored PCB that does not meet the current jacks is empty space — paint a stub, do not keep the old polyline.
+- A preset load that starts ELK/A* must not apply that result after a newer hydrate. Stamp `layoutEpoch` on replace; drop stale `applyLayout`. `rerouteBoard` (connect/cut) is the same stamp — no epoch-less apply. Host echo of the same chip ids keeps live xy. Stored PCB that does not meet the current jacks is empty space — paint a stub, do not keep the old polyline.
+- Layout worker timeout must reject every other in-flight job (`failWorker` clears `pending`). The timed-out request may fall back to local ELK; leftovers must not hang for another 2.5 s.
 - Cubase track change / ASIO Guard calls `setNonRealtime` and VST3 `setProcessing`. Half-band OS, sanitation, and delay rings must `reset()` on that flag change (same as `PluginProcessor::reset`, including the 256-sample fade-in). Do not leave filter memory from the previous realtime/lookahead path.
 - ENV is a follower. LFO lamp/chase is only for `osc`. Do not feed env cables a fake 1 Hz `freq`.
 - ENV is a bus tap (audio `in`, mod `out`). LFO has no audio in. `connectAudio` must not treat env as osc. Draw IN/prev → env.in; env is never a through node.
@@ -72,6 +74,8 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Preset arrows walk the selected explorer folder, then the next folder. They do not walk JSON order.
 - Octaver `up = 0` must not still run the +1 rectifier. Use LookupTables for sin/tanh on that path.
 - Audio thread never looks up `variables[juce::String]`. Bind knob/env/osc slots at load. `hardclip`/`fold` are not ADAA — do not force the sample loop.
+- Audio path uses `evaluateLive` (no parse lock, no ADAA reset). `evaluate()` is prepare/tests only. Delay already documented the lock+reset as the 8× Space-Echo crackle — Filter/Comp/Pitch/IR/Reverb were still on `evaluate()`.
+- Multi-bus scratch (`inSnapshot` / `busScratch`) and IR `dryScratch` are sized in `prepare` / `loadScript`. `processBlock` never `setSize`s them. Mixdown writes `dest` (no temp `AudioBuffer`). Bus filter is `busIndex` bound at load, not `juce::String("main")`. Send/out gain is `BoundGain` (const or knob lane), not `trim()`/`toLowerCase()` per sample.
 - Knob readout is `round2` (+ unit / `%`×100). Never round SignalChain / audio-thread samples to match the label.
 - Bind from an inactive knob activates it with `chipSpec.ranges` / `enums`. Enum binds are N detents + N ticks, not a continuous arc.
 - IR WAV is host state, never the formula. An overlay with Load is not a feature if nothing opens it. Circuit chip, Inspect, Stages, and Terminal must share one Impulse entry.
@@ -79,6 +83,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## DSP / CPU
 
 - Footer CPU is 0–100. Host-callback ratio > 1 is not a percent of the machine.
+- NKTM (`TelemetryPump`) scans only while an editor is attached. Headless inserts skip `noteInput`/`publish`. Chip taps stay; they are the Circuit glow, not the Unit scope.
 - Cubase ASIO Guard can deliver host `n` > `prepareToPlay` `samplesPerBlock`. Never `setSize` / `new` / `juce::String` copy on the audio thread; slice at the prepared host ceiling before OS.
 - After a trip, do not decay the wet EMA to 0 (fake recovery). Do not leave 1.73 on the meter during SAFE-hold (`noteHoldDisplay`).
 - LFO Hz is not audio rate. Filter coeffs: stride + smoother, not `setCutoff` every sample at 8×.

@@ -5,8 +5,19 @@
 #include "../dsp/LookupTables.h"
 #include "../utils/Log.h"
 #include "Localiser.h"
+#include <atomic>
 
 using namespace juce;
+
+namespace
+{
+std::atomic<uint32_t> gLockedEvaluateCalls { 0 };
+}
+
+uint32_t ExpressionEvaluator::takeLockedEvaluateCalls() noexcept
+{
+    return gLockedEvaluateCalls.exchange (0, std::memory_order_relaxed);
+}
 
 static_assert (ExpressionEvaluator::MaxVariables <= (size_t) ExprTape::kMaxVars,
                "tape LoadVar index must fit ExprTape::kMaxVars");
@@ -1084,6 +1095,7 @@ void ExpressionEvaluator::setVariable(size_t index, float value) noexcept
 
 float ExpressionEvaluator::evaluate(float xValue) const noexcept
 {
+    gLockedEvaluateCalls.fetch_add (1, std::memory_order_relaxed);
     Node* localRoot = nullptr;
     VarArray varsCopy;
     {

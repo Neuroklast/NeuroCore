@@ -9,6 +9,7 @@
 #include "../src/dsp/LatencyAlignedSidechain.h"
 #include "../src/dsp/InputRouter.h"
 #include "../src/dsl/SignalChain.h"
+#include "../src/utils/ExpressionEvaluator.h"
 #include "TestHelpers.h"
 #include <cmath>
 #include <vector>
@@ -145,6 +146,105 @@ public:
         beginTest ("oversampling default choice index is 4x (2)");
         {
             expectEquals (Config::kDefaultOversamplingIndex, 2);
+        }
+
+        beginTest ("multi-bus prepare sizes scratch; processBlock does not grow it");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            const juce::String script =
+                "stage1: y = x\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.5\n"
+                "out: main = 1; dirt = 1\n";
+            expect (chain.loadScript (script, err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            const int snap0 = chain.getInSnapshotNumSamples();
+            const int bus0 = chain.getBusScratchNumSamples();
+            expect (snap0 >= 64, "prepare must size inSnapshot before the first callback");
+            expect (bus0 >= 64, "prepare must size busScratch before the first callback");
+
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.5f);
+                buf.setSample (1, i, 0.5f);
+            }
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 0.75f, 0.02f);
+            expectEquals (chain.getInSnapshotNumSamples(), snap0,
+                          "inSnapshot grew on a prepared-size block");
+            expectEquals (chain.getBusScratchNumSamples(), bus0,
+                          "busScratch grew on a prepared-size block");
+
+            juce::AudioBuffer<float> overflow (2, 256);
+            for (int i = 0; i < 256; ++i)
+            {
+                overflow.setSample (0, i, 0.4f);
+                overflow.setSample (1, i, 0.4f);
+            }
+            chain.processBlock (overflow);
+            expectEquals (TestHelpers::countNonFinite (overflow), 0);
+            expectEquals (chain.getInSnapshotNumSamples(), snap0,
+                          "inSnapshot grew on n=256 after prepare 64");
+            expectEquals (chain.getBusScratchNumSamples(), bus0,
+                          "busScratch grew on n=256 after prepare 64");
+        }
+
+        beginTest ("IR dryScratch is sized in prepare; processBlock does not grow it");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("ir1: mix = 1", err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> ir (1, 32);
+            ir.clear();
+            ir.setSample (0, 0, 1.f);
+            chain.loadImpulseResponse ("ir1", ir, 48000.0);
+            const int dry0 = chain.getIrDryScratchNumSamples();
+            expect (dry0 >= 64, "IR prepare must size dryScratch");
+
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.3f);
+                buf.setSample (1, i, 0.3f);
+            }
+            chain.processBlock (buf);
+            expectEquals (chain.getIrDryScratchNumSamples(), dry0,
+                          "dryScratch grew on a prepared-size block");
+
+            juce::AudioBuffer<float> overflow (2, 256);
+            overflow.clear();
+            chain.processBlock (overflow);
+            expectEquals (chain.getIrDryScratchNumSamples(), dry0,
+                          "dryScratch grew on n=256 after prepare 64");
+        }
+
+        beginTest ("processBlock does not take the expression parse lock");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "filter1: type = lowpass; cutoff = 800\n"
+                "comp1: threshold = -12; ratio = 4; attack = 0.01; release = 0.1\n"
+                "delay1: time = 180; mix = 0.25; feedback = 0.3\n"
+                "eq1: freq = 1000; q = 0.7; gain = 0\n",
+                err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            ExpressionEvaluator::takeLockedEvaluateCalls();
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.2f);
+                buf.setSample (1, i, 0.2f);
+            }
+            chain.processBlock (buf);
+            expectEquals ((int) ExpressionEvaluator::takeLockedEvaluateCalls(), 0,
+                          "evaluate() lock+ADAA-reset is not the audio path");
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
         }
 
         beginTest ("footer CPU stays 0-100 after LTO (host ratio is not the meter)");

@@ -82,7 +82,7 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fb;
     };
     mixSm.setTargetValue (ev (mixExpr, 1.f));
@@ -95,19 +95,22 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
         return;
     }
 
-    if (dryScratch.getNumChannels() < nCh || dryScratch.getNumSamples() < nS)
-        dryScratch.setSize (nCh, nS, false, false, true);
-    for (int c = 0; c < nCh; ++c)
-        dryScratch.copyFrom (c, 0, buffer, c, 0, nS);
+    const int nUse = juce::jmin (nS, dryScratch.getNumSamples());
+    const int chUse = juce::jmin (nCh, dryScratch.getNumChannels());
+    if (nUse <= 0 || chUse <= 0)
+        return;
+    for (int c = 0; c < chUse; ++c)
+        dryScratch.copyFrom (c, 0, buffer, c, 0, nUse);
 
     juce::dsp::AudioBlock<float> block (buffer);
-    juce::dsp::ProcessContextReplacing<float> ctx (block);
+    auto sub = block.getSubBlock (0, (size_t) nUse);
+    juce::dsp::ProcessContextReplacing<float> ctx (sub);
     conv.process (ctx);
 
     const juce::AudioBuffer<float>* drySrc = &dryScratch;
     if (latencySamples > 0)
     {
-        dryAlign.pushAndRead (dryScratch, nS);
+        dryAlign.pushAndRead (dryScratch, nUse);
         drySrc = &dryAlign.getAligned();
     }
 
@@ -117,8 +120,8 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
         juce::jlimit (-24.f, 24.f, gainSm.getCurrentValue()));
     if (staticMix && mix0 <= 1.0e-4f)
     {
-        for (int c = 0; c < nCh; ++c)
-            buffer.copyFrom (c, 0, *drySrc, c, 0, nS);
+        for (int c = 0; c < chUse; ++c)
+            buffer.copyFrom (c, 0, *drySrc, c, 0, nUse);
         mixSm.skip (nS);
         gainSm.skip (nS);
         return;
@@ -126,7 +129,7 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
     if (staticMix && mix0 >= 0.999f)
     {
         if (std::abs (g0 - 1.f) > 1.0e-5f)
-            buffer.applyGain (g0);
+            sub.multiplyBy (g0);
         mixSm.skip (nS);
         gainSm.skip (nS);
         return;
@@ -134,14 +137,14 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
 
     float* chOut[2] {};
     const float* chDry[2] {};
-    const int useCh = juce::jmin (nCh, 2);
+    const int useCh = juce::jmin (chUse, 2);
     for (int c = 0; c < useCh; ++c)
     {
         chOut[c] = buffer.getWritePointer (c);
         chDry[c] = drySrc->getReadPointer (c);
     }
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < nUse; ++i)
     {
         const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
         const float g = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 24.f, gainSm.getNextValue()));

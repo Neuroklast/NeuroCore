@@ -31,6 +31,8 @@ public:
 
     /** Audio-thread eval: no parse lock, no ADAA reset. Formula is immutable after load. */
     float evaluateLive (float x) const noexcept;
+    /** Test hook: locked evaluate() calls since last take. Audio path must stay 0. */
+    static uint32_t takeLockedEvaluateCalls() noexcept;
     bool hasLiveTape() const noexcept { return liveTape.n > 0; }
     bool liveTapeCanSimd() const noexcept { return exprTapeCanSimd (liveTape); }
     bool hasLiveJit() const noexcept { return liveJit.fn != nullptr; }

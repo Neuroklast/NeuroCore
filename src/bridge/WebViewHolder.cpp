@@ -262,6 +262,7 @@ struct WebViewHolder::Impl : private juce::Timer,
 
         attachedTo = &editor;
         editor.addComponentListener (this);
+        proc.getTelemetry().setWanted (true);
         syncNative (editor);
     }
 
@@ -282,6 +283,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (surface != nullptr && ! bridge::keepWebViewVisibleForHostEvents())
             surface->setVisible (false);
         attachedTo = nullptr;
+        proc.getTelemetry().setWanted (false);
     }
 
     void layout (juce::Rectangle<int> inner)

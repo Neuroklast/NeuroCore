@@ -75,6 +75,8 @@ float TelemetryPump::rmsOf (const juce::AudioBuffer<float>& src) noexcept
 
 void TelemetryPump::noteInput (const juce::AudioBuffer<float>& in) noexcept
 {
+    if (! wanted.load (std::memory_order_relaxed))
+        return;
     decimate (in, scopeIn, kScopeN);
     lastInPeak = peakOf (in);
     lastInRms = rmsOf (in);
@@ -82,6 +84,8 @@ void TelemetryPump::noteInput (const juce::AudioBuffer<float>& in) noexcept
 
 void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) noexcept
 {
+    if (! wanted.load (std::memory_order_relaxed))
+        return;
     decimate (out, scopeOut, kScopeN);
     const int n = out.getNumSamples();
     const float* L = out.getNumChannels() > 0 ? out.getReadPointer (0) : nullptr;

@@ -97,6 +97,12 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
                     irb->loadImpulse (*it->second.audio, it->second.sr);
             }
         }
+    const int busCh = (int) juce::jmax ((juce::uint32) 1, spec.numChannels);
+    const int busN  = (int) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64);
+    ensureBusBuffers (busCh, busN);
+    if (auto g = std::atomic_load (&busGraph))
+        if (auto ptr = std::atomic_load (&chain))
+            bindXoverDestinations (*ptr, *g);
 }
 
 static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
@@ -1478,6 +1484,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (xo->threeBand)
                     ensureGraphBus (newGraph, "mid");
             }
+        for (auto& b : *newChain)
+        {
+            b->busIndex = findBusIndex (newGraph, b->busName);
+            if (b->busIndex < 0)
+                b->busIndex = 0;
+        }
         retiredBusGraph = std::atomic_load (&busGraph);
         std::atomic_store (&busGraph, std::make_shared<BusGraph> (std::move (newGraph)));
     }
@@ -1565,6 +1577,17 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
     std::atomic_store (&chain, newChain);
     hot.bind (variables);
+    if (currentSpec.sampleRate > 0.0)
+    {
+        const int busCh = (int) juce::jmax ((juce::uint32) 1, currentSpec.numChannels);
+        const int busN  = (int) juce::jmax (currentSpec.maximumBlockSize, (juce::uint32) 64);
+        ensureBusBuffers (busCh, busN);
+    }
+    if (auto g = std::atomic_load (&busGraph))
+    {
+        bindBusGains (*g);
+        bindXoverDestinations (*newChain, *g);
+    }
     return true;
 }
 
@@ -1614,6 +1637,17 @@ juce::StringArray SignalChain::getIrSlotNames() const
     return names;
 }
 
+int SignalChain::getIrDryScratchNumSamples() const noexcept
+{
+    auto c = std::atomic_load (&chain);
+    if (! c)
+        return 0;
+    for (const auto& b : *c)
+        if (auto* ir = dynamic_cast<const Ir*> (b.get()))
+            return ir->dryScratch.getNumSamples();
+    return 0;
+}
+
 int SignalChain::getIrLatencySamples() const noexcept
 {
     auto c = std::atomic_load (&chain);
@@ -1661,10 +1695,10 @@ void SignalChain::ensureBusBuffers (int numChannels, int numSamples)
 {
     const int ch = juce::jmax (1, numChannels);
     const int sm = juce::jmax (1, numSamples);
-    if (inSnapshot.getNumChannels() != ch || inSnapshot.getNumSamples() < sm)
+    if (inSnapshot.getNumChannels() != ch || inSnapshot.getNumSamples() != sm)
         inSnapshot.setSize (ch, sm, false, false, true);
     for (auto& b : busScratch)
-        if (b.getNumChannels() != ch || b.getNumSamples() < sm)
+        if (b.getNumChannels() != ch || b.getNumSamples() != sm)
             b.setSize (ch, sm, false, false, true);
 }
 
@@ -1674,6 +1708,95 @@ bool SignalChain::isNumericGain (const juce::String& expr) const noexcept
     if (e.isEmpty())
         return true;
     return e.retainCharacters ("0123456789.+-").length() == e.length();
+}
+
+namespace
+{
+BoundGain parseBoundGain (const juce::String& expr, const AliasMap* aliases) noexcept
+{
+    BoundGain g;
+    auto e = expr.trim();
+    if (e.isEmpty())
+        return g;
+
+    const auto lower = e.toLowerCase();
+    if (lower.startsWith ("1-"))
+    {
+        g.complement = true;
+        e = e.substring (2).trim();
+    }
+    else if (lower.startsWith ("1 -"))
+    {
+        g.complement = true;
+        e = e.substring (3).trim();
+    }
+    if (e.startsWithChar ('(') && e.endsWithChar (')') && e.length() >= 2)
+        e = e.substring (1, e.length() - 1).trim();
+
+    auto isNum = [] (const juce::String& s) -> bool
+    {
+        if (s.isEmpty())
+            return true;
+        return s.retainCharacters ("0123456789.+-").length() == s.length();
+    };
+    if (isNum (e))
+    {
+        g.numeric = true;
+        g.k = e.getFloatValue();
+        return g;
+    }
+
+    g.numeric = false;
+    for (int i = 0; i < Config::kNumUserParams; ++i)
+        if (e.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
+        {
+            g.knob = i;
+            return g;
+        }
+    if (aliases != nullptr)
+    {
+        for (const auto& kv : *aliases)
+        {
+            if (! e.equalsIgnoreCase (kv.second) && ! e.equalsIgnoreCase (kv.first))
+                continue;
+            for (int i = 0; i < Config::kNumUserParams; ++i)
+                if (kv.first.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
+                {
+                    g.knob = i;
+                    return g;
+                }
+        }
+    }
+    g.numeric = true;
+    g.k = e.getFloatValue();
+    return g;
+}
+} // namespace
+
+void SignalChain::bindBusGains (BusGraph& g) const noexcept
+{
+    auto al = std::atomic_load (&aliases);
+    const AliasMap* map = al.get();
+    for (auto& b : g.buses)
+        for (auto& s : b.sends)
+            s.gain = parseBoundGain (s.gainExpr, map);
+    for (auto& t : g.outTaps)
+        t.gain = parseBoundGain (t.gainExpr, map);
+}
+
+float SignalChain::readBoundGain (const BoundGain& g, int sampleIndex) const noexcept
+{
+    float v = g.k;
+    if (g.knob >= 0 && g.knob < Config::kNumUserParams)
+    {
+        if (sampleIndex >= 0 && sampleIndex < knobLaneN && knobLane[(size_t) g.knob] != nullptr)
+            v = knobLane[(size_t) g.knob][(size_t) sampleIndex];
+        else
+            v = paramSmooth[(size_t) g.knob].getCurrentValue();
+    }
+    if (g.complement)
+        v = 1.0f - v;
+    return juce::jlimit (0.0f, 2.0f, v);
 }
 
 float SignalChain::resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept
@@ -1755,17 +1878,18 @@ void SignalChain::applyBusSends (int busIndex, int numChannels, int numSamples)
 
         const int srcCh = juce::jmin (chUse, src->getNumChannels());
         const int srcSm = juce::jmin (smUse, src->getNumSamples());
-        if (isNumericGain (s.gainExpr))
+        if (s.gain.numeric && s.gain.knob < 0)
         {
-            dest.addFrom (0, 0, *src, 0, 0, srcSm, resolveBusGain (s.gainExpr, 0));
+            const float g = readBoundGain (s.gain, 0);
+            dest.addFrom (0, 0, *src, 0, 0, srcSm, g);
             for (int ch = 1; ch < srcCh; ++ch)
-                dest.addFrom (ch, 0, *src, ch, 0, srcSm, resolveBusGain (s.gainExpr, 0));
+                dest.addFrom (ch, 0, *src, ch, 0, srcSm, g);
         }
         else
         {
             for (int i = 0; i < srcSm; ++i)
             {
-                const float g = resolveBusGain (s.gainExpr, i);
+                const float g = readBoundGain (s.gain, i);
                 for (int ch = 0; ch < srcCh; ++ch)
                     dest.addSample (ch, i, src->getSample (ch, i) * g);
             }
@@ -1798,26 +1922,22 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
     dest.clear();
     bool varying = false;
     for (const auto& t : graphPtr->outTaps)
-        if (! isNumericGain (t.gainExpr))
+        if (! t.gain.numeric || t.gain.knob >= 0)
             varying = true;
 
     if (! varying)
     {
-        std::vector<juce::AudioBuffer<float>*> srcs;
-        std::vector<float> gains;
-        srcs.reserve (graphPtr->outTaps.size());
-        gains.reserve (graphPtr->outTaps.size());
         for (const auto& t : graphPtr->outTaps)
         {
             if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
                 continue;
-            srcs.push_back (&busScratch[(size_t) t.busIndex]);
-            gains.push_back (resolveBusGain (t.gainExpr, 0));
+            const float g = readBoundGain (t.gain, 0);
+            auto& src = busScratch[(size_t) t.busIndex];
+            const int srcCh = juce::jmin (chUse, src.getNumChannels());
+            const int srcSm = juce::jmin (smUse, src.getNumSamples());
+            for (int ch = 0; ch < srcCh; ++ch)
+                dest.addFrom (ch, 0, src, ch, 0, srcSm, g);
         }
-        juce::AudioBuffer<float> mixed (chUse, smUse);
-        mixdown (mixed, srcs, gains);
-        for (int ch = 0; ch < chUse; ++ch)
-            dest.copyFrom (ch, 0, mixed, ch, 0, smUse);
         const float db = graphPtr->outGainDb.getFloatValue();
         if (std::abs (db) > 1.0e-4f)
             dest.applyGain (0, smUse, std::pow (10.f, db / 20.f));
@@ -1830,7 +1950,7 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
         {
             if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
                 continue;
-            const float g = resolveBusGain (t.gainExpr, i);
+            const float g = readBoundGain (t.gain, i);
             auto& src = busScratch[(size_t) t.busIndex];
             const int srcCh = juce::jmin (chUse, src.getNumChannels());
             for (int ch = 0; ch < srcCh; ++ch)
@@ -2020,35 +2140,37 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     const bool multi = graphPtr != nullptr
                     && (graphPtr->buses.size() > 1 || graphPtr->hasExplicitOut());
 
-    auto renderEnvsFor = [&] (juce::AudioBuffer<float>& work, const juce::String& onlyBus)
+    auto renderEnvsFor = [&] (juce::AudioBuffer<float>& work, int onlyBus)
     {
+        const int nWork = juce::jmin (numSamples, work.getNumSamples());
         const float* envL = work.getNumChannels() > 0 ? work.getReadPointer (0) : nullptr;
         const float* envR = work.getNumChannels() > 1 ? work.getReadPointer (1) : nullptr;
         if (envL == nullptr)
             return;
         for (int i = 0; i < nEnv; ++i)
         {
-            if (onlyBus.isNotEmpty() && ! envs[i]->busName.equalsIgnoreCase (onlyBus))
+            if (onlyBus >= 0 && envs[i]->busIndex != onlyBus)
                 continue;
             if (envs[i]->followSidechain && extScL != nullptr && extScN > 0)
                 envs[i]->renderModBlock (extScL, extScR != nullptr ? extScR : extScL,
-                                         juce::jmin (numSamples, extScN));
+                                         juce::jmin (nWork, extScN));
             else
-                envs[i]->renderModBlock (envL, envR, numSamples);
+                envs[i]->renderModBlock (envL, envR, nWork);
             if (! envs[i]->modLane.empty())
                 writeNodeTapLane (envs[i]->tapSlot, envs[i]->modLane.data(),
                                   (int) envs[i]->modLane.size());
         }
     };
 
-    auto processOn = [&] (juce::AudioBuffer<float>& work, const juce::String& onlyBus)
+    auto processOn = [&] (juce::AudioBuffer<float>& work, int onlyBus)
     {
         const int workCh = work.getNumChannels();
-        if (onlyBus.isEmpty() || onlyBus == "main")
+        const int nWork = juce::jmin (numSamples, work.getNumSamples());
+        if (onlyBus < 0 || onlyBus == 0)
             writeNodeTap (kTapSlotIn, work);
         for (auto& b : *chainPtr)
         {
-            if (onlyBus.isNotEmpty() && ! b->busName.equalsIgnoreCase (onlyBus))
+            if (onlyBus >= 0 && b->busIndex != onlyBus)
                 continue;
 
             switch (b->kind)
@@ -2064,7 +2186,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     {
                         auto* l = work.getWritePointer (0);
                         auto* r = work.getWritePointer (1);
-                        for (int i = 0; i < numSamples; ++i)
+                        for (int i = 0; i < nWork; ++i)
                         {
                             const float m = (l[i] + r[i]) * 0.5f;
                             const float s = (l[i] - r[i]) * 0.5f;
@@ -2087,7 +2209,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                                                        ? 1
                                                        : (size_t) juce::jmin (workCh, st->histCh);
 
-                            for (int i = 0; i < numSamples; ++i)
+                            for (int i = 0; i < nWork; ++i)
                             {
                                 if (st->usesTimeVariable)
                                     injectKnobsAt (i);
@@ -2121,7 +2243,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     {
                         auto* m = work.getWritePointer (0);
                         auto* s = work.getWritePointer (1);
-                        for (int i = 0; i < numSamples; ++i)
+                        for (int i = 0; i < nWork; ++i)
                         {
                             const float l = m[i] + s[i];
                             const float r = m[i] - s[i];
@@ -2139,11 +2261,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     auto* dl = static_cast<Delay*> (b.get());
                     auto* L = work.getWritePointer (0);
                     auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
-                    const int mid = juce::jmax (0, numSamples - 1);
+                    const int mid = juce::jmax (0, nWork - 1);
                     injectKnobsAt (mid);
                     writeModsAt (mid);
                     dl->syncFromVariables();
-                    for (int i = 0; i < numSamples; ++i)
+                    for (int i = 0; i < nWork; ++i)
                         dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
                     if (b->tapSlot >= 0)
                         writeNodeTap (b->tapSlot, work);
@@ -2156,9 +2278,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     if (fi->modulated)
                     {
                         const int stride = juce::jmax (1, Config::kFilterCoeffStride);
-                        for (int i = 0; i < numSamples; )
+                        for (int i = 0; i < nWork; )
                         {
-                            const int n = juce::jmin (stride, numSamples - i);
+                            const int n = juce::jmin (stride, nWork - i);
                             const int mid = i + n / 2;
                             for (int p = 0; p < Config::kNumUserParams; ++p)
                                 if (hot.knob[p] != nullptr && knobLane[(size_t) p] != nullptr && mid < nLane)
@@ -2200,18 +2322,18 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             for (int ch = 0; ch < workCh; ++ch)
             {
                 auto* data = work.getWritePointer (ch);
-                for (int i = 0; i < numSamples; ++i)
+                for (int i = 0; i < nWork; ++i)
                     data[i] = DSPUtils::softCeilSample (data[i], kChainCeil);
             }
         }
 
-        if (onlyBus.isEmpty() || onlyBus == "main")
+        if (onlyBus < 0 || onlyBus == 0)
             writeNodeTap (kTapSlotOut, work);
     };
 
     if (! multi)
     {
-        renderEnvsFor (buffer, {});
+        renderEnvsFor (buffer, -1);
         for (int i = 0; i < nOsc; ++i)
             if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
                 if (oscs[i]->destSlot != nullptr)
@@ -2220,28 +2342,31 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
                 if (envs[i]->destSlot != nullptr)
                     *envs[i]->destSlot = envs[i]->modLane[(size_t) numSamples - 1];
-        processOn (buffer, {});
+        processOn (buffer, -1);
     }
     else
     {
-        ensureBusBuffers (numChannels, numSamples);
-        for (int ch = 0; ch < numChannels; ++ch)
-            inSnapshot.copyFrom (ch, 0, buffer, ch, 0, numSamples);
-        for (int ch = 0; ch < numChannels; ++ch)
-            busScratch[0].copyFrom (ch, 0, inSnapshot, ch, 0, numSamples);
+        const int sm = juce::jmin (numSamples,
+                                   inSnapshot.getNumSamples(),
+                                   busScratch[0].getNumSamples());
+        const int chUse = juce::jmin (numChannels, inSnapshot.getNumChannels());
+        if (sm <= 0 || chUse <= 0)
+            return;
+        for (int ch = 0; ch < chUse; ++ch)
+            inSnapshot.copyFrom (ch, 0, buffer, ch, 0, sm);
+        for (int ch = 0; ch < chUse; ++ch)
+            busScratch[0].copyFrom (ch, 0, inSnapshot, ch, 0, sm);
         for (int bi = 1; bi < (int) graphPtr->buses.size() && bi < (int) busScratch.size(); ++bi)
             busScratch[(size_t) bi].clear();
-        bindXoverDestinations (*chainPtr, *graphPtr);
 
-        renderEnvsFor (busScratch[0], "main");
-        processOn (busScratch[0], "main");
+        renderEnvsFor (busScratch[0], 0);
+        processOn (busScratch[0], 0);
 
         for (int bi = 1; bi < (int) graphPtr->buses.size(); ++bi)
         {
-            applyBusSends (bi, numChannels, numSamples);
-            const auto& name = graphPtr->buses[(size_t) bi].name;
-            renderEnvsFor (busScratch[(size_t) bi], name);
-            processOn (busScratch[(size_t) bi], name);
+            applyBusSends (bi, chUse, sm);
+            renderEnvsFor (busScratch[(size_t) bi], bi);
+            processOn (busScratch[(size_t) bi], bi);
         }
 
         for (int i = 0; i < nOsc; ++i)
@@ -2253,7 +2378,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 if (envs[i]->destSlot != nullptr)
                     *envs[i]->destSlot = envs[i]->modLane[(size_t) numSamples - 1];
 
-        writeMixdown (buffer, numChannels, numSamples);
+        writeMixdown (buffer, chUse, sm);
         writeNodeTap (kTapSlotOut, buffer);
     }
 
@@ -2628,7 +2753,7 @@ void SignalChain::Osc::updateFrequencyFromExpr() noexcept
     for (const auto& n : varNames)
         freqExpr.setVariable(n.second, *n.first);
 
-    float f = freqExpr.evaluate (0.0f);
+    float f = freqExpr.evaluateLive (0.0f);
     if (freqExprIsPeriodMs)
         f = 1000.0f / juce::jmax (1.0f, f);
     if (! std::isfinite (f) || f <= 0.0f)
@@ -2645,7 +2770,7 @@ void SignalChain::Osc::updateSyncFrequency() noexcept
     {
         for (const auto& n : varNames)
             syncExpr.setVariable (n.second, *n.first);
-        const float r = syncExpr.evaluate (0.0f);
+        const float r = syncExpr.evaluateLive (0.0f);
         if (std::isfinite (r) && r > 0.0f)
         {
             if (syncExprIsPeriodMs)
@@ -3074,8 +3199,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     }
 
     const float probe = buffer.getSample(0, 0);
-    float fc  = cutoff.evaluate(probe);
-    float res = resonance.evaluate(probe);
+    float fc  = cutoff.evaluateLive(probe);
+    float res = resonance.evaluateLive(probe);
     if (! std::isfinite (fc))  fc  = 1000.0f;
     if (! std::isfinite (res)) res = 0.7f;
 
@@ -3083,8 +3208,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     {
         if (useCenterWidth)
         {
-            float c = center.evaluate(probe);
-            float w = width.evaluate(probe);
+            float c = center.evaluateLive(probe);
+            float w = width.evaluateLive(probe);
             if (! std::isfinite (c)) c = 1000.0f;
             if (! std::isfinite (w) || w < 1.0f) w = 500.0f;
             fc = c;
@@ -3093,8 +3218,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
         }
         else if (useLowHigh)
         {
-            float lo = lowcut.evaluate(probe);
-            float hi = highcut.evaluate(probe);
+            float lo = lowcut.evaluateLive(probe);
+            float hi = highcut.evaluateLive(probe);
             if (! std::isfinite (lo)) lo = 200.0f;
             if (! std::isfinite (hi)) hi = 2000.0f;
             fc = (lo + hi) * 0.5f;
@@ -3282,9 +3407,9 @@ void SignalChain::Eq::processBlock (juce::AudioBuffer<float>& buffer)
         }
     }
 
-    float f0 = freq.evaluate (0.f);
-    float q0 = q.evaluate (0.f);
-    float g0 = gainDb.evaluate (0.f);
+    float f0 = freq.evaluateLive (0.f);
+    float q0 = q.evaluateLive (0.f);
+    float g0 = gainDb.evaluateLive (0.f);
     if (! std::isfinite (f0)) f0 = 1000.f;
     if (! std::isfinite (q0)) q0 = 0.707f;
     if (! std::isfinite (g0)) g0 = 0.f;
@@ -3397,12 +3522,12 @@ float SignalChain::Env::process(int ch, float x)
         }
         if (! attackLit)
         {
-            atkTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, attack.evaluate (x)));
+            atkTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, attack.evaluateLive (x)));
             a = atkTime.getNextValue();
         }
         if (! releaseLit)
         {
-            relTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, release.evaluate (x)));
+            relTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, release.evaluateLive (x)));
             r = relTime.getNextValue();
         }
     }
@@ -3632,17 +3757,17 @@ float SignalChain::getMaxTailTime() const noexcept
         if (const auto* co = dynamic_cast<const Comp*>(b.get()))
         {
             // release is stored as seconds (0.01..1.0 from addDefaultMap)
-            float rel = co->release.evaluate(0.f);
+            float rel = co->release.evaluateLive(0.f);
             if (rel > maxTail) maxTail = rel;
         }
         else if (const auto* lim = dynamic_cast<const Limit*> (b.get()))
         {
-            float rel = lim->release.evaluate (0.f);
+            float rel = lim->release.evaluateLive (0.f);
             if (rel > maxTail) maxTail = rel;
         }
         else if (const auto* en = dynamic_cast<const Env*>(b.get()))
         {
-            float rel = en->release.evaluate(0.f);
+            float rel = en->release.evaluateLive(0.f);
             if (rel > maxTail) maxTail = rel;
         }
         else if (const auto* dl = dynamic_cast<const Delay*>(b.get()))
@@ -3771,7 +3896,7 @@ float SignalChain::Delay::resolveDelaySamples() const noexcept
     }
     else
     {
-        ms = timeMs.evaluate (0.f);
+        ms = timeMs.evaluateLive (0.f);
         if (! std::isfinite (ms))
             ms = 250.f;
     }
@@ -3788,10 +3913,10 @@ float SignalChain::Delay::tailSeconds() const noexcept
         ms = static_cast<float> ((60000.0 / currentBpm) * (double) syncBeats);
     else
     {
-        ms = timeMs.evaluate (0.f);
+        ms = timeMs.evaluateLive (0.f);
         if (! std::isfinite (ms)) ms = 250.f;
     }
-    float fb = feedback.evaluate (0.f);
+    float fb = feedback.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
     fb = juce::jlimit (0.f, 0.95f, fb);
     // Approximate audible tail: delay * log(noise)/log(fb)
@@ -3821,10 +3946,10 @@ float SignalChain::Delay::process (int ch, float x)
     }
 
     const float dSamps = resolveDelaySamples();
-    float fb = feedback.evaluate (0.f);
+    float fb = feedback.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
     fb = juce::jlimit (0.f, 0.95f, fb);
-    float wet = mix.evaluate (0.f);
+    float wet = mix.evaluateLive (0.f);
     if (! std::isfinite (wet)) wet = 0.35f;
     wet = juce::jlimit (0.f, 1.f, wet);
 
@@ -3833,7 +3958,7 @@ float SignalChain::Delay::process (int ch, float x)
     if (! std::isfinite (delayed))
         delayed = 0.f;
 
-    float dampHzV = dampHz.evaluate (0.f);
+    float dampHzV = dampHz.evaluateLive (0.f);
     if (! std::isfinite (dampHzV)) dampHzV = 6500.f;
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi
                                   * juce::jlimit (200.f, sampleRate * 0.45f, dampHzV) / sampleRate);
@@ -3868,15 +3993,15 @@ void SignalChain::Delay::syncFromVariables() noexcept
 
     delaySm.setTargetValue (resolveDelaySamples());
 
-    float fb = feedback.evaluate (0.f);
+    float fb = feedback.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
     fbSm.setTargetValue (juce::jlimit (0.0f, 0.98f, fb));
 
-    float mx = mix.evaluate (0.f);
+    float mx = mix.evaluateLive (0.f);
     if (! std::isfinite (mx)) mx = 0.35f;
     mixSm.setTargetValue (juce::jlimit (0.0f, 1.0f, mx));
 
-    float dampHzV = dampHz.evaluate (0.f);
+    float dampHzV = dampHz.evaluateLive (0.f);
     if (! std::isfinite (dampHzV)) dampHzV = 6500.f;
     dampHzV = juce::jlimit (200.f, sampleRate * 0.45f, dampHzV);
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHzV / sampleRate);
@@ -4092,10 +4217,10 @@ void SignalChain::Reverb::prepare (const juce::dsp::ProcessSpec& spec)
 
 float SignalChain::Reverb::tailSeconds() const noexcept
 {
-    float decay = decayExpr.evaluate (0.f);
+    float decay = decayExpr.evaluateLive (0.f);
     if (! std::isfinite (decay)) decay = 0.5f;
     decay = juce::jlimit (0.05f, 0.98f, decay);
-    float size = sizeExpr.evaluate (0.f);
+    float size = sizeExpr.evaluateLive (0.f);
     if (! std::isfinite (size)) size = 0.55f;
     // Empirical RT60 proxy
     return juce::jlimit (0.2f, 10.0f, 0.4f + size * 1.2f + decay * 4.5f);
@@ -4104,13 +4229,13 @@ float SignalChain::Reverb::tailSeconds() const noexcept
 float SignalChain::Reverb::process (int ch, float x)
 {
     // Scalar path: feed all combs on this channel bank
-    float decay = decayExpr.evaluate (0.f);
+    float decay = decayExpr.evaluateLive (0.f);
     if (! std::isfinite (decay)) decay = 0.5f;
     const float fb = 0.7f + juce::jlimit (0.05f, 0.95f, decay) * 0.28f;
-    float damp = dampExpr.evaluate (0.f);
+    float damp = dampExpr.evaluateLive (0.f);
     if (! std::isfinite (damp)) damp = 0.4f;
     damp = juce::jlimit (0.f, 0.95f, damp);
-    float wet = mixExpr.evaluate (0.f);
+    float wet = mixExpr.evaluateLive (0.f);
     if (! std::isfinite (wet)) wet = 0.3f;
     wet = juce::jlimit (0.f, 1.f, wet);
 
@@ -4146,7 +4271,7 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
         }
     }
 
-    float size = sizeExpr.evaluate (0.f);
+    float size = sizeExpr.evaluateLive (0.f);
     if (! std::isfinite (size)) size = 0.55f;
     size = juce::jlimit (0.05f, 1.0f, size);
     sizeSm.setTargetValue (size);
@@ -4155,24 +4280,24 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
     if (std::abs (size - lastSize) > 0.02f)
         applySize (size);
 
-    float decay = decayExpr.evaluate (0.f);
+    float decay = decayExpr.evaluateLive (0.f);
     if (! std::isfinite (decay)) decay = 0.5f;
     decay = juce::jlimit (0.05f, 0.95f, decay);
     // Map 0..1 → comb feedback ~0.7..0.98 (Freeverb room)
     const float fb = 0.7f + decay * 0.28f;
     decaySm.setTargetValue (fb);
 
-    float damp = dampExpr.evaluate (0.f);
+    float damp = dampExpr.evaluateLive (0.f);
     if (! std::isfinite (damp)) damp = 0.4f;
     damp = juce::jlimit (0.0f, 0.95f, damp);
     dampSm.setTargetValue (damp);
 
-    float mx = mixExpr.evaluate (0.f);
+    float mx = mixExpr.evaluateLive (0.f);
     if (! std::isfinite (mx)) mx = 0.3f;
     mx = juce::jlimit (0.0f, 1.0f, mx);
     mixSm.setTargetValue (mx);
 
-    float width = widthExpr.evaluate (0.f);
+    float width = widthExpr.evaluateLive (0.f);
     if (! std::isfinite (width)) width = 1.f;
     width = juce::jlimit (0.0f, 1.0f, width);
     widthSm.setTargetValue (width);
@@ -4468,11 +4593,11 @@ void SignalChain::Octaver::processBlock (juce::AudioBuffer<float>& buffer)
     {
         sm.setTargetValue (std::isfinite (v) ? v : fallback);
     };
-    setT (subSm, subExpr.evaluate (0.f), 0.65f);
-    setT (upSm, upExpr.evaluate (0.f), 0.2f);
-    setT (mixSm, mixExpr.evaluate (0.f), 0.7f);
-    setT (toneSm, toneExpr.evaluate (0.f), 420.f);
-    setT (thrSm, threshExpr.evaluate (0.f), 0.04f);
+    setT (subSm, subExpr.evaluateLive (0.f), 0.65f);
+    setT (upSm, upExpr.evaluateLive (0.f), 0.2f);
+    setT (mixSm, mixExpr.evaluateLive (0.f), 0.7f);
+    setT (toneSm, toneExpr.evaluateLive (0.f), 420.f);
+    setT (thrSm, threshExpr.evaluateLive (0.f), 0.04f);
 
     float* dst[2] {};
     const int useCh = juce::jmin (nCh, 2);
@@ -4633,14 +4758,14 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
     {
         sm.setTargetValue (std::isfinite (v) ? v : fallback);
     };
-    setT (mixSm, mixExpr.evaluate (0.f), 0.85f);
-    setT (qSm, qExpr.evaluate (0.f), 2.2f);
-    setT (formSm, formantExpr.evaluate (0.f), 1.f);
-    setT (drySm, dryExpr.evaluate (0.f), 0.15f);
+    setT (mixSm, mixExpr.evaluateLive (0.f), 0.85f);
+    setT (qSm, qExpr.evaluateLive (0.f), 2.2f);
+    setT (formSm, formantExpr.evaluateLive (0.f), 1.f);
+    setT (drySm, dryExpr.evaluateLive (0.f), 0.15f);
 
     // Evaluate per-block envelope times (clamp to safe range)
-    const float atkV = attackExpr.evaluate (0.f);
-    const float relV = releaseExpr.evaluate (0.f);
+    const float atkV = attackExpr.evaluateLive (0.f);
+    const float relV = releaseExpr.evaluateLive (0.f);
     const float atkSec = juce::jlimit (0.001f, 0.1f, std::isfinite (atkV) ? atkV : 0.003f);
     const float relSec = juce::jlimit (0.005f, 0.5f, std::isfinite (relV) ? relV : 0.030f);
     const float atk = 1.f - std::exp (-1.f / (atkSec * sampleRate));
@@ -4975,6 +5100,10 @@ void SignalChain::Sidechain::prepare (const juce::dsp::ProcessSpec& spec)
     float m0 = mixExpr.evaluate (0.f);
     if (! std::isfinite (m0)) m0 = 1.f;
     mixSm.setCurrentAndTargetValue (juce::jlimit (0.f, 1.f, m0));
+    varNames.clear();
+    if (varPtr != nullptr)
+        for (auto& kv : *varPtr)
+            varNames.emplace_back (&kv.second, kv.first.toStdString());
 }
 
 void SignalChain::Sidechain::clearRuntimeState() noexcept
@@ -4986,15 +5115,10 @@ void SignalChain::Sidechain::syncMixFromVars() noexcept
 {
     if (varPtr != nullptr)
     {
-        if (varNames.empty())
-        {
-            for (auto& kv : *varPtr)
-                varNames.emplace_back (&kv.second, kv.first.toStdString());
-        }
         for (const auto& n : varNames)
             mixExpr.setVariable (n.second, *n.first);
     }
-    float m = mixExpr.evaluate (0.f);
+    float m = mixExpr.evaluateLive (0.f);
     if (! std::isfinite (m)) m = 1.f;
     mixSm.setTargetValue (juce::jlimit (0.f, 1.f, m));
 }

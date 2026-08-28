@@ -196,14 +196,14 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
         ceilingDb.setVariable (entry.second, v);
     }
 
-    const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f));
-    const float mixT = juce::jlimit (0.f, 1.f, mixExpr.evaluate (0.f));
-    float formant = formantExpr.evaluate (0.f);
+    const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluateLive (0.f));
+    const float mixT = juce::jlimit (0.f, 1.f, mixExpr.evaluateLive (0.f));
+    float formant = formantExpr.evaluateLive (0.f);
     if (! (formant > 0.f))
         formant = 1.f;
     formant = juce::jlimit (0.25f, 4.f, formant);
 
-    const float ceilDb = ceilingDb.evaluate (0.f);
+    const float ceilDb = ceilingDb.evaluateLive (0.f);
     if (std::abs (ceilDb - cachedCeil) > 1.0e-5f)
     {
         cachedCeil = ceilDb;
@@ -257,12 +257,12 @@ float SignalChain::Pitch::process (int channel, float x)
         ceilingDb.setVariable (entry.second, v);
     }
 
-    const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluate (0.f)) / 12.f);
-    float fr = formantExpr.evaluate (0.f);
+    const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluateLive (0.f)) / 12.f);
+    float fr = formantExpr.evaluateLive (0.f);
     if (! (fr > 0.f)) fr = 1.f;
     fr = juce::jlimit (0.25f, 4.f, fr);
-    const float mixV = juce::jlimit (0.f, 1.f, mixExpr.evaluate (0.f));
-    const float ceilDb = juce::jlimit (-24.f, 0.f, ceilingDb.evaluate (0.f));
+    const float mixV = juce::jlimit (0.f, 1.f, mixExpr.evaluateLive (0.f));
+    const float ceilDb = juce::jlimit (-24.f, 0.f, ceilingDb.evaluateLive (0.f));
     const int ci = juce::jlimit (0, 1, channel);
     float wet = processSample (ch[ci], x, pr, fr);
     wet = DSPUtils::softCeilSample (wet, juce::Decibels::decibelsToGain (ceilDb));
