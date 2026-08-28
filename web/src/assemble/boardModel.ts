@@ -158,8 +158,8 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     const jacks = visualJacksFor(n, visible).length ? visualJacksFor(n, visible) : (n.jacks ?? []);
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     const role: "io" | "chip" = n.type === "out" || isSidechainType(n.type) ? "io" : "chip";
-    const px = n.x != null && Number.isFinite(n.x) ? n.x : x;
-    const py = n.y != null && Number.isFinite(n.y) ? n.y : rowY;
+    const px = x;
+    const py = rowY;
     nodes[n.id] = makeNode(
       n.id,
       isSidechainType(n.type) ? "sidechain" : n.type,

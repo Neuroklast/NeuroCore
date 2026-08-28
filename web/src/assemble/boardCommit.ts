@@ -43,17 +43,22 @@ export async function layoutBoard(
   mode: "ARRANGE" | "COMPACT" | "REROUTE",
   view: { w: number; h: number },
 ): Promise<void> {
-  if (mode !== "REROUTE") {
-    useBoardStore.setState({ userMoved: false });
-  }
+  const epoch = useBoardStore.getState().layoutEpoch;
   const g = useBoardStore.getState();
   const payload = graphToLayout(g);
   const laid = await runLayout(mode, payload.nodes, payload.edges, view);
+  const live = useBoardStore.getState();
+  if (live.layoutEpoch !== epoch) {
+    return;
+  }
+  if (mode !== "REROUTE" && live.userMoved) {
+    return;
+  }
   const routes: Record<string, Array<{ x: number; y: number }>> = {};
   for (const [id, d] of Object.entries(laid.edgePaths)) {
     routes[id] = parseRoutePath(d);
   }
-  useBoardStore.getState().applyLayout(laid.nodes, routes);
+  useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
   if (mode !== "REROUTE") {
     const next = useBoardStore.getState();
     useBoardStore.getState().setCamera(fitCamera(Object.values(next.nodes), view));

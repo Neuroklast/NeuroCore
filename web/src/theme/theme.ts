@@ -207,8 +207,4 @@ export function themeRgba(slot: "accent" | "cyan" | "warn", alpha: number, theme
   return `rgba(${rgb}, ${a})`;
 }
 
-export const THEME_STORAGE_KEY = "nk-theme";
 
-export function readStoredTheme(raw: string | null): ThemeId {
-  return raw && isThemeId(raw) ? raw : DEFAULT_THEME;
-}

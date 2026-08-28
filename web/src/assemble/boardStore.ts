@@ -14,6 +14,7 @@ import { snapToGrid } from "./grid";
 export type BoardState = BoardGraph & {
   camera: BoardCamera;
   userMoved: boolean;
+  layoutEpoch: number;
   hydrate: (ast: AstDocument | null, sidechainOn?: boolean, keepXy?: boolean) => void;
   setCamera: (camera: BoardCamera) => void;
   setEdges: (edges: Record<string, BoardEdge>) => void;
@@ -21,6 +22,7 @@ export type BoardState = BoardGraph & {
   applyLayout: (
     placed: Record<string, { x: number; y: number; w: number; h: number }>,
     routes: Record<string, Array<{ x: number; y: number }>>,
+    epoch?: number,
   ) => void;
 };
 
@@ -30,9 +32,11 @@ export const useBoardStore = create<BoardState>((set) => ({
   ...empty,
   camera: { tx: 32, ty: 32, scale: 1 },
   userMoved: false,
+  layoutEpoch: 0,
   hydrate: (ast, sidechainOn = false, keepXy = false) => {
+    const epoch = useBoardStore.getState().layoutEpoch + 1;
     if (! ast) {
-      set({ ...empty, userMoved: false });
+      set({ ...empty, userMoved: false, layoutEpoch: epoch });
       return;
     }
     const next = hydrateBoard(ast, sidechainOn);
@@ -47,7 +51,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       set({ ...next, userMoved: true });
       return;
     }
-    set({ ...next, userMoved: false });
+    set({ ...next, userMoved: false, layoutEpoch: epoch });
   },
   setCamera: (camera) => set({ camera }),
   setEdges: (edges) => set({ edges }),
@@ -68,9 +72,12 @@ export const useBoardStore = create<BoardState>((set) => ({
       edges,
     };
   }),
-  applyLayout: (placed, routes) => set((s) => ({
-    ...applyPlaced(s, placed, routes),
-  })),
+  applyLayout: (placed, routes, epoch) => set((s) => {
+    if (epoch != null && epoch !== s.layoutEpoch) {
+      return s;
+    }
+    return applyPlaced(s, placed, routes);
+  }),
 }));
 
 export function boardNodes(): BoardNode[] {

@@ -14,8 +14,9 @@ import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, worldFromScre
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, hitBoardEdge } from "./boardEdit";
-import { graphToLayout, portGlobal, type BoardPort } from "./boardModel";
+import { graphToLayout, hydrateBoard, portGlobal, type BoardPort } from "./boardModel";
 import { useBoardStore } from "./boardStore";
+import { keepBoardXy } from "./boardSync";
 import { CableCanvas, paintCablesNow } from "./CableCanvas";
 import { demoClipRows } from "./demoClips";
 import { circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
@@ -64,7 +65,15 @@ export function BoardView() {
   const dofAllowed = circuitDofAllowed(motion, prefersReduced);
 
   useEffect(() => {
-    useBoardStore.getState().hydrate(ast, sidechainOn, origin === "canvas");
+    const prevIds = Object.keys(useBoardStore.getState().nodes);
+    const nextIds = ast ? Object.keys(hydrateBoard(ast, sidechainOn).nodes) : [];
+    const keep = keepBoardXy({
+      origin,
+      prevIds,
+      nextIds,
+      chipsHavePositions: true,
+    });
+    useBoardStore.getState().hydrate(ast, sidechainOn, keep);
     if (origin === "preset") {
       useChipViewStore.getState().collapseAll();
     }

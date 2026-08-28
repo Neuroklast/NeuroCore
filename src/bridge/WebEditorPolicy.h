@@ -67,4 +67,11 @@ inline bool shouldRealizeChromium (bool stillAttached,
     return stillAttached && hasPeer && ticket == epoch;
 }
 
+/** JUCE emitEventIfBrowserIsVisible no-ops when Component::isVisible is false.
+    Shared Settings must still reach a parked WebView (closed editor). */
+inline bool keepWebViewVisibleForHostEvents() noexcept
+{
+    return true;
+}
+
 } // namespace bridge

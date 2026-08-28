@@ -53,7 +53,7 @@ Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
 - Functions — look up formula words and insert them.
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
+- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Mix, OS, knobs, and the formula stay with the insert. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
@@ -108,7 +108,7 @@ Blocks
 - A closed chip is a lamp to the left of the name, then a type code, mute/solo. Contacts are labelled `[ IN ]` `[ OUT ]` `[ MID ]` `[ SIDE ]`. The footer line is the instance id and live peak, not a fake serial — it sits above the south parameter sockets. The chevron opens Inspect (every parameter). Dragging a knob over the chip opens the bind list; south labels hide while that list is open.
 - Envelope: the lamp fills with the live level. Open it to pick **source** (`in` or `sidechain`) and **unit** (`lin` 0–1, or `db` for a compressor built from env + a formula stage).
 - Phaser is a real allpass cascade (rate, depth, center, feedback, mix, stages). Flanger is a short delay comb; invert is through-zero. Filter **allpass** is one phaser stage if you want to stack them yourself.
-- Loading a preset closes open details and fits the whole chain above the mix bar.
+- Loading a preset closes open details, lays the chain out left to right, and fits it above the mix bar. Cables meet the jacks of that layout; they do not keep the previous sound’s paths.
 
 Arrange and Compact
 - Right-click empty board → Arrange (one row, left to right) or Compact (wrap to the window, still left to right — never a snake). The wrap cable runs between the rows, not around the whole board. Compact keeps a Send bus on its own row under the main chain and parks OUT at the right. Ctrl+A Arrange, Shift+A Compact. Loading a preset arranges, and wraps only if the chain is wider than the window. Dragging a chip stops auto-layout until you Arrange/Compact again.

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { applyUiPrefs } from "../chrome/persistUi";
-import { DEFAULT_THEME, isThemeId, readStoredTheme, THEME_STORAGE_KEY, type ThemeId } from "../theme/theme";
+import { DEFAULT_THEME, isThemeId, type ThemeId } from "../theme/theme";
 
 export interface KnobState {
   id: string;
@@ -242,21 +242,8 @@ export const useHostStore = create<HostState>((set) => ({
   presetName: "",
   originName: "",
   presetDirty: false,
-  discardPrompt: (() => {
-    try {
-      return localStorage.getItem("nk-discard-prompt") !== "0";
-    } catch {
-      return true;
-    }
-  })(),
-  frameRate: (() => {
-    try {
-      const n = Number(localStorage.getItem("nk-fps") ?? "60");
-      return n === 30 ? 30 : 60;
-    } catch {
-      return 60;
-    }
-  })(),
+  discardPrompt: true,
+  frameRate: 60,
   pendingPreset: null,
   presets: [],
   licensed: true,
@@ -272,7 +259,7 @@ export const useHostStore = create<HostState>((set) => ({
   bypass: false,
   mixHeld: 1,
   motion: "full",
-  cables: "wave",
+  cables: "dots",
   formulaPt: 18,
   scopeSource: "both",
   scopeDelta: false,
@@ -288,16 +275,7 @@ export const useHostStore = create<HostState>((set) => ({
   clipsRms: {},
   clipsRmsL: {},
   clipsRmsR: {},
-  theme: (() => {
-    try {
-      if (typeof localStorage === "undefined" || typeof localStorage.getItem !== "function") {
-        return DEFAULT_THEME;
-      }
-      return readStoredTheme(localStorage.getItem(THEME_STORAGE_KEY));
-    } catch {
-      return DEFAULT_THEME;
-    }
-  })(),
+  theme: DEFAULT_THEME,
   knobGestures: {} as Record<string, true>,
   knobMeta: {} as Record<string, Partial<KnobState>>,
 
@@ -458,12 +436,6 @@ export const useHostStore = create<HostState>((set) => ({
   setPolisher: (index) => set({ polisher: Math.max(0, Math.min(1, Math.round(index))) }),
   setInput: (index) => set({ input: Math.max(0, Math.min(2, Math.round(index))) }),
   setTheme: (id) => {
-    const theme = isThemeId(id) ? id : DEFAULT_THEME;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      /* private mode */
-    }
-    set({ theme });
+    set({ theme: isThemeId(id) ? id : DEFAULT_THEME });
   },
 }));

@@ -57,3 +57,26 @@ export function stubRoute(from: Pt, to: Pt): Pt[] {
     to,
   ]);
 }
+
+function near(a: Pt, b: Pt): boolean {
+  return Math.abs(a.x - b.x) <= BOARD_GRID && Math.abs(a.y - b.y) <= BOARD_GRID;
+}
+
+/** Stored PCB that does not meet the current jacks is empty space — drop it. */
+export function routeFitsPorts(from: Pt, to: Pt, route: Pt[]): boolean {
+  if (route.length < 2) {
+    return false;
+  }
+  return near(route[0]!, from) && near(route[route.length - 1]!, to);
+}
+
+/** Paint the stored route only when both ends still sit on the jacks. */
+export function paintRoute(from: Pt, to: Pt, route: Pt[]): Pt[] {
+  if (! routeFitsPorts(from, to, route)) {
+    return stubRoute(from, to);
+  }
+  const pinned = route.slice();
+  pinned[0] = from;
+  pinned[pinned.length - 1] = to;
+  return pinned;
+}

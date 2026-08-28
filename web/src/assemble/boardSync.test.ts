@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOARD_MIN_ZOOM, boardIdsMatch, fitViewOpts, keepLivePositions, mergeBoardNodes, nextSeenIds, paneCanFit, scheduleFitView, shouldAutoArrange, shouldFitView } from "./boardSync";
+import { BOARD_MIN_ZOOM, boardIdsMatch, fitViewOpts, keepBoardXy, keepLivePositions, mergeBoardNodes, nextSeenIds, paneCanFit, scheduleFitView, shouldAutoArrange, shouldFitView } from "./boardSync";
 
 describe("board position ownership", () => {
   it("does not auto-arrange after a user drag or explicit Arrange", () => {
@@ -45,6 +45,21 @@ describe("board position ownership", () => {
       origin: "host",
       prevIds: ["IN", "stage1", "OUT"],
       nextIds: ["IN", "stage1", "OUT"],
+      chipsHavePositions: true,
+    })).toBe(false);
+  });
+
+  it("keeps live xy on a host echo of the same chips so a preset layout does not jump", () => {
+    const ids = ["IN", "stage1", "OUT"];
+    const same = { prevIds: ids, nextIds: ids, chipsHavePositions: true };
+    expect(keepBoardXy({ origin: "host", ...same })).toBe(true);
+    expect(keepBoardXy({ origin: "bridge", ...same })).toBe(true);
+    expect(keepBoardXy({ origin: "canvas", ...same })).toBe(true);
+    expect(keepBoardXy({ origin: "preset", ...same })).toBe(false);
+    expect(keepBoardXy({
+      origin: "host",
+      prevIds: [],
+      nextIds: ids,
       chipsHavePositions: true,
     })).toBe(false);
   });

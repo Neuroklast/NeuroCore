@@ -12,6 +12,30 @@ describe("hostStore", () => {
     });
   });
 
+  it("shared prefs default from native UiSettings, not WebView2 localStorage", () => {
+    const s = useHostStore.getInitialState();
+    expect(s.theme).toBe("signal");
+    expect(s.frameRate).toBe(60);
+    expect(s.discardPrompt).toBe(true);
+    expect(s.cables).toBe("dots");
+  });
+
+  it("host snapshot applies shared prefs from native UiSettings", () => {
+    useHostStore.getState().applyHost({
+      theme: "gold",
+      frameRate: 30,
+      discardPrompt: false,
+      motion: "reduced",
+      cables: "dots",
+    });
+    const s = useHostStore.getState();
+    expect(s.theme).toBe("gold");
+    expect(s.frameRate).toBe(30);
+    expect(s.discardPrompt).toBe(false);
+    expect(s.motion).toBe("reduced");
+    expect(s.cables).toBe("dots");
+  });
+
   it("initial os/osFactor/polisher match APVTS defaults (Issue 5: no cross-instance flash)", () => {
     // The store initialises with values that match the plugin's APVTS defaults:
     //   kDefaultOversamplingIndex = 2  →  4×  (index 2, factor 4)

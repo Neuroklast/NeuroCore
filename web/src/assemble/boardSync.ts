@@ -46,12 +46,14 @@ export function scheduleFitView(run: () => void): void {
   });
 }
 
-export function shouldAutoArrange(opts: {
+export type ArrangeOpts = {
   origin: Origin;
   prevIds: readonly string[];
   nextIds: readonly string[];
   chipsHavePositions: boolean;
-}): boolean {
+};
+
+export function shouldAutoArrange(opts: ArrangeOpts): boolean {
   if (opts.origin === "canvas" || opts.origin === "elk") {
     return false;
   }
@@ -67,6 +69,11 @@ export function shouldAutoArrange(opts: {
     return false;
   }
   return opts.origin === "host" || opts.origin === "bridge";
+}
+
+/** Keep the live board xy unless this AST is a new graph / preset load. */
+export function keepBoardXy(opts: ArrangeOpts): boolean {
+  return ! shouldAutoArrange(opts);
 }
 
 /** Strict Mode re-runs the paint effect. Do not remember ids while arrange is still pending. */

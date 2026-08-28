@@ -8,6 +8,7 @@
 #include "../src/bridge/WebBridge.h"
 #include "../src/bridge/WebEditorPolicy.h"
 #include "../src/bridge/WebNav.h"
+#include "../src/bridge/Vst3ModuleInfo.h"
 #include "../src/bridge/WebViewHolder.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/utils/ExprTapeJit.h"
@@ -167,6 +168,28 @@ public:
             expectEquals ((int) hello.getProperty ("scriptLength", -1), 17);
         }
 
+        beginTest ("parked WebView stays visible so shared Settings reach every instance");
+        {
+            expect (bridge::keepWebViewVisibleForHostEvents());
+        }
+
+        beginTest ("VST3 moduleinfo.json names NEUROKORE and matches the JUCE class CID");
+        {
+            const auto json = bridge::vst3ModuleInfoJson();
+            const auto cid = bridge::vst3CidHex (juce::VST3ClientExtensions::InterfaceType::component);
+            expect (cid.length() == 32, cid);
+            expect (json.contains ("\"Name\": \"NEUROKORE\""), json);
+            expect (json.contains ("Audio Module Class"), json);
+            expect (json.contains (cid), json);
+            const auto disk = juce::File (NEUROKORE_RESOURCES_DIR).getChildFile ("moduleinfo.json");
+            expect (disk.existsAsFile(), disk.getFullPathName());
+            const auto onDisk = disk.loadFileAsString();
+            expect (onDisk.contains ("NEUROKORE"), onDisk);
+#if JUCE_WINDOWS
+            expect (onDisk.contains (cid), onDisk);
+#endif
+        }
+
         beginTest ("Space is host transport, never a plugin command");
         {
             expect (bridge::isHostTransportKey (juce::KeyPress (juce::KeyPress::spaceKey)));
@@ -274,8 +297,13 @@ public:
                     "WebView2 must not exist in the holder ctor / createView");
             expect (holder.browserIdentity() != 0,
                     "holder identity is the Impl, not Chromium");
-            expect (holder.zipIndexBuildCount() >= 1);
+            expectEquals (holder.zipIndexBuildCount(), 0,
+                          "zip index is lazy; holder ctor does not parse the embedded zip");
             expect (holder.serve ("/").has_value());
+            const int afterServe = holder.zipIndexBuildCount();
+            expect (holder.serve ("/").has_value());
+            expectEquals (holder.zipIndexBuildCount(), afterServe,
+                          "serve does not rebuild the zip index");
 
             juce::Component frame;
             holder.attach (frame);
@@ -304,7 +332,6 @@ public:
             const auto first = holder.serve ("/");
             expect (first.has_value(), "resource provider serves /");
             const int builds = holder.zipIndexBuildCount();
-            expect (builds >= 1);
             expect (holder.serve ("/").has_value());
             expectEquals (holder.zipIndexBuildCount(), builds,
                           "serve does not rebuild the zip index");
@@ -348,7 +375,9 @@ public:
         beginTest ("WebZipIndex load is serialized across threads");
         {
             bridge::WebZipIndex index;
-            expect (index.buildCount() >= 1);
+            expectEquals (index.buildCount(), 0, "ctor does not parse the zip");
+            (void) index.load ("/");
+            expectEquals (index.buildCount(), 1, "first load builds once");
             std::atomic<int> hits { 0 };
             std::vector<std::thread> threads;
             threads.reserve (4);
