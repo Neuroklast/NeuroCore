@@ -17,6 +17,9 @@ public:
     static constexpr std::size_t kMaxBytes = 4096;
 
     void reset() noexcept;
+    /** Audio thread: skip noteInput/publish when no editor is reading NKTM. */
+    void setWanted (bool on) noexcept { wanted.store (on, std::memory_order_relaxed); }
+    bool isWanted() const noexcept { return wanted.load (std::memory_order_relaxed); }
     void noteInput (const juce::AudioBuffer<float>& in) noexcept;
     void publish (const juce::AudioBuffer<float>& out, float cpu01) noexcept;
     std::size_t copyLatest (void* dest, std::size_t destBytes) const noexcept;
@@ -34,6 +37,7 @@ private:
 
     Slot slots[2];
     std::atomic<int> published { 0 };
+    std::atomic<bool> wanted { true };
     float scopeIn[kScopeN] {};
     float scopeOut[kScopeN] {};
     float gonioX[kGonioN] {};

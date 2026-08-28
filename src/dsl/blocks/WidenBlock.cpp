@@ -72,7 +72,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fb;
     };
     widthSm.setTargetValue (ev (widthExpr, 0.7f));

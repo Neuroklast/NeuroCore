@@ -84,7 +84,7 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
 
 float SignalChain::Ott::tailSeconds() const noexcept
 {
-    float t = timeExpr.evaluate (0.f);
+    float t = timeExpr.evaluateLive (0.f);
     if (! std::isfinite (t)) t = 0.35f;
     t = juce::jlimit (0.f, 1.f, t);
     return 0.02f + t * 0.32f;
@@ -114,7 +114,7 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fb;
     };
     depthSm.setTargetValue (ev (depthExpr, 0.5f));

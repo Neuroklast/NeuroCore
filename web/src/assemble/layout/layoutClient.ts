@@ -11,8 +11,20 @@ let workerFactory: (() => Worker | null) | null = null;
 let workerDead = false;
 let workerTimeoutMs = 2500;
 
+function clearPending(rejectLeft: Error | null): void {
+  const leftover = [...pending.values()];
+  pending.clear();
+  for (const job of leftover) {
+    clearTimeout(job.timer);
+    if (rejectLeft) {
+      job.reject(rejectLeft);
+    }
+  }
+}
+
 /** Tests inject a fake Worker so ELK never runs on the caller. Pass null to restore. */
 export function setLayoutWorkerFactory(factory: (() => Worker | null) | null): void {
+  clearPending(null);
   workerFactory = factory;
   worker = null;
   workerDead = false;
@@ -30,6 +42,7 @@ function failWorker(): void {
     /* already gone */
   }
   worker = null;
+  clearPending(new Error("layout worker died"));
 }
 
 function bindWorker(w: Worker): Worker {

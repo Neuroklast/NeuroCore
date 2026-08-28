@@ -11,10 +11,20 @@ namespace dsl
 inline constexpr int kReservedBusIn   = -2;
 inline constexpr int kReservedBusMain = 0;
 
+/** Gain bound at load. Audio thread reads k / knob — never gainExpr. */
+struct BoundGain
+{
+    bool numeric { true };
+    bool complement { false };
+    float k { 1.f };
+    int knob { -1 };
+};
+
 struct BusSend
 {
     int sourceIndex { kReservedBusIn }; ///< -2 = in, 0 = main, 1.. = named
     juce::String gainExpr;
+    BoundGain gain;
 };
 
 struct BusDef
@@ -28,6 +38,7 @@ struct OutTap
 {
     int busIndex { kReservedBusMain };
     juce::String gainExpr;
+    BoundGain gain;
 };
 
 struct BusGraph

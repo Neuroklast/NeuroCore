@@ -2,6 +2,8 @@
 
 #include <JuceHeader.h>
 #include "../src/bridge/TelemetryPump.h"
+#include "../src/core/PluginProcessor.h"
+#include "TestHelpers.h"
 
 class TelemetryPumpTest : public juce::UnitTest
 {
@@ -45,6 +47,43 @@ public:
             bridge::TelemetryPump pump;
             std::uint8_t buf[64];
             expectEquals ((int) pump.copyLatest (buf, sizeof (buf)), 0);
+        }
+
+        beginTest ("setWanted false skips noteInput and publish");
+        {
+            bridge::TelemetryPump pump;
+            pump.setWanted (false);
+            juce::AudioBuffer<float> in (2, 32), out (2, 32);
+            for (int i = 0; i < 32; ++i)
+            {
+                in.setSample (0, i, 0.8f);
+                out.setSample (0, i, 0.8f);
+            }
+            pump.noteInput (in);
+            pump.publish (out, 0.5f);
+            std::uint8_t buf[4096];
+            expectEquals ((int) pump.copyLatest (buf, sizeof (buf)), 0,
+                          "NKTM must not scan when no editor is reading");
+        }
+
+        beginTest ("closed editor does not publish NKTM");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.4f);
+                buf.setSample (1, i, 0.4f);
+            }
+            juce::MidiBuffer midi;
+            proc.processBlock (buf, midi);
+            std::uint8_t frame[4096];
+            expectEquals ((int) proc.getTelemetry().copyLatest (frame, sizeof (frame)), 0,
+                          "headless insert must not fill telemetry.bin");
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            proc.releaseResources();
         }
     }
 };

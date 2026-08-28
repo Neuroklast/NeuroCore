@@ -26,6 +26,7 @@ import { parseDslSketch } from "../presets/parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
+import { nk } from "../theme/tokens";
 import { knobBindEnabled, paneShowsTechNoise, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
 
 const HackView = lazy(() => import("../hack/HackView"));
@@ -139,7 +140,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: "0.6.1-beta", scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: nk.version, scale: 1 }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }

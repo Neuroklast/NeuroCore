@@ -56,7 +56,7 @@ void SignalChain::Limit::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fallback;
     };
     ceilSm.setTargetValue (ev (ceilingDb, -0.3f));

@@ -144,6 +144,7 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
 
     UiSettings::get().addListener (this);
     dspEngine.setLiveMode (UiSettings::get().liveMode());
+    telemetryPump.setWanted (false);
 }
 
 bool NeuroKoreAudioProcessor::isDemoMixLocked() const noexcept

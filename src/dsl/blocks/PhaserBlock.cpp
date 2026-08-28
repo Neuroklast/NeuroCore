@@ -113,7 +113,7 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
-        const float v = e.evaluate (0.f);
+        const float v = e.evaluateLive (0.f);
         return std::isfinite (v) ? v : fb;
     };
     stagesSm.setCurrentAndTargetValue (ev (stagesExpr, 6.f));
