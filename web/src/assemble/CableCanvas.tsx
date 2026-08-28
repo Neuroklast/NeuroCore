@@ -3,7 +3,7 @@ import { useHostStore } from "../store/hostStore";
 import { subscribeVizClock } from "../theme/vizClock";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
 import { bezierPreview, connectDragRef } from "./boardConnect";
-import { stubRoute } from "./boardPath";
+import { paintRoute } from "./boardPath";
 import {
   edgeLanes,
   edgePaintKind,
@@ -203,7 +203,7 @@ export function CableCanvas({
         }
         const from = portGlobal(sn, sp);
         const to = portGlobal(tn, tp);
-        const raw = e.route.length >= 2 ? e.route : stubRoute(from, to);
+        const raw = paintRoute(from, to, e.route);
         let pts = chamferWaypoints(raw);
         if (pts.length < 2) {
           continue;

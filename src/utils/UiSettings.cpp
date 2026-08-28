@@ -53,40 +53,122 @@ UiSettings::UiSettings()
     opts.millisecondsBeforeSaving = 0;
     opts.storageFormat            = juce::PropertiesFile::storeAsXML;
 
-    auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                   .getChildFile ("NEUROKLAST")
-                   .getChildFile (Config::kAppDataFolder);
-    dir.createDirectory();
-
-    props = std::make_unique<juce::PropertiesFile> (dir.getChildFile ("ui.settings"), opts);
-
-    scalePercent.store (clampScale (props->getIntValue (kScaleKey, Config::kUiScalePercentMin)),
-                        std::memory_order_relaxed);
-    fontPt.store (clampFont ((float) props->getDoubleValue (kFontKey, Config::kDefaultEditorFontPt)),
-                  std::memory_order_relaxed);
-    live.store (props->getBoolValue (kLiveKey, false), std::memory_order_relaxed);
-    hostTempo.store (props->getBoolValue (kHostTempoKey, true), std::memory_order_relaxed);
-    bpmUser.store (juce::jlimit (20.f, 400.f,
-                                 (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo)),
-                   std::memory_order_relaxed);
-    cableWave.store (props->getBoolValue (kCableWaveKey, false), std::memory_order_relaxed);
-    fpsCap.store (clampFrameRate (props->getIntValue (kFpsKey, 60)), std::memory_order_relaxed);
-    unsavedPrompt.store (props->getBoolValue (kDiscardKey, true), std::memory_order_relaxed);
-    theme = clampTheme (props->getValue (kThemeKey, "signal"));
-
-    if (props->containsKey (kMotionKey))
-        motionValue.store ((int) clampMotion (props->getIntValue (kMotionKey, 0)),
-                           std::memory_order_relaxed);
-    else
-        motionValue.store ((int) (props->getBoolValue (kCalmKey, false)
-                                      ? CyberMotion::Off
-                                      : CyberMotion::Full),
-                           std::memory_order_relaxed);
+    const auto file = settingsFile();
+    file.getParentDirectory().createDirectory();
+    fileLock = std::make_unique<juce::InterProcessLock> ("NEUROKORE-ui-settings");
+    {
+        const juce::InterProcessLock::ScopedLockType fileSl (*fileLock);
+        props = std::make_unique<juce::PropertiesFile> (file, opts);
+        applyLoaded();
+    }
+    lastWrite = file.getLastModificationTime();
+    if (juce::MessageManager::getInstanceWithoutCreating() != nullptr)
+        startTimer (500);
 }
 
 UiSettings::~UiSettings()
 {
+    stopTimer();
     persist();
+}
+
+juce::File UiSettings::settingsFile() const
+{
+    return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+               .getChildFile ("NEUROKLAST")
+               .getChildFile (Config::kAppDataFolder)
+               .getChildFile ("ui.settings");
+}
+
+bool UiSettings::applyLoaded()
+{
+    if (props == nullptr)
+        return false;
+
+    const int nextScale = clampScale (props->getIntValue (kScaleKey, Config::kUiScalePercentMin));
+    const float nextFont = clampFont ((float) props->getDoubleValue (kFontKey, Config::kDefaultEditorFontPt));
+    const bool nextLive = props->getBoolValue (kLiveKey, false);
+    const bool nextHostTempo = props->getBoolValue (kHostTempoKey, true);
+    const float nextBpm = juce::jlimit (20.f, 400.f,
+                                        (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo));
+    const bool nextCable = props->getBoolValue (kCableWaveKey, false);
+    const int nextFps = clampFrameRate (props->getIntValue (kFpsKey, 60));
+    const bool nextPrompt = props->getBoolValue (kDiscardKey, true);
+    const juce::String nextTheme = clampTheme (props->getValue (kThemeKey, "signal"));
+    const int nextMotion = props->containsKey (kMotionKey)
+                               ? (int) clampMotion (props->getIntValue (kMotionKey, 0))
+                               : (int) (props->getBoolValue (kCalmKey, false)
+                                            ? CyberMotion::Off
+                                            : CyberMotion::Full);
+
+    bool changed = false;
+    auto putInt = [&] (std::atomic<int>& slot, int v)
+    {
+        if (slot.load (std::memory_order_relaxed) != v)
+        {
+            slot.store (v, std::memory_order_relaxed);
+            changed = true;
+        }
+    };
+    auto putBool = [&] (std::atomic<bool>& slot, bool v)
+    {
+        if (slot.load (std::memory_order_relaxed) != v)
+        {
+            slot.store (v, std::memory_order_relaxed);
+            changed = true;
+        }
+    };
+    auto putFloat = [&] (std::atomic<float>& slot, float v)
+    {
+        if (slot.load (std::memory_order_relaxed) != v)
+        {
+            slot.store (v, std::memory_order_relaxed);
+            changed = true;
+        }
+    };
+
+    putInt (scalePercent, nextScale);
+    putFloat (fontPt, nextFont);
+    putBool (live, nextLive);
+    putBool (hostTempo, nextHostTempo);
+    putFloat (bpmUser, nextBpm);
+    putBool (cableWave, nextCable);
+    putInt (fpsCap, nextFps);
+    putBool (unsavedPrompt, nextPrompt);
+    putInt (motionValue, nextMotion);
+    if (theme != nextTheme)
+    {
+        theme = nextTheme;
+        changed = true;
+    }
+    return changed;
+}
+
+bool UiSettings::reloadFromDisk()
+{
+    bool changed = false;
+    {
+        const juce::InterProcessLock::ScopedLockType fileSl (*fileLock);
+        const juce::ScopedLock sl (lock);
+        if (props == nullptr || ! props->reload())
+            return false;
+        lastWrite = settingsFile().getLastModificationTime();
+        changed = applyLoaded();
+    }
+    if (changed)
+        notifyListeners();
+    return true;
+}
+
+void UiSettings::timerCallback()
+{
+    const auto file = settingsFile();
+    if (! file.existsAsFile())
+        return;
+    const auto stamp = file.getLastModificationTime();
+    if (stamp.toMilliseconds() <= lastWrite.toMilliseconds())
+        return;
+    reloadFromDisk();
 }
 
 CyberMotion UiSettings::motion() const noexcept
@@ -267,6 +349,7 @@ float UiSettings::clampFont (float pt) noexcept
 
 void UiSettings::persist() const
 {
+    const juce::InterProcessLock::ScopedLockType fileSl (*fileLock);
     const juce::ScopedLock sl (lock);
     if (props == nullptr)
         return;
@@ -284,4 +367,5 @@ void UiSettings::persist() const
     props->setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
     props->setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));
     props->saveIfNeeded();
+    lastWrite = settingsFile().getLastModificationTime();
 }

@@ -12,7 +12,7 @@ import {
   snapSize,
   snapToGrid,
 } from "./grid";
-import { dragLinePath } from "./boardPath";
+import { dragLinePath, paintRoute, routeFitsPorts } from "./boardPath";
 import { TUBE } from "./tubeModel";
 import { cableAccent, cableFace, isValidLink } from "./validateLink";
 
@@ -82,6 +82,20 @@ describe("board grid paint — one cell for snap, cables, and background", () =>
     expect(d.includes("Q")).toBe(false);
     expect(d.includes("C")).toBe(false);
     expect((d.match(/L/g) ?? []).length).toBe(1);
+  });
+
+  it("drops a stored route that no longer meets the jacks", () => {
+    const from = { x: 96, y: 80 };
+    const to = { x: 320, y: 80 };
+    const stale = [{ x: 10, y: 400 }, { x: 200, y: 400 }, { x: 400, y: 400 }];
+    expect(routeFitsPorts(from, to, stale)).toBe(false);
+    const painted = paintRoute(from, to, stale);
+    expect(painted[0]).toEqual(from);
+    expect(painted[painted.length - 1]).toEqual(to);
+    expect(painted.every((p) => Math.abs(p.y - 400) > 1)).toBe(true);
+    const live = [{ x: 96, y: 80 }, { x: 160, y: 80 }, { x: 320, y: 80 }];
+    expect(routeFitsPorts(from, to, live)).toBe(true);
+    expect(paintRoute(from, to, live)[0]).toEqual(from);
   });
 });
 

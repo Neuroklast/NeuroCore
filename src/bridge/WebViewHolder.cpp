@@ -279,7 +279,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         if (surface != nullptr && surface->getParentComponent() == &editor)
             editor.removeChildComponent (surface.get());
 
-        if (surface != nullptr)
+        if (surface != nullptr && ! bridge::keepWebViewVisibleForHostEvents())
             surface->setVisible (false);
         attachedTo = nullptr;
     }
@@ -391,7 +391,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         ensureOwnerHwnd();
         parkNative(); // HWND lives under ownerHwnd from birth — never under IPlugView
 #else
-        browser->setVisible (false);
+        browser->setVisible (bridge::keepWebViewVisibleForHostEvents());
 #endif
         surface = std::move (page);
 

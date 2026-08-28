@@ -594,3 +594,28 @@ nk_copy_web_dist(NeuroKore)
 nk_copy_web_dist(NeuroKore_Standalone)
 nk_copy_web_dist(NeuroKore_VST3)
 nk_copy_web_dist(NeuroKore_AU)
+
+# Cubase reads Contents/Resources/moduleinfo.json without loading the DLL.
+# Keep VST3_AUTO_MANIFEST FALSE: juce_vst3_helper loads the plugin and can hang
+# the same way a Cubase scan did.
+if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
+    if (WIN32)
+        set (_nk_mod_endian windows)
+    else()
+        set (_nk_mod_endian apple)
+    endif()
+    get_target_property (_nk_vst3_artefact NeuroKore_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
+    if (_nk_vst3_artefact)
+        add_custom_command (TARGET NeuroKore_VST3 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${_nk_vst3_artefact}/Contents/Resources"
+            COMMAND "${NODE_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/write_vst3_moduleinfo.mjs"
+                --endian ${_nk_mod_endian}
+                --version ${NEUROKORE_VERSION_LABEL}
+                --out "${_nk_vst3_artefact}/Contents/Resources/moduleinfo.json"
+            COMMENT "Write VST3 moduleinfo.json for host scan without load"
+            VERBATIM
+        )
+    endif()
+endif()

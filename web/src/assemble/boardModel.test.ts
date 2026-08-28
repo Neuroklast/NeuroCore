@@ -63,6 +63,30 @@ describe("headless board model", () => {
     expect(ranks.stage1).toBeGreaterThanOrEqual(1);
   });
 
+  it("ignores native AST xy so a preset does not sit on the previous board", () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [{
+        id: "stage1",
+        type: "stage",
+        busName: "main",
+        args: { y: "x" },
+        trailingComment: "",
+        x: 1800,
+        y: 900,
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "out", label: "out", output: true, kind: "audio" },
+        ],
+      }],
+      edges: [{ from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" }],
+    };
+    const g = hydrateBoard(ast);
+    expect(g.nodes.stage1!.x).toBeLessThan(800);
+    expect(g.nodes.stage1!.y).toBeLessThan(400);
+    expect(Object.values(g.edges).every((e) => e.route.length === 0)).toBe(true);
+  });
+
   it("gives an MS split two east ports and no combined out", () => {
     const ast: AstDocument = {
       ...emptyAst(),

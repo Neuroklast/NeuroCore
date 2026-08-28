@@ -8,7 +8,7 @@ enum class CyberMotion : uint8_t { Full, Reduced, Off };
 
 /** Persisted UI prefs under userAppData/NEUROKLAST/NeuroKore.
     Message-thread settings; getters are lock-free. */
-class UiSettings
+class UiSettings : private juce::Timer
 {
 public:
     struct Listener
@@ -56,6 +56,9 @@ public:
     bool discardPrompt() const noexcept;
     void setDiscardPrompt (bool enabled);
 
+    /** Re-read %AppData% ui.settings so another process's persist is visible. */
+    bool reloadFromDisk();
+
     static int clampScale (int percent) noexcept;
     static int clampFrameRate (int fps) noexcept;
     static CyberMotion clampMotion (int stored) noexcept;
@@ -71,10 +74,15 @@ private:
     static float clampFont (float pt) noexcept;
     void persist() const;
     void notifyListeners() const;
+    bool applyLoaded();
+    void timerCallback() override;
+    juce::File settingsFile() const;
 
     juce::CriticalSection lock;
     mutable juce::ListenerList<Listener> listeners;
     std::unique_ptr<juce::PropertiesFile> props;
+    mutable std::unique_ptr<juce::InterProcessLock> fileLock;
+    mutable juce::Time lastWrite;
     std::atomic<int>   motionValue { (int) CyberMotion::Full };
     std::atomic<int>   scalePercent { 100 };
     std::atomic<float> fontPt { 18.f };

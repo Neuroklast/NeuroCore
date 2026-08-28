@@ -121,6 +121,31 @@ public:
             UiSettings::get().setFrameRate (60);
         }
 
+        beginTest ("shared UI prefs reload from AppData written by another process");
+        {
+            UiSettings::get().setThemeId ("signal");
+            UiSettings::get().setFrameRate (60);
+            const auto f = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                               .getChildFile ("NEUROKLAST")
+                               .getChildFile (Config::kAppDataFolder)
+                               .getChildFile ("ui.settings");
+            expect (f.existsAsFile(), f.getFullPathName());
+            auto xml = f.loadFileAsString();
+            xml = xml.replace ("signal", "gold");
+            xml = xml.replace (">60<", ">30<");
+            xml = xml.replace ("val=\"60\"", "val=\"30\"");
+            expect (f.replaceWithText (xml));
+            expect (UiSettings::get().reloadFromDisk());
+            expectEquals (UiSettings::get().themeId(), juce::String ("gold"));
+            expectEquals (UiSettings::get().frameRate(), 30);
+            NeuroKoreAudioProcessor other;
+            expectEquals (bridge::hostVar (other).getProperty ("theme", "").toString(),
+                          juce::String ("gold"));
+            expectEquals ((int) bridge::hostVar (other).getProperty ("frameRate", 0), 30);
+            UiSettings::get().setThemeId ("signal");
+            UiSettings::get().setFrameRate (60);
+        }
+
         beginTest ("LIVE on one processor applies to another without an editor");
         {
             UiSettings::get().setLiveMode (false);

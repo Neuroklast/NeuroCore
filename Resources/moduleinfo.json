@@ -1,0 +1,40 @@
+{
+  "Name": "NEUROKORE",
+  "Version": "0.6.1-beta",
+  "Factory Info": {
+    "Vendor": "Neuroklast",
+    "URL": "https://neuroklast.net",
+    "E-Mail": "mailto:info@neuroklast.net",
+    "Flags": {
+      "Unicode": true,
+      "Classes Discardable": false,
+      "Component Non Discardable": false
+    }
+  },
+  "Classes": [
+    {
+      "CID": "01EFCDAB8291EBFA4E524B4C4E524B4F",
+      "Category": "Audio Module Class",
+      "Name": "NEUROKORE",
+      "Vendor": "Neuroklast",
+      "Version": "0.6.1-beta",
+      "SDKVersion": "VST 3.7.12",
+      "Sub Categories": ["Fx", "Distortion"],
+      "Class Flags": 0,
+      "Cardinality": 2147483647,
+      "Snapshots": []
+    },
+    {
+      "CID": "01EFCDAB3412CDAB4E524B4C4E524B4F",
+      "Category": "Component Controller Class",
+      "Name": "NEUROKORE",
+      "Vendor": "Neuroklast",
+      "Version": "0.6.1-beta",
+      "SDKVersion": "VST 3.7.12",
+      "Sub Categories": ["Fx", "Distortion"],
+      "Class Flags": 0,
+      "Cardinality": 2147483647,
+      "Snapshots": []
+    }
+  ]
+}
