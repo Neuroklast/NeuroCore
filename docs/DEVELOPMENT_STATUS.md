@@ -2,7 +2,7 @@
 
 **Stand:** 2026-08-28 (Circuit hot path: drag in refs, cached cables, layout worker; 0.6.2-beta)  
 **Version:** 0.6.2-beta  
-**Branch:** `master`
+**Branch:** `main`
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
