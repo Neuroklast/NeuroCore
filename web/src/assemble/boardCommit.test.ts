@@ -67,9 +67,10 @@ describe("rerouteBoard layout generation", () => {
     });
     expect(useBoardStore.getState().nodes.filter1).toBeDefined();
     const filterX = useBoardStore.getState().nodes.filter1!.x;
-    expect(reply).toBeTypeOf("function");
-
-    reply?.({
+    if (reply == null) {
+      throw new Error("layout worker did not post");
+    }
+    reply({
       nodes: { stage1: { x: 640, y: 96, w: 160, h: 96 }, IN: { x: 640, y: 96, w: 96, h: 96 } },
       edgePaths: {},
     });
