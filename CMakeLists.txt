@@ -7,8 +7,8 @@ if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set (CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS for VST3/AU")
 endif()
 
-set(NEUROKORE_VERSION_NUMERIC "0.6.2")
-set(NEUROKORE_VERSION_LABEL "0.6.2-beta")
+set(NEUROKORE_VERSION_NUMERIC "0.6.4")
+set(NEUROKORE_VERSION_LABEL "0.6.4-beta")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
@@ -272,12 +272,6 @@ if (NK_HAS_EXPR_JIT)
     target_link_libraries (NeuroKore PRIVATE asmjit::asmjit)
 endif()
 
-# Copy resources next to every built binary (SharedCode dir + Standalone + VST3)
-add_custom_command(TARGET NeuroKore POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources
-        $<TARGET_FILE_DIR:NeuroKore>/resources
-)
 # Always stamp the version on the built binaries (exe / .vst3 / .component).
 if(TARGET NeuroKore_Standalone)
     set_target_properties(NeuroKore_Standalone PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
@@ -315,13 +309,9 @@ if(TARGET NeuroKore_Standalone)
         target_sources(NeuroKore_Standalone PRIVATE resources/img/nk_logo.rc)
     endif()
 endif()
-if(TARGET NeuroKore_VST3)
-    add_custom_command(TARGET NeuroKore_VST3 POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/resources
-            $<TARGET_FILE_DIR:NeuroKore_VST3>/resources
-    )
-endif()
+# Windows VST3 is the module binary + Contents/Resources/moduleinfo.json.
+# Factory / IRs / web are BinaryData. Do not copy a sibling resources/ or web/
+# into Contents/x86_64-win (NEUROMETER does not).
 if(TARGET NeuroKore_AU)
     add_custom_command(TARGET NeuroKore_AU POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -590,14 +580,14 @@ function(nk_copy_web_dist tgt)
         COMMENT "Copy current web/dist next to ${tgt} (dev only; binary already embeds it)"
     )
 endfunction()
-nk_copy_web_dist(NeuroKore)
 nk_copy_web_dist(NeuroKore_Standalone)
-nk_copy_web_dist(NeuroKore_VST3)
 nk_copy_web_dist(NeuroKore_AU)
 
 # Cubase reads Contents/Resources/moduleinfo.json without loading the DLL.
 # Keep VST3_AUTO_MANIFEST FALSE: juce_vst3_helper loads the plugin and can hang
 # the same way a Cubase scan did.
+# NeuroKoreVst3Manifest is always out of date so a no-op VST3 link still writes
+# the JSON (POST_BUILD is skipped when MSBuild considers the DLL up to date).
 if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
     if (WIN32)
         set (_nk_mod_endian windows)
@@ -605,16 +595,38 @@ if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
         set (_nk_mod_endian apple)
     endif()
     get_target_property (_nk_vst3_artefact NeuroKore_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
+    set (_nk_modinfo_script "${CMAKE_CURRENT_SOURCE_DIR}/scripts/write_vst3_moduleinfo.mjs")
+    set (_nk_modinfo_res "${CMAKE_CURRENT_SOURCE_DIR}/resources/moduleinfo.json")
+    set (_nk_modinfo_cmds
+        COMMAND "${NODE_EXECUTABLE}"
+            "${_nk_modinfo_script}"
+            --endian ${_nk_mod_endian}
+            --version ${NEUROKORE_VERSION_LABEL}
+            --out "${_nk_modinfo_res}"
+    )
     if (_nk_vst3_artefact)
-        add_custom_command (TARGET NeuroKore_VST3 POST_BUILD
+        set (_nk_modinfo_cmds
             COMMAND ${CMAKE_COMMAND} -E make_directory
                 "${_nk_vst3_artefact}/Contents/Resources"
             COMMAND "${NODE_EXECUTABLE}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/write_vst3_moduleinfo.mjs"
+                "${_nk_modinfo_script}"
                 --endian ${_nk_mod_endian}
                 --version ${NEUROKORE_VERSION_LABEL}
                 --out "${_nk_vst3_artefact}/Contents/Resources/moduleinfo.json"
-            COMMENT "Write VST3 moduleinfo.json for host scan without load"
+                --also "${_nk_modinfo_res}"
+                --bundle "${_nk_vst3_artefact}"
+        )
+    endif()
+    add_custom_target(NeuroKoreVst3Manifest
+        ${_nk_modinfo_cmds}
+        COMMENT "Write VST3 moduleinfo.json (Contents/Resources + resources/)"
+        VERBATIM
+    )
+    add_dependencies(NeuroKore_VST3 NeuroKoreVst3Manifest)
+    if (_nk_vst3_artefact)
+        add_custom_command (TARGET NeuroKore_VST3 POST_BUILD
+            ${_nk_modinfo_cmds}
+            COMMENT "Write VST3 moduleinfo.json after JUCE strips the old one"
             VERBATIM
         )
     endif()

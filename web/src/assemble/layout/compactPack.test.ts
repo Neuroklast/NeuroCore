@@ -93,6 +93,39 @@ describe("compact packRows", () => {
     expect(gap, `row gap ${gap}`).toBeGreaterThanOrEqual(WRAP_AIR);
   });
 
+  it("puts IN.out and the first DSP in on the same global Y so Compact cannot knick the first tube", () => {
+    const row = findFactory("Airy Clean");
+    expect(row, "missing Airy Clean").toBeTruthy();
+    const { doc } = parseDslSketch(row!.script);
+    const { nodes, edges } = flowFromAst(doc);
+    const layout = flowToLayout(nodes, edges);
+    const packed = packRows(layout.nodes, layout.edges, { w: 1200, h: 420 });
+    for (const p of Object.values(packed)) {
+      expect(p.x % BOARD_GRID).toBe(0);
+      expect(p.y % BOARD_GRID).toBe(0);
+    }
+    const hop = layout.edges.find((e) => e.source === "IN" && e.fromJack === "out");
+    expect(hop, "IN.out hop").toBeTruthy();
+    const inn = layout.nodes.find((n) => n.id === "IN")!;
+    const dsp = layout.nodes.find((n) => n.id === hop!.target)!;
+    const inJack = packed.IN!.y + (inn.outs.find((p) => p.id === "out")?.y ?? 0);
+    const dspJack = packed[hop!.target]!.y + (dsp.ins.find((p) => p.id === hop!.toJack)?.y ?? dsp.ins[0]!.y);
+    expect(inJack, `IN.out ${inJack} vs ${hop!.target}.in ${dspJack}`).toBe(dspJack);
+  });
+
+  it("parks OUT as the unique last chip: nothing to the right, last row", () => {
+    const { nodes, edges } = chain(5);
+    const packed = packRows(nodes, edges, { w: 700, h: 420 });
+    const out = packed.OUT!;
+    for (const [id, p] of Object.entries(packed)) {
+      if (id === "OUT") {
+        continue;
+      }
+      expect(p.x + p.w, `${id} must sit left of OUT`).toBeLessThanOrEqual(out.x);
+      expect(p.y, `${id} must not sit below OUT`).toBeLessThanOrEqual(out.y);
+    }
+  });
+
   it("keeps a short chain on one row and snaps to 32", () => {
     const { nodes, edges } = chain(1);
     const packed = packRows(nodes, edges, { w: 1200, h: 420 });

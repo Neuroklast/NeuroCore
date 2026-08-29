@@ -16,6 +16,7 @@ export function sidePortMinHeight(count: number): number {
  * 1..N jacks on the west (x=0) or east (x=w) face.
  * One jack: chip midline. Two+: equal pitch around the body-band midline
  * (below the title, above the foot) so IN out/sc are not in the hazard or footer.
+ * Every centre is a cell midline (16, 48, 80, …) so a 32-grid chip can share a rail.
  */
 export function sidePortLocals(
   count: number,
@@ -34,7 +35,7 @@ export function sidePortLocals(
   const pitch = sideJackPitch(n, band.innerH);
   return Array.from({ length: n }, (_, i) => ({
     x,
-    y: band.mid + (i - (n - 1) / 2) * pitch,
+    y: snapToCellCenter(band.mid + (i - (n - 1) / 2) * pitch),
   }));
 }
 

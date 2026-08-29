@@ -18,10 +18,13 @@ describe("circuit depth of field", () => {
     expect(motionAllows("dof", "full", false)).toBe(true);
     expect(motionAllows("dof", "reduced", false)).toBe(false);
     expect(motionAllows("dof", "off", false)).toBe(false);
-    expect(motionAllows("dof", "full", true)).toBe(false);
+    expect(motionAllows("dof", "full", true)).toBe(true);
     expect(circuitDofAllowed("full", false)).toBe(true);
     expect(circuitDofAllowed("off", false)).toBe(false);
-    expect(circuitDofAllowed("full", true)).toBe(false);
+    expect(circuitDofAllowed("full", true)).toBe(true);
+    expect(circuitDofAllowed("full", false, 1)).toBe(true);
+    expect(circuitDofAllowed("full", false, 0.4)).toBe(false);
+    expect(circuitDofAllowed("full", false, 0.7)).toBe(false);
   });
 
   it("selected chain is sharp; other chips/edges are soft", () => {

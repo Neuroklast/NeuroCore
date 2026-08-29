@@ -247,7 +247,7 @@ public:
             setEnv ("NEUROKORE_WEB_DISK", "1");
             expect (bridge::wantDiskWebAssets());
             setEnv ("NEUROKORE_WEB_DISK", "");
-            expect (bridge::wantDiskWebAssets(), "unset keeps disk for local builds");
+            expect (! bridge::wantDiskWebAssets(), "unset uses the embedded zip");
             if (prev.isNotEmpty())
                 setEnv ("NEUROKORE_WEB_DISK", prev.toRawUTF8());
             else
@@ -289,16 +289,19 @@ public:
             expect (! bridge::shouldRealizeChromium (false, false, 0, 0));
         }
 
-        beginTest ("holder ctor does not spawn a browser (Cubase createView / scan)");
+        beginTest ("holder surface is born with the processor, not on IPlugView attached");
         {
+            // NeuroMeter model: WebView2 lives on the processor. Cubase scan
+            // createView/attached must only parent an existing park HWND.
             NeuroKoreAudioProcessor proc;
             auto& holder = proc.getWebView();
-            expect (holder.browserComponent() == nullptr,
-                    "WebView2 must not exist in the holder ctor / createView");
+            expect (holder.browserComponent() != nullptr,
+                    "surface exists before createView / attached");
             expect (holder.browserIdentity() != 0,
                     "holder identity is the Impl, not Chromium");
             expectEquals (holder.zipIndexBuildCount(), 0,
                           "zip index is lazy; holder ctor does not parse the embedded zip");
+            const auto id = holder.browserIdentity();
             expect (holder.serve ("/").has_value());
             const int afterServe = holder.zipIndexBuildCount();
             expect (holder.serve ("/").has_value());
@@ -308,11 +311,9 @@ public:
             juce::Component frame;
             holder.attach (frame);
             expect (holder.isAttached());
-            expect (holder.browserComponent() != nullptr,
-                    "test dummy surface is born on attach, not in the ctor");
-            expectEquals ((juce::int64) holder.browserIdentity(),
-                          (juce::int64) proc.getWebView().browserIdentity(),
-                          "identity survives first surface");
+            expectEquals ((juce::int64) holder.browserIdentity(), (juce::int64) id,
+                          "attach does not rebuild the surface");
+            expect (holder.browserComponent() != nullptr);
             holder.detach (frame);
             expect (holder.browserComponent() != nullptr,
                     "close parks; it does not delete the surface");

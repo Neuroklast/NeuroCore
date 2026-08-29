@@ -1,4 +1,4 @@
-import { BOARD_GRID, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToGrid } from "../grid";
+import { BOARD_GRID, BOARD_HALF, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToCellCenter, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
 export const COMPACT_GAP = CHIP_AIR_X;
@@ -158,6 +158,29 @@ export function nodeRail(n: LayoutNode): string {
   return "main";
 }
 
+function portLocalY(n: LayoutNode, jackId: string | undefined, east: boolean): number {
+  const list = east ? n.outs : n.ins;
+  const hit = jackId ? list.find((p) => p.id === jackId) : undefined;
+  return snapToCellCenter(hit?.y ?? list[0]?.y ?? BOARD_HALF);
+}
+
+function connectingLocalY(
+  id: string,
+  prevId: string | undefined,
+  byId: Map<string, LayoutNode>,
+  edges: LayoutEdge[],
+): number {
+  const n = byId.get(id);
+  if (! n) {
+    return BOARD_HALF;
+  }
+  if (! prevId) {
+    return portLocalY(n, "out", true);
+  }
+  const e = edges.find((ed) => ed.source === prevId && ed.target === id);
+  return portLocalY(n, e?.toJack, false);
+}
+
 function placeOrder(
   order: string[],
   byId: Map<string, LayoutNode>,
@@ -166,6 +189,7 @@ function placeOrder(
   gapX: number,
   gapY: number,
   viewW: number,
+  edges: LayoutEdge[],
 ): Record<string, { x: number; y: number; w: number; h: number }> {
   const widths = order.map((id) => snapSize(byId.get(id)?.w ?? BOARD_GRID));
   const colsN = wrapFits(widths, viewW, gapX, pad);
@@ -201,10 +225,6 @@ function placeOrder(
     rowY[r] = snapToGrid(y);
     y += (rowH[r] ?? 0) + gapY;
   }
-  const jackLocal = (id: string): number => {
-    const n = byId.get(id);
-    return n?.outs[0]?.y ?? n?.ins[0]?.y ?? BOARD_GRID + BOARD_GRID * 0.5;
-  };
   const out: Record<string, { x: number; y: number; w: number; h: number }> = {};
   const rows = new Map<number, typeof slots>();
   for (const s of slots) {
@@ -213,15 +233,21 @@ function placeOrder(
     rows.set(s.row, list);
   }
   for (const [r, list] of rows) {
-    const rail = jackLocal(list[0]!.id);
-    let minY = Infinity;
-    const placed = list.map((s) => {
-      const py = snapToGrid((rowY[r] ?? originY) + (rail - jackLocal(s.id)));
-      minY = Math.min(minY, py);
-      return { s, y: py };
+    const first = list[0]!;
+    const firstNode = byId.get(first.id);
+    const firstJack = r === 0
+      ? connectingLocalY(first.id, undefined, byId, edges)
+      : (firstNode ? portLocalY(firstNode, undefined, false) : BOARD_HALF);
+    const rail = snapToCellCenter((rowY[r] ?? originY) + firstJack);
+    const raw = list.map((s, i) => {
+      const jack = i === 0
+        ? firstJack
+        : connectingLocalY(s.id, list[i - 1]!.id, byId, edges);
+      return { s, y: snapToGrid(rail - jack) };
     });
-    const lift = minY < originY ? originY - minY : 0;
-    for (const p of placed) {
+    const minY = Math.min(...raw.map((p) => p.y));
+    const lift = minY < pad ? snapToGrid(pad - minY) : 0;
+    for (const p of raw) {
       out[p.s.id] = {
         x: colX[p.s.col] ?? pad,
         y: snapToGrid(p.y + lift),
@@ -233,6 +259,34 @@ function placeOrder(
   return out;
 }
 
+/** OUT is the unique last terminal: east of the hull, on the last row. Never a wrap slot. */
+export function parkOutTerminal(
+  placed: Record<string, { x: number; y: number; w: number; h: number }>,
+  gapX = CHIP_AIR_X,
+): Record<string, { x: number; y: number; w: number; h: number }> {
+  const outId = placed.OUT ? "OUT" : placed.out ? "out" : "";
+  if (! outId) {
+    return placed;
+  }
+  const out = placed[outId]!;
+  const others = Object.entries(placed)
+    .filter(([id]) => id !== outId)
+    .map(([, p]) => p);
+  if (others.length === 0) {
+    return placed;
+  }
+  const maxRight = Math.max(...others.map((p) => p.x + p.w));
+  const maxY = Math.max(...others.map((p) => p.y));
+  return {
+    ...placed,
+    [outId]: {
+      ...out,
+      x: snapToGrid(maxRight + gapX),
+      y: snapToGrid(maxY),
+    },
+  };
+}
+
 export function packRows(
   nodes: LayoutNode[],
   edges: LayoutEdge[],
@@ -242,26 +296,44 @@ export function packRows(
   const gapY = WRAP_AIR;
   const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));
+  const outNode = nodes.find((n) => n.id === "OUT" || n.id === "out" || nodeRail(n) === "out");
   const namedRails = [...new Set(nodes.map(nodeRail).filter((r) => r !== "main" && r !== "out" && r !== "mod"))];
+  const withOut = (
+    packed: Record<string, { x: number; y: number; w: number; h: number }>,
+  ) => {
+    const body = separateChips(packed);
+    if (! outNode) {
+      return body;
+    }
+    return parkOutTerminal({
+      ...body,
+      [outNode.id]: {
+        x: pad,
+        y: pad,
+        w: snapSize(outNode.w),
+        h: snapSize(outNode.h),
+      },
+    }, gapX);
+  };
   if (namedRails.length === 0) {
     const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
-    return separateChips(placeOrder(
-      serialIds(nodes, edges, start),
+    const order = serialIds(nodes, edges, start).filter((id) => id !== "OUT" && id !== "out");
+    return withOut(placeOrder(
+      order,
       byId,
       pad,
       pad,
       gapX,
       gapY,
       view.w,
+      edges,
     ));
   }
 
   const groups = new Map<string, LayoutNode[]>();
-  let outNode: LayoutNode | undefined;
   for (const n of nodes) {
     const r = nodeRail(n);
     if (r === "out") {
-      outNode = n;
       continue;
     }
     const list = groups.get(r) ?? [];
@@ -281,22 +353,14 @@ export function packRows(
       ? (members.find((n) => n.id === "IN")?.id ?? members[0]!.id)
       : (members.find((n) => n.id === rail)?.id ?? members[0]!.id);
     const subEdges = edges.filter((e) => members.some((n) => n.id === e.source) && members.some((n) => n.id === e.target));
-    const chunk = placeOrder(serialIds(members, subEdges, start), byId, y, pad, gapX, gapY, view.w);
+    const chunk = placeOrder(serialIds(members, subEdges, start), byId, y, pad, gapX, gapY, view.w, subEdges);
     for (const [id, p] of Object.entries(chunk)) {
       placed[id] = p;
       maxRight = Math.max(maxRight, p.x + p.w);
       y = Math.max(y, p.y + p.h + gapY);
     }
   }
-  if (outNode) {
-    placed[outNode.id] = {
-      x: snapToGrid(maxRight + gapX),
-      y: placed.IN?.y ?? pad,
-      w: snapSize(outNode.w),
-      h: snapSize(outNode.h),
-    };
-  }
-  return separateChips(placed);
+  return withOut(placed);
 }
 
 export function rowCount(

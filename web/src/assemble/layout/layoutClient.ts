@@ -3,31 +3,46 @@ import type { ChipData } from "../flowFromAst";
 import { flowToLayout } from "./fromFlow";
 import { runLayout } from "./runLayout";
 import type { LayoutEdge, LayoutMode, LayoutNode, LayoutResult, LayoutView } from "./types";
+import LayoutWorker from "./layout.worker.ts?worker";
+
+type PendingJob = {
+  resolve: (r: LayoutResult) => void;
+  reject: (e: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+  mode: LayoutMode;
+  nodes: LayoutNode[];
+  edges: LayoutEdge[];
+  view: LayoutView;
+};
 
 let worker: Worker | null = null;
 let nextId = 1;
-const pending = new Map<number, { resolve: (r: LayoutResult) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+const pending = new Map<number, PendingJob>();
 let workerFactory: (() => Worker | null) | null = null;
-let workerDead = false;
 let workerTimeoutMs = 2500;
 
-function clearPending(rejectLeft: Error | null): void {
+function fallbackJob(job: PendingJob): void {
+  clearTimeout(job.timer);
+  void runLayout(job.mode, job.nodes, job.edges, job.view).then(job.resolve, job.reject);
+}
+
+function clearPending(fallbackLeft: boolean): void {
   const leftover = [...pending.values()];
   pending.clear();
   for (const job of leftover) {
-    clearTimeout(job.timer);
-    if (rejectLeft) {
-      job.reject(rejectLeft);
+    if (fallbackLeft) {
+      fallbackJob(job);
+    } else {
+      clearTimeout(job.timer);
     }
   }
 }
 
 /** Tests inject a fake Worker so ELK never runs on the caller. Pass null to restore. */
 export function setLayoutWorkerFactory(factory: (() => Worker | null) | null): void {
-  clearPending(null);
+  clearPending(false);
   workerFactory = factory;
   worker = null;
-  workerDead = false;
 }
 
 export function setLayoutWorkerTimeoutMs(ms: number | null): void {
@@ -35,14 +50,13 @@ export function setLayoutWorkerTimeoutMs(ms: number | null): void {
 }
 
 function failWorker(): void {
-  workerDead = true;
   try {
     worker?.terminate();
   } catch {
     /* already gone */
   }
   worker = null;
-  clearPending(new Error("layout worker died"));
+  clearPending(true);
 }
 
 function bindWorker(w: Worker): Worker {
@@ -65,9 +79,6 @@ function bindWorker(w: Worker): Worker {
 }
 
 function getWorker(): Worker | null {
-  if (workerDead) {
-    return null;
-  }
   if (worker) {
     return worker;
   }
@@ -83,7 +94,7 @@ function getWorker(): Worker | null {
     return null;
   }
   try {
-    worker = bindWorker(new Worker(new URL("./layout.worker.ts", import.meta.url), { type: "module" }));
+    worker = bindWorker(new LayoutWorker());
     return worker;
   } catch {
     return null;
@@ -126,19 +137,26 @@ function postGraphLayout(
     const reqId = nextId;
     nextId += 1;
     return new Promise<LayoutResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        pending.delete(reqId);
-        failWorker();
-        void runLayout(mode, nodes, edges, view).then(resolve, reject);
-      }, workerTimeoutMs);
-      pending.set(reqId, { resolve, reject, timer });
+      const job: PendingJob = {
+        resolve,
+        reject,
+        timer: setTimeout(() => {
+          pending.delete(reqId);
+          failWorker();
+          fallbackJob(job);
+        }, workerTimeoutMs),
+        mode,
+        nodes,
+        edges,
+        view,
+      };
+      pending.set(reqId, job);
       try {
         w.postMessage({ type: mode, nodes, edges, view, reqId });
       } catch {
-        clearTimeout(timer);
         pending.delete(reqId);
         failWorker();
-        void runLayout(mode, nodes, edges, view).then(resolve, reject);
+        fallbackJob(job);
       }
     });
   }

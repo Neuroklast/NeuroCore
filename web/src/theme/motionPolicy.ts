@@ -18,13 +18,16 @@ export function motionAllows(
   motion: MotionPref,
   prefersReduced: boolean,
 ): boolean {
-  if (prefersReduced || motion === "off") {
+  if (motion === "off") {
     return false;
   }
-  if (motion === "reduced") {
-    return feature === "crtScan" || feature === "chipReact" || feature === "faceGlow" || feature === "bloom";
+  if (motion === "full") {
+    return true;
   }
-  return true;
+  if (prefersReduced) {
+    return false;
+  }
+  return feature === "crtScan" || feature === "chipReact" || feature === "faceGlow" || feature === "bloom";
 }
 
 export function motionCopy(motion: MotionPref): string {

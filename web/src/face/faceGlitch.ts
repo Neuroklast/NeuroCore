@@ -58,7 +58,7 @@ export function logoMotion(
 ): LogoMotion {
   const motion = opts.motion ?? "full";
   const prefersReduced = opts.prefersReduced === true;
-  if (prefersReduced || motion === "off") {
+  if (motion === "off" || (prefersReduced && motion !== "full")) {
     return { glow: 0, chromaPx: 0, jitterHz: 0 };
   }
   const glow = glowFromLoudness(loudness);

@@ -2,14 +2,14 @@
 
 Programmable real-time audio effect by **Neuroklast**. Load a factory sound, turn six knobs, or build your own chain.
 
-English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.6.2-beta**.
+English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.6.4-beta**.
 
-Operator guide (also the in-plugin Help): [docs/manual/NEUROKORE.md](docs/manual/NEUROKORE.md)
+Operator guide: [docs/manual/NEUROKORE.md](docs/manual/NEUROKORE.md). In-plugin Help is that guide minus Install.
 
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.2-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
+1. Run `NEUROKORE-0.6.4-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
 2. If Microsoft Edge WebView2 is missing, the setup installs it. Without that runtime the window is empty.
 3. Rescan plug-ins. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3`.
 4. Standalone is in the Start menu under Neuroklast. Uninstall keeps your presets and license.
@@ -41,7 +41,7 @@ cmake --build build --config Release --target NeuroKore_All
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Windows: `build_release.bat`. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.2-beta.exe` / `.vst3` / `.component`).
+Windows: `build_release.bat`. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.4-beta.exe` / `.vst3` / `.component`).
 
 Package Windows zip + installer (after Release). Needs [Inno Setup 6](https://jrsoftware.org/isinfo.php):
 

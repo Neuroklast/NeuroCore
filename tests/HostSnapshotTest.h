@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "../src/bridge/HostSnapshot.h"
 #include "../src/core/Config.h"
+#include "../src/core/EffectParameters.h"
 #include "../src/core/PluginProcessor.h"
 #include "../src/utils/FactoryPresetLibrary.h"
 #include "../src/utils/PresetLibrary.h"
@@ -121,6 +122,97 @@ public:
             UiSettings::get().setFrameRate (60);
         }
 
+        beginTest ("window size, oversampling and polisher persist in ui.settings");
+        {
+            UiSettings::get().setEditorSize (1400, 941);
+            UiSettings::get().setOversamplingIndex (3);
+            UiSettings::get().setPolisherIndex (1);
+            const auto f = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                               .getChildFile ("NEUROKLAST")
+                               .getChildFile (Config::kAppDataFolder)
+                               .getChildFile ("ui.settings");
+            const auto xml = f.loadFileAsString();
+            expect (xml.contains ("1400"), xml);
+            expect (xml.contains ("oversamplingIndex"), xml);
+            expect (xml.contains ("polisherIndex"), xml);
+            expectEquals (UiSettings::get().editorWidth(), 1400);
+            expectEquals (UiSettings::get().oversamplingIndex(), 3);
+            expectEquals (UiSettings::get().polisherIndex(), 1);
+            NeuroKoreAudioProcessor proc;
+            if (auto* os = dynamic_cast<juce::AudioParameterChoice*> (
+                    proc.apvts.getParameter (EffectParameters::oversampling)))
+                expectEquals (os->getIndex(), 3);
+            if (auto* po = dynamic_cast<juce::AudioParameterChoice*> (
+                    proc.apvts.getParameter (EffectParameters::polisherMode)))
+                expectEquals (po->getIndex(), 1);
+            UiSettings::get().setOversamplingIndex (2);
+            UiSettings::get().setPolisherIndex (0);
+            UiSettings::get().setEditorSize (1280, 860);
+        }
+
+        beginTest ("host state restore does not overwrite global oversampling or polisher");
+        {
+            UiSettings::get().setOversamplingIndex (0);
+            UiSettings::get().setPolisherIndex (0);
+            NeuroKoreAudioProcessor stale;
+            if (auto* mix = stale.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.25f);
+            juce::MemoryBlock blob;
+            stale.getStateInformation (blob);
+
+            UiSettings::get().setOversamplingIndex (3);
+            UiSettings::get().setPolisherIndex (1);
+            NeuroKoreAudioProcessor live;
+            live.setStateInformation (blob.getData(), (int) blob.getSize());
+
+            if (auto* os = dynamic_cast<juce::AudioParameterChoice*> (
+                    live.apvts.getParameter (EffectParameters::oversampling)))
+                expectEquals (os->getIndex(), 3);
+            if (auto* po = dynamic_cast<juce::AudioParameterChoice*> (
+                    live.apvts.getParameter (EffectParameters::polisherMode)))
+                expectEquals (po->getIndex(), 1);
+            expectEquals (UiSettings::get().oversamplingIndex(), 3);
+            expectEquals (UiSettings::get().polisherIndex(), 1);
+            if (auto* mix = live.apvts.getParameter (EffectParameters::dryWet))
+                expectWithinAbsoluteError (mix->getValue(), 0.25f, 1.0e-4f);
+
+            UiSettings::get().setOversamplingIndex (2);
+            UiSettings::get().setPolisherIndex (0);
+        }
+
+        beginTest ("Unit meter prefs persist in ui.settings and hostVar");
+        {
+            UiSettings::get().setScopeSource ("out");
+            UiSettings::get().setScopeX ("freq");
+            UiSettings::get().setScopeY ("db");
+            UiSettings::get().setScopeGrid (false);
+            UiSettings::get().setScopeInvertY (true);
+            UiSettings::get().setScopeDelta (true);
+            const auto f = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                               .getChildFile ("NEUROKLAST")
+                               .getChildFile (Config::kAppDataFolder)
+                               .getChildFile ("ui.settings");
+            const auto xml = f.loadFileAsString();
+            expect (xml.contains ("scopeSource"), xml);
+            expect (xml.containsIgnoreCase ("out"), xml);
+            expect (xml.contains ("scopeX"), xml);
+            expect (xml.contains ("freq"), xml);
+            NeuroKoreAudioProcessor proc;
+            const auto host = bridge::hostVar (proc);
+            expectEquals (host.getProperty ("scopeSource", "").toString(), juce::String ("out"));
+            expectEquals (host.getProperty ("scopeX", "").toString(), juce::String ("freq"));
+            expectEquals (host.getProperty ("scopeY", "").toString(), juce::String ("db"));
+            expectEquals ((int) host.getProperty ("scopeGrid", true), 0);
+            expectEquals ((int) host.getProperty ("scopeInvertY", false), 1);
+            expectEquals ((int) host.getProperty ("scopeDelta", false), 1);
+            UiSettings::get().setScopeSource ("both");
+            UiSettings::get().setScopeX ("samples");
+            UiSettings::get().setScopeY ("linear");
+            UiSettings::get().setScopeGrid (true);
+            UiSettings::get().setScopeInvertY (false);
+            UiSettings::get().setScopeDelta (false);
+        }
+
         beginTest ("shared UI prefs reload from AppData written by another process");
         {
             UiSettings::get().setThemeId ("signal");
@@ -144,6 +236,18 @@ public:
             expectEquals ((int) bridge::hostVar (other).getProperty ("frameRate", 0), 30);
             UiSettings::get().setThemeId ("signal");
             UiSettings::get().setFrameRate (60);
+        }
+
+        beginTest ("hostVar carries live independently of SAFE mode word");
+        {
+            UiSettings::get().setLiveMode (true);
+            NeuroKoreAudioProcessor proc;
+            const auto host = bridge::hostVar (proc);
+            expect ((bool) host.getProperty ("live", false));
+            expect (host.hasProperty ("live"));
+            UiSettings::get().setLiveMode (false);
+            const auto off = bridge::hostVar (proc);
+            expect (! (bool) off.getProperty ("live", true));
         }
 
         beginTest ("LIVE on one processor applies to another without an editor");

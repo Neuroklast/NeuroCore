@@ -24,6 +24,7 @@ export interface HostState {
   input: number;
   cpu: number;
   mode: string;
+  live: boolean;
   lat: number;
   sr: number;
   buf: number;
@@ -232,6 +233,7 @@ export const useHostStore = create<HostState>((set) => ({
   input: 1,
   cpu: 0,
   mode: "STUDIO",
+  live: false,
   lat: 0,
   sr: 0,
   buf: 0,
@@ -295,6 +297,14 @@ export const useHostStore = create<HostState>((set) => ({
       theme: s.theme,
       frameRate: s.frameRate,
       discardPrompt: s.discardPrompt,
+      live: s.live,
+      scale: s.scale === 150 || s.scale === 125 ? s.scale : 100,
+      scopeSource: s.scopeSource,
+      scopeX: s.scopeX,
+      scopeY: s.scopeY,
+      scopeGrid: s.scopeGrid,
+      scopeInvertY: s.scopeInvertY,
+      scopeDelta: s.scopeDelta,
     });
     const parsedClips = Array.isArray(p.clips)
       ? parseClipPeaks(p.clips as Array<Record<string, unknown>>)
@@ -302,6 +312,7 @@ export const useHostStore = create<HostState>((set) => ({
     return {
     cpu: Number(p.cpu ?? 0),
     mode: String(p.mode ?? "STUDIO"),
+    live: prefs.live ?? s.live,
     lat: Number(p.lat ?? 0),
     sr: Number(p.sr ?? 0),
     buf: Number(p.buf ?? 0),
@@ -309,12 +320,18 @@ export const useHostStore = create<HostState>((set) => ({
     tempoSource: String(p.tempoSource ?? "HOST"),
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
-    scale: Number(p.scale ?? 100),
+    scale: prefs.scale ?? Number(p.scale ?? s.scale),
     motion: prefs.motion ?? s.motion,
     cables: prefs.cables ?? s.cables,
     theme: prefs.theme ?? s.theme,
     frameRate: prefs.frameRate ?? s.frameRate,
     discardPrompt: prefs.discardPrompt ?? s.discardPrompt,
+    scopeSource: prefs.scopeSource ?? s.scopeSource,
+    scopeX: prefs.scopeX ?? s.scopeX,
+    scopeY: prefs.scopeY ?? s.scopeY,
+    scopeGrid: prefs.scopeGrid ?? s.scopeGrid,
+    scopeInvertY: prefs.scopeInvertY ?? s.scopeInvertY,
+    scopeDelta: prefs.scopeDelta ?? s.scopeDelta,
     sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
     mods: Array.isArray(p.mods)
       ? Object.fromEntries(

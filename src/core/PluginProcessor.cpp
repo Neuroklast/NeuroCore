@@ -103,6 +103,7 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.addParameterListener (EffectParameters::userParams[i], this);
     apvts.addParameterListener (EffectParameters::oversampling, this);
+    apvts.addParameterListener (EffectParameters::polisherMode, this);
     apvts.addParameterListener (EffectParameters::dryWet, this);
 
     loadLanguage ("en");
@@ -143,8 +144,12 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     }
 
     UiSettings::get().addListener (this);
+    lastUiScalePercent = UiSettings::get().uiScalePercent();
     dspEngine.setLiveMode (UiSettings::get().liveMode());
     telemetryPump.setWanted (false);
+    // WebView2 is born with the processor (NeuroMeter). Cubase scan createView
+    // must not CreateCoreWebView2 on the IPlugView HWND.
+    webViewHolder = std::make_unique<bridge::WebViewHolder> (*this);
 }
 
 bool NeuroKoreAudioProcessor::isDemoMixLocked() const noexcept
@@ -185,6 +190,7 @@ NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.removeParameterListener (EffectParameters::userParams[i], this);
     apvts.removeParameterListener (EffectParameters::oversampling, this);
+    apvts.removeParameterListener (EffectParameters::polisherMode, this);
     apvts.removeParameterListener (EffectParameters::dryWet, this);
 }
 
@@ -573,9 +579,6 @@ bridge::WebViewHolder& NeuroKoreAudioProcessor::getWebView()
 juce::AudioProcessorEditor* NeuroKoreAudioProcessor::createEditor()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR)
-    // Do NOT call getWebView() here — that builds WebZipIndex synchronously
-    // on the Cubase scan stack. WebPluginEditor::ctor calls
-    // audioProcessor.getWebView().attach(*this) which lazily creates the holder.
     return createWebEditor (*this);
 #else
     return nullptr;
@@ -678,7 +681,10 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 tree.removeChild (i, nullptr);
             }
 
+            restoringHostState = true;
             apvts.replaceState (tree);
+            restoringHostState = false;
+            applySharedProcessingPrefs();
 
             if (scriptFromState.isNotEmpty())
             {
@@ -705,6 +711,8 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             resolvePresetNameFromScript();
 
             sendChangeMessage();
+            if (webViewHolder != nullptr)
+                webViewHolder->pushHost();
         }
     }
 }
@@ -756,6 +764,24 @@ void NeuroKoreAudioProcessor::setLiveMode (bool enabled)
     UiSettings::get().setLiveMode (enabled);
 }
 
+void NeuroKoreAudioProcessor::applySharedProcessingPrefs()
+{
+    if (auto* os = dynamic_cast<juce::AudioParameterChoice*> (
+            apvts.getParameter (EffectParameters::oversampling)))
+    {
+        const int idx = UiSettings::get().oversamplingIndex();
+        if (os->getIndex() != idx)
+            os->setValueNotifyingHost (os->convertTo0to1 ((float) idx));
+    }
+    if (auto* po = dynamic_cast<juce::AudioParameterChoice*> (
+            apvts.getParameter (EffectParameters::polisherMode)))
+    {
+        const int idx = UiSettings::get().polisherIndex();
+        if (po->getIndex() != idx)
+            po->setValueNotifyingHost (po->convertTo0to1 ((float) idx));
+    }
+}
+
 void NeuroKoreAudioProcessor::uiSettingsChanged()
 {
     const bool enabled = UiSettings::get().liveMode();
@@ -774,8 +800,23 @@ void NeuroKoreAudioProcessor::uiSettingsChanged()
             triggerAsyncUpdate();
         }
     }
+    applySharedProcessingPrefs();
     if (webViewHolder != nullptr)
         webViewHolder->pushHost();
+    const int scale = UiSettings::get().uiScalePercent();
+    if (scale == lastUiScalePercent)
+        return;
+    lastUiScalePercent = scale;
+    if (auto* ed = getActiveEditor())
+    {
+        const float f = UiSettings::get().uiScaleFactor();
+        const int w = juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth,
+                                    juce::roundToInt ((float) Config::kUiDesignWidth * f));
+        const int h = juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight,
+                                    juce::roundToInt ((float) Config::kUiDesignHeight * f));
+        if (ed->getWidth() != w || ed->getHeight() != h)
+            ed->setSize (w, h);
+    }
 }
 
 juce::String NeuroKoreAudioProcessor::getIrName (const juce::String& slot) const
@@ -1119,7 +1160,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroKoreAudioProcessor::cre
     addParam ("outputGain", "Output Gain", 0.f, 2.f, 1.f);
     addParam ("dryWet", "Dry/Wet", 0.f, 1.f, 1.f);
     // Default None — Limiter flattened every preset's dynamics ("pressed" amp sims)
-    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Soft Clip", juce::StringArray { "Off", "Soft Clip" }, 0));
+    params.push_back (std::make_unique<juce::AudioParameterChoice> ("polisherMode", "Soft Clip", juce::StringArray { "Off", "Soft Clip" },
+                                                                   UiSettings::get().polisherIndex()));
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputLeft, "Input L", true));
     // Stereo hosts: process both channels by default
     params.push_back (std::make_unique<juce::AudioParameterBool> (EffectParameters::useInputRight, "Input R", true));
@@ -1127,7 +1169,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroKoreAudioProcessor::cre
     params.push_back (std::make_unique<juce::AudioParameterChoice> (EffectParameters::oversampling,
                                                                    "Oversampling",
                                                                    juce::StringArray { "1x", "2x", "4x", "8x" },
-                                                                   Config::kDefaultOversamplingIndex));
+                                                                   UiSettings::get().oversamplingIndex()));
     // AutoGain strength: 0 = off (character), 1 = full mild match. No UI widget.
     addParam (EffectParameters::autoGain, "Auto Gain", 0.f, 1.f, 0.f);
 
@@ -1206,10 +1248,23 @@ void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID,
         if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
                 apvts.getParameter (EffectParameters::oversampling)))
             idx = juce::jlimit (0, 3, choice->getIndex());
+        if (! restoringHostState)
+            UiSettings::get().setOversamplingIndex (idx);
+        if (restoringHostState)
+            return;
         if (idx == dspEngine.getOversamplingIndex())
             return;
         cpuProtect.reset();
         triggerAsyncUpdate();
+    }
+    else if (parameterID == EffectParameters::polisherMode)
+    {
+        int idx = 0;
+        if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                apvts.getParameter (EffectParameters::polisherMode)))
+            idx = juce::jlimit (0, 1, choice->getIndex());
+        if (! restoringHostState)
+            UiSettings::get().setPolisherIndex (idx);
     }
     else if (parameterID == EffectParameters::dryWet)
     {

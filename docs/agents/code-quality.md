@@ -25,7 +25,7 @@
 ## Where code lives
 
 - `src/dsl/GraphModel.*` — document, jacks, tidy, emit/parse.
-- `src/ui/WebPluginEditor.*` — WebView host. Circuit lives in `web/` (React Flow + elkjs).
+- `src/ui/WebPluginEditor.*` — WebView host. Circuit lives in `web/` (`boardStore` + elkjs + A*).
 - `src/core/DspEngine.*` / `CpuProtect.h` — runtime. Do not hide DSP cost by lying in the footer.
 
 ## Version

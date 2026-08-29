@@ -70,12 +70,18 @@ export function routeFitsPorts(from: Pt, to: Pt, route: Pt[]): boolean {
   return near(route[0]!, from) && near(route[route.length - 1]!, to);
 }
 
-/** Paint the stored route only when both ends still sit on the jacks. */
+/** Paint the stored route only when both ends still sit on the jacks. Always source → dest. */
 export function paintRoute(from: Pt, to: Pt, route: Pt[]): Pt[] {
-  if (! routeFitsPorts(from, to, route)) {
+  if (route.length < 2) {
     return stubRoute(from, to);
   }
-  const pinned = route.slice();
+  const last = route[route.length - 1]!;
+  const forward = near(route[0]!, from) && near(last, to);
+  const backward = near(route[0]!, to) && near(last, from);
+  if (! forward && ! backward) {
+    return stubRoute(from, to);
+  }
+  const pinned = (backward ? route.slice().reverse() : route.slice());
   pinned[0] = from;
   pinned[pinned.length - 1] = to;
   return pinned;

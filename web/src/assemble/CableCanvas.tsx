@@ -13,13 +13,18 @@ import {
   edgeLanes,
   edgePaintKind,
   PACKET_CORE,
+  PACKET_SPAN,
+  packetDistancesFromCursor,
+  packetMeanGap,
+  packetSeed,
+  pathLength,
   peakForLane,
+  pointAlong,
   rmsForLane,
   streamAlpha,
   streamBlur,
-  streamDash,
+  streamAdvance,
   streamGlitch,
-  streamSpeed,
   type LaneColor,
 } from "./cablePaint";
 import type { Pt } from "./layout/types";
@@ -62,14 +67,13 @@ function tracePath(ctx: CanvasRenderingContext2D, pts: Array<{ x: number; y: num
   }
 }
 
-function strokeStream(
+function strokePackets(
   ctx: CanvasRenderingContext2D,
   pts: Array<{ x: number; y: number }>,
   glow: string,
   core: string,
   width: number,
-  dash: number[],
-  dashOffset: number,
+  distances: number[],
   peak: number,
   bloom: boolean,
 ): void {
@@ -84,8 +88,27 @@ function strokeStream(
   tracePath(ctx, pts);
   ctx.stroke();
 
-  ctx.setLineDash(dash);
-  ctx.lineDashOffset = dashOffset;
+  const drawBeads = (color: string) => {
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    for (const d of distances) {
+      const a = pointAlong(pts, d);
+      if (! a) {
+        continue;
+      }
+      const b = pointAlong(pts, d + PACKET_SPAN);
+      ctx.moveTo(a.x, a.y);
+      if (b) {
+        ctx.lineTo(b.x, b.y);
+      } else {
+        ctx.lineTo(a.x, a.y);
+      }
+    }
+    ctx.stroke();
+  };
+
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(1.6, width * 1.15);
   ctx.globalCompositeOperation = "screen";
   const glitch = streamGlitch(peak);
   if (glitch > 0) {
@@ -93,30 +116,22 @@ function strokeStream(
     ctx.globalAlpha = 1;
     ctx.save();
     ctx.translate(-glitch, 0);
-    ctx.strokeStyle = "rgba(255, 0, 60, 1)";
-    tracePath(ctx, pts);
-    ctx.stroke();
+    drawBeads("rgba(255, 0, 60, 1)");
     ctx.restore();
     ctx.save();
     ctx.translate(glitch, 0);
-    ctx.strokeStyle = "rgba(0, 255, 255, 1)";
-    tracePath(ctx, pts);
-    ctx.stroke();
+    drawBeads("rgba(0, 255, 255, 1)");
     ctx.restore();
-    ctx.strokeStyle = "#FFFFFF";
-    tracePath(ctx, pts);
-    ctx.stroke();
+    drawBeads("#FFFFFF");
   } else {
     ctx.globalAlpha = streamAlpha(peak);
     ctx.shadowColor = glow;
     ctx.shadowBlur = bloom ? streamBlur(peak) : 0;
-    ctx.strokeStyle = core;
-    tracePath(ctx, pts);
-    ctx.stroke();
+    drawBeads(core);
   }
   ctx.globalCompositeOperation = "source-over";
   ctx.shadowBlur = 0;
-  ctx.setLineDash([]);
+  ctx.lineCap = "butt";
 }
 
 let drawNow: (() => void) | null = null;
@@ -143,6 +158,8 @@ export function CableCanvas({
   const ref = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef(graph);
   graphRef.current = graph;
+  const sizeRef = useRef({ width, height });
+  sizeRef.current = { width, height };
 
   useEffect(() => {
     const canvas = ref.current;
@@ -153,24 +170,30 @@ export function CableCanvas({
     if (! ctx) {
       return;
     }
-    const offsets = new Map<string, number>();
     const palette: Record<LaneColor, string> = { ...FALLBACK };
     const geom = new Map<string, { stamp: string; lanes: Pt[][] }>();
+    const offsets = new Map<string, number>();
+    const trains = new Map<string, { k: number; c: number }>();
+    let lastNow = 0;
     let paletteTheme = "";
     const coreInk = () => resolveColor(PACKET_CORE, "#ffffff");
     let core = FALLBACK.accent;
-    const draw = () => {
+    const draw = (now = 0) => {
+      const t = now > 0 ? now : (typeof performance !== "undefined" ? performance.now() : 0);
+      const dt = lastNow > 0 ? Math.max(0, (t - lastNow) / 1000) : 0;
+      lastNow = t;
+      const { width: w, height: h } = sizeRef.current;
       const g = graphRef.current;
       const cam = cameraRef.current;
       const dpr = window.devicePixelRatio || 1;
-      if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
+      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, w, h);
       ctx.save();
       ctx.setTransform(dpr * cam.scale, 0, 0, dpr * cam.scale, dpr * cam.tx, dpr * cam.ty);
 
@@ -189,8 +212,8 @@ export function CableCanvas({
           tx: cam.tx,
           ty: cam.ty,
           scale: cam.scale,
-          width,
-          height,
+          width: w,
+          height: h,
         });
       }
 
@@ -233,24 +256,30 @@ export function CableCanvas({
           const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type);
           const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type);
           const key = `${e.id}:${lane.id}`;
-          let off = offsets.get(key) ?? 0;
-          const spd = streamSpeed(energy);
-          if (spd > 0) {
-            off -= spd;
-            offsets.set(key, off);
-          }
+          const integrated = streamAdvance(offsets.get(key) ?? 0, energy, dt, peak);
+          offsets.set(key, integrated);
+          const mean = packetMeanGap(energy);
+          const seed = packetSeed(key);
+          const next = packetDistancesFromCursor(
+            pathLength(painted),
+            integrated,
+            mean,
+            seed,
+            trains.get(key) ?? { k: 0, c: 0 },
+          );
+          trains.set(key, next.cursor);
+          const beads = next.distances;
           ctx.save();
           if (dim) {
             ctx.globalAlpha = 0.12;
           }
-          strokeStream(
+          strokePackets(
             ctx,
             painted,
             palette[lane.color],
             core,
             lane.width,
-            streamDash(lane.dash, energy),
-            off,
+            beads,
             peak,
             pass.glow,
           );
@@ -284,7 +313,7 @@ export function CableCanvas({
       }
       off();
     };
-  }, [width, height, cameraRef, gestureRef, active]);
+  }, [active, cameraRef, gestureRef]);
 
   return <canvas ref={ref} className="nk-board-canvas" aria-hidden />;
 }

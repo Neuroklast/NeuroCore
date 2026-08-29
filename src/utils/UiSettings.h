@@ -56,6 +56,29 @@ public:
     bool discardPrompt() const noexcept;
     void setDiscardPrompt (bool enabled);
 
+    int editorWidth() const noexcept;
+    int editorHeight() const noexcept;
+    void setEditorSize (int width, int height);
+
+    int oversamplingIndex() const noexcept;
+    void setOversamplingIndex (int index);
+
+    int polisherIndex() const noexcept;
+    void setPolisherIndex (int index);
+
+    juce::String scopeSource() const;
+    void setScopeSource (const juce::String& id);
+    juce::String scopeX() const;
+    void setScopeX (const juce::String& id);
+    juce::String scopeY() const;
+    void setScopeY (const juce::String& id);
+    bool scopeGrid() const noexcept;
+    void setScopeGrid (bool enabled);
+    bool scopeInvertY() const noexcept;
+    void setScopeInvertY (bool enabled);
+    bool scopeDelta() const noexcept;
+    void setScopeDelta (bool enabled);
+
     /** Re-read %AppData% ui.settings so another process's persist is visible. */
     bool reloadFromDisk();
 
@@ -72,6 +95,9 @@ private:
     UiSettings& operator= (const UiSettings&) = delete;
 
     static float clampFont (float pt) noexcept;
+    static juce::String clampScopeSource (const juce::String& id);
+    static juce::String clampScopeX (const juce::String& id);
+    static juce::String clampScopeY (const juce::String& id);
     void persist() const;
     void notifyListeners() const;
     bool applyLoaded();
@@ -92,5 +118,15 @@ private:
     std::atomic<bool>  cableWave { false };
     std::atomic<int>   fpsCap { 60 };
     std::atomic<bool>  unsavedPrompt { true };
+    std::atomic<int>   editorW { 0 };
+    std::atomic<int>   editorH { 0 };
+    std::atomic<int>   osIndex { 2 };
+    std::atomic<int>   polishIndex { 0 };
+    std::atomic<bool>  meterGrid { true };
+    std::atomic<bool>  meterInvertY { false };
+    std::atomic<bool>  meterDelta { false };
     juce::String       theme { "signal" };
+    juce::String       meterSource { "both" };
+    juce::String       meterX { "samples" };
+    juce::String       meterY { "linear" };
 };

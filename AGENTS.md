@@ -13,7 +13,7 @@ cmake --build build --target NeuroKoreTests --config Release
 
 Windows one-click: `build_release.bat` (Debug: `build_debug.bat`). Same tree (`build/`) and target (`NeuroKore_All`). If you bump `NEUROKORE_VERSION_LABEL` or the Release target, update those `.bat` files in the same change.
 
-Version is **0.6.2-beta**. Do not invent a new one.
+Version is **0.6.4-beta**. Do not invent a new one.
 
 ## Read before you touch code
 

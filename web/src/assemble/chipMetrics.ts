@@ -71,8 +71,10 @@ export function dspFaceSize(): { w: number; h: number } {
   return { w: snapSize(CHIP_W), h: snapSize(chipFaceStackPx()) };
 }
 
-export function ioFaceSize(): { w: number; h: number } {
-  return { w: snapSize(IO_W), h: snapSize(IO_H) };
+export function ioFaceSize(jackCount = 1): { w: number; h: number } {
+  const n = Math.max(1, Math.floor(Number(jackCount) || 1));
+  const minH = n <= 1 ? IO_H : TITLE_H + CHIP_PAD_Y + (n - 1) * JACK_PITCH;
+  return { w: snapSize(IO_W), h: snapSize(Math.max(IO_H, minH)) };
 }
 
 export function chipOverlayStackPx(hiddenRows: number): number {

@@ -193,6 +193,93 @@ public:
                           "busScratch grew on n=256 after prepare 64");
         }
 
+        beginTest ("multi-bus xover walks callback n, not scratch capacity");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "xover1: f1 = 200; f2 = 2500\n"
+                "out: low = 1; mid = 1; high = 1\n",
+                err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            const int snap0 = chain.getInSnapshotNumSamples();
+            expect (snap0 >= 512, "prepare sizes scratch to the OS/host ceiling");
+
+            juce::AudioBuffer<float> hot (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                hot.setSample (0, i, 0.9f);
+                hot.setSample (1, i, 0.9f);
+            }
+            chain.processBlock (hot);
+            expectEquals (TestHelpers::countNonFinite (hot), 0);
+
+            juce::AudioBuffer<float> quiet (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                quiet.setSample (0, i, 0.5f);
+                quiet.setSample (1, i, 0.5f);
+            }
+            chain.processBlock (quiet);
+            expectEquals (TestHelpers::countNonFinite (quiet), 0);
+            expectEquals (chain.getInSnapshotNumSamples(), snap0,
+                          "short callback must not grow scratch");
+
+            float inPk = 0.f;
+            expect (chain.copyTapPeak ("__in__", inPk), "IN tap publishes");
+            // storeTapLevels holds then decays 0.88/block. Leftover scratch
+            // stays at 0.9; a real 0.5 callback must drop below that hold.
+            expect (inPk < 0.85f,
+                    "IN tap must not keep the previous block's scratch tail; pk="
+                        + juce::String (inPk, 4));
+
+            float xoPk = 0.f;
+            expect (chain.copyTapPeak ("xover1", xoPk), "xover tap publishes");
+            expect (xoPk < 0.85f,
+                    "xover tap must not scan unused scratch tail; pk="
+                        + juce::String (xoPk, 4));
+
+            for (int k = 0; k < 12; ++k)
+            {
+                for (int i = 0; i < 64; ++i)
+                {
+                    quiet.setSample (0, i, 0.5f);
+                    quiet.setSample (1, i, 0.5f);
+                }
+                chain.processBlock (quiet);
+            }
+            expect (chain.copyTapPeak ("__in__", inPk));
+            expect (inPk > 0.4f && inPk < 0.6f,
+                    "IN tap settles on the live 0.5 callback, pk="
+                        + juce::String (inPk, 4));
+            expect (chain.copyTapPeak ("xover1", xoPk));
+            expect (xoPk > 0.4f && xoPk < 0.6f,
+                    "xover tap settles on the live callback, pk="
+                        + juce::String (xoPk, 4));
+
+            int bad = 0;
+            float runPk = 0.f;
+            const int ns[] = { 64, 128, 512, 64 };
+            for (int k = 0; k < 50; ++k)
+            {
+                const int n = ns[k % 4];
+                juce::AudioBuffer<float> buf (2, n);
+                for (int i = 0; i < n; ++i)
+                {
+                    const float x = 0.5f * std::sin (6.2831853f * 220.f * (float) (k * 64 + i) / 48000.f);
+                    buf.setSample (0, i, x);
+                    buf.setSample (1, i, x);
+                }
+                chain.processBlock (buf);
+                bad += TestHelpers::countNonFinite (buf);
+                runPk = juce::jmax (runPk, TestHelpers::peakAbs (buf));
+            }
+            expectEquals (bad, 0);
+            expect (runPk < 2.0f, "xover mix of 0.5 sine must stay near unity, pk="
+                    + juce::String (runPk, 4));
+            expectEquals (chain.getInSnapshotNumSamples(), snap0);
+        }
+
         beginTest ("IR dryScratch is sized in prepare; processBlock does not grow it");
         {
             dsl::SignalChain chain;

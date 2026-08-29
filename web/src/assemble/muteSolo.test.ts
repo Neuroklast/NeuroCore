@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useAstStore } from "../store/astStore";
+import { useChipViewStore } from "../store/expandStore";
+import { useBoardStore } from "./boardStore";
+import { toggleChipMute } from "./muteSoloApply";
 import {
   applyMuteSolo,
   isFlowBlockId,
+  muteHidNodes,
+  muteOverlayOnly,
   muteableIds,
   stripMuteComments,
 } from "./muteSolo";
@@ -62,10 +68,84 @@ describe("muteSolo script overlay", () => {
     expect(stripMuteComments(muted)).toBe(SCRIPT);
   });
 
+  it("mute overlay is the same graph with comments, not a new circuit", () => {
+    const muted = applyMuteSolo(SCRIPT, new Set(["stage1"]), new Set());
+    expect(stripMuteComments(muted)).toBe(stripMuteComments(SCRIPT));
+    expect(muted).not.toBe(SCRIPT);
+  });
+
+  it("mute overlay is the same circuit as the live script", () => {
+    const muted = applyMuteSolo(SCRIPT, new Set(["stage1"]), new Set());
+    expect(muteOverlayOnly(SCRIPT, muted)).toBe(true);
+    expect(muteOverlayOnly(muted, SCRIPT)).toBe(true);
+    expect(muteOverlayOnly(muted, muted), "plugin echo of the same muted script").toBe(true);
+    expect(muteOverlayOnly(SCRIPT, SCRIPT.replace("stage1", "stage9"))).toBe(false);
+    expect(muteHidNodes(muted, { nodes: [{ id: "stage1" }, { id: "filter1" }] }, { nodes: [{ id: "filter1" }] })).toBe(true);
+    expect(muteHidNodes(SCRIPT, { nodes: [{ id: "stage1" }] }, { nodes: [] })).toBe(false);
+  });
+
   it("re-applying overlay is stable (no double comments)", () => {
     const once = applyMuteSolo(SCRIPT, new Set(["osc1"]), new Set());
     const twice = applyMuteSolo(once, new Set(["osc1"]), new Set());
     expect(twice).toBe(once);
     expect(twice.split("# nk-ms osc1:").length).toBe(2);
+  });
+});
+
+describe("toggle mute leaves the board", () => {
+  const ast = {
+    version: 1 as const,
+    leadingComments: [],
+    params: [],
+    nodes: [{
+      id: "stage1",
+      type: "stage",
+      busName: "main",
+      args: { y: "x" },
+      trailingComment: "",
+      jacks: [
+        { id: "in", label: "in", output: false, kind: "audio" },
+        { id: "out", label: "out", output: true, kind: "audio" },
+      ],
+    }],
+    edges: [{ from: "IN", to: "stage1", kind: "audio", fromJack: "out", toJack: "in" }],
+  };
+
+  beforeEach(() => {
+    useChipViewStore.setState({ muted: new Set(), soloed: new Set() });
+    useAstStore.setState({
+      origin: "preset",
+      ast: null,
+      lastValidAst: null,
+      lastValidScript: "",
+      script: "",
+      diagnostics: [],
+    });
+    useAstStore.getState().applyAstEvent({
+      origin: "preset",
+      script: "stage1: y = x\n",
+      astJson: JSON.stringify(ast),
+      diagnostics: [],
+    });
+    useBoardStore.getState().hydrate(useAstStore.getState().ast);
+    const edges = Object.fromEntries(
+      Object.entries(useBoardStore.getState().edges).map(([id, e]) => [
+        id,
+        { ...e, route: [{ x: 32, y: 144 }, { x: 320, y: 144 }] },
+      ]),
+    );
+    useBoardStore.getState().setEdges(edges);
+  });
+
+  it("does not replace AST, origin, chip xy, or stored routes", () => {
+    const visual = useAstStore.getState().ast;
+    const xy = useBoardStore.getState().nodes.stage1!.x;
+    const routes = JSON.stringify(Object.values(useBoardStore.getState().edges).map((e) => e.route));
+    toggleChipMute("stage1");
+    expect(useAstStore.getState().ast).toBe(visual);
+    expect(useAstStore.getState().origin).toBe("preset");
+    expect(useAstStore.getState().script).toContain("# nk-ms stage1:");
+    expect(useBoardStore.getState().nodes.stage1!.x).toBe(xy);
+    expect(JSON.stringify(Object.values(useBoardStore.getState().edges).map((e) => e.route))).toBe(routes);
   });
 });

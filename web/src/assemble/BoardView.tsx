@@ -23,6 +23,7 @@ import { demoClipRows } from "./demoClips";
 import { applyBoardFocus, boardFocusEdgesRef, boardHoverRef, circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
+import { circuitPaintActive } from "../app/workspace";
 
 type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
@@ -42,6 +43,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const ports = useBoardStore((s) => s.ports);
   const edges = useBoardStore((s) => s.edges);
   const userMoved = useBoardStore((s) => s.userMoved);
+  const layoutBusy = useBoardStore((s) => s.layoutBusy);
   const paneRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const camLive = useRef(useBoardStore.getState().camera);
@@ -62,11 +64,10 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const motion = useHostStore((s) => s.motion);
   const prefersReduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-  const dofAllowed = circuitDofAllowed(motion, prefersReduced);
-
   const paintFocus = useCallback(() => {
     const pane = paneRef.current;
     const g = useBoardStore.getState();
+    const allowed = circuitDofAllowed(motion, prefersReduced, camLive.current.scale);
     const plane = focusPlane({
       selectedNodeIds: selectedRef.current ? [selectedRef.current] : [],
       selectedEdgeIds: [],
@@ -77,26 +78,29 @@ export function BoardView({ active = true }: { active?: boolean }) {
         target: e.targetNodeId,
       })),
     });
-    boardFocusEdgesRef.current = dofAllowed && plane.active ? plane.edges : null;
+    boardFocusEdgesRef.current = allowed && plane.active ? plane.edges : null;
     if (pane) {
-      applyBoardFocus(pane.querySelectorAll("[data-node-id]"), (id) => focusAttr(dofAllowed, plane, id));
+      applyBoardFocus(pane.querySelectorAll("[data-node-id]"), (id) => focusAttr(allowed, plane, id));
     }
     paintCablesNow();
-  }, [dofAllowed]);
+  }, [motion, prefersReduced]);
 
   useEffect(() => {
     const prevIds = Object.keys(useBoardStore.getState().nodes);
     const keep = keepBoardXy({
-      origin,
+      origin: useAstStore.getState().origin,
       prevIds,
       nextIds: previewBoardIds(ast, sidechainOn),
       chipsHavePositions: true,
     });
     useBoardStore.getState().hydrate(ast, sidechainOn, keep);
+  }, [ast, sidechainOn]);
+
+  useEffect(() => {
     if (origin === "preset") {
       useChipViewStore.getState().collapseAll();
     }
-  }, [ast, origin, sidechainOn]);
+  }, [origin, ast]);
 
   useEffect(() => {
     if (hasJuceBridge()) {
@@ -225,6 +229,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if (origin === "canvas") {
+      return;
+    }
+    if (useBoardStore.getState().commandedLayout) {
       return;
     }
     let cancel = false;
@@ -414,11 +421,11 @@ export function BoardView({ active = true }: { active?: boolean }) {
       const view = { w: paneRef.current?.clientWidth || 960, h: paneRef.current?.clientHeight || 420 };
       if (isArrangeChord(e) && ! e.shiftKey) {
         e.preventDefault();
-        void layoutBoard("ARRANGE", view);
+        void layoutBoard("ARRANGE", view, { force: true });
       }
       if (e.shiftKey && ! e.ctrlKey && ! e.metaKey && e.key.toLowerCase() === "a") {
         e.preventDefault();
-        void layoutBoard("COMPACT", view);
+        void layoutBoard("COMPACT", view, { force: true });
       }
       if (e.key === "Delete" || e.key === "Backspace") {
         const id = selectedRef.current;
@@ -453,7 +460,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     applyLiveCamera(zoomCamera(camLive.current, sx, sy, e.deltaY > 0 ? 0.92 : 1.08), true);
-  }, [applyLiveCamera]);
+    paintFocus();
+  }, [applyLiveCamera, paintFocus]);
 
   const graph = { nodes, ports, edges };
   const portsByNode = useMemo(() => {
@@ -534,8 +542,21 @@ export function BoardView({ active = true }: { active?: boolean }) {
         gestureRef={camGesture}
         width={size.w}
         height={size.h}
-        active={active}
+        active={active && ! layoutBusy && circuitPaintActive("assemble", size.w, size.h)}
       />
+      {layoutBusy ? (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/85"
+          role="progressbar"
+          aria-busy="true"
+          aria-label="Layout"
+        >
+          <div className="text-[11px] tracking-[0.35em] text-ink">LAYOUT</div>
+          <div className="mt-3 h-1 w-48 overflow-hidden bg-ink-muted">
+            <div className="nk-layout-bar h-full w-full bg-accent" />
+          </div>
+        </div>
+      ) : null}
       <div
         ref={worldRef}
         className="nk-board-world"
@@ -560,8 +581,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
             addCircuitBlock(type, args);
             setMenu(null);
           }} />
-          <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("ARRANGE", size); }}>Arrange</OsMenuItem>
-          <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("COMPACT", size); }}>Compact</OsMenuItem>
+          <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("ARRANGE", size, { force: true }); }}>Arrange</OsMenuItem>
+          <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("COMPACT", size, { force: true }); }}>Compact</OsMenuItem>
         </OsContextMenu>
       ) : null}
       {menu?.kind === "chip" ? (

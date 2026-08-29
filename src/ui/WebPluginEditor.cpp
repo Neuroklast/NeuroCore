@@ -1,6 +1,7 @@
 #include "WebPluginEditor.h"
 #include "../bridge/WebViewHolder.h"
 #include "../core/Config.h"
+#include "../utils/UiSettings.h"
 #include <cmath>
 
 #if ! JUCE_WEB_BROWSER
@@ -44,7 +45,21 @@ WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
     setConstrainer (&sizeConstrain);
     setResizable (true, false);
     setResizeLimits (minW, minH, Config::kUiMaxWindowWidth, Config::kUiMaxWindowHeight);
-    setSize (Config::kUiDesignWidth, Config::kUiDesignHeight);
+    const int savedW = UiSettings::get().editorWidth();
+    const int savedH = UiSettings::get().editorHeight();
+    if (savedW >= Config::kUiMinWindowWidth && savedH >= Config::kUiMinWindowHeight)
+    {
+        setSize (juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth, savedW),
+                 juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight, savedH));
+    }
+    else
+    {
+        const float f = UiSettings::get().uiScaleFactor();
+        setSize (juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth,
+                               juce::roundToInt ((float) Config::kUiDesignWidth * f)),
+                 juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight,
+                               juce::roundToInt ((float) Config::kUiDesignHeight * f)));
+    }
     cornerGrip = std::make_unique<QuietCorner> (this, &sizeConstrain);
     addAndMakeVisible (*cornerGrip);
     cornerGrip->setAlwaysOnTop (true);
@@ -109,6 +124,7 @@ void WebPluginEditor::resized()
         cornerGrip->setBounds (r.getWidth() - grip, r.getHeight() - grip, grip, grip);
         cornerGrip->toFront (false);
     }
+    UiSettings::get().setEditorSize (getWidth(), getHeight());
 }
 
 juce::AudioProcessorEditor* createWebEditor (NeuroKoreAudioProcessor& p)

@@ -4,7 +4,7 @@ The suite has tens of thousands of `expect()` calls, many per-sample. That hides
 
 ## Contract tests
 
-Circuit layout contracts live in `web/src/assemble/*.test.ts` (React Flow / elkjs), not in C++.
+Circuit layout contracts live in `web/src/assemble/*.test.ts` (`boardStore` / elkjs / A*), not in C++.
 
 A C++ contract is one named check with a dump on failure. Do **not** add another `expect` inside a 512-sample loop. Use `TestHelpers::countNonFinite` / `peakAbs`.
 

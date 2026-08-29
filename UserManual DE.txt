@@ -2,7 +2,7 @@
 
 NEUROKORE ist ein Insert- oder Send-Effekt von Neuroklast. Lade einen Factory-Sound, drehe die Regler a–f, oder schreibe eine kurze Formel (Drive, Filter, Delay, Reverb, Kompressor, Gate, Limiter, IR-Cab, Pitch, Crossover, Envelope, Oszillator).
 
-Version 0.6.2-beta. Formate: Standalone, VST3, AU.
+Version 0.6.4-beta. Formate: Standalone, VST3, AU.
 
 Die Demo läuft 14 Tage ab dem ersten Start auf diesem Rechner. Statuszeile und Settings → License zeigen das Enddatum. Danach bleibt Mix trocken, bis eine Lizenz liegt.
 
@@ -63,10 +63,10 @@ Obere Leiste
 - < / > blättert Factory, dann User. An beiden Enden Wrap.
 - Functions: Wörterbuch. Ordner links: Core, Drive, Crush, Blocks.
 - Stages: Blöcke der aktuellen Formel und welche Regler sie nutzen. IR-Block öffnet den Cab-Slot.
-- Settings: Animation, Studio / Live, Theme, UI-Scale, Formelgröße, Circuit-Kabel, Tempo, Standalone-Audio, About / License / Help.
-- LIVE / STUDIO: Live = min-phase Oversampling (kaum Latenz). Studio = linear-phase. Gleicher Schalter in Settings.
+- Settings: Motion, Studio / Live, Scale 100/125/150, Theme, Frame rate 30/60, Circuit-Kabel, Tempo, unsaved prompt, Standalone-Audio, About / License / Help. Keine Formelgröße. Fenster per Rahmen ziehen.
+- LIVE / STUDIO: Live = min-phase Oversampling (kaum Latenz). Studio = linear-phase. Gleicher Schalter in Settings. Gilt für jedes Insert auf diesem Rechner.
 - Bypass: Mix auf 0, Slider gesperrt. Bypass aus: alter Mix kommt zurück.
-- Help: diese Anleitung (englische In-Plugin-Hilfe).
+- Help: englische In-Plugin-Hilfe (ohne Install). Diese Datei ist die deutsche Bedienhilfe.
 
 Kein License-Knopf in der Kopfzeile. Settings → License.
 
@@ -78,22 +78,23 @@ Regler
 - Name klicken zum Umbenennen. Schreibt `param a = …` ins Skript. Die Formel benutzt weiter a–f.
 - Mausrad über dem Knob dreht. Wert tippen (Zahl oder 1/4).
 - Rechtsklick: Name / Min / Max / Unit / Note / MIDI Learn. Nie das Browser-Menü.
-- Circuit: von der unteren Chip-Buchse auf einen Knob ziehen = binden. Gebundene Knobs stehen auf dem Chip. Keine extra Knob-Kabel auf der Platine.
+- Circuit: Buchse oben am Knob auf einen Chip ziehen = binden. Gebundene Buchstaben stehen auf dem Chip. Keine extra Knob-Kabel auf der Platine.
 
 Tools-Zeile (Circuit und Terminal)
 - L / BOTH / R, Oversampling 1× / 2× / 4× / 8× (Default 4×), Soft Clip Aus / An, Mix.
+- OS, Soft Clip und Unit-Meter (Rechtsklick aufs Plot) gelten für jedes Insert und bleiben in AppData. Mix, Regler und Formel bleiben am Insert.
 - Mix-Glitch nur im Slider. Bei Bypass gesperrt.
 
 Fußzeile
-- LIVE / STUDIO / BYPASS / SAFE, CPU 0–100, Latenz, Samplerate, 32f, Buffer, BPM HOST oder USER, OS.
+- MODE (STUDIO / LIVE / SAFE), CPU 0–100, LAT, SR, BUF, BPM HOST oder USER, OS.
 - Ganz rechts: LIC wenn lizenziert, sonst DEMO und Resttage plus Enddatum (14 Tage ab erstem Start).
-- IN / OUT: Welle, Stereofeld, Loudness. Quelle IN | OUT | BOTH. CPU ist nie ein Host-Callback-Verhältnis wie 173 %.
+- Spektrogramm, Gonio und dB sitzen auf Unit, nicht in der Fußzeile. CPU ist nie ein Host-Callback-Verhältnis wie 173 %.
 
 Leertaste
 - Leertaste ist Host Play / Pause, auch wenn das Plugin Fokus hat. In Textfeldern bleibt es ein Leerzeichen.
 
 Fenster
-- Verhältnis 1280:860. Settings-Scale 100 / 125 / 150. Fit snappt abwärts, nie größer als das Host-Fenster.
+- Verhältnis 1280:860. Rahmen ziehen speichert die Größe. Scale 100 / 125 / 150 in Settings. Fit snappt abwärts, nie größer als das Host-Fenster.
 
 ---
 
@@ -139,9 +140,9 @@ Hinzufügen und löschen
 - Ctrl+Z / Ctrl+Y ist Formel-Undo / Redo.
 
 Kabel
-- Beim Ziehen eine gerade Linie zum Zeiger. Nach dem Loslassen orthogonale Leiterbahn (Stubs, parallele Lanes, höchstens zwei Ecken auf freier Bahn).
-- Audio weiß mit rotem Glow. LFO / Bind cyan. LFO-Spur steht still; ein Impuls läuft in Hz.
-- Settings → Circuit cables: Dots (Perlen bei Signal) oder Wave (graue Welle nach dem Block).
+- Beim Ziehen eine freie Kurve zum Zeiger. Nach dem Loslassen orthogonale Leiterbahn mit 45°-Ecken.
+- Stereo: zwei parallele Lanes (L cyan, R rot). Pakete laufen Quelle → Ziel, Abstände unregelmäßig — kein sich wiederholendes Raster, damit ein lautes, schnelles Signal nicht rückwärts wirkt. RMS setzt Dichte und Tempo, Peak die Helligkeit. Unter −60 dB steht der Zug.
+- Settings → Circuit cables: Dots oder Wave. LFO-Spur steht still; ein Impuls läuft in Hz.
 
 Anordnen
 - Ctrl/Cmd+A Arrange: Kette links→rechts mit Luft.
@@ -620,5 +621,5 @@ About (Settings → About) zeigt Version, Formate und Kontakt.
 
 Für Support: Host und Version, Betriebssystem, Plugin-Version, Preset oder Formel, und die Schritte zum Nachstellen. Kontakt: info@neuroklast.net / https://neuroklast.net
 
-Englische In-Plugin-Hilfe: Help im Plugin, resources/UserManual_en.txt, docs/USER_MANUAL.md.
+Englische In-Plugin-Hilfe: Help im Plugin (ohne Install). Volltext: resources/UserManual_en.txt und docs/manual/NEUROKORE.md.
 Engine und DSL: docs/DSL_REFERENCE.md.

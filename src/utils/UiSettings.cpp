@@ -14,6 +14,16 @@ namespace
     constexpr const char* kThemeKey = "theme";
     constexpr const char* kFpsKey = "frameRate";
     constexpr const char* kDiscardKey = "discardPrompt";
+    constexpr const char* kEditorWKey = "editorWidth";
+    constexpr const char* kEditorHKey = "editorHeight";
+    constexpr const char* kOsKey = "oversamplingIndex";
+    constexpr const char* kPolishKey = "polisherIndex";
+    constexpr const char* kScopeSrcKey = "scopeSource";
+    constexpr const char* kScopeXKey = "scopeX";
+    constexpr const char* kScopeYKey = "scopeY";
+    constexpr const char* kScopeGridKey = "scopeGrid";
+    constexpr const char* kScopeInvKey = "scopeInvertY";
+    constexpr const char* kScopeDeltaKey = "scopeDelta";
 
     juce::String clampTheme (const juce::String& id)
     {
@@ -95,6 +105,18 @@ bool UiSettings::applyLoaded()
     const int nextFps = clampFrameRate (props->getIntValue (kFpsKey, 60));
     const bool nextPrompt = props->getBoolValue (kDiscardKey, true);
     const juce::String nextTheme = clampTheme (props->getValue (kThemeKey, "signal"));
+    const int nextEditorW = juce::jlimit (0, Config::kUiMaxWindowWidth,
+                                          props->getIntValue (kEditorWKey, 0));
+    const int nextEditorH = juce::jlimit (0, Config::kUiMaxWindowHeight,
+                                          props->getIntValue (kEditorHKey, 0));
+    const int nextOs = juce::jlimit (0, 3, props->getIntValue (kOsKey, Config::kDefaultOversamplingIndex));
+    const int nextPolish = juce::jlimit (0, 1, props->getIntValue (kPolishKey, 0));
+    const juce::String nextScopeSrc = UiSettings::clampScopeSource (props->getValue (kScopeSrcKey, "both"));
+    const juce::String nextScopeX = UiSettings::clampScopeX (props->getValue (kScopeXKey, "samples"));
+    const juce::String nextScopeY = UiSettings::clampScopeY (props->getValue (kScopeYKey, "linear"));
+    const bool nextGrid = props->getBoolValue (kScopeGridKey, true);
+    const bool nextInv = props->getBoolValue (kScopeInvKey, false);
+    const bool nextDelta = props->getBoolValue (kScopeDeltaKey, false);
     const int nextMotion = props->containsKey (kMotionKey)
                                ? (int) clampMotion (props->getIntValue (kMotionKey, 0))
                                : (int) (props->getBoolValue (kCalmKey, false)
@@ -136,9 +158,31 @@ bool UiSettings::applyLoaded()
     putInt (fpsCap, nextFps);
     putBool (unsavedPrompt, nextPrompt);
     putInt (motionValue, nextMotion);
+    putInt (editorW, nextEditorW);
+    putInt (editorH, nextEditorH);
+    putInt (osIndex, nextOs);
+    putInt (polishIndex, nextPolish);
+    putBool (meterGrid, nextGrid);
+    putBool (meterInvertY, nextInv);
+    putBool (meterDelta, nextDelta);
     if (theme != nextTheme)
     {
         theme = nextTheme;
+        changed = true;
+    }
+    if (meterSource != nextScopeSrc)
+    {
+        meterSource = nextScopeSrc;
+        changed = true;
+    }
+    if (meterX != nextScopeX)
+    {
+        meterX = nextScopeX;
+        changed = true;
+    }
+    if (meterY != nextScopeY)
+    {
+        meterY = nextScopeY;
         changed = true;
     }
     return changed;
@@ -315,6 +359,169 @@ void UiSettings::setDiscardPrompt (bool enabled)
     notifyListeners();
 }
 
+int UiSettings::editorWidth() const noexcept
+{
+    return editorW.load (std::memory_order_relaxed);
+}
+
+int UiSettings::editorHeight() const noexcept
+{
+    return editorH.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setEditorSize (int width, int height)
+{
+    const int w = juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth, width);
+    const int h = juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight, height);
+    if (editorW.load (std::memory_order_relaxed) == w
+        && editorH.load (std::memory_order_relaxed) == h)
+        return;
+    editorW.store (w, std::memory_order_relaxed);
+    editorH.store (h, std::memory_order_relaxed);
+    persist();
+}
+
+int UiSettings::oversamplingIndex() const noexcept
+{
+    return juce::jlimit (0, 3, osIndex.load (std::memory_order_relaxed));
+}
+
+void UiSettings::setOversamplingIndex (int index)
+{
+    const int v = juce::jlimit (0, 3, index);
+    if (osIndex.load (std::memory_order_relaxed) == v)
+        return;
+    osIndex.store (v, std::memory_order_relaxed);
+    persist();
+    notifyListeners();
+}
+
+int UiSettings::polisherIndex() const noexcept
+{
+    return juce::jlimit (0, 1, polishIndex.load (std::memory_order_relaxed));
+}
+
+void UiSettings::setPolisherIndex (int index)
+{
+    const int v = juce::jlimit (0, 1, index);
+    if (polishIndex.load (std::memory_order_relaxed) == v)
+        return;
+    polishIndex.store (v, std::memory_order_relaxed);
+    persist();
+    notifyListeners();
+}
+
+juce::String UiSettings::scopeSource() const
+{
+    const juce::ScopedLock sl (lock);
+    return meterSource;
+}
+
+void UiSettings::setScopeSource (const juce::String& id)
+{
+    {
+        const juce::ScopedLock sl (lock);
+        meterSource = clampScopeSource (id);
+    }
+    persist();
+    notifyListeners();
+}
+
+juce::String UiSettings::scopeX() const
+{
+    const juce::ScopedLock sl (lock);
+    return meterX;
+}
+
+void UiSettings::setScopeX (const juce::String& id)
+{
+    {
+        const juce::ScopedLock sl (lock);
+        meterX = clampScopeX (id);
+    }
+    persist();
+    notifyListeners();
+}
+
+juce::String UiSettings::scopeY() const
+{
+    const juce::ScopedLock sl (lock);
+    return meterY;
+}
+
+void UiSettings::setScopeY (const juce::String& id)
+{
+    {
+        const juce::ScopedLock sl (lock);
+        meterY = clampScopeY (id);
+    }
+    persist();
+    notifyListeners();
+}
+
+bool UiSettings::scopeGrid() const noexcept
+{
+    return meterGrid.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setScopeGrid (bool enabled)
+{
+    if (meterGrid.load (std::memory_order_relaxed) == enabled)
+        return;
+    meterGrid.store (enabled, std::memory_order_relaxed);
+    persist();
+    notifyListeners();
+}
+
+bool UiSettings::scopeInvertY() const noexcept
+{
+    return meterInvertY.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setScopeInvertY (bool enabled)
+{
+    if (meterInvertY.load (std::memory_order_relaxed) == enabled)
+        return;
+    meterInvertY.store (enabled, std::memory_order_relaxed);
+    persist();
+    notifyListeners();
+}
+
+bool UiSettings::scopeDelta() const noexcept
+{
+    return meterDelta.load (std::memory_order_relaxed);
+}
+
+void UiSettings::setScopeDelta (bool enabled)
+{
+    if (meterDelta.load (std::memory_order_relaxed) == enabled)
+        return;
+    meterDelta.store (enabled, std::memory_order_relaxed);
+    persist();
+    notifyListeners();
+}
+
+juce::String UiSettings::clampScopeSource (const juce::String& id)
+{
+    if (id == "in" || id == "out")
+        return id;
+    return "both";
+}
+
+juce::String UiSettings::clampScopeX (const juce::String& id)
+{
+    if (id == "time" || id == "freq")
+        return id;
+    return "samples";
+}
+
+juce::String UiSettings::clampScopeY (const juce::String& id)
+{
+    if (id == "db")
+        return id;
+    return "linear";
+}
+
 int UiSettings::clampScale (int percent) noexcept
 {
     if (percent >= Config::kUiScalePercentMax)
@@ -366,6 +573,16 @@ void UiSettings::persist() const
     props->setValue (kThemeKey, theme);
     props->setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
     props->setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));
+    props->setValue (kEditorWKey, editorW.load (std::memory_order_relaxed));
+    props->setValue (kEditorHKey, editorH.load (std::memory_order_relaxed));
+    props->setValue (kOsKey, osIndex.load (std::memory_order_relaxed));
+    props->setValue (kPolishKey, polishIndex.load (std::memory_order_relaxed));
+    props->setValue (kScopeSrcKey, meterSource);
+    props->setValue (kScopeXKey, meterX);
+    props->setValue (kScopeYKey, meterY);
+    props->setValue (kScopeGridKey, meterGrid.load (std::memory_order_relaxed));
+    props->setValue (kScopeInvKey, meterInvertY.load (std::memory_order_relaxed));
+    props->setValue (kScopeDeltaKey, meterDelta.load (std::memory_order_relaxed));
     props->saveIfNeeded();
     lastWrite = settingsFile().getLastModificationTime();
 }

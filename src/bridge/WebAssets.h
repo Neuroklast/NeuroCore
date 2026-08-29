@@ -54,7 +54,7 @@ juce::File expectedEmbeddedWebZip();
 /** Disk dist if present (dev), otherwise the binary-embedded zip. */
 std::optional<WebAsset> resolveEditorAsset (const juce::File& diskRoot, const juce::String& url);
 
-/** False when NEUROKORE_WEB_DISK=0 — tester mode, binary zip only. */
+/** True only when NEUROKORE_WEB_DISK=1. Shipping binaries use the embedded zip. */
 bool wantDiskWebAssets();
 
 /** Embedded hello page used when web/dist is missing. */
