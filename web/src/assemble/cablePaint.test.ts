@@ -26,9 +26,16 @@ import {
   streamAlpha,
   streamBlur,
   streamDash,
+  streamAdvance,
+  streamDashOffset,
   streamGlitch,
+  streamIdentityPhase,
   streamSpeed,
   twinsCross,
+  packetDistances,
+  packetGapAt,
+  packetMeanGap,
+  packetSeed,
 } from "./cablePaint";
 import { chamferWaypoints, hasLightning } from "./layout/chamfer";
 
@@ -129,15 +136,28 @@ describe("lane telemetry", () => {
 
   it("maps RMS to gap and speed, peak to glow, and glitch only above 0 dBFS", () => {
     expect(streamSpeed(0)).toBe(0);
-    expect(streamSpeed(1)).toBe(STREAM_PX);
+    expect(streamSpeed(1)).toBeGreaterThan(0);
+    expect(streamSpeed(1)).toBeLessThan(STREAM_PX * 60);
     expect(streamSpeed(0.5)).toBeGreaterThan(0);
-    expect(streamSpeed(0.5)).toBeLessThan(STREAM_PX);
+    expect(streamSpeed(0.5)).toBeLessThan(STREAM_PX * 60);
+    expect(streamAdvance(0, 1, 1 / 60) * 2).toBeCloseTo(streamAdvance(0, 1, 1 / 30));
+    expect(streamAdvance(-10, 0, 1 / 60)).toBe(-10);
+    expect(streamAdvance(0, 1, 1 / 60)).toBeGreaterThan(0);
+    expect(streamAdvance(0, 1, 1)).toBeGreaterThan(streamAdvance(0, 0.25, 1));
+    expect(streamSpeed(0, 0.5)).toBeGreaterThan(0);
+    expect(streamSpeed(0, 0)).toBe(0);
+    expect(Math.abs(streamDashOffset(1000, 0.9))).toBeGreaterThan(Math.abs(streamDashOffset(1000, 0.4)));
+    expect(streamDashOffset(2000, 1)).toBeGreaterThan(streamDashOffset(1000, 1));
+    expect(streamDashOffset(1000, 0, 0)).toBe(0);
     expect(streamAlpha(0)).toBeCloseTo(STREAM_ALPHA_STILL);
     expect(streamAlpha(1)).toBeCloseTo(STREAM_ALPHA_HOT);
     expect(streamBlur(0)).toBe(STREAM_BLUR_STILL);
     expect(streamBlur(1)).toBe(STREAM_BLUR_HOT);
     expect(streamGlitch(1)).toBe(0);
     expect(streamGlitch(1.2)).toBeGreaterThan(0);
+    expect(streamIdentityPhase("e0:L", 30)).not.toBe(streamIdentityPhase("e0:R", 30));
+    expect(streamIdentityPhase("stage1:L", 30)).not.toBe(streamIdentityPhase("filter1:L", 30));
+    expect(streamIdentityPhase("e0:L", 30)).toBe(streamIdentityPhase("e0:L", 30));
     const still = streamDash(MAIN_DASH, 0);
     const hot = streamDash(MAIN_DASH, 1);
     const gap = (d: number[]) => d.filter((_, i) => i % 2 === 1).reduce((s, g) => s + g, 0) / 3;
@@ -170,6 +190,20 @@ describe("pcb background traces", () => {
     const lanes = buildCableLanes(from, to, route, "audio", "out");
     expect(lanes.length).toBe(2);
     expect(lanes[0]![0]).toEqual(expect.objectContaining({ x: from.x }));
+    const last = lanes[0]![lanes[0]!.length - 1]!;
+    expect(last.x).toBe(to.x);
+    expect(Math.max(...lanes[0]!.map((p) => p.x))).toBeLessThanOrEqual(to.x);
+  });
+
+  it("never paints a dest-first route so packets cannot leave OUT east", () => {
+    const from = { x: 0, y: 80 };
+    const to = { x: 200, y: 80 };
+    const backwards = [to, { x: 120, y: 80 }, { x: 40, y: 80 }, from];
+    const lanes = buildCableLanes(from, to, backwards, "audio", "out");
+    const pts = lanes[0]!;
+    expect(pts[0]!.x).toBe(from.x);
+    expect(pts[pts.length - 1]!.x).toBe(to.x);
+    expect(Math.max(...pts.map((p) => p.x))).toBeLessThanOrEqual(to.x);
   });
 
   it("gates cells by a pan-stable hash and culls to the camera", () => {
@@ -179,6 +213,56 @@ describe("pcb background traces", () => {
     expect(a.i1 - a.i0).toBeLessThanOrEqual(4);
     const b = visibleBlockRange({ tx: -128, ty: 0, scale: 1, width: 256, height: 256 });
     expect(b.i0).toBeGreaterThan(a.i0);
+  });
+});
+
+describe("aperiodic packet train", () => {
+  it("does not repeat a short spacing pattern so flow cannot look reversed", () => {
+    const mean = 16;
+    const seed = packetSeed("e0:L");
+    const gaps = Array.from({ length: 24 }, (_, k) => packetGapAt(k, seed, mean));
+    const period2 = gaps.every((g, i) => Math.abs(g - gaps[i % 2]!) < 0.05);
+    expect(period2).toBe(false);
+    for (let i = 1; i < gaps.length; i += 1) {
+      expect(Math.abs(gaps[i]! - gaps[i - 1]!)).toBeGreaterThan(1);
+    }
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeGreaterThan(mean * 0.4);
+    const onCable = packetDistances(220, 0, mean, seed);
+    const spacings = onCable.slice(1).map((d, i) => d - onCable[i]!);
+    const unique = new Set(spacings.map((g) => Math.round(g * 4)));
+    expect(unique.size).toBeGreaterThan(2);
+  });
+
+  it("translates the train toward dest when travel increases", () => {
+    const mean = 16;
+    const seed = 0.31;
+    const a = packetDistances(240, 10, mean, seed);
+    const b = packetDistances(240, 14, mean, seed);
+    const interior = a.filter((d) => d > 8 && d < 220);
+    expect(interior.length).toBeGreaterThan(4);
+    for (const d of interior) {
+      expect(b.some((x) => Math.abs(x - (d + 4)) < 0.51)).toBe(true);
+    }
+  });
+
+  it("packs denser when RMS is hot, never a 2 px lattice", () => {
+    expect(packetMeanGap(0)).toBeGreaterThan(packetMeanGap(1));
+    expect(packetMeanGap(1)).toBeGreaterThan(8);
+  });
+
+  it("keeps L and R on different trains", () => {
+    const L = packetDistances(200, 0, 16, packetSeed("e0:L"));
+    const R = packetDistances(200, 0, 16, packetSeed("e0:R"));
+    expect(L).not.toEqual(R);
+  });
+
+  it("advances less than half the smallest gap per 60 fps frame so the eye cannot reverse", () => {
+    const mean = packetMeanGap(1);
+    const gaps = Array.from({ length: 32 }, (_, k) => packetGapAt(k, 0.2, mean));
+    const smallest = Math.min(...gaps);
+    const step = streamSpeed(1) / 60;
+    expect(step).toBeLessThan(smallest * 0.5);
+    expect(streamAdvance(0, 1, 1 / 60) * 2).toBeCloseTo(streamAdvance(0, 1, 1 / 30));
   });
 });
 

@@ -1,8 +1,8 @@
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
-import { BOARD_GRID } from "../grid";
-import { aroundFallback, astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
+import { BOARD_GRID, CHIP_AIR_X } from "../grid";
+import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
 import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
-import { packRows } from "./compactPack";
+import { packRows, parkOutTerminal } from "./compactPack";
 import { placeWithElk } from "./elkPlace";
 import { GridMap, portInCell, portOutCell } from "./gridMap";
 import { DIR_E, DIR_W, type LayoutEdge, type LayoutMode, type LayoutNode, type LayoutResult, type LayoutView, type Pt } from "./types";
@@ -36,6 +36,19 @@ function collapseColinear(pts: Pt[]): Pt[] {
     }
   }
   return out;
+}
+
+/** A* miss: wrap rail between rows, else HVH toward dest. Never around the far hull. */
+export function blockedRoute(
+  from: Pt,
+  to: Pt,
+  srcBox?: { y: number; h: number },
+  dstBox?: { y: number },
+): Pt[] {
+  if (srcBox && dstBox && isWrapJack(from, to)) {
+    return wrapRailRoute(from, to, wrapRailY(srcBox, dstBox));
+  }
+  return hvhFallback(from, to);
 }
 
 /** Jacks own a 32 px east stub. Mid path stays between the stubs so dest never U-turns. */
@@ -91,7 +104,7 @@ export async function runLayout(
     }]))
     : mode === "COMPACT"
       ? packRows(nodes, edges, view)
-      : await placeWithElk(nodes, edges, mode);
+      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const map = new GridMap();
@@ -136,14 +149,22 @@ export async function runLayout(
   for (const job of jobs) {
     const srcBox = placed[job.e.source];
     const dstBox = placed[job.e.target];
-    const wrap = mode === "COMPACT"
-      && srcBox
-      && dstBox
-      && dstBox.y >= srcBox.y + srcBox.h
-      && isWrapJack(job.from, job.to);
+    const wrap = srcBox && dstBox && isWrapJack(job.from, job.to);
     let pts: Pt[];
     if (wrap && srcBox && dstBox) {
       pts = wrapRailRoute(job.from, job.to, wrapRailY(srcBox, dstBox));
+    } else if (almost(job.from.y, job.to.y) && job.to.x > job.from.x) {
+      const r = job.start.r;
+      const c0 = Math.min(job.start.c, job.goal.c);
+      const c1 = Math.max(job.start.c, job.goal.c);
+      const cells = [];
+      for (let c = c0; c <= c1; c += 1) {
+        cells.push({ c, r });
+      }
+      if (cells.length > 0) {
+        map.occupy(cells, []);
+      }
+      pts = [job.from, job.to];
     } else {
       let cells = astarRoute(map, job.start, job.goal, DIR_E, false, job.e.id);
       if (! cells || cells.length === 0) {
@@ -153,10 +174,7 @@ export async function runLayout(
         map.occupy(cells, pathTurns(cells));
         pts = [job.from, ...cellsToPoints(map, cells), job.to];
       } else {
-        const aroundY = job.from.y < job.to.y
-          ? Math.min(job.from.y, job.to.y) - BOARD_GRID * 2
-          : Math.max(job.from.y, job.to.y) + BOARD_GRID * 2;
-        pts = aroundFallback(job.from, job.to, aroundY);
+        pts = blockedRoute(job.from, job.to, srcBox, dstBox);
       }
       if (pathLength(pts) < BOARD_GRID) {
         pts = hvhFallback(job.from, job.to);

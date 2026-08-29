@@ -25,7 +25,14 @@ export const STEREO_OFFSET = 4;
 export const STEREO_GAP = STEREO_OFFSET * 2;
 export const MAIN_DASH = [2, 4, 2, 12, 6, 4];
 export const SIDE_DASH = [1, 3, 1, 8];
+/** Legacy dash step. Packet speed is a fraction of mean gap, not this. */
 export const STREAM_PX = 12;
+/** Mean packet gap at the noise floor / at full RMS. Never a 2 px lattice. */
+export const PACKET_MEAN_STILL = 28;
+export const PACKET_MEAN_HOT = 12;
+/** Bead length along the polyline. */
+export const PACKET_SPAN = 6;
+const PACKET_PHI = 0.6180339887498949;
 /** IEEE 0 dBFS. Glitch only when the float peak exceeds full scale. */
 export const GLITCH_PEAK = 1;
 export const STREAM_ALPHA_STILL = 0.4;
@@ -282,9 +289,50 @@ export function energyT(amp: number): number {
   return Math.min(1, (db - CABLE_STILL_DB) / -CABLE_STILL_DB);
 }
 
-/** Per-frame dash advance from RMS. Silence / floor does not move. */
-export function streamSpeed(rms: number): number {
-  return energyT(rms) * STREAM_PX;
+export function streamCycle(dash: readonly number[]): number {
+  return dash.reduce((s, v) => s + v, 0);
+}
+
+/** Stable phase in the dash cycle so two tubes never lock to one repeating pattern. */
+export function streamIdentityPhase(id: string, cycle: number): number {
+  if (! (cycle > 0) || ! id) {
+    return 0;
+  }
+  let n = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    n += id.charCodeAt(i) * (i + 1);
+  }
+  return n % cycle;
+}
+
+/**
+ * Dash speed in px/sec. Missing RMS uses peak (× √½). Floor does not move.
+ * Hot travel is a fraction of mean packet gap so one frame cannot jump a bead.
+ */
+export function streamSpeed(rms: number, peak = 0): number {
+  const energy = Math.max(Number(rms) || 0, (Number(peak) || 0) * Math.SQRT1_2);
+  const t = energyT(energy);
+  if (t <= 0) {
+    return 0;
+  }
+  return t * PACKET_MEAN_HOT * 0.2 * 60;
+}
+
+/**
+ * Canvas 2D: increasing `lineDashOffset` walks ink along the polyline
+ * (first point = source jack → last = dest). SVG/React Flow dashdraw is the
+ * opposite sign; we are not on SVG.
+ */
+export function streamDashOffset(nowMs: number, rms: number, peak = 0): number {
+  const t = Number.isFinite(nowMs) ? Math.max(0, nowMs) / 1000 : 0;
+  return streamSpeed(rms, peak) * t;
+}
+
+/** Integrate that lane's RMS speed. Silence holds phase. dt ≤ 0 is a no-op. */
+export function streamAdvance(prev: number, rms: number, dtSec: number, peak = 0): number {
+  const dt = Number.isFinite(dtSec) ? Math.max(0, dtSec) : 0;
+  const cur = Number.isFinite(prev) ? prev : 0;
+  return cur + streamSpeed(rms, peak) * dt;
 }
 
 /** Transient brightness from peak, not RMS. Quiet loop still glows. */
@@ -323,14 +371,6 @@ export function streamDash(base: number[], rms: number): number[] {
   return base.map((v, i) => (i % 2 === 1 ? Math.max(1, v * k) : v));
 }
 
-/** Uneven bead gaps from the stereo bus constants — not a uniform dash. */
-export const PACKET_GAPS = [
-  STEREO_GAP,
-  STEREO_GAP + STEREO_OFFSET,
-  STEREO_GAP,
-  STEREO_OFFSET * 3,
-] as const;
-
 export function pathLength(pts: Pt[]): number {
   let n = 0;
   for (let i = 1; i < pts.length; i += 1) {
@@ -360,23 +400,90 @@ export function pointAlong(pts: Pt[], dist: number): Pt | null {
   return null;
 }
 
-export function packetDistances(pathLen: number, travel: number, gaps: readonly number[] = PACKET_GAPS): number[] {
-  const cycle = gaps.reduce((s, g) => s + g, 0);
-  if (pathLen <= 0 || cycle <= 0) {
-    return [];
+export function packetMeanGap(rms: number): number {
+  const t = energyT(rms);
+  return PACKET_MEAN_HOT + (PACKET_MEAN_STILL - PACKET_MEAN_HOT) * (1 - t);
+}
+
+/** Lane id → (0,1) so L/R never share a train. */
+export function packetSeed(id: string): number {
+  if (! id) {
+    return 0;
   }
-  const shift = ((travel % cycle) + cycle) % cycle;
-  const out: number[] = [];
-  let d = -shift;
-  let k = 0;
-  while (d < pathLen) {
-    if (d >= 0) {
-      out.push(d);
-    }
-    d += gaps[k % gaps.length]!;
+  let n = 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    n ^= id.charCodeAt(i);
+    n = Math.imul(n, 16777619);
+  }
+  return (n >>> 0) / 4294967296;
+}
+
+/**
+ * Weyl (golden-ratio) gaps. Consecutive spacings always differ; the sequence
+ * has no short period, so a fast tube cannot alias into reverse flow.
+ */
+export function packetGapAt(k: number, seed: number, mean: number): number {
+  const i = Number.isFinite(k) ? k : 0;
+  const s = Number.isFinite(seed) ? seed : 0;
+  const m = Number.isFinite(mean) && mean > 0 ? mean : PACKET_MEAN_STILL;
+  const u = ((s + (i + 1) * PACKET_PHI) % 1 + 1) % 1;
+  return m * (0.45 + 1.1 * u);
+}
+
+export type PacketCursor = { k: number; c: number };
+
+/**
+ * Packet k sits at train coordinate C(k). World = C(k) + travel so increasing
+ * travel walks source → dest. `cursor` is the last first-visible packet so a
+ * long session does not walk from the origin.
+ */
+export function packetDistancesFromCursor(
+  pathLen: number,
+  travel: number,
+  mean: number,
+  seed: number,
+  cursor: PacketCursor = { k: 0, c: 0 },
+): { distances: number[]; cursor: PacketCursor } {
+  if (! (pathLen > 0) || ! (mean > 0)) {
+    return { distances: [], cursor };
+  }
+  const t = Number.isFinite(travel) ? travel : 0;
+  let k = Number.isFinite(cursor.k) ? cursor.k : 0;
+  let c = Number.isFinite(cursor.c) ? cursor.c : 0;
+  let n = 0;
+  while (c + t > 0 && n < 64) {
+    k -= 1;
+    c -= packetGapAt(k, seed, mean);
+    n += 1;
+  }
+  n = 0;
+  while (c + packetGapAt(k, seed, mean) + t <= 0 && n < 64) {
+    c += packetGapAt(k, seed, mean);
     k += 1;
+    n += 1;
   }
-  return out;
+  const distances: number[] = [];
+  let first: PacketCursor = { k, c };
+  let saw = false;
+  n = 0;
+  while (c + t < pathLen && n < 512) {
+    const pos = c + t;
+    if (pos >= 0) {
+      if (! saw) {
+        first = { k, c };
+        saw = true;
+      }
+      distances.push(pos);
+    }
+    c += packetGapAt(k, seed, mean);
+    k += 1;
+    n += 1;
+  }
+  return { distances, cursor: saw ? first : { k, c } };
+}
+
+export function packetDistances(pathLen: number, travel: number, mean: number, seed = 0): number[] {
+  return packetDistancesFromCursor(pathLen, travel, mean, seed, { k: 0, c: 0 }).distances;
 }
 
 /** Beads are not equally bright. Phase rides the same travel as motion. */

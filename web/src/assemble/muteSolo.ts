@@ -54,6 +54,35 @@ export function stripMuteComments(script: string): string {
   }).join("\n");
 }
 
+/** Same circuit, only `# nk-ms` overlay. Identical scripts count — a plugin echo must not rebuild. */
+export function muteOverlayOnly(prev: string, next: string): boolean {
+  if (! prev || ! next) {
+    return false;
+  }
+  return stripMuteComments(prev) === stripMuteComments(next);
+}
+
+/** Native parse drops `# nk-ms` chips from AST JSON. That is not a board delete. */
+export function muteHidNodes(
+  script: string,
+  visual: { nodes: Array<{ id: string }> },
+  incoming: { nodes: Array<{ id: string }> },
+): boolean {
+  const hidden = new Set<string>();
+  for (const line of script.replace(/\r\n/g, "\n").split("\n")) {
+    const m = line.match(/^\s*# nk-ms\s+([a-z_][a-z0-9]*)\s*:/i);
+    if (m?.[1]) {
+      hidden.add(m[1].toLowerCase());
+    }
+  }
+  if (hidden.size === 0) {
+    return false;
+  }
+  const next = new Set(incoming.nodes.map((n) => n.id.toLowerCase()));
+  const missing = visual.nodes.filter((n) => ! next.has(n.id.toLowerCase()));
+  return missing.length > 0 && missing.every((n) => hidden.has(n.id.toLowerCase()));
+}
+
 function idsToComment(script: string, muted: Set<string>, soloed: Set<string>): Set<string> {
   const muteable = muteableIds(script);
   const want = new Set<string>();

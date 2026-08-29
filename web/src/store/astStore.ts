@@ -7,6 +7,7 @@ import type {
   Origin,
 } from "../bridge/ast";
 import { parseAstJson } from "../bridge/ast";
+import { muteHidNodes, muteOverlayOnly } from "../assemble/muteSolo";
 import { useHostStore } from "./hostStore";
 
 export interface AstState {
@@ -38,14 +39,26 @@ export const useAstStore = create<AstState>((set) => ({
       });
       return;
     }
-    set((state) => ({
-      origin: payload.origin,
-      ast: parsed,
-      lastValidAst: parsed,
-      lastValidScript: payload.script,
-      script: opts?.updateScript === false ? state.script : payload.script,
-      diagnostics: payload.diagnostics,
-    }));
+    set((state) => {
+      const live = state.lastValidScript || state.script;
+      const overlay = muteOverlayOnly(live, payload.script)
+        || (state.ast != null && muteHidNodes(payload.script || live, state.ast, parsed));
+      if (overlay) {
+        return {
+          lastValidScript: payload.script,
+          script: opts?.updateScript === false ? state.script : payload.script,
+          diagnostics: payload.diagnostics,
+        };
+      }
+      return {
+        origin: payload.origin,
+        ast: parsed,
+        lastValidAst: parsed,
+        lastValidScript: payload.script,
+        script: opts?.updateScript === false ? state.script : payload.script,
+        diagnostics: payload.diagnostics,
+      };
+    });
     if (payload.origin === "canvas" || payload.origin === "editor" || payload.origin === "undo") {
       useHostStore.getState().markDirty();
     }

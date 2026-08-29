@@ -34,6 +34,45 @@ describe("hostStore", () => {
     expect(s.discardPrompt).toBe(false);
     expect(s.motion).toBe("reduced");
     expect(s.cables).toBe("dots");
+    expect(s.scale).toBe(100);
+  });
+
+  it("host snapshot applies Unit meter prefs", () => {
+    useHostStore.getState().applyHost({
+      scopeSource: "out",
+      scopeX: "freq",
+      scopeY: "db",
+      scopeGrid: false,
+      scopeInvertY: true,
+      scopeDelta: true,
+    });
+    const s = useHostStore.getState();
+    expect(s.scopeSource).toBe("out");
+    expect(s.scopeX).toBe("freq");
+    expect(s.scopeY).toBe("db");
+    expect(s.scopeGrid).toBe(false);
+    expect(s.scopeInvertY).toBe(true);
+    expect(s.scopeDelta).toBe(true);
+  });
+
+  it("host snapshot applies LIVE and ui scale", () => {
+    useHostStore.getState().applyHost({
+      mode: "LIVE",
+      live: true,
+      scale: 150,
+    });
+    const s = useHostStore.getState();
+    expect(s.mode).toBe("LIVE");
+    expect(s.live).toBe(true);
+    expect(s.scale).toBe(150);
+  });
+
+  it("SAFE mode word does not turn LIVE off", () => {
+    useHostStore.getState().applyHost({ mode: "LIVE", live: true });
+    useHostStore.getState().applyHost({ mode: "SAFE", live: true, cpu: 100 });
+    const s = useHostStore.getState();
+    expect(s.mode).toBe("SAFE");
+    expect(s.live).toBe(true);
   });
 
   it("initial os/osFactor/polisher match APVTS defaults (Issue 5: no cross-instance flash)", () => {

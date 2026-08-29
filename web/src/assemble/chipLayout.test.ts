@@ -32,8 +32,9 @@ import {
 import { chipSpec, overlayParamKeys } from "./chipSpec";
 import { CHAR_PX } from "./chipMetrics";
 import { DETAIL_HIT } from "../theme/chromeSpec";
-import { BOARD_GRID, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
+import { BOARD_GRID, BOARD_HALF, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
+import { sidePortLocals, sidePortMinHeight } from "./portLayout";
 
 const audio = (id: string, output: boolean): AstJack => ({ id, label: id, output, kind: "audio" });
 
@@ -84,8 +85,9 @@ describe("chip face, labels, copy", () => {
     expect(jackTopPx(0, 1, 400, "filter")).toBe(snapToCellCenter(400 * 0.5));
     const y0 = jackTopPx(0, 2, io.h, "in");
     const y1 = jackTopPx(1, 2, io.h, "in");
-    expect(y0).toBeLessThan(snapToCellCenter(io.h * 0.5));
-    expect(y1).toBeGreaterThan(snapToCellCenter(io.h * 0.5));
+    expect(y0).not.toBe(y1);
+    expect(onCellCenter(y0)).toBe(true);
+    expect(onCellCenter(y1)).toBe(true);
     expect(y0).toBeGreaterThanOrEqual(TITLE_H);
     expect(y1).toBeLessThanOrEqual(io.h - CHIP_PAD_Y);
     const gutter = chipBodyInset();
@@ -197,6 +199,25 @@ describe("chip face, labels, copy", () => {
     expect(out).toEqual(inn);
     expect(inn.h).toBeLessThan(dsp.h);
     expect(inn.w).toBeLessThan(dsp.w);
+  });
+
+  it("grows OUT so three mix-ins sit in the body band, not on the title or foot", () => {
+    const jacks = [audio("low", false), audio("mid", false), audio("high", false)];
+    const box = chipBox("out", jacks, false, {});
+    expect(box.h).toBeGreaterThanOrEqual(sidePortMinHeight(3));
+    expect(box.h % BOARD_GRID).toBe(0);
+    expect(box.h).toBeGreaterThan(ioFaceSize(1).h);
+    const ports = sidePortLocals(3, box, false);
+    expect(ports).toHaveLength(3);
+    for (const p of ports) {
+      expect(p.x).toBe(0);
+      expect(p.y).toBeGreaterThanOrEqual(TITLE_H);
+      expect(p.y).toBeLessThanOrEqual(box.h - CHIP_PAD_Y);
+      expect(p.y).toBeGreaterThanOrEqual(BOARD_HALF);
+      expect(p.y + BOARD_HALF).toBeLessThanOrEqual(box.h);
+    }
+    expect(ports[1]!.y - ports[0]!.y).toBe(ports[2]!.y - ports[1]!.y);
+    expect(chipBox("out", [audio("in", false)], false, {})).toEqual(ioFaceSize());
   });
 
   it("spreads south bind jacks across the shared DSP face without widening it", () => {

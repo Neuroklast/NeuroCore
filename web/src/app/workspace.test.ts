@@ -44,5 +44,7 @@ describe("workspace modes", () => {
     expect(circuitPaintActive("hack", 960, 420)).toBe(false);
     expect(circuitPaintActive("assemble", 0, 420)).toBe(false);
     expect(circuitPaintActive("assemble", 960, 0)).toBe(false);
+    expect(circuitPaintActive("assemble", 40, 40)).toBe(false);
+    expect(circuitPaintActive("assemble", 41, 41)).toBe(true);
   });
 });

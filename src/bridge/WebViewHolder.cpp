@@ -205,6 +205,9 @@ struct WebViewHolder::Impl : private juce::Timer,
           distRoot (resolveDistRoot())
     {
         session.seed (p.getScript());
+        // NeuroMeter model: birth the surface with the processor. Cubase
+        // createView/attached only parents the park HWND — never CreateWebView.
+        constructSurface();
     }
 
     ~Impl() override
@@ -307,42 +310,10 @@ struct WebViewHolder::Impl : private juce::Timer,
     {
         if (surface != nullptr)
             return;
-#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
-        if (attachedTo == nullptr || attachedTo->getPeer() == nullptr)
-            return;
-#endif
         constructSurface();
     }
 
     void scheduleChromium()
-    {
-#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
-        const auto ticket = spawnEpoch;
-        juce::WeakReference<Impl> weak (this);
-        juce::MessageManager::callAsync ([weak, ticket]
-        {
-            if (weak == nullptr)
-                return;
-            auto* self = weak.get();
-            const bool hasPeer = self->attachedTo != nullptr
-                              && self->attachedTo->getPeer() != nullptr;
-            if (! shouldRealizeChromium (self->attachedTo != nullptr, hasPeer,
-                                         ticket, self->spawnEpoch))
-                return;
-            self->realizeChromium();
-        });
-#else
-        ensureSurface();
-        if (surface != nullptr && attachedTo != nullptr)
-        {
-            if (surface->getParentComponent() != attachedTo)
-                attachedTo->addAndMakeVisible (*surface);
-            surface->setVisible (true);
-        }
-#endif
-    }
-
-    void realizeChromium()
     {
         ensureSurface();
         if (attachedTo != nullptr)
@@ -596,6 +567,8 @@ struct WebViewHolder::Impl : private juce::Timer,
                                     const auto& o = args[0];
                                     if (! o.getProperty ("scale", juce::var()).isVoid())
                                         UiSettings::get().setUiScalePercent ((int) o.getProperty ("scale", 100));
+                                    if (! o.getProperty ("live", juce::var()).isVoid())
+                                        proc.setLiveMode ((bool) o.getProperty ("live", false));
                                     if (! o.getProperty ("bpmFollow", juce::var()).isVoid())
                                         UiSettings::get().setUseHostTempo ((bool) o.getProperty ("bpmFollow", true));
                                     if (! o.getProperty ("bpmUser", juce::var()).isVoid())
@@ -624,6 +597,18 @@ struct WebViewHolder::Impl : private juce::Timer,
                                         UiSettings::get().setFrameRate ((int) o.getProperty ("frameRate", 0));
                                     if (! o.getProperty ("discardPrompt", juce::var()).isVoid())
                                         UiSettings::get().setDiscardPrompt ((bool) o.getProperty ("discardPrompt", true));
+                                    if (! o.getProperty ("scopeSource", juce::var()).isVoid())
+                                        UiSettings::get().setScopeSource (o.getProperty ("scopeSource", "both").toString());
+                                    if (! o.getProperty ("scopeX", juce::var()).isVoid())
+                                        UiSettings::get().setScopeX (o.getProperty ("scopeX", "samples").toString());
+                                    if (! o.getProperty ("scopeY", juce::var()).isVoid())
+                                        UiSettings::get().setScopeY (o.getProperty ("scopeY", "linear").toString());
+                                    if (! o.getProperty ("scopeGrid", juce::var()).isVoid())
+                                        UiSettings::get().setScopeGrid ((bool) o.getProperty ("scopeGrid", true));
+                                    if (! o.getProperty ("scopeInvertY", juce::var()).isVoid())
+                                        UiSettings::get().setScopeInvertY ((bool) o.getProperty ("scopeInvertY", false));
+                                    if (! o.getProperty ("scopeDelta", juce::var()).isVoid())
+                                        UiSettings::get().setScopeDelta ((bool) o.getProperty ("scopeDelta", false));
                                 }
                                 pushHost();
                                 complete (juce::var (true));
@@ -980,10 +965,20 @@ struct WebViewHolder::Impl : private juce::Timer,
         style &= ~(FlagType) WS_CHILD;
         style |= (FlagType) WS_POPUP;
         SetWindowLongPtr (child, GWL_STYLE, style);
-        ShowWindow (child, SW_HIDE);
         if (ownerHwnd != nullptr)
             SetParent (child, ownerHwnd);
-        park->setVisible (false);
+        if (bridge::keepWebViewVisibleForHostEvents())
+        {
+            park->setVisible (true);
+            if (surface != nullptr)
+                surface->setVisible (true);
+            ShowWindow (child, SW_SHOWNA);
+        }
+        else
+        {
+            ShowWindow (child, SW_HIDE);
+            park->setVisible (false);
+        }
     }
 
     void positionPark (juce::Rectangle<int> inner)

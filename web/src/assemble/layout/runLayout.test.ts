@@ -7,7 +7,8 @@ import { findFactory } from "../../presets/factoryCatalog";
 import { handleId } from "../handles";
 import { firstLastHorizontal, hasLightning } from "./chamfer";
 import { packRows, rowCount } from "./compactPack";
-import { arrange, bboxArea, compact, pathLength, pinJackStubs, reroute } from "./runLayout";
+import { flowToLayout } from "./fromFlow";
+import { arrange, bboxArea, blockedRoute, compact, pathLength, pinJackStubs, reroute } from "./runLayout";
 import { requestLayout } from "./layoutClient";
 import type { LayoutEdge, LayoutNode } from "./types";
 
@@ -76,6 +77,34 @@ describe("dest jack stubs", () => {
     expect(hasWestThenEastHook(pts), r.edgePaths.e).toBe(false);
     expect(Math.max(...pts.map((p) => p.x)), r.edgePaths.e).toBeLessThanOrEqual(320.6);
     expect(Math.abs(pts[pts.length - 1]!.x - 320)).toBeLessThan(1);
+  });
+});
+
+describe("blocked cable stays in the source-dest band", () => {
+  it("uses HVH toward dest when dest is to the right, never over the far hull", () => {
+    const from = { x: 64, y: 48 };
+    const to = { x: 320, y: 160 };
+    const pts = blockedRoute(from, to);
+    expect(pts[0]).toEqual(from);
+    expect(pts[pts.length - 1]).toEqual(to);
+    expect(pts[1]!.x).toBeGreaterThan(from.x);
+    const y0 = Math.min(from.y, to.y);
+    const y1 = Math.max(from.y, to.y);
+    expect(Math.min(...pts.map((p) => p.y))).toBeGreaterThanOrEqual(y0 - 0.6);
+    expect(Math.max(...pts.map((p) => p.y))).toBeLessThanOrEqual(y1 + 0.6);
+  });
+
+  it("rides the wrap rail between rows when dest is left and below", () => {
+    const srcBox = { x: 320, y: 32, w: 160, h: 96 };
+    const dstBox = { x: 32, y: 192, w: 128, h: 96 };
+    const from = { x: srcBox.x + srcBox.w, y: srcBox.y + 48 };
+    const to = { x: dstBox.x, y: dstBox.y + 48 };
+    const pts = blockedRoute(from, to, srcBox, dstBox);
+    const railHits = pts.filter((p) => p.y >= srcBox.y + srcBox.h && p.y <= dstBox.y);
+    expect(railHits.length).toBeGreaterThan(0);
+    expect(Math.min(...pts.map((p) => p.y))).toBeGreaterThanOrEqual(from.y - BOARD_GRID);
+    expect(Math.max(...pts.map((p) => p.y))).toBeLessThanOrEqual(to.y + BOARD_GRID);
+    expect(pts[1]!.x).toBeGreaterThan(from.x);
   });
 });
 
@@ -162,6 +191,31 @@ function parsePath(d: string): Array<{ x: number; y: number }> {
   }
   return pts;
 }
+
+describe("IN first tube", () => {
+  it("stays on one Y after compact — no knick, no 45° after IN.out", async () => {
+    const preset = findFactory("Airy Clean");
+    expect(preset).toBeTruthy();
+    const { doc } = parseDslSketch(preset!.script);
+    const { nodes, edges } = flowFromAst(doc);
+    const hop = edges.find((e) => e.source === "IN" && String(e.sourceHandle).includes("out"));
+    expect(hop, "IN.out hop").toBeTruthy();
+    const layout = flowToLayout(nodes, edges);
+    const laid = await compact(layout.nodes, layout.edges, { w: 1200, h: 420 });
+    const d = laid.edgePaths[hop!.id];
+    expect(d, hop!.id).toBeTruthy();
+    const pts = parsePath(d!);
+    expect(pts.length).toBeGreaterThanOrEqual(2);
+    const y0 = pts[0]!.y;
+    for (const p of pts) {
+      expect(p.y, d).toBe(y0);
+    }
+    expect(hasLightning(pts), d).toBe(false);
+    for (let i = 1; i < pts.length; i += 1) {
+      expect(pts[i]!.x, d).toBeGreaterThan(pts[i - 1]!.x);
+    }
+  });
+});
 
 describe("layout lands on jacks", () => {
   it("starts and ends every audio path on the painted jack", async () => {

@@ -204,7 +204,7 @@ export function logoRgbSplit(
   opts: { motion?: MotionPref; prefersReduced?: boolean } = {},
 ): { redX: number; cyanY: number } {
   const motion = opts.motion ?? "full";
-  if (opts.prefersReduced === true || motion === "off" || motion === "reduced") {
+  if (motion === "off" || motion === "reduced" || (opts.prefersReduced === true && motion !== "full")) {
     return { redX: 0, cyanY: 0 };
   }
   return {

@@ -7,8 +7,8 @@
 $ErrorActionPreference = "Stop"
 if (-not $PSScriptRoot) { $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.6.2-beta"
-$numeric = "0.6.2"
+$version = "0.6.4-beta"
+$numeric = "0.6.4"
 $stem = "NEUROKORE-$version"
 $bundleName = "NEUROKORE.vst3"
 $art = Join-Path $root "build\NeuroKore_artefacts\Release"
@@ -92,15 +92,27 @@ $stageBin = Join-Path $stageBundle "Contents\x86_64-win"
 New-Item -ItemType Directory -Force -Path $stageBin | Out-Null
 Copy-Item -Force $inner.FullName (Join-Path $stageBin $inner.Name)
 
-$resSrc = Join-Path $root "resources"
-$stageRes = Join-Path $stageBin "resources"
-if (Test-Path $resSrc) {
-    Copy-Item -Recurse -Force $resSrc $stageRes
+$modSrc = Join-Path $srcBundle "Contents\Resources\moduleinfo.json"
+if (-not (Test-Path $modSrc)) {
+    throw "VST3 moduleinfo.json missing at $modSrc - Cubase scan needs Contents/Resources, not a sibling resources folder."
 }
+$stageMod = Join-Path $stageBundle "Contents\Resources"
+New-Item -ItemType Directory -Force -Path $stageMod | Out-Null
+Copy-Item -Force $modSrc (Join-Path $stageMod "moduleinfo.json")
 
+$resSrc = Join-Path $root "resources"
 if ($exe) {
     Copy-Item -Force $exe (Join-Path $stage $stem.exe)
-    Copy-Item -Recurse -Force $resSrc (Join-Path $stage "resources")
+    if (Test-Path $resSrc) {
+        Copy-Item -Recurse -Force $resSrc (Join-Path $stage "resources")
+    }
+}
+
+foreach ($junk in @("resources", "web")) {
+    $p = Join-Path $stageBin $junk
+    if (Test-Path $p) {
+        throw "VST3 x86_64-win must not contain $junk - binary embeds factory/web (NEUROMETER layout)."
+    }
 }
 
 Copy-Item -Force (Join-Path $root "LICENSE") (Join-Path $stage "LICENSE.txt")

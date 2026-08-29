@@ -68,4 +68,51 @@ describe("astStore", () => {
     expect(useAstStore.getState().script).toContain("tanh");
     expect(useAstStore.getState().lastValidAst?.nodes[0]?.id).toBe("stage1");
   });
+
+  it("mute comments do not replace the visual AST", () => {
+    const json = JSON.stringify(validAst);
+    useAstStore.getState().applyAstEvent({
+      origin: "preset",
+      script: "stage1: y = x\n",
+      astJson: json,
+      diagnostics: [],
+    });
+    const ast = useAstStore.getState().ast;
+    useAstStore.getState().applyAstEvent({
+      origin: "canvas",
+      script: "# nk-ms stage1: y = x\n",
+      astJson: JSON.stringify({ ...validAst, nodes: [], edges: [] }),
+      diagnostics: [],
+    });
+    expect(useAstStore.getState().ast).toBe(ast);
+    expect(useAstStore.getState().ast?.nodes).toHaveLength(1);
+    expect(useAstStore.getState().script).toContain("# nk-ms");
+    expect(useAstStore.getState().origin, "mute must not flip origin or Circuit rehydrates").toBe("preset");
+  });
+
+  it("a second mute compile echo with empty nodes still keeps the visual chips", () => {
+    const json = JSON.stringify(validAst);
+    useAstStore.getState().applyAstEvent({
+      origin: "preset",
+      script: "stage1: y = x\n",
+      astJson: json,
+      diagnostics: [],
+    });
+    const muted = "# nk-ms stage1: y = x\n";
+    const empty = JSON.stringify({ ...validAst, nodes: [], edges: [] });
+    useAstStore.getState().applyAstEvent({
+      origin: "canvas",
+      script: muted,
+      astJson: empty,
+      diagnostics: [],
+    });
+    useAstStore.getState().applyAstEvent({
+      origin: "canvas",
+      script: muted,
+      astJson: empty,
+      diagnostics: [],
+    });
+    expect(useAstStore.getState().ast?.nodes).toHaveLength(1);
+    expect(useAstStore.getState().ast?.nodes[0]?.id).toBe("stage1");
+  });
 });

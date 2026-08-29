@@ -74,15 +74,63 @@ describe("requestLayout stays off the UI thread when a worker exists", () => {
     expect(laid.nodes).toBeTruthy();
   });
 
-  it("rejects other in-flight jobs when one request times out", async () => {
+  it("falls back to runLayout when the worker errors instead of rejecting", async () => {
+    const fake: { postMessage: () => void; terminate: () => void; onerror?: (ev: Event) => void } = {
+      postMessage() {},
+      terminate() {},
+    };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    queueMicrotask(() => {
+      fake.onerror?.(new Event("error"));
+    });
+    const laid = await requestGraphLayout("ARRANGE", [
+      { id: "IN", x: 0, y: 0, w: 96, h: 96, ins: [], outs: [{ id: "out", y: 48 }] },
+      { id: "OUT", x: 400, y: 0, w: 96, h: 96, ins: [{ id: "in", y: 48 }], outs: [] },
+    ], [{ id: "e0", source: "IN", target: "OUT", fromJack: "out", toJack: "in" }], { w: 960, h: 420 });
+    expect(laid.nodes.IN).toBeDefined();
+    expect(laid.nodes.OUT).toBeDefined();
+  });
+
+  it("falls back in-flight jobs when one request times out instead of rejecting them", async () => {
     setLayoutWorkerTimeoutMs(20);
     const fake = { postMessage() {}, terminate() {} };
     setLayoutWorkerFactory(() => fake as unknown as Worker);
     const nodes = [{ id: "IN", ins: [], outs: [] as Array<{ id: string; y: number }>, w: 96, h: 96 }];
     const a = requestGraphLayout("REROUTE", nodes, [], { w: 400, h: 200 });
     const b = requestGraphLayout("REROUTE", nodes, [], { w: 400, h: 200 });
-    await expect(b).rejects.toThrow(/layout worker/);
-    const laid = await a;
-    expect(laid.nodes).toBeTruthy();
+    const laidB = await b;
+    const laidA = await a;
+    expect(laidA.nodes).toBeTruthy();
+    expect(laidB.nodes).toBeTruthy();
+  });
+
+  it("posts again after a timeout instead of leaving the worker dead", async () => {
+    setLayoutWorkerTimeoutMs(20);
+    let posted = 0;
+    const fake = {
+      postMessage(msg: { reqId: number }) {
+        posted += 1;
+        if (posted === 1) {
+          return;
+        }
+        queueMicrotask(() => {
+          (fake as { onmessage?: (ev: { data: unknown }) => void }).onmessage?.({
+            data: {
+              reqId: msg.reqId,
+              ok: true,
+              nodes: { IN: { x: 8, y: 16, w: 96, h: 96 } },
+              edgePaths: {},
+            },
+          });
+        });
+      },
+      terminate() {},
+    };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    const nodes = [{ id: "IN", position: { x: 0, y: 0 }, data: { type: "in", jacks: [], args: {} } }] as unknown as Node<ChipData>[];
+    await requestLayout("REROUTE", nodes, [], { w: 400, h: 200 });
+    const laid = await requestLayout("REROUTE", nodes, [], { w: 400, h: 200 });
+    expect(posted).toBe(2);
+    expect(laid.nodes.IN).toEqual({ x: 8, y: 16, w: 96, h: 96 });
   });
 });

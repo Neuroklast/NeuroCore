@@ -96,3 +96,23 @@ describe("preset load layout generation", () => {
     expect(routes.every((r) => r.length === 0)).toBe(true);
   });
 });
+
+describe("mute is not a layout", () => {
+  it("keepXy hydrate keeps stored cable routes so mute cannot restub the board", () => {
+    useBoardStore.getState().hydrate(chain());
+    const stamped = Object.fromEntries(
+      Object.entries(useBoardStore.getState().edges).map(([id, e]) => [
+        id,
+        { ...e, route: [{ x: 32, y: 144 }, { x: 320, y: 144 }] },
+      ]),
+    );
+    useBoardStore.getState().setEdges(stamped);
+    const x = useBoardStore.getState().nodes.stage1!.x;
+    const before = JSON.stringify(Object.values(useBoardStore.getState().edges).map((e) => e.route));
+    useBoardStore.getState().hydrate(chain(), false, true);
+    const after = JSON.stringify(Object.values(useBoardStore.getState().edges).map((e) => e.route));
+    expect(after, "keepXy dropped PCB routes").toBe(before);
+    expect(Object.values(useBoardStore.getState().edges).every((e) => e.route.length >= 2)).toBe(true);
+    expect(useBoardStore.getState().nodes.stage1!.x).toBe(x);
+  });
+});

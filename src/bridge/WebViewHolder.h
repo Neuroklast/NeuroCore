@@ -14,10 +14,9 @@ namespace bridge
 
 /**
  * Processor-owned WebView surface. Outlives IPlugView / WebPluginEditor.
- * IPlugView is a frame (size, HWND). Chromium is a backend: never on the
- * host callback stack (createView / attached). A message-tick later it
- * realizes only if the view is still attached with a peer — scan already
- * called removed(). Detach is removeChild without deleting the browser.
+ * Chromium is born in the holder ctor (processor lifetime), parked on a
+ * hidden HWND. IPlugView createView/attached only parents that HWND —
+ * never CreateCoreWebView2. Detach parks; it does not delete the browser.
  */
 class WebViewHolder
 {

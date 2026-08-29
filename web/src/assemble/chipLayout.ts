@@ -76,8 +76,8 @@ export function chipHeight(_inCount: number, _outCount: number, _expanded = fals
   return dspFaceSize().h;
 }
 
-export function ioHeight(_jackCount: number): number {
-  return ioFaceSize().h;
+export function ioHeight(jackCount: number): number {
+  return ioFaceSize(jackCount).h;
 }
 
 export function countSides(jacks: AstJack[]): { ins: number; outs: number } {
@@ -164,7 +164,8 @@ export function chipBox(
     : args;
   const spec = chipSpec(type, rec);
   if (isUtilityIo(spec.id)) {
-    return ioFaceSize();
+    const side = countSides(_jacks);
+    return ioFaceSize(Math.max(side.ins, side.outs, 1));
   }
   return dspFaceSize();
 }

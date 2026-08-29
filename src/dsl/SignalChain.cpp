@@ -2166,8 +2166,14 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     {
         const int workCh = work.getNumChannels();
         const int nWork = juce::jmin (numSamples, work.getNumSamples());
+        if (nWork <= 0 || workCh <= 0)
+            return;
+        // Callback n, not prepare capacity. Scratch is sized for the OS ceiling;
+        // handing chips the whole buffer walked IIR/taps through the leftover tail
+        // (HF scratch, +35 dB meters, 8× xover). Same view as DspEngine osWork.
+        juce::AudioBuffer<float> slice (work.getArrayOfWritePointers(), workCh, nWork);
         if (onlyBus < 0 || onlyBus == 0)
-            writeNodeTap (kTapSlotIn, work);
+            writeNodeTap (kTapSlotIn, slice);
         for (auto& b : *chainPtr)
         {
             if (onlyBus >= 0 && b->busIndex != onlyBus)
@@ -2199,7 +2205,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     {
                         if (! st->needsPerSampleInject())
                         {
-                            st->processBlock (work);
+                            st->processBlock (slice);
                         }
                         else
                         {
@@ -2236,7 +2242,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     }
                     else
                     {
-                        st->processBlock (work);
+                        st->processBlock (slice);
                     }
 
                     if (st->msDecode && workCh >= 2)
@@ -2252,7 +2258,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                         }
                     }
                     if (b->tapSlot >= 0)
-                        writeNodeTap (b->tapSlot, work);
+                        writeNodeTap (b->tapSlot, slice);
                     continue;
                 }
 
@@ -2268,7 +2274,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     for (int i = 0; i < nWork; ++i)
                         dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
                     if (b->tapSlot >= 0)
-                        writeNodeTap (b->tapSlot, work);
+                        writeNodeTap (b->tapSlot, slice);
                     continue;
                 }
 
@@ -2300,10 +2306,10 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     }
                     else
                     {
-                        fi->processBlock (work);
+                        fi->processBlock (slice);
                     }
                     if (b->tapSlot >= 0)
-                        writeNodeTap (b->tapSlot, work);
+                        writeNodeTap (b->tapSlot, slice);
                     continue;
                 }
 
@@ -2311,9 +2317,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     break;
             }
 
-            b->processBlock (work);
+            b->processBlock (slice);
             if (b->tapSlot >= 0)
-                writeNodeTap (b->tapSlot, work);
+                writeNodeTap (b->tapSlot, slice);
         }
         // Chainwide FS safety ceiling: soft-shape only true overs (abs > 1).
         // Musical levels stay untouched; OutputSanitizer remains the final host-side pad.
@@ -2328,7 +2334,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         }
 
         if (onlyBus < 0 || onlyBus == 0)
-            writeNodeTap (kTapSlotOut, work);
+            writeNodeTap (kTapSlotOut, slice);
     };
 
     if (! multi)

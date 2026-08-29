@@ -261,10 +261,10 @@ std::optional<WebAsset> WebZipIndex::load (const juce::String& url) const
 bool wantDiskWebAssets()
 {
     const auto v = juce::SystemStats::getEnvironmentVariable ("NEUROKORE_WEB_DISK", {});
-    if (v == "0" || v.equalsIgnoreCase ("off") || v.equalsIgnoreCase ("false")
-        || v.equalsIgnoreCase ("embed"))
-        return false;
-    return true;
+    if (v == "1" || v.equalsIgnoreCase ("on") || v.equalsIgnoreCase ("true")
+        || v.equalsIgnoreCase ("disk"))
+        return true;
+    return false;
 }
 
 std::optional<WebAsset> resolveEditorAsset (const juce::File& diskRoot, const juce::String& url)
@@ -307,7 +307,7 @@ juce::String fallbackIndexHtml()
                        && window.__JUCE__.initialisationData.__juce__functions) || [];
         if (names.indexOf('UI_READY') >= 0) {
           window.__JUCE__.backend.emitEvent('__juce__invoke', {
-            name: 'UI_READY', params: [{ build: '0.6.2-beta', scale: 1 }], resultId: 0
+            name: 'UI_READY', params: [{ build: '0.6.4-beta' }], resultId: 0
           });
         }
         window.__JUCE__.backend.addEventListener('hello', (payload) => {

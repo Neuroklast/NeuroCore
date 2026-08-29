@@ -11,10 +11,14 @@ import {
 } from "./boardModel";
 import { snapToGrid } from "./grid";
 
+export type CommandedLayout = "ARRANGE" | "COMPACT" | null;
+
 export type BoardState = BoardGraph & {
   camera: BoardCamera;
   userMoved: boolean;
   layoutEpoch: number;
+  commandedLayout: CommandedLayout;
+  layoutBusy: boolean;
   hydrate: (ast: AstDocument | null, sidechainOn?: boolean, keepXy?: boolean) => void;
   setCamera: (camera: BoardCamera) => void;
   setEdges: (edges: Record<string, BoardEdge>) => void;
@@ -33,25 +37,37 @@ export const useBoardStore = create<BoardState>((set) => ({
   camera: { tx: 32, ty: 32, scale: 1 },
   userMoved: false,
   layoutEpoch: 0,
+  commandedLayout: null,
+  layoutBusy: false,
   hydrate: (ast, sidechainOn = false, keepXy = false) => {
     const epoch = useBoardStore.getState().layoutEpoch + 1;
     if (! ast) {
-      set({ ...empty, userMoved: false, layoutEpoch: epoch });
+      set({ ...empty, userMoved: false, layoutEpoch: epoch, commandedLayout: null, layoutBusy: false });
       return;
     }
     const next = hydrateBoard(ast, sidechainOn);
     if (keepXy) {
-      const prev = useBoardStore.getState().nodes;
+      const prev = useBoardStore.getState();
       for (const [id, n] of Object.entries(next.nodes)) {
-        const p = prev[id];
+        const p = prev.nodes[id];
         if (p) {
           next.nodes[id] = { ...n, x: p.x, y: p.y };
         }
       }
-      set({ ...next, userMoved: true });
+      for (const [id, e] of Object.entries(next.edges)) {
+        const p = prev.edges[id];
+        if (p && p.sourcePortId === e.sourcePortId && p.targetPortId === e.targetPortId && p.route.length > 0) {
+          next.edges[id] = { ...e, route: p.route };
+        }
+      }
+      set({
+        ...next,
+        userMoved: prev.userMoved,
+        commandedLayout: prev.commandedLayout,
+      });
       return;
     }
-    set({ ...next, userMoved: false, layoutEpoch: epoch });
+    set({ ...next, userMoved: false, layoutEpoch: epoch, commandedLayout: null, layoutBusy: true });
   },
   setCamera: (camera) => set({ camera }),
   setEdges: (edges) => set({ edges }),

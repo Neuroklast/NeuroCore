@@ -1,8 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.2-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
-
-This file is the operator guide. The same text is what Help shows inside the plugin.
+NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.4-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -17,9 +15,9 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.2-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.4-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
-3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
+3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json`. There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
 5. A SHA-256 file sits next to the Setup.exe so you can check the download.
 
@@ -31,6 +29,8 @@ Mac
 Linux is VST3 or Standalone. You need a WebKitGTK web view on the machine.
 
 The first unlicensed launch starts a **14-day demo**. Help → License shows the end date. After that, Mix stays dry until you install a license.
+
+If the window is empty on Windows, install Microsoft Edge WebView2 and reopen the plugin. Cubase hanging while scanning: delete leftover `NEUROKORE-*.vst3` files (not only folders) under Common Files, then install the `NEUROKORE.vst3` bundle. The web view is created with the plug-in, not when Cubase opens a scan window.
 
 ---
 
@@ -53,8 +53,8 @@ Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
 - Functions — look up formula words and insert them.
 - Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW. Mix, OS, knobs, and the formula stay with the insert. Resize the window by dragging the frame. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark.
-- LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine.
+- Settings — motion, Live / Studio, scale (100 / 125 / 150 %), theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. Live/Studio does not change the window size. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
+- LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine. It does not resize the window.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
 
@@ -67,10 +67,10 @@ Knobs
 
 Oversampling (OS)
 - 1×, 2×, 4×, 8×. Higher OS is cleaner on heavy drive, and costs CPU and delay.
-- Pick OS on the Unit face. Studio vs Live is how that OS is built, not a second OS menu.
+- Pick OS on the Unit face. Changing it on one insert updates every NEUROKORE on this machine. Studio vs Live is how that OS is built, not a second OS menu.
 
 Unit meters
-- Right-click the floor plot: Input / Output / Both, Samples / Time / Frequency, Linear / Decibel, grid, invert Y, delta.
+- Right-click the floor plot: Input / Output / Both, Samples / Time / Frequency, Linear / Decibel, grid, invert Y, delta. Those choices apply to every instance and survive the next launch.
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
 - The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
 
@@ -94,11 +94,12 @@ The board is the same sound as Unit and Terminal.
 
 Cables
 - Drag a chip by its body. Contacts sit on the left and right frame, equally spaced. Drag from an output (right) to an input (left).
-- While you drag, the cable is a free curve and snaps to a contact from 30 px away. After you drop, the board etches a PCB path (right angles, 45° corners). Alt+click a contact to cut. Dropping on a busy input replaces the old cable.
-- A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Packet spacing and speed follow that channel’s RMS; brightness follows the peak. Below −60 dB the stream freezes. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
-- Right-click empty board to add a block (parked, no cable). Right-click a cable or click it to insert a block on that run. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face.
+- While you drag, the cable is a free curve and snaps to a contact from 30 px away. After you drop, the board etches a PCB path (right angles, 45° corners). A wrap to the next row rides the gap between rows, not around the whole board. Packets travel source → dest along that path. Alt+click a contact to cut. Dropping on a busy input replaces the old cable.
+- A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Packet spacing and speed follow that channel’s RMS; brightness follows the peak. Gaps are irregular (no repeating count or pitch) so a loud, fast tube still reads source → dest instead of running backward. Speed is in real time (30 or 60 fps is the same travel). Below −60 dB the stream freezes. The tubes start when you open Circuit, not only after you resize the window. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
+- Right-click empty board to add a block (parked, no cable). Right-click a cable or click it to insert a block on that run. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face — they do not remove chips or reroute cables. Packets run source → dest (IN toward OUT) and never out the back of OUT. Each tube has its own irregular train so two lanes never lock. Louder chips pack denser, faster beads; silence holds the last phase. OUT is the last chip, right of the hull.
 - Circuit titles are not selectable text. Search and inspect fields still are.
-- Pan the board on empty pane, middle mouse, or space+drag. Wheel zooms under the cursor. Drag a chip — it follows the pointer; cables meet it. The board stores the new place when you drop, then etches the PCB. The camera is not a React re-render.
+- Pan the board on empty pane, middle mouse, or space+drag. Wheel zooms under the cursor. Fitted or zoomed-out chips stay sharp (no extra blur). Drag a chip — it follows the pointer; cables meet it. The board stores the new place when you drop, then etches the PCB. The camera is not a React re-render.
+- OUT grows when several buses mix in (low/mid/high, send returns). One input stays a compact tile.
 
 IN and OUT
 - **IN** is locked on the left. Two outputs on the right, stacked in the middle of the tile: **out** is the track, **sc** is the host sidechain. They sit under the title stripe and above the footer. There is no input jack on IN. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
@@ -111,7 +112,7 @@ Blocks
 - Loading a preset closes open details, lays the chain out left to right, and fits it above the mix bar. Cables meet the jacks of that layout; they do not keep the previous sound's paths.
 
 Arrange and Compact
-- Right-click empty board → Arrange (one row, left to right) or Compact (wrap to the window, still left to right — never a snake). The wrap cable runs between the rows, not around the whole board. Compact keeps a Send bus on its own row under the main chain and parks OUT at the right. Ctrl+A Arrange, Shift+A Compact. Loading a preset arranges, and wraps only if the chain is wider than the window. Dragging a chip stops auto-layout until you Arrange/Compact again.
+- Right-click empty board → Arrange (one row, left to right) or Compact (wrap to the window, still left to right — never a snake). The wrap cable runs between the rows, not around the whole board. Compact keeps a Send bus on its own row under the main chain, parks OUT at the right, and lines IN.out up with the first block so that cable is a straight run, not a kink. Ctrl+A Arrange, Shift+A Compact. Loading a preset on Circuit shows a layout progress bar until Compact/Arrange finishes, so the board does not freeze on a half-laid graph. Loading a preset arranges, and wraps only if the chain is wider than the window. Dragging a chip stops auto-layout; Arrange or Compact still run when you ask.
 
 Expand a chip for hidden parameters. The chip size does not jump.
 
@@ -164,9 +165,7 @@ Status bar (left to right)
 - **SR / BUF / BPM** — sample rate, block size, tempo. HOST follows the DAW; USER is the tempo you typed in Settings.
 
 If something is wrong
-- Empty window on Windows: install Microsoft Edge WebView2, then reopen the plugin.
-- Cubase hangs while scanning plug-ins: you have an old 0.6.1. This build does not start the web view during scan — copy only `NEUROKORE-0.6.2-beta.vst3` into Common Files, not the whole artefact folder, then rescan.
-- Terminal stuck on Loading: same, old build. This one uses the packaged editor.
+- Terminal stuck on Loading: old build. This one uses the packaged editor.
 - No sound: Mix, Bypass, and SAFE. If SAFE, lower OS or simplify, then keep playing — it retries.
 - Sidechain silent: enable the extra input in the DAW, then cable IN **sc**.
 - Preset name has a star: you have unsaved edits. Save As... before you load another factory row.

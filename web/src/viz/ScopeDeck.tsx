@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createTelemetryViews, decodeTelemetry, SCOPE_N } from "../bridge/telemetry";
+import { persistUi } from "../chrome/persistUi";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { menuPos } from "../theme/fit";
@@ -85,18 +86,19 @@ export function UnitAnalyzer() {
   void tick;
 
   const onMenu = (kind: "source" | "x" | "y" | "flag", id: string) => {
+    const cur = useHostStore.getState();
     if (kind === "source") {
-      useHostStore.setState({ scopeSource: id as ScopeSource });
+      persistUi({ scopeSource: id as ScopeSource });
     } else if (kind === "x") {
-      useHostStore.setState({ scopeX: id as ScopeXScale });
+      persistUi({ scopeX: id as ScopeXScale });
     } else if (kind === "y") {
-      useHostStore.setState({ scopeY: id as ScopeYScale });
+      persistUi({ scopeY: id as ScopeYScale });
     } else if (id === "grid") {
-      useHostStore.setState((s) => ({ scopeGrid: ! s.scopeGrid }));
+      persistUi({ scopeGrid: ! cur.scopeGrid });
     } else if (id === "invertY") {
-      useHostStore.setState((s) => ({ scopeInvertY: ! s.scopeInvertY }));
+      persistUi({ scopeInvertY: ! cur.scopeInvertY });
     } else if (id === "delta") {
-      useHostStore.setState((s) => ({ scopeDelta: ! s.scopeDelta }));
+      persistUi({ scopeDelta: ! cur.scopeDelta });
     }
     setMenu(null);
   };

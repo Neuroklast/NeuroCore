@@ -122,13 +122,13 @@ Input
 
 ### `WebPluginEditor` (`src/ui/WebPluginEditor.h/.cpp`)
 - Thin frame around the processor-owned WebView (Windows WebView2, macOS WKWebView)
-- Circuit/Terminal/Unit leben in `web/` (React Flow + elkjs)
+- Circuit/Terminal/Unit leben in `web/` (headless `boardStore` + elkjs + A*)
 - Web-Assets: Windows RCDATA `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`
 
 ### WebView lifetime
 - Bound to `NeuroKoreAudioProcessor` (`bridge::WebViewHolder`), **not** to the VST3 `IPlugView` / `AudioProcessorEditor`.
-- Three lifetimes: processor (scan-safe), IPlugView frame (`getSize`, HWND, splash), Chromium backend. Chromium is never constructed on the host callback stack (`createView` / `attached`). `MessageManager::callAsync` later realizes it only if `shouldRealizeChromium` (still attached, has peer, ticket == epoch). Scan is attached+removed on one stack — the ticket is stale.
-- Editor construct: reparent/show the existing browser (or spawn it if this is the first peer). Editor destruct: `removeChild` without deleting it.
+- Three lifetimes: processor (scan-safe), IPlugView frame (`getSize`, HWND, splash), Chromium backend. Chromium is born in the holder ctor on a hidden park HWND (same as NEUROMETER). `createView` / `attached()` only parent that HWND. `callAsync` after `attached()` CreateWebView2 on Cubase's IPlugView stack and hangs the scanner.
+- Editor construct: reparent/show the existing browser. Editor destruct: `removeChild` without deleting it.
 - Windows: the WebView2 parent HWND is **never a child of the IPlugView HWND**. VST3 `removed()` `DestroyWindow`s the plugin peer *before* `~WebPluginEditor`. Park is a sibling of IPlugView (child of the host `systemWindow`). Standalone has no IPlugView — the editor peer **is** the app window, so that HWND is the park parent. The hidden processor-owned HWND is only for detach/close. `parentHierarchyChanged` / `visibilityChanged` park while the peer still exists. Each instance gets its own WebView2 user-data folder (`NEUROKORE-webview2/i<id>`).
 - Hidden editor keeps the JS heap. Host telemetry at 8 Hz runs only while attached (SPSC `telemetry.bin` is still latest-value).
 - Reopen does not rebuild the zip index and does not require a second `UI_READY` (latch is idempotent on the holder).
@@ -175,7 +175,7 @@ Parameter-IDs für den APVTS:
 - Native Circuit-Router. Produkt-Layout ist elkjs + A* in `web/`. Nicht anfassen für neue Circuit-Arbeit.
 
 ### `GraphModel` (`src/dsl/GraphModel.h/.cpp`)
-- Editor-Datenmodell (Document). Layout/Routing ist `web/` (React Flow + elkjs), nicht native Canvas
+- Editor-Datenmodell (Document). Layout/Routing ist `web/` (`boardStore` + elkjs + A*), nicht native Canvas
 - `parse` nutzt `DSLParser` und hängt `#`-Header/Trailing-Kommentare inkl. `@x,y` an
 - `emit` schreibt kanonische DSL; Formel bleibt Source of Truth
 - `jacksFor` / `jacksForInput` / `jacksForVirtualOut`: sichtbare Ports (Audio, Mix-Bus, Knob, SC, Mod, MID/SIDE, L/R, Xover)
@@ -186,7 +186,7 @@ Parameter-IDs für den APVTS:
 - `moveNode` verschiebt Blöcke mit Bus-Regeln (`send` nur im Named Bus, `out` zuletzt)
 
 ### Circuit-UI
-- Produkt: React Flow in `web/` (`nodesDraggable`, `onConnect`, stored `data.route`). C++ `GraphModel` bleibt Document/emit/parse.
+- Produkt: headless board in `web/` (`boardStore` nodes/ports/edges, DOM chips, one cable canvas, stored `edge.route`). C++ `GraphModel` bleibt Document/emit/parse.
 
 ### `SignalChain` (`src/dsl/SignalChain.h/.cpp`)
 - Führt die geparsten Blöcke aus. Audio: nur `processBlock` (eine Virtual / Chip / Callback)

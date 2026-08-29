@@ -379,6 +379,7 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("cpu", footerCpu (proc.getCpuLoad()));
     root->setProperty ("safe", safe);
     root->setProperty ("mode", juce::String (modeWord (safe, false, proc.isLiveMode())));
+    root->setProperty ("live", proc.isLiveMode());
     root->setProperty ("lat", lat);
     root->setProperty ("sr", sr);
     root->setProperty ("buf", proc.getHostBlockSize());
@@ -391,6 +392,12 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("theme", UiSettings::get().themeId());
     root->setProperty ("frameRate", UiSettings::get().frameRate());
     root->setProperty ("discardPrompt", UiSettings::get().discardPrompt());
+    root->setProperty ("scopeSource", UiSettings::get().scopeSource());
+    root->setProperty ("scopeX", UiSettings::get().scopeX());
+    root->setProperty ("scopeY", UiSettings::get().scopeY());
+    root->setProperty ("scopeGrid", UiSettings::get().scopeGrid());
+    root->setProperty ("scopeInvertY", UiSettings::get().scopeInvertY());
+    root->setProperty ("scopeDelta", UiSettings::get().scopeDelta());
     bool sidechainOn = false;
     if (auto* scBus = proc.getBus (true, 1))
         sidechainOn = scBus->isEnabled();

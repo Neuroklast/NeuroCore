@@ -110,11 +110,16 @@ describe("unit logo motion from loudness / bass / treble", () => {
       prefersReduced: false,
     });
     const reducedOs = logoMotion(bands.loudness, bands.bass, bands.treble, {
+      motion: "reduced",
+      prefersReduced: true,
+    });
+    const fullOs = logoMotion(bands.loudness, bands.bass, bands.treble, {
       motion: "full",
       prefersReduced: true,
     });
     expect(off).toEqual({ glow: 0, chromaPx: 0, jitterHz: 0 });
     expect(reducedOs).toEqual({ glow: 0, chromaPx: 0, jitterHz: 0 });
+    expect(fullOs.glow).toBeGreaterThan(0);
 
     const snap = logoMotion(1, 1, 1, { motion: "reduced", prefersReduced: false });
     expect(snap.glow).toBeGreaterThan(0);

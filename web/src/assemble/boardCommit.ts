@@ -42,26 +42,46 @@ function pushAst(nextEdges: AstEdge[]): void {
 export async function layoutBoard(
   mode: "ARRANGE" | "COMPACT" | "REROUTE",
   view: { w: number; h: number },
+  opts: { force?: boolean } = {},
 ): Promise<void> {
   const epoch = useBoardStore.getState().layoutEpoch;
-  const g = useBoardStore.getState();
-  const payload = graphToLayout(g);
-  const laid = await requestGraphLayout(mode, payload.nodes, payload.edges, view);
-  const live = useBoardStore.getState();
-  if (live.layoutEpoch !== epoch) {
-    return;
-  }
-  if (mode !== "REROUTE" && live.userMoved) {
-    return;
-  }
-  const routes: Record<string, Array<{ x: number; y: number }>> = {};
-  for (const [id, d] of Object.entries(laid.edgePaths)) {
-    routes[id] = parseRoutePath(d);
-  }
-  useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
   if (mode !== "REROUTE") {
-    const next = useBoardStore.getState();
-    useBoardStore.getState().setCamera(fitCamera(Object.values(next.nodes), view));
+    useBoardStore.setState({ layoutBusy: true });
+  }
+  try {
+    const g = useBoardStore.getState();
+    const payload = graphToLayout(g);
+    const laid = await requestGraphLayout(mode, payload.nodes, payload.edges, view);
+    const live = useBoardStore.getState();
+    if (live.layoutEpoch !== epoch) {
+      return;
+    }
+    const commanded = opts.force === true && mode !== "REROUTE";
+    if (mode !== "REROUTE" && live.userMoved && ! commanded) {
+      return;
+    }
+    if (mode !== "REROUTE" && ! commanded && live.commandedLayout) {
+      return;
+    }
+    const routes: Record<string, Array<{ x: number; y: number }>> = {};
+    for (const [id, d] of Object.entries(laid.edgePaths)) {
+      routes[id] = parseRoutePath(d);
+    }
+    useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
+    if (commanded) {
+      useBoardStore.setState({
+        userMoved: false,
+        commandedLayout: mode === "COMPACT" ? "COMPACT" : "ARRANGE",
+      });
+    }
+    if (mode !== "REROUTE") {
+      const next = useBoardStore.getState();
+      useBoardStore.getState().setCamera(fitCamera(Object.values(next.nodes), view));
+    }
+  } finally {
+    if (mode !== "REROUTE" && useBoardStore.getState().layoutEpoch === epoch) {
+      useBoardStore.setState({ layoutBusy: false });
+    }
   }
 }
 

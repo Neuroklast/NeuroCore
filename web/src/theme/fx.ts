@@ -1,4 +1,5 @@
 import { advancePlasmaDash } from "../assemble/cableMotion";
+import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { subscribeVizClock } from "./vizClock";
 
@@ -31,16 +32,18 @@ export function bindPeakCss(el: HTMLElement): () => void {
   let dashIn = 0;
   let dashOut = 0;
   let last = 0;
-  const reduced = typeof window !== "undefined"
-    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   const tick = (now: number) => {
     const dt = last > 0 ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
+    const motion = useHostStore.getState().motion;
+    const osReduce = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    const still = motion === "off" || (osReduce && motion !== "full");
     const s = useTelemetryStore.getState();
     const vars = peakCssVars(s.inPeak, s.outPeak, {
       dashIn,
       dashOut,
-      dt: reduced ? 0 : dt,
+      dt: still ? 0 : dt,
     });
     dashIn = Number(vars["--nk-dash-in"]);
     dashOut = Number(vars["--nk-dash-out"]);

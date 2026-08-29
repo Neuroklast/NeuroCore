@@ -8,7 +8,14 @@ export type FocusPlane = {
   edges: Set<string>;
 };
 
-export function circuitDofAllowed(motion: MotionPref, prefersReduced: boolean): boolean {
+export function circuitDofAllowed(
+  motion: MotionPref,
+  prefersReduced: boolean,
+  scale = 1,
+): boolean {
+  if (! Number.isFinite(scale) || Math.abs(scale - 1) > 0.02) {
+    return false;
+  }
   return motionAllows("dof", motion, prefersReduced);
 }
 

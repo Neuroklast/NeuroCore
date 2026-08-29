@@ -55,10 +55,8 @@ inline bool shouldOpenWebEditor()
     return wantWebEditor() && webEditorCanRun();
 }
 
-/** Chromium is a backend, not IPlugView.
- *  Realize only after the host callback stack has unwound, and only if the
- *  view is still attached with a peer. Scan is attached+removed on one stack:
- *  the pending ticket is stale. */
+/** Kept as a scan-stack guard. Production births Chromium in the holder ctor
+ *  (processor lifetime). Do not CreateWebView from IPlugView attached(). */
 inline bool shouldRealizeChromium (bool stillAttached,
                                    bool hasPeer,
                                    std::uint32_t ticket,

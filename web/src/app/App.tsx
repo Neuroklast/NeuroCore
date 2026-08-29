@@ -19,11 +19,9 @@ import { RESIZE_GRIP } from "../theme/chromeSpec";
 import { CrtFx, PaneTechNoise, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
-import { bindDocumentTheme } from "../theme/themeBind";
+import { bindDocumentMotion, bindDocumentTheme } from "../theme/themeBind";
 import { setVizFpsCap } from "../theme/vizClock";
 import { seedFactoryPresets } from "../presets/presetActions";
-import { parseDslSketch } from "../presets/parseDslSketch";
-import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
 import { nk } from "../theme/tokens";
@@ -36,6 +34,7 @@ export function App() {
   const telemetryPath = useHostStore((s) => s.telemetryPath);
   const frameRate = useHostStore((s) => s.frameRate);
   const theme = useHostStore((s) => s.theme) ?? "signal";
+  const motion = useHostStore((s) => s.motion);
   useEffect(() => {
     bindDocumentTheme(theme);
     requestAnimationFrame(() => {
@@ -43,6 +42,9 @@ export function App() {
       document.getElementById("nk-splash")?.remove();
     });
   }, [theme]);
+  useEffect(() => {
+    bindDocumentMotion(motion);
+  }, [motion]);
   useEffect(() => {
     setVizFpsCap(frameRate);
   }, [frameRate]);
@@ -52,15 +54,11 @@ export function App() {
       if (! rec || typeof rec.astJson !== "string") {
         return;
       }
-      if (rec.origin === "preset" || rec.origin === "host") {
+      if (rec.origin === "preset") {
         resetMuteSolo();
         useChipViewStore.getState().collapseAll();
       }
-      const clean = typeof rec.script === "string" ? stripMuteComments(rec.script) : rec.script;
-      const astJson = clean && clean !== rec.script
-        ? JSON.stringify(parseDslSketch(clean).doc)
-        : rec.astJson;
-      useAstStore.getState().applyAstEvent({ ...rec, astJson }, {
+      useAstStore.getState().applyAstEvent(rec, {
         updateScript: shouldHydrate("editor", rec.origin as Origin),
       });
     });
@@ -140,7 +138,7 @@ export function App() {
     window.addEventListener("contextmenu", onContextMenu, true);
 
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: nk.version, scale: 1 }).catch(() => undefined);
+      void getNativeFunction("UI_READY")({ build: nk.version }).catch(() => undefined);
     } else if (useAstStore.getState().ast == null) {
       seedFactoryPresets();
     }

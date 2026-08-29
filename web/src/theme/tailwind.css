@@ -124,10 +124,23 @@ body,
   animation: nk-assemble 0.55s var(--nk-ease) both;
 }
 
+@keyframes nk-layout-run {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200%); }
+}
+
+.nk-layout-bar {
+  animation: nk-layout-run 1.1s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .nk-boot {
+  html:not([data-motion]) .nk-boot {
     animation: none;
   }
+}
+
+html[data-motion="off"] .nk-boot {
+  animation: none;
 }
 
 .nk-clip {
@@ -288,7 +301,6 @@ body,
   inset: 0;
   transform-origin: 0 0;
   z-index: 1;
-  will-change: transform;
 }
 .nk-board-canvas {
   position: absolute;
@@ -478,12 +490,22 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-dof="on"] .nk-chip[data-focus="soft"],
-  [data-dof="on"] .nk-chip-io[data-focus="soft"],
-  [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
+  html:not([data-motion]) [data-dof="on"] .nk-chip[data-focus="soft"],
+  html:not([data-motion]) [data-dof="on"] .nk-chip-io[data-focus="soft"],
+  html:not([data-motion]) [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
     opacity: 1;
     filter: none;
   }
+}
+
+html[data-motion="off"] [data-dof="on"] .nk-chip[data-focus="soft"],
+html[data-motion="off"] [data-dof="on"] .nk-chip-io[data-focus="soft"],
+html[data-motion="off"] [data-dof="on"] .nk-dof-edge[data-focus="soft"],
+html[data-motion="reduced"] [data-dof="on"] .nk-chip[data-focus="soft"],
+html[data-motion="reduced"] [data-dof="on"] .nk-chip-io[data-focus="soft"],
+html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
+  opacity: 1;
+  filter: none;
 }
 
 .react-flow__node-io,
@@ -1389,17 +1411,35 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nk-bore-chase,
-  .nk-lfo-dot,
-  .nk-plasma,
-  .nk-plasma-glow,
-  .nk-dots,
-  .nk-crt-bloom,
-  .nk-crt-sweep,
-  .nk-crt-jit,
-  .nk-lfo-lamp {
+  html:not([data-motion]) .nk-bore-chase,
+  html:not([data-motion]) .nk-lfo-dot,
+  html:not([data-motion]) .nk-plasma,
+  html:not([data-motion]) .nk-plasma-glow,
+  html:not([data-motion]) .nk-dots,
+  html:not([data-motion]) .nk-crt-bloom,
+  html:not([data-motion]) .nk-crt-sweep,
+  html:not([data-motion]) .nk-crt-jit,
+  html:not([data-motion]) .nk-lfo-lamp {
     animation: none;
   }
+}
+
+html[data-motion="off"] .nk-bore-chase,
+html[data-motion="off"] .nk-lfo-dot,
+html[data-motion="off"] .nk-plasma,
+html[data-motion="off"] .nk-plasma-glow,
+html[data-motion="off"] .nk-dots,
+html[data-motion="off"] .nk-crt-bloom,
+html[data-motion="off"] .nk-crt-sweep,
+html[data-motion="off"] .nk-crt-jit,
+html[data-motion="off"] .nk-lfo-lamp,
+html[data-motion="reduced"] .nk-bore-chase,
+html[data-motion="reduced"] .nk-lfo-dot,
+html[data-motion="reduced"] .nk-plasma,
+html[data-motion="reduced"] .nk-plasma-glow,
+html[data-motion="reduced"] .nk-dots,
+html[data-motion="reduced"] .nk-lfo-lamp {
+  animation: none;
 }
 
 .nk-flow .react-flow__handle-connecting,
@@ -2093,10 +2133,17 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nk-overlay-host[data-phase],
-  .nk-overlay[data-phase] {
+  html:not([data-motion]) .nk-overlay-host[data-phase],
+  html:not([data-motion]) .nk-overlay[data-phase] {
     animation: none;
   }
+}
+
+html[data-motion="off"] .nk-overlay-host[data-phase],
+html[data-motion="off"] .nk-overlay[data-phase],
+html[data-motion="reduced"] .nk-overlay-host[data-phase],
+html[data-motion="reduced"] .nk-overlay[data-phase] {
+  animation: none;
 }
 
 .nk-bloom {
@@ -2132,6 +2179,175 @@ body,
 
 .nk-overlay-led {
   box-shadow: 0 0 8px var(--nk-accent), 0 0 18px rgba(var(--nk-warn-rgb), 0.25);
+}
+
+.nk-help {
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-weight: 400;
+  color: var(--nk-ink);
+}
+
+.nk-help input {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.nk-help aside button {
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.nk-help-page {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  color: var(--nk-ink);
+}
+
+.nk-help-title,
+.nk-help-kicker {
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nk-accent);
+}
+
+.nk-help-title {
+  margin: 0 0 1rem;
+  padding-bottom: 0.55rem;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(var(--nk-accent-rgb), 0.45);
+}
+
+.nk-help-kicker {
+  display: block;
+  margin: 0 0 0.35em;
+  font-size: 11px;
+}
+
+.nk-help-page p,
+.nk-help-page ul,
+.nk-help-page ol,
+.nk-help-page dl,
+.nk-help-page table {
+  margin: 0 0 0.9em;
+}
+
+.nk-help-page p:last-child,
+.nk-help-page ul:last-child,
+.nk-help-page ol:last-child,
+.nk-help-page dl:last-child,
+.nk-help-page table:last-child {
+  margin-bottom: 0;
+}
+
+.nk-help-chip,
+.nk-help-page code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--nk-cyan);
+}
+
+.nk-help-em {
+  font-weight: 400;
+  color: var(--nk-ink);
+}
+
+.nk-help-page ul {
+  list-style: none;
+  padding: 0;
+}
+
+.nk-help-page ul li {
+  position: relative;
+  padding-left: 1.1em;
+  margin: 0.28em 0;
+}
+
+.nk-help-page ul li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.58em;
+  width: 5px;
+  height: 5px;
+  background: var(--nk-accent);
+}
+
+.nk-help-page ol {
+  list-style: decimal;
+  padding-left: 1.45em;
+}
+
+.nk-help-page ol li {
+  margin: 0.28em 0;
+}
+
+.nk-help-def {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 11.5rem) 1fr;
+  gap: 0.2em 1em;
+  margin: 0.2em 0;
+  align-items: start;
+}
+
+.nk-help-def dt {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--nk-cyan);
+  padding-top: 0.12em;
+}
+
+.nk-help-def dd {
+  margin: 0;
+}
+
+.nk-help-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.nk-help-page th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nk-ink-muted);
+  border-bottom: 1px solid var(--nk-line);
+  padding: 0.35em 0.75em 0.45em 0;
+}
+
+.nk-help-page td {
+  vertical-align: top;
+  padding: 0.4em 0.75em 0.4em 0;
+  border-bottom: 1px solid rgb(var(--nk-line-rgb) / 0.65);
+}
+
+.nk-help-page td:first-child {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--nk-cyan);
+  white-space: nowrap;
+}
+
+.nk-help-page hr {
+  border: 0;
+  border-top: 1px solid var(--nk-line);
+  margin: 1.1em 0;
 }
 
 .nk-knob-head {

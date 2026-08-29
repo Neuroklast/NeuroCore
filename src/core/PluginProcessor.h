@@ -333,8 +333,11 @@ private:
                     const juce::String& displayName, juce::String& error);
     void updateProcessingSpec (double sampleRate, int blockSize);
     void handleAsyncUpdate() override;
+    void applySharedProcessingPrefs();
 
     std::unique_ptr<bridge::WebViewHolder> webViewHolder;
+    int lastUiScalePercent { -1 };
+    bool restoringHostState { false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuroKoreAudioProcessor)
 };
