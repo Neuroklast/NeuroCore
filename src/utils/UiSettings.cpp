@@ -60,7 +60,7 @@ UiSettings::UiSettings()
     juce::PropertiesFile::Options opts;
     opts.applicationName          = "NeuroKore";
     opts.filenameSuffix           = "settings";
-    opts.millisecondsBeforeSaving = 0;
+    opts.millisecondsBeforeSaving = -1; // One explicit save per transaction.
     opts.storageFormat            = juce::PropertiesFile::storeAsXML;
 
     const auto file = settingsFile();
@@ -79,7 +79,7 @@ UiSettings::UiSettings()
 UiSettings::~UiSettings()
 {
     stopTimer();
-    persist();
+    flushPendingProcessingChanges();
 }
 
 juce::File UiSettings::settingsFile() const
@@ -204,8 +204,27 @@ bool UiSettings::reloadFromDisk()
     return true;
 }
 
+void UiSettings::queueOversamplingIndex (int index) noexcept
+{
+    pendingOs.store (juce::jlimit (0, 3, index), std::memory_order_release);
+}
+
+void UiSettings::queuePolisherIndex (int index) noexcept
+{
+    pendingPolish.store (juce::jlimit (0, 1, index), std::memory_order_release);
+}
+
+void UiSettings::flushPendingProcessingChanges()
+{
+    const int os = pendingOs.exchange (-1, std::memory_order_acq_rel);
+    const int polish = pendingPolish.exchange (-1, std::memory_order_acq_rel);
+    if (os >= 0) setOversamplingIndex (os);
+    if (polish >= 0) setPolisherIndex (polish);
+}
+
 void UiSettings::timerCallback()
 {
+    flushPendingProcessingChanges();
     const auto file = settingsFile();
     if (! file.existsAsFile())
         return;
@@ -223,7 +242,7 @@ CyberMotion UiSettings::motion() const noexcept
 void UiSettings::setMotion (CyberMotion m)
 {
     motionValue.store ((int) clampMotion ((int) m), std::memory_order_relaxed);
-    persist();
+    persist ({ kMotionKey, kCalmKey });
     notifyListeners();
 }
 
@@ -245,7 +264,7 @@ int UiSettings::uiScalePercent() const noexcept
 void UiSettings::setUiScalePercent (int percent)
 {
     scalePercent.store (clampScale (percent), std::memory_order_relaxed);
-    persist();
+    persist ({ kScaleKey });
     notifyListeners();
 }
 
@@ -262,7 +281,7 @@ float UiSettings::editorFontPt() const noexcept
 void UiSettings::setEditorFontPt (float pt)
 {
     fontPt.store (clampFont (pt), std::memory_order_relaxed);
-    persist();
+    persist ({ kFontKey });
     notifyListeners();
 }
 
@@ -274,7 +293,7 @@ bool UiSettings::liveMode() const noexcept
 void UiSettings::setLiveMode (bool enabled)
 {
     live.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kLiveKey });
     notifyListeners();
 }
 
@@ -286,7 +305,7 @@ bool UiSettings::useHostTempo() const noexcept
 void UiSettings::setUseHostTempo (bool enabled)
 {
     hostTempo.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kHostTempoKey });
     notifyListeners();
 }
 
@@ -298,7 +317,7 @@ float UiSettings::userBpm() const noexcept
 void UiSettings::setUserBpm (float bpm)
 {
     bpmUser.store (juce::jlimit (20.f, 400.f, bpm), std::memory_order_relaxed);
-    persist();
+    persist ({ kUserBpmKey });
     notifyListeners();
 }
 
@@ -310,7 +329,7 @@ bool UiSettings::cableWaveform() const noexcept
 void UiSettings::setCableWaveform (bool enabled)
 {
     cableWave.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kCableWaveKey });
     notifyListeners();
 }
 
@@ -326,7 +345,7 @@ void UiSettings::setThemeId (const juce::String& id)
         const juce::ScopedLock sl (lock);
         theme = clampTheme (id);
     }
-    persist();
+    persist ({ kThemeKey });
     notifyListeners();
 }
 
@@ -338,7 +357,7 @@ int UiSettings::frameRate() const noexcept
 void UiSettings::setFrameRate (int fps)
 {
     fpsCap.store (clampFrameRate (fps), std::memory_order_relaxed);
-    persist();
+    persist ({ kFpsKey });
     notifyListeners();
 }
 
@@ -355,7 +374,7 @@ bool UiSettings::discardPrompt() const noexcept
 void UiSettings::setDiscardPrompt (bool enabled)
 {
     unsavedPrompt.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kDiscardKey });
     notifyListeners();
 }
 
@@ -378,7 +397,8 @@ void UiSettings::setEditorSize (int width, int height)
         return;
     editorW.store (w, std::memory_order_relaxed);
     editorH.store (h, std::memory_order_relaxed);
-    persist();
+    persist ({ kEditorWKey, kEditorHKey });
+    notifyListeners();
 }
 
 int UiSettings::oversamplingIndex() const noexcept
@@ -392,7 +412,7 @@ void UiSettings::setOversamplingIndex (int index)
     if (osIndex.load (std::memory_order_relaxed) == v)
         return;
     osIndex.store (v, std::memory_order_relaxed);
-    persist();
+    persist ({ kOsKey });
     notifyListeners();
 }
 
@@ -407,7 +427,7 @@ void UiSettings::setPolisherIndex (int index)
     if (polishIndex.load (std::memory_order_relaxed) == v)
         return;
     polishIndex.store (v, std::memory_order_relaxed);
-    persist();
+    persist ({ kPolishKey });
     notifyListeners();
 }
 
@@ -423,7 +443,7 @@ void UiSettings::setScopeSource (const juce::String& id)
         const juce::ScopedLock sl (lock);
         meterSource = clampScopeSource (id);
     }
-    persist();
+    persist ({ kScopeSrcKey });
     notifyListeners();
 }
 
@@ -439,7 +459,7 @@ void UiSettings::setScopeX (const juce::String& id)
         const juce::ScopedLock sl (lock);
         meterX = clampScopeX (id);
     }
-    persist();
+    persist ({ kScopeXKey });
     notifyListeners();
 }
 
@@ -455,7 +475,7 @@ void UiSettings::setScopeY (const juce::String& id)
         const juce::ScopedLock sl (lock);
         meterY = clampScopeY (id);
     }
-    persist();
+    persist ({ kScopeYKey });
     notifyListeners();
 }
 
@@ -469,7 +489,7 @@ void UiSettings::setScopeGrid (bool enabled)
     if (meterGrid.load (std::memory_order_relaxed) == enabled)
         return;
     meterGrid.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kScopeGridKey });
     notifyListeners();
 }
 
@@ -483,7 +503,7 @@ void UiSettings::setScopeInvertY (bool enabled)
     if (meterInvertY.load (std::memory_order_relaxed) == enabled)
         return;
     meterInvertY.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kScopeInvKey });
     notifyListeners();
 }
 
@@ -497,7 +517,7 @@ void UiSettings::setScopeDelta (bool enabled)
     if (meterDelta.load (std::memory_order_relaxed) == enabled)
         return;
     meterDelta.store (enabled, std::memory_order_relaxed);
-    persist();
+    persist ({ kScopeDeltaKey });
     notifyListeners();
 }
 
@@ -554,35 +574,42 @@ float UiSettings::clampFont (float pt) noexcept
     return juce::jlimit (Config::kMinEditorFontPt, Config::kMaxEditorFontPt, pt);
 }
 
-void UiSettings::persist() const
+void UiSettings::persist (std::initializer_list<const char*> changedKeys)
 {
     const juce::InterProcessLock::ScopedLockType fileSl (*fileLock);
     const juce::ScopedLock sl (lock);
     if (props == nullptr)
         return;
 
+    juce::PropertySet desired;
     const auto m = clampMotion (motionValue.load (std::memory_order_relaxed));
-    props->setValue (kMotionKey, (int) m);
-    props->setValue (kCalmKey, m == CyberMotion::Off);
-    props->setValue (kScaleKey, scalePercent.load (std::memory_order_relaxed));
-    props->setValue (kFontKey, (double) fontPt.load (std::memory_order_relaxed));
-    props->setValue (kLiveKey, live.load (std::memory_order_relaxed));
-    props->setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));
-    props->setValue (kUserBpmKey, (double) bpmUser.load (std::memory_order_relaxed));
-    props->setValue (kCableWaveKey, cableWave.load (std::memory_order_relaxed));
-    props->setValue (kThemeKey, theme);
-    props->setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
-    props->setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));
-    props->setValue (kEditorWKey, editorW.load (std::memory_order_relaxed));
-    props->setValue (kEditorHKey, editorH.load (std::memory_order_relaxed));
-    props->setValue (kOsKey, osIndex.load (std::memory_order_relaxed));
-    props->setValue (kPolishKey, polishIndex.load (std::memory_order_relaxed));
-    props->setValue (kScopeSrcKey, meterSource);
-    props->setValue (kScopeXKey, meterX);
-    props->setValue (kScopeYKey, meterY);
-    props->setValue (kScopeGridKey, meterGrid.load (std::memory_order_relaxed));
-    props->setValue (kScopeInvKey, meterInvertY.load (std::memory_order_relaxed));
-    props->setValue (kScopeDeltaKey, meterDelta.load (std::memory_order_relaxed));
+    desired.setValue (kMotionKey, (int) m);
+    desired.setValue (kCalmKey, m == CyberMotion::Off);
+    desired.setValue (kScaleKey, scalePercent.load (std::memory_order_relaxed));
+    desired.setValue (kFontKey, (double) fontPt.load (std::memory_order_relaxed));
+    desired.setValue (kLiveKey, live.load (std::memory_order_relaxed));
+    desired.setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));
+    desired.setValue (kUserBpmKey, (double) bpmUser.load (std::memory_order_relaxed));
+    desired.setValue (kCableWaveKey, cableWave.load (std::memory_order_relaxed));
+    desired.setValue (kThemeKey, theme);
+    desired.setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
+    desired.setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));
+    desired.setValue (kEditorWKey, editorW.load (std::memory_order_relaxed));
+    desired.setValue (kEditorHKey, editorH.load (std::memory_order_relaxed));
+    desired.setValue (kOsKey, osIndex.load (std::memory_order_relaxed));
+    desired.setValue (kPolishKey, polishIndex.load (std::memory_order_relaxed));
+    desired.setValue (kScopeSrcKey, meterSource);
+    desired.setValue (kScopeXKey, meterX);
+    desired.setValue (kScopeYKey, meterY);
+    desired.setValue (kScopeGridKey, meterGrid.load (std::memory_order_relaxed));
+    desired.setValue (kScopeInvKey, meterInvertY.load (std::memory_order_relaxed));
+    desired.setValue (kScopeDeltaKey, meterDelta.load (std::memory_order_relaxed));
+    // Merge only this transaction's keys into the latest shared file. A stale
+    // instance changing its frame rate must not undo another instance's theme.
+    props->reload();
+    for (const auto* key : changedKeys)
+        props->setValue (key, desired.getValue (key));
     props->saveIfNeeded();
+    applyLoaded();
     lastWrite = settingsFile().getLastModificationTime();
 }

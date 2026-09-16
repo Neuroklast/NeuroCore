@@ -1,3 +1,4 @@
+#include "GlobalPreferencesTest.h"
 #include "TelemetrySamplingTest.h"
 #include "FxRuntimeTest.h"
 #include "DSLParserTest.h"
@@ -62,6 +63,7 @@ int main (int argc, char* argv[])
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
   TelemetrySamplingTest telemetrySamplingTest;
+  GlobalPreferencesTest globalPreferencesTest;
   AstJsonTest astJsonTest;
   WebShellTest webShellTest;
   WebCompileTest webCompileTest;

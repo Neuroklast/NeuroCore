@@ -1248,7 +1248,7 @@ void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID,
                 apvts.getParameter (EffectParameters::oversampling)))
             idx = juce::jlimit (0, 3, choice->getIndex());
         if (! restoringHostState)
-            UiSettings::get().setOversamplingIndex (idx);
+            UiSettings::get().queueOversamplingIndex (idx);
         if (restoringHostState)
             return;
         if (idx == dspEngine.getOversamplingIndex())
@@ -1263,7 +1263,7 @@ void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID,
                 apvts.getParameter (EffectParameters::polisherMode)))
             idx = juce::jlimit (0, 1, choice->getIndex());
         if (! restoringHostState)
-            UiSettings::get().setPolisherIndex (idx);
+            UiSettings::get().queuePolisherIndex (idx);
     }
     else if (parameterID == EffectParameters::dryWet)
     {

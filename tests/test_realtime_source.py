@@ -15,5 +15,12 @@ class RuntimeCoefficientContract(unittest.TestCase):
                     offenders.append(f'{path.relative_to(ROOT)}:{line}')
         self.assertEqual(offenders, [], 'Use preallocated coefficients and ArrayCoefficients: ' + ', '.join(offenders))
 
+class ParameterNotificationContract(unittest.TestCase):
+    def test_host_parameter_callback_does_not_persist_global_preferences(self):
+        source = (ROOT / 'src/core/PluginProcessor.cpp').read_text()
+        body = source.split('void NeuroKoreAudioProcessor::parameterChanged', 1)[1].split('juce::StringArray NeuroKoreAudioProcessor::getPresetNames', 1)[0]
+        self.assertNotIn('UiSettings::get().setOversamplingIndex', body)
+        self.assertNotIn('UiSettings::get().setPolisherIndex', body)
+
 if __name__ == '__main__':
     unittest.main()
