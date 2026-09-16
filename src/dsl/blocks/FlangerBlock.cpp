@@ -53,10 +53,7 @@ void SignalChain::Flanger::prepare (const juce::dsp::ProcessSpec& spec)
     dSampSm.setCurrentAndTargetValue (ms0 * 0.001f * sampleRate);
     fbLatch = juce::jlimit (0.f, 0.95f, fbSm.getCurrentValue());
     mixLatch = juce::jlimit (0.f, 1.f, mixSm.getCurrentValue());
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &rateExpr, &depthExpr, &delayExpr, &feedbackExpr, &mixExpr, &invertExpr });
     clearRuntimeState();
 }
 
@@ -115,16 +112,7 @@ void SignalChain::Flanger::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0 || delayL == nullptr || delayN < 8)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        rateExpr.setVariable (n.second, v);
-        depthExpr.setVariable (n.second, v);
-        delayExpr.setVariable (n.second, v);
-        feedbackExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-        invertExpr.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {

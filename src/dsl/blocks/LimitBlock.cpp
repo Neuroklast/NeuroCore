@@ -25,10 +25,7 @@ void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
     // ~80 µs attack — instant slam clicked; hard clip still holds the ceiling
     atkC = 1.f - std::exp (-1.f / juce::jmax (1.f, 0.00008f * sampleRate));
     clearRuntimeState();
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &ceilingDb, &release });
 }
 
 float SignalChain::Limit::process (int ch, float x)
@@ -47,12 +44,7 @@ void SignalChain::Limit::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        ceilingDb.setVariable (n.second, v);
-        release.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)
     {

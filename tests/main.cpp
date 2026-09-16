@@ -1,3 +1,4 @@
+#include "FxRuntimeTest.h"
 #include "DSLParserTest.h"
 #include "GraphModelTest.h"
 #include "ExpressionEvaluatorTest.h"
@@ -37,6 +38,7 @@ int main (int argc, char* argv[])
   // Without this, the first NeuroKoreAudioProcessor construction can spin forever.
   juce::ScopedJuceInitialiser_GUI juceInit;
 
+  FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;
   GraphModelTest graphModelTest;
   ExpressionEvaluatorTest evaluatorTest;
@@ -76,7 +78,16 @@ int main (int argc, char* argv[])
   };
 
   LoggingRunner runner;
-  runner.runAllTests();
+  if (argc > 1)
+  {
+    juce::Array<juce::UnitTest*> selected;
+    for (auto* test : juce::UnitTest::getAllTests())
+      for (int arg = 1; arg < argc; ++arg)
+        if (test->getName() == argv[arg]) { selected.add (test); break; }
+    if (selected.isEmpty()) { std::cerr << "No matching tests" << std::endl; return 2; }
+    runner.runTests (selected);
+  }
+  else runner.runAllTests();
 
   int failures = 0;
   int passes = 0;

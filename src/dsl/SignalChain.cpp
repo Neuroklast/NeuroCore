@@ -613,7 +613,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             // Collect variable names for live evaluation
             for (auto* ev : { &dl->timeMs, &dl->feedback, &dl->mix, &dl->dampHz })
             {
-                // varNames filled in prepare via varPtr map
+                // Parameter bindings are built in prepare.
                 juce::ignoreUnused (ev);
             }
             newChain->push_back (std::move (dl));
@@ -2737,12 +2737,7 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     vizDecimAcc = 0;
     vizDecim = juce::jmax (1, (int) std::lround ((double) sampleRate * (double) kVizWindowSec
                                                 / (double) kVizN));
-    varNames.clear();
-    if (varPtr)
-    {
-        for (auto& kv : *varPtr)
-            varNames.emplace_back(&kv.second, kv.first.toStdString());
-    }
+    bindings.prepare (varPtr, { &freqExpr, &syncExpr });
     if (useSyncRatio)
         updateSyncFrequency();
     else if (useFreqExpr)
@@ -2756,8 +2751,7 @@ void SignalChain::Osc::updateFrequencyFromExpr() noexcept
     if (! useFreqExpr || ! varPtr)
         return;
 
-    for (const auto& n : varNames)
-        freqExpr.setVariable(n.second, *n.first);
+    bindings.refresh();
 
     float f = freqExpr.evaluateLive (0.0f);
     if (freqExprIsPeriodMs)
@@ -2774,8 +2768,7 @@ void SignalChain::Osc::updateSyncFrequency() noexcept
 
     if (useSyncExpr && varPtr)
     {
-        for (const auto& n : varNames)
-            syncExpr.setVariable (n.second, *n.first);
+        bindings.refresh();
         const float r = syncExpr.evaluateLive (0.0f);
         if (std::isfinite (r) && r > 0.0f)
         {
@@ -3062,11 +3055,8 @@ void SignalChain::Filter::prepare(const juce::dsp::ProcessSpec& spec)
     lastAppliedRes = -1.f;
     if (allpass)
         apCoeff = DSPUtils::onePoleAllpassA (cutoffSm.getCurrentValue(), sampleRate);
-    varNames.clear();
-    if (varPtr)
+    bindings.prepare (varPtr, { &cutoff, &resonance, &center, &width, &lowcut, &highcut });
     {
-        for (auto& kv : *varPtr)
-            varNames.emplace_back(&kv.second, kv.first.toStdString());
         yPtr = &(*varPtr)["y"];
     }
 }
@@ -3078,15 +3068,7 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
     samples = juce::jmax (1, samples);
 
     const float probe = 0.0f;
-    for (const auto& n : varNames)
-    {
-        cutoff.setVariable(n.second, *n.first);
-        resonance.setVariable(n.second, *n.first);
-        center.setVariable(n.second, *n.first);
-        width.setVariable(n.second, *n.first);
-        lowcut.setVariable(n.second, *n.first);
-        highcut.setVariable(n.second, *n.first);
-    }
+    bindings.refresh();
 
     float fc = cutoff.evaluateLive (probe);
     float res = resonance.evaluateLive (probe);
@@ -3193,16 +3175,7 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     if (numSamples <= 0 || numChannels <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const auto v = *n.first;
-        cutoff.setVariable(n.second, v);
-        resonance.setVariable(n.second, v);
-        center.setVariable(n.second, v);
-        width.setVariable(n.second, v);
-        lowcut.setVariable(n.second, v);
-        highcut.setVariable(n.second, v);
-    }
+    bindings.refresh();
 
     const float probe = buffer.getSample(0, 0);
     float fc  = cutoff.evaluateLive(probe);
@@ -3339,10 +3312,7 @@ void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
     qSm.setCurrentAndTargetValue (std::isfinite (q0) ? q0 : 0.707f);
     gainSm.setCurrentAndTargetValue (std::isfinite (g0) ? g0 : 0.f);
     applyCoeffs (freqSm.getCurrentValue(), qSm.getCurrentValue(), gainSm.getCurrentValue());
-    varNames.clear();
-    if (varPtr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &freq, &q, &gainDb });
 }
 
 void SignalChain::Eq::applyCoeffs (float fHz, float qVal, float gDb) noexcept
@@ -3352,33 +3322,31 @@ void SignalChain::Eq::applyCoeffs (float fHz, float qVal, float gDb) noexcept
     const float qv = juce::jlimit (0.1f, 12.f, qVal);
     const float g = juce::jlimit (-24.f, 24.f, gDb);
     const float lin = juce::Decibels::decibelsToGain (g);
-    juce::dsp::IIR::Coefficients<float>::Ptr c;
+    std::array<float, 6> c {};
     switch (type)
     {
         case Type::Notch:
-            c = juce::dsp::IIR::Coefficients<float>::makeNotch (sampleRate, f, qv);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makeNotch (sampleRate, f, qv);
             break;
         case Type::LowShelf:
-            c = juce::dsp::IIR::Coefficients<float>::makeLowShelf (sampleRate, f, qv, lin);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makeLowShelf (sampleRate, f, qv, lin);
             break;
         case Type::HighShelf:
-            c = juce::dsp::IIR::Coefficients<float>::makeHighShelf (sampleRate, f, qv, lin);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makeHighShelf (sampleRate, f, qv, lin);
             break;
         case Type::LowCut:
-            c = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, f, qv);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (sampleRate, f, qv);
             break;
         case Type::HighCut:
-            c = juce::dsp::IIR::Coefficients<float>::makeLowPass (sampleRate, f, qv);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makeLowPass (sampleRate, f, qv);
             break;
         case Type::Peak:
         default:
-            c = juce::dsp::IIR::Coefficients<float>::makePeakFilter (sampleRate, f, qv, lin);
+            c = juce::dsp::IIR::ArrayCoefficients<float>::makePeakFilter (sampleRate, f, qv, lin);
             break;
     }
-    if (c == nullptr)
-        return;
-    filtL.coefficients = c;
-    filtR.coefficients = c;
+    *filtL.coefficients = c;
+    *filtR.coefficients = c;
     lastAppliedF = f;
     lastAppliedQ = qv;
     lastAppliedG = g;
@@ -3404,13 +3372,7 @@ void SignalChain::Eq::processBlock (juce::AudioBuffer<float>& buffer)
 
     if (varPtr)
     {
-        for (const auto& vn : varNames)
-        {
-            const float v = *vn.first;
-            freq.setVariable (vn.second, v);
-            q.setVariable (vn.second, v);
-            gainDb.setVariable (vn.second, v);
-        }
+        bindings.refresh();
     }
 
     float f0 = freq.evaluateLive (0.f);
@@ -3502,10 +3464,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     prevRel = initRel;
     atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
-    varNames.clear();
-    if (varPtr && (! attackLit || ! releaseLit))
-        for (auto& kv : *varPtr)
-            varNames.emplace_back(&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &attack, &release });
     if (varPtr)
         midiGatePtr = &(*varPtr)["midi_gate"];
 }
@@ -3519,13 +3478,7 @@ float SignalChain::Env::process(int ch, float x)
     float r = releaseFixed;
     if (! attackLit || ! releaseLit)
     {
-        for (const auto& n : varNames)
-        {
-            if (! attackLit)
-                attack.setVariable(n.second, *n.first);
-            if (! releaseLit)
-                release.setVariable(n.second, *n.first);
-        }
+        bindings.refresh();
         if (! attackLit)
         {
             atkTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, attack.evaluateLive (x)));
@@ -3845,17 +3798,7 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
 
     if (varPtr != nullptr)
     {
-        varNames.clear();
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
-        for (const auto& n : varNames)
-        {
-            const float v = *n.first;
-            timeMs.setVariable (n.second, v);
-            feedback.setVariable (n.second, v);
-            mix.setVariable (n.second, v);
-            dampHz.setVariable (n.second, v);
-        }
+        bindings.prepare (varPtr, { &timeMs, &feedback, &mix, &dampHz });
     }
 
     const float ds = resolveDelaySamples();
@@ -3941,14 +3884,7 @@ float SignalChain::Delay::process (int ch, float x)
 
     if (varPtr != nullptr)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = *n.first;
-            timeMs.setVariable (n.second, v);
-            feedback.setVariable (n.second, v);
-            mix.setVariable (n.second, v);
-            dampHz.setVariable (n.second, v);
-        }
+        bindings.refresh();
     }
 
     const float dSamps = resolveDelaySamples();
@@ -3987,14 +3923,7 @@ void SignalChain::Delay::syncFromVariables() noexcept
 {
     if (varPtr != nullptr)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = *n.first;
-            timeMs.setVariable (n.second, v);
-            feedback.setVariable (n.second, v);
-            mix.setVariable (n.second, v);
-            dampHz.setVariable (n.second, v);
-        }
+        bindings.refresh();
     }
 
     delaySm.setTargetValue (resolveDelaySamples());
@@ -4182,18 +4111,7 @@ void SignalChain::Reverb::prepare (const juce::dsp::ProcessSpec& spec)
 
     if (varPtr != nullptr)
     {
-        varNames.clear();
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
-        for (const auto& n : varNames)
-        {
-            const float v = *n.first;
-            sizeExpr.setVariable (n.second, v);
-            decayExpr.setVariable (n.second, v);
-            dampExpr.setVariable (n.second, v);
-            mixExpr.setVariable (n.second, v);
-            widthExpr.setVariable (n.second, v);
-        }
+        bindings.prepare (varPtr, { &sizeExpr, &decayExpr, &dampExpr, &mixExpr, &widthExpr });
     }
 
     float size0 = sizeExpr.evaluate (0.f);
@@ -4266,15 +4184,7 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
 
     if (varPtr != nullptr)
     {
-        for (const auto& n : varNames)
-        {
-            const float v = *n.first;
-            sizeExpr.setVariable (n.second, v);
-            decayExpr.setVariable (n.second, v);
-            dampExpr.setVariable (n.second, v);
-            mixExpr.setVariable (n.second, v);
-            widthExpr.setVariable (n.second, v);
-        }
+        bindings.refresh();
     }
 
     float size = sizeExpr.evaluateLive (0.f);
@@ -4436,10 +4346,7 @@ void SignalChain::Octaver::prepare (const juce::dsp::ProcessSpec& spec)
     lastToneHz = -1.f;
     toneA = 0.f;
     clearRuntimeState();
-    varNames.clear();
-    if (varPtr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &subExpr, &upExpr, &mixExpr, &toneExpr, &threshExpr });
 }
 
 void SignalChain::Octaver::tickDetector (float mid, float thr) noexcept
@@ -4584,15 +4491,7 @@ void SignalChain::Octaver::processBlock (juce::AudioBuffer<float>& buffer)
 
     if (varPtr)
     {
-        for (const auto& vn : varNames)
-        {
-            const float v = *vn.first;
-            subExpr.setVariable (vn.second, v);
-            upExpr.setVariable (vn.second, v);
-            mixExpr.setVariable (vn.second, v);
-            toneExpr.setVariable (vn.second, v);
-            threshExpr.setVariable (vn.second, v);
-        }
+        bindings.refresh();
     }
 
     auto setT = [] (juce::SmoothedValue<float>& sm, float v, float fallback)
@@ -4690,13 +4589,11 @@ void SignalChain::Vocoder::applyBands (float q, float formant) noexcept
     for (int i = 0; i < nb; ++i)
     {
         const float fc = juce::jlimit (90.f, ny, lo * std::pow (ratio, (float) i));
-        auto c = juce::dsp::IIR::Coefficients<float>::makeBandPass (sampleRate, fc, qv);
-        if (c == nullptr)
-            continue;
+        auto c = juce::dsp::IIR::ArrayCoefficients<float>::makeBandPass (sampleRate, fc, qv);
         auto& b = bands[(size_t) i];
-        b.modMono.coefficients = c;
-        b.carL.coefficients = c;
-        b.carR.coefficients = c;
+        *b.modMono.coefficients = c;
+        *b.carL.coefficients = c;
+        *b.carR.coefficients = c;
     }
     lastQ = q;
     lastForm = form;
@@ -4727,10 +4624,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     hpR = std::exp (-2.f * juce::MathConstants<float>::pi * 70.f / sampleRate);
     clearRuntimeState();
     applyBands (qSm.getCurrentValue(), formSm.getCurrentValue());
-    varNames.clear();
-    if (varPtr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &mixExpr, &qExpr, &formantExpr, &dryExpr, &attackExpr, &releaseExpr });
 }
 
 float SignalChain::Vocoder::process (int channel, float x)
@@ -4748,16 +4642,7 @@ void SignalChain::Vocoder::processBlock (juce::AudioBuffer<float>& buffer)
 
     if (varPtr)
     {
-        for (const auto& vn : varNames)
-        {
-            const float v = *vn.first;
-            mixExpr.setVariable (vn.second, v);
-            qExpr.setVariable (vn.second, v);
-            formantExpr.setVariable (vn.second, v);
-            dryExpr.setVariable (vn.second, v);
-            attackExpr.setVariable (vn.second, v);
-            releaseExpr.setVariable (vn.second, v);
-        }
+        bindings.refresh();
     }
 
     auto setT = [] (juce::SmoothedValue<float>& sm, float v, float fallback)
@@ -5106,10 +4991,7 @@ void SignalChain::Sidechain::prepare (const juce::dsp::ProcessSpec& spec)
     float m0 = mixExpr.evaluate (0.f);
     if (! std::isfinite (m0)) m0 = 1.f;
     mixSm.setCurrentAndTargetValue (juce::jlimit (0.f, 1.f, m0));
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &mixExpr });
 }
 
 void SignalChain::Sidechain::clearRuntimeState() noexcept
@@ -5121,8 +5003,7 @@ void SignalChain::Sidechain::syncMixFromVars() noexcept
 {
     if (varPtr != nullptr)
     {
-        for (const auto& n : varNames)
-            mixExpr.setVariable (n.second, *n.first);
+        bindings.refresh();
     }
     float m = mixExpr.evaluateLive (0.f);
     if (! std::isfinite (m)) m = 1.f;

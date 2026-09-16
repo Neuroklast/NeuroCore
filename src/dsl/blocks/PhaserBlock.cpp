@@ -74,10 +74,7 @@ void SignalChain::Phaser::prepare (const juce::dsp::ProcessSpec& spec)
     snap (centerSm, centerExpr, 800.f, Config::kModSmoothingTime);
     snap (fbSm, feedbackExpr, 0.3f, Config::kSmoothingTime);
     snap (mixSm, mixExpr, 0.5f, Config::kSmoothingTime);
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &stagesExpr, &rateExpr, &depthExpr, &centerExpr, &feedbackExpr, &mixExpr });
     clearRuntimeState();
     nStages = juce::jlimit (2, kMaxStages, (int) std::lround (stagesSm.getCurrentValue()));
     apA = DSPUtils::onePoleAllpassA (centerSm.getCurrentValue(), sampleRate);
@@ -100,16 +97,7 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        stagesExpr.setVariable (n.second, v);
-        rateExpr.setVariable (n.second, v);
-        depthExpr.setVariable (n.second, v);
-        centerExpr.setVariable (n.second, v);
-        feedbackExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {

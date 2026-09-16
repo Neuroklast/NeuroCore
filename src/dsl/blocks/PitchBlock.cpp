@@ -49,10 +49,7 @@ void SignalChain::Pitch::prepare (const juce::dsp::ProcessSpec& spec)
     ceilSm.setCurrentAndTargetValue (1.f);
     cachedCeil = 1.0e9f;
     ceilLin = 1.f;
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &semiExpr, &mixExpr, &formantExpr, &ceilingDb });
 }
 
 void SignalChain::Pitch::applyTempo (double bpm) noexcept
@@ -187,14 +184,7 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     if (n <= 0 || nc <= 0 || fft == nullptr)
         return;
 
-    for (const auto& entry : varNames)
-    {
-        const float v = *entry.first;
-        semiExpr.setVariable (entry.second, v);
-        mixExpr.setVariable (entry.second, v);
-        formantExpr.setVariable (entry.second, v);
-        ceilingDb.setVariable (entry.second, v);
-    }
+    bindings.refresh();
 
     const float semi = juce::jlimit (-24.f, 24.f, semiExpr.evaluateLive (0.f));
     const float mixT = juce::jlimit (0.f, 1.f, mixExpr.evaluateLive (0.f));
@@ -248,14 +238,7 @@ float SignalChain::Pitch::process (int channel, float x)
     if (fft == nullptr)
         return x;
 
-    for (const auto& entry : varNames)
-    {
-        const float v = *entry.first;
-        semiExpr.setVariable (entry.second, v);
-        mixExpr.setVariable (entry.second, v);
-        formantExpr.setVariable (entry.second, v);
-        ceilingDb.setVariable (entry.second, v);
-    }
+    bindings.refresh();
 
     const float pr = std::pow (2.f, juce::jlimit (-24.f, 24.f, semiExpr.evaluateLive (0.f)) / 12.f);
     float fr = formantExpr.evaluateLive (0.f);

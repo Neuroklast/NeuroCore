@@ -6,6 +6,15 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Laufende DSP-Prüfung (2026-09-16)
+
+Branch `optimize/fx-runtime-factory`: parameter expressions bind referenced variables in prepare,
+then refresh by pointer/index. EQ, crossover, OTT and vocoder use ArrayCoefficients and update
+prepared IIR storage. The source allocation regression fails on main and passes on this branch.
+`tests/dsp` builds the DSP contracts without the WebView or plugin installation. New runtime
+contracts cover 22 node types, irregular blocks, stereo preservation, envelope position and
+pitch level/latency. Runtime fixes, preset curation and platform packages are still in progress.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.

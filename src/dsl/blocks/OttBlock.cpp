@@ -23,20 +23,20 @@ void SignalChain::Ott::applyCoeffs (float f1, float f2) noexcept
     f1 = juce::jlimit (40.f, ny - 80.f, f1);
     f2 = juce::jlimit (f1 + 80.f, ny, f2);
     constexpr float q = 0.70710678f;
-    auto lp1 = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, f1, q);
-    auto hp1 = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, f1, q);
-    auto lp2 = juce::dsp::IIR::Coefficients<float>::makeLowPass  (sampleRate, f2, q);
-    auto hp2 = juce::dsp::IIR::Coefficients<float>::makeHighPass (sampleRate, f2, q);
+    auto lp1 = juce::dsp::IIR::ArrayCoefficients<float>::makeLowPass  (sampleRate, f1, q);
+    auto hp1 = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (sampleRate, f1, q);
+    auto lp2 = juce::dsp::IIR::ArrayCoefficients<float>::makeLowPass  (sampleRate, f2, q);
+    auto hp2 = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (sampleRate, f2, q);
     for (auto& c : ch)
     {
-        *c.lp1a.coefficients = *lp1;
-        *c.lp1b.coefficients = *lp1;
-        *c.hp1a.coefficients = *hp1;
-        *c.hp1b.coefficients = *hp1;
-        *c.lp2a.coefficients = *lp2;
-        *c.lp2b.coefficients = *lp2;
-        *c.hp2a.coefficients = *hp2;
-        *c.hp2b.coefficients = *hp2;
+        *c.lp1a.coefficients = lp1;
+        *c.lp1b.coefficients = lp1;
+        *c.hp1a.coefficients = hp1;
+        *c.hp1b.coefficients = hp1;
+        *c.lp2a.coefficients = lp2;
+        *c.lp2b.coefficients = lp2;
+        *c.hp2a.coefficients = hp2;
+        *c.hp2b.coefficients = hp2;
     }
     lastF1 = f1;
     lastF2 = f2;
@@ -76,10 +76,7 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
     applyCoeffs (f1Sm.getCurrentValue(), f2Sm.getCurrentValue());
     clearRuntimeState();
     applyCoeffs (f1Sm.getCurrentValue(), f2Sm.getCurrentValue());
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &depthExpr, &timeExpr, &inExpr, &lowExpr, &midExpr, &highExpr, &f1Expr, &f2Expr });
 }
 
 float SignalChain::Ott::tailSeconds() const noexcept
@@ -99,18 +96,7 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        depthExpr.setVariable (n.second, v);
-        timeExpr.setVariable (n.second, v);
-        inExpr.setVariable (n.second, v);
-        lowExpr.setVariable (n.second, v);
-        midExpr.setVariable (n.second, v);
-        highExpr.setVariable (n.second, v);
-        f1Expr.setVariable (n.second, v);
-        f2Expr.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {

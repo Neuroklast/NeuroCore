@@ -47,10 +47,7 @@ void SignalChain::Widen::prepare (const juce::dsp::ProcessSpec& spec)
     snap (widthSm, widthExpr, 0.7f);
     snap (delaySm, delayMs, 14.f);
     snap (bassSm, bassHz, 140.f);
-    varNames.clear();
-    if (varPtr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &widthExpr, &delayMs, &bassHz });
 }
 
 float SignalChain::Widen::process (int, float x) { return x; }
@@ -62,13 +59,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& vn : varNames)
-    {
-        const float v = *vn.first;
-        widthExpr.setVariable (vn.second, v);
-        delayMs.setVariable (vn.second, v);
-        bassHz.setVariable (vn.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
