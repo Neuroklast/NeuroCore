@@ -161,9 +161,9 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         float detL = 0.f, detR = 0.f;
         if (followSidechain)
         {
-            if (scL != nullptr && scN > 0)
+            if (scL != nullptr && i < scN)
             {
-                const int si = juce::jlimit (0, scN - 1, i);
+                const int si = i;
                 detL = scL[si];
                 detR = scR != nullptr ? scR[si] : detL;
             }

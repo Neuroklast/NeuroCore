@@ -7,6 +7,8 @@ using namespace dsl;
 void SignalChain::Limit::clearRuntimeState() noexcept
 {
     gain = 1.f;
+    cachedRel = -1.f;
+    cachedCeil = 1.0e9f;
 }
 
 void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
@@ -31,8 +33,8 @@ void SignalChain::Limit::prepare (const juce::dsp::ProcessSpec& spec)
 float SignalChain::Limit::process (int ch, float x)
 {
     juce::ignoreUnused (ch);
-    juce::AudioBuffer<float> one (1, 1);
-    one.setSample (0, 0, x);
+    float* data[] { &x };
+    juce::AudioBuffer<float> one (data, 1, 1);
     processBlock (one);
     return one.getSample (0, 0);
 }

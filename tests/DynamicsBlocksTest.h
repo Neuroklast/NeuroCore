@@ -552,8 +552,8 @@ public:
                 buf.setSample (0, i, 0.8f);
             chain.processBlock (buf);
             const float peak = TestHelpers::peakAbs (buf);
-            // 0.8 * 2 = 1.6 is softly bounded below full scale.
-            expect (peak <= 1.0f && peak > 0.95f,
+            // Internal bus guard preserves 0 dBFS and compresses overs into 6 dB headroom.
+            expect (peak > 1.0f && peak < 1.6f,
                     "overs soft-shaped, peak=" + juce::String (peak, 3));
             expectEquals (TestHelpers::countNonFinite (buf), 0);
 

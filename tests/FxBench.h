@@ -115,8 +115,9 @@ inline int auditFactory (const char* catalogPath, const char* outputPath)
                     if (! std::isfinite (v)) { ++bad; continue; }
                     peak = std::max (peak, std::abs (v)); energy += v*v; sum += v; ++count;
                     mono += 0.5f*v;
+                    if (i % 32 == 0) signature.push_back (v);
                 }
-                if (i % 32 == 0) signature.push_back (mono);
+
             }
         }
         if (bad) ++failures;

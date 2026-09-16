@@ -102,7 +102,10 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
     ensureBusBuffers (busCh, busN);
     if (auto g = std::atomic_load (&busGraph))
         if (auto ptr = std::atomic_load (&chain))
+        {
             bindXoverDestinations (*ptr, *g);
+            prepareBusLatency (*ptr, *g);
+        }
 }
 
 static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
@@ -1467,6 +1470,71 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             error = graphErr;
             return false;
         }
+        // Compile control expressions before publishing the graph. Canonicalise
+        // aliases by token, then use the same range mapping as block parameters.
+        auto bindGain = [&] (const juce::String& raw, BoundGain& gain) -> bool
+        {
+            const auto input = raw.isEmpty() ? juce::String ("1") : raw;
+            juce::String canonical;
+            for (int pos = 0; pos < input.length();)
+            {
+                const auto c = input[pos];
+                if (juce::CharacterFunctions::isDigit (c) || c == (juce_wchar) '.')
+                {
+                    // Preserve scientific notation as a number, not a variable e.
+                    int end = pos + 1;
+                    while (end < input.length() && (juce::CharacterFunctions::isDigit (input[end]) || input[end] == (juce_wchar) '.')) ++end;
+                    if (end < input.length() && (input[end] == (juce_wchar) 'e' || input[end] == (juce_wchar) 'E'))
+                    {
+                        ++end;
+                        if (end < input.length() && (input[end] == (juce_wchar) '+' || input[end] == (juce_wchar) '-')) ++end;
+                        while (end < input.length() && juce::CharacterFunctions::isDigit (input[end])) ++end;
+                    }
+                    canonical += input.substring (pos, end); pos = end; continue;
+                }
+                if (! juce::CharacterFunctions::isLetter (c) && c != (juce_wchar) '_')
+                { canonical += juce::String::charToString (c); ++pos; continue; }
+                int end = pos + 1;
+                while (end < input.length() && (juce::CharacterFunctions::isLetterOrDigit (input[end]) || input[end] == (juce_wchar) '_')) ++end;
+                auto token = input.substring (pos, end);
+                int next = end;
+                while (next < input.length() && juce::CharacterFunctions::isWhitespace (input[next])) ++next;
+                const bool function = next < input.length() && input[next] == (juce_wchar) '(';
+                bool known = function || token.equalsIgnoreCase ("pi");
+                if (! function)
+                    for (int k = 0; k < Config::kNumUserParams; ++k)
+                    {
+                        const juce::String letter = Config::kDefaultVariableNames[k];
+                        auto alias = newAliases.find (letter);
+                        if (token.equalsIgnoreCase (letter) || (alias != newAliases.end() && token.equalsIgnoreCase (alias->second)))
+                        { token = letter; known = true; break; }
+                    }
+                if (! known) { error = "Unknown bus gain variable '" + token + "'."; return false; }
+                canonical += token; pos = end;
+            }
+            gain.expression = std::make_shared<ExpressionEvaluator>();
+            if (! gain.expression->parseFormula (replaceParamsInExpr (canonical).toStdString()))
+            { error = "Invalid bus gain: " + gain.expression->getLastError(); return false; }
+            gain.numeric = true;
+            for (int k = 0; k < Config::kNumUserParams; ++k)
+            {
+                gain.indices[(size_t) k] = gain.expression->getVariableIndex (Config::kDefaultVariableNames[k]);
+                if (gain.indices[(size_t) k] != ExpressionEvaluator::invalidIndex) gain.numeric = false;
+            }
+            if (gain.numeric)
+            {
+                const float value = gain.expression->evaluateLive (0.f);
+                if (! std::isfinite (value)) { error = "Non-finite bus gain."; return false; }
+                gain.k = juce::jlimit (0.f, 2.f, value);
+                gain.expression.reset();
+            }
+            return true;
+        };
+        for (auto& bus : newGraph.buses)
+            for (auto& send : bus.sends)
+                if (! bindGain (send.gainExpr, send.gain)) return false;
+        for (auto& tap : newGraph.outTaps)
+            if (! bindGain (tap.gainExpr, tap.gain)) return false;
         int ci = 0;
         for (const auto& d : desc)
         {
@@ -1585,8 +1653,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     }
     if (auto g = std::atomic_load (&busGraph))
     {
-        bindBusGains (*g);
         bindXoverDestinations (*newChain, *g);
+        prepareBusLatency (*newChain, *g);
     }
     return true;
 }
@@ -1650,18 +1718,62 @@ int SignalChain::getIrDryScratchNumSamples() const noexcept
 
 int SignalChain::getIrLatencySamples() const noexcept
 {
-    auto c = std::atomic_load (&chain);
-    if (! c)
-        return 0;
-    int n = 0;
-    for (const auto& b : *c)
+    const auto g = std::atomic_load (&busGraph);
+    return g != nullptr ? g->latencySamples : 0;
+}
+
+void SignalChain::prepareBusLatency (Chain& c, BusGraph& g)
+{
+    const int channels = (int) juce::jmax (1u, currentSpec.numChannels);
+    const int capacity = (int) juce::jmax (64u, currentSpec.maximumBlockSize);
+    std::vector<int> seedLatency (g.buses.size(), 0);
+    auto sourceLatency = [&g] (int index)
     {
-        if (auto* ir = dynamic_cast<const Ir*> (b.get()))
-            n += ir->latencySamples;
-        if (auto* pt = dynamic_cast<const Pitch*> (b.get()))
-            n += juce::jmax (0, pt->latencySamples);
+        return index >= 0 && index < (int) g.buses.size() ? g.buses[(size_t) index].outputLatency : 0;
+    };
+    for (auto& bus : g.buses) bus.outputLatency = 0;
+    // Sends form a topologically ordered DAG. Sum serial delays, take the
+    // maximum at every join, and compensate each faster incoming path.
+    for (size_t bi = 0; bi < g.buses.size(); ++bi)
+    {
+        auto& bus = g.buses[bi];
+        int arrival = seedLatency[bi];
+        for (const auto& send : bus.sends)
+            arrival = juce::jmax (arrival, sourceLatency (send.sourceIndex));
+        bus.seedCompensation.prepare (channels, capacity, arrival - seedLatency[bi]);
+        bus.seedCompensation.reset();
+        for (auto& send : bus.sends)
+        {
+            send.compensation.prepare (channels, capacity, arrival - sourceLatency (send.sourceIndex));
+            send.compensation.reset();
+        }
+        int end = arrival;
+        for (const auto& node : c)
+        {
+            if (node->busIndex != (int) bi) continue;
+            if (auto* ir = dynamic_cast<Ir*> (node.get())) end += ir->latencySamples;
+            if (auto* pitch = dynamic_cast<Pitch*> (node.get())) end += pitch->latencySamples;
+            if (auto* xover = dynamic_cast<Xover*> (node.get()))
+                for (auto* dest : { xover->lowOut, xover->midOut, xover->highOut })
+                    if (dest != nullptr)
+                        for (size_t target = bi + 1; target < g.buses.size(); ++target)
+                            if (dest == &busScratch[target]) seedLatency[target] = end;
+        }
+        bus.outputLatency = end;
     }
-    return n;
+    g.latencySamples = g.buses.empty() ? 0 : g.buses[0].outputLatency;
+    if (g.hasExplicitOut())
+    {
+        g.latencySamples = 0;
+        for (const auto& tap : g.outTaps)
+            g.latencySamples = juce::jmax (g.latencySamples, sourceLatency (tap.busIndex));
+        for (auto& tap : g.outTaps)
+        {
+            tap.compensation.prepare (channels, capacity, g.latencySamples - sourceLatency (tap.busIndex));
+            tap.compensation.reset();
+        }
+    }
+    g.outputGain = juce::Decibels::decibelsToGain (g.outGainDb.getFloatValue());
 }
 
 void SignalChain::loadImpulseResponse (const juce::String& slot, const juce::AudioBuffer<float>& ir, double irSr)
@@ -1702,157 +1814,19 @@ void SignalChain::ensureBusBuffers (int numChannels, int numSamples)
             b.setSize (ch, sm, false, false, true);
 }
 
-bool SignalChain::isNumericGain (const juce::String& expr) const noexcept
-{
-    const auto e = expr.trim();
-    if (e.isEmpty())
-        return true;
-    return e.retainCharacters ("0123456789.+-").length() == e.length();
-}
-
-namespace
-{
-BoundGain parseBoundGain (const juce::String& expr, const AliasMap* aliases) noexcept
-{
-    BoundGain g;
-    auto e = expr.trim();
-    if (e.isEmpty())
-        return g;
-
-    const auto lower = e.toLowerCase();
-    if (lower.startsWith ("1-"))
-    {
-        g.complement = true;
-        e = e.substring (2).trim();
-    }
-    else if (lower.startsWith ("1 -"))
-    {
-        g.complement = true;
-        e = e.substring (3).trim();
-    }
-    if (e.startsWithChar ('(') && e.endsWithChar (')') && e.length() >= 2)
-        e = e.substring (1, e.length() - 1).trim();
-
-    auto isNum = [] (const juce::String& s) -> bool
-    {
-        if (s.isEmpty())
-            return true;
-        return s.retainCharacters ("0123456789.+-").length() == s.length();
-    };
-    if (isNum (e))
-    {
-        g.numeric = true;
-        g.k = e.getFloatValue();
-        return g;
-    }
-
-    g.numeric = false;
-    for (int i = 0; i < Config::kNumUserParams; ++i)
-        if (e.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
-        {
-            g.knob = i;
-            return g;
-        }
-    if (aliases != nullptr)
-    {
-        for (const auto& kv : *aliases)
-        {
-            if (! e.equalsIgnoreCase (kv.second) && ! e.equalsIgnoreCase (kv.first))
-                continue;
-            for (int i = 0; i < Config::kNumUserParams; ++i)
-                if (kv.first.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
-                {
-                    g.knob = i;
-                    return g;
-                }
-        }
-    }
-    g.numeric = true;
-    g.k = e.getFloatValue();
-    return g;
-}
-} // namespace
-
-void SignalChain::bindBusGains (BusGraph& g) const noexcept
-{
-    auto al = std::atomic_load (&aliases);
-    const AliasMap* map = al.get();
-    for (auto& b : g.buses)
-        for (auto& s : b.sends)
-            s.gain = parseBoundGain (s.gainExpr, map);
-    for (auto& t : g.outTaps)
-        t.gain = parseBoundGain (t.gainExpr, map);
-}
-
 float SignalChain::readBoundGain (const BoundGain& g, int sampleIndex) const noexcept
 {
-    float v = g.k;
-    if (g.knob >= 0 && g.knob < Config::kNumUserParams)
-    {
-        if (sampleIndex >= 0 && sampleIndex < knobLaneN && knobLane[(size_t) g.knob] != nullptr)
-            v = knobLane[(size_t) g.knob][(size_t) sampleIndex];
-        else
-            v = paramSmooth[(size_t) g.knob].getCurrentValue();
-    }
-    if (g.complement)
-        v = 1.0f - v;
-    return juce::jlimit (0.0f, 2.0f, v);
-}
-
-float SignalChain::resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept
-{
-    auto e = expr.trim();
-    if (e.isEmpty())
-        return 1.0f;
-
-    bool complement = false;
-    const auto lower = e.toLowerCase();
-    if (lower.startsWith ("1-"))
-    {
-        complement = true;
-        e = e.substring (2).trim();
-    }
-    else if (lower.startsWith ("1 -"))
-    {
-        complement = true;
-        e = e.substring (3).trim();
-    }
-
-    auto finish = [complement] (float g) -> float
-    {
-        if (complement)
-            g = 1.0f - g;
-        return juce::jlimit (0.0f, 2.0f, g);
-    };
-
-    if (isNumericGain (e))
-        return finish (e.getFloatValue());
-
-    auto readKnob = [this, sampleIndex] (int idx) -> float
-    {
-        if (idx < 0 || idx >= Config::kNumUserParams)
-            return 0.0f;
-        if (sampleIndex >= 0 && sampleIndex < knobLaneN && knobLane[(size_t) idx] != nullptr)
-            return knobLane[(size_t) idx][(size_t) sampleIndex];
-        return paramSmooth[(size_t) idx].getCurrentValue();
-    };
-
+    if (g.numeric) return g.k;
     for (int i = 0; i < Config::kNumUserParams; ++i)
-        if (e.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
-            return finish (readKnob (i));
-
-    if (auto al = std::atomic_load (&aliases))
     {
-        for (const auto& kv : *al)
-        {
-            if (! e.equalsIgnoreCase (kv.second) && ! e.equalsIgnoreCase (kv.first))
-                continue;
-            for (int i = 0; i < Config::kNumUserParams; ++i)
-                if (kv.first.equalsIgnoreCase (Config::kDefaultVariableNames[i]))
-                    return finish (readKnob (i));
-        }
+        const auto index = g.indices[(size_t) i];
+        if (index == ExpressionEvaluator::invalidIndex) continue;
+        const float normalized = sampleIndex >= 0 && sampleIndex < knobLaneN && knobLane[(size_t) i] != nullptr
+            ? knobLane[(size_t) i][(size_t) sampleIndex] : paramSmooth[(size_t) i].getCurrentValue();
+        g.expression->setVariable (index, publishedKnobValue (i, normalized));
     }
-    return finish (e.getFloatValue());
+    const float value = g.expression->evaluateLive (0.f);
+    return std::isfinite (value) ? juce::jlimit (0.f, 2.f, value) : 0.f;
 }
 
 void SignalChain::applyBusSends (int busIndex, int numChannels, int numSamples)
@@ -1862,11 +1836,18 @@ void SignalChain::applyBusSends (int busIndex, int numChannels, int numSamples)
         return;
 
     auto& dest = busScratch[(size_t) busIndex];
-    const auto& sends = graphPtr->buses[(size_t) busIndex].sends;
+    auto& bus = graphPtr->buses[(size_t) busIndex];
+    auto& sends = bus.sends;
     const int chUse = juce::jmin (numChannels, dest.getNumChannels());
     const int smUse = juce::jmin (numSamples, dest.getNumSamples());
 
-    for (const auto& s : sends)
+    if (bus.seedCompensation.getLatency() > 0)
+    {
+        bus.seedCompensation.pushAndRead (dest, smUse);
+        for (int ch = 0; ch < chUse; ++ch)
+            dest.copyFrom (ch, 0, bus.seedCompensation.getAligned(), ch, 0, smUse);
+    }
+    for (auto& s : sends)
     {
         const juce::AudioBuffer<float>* src = nullptr;
         if (s.sourceIndex == kReservedBusIn)
@@ -1875,10 +1856,15 @@ void SignalChain::applyBusSends (int busIndex, int numChannels, int numSamples)
             src = &busScratch[(size_t) s.sourceIndex];
         if (src == nullptr)
             continue;
+        if (s.compensation.getLatency() > 0)
+        {
+            s.compensation.pushAndRead (*src, smUse);
+            src = &s.compensation.getAligned();
+        }
 
         const int srcCh = juce::jmin (chUse, src->getNumChannels());
         const int srcSm = juce::jmin (smUse, src->getNumSamples());
-        if (s.gain.numeric && s.gain.knob < 0)
+        if (s.gain.numeric)
         {
             const float g = readBoundGain (s.gain, 0);
             dest.addFrom (0, 0, *src, 0, 0, srcSm, g);
@@ -1906,60 +1892,40 @@ void SignalChain::writeMixdown (juce::AudioBuffer<float>& dest, int numChannels,
     const int chUse = juce::jmin (numChannels, dest.getNumChannels());
     const int smUse = juce::jmin (numSamples, dest.getNumSamples());
 
+    dest.clear();
     if (! graphPtr->hasExplicitOut())
     {
-        const int srcCh = juce::jmin (chUse, busScratch[0].getNumChannels());
-        const int srcSm = juce::jmin (smUse, busScratch[0].getNumSamples());
-        dest.clear();
-        for (int ch = 0; ch < srcCh; ++ch)
-            dest.copyFrom (ch, 0, busScratch[0], ch, 0, srcSm);
-        const float db0 = graphPtr->outGainDb.getFloatValue();
-        if (std::abs (db0) > 1.0e-4f)
-            dest.applyGain (0, smUse, std::pow (10.f, db0 / 20.f));
-        return;
+        for (int ch = 0; ch < chUse; ++ch)
+            dest.copyFrom (ch, 0, busScratch[0], ch, 0, smUse);
     }
-
-    dest.clear();
-    bool varying = false;
-    for (const auto& t : graphPtr->outTaps)
-        if (! t.gain.numeric || t.gain.knob >= 0)
-            varying = true;
-
-    if (! varying)
+    else
     {
-        for (const auto& t : graphPtr->outTaps)
+        for (auto& tap : graphPtr->outTaps)
         {
-            if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
-                continue;
-            const float g = readBoundGain (t.gain, 0);
-            auto& src = busScratch[(size_t) t.busIndex];
-            const int srcCh = juce::jmin (chUse, src.getNumChannels());
-            const int srcSm = juce::jmin (smUse, src.getNumSamples());
-            for (int ch = 0; ch < srcCh; ++ch)
-                dest.addFrom (ch, 0, src, ch, 0, srcSm, g);
-        }
-        const float db = graphPtr->outGainDb.getFloatValue();
-        if (std::abs (db) > 1.0e-4f)
-            dest.applyGain (0, smUse, std::pow (10.f, db / 20.f));
-        return;
-    }
-
-    for (int i = 0; i < smUse; ++i)
-    {
-        for (const auto& t : graphPtr->outTaps)
-        {
-            if (t.busIndex < 0 || t.busIndex >= (int) busScratch.size())
-                continue;
-            const float g = readBoundGain (t.gain, i);
-            auto& src = busScratch[(size_t) t.busIndex];
-            const int srcCh = juce::jmin (chUse, src.getNumChannels());
-            for (int ch = 0; ch < srcCh; ++ch)
-                dest.addSample (ch, i, src.getSample (ch, i) * g);
+            if (tap.busIndex < 0 || tap.busIndex >= (int) busScratch.size()) continue;
+            const juce::AudioBuffer<float>* src = &busScratch[(size_t) tap.busIndex];
+            if (tap.compensation.getLatency() > 0)
+            {
+                tap.compensation.pushAndRead (*src, smUse);
+                src = &tap.compensation.getAligned();
+            }
+            if (tap.gain.numeric)
+            {
+                const float gain = readBoundGain (tap.gain, 0);
+                for (int ch = 0; ch < chUse; ++ch)
+                    dest.addFrom (ch, 0, *src, ch, 0, smUse, gain);
+            }
+            else
+                for (int i = 0; i < smUse; ++i)
+                {
+                    const float gain = readBoundGain (tap.gain, i);
+                    for (int ch = 0; ch < chUse; ++ch)
+                        dest.addSample (ch, i, src->getSample (ch, i) * gain);
+                }
         }
     }
-    const float dbV = graphPtr->outGainDb.getFloatValue();
-    if (std::abs (dbV) > 1.0e-4f)
-        dest.applyGain (0, smUse, std::pow (10.f, dbV / 20.f));
+    if (graphPtr->outputGain != 1.f)
+        dest.applyGain (0, smUse, graphPtr->outputGain);
 }
 
 void SignalChain::processBlock(juce::AudioBuffer<float>& buffer)
@@ -2167,9 +2133,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     auto* env = static_cast<Env*> (b.get());
                     const float* l = slice.getReadPointer (0);
                     const float* r = workCh > 1 ? slice.getReadPointer (1) : l;
-                    if (env->followSidechain && extScL != nullptr && extScN > 0)
+                    if (env->followSidechain)
                         env->renderModBlock (extScL, extScR != nullptr ? extScR : extScL,
-                                             juce::jmin (nWork, extScN));
+                                             nWork, extScN);
                     else
                         env->renderModBlock (l, r, nWork);
                     if (! env->modLane.empty())
@@ -2317,15 +2283,18 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (b->tapSlot >= 0)
                 writeNodeTap (b->tapSlot, slice);
         }
-        // Chainwide FS safety ceiling: soft-shape only true overs (abs > 1).
-        // Musical levels stay untouched; OutputSanitizer remains the final host-side pad.
+        // Internal buses retain 6 dB headroom; unity stages stay transparent at 0 dBFS.
+        // OutputSanitizer remains the final host-side protection.
         {
-            constexpr float kChainCeil = 1.0f;
             for (int ch = 0; ch < workCh; ++ch)
             {
                 auto* data = work.getWritePointer (ch);
                 for (int i = 0; i < nWork; ++i)
-                    data[i] = DSPUtils::softCeilSample (data[i], kChainCeil);
+                {
+                    const float magnitude = std::abs (data[i]);
+                    if (magnitude > 1.f)
+                        data[i] = std::copysign (2.f - 1.f / magnitude, data[i]);
+                }
             }
         }
 
@@ -3429,7 +3398,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
     prevRel = initRel;
     atkCoeff = std::exp(-1.0f / (initAtk * sampleRate));
     relCoeff = std::exp(-1.0f / (initRel * sampleRate));
-    bindings.prepare (varPtr, { &attack, &release });
+    bindings.prepare (varPtr, { &attack, &release, &hold, &minV, &maxV });
     if (varPtr)
         midiGatePtr = &(*varPtr)["midi_gate"];
 }
@@ -3441,9 +3410,12 @@ float SignalChain::Env::process(int ch, float x)
 
     float a = attackFixed;
     float r = releaseFixed;
-    if (! attackLit || ! releaseLit)
+    if (! attackLit || ! releaseLit || ! holdLit || ! minLit || ! maxLit)
     {
         bindings.refresh();
+        if (! holdLit) holdFixed = juce::jlimit (0.f, 0.5f, hold.evaluateLive (x));
+        if (! minLit) minFixed = juce::jlimit (0.f, 1.f, minV.evaluateLive (x));
+        if (! maxLit) maxFixed = juce::jlimit (0.f, 1.f, maxV.evaluateLive (x));
         if (! attackLit)
         {
             atkTime.setTargetValue (juce::jlimit (0.0001f, 1.0f, attack.evaluateLive (x)));
@@ -3523,7 +3495,7 @@ float SignalChain::Env::process(int ch, float x)
     return x;
 }
 
-void SignalChain::Env::renderModBlock (const float* left, const float* right, int numSamples) noexcept
+void SignalChain::Env::renderModBlock (const float* left, const float* right, int numSamples, int availableSamples) noexcept
 {
     if (numSamples <= 0)
         return;
@@ -3534,8 +3506,9 @@ void SignalChain::Env::renderModBlock (const float* left, const float* right, in
     for (int i = 0; i < numSamples; ++i)
     {
         // Stereo sidechain: follow louder channel (was: L-only — right-only/MS wrong)
-        const float l = left  != nullptr ? left[i]  : 0.0f;
-        const float r = right != nullptr ? right[i] : l;
+        const bool available = availableSamples < 0 || i < availableSamples;
+        const float l = available && left != nullptr ? left[i] : 0.0f;
+        const float r = available && right != nullptr ? right[i] : l;
         const float x = (std::abs (l) >= std::abs (r)) ? l : r;
         process (0, x);
         const float y = destSlot != nullptr ? *destSlot
@@ -3666,6 +3639,15 @@ void SignalChain::clearRuntimeState() noexcept
     for (auto& b : *chainPtr)
         if (b)
             b->clearRuntimeState();
+    if (auto graph = std::atomic_load (&busGraph))
+    {
+        for (auto& bus : graph->buses)
+        {
+            bus.seedCompensation.reset();
+            for (auto& send : bus.sends) send.compensation.reset();
+        }
+        for (auto& tap : graph->outTaps) tap.compensation.reset();
+    }
     sampleCounter = 0;
 }
 

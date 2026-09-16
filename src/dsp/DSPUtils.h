@@ -538,7 +538,7 @@ namespace DSPUtils
 
 #if JUCE_DEBUG
         juce::StringArray dbgVals;
-        for (size_t i = 0; i < juce::jmin<size_t>(magnitudes.size(), 8); ++i)
+        for (size_t i = 0; i < std::min<size_t>(magnitudes.size(), 8); ++i)
             dbgVals.add(juce::String(magnitudes[i], 2));
         DBG("FFT magnitudes: " << dbgVals.joinIntoString(", "));
 #endif

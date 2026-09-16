@@ -11,33 +11,37 @@ inline float wrapPi (float x) noexcept
 {
     constexpr float kPi = juce::MathConstants<float>::pi;
     constexpr float kTwoPi = juce::MathConstants<float>::twoPi;
-    x = std::fmod (x + kPi, kTwoPi);
-    if (x < 0.f)
-        x += kTwoPi;
-    return x - kPi;
+    return x - kTwoPi * std::floor ((x + kPi) / kTwoPi);
 }
 } // namespace
 
 void SignalChain::Pitch::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    sampleRate = (float) spec.sampleRate;
-    fft = std::make_unique<juce::dsp::FFT> (kFftOrder);
+    sampleRate = std::isfinite (spec.sampleRate) && spec.sampleRate > 0.0
+                     ? (float) spec.sampleRate : 48000.f;
+    // Preserve time/frequency resolution when the engine oversamples.
+    // Allocation and FFT planning happen only during prepare.
+    const int order = juce::jlimit (9, 15, kFftOrder
+        + (int) std::lround (std::log2 (sampleRate / 48000.f)));
+    fftSize = 1 << order;
+    bins = fftSize / 2 + 1;
+    fft = std::make_unique<juce::dsp::FFT> (order);
 
-    window.resize ((size_t) kFftSize);
-    for (int i = 0; i < kFftSize; ++i)
+    window.resize ((size_t) fftSize);
+    for (int i = 0; i < fftSize; ++i)
         window[(size_t) i] = 0.5f
                            - 0.5f * std::cos (juce::MathConstants<float>::twoPi
-                                              * (float) i / (float) kFftSize);
+                                              * (float) i / (float) fftSize);
 
-    hop = kHopBase;
+    hop = fftSize / kOsamp;
     applyTempo (currentBpm > 0.0 ? currentBpm : (double) Config::kDefaultTempo);
 
-    ch[0].ensure();
-    ch[1].ensure();
+    ch[0].ensure (fftSize);
+    ch[1].ensure (fftSize);
     // smb: rover starts at fftSize - hop (inFifoLatency)
-    ch[0].rover = kFftSize - hop;
-    ch[1].rover = kFftSize - hop;
-    latencySamples = kFftSize;
+    ch[0].rover = fftSize - hop;
+    ch[1].rover = fftSize - hop;
+    latencySamples = fftSize;
 
     semiSm.reset (sampleRate, 0.02);
     mixSm.reset (sampleRate, 0.02);
@@ -58,8 +62,8 @@ void SignalChain::Pitch::applyTempo (double bpm) noexcept
         currentBpm = bpm;
     // An STFT is a fixed-latency processor, not a tempo-synchronised delay.
     // Retain legacy sync syntax but never alter overlap/latency during playback.
-    hop = kHopBase;
-    latencySamples = kFftSize;
+    hop = fftSize / kOsamp;
+    latencySamples = fftSize;
 }
 
 void SignalChain::Pitch::clearRuntimeState() noexcept
@@ -76,17 +80,17 @@ void SignalChain::Pitch::clearRuntimeState() noexcept
 void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantRatio) noexcept
 {
     const int hopSz = juce::jmax (1, hop);
-    const float expct = juce::MathConstants<float>::twoPi * (float) hopSz / (float) kFftSize;
-    const float freqPerBin = sampleRate / (float) kFftSize;
+    const float expct = juce::MathConstants<float>::twoPi * (float) hopSz / (float) fftSize;
+    const float freqPerBin = sampleRate / (float) fftSize;
     auto& work = c.fftWork;
 
     std::fill (work.begin(), work.end(), 0.f);
-    for (int i = 0; i < kFftSize; ++i)
+    for (int i = 0; i < fftSize; ++i)
         work[(size_t) i] = c.inFifo[(size_t) i] * window[(size_t) i];
 
-    fft->performRealOnlyForwardTransform (work.data());
+    fft->performRealOnlyForwardTransform (work.data(), true);
 
-    for (int k = 0; k < kBins; ++k)
+    for (int k = 0; k < bins; ++k)
     {
         const float re = work[(size_t) (2 * k)];
         const float im = work[(size_t) (2 * k + 1)];
@@ -109,16 +113,16 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     const float fr = juce::jlimit (0.25f, 4.f, formantRatio);
     const float binScale = pr / fr;
 
-    for (int k = 0; k < kBins; ++k)
+    for (int k = 0; k < bins; ++k)
     {
         const int index = (int) std::lround ((double) k * (double) binScale);
-        if (index < 0 || index >= kBins)
+        if (index < 0 || index >= bins)
             continue;
         c.synMagn[(size_t) index] += c.anaMagn[(size_t) k];
         c.synFreq[(size_t) index] += c.anaFreq[(size_t) k] * pr * c.anaMagn[(size_t) k];
     }
 
-    for (int k = 0; k < kBins; ++k)
+    for (int k = 0; k < bins; ++k)
     {
         const float magn = c.synMagn[(size_t) k];
         float tmp = (freqPerBin > 0.f) ? (magn > 1.0e-20f ? c.synFreq[(size_t) k] / (magn * freqPerBin) : (float) k) : 0.f;
@@ -135,17 +139,17 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     // JUCE inverse FFT includes 1/N. Four overlapping Hann-squared
     // windows sum to 3/2, so unity reconstruction needs exactly 2/3.
     const float scale = 2.f / 3.f;
-    for (int i = 0; i < kFftSize; ++i)
+    for (int i = 0; i < fftSize; ++i)
         c.outAccum[(size_t) i] += scale * window[(size_t) i] * work[(size_t) i];
 
     // Publish next hop; shift OLA accumulator and input FIFO (classic smb).
     for (int k = 0; k < hopSz; ++k)
         c.outFifo[(size_t) k] = c.outAccum[(size_t) k];
 
-    std::move (c.outAccum.begin() + hopSz, c.outAccum.begin() + hopSz + kFftSize, c.outAccum.begin());
-    std::fill (c.outAccum.begin() + kFftSize, c.outAccum.end(), 0.f);
+    std::move (c.outAccum.begin() + hopSz, c.outAccum.begin() + hopSz + fftSize, c.outAccum.begin());
+    std::fill (c.outAccum.begin() + fftSize, c.outAccum.end(), 0.f);
 
-    const int latency = kFftSize - hopSz;
+    const int latency = fftSize - hopSz;
     for (int k = 0; k < latency; ++k)
         c.inFifo[(size_t) k] = c.inFifo[(size_t) (k + hopSz)];
 }
@@ -153,7 +157,7 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
 float SignalChain::Pitch::processSample (Chan& c, float x, float pitchRatio, float formantRatio) noexcept
 {
     const int hopSz = juce::jmax (1, hop);
-    const int latency = kFftSize - hopSz;
+    const int latency = fftSize - hopSz;
 
     if (c.rover < latency)
         c.rover = latency;
@@ -162,7 +166,7 @@ float SignalChain::Pitch::processSample (Chan& c, float x, float pitchRatio, flo
     const float wet = c.outFifo[(size_t) (c.rover - latency)];
     ++c.rover;
 
-    if (c.rover >= kFftSize)
+    if (c.rover >= fftSize)
     {
         processFrame (c, pitchRatio, formantRatio);
         c.rover = latency;
@@ -208,7 +212,7 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
         const float ceilV = ceilSm.getNextValue();
         const float semitones = semiSm.getNextValue();
         // Ratio is consumed only when an FFT frame is completed.
-        const float pr = ch[0].rover + 1 == kFftSize ? std::exp2 (semitones / 12.f) : 1.f;
+        const float pr = ch[0].rover + 1 == fftSize ? std::exp2 (semitones / 12.f) : 1.f;
         float fr = formSm.getNextValue();
         if (! (fr > 0.f))
             fr = 1.f;

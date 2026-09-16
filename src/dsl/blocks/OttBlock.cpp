@@ -164,8 +164,6 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
         for (int c = 0; c < useCh; ++c)
         {
             const float x = std::isfinite (dst[c][i]) ? dst[c][i] * inG : 0.f;
-            if (c == 0) dryL = dst[c][i];
-            else        dryR = dst[c][i];
             auto& p = ch[c];
             const float lo = p.lowPhase.processSample (p.lp1b.processSample (p.lp1a.processSample (x)));
             const float hp1 = p.hp1b.processSample (p.hp1a.processSample (x));
@@ -174,6 +172,10 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
             band[c][0] = std::isfinite (lo) ? lo : 0.f;
             band[c][1] = std::isfinite (md) ? md : 0.f;
             band[c][2] = std::isfinite (hi) ? hi : 0.f;
+            // Blend against the same crossover phase response. Mixing raw
+            // input with reconstructed bands creates deep notches at depth 0.5.
+            const float dry = (band[c][0] + band[c][1] + band[c][2]) / inG;
+            if (c == 0) dryL = dry; else dryR = dry;
         }
         if (useCh < 2)
             dryR = dryL;

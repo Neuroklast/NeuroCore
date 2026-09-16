@@ -120,12 +120,13 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         }
 
         float det = 0.f;
-        if (followSidechain && scL != nullptr && scN > 0)
+        if (followSidechain)
         {
-            const int si = juce::jlimit (0, scN - 1, i);
-            det = std::abs (scL[si]);
-            if (scR != nullptr)
-                det = juce::jmax (det, std::abs (scR[si]));
+            if (scL != nullptr && i < scN)
+            {
+                det = std::abs (scL[i]);
+                if (scR != nullptr) det = juce::jmax (det, std::abs (scR[i]));
+            }
         }
         else
         {

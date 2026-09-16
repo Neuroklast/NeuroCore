@@ -2,6 +2,8 @@
 
 #include <JuceHeader.h>
 #include "DSLParser.h"
+#include "../utils/ExpressionEvaluator.h"
+#include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
 #include <vector>
 
@@ -11,13 +13,13 @@ namespace dsl
 inline constexpr int kReservedBusIn   = -2;
 inline constexpr int kReservedBusMain = 0;
 
-/** Gain bound at load. Audio thread reads k / knob — never gainExpr. */
+/** Gain compiled at load. Audio thread reads numeric values / cached variable indices. */
 struct BoundGain
 {
     bool numeric { true };
-    bool complement { false };
     float k { 1.f };
-    int knob { -1 };
+    std::shared_ptr<ExpressionEvaluator> expression;
+    std::array<size_t, Config::kNumUserParams> indices {};
 };
 
 struct BusSend
@@ -25,6 +27,7 @@ struct BusSend
     int sourceIndex { kReservedBusIn }; ///< -2 = in, 0 = main, 1.. = named
     juce::String gainExpr;
     BoundGain gain;
+    LatencyAlignedSidechain compensation;
 };
 
 struct BusDef
@@ -32,6 +35,8 @@ struct BusDef
     juce::String name;
     std::vector<BusSend> sends;
     std::vector<int> blockIndices;
+    LatencyAlignedSidechain seedCompensation;
+    int outputLatency { 0 };
 };
 
 struct OutTap
@@ -39,6 +44,7 @@ struct OutTap
     int busIndex { kReservedBusMain };
     juce::String gainExpr;
     BoundGain gain;
+    LatencyAlignedSidechain compensation;
 };
 
 struct BusGraph
@@ -46,6 +52,8 @@ struct BusGraph
     std::vector<BusDef> buses;   ///< [0] is always main
     std::vector<OutTap> outTaps; ///< empty = output main
     juce::String outGainDb { "0" };
+    float outputGain { 1.f };
+    int latencySamples { 0 };
 
     bool hasExplicitOut() const noexcept { return ! outTaps.empty(); }
 };

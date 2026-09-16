@@ -109,11 +109,8 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
     depthSm.setTargetValue (ev (depthExpr, 0.7f));
     centerSm.setTargetValue (ev (centerExpr, 800.f));
     nStages = juce::jlimit (2, kMaxStages, (int) std::lround (stagesSm.getCurrentValue()));
-    const float fb = juce::jlimit (0.f, 0.95f, ev (feedbackExpr, 0.3f));
-    const float mix = juce::jlimit (0.f, 1.f, ev (mixExpr, 0.5f));
-    const float dry = 1.f - mix;
-    fbSm.setCurrentAndTargetValue (fb);
-    mixSm.setCurrentAndTargetValue (mix);
+    fbSm.setTargetValue (juce::jlimit (0.f, 0.95f, ev (feedbackExpr, 0.3f)));
+    mixSm.setTargetValue (juce::jlimit (0.f, 1.f, ev (mixExpr, 0.5f)));
 
     float* NK_RESTRICT L = buffer.getWritePointer (0);
     float* NK_RESTRICT R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
@@ -154,6 +151,9 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
 
         for (int k = 0; k < n; ++k)
         {
+            const float fb = fbSm.getNextValue();
+            const float mix = mixSm.getNextValue();
+            const float dry = 1.f - mix;
             const float xL = L[i + k];
             float yL = cascadeN (DSPUtils::satFb (xL + lastYL * fb), a, zL, stages);
             lastYL = yL;

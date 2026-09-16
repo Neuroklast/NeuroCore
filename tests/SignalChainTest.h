@@ -478,12 +478,12 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 0), 1.0f, 1.0e-4f);
         }
 
-        beginTest("mono guitar in feeds both L and R channel paths");
+        beginTest("explicit left input feeds mono guitar to both channel paths");
         {
             InputRouter router;
             router.prepare ({ 48000.0, 64, 2 });
             router.setUseLeft (true);
-            router.setUseRight (true);
+            router.setUseRight (false);
             juce::AudioBuffer<float> warm (2, 64);
             warm.clear();
             for (int b = 0; b < 32; ++b)

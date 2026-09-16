@@ -500,7 +500,7 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
                 peak = juce::jmax(peak, std::abs(v));
                 acc += (double) v * (double) v;
             }
-            const double meanSq = acc / (double) juce::jmax<size_t>(1, numSamplesEarly);
+            const double meanSq = acc / (double) std::max<size_t>(1, numSamplesEarly);
             rmsSum += (float) (std::isfinite(meanSq) ? std::sqrt(juce::jmax(0.0, meanSq)) : 0.0);
         }
         rmsSum /= juce::jmax(1u, static_cast<unsigned int>(block.getNumChannels()));
@@ -723,7 +723,7 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
             peak = juce::jmax(peak, std::abs(v));
             acc += (double) v * (double) v;
         }
-        const double meanSq = acc / (double) juce::jmax<size_t>(1, numSamples);
+        const double meanSq = acc / (double) std::max<size_t>(1, numSamples);
         rmsSum += (float) (std::isfinite(meanSq) ? std::sqrt(juce::jmax(0.0, meanSq)) : 0.0);
     }
     rmsSum /= juce::jmax(1u, static_cast<unsigned int>(block.getNumChannels()));

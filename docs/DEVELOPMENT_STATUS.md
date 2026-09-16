@@ -40,8 +40,8 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 
 ## DSP (0.4.11-alpha)
 
-- **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
-- **`phaser` / `flanger` / `filter type = allpass`**: 1-pole allpass cascade (internal LFO, feedback in-chip); short delay comb with invert; env `unit = db` is dBFS. Coeffs at `kFilterCoeffStride`. Phaser: unrolled 2/4/6/8/10/12 cascade, mix/fb latched, denorm on z per stride. Flanger: Delay-shaped `processFrame` (slew tap), mix/fb latched, invert is a smoothed ±1 gain. Feedback sat at 1.5 like Delay. No per-sample `evaluate`.
+- **`pitch`**: phase-vocoder (sample-rate-scaled FFT, 1024 / hop 256 at 48 kHz), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
+- **`phaser` / `flanger` / `filter type = allpass`**: 1-pole allpass cascade (internal LFO, feedback in-chip); short delay comb with invert; env `unit = db` is dBFS. Coeffs at `kFilterCoeffStride`. Phaser: unrolled 2/4/6/8/10/12 cascade, mix/fb sample-smoothed, denorm on z per stride. Flanger: Delay-shaped `processFrame` (slew tap), mix/fb sample-smoothed, invert is a smoothed ±1 gain. Feedback sat at 1.5 like Delay. No per-sample `evaluate`.
 - **Sanitation**: fixed engine chain after DSL. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction.
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
@@ -109,3 +109,10 @@ Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout prog
 - Native alpha CI added for Windows x64, Linux x64 and macOS universal, with full-suite gates and explicit release marker. Corrected case-sensitive resource paths and Linux editor embedding. Packaging source contracts pass; native CI results are pending. License/EULA/tester agreement are packaged; no activation key is distributed.
 
 - Extended local DSP suite (FxRuntime, ModulationBlocks, DelayReverb, EqSidechain, DynamicsBlocks, IrXover): 0 failures. Fixed triangle shape, duplicate stage MS transforms, three-band phase summation, IIR order preparation, and actual soft-ceiling bound. Updated two legacy expectations that explicitly required overshoot above the named ceiling; new bounds are stricter. Factory probe now loads the selected cabinet IRs.
+
+## Runtime validation checkpoint
+
+- Parallel PDC, compiled/range-mapped bus gains, oversampled pitch resolution, phase-matched OTT depth, limiter re-prepare, missing/short external detector input, and offline CPU guard corrected. Contract regressions reproduced before each model change.
+- Local production DSP suite passes; Linux allocation probe includes automated blocks and parallel routing. Full-scale identity restored separately from effect ceiling bounds.
+- First Windows native build completed; full suite exposed 11 legacy ceiling/routing expectations. Internal unity and explicit mono selection corrected; cross-platform rerun pending.
+- Linux browser dependency declarations and macOS arm64 size_t overloads corrected. CI now invokes pinned pluginval against built VST3/AU before packaging. No claim of all-DAW certification or released binaries yet.

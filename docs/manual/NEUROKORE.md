@@ -185,3 +185,12 @@ DSP corrections (0.6.4-beta)
 Alpha download packages include VST3 and Standalone on Windows/Linux, and VST3/AU/Standalone universal bundles on macOS. Each package includes license terms, a tester agreement, installation instructions and its source commit. Activation licenses are supplied separately. Linux embeds its editor assets. Unsigned/ad-hoc signed alpha packages do not imply notarisation or certification for every host.
 
 DSP accuracy: triangle LFOs now have continuous triangular ramps; stage MS flags encode/decode once. Three-band crossover low paths include the phase compensation needed for a flat summed magnitude. Noise LFOs own their random state. Soft ceilings now bound the signal at the selected amplitude, with a smooth knee starting at 95% of that amplitude; previous versions could approach twice the named ceiling.
+
+
+### DSP routing and offline rendering
+
+Parallel buses compensate shorter paths before sends and output summation; reported latency is the longest audible path, not the sum of parallel paths. Send/output gains accept compiled arithmetic and named controls with the same declared parameter ranges as effect blocks. Unknown gain variables reject the script. Internal buses preserve unity through 0 dBFS and gently compress overs into 6 dB of headroom; effect ceiling controls remain bounded at their stated levels, and final host-output sanitation still applies.
+
+Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doubling of engine rate), keeping analysis duration near 21 ms when oversampling. Dry/wet paths share the reported latency. OTT depth blends against the phase-matched crossover sum. Phaser/flanger feedback and mix changes are smoothed per sample. Limiter release is recalculated after sample-rate changes.
+
+External detector inputs are silent when disconnected or shorter than the current block; they do not fall back to the program signal or repeat the final sidechain sample. Offline renders retain CPU metering but do not enter realtime CPU-protection holds. Envelope min/max/hold expressions follow their controls.

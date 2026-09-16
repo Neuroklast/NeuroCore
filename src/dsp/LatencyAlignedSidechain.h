@@ -57,9 +57,12 @@ public:
         if (nCh <= 0 || ringN <= 0 || numSamples <= 0)
             return;
 
-        if (aligned_.getNumSamples() < numSamples
-            || aligned_.getNumChannels() != nCh)
-            aligned_.setSize (nCh, numSamples, false, false, true);
+        // The owner slices oversized host callbacks at its prepared capacity.
+        // Changing active channel count must never resize on the audio thread.
+        jassert (numSamples <= aligned_.getNumSamples() && numSamples <= dry.getNumSamples());
+        numSamples = juce::jmin (numSamples, aligned_.getNumSamples(), dry.getNumSamples());
+        for (int ch = nCh; ch < aligned_.getNumChannels(); ++ch)
+            aligned_.clear (ch, 0, numSamples);
 
         if (latency_ == 0)
         {
@@ -76,15 +79,18 @@ public:
             float* dst = aligned_.getWritePointer (ch);
 
             int w = writePos_;
+            int r = w - latency_;
+            if (r < 0) r += ringN;
             for (int i = 0; i < numSamples; ++i)
             {
-                const int r = (w - latency_ + ringN * 8) % ringN;
                 ring[w] = src[i];
                 dst[i] = ring[r];
-                w = (w + 1) % ringN;
+                if (++w == ringN) w = 0;
+                if (++r == ringN) r = 0;
             }
         }
-        writePos_ = (writePos_ + numSamples) % ringN;
+        writePos_ += numSamples;
+        if (writePos_ >= ringN) writePos_ -= ringN;
     }
 
     const juce::AudioBuffer<float>& getAligned() const noexcept { return aligned_; }

@@ -33,3 +33,8 @@ target_link_libraries(NeuroKoreDspContracts PRIVATE
     juce::juce_dsp juce::juce_audio_processors juce::juce_recommended_config_flags)
 enable_testing()
 add_test(NAME FxRuntimeTest COMMAND NeuroKoreDspContracts)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_sources(NeuroKoreDspContracts PRIVATE ${NK_ROOT}/tests/RealtimeAllocationProbe.cpp)
+    target_compile_definitions(NeuroKoreDspContracts PRIVATE NK_ALLOCATION_PROBE=1)
+    target_link_options(NeuroKoreDspContracts PRIVATE -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc)
+endif()

@@ -22,7 +22,7 @@ public:
 
     void runTest() override
     {
-        beginTest ("InputRouter BOTH seeds a silent host side; SignalChain does not");
+        beginTest ("InputRouter BOTH and SignalChain preserve hard-panned stereo");
         {
             InputRouter router;
             router.prepare ({ 48000.0, 64, 2 });
@@ -43,7 +43,7 @@ public:
             float rPk = 0.f;
             for (int i = 0; i < 64; ++i)
                 rPk = juce::jmax (rPk, std::abs (host.getSample (1, i)));
-            expect (rPk > 0.5f, "BOTH must seed R from L so channel=right still hears a mono DI");
+            expectWithinAbsoluteError (rPk, 0.f, 1.0e-6f, "BOTH preserves a silent right channel");
 
             dsl::SignalChain chain;
             juce::String err;

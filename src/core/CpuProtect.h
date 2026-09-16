@@ -54,8 +54,13 @@ public:
         return true;
     }
 
-    /** Feed one wet block's used time vs host budget. Audio thread only. */
-    void observe (double secondsUsed, double budgetSec) noexcept
+    bool shouldHoldAudio (int numSamples, double sampleRate, bool offlineRender = false) noexcept
+    {
+        return ! offlineRender && isTripped() && ! shouldProbeWet (numSamples, sampleRate);
+    }
+
+    /** Offline work has no callback deadline and must never trip the guard. */
+    void observe (double secondsUsed, double budgetSec, bool offlineRender = false) noexcept
     {
         if (! std::isfinite (secondsUsed) || secondsUsed < 0.0)
             secondsUsed = 0.0;
@@ -67,6 +72,9 @@ public:
 
         emaLoad += Config::kCpuEmaAlpha * (load - emaLoad);
         smoothedLoad.store (emaLoad, std::memory_order_relaxed);
+
+        if (offlineRender)
+            return;
 
         // Cold start after prepare/OS/IR — ignore trips for a wall-time window.
         if (warmupRemainSec > 0.0)

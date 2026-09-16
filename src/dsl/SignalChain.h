@@ -623,7 +623,7 @@ private:
         void processBlock(juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         /** Fill modLane from stereo sidechain (max |L|,|R|; right may be null). */
-        void renderModBlock (const float* left, const float* right, int numSamples) noexcept;
+        void renderModBlock (const float* left, const float* right, int numSamples, int availableSamples = -1) noexcept;
     };
 
     /** True delay line: time (ms) or tempo sync, feedback, damp LPF, wet mix, optional ping-pong. */
@@ -925,6 +925,8 @@ private:
         float cachedCeil { 1.0e9f };
         float ceilLin { 1.f };
         int latencySamples { 0 };
+        int fftSize { kFftSize };
+        int bins { kBins };
         int hop { kHopBase };
         std::unique_ptr<juce::dsp::FFT> fft;
         std::vector<float> window;
@@ -942,31 +944,32 @@ private:
             std::vector<float> synMagn;    // kBins
             std::vector<float> synFreq;    // kBins
             std::vector<float> fftWork;    // 2 * kFftSize
-            std::array<float, kFftSize> dryDelay {};
+            std::vector<float> dryDelay;
             int dryIndex { 0 };
             float delayDry (float input) noexcept
             {
                 const float result = dryDelay[(size_t) dryIndex];
                 dryDelay[(size_t) dryIndex] = input;
-                if (++dryIndex == kFftSize) dryIndex = 0;
+                if (++dryIndex == (int) dryDelay.size()) dryIndex = 0;
                 return result;
             }
             int rover { kFftSize - kHopBase };
-            void ensure()
+            void ensure (int size)
             {
-                inFifo.assign ((size_t) kFftSize, 0.f);
-                outFifo.assign ((size_t) kFftSize, 0.f);
-                outAccum.assign ((size_t) (2 * kFftSize), 0.f);
-                lastPhase.assign ((size_t) kBins, 0.f);
-                sumPhase.assign ((size_t) kBins, 0.f);
-                anaMagn.assign ((size_t) kBins, 0.f);
-                anaFreq.assign ((size_t) kBins, 0.f);
-                synMagn.assign ((size_t) kBins, 0.f);
-                synFreq.assign ((size_t) kBins, 0.f);
-                fftWork.assign ((size_t) (2 * kFftSize), 0.f);
-                dryDelay.fill (0.f);
+                const int binCount = size / 2 + 1;
+                inFifo.assign ((size_t) size, 0.f);
+                outFifo.assign ((size_t) size, 0.f);
+                outAccum.assign ((size_t) (2 * size), 0.f);
+                lastPhase.assign ((size_t) binCount, 0.f);
+                sumPhase.assign ((size_t) binCount, 0.f);
+                anaMagn.assign ((size_t) binCount, 0.f);
+                anaFreq.assign ((size_t) binCount, 0.f);
+                synMagn.assign ((size_t) binCount, 0.f);
+                synFreq.assign ((size_t) binCount, 0.f);
+                fftWork.assign ((size_t) (2 * size), 0.f);
+                dryDelay.assign ((size_t) size, 0.f);
                 dryIndex = 0;
-                rover = kFftSize - kHopBase;
+                rover = size - size / kOsamp;
             }
             void clear (int hopSz) noexcept
             {
@@ -975,9 +978,9 @@ private:
                 std::fill (outAccum.begin(), outAccum.end(), 0.f);
                 std::fill (lastPhase.begin(), lastPhase.end(), 0.f);
                 std::fill (sumPhase.begin(), sumPhase.end(), 0.f);
-                dryDelay.fill (0.f);
+                std::fill (dryDelay.begin(), dryDelay.end(), 0.f);
                 dryIndex = 0;
-                rover = kFftSize - juce::jmax (1, hopSz);
+                rover = (int) inFifo.size() - juce::jmax (1, hopSz);
             }
         };
         Chan ch[2];
@@ -1009,10 +1012,8 @@ private:
     std::array<juce::AudioBuffer<float>, Config::kMaxNamedBuses + 1> busScratch;
 
     void ensureBusBuffers (int numChannels, int numSamples);
-    void bindBusGains (BusGraph& g) const noexcept;
+    void prepareBusLatency (Chain& c, BusGraph& g);
     float readBoundGain (const BoundGain& g, int sampleIndex) const noexcept;
-    float resolveBusGain (const juce::String& expr, int sampleIndex) const noexcept;
-    bool isNumericGain (const juce::String& expr) const noexcept;
     void applyBusSends (int busIndex, int numChannels, int numSamples);
     void writeMixdown (juce::AudioBuffer<float>& dest, int numChannels, int numSamples);
 
