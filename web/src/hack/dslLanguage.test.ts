@@ -153,3 +153,14 @@ describe("dsl complete", () => {
     expect(items.every((i) => i.kind === "property")).toBe(true);
   });
 });
+
+it('expands a block as a full tab-stop snippet with every catalog parameter',()=>{
+ const item=complete('stage',5).find(i=>i.kind==='snippet');
+ expect(item?.insertText).toContain('${1:stage1}');
+ expect(item?.insertText).toContain('y = ${2:x}');
+ expect(item?.insertText).toContain('channel = ${3:both}');
+ expect(item?.insertAsSnippet).toBe(true);
+ expect(item && stillParsesAfterInsert('stage',5,item)).toBe(true);
+ const comp=complete('comp',4).find(i=>i.kind==='snippet')?.insertText ?? '';
+ for(const key of ['threshold','ratio','attack','release','ceiling']) expect(comp).toContain(`${key} =`);
+});

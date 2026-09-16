@@ -47,6 +47,9 @@ export function registerNeurokoreDsl(monaco: Monaco): void {
               : it.kind === "value"
                 ? monaco.languages.CompletionItemKind.Value
                 : monaco.languages.CompletionItemKind.Keyword,
+          insertTextRules: it.insertAsSnippet
+            ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+            : undefined,
           range,
         })),
       };

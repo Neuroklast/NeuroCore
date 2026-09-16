@@ -189,3 +189,5 @@ Binding persistence: five reproduced failures fixed (script/range persistence, s
 Circuit edit checkpoint: copy/cut/paste/duplicate/park now operate on the script and are available from keyboard and context menus. Generated IDs are unbounded collision-free integers. LFO faces show the configured sine, triangle, saw, soft-saw, square, soft-square or noise waveform, with effective rate. Targeted edit/shortcut/LFO tests and TypeScript pass.
 
 Theme checkpoint: Signal, Gold, Azure and DIGICIDE now carry distinct frame cuts, panel radii and material textures in addition to palette changes. Geometry and paint consume central theme tokens; theme and TypeScript contracts pass.
+
+Terminal checkpoint: Circuit compile events hydrate the shared script view. Catalog-derived block snippets insert every parameter with Monaco Tab stops. Save retains the last valid graph and editor draft on lint, compiler or bridge failure; invalid native compiles are not added to undo history. Completion/compile/store contracts and TypeScript pass.

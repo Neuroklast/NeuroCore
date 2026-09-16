@@ -213,12 +213,16 @@ export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "c
 export function publishScript(script: string, origin: "canvas" | "editor"): void | Promise<unknown> {
   const cur = useAstStore.getState();
   const prev = cur.lastValidScript || cur.script;
-  if (prev && prev !== script) {
-    pushScriptHistory(prev);
-  }
+  const remember = () => {
+    if (prev && prev !== script) pushScriptHistory(prev);
+  };
   if (hasJuceBridge()) {
-    return getNativeFunction("compile")({ origin, script });
+    return getNativeFunction("compile")({ origin, script }).then((result) => {
+      if (!result || typeof result !== "object" || !("ok" in result) || result.ok === true) remember();
+      return result;
+    });
   }
+  remember();
   applyCanvasScript(script);
 }
 

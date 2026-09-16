@@ -9,6 +9,8 @@ export interface CompleteItem {
   insertText: string;
   detail: string;
   kind: CompleteKind;
+  insertAsSnippet?: boolean;
+  plainInsertText?: string;
 }
 
 const BLOCKS = [
@@ -38,17 +40,27 @@ const PROPS: Record<string, string[]> = {
   custom: ["y"],
 };
 
-const SNIPPETS: Record<string, string> = {
-  filter: "filter1: type = lowpass; cutoff = 1000; resonance = 0.4",
-  reverb: "reverb1: size = 0.45; decay = 0.5; damp = 0.3; mix = 0.25",
-  delay: "delay1: time = 1/4; feedback = 0.35; mix = 0.3",
-  stage: "stage1: y = tanh(x * a)",
-  osc: "osc1: shape = sine; freq = 2",
-  env: "env1: type = peak; unit = lin; attack = 0.01; release = 0.1; min = 0; max = 1",
-  phaser: "phaser1: stages = 6; rate = 0.4; depth = 0.7; center = 800; feedback = 0.3; mix = 0.5",
-  flanger: "flanger1: rate = 0.25; depth = 0.7; delay = 2; feedback = 0.45; mix = 0.5; invert = on",
-  custom: "custom1: y = x",
-};
+function snippetFor(kind: string): { snippet: string; plain: string } | null {
+  if (kind === "param") return { snippet: "param ${1:a} = ${2:Macro} [${3:0}, ${4:1}]", plain: "param a = Macro [0, 1]" };
+  if (kind === "bus") return { snippet: "bus ${1:dirt}:", plain: "bus dirt:" };
+  const spec = chipSpec(kind);
+  if (spec.paramJacks.length === 0) return null;
+  const id = kind === "gate" ? "ngate1" : `${kind}1`;
+  const plainArgs = spec.paramJacks.map((key) => `${key} = ${spec.defaultArgs[key] ?? (spec.enums[key]?.[0] ?? "0")}`);
+  const snippetArgs = spec.paramJacks.map((key, i) => `${key} = \${${i + 2}:${spec.defaultArgs[key] ?? (spec.enums[key]?.[0] ?? "0")}}`);
+  return {
+    snippet: `\${1:${id}}: ${snippetArgs.join("; ")}`,
+    plain: `${id}: ${plainArgs.join("; ")}`,
+  };
+}
+
+function snippetItem(kind: string): CompleteItem | null {
+  const text = snippetFor(kind);
+  return text ? {
+    label: `${kind} line`, insertText: text.snippet, plainInsertText: text.plain,
+    detail: "all parameters · Tab to edit", kind: "snippet", insertAsSnippet: true,
+  } : null;
+}
 
 export function wordAt(text: string, caret: number): { start: number; prefix: string } {
   const n = Math.max(0, Math.min(text.length, caret));
@@ -137,7 +149,7 @@ function enumsOk(script: string): boolean {
 /** True when inserting the item leaves a brace-balanced script with legal enums. */
 export function stillParsesAfterInsert(text: string, caret: number, item: CompleteItem): boolean {
   const { start } = wordAt(text, caret);
-  const next = `${text.slice(0, start)}${item.insertText}${text.slice(caret)}`;
+  const next = `${text.slice(0, start)}${item.plainInsertText ?? item.insertText}${text.slice(caret)}`;
   if (! bracesOk(next)) {
     return false;
   }
@@ -185,10 +197,8 @@ export function complete(text: string, caret: number): CompleteItem[] {
   }
 
   if (kind && ! head.includes(":")) {
-    const snippet = SNIPPETS[kind];
-    if (snippet) {
-      add(items, { label: `${kind} line`, insertText: snippet, detail: "snippet", kind: "snippet" }, "");
-    }
+    const snippet = snippetItem(kind);
+    if (snippet) add(items, snippet, "");
     add(items, {
       label: `${kind}1:`,
       insertText: `${kind}1: `,
@@ -204,10 +214,11 @@ export function complete(text: string, caret: number): CompleteItem[] {
   for (const b of BLOCKS) {
     add(items, { label: b, insertText: b, detail: "block", kind: "block" }, prefix);
   }
-  if (prefix && SNIPPETS.filter) {
-    for (const [k, snip] of Object.entries(SNIPPETS)) {
+  if (prefix) {
+    for (const k of BLOCKS) {
       if (k.startsWith(prefix.toLowerCase()) || prefix.toLowerCase().startsWith(k)) {
-        add(items, { label: `${k} line`, insertText: snip, detail: "snippet", kind: "snippet" }, prefix);
+        const snippet = snippetItem(k);
+        if (snippet) add(items, snippet, prefix);
       }
     }
   }
