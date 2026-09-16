@@ -104,4 +104,4 @@ Windows: `build_release.bat` / `build_debug.bat` — same `build/` tree and `Neu
 
 Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout progress, mute keeps chips. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.6.4-beta.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3` (Mac: plus `.component`).
 
-- DSP host-buffer regression: fixed SIMD crash on unaligned stereo channel buffers. The 22-node irregular-block matrix passes; routing/envelope/filter/widen/pitch contracts still expose known failures under active repair.
+- DSP host-buffer regression: fixed SIMD crash on unaligned stereo channel buffers. The 22-node irregular-block matrix passes. Routing/envelope/filter/widen/pitch contracts failed before their fixes and now pass (0 failures). Full platform suite and release validation remain pending.

@@ -49,20 +49,11 @@ void InputRouter::process(const juce::dsp::ProcessContextReplacing<SampleType>& 
     auto* left  = block.getChannelPointer(0);
     auto* right = block.getChannelPointer(1);
 
-    // BOTH + mono guitar: one side is digital zero. Seed it so L/R splits work.
-    if (channelEnabled[0] && channelEnabled[1] && numSamples > 0)
-    {
-        float lE = 0.f, rE = 0.f;
-        for (size_t i = 0; i < numSamples; ++i)
-        {
-            lE = juce::jmax (lE, std::abs (left[i]));
-            rE = juce::jmax (rE, std::abs (right[i]));
-        }
-        if (rE < 1.0e-5f && lE > 1.0e-5f)
-            juce::FloatVectorOperations::copy (right, left, (int) numSamples);
-        else if (lE < 1.0e-5f && rE > 1.0e-5f)
-            juce::FloatVectorOperations::copy (left, right, (int) numSamples);
-    }
+    // BOTH is true stereo. Explicit Left/Right modes handle mono sources.
+    if (! weights[0][0].isSmoothing() && ! weights[0][1].isSmoothing()
+        && ! weights[1][0].isSmoothing() && ! weights[1][1].isSmoothing()
+        && channelEnabled[0] && channelEnabled[1])
+        return;
 
     for (size_t i = 0; i < numSamples; ++i)
     {

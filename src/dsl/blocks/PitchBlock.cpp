@@ -37,7 +37,7 @@ void SignalChain::Pitch::prepare (const juce::dsp::ProcessSpec& spec)
     // smb: rover starts at fftSize - hop (inFifoLatency)
     ch[0].rover = kFftSize - hop;
     ch[1].rover = kFftSize - hop;
-    latencySamples = kFftSize - hop;
+    latencySamples = kFftSize;
 
     semiSm.reset (sampleRate, 0.02);
     mixSm.reset (sampleRate, 0.02);
@@ -56,17 +56,10 @@ void SignalChain::Pitch::applyTempo (double bpm) noexcept
 {
     if (bpm > 0.0)
         currentBpm = bpm;
-    if (! useSync || sampleRate <= 0.f || currentBpm <= 0.0)
-    {
-        hop = kHopBase;
-        latencySamples = kFftSize - hop;
-        return;
-    }
-
-    const double ms = (60000.0 / currentBpm) * (double) syncBeats;
-    hop = juce::jlimit (64, kFftSize / 2,
-                        (int) std::lround (ms * 0.001 * (double) sampleRate));
-    latencySamples = kFftSize - hop;
+    // An STFT is a fixed-latency processor, not a tempo-synchronised delay.
+    // Retain legacy sync syntax but never alter overlap/latency during playback.
+    hop = kHopBase;
+    latencySamples = kFftSize;
 }
 
 void SignalChain::Pitch::clearRuntimeState() noexcept
@@ -97,7 +90,7 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     {
         const float re = work[(size_t) (2 * k)];
         const float im = work[(size_t) (2 * k + 1)];
-        const float magn = 2.f * std::sqrt (re * re + im * im);
+        const float magn = std::sqrt (re * re + im * im);
         const float phase = std::atan2 (im, re);
 
         float delta = phase - c.lastPhase[(size_t) k];
@@ -122,16 +115,16 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
         if (index < 0 || index >= kBins)
             continue;
         c.synMagn[(size_t) index] += c.anaMagn[(size_t) k];
-        c.synFreq[(size_t) index] = c.anaFreq[(size_t) k] * pr;
+        c.synFreq[(size_t) index] += c.anaFreq[(size_t) k] * pr * c.anaMagn[(size_t) k];
     }
 
     for (int k = 0; k < kBins; ++k)
     {
         const float magn = c.synMagn[(size_t) k];
-        float tmp = (freqPerBin > 0.f) ? (c.synFreq[(size_t) k] / freqPerBin) : 0.f;
+        float tmp = (freqPerBin > 0.f) ? (magn > 1.0e-20f ? c.synFreq[(size_t) k] / (magn * freqPerBin) : (float) k) : 0.f;
         tmp -= (float) k;
         const float delta = tmp * expct;
-        const float phase = c.sumPhase[(size_t) k] + delta + (float) k * expct;
+        const float phase = wrapPi (c.sumPhase[(size_t) k] + delta + (float) k * expct);
         c.sumPhase[(size_t) k] = phase;
         work[(size_t) (2 * k)] = magn * std::cos (phase);
         work[(size_t) (2 * k + 1)] = magn * std::sin (phase);
@@ -139,10 +132,11 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
 
     fft->performRealOnlyInverseTransform (work.data());
 
-    // Hann + osamp OLA compensation (smbPitchShift scale).
-    const float scale = 2.f / (float) kOsamp;
+    // JUCE inverse FFT includes 1/N. Four overlapping Hann-squared
+    // windows sum to 3/2, so unity reconstruction needs exactly 2/3.
+    const float scale = 2.f / 3.f;
     for (int i = 0; i < kFftSize; ++i)
-        c.outAccum[(size_t) i] += scale * window[(size_t) i] * work[(size_t) i] / (float) kFftSize;
+        c.outAccum[(size_t) i] += scale * window[(size_t) i] * work[(size_t) i];
 
     // Publish next hop; shift OLA accumulator and input FIFO (classic smb).
     for (int k = 0; k < hopSz; ++k)
@@ -212,7 +206,9 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
     {
         const float mixV = mixSm.getNextValue();
         const float ceilV = ceilSm.getNextValue();
-        const float pr = std::pow (2.f, semiSm.getNextValue() / 12.f);
+        const float semitones = semiSm.getNextValue();
+        // Ratio is consumed only when an FFT frame is completed.
+        const float pr = ch[0].rover + 1 == kFftSize ? std::exp2 (semitones / 12.f) : 1.f;
         float fr = formSm.getNextValue();
         if (! (fr > 0.f))
             fr = 1.f;
@@ -221,14 +217,14 @@ void SignalChain::Pitch::processBlock (juce::AudioBuffer<float>& buffer)
             const float dry = L[i];
             float wet = processSample (ch[0], dry, pr, fr);
             wet = DSPUtils::softCeilSample (wet, ceilV);
-            L[i] = dry * (1.f - mixV) + wet * mixV;
+            L[i] = ch[0].delayDry (dry) * (1.f - mixV) + wet * mixV;
         }
         if (R != nullptr)
         {
             const float dry = R[i];
             float wet = processSample (ch[1], dry, pr, fr);
             wet = DSPUtils::softCeilSample (wet, ceilV);
-            R[i] = dry * (1.f - mixV) + wet * mixV;
+            R[i] = ch[1].delayDry (dry) * (1.f - mixV) + wet * mixV;
         }
     }
 }
@@ -249,5 +245,5 @@ float SignalChain::Pitch::process (int channel, float x)
     const int ci = juce::jlimit (0, 1, channel);
     float wet = processSample (ch[ci], x, pr, fr);
     wet = DSPUtils::softCeilSample (wet, juce::Decibels::decibelsToGain (ceilDb));
-    return x * (1.f - mixV) + wet * mixV;
+    return ch[ci].delayDry (x) * (1.f - mixV) + wet * mixV;
 }

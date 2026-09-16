@@ -174,3 +174,10 @@ If something is wrong
 Need a human: neuroklast.net
 
 DSP host buffers: formula stages accept unaligned channel data and odd callback sizes; no SIMD alignment is required from the host.
+
+DSP corrections (0.6.4-beta)
+- BOTH preserves stereo, including hard-panned sources. Select Left or Right explicitly to duplicate a mono input.
+- Envelope detectors measure audio at their position in the signal chain.
+- Filter automation also advances when the host supplies one sample per callback.
+- Widen adds a mono-cancelling side signal to the original stereo image. Width zero and mono processing are transparent.
+- Pitch uses a fixed 1024-sample latency at its processing sample rate and aligns its internal dry/wet paths. Zero semitones with formant 1 reconstructs unity gain. Legacy pitch sync syntax remains readable; FFT overlap and latency no longer change with host tempo.

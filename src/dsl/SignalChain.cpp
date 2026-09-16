@@ -2140,28 +2140,6 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     const bool multi = graphPtr != nullptr
                     && (graphPtr->buses.size() > 1 || graphPtr->hasExplicitOut());
 
-    auto renderEnvsFor = [&] (juce::AudioBuffer<float>& work, int onlyBus)
-    {
-        const int nWork = juce::jmin (numSamples, work.getNumSamples());
-        const float* envL = work.getNumChannels() > 0 ? work.getReadPointer (0) : nullptr;
-        const float* envR = work.getNumChannels() > 1 ? work.getReadPointer (1) : nullptr;
-        if (envL == nullptr)
-            return;
-        for (int i = 0; i < nEnv; ++i)
-        {
-            if (onlyBus >= 0 && envs[i]->busIndex != onlyBus)
-                continue;
-            if (envs[i]->followSidechain && extScL != nullptr && extScN > 0)
-                envs[i]->renderModBlock (extScL, extScR != nullptr ? extScR : extScL,
-                                         juce::jmin (nWork, extScN));
-            else
-                envs[i]->renderModBlock (envL, envR, nWork);
-            if (! envs[i]->modLane.empty())
-                writeNodeTapLane (envs[i]->tapSlot, envs[i]->modLane.data(),
-                                  (int) envs[i]->modLane.size());
-        }
-    };
-
     auto processOn = [&] (juce::AudioBuffer<float>& work, int onlyBus)
     {
         const int workCh = work.getNumChannels();
@@ -2182,8 +2160,26 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             switch (b->kind)
             {
                 case NodeKind::Osc:
-                case NodeKind::Env:
                     continue;
+                case NodeKind::Env:
+                {
+                    // Detectors observe the signal at their actual graph position.
+                    auto* env = static_cast<Env*> (b.get());
+                    const float* l = slice.getReadPointer (0);
+                    const float* r = workCh > 1 ? slice.getReadPointer (1) : l;
+                    if (env->followSidechain && extScL != nullptr && extScN > 0)
+                        env->renderModBlock (extScL, extScR != nullptr ? extScR : extScL,
+                                             juce::jmin (nWork, extScN));
+                    else
+                        env->renderModBlock (l, r, nWork);
+                    if (! env->modLane.empty())
+                    {
+                        writeNodeTapLane (env->tapSlot, env->modLane.data(), (int) env->modLane.size());
+                        if (env->destSlot != nullptr)
+                            *env->destSlot = env->modLane.back();
+                    }
+                    continue;
+                }
 
                 case NodeKind::Stage:
                 {
@@ -2339,15 +2335,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
     if (! multi)
     {
-        renderEnvsFor (buffer, -1);
+
         for (int i = 0; i < nOsc; ++i)
             if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
                 if (oscs[i]->destSlot != nullptr)
                     *oscs[i]->destSlot = oscs[i]->modLane[(size_t) numSamples - 1];
-        for (int i = 0; i < nEnv; ++i)
-            if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
-                if (envs[i]->destSlot != nullptr)
-                    *envs[i]->destSlot = envs[i]->modLane[(size_t) numSamples - 1];
         processOn (buffer, -1);
     }
     else
@@ -2365,13 +2357,12 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         for (int bi = 1; bi < (int) graphPtr->buses.size() && bi < (int) busScratch.size(); ++bi)
             busScratch[(size_t) bi].clear();
 
-        renderEnvsFor (busScratch[0], 0);
         processOn (busScratch[0], 0);
 
         for (int bi = 1; bi < (int) graphPtr->buses.size(); ++bi)
         {
             applyBusSends (bi, chUse, sm);
-            renderEnvsFor (busScratch[(size_t) bi], bi);
+
             processOn (busScratch[(size_t) bi], bi);
         }
 
@@ -3220,10 +3211,10 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     resSm.setTargetValue(res);
     // Mid-block snapshot — dummy-advancing the smoother then applying the end
     // value made every knob move a single step (zipper) and burned CPU.
-    if (numSamples > 1)
+    if (numSamples > 0)
     {
-        cutoffSm.skip (numSamples / 2);
-        resSm.skip (numSamples / 2);
+        cutoffSm.skip ((numSamples + 1) / 2);
+        resSm.skip ((numSamples + 1) / 2);
     }
     const float fcSm = cutoffSm.getCurrentValue();
     const float rqSm = resSm.getCurrentValue();
@@ -3243,8 +3234,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     }
     if (numSamples > 1)
     {
-        cutoffSm.skip (numSamples - numSamples / 2);
-        resSm.skip (numSamples - numSamples / 2);
+        cutoffSm.skip (numSamples / 2);
+        resSm.skip (numSamples / 2);
     }
 
     // Architecture: always processSample(ch, ·) so each channel keeps its own

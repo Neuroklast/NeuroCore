@@ -56,7 +56,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
 {
     const int nCh = buffer.getNumChannels();
     const int nS = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0)
+    if (nS <= 0 || nCh < 2)
         return;
 
     bindings.refresh();
@@ -116,8 +116,8 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
         const float cap = 0.92f * std::abs (mid) + 1.0e-6f;
         side = juce::jlimit (-cap, cap, side);
 
-        float outL = mid + side;
-        float outR = mid - side;
+        float outL = inL + side;
+        float outR = inR - side;
         if (! std::isfinite (outL)) outL = inL;
         if (! std::isfinite (outR)) outR = inR;
         L[i] = outL;

@@ -942,6 +942,15 @@ private:
             std::vector<float> synMagn;    // kBins
             std::vector<float> synFreq;    // kBins
             std::vector<float> fftWork;    // 2 * kFftSize
+            std::array<float, kFftSize> dryDelay {};
+            int dryIndex { 0 };
+            float delayDry (float input) noexcept
+            {
+                const float result = dryDelay[(size_t) dryIndex];
+                dryDelay[(size_t) dryIndex] = input;
+                if (++dryIndex == kFftSize) dryIndex = 0;
+                return result;
+            }
             int rover { kFftSize - kHopBase };
             void ensure()
             {
@@ -955,6 +964,8 @@ private:
                 synMagn.assign ((size_t) kBins, 0.f);
                 synFreq.assign ((size_t) kBins, 0.f);
                 fftWork.assign ((size_t) (2 * kFftSize), 0.f);
+                dryDelay.fill (0.f);
+                dryIndex = 0;
                 rover = kFftSize - kHopBase;
             }
             void clear (int hopSz) noexcept
@@ -964,6 +975,8 @@ private:
                 std::fill (outAccum.begin(), outAccum.end(), 0.f);
                 std::fill (lastPhase.begin(), lastPhase.end(), 0.f);
                 std::fill (sumPhase.begin(), sumPhase.end(), 0.f);
+                dryDelay.fill (0.f);
+                dryIndex = 0;
                 rover = kFftSize - juce::jmax (1, hopSz);
             }
         };
