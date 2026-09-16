@@ -190,6 +190,8 @@ juce_add_plugin(NeuroKore
     MICROPHONE_PERMISSION_ENABLED TRUE
     MICROPHONE_PERMISSION_TEXT "NEUROKORE needs microphone access to process live audio in the standalone app."
     NEEDS_WEBVIEW2 TRUE
+    NEEDS_WEB_BROWSER TRUE
+    NEEDS_CURL TRUE
 )
 
 target_sources(NeuroKore PRIVATE
@@ -319,7 +321,7 @@ if(TARGET NeuroKore_AU)
     )
 endif()
 
-juce_add_console_app(NeuroKoreTests PRODUCT_NAME "NeuroKoreTests")
+juce_add_console_app(NeuroKoreTests PRODUCT_NAME "NeuroKoreTests" NEEDS_WEB_BROWSER TRUE NEEDS_CURL TRUE)
 juce_generate_juce_header(NeuroKoreTests)
 
 target_sources(NeuroKoreTests PRIVATE
@@ -640,4 +642,10 @@ if (UNIX AND NOT APPLE)
     add_dependencies(webBinary NeuroKoreWebEmbed)
     target_link_libraries(NeuroKore PRIVATE webBinary)
     target_link_libraries(NeuroKoreTests PRIVATE webBinary)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_sources(NeuroKoreTests PRIVATE tests/RealtimeAllocationProbe.cpp)
+    target_compile_definitions(NeuroKoreTests PRIVATE NK_ALLOCATION_PROBE=1)
+    target_link_options(NeuroKoreTests PRIVATE -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc)
 endif()

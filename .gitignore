@@ -397,3 +397,5 @@ installer/MicrosoftEdgeWebView2RuntimeInstallerX64.exe
 build-dsp*/
 
 /release/
+
+/build-validator/
