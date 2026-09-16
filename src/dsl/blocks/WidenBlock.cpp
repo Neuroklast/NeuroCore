@@ -47,7 +47,8 @@ void SignalChain::Widen::prepare (const juce::dsp::ProcessSpec& spec)
     snap (widthSm, widthExpr, 0.7f);
     snap (delaySm, delayMs, 14.f);
     snap (bassSm, bassHz, 140.f);
-    bindings.prepare (varPtr, { &widthExpr, &delayMs, &bassHz });
+    snap (mixSm, mixExpr, 1.f);
+    bindings.prepare (varPtr, { &widthExpr, &delayMs, &bassHz, &mixExpr });
 }
 
 float SignalChain::Widen::process (int, float x) { return x; }
@@ -69,6 +70,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
     widthSm.setTargetValue (ev (widthExpr, 0.7f));
     delaySm.setTargetValue (ev (delayMs, 14.f));
     bassSm.setTargetValue (ev (bassHz, 140.f));
+    mixSm.setTargetValue (ev (mixExpr, 1.f));
 
     float* L = buffer.getWritePointer (0);
     float* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
@@ -116,6 +118,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
         const float cap = 0.92f * std::abs (mid) + 1.0e-6f;
         side = juce::jlimit (-cap, cap, side);
 
+        side *= juce::jlimit (0.f, 1.f, mixSm.getNextValue());
         float outL = inL + side;
         float outR = inR - side;
         if (! std::isfinite (outL)) outL = inL;

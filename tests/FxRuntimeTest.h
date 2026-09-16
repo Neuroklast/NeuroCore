@@ -303,6 +303,45 @@ public:
             expectWithinAbsoluteError (b.getSample (0, 0), -1.f, 1.e-6f);
             expectWithinAbsoluteError (b.getSample (0, 1), 1.f, 1.e-6f);
         }
+        beginTest ("reverb channel selection preserves and excludes the other channel");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("reverb1: channel = side; mix = 1; size = 0.2", error), error);
+            chain.prepare ({ 48000, 256, 2 });
+            juce::AudioBuffer<float> b (2, 256);
+            float leftError = 0.f, rightPeak = 0.f;
+            for (int block = 0; block < 100; ++block)
+            {
+                b.clear();
+                for (int i = 0; i < 256; ++i) b.setSample (0, i, 0.2f);
+                chain.processBlock (b);
+                for (int i = 0; i < 256; ++i)
+                {
+                    leftError = std::max (leftError, std::abs (b.getSample (0, i) - 0.2f));
+                    rightPeak = std::max (rightPeak, std::abs (b.getSample (1, i)));
+                }
+            }
+            expect (leftError < 1.e-6f, "unselected mid channel changed");
+            expect (rightPeak < 1.e-6f, "mid leaked into side reverb");
+        }
+        beginTest ("widen mix zero is stereo identity");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("widen1: width = 1; mix = 0", error), error);
+            chain.prepare ({ 48000, 256, 2 });
+            juce::AudioBuffer<float> b (2, 256), dry (2, 256);
+            float maximumError = 0.f;
+            for (int block = 0; block < 32; ++block)
+            {
+                FxRuntime::fill (b, block * 256); dry.makeCopyOf (b, true);
+                chain.processBlock (b);
+                for (int c = 0; c < 2; ++c) for (int i = 0; i < 256; ++i)
+                    maximumError = std::max (maximumError, std::abs (b.getSample (c,i) - dry.getSample (c,i)));
+            }
+            expect (maximumError < 1.e-6f, "mix=0 error=" + juce::String (maximumError));
+        }
         beginTest ("pitch analysis duration stays constant at oversampled rates");
         for (int rate : { 48000, 96000, 192000, 384000 })
         {

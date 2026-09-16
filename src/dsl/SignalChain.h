@@ -498,8 +498,8 @@ private:
     {
         static constexpr int kNumAp = 3;
 
-        ExpressionEvaluator widthExpr, delayMs, bassHz;
-        juce::SmoothedValue<float> widthSm, delaySm, bassSm;
+        ExpressionEvaluator widthExpr, delayMs, bassHz, mixExpr;
+        juce::SmoothedValue<float> widthSm, delaySm, bassSm, mixSm;
         float sampleRate { 44100.f };
         float bassA { 0.f }, lastBass { -1.f };
         float hpX { 0.f }, hpY { 0.f };
@@ -672,6 +672,7 @@ private:
     /** Schroeder/Freeverb-style multi-comb + allpass reverb (stereo). */
     struct Reverb : Block
     {
+        Stage::ChannelMode channelMode { Stage::ChannelMode::Both };
         ExpressionEvaluator sizeExpr;   ///< 0..1 room size
         ExpressionEvaluator decayExpr;  ///< 0..1 feedback / RT60 proxy
         ExpressionEvaluator dampExpr;   ///< 0..1 high-frequency damping

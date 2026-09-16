@@ -118,3 +118,5 @@ Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout prog
 - Linux browser dependency declarations and macOS arm64 size_t overloads corrected. CI now invokes pinned pluginval against built VST3/AU before packaging. No claim of all-DAW certification or released binaries yet.
 
 Native packaging is deferred until DSP, preset and UI work is complete. Intermediate pushes skip the native build matrix; explicit workflow dispatch or the final `[release-alpha]` checkpoint runs it. Focused source/DSP/web contracts continue during development.
+
+Reverb channel isolation and Widen mix had three reproduced contract failures; selected-channel isolation and mix=0 identity now pass in the local DSP suite.

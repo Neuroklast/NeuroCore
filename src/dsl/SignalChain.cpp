@@ -624,6 +624,15 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("reverb") || d.type.startsWith ("verb"))
         {
             auto rv = std::make_unique<Reverb>();
+            if (d.args.count ("channel"))
+            {
+                const auto channel = d.args.at ("channel").trim().toLowerCase();
+                if (channel == "left" || channel == "l" || channel == "mid" || channel == "m")
+                    rv->channelMode = Stage::ChannelMode::Left;
+                else if (channel == "right" || channel == "r" || channel == "side" || channel == "s")
+                    rv->channelMode = Stage::ChannelMode::Right;
+            }
+
             rv->varPtr = &variables;
 
             if (d.args.count ("size") || d.args.count ("room"))
@@ -1368,6 +1377,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", wd->mixExpr, "mix [0..1]");
             parseAmt ("width", "amount", 0.f, 1.4f, "0.7", wd->widthExpr, "width [0..1.4]");
             parseAmt ("delay", "haas", 0.5f, 40.f, "14", wd->delayMs, "delay [ms]");
             parseAmt ("bass", "mono", 60.f, 400.f, "140", wd->bassHz, "bass [Hz]");
@@ -4099,6 +4109,8 @@ float SignalChain::Reverb::tailSeconds() const noexcept
 
 float SignalChain::Reverb::process (int ch, float x)
 {
+    if ((channelMode == Stage::ChannelMode::Left && ch != 0)
+        || (channelMode == Stage::ChannelMode::Right && ch != 1)) return x;
     // Scalar path: feed all combs on this channel bank
     float decay = decayExpr.evaluateLive (0.f);
     if (! std::isfinite (decay)) decay = 0.5f;
@@ -4170,6 +4182,9 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
     auto* L = buffer.getWritePointer (0);
     auto* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
 
+    const bool doL = channelMode != Stage::ChannelMode::Right;
+    const bool doR = channelMode != Stage::ChannelMode::Left && R != nullptr;
+    if (! doL && ! doR) return;
     for (int i = 0; i < nS; ++i)
     {
         const float feedback = decaySm.getNextValue();
@@ -4180,7 +4195,7 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float inL = std::isfinite (L[i]) ? L[i] : 0.f;
         const float inR = R != nullptr ? (std::isfinite (R[i]) ? R[i] : 0.f) : inL;
-        const float input = 0.5f * (inL + inR);
+        const float input = doL && doR ? 0.5f * (inL + inR) : (doL ? inL : inR);
 
         float outL = 0.f, outR = 0.f;
         for (int c = 0; c < kNumCombs; ++c)
@@ -4205,11 +4220,11 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
         // Soft-limit only true peaks (constant tanh = HF/crackle on bright rooms)
         if (! std::isfinite (outL)) outL = 0.f;
         if (! std::isfinite (outR)) outR = 0.f;
-        if (std::abs (outL) > 1.2f) outL = 1.2f * std::tanh (outL / 1.2f);
-        if (std::abs (outR) > 1.2f) outR = 1.2f * std::tanh (outR / 1.2f);
+        outL = DSPUtils::softCeilSample (outL, 1.2f);
+        outR = DSPUtils::softCeilSample (outR, 1.2f);
 
-        L[i] = inL * dryG + outL * wet;
-        if (R != nullptr)
+        if (doL) L[i] = inL * dryG + outL * wet;
+        if (doR)
             R[i] = inR * dryG + outR * wet;
     }
 }

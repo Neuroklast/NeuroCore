@@ -194,3 +194,5 @@ Parallel buses compensate shorter paths before sends and output summation; repor
 Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doubling of engine rate), keeping analysis duration near 21 ms when oversampling. Dry/wet paths share the reported latency. OTT depth blends against the phase-matched crossover sum. Phaser/flanger feedback and mix changes are smoothed per sample. Limiter release is recalculated after sample-rate changes.
 
 External detector inputs are silent when disconnected or shorter than the current block; they do not fall back to the program signal or repeat the final sidechain sample. Offline renders retain CPU metering but do not enter realtime CPU-protection holds. Envelope min/max/hold expressions follow their controls.
+
+Reverb now honors left/right and mid/side channel selection: only the selected channel feeds its reverb and the other channel remains dry. Widen supports an independent smoothed `mix` (0 = unchanged stereo, 1 = full configured width). Reverb peak protection uses a continuous knee instead of switching abruptly at its threshold.
