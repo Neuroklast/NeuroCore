@@ -250,3 +250,5 @@ The former decorative temperature and checksum readouts are removed. The logo
 uses restrained level-reactive light without random glitches or scrolling code.
 If native telemetry is unavailable, meters clear and a waiting message appears.
 Synthetic signals are confined to the explicitly labelled browser preview.
+
+Parameter binding: Numeric macro bindings persist with their range in the script. Linking an existing macro preserves its other destinations and maps the new destination explicitly. Binding an audio formula adds a neutral gain control without replacing the audio expression. Load-time options (filter type, oscillator shape, envelope unit/source) remain dropdown choices, not macro targets. Compressor, gate and limiter envelope times are expressed in seconds.

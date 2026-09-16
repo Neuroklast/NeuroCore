@@ -1,10 +1,11 @@
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
-import type { AstParam } from "../bridge/ast";
 import { useAstStore } from "../store/astStore";
 import { useHostStore, type KnobState } from "../store/hostStore";
 import { mappedToNorm } from "../chrome/noteValue";
 import { chipSpec } from "./chipSpec";
-import { applyKnobBind, bindableArgKeys } from "./handles";
+import { bindableArgKeys } from "./handles";
+import { publishScript, scriptAfterSetArg } from "./addBlock";
+import { rewriteParamLine } from "../chrome/knobMenu";
 
 export type BindProfile = {
   name: string;
@@ -114,62 +115,42 @@ export function activateKnobPatch(profile: BindProfile): Partial<KnobState> & { 
   };
 }
 
-function upsertParam(params: AstParam[], letter: string, profile: BindProfile): AstParam[] {
-  const alias = letter.toLowerCase();
-  const next: AstParam = {
-    alias,
-    name: profile.name,
-    min: profile.min,
-    max: profile.max,
-    isNote: profile.isNote,
-    noteWholes: [],
-    noteLabels: [],
-  };
-  const i = params.findIndex((p) => p.alias === alias);
-  if (i < 0) {
-    return [...params, next];
-  }
-  const copy = params.slice();
-  copy[i] = next;
-  return copy;
-}
-
-export function commitBind(node: string, key: string, letter: string) {
-  if (! node || ! key || ! /^[a-f]$/i.test(letter)) {
-    return;
-  }
+/** The script owns bindings; existing macro ranges belong to all their destinations. */
+export async function commitBind(node: string, key: string, letter: string): Promise<void> {
+  if (!node || !key || !/^[a-f]$/i.test(letter)) return;
   const id = letter.toLowerCase();
-  const ast = useAstStore.getState().ast;
-  const target = ast?.nodes.find((n) => n.id === node);
-  if (ast && target) {
-    const profile = bindProfile(target.type, key, target.args);
-    useAstStore.setState({
-      ast: {
-        ...ast,
-        params: upsertParam(ast.params, id, profile),
-        nodes: ast.nodes.map((n) => (
-          n.id === node ? { ...n, args: applyKnobBind(n.args, key, letter) } : n
-        )),
-      },
-    });
-    useHostStore.getState().activateKnob(id, activateKnobPatch(profile));
-  } else if (ast) {
-    useAstStore.setState({
-      ast: {
-        ...ast,
-        nodes: ast.nodes.map((n) => (
-          n.id === node ? { ...n, args: applyKnobBind(n.args, key, letter) } : n
-        )),
-      },
-    });
-  }
-  if (hasJuceBridge()) {
-    void getNativeFunction("graphOp")({
-      origin: "canvas",
-      op: "setArg",
-      node,
-      key,
-      value: id,
-    }).catch(() => undefined);
+  const state = useAstStore.getState();
+  const target = state.ast?.nodes.find((n) => n.id === node);
+  if (!target) return;
+  const spec = chipSpec(target.type, target.args);
+  const formula = key === "y";
+  if (!spec.ranges[key] && !formula && !/^in[1-8]$/.test(key)) return;
+  const current = target.args[key] || (formula ? "x" : "0");
+  if (new RegExp(`\\b${id}\\b`).test(current)) return;
+  const profile = formula
+    ? { name: "Gain", min: 0, max: 2, defaultNorm: 0.5, isNote: false }
+    : bindProfile(target.type, key, target.args);
+  const existing = useHostStore.getState().knobs.find((knob) => knob.id === id);
+  const active = Boolean(existing?.active || state.ast?.params.some((p) => p.alias === id));
+  const mapped = `map(${id},0,1,${profile.min},${profile.max})`;
+  const value = formula ? `(${current}) * ${mapped}` : active ? mapped : id;
+  let script = state.lastValidScript || state.script;
+  if (!script.trim()) return;
+  script = scriptAfterSetArg(script, node, key, value);
+  if (!active) script = rewriteParamLine(script, id, profile);
+  try {
+    const result = await publishScript(script, "canvas");
+    if (result && typeof result === "object" && "ok" in result && !result.ok) return;
+    if (!active) {
+      useHostStore.getState().activateKnob(id, activateKnobPatch(profile));
+      if (hasJuceBridge()) {
+        const setParam = getNativeFunction("setParam");
+        await setParam({ id, value: profile.defaultNorm, gesture: "begin" });
+        await setParam({ id, value: profile.defaultNorm, gesture: "end" });
+      }
+    }
+  } catch (error) {
+    useAstStore.setState({ diagnostics: [{ line: 0, column: 0,
+      message: `Could not bind parameter: ${error instanceof Error ? error.message : String(error)}` }] });
   }
 }

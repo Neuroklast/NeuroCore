@@ -82,7 +82,7 @@ describe("jack align and knob bind", () => {
     expect(activateKnobPatch(profile).enums).toEqual(profile.enums);
   });
 
-  it("commitBind on an enum key snaps the knob to N options", () => {
+  it("commitBind leaves load-time enum choices unchanged", async () => {
     useHostStore.setState({
       knobs: [
         { id: "b", name: "", value: 0, active: false, min: 0, max: 1, isNote: false },
@@ -103,18 +103,17 @@ describe("jack align and knob bind", () => {
         }],
       },
       lastValidAst: null,
-      lastValidScript: "",
+      lastValidScript: "filter1: type = lowpass; cutoff = 1000; resonance = 0.4; channel = both\n",
       script: "",
       diagnostics: [],
     });
-    commitBind("filter1", "type", "b");
+    await commitBind("filter1", "type", "b");
     const knob = useHostStore.getState().knobs.find((k) => k.id === "b");
-    expect(knob?.enums).toEqual(["lowpass", "highpass", "bandpass", "allpass"]);
-    expect(knob?.enums).toHaveLength(4);
-    expect(knob?.active).toBe(true);
+    expect(knob?.enums).toBeUndefined();
+    expect(knob?.active).toBe(false);
   });
 
-  it("commitBind activates an inactive knob and writes the letter", () => {
+  it("commitBind activates an inactive knob and writes the letter", async () => {
     useHostStore.setState({
       knobs: [
         { id: "d", name: "", value: 0, active: false, min: 0, max: 1, isNote: false },
@@ -136,12 +135,12 @@ describe("jack align and knob bind", () => {
         }],
       },
       lastValidAst: null,
-      lastValidScript: "",
+      lastValidScript: "filter1: type = lowpass; cutoff = 1000; resonance = 0.4; channel = both\n",
       script: "",
       diagnostics: [],
     });
 
-    commitBind("filter1", defaultBindKey("filter"), "d");
+    await commitBind("filter1", defaultBindKey("filter"), "d");
 
     const knob = useHostStore.getState().knobs.find((k) => k.id === "d");
     expect(knob?.active).toBe(true);

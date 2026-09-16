@@ -210,15 +210,14 @@ export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "c
   });
 }
 
-export function publishScript(script: string, origin: "canvas" | "editor"): void {
+export function publishScript(script: string, origin: "canvas" | "editor"): void | Promise<unknown> {
   const cur = useAstStore.getState();
   const prev = cur.lastValidScript || cur.script;
   if (prev && prev !== script) {
     pushScriptHistory(prev);
   }
   if (hasJuceBridge()) {
-    void getNativeFunction("compile")({ origin, script });
-    return;
+    return getNativeFunction("compile")({ origin, script });
   }
   applyCanvasScript(script);
 }

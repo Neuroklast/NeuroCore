@@ -29,7 +29,7 @@ const CATALOG: Array<{
   { id: "limit", label: "Limit", params: ["ceiling", "release"] },
   { id: "ott", label: "OTT", params: ["depth", "time", "low", "mid", "high"] },
   { id: "ir", label: "IR", params: ["mix", "gain"] },
-  { id: "env", label: "ENV", params: ["type", "attack", "release", "hold", "min", "max", "invert", "source"] },
+  { id: "env", label: "ENV", params: ["type", "unit", "attack", "release", "hold", "min", "max", "invert", "source"] },
   { id: "osc", label: "LFO", params: ["shape", "freq", "sync", "depth"] },
   { id: "octaver", label: "Octaver", params: ["sub", "up", "mix", "tone", "thresh"] },
   { id: "vocoder", label: "Vocoder", params: ["bands", "mix", "q", "attack", "release"] },
@@ -72,7 +72,7 @@ describe("ChipSpec registry", () => {
     const spec = chipSpec("env");
     expect(spec.audioIns).toEqual(["in"]);
     expect(spec.audioOuts).toEqual(["mod"]);
-    expect(spec.paramJacks).toEqual(["type", "attack", "release", "hold", "min", "max", "invert", "source"]);
+    expect(spec.paramJacks).toEqual(["type", "unit", "attack", "release", "hold", "min", "max", "invert", "source"]);
     expect(spec.enums.type).toEqual(["peak", "rms"]);
     expect(spec.enums.invert).toEqual(["off", "on"]);
     expect(spec.enums.source).toEqual(["in", "sidechain"]);
@@ -131,16 +131,16 @@ describe("typeCode and collapsed face", () => {
 });
 
 describe("param jacks on the south edge", () => {
-  it("only paints knobs that compile as key = a (ranges and sonic enums)", () => {
-    expect(bindableJackKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance"]);
+  it("only paints knobs that compile as key = a (numeric ranges)", () => {
+    expect(bindableJackKeys(chipSpec("filter"))).toEqual(["cutoff", "resonance"]);
     expect(bindableJackKeys(chipSpec("filter"))).not.toContain("channel");
     expect(bindableJackKeys(chipSpec("stage"))).toEqual([]);
     expect(bindableJackKeys(chipSpec("custom"))).toEqual([]);
     expect(bindableJackKeys(chipSpec("bus"))).toEqual([]);
     expect(bindableJackKeys(chipSpec("send"))).toEqual([]);
-    expect(bindableJackKeys(chipSpec("eq"))).toEqual(["type", "freq", "q", "gain"]);
+    expect(bindableJackKeys(chipSpec("eq"))).toEqual(["freq", "q", "gain"]);
     expect(bindableJackKeys(chipSpec("env"))).toEqual([
-      "type", "attack", "release", "hold", "min", "max", "invert", "source",
+      "attack", "release", "hold", "min", "max",
     ]);
     expect(paintedBindKeys("custom", { y: "x", in2: "0" })).toEqual(["in2"]);
     expect(paintedBindKeys("stage", { y: "x" })).toEqual([]);

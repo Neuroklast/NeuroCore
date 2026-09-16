@@ -183,3 +183,5 @@ Bandpass bandwidth and the 1/32 grid endpoint now pass reproduced DSP regression
 Unit measurement checkpoint: shared -60 dBFS floor, no false lit bar below it, validated frame lengths and contiguous host-rate scope capture. Three native block-size sampling failures and four web display/frame failures reproduced, then fixed. Local native DSP/sampling suite and 30 targeted web contracts pass.
 
 Shared settings: reproduced stale-process theme overwrite fixed with per-key merge/save; OS/polisher host callbacks now queue atomic requests instead of taking file locks or notifying listeners on the audio thread. Native global-preference contracts and zero-allocation request probe pass.
+
+Binding persistence: five reproduced failures fixed (script/range persistence, shared-macro preservation, formula audio preservation, load-time enum rejection, envelope unit labels). Native compile completes before setting a new macro default.
