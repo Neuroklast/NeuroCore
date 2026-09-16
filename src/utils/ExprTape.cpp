@@ -442,7 +442,7 @@ template <typename Fn>
 V mapLanes (V a, Fn&& fn) noexcept
 {
     constexpr size_t w = V::SIMDNumElements;
-    alignas (16) float x[w];
+    alignas (juce::dsp::SIMDRegister<float>) float x[w];
     a.copyToRawArray (x);
     for (size_t i = 0; i < w; ++i)
         x[i] = fn (x[i]);
@@ -453,7 +453,7 @@ template <typename Fn>
 V mapLanes2 (V a, V b, Fn&& fn) noexcept
 {
     constexpr size_t w = V::SIMDNumElements;
-    alignas (16) float x[w], y[w];
+    alignas (juce::dsp::SIMDRegister<float>) float x[w], y[w];
     a.copyToRawArray (x);
     b.copyToRawArray (y);
     for (size_t i = 0; i < w; ++i)
@@ -541,7 +541,7 @@ juce::dsp::SIMDRegister<float> exprTapeEvalSimd (ExprTape& tape,
             case ExprOp::Call3:
             {
                 constexpr size_t w = V::SIMDNumElements;
-                alignas (16) float xa[w], ya[w], za[w];
+                alignas (juce::dsp::SIMDRegister<float>) float xa[w], ya[w], za[w];
                 s[tape.a[i]].copyToRawArray (xa);
                 s[tape.b[i]].copyToRawArray (ya);
                 s[tape.c[i]].copyToRawArray (za);
@@ -554,7 +554,7 @@ juce::dsp::SIMDRegister<float> exprTapeEvalSimd (ExprTape& tape,
             case ExprOp::Call5:
             {
                 constexpr size_t w = V::SIMDNumElements;
-                alignas (16) float va[w], i0[w], i1[w], o0[w], o1[w];
+                alignas (juce::dsp::SIMDRegister<float>) float va[w], i0[w], i1[w], o0[w], o1[w];
                 s[tape.a[i]].copyToRawArray (va);
                 s[tape.b[i]].copyToRawArray (i0);
                 s[tape.c[i]].copyToRawArray (i1);

@@ -172,3 +172,5 @@ If something is wrong
 - Help search: type a word (license, save as, multiband, pitch, DEMO) to filter this guide.
 
 Need a human: neuroklast.net
+
+DSP host buffers: formula stages accept unaligned channel data and odd callback sizes; no SIMD alignment is required from the host.

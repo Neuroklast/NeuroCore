@@ -48,6 +48,7 @@ public:
         beginTest ("every node processes mono/stereo, automation and irregular host blocks");
         for (const auto& fx : FxRuntime::cases)
         {
+            logMessage (fx.name);
             for (double sr : { 22050.0, 48000.0, 192000.0 })
                 for (int channels : { 1, 2 })
                 {

@@ -2640,7 +2640,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
                 // Mirror current samples into y so y=f(y) stage chains are not silent
                 if (idxY != ExpressionEvaluator::invalidIndex)
                 {
-                    alignas(16) float yLane[width];
+                    alignas(juce::dsp::SIMDRegister<float>) float yLane[width];
                     for (size_t k = 0; k < width; ++k)
                     {
                         const size_t idx = i + k;
@@ -2665,7 +2665,7 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
             auto post = [this, prevX, prevY, data, numSamples](size_t i, juce::dsp::SIMDRegister<float> result)
             {
                 constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-                alignas(16) float arr[width];
+                alignas(juce::dsp::SIMDRegister<float>) float arr[width];
                 result.copyToRawArray(arr);
                 const size_t remaining = numSamples - i;
                 const size_t count = juce::jmin(width, remaining);

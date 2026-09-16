@@ -2,6 +2,7 @@
 #include <iostream>
 int main(int argc, char** argv)
 {
+    juce::ScopedJuceInitialiser_GUI juceInit;
     juce::ScopedNoDenormals noDenormals;
     if (argc == 2 && std::string(argv[1]) == "--benchmark") return runFxBenchmark();
     if (argc == 4 && std::string(argv[1]) == "--factory") return auditFactory(argv[2], argv[3]);

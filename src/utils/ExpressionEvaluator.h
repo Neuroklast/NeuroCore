@@ -359,7 +359,13 @@ inline void ExpressionEvaluator::evaluateBlockSimdUnsafe(
     for (; i + width <= numSamples; i += width)
     {
         if (xIndex != invalidIndex)
-            varsCopy[xIndex] = juce::dsp::SIMDRegister<float>::fromRawArray(samples + i);
+            {
+            // Host buffers (and later channels of odd-sized buffers) need not be
+            // SIMD-aligned. Fixed-size copying permits an unaligned vector load.
+            alignas(juce::dsp::SIMDRegister<float>) float input[width];
+            std::copy_n(samples + i, width, input);
+            varsCopy[xIndex] = juce::dsp::SIMDRegister<float>::fromRawArray(input);
+        }
 
         pre(i, varsCopy);
         post(i, func(varsCopy.data()));
