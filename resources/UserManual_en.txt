@@ -258,3 +258,5 @@ Circuit editing: Select a processing block and use Ctrl/Cmd+C, X, V or D to copy
 Themes change the editor material as well as its hue: chip corner geometry, panel radius and background texture are theme-specific. Signal is angular and striped, Gold is compact and radial, Azure is rounded and spacious, and DIGICIDE is square with fine scan texture.
 
 Terminal is a live script view of Circuit edits. In Edit mode, completion inserts complete block templates from the current block catalog; press Tab to step through the block ID and every parameter value. Save first validates the draft. A rejected or interrupted compile stays in Edit mode, shows markers, and leaves the last valid audio graph active.
+
+Local developer builds always reconfigure before compiling. On macOS/Linux run `scripts/build_local.sh` (Linux: run `scripts/install_linux_deps.sh` once); on Windows run `build_release.bat`. Set `JUCE_DIR` to a JUCE 8.0.6 checkout to build offline, or let CMake fetch the pinned release. Native CI validation is manual and does not publish releases.

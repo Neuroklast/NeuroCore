@@ -191,3 +191,5 @@ Circuit edit checkpoint: copy/cut/paste/duplicate/park now operate on the script
 Theme checkpoint: Signal, Gold, Azure and DIGICIDE now carry distinct frame cuts, panel radii and material textures in addition to palette changes. Geometry and paint consume central theme tokens; theme and TypeScript contracts pass.
 
 Terminal checkpoint: Circuit compile events hydrate the shared script view. Catalog-derived block snippets insert every parameter with Monaco Tab stops. Save retains the last valid graph and editor draft on lint, compiler or bridge failure; invalid native compiles are not added to undo history. Completion/compile/store contracts and TypeScript pass.
+
+Local build checkpoint: Windows Debug/Release and POSIX build entry points reconfigure on every run; the POSIX script supports pinned offline JUCE via JUCE_DIR and configurable build directory/config/jobs. Native CI is manual-only and cannot publish a release. Platform binary delivery remains cancelled.

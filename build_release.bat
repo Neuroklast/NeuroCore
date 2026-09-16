@@ -23,22 +23,18 @@ echo ===========================================
 call :find_cmake
 if errorlevel 1 exit /b 1
 
-if not exist "%BUILD_DIR%\CMakeCache.txt" (
-    echo.
-    echo [1/2] cmake -B %BUILD_DIR% -S .
-    "%CMAKE%" -B "%BUILD_DIR%" -S .
-    if errorlevel 1 (
-        echo FEHLER: CMake configure fehlgeschlagen.
-        call :maybe_pause
-        exit /b 1
-    )
-) else (
-    echo [1/2] %BUILD_DIR%\CMakeCache.txt vorhanden — configure uebersprungen.
+echo.
+echo [1/2] cmake -B %BUILD_DIR% -S .
+"%CMAKE%" -B "%BUILD_DIR%" -S .
+if errorlevel 1 (
+    echo FEHLER: CMake configure fehlgeschlagen.
+    call :maybe_pause
+    exit /b 1
 )
 
 echo.
 echo [2/2] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
-"%CMAKE%" --build "%BUILD_DIR%" --config %CONFIG% --target %TARGET%
+"%CMAKE%" --build "%BUILD_DIR%" --config %CONFIG% --target %TARGET% --parallel
 if errorlevel 1 (
     echo FEHLER: Release-Build fehlgeschlagen.
     call :maybe_pause

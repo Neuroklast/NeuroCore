@@ -1,7 +1,5 @@
-name: Native alpha builds
+name: Manual native validation
 on:
-  push:
-    branches: [optimize/fx-runtime-factory]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,8 +8,6 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    # Native packages are built only for the final release checkpoint or on demand.
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-alpha]')
     strategy:
       fail-fast: false
       matrix:
@@ -98,22 +94,3 @@ jobs:
             build/Testing/Temporary/
             build/validation/
             build/CMakeFiles/CMakeConfigureLog.yaml
-  release:
-    if: contains(github.event.head_commit.message, '[release-alpha]')
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: NEUROKORE-*
-          path: release
-          merge-multiple: true
-      - name: Publish tested prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="alpha-tested-${GITHUB_SHA:0:12}"
-          gh release create "$tag" release/* --target "$GITHUB_SHA" --prerelease --title "NEUROKORE 0.6.4-beta — alpha test build" --notes-file docs/ALPHA_RELEASE_NOTES.md

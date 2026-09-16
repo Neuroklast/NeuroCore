@@ -84,35 +84,6 @@ export function stereoMetrics(
   };
 }
 
-/** 24-bit djb2 of the script / AST JSON. */
-export function astChecksum(src: string): string {
-  let h = 5381;
-  for (let i = 0; i < src.length; i += 1) {
-    h = ((h << 5) + h + src.charCodeAt(i)) | 0;
-  }
-  const hex = (h >>> 0).toString(16).toUpperCase().padStart(8, "0").slice(-6);
-  return `0x${hex}`;
-}
-
-export function dspEvalMs(cpu01: number, buf: number, sr: number): number {
-  if (! Number.isFinite(cpu01) || ! Number.isFinite(buf) || ! Number.isFinite(sr)) {
-    return 0;
-  }
-  if (cpu01 <= 0 || buf <= 0 || sr <= 0) {
-    return 0;
-  }
-  return clamp01(cpu01) * (buf / sr) * 1000;
-}
-
-export function coreTempC(drive01: number, cpu01: number): { temp: number; warn: boolean } {
-  const temp = Math.round(42 + clamp01(drive01) * 40 + clamp01(cpu01) * 30);
-  return { temp, warn: temp >= 80 };
-}
-
-export function driveAmount(knobs: Array<{ name: string; id: string; value: number }>): number {
-  const named = knobs.find((k) => /drive/i.test(k.name) || k.id.toLowerCase() === "d");
-  return clamp01(named?.value ?? 0);
-}
 
 export function osModeLabel(osFactor: number): string {
   const n = [1, 2, 4, 8].includes(osFactor) ? osFactor : 1;
@@ -220,54 +191,6 @@ export function transientHit(currPeak: number, prevPeak: number): boolean {
   return currPeak - prevPeak > 0.22 && currPeak > 0.18;
 }
 
-export function logoPulsePeriodMs(bpm: number): number {
-  const b = Number.isFinite(bpm) && bpm > 20 ? bpm : 120;
-  return Math.round(60000 / b);
-}
-
-export function rainSpeed(cpu01: number, drive01: number): number {
-  return 1 + clamp01(cpu01) * 2.4 + clamp01(drive01) * 1.6;
-}
-
-export function rainHot(cpu01: number, drive01: number): boolean {
-  return clamp01(cpu01) >= 0.55 || clamp01(drive01) >= 0.75;
-}
-
-export function dataRainLines(checksum: string, tick: number, count = 8): string[] {
-  const seed = checksum.replace(/^0x/i, "") || "4F9A8C";
-  const n = Math.max(1, count);
-  const lines: string[] = [];
-  let h = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  }
-  h = (h + (tick | 0) * 1103515245) | 0;
-  for (let i = 0; i < n; i += 1) {
-    h = (h * 1664525 + 1013904223) | 0;
-    const a = (h >>> 0).toString(16).toUpperCase().padStart(8, "0");
-    h = (h * 1664525 + 1013904223) | 0;
-    const b = (h >>> 0).toString(16).toUpperCase().padStart(8, "0");
-    lines.push(`${a}${b.slice(0, 4)}`);
-  }
-  return lines;
-}
-
-export function cursorReadout(x: number, y: number): string {
-  return `X: ${Math.round(x)}  Y: ${Math.round(y)}`;
-}
-
-export function logoReactiveStyle(
-  split: { redX: number; cyanY: number },
-  pulseMs: number,
-  speed: number,
-): Record<string, string> {
-  return {
-    "--nk-logo-red-x": `${split.redX}px`,
-    "--nk-logo-cyan-y": `${split.cyanY}px`,
-    "--nk-logo-pulse-ms": `${Math.max(200, pulseMs)}ms`,
-    "--nk-logo-rain": String(speed),
-  };
-}
 
 export function nodeIsMuted(args: Record<string, string>): boolean {
   if (truthyArg(args.bypass) || truthyArg(args.mute) || truthyArg(args.disabled)) {
