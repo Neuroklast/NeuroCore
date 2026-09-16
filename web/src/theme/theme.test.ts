@@ -77,3 +77,16 @@ describe("theme engine", () => {
     expect(themeRgba("cyan", 0.1, themeOf("azure"))).toBe("rgba(0, 240, 255, 0.1)");
   });
 });
+
+it('themes change material geometry and texture as well as hue',()=>{
+ const themes=themeIds().map(themeOf);
+ expect(new Set(themes.map(t=>t.frameCut)).size).toBe(4);
+ expect(new Set(themes.map(t=>t.panelRadius)).size).toBeGreaterThan(2);
+ expect(new Set(themes.map(t=>t.texture)).size).toBe(4);
+ for(const t of themes){
+  const css=themeCssVars(t);
+  expect(css['--nk-frame-cut']).toBe(`${t.frameCut}px`);
+  expect(css['--nk-panel-radius']).toBe(`${t.panelRadius}px`);
+  expect(css['--nk-theme-texture']).toBeTruthy();
+ }
+});

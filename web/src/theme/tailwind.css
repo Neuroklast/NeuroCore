@@ -72,6 +72,9 @@
   --nk-accent-dim-rgb: 138, 0, 33;
   --nk-accent-deep: #3a0008;
   --nk-chip-cut: 10px;
+  --nk-frame-cut: 10px;
+  --nk-panel-radius: 0px;
+  --nk-theme-texture: repeating-linear-gradient(135deg, rgba(var(--nk-accent-rgb), .025) 0 1px, transparent 1px 12px);
   --nk-accent-rgb: 255, 0, 60;
   --nk-cyan: #00f0ff;
   --nk-cyan-rgb: 0, 240, 255;
@@ -100,7 +103,8 @@ body,
   height: 100%;
   width: 100%;
   margin: 0;
-  background: var(--nk-bg);
+  background-color: var(--nk-bg);
+  background-image: var(--nk-theme-texture);
   overflow: hidden;
   color: var(--nk-ink);
   font-family: "Apex", "Inter", "Segoe UI", sans-serif;
@@ -218,8 +222,9 @@ html[data-motion="off"] .nk-boot {
   position: absolute;
   inset: 0;
   z-index: 0;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  background: #000;
+  clip-path: polygon(var(--nk-chip-cut) 0, 100% 0, 100% calc(100% - var(--nk-chip-cut)), calc(100% - var(--nk-chip-cut)) 100%, 0 100%, 0 var(--nk-chip-cut));
+  background: var(--nk-black);
+  border-radius: var(--nk-panel-radius);
 }
 
 .nk-chip-pads {
