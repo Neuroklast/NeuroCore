@@ -240,3 +240,13 @@ router's stored geometry, including Mid/Side connections.
 
 The automatic overview fits the complete circuit, even below the usual manual
 zoom range. Zoom in around the pointer to edit small controls.
+
+### Unit measurements
+
+Unit shows measured input/output peaks and output RMS with a −60 dBFS display
+floor. Peaks come from audio-block telemetry, not the downsampled stereo plot.
+Engine status shows sample rate, buffer size, latency, oversampling and CPU load.
+The former decorative temperature and checksum readouts are removed. The logo
+uses restrained level-reactive light without random glitches or scrolling code.
+If native telemetry is unavailable, meters clear and a waiting message appears.
+Synthetic signals are confined to the explicitly labelled browser preview.

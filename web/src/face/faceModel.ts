@@ -116,7 +116,7 @@ export function driveAmount(knobs: Array<{ name: string; id: string; value: numb
 
 export function osModeLabel(osFactor: number): string {
   const n = [1, 2, 4, 8].includes(osFactor) ? osFactor : 1;
-  return `LINEAR_PHASE_${n}X`;
+  return n === 1 ? "Off" : `${n}×`;
 }
 
 /** Full-pane background. Bars grow up from the Unit floor, not a mid strip. */

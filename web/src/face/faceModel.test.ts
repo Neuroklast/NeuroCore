@@ -129,9 +129,9 @@ describe("unit face engine greeble", () => {
       { id: "d", name: "Drive", value: 0.4 },
     ])).toBeCloseTo(0.4);
 
-    expect(osModeLabel(4)).toBe("LINEAR_PHASE_4X");
-    expect(osModeLabel(8)).toBe("LINEAR_PHASE_8X");
-    expect(osModeLabel(1)).toBe("LINEAR_PHASE_1X");
+    expect(osModeLabel(4)).toBe("4×");
+    expect(osModeLabel(8)).toBe("8×");
+    expect(osModeLabel(1)).toBe("Off");
   });
 });
 

@@ -51,6 +51,16 @@ segment overlap checks. Browser review found and reproduced the 40% camera floor
 clipping tall circuits; fit is now content-based. Off has zero running CSS
 animations in browser inspection. Further UX, themes and visual cleanup remain.
 
+## Unit display cleanup (2026-09-16)
+
+Removed invented core temperature, decorative AST checksum, random logo glitches,
+code rain and pointer coordinates. Unit now reports actual block input/output
+peaks rather than gonio-decimated channel maxima. Missing native telemetry clears
+all readings and reports that data is unavailable; it cannot substitute a demo
+waveform. Browser preview remains labelled synthetic. Logo and circuit visual
+identity remain. Platform builds are cancelled by the latest user instruction;
+remaining work ends with a pushed PR and merge after validation.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.
