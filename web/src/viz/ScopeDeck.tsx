@@ -58,12 +58,14 @@ export function TelemetryPump({
             const res = await fetch(telemetryPath, { cache: "no-store" });
             if (res.ok) {
               const ab = await res.arrayBuffer();
+              if (!live) return;
               ok = decodeTelemetry(ab, views);
             }
           } catch {
             ok = false;
           }
         }
+        if (!live) return;
         if (! ok) {
           fillTelemetryFallback(views, t, hasJuceBridge());
           t += 1;

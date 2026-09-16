@@ -26,7 +26,7 @@ export function shouldBlockBrowserShortcut(e: {
   ctrlKey: boolean;
   metaKey: boolean;
   altKey: boolean;
-}): boolean {
+}, ctx: { textTarget: boolean } = { textTarget: false }): boolean {
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (key === "F5" || key === "F12" || key === "F3" || key === "F7") {
     return true;
@@ -38,6 +38,7 @@ export function shouldBlockBrowserShortcut(e: {
   if (key === "F5") {
     return true;
   }
+  if (ctx.textTarget && ["a", "c", "x", "v", "f", "d"].includes(key)) return false;
   return CTRL_KEYS.has(key);
 }
 

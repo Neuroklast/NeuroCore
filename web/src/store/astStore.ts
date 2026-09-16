@@ -68,6 +68,8 @@ export const useAstStore = create<AstState>((set) => ({
   },
 
   applyCompileResult: (payload) => {
+    if (payload.origin === "editor" && payload.script != null
+        && payload.script !== useAstStore.getState().script) return;
     if (! payload.ok) {
       set({
         origin: payload.origin,
@@ -81,5 +83,5 @@ export const useAstStore = create<AstState>((set) => ({
     });
   },
 
-  setDraftScript: (script) => set({ script }),
+  setDraftScript: (script) => set({ script, diagnostics: [] }),
 }));

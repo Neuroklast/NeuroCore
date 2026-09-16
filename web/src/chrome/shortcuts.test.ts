@@ -149,3 +149,10 @@ describe('Circuit editing chords',()=>{
     }
   });
 });
+
+ it("preserves native text clipboard and editor chords", () => {
+   for (const key of ["a", "c", "x", "v", "f", "d"]) {
+     expect(shouldBlockBrowserShortcut({ ...bare, key, ctrlKey: true }, { textTarget: true })).toBe(false);
+   }
+   expect(shouldBlockBrowserShortcut({ ...bare, key: "F5" }, { textTarget: true })).toBe(true);
+ });

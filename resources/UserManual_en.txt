@@ -262,3 +262,6 @@ Terminal is a live script view of Circuit edits. In Edit mode, completion insert
 Local developer builds always reconfigure before compiling. On macOS/Linux run `scripts/build_local.sh` (Linux: run `scripts/install_linux_deps.sh` once); on Windows run `build_release.bat`. Set `JUCE_DIR` to a JUCE 8.0.6 checkout to build offline, or let CMake fetch the pinned release. Native CI validation is manual and does not publish releases.
 
 Hosts receive a tail length that includes serial delay, reverb and release stages on the longest audible bus path, so a second effect is not cut after transport stops. Parked blocks are excluded. Newly added compressor and gate blocks start at -18 dB with explicit attack, release and ceiling values.
+
+Circuit edits and Terminal drafts
+Rejected connections leave the last compiled graph and Terminal script intact. Native connection changes appear in both views only after successful compilation. A connection can be drawn from either end. Compiler diagnostics belong to the submitted draft; replies to older drafts do not replace diagnostics for current text. Copy, cut, paste and editor navigation remain available while typing; Circuit shortcuts act only in the active Circuit view.

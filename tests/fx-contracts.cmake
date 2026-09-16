@@ -16,6 +16,10 @@ add_executable(NeuroKoreDspContracts
     ${NK_ROOT}/src/utils/UiSettings.cpp
     ${NK_ROOT}/src/bridge/TelemetryFrame.cpp
     ${NK_ROOT}/src/bridge/TelemetryPump.cpp
+    ${NK_ROOT}/src/bridge/CompileSession.cpp
+    ${NK_ROOT}/src/bridge/AstJson.cpp
+    ${NK_ROOT}/src/bridge/GraphOps.cpp
+    ${NK_ROOT}/src/dsl/GraphModel.cpp
     ${NK_ROOT}/src/dsl/DSLParser.cpp
     ${NK_ROOT}/src/dsl/SignalChain.cpp
     ${NK_BLOCKS}

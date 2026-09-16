@@ -218,8 +218,13 @@ export function publishScript(script: string, origin: "canvas" | "editor"): void
   };
   if (hasJuceBridge()) {
     return getNativeFunction("compile")({ origin, script }).then((result) => {
-      if (!result || typeof result !== "object" || !("ok" in result) || result.ok === true) remember();
+      if (!result || typeof result !== "object" || !("ok" in result)) throw new Error("No compile acknowledgement received.");
+      if (result.ok === true) remember();
       return result;
+    }).catch((error) => {
+      const diagnostics = [{ line: 1, column: 1, message: error instanceof Error ? error.message : String(error) }];
+      useAstStore.setState({ diagnostics });
+      return { ok: false, origin, diagnostics };
     });
   }
   remember();

@@ -6,6 +6,7 @@ import { subscribeVizClock } from "../theme/vizClock";
 import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
 import { useBindStore } from "../store/telemetryStore";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
+import { undoTargetIsText } from "../chrome/undoModel";
 import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
@@ -271,9 +272,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
           commitBoardCut(port);
           return;
         }
-        if (! port.east) {
-          return;
-        }
         const from = portGlobal(node, port);
         connectDragRef.current = {
           fromPort: port,
@@ -384,7 +382,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (drag?.snapPortId) {
       const dst = useBoardStore.getState().ports[drag.snapPortId];
       if (dst) {
-        commitBoardConnect(drag.fromPort, dst);
+        void (drag.fromPort.east ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
       }
     }
     connectDragRef.current = null;
@@ -411,6 +409,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (!active || undoTargetIsText(e.target) || useHostStore.getState().overlay != null) return;
       if (e.code === "Space") {
         spaceRef.current = true;
       }
@@ -456,8 +455,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      spaceRef.current = false;
     };
-  }, []);
+  }, [active]);
 
   const onWheel = useCallback((e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();

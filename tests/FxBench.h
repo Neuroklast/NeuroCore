@@ -17,6 +17,9 @@ inline int runFxBenchmark()
             juce::String error;
             if (! chain.loadScript (fx.script, error)) { std::cerr << fx.name << ": " << error << '\n'; return 1; }
             chain.prepare ({ 48000, (juce::uint32) blockSize, 2 });
+            // Production DSP cost with no editor attached. Telemetry taps are a
+            // separately capped UI cost and are disabled when every editor is closed.
+            chain.setNodeTapsWanted (false);
             juce::AudioBuffer<float> b (2, blockSize), input (2, blockSize);
             FxRuntime::fill (input);
             std::array<double, 5> timings {};

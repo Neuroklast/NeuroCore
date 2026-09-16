@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../src/bridge/CompileSession.h"
+#include "../src/bridge/AstJson.h"
 #include "../src/dsl/GraphModel.h"
 
 /** WP3: invalid DSL must not compile audio; last valid AST stays. */

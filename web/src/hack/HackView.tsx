@@ -110,7 +110,7 @@ export function HackView() {
     ];
     const result = await commitTerminalDraft(script, preflight, (draft) => publishScript(draft, "editor"));
     useAstStore.getState().applyCompileResult(result);
-    if (result.ok) setEditing(false);
+    if (result.ok && useAstStore.getState().script === script) setEditing(false);
   };
 
   const formulaPt = useHostStore((s) => s.formulaPt);

@@ -120,7 +120,7 @@ export function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && undoTargetIsText(e.target)) {
         return;
       }
-      if (shouldBlockBrowserShortcut(e)) {
+      if (shouldBlockBrowserShortcut(e, hostCtx)) {
         e.preventDefault();
         // Ctrl/Cmd+A Arrange: block browser select-all but let AssembleView bubble-handle.
         if (browserShortcutStopsPropagation(e, { textTarget: hostCtx.textTarget }))
