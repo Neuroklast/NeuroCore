@@ -61,6 +61,15 @@ waveform. Browser preview remains labelled synthetic. Logo and circuit visual
 identity remain. Platform builds are cancelled by the latest user instruction;
 remaining work ends with a pushed PR and merge after validation.
 
+## WebView bridge lifetime (2026-09-16)
+
+One response dispatcher and monotonic request IDs replace per-call completion
+listeners and random IDs. Native replies are no longer silently completed after
+50 ms. A 30-second error timeout cleans pending calls. Host event subscriptions
+return cleanup functions, and App unsubscribes on unmount. Three failing bridge
+contracts now pass: delayed compile, 100 parameter updates with one listener,
+and repeated mount/unmount subscriptions. TypeScript passes.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.
