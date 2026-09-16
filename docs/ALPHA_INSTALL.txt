@@ -1,0 +1,36 @@
+NEUROKORE 0.6.4-beta — alpha installation
+
+Read LICENSE.txt, EULA.txt and ALPHA_TESTER_AGREEMENT.txt. Personal activation
+files (.lic) are issued separately by NEUROKLAST. The signing key and license
+issuer are never included in these download packages.
+
+Windows x86_64
+Copy the complete .vst3 directory from VST3 to:
+C:\Program Files\Common Files\VST3
+The standalone executable is in Standalone. Microsoft Edge WebView2
+Evergreen Runtime is required for the editor. Obtain it from Microsoft.
+These alpha binaries are unsigned.
+
+macOS Intel and Apple Silicon (universal)
+Copy the .vst3 directory into ~/Library/Audio/Plug-Ins/VST3
+Copy the .component directory into ~/Library/Audio/Plug-Ins/Components
+Copy the standalone .app into Applications. VST3 and AU are included.
+The bundles have an ad-hoc integrity signature; they are not Developer ID
+signed or notarised. macOS security policy may block downloaded alpha builds.
+Do not disable system security globally; consult the publisher for a signed
+build if your machine's policy requires one.
+
+Linux x86_64
+Built on Ubuntu 22.04. Copy the complete .vst3 directory into ~/.vst3
+The standalone executable is in Standalone. GTK 3, WebKitGTK 4.1, ALSA and
+standard X11/OpenGL libraries are required. On compatible Ubuntu systems:
+sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0 libasound2 libgl1
+Other distributions need their corresponding runtime packages. The editor
+and factory resources are embedded; no source checkout is required.
+
+All platforms
+Close the DAW before replacing a plugin, then rescan plugins in the DAW.
+Use VST3 hosts for VST3, AU hosts for AU. Pro Tools AAX and VST2 are not
+provided. Keep older versions and a backup of important projects.
+BUILD.json identifies the exact source commit. The adjacent SHA-256 file
+verifies the downloaded archive. Report the build identifier with issues.

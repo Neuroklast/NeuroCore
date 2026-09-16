@@ -57,7 +57,7 @@ if(NOT DEFINED JUCE_DIR)
             # generated MSBuild steps. With JUCE_BUILD_HELPER_TOOLS=ON the executable
             # target is "juceaide" (no juce:: alias), so use $<TARGET_FILE:juceaide>.
             set(_juce_utils_cmake "${juce_SOURCE_DIR}/extras/Build/CMake/JUCEUtils.cmake")
-            if(EXISTS "${_juce_utils_cmake}")
+            if(WIN32 AND EXISTS "${_juce_utils_cmake}")
                 file(READ "${_juce_utils_cmake}" _juce_utils_content)
                 string(REPLACE "COMMAND juce::juceaide" "COMMAND $<TARGET_FILE:juceaide>" _juce_utils_content "${_juce_utils_content}")
                 file(WRITE "${_juce_utils_cmake}" "${_juce_utils_content}")
@@ -75,7 +75,7 @@ endif()
 if(NOT _JUCE_FETCHED)
     # Same juceaide MSBuild/CMake fix as FetchContent path when CI passes -DJUCE_DIR=
     set(_juce_utils_cmake "${JUCE_DIR}/extras/Build/CMake/JUCEUtils.cmake")
-    if(EXISTS "${_juce_utils_cmake}")
+    if(WIN32 AND EXISTS "${_juce_utils_cmake}")
         file(READ "${_juce_utils_cmake}" _juce_utils_content)
         string(REPLACE "COMMAND juce::juceaide" "COMMAND $<TARGET_FILE:juceaide>" _juce_utils_content "${_juce_utils_content}")
         file(WRITE "${_juce_utils_cmake}" "${_juce_utils_content}")
@@ -89,7 +89,7 @@ endif()
 # Phase 5: asmjit only on Windows x64. Apple VST3/AU (Intel + Apple Silicon)
 # compile the tape interpreter — no asmjit headers, no RWX on AU sandbox.
 set (NK_HAS_EXPR_JIT 0)
-if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "ARM|arm|aarch64" AND NOT CMAKE_GENERATOR_PLATFORM MATCHES "ARM|arm")
     set (ASMJIT_STATIC ON CACHE BOOL "" FORCE)
     set (ASMJIT_TEST OFF CACHE BOOL "" FORCE)
     set (ASMJIT_NO_FOREIGN ON CACHE BOOL "" FORCE)
@@ -97,8 +97,7 @@ if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     set (ASMJIT_NO_INSTALL ON CACHE BOOL "" FORCE)
     FetchContent_Declare (asmjit
         GIT_REPOSITORY https://github.com/asmjit/asmjit.git
-        GIT_TAG        master
-        GIT_SHALLOW    TRUE
+        GIT_TAG        dffd8b164f228abbc47246c9881f107d656952b2
     )
     FetchContent_MakeAvailable (asmjit)
     set (NK_HAS_EXPR_JIT 1)
@@ -243,10 +242,10 @@ juce_add_binary_data(resourcesBinary
         resources/UserManual_en.txt
         # Source of truth is this JSON in git. Bound into BinaryData at configure/build.
         resources/factory_presets.json
-        "resources/irs/American IR 01.wav"
-        "resources/irs/British IR 01.wav"
-        "resources/irs/Medium IR 01.wav"
-        "resources/irs/Vintage IR 01.wav"
+        "Resources/irs/American IR 01.wav"
+        "Resources/irs/British IR 01.wav"
+        "Resources/irs/Medium IR 01.wav"
+        "Resources/irs/Vintage IR 01.wav"
 )
 
 target_link_libraries(NeuroKore PRIVATE
@@ -306,7 +305,7 @@ if(TARGET NeuroKore_Standalone)
             $<TARGET_FILE_DIR:NeuroKore_Standalone>/resources
     )
     if(WIN32)
-        target_sources(NeuroKore_Standalone PRIVATE resources/img/nk_logo.rc)
+        target_sources(NeuroKore_Standalone PRIVATE Resources/img/nk_logo.rc)
     endif()
 endif()
 # Windows VST3 is the module binary + Contents/Resources/moduleinfo.json.
@@ -455,7 +454,7 @@ list(FILTER _nk_web_sources EXCLUDE REGEX "\\.gen\\.(json|txt)$")
 
 add_custom_command(
     OUTPUT "${_nk_web_nm_stamp}"
-    COMMAND "${NPM_EXECUTABLE}" install --no-audit --no-fund
+    COMMAND "${NPM_EXECUTABLE}" ci --no-audit --no-fund
     COMMAND ${CMAKE_COMMAND} -E touch "${_nk_web_nm_stamp}"
     WORKING_DIRECTORY "${_nk_web_dir}"
     DEPENDS
@@ -630,4 +629,14 @@ if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
             VERBATIM
         )
     endif()
+endif()
+
+# Linux hosts cannot rely on a resource directory beside the DAW executable.
+if (UNIX AND NOT APPLE)
+    set_source_files_properties("${_nk_web_zip}" PROPERTIES GENERATED TRUE)
+    juce_add_binary_data(webBinary NAMESPACE WebBinaryData HEADER_NAME WebBinaryData.h
+        SOURCES "${_nk_web_zip}")
+    add_dependencies(webBinary NeuroKoreWebEmbed)
+    target_link_libraries(NeuroKore PRIVATE webBinary)
+    target_link_libraries(NeuroKoreTests PRIVATE webBinary)
 endif()

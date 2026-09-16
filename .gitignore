@@ -395,3 +395,5 @@ installer/MicrosoftEdgeWebView2RuntimeInstallerX64.exe
 
 # Out-of-tree DSP contract builds
 build-dsp*/
+
+/release/

@@ -181,3 +181,5 @@ DSP corrections (0.6.4-beta)
 - Filter automation also advances when the host supplies one sample per callback.
 - Widen adds a mono-cancelling side signal to the original stereo image. Width zero and mono processing are transparent.
 - Pitch uses a fixed 1024-sample latency at its processing sample rate and aligns its internal dry/wet paths. Zero semitones with formant 1 reconstructs unity gain. Legacy pitch sync syntax remains readable; FFT overlap and latency no longer change with host tempo.
+
+Alpha download packages include VST3 and Standalone on Windows/Linux, and VST3/AU/Standalone universal bundles on macOS. Each package includes license terms, a tester agreement, installation instructions and its source commit. Activation licenses are supplied separately. Linux embeds its editor assets. Unsigned/ad-hoc signed alpha packages do not imply notarisation or certification for every host.

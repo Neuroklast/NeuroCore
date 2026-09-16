@@ -105,3 +105,5 @@ Windows: `build_release.bat` / `build_debug.bat` — same `build/` tree and `Neu
 Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout progress, mute keeps chips. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.6.4-beta.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3` (Mac: plus `.component`).
 
 - DSP host-buffer regression: fixed SIMD crash on unaligned stereo channel buffers. The 22-node irregular-block matrix passes. Routing/envelope/filter/widen/pitch contracts failed before their fixes and now pass (0 failures). Full platform suite and release validation remain pending.
+
+- Native alpha CI added for Windows x64, Linux x64 and macOS universal, with full-suite gates and explicit release marker. Corrected case-sensitive resource paths and Linux editor embedding. Packaging source contracts pass; native CI results are pending. License/EULA/tester agreement are packaged; no activation key is distributed.
