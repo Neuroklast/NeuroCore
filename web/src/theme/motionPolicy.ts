@@ -27,7 +27,7 @@ export function motionAllows(
   if (prefersReduced) {
     return false;
   }
-  return feature === "crtScan" || feature === "chipReact" || feature === "faceGlow" || feature === "bloom";
+  return feature === "chipReact" || feature === "faceGlow" || feature === "bloom";
 }
 
 export function motionCopy(motion: MotionPref): string {

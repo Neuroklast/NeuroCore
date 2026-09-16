@@ -205,6 +205,11 @@ public:
 
     bool  isCpuProtectActive() const noexcept { return cpuProtect.isTripped(); }
     float getCpuLoad()         const noexcept { return cpuProtect.getSmoothedLoad(); }
+    void setTelemetryWanted (bool on) noexcept
+    {
+        telemetryPump.setWanted (on);
+        scriptManager.signalChain.setNodeTapsWanted (on);
+    }
     bridge::TelemetryPump& getTelemetry() noexcept { return telemetryPump; }
     const bridge::TelemetryPump& getTelemetry() const noexcept { return telemetryPump; }
     void  clearCpuProtect()          noexcept { cpuProtect.clear(); }

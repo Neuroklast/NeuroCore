@@ -109,6 +109,7 @@ juce::var CompileSession::toCompileResultVar (const CompileOutcome& out) const
     auto* root = new juce::DynamicObject();
     root->setProperty ("ok", out.ok);
     root->setProperty ("origin", out.origin);
+    root->setProperty ("script", out.script);
     juce::Array<juce::var> diags;
     for (const auto& d : out.diagnostics)
     {

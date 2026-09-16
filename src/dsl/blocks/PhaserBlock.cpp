@@ -74,10 +74,7 @@ void SignalChain::Phaser::prepare (const juce::dsp::ProcessSpec& spec)
     snap (centerSm, centerExpr, 800.f, Config::kModSmoothingTime);
     snap (fbSm, feedbackExpr, 0.3f, Config::kSmoothingTime);
     snap (mixSm, mixExpr, 0.5f, Config::kSmoothingTime);
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &stagesExpr, &rateExpr, &depthExpr, &centerExpr, &feedbackExpr, &mixExpr });
     clearRuntimeState();
     nStages = juce::jlimit (2, kMaxStages, (int) std::lround (stagesSm.getCurrentValue()));
     apA = DSPUtils::onePoleAllpassA (centerSm.getCurrentValue(), sampleRate);
@@ -100,16 +97,7 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        stagesExpr.setVariable (n.second, v);
-        rateExpr.setVariable (n.second, v);
-        depthExpr.setVariable (n.second, v);
-        centerExpr.setVariable (n.second, v);
-        feedbackExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
@@ -121,11 +109,8 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
     depthSm.setTargetValue (ev (depthExpr, 0.7f));
     centerSm.setTargetValue (ev (centerExpr, 800.f));
     nStages = juce::jlimit (2, kMaxStages, (int) std::lround (stagesSm.getCurrentValue()));
-    const float fb = juce::jlimit (0.f, 0.95f, ev (feedbackExpr, 0.3f));
-    const float mix = juce::jlimit (0.f, 1.f, ev (mixExpr, 0.5f));
-    const float dry = 1.f - mix;
-    fbSm.setCurrentAndTargetValue (fb);
-    mixSm.setCurrentAndTargetValue (mix);
+    fbSm.setTargetValue (juce::jlimit (0.f, 0.95f, ev (feedbackExpr, 0.3f)));
+    mixSm.setTargetValue (juce::jlimit (0.f, 1.f, ev (mixExpr, 0.5f)));
 
     float* NK_RESTRICT L = buffer.getWritePointer (0);
     float* NK_RESTRICT R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
@@ -166,6 +151,9 @@ void SignalChain::Phaser::processBlock (juce::AudioBuffer<float>& buffer)
 
         for (int k = 0; k < n; ++k)
         {
+            const float fb = fbSm.getNextValue();
+            const float mix = mixSm.getNextValue();
+            const float dry = 1.f - mix;
             const float xL = L[i + k];
             float yL = cascadeN (DSPUtils::satFb (xL + lastYL * fb), a, zL, stages);
             lastYL = yL;

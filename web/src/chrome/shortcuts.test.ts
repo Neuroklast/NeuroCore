@@ -139,3 +139,20 @@ describe("non-text keys reach the DAW host", () => {
     )).toBe(true);
   });
 });
+
+describe('Circuit editing chords',()=>{
+  it('keeps copy/cut/paste/duplicate/park in the circuit and lets them bubble',()=>{
+    const selected={textTarget:false,circuitHasSelection:true,overlayOpen:false};
+    for(const key of ['c','x','v','d','p']){
+      expect(shouldForwardToHost({...bare,key,ctrlKey:true},selected)).toBe(false);
+      expect(browserShortcutStopsPropagation({key,ctrlKey:true,metaKey:false,altKey:false},{textTarget:false})).toBe(false);
+    }
+  });
+});
+
+ it("preserves native text clipboard and editor chords", () => {
+   for (const key of ["a", "c", "x", "v", "f", "d"]) {
+     expect(shouldBlockBrowserShortcut({ ...bare, key, ctrlKey: true }, { textTarget: true })).toBe(false);
+   }
+   expect(shouldBlockBrowserShortcut({ ...bare, key: "F5" }, { textTarget: true })).toBe(true);
+ });

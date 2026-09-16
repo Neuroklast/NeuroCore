@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import { CHIP_CUT, chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../theme/chromeSpec";
+import { chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../theme/chromeSpec";
+import { themeOf } from "../theme/theme";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
 import { BindDropPad, BindRail } from "./BindRail";
@@ -18,6 +19,7 @@ import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
+import { lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 
 export function BoardChip({
   node,
@@ -42,6 +44,9 @@ export function BoardChip({
   const peak = useHostStore((s) => s.clips[node.id] ?? 0);
   const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
   const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
+  const knobs = useHostStore((s) => s.knobs);
+  const bpm = useHostStore((s) => s.bpm);
+  const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
@@ -53,6 +58,9 @@ export function BoardChip({
   const showExpand = chipExpandAction(node.role, node.type) === "inspect";
   const binds = node.role === "chip" ? paintedBindKeys(node.type, node.args) : [];
   const bindOpen = bindOver && node.role === "chip" && binds.length > 0;
+  const lfoShape = parseLfoShape(node.args.shape ?? "sine");
+  const lfoHz = node.type === "osc" ? resolveLfoHz(node.args, knobs, bpm) : 0;
+  const frameCut = themeOf(theme).frameCut;
 
   return (
     <div
@@ -72,7 +80,7 @@ export function BoardChip({
         overflow: "visible",
         ...({
           ...chipChromeVars(node.role),
-          "--nk-chip-cut": `${CHIP_CUT}px`,
+          "--nk-chip-cut": `${frameCut}px`,
         } as CSSProperties),
         ...(ioInset
           ? {
@@ -97,7 +105,7 @@ export function BoardChip({
           ) : chrome.lamp === "env" ? (
             <span className="nk-env-lamp" aria-hidden />
           ) : (
-            <span className="nk-lfo-lamp nk-lfo-sine" aria-hidden />
+            <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
           )
         ) : null}
         <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
@@ -106,12 +114,12 @@ export function BoardChip({
       </div>
       <svg className="nk-chip-frame" width={node.w} height={node.h} viewBox={`0 0 ${node.w} ${node.h}`} aria-hidden>
         <polygon
-          points={framePoints(node.w, node.h)}
+          points={framePoints(node.w, node.h, frameCut)}
           fill="none"
           stroke={selected || isIn ? "var(--nk-cyan)" : "var(--nk-ink-muted)"}
           strokeWidth="1.4"
         />
-        {frameCorners(node.w, node.h).map((d, i) => (
+        {frameCorners(node.w, node.h, frameCut).map((d, i) => (
           <path key={i} d={d} fill="none" stroke={selected || isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"} strokeWidth="2.7" />
         ))}
       </svg>
@@ -229,4 +237,3 @@ function ClipWarnSvg() {
     </svg>
   );
 }
-

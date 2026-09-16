@@ -1,3 +1,4 @@
+import { hasJuceBridge } from "../bridge/juce";
 import { useEffect, useRef, useState } from "react";
 import { createTelemetryViews, decodeTelemetry, SCOPE_N } from "../bridge/telemetry";
 import { persistUi } from "../chrome/persistUi";
@@ -10,7 +11,12 @@ import { ScopeCanvas, ScopeMenu } from "./ScopeCanvas";
 import { StereoField } from "./StereoField";
 import { demoGonioLr, demoLoudness, type ScopeSource, type ScopeXScale, type ScopeYScale } from "./scopeModel";
 
-function fillDemo(views: ReturnType<typeof createTelemetryViews>, t: number) {
+export function fillTelemetryFallback(views: ReturnType<typeof createTelemetryViews>, t: number, native = false) {
+  if (native) {
+    views.inPeak = views.outPeak = views.inRms = views.outRms = views.cpu01 = 0;
+    for (const samples of [views.scopeIn, views.scopeOut, views.gonioX, views.gonioY]) samples.fill(0);
+    return;
+  }
   const n = SCOPE_N;
   for (let i = 0; i < n; i += 1) {
     const ph = (i / n) * Math.PI * 2 + t * 0.35;
@@ -52,17 +58,19 @@ export function TelemetryPump({
             const res = await fetch(telemetryPath, { cache: "no-store" });
             if (res.ok) {
               const ab = await res.arrayBuffer();
+              if (!live) return;
               ok = decodeTelemetry(ab, views);
             }
           } catch {
             ok = false;
           }
         }
+        if (!live) return;
         if (! ok) {
-          fillDemo(views, t);
+          fillTelemetryFallback(views, t, hasJuceBridge());
           t += 1;
         }
-        useTelemetryStore.getState().applyViews(views);
+        useTelemetryStore.getState().applyViews(views, ok);
         await new Promise((r) => window.setTimeout(r, ms));
       }
     };

@@ -48,3 +48,15 @@ describe("board camera", () => {
     expect(Math.abs(w.y - 80)).toBeLessThan(1e-9);
   });
 });
+
+it("fits the entire tall circuit without clipping the first and last row", () => {
+  const nodes = [node("IN",32,32,128,96),node("OUT",800,2600,128,160)];
+  const view = {w:1200,h:560};
+  const camera = fitCamera(nodes,view);
+  for(const n of nodes) {
+    const a=screenFromWorld(camera,n.x,n.y), b=screenFromWorld(camera,n.x+n.w,n.y+n.h);
+    expect(a.x>=0 && a.y>=0 && b.x<=view.w && b.y<=view.h).toBe(true);
+  }
+  const zoomed=zoomCamera(camera,600,280,1.05);
+  expect(zoomed.scale/camera.scale).toBeCloseTo(1.05);
+});

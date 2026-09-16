@@ -3,6 +3,7 @@ import { GONIO_N, SCOPE_N, type TelemetryViews } from "../bridge/telemetry";
 
 interface TelemetryState {
   tick: number;
+  available: boolean;
   inPeak: number;
   outPeak: number;
   inRms: number;
@@ -11,12 +12,13 @@ interface TelemetryState {
   scopeOut: Float32Array;
   gonioL: Float32Array;
   gonioR: Float32Array;
-  applyViews: (v: TelemetryViews) => void;
+  applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
 }
 
 export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   tick: 0,
+  available: false,
   inPeak: 0,
   outPeak: 0,
   inRms: 0,
@@ -25,7 +27,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   scopeOut: new Float32Array(SCOPE_N),
   gonioL: new Float32Array(GONIO_N),
   gonioR: new Float32Array(GONIO_N),
-  applyViews: (v) => {
+  applyViews: (v, available = true) => {
     const s = get();
     s.scopeIn.set(v.scopeIn.subarray(0, s.scopeIn.length));
     s.scopeOut.set(v.scopeOut.subarray(0, s.scopeOut.length));
@@ -33,6 +35,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
     s.gonioR.set(v.gonioY.subarray(0, s.gonioR.length));
     set({
       tick: s.tick + 1,
+      available,
       inPeak: v.inPeak,
       outPeak: v.outPeak,
       inRms: v.inRms,

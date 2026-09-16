@@ -36,12 +36,11 @@ Proprietary. Copyright (c) 2024–2026 NEUROKLAST. Testers receive a signed `.li
 Needs JUCE 8.0.6+ (`JUCE_DIR` or CMake fetches it) and a VST3 SDK.
 
 ```bash
-cmake -B build -S .
-cmake --build build --config Release --target NeuroKore_All
+./scripts/build_local.sh
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Windows: `build_release.bat`. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.4-beta.exe` / `.vst3` / `.component`).
+Linux first needs `./scripts/install_linux_deps.sh`. Windows uses `build_release.bat` and macOS/Linux use `scripts/build_local.sh`. Both entry points reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.4-beta.exe` / `.vst3` / `.component`).
 
 Package Windows zip + installer (after Release). Needs [Inno Setup 6](https://jrsoftware.org/isinfo.php):
 

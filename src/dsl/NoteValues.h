@@ -30,6 +30,12 @@ namespace NoteValues
         { 0.09375f,  "1/16." },
         { 1.0f / 12.0f, "1/12" },
         { 0.0625f,   "1/16" },
+        { 0.046875f, "1/32." },
+        { 1.0f / 24.0f, "1/24" },
+        { 0.03125f,  "1/32" },
+        { 0.0234375f, "1/64." },
+        { 1.0f / 48.0f, "1/48" },
+        { 0.015625f, "1/64" },
     };
 
     inline constexpr float kEps = 1.0e-4f;
@@ -87,6 +93,15 @@ namespace NoteValues
                 return g.label;
         const int den = juce::jlimit (1, 64, (int) std::lround (1.0 / (double) whole));
         return "1/" + juce::String (den);
+    }
+
+    inline float normFromWhole (float whole, const std::vector<float>& steps) noexcept
+    {
+        if (steps.size() <= 1) return 0.f;
+        size_t best = 0;
+        for (size_t i = 1; i < steps.size(); ++i)
+            if (std::abs (steps[i] - whole) < std::abs (steps[best] - whole)) best = i;
+        return (float) best / (float) (steps.size() - 1);
     }
 
     struct Grid

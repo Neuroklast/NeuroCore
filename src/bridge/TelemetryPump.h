@@ -31,7 +31,7 @@ private:
         std::uint32_t size { 0 };
     };
 
-    void decimate (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept;
+    void captureScope (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept;
     static float peakOf (const juce::AudioBuffer<float>& src) noexcept;
     static float rmsOf (const juce::AudioBuffer<float>& src) noexcept;
 

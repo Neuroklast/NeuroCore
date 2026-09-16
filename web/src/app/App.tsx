@@ -49,7 +49,11 @@ export function App() {
     setVizFpsCap(frameRate);
   }, [frameRate]);
   useEffect(() => {
-    onNativeEvent("ast", (payload) => {
+    const subscriptions: Array<() => void> = [];
+    const listen = (id: string, fn: (payload: unknown) => void) => {
+      subscriptions.push(onNativeEvent(id, fn));
+    };
+    listen("ast", (payload) => {
       const rec = payload as AstEventPayload;
       if (! rec || typeof rec.astJson !== "string") {
         return;
@@ -62,24 +66,24 @@ export function App() {
         updateScript: shouldHydrate("editor", rec.origin as Origin),
       });
     });
-    onNativeEvent("compileResult", (payload) => {
+    listen("compileResult", (payload) => {
       const rec = payload as CompileResultPayload;
       if (! rec || typeof rec.ok !== "boolean") {
         return;
       }
       useAstStore.getState().applyCompileResult(rec);
     });
-    onNativeEvent("hello", (payload) => {
+    listen("hello", (payload) => {
       const rec = payload as { telemetryPath?: string };
       if (typeof rec?.telemetryPath === "string") {
         useHostStore.getState().setTelemetryPath(rec.telemetryPath);
       }
     });
-    onNativeEvent("params", (p) => useHostStore.getState().applyParams(p as Record<string, unknown>));
-    onNativeEvent("host", (p) => useHostStore.getState().applyHost(p as Record<string, unknown>));
-    onNativeEvent("presetState", (p) => useHostStore.getState().applyPresets(p as Record<string, unknown>));
-    onNativeEvent("license", (p) => useHostStore.getState().applyLicense(p as Record<string, unknown>));
-    onNativeEvent("ir", (p) => useHostStore.getState().applyIr(p as Record<string, unknown>));
+    listen("params", (p) => useHostStore.getState().applyParams(p as Record<string, unknown>));
+    listen("host", (p) => useHostStore.getState().applyHost(p as Record<string, unknown>));
+    listen("presetState", (p) => useHostStore.getState().applyPresets(p as Record<string, unknown>));
+    listen("license", (p) => useHostStore.getState().applyLicense(p as Record<string, unknown>));
+    listen("ir", (p) => useHostStore.getState().applyIr(p as Record<string, unknown>));
     const onKey = (e: KeyboardEvent) => {
       if (! undoTargetIsText(e.target) && (isUndoKey(e) || isRedoKey(e))) {
         e.preventDefault();
@@ -116,7 +120,7 @@ export function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && undoTargetIsText(e.target)) {
         return;
       }
-      if (shouldBlockBrowserShortcut(e)) {
+      if (shouldBlockBrowserShortcut(e, hostCtx)) {
         e.preventDefault();
         // Ctrl/Cmd+A Arrange: block browser select-all but let AssembleView bubble-handle.
         if (browserShortcutStopsPropagation(e, { textTarget: hostCtx.textTarget }))
@@ -143,6 +147,7 @@ export function App() {
       seedFactoryPresets();
     }
     return () => {
+      subscriptions.forEach(unsubscribe => unsubscribe());
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
       window.removeEventListener("contextmenu", onContextMenu, true);

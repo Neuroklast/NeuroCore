@@ -47,10 +47,8 @@ void SignalChain::Widen::prepare (const juce::dsp::ProcessSpec& spec)
     snap (widthSm, widthExpr, 0.7f);
     snap (delaySm, delayMs, 14.f);
     snap (bassSm, bassHz, 140.f);
-    varNames.clear();
-    if (varPtr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    snap (mixSm, mixExpr, 1.f);
+    bindings.prepare (varPtr, { &widthExpr, &delayMs, &bassHz, &mixExpr });
 }
 
 float SignalChain::Widen::process (int, float x) { return x; }
@@ -59,16 +57,10 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
 {
     const int nCh = buffer.getNumChannels();
     const int nS = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0)
+    if (nS <= 0 || nCh < 2)
         return;
 
-    for (const auto& vn : varNames)
-    {
-        const float v = *vn.first;
-        widthExpr.setVariable (vn.second, v);
-        delayMs.setVariable (vn.second, v);
-        bassHz.setVariable (vn.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
@@ -78,6 +70,7 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
     widthSm.setTargetValue (ev (widthExpr, 0.7f));
     delaySm.setTargetValue (ev (delayMs, 14.f));
     bassSm.setTargetValue (ev (bassHz, 140.f));
+    mixSm.setTargetValue (ev (mixExpr, 1.f));
 
     float* L = buffer.getWritePointer (0);
     float* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
@@ -125,8 +118,9 @@ void SignalChain::Widen::processBlock (juce::AudioBuffer<float>& buffer)
         const float cap = 0.92f * std::abs (mid) + 1.0e-6f;
         side = juce::jlimit (-cap, cap, side);
 
-        float outL = mid + side;
-        float outR = mid - side;
+        side *= juce::jlimit (0.f, 1.f, mixSm.getNextValue());
+        float outL = inL + side;
+        float outR = inR - side;
         if (! std::isfinite (outL)) outL = inL;
         if (! std::isfinite (outR)) outR = inR;
         L[i] = outL;

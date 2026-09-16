@@ -1698,8 +1698,8 @@ std::vector<KnobBinding> knobBindings (const GraphNode& node)
             {
                 if (s[i] != letter)
                     continue;
-                const auto prev = (i == 0) ? 0 : s[i - 1];
-                const auto next = (i + 1 >= s.length()) ? 0 : s[i + 1];
+                const juce::juce_wchar prev = (i == 0) ? juce::juce_wchar{} : s[i - 1];
+                const juce::juce_wchar next = (i + 1 >= s.length()) ? juce::juce_wchar{} : s[i + 1];
                 if (juce::CharacterFunctions::isLetterOrDigit (prev) || prev == '_')
                     continue;
                 if (juce::CharacterFunctions::isLetterOrDigit (next) || next == '_')
@@ -1767,8 +1767,8 @@ bool argUsesToken (const GraphNode& n, const juce::String& token)
         int i = 0;
         while ((i = s.indexOf (i, t)) >= 0)
         {
-            const auto prev = (i == 0) ? 0 : s[i - 1];
-            const auto next = (i + t.length() >= s.length()) ? 0 : s[i + t.length()];
+            const juce::juce_wchar prev = (i == 0) ? juce::juce_wchar{} : s[i - 1];
+            const juce::juce_wchar next = (i + t.length() >= s.length()) ? juce::juce_wchar{} : s[i + t.length()];
             if (! juce::CharacterFunctions::isLetterOrDigit (prev) && prev != '_'
                 && ! juce::CharacterFunctions::isLetterOrDigit (next) && next != '_')
                 return true;

@@ -58,10 +58,7 @@ void SignalChain::Ir::prepare (const juce::dsp::ProcessSpec& spec)
     const float g = gainDb.evaluate (0.f);
     mixSm.setCurrentAndTargetValue (std::isfinite (m) ? m : 1.f);
     gainSm.setCurrentAndTargetValue (std::isfinite (g) ? g : 0.f);
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &mixExpr, &gainDb });
 }
 
 float SignalChain::Ir::process (int, float x) { return x; }
@@ -73,12 +70,7 @@ void SignalChain::Ir::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        mixExpr.setVariable (n.second, v);
-        gainDb.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {

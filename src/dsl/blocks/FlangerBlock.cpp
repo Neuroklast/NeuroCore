@@ -53,10 +53,7 @@ void SignalChain::Flanger::prepare (const juce::dsp::ProcessSpec& spec)
     dSampSm.setCurrentAndTargetValue (ms0 * 0.001f * sampleRate);
     fbLatch = juce::jlimit (0.f, 0.95f, fbSm.getCurrentValue());
     mixLatch = juce::jlimit (0.f, 1.f, mixSm.getCurrentValue());
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &rateExpr, &depthExpr, &delayExpr, &feedbackExpr, &mixExpr, &invertExpr });
     clearRuntimeState();
 }
 
@@ -85,8 +82,8 @@ void SignalChain::Flanger::processFrame (float& left, float* right, float pol) n
 
     const int wp = writePos;
     const int N = delayN;
-    const float fb = fbLatch;
-    const float mix = mixLatch;
+    const float fb = fbSm.getNextValue();
+    const float mix = mixSm.getNextValue();
     const float dry = 1.f - mix;
 
     const float xL = left;
@@ -115,16 +112,7 @@ void SignalChain::Flanger::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0 || delayL == nullptr || delayN < 8)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        rateExpr.setVariable (n.second, v);
-        depthExpr.setVariable (n.second, v);
-        delayExpr.setVariable (n.second, v);
-        feedbackExpr.setVariable (n.second, v);
-        mixExpr.setVariable (n.second, v);
-        invertExpr.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fb)
     {
@@ -136,8 +124,8 @@ void SignalChain::Flanger::processBlock (juce::AudioBuffer<float>& buffer)
     delaySm.setTargetValue (ev (delayExpr, 2.f));
     fbLatch = juce::jlimit (0.f, 0.95f, ev (feedbackExpr, 0.45f));
     mixLatch = juce::jlimit (0.f, 1.f, ev (mixExpr, 0.5f));
-    fbSm.setCurrentAndTargetValue (fbLatch);
-    mixSm.setCurrentAndTargetValue (mixLatch);
+    fbSm.setTargetValue (fbLatch);
+    mixSm.setTargetValue (mixLatch);
     invertSm.setTargetValue (juce::jlimit (0.f, 1.f, ev (invertExpr, 0.f)));
 
     float* NK_RESTRICT L = buffer.getWritePointer (0);
@@ -151,7 +139,6 @@ void SignalChain::Flanger::processBlock (juce::AudioBuffer<float>& buffer)
         rateSm.skip (n);
         depthSm.skip (n);
         delaySm.skip (n);
-        invertSm.skip (n);
 
         const float rate = juce::jlimit (0.f, 20.f, rateSm.getCurrentValue());
         const float depth = juce::jlimit (0.f, 1.f, depthSm.getCurrentValue());
@@ -164,10 +151,11 @@ void SignalChain::Flanger::processBlock (juce::AudioBuffer<float>& buffer)
         const float lfo = (rate > 0.001f) ? LookupTables::fastSin (phase) : 0.f;
         const float ms = juce::jlimit (0.1f, kMaxDelaySec * 1000.f, centerMs * (1.f + depth * lfo));
         dSampSm.setTargetValue (ms * 0.001f * sampleRate);
-        const float pol = 1.f - 2.f * juce::jlimit (0.f, 1.f, invertSm.getCurrentValue());
-
         for (int k = 0; k < n; ++k)
+        {
+            const float pol = 1.f - 2.f * juce::jlimit (0.f, 1.f, invertSm.getNextValue());
             processFrame (L[i + k], R != nullptr ? &R[i + k] : nullptr, pol);
+        }
         i += n;
     }
 }

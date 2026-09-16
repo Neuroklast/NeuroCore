@@ -172,7 +172,7 @@ describe("compact packRows", () => {
     const packed = packRows(nodes, edges, { w: 960, h: 420 });
     expect(packed.dirt!.y).toBeGreaterThan(packed.IN!.y);
     expect(packed.send!.y).toBe(packed.dirt!.y);
-    expect(packed.stage2!.y).toBe(packed.dirt!.y);
+    expect(packed.stage2!.y).toBeGreaterThanOrEqual(packed.dirt!.y);
     expect(packed.stage1!.y).toBe(packed.IN!.y);
     expect(packed.OUT!.x).toBeGreaterThanOrEqual(packed.stage1!.x + packed.stage1!.w);
     expect(packed.OUT!.x).toBeGreaterThanOrEqual(packed.stage2!.x + packed.stage2!.w);

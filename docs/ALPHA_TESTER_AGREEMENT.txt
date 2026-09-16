@@ -1,0 +1,68 @@
+NEUROKORE ALPHA TESTER AGREEMENT
+Version 1 — 16 September 2026
+Copyright (c) 2024–2026 NEUROKLAST. All rights reserved.
+
+Parties and acceptance
+This agreement is between NEUROKLAST and the tester accepting an invitation
+from NEUROKLAST to test NEUROKORE. Read this agreement and EULA.txt before
+accepting the invitation or using an alpha test build. If you do not agree,
+do not install or use that build. An invitation and any required activation
+license are supplied separately; downloading a public archive alone does not
+issue an activation license.
+
+1. Test permission
+NEUROKLAST grants an invited tester personal, non-exclusive, non-transferable
+permission to install the supplied alpha build on computers the tester owns
+or controls, and to evaluate it, including in the tester's own DAW projects.
+This supplements the EULA only for authorised alpha testing. It does not
+grant ownership of the software, a resale right or a future paid license.
+The tester retains ownership of their recordings and musical work.
+
+2. Evaluation build
+The build is unfinished. Features, preset sounds, saved-state behaviour and
+system requirements may change. Keep independent project backups and render
+important tracks before updating. Test at a comfortable monitoring level.
+A successful build or automated test does not certify every DAW, operating
+system version, audio interface or project configuration.
+
+3. Feedback
+Participation is voluntary. Useful reports include the build identifier,
+OS/CPU, DAW version, plugin format, sample rate, buffer size, reproduction
+steps and a minimal example where possible. Supply only material you may
+share. Do not send personal data, credentials, activation files or another
+party's unreleased recordings in public reports. NEUROKLAST may use the
+feedback to develop and improve the product without payment or attribution;
+this does not transfer ownership of the tester's music or recordings.
+
+4. Distribution and confidential materials
+Do not redistribute activation files, private test builds or materials
+explicitly marked confidential. Publicly released information and builds
+are not confidential merely because they concern the alpha. Share the
+official download link rather than repackaging the software. Existing EULA
+restrictions and non-waivable statutory rights continue to apply.
+
+5. Duration and withdrawal
+Either party may end participation by notice. On withdrawal or revocation of
+the test permission, stop using the alpha build and remove copies obtained
+solely under this test permission. This does not affect separate licenses
+already granted to the tester or ownership of rendered audio.
+
+6. No promised support or final release
+There is no obligation to deliver a final product, a release date, a specific
+feature, paid compensation or continuing support. Alpha access is not a
+purchase of the final product.
+
+7. Liability and mandatory rights
+The EULA's warranty and liability provisions apply only to the extent allowed
+by applicable law. Nothing in this agreement excludes liability that cannot
+lawfully be excluded or limits non-waivable consumer or other statutory
+rights. If a provision is unenforceable, the remaining provisions continue
+to apply to the extent permitted by law.
+
+8. Contact
+https://neuroklast.net
+
+Tester acceptance record (retain with the invitation):
+Name/email: ______________________________
+Build identifier: ________________________
+Date and acceptance/signature: ________________________

@@ -1,7 +1,7 @@
 import { BOARD_GRID, BOARD_HALF, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToCellCenter, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
-export const COMPACT_GAP = CHIP_AIR_X;
+export const COMPACT_GAP = CHIP_AIR_X * 2;
 /** Halo + rail + halo. finishHalo solidifies one cell around each chip, so CHIP_AIR_Y is not a cable. */
 export const WRAP_AIR = BOARD_PAD + BOARD_GRID + BOARD_PAD;
 export type BoardView = { w: number; h: number };
@@ -292,7 +292,7 @@ export function packRows(
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  const gapX = CHIP_AIR_X;
+  const gapX = COMPACT_GAP;
   const gapY = WRAP_AIR;
   const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));

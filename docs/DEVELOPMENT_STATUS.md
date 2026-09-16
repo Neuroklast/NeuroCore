@@ -6,6 +6,70 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Laufende DSP-Prüfung (2026-09-16)
+
+Branch `optimize/fx-runtime-factory`: parameter expressions bind referenced variables in prepare,
+then refresh by pointer/index. EQ, crossover, OTT and vocoder use ArrayCoefficients and update
+prepared IIR storage. The source allocation regression fails on main and passes on this branch.
+`tests/dsp` builds the DSP contracts without the WebView or plugin installation. New runtime
+contracts cover 22 node types, irregular blocks, stereo preservation, envelope position and
+pitch level/latency. Runtime fixes, preset curation and platform packages are still in progress.
+
+## Circuit signal accuracy (2026-09-16)
+
+Unsplit signals now draw one cable. L/R, M/S, crossover bands, named bus inputs
+and external sidechain use their actual source meters. Meter peaks scan every
+sample (including impulses between display samples); decay is time based.
+128 tap slots replace 32, and closed editors disable tap work. Wave samples are
+atomic. Short sidechains contribute silence after their last supplied sample.
+L/R split/join retain identity nodes so downstream tap names cannot shift.
+IN is draggable. Native contracts reproduce impulse, long-chain, split identity,
+short-sidechain and band errors; web contracts cover one cable and lane sources.
+Routing, keyboard UX, themes and visual review remain in progress. Native release
+builds remain deferred until all requested changes are complete.
+
+## Motion modes (2026-09-16)
+
+Canvas packets, Unit plasma and CRT scans now share the motion policy. Reduced
+stops perpetual movement but retains reactive highlights; Off also disables all
+CSS transitions and pseudo-element animations. Still cables keep fixed packet
+geometry while brightness reports current level. Startup without an explicit
+preference respects OS reduced motion. Four previously failing motion contracts
+now pass (27 targeted tests); TypeScript checks pass.
+
+## Circuit routing contracts (2026-09-16)
+
+One obstacle-aware A* handles straight, offset and wrapped connections. Unsafe
+ignore-overlap fallbacks are removed. Search bounds are fixed, numeric search
+keys replace string state keys, and more expensive queued duplicates are pruned.
+Physical sockets are unique per edge while semantic DSP jack IDs stay intact.
+Bus/modulation rows survive graph-to-layout conversion; Compact reserves wider
+routing gutters. A bounded retry prioritizes blocked connections. Final chamfer
+ink is checked for overlap and canvas does not reshape that reserved geometry.
+All 317 factory graphs pass both Arrange and Compact at 1440x640, including final
+segment overlap checks. Browser review found and reproduced the 40% camera floor
+clipping tall circuits; fit is now content-based. Off has zero running CSS
+animations in browser inspection. Further UX, themes and visual cleanup remain.
+
+## Unit display cleanup (2026-09-16)
+
+Removed invented core temperature, decorative AST checksum, random logo glitches,
+code rain and pointer coordinates. Unit now reports actual block input/output
+peaks rather than gonio-decimated channel maxima. Missing native telemetry clears
+all readings and reports that data is unavailable; it cannot substitute a demo
+waveform. Browser preview remains labelled synthetic. Logo and circuit visual
+identity remain. Platform builds are cancelled by the latest user instruction;
+remaining work ends with a pushed PR and merge after validation.
+
+## WebView bridge lifetime (2026-09-16)
+
+One response dispatcher and monotonic request IDs replace per-call completion
+listeners and random IDs. Native replies are no longer silently completed after
+50 ms. A 30-second error timeout cleans pending calls. Host event subscriptions
+return cleanup functions, and App unsubscribes on unmount. Three failing bridge
+contracts now pass: delayed compile, 100 parameter updates with one listener,
+and repeated mount/unmount subscriptions. TypeScript passes.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.
@@ -31,8 +95,8 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 
 ## DSP (0.4.11-alpha)
 
-- **`pitch`**: phase-vocoder (FFT 1024 / hop 256), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
-- **`phaser` / `flanger` / `filter type = allpass`**: 1-pole allpass cascade (internal LFO, feedback in-chip); short delay comb with invert; env `unit = db` is dBFS. Coeffs at `kFilterCoeffStride`. Phaser: unrolled 2/4/6/8/10/12 cascade, mix/fb latched, denorm on z per stride. Flanger: Delay-shaped `processFrame` (slew tap), mix/fb latched, invert is a smoothed ±1 gain. Feedback sat at 1.5 like Delay. No per-sample `evaluate`.
+- **`pitch`**: phase-vocoder (sample-rate-scaled FFT, 1024 / hop 256 at 48 kHz), `semitones`/`shift`, `mix`, `formant`, optional `sync`, `ceiling` default −0.3 dB. Latency reported with IR latency.
+- **`phaser` / `flanger` / `filter type = allpass`**: 1-pole allpass cascade (internal LFO, feedback in-chip); short delay comb with invert; env `unit = db` is dBFS. Coeffs at `kFilterCoeffStride`. Phaser: unrolled 2/4/6/8/10/12 cascade, mix/fb sample-smoothed, denorm on z per stride. Flanger: Delay-shaped `processFrame` (slew tap), mix/fb sample-smoothed, invert is a smoothed ±1 gain. Feedback sat at 1.5 like Delay. No per-sample `evaluate`.
 - **Sanitation**: fixed engine chain after DSL. 1-pole DC 5 Hz → steep AA (96/128 dB/oct, fc = 0.45·hostSr) → downsample → optional Soft Clip → True-Peak **−0.3 dBTP** → TPDF dither only on integer bit-depth reduction.
 - **Ceilings (DSL)**: optional `ceiling` on `gate` / `comp` (default 0 dB). Chainwide soft-shape only for `|x| > 1`.
 - **macOS**: VST3 + AU (`aumf`, `AU_SANDBOX_SAFE`, 10.15). Web in `Contents/Resources/web` + `neurokore_web_dist.zip`. WKWebView. Factory aus BinaryData. Formel = Tape, kein asmjit.
@@ -94,3 +158,44 @@ Windows: `build_release.bat` / `build_debug.bat` — same `build/` tree and `Neu
 `NeuroKore_All` / VST3 / Standalone **always** run `npm run build` first (`NeuroKoreWeb` is a hard dependency). Missing `npm` fails configure. `web/dist` is packed into the binary (Windows RCDATA id `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`). Testers need only the `.vst3` / `.exe` / `.component`. Windows VST3 is the module binary + `Contents/Resources/moduleinfo.json` — no sibling `resources/` or `web/` next to the DLL (NEUROMETER layout). Standalone may keep a sibling `web/` for local disk UI. `NEUROKORE_WEB_DISK=0` ignores disk and serves the embed (local tester-mode). Quoted RC names do not FindResource — integer ID only. `factory_presets.json` is a configure depend of BinaryData.
 
 Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout progress, mute keeps chips. Artefakte: `build/NeuroKore_artefacts/Release/Standalone/NEUROKORE-0.6.4-beta.exe`, `build/NeuroKore_artefacts/Release/VST3/NEUROKORE.vst3` (Mac: plus `.component`).
+
+- DSP host-buffer regression: fixed SIMD crash on unaligned stereo channel buffers. The 22-node irregular-block matrix passes. Routing/envelope/filter/widen/pitch contracts failed before their fixes and now pass (0 failures). Full platform suite and release validation remain pending.
+
+- Native alpha CI added for Windows x64, Linux x64 and macOS universal, with full-suite gates and explicit release marker. Corrected case-sensitive resource paths and Linux editor embedding. Packaging source contracts pass; native CI results are pending. License/EULA/tester agreement are packaged; no activation key is distributed.
+
+- Extended local DSP suite (FxRuntime, ModulationBlocks, DelayReverb, EqSidechain, DynamicsBlocks, IrXover): 0 failures. Fixed triangle shape, duplicate stage MS transforms, three-band phase summation, IIR order preparation, and actual soft-ceiling bound. Updated two legacy expectations that explicitly required overshoot above the named ceiling; new bounds are stricter. Factory probe now loads the selected cabinet IRs.
+
+## Runtime validation checkpoint
+
+- Parallel PDC, compiled/range-mapped bus gains, oversampled pitch resolution, phase-matched OTT depth, limiter re-prepare, missing/short external detector input, and offline CPU guard corrected. Contract regressions reproduced before each model change.
+- Local production DSP suite passes; Linux allocation probe includes automated blocks and parallel routing. Full-scale identity restored separately from effect ceiling bounds.
+- First Windows native build completed; full suite exposed 11 legacy ceiling/routing expectations. Internal unity and explicit mono selection corrected; cross-platform rerun pending.
+- Linux browser dependency declarations and macOS arm64 size_t overloads corrected. CI now invokes pinned pluginval against built VST3/AU before packaging. No claim of all-DAW certification or released binaries yet.
+
+Native packaging is deferred until DSP, preset and UI work is complete. Intermediate pushes skip the native build matrix; explicit workflow dispatch or the final `[release-alpha]` checkpoint runs it. Focused source/DSP/web contracts continue during development.
+
+Reverb channel isolation and Widen mix had three reproduced contract failures; selected-channel isolation and mix=0 identity now pass in the local DSP suite.
+
+Factory checkpoint: 317 programs, 17 new Metal/Industrial/Mixing/Mastering presets, one merged rumble variant, descriptive artist-free names, repaired vocal/filter/side-hall paths. Metadata contracts pass; default and macro/silence production-DSP audit has no parse/nonfinite failures. Native FactoryLoudness awaits the final build. See `docs/FACTORY_CURATION.md`.
+
+Bandpass bandwidth and the 1/32 grid endpoint now pass reproduced DSP regressions. Factory note defaults use grid positions in native/browser loaders. Targeted web preset/note contracts pass; the broader web run also exposed pre-existing ENV registry expectations and reduced-motion boot behavior, reserved for the UI pass.
+
+Unit measurement checkpoint: shared -60 dBFS floor, no false lit bar below it, validated frame lengths and contiguous host-rate scope capture. Three native block-size sampling failures and four web display/frame failures reproduced, then fixed. Local native DSP/sampling suite and 30 targeted web contracts pass.
+
+Shared settings: reproduced stale-process theme overwrite fixed with per-key merge/save; OS/polisher host callbacks now queue atomic requests instead of taking file locks or notifying listeners on the audio thread. Native global-preference contracts and zero-allocation request probe pass.
+
+Binding persistence: five reproduced failures fixed (script/range persistence, shared-macro preservation, formula audio preservation, load-time enum rejection, envelope unit labels). Native compile completes before setting a new macro default.
+
+Circuit edit checkpoint: copy/cut/paste/duplicate/park now operate on the script and are available from keyboard and context menus. Generated IDs are unbounded collision-free integers. LFO faces show the configured sine, triangle, saw, soft-saw, square, soft-square or noise waveform, with effective rate. Targeted edit/shortcut/LFO tests and TypeScript pass.
+
+Theme checkpoint: Signal, Gold, Azure and DIGICIDE now carry distinct frame cuts, panel radii and material textures in addition to palette changes. Geometry and paint consume central theme tokens; theme and TypeScript contracts pass.
+
+Terminal checkpoint: Circuit compile events hydrate the shared script view. Catalog-derived block snippets insert every parameter with Monaco Tab stops. Save retains the last valid graph and editor draft on lint, compiler or bridge failure; invalid native compiles are not added to undo history. Completion/compile/store contracts and TypeScript pass.
+
+Local build checkpoint: Windows Debug/Release and POSIX build entry points reconfigure on every run; the POSIX script supports pinned offline JUCE via JUCE_DIR and configurable build directory/config/jobs. Native CI is manual-only and cannot publish a release. Platform binary delivery remains cancelled.
+
+DSP tail/default checkpoint: reproduced serial-delay tail under-reporting; tail length now follows the longest audible bus path and accumulates serial effect releases without heap allocation. Parked buses do not extend host tails. Newly inserted compressor/gate blocks use the DSP's dB and seconds defaults rather than obsolete linear thresholds. The local DSP suite reports 0 failures.
+
+Compile transaction checkpoint: rejected native cable edits preserve the last valid script/graph, and cutting an edge no longer submits an unrelated second compile. Terminal replies carry the submitted script to reject stale diagnostics. Native WebCompile contracts are included in the headless runner. Text editing preserves clipboard/find chords; hidden Circuit views cannot act on keyboard edits. Factory stress audit actually executed with its output argument: 317 presets, zero nonfinite samples, maximum internal floating-point peak 1.715 (before output protection).
+
+Windows build log fix: JUCE_VST3_CAN_REPLACE_VST2=0 is PUBLIC on the plugin target, fixing JUCE C1189 in the VST3 wrapper without enabling legacy parameter IDs or suppressing the check. Web source dependencies exclude generated node_modules/dist paths (MSB8064). Terminal snippets now avoid duplicate IDs, preserve out, replace trailing-space heads, and derive parameter defaults from chipSpec. Windows compilation has not been rerun in this Linux environment.

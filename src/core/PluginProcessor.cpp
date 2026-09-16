@@ -146,7 +146,7 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     UiSettings::get().addListener (this);
     lastUiScalePercent = UiSettings::get().uiScalePercent();
     dspEngine.setLiveMode (UiSettings::get().liveMode());
-    telemetryPump.setWanted (false);
+    setTelemetryWanted (false);
     // WebView2 is born with the processor (NeuroMeter). Cubase scan createView
     // must not CreateCoreWebView2 on the IPlugView HWND.
     webViewHolder = std::make_unique<bridge::WebViewHolder> (*this);
@@ -434,8 +434,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // output — that click is the "buffer overflow" live-only glitch.
     // Mix 0% still runs the engine: host PDC delays other tracks by OS+IR,
     // so dry must leave on that same timeline (bypass path delays dry).
-    const bool cpuHold = cpuProtect.isTripped()
-                      && ! cpuProtect.shouldProbeWet (nSamp, sr);
+    const bool cpuHold = cpuProtect.shouldHoldAudio (nSamp, sr, isNonRealtime());
     if (cpuHold)
     {
         cpuProtect.noteHoldDisplay();
@@ -508,7 +507,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         const double used = juce::Time::highResolutionTicksToSeconds (
             juce::Time::getHighResolutionTicks() - t0);
         const double budget = (sr > 0.0) ? ((double) nSamp / sr) : 0.005;
-        cpuProtect.observe (used, budget);
+        cpuProtect.observe (used, budget, isNonRealtime());
     }
 
     float g = osOutGain.load (std::memory_order_relaxed);
@@ -1249,7 +1248,7 @@ void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID,
                 apvts.getParameter (EffectParameters::oversampling)))
             idx = juce::jlimit (0, 3, choice->getIndex());
         if (! restoringHostState)
-            UiSettings::get().setOversamplingIndex (idx);
+            UiSettings::get().queueOversamplingIndex (idx);
         if (restoringHostState)
             return;
         if (idx == dspEngine.getOversamplingIndex())
@@ -1264,7 +1263,7 @@ void NeuroKoreAudioProcessor::parameterChanged (const juce::String& parameterID,
                 apvts.getParameter (EffectParameters::polisherMode)))
             idx = juce::jlimit (0, 1, choice->getIndex());
         if (! restoringHostState)
-            UiSettings::get().setPolisherIndex (idx);
+            UiSettings::get().queuePolisherIndex (idx);
     }
     else if (parameterID == EffectParameters::dryWet)
     {

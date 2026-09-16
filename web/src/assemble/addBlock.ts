@@ -14,8 +14,8 @@ export type AddableBlock = {
 
 export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "stage", label: "Drive", args: "y = x", category: "Dynamics" },
-  { type: "comp", label: "Comp", args: "threshold = 0.4; ratio = 4", category: "Dynamics" },
-  { type: "noisegate", label: "Gate", args: "threshold = 0.05", category: "Dynamics" },
+  { type: "comp", label: "Comp", args: "threshold = -18; ratio = 4; attack = 0.01; release = 0.1; ceiling = 0", category: "Dynamics" },
+  { type: "noisegate", label: "Gate", args: "threshold = -18; attack = 0.01; release = 0.1; ceiling = 0", category: "Dynamics" },
   { type: "limit", label: "Limit", args: "ceiling = -0.3; release = 0.08", category: "Dynamics" },
   { type: "filter", label: "Filter", args: "type = lowpass; cutoff = 1200; resonance = 0.3", category: "Tone" },
   { type: "eq", label: "EQ", args: "type = peak; freq = 1000; gain = 0", category: "Tone" },
@@ -49,14 +49,14 @@ export function blocksInCategory(category: string): AddableBlock[] {
 export function nextBlockId(type: string, taken: Iterable<string>): string {
   const stem = type === "noisegate" ? "ngate" : type;
   const have = new Set([...taken].map((s) => s.toLowerCase()));
-  for (let n = 1; n < 100; n += 1) {
+  for (let n = 1; ; n += 1) {
     const id = `${stem}${n}`;
     if (! have.has(id)) {
       return id;
     }
   }
-  return `${stem}x`;
 }
+
 
 function nextRailName(script: string): string {
   const have = new Set(
@@ -210,16 +210,24 @@ export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "c
   });
 }
 
-export function publishScript(script: string, origin: "canvas" | "editor"): void {
+export function publishScript(script: string, origin: "canvas" | "editor"): void | Promise<unknown> {
   const cur = useAstStore.getState();
   const prev = cur.lastValidScript || cur.script;
-  if (prev && prev !== script) {
-    pushScriptHistory(prev);
-  }
+  const remember = () => {
+    if (prev && prev !== script) pushScriptHistory(prev);
+  };
   if (hasJuceBridge()) {
-    void getNativeFunction("compile")({ origin, script });
-    return;
+    return getNativeFunction("compile")({ origin, script }).then((result) => {
+      if (!result || typeof result !== "object" || !("ok" in result)) throw new Error("No compile acknowledgement received.");
+      if (result.ok === true) remember();
+      return result;
+    }).catch((error) => {
+      const diagnostics = [{ line: 1, column: 1, message: error instanceof Error ? error.message : String(error) }];
+      useAstStore.setState({ diagnostics });
+      return { ok: false, origin, diagnostics };
+    });
   }
+  remember();
   applyCanvasScript(script);
 }
 
@@ -325,3 +333,46 @@ export function renameCircuitBlock(oldId: string, newId: string): void {
   }
   publishScript(next, "canvas");
 }
+
+
+type CircuitClipboard = { type: string; args: string } | null;
+let circuitClipboard: CircuitClipboard = null;
+
+function nodeClipboard(id: string): CircuitClipboard {
+  const node = useAstStore.getState().ast?.nodes.find((n) => n.id === id);
+  if (!node || node.type === "in" || node.type === "out") return null;
+  return { type: node.type, args: Object.entries(node.args).map(([k, v]) => `${k} = ${v}`).join("; ") };
+}
+
+export function copyCircuitBlock(id: string): boolean {
+  const next = nodeClipboard(id);
+  if (!next) return false;
+  circuitClipboard = next;
+  return true;
+}
+
+export function pasteCircuitBlockAfter(afterId: string): string | null {
+  if (!circuitClipboard) return null;
+  return insertCircuitBlockAfter(afterId || "IN", circuitClipboard.type, circuitClipboard.args);
+}
+
+export function duplicateCircuitBlock(id: string): string | null {
+  return copyCircuitBlock(id) ? pasteCircuitBlockAfter(id) : null;
+}
+
+export function cutCircuitBlock(id: string): boolean {
+  if (!copyCircuitBlock(id)) return false;
+  removeCircuitBlock(id);
+  return true;
+}
+
+export function parkCircuitBlock(id: string): boolean {
+  const cur = useAstStore.getState();
+  const before = cur.lastValidScript || cur.script;
+  const next = parkNodeInScript(before, id);
+  if (next === before) return false;
+  publishScript(next, "canvas");
+  return true;
+}
+
+export function circuitClipboardHasData(): boolean { return circuitClipboard != null; }

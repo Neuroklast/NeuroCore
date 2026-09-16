@@ -153,3 +153,31 @@ describe("dsl complete", () => {
     expect(items.every((i) => i.kind === "property")).toBe(true);
   });
 });
+
+it('expands a block as a full tab-stop snippet with every catalog parameter',()=>{
+ const item=complete('stage',5).find(i=>i.kind==='snippet');
+ expect(item?.insertText).toContain('${1:stage1}');
+ expect(item?.insertText).toContain('y = ${2:x}');
+ expect(item?.insertText).toContain('channel = ${3:both}');
+ expect(item?.insertAsSnippet).toBe(true);
+ expect(item && stillParsesAfterInsert('stage',5,item)).toBe(true);
+ const comp=complete('comp',4).find(i=>i.kind==='snippet')?.insertText ?? '';
+ for(const key of ['threshold','ratio','attack','release','ceiling']) expect(comp).toContain(`${key} =`);
+});
+
+it('uses unique block names and the reserved output mixer name', () => {
+ const text='stage1: y = x\nstage';
+ expect(complete(text,text.length).find(i=>i.kind==='snippet')?.plainInsertText).toMatch(/^stage2:/);
+ expect(complete('out',3).find(i=>i.kind==='snippet')?.plainInsertText).toMatch(/^out:/);
+});
+it('completes catalog properties even while another line is unfinished', () => {
+ const text='stage1: y = tanh(\nngate1: ';
+ const items=complete(text,text.length);
+ expect(items.map(i=>i.label)).toContain('release');
+ expect(items.find(i=>i.label==='release')?.insertAsSnippet).toBe(true);
+});
+it('replaces the typed block head including a trailing space', () => {
+ const text='stage1: y = x\n  stage ';
+ const item=complete(text,text.length).find(i=>i.kind==='snippet');
+ expect(item?.replaceStart).toBe(text.lastIndexOf('stage'));
+});

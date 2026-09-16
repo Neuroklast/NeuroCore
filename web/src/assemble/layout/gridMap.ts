@@ -63,10 +63,8 @@ export class GridMap {
     }
     for (const nk of ring) {
       this.halo.add(nk);
-      const stub = this.entryStubs.has(nk) || this.exitStubs.has(nk);
-      if (! stub) {
-        this.solid.add(nk);
-      }
+      // Clearance is a routing cost, never a second physical obstacle.
+      // Hard halos seal offset ports in otherwise usable narrow gutters.
     }
   }
 

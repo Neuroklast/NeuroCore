@@ -1,9 +1,9 @@
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
-import { BOARD_GRID, snapToGrid } from "./grid";
+import { BOARD_GRID, snapToGrid, snapSize } from "./grid";
 import { canonicalIoJacks } from "./ioPaint";
-import { globalPort, sidePortLocals } from "./portLayout";
+import { globalPort, sidePortLocals, sidePortMinHeight } from "./portLayout";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
 import { inferModLinks, isLfoNode, visibleNodes } from "./flowFromAst";
 import type { LayoutEdge, LayoutNode } from "./layout/types";
@@ -22,6 +22,7 @@ export type BoardNode = {
   label: string;
   channel: string;
   locked: boolean;
+  busName?: string;
 };
 
 export type BoardPort = {
@@ -167,7 +168,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   const rowY = BOARD_GRID * 4;
 
   const inJacks = canonicalIoJacks("in");
-  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", true);
+  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", false);
   addPorts(ports, "IN", inJacks, true);
   x += nodes.IN.w + CHIP_GAP;
 
@@ -189,6 +190,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       channelOf(n),
       isSidechainType(n.type),
     );
+    nodes[n.id]!.busName = n.busName;
     addPorts(ports, n.id, jacks, false);
     addPorts(ports, n.id, jacks, true);
     x = px + nodes[n.id]!.w + CHIP_GAP;
@@ -234,6 +236,29 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     };
   });
 
+  // Semantic jack IDs stay intact for DSP operations. Every visible connection
+  // owns a physical socket, so fan-out/fan-in never starts on stacked rails.
+  const useCount = new Map<string, number>();
+  for (const edge of Object.values(edges)) {
+    for (const field of ["sourcePortId", "targetPortId"] as const) {
+      const base = edge[field];
+      const count = useCount.get(base) ?? 0;
+      useCount.set(base, count + 1);
+      if (count > 0) {
+        const id = `${base}::branch${count}`;
+        ports[id] = { ...ports[base]!, id };
+        edge[field] = id;
+      }
+    }
+  }
+  for (const node of Object.values(nodes)) {
+    for (const east of [false, true]) {
+      const side = Object.values(ports).filter(p => p.nodeId === node.id && p.east === east);
+      side.sort((a, b) => a.index - b.index || a.id.localeCompare(b.id));
+      side.forEach((p, index) => { p.index = index; p.count = side.length; });
+      node.h = Math.max(node.h, snapSize(sidePortMinHeight(side.length) + BOARD_GRID));
+    }
+  }
   return { nodes, ports, edges };
 }
 
@@ -274,16 +299,17 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
       y: n.y,
       w: n.w,
       h: n.h,
-      ins: ins.map((p) => ({ id: p.jackId, y: portLocal(n, p).y })),
-      outs: outs.map((p) => ({ id: p.jackId, y: portLocal(n, p).y })),
+      rail: isLfoNode(n) || n.type === "env" ? "mod" : n.busName || "main",
+      ins: ins.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
+      outs: outs.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
     };
   });
   const edges: LayoutEdge[] = Object.values(graph.edges).map((e) => ({
     id: e.id,
     source: e.sourceNodeId,
     target: e.targetNodeId,
-    fromJack: graph.ports[e.sourcePortId]?.jackId ?? "out",
-    toJack: graph.ports[e.targetPortId]?.jackId ?? "in",
+    fromJack: e.sourcePortId,
+    toJack: e.targetPortId,
   }));
   return { nodes, edges };
 }

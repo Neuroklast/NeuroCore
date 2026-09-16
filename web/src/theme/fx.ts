@@ -1,3 +1,4 @@
+import { motionAllows } from "./motionPolicy";
 import { advancePlasmaDash } from "../assemble/cableMotion";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
@@ -38,7 +39,7 @@ export function bindPeakCss(el: HTMLElement): () => void {
     const motion = useHostStore.getState().motion;
     const osReduce = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-    const still = motion === "off" || (osReduce && motion !== "full");
+    const still = !motionAllows("pipeWave", motion, osReduce);
     const s = useTelemetryStore.getState();
     const vars = peakCssVars(s.inPeak, s.outPeak, {
       dashIn,

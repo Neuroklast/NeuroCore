@@ -42,7 +42,7 @@ describe("factory catalog", () => {
     for (const name of [
       "Offbeat Gallop",
       "Schranz Multiband",
-      "Koren Stack Cab",
+      "Downtuned Stack Cab",
       "Streaming Ceiling",
       "FET All In",
       "Precision Multiband",

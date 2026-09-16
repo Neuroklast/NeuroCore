@@ -127,3 +127,25 @@ describe("headless board model", () => {
     expect(east.some((p) => p.jackId === "out")).toBe(false);
   });
 });
+
+it("allows moving the input terminal", () => {
+  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(false);
+});
+
+it("gives every fan-out and fan-in connection a distinct physical socket", async () => {
+  const { findFactory } = await import("../presets/factoryCatalog");
+  const { parseDslSketch } = await import("../presets/parseDslSketch");
+  const { doc } = parseDslSketch(findFactory("Transparent Blend")!.script);
+  const graph = hydrateBoard(doc);
+  const edges = Object.values(graph.edges);
+  expect(new Set(edges.map(e => e.sourcePortId)).size).toBe(edges.length);
+  expect(new Set(edges.map(e => e.targetPortId)).size).toBe(edges.length);
+  for (const node of Object.values(graph.nodes)) {
+    for (const east of [false, true]) {
+      const ps = Object.values(graph.ports).filter(p => p.nodeId === node.id && p.east === east);
+      const ys = ps.map(p => portGlobal(node, p).y - node.y);
+      expect(new Set(ys).size).toBe(ys.length);
+      expect(ys.every(y => y >= 26 && y < node.h - 12)).toBe(true);
+    }
+  }
+});

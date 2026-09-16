@@ -2,6 +2,9 @@
 
 #include <memory>
 #include <utility>
+#if JUCE_LINUX
+#include <WebBinaryData.h>
+#endif
 
 #if JUCE_WINDOWS
 #include <windows.h>
@@ -162,6 +165,10 @@ static bool lockEmbeddedWebZip (const void*& data, size_t& size)
     data = blob.first;
     size = blob.second;
     return data != nullptr && size > 0;
+#elif JUCE_LINUX
+    data = WebBinaryData::neurokore_web_dist_zip;
+    size = (size_t) WebBinaryData::neurokore_web_dist_zipSize;
+    return size > 0;
 #elif JUCE_MAC
     static juce::MemoryBlock zipBlob;
     static const bool ok = []()

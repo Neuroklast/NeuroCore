@@ -54,7 +54,11 @@ public:
 
     /** Full analysis (parse + static + dynamic). */
     static FormulaQualityReport analyse (const juce::String& script,
-                                         const Options& opt = {});
+                                         const Options& opt);
+    static FormulaQualityReport analyse (const juce::String& script)
+    {
+        return analyse (script, Options {});
+    }
 
     /** Factory-preset gate: ok && score >= minScore. */
     static bool passesFactoryGate (const FormulaQualityReport& r, float minScore = 55.f);

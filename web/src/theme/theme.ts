@@ -27,6 +27,9 @@ export interface ThemePalette {
   error: string;
   white: string;
   black: string;
+  frameCut: number;
+  panelRadius: number;
+  texture: string;
 }
 
 export const DEFAULT_THEME: ThemeId = "signal";
@@ -59,6 +62,9 @@ const THEMES: Record<ThemeId, ThemePalette> = {
     error: "#ff4d6d",
     white: "#ffffff",
     black: "#000000",
+    frameCut: 10,
+    panelRadius: 0,
+    texture: "repeating-linear-gradient(135deg, rgba(var(--nk-accent-rgb), .025) 0 1px, transparent 1px 12px)",
   },
   gold: {
     id: "gold",
@@ -87,6 +93,9 @@ const THEMES: Record<ThemeId, ThemePalette> = {
     error: "#ffb000",
     white: "#ffffff",
     black: "#000000",
+    frameCut: 3,
+    panelRadius: 2,
+    texture: "radial-gradient(circle at 20% 10%, rgba(var(--nk-warn-rgb), .07), transparent 34%)",
   },
   azure: {
     id: "azure",
@@ -115,6 +124,9 @@ const THEMES: Record<ThemeId, ThemePalette> = {
     error: "#5a8cff",
     white: "#ffffff",
     black: "#000000",
+    frameCut: 16,
+    panelRadius: 8,
+    texture: "linear-gradient(120deg, rgba(var(--nk-cyan-rgb), .045), transparent 38%, rgba(var(--nk-accent-rgb), .035))",
   },
   digicide: {
     id: "digicide",
@@ -143,6 +155,9 @@ const THEMES: Record<ThemeId, ThemePalette> = {
     error: "#8D5A5A",
     white: "#E4EEEF",
     black: "#000000",
+    frameCut: 0,
+    panelRadius: 1,
+    texture: "repeating-linear-gradient(0deg, rgba(var(--nk-cyan-rgb), .025) 0 1px, transparent 1px 4px)",
   },
 };
 
@@ -184,6 +199,9 @@ export function themeCssVars(p: ThemePalette): Record<string, string> {
     "--nk-error": p.error,
     "--nk-white": p.white,
     "--nk-black": p.black,
+    "--nk-frame-cut": `${p.frameCut}px`,
+    "--nk-panel-radius": `${p.panelRadius}px`,
+    "--nk-theme-texture": p.texture,
   };
 }
 
@@ -206,5 +224,4 @@ export function themeRgba(slot: "accent" | "cyan" | "warn", alpha: number, theme
   const a = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 0;
   return `rgba(${rgb}, ${a})`;
 }
-
 

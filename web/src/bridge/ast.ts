@@ -52,6 +52,7 @@ export interface AstDocument {
 }
 
 export interface CompileResultPayload {
+  script?: string;
   ok: boolean;
   origin: Origin;
   diagnostics: Diagnostic[];

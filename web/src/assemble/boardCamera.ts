@@ -1,4 +1,3 @@
-import { snapToGrid } from "./grid";
 import { BOARD_MAX_SCALE, BOARD_MIN_SCALE, type BoardCamera, type BoardNode } from "./boardModel";
 
 export function cameraMatrix(c: BoardCamera): string {
@@ -16,7 +15,7 @@ export function zoomCamera(
   factor: number,
 ): BoardCamera {
   const before = worldFromScreen(c, sx, sy);
-  const scale = Math.min(BOARD_MAX_SCALE, Math.max(BOARD_MIN_SCALE, c.scale * factor));
+  const scale = Math.min(BOARD_MAX_SCALE, Math.max(Math.min(BOARD_MIN_SCALE, c.scale), c.scale * factor));
   return { scale, tx: sx - before.x * scale, ty: sy - before.y * scale };
 }
 
@@ -64,10 +63,10 @@ export function fitCamera(
   const y1 = Math.max(...list.map((n) => n.y + n.h)) + pad;
   const bw = Math.max(1, x1 - x0);
   const bh = Math.max(1, y1 - y0);
-  const scale = Math.min(BOARD_MAX_SCALE, Math.max(BOARD_MIN_SCALE, Math.min(view.w / bw, view.h / bh)));
+  const scale = Math.min(BOARD_MAX_SCALE, view.w / bw, view.h / bh);
   return {
     scale,
-    tx: snapToGrid((view.w - bw * scale) * 0.5 - x0 * scale),
-    ty: snapToGrid((view.h - bh * scale) * 0.5 - y0 * scale),
+    tx: Math.round((view.w - bw * scale) * 0.5 - x0 * scale),
+    ty: Math.round((view.h - bh * scale) * 0.5 - y0 * scale),
   };
 }

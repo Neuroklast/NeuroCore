@@ -101,53 +101,53 @@ export function rerouteBoard(): void {
   }).catch(() => undefined);
 }
 
-export function commitBoardConnect(src: BoardPort, dst: BoardPort): void {
+/** Native emits the new AST and script only after a successful graph compile. */
+async function nativeGraphOp(payload: Record<string, string>): Promise<boolean> {
+  try {
+    const result = await getNativeFunction("graphOp")({ origin: "canvas", ...payload }) as
+      { ok?: boolean; error?: string; diagnostics?: Array<{line:number;column:number;message:string}> };
+    if (result?.ok !== true) {
+      useAstStore.setState({ diagnostics: result?.diagnostics?.length ? result.diagnostics :
+        [{ line: 1, column: 1, message: result?.error || "Graph edit could not be compiled." }] });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    useAstStore.setState({ diagnostics: [{ line: 1, column: 1,
+      message: error instanceof Error ? error.message : String(error) }] });
+    return false;
+  }
+}
+
+export async function commitBoardConnect(src: BoardPort, dst: BoardPort): Promise<void> {
+  if (hasJuceBridge()) {
+    await nativeGraphOp({ op: "connect", from: src.nodeId, fromJack: src.jackId, to: dst.nodeId, toJack: dst.jackId });
+    return;
+  }
   const g = useBoardStore.getState();
   useBoardStore.getState().setEdges(edgesAfterConnect(g, src, dst));
   const ast = useAstStore.getState().ast;
-  if (ast) {
-    pushAst(astEdgesAfterConnect(ast.edges ?? [], src, dst));
-  }
-  if (hasJuceBridge()) {
-    void getNativeFunction("graphOp")({
-      origin: "canvas",
-      op: "connect",
-      from: src.nodeId,
-      fromJack: src.jackId,
-      to: dst.nodeId,
-      toJack: dst.jackId,
-    });
-  }
+  if (ast) pushAst(astEdgesAfterConnect(ast.edges ?? [], src, dst));
   rerouteBoard();
 }
 
-export function commitBoardCut(port: BoardPort): void {
+export async function commitBoardCut(port: BoardPort): Promise<void> {
   const g = useBoardStore.getState();
   const doomed = Object.values(g.edges).filter((e) => e.sourcePortId === port.id || e.targetPortId === port.id);
-  useBoardStore.getState().setEdges(edgesAfterCutPort(g, port.id));
-  const ast = useAstStore.getState().ast;
-  if (ast) {
-    pushAst(astEdgesAfterCut(ast.edges ?? [], port));
-  }
-  const cur = useAstStore.getState();
-  let script = cur.lastValidScript || cur.script;
-  for (const e of doomed) {
-    script = scriptAfterDisconnect(script, e.sourceNodeId, e.targetNodeId);
-  }
-  if (script !== (cur.lastValidScript || cur.script)) {
-    publishScript(script, "canvas");
-  }
   if (hasJuceBridge()) {
     for (const e of doomed) {
-      void getNativeFunction("graphOp")({
-        origin: "canvas",
-        op: "disconnect",
-        from: e.sourceNodeId,
-        fromJack: g.ports[e.sourcePortId]?.jackId ?? "out",
-        to: e.targetNodeId,
-        toJack: g.ports[e.targetPortId]?.jackId ?? "in",
-      });
+      if (!await nativeGraphOp({ op: "disconnect", from: e.sourceNodeId,
+        fromJack: g.ports[e.sourcePortId]?.jackId ?? "out", to: e.targetNodeId,
+        toJack: g.ports[e.targetPortId]?.jackId ?? "in" })) break;
     }
+    return;
   }
+  useBoardStore.getState().setEdges(edgesAfterCutPort(g, port.id));
+  const ast = useAstStore.getState().ast;
+  if (ast) pushAst(astEdgesAfterCut(ast.edges ?? [], port));
+  const cur = useAstStore.getState();
+  let script = cur.lastValidScript || cur.script;
+  for (const e of doomed) script = scriptAfterDisconnect(script, e.sourceNodeId, e.targetNodeId);
+  if (script !== (cur.lastValidScript || cur.script)) await publishScript(script, "canvas");
   rerouteBoard();
 }

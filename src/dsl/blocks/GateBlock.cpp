@@ -42,10 +42,7 @@ void SignalChain::Gate::prepare (const juce::dsp::ProcessSpec& spec)
     clearRuntimeState();
     gain = juce::Decibels::decibelsToGain (juce::jlimit (-90.f, 0.f, rangeSm.getCurrentValue()));
     ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
-    varNames.clear();
-    if (varPtr != nullptr)
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
+    bindings.prepare (varPtr, { &thresholdDb, &hystDb, &attack, &hold, &release, &rangeDb, &ceilingDb });
 }
 
 float SignalChain::Gate::process (int ch, float x)
@@ -61,17 +58,7 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        thresholdDb.setVariable (n.second, v);
-        hystDb.setVariable (n.second, v);
-        attack.setVariable (n.second, v);
-        hold.setVariable (n.second, v);
-        release.setVariable (n.second, v);
-        rangeDb.setVariable (n.second, v);
-        ceilingDb.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto evalOr = [] (ExpressionEvaluator& e, float fallback) -> float
     {
@@ -133,12 +120,13 @@ void SignalChain::Gate::processBlock (juce::AudioBuffer<float>& buffer)
         }
 
         float det = 0.f;
-        if (followSidechain && scL != nullptr && scN > 0)
+        if (followSidechain)
         {
-            const int si = juce::jlimit (0, scN - 1, i);
-            det = std::abs (scL[si]);
-            if (scR != nullptr)
-                det = juce::jmax (det, std::abs (scR[si]));
+            if (scL != nullptr && i < scN)
+            {
+                det = std::abs (scL[i]);
+                if (scR != nullptr) det = juce::jmax (det, std::abs (scR[i]));
+            }
         }
         else
         {

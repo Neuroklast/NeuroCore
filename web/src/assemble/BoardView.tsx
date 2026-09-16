@@ -6,9 +6,10 @@ import { subscribeVizClock } from "../theme/vizClock";
 import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
 import { useBindStore } from "../store/telemetryStore";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
+import { undoTargetIsText } from "../chrome/undoModel";
 import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
-import { addCircuitBlock, insertCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
+import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, worldFromScreen, zoomCamera } from "./boardCamera";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
@@ -271,9 +272,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
           commitBoardCut(port);
           return;
         }
-        if (! port.east) {
-          return;
-        }
         const from = portGlobal(node, port);
         connectDragRef.current = {
           fromPort: port,
@@ -384,7 +382,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (drag?.snapPortId) {
       const dst = useBoardStore.getState().ports[drag.snapPortId];
       if (dst) {
-        commitBoardConnect(drag.fromPort, dst);
+        void (drag.fromPort.east ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
       }
     }
     connectDragRef.current = null;
@@ -411,6 +409,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (!active || undoTargetIsText(e.target) || useHostStore.getState().overlay != null) return;
       if (e.code === "Space") {
         spaceRef.current = true;
       }
@@ -427,6 +426,15 @@ export function BoardView({ active = true }: { active?: boolean }) {
         e.preventDefault();
         void layoutBoard("COMPACT", view, { force: true });
       }
+      const chord = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      const id = selectedRef.current;
+      const n = id ? useBoardStore.getState().nodes[id] : undefined;
+      if (chord && id && key === "c" && canDeleteChip(n)) { e.preventDefault(); copyCircuitBlock(id); return; }
+      if (chord && id && key === "x" && canDeleteChip(n)) { e.preventDefault(); cutCircuitBlock(id); setSelected("IN"); return; }
+      if (chord && key === "v") { e.preventDefault(); const fresh = pasteCircuitBlockAfter(id || "IN"); if (fresh) setSelected(fresh); return; }
+      if (chord && id && key === "d" && canDeleteChip(n)) { e.preventDefault(); const fresh = duplicateCircuitBlock(id); if (fresh) setSelected(fresh); return; }
+      if (chord && id && key === "p" && canDeleteChip(n)) { e.preventDefault(); parkCircuitBlock(id); return; }
       if (e.key === "Delete" || e.key === "Backspace") {
         const id = selectedRef.current;
         const n = id ? useBoardStore.getState().nodes[id] : undefined;
@@ -447,8 +455,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      spaceRef.current = false;
     };
-  }, []);
+  }, [active]);
 
   const onWheel = useCallback((e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -590,6 +599,13 @@ export function BoardView({ active = true }: { active?: boolean }) {
           <OsMenuItem onClick={() => {
             setMenu({ kind: "add", left: menu.left, top: menu.top, afterId: menu.id });
           }}>Insert after</OsMenuItem>
+          {canDeleteChip(nodes[menu.id]) ? <>
+            <OsMenuItem onClick={() => { copyCircuitBlock(menu.id); setMenu(null); }}>Copy</OsMenuItem>
+            <OsMenuItem onClick={() => { cutCircuitBlock(menu.id); setSelected("IN"); setMenu(null); }}>Cut</OsMenuItem>
+            <OsMenuItem onClick={() => { const id = duplicateCircuitBlock(menu.id); if (id) setSelected(id); setMenu(null); }}>Duplicate</OsMenuItem>
+            <OsMenuItem onClick={() => { parkCircuitBlock(menu.id); setMenu(null); }}>Park</OsMenuItem>
+          </> : null}
+          <OsMenuItem onClick={() => { const id = pasteCircuitBlockAfter(menu.id); if (id) setSelected(id); setMenu(null); }}>Paste after</OsMenuItem>
           <OsMenuItem onClick={() => {
             const n = useBoardStore.getState().nodes[menu.id];
             if (n) {

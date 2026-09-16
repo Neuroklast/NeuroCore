@@ -54,10 +54,10 @@ describe("knob note values", () => {
 
   it("converts a ms range to note wholes and back at 120 BPM", () => {
     const notes = timeRangeToNote(20, 2000, 120, "ms");
-    expect(notes.min).toBeCloseTo(0.0625, 3);
+    expect(notes.min).toBeCloseTo(0.015625, 3);
     expect(notes.max).toBeCloseTo(1, 3);
     const ms = noteRangeToTime(notes.min, notes.max, 120, "ms");
-    expect(ms.min).toBeCloseTo(125, 0);
+    expect(ms.min).toBeCloseTo(31.25, 2);
     expect(ms.max).toBeCloseTo(2000, 0);
   });
 

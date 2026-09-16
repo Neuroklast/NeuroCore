@@ -1,9 +1,10 @@
+import { motionAllows } from "../theme/motionPolicy";
 import { peakToDb } from "../bridge/telemetry";
 import type { PortKind } from "./boardModel";
 import { paintRoute } from "./boardPath";
 import { CABLE_STILL_DB, plasmaSpeedPxPerSec } from "./cableMotion";
 import { BOARD_BLOCK, BOARD_HALF } from "./grid";
-import { chamferWaypoints, hasLightning } from "./layout/chamfer";
+import { hasLightning } from "./layout/chamfer";
 import type { Pt } from "./layout/types";
 
 export type EdgePaintKind = "stereo" | "mono" | "mid" | "side" | "mod" | "sc";
@@ -45,18 +46,16 @@ export const STREAM_GAP_HOT = 2;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
-/** Pan/zoom: skip copper traces and shadowBlur. Packets still move. Glow is Full only. */
+/** Gestures skip decoration. Only Full advances packets; meters stay live. */
 export function cablePaintPass(
   gesture: boolean,
   motion: "full" | "reduced" | "off" = "full",
-): { traces: boolean; glow: boolean } {
-  if (gesture || motion === "off") {
-    return { traces: false, glow: false };
-  }
-  if (motion === "reduced") {
-    return { traces: true, glow: false };
-  }
-  return { traces: true, glow: true };
+): { traces: boolean; glow: boolean; animate: boolean } {
+  return {
+    traces: !gesture && motion !== "off",
+    glow: !gesture && motionAllows("bloom", motion, false) && motion === "full",
+    animate: !gesture && motionAllows("pipeWave", motion, false),
+  };
 }
 
 export function cableGeomStamp(
@@ -115,16 +114,12 @@ export function buildCableLanes(
   kindHint: PortKind | string,
   jackId: string,
 ): Pt[][] {
-  const raw = paintRoute(from, to, route);
-  let pts = chamferWaypoints(raw);
+  const pts = paintRoute(from, to, route);
   const port: PaintPort = {
     jackId,
     kind: kindHint === "mod" ? "mod" : kindHint === "sc" ? "sc" : "audio",
   };
   const kind = edgePaintKind(port);
-  if (kind === "side") {
-    pts = sideBreakaway(pts);
-  }
   if (pts.length < 2) {
     return [];
   }
@@ -136,10 +131,7 @@ export function buildCableLanes(
 export function edgeLanes(kind: EdgePaintKind, jackId = ""): CableLane[] {
   const j = jackId.trim().toLowerCase();
   if (kind === "stereo") {
-    return [
-      { id: "L", offset: -STEREO_OFFSET, dash: MAIN_DASH, width: 2, color: "cyan" },
-      { id: "R", offset: STEREO_OFFSET, dash: MAIN_DASH, width: 2, color: "accent" },
-    ];
+    return [{ id: "mono", offset: 0, dash: MAIN_DASH, width: 2.4, color: "accent" }];
   }
   if (kind === "mid") {
     return [{ id: "M", offset: 0, dash: MAIN_DASH, width: 2.4, color: "accent" }];
@@ -154,7 +146,8 @@ export function edgeLanes(kind: EdgePaintKind, jackId = ""): CableLane[] {
     return [{ id: "sc", offset: 0, dash: MAIN_DASH, width: 1.5, color: "warn" }];
   }
   const color: LaneColor = j === "left" || j === "l" ? "cyan" : j === "right" || j === "r" ? "accent" : "accent";
-  return [{ id: "mono", offset: 0, dash: MAIN_DASH, width: 1.8, color }];
+  const id: LaneId = j === "left" || j === "l" ? "L" : j === "right" || j === "r" ? "R" : "mono";
+  return [{ id, offset: 0, dash: MAIN_DASH, width: 2, color }];
 }
 
 function unit(dx: number, dy: number): Pt {
@@ -511,9 +504,12 @@ export function glowForPeak(peak: number): number {
   return streamBlur(peak);
 }
 
-function tapAliases(sourceId: string, sourceType = ""): string[] {
+function tapAliases(sourceId: string, sourceType = "", sourceBus = ""): string[] {
   const t = sourceType.toLowerCase();
-  if (t === "send" || t === "bus" || t === "in" || sourceId === "IN") {
+  if (t === "send" || t === "bus") {
+    return [`bus:${sourceBus || sourceId.replace(/^send_/, "")}`, sourceId];
+  }
+  if (t === "in" || sourceId === "IN") {
     return ["IN", "__in__", sourceId];
   }
   if (t === "out" || sourceId === "OUT" || sourceId === "out") {
@@ -529,8 +525,13 @@ export function tapForLane(
   left: Record<string, number>,
   right: Record<string, number>,
   sourceType = "",
+  sourcePort = "",
+  sourceBus = "",
 ): number {
-  const aliases = tapAliases(sourceId, sourceType);
+  const aliases = lane === "sc" ? ["SC", "__sc__"]
+    : isXoverType(sourceType) && ["low", "mid", "high"].includes(sourcePort)
+      ? [`${sourceId}:${sourcePort}`]
+      : tapAliases(sourceId, sourceType, sourceBus);
   const pick = (map: Record<string, number>) => {
     for (const id of aliases) {
       if (map[id] != null) {
@@ -539,10 +540,10 @@ export function tapForLane(
     }
     return undefined;
   };
-  if (lane === "L") {
+  if (lane === "L" || lane === "M") {
     return pick(left) ?? pick(mono) ?? 0;
   }
-  if (lane === "R") {
+  if (lane === "R" || lane === "S") {
     return pick(right) ?? pick(mono) ?? 0;
   }
   return pick(mono) ?? 0;
@@ -555,8 +556,10 @@ export function peakForLane(
   clipsL: Record<string, number>,
   clipsR: Record<string, number>,
   sourceType = "",
+  sourcePort = "",
+  sourceBus = "",
 ): number {
-  return tapForLane(lane, sourceId, clips, clipsL, clipsR, sourceType);
+  return tapForLane(lane, sourceId, clips, clipsL, clipsR, sourceType, sourcePort, sourceBus);
 }
 
 export function rmsForLane(
@@ -566,8 +569,10 @@ export function rmsForLane(
   rmsL: Record<string, number>,
   rmsR: Record<string, number>,
   sourceType = "",
+  sourcePort = "",
+  sourceBus = "",
 ): number {
-  return tapForLane(lane, sourceId, rms, rmsL, rmsR, sourceType);
+  return tapForLane(lane, sourceId, rms, rmsL, rmsR, sourceType, sourcePort, sourceBus);
 }
 
 export type CameraTransform = {

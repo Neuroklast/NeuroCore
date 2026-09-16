@@ -11,6 +11,7 @@ import {
   scriptAfterSetArg,
 } from "./addBlock";
 import { chipSpec } from "./chipSpec";
+import { useAstStore } from "../store/astStore";
 
 describe("circuit add/remove", () => {
   it("lists addable chips and inserts a legal line before out", () => {
@@ -146,4 +147,24 @@ describe("circuit add/remove", () => {
     expect(scriptAfterRename(src, "custom1", "custom1")).toBe(src);
     expect(scriptAfterRename(src, "custom1", "")).toBe(src);
   });
+});
+
+describe('Circuit clipboard commands',()=>{
+  it('copies, duplicates, cuts, pastes and parks a selected chip through the script', async()=>{
+    const { applyCanvasScript, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, pasteCircuitBlockAfter, parkCircuitBlock } = await import('./addBlock');
+    applyCanvasScript('stage1: y = tanh(x*3)\nfilter1: type = highpass; cutoff = 900\nout: main = 1\n');
+    expect(copyCircuitBlock('stage1')).toBe(true);
+    expect(duplicateCircuitBlock('stage1')).toMatch(/^stage2$/);
+    expect(useAstStore.getState().lastValidScript).toContain('stage2: y = tanh(x*3)');
+    expect(cutCircuitBlock('stage2')).toBe(true);
+    expect(useAstStore.getState().lastValidScript).not.toContain('stage2:');
+    expect(pasteCircuitBlockAfter('filter1')).toMatch(/^stage2$/);
+    parkCircuitBlock('filter1');
+    expect(useAstStore.getState().lastValidScript).toMatch(/bus __park:\nfilter1:/);
+  });
+});
+
+it('uses catalog units for newly added dynamics blocks',()=>{
+ expect(ADDABLE_BLOCKS.find(b=>b.type==='comp')?.args).toContain('threshold = -18');
+ expect(ADDABLE_BLOCKS.find(b=>b.type==='noisegate')?.args).toContain('threshold = -18');
 });

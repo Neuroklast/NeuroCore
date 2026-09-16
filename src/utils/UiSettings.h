@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include <atomic>
 #include <cstdint>
+#include <initializer_list>
 
 enum class CyberMotion : uint8_t { Full, Reduced, Off };
 
@@ -66,6 +67,12 @@ public:
     int polisherIndex() const noexcept;
     void setPolisherIndex (int index);
 
+    /** Audio-thread entry points: atomics only, no disk or listener callbacks. */
+    void queueOversamplingIndex (int index) noexcept;
+    void queuePolisherIndex (int index) noexcept;
+    /** Message thread: drain latest host changes and publish shared preferences. */
+    void flushPendingProcessingChanges();
+
     juce::String scopeSource() const;
     void setScopeSource (const juce::String& id);
     juce::String scopeX() const;
@@ -98,7 +105,7 @@ private:
     static juce::String clampScopeSource (const juce::String& id);
     static juce::String clampScopeX (const juce::String& id);
     static juce::String clampScopeY (const juce::String& id);
-    void persist() const;
+    void persist (std::initializer_list<const char*> changedKeys);
     void notifyListeners() const;
     bool applyLoaded();
     void timerCallback() override;
@@ -122,6 +129,7 @@ private:
     std::atomic<int>   editorH { 0 };
     std::atomic<int>   osIndex { 2 };
     std::atomic<int>   polishIndex { 0 };
+    std::atomic<int>   pendingOs { -1 }, pendingPolish { -1 };
     std::atomic<bool>  meterGrid { true };
     std::atomic<bool>  meterInvertY { false };
     std::atomic<bool>  meterDelta { false };

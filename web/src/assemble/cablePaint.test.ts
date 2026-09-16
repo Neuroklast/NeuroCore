@@ -54,24 +54,13 @@ describe("edgePaintKind", () => {
 });
 
 describe("stereo bus paint", () => {
-  it("uses one route and two normal offsets 8 px apart", () => {
+  it("uses one centered lane until the signal is explicitly split", () => {
     const lanes = edgeLanes("stereo");
-    expect(lanes).toHaveLength(2);
-    expect(lanes[0]?.offset).toBe(-STEREO_OFFSET);
-    expect(lanes[1]?.offset).toBe(STEREO_OFFSET);
-    expect(STEREO_GAP).toBe(8);
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0]?.offset).toBe(0);
     expect(lanes[0]?.dash).toEqual(MAIN_DASH);
-    expect(lanes[1]?.color).toBe("accent");
-    expect(lanes[0]?.color).toBe("cyan");
-    const line = [
-      { x: 0, y: 80 },
-      { x: 120, y: 80 },
-    ];
-    const L = parallelOffset(line, -STEREO_OFFSET);
-    const R = parallelOffset(line, STEREO_OFFSET);
-    expect(L[0]?.y).toBeCloseTo(76);
-    expect(R[0]?.y).toBeCloseTo(84);
-    expect(twinsCross(L, R)).toBe(false);
+    expect(edgeLanes("mono", "left")[0]).toMatchObject({ id: "L", color: "cyan" });
+    expect(edgeLanes("mono", "right")[0]).toMatchObject({ id: "R", color: "accent" });
   });
 
   it("keeps twin lanes from crossing on a 45° chamfer", () => {
@@ -113,15 +102,12 @@ describe("mid/side vs L/R language", () => {
 });
 
 describe("lane telemetry", () => {
-  it("runs send and bus tubes from the IN tap — those chips have no DSP meter", () => {
-    const clips = { IN: 0.4, __in__: 0.4, stage1: 0.2 };
-    const clipsL = { IN: 0.4, __in__: 0.4 };
-    const clipsR = { IN: 0.35, __in__: 0.35 };
-    expect(peakForLane("L", "send", clips, clipsL, clipsR, "send")).toBeCloseTo(0.4);
-    expect(peakForLane("R", "send", clips, clipsL, clipsR, "send")).toBeCloseTo(0.35);
-    expect(peakForLane("L", "dirt", clips, clipsL, clipsR, "bus")).toBeCloseTo(0.4);
-    expect(rmsForLane("mono", "send", { IN: 0.22 }, { IN: 0.22 }, { IN: 0.22 }, "send")).toBeCloseTo(0.22);
-    expect(peakForLane("L", "send", { stage1: 0.9 }, { stage1: 0.9 }, { stage1: 0.9 }, "send")).toBe(0);
+  it("meters sends and buses after their gain, never from unrelated program input", () => {
+    const peaks = { IN: 0.9, "bus:dirt": 0.2 };
+    expect(peakForLane("mono", "send_dirt", peaks, {}, {}, "send")).toBe(0.2);
+    expect(peakForLane("mono", "dirt", peaks, {}, {}, "bus")).toBe(0.2);
+    expect(peakForLane("mono", "send_missing", peaks, {}, {}, "send")).toBe(0);
+    expect(peakForLane("mono", "xover1", { xover1: 0.8, "xover1:low": 0.1 }, {}, {}, "xover", "low")).toBe(0.1);
   });
 
   it("reads L and R separately so a hard pan left dims the right lane", () => {
@@ -171,14 +157,14 @@ describe("lane telemetry", () => {
 
 describe("pcb background traces", () => {
   it("drops traces and glow while the camera is moving", () => {
-    expect(cablePaintPass(false)).toEqual({ traces: true, glow: true });
-    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false });
+    expect(cablePaintPass(false)).toEqual({ traces: true, glow: true, animate: true });
+    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false, animate: false });
   });
 
   it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
-    expect(cablePaintPass(false, "full")).toEqual({ traces: true, glow: true });
-    expect(cablePaintPass(false, "reduced")).toEqual({ traces: true, glow: false });
-    expect(cablePaintPass(false, "off")).toEqual({ traces: false, glow: false });
+    expect(cablePaintPass(false, "full")).toEqual({ traces: true, glow: true, animate: true });
+    expect(cablePaintPass(false, "reduced")).toEqual({ traces: true, glow: false, animate: false });
+    expect(cablePaintPass(false, "off")).toEqual({ traces: false, glow: false, animate: false });
     const from = { x: 0, y: 16 };
     const to = { x: 128, y: 16 };
     const route = [from, { x: 64, y: 16 }, to];
@@ -188,7 +174,7 @@ describe("pcb background traces", () => {
     expect(a).toBe(b);
     expect(a).not.toBe(c);
     const lanes = buildCableLanes(from, to, route, "audio", "out");
-    expect(lanes.length).toBe(2);
+    expect(lanes.length).toBe(1);
     expect(lanes[0]![0]).toEqual(expect.objectContaining({ x: from.x }));
     const last = lanes[0]![lanes[0]!.length - 1]!;
     expect(last.x).toBe(to.x);
@@ -270,4 +256,21 @@ describe("overload dB is the real peak", () => {
   it("matches peakToDb when the chip is actually hot", () => {
     expect(peakToDb(1.2)).toBeCloseTo(20 * Math.log10(1.2));
   });
+});
+
+it("draws one lane for an unsplit stereo bus", () => {
+  expect(edgeLanes("stereo", "out")).toHaveLength(1);
+});
+
+it("uses the encoded channel for each MS lane and the actual sidechain tap", () => {
+  expect(peakForLane("M", "ms1", { ms1: 0.9 }, { ms1: 0.2 }, { ms1: 0.7 })).toBe(0.2);
+  expect(peakForLane("S", "ms1", { ms1: 0.9 }, { ms1: 0.2 }, { ms1: 0.7 })).toBe(0.7);
+  expect(peakForLane("sc", "IN", { IN: 0.9, SC: 0.1 }, {}, {}, "in")).toBe(0.1);
+  expect(peakForLane("sc", "IN", { IN: 0.9 }, {}, {}, "in")).toBe(0);
+});
+
+it("paints Mid and Side on their reserved route without a second geometry rewrite", () => {
+  const route = [{x:200,y:80},{x:264,y:80},{x:264,y:176},{x:360,y:176}];
+  expect(buildCableLanes(route[0]!, route[3]!, route, "audio", "side"))
+    .toEqual(buildCableLanes(route[0]!, route[3]!, route, "audio", "mid"));
 });

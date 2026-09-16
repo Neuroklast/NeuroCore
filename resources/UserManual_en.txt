@@ -172,3 +172,98 @@ If something is wrong
 - Help search: type a word (license, save as, multiband, pitch, DEMO) to filter this guide.
 
 Need a human: neuroklast.net
+
+DSP host buffers: formula stages accept unaligned channel data and odd callback sizes; no SIMD alignment is required from the host.
+
+DSP corrections (0.6.4-beta)
+- BOTH preserves stereo, including hard-panned sources. Select Left or Right explicitly to duplicate a mono input.
+- Envelope detectors measure audio at their position in the signal chain.
+- Filter automation also advances when the host supplies one sample per callback.
+- Widen adds a mono-cancelling side signal to the original stereo image. Width zero and mono processing are transparent.
+- Pitch uses a fixed 1024-sample latency at its processing sample rate and aligns its internal dry/wet paths. Zero semitones with formant 1 reconstructs unity gain. Legacy pitch sync syntax remains readable; FFT overlap and latency no longer change with host tempo.
+
+Alpha download packages include VST3 and Standalone on Windows/Linux, and VST3/AU/Standalone universal bundles on macOS. Each package includes license terms, a tester agreement, installation instructions and its source commit. Activation licenses are supplied separately. Linux embeds its editor assets. Unsigned/ad-hoc signed alpha packages do not imply notarisation or certification for every host.
+
+DSP accuracy: triangle LFOs now have continuous triangular ramps; stage MS flags encode/decode once. Three-band crossover low paths include the phase compensation needed for a flat summed magnitude. Noise LFOs own their random state. Soft ceilings now bound the signal at the selected amplitude, with a smooth knee starting at 95% of that amplitude; previous versions could approach twice the named ceiling.
+
+
+### DSP routing and offline rendering
+
+Parallel buses compensate shorter paths before sends and output summation; reported latency is the longest audible path, not the sum of parallel paths. Send/output gains accept compiled arithmetic and named controls with the same declared parameter ranges as effect blocks. Unknown gain variables reject the script. Internal buses preserve unity through 0 dBFS and gently compress overs into 6 dB of headroom; effect ceiling controls remain bounded at their stated levels, and final host-output sanitation still applies.
+
+Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doubling of engine rate), keeping analysis duration near 21 ms when oversampling. Dry/wet paths share the reported latency. OTT depth blends against the phase-matched crossover sum. Phaser/flanger feedback and mix changes are smoothed per sample. Limiter release is recalculated after sample-rate changes.
+
+External detector inputs are silent when disconnected or shorter than the current block; they do not fall back to the program signal or repeat the final sidechain sample. Offline renders retain CPU metering but do not enter realtime CPU-protection holds. Envelope min/max/hold expressions follow their controls.
+
+Reverb now honors left/right and mid/side channel selection: only the selected channel feeds its reverb and the other channel remains dry. Widen supports an independent smoothed `mix` (0 = unchanged stereo, 1 = full configured width). Reverb peak protection uses a continuous knee instead of switching abruptly at its threshold.
+
+### Factory Metal, Industrial and mix utilities
+
+New Metal presets cover blastbeat attack, snare crack, growl vocals, two high-gain DI guitar stacks and a split-band bass amp. Industrial presets provide distinct overdriven and folded kicks, percussion grind, moving bass distortion and two wet-only Rumble Send returns. The Mixing/Mastering additions cover harmonic bass translation, parallel drum compression, low-mid control, gentle bus glue and side-only bass cleanup. Use the Rumble Send programs on an aux with the original kick retained separately; external ducking requires a routed host sidechain.
+
+The catalog contains 317 programs. Artist references have been replaced by descriptive names, and Warehouse Rumble is consolidated into the expanded Kick Rumble controls. Existing saved project scripts retain their processing. Vocal de-ess/presence/warmth, side halls, Acid Line, Vowel Filter and several macro controls have been corrected. Compare at matched perceived loudness and adjust thresholds to the actual recording. See the factory curation notes for the specific architectures and validation scope.
+
+Bandpass width now determines Q when no explicit resonance is supplied; an explicit resonance takes precedence. Musical parameter grids include dotted/triplet divisions through 1/64. Factory musical defaults select the nearest note-grid entry rather than treating note fractions as linear controls; native and browser preset loading use the same mapping.
+
+Unit readouts, level bars and spectrum share a -60 dBFS display floor; values below it stay on the floor. The scope uses the latest 256 consecutive host-rate samples across callback boundaries, so changing the host block size no longer changes its frequency/time scale. Scope traces show the channel average (mid for stereo); stereo energy is represented separately by the peak/RMS meters and goniometer. Truncated telemetry frames are ignored and shorter valid frames clear old samples.
+
+Shared settings writes merge only the changed preference keys into the newest settings file, so one instance changing frame rate does not overwrite another process's newer theme or processing setting. Host automation of oversampling/polisher queues atomic requests; persistence and instance notifications occur on the message-thread settings poll (up to 500 ms), including instances without an open editor.
+
+### Circuit signal monitoring
+
+An unsplit mono or stereo connection uses one cable. Explicit L/R and Mid/Side
+connections have distinct channel colours. Cable brightness follows peak level;
+packet density and speed follow RMS at the source. Mid/Side reads the encoded
+Mid and Side channels, crossover outputs read their individual bands, and bus
+inputs include send gain. The host sidechain has its own meter; it never borrows
+the main input level. Monitoring stops when the editor is closed.
+
+IN can be dragged and snapped like the other blocks. L/R split and join preserve
+the audio channels and retain their own measurement points.
+
+### Motion modes
+
+Full enables travelling signal packets, scans and animated transitions. Reduced
+keeps subdued, level-driven highlights while stopping travelling packets, scans
+and repeating CSS animations. Off disables decoration, animation and transitions.
+Meters, parameter values and routing feedback still update in every mode.
+Without an explicit motion preference, the startup animation respects the
+operating system's reduced-motion setting. Explicit Full remains an override.
+
+### Circuit routing and overview
+
+Each visible connection has its own socket, including fan-out and summed inputs.
+Blocks grow vertically when extra sockets need space. Arrange and Compact reserve
+separate tracks for cables and check straight connections against intervening
+blocks. Parallel branches retain their named bus rows in Compact. Lines use the
+router's stored geometry, including Mid/Side connections.
+
+The automatic overview fits the complete circuit, even below the usual manual
+zoom range. Zoom in around the pointer to edit small controls.
+
+### Unit measurements
+
+Unit shows measured input/output peaks and output RMS with a −60 dBFS display
+floor. Peaks come from audio-block telemetry, not the downsampled stereo plot.
+Engine status shows sample rate, buffer size, latency, oversampling and CPU load.
+The former decorative temperature and checksum readouts are removed. The logo
+uses restrained level-reactive light without random glitches or scrolling code.
+If native telemetry is unavailable, meters clear and a waiting message appears.
+Synthetic signals are confined to the explicitly labelled browser preview.
+
+Parameter binding: Numeric macro bindings persist with their range in the script. Linking an existing macro preserves its other destinations and maps the new destination explicitly. Binding an audio formula adds a neutral gain control without replacing the audio expression. Load-time options (filter type, oscillator shape, envelope unit/source) remain dropdown choices, not macro targets. Compressor, gate and limiter envelope times are expressed in seconds.
+
+Circuit editing: Select a processing block and use Ctrl/Cmd+C, X, V or D to copy, cut, paste or duplicate it. Ctrl/Cmd+P parks it on the inactive park bus. The same actions are available from the block context menu. Right-click a cable or click it to insert a block after its source. Oscillator blocks show their configured waveform and effective synced/free rate.
+
+Themes change the editor material as well as its hue: chip corner geometry, panel radius and background texture are theme-specific. Signal is angular and striped, Gold is compact and radial, Azure is rounded and spacious, and DIGICIDE is square with fine scan texture.
+
+Terminal is a live script view of Circuit edits. In Edit mode, completion inserts complete block templates from the current block catalog; press Tab to step through the block ID and every parameter value. Save first validates the draft. A rejected or interrupted compile stays in Edit mode, shows markers, and leaves the last valid audio graph active.
+
+Local developer builds always reconfigure before compiling. On macOS/Linux run `scripts/build_local.sh` (Linux: run `scripts/install_linux_deps.sh` once); on Windows run `build_release.bat`. Set `JUCE_DIR` to a JUCE 8.0.6 checkout to build offline, or let CMake fetch the pinned release. Native CI validation is manual and does not publish releases.
+
+Hosts receive a tail length that includes serial delay, reverb and release stages on the longest audible bus path, so a second effect is not cut after transport stops. Parked blocks are excluded. Newly added compressor and gate blocks start at -18 dB with explicit attack, release and ceiling values.
+
+Circuit edits and Terminal drafts
+Rejected connections leave the last compiled graph and Terminal script intact. Native connection changes appear in both views only after successful compilation. A connection can be drawn from either end. Compiler diagnostics belong to the submitted draft; replies to older drafts do not replace diagnostics for current text. Copy, cut, paste and editor navigation remain available while typing; Circuit shortcuts act only in the active Circuit view.
+
+Terminal completion selects unused block IDs, keeps the reserved out mixer name, and offers catalog parameter defaults as Tab stops even while other lines are unfinished. Windows builds explicitly disable VST2 replacement compatibility; NEUROKORE ships VST3, Standalone and macOS AU. Existing VST3 parameter IDs are preserved.

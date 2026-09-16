@@ -116,3 +116,11 @@ describe("astStore", () => {
     expect(useAstStore.getState().ast?.nodes[0]?.id).toBe("stage1");
   });
 });
+
+it('ignores diagnostics for an older draft and clears stale errors when typing',()=>{
+ useAstStore.setState({script:'stage1: y = x',diagnostics:[{line:1,column:1,message:'old'}]});
+ useAstStore.getState().setDraftScript('stage1: y = tanh(x)');
+ expect(useAstStore.getState().diagnostics).toEqual([]);
+ useAstStore.getState().applyCompileResult({origin:'editor',script:'stage1: y = x',ok:false,diagnostics:[{line:1,column:1,message:'stale'}]});
+ expect(useAstStore.getState().diagnostics).toEqual([]);
+});

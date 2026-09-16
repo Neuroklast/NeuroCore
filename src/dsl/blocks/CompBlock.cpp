@@ -37,12 +37,10 @@ void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
     resetSm (ceilSm, ceilingDb, 0.f);
     clearRuntimeState();
     ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
-    varNames.clear();
+    bindings.prepare (varPtr, { &threshold, &ratio, &attack, &release, &kneeDb, &makeupDb, &hpfHz, &ceilingDb });
     yPtr = nullptr;
     if (varPtr != nullptr)
     {
-        for (auto& kv : *varPtr)
-            varNames.emplace_back (&kv.second, kv.first.toStdString());
         yPtr = &(*varPtr)["y"];
     }
 }
@@ -79,18 +77,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    for (const auto& n : varNames)
-    {
-        const float v = *n.first;
-        threshold.setVariable (n.second, v);
-        ratio.setVariable (n.second, v);
-        attack.setVariable (n.second, v);
-        release.setVariable (n.second, v);
-        kneeDb.setVariable (n.second, v);
-        makeupDb.setVariable (n.second, v);
-        hpfHz.setVariable (n.second, v);
-        ceilingDb.setVariable (n.second, v);
-    }
+    bindings.refresh();
 
     auto ev = [] (ExpressionEvaluator& e, float fallback)
     {
@@ -174,9 +161,9 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         float detL = 0.f, detR = 0.f;
         if (followSidechain)
         {
-            if (scL != nullptr && scN > 0)
+            if (scL != nullptr && i < scN)
             {
-                const int si = juce::jlimit (0, scN - 1, i);
+                const int si = i;
                 detL = scL[si];
                 detR = scR != nullptr ? scR[si] : detL;
             }

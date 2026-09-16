@@ -84,7 +84,9 @@ export function astarRoute(
   map.expandTo(start.c, start.r);
   map.expandTo(goal.c, goal.r);
   const heap: State[] = [];
-  const seen = new Map<string, number>();
+  const width = map.maxC - map.minC + 1;
+  const key = (c: number, r: number, dir: Dir) => ((r - map.minR) * width + c - map.minC) * 4 + dir;
+  const best = new Map<number, number>();
   const startState: State = {
     c: start.c,
     r: start.r,
@@ -94,15 +96,11 @@ export function astarRoute(
     prev: -1,
   };
   heapPush(heap, startState);
+  best.set(key(start.c, start.r, startDir), 0);
   const all: State[] = [];
   while (heap.length > 0) {
     const cur = heapPop(heap)!;
-    const sk = `${cur.c},${cur.r},${cur.dir}`;
-    const prevG = seen.get(sk);
-    if (prevG !== undefined && prevG <= cur.g) {
-      continue;
-    }
-    seen.set(sk, cur.g);
+    if (best.get(key(cur.c, cur.r, cur.dir)) !== cur.g) continue;
     const idx = all.length;
     all.push(cur);
     if (cur.c === goal.c && cur.r === goal.r) {
@@ -129,9 +127,7 @@ export function astarRoute(
       }
       const nc = cur.c + DC[nd]!;
       const nr = cur.r + DR[nd]!;
-      if (! map.inBounds(nc, nr) && Math.abs(nc - goal.c) + Math.abs(nr - goal.r) > 2) {
-        map.expandTo(nc, nr, 2);
-      }
+      if (!map.inBounds(nc, nr)) continue;
       const kk = map.key(nc, nr);
       if (map.solid.has(kk)) {
         continue;
@@ -163,6 +159,10 @@ export function astarRoute(
       if (add >= INF) {
         continue;
       }
+      const nextKey = key(nc, nr, nd);
+      const cost = cur.g + add;
+      if ((best.get(nextKey) ?? INF) <= cost) continue;
+      best.set(nextKey, cost);
       const next: State = {
         c: nc,
         r: nr,

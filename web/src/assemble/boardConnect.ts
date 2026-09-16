@@ -27,7 +27,7 @@ export function magnetPort(
 ): BoardPort | null {
   let best: { port: BoardPort; d: number } | null = null;
   for (const p of Object.values(graph.ports)) {
-    if (! canLink(from, p)) {
+    if (!(from.east ? canLink(from, p) : canLink(p, from))) {
       continue;
     }
     const n = graph.nodes[p.nodeId];

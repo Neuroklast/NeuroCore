@@ -1,0 +1,6 @@
+#pragma once
+namespace BinaryData
+{
+inline constexpr char en_txt[] = R"NK_LOCALE(@NK_TEST_LOCALE@)NK_LOCALE";
+inline constexpr int en_txtSize = sizeof (en_txt) - 1;
+}

@@ -51,11 +51,11 @@ describe("knob context menu", () => {
     };
     const on = applyKnobEdit(delay, { isNote: true }, 120);
     expect(on.isNote).toBe(true);
-    expect(on.min).toBeCloseTo(0.0625, 3);
+    expect(on.min).toBeCloseTo(0.015625, 3);
     expect(on.max).toBeCloseTo(1, 3);
     const off = applyKnobEdit(on, { isNote: false }, 120);
     expect(off.isNote).toBe(false);
-    expect(off.min).toBeCloseTo(125, 0);
+    expect(off.min).toBeCloseTo(31.25, 2);
     expect(off.max).toBeCloseTo(2000, 0);
   });
 

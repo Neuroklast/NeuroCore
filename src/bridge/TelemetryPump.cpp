@@ -10,26 +10,27 @@ void TelemetryPump::reset() noexcept
     published.store (0, std::memory_order_relaxed);
     slots[0].size = 0;
     slots[1].size = 0;
+    std::fill (std::begin (scopeIn), std::end (scopeIn), 0.f);
+    std::fill (std::begin (scopeOut), std::end (scopeOut), 0.f);
+    lastInPeak = lastInRms = 0.f;
 }
 
-void TelemetryPump::decimate (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept
+void TelemetryPump::captureScope (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept
 {
     const int n = src.getNumSamples();
     const int ch = src.getNumChannels();
-    if (n <= 0 || destN <= 0)
+    if (destN <= 0 || n <= 0) return;
+    if (ch <= 0) { std::fill (dest, dest + destN, 0.f); return; }
+    // Scope/FFT timestamps are at the host rate: never stretch a short block
+    // or decimate a long block while labelling it with the original rate.
+    const int take = juce::jmin (n, destN);
+    std::move (dest + take, dest + destN, dest);
+    for (int i = 0; i < take; ++i)
     {
-        for (int i = 0; i < destN; ++i)
-            dest[i] = 0.f;
-        return;
-    }
-    for (int i = 0; i < destN; ++i)
-    {
-        const int idx = (int) (((int64_t) i * (int64_t) n) / (int64_t) destN);
-        float acc = 0.f;
-        const int use = juce::jmax (1, ch);
-        for (int c = 0; c < use; ++c)
-            acc += src.getReadPointer (c)[juce::jmin (idx, n - 1)];
-        dest[i] = acc / (float) use;
+        float sum = 0.f;
+        for (int c = 0; c < ch; ++c)
+            sum += src.getReadPointer (c)[n - take + i];
+        dest[destN - take + i] = sum / (float) ch;
     }
 }
 
@@ -77,7 +78,7 @@ void TelemetryPump::noteInput (const juce::AudioBuffer<float>& in) noexcept
 {
     if (! wanted.load (std::memory_order_relaxed))
         return;
-    decimate (in, scopeIn, kScopeN);
+    captureScope (in, scopeIn, kScopeN);
     lastInPeak = peakOf (in);
     lastInRms = rmsOf (in);
 }
@@ -86,7 +87,7 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
 {
     if (! wanted.load (std::memory_order_relaxed))
         return;
-    decimate (out, scopeOut, kScopeN);
+    captureScope (out, scopeOut, kScopeN);
     const int n = out.getNumSamples();
     const float* L = out.getNumChannels() > 0 ? out.getReadPointer (0) : nullptr;
     const float* R = out.getNumChannels() > 1 ? out.getReadPointer (1) : L;
@@ -94,8 +95,8 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
     {
         const int idx = (n > 0) ? (int) (((int64_t) i * (int64_t) n) / (int64_t) kGonioN) : 0;
         const int ii = (n > 0) ? juce::jmin (idx, n - 1) : 0;
-        gonioX[i] = L != nullptr ? L[ii] : 0.f;
-        gonioY[i] = R != nullptr ? R[ii] : 0.f;
+        gonioX[i] = n > 0 && L != nullptr ? L[ii] : 0.f;
+        gonioY[i] = n > 0 && R != nullptr ? R[ii] : 0.f;
     }
 
     TelemetryDesc d;

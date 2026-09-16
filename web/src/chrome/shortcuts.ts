@@ -1,7 +1,7 @@
 import { isRedoKey, isUndoKey } from "./undoModel";
 
 const CTRL_KEYS = new Set([
-  "a", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
+  "a", "c", "x", "v", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
   "+", "-", "=", "0",
 ]);
 
@@ -26,7 +26,7 @@ export function shouldBlockBrowserShortcut(e: {
   ctrlKey: boolean;
   metaKey: boolean;
   altKey: boolean;
-}): boolean {
+}, ctx: { textTarget: boolean } = { textTarget: false }): boolean {
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (key === "F5" || key === "F12" || key === "F3" || key === "F7") {
     return true;
@@ -38,6 +38,7 @@ export function shouldBlockBrowserShortcut(e: {
   if (key === "F5") {
     return true;
   }
+  if (ctx.textTarget && ["a", "c", "x", "v", "f", "d"].includes(key)) return false;
   return CTRL_KEYS.has(key);
 }
 
@@ -108,7 +109,7 @@ export function browserShortcutStopsPropagation(
 ): boolean {
   if (! shouldBlockBrowserShortcut(e))
     return false;
-  if (! ctx.textTarget && isArrangeChord(e))
+  if (!ctx.textTarget && (isArrangeChord(e) || ((e.ctrlKey || e.metaKey) && ["c", "x", "v", "d", "p"].includes(e.key.toLowerCase()))))
     return false;
   return true;
 }

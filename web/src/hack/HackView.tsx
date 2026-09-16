@@ -11,6 +11,7 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { openImpulse } from "../overlays/ImpulsePanel";
 import { useTheme } from "../theme/themeBind";
+import { commitTerminalDraft } from "./terminalCompile";
 import {
   annotateKnobInlays,
   termFrame,
@@ -101,10 +102,15 @@ export function HackView() {
     return annotateKnobInlays(headed, knobs);
   }, [editing, baseScript, presetName, howItSounds, knobs]);
 
-  const save = () => {
-    validateOnSave(script, diagnostics);
-    publishScript(script, "editor");
-    setEditing(false);
+  const save = async () => {
+    const report = validateOnSave(script, diagnostics);
+    const preflight = report.ok ? diagnostics : [
+      ...diagnostics,
+      ...report.issues.filter((i) => i.severity === "error").map((i) => ({ line: 1, column: 1, message: i.message })),
+    ];
+    const result = await commitTerminalDraft(script, preflight, (draft) => publishScript(draft, "editor"));
+    useAstStore.getState().applyCompileResult(result);
+    if (result.ok && useAstStore.getState().script === script) setEditing(false);
   };
 
   const formulaPt = useHostStore((s) => s.formulaPt);
@@ -124,7 +130,7 @@ export function HackView() {
                 key={action}
                 type="button"
                 className="nk-clip nk-term-tool"
-                onClick={() => (editing ? save() : setEditing(true))}
+                onClick={() => { if (editing) void save(); else setEditing(true); }}
               >
                 {editing ? "Save" : "Edit"}
               </button>
@@ -194,6 +200,9 @@ export function HackView() {
             wordWrap: "on",
             tabSize: 2,
             automaticLayout: true,
+            snippetSuggestions: "top",
+            tabCompletion: "on",
+            suggest: { snippetsPreventQuickSuggestions: false, showSnippets: true },
             cursorStyle: "line",
             cursorWidth: frame.caret ? 2 : 0,
             renderLineHighlight: frame.caret ? "line" : "none",

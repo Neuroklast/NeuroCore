@@ -3,13 +3,7 @@ import { demoAst } from "../assemble/demoAst";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { peakToDb } from "../bridge/telemetry";
 import {
-  astChecksum,
   bandRms,
-  coreTempC,
-  cursorReadout,
-  dataRainLines,
-  driveAmount,
-  dspEvalMs,
   faceFftBar,
   faceFftFrame,
   formatDbfs,
@@ -17,13 +11,10 @@ import {
   rmsReadout,
   knobLfo,
   lfoScopePath,
-  logoPulsePeriodMs,
   logoRgbSplit,
   minimapGraph,
   nodeIsMuted,
   osModeLabel,
-  rainHot,
-  rainSpeed,
   spectrumBins,
   stereoMetrics,
   transientHit,
@@ -104,36 +95,6 @@ describe("unit face stereo metrics from gonio", () => {
   });
 });
 
-describe("unit face engine greeble", () => {
-  it("hashes the AST, scales eval time from cpu×block, and warns core temp from drive", () => {
-    const a = astChecksum("stage1: y = tanh(x * d)");
-    const b = astChecksum("filter1: cutoff = 800");
-    expect(a).toMatch(/^0x[0-9A-F]{6}$/);
-    expect(b).toMatch(/^0x[0-9A-F]{6}$/);
-    expect(a).not.toBe(b);
-    expect(astChecksum("stage1: y = tanh(x * d)")).toBe(a);
-
-    expect(dspEvalMs(0.25, 256, 48000)).toBeCloseTo(1.333, 2);
-    expect(dspEvalMs(0, 256, 48000)).toBe(0);
-    expect(dspEvalMs(0.5, 0, 48000)).toBe(0);
-
-    const cool = coreTempC(0, 0);
-    expect(cool.temp).toBeLessThan(50);
-    expect(cool.warn).toBe(false);
-    const hot = coreTempC(1, 0.6);
-    expect(hot.temp).toBeGreaterThanOrEqual(80);
-    expect(hot.warn).toBe(true);
-
-    expect(driveAmount([
-      { id: "a", name: "Rate", value: 1 },
-      { id: "d", name: "Drive", value: 0.4 },
-    ])).toBeCloseTo(0.4);
-
-    expect(osModeLabel(4)).toBe("LINEAR_PHASE_4X");
-    expect(osModeLabel(8)).toBe("LINEAR_PHASE_8X");
-    expect(osModeLabel(1)).toBe("LINEAR_PHASE_1X");
-  });
-});
 
 describe("unit face logo reactive from bands + host", () => {
   it("shifts red on X from low, cyan on Y from high; transient slices; pulse follows BPM", () => {
@@ -150,19 +111,6 @@ describe("unit face logo reactive from bands + host", () => {
     expect(transientHit(0.82, 0.12)).toBe(true);
     expect(transientHit(0.81, 0.8)).toBe(false);
 
-    expect(logoPulsePeriodMs(120)).toBe(500);
-    expect(logoPulsePeriodMs(0)).toBe(500);
-
-    expect(rainHot(0.1, 0.2)).toBe(false);
-    expect(rainHot(0.8, 0.2)).toBe(true);
-    expect(rainSpeed(0.8, 0.9)).toBeGreaterThan(rainSpeed(0.1, 0.1));
-
-    const lines = dataRainLines("0x4F9A8C", 3, 6);
-    expect(lines).toHaveLength(6);
-    expect(lines[0]).toMatch(/[0-9A-F]{4,}/);
-    expect(dataRainLines("0x4F9A8C", 4, 6).join()).not.toBe(lines.join());
-
-    expect(cursorReadout(140.4, 220.6)).toBe("X: 140  Y: 221");
   });
 });
 

@@ -294,10 +294,10 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::AdaaFunc2Node::evalSimd (
 {
     // ADAA is sequential — scalar fallback per lane using active channel bank
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas (16) float res[width];
+    alignas (juce::dsp::SIMDRegister<float>) float res[width];
     auto xv = x ? x->evalSimd (vars) : juce::dsp::SIMDRegister<float> (0.0f);
     auto pv = p ? p->evalSimd (vars) : juce::dsp::SIMDRegister<float> (1.0f);
-    alignas (16) float xa[width], pa[width];
+    alignas (juce::dsp::SIMDRegister<float>) float xa[width], pa[width];
     xv.copyToRawArray (xa);
     pv.copyToRawArray (pa);
     const int c = juce::jlimit (0, kAdaaChannels - 1, gAdaaChannel);
@@ -339,11 +339,11 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::BinaryNode::evalSimd(const j
     auto l = left->evalSimd(vars);
     auto r = right->evalSimd(vars);
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas(16) float lf[width];
-    alignas(16) float rf[width];
+    alignas(juce::dsp::SIMDRegister<float>) float lf[width];
+    alignas(juce::dsp::SIMDRegister<float>) float rf[width];
     l.copyToRawArray(lf);
     r.copyToRawArray(rf);
-    alignas(16) float res[width] = {};
+    alignas(juce::dsp::SIMDRegister<float>) float res[width] = {};
 
     switch (op)
     {
@@ -403,7 +403,7 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::FunctionNode::evalSimd(const
 
     // Scalar fallback for functions without SIMD path.
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas(16) float arr[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arr[width];
     v.copyToRawArray(arr);
     for (size_t i = 0; i < width; ++i)
         arr[i] = func(arr[i]);
@@ -421,11 +421,11 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func2Node::evalSimd(const ju
     auto a = left->evalSimd(vars);
     auto b = right->evalSimd(vars);
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas(16) float arrA[width];
-    alignas(16) float arrB[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrA[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrB[width];
     a.copyToRawArray(arrA);
     b.copyToRawArray(arrB);
-    alignas(16) float res[width];
+    alignas(juce::dsp::SIMDRegister<float>) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -445,13 +445,13 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func3Node::evalSimd(const ju
         return simdFunc(a, b, c);
 
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas(16) float arrA[width];
-    alignas(16) float arrB[width];
-    alignas(16) float arrC[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrA[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrB[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrC[width];
     a.copyToRawArray(arrA);
     b.copyToRawArray(arrB);
     c.copyToRawArray(arrC);
-    alignas(16) float res[width];
+    alignas(juce::dsp::SIMDRegister<float>) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i], arrC[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -470,13 +470,13 @@ juce::dsp::SIMDRegister<float> ExpressionEvaluator::Func5Node::evalSimd(const ju
     auto dv = d->evalSimd(vars);
     auto ev = e->evalSimd(vars);
     constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-    alignas(16) float arrA[width];
-    alignas(16) float arrB[width];
-    alignas(16) float arrC[width];
-    alignas(16) float arrD[width];
-    alignas(16) float arrE[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrA[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrB[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrC[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrD[width];
+    alignas(juce::dsp::SIMDRegister<float>) float arrE[width];
     av.copyToRawArray(arrA); bv.copyToRawArray(arrB); cv.copyToRawArray(arrC); dv.copyToRawArray(arrD); ev.copyToRawArray(arrE);
-    alignas(16) float res[width];
+    alignas(juce::dsp::SIMDRegister<float>) float res[width];
     for (size_t i = 0; i < width; ++i)
         res[i] = func(arrA[i], arrB[i], arrC[i], arrD[i], arrE[i]);
     return juce::dsp::SIMDRegister<float>::fromRawArray(res);
@@ -1187,7 +1187,7 @@ void ExpressionEvaluator::evaluateBlockSimd(float* samples, size_t numSamples,
             }
 
             constexpr size_t width = juce::dsp::SIMDRegister<float>::SIMDNumElements;
-            alignas(16) float arr[width];
+            alignas(juce::dsp::SIMDRegister<float>) float arr[width];
             result.copyToRawArray(arr);
             const size_t remaining = numSamples - i;
             const size_t count = juce::jmin(width, remaining);

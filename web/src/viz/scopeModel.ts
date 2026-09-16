@@ -1,3 +1,4 @@
+import { DISPLAY_DB_FLOOR, peakToDb } from "../bridge/telemetry";
 import { liveTheme } from "../theme/theme";
 
 export type ScopeSource = "in" | "out" | "both";
@@ -88,8 +89,7 @@ export function loudTitle(source: ScopeSource): string {
 
 /** 0..100 bar height from linear peak/rms. Silence sits on the floor. */
 export function barFillPercent(linear: number): number {
-  const db = 20 * Math.log10(Math.max(1.0e-8, linear));
-  return Math.max(2, Math.min(100, ((db + 60) / 60) * 100));
+  return Math.min(100, ((peakToDb(linear) - DISPLAY_DB_FLOOR) / -DISPLAY_DB_FLOOR) * 100);
 }
 
 export const LU_LINES = 48;
@@ -236,7 +236,7 @@ export function logSpectrumBins(samples: ArrayLike<number>, sr: number, bins = S
   return out;
 }
 
-/** Frequency always uses dB height so the grid (−72…0) matches the row. */
+/** Frequency always uses dB height so the grid (−60…0) matches the row. */
 export function liftScopeMags(
   raw: ArrayLike<number>,
   xScale: ScopeXScale,
@@ -285,13 +285,12 @@ export function scopeRecordIds(): Array<"in" | "out"> {
   return ["in", "out"];
 }
 
-/** Linear FFT bin → 0..1 display. Floor −72 dB so a loud hit still fills. */
+/** Linear FFT bin → 0..1 display. Floor −60 dB so a loud hit still fills. */
 export function specMag01(linear: number): number {
   if (! Number.isFinite(linear) || linear <= 0) {
     return 0;
   }
-  const db = 20 * Math.log10(Math.max(1.0e-8, linear));
-  return Math.max(0, Math.min(1, (db + 72) / 72));
+  return barFillPercent(linear) / 100;
 }
 
 /** Rising edge that stays positive — skip harmonic/zero chatter that hunts the standing wave. */
@@ -441,13 +440,13 @@ export function waveProject(
   return spectrogramProject(bin, row, mag, w, h);
 }
 
-/** dB ticks on the near-plane Y axis. Floor is −72 dB (specMag01). */
+/** dB ticks on the near-plane Y axis. Floor is −60 dB (specMag01). */
 export function specDbMarks(): Array<{ mag: number; label: string }> {
   return [
     { mag: 1, label: "0" },
-    { mag: 48 / 72, label: "-24" },
-    { mag: 24 / 72, label: "-48" },
-    { mag: 0, label: "-72" },
+    { mag: 2 / 3, label: "-20" },
+    { mag: 1 / 3, label: "-40" },
+    { mag: 0, label: String(DISPLAY_DB_FLOOR) },
   ];
 }
 

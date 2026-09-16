@@ -60,7 +60,7 @@ describe("scope deck model", () => {
   it("places log frequency marks denser at the low end", () => {
     const marks = logFreqMarks(48000);
     expect(marks.map((m) => m.label)).toEqual(expect.arrayContaining(["50", "100", "1k", "10k"]));
-    expect(specDbMarks().map((m) => m.label)).toEqual(["0", "-24", "-48", "-72"]);
+    expect(specDbMarks().map((m) => m.label)).toEqual(["0", "-20", "-40", "-60"]);
     const a = marks.find((m) => m.hz === 100)!;
     const b = marks.find((m) => m.hz === 1000)!;
     const c = marks.find((m) => m.hz === 10000)!;
@@ -121,7 +121,7 @@ describe("scope deck model", () => {
 
   it("LU bar height follows live rms, not a parked constant", () => {
     expect(barFillPercent(0.6)).toBeGreaterThan(barFillPercent(0.05));
-    expect(barFillPercent(0)).toBe(2);
+    expect(barFillPercent(0)).toBe(0);
     expect(luLitLines(0.6)).toBeGreaterThan(luLitLines(0.05));
     expect(luLitLines(0)).toBe(0);
     expect(luLitLines(1)).toBe(LU_LINES);
@@ -282,4 +282,9 @@ describe("scope deck model", () => {
     expect(processModeIndex("LIVE")).toBe(1);
     expect(processModeIndex("STUDIO")).toBe(0);
   });
+});
+
+it("does not illuminate meters below the common -60 dB floor", () => {
+  expect(barFillPercent(0.0001)).toBe(0);
+  expect(luLitLines(0.0001)).toBe(0);
 });

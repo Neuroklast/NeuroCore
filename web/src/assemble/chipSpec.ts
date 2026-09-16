@@ -251,8 +251,8 @@ add({
   ranges: {
     threshold: { min: -60, max: 0, unit: "dB" },
     ratio: { min: 1, max: 20 },
-    attack: { min: 0.001, max: 1, unit: "ms" },
-    release: { min: 0.001, max: 2, unit: "ms" },
+    attack: { min: 0.001, max: 1, unit: "s" },
+    release: { min: 0.001, max: 2, unit: "s" },
     ceiling: { min: -12, max: 0, unit: "dB" },
   },
   defaultArgs: { threshold: "-18", ratio: "4", attack: "0.01", release: "0.1", ceiling: "0" },
@@ -268,8 +268,8 @@ add({
   paramJacks: ["threshold", "attack", "release", "ceiling"],
   ranges: {
     threshold: { min: -80, max: 0, unit: "dB" },
-    attack: { min: 0.001, max: 1, unit: "ms" },
-    release: { min: 0.001, max: 2, unit: "ms" },
+    attack: { min: 0.001, max: 1, unit: "s" },
+    release: { min: 0.001, max: 2, unit: "s" },
     ceiling: { min: -12, max: 0, unit: "dB" },
   },
   defaultArgs: { threshold: "-18", attack: "0.01", release: "0.1", ceiling: "0" },
@@ -285,7 +285,7 @@ add({
   paramJacks: ["ceiling", "release"],
   ranges: {
     ceiling: { min: -12, max: 0, unit: "dB" },
-    release: { min: 0.001, max: 1, unit: "ms" },
+    release: { min: 0.001, max: 1, unit: "s" },
   },
   defaultArgs: { ceiling: "-0.3", release: "0.1" },
   blurb: "Brickwall limiter.",
@@ -679,7 +679,7 @@ export function chipSpec(type: string, args: Record<string, string> = {}): ChipS
 const NOT_KNOB_CODE = new Set(["y", "channel", "kanal", "name", "mode", "family"]);
 
 /**
- * South bind jacks: numeric ranges and sonic enums that compile as `key = a`.
+ * South bind jacks: runtime numeric expressions that compile as `key = a`.
  * Routing/name/formula fields stay off the rail.
  */
 export function bindableJackKeys(spec: ChipSpec): string[] {
@@ -690,7 +690,7 @@ export function bindableJackKeys(spec: ChipSpec): string[] {
     if (spec.ranges[k]) {
       return true;
     }
-    return (spec.enums[k] ?? []).length > 0;
+    return false;
   });
 }
 
