@@ -13,6 +13,8 @@ configure_file("${NK_ROOT}/tests/headless/BinaryData.h.in" "${CMAKE_CURRENT_BINA
 file(GLOB NK_BLOCKS "${NK_ROOT}/src/dsl/blocks/*.cpp")
 add_executable(NeuroKoreDspContracts
     ${NK_ROOT}/tests/fx_main.cpp
+    ${NK_ROOT}/src/bridge/TelemetryFrame.cpp
+    ${NK_ROOT}/src/bridge/TelemetryPump.cpp
     ${NK_ROOT}/src/dsl/DSLParser.cpp
     ${NK_ROOT}/src/dsl/SignalChain.cpp
     ${NK_BLOCKS}

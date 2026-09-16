@@ -124,3 +124,5 @@ Reverb channel isolation and Widen mix had three reproduced contract failures; s
 Factory checkpoint: 317 programs, 17 new Metal/Industrial/Mixing/Mastering presets, one merged rumble variant, descriptive artist-free names, repaired vocal/filter/side-hall paths. Metadata contracts pass; default and macro/silence production-DSP audit has no parse/nonfinite failures. Native FactoryLoudness awaits the final build. See `docs/FACTORY_CURATION.md`.
 
 Bandpass bandwidth and the 1/32 grid endpoint now pass reproduced DSP regressions. Factory note defaults use grid positions in native/browser loaders. Targeted web preset/note contracts pass; the broader web run also exposed pre-existing ENV registry expectations and reduced-motion boot behavior, reserved for the UI pass.
+
+Unit measurement checkpoint: shared -60 dBFS floor, no false lit bar below it, validated frame lengths and contiguous host-rate scope capture. Three native block-size sampling failures and four web display/frame failures reproduced, then fixed. Local native DSP/sampling suite and 30 targeted web contracts pass.

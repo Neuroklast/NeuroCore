@@ -1,3 +1,4 @@
+#include "TelemetrySamplingTest.h"
 #include "FxRuntimeTest.h"
 #include "DSLParserTest.h"
 #include "GraphModelTest.h"
@@ -60,6 +61,7 @@ int main (int argc, char* argv[])
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
+  TelemetrySamplingTest telemetrySamplingTest;
   AstJsonTest astJsonTest;
   WebShellTest webShellTest;
   WebCompileTest webCompileTest;

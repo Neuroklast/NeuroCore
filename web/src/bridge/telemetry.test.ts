@@ -44,7 +44,33 @@ describe("decodeTelemetry", () => {
   });
 
   it("peakToDb floors silence", () => {
-    expect(peakToDb(0)).toBe(-96);
+    expect(peakToDb(0)).toBe(-60);
+    expect(peakToDb(0.00001)).toBe(-60);
+    expect(peakToDb(Number.NaN)).toBe(-60);
     expect(peakToDb(1)).toBeCloseTo(0);
   });
+});
+
+it("rejects truncated telemetry without changing the last valid frame", () => {
+  const dest = createTelemetryViews();
+  dest.inPeak = 0.5;
+  const ab = new ArrayBuffer(36);
+  const header = new DataView(ab);
+  header.setUint32(0, TELEMETRY_MAGIC, true);
+  header.setUint16(4, 1, true);
+  header.setUint16(28, 256, true);
+  expect(decodeTelemetry(ab, dest)).toBe(false);
+  expect(dest.inPeak).toBe(0.5);
+});
+
+it("clears unused scope samples when a shorter valid frame arrives", () => {
+  const dest = createTelemetryViews();
+  dest.scopeIn.fill(0.8);
+  const ab = new ArrayBuffer(40);
+  const header = new DataView(ab);
+  header.setUint32(0, TELEMETRY_MAGIC, true);
+  header.setUint16(4, 1, true);
+  header.setUint16(28, 1, true);
+  expect(decodeTelemetry(ab, dest)).toBe(true);
+  expect(dest.scopeIn[20]).toBe(0);
 });

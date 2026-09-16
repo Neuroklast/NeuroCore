@@ -1,6 +1,8 @@
 export const TELEMETRY_MAGIC = 0x4E4B544D;
 export const SCOPE_N = 256;
 export const GONIO_N = 128;
+export const DISPLAY_DB_FLOOR = -60;
+export const DISPLAY_AMP_FLOOR = 10 ** (DISPLAY_DB_FLOOR / 20);
 
 export interface TelemetryViews {
   inPeak: number;
@@ -40,26 +42,33 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   if (view.getUint32(0, true) !== TELEMETRY_MAGIC) {
     return false;
   }
-  dest.inPeak = view.getFloat32(8, true);
-  dest.outPeak = view.getFloat32(12, true);
-  dest.inRms = view.getFloat32(16, true);
-  dest.outRms = view.getFloat32(20, true);
-  dest.cpu01 = view.getFloat32(24, true);
-  dest.scopeN = view.getUint16(28, true);
-  dest.gonioN = view.getUint16(30, true);
-  const nS = Math.min(dest.scopeN, dest.scopeIn.length);
-  const nG = Math.min(dest.gonioN, dest.gonioX.length);
-  const f32 = new Float32Array(ab, 32);
-  dest.scopeIn.set(f32.subarray(0, nS));
-  dest.scopeOut.set(f32.subarray(nS, nS + nS));
-  dest.gonioX.set(f32.subarray(nS + nS, nS + nS + nG));
-  dest.gonioY.set(f32.subarray(nS + nS + nG, nS + nS + nG + nG));
+  const scopeN = view.getUint16(28, true);
+  const gonioN = view.getUint16(30, true);
+  const requiredBytes = 32 + (scopeN * 2 + gonioN * 2) * 4;
+  if (view.getUint16(4, true) !== 1 || ab.byteLength < requiredBytes) return false;
+  const readings = [8, 12, 16, 20, 24].map((offset) => view.getFloat32(offset, true));
+  if (readings.some((value) => !Number.isFinite(value) || value < 0)) return false;
+  [dest.inPeak, dest.outPeak, dest.inRms, dest.outRms, dest.cpu01] = readings as [number, number, number, number, number];
+  dest.scopeN = Math.min(scopeN, dest.scopeIn.length);
+  dest.gonioN = Math.min(gonioN, dest.gonioX.length);
+  const f32 = new Float32Array(ab, 32, scopeN * 2 + gonioN * 2);
+  const copy = (target: Float32Array, offset: number, length: number) => {
+    target.fill(0);
+    for (let i = 0; i < length; i += 1) {
+      const value = f32[offset + i]!;
+      target[i] = Number.isFinite(value) ? value : 0;
+    }
+  };
+  copy(dest.scopeIn, 0, dest.scopeN);
+  copy(dest.scopeOut, scopeN, dest.scopeN);
+  copy(dest.gonioX, scopeN * 2, dest.gonioN);
+  copy(dest.gonioY, scopeN * 2 + gonioN, dest.gonioN);
   return true;
 }
 
 export function peakToDb(p: number): number {
-  if (! Number.isFinite(p) || p <= 1.0e-8) {
-    return -96;
+  if (! Number.isFinite(p) || p <= DISPLAY_AMP_FLOOR) {
+    return DISPLAY_DB_FLOOR;
   }
-  return 20 * Math.log10(p);
+  return Math.max(DISPLAY_DB_FLOOR, 20 * Math.log10(p));
 }
