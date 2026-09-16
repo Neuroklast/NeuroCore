@@ -6,14 +6,20 @@
  * - diode(x,d) / asinh: op-amp diode clipper / soft knee (C-inf)
  * - softclip(x,d): smooth algebraic y = x/sqrt(1+x^2) -- low HF alias vs piecewise cubic
  * - hardclip(x,lim): soft-knee Hermite brickwall (~3%) -- never pure clamp
+ * - clamp(x,lo,hi): true hard clip (no knee) -- use when the sound must be hard
  *
- * Anti-alias clip topology (ALL clip-heavy presets follow this):
- *   1. Prefer softclip / tube / diode over bare hardclip
- *   2. If hard ceiling needed: hardclip(softclip(x, drive), ceiling)
- *   3. Always LPF after heavy clip (tone / cab / anti-alias recovery)
- *   4. Optional mild HPF pre-clip (less HF into the nonlinearity)
- *   5. Parallel lerp(dry, wet) for transparent peak control
- *   6. Keep resonance <= ~3.2 (engine caps ~4.5); avoid Q self-osc crackle
+ * Clip topology (ALL clip-heavy presets follow this):
+ *   1. Hard stays hard: presets whose character is hard use clamp / hardclip.
+ *      Do NOT soften a hard-intent preset to softclip / tube / diode.
+ *   2. Soft character stays soft: softclip / tube / diode for warm/tube/diode voicings.
+ *   3. Hard ceiling over a soft pre-shape: clamp(softclip(x, drive), -c, c)
+ *   4. Always LPF after heavy clip (tone / cab / anti-alias recovery)
+ *   5. Optional mild HPF pre-clip (less HF into the nonlinearity)
+ *   6. Parallel lerp(dry, wet) for transparent peak control
+ *   7. Keep resonance <= ~3.2 (engine caps ~4.5); avoid Q self-osc crackle
+ *
+ * NOTE: the runtime Optimize is sound-neutral and never swaps hard<->soft or
+ * inserts filters. Harden presets here, not at optimize time.
  *
  * Multi-stage chains emulate preamp -> tone -> power -> cab (HPF/LPF band-limit).
  * outputGain defaults to 0 dB (host meter friendly; AutoGain handles loudness).

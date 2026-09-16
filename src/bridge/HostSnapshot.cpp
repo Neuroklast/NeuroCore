@@ -230,7 +230,7 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
     {
         juce::String err;
         if (! proc.applyFormula (
-                "// New preset\nparam a = Drive [0.5, 4.0]\nstage1: y = softclip(x, a)\n",
+                "// New preset\nparam a = Drive [0.5, 4.0]\nstage1: y = hardclip(x, a)\n",
                 err, true))
         {
             error = err;

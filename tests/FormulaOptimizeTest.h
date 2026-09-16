@@ -21,19 +21,30 @@ public:
             expect (compact (rep.script) == "x");
         }
 
-        beginTest ("classic softclip formula");
+        beginTest ("classic softclip formula is left as written");
         {
             auto rep = optimizeFormulaDetailed ("x / (1 + abs(x))");
             expect (rep.verified);
-            expect (compact (rep.script).contains ("softclip"));
-            expectGreaterThan (rep.changes, 0);
+            expectEquals (rep.changes, 0);
+            expect (compact (rep.script).contains ("abs"));
+            expect (! compact (rep.script).contains ("softclip"));
         }
 
-        beginTest ("clamp brickwall -> hardclip");
+        beginTest ("hard clip stays hard (clamp is not swapped)");
         {
             auto rep = optimizeFormulaDetailed ("clamp(x, -1, 1)");
             expect (rep.verified);
-            expect (compact (rep.script).contains ("hardclip"));
+            expectEquals (rep.changes, 0);
+            expect (compact (rep.script).contains ("clamp"));
+            expect (! compact (rep.script).contains ("softclip"));
+        }
+
+        beginTest ("tanh is never rewritten to softclip");
+        {
+            auto rep = optimizeFormulaDetailed ("stage1: y = tanh(x * a)");
+            expectEquals (rep.changes, 0);
+            expect (rep.script.containsIgnoreCase ("tanh"));
+            expect (! rep.script.containsIgnoreCase ("softclip"));
         }
 
         beginTest ("softclip(x*a) -> softclip(x, a)");
@@ -68,12 +79,13 @@ public:
             expect (p.parse (rep.script, blocks, aliases, params, err), err);
         }
 
-        beginTest ("bare hardclip gets AA LPF if no filter present");
+        beginTest ("bare hardclip is left untouched (no injected LPF)");
         {
             auto rep = optimizeFormulaDetailed ("stage1: y = hardclip(x, 0.5)");
             expect (rep.verified);
-            expect (rep.script.containsIgnoreCase ("lowpass"));
-            expectGreaterThan (rep.changes, 0);
+            expectEquals (rep.changes, 0);
+            expect (rep.script.containsIgnoreCase ("hardclip"));
+            expect (! rep.script.containsIgnoreCase ("lowpass"));
         }
 
         beginTest ("rejects garbage that would not parse");

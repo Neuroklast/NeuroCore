@@ -332,7 +332,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Cyberpunk Drive\n# Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose — not Glitch Laboratory.\n\nparam a = Drive [1.8, 9.5]\nparam b = Bits [5.0, 12.0]\nparam c = Fold [0.22, 0.68]\nparam d = Metal [5, 26]\nparam e = Tone [1400, 7200]\nparam f = Level [0.85, 1.5]\nfilter1: type = highpass; cutoff = 115; resonance = 0.4\nstage1: y = softclip(x, a * 0.5)\neq1: type = peak; freq = 1350; q = 0.95; gain = 3.2\nstage2: y = bitcrush(y, b)\nstage3: y = fold(y, -c, c)\ndelay1: time = d; feedback = 0.34; mix = 0.16; damp = 6800\nfilter2: type = lowpass; cutoff = e; resonance = 0.38\nstage4: y = diode(y, 1.32) * f * 1.35\n",
+    "script": "# Cyberpunk Drive\n# Guitar-shaped digital dirt: HPF, soft preamp, bitcrush, fold, short metal comb, cab LPF. Loud on purpose — not Glitch Laboratory.\n\nparam a = Drive [1.8, 9.5]\nparam b = Bits [5.0, 12.0]\nparam c = Fold [0.22, 0.68]\nparam d = Metal [5, 26]\nparam e = Tone [1400, 7200]\nparam f = Level [0.85, 1.5]\nfilter1: type = highpass; cutoff = 115; resonance = 0.4\nstage1: y = softclip(x, a * 0.5)\neq1: type = peak; freq = 1350; q = 0.95; gain = 3.2\nstage2: y = bitcrush(y, b)\nstage3: y = fold(y, -c, c)\ndelay1: time = d; feedback = 0.34; mix = 0.16; damp = 6800\nfilter2: type = lowpass; cutoff = e; resonance = 0.38\nstage4: y = clamp(diode(y, 1.32), -0.7, 0.7) * f * 1.35\n",
     "tags": [
       "bitcrush",
       "clip",
@@ -704,7 +704,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vocal Grit\n# Broadcast grit: HPF, tube, air LPF.\n\nparam a = Drive [1.2, 5.5]\nparam b = LowCut [80, 280]\nparam c = Air [2500, 11000]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.35\nstage1: y = tube(x, a) * d\nfilter2: type = lowpass; cutoff = c; resonance = 0.4\n",
+    "script": "# Vocal Grit\n# Broadcast grit: HPF, tube, air LPF.\n\nparam a = Drive [1.2, 5.5]\nparam b = LowCut [80, 280]\nparam c = Air [2500, 11000]\nparam d = Level [0.5, 1.25]\nfilter1: type = highpass; cutoff = b; resonance = 0.35\nstage1: y = clamp(tube(x, a), -0.7, 0.7) * d\nfilter2: type = lowpass; cutoff = c; resonance = 0.4\n",
     "tags": [
       "air",
       "drive",
@@ -1079,7 +1079,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Formant Crush\n# Dual formant peaks + softclip + mild LPF (clip between formants stays band-limited).\n\nparam a = F1 [320, 1100]\nparam b = F2 [1000, 2800]\nparam c = Drive [1.3, 4.5]\nfilter1: type = bandpass; center = a; width = 220\nstage1: y = softclip(x, c)\nfilter2: type = bandpass; center = b; width = 320\nfilter3: type = lowpass; cutoff = 9000; resonance = 0.3\n",
+    "script": "# Formant Crush\n# Dual formant peaks + softclip + mild LPF (clip between formants stays band-limited).\n\nparam a = F1 [320, 1100]\nparam b = F2 [1000, 2800]\nparam c = Drive [1.3, 4.5]\nfilter1: type = bandpass; center = a; width = 220\nstage1: y = clamp(softclip(x, c), -0.7, 0.7)\nfilter2: type = bandpass; center = b; width = 320\nfilter3: type = lowpass; cutoff = 9000; resonance = 0.3\n",
     "tags": [
       "clip",
       "crush",
@@ -2019,7 +2019,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Bass Architect\n# Sub-safe: HPF, parallel grit, mid peak (keeps the fundamental), glue, cab LPF.\n\nparam a = HPF [25, 90]\nparam b = Drive [1.2, 6.0]\nparam c = Blend [0.2, 0.8]\nparam d = Mid [200, 1200]\nparam e = Thresh [-22.0, -8.0]\nparam f = Level [0.5, 1.3]\nfilter1: type = highpass; cutoff = a; resonance = 0.25\nstage1: y = lerp(x, tube(x, b), c)\neq1: type = peak; freq = d; q = 1.05; gain = 3.8\ncomp1: threshold = e; ratio = 4.0; attack = 0.015; release = 0.22\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.3\nstage2: y = softclip(x * f, 1.08)\n",
+    "script": "# Bass Architect\n# Sub-safe: HPF, parallel grit, mid peak (keeps the fundamental), glue, cab LPF.\n\nparam a = HPF [25, 90]\nparam b = Drive [1.2, 6.0]\nparam c = Blend [0.2, 0.8]\nparam d = Mid [200, 1200]\nparam e = Thresh [-22.0, -8.0]\nparam f = Level [0.5, 1.3]\nfilter1: type = highpass; cutoff = a; resonance = 0.25\nstage1: y = lerp(x, tube(x, b), c)\neq1: type = peak; freq = d; q = 1.05; gain = 3.8\ncomp1: threshold = e; ratio = 4.0; attack = 0.015; release = 0.22\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.3\nstage2: y = clamp(softclip(x * f, 1.08), -0.7, 0.7)\n",
     "tags": [
       "bass",
       "clip",
@@ -3990,7 +3990,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hot British Lead\n# 800-style lead: aggressive HPF, stacked tube, mid scoop then presence, dark cab.\n\nparam a = Gain [2.5, 10.0]\nparam b = Scoop [400, 1200]\nparam c = Presence [2500, 7000]\nparam d = Level [0.28, 0.95]\ngate1: threshold = -46; hyst = 6; hold = 0.03; range = -80\nfilter1: type = highpass; cutoff = 110; resonance = 0.42\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(y, a * 0.7)\neq1: type = notch; freq = b; q = 1.1; gain = 0\neq2: type = highshelf; freq = c; q = 0.7; gain = 3.5\nstage3: y = softclip(y * 1.25, 1.45)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.48\nstage4: y = diode(y, 1.35) * d\nir1: mix = 0.45; gain = 0\nlimit1: ceiling = -0.3; release = 0.08\n",
+    "script": "# Hot British Lead\n# 800-style lead: aggressive HPF, stacked tube, mid scoop then presence, dark cab.\n\nparam a = Gain [2.5, 10.0]\nparam b = Scoop [400, 1200]\nparam c = Presence [2500, 7000]\nparam d = Level [0.28, 0.95]\ngate1: threshold = -46; hyst = 6; hold = 0.03; range = -80\nfilter1: type = highpass; cutoff = 110; resonance = 0.42\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(y, a * 0.7)\neq1: type = notch; freq = b; q = 1.1; gain = 0\neq2: type = highshelf; freq = c; q = 0.7; gain = 3.5\nstage3: y = softclip(y * 1.25, 1.45)\nfilter2: type = lowpass; cutoff = 4800; resonance = 0.48\nstage4: y = clamp(diode(y, 1.35), -0.7, 0.7) * d\nir1: mix = 0.45; gain = 0\nlimit1: ceiling = -0.3; release = 0.08\n",
     "tags": [
       "amp",
       "cabinet",
@@ -6602,7 +6602,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tall Stack Fuzz\n# Muff-like stacked filters around a fold, then a dark cab.\n\nparam a = Fuzz [2, 10]\nparam b = Scoop [400, 1400]\nparam c = Top [1800, 5000]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage1: y = fold(x, -0.35, 0.35)\nstage2: y = softclip(y, a)\neq1: type = peak; freq = b; q = 0.9; gain = -5\nir1: mix = 0.4; gain = 4\n",
+    "script": "# Tall Stack Fuzz\n# Muff-like stacked filters around a fold, then a dark cab.\n\nparam a = Fuzz [2, 10]\nparam b = Scoop [400, 1400]\nparam c = Top [1800, 5000]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage1: y = fold(x, -0.35, 0.35)\nstage2: y = clamp(softclip(y, a), -0.7, 0.7)\neq1: type = peak; freq = b; q = 0.9; gain = -5\nir1: mix = 0.4; gain = 4\n",
     "tags": [
       "cabinet",
       "clip",
@@ -8325,7 +8325,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Fuzz Into Amp\n# Stacked-filter fuzz into a dark cab.\n\nparam a = Fuzz [2, 9]\nparam b = Scoop [500, 1200]\nparam c = Cab [0.3, 0.7]\nfilter1: type = highpass; cutoff = 70; resonance = 0.32\nfilter2: type = lowpass; cutoff = 3800; resonance = 0.4\nstage1: y = softclip(x, a)\neq1: type = peak; freq = b; q = 0.9; gain = -4.5\nir1: mix = c; gain = 2\n",
+    "script": "# Fuzz Into Amp\n# Stacked-filter fuzz into a dark cab.\n\nparam a = Fuzz [2, 9]\nparam b = Scoop [500, 1200]\nparam c = Cab [0.3, 0.7]\nfilter1: type = highpass; cutoff = 70; resonance = 0.32\nfilter2: type = lowpass; cutoff = 3800; resonance = 0.4\nstage1: y = clamp(softclip(x, a), -0.7, 0.7)\neq1: type = peak; freq = b; q = 0.9; gain = -4.5\nir1: mix = c; gain = 2\n",
     "tags": [
       "amp",
       "cabinet",
@@ -12324,7 +12324,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hard Groove Machine\n# Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.\n\nparam a = Gate Rate [1/4, 1/16]\nparam b = Drive [3.0, 8.0]\nparam c = Filter Freq [800, 2400]\nparam d = Reso [0.4, 1.2]\nparam e = Tail [0.2, 0.6]\nparam f = Punch [0.0, 6.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.4\nosc1: shape = square; sync = a; depth = 1.0\nstage1: y = x * (0.22 + (0.5 + 0.5 * osc1) * 0.78)\nstage2: y = tube(x, b)\nfilter2: type = lowpass; cutoff = c; resonance = d\nreverb1: size = 0.4; decay = e; damp = 0.5; mix = 0.22 * (1 - 0.5 * osc1)\nenv1: type = peak; attack = 0.003; release = 0.12\nstage3: y = x * (1 + env1 * f * 0.15)\nlimit1: ceiling = -0.4; release = 0.1\n",
+    "script": "# Hard Groove Machine\n# Hard dance/hardstyle: square LFO (1/8 sync) gates signal on/off, tube+resonant bandpass when open, reverb tail when closed, transient punch.\n\nparam a = Gate Rate [1/4, 1/16]\nparam b = Drive [3.0, 8.0]\nparam c = Filter Freq [800, 2400]\nparam d = Reso [0.4, 1.2]\nparam e = Tail [0.2, 0.6]\nparam f = Punch [0.0, 6.0]\nfilter1: type = highpass; cutoff = 75; resonance = 0.4\nosc1: shape = square; sync = a; depth = 1.0\nstage1: y = x * (0.22 + (0.5 + 0.5 * osc1) * 0.78)\nstage2: y = clamp(tube(x, b), -0.7, 0.7)\nfilter2: type = lowpass; cutoff = c; resonance = d\nreverb1: size = 0.4; decay = e; damp = 0.5; mix = 0.22 * (1 - 0.5 * osc1)\nenv1: type = peak; attack = 0.003; release = 0.12\nstage3: y = x * (1 + env1 * f * 0.15)\nlimit1: ceiling = -0.4; release = 0.1\n",
     "tags": [
       "hardstyle",
       "hard dance",
@@ -12495,7 +12495,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Hardstyle Sub Pummel\n# Hardstyle mid punch with a separately compressed sub path and optional external-sidechain ducking. Sub Delay is a short timing offset in milliseconds, not a phase-angle control.\n\nparam a = Sub Comp [6.0, 12.0]\nparam b = Sub Delay [0, 2]\nparam c = OTT Drive [0.2, 0.7]\nparam d = Main Punch [1.5, 4.0]\nparam e = Sidechain [2.0, 8.0]\nparam f = Balance [0.5, 1.2]\nfilter1: type = highpass; cutoff = 95; resonance = 0.4\nstage1: y = softclip(x, d)\nott1: depth = c; time = 0.015\nlimit1: ceiling = -0.3; release = 0.1\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.45\n  stage2: y = tanh(x * 1.2)\n  comp1: threshold = -24; ratio = a; attack = 0.015; release = 0.18; makeup = 10\n  comp2: source = sidechain; threshold = -18; ratio = e; attack = 0.002; release = 0.06\n  stage3: y = x * f\n  delay1: time = b; feedback = 0; mix = 1\n  limit2: ceiling = -0.3; release = 0.1\nout: main = 1; sub = 1\n",
+    "script": "# Hardstyle Sub Pummel\n# Hardstyle mid punch with a separately compressed sub path and optional external-sidechain ducking. Sub Delay is a short timing offset in milliseconds, not a phase-angle control.\n\nparam a = Sub Comp [6.0, 12.0]\nparam b = Sub Delay [0, 2]\nparam c = OTT Drive [0.2, 0.7]\nparam d = Main Punch [1.5, 4.0]\nparam e = Sidechain [2.0, 8.0]\nparam f = Balance [0.5, 1.2]\nfilter1: type = highpass; cutoff = 95; resonance = 0.4\nstage1: y = clamp(softclip(x, d), -0.7, 0.7)\nott1: depth = c; time = 0.015\nlimit1: ceiling = -0.3; release = 0.1\nbus sub:\n  send: in = 1\n  filter2: type = lowpass; cutoff = 100; resonance = 0.45\n  stage2: y = tanh(x * 1.2)\n  comp1: threshold = -24; ratio = a; attack = 0.015; release = 0.18; makeup = 10\n  comp2: source = sidechain; threshold = -18; ratio = e; attack = 0.002; release = 0.06\n  stage3: y = x * f\n  delay1: time = b; feedback = 0; mix = 1\n  limit2: ceiling = -0.3; release = 0.1\nout: main = 1; sub = 1\n",
     "tags": [
       "hardstyle",
       "edm",
@@ -13442,7 +13442,7 @@
       "max": 1.1,
       "default": 0.72
     },
-    "script": "# Baritone Serrated Stack\n# A raspier baritone DI amp with asymmetric diode saturation, lean low mids and a British cabinet. Distinct from the tight rhythm stack: stronger upper harmonics and a coarse edge. Increase Body only after tuning the gate.\nparam a = Gain [5, 24]\nparam b = Body [-6, 5]\nparam c = Edge [1500, 4500]\nparam d = Gate [-65, -25]\nparam e = Level [0.25, 1.1]\ngate1: threshold = d; attack = 0.0005; hold = 0.02; release = 0.045; range = -66\nfilter1: type = highpass; cutoff = 78; resonance = 0.707\nstage1: y = diode(x * a, 1.6)\nfilter2: type = highpass; cutoff = 35; resonance = 0.707\neq1: type = peak; freq = 260; q = 0.8; gain = b\neq2: type = peak; freq = c; q = 1.25; gain = 5\nstage2: y = tanh(x * 3) * 0.8\nir1: mix = 1; gain = 0\nfilter3: type = lowpass; cutoff = 7200; resonance = 0.707\nstage3: y = x * e\nlimit1: ceiling = -1; release = 0.06\n",
+    "script": "# Baritone Serrated Stack\n# A raspier baritone DI amp with asymmetric diode saturation, lean low mids and a British cabinet. Distinct from the tight rhythm stack: stronger upper harmonics and a coarse edge. Increase Body only after tuning the gate.\nparam a = Gain [5, 24]\nparam b = Body [-6, 5]\nparam c = Edge [1500, 4500]\nparam d = Gate [-65, -25]\nparam e = Level [0.25, 1.1]\ngate1: threshold = d; attack = 0.0005; hold = 0.02; release = 0.045; range = -66\nfilter1: type = highpass; cutoff = 78; resonance = 0.707\nstage1: y = clamp(diode(x * a, 1.6), -0.7, 0.7)\nfilter2: type = highpass; cutoff = 35; resonance = 0.707\neq1: type = peak; freq = 260; q = 0.8; gain = b\neq2: type = peak; freq = c; q = 1.25; gain = 5\nstage2: y = tanh(x * 3) * 0.8\nir1: mix = 1; gain = 0\nfilter3: type = lowpass; cutoff = 7200; resonance = 0.707\nstage3: y = x * e\nlimit1: ceiling = -1; release = 0.06\n",
     "irs": {
       "ir1": "British IR 01.wav"
     }

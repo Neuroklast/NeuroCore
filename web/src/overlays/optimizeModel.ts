@@ -20,9 +20,6 @@ const WHOLE: Array<{ from: string; to: string; msg: string }> = [
   { from: "x/1.0", to: "x", msg: "Drop / 1.0" },
   { from: "--x", to: "x", msg: "Drop double negate" },
   { from: "-(-x)", to: "x", msg: "Drop double negate" },
-  { from: "x/(1+abs(x))", to: "softclip(x)", msg: "Use softclip(x)" },
-  { from: "clamp(x,-1,1)", to: "hardclip(x,1)", msg: "Use hardclip(x, 1)" },
-  { from: "min(1,max(-1,x))", to: "hardclip(x,1)", msg: "Use hardclip(x, 1)" },
 ];
 
 export function optimizeScript(source: string): OptimizeReport {

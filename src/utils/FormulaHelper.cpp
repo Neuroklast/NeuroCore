@@ -270,60 +270,8 @@ static bool scriptParses (const juce::String& script)
 // Expression rewrites (built-in, order matters)
 // =============================================================================
 
-struct ExprRewrite
-{
-    const char* id;          ///< stable id for messages
-    const char* fromCompact; ///< pattern without spaces (substring or full)
-    const char* toCompact;   ///< replacement (may use capture via special handlers)
-    bool wholeOnly;          ///< require full-string match
-    bool needsEquivCheck;    ///< numerical equivalence before accept
-};
-
-// Handlers for non-trivial rewrites
-static juce::String tryRewriteSoftclipClassic (const juce::String& compact)
-{
-    // x/(1+abs(x))  and variants with drive: (x*a)/(1+abs(x*a))
-    // softclip is the engine-native form
-    if (compact == "x/(1+abs(x))" || compact == "x/(1.0+abs(x))"
-        || compact == "(x)/(1+abs(x))")
-        return "softclip(x)";
-
-    // x/sqrt(1+x*x) or x/sqrt(1+x^2)
-    if (compact == "x/sqrt(1+x*x)" || compact == "x/sqrt(1.0+x*x)"
-        || compact == "x/sqrt(1+pow(x,2))" || compact == "x/sqrt(1+x^2)")
-        return "softclip(x)";
-
-    return {};
-}
-
-static juce::String tryRewriteClampBrickwall (const juce::String& compact)
-{
-    // clamp(x,-1,1) / clamp(x,-1.0,1.0) → hardclip(x, 1)
-    if (compact == "clamp(x,-1,1)" || compact == "clamp(x,-1.0,1.0)"
-        || compact == "clamp(x,-1.0,1)" || compact == "clamp(x,-1,1.0)")
-        return "hardclip(x,1)";
-
-    // min(1,max(-1,x)) style
-    if (compact == "min(1,max(-1,x))" || compact == "min(1.0,max(-1.0,x))"
-        || compact == "max(-1,min(1,x))" || compact == "max(-1.0,min(1.0,x))")
-        return "hardclip(x,1)";
-
-    return {};
-}
-
-static juce::String tryRewriteTanhSoft (const juce::String& compact)
-{
-    // tanh(clamp(...)) / clamp(tanh(...)) → softclip (smoother AA than bare tanh extremes)
-    if (compact == "tanh(clamp(x,-1,1))" || compact == "tanh(clamp(x,-1.0,1.0))"
-        || compact == "clamp(tanh(x),-1,1)" || compact == "clamp(tanh(x),-1.0,1.0)")
-        return "softclip(x)";
-
-    // tanh(x*a) with simple forms → softclip(x, a) when a is a single identifier/number
-    // handled generically below via pattern list
-
-    return {};
-}
-
+// Sound-neutral handlers only. Optimize must never replace a hard clipper
+// with a soft one (or vice versa): hard stays hard.
 static juce::String tryRewriteIdentities (const juce::String& compact)
 {
     // Full-expression identities
@@ -345,29 +293,9 @@ static juce::String tryRewriteIdentities (const juce::String& compact)
     return {};
 }
 
-static juce::String tryRewriteNestedSoftclip (const juce::String& compact)
-{
-    // softclip(softclip(x)) → softclip(x)  (outer has no drive)
-    if (compact == "softclip(softclip(x))" || compact == "softclip(softclip(x,1))"
-        || compact == "softclip(softclip(x,1.0))")
-        return "softclip(x)";
-
-    // hardclip(hardclip(x,L),L) → hardclip(x,L)
-    // simple fixed limits
-    if (compact == "hardclip(hardclip(x,1),1)" || compact == "hardclip(hardclip(x,0.5),0.5)")
-    {
-        if (compact.contains ("0.5"))
-            return "hardclip(x,0.5)";
-        return "hardclip(x,1)";
-    }
-
-    return {};
-}
-
 static juce::String tryRewriteSoftclipDrive (const juce::String& compact)
 {
-    // softclip(x*a) → softclip(x, a)  (and b,c,d / numbers)
-    // Pattern: softclip(x*<term>) where term is identifier or simple number
+    // softclip(x*a) → softclip(x, a)  (same transfer, drive argument form)
     const juce::String prefix = "softclip(x*";
     if (compact.startsWith (prefix) && compact.endsWithChar (')'))
     {
@@ -403,23 +331,6 @@ static juce::String tryRewriteSoftclipDrive (const juce::String& compact)
                 return "softclip(x," + term + ")";
         }
     }
-
-    // tanh(x*a) → softclip(x, a)  (prefer engine softclip / ADAA)
-    if (compact.startsWith ("tanh(x*") && compact.endsWithChar (')'))
-    {
-        auto inner = compact.substring (6, compact.length() - 1); // after tanh(
-        // inner is x*TERM
-        if (inner.startsWith ("x*"))
-        {
-            auto term = inner.substring (2);
-            if (term.isNotEmpty()
-                && (term.containsOnly ("0123456789.")
-                    || (term.length() <= 8 && term.containsOnly ("abcdefghijklmnopqrstuvwxyz0123456789_."))))
-                return "softclip(x," + term + ")";
-        }
-    }
-    if (compact == "tanh(x)")
-        return "softclip(x)";
 
     return {};
 }
@@ -478,66 +389,27 @@ static juce::String rewriteExpressionOnce (const juce::String& expr, juce::Strin
     if (auto r = tryRewriteIdentities (c); r.isNotEmpty())
         if (auto a = accept (r, "OptIdentity", true); a.isNotEmpty()) return a;
 
-    if (auto r = tryRewriteSoftclipClassic (c); r.isNotEmpty())
-        if (auto a = accept (r, "OptSoftclipClassic", true); a.isNotEmpty()) return a;
-
-    if (auto r = tryRewriteClampBrickwall (c); r.isNotEmpty())
-        if (auto a = accept (r, "OptHardclipClamp", true); a.isNotEmpty()) return a;
-
-    if (auto r = tryRewriteTanhSoft (c); r.isNotEmpty())
-        if (auto a = accept (r, "OptSoftclipTanh", false); a.isNotEmpty()) return a;
-        // tanh vs softclip not numerically equal — allow as intentional modernisation
-
-    if (auto r = tryRewriteNestedSoftclip (c); r.isNotEmpty())
-        if (auto a = accept (r, "OptNestedClip", true); a.isNotEmpty()) return a;
-
     if (auto r = tryRewriteSoftclipDrive (c); r.isNotEmpty())
-    {
-        // tanh→softclip is intentional modernisation (not bit-exact)
-        if (c.startsWith ("tanh"))
-        {
-            if (auto a = accept (r, "OptTanhToSoftclip", false); a.isNotEmpty())
-                return a;
-        }
-        else
-        {
-            // softclip(x*a) ↔ softclip(x,a) must match numerically
-            if (auto a = accept (r, "OptSoftclipDrive", true); a.isNotEmpty())
-                return a;
-        }
-    }
+        if (auto a = accept (r, "OptSoftclipDrive", true); a.isNotEmpty()) return a;
 
-    // File-based rules (full match on compact form)
+    // File-based rules (full match on compact form). Only numerically
+    // equivalent rewrites are accepted — Optimize never changes the sound.
     for (const auto& rule : optimizationRules)
     {
-        if (c == rule.pattern || expressionsEquivalent (expr, rule.pattern))
-        {
-            // Never emit unknown functions (legacy saturate)
-            auto repl = rule.replacement;
-            if (compactExpr (repl).contains ("saturate("))
-                repl = "softclip(x)";
-            if (auto a = accept (repl, rule.messageKey.toRawUTF8(), true); a.isNotEmpty())
+        if (c == rule.pattern)
+            if (auto a = accept (rule.replacement, rule.messageKey.toRawUTF8(), true); a.isNotEmpty())
                 return a;
-            // Allow non-equivalent modernisation only for known softclip upgrades
-            if (compactExpr (repl).startsWith ("softclip") || compactExpr (repl).startsWith ("hardclip"))
-                if (auto a = accept (repl, rule.messageKey.toRawUTF8(), false); a.isNotEmpty())
-                    return a;
-        }
     }
 
-    // Substring / local rewrites on compact form (safe, repeated)
-    struct Sub { const char* from; const char* to; const char* key; bool equiv; };
+    // Substring / local identity rewrites on compact form (safe, repeated)
+    struct Sub { const char* from; const char* to; const char* key; };
     static constexpr Sub kSubs[] = {
-        { "x*1.0", "x", "OptIdentity", true },
-        { "1.0*x", "x", "OptIdentity", true },
-        { "x*1)", "x)", "OptIdentity", true },
-        { "(1*x", "(x", "OptIdentity", true },
-        { "x+0.0", "x", "OptIdentity", true },
-        { "0.0+x", "x", "OptIdentity", true },
-        { "clamp(x,-1,1)", "hardclip(x,1)", "OptHardclipClamp", true },
-        { "clamp(x,-1.0,1.0)", "hardclip(x,1)", "OptHardclipClamp", true },
-        // Prefer engine hardclip over bare clamp for known brickwalls
-        { "hardclip(softclip(softclip(", "hardclip(softclip(", "OptNestedClip", false },
+        { "x*1.0", "x", "OptIdentity" },
+        { "1.0*x", "x", "OptIdentity" },
+        { "x*1)", "x)", "OptIdentity" },
+        { "(1*x", "(x", "OptIdentity" },
+        { "x+0.0", "x", "OptIdentity" },
+        { "0.0+x", "x", "OptIdentity" },
     };
 
     for (const auto& s : kSubs)
@@ -545,10 +417,8 @@ static juce::String rewriteExpressionOnce (const juce::String& expr, juce::Strin
         if (c.contains (s.from))
         {
             auto cand = juce::String (c).replace (s.from, s.to);
-            if (auto a = accept (cand, s.key, s.equiv); a.isNotEmpty())
+            if (auto a = accept (cand, s.key, true); a.isNotEmpty())
                 return a;
-            if (! s.equiv)
-                if (auto a = accept (cand, s.key, false); a.isNotEmpty()) return a;
         }
     }
 
@@ -583,12 +453,7 @@ static juce::String optimizeExpression (const juce::String& exprIn,
             if (msg == key) // missing locale — readable fallback
             {
                 if (key == "OptIdentity") msg = "Simplified identity";
-                else if (key == "OptSoftclipClassic") msg = "Classic softclip formula -> softclip()";
-                else if (key == "OptHardclipClamp") msg = "clamp brickwall -> hardclip (soft-knee)";
-                else if (key == "OptSoftclipTanh") msg = "tanh+clamp -> softclip (low alias)";
-                else if (key == "OptNestedClip") msg = "Removed redundant nested clip";
                 else if (key == "OptSoftclipDrive") msg = "softclip(x*drive) -> softclip(x, drive)";
-                else if (key == "OptTanhToSoftclip") msg = "tanh drive -> softclip (ADAA)";
                 else msg = key;
             }
             if (! messages.contains (msg))
@@ -703,16 +568,7 @@ static juce::String optimizeScriptLines (const juce::String& script,
     juce::StringArray lines;
     lines.addLines (script);
 
-    // Track stage formulas for structural analysis
-    struct StageInfo
-    {
-        int lineIndex { -1 };
-        juce::String expr;
-        bool hasHardish { false };
-    };
-    std::vector<StageInfo> stages;
-    bool hasLpfAfterHard = false;
-
+    // Sound-neutral only: no structural stages are added or removed.
     juce::StringArray outLines;
     outLines.ensureStorageAllocated (lines.size() + 4);
 
@@ -735,13 +591,6 @@ static juce::String optimizeScriptLines (const juce::String& script,
             if (splitStageY (trimmed, prefix, expr, suffix))
             {
                 auto optExpr = optimizeExpression (expr, messages, changes);
-                StageInfo si;
-                si.lineIndex = outLines.size();
-                si.expr = optExpr;
-                auto ec = compactExpr (optExpr).toLowerCase();
-                si.hasHardish = ec.contains ("hardclip") || ec.contains ("fold(")
-                             || ec.contains ("bitcrush") || ec.contains ("clamp(");
-                stages.push_back (si);
                 outLines.add (prefix + optExpr + suffix);
                 continue;
             }
@@ -754,8 +603,6 @@ static juce::String optimizeScriptLines (const juce::String& script,
             || lower.startsWith ("flange")
             || lower.startsWith ("param"))
         {
-            if (lower.startsWith ("filter") && lower.contains ("lowpass"))
-                hasLpfAfterHard = true; // approximate: any LPF in script
             outLines.add (line);
             continue;
         }
@@ -769,44 +616,6 @@ static juce::String optimizeScriptLines (const juce::String& script,
         }
 
         outLines.add (line);
-    }
-
-    // Structural: if last audio processing is hardish clip without any LPF in script,
-    // append a gentle anti-alias LPF (safe default).
-    bool anyHard = false;
-    for (const auto& s : stages)
-        if (s.hasHardish)
-            anyHard = true;
-
-    bool hasAnyLpf = false;
-    for (const auto& l : outLines)
-        if (l.toLowerCase().contains ("lowpass"))
-            hasAnyLpf = true;
-
-    if (anyHard && ! hasAnyLpf)
-    {
-        // Find free filter name
-        int maxF = 0;
-        for (const auto& l : outLines)
-        {
-            auto t = l.trim().toLowerCase();
-            if (t.startsWith ("filter"))
-            {
-                int n = t.fromFirstOccurrenceOf ("filter", false, false)
-                          .upToFirstOccurrenceOf (":", false, false)
-                          .retainCharacters ("0123456789").getIntValue();
-                maxF = juce::jmax (maxF, n);
-            }
-        }
-        const int id = maxF + 1;
-        outLines.add ("filter" + juce::String (id)
-                      + ": type = lowpass; cutoff = 12000; resonance = 0.3");
-        ++changes;
-        auto msg = TRANS ("OptAddAaLpf");
-        if (msg == "OptAddAaLpf")
-            msg = "Added mild LPF after hard clip (anti-alias recovery)";
-        messages.add (msg);
-        juce::ignoreUnused (hasLpfAfterHard);
     }
 
     // Prefer LF endings consistent with input

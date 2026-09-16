@@ -126,6 +126,7 @@ The text is the sound.
 - **Edit** opens the editor. Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac).
 - **Save** applies the text. If it does not parse, you stay on the last good sound.
 - **Validate** lists checks without applying.
+- **Optimize** only drops redundant identities (like `x * 1`). It never changes the sound: a hard clipper stays hard (`clamp`, `hardclip`), a soft clipper stays soft (`softclip`, `tube`, `diode`), and no filters or stages are added.
 
 The code editor is packaged in the plug-in. Opening Terminal does not need a network connection.
 

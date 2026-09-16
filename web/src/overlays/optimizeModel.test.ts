@@ -19,4 +19,18 @@ describe("optimize script", () => {
     expect(optimizeShowsApply(b)).toBe(false);
     expect(optimizeEmptyMessage(b)).toBe("Script already optimal");
   });
+
+  it("never replaces hard clipping with soft replacements", () => {
+    for (const expr of [
+      "clamp(x,-1,1)",
+      "min(1,max(-1,x))",
+      "hardclip(x,1)",
+      "x/(1+abs(x))",
+    ]) {
+      const report = optimizeScript(`stage1: y = ${expr}`);
+      expect(report.changes).toBe(0);
+      expect(report.script).toContain(expr);
+      expect(optimizeShowsApply(report)).toBe(false);
+    }
+  });
 });
