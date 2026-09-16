@@ -911,7 +911,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add(d.name + " resonance [0.1..4.5]");
             }
-            else
+            else if (! fi->useCenterWidth && ! fi->useLowHigh)
                 fi->resonance.parseFormula("0.7");
 
             fi->varPtr = &variables;

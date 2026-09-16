@@ -39,7 +39,7 @@ inline int runFxBenchmark()
     return 0;
 }
 
-inline int auditFactory (const char* catalogPath, const char* outputPath)
+inline int auditFactory (const char* catalogPath, const char* outputPath, bool stress = false)
 {
     using nlohmann::json;
     json presets; std::ifstream (catalogPath) >> presets;
@@ -74,7 +74,11 @@ inline int auditFactory (const char* catalogPath, const char* outputPath)
             if (! preset.contains (key)) continue;
             const auto& knob = preset.at(key);
             const float lo = knob.at("min"), hi = knob.at("max"), def = knob.at("default");
-            chain.setParameter ((size_t) p, hi > lo ? (def - lo) / (hi - lo) : 0.f);
+            float normalized = std::abs (hi - lo) > 1.e-6f ? (def - lo) / (hi - lo) : 0.f;
+            for (const auto& pd : chain.getParamInfo())
+                if (pd.isNote && pd.alias == juce::String::charToString ((juce_wchar) ('a' + p)))
+                    normalized = dsl::NoteValues::normFromWhole (def, pd.noteWholes);
+            chain.setParameter ((size_t) p, normalized);
         }
         const float inGain = juce::Decibels::decibelsToGain (preset.value ("inputGain", 0.f));
         const float outGain = juce::Decibels::decibelsToGain (preset.value ("outputGain", 0.f));
@@ -89,6 +93,9 @@ inline int auditFactory (const char* catalogPath, const char* outputPath)
         std::vector<float> signature;
         for (int block = 0; block < 256; ++block)
         {
+            if (stress && block % 32 == 0)
+                for (int knob = 0; knob < Config::kNumUserParams; ++knob)
+                    chain.setParameter ((size_t) knob, (block / 32) % 2 ? 1.f : 0.f);
             for (int i = 0; i < 256; ++i)
             {
                 const int sample = block * 256 + i;
@@ -104,6 +111,7 @@ inline int auditFactory (const char* catalogPath, const char* outputPath)
             }
             dry.makeCopyOf (b, true);
             dryAlign.pushAndRead (dry, 256);
+            if (stress && block >= 192) { b.clear(); dry.clear(); }
             chain.processBlock (b);
             if (block < 64) continue;
             for (int i = 0; i < 256; ++i)

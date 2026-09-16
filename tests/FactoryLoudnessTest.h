@@ -26,6 +26,7 @@ public:
 
             NeuroKoreAudioProcessor proc;
             proc.setPlayConfigDetails (2, 2, 48000.0, 512);
+            proc.setNonRealtime (true); // This is an offline measurement, not a callback-budget test.
             proc.prepareToPlay (48000.0, 512);
 
             int insertN = 0, sendN = 0, quietN = 0;

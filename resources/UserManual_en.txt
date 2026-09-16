@@ -196,3 +196,11 @@ Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doub
 External detector inputs are silent when disconnected or shorter than the current block; they do not fall back to the program signal or repeat the final sidechain sample. Offline renders retain CPU metering but do not enter realtime CPU-protection holds. Envelope min/max/hold expressions follow their controls.
 
 Reverb now honors left/right and mid/side channel selection: only the selected channel feeds its reverb and the other channel remains dry. Widen supports an independent smoothed `mix` (0 = unchanged stereo, 1 = full configured width). Reverb peak protection uses a continuous knee instead of switching abruptly at its threshold.
+
+### Factory Metal, Industrial and mix utilities
+
+New Metal presets cover blastbeat attack, snare crack, growl vocals, two high-gain DI guitar stacks and a split-band bass amp. Industrial presets provide distinct overdriven and folded kicks, percussion grind, moving bass distortion and two wet-only Rumble Send returns. The Mixing/Mastering additions cover harmonic bass translation, parallel drum compression, low-mid control, gentle bus glue and side-only bass cleanup. Use the Rumble Send programs on an aux with the original kick retained separately; external ducking requires a routed host sidechain.
+
+The catalog contains 317 programs. Artist references have been replaced by descriptive names, and Warehouse Rumble is consolidated into the expanded Kick Rumble controls. Existing saved project scripts retain their processing. Vocal de-ess/presence/warmth, side halls, Acid Line, Vowel Filter and several macro controls have been corrected. Compare at matched perceived loudness and adjust thresholds to the actual recording. See the factory curation notes for the specific architectures and validation scope.
+
+Bandpass width now determines Q when no explicit resonance is supplied; an explicit resonance takes precedence. Musical parameter grids include dotted/triplet divisions through 1/64. Factory musical defaults select the nearest note-grid entry rather than treating note fractions as linear controls; native and browser preset loading use the same mapping.

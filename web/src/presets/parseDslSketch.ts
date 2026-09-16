@@ -1,3 +1,4 @@
+import { wholeToNoteNorm } from "../chrome/noteValue";
 import type { AstDocument, AstEdge, AstJack, AstNode, AstParam } from "../bridge/ast";
 import { CHIP_GAP, CHIP_W, IO_W } from "../assemble/chipLayout";
 import { visualAudioEdges, visualJacksFor } from "../assemble/visualEdges";
@@ -268,7 +269,7 @@ export function knobsFromSketch(script: string, extras?: Array<{
       return {
         id,
         name: extra.name || param?.name || id,
-        value: norm01(extra.default, extra.min, extra.max),
+        value: param?.isNote ? wholeToNoteNorm(extra.default, extra.min, extra.max) : norm01(extra.default, extra.min, extra.max),
         active: true,
         min: extra.min,
         max: extra.max,

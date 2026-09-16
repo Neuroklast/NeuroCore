@@ -4,6 +4,7 @@
 #include "../core/EffectParameters.h"
 #include "../core/Config.h"
 #include "../dsl/GraphModel.h"
+#include "../dsl/NoteValues.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <BinaryData.h>
 
@@ -32,12 +33,15 @@ void setKnobNormalized(juce::AudioProcessorValueTreeState& apvts,
                        const char* id,
                        float minVal,
                        float maxVal,
-                       float defaultVal)
+                       float defaultVal,
+                       const dsl::ParamDesc* descriptor)
 {
     if (auto* p = apvts.getParameter(id))
     {
-        const float denom = juce::jmax(1.0e-6f, maxVal - minVal);
-        const float norm  = juce::jlimit(0.0f, 1.0f, (defaultVal - minVal) / denom);
+        const float denom = maxVal - minVal;
+        const float norm = descriptor != nullptr && descriptor->isNote
+            ? dsl::NoteValues::normFromWhole (defaultVal, descriptor->noteWholes)
+            : (std::abs (denom) > 1.0e-6f ? juce::jlimit (0.f, 1.f, (defaultVal - minVal) / denom) : 0.f);
         p->setValueNotifyingHost(norm);
     }
 }
@@ -370,8 +374,11 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
     {
         if (preset.paramNames[i].isNotEmpty())
             processor.setVariableName(i, preset.paramNames[i]);
+        const dsl::ParamDesc* descriptor = nullptr;
+        for (const auto& pd : processor.getParamInfo())
+            if (pd.alias == juce::String::charToString ((juce_wchar) ('a' + i))) { descriptor = &pd; break; }
         setKnobNormalized(apvts, EffectParameters::userParams[i],
-                          preset.paramMin[i], preset.paramMax[i], preset.paramDefault[i]);
+                          preset.paramMin[i], preset.paramMax[i], preset.paramDefault[i], descriptor);
     }
 
     setLinearGainDb(apvts, EffectParameters::inputGain,  preset.inputGainDb);

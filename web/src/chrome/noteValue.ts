@@ -29,6 +29,12 @@ export const NOTE_GRID: Array<{ whole: number; label: string }> = [
   { whole: 0.09375, label: "1/16." },
   { whole: 1 / 12, label: "1/12" },
   { whole: 0.0625, label: "1/16" },
+  { whole: 0.046875, label: "1/32." },
+  { whole: 1 / 24, label: "1/24" },
+  { whole: 0.03125, label: "1/32" },
+  { whole: 0.0234375, label: "1/64." },
+  { whole: 1 / 48, label: "1/48" },
+  { whole: 0.015625, label: "1/64" },
 ];
 
 const EPS = 1e-3;

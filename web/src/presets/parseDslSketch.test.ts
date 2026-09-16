@@ -140,3 +140,10 @@ describe("parseDslSketch", () => {
     expect(doc.nodes.some((n) => n.type === "stage")).toBe(true);
   });
 });
+
+it("loads a musical factory default by its note-grid position", () => {
+  const knobs = knobsFromSketch("param a = Rate [1/2, 1/8]\nosc1: sync = a", [
+    { id: "a", name: "Rate", min: 0.5, max: 0.125, default: 0.25 },
+  ]);
+  expect(knobs[0]?.value).toBeCloseTo(0.5);
+});

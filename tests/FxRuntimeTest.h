@@ -342,6 +342,31 @@ public:
             }
             expect (maximumError < 1.e-6f, "mix=0 error=" + juce::String (maximumError));
         }
+        beginTest ("bandpass width determines bandwidth when resonance is not explicit");
+        double energies[2] {};
+        for (int mode = 0; mode < 2; ++mode)
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("filter1: type = bandpass; center = 1000; width = "
+                + juce::String (mode == 0 ? 300 : 1800), error), error);
+            chain.prepare ({ 48000, 256, 1 });
+            juce::AudioBuffer<float> b (1, 256);
+            for (int block = 0; block < 40; ++block)
+            {
+                for (int i = 0; i < 256; ++i) b.setSample (0, i, 0.1f * std::sin ((block * 256 + i) * 1500.f * juce::MathConstants<float>::twoPi / 48000.f));
+                chain.processBlock (b);
+                if (block > 20) for (int i = 0; i < 256; ++i) energies[mode] += b.getSample (0,i) * b.getSample (0,i);
+            }
+        }
+        expect (std::abs (energies[0] - energies[1]) > 0.1, "width has no audible effect");
+        beginTest ("note ranges include their declared fast endpoint");
+        {
+            const auto grid = dsl::NoteValues::makeGrid (0.125f, 0.03125f);
+            expectWithinAbsoluteError (grid.wholeFromNorm (1.f), 0.03125f, 1.e-6f);
+            for (const auto note : grid.wholes)
+                expectWithinAbsoluteError (grid.wholeFromNorm (dsl::NoteValues::normFromWhole (note, grid.wholes)), note, 1.e-6f);
+        }
         beginTest ("pitch analysis duration stays constant at oversampled rates");
         for (int rate : { 48000, 96000, 192000, 384000 })
         {

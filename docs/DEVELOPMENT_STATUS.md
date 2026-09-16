@@ -120,3 +120,7 @@ Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout prog
 Native packaging is deferred until DSP, preset and UI work is complete. Intermediate pushes skip the native build matrix; explicit workflow dispatch or the final `[release-alpha]` checkpoint runs it. Focused source/DSP/web contracts continue during development.
 
 Reverb channel isolation and Widen mix had three reproduced contract failures; selected-channel isolation and mix=0 identity now pass in the local DSP suite.
+
+Factory checkpoint: 317 programs, 17 new Metal/Industrial/Mixing/Mastering presets, one merged rumble variant, descriptive artist-free names, repaired vocal/filter/side-hall paths. Metadata contracts pass; default and macro/silence production-DSP audit has no parse/nonfinite failures. Native FactoryLoudness awaits the final build. See `docs/FACTORY_CURATION.md`.
+
+Bandpass bandwidth and the 1/32 grid endpoint now pass reproduced DSP regressions. Factory note defaults use grid positions in native/browser loaders. Targeted web preset/note contracts pass; the broader web run also exposed pre-existing ENV registry expectations and reduced-motion boot behavior, reserved for the UI pass.
