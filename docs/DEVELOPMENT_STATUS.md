@@ -116,3 +116,5 @@ Gate 2026-08-29: **0.6.4-beta**. Persist window/OS/polisher, Circuit layout prog
 - Local production DSP suite passes; Linux allocation probe includes automated blocks and parallel routing. Full-scale identity restored separately from effect ceiling bounds.
 - First Windows native build completed; full suite exposed 11 legacy ceiling/routing expectations. Internal unity and explicit mono selection corrected; cross-platform rerun pending.
 - Linux browser dependency declarations and macOS arm64 size_t overloads corrected. CI now invokes pinned pluginval against built VST3/AU before packaging. No claim of all-DAW certification or released binaries yet.
+
+Native packaging is deferred until DSP, preset and UI work is complete. Intermediate pushes skip the native build matrix; explicit workflow dispatch or the final `[release-alpha]` checkpoint runs it. Focused source/DSP/web contracts continue during development.

@@ -10,6 +10,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    # Native packages are built only for the final release checkpoint or on demand.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-alpha]')
     strategy:
       fail-fast: false
       matrix:
