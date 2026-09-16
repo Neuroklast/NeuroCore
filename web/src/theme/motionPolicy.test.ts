@@ -22,8 +22,8 @@ describe("motion policy", () => {
     expect(motionAllows("crtScan", "reduced", true)).toBe(false);
   });
 
-  it("reduced keeps scan and chip highlight only", () => {
-    expect(motionAllows("crtScan", "reduced", false)).toBe(true);
+  it("reduced keeps reactive highlights without continuous motion", () => {
+    expect(motionAllows("crtScan", "reduced", false)).toBe(false);
     expect(motionAllows("chipReact", "reduced", false)).toBe(true);
     expect(motionAllows("bloom", "reduced", false)).toBe(true);
     expect(motionAllows("overlay", "reduced", false)).toBe(false);

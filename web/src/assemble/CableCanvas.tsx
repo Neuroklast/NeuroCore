@@ -76,6 +76,7 @@ function strokePackets(
   distances: number[],
   peak: number,
   bloom: boolean,
+  animate: boolean,
 ): void {
   ctx.lineCap = "butt";
   ctx.lineJoin = "miter";
@@ -110,7 +111,7 @@ function strokePackets(
   ctx.lineCap = "round";
   ctx.lineWidth = Math.max(1.6, width * 1.15);
   ctx.globalCompositeOperation = "screen";
-  const glitch = streamGlitch(peak);
+  const glitch = animate ? streamGlitch(peak) : 0;
   if (glitch > 0) {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -256,9 +257,9 @@ export function CableCanvas({
           const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type, sp.jackId, sn.busName);
           const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type, sp.jackId, sn.busName);
           const key = `${e.id}:${lane.id}`;
-          const integrated = streamAdvance(offsets.get(key) ?? 0, energy, dt, peak);
+          const integrated = streamAdvance(offsets.get(key) ?? 0, energy, pass.animate ? dt : 0, peak);
           offsets.set(key, integrated);
-          const mean = packetMeanGap(energy);
+          const mean = packetMeanGap(pass.animate ? energy : 0);
           const seed = packetSeed(key);
           const next = packetDistancesFromCursor(
             pathLength(painted),
@@ -282,6 +283,7 @@ export function CableCanvas({
             beads,
             peak,
             pass.glow,
+            pass.animate,
           );
           ctx.restore();
         });

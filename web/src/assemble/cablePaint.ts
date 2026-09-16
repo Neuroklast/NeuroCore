@@ -1,3 +1,4 @@
+import { motionAllows } from "../theme/motionPolicy";
 import { peakToDb } from "../bridge/telemetry";
 import type { PortKind } from "./boardModel";
 import { paintRoute } from "./boardPath";
@@ -45,18 +46,16 @@ export const STREAM_GAP_HOT = 2;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
-/** Pan/zoom: skip copper traces and shadowBlur. Packets still move. Glow is Full only. */
+/** Gestures skip decoration. Only Full advances packets; meters stay live. */
 export function cablePaintPass(
   gesture: boolean,
   motion: "full" | "reduced" | "off" = "full",
-): { traces: boolean; glow: boolean } {
-  if (gesture || motion === "off") {
-    return { traces: false, glow: false };
-  }
-  if (motion === "reduced") {
-    return { traces: true, glow: false };
-  }
-  return { traces: true, glow: true };
+): { traces: boolean; glow: boolean; animate: boolean } {
+  return {
+    traces: !gesture && motion !== "off",
+    glow: !gesture && motionAllows("bloom", motion, false) && motion === "full",
+    animate: !gesture && motionAllows("pipeWave", motion, false),
+  };
 }
 
 export function cableGeomStamp(

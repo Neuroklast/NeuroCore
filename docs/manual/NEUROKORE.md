@@ -220,3 +220,12 @@ the main input level. Monitoring stops when the editor is closed.
 
 IN can be dragged and snapped like the other blocks. L/R split and join preserve
 the audio channels and retain their own measurement points.
+
+### Motion modes
+
+Full enables travelling signal packets, scans and animated transitions. Reduced
+keeps subdued, level-driven highlights while stopping travelling packets, scans
+and repeating CSS animations. Off disables decoration, animation and transitions.
+Meters, parameter values and routing feedback still update in every mode.
+Without an explicit motion preference, the startup animation respects the
+operating system's reduced-motion setting. Explicit Full remains an override.

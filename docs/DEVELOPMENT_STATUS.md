@@ -28,6 +28,15 @@ short-sidechain and band errors; web contracts cover one cable and lane sources.
 Routing, keyboard UX, themes and visual review remain in progress. Native release
 builds remain deferred until all requested changes are complete.
 
+## Motion modes (2026-09-16)
+
+Canvas packets, Unit plasma and CRT scans now share the motion policy. Reduced
+stops perpetual movement but retains reactive highlights; Off also disables all
+CSS transitions and pseudo-element animations. Still cables keep fixed packet
+geometry while brightness reports current level. Startup without an explicit
+preference respects OS reduced motion. Four previously failing motion contracts
+now pass (27 targeted tests); TypeScript checks pass.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.

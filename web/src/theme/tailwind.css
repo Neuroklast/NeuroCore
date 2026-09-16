@@ -2839,3 +2839,20 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   background: var(--nk-accent);
   color: #fff;
 }
+
+/* Settings apply to all chrome, including pseudo-elements and new components.
+   Live meters continue to update; only interpolation and decoration stop. */
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition-duration: 80ms !important;
+  scroll-behavior: auto !important;
+}

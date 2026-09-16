@@ -157,14 +157,14 @@ describe("lane telemetry", () => {
 
 describe("pcb background traces", () => {
   it("drops traces and glow while the camera is moving", () => {
-    expect(cablePaintPass(false)).toEqual({ traces: true, glow: true });
-    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false });
+    expect(cablePaintPass(false)).toEqual({ traces: true, glow: true, animate: true });
+    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false, animate: false });
   });
 
   it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
-    expect(cablePaintPass(false, "full")).toEqual({ traces: true, glow: true });
-    expect(cablePaintPass(false, "reduced")).toEqual({ traces: true, glow: false });
-    expect(cablePaintPass(false, "off")).toEqual({ traces: false, glow: false });
+    expect(cablePaintPass(false, "full")).toEqual({ traces: true, glow: true, animate: true });
+    expect(cablePaintPass(false, "reduced")).toEqual({ traces: true, glow: false, animate: false });
+    expect(cablePaintPass(false, "off")).toEqual({ traces: false, glow: false, animate: false });
     const from = { x: 0, y: 16 };
     const to = { x: 128, y: 16 };
     const route = [from, { x: 64, y: 16 }, to];
