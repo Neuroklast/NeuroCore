@@ -109,7 +109,7 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
 {
     if (shape == "triangle" || shape == "tri")
         return juce::dsp::Oscillator<float>([] (float x) {
-            return juce::jmap (x, -juce::MathConstants<float>::pi, juce::MathConstants<float>::pi, -1.0f, 1.0f);
+            return 1.f - 2.f * std::abs (x) / juce::MathConstants<float>::pi;
         });
     // Soft square: rounded edges — hard square clicks/crackles on amp modulation
     if (shape == "softsquare" || shape == "soft_square" || shape == "soft-square")
@@ -135,8 +135,8 @@ static juce::dsp::Oscillator<float> makeOsc(const juce::String& shape)
             return std::tanh (saw * 3.4f) / std::tanh (3.4f);
         });
     if (shape == "noise")
-        return juce::dsp::Oscillator<float>([] (float) {
-            return juce::Random::getSystemRandom().nextFloat() * 2.f - 1.f;
+        return juce::dsp::Oscillator<float>([rng = juce::Random{}] (float) mutable {
+            return rng.nextFloat() * 2.f - 1.f;
         });
     return juce::dsp::Oscillator<float>([] (float x) { return std::sin (x); });
 }
@@ -2569,20 +2569,6 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
 
     // Order MUST match hybrid path: encode → process → decode.
     // (Old code decoded before the formula when both flags were set — M/S was a no-op.)
-    if (msEncode && buffer.getNumChannels() >= 2)
-    {
-        const int numS = buffer.getNumSamples();
-        auto* l = buffer.getWritePointer(0);
-        auto* r = buffer.getWritePointer(1);
-        for (int i = 0; i < numS; ++i)
-        {
-            const float m = (l[i] + r[i]) * 0.5f;
-            const float s = (l[i] - r[i]) * 0.5f;
-            l[i] = m;
-            r[i] = s;
-        }
-    }
-
     juce::dsp::AudioBlock<float> block (buffer);
     const size_t numSamples  = block.getNumSamples();
 
@@ -2689,20 +2675,6 @@ void SignalChain::Stage::processBlock(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // Decode after formula (paired with encode above)
-    if (msDecode && buffer.getNumChannels() >= 2)
-    {
-        const int numS = buffer.getNumSamples();
-        auto* m = buffer.getWritePointer(0);
-        auto* s = buffer.getWritePointer(1);
-        for (int i = 0; i < numS; ++i)
-        {
-            const float l = m[i] + s[i];
-            const float r = m[i] - s[i];
-            m[i] = l;
-            s[i] = r;
-        }
-    }
 }
 
 void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
@@ -3303,6 +3275,8 @@ void SignalChain::Eq::prepare (const juce::dsp::ProcessSpec& spec)
     qSm.setCurrentAndTargetValue (std::isfinite (q0) ? q0 : 0.707f);
     gainSm.setCurrentAndTargetValue (std::isfinite (g0) ? g0 : 0.f);
     applyCoeffs (freqSm.getCurrentValue(), qSm.getCurrentValue(), gainSm.getCurrentValue());
+    filtL.reset();
+    filtR.reset();
     bindings.prepare (varPtr, { &freq, &q, &gainDb });
 }
 
@@ -4615,6 +4589,7 @@ void SignalChain::Vocoder::prepare (const juce::dsp::ProcessSpec& spec)
     hpR = std::exp (-2.f * juce::MathConstants<float>::pi * 70.f / sampleRate);
     clearRuntimeState();
     applyBands (qSm.getCurrentValue(), formSm.getCurrentValue());
+    for (auto& b : bands) { b.modMono.reset(); b.carL.reset(); b.carR.reset(); }
     bindings.prepare (varPtr, { &mixExpr, &qExpr, &formantExpr, &dryExpr, &attackExpr, &releaseExpr });
 }
 

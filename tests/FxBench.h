@@ -1,4 +1,5 @@
 #pragma once
+#include <juce_audio_formats/juce_audio_formats.h>
 #include "FxRuntimeTest.h"
 #include "../src/third_party/nlohmann/json.hpp"
 #include <chrono>
@@ -51,6 +52,21 @@ inline int auditFactory (const char* catalogPath, const char* outputPath)
         juce::String error;
         if (! chain.loadScript (juce::String (preset.at("script").get<std::string>()), error))
         { report.push_back ({{"name", name}, {"error", error.toStdString()}}); ++failures; continue; }
+        if (preset.contains ("irs"))
+        {
+            juce::AudioFormatManager formats;
+            formats.registerBasicFormats();
+            for (auto it = preset["irs"].begin(); it != preset["irs"].end(); ++it)
+            {
+                const auto root = juce::File (juce::String (catalogPath)).getParentDirectory().getParentDirectory();
+                const auto file = root.getChildFile ("Resources/irs").getChildFile (it.value().get<std::string>());
+                std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (file));
+                if (! reader) { std::cerr << "Missing IR: " << file.getFullPathName() << '\n'; return 2; }
+                juce::AudioBuffer<float> ir ((int) reader->numChannels, (int) reader->lengthInSamples);
+                reader->read (&ir, 0, ir.getNumSamples(), 0, true, true);
+                chain.loadImpulseResponse (it.key(), ir, reader->sampleRate);
+            }
+        }
         chain.prepare ({ 48000, 256, 2 });
         for (int p = 0; p < Config::kNumUserParams; ++p)
         {

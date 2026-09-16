@@ -70,6 +70,61 @@ public:
                     expect (bad == 0 && peak <= 2.f, juce::String (fx.name) + " sr=" + juce::String (sr) + " ch=" + juce::String (channels));
                 }
         }
+        beginTest ("triangle LFO has a continuous turnaround, not a saw reset");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("osc1: shape = triangle; freq = 20\nstage1: y = osc1 * 0.2", error), error);
+            chain.prepare ({ 48000, 256, 1 });
+            juce::AudioBuffer<float> b (1, 256);
+            float previous = 0, maxStep = 0;
+            for (int block = 0; block < 50; ++block)
+            {
+                b.clear(); chain.processBlock (b);
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float x = b.getSample (0, i);
+                    if (block > 10) maxStep = juce::jmax (maxStep, std::abs (x - previous));
+                    previous = x;
+                }
+            }
+            expect (maxStep < 0.001f, "triangle step=" + juce::String (maxStep, 6));
+        }
+        beginTest ("stage MS encoding is applied exactly once");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("stage1: y = x; ms_encode = true", error), error);
+            chain.prepare ({ 48000, 31, 2 });
+            juce::AudioBuffer<float> b (2, 31);
+            for (int i = 0; i < 31; ++i) { b.setSample (0, i, 0.3f); b.setSample (1, i, 0.1f); }
+            chain.processBlock (b);
+            expectWithinAbsoluteError (b.getSample (0, 15), 0.2f, 1.e-6f);
+            expectWithinAbsoluteError (b.getSample (1, 15), 0.1f, 1.e-6f);
+        }
+        beginTest ("three-band crossover recombines without a magnitude hole");
+        for (float hz : { 200.f, 800.f, 1200.f, 2500.f, 8000.f })
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("xover1: f1 = 1000; f2 = 1500\nout: low = 1; mid = 1; high = 1", error), error);
+            chain.prepare ({ 48000, 256, 1 });
+            juce::AudioBuffer<float> b (1, 256);
+            double input = 0, output = 0;
+            for (int block = 0; block < 64; ++block)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    float x = 0.1f * std::sin (juce::MathConstants<float>::twoPi * hz * (block * 256 + i) / 48000.f);
+                    b.setSample (0, i, x);
+                    if (block >= 32) input += x*x;
+                }
+                chain.processBlock (b);
+                if (block >= 32)
+                    for (int i = 0; i < 256; ++i) output += b.getSample (0, i) * b.getSample (0, i);
+            }
+            expect (std::abs (10.0 * std::log10 (output/input)) < 0.1, "Hz=" + juce::String (hz) + " dB=" + juce::String (10.0 * std::log10 (output/input)));
+        }
         beginTest ("input routing preserves a hard-panned stereo source");
         {
             InputRouter router;

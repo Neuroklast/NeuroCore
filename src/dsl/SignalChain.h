@@ -397,7 +397,7 @@ private:
         struct Path
         {
             juce::dsp::IIR::Filter<float> lp1a, lp1b, hp1a, hp1b;
-            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b;
+            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b, lowPhase;
         };
         Path ch[2];
 
@@ -426,7 +426,7 @@ private:
         struct Path
         {
             juce::dsp::IIR::Filter<float> lp1a, lp1b, hp1a, hp1b;
-            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b;
+            juce::dsp::IIR::Filter<float> lp2a, lp2b, hp2a, hp2b, lowPhase;
         };
         Path ch[2];
 

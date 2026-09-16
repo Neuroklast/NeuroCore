@@ -523,8 +523,8 @@ public:
                 err), err);
             chain.prepare ({ 48000.0, 256, 2 });
             const float peak = tonePeak (chain, 0.5f, 1000.f, 48000.f, 6);
-            // softCeilSample is asymptotic, not a hard clip — 12 dB makeup on 0.5 → ~0.88
-            expect (peak < 0.95f && peak > 0.6f,
+            // A named ceiling is a bound, not the onset of a curve approaching twice the ceiling.
+            expect (peak <= juce::Decibels::decibelsToGain (-6.f) && peak > 0.45f,
                     "comp ceiling should hold makeup, peak=" + juce::String (peak, 3));
         }
 
@@ -541,7 +541,7 @@ public:
                     "gate ceiling should hold, peak=" + juce::String (peak, 3));
         }
 
-        beginTest ("chainwide soft-ceiling shapes true overs only");
+        beginTest ("chainwide soft-ceiling bounds overs and preserves low-level audio");
         {
             dsl::SignalChain chain;
             juce::String err;
@@ -552,8 +552,8 @@ public:
                 buf.setSample (0, i, 0.8f);
             chain.processBlock (buf);
             const float peak = TestHelpers::peakAbs (buf);
-            // 0.8 * 2 = 1.6 → soft-shaped above 1.0, must stay finite and below raw 1.6
-            expect (peak < 1.55f && peak > 1.0f,
+            // 0.8 * 2 = 1.6 is softly bounded below full scale.
+            expect (peak <= 1.0f && peak > 0.95f,
                     "overs soft-shaped, peak=" + juce::String (peak, 3));
             expectEquals (TestHelpers::countNonFinite (buf), 0);
 

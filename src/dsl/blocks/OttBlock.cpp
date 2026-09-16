@@ -9,7 +9,7 @@ void SignalChain::Ott::clearRuntimeState() noexcept
     for (auto& c : ch)
     {
         c.lp1a.reset(); c.lp1b.reset(); c.hp1a.reset(); c.hp1b.reset();
-        c.lp2a.reset(); c.lp2b.reset(); c.hp2a.reset(); c.hp2b.reset();
+        c.lp2a.reset(); c.lp2b.reset(); c.hp2a.reset(); c.hp2b.reset(); c.lowPhase.reset();
     }
     envDb[0] = envDb[1] = envDb[2] = -80.f;
     lastF1 = -1.f;
@@ -27,8 +27,10 @@ void SignalChain::Ott::applyCoeffs (float f1, float f2) noexcept
     auto hp1 = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (sampleRate, f1, q);
     auto lp2 = juce::dsp::IIR::ArrayCoefficients<float>::makeLowPass  (sampleRate, f2, q);
     auto hp2 = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (sampleRate, f2, q);
+    auto ap2 = juce::dsp::IIR::ArrayCoefficients<float>::makeAllPass (sampleRate, f2, q);
     for (auto& c : ch)
     {
+        *c.lowPhase.coefficients = ap2;
         *c.lp1a.coefficients = lp1;
         *c.lp1b.coefficients = lp1;
         *c.hp1a.coefficients = hp1;
@@ -51,7 +53,7 @@ void SignalChain::Ott::prepare (const juce::dsp::ProcessSpec& spec)
         c.lp1a.prepare (one); c.lp1b.prepare (one);
         c.hp1a.prepare (one); c.hp1b.prepare (one);
         c.lp2a.prepare (one); c.lp2b.prepare (one);
-        c.hp2a.prepare (one); c.hp2b.prepare (one);
+        c.hp2a.prepare (one); c.hp2b.prepare (one); c.lowPhase.prepare (one);
     }
     auto snap = [this] (juce::SmoothedValue<float>& sm, ExpressionEvaluator& e, float fb)
     {
@@ -165,7 +167,7 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
             if (c == 0) dryL = dst[c][i];
             else        dryR = dst[c][i];
             auto& p = ch[c];
-            const float lo = p.lp1b.processSample (p.lp1a.processSample (x));
+            const float lo = p.lowPhase.processSample (p.lp1b.processSample (p.lp1a.processSample (x)));
             const float hp1 = p.hp1b.processSample (p.hp1a.processSample (x));
             const float md = p.lp2b.processSample (p.lp2a.processSample (hp1));
             const float hi = p.hp2b.processSample (p.hp2a.processSample (hp1));

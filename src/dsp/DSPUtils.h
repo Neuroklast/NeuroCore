@@ -154,10 +154,14 @@ namespace DSPUtils
         if (c <= 1.0e-6f)
             return 0.f;
         const float a = std::abs (x);
-        if (a <= c)
+        // Smooth, unity-slope knee and a true asymptotic ceiling. The old
+        // over/(1+over/c) formula approached 2*c instead of c.
+        const float headroom = c * 0.05f;
+        const float knee = c - headroom;
+        if (a <= knee)
             return x;
-        const float over = a - c;
-        const float shaped = c + over / (1.f + over / juce::jmax (c, 1.0e-3f));
+        const float over = a - knee;
+        const float shaped = c - headroom / (1.f + over / headroom);
         return std::copysign (shaped, x);
     }
 
