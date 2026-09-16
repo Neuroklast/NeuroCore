@@ -367,6 +367,69 @@ public:
             for (const auto note : grid.wholes)
                 expectWithinAbsoluteError (grid.wholeFromNorm (dsl::NoteValues::normFromWhole (note, grid.wholes)), note, 1.e-6f);
         }
+        beginTest ("tap peaks catch impulses between display samples and cover long chains");
+        {
+            dsl::SignalChain chain;
+            juce::String error, script;
+            for (int i = 0; i < 40; ++i) script += "stage" + juce::String (i) + ": y = x\n";
+            expect (chain.loadScript (script, error), error);
+            chain.prepare ({ 48000, 512, 2 });
+            juce::AudioBuffer<float> b (2, 512); b.clear(); b.setSample (0, 1, 0.8f);
+            chain.processBlock (b);
+            float peak = 0;
+            expect (chain.copyTapPeak ("stage39", peak), "missing late node tap");
+            expectWithinAbsoluteError (peak, 0.8f, 1.e-6f);
+            expect (chain.copyTapPeak ("stage0", peak));
+            expectWithinAbsoluteError (peak, 0.8f, 1.e-6f);
+        }
+        beginTest ("short external sidechain is silent after its end and has its own tap");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("stage1: y = sc", error), error);
+            chain.prepare ({ 48000, 64, 1 });
+            float sc[8]; std::fill (std::begin (sc), std::end (sc), 0.4f);
+            chain.setExternalSidechain (sc, nullptr, 8);
+            juce::AudioBuffer<float> b (1, 64); b.clear();
+            chain.processBlock (b);
+            expectWithinAbsoluteError (b.getSample (0, 63), 0.f, 1.e-6f);
+            float peak = 0;
+            expect (chain.copyTapPeak ("__sc__", peak));
+            expectWithinAbsoluteError (peak, 0.4f, 1.e-6f);
+        }
+        beginTest ("LR split preserves samples and node tap identities");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("ms1: mode = split; family = lr\nstage1: y = x * 0.5", error), error);
+            chain.prepare ({ 48000, 64, 2 });
+            juce::AudioBuffer<float> b (2, 64);
+            for (int i = 0; i < 64; ++i) { b.setSample (0, i, 0.4f); b.setSample (1, i, -0.2f); }
+            chain.processBlock (b);
+            float split = 0, stage = 0;
+            expect (chain.copyTapPeak ("ms1", split));
+            expect (chain.copyTapPeak ("stage1", stage));
+            expectWithinAbsoluteError (split, 0.4f, 1.e-6f);
+            expectWithinAbsoluteError (stage, 0.2f, 1.e-6f);
+            expectWithinAbsoluteError (b.getSample (1, 63), -0.1f, 1.e-6f);
+        }
+        beginTest ("crossover taps meter each actual band");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript ("xover1: f1 = 300\nout: low = 1; high = 1", error), error);
+            chain.prepare ({ 48000, 256, 1 });
+            juce::AudioBuffer<float> b (1, 256);
+            for (int block = 0; block < 80; ++block)
+            {
+                for (int i = 0; i < 256; ++i) b.setSample (0,i,0.2f * std::sin ((block * 256 + i) * 80.f * juce::MathConstants<float>::twoPi / 48000.f));
+                chain.processBlock (b);
+            }
+            float low = 0, high = 0;
+            expect (chain.copyTapPeak ("xover1:low", low));
+            expect (chain.copyTapPeak ("xover1:high", high));
+            expect (low > 0.15f && high < 0.01f, "band levels must differ for a low-frequency input");
+        }
         beginTest ("pitch analysis duration stays constant at oversampled rates");
         for (int rate : { 48000, 96000, 192000, 384000 })
         {

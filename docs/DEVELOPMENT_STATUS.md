@@ -15,6 +15,19 @@ prepared IIR storage. The source allocation regression fails on main and passes 
 contracts cover 22 node types, irregular blocks, stereo preservation, envelope position and
 pitch level/latency. Runtime fixes, preset curation and platform packages are still in progress.
 
+## Circuit signal accuracy (2026-09-16)
+
+Unsplit signals now draw one cable. L/R, M/S, crossover bands, named bus inputs
+and external sidechain use their actual source meters. Meter peaks scan every
+sample (including impulses between display samples); decay is time based.
+128 tap slots replace 32, and closed editors disable tap work. Wave samples are
+atomic. Short sidechains contribute silence after their last supplied sample.
+L/R split/join retain identity nodes so downstream tap names cannot shift.
+IN is draggable. Native contracts reproduce impulse, long-chain, split identity,
+short-sidechain and band errors; web contracts cover one cable and lane sources.
+Routing, keyboard UX, themes and visual review remain in progress. Native release
+builds remain deferred until all requested changes are complete.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.

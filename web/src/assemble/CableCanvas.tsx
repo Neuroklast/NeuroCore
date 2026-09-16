@@ -253,8 +253,8 @@ export function CableCanvas({
           if (! lane) {
             return;
           }
-          const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type);
-          const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type);
+          const peak = peakForLane(lane.id, e.sourceNodeId, clips, clipsL, clipsR, sn.type, sp.jackId, sn.busName);
+          const energy = rmsForLane(lane.id, e.sourceNodeId, rms, rmsL, rmsR, sn.type, sp.jackId, sn.busName);
           const key = `${e.id}:${lane.id}`;
           const integrated = streamAdvance(offsets.get(key) ?? 0, energy, dt, peak);
           offsets.set(key, integrated);

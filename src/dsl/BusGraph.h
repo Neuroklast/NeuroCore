@@ -37,6 +37,7 @@ struct BusDef
     std::vector<int> blockIndices;
     LatencyAlignedSidechain seedCompensation;
     int outputLatency { 0 };
+    int inputTap { -1 };
 };
 
 struct OutTap

@@ -43,6 +43,7 @@ SignalChain::SignalChain()
     hot.bind (variables);
     setNodeTapId (kTapSlotIn, "__in__");
     setNodeTapId (kTapSlotOut, "__out__");
+    setNodeTapId (kTapSlotSidechain, "__sc__");
 }
 
 void SignalChain::HotSlots::bind (std::unordered_map<juce::String, float>& vars) noexcept
@@ -713,14 +714,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                          || family == "lr" || family == "leftright" || family == "l/r"
                          || mode == "split_lr" || mode == "join_lr"
                          || mode == "lr_split" || mode == "lr_join";
-            if (! lr)
-            {
-                auto ms = std::make_unique<Ms>();
-                ms->encode = ! (mode == "decode" || mode == "join" || mode == "lr"
-                             || mode == "stereo" || mode == "to_lr"
-                             || mode == "join_lr" || mode == "lr_join");
-                newChain->push_back (std::move (ms));
-            }
+            auto ms = std::make_unique<Ms>();
+            ms->passthrough = lr;
+            ms->encode = ! (mode == "decode" || mode == "join" || mode == "lr"
+                         || mode == "stereo" || mode == "to_lr"
+                         || mode == "join_lr" || mode == "lr_join");
+            newChain->push_back (std::move (ms));
         }
         else if (d.type.startsWith("osc"))
         {
@@ -1253,6 +1252,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("xover") || d.type.startsWith ("crossover"))
         {
             auto xo = std::make_unique<Xover>();
+            xo->kind = NodeKind::Xover;
             const auto f1raw = d.args.count ("f1") ? d.args.at ("f1")
                              : (d.args.count ("low") ? d.args.at ("low") : juce::String ("120"));
             xo->f1Hz.parseFormula (addDefaultMap (f1raw, 20.f, 8000.f).toStdString());
@@ -1972,6 +1972,12 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     const int numChannels = buffer.getNumChannels();
     if (numSamples <= 0 || numChannels <= 0)
         return;
+    tapCaptureActive = tapsWanted.load (std::memory_order_relaxed);
+    if (tapCaptureActive)
+    {
+        tapRelease = std::exp (-(float) numSamples / ((float) currentSpec.sampleRate * 0.12f));
+        writeNodeTapAudio (kTapSlotSidechain, extScL, extScR, juce::jmin (numSamples, extScN));
+    }
     // hot.* slots are bound in prepare/loadScript — never re-hash the map here.
     // Silent-side seed for a mono DI is InputRouter (plugin input). This graph
     // keeps L/R as given — a hard pan must stay a hard pan on the taps.
@@ -2290,6 +2296,13 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             }
 
             b->processBlock (slice);
+            if (tapCaptureActive && b->kind == NodeKind::Xover)
+            {
+                const auto* xo = static_cast<Xover*> (b.get());
+                if (xo->lowOut != nullptr) writeNodeTap (xo->lowTap, *xo->lowOut, nWork);
+                if (xo->midOut != nullptr && xo->threeBand) writeNodeTap (xo->midTap, *xo->midOut, nWork);
+                if (xo->highOut != nullptr) writeNodeTap (xo->highTap, *xo->highOut, nWork);
+            }
             if (b->tapSlot >= 0)
                 writeNodeTap (b->tapSlot, slice);
         }
@@ -2341,6 +2354,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         for (int bi = 1; bi < (int) graphPtr->buses.size(); ++bi)
         {
             applyBusSends (bi, chUse, sm);
+            writeNodeTap (graphPtr->buses[(size_t) bi].inputTap, busScratch[(size_t) bi], sm);
 
             processOn (busScratch[(size_t) bi], bi);
         }
@@ -2874,6 +2888,8 @@ void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
             id = "OUT";
         else if (id == "__in__")
             id = "IN";
+        else if (id == "__sc__")
+            id = "SC";
         auto* o = new juce::DynamicObject();
         o->setProperty ("id", id);
         const float peakL = t.peakL.load (std::memory_order_relaxed);
@@ -3623,7 +3639,7 @@ void SignalChain::setVoiceInput (const float* left, const float* right, int numS
 
 void SignalChain::publishSidechainSample (int sampleIndex) noexcept
 {
-    if (extScN <= 0 || extScL == nullptr)
+    if (extScN <= 0 || extScL == nullptr || sampleIndex < 0 || sampleIndex >= extScN)
     {
         if (hot.sc != nullptr) *hot.sc = 0.f;
         if (hot.scL != nullptr) *hot.scL = 0.f;
@@ -3631,7 +3647,7 @@ void SignalChain::publishSidechainSample (int sampleIndex) noexcept
         if (hot.sidechain != nullptr) *hot.sidechain = 0.f;
         return;
     }
-    const int i = juce::jlimit (0, extScN - 1, sampleIndex);
+    const int i = sampleIndex;
     const float sl = extScL[i];
     const float sr = extScR != nullptr ? extScR[i] : sl;
     const float mono = 0.5f * (sl + sr);
@@ -4235,6 +4251,7 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
 
 void SignalChain::Ms::processBlock (juce::AudioBuffer<float>& buffer)
 {
+    if (passthrough) return;
     if (buffer.getNumChannels() < 2 || buffer.getNumSamples() <= 0)
         return;
 
@@ -4756,7 +4773,7 @@ void SignalChain::bindNodeTaps (Chain& c) noexcept
     {
         auto& t = nodeTaps[(size_t) i];
         t.id.fill (0);
-        t.wave.fill (0.f);
+        for (auto& sample : t.wave) sample.store (0.f, std::memory_order_relaxed);
         t.peak.store (0.f, std::memory_order_relaxed);
         t.peakL.store (0.f, std::memory_order_relaxed);
         t.peakR.store (0.f, std::memory_order_relaxed);
@@ -4766,6 +4783,7 @@ void SignalChain::bindNodeTaps (Chain& c) noexcept
     }
     setNodeTapId (kTapSlotIn, "__in__");
     setNodeTapId (kTapSlotOut, "__out__");
+    setNodeTapId (kTapSlotSidechain, "__sc__");
     int next = kTapSlotFirstChip;
     for (auto& b : c)
     {
@@ -4777,7 +4795,27 @@ void SignalChain::bindNodeTaps (Chain& c) noexcept
         setNodeTapId (next, b->tapId);
         b->tapSlot = next;
         ++next;
+        if (b->kind == NodeKind::Xover)
+        {
+            auto* xo = static_cast<Xover*> (b.get());
+            auto bind = [&] (const char* port) {
+                if (next >= kMaxNodeTaps) return -1;
+                setNodeTapId (next, b->tapId + ":" + port);
+                return next++;
+            };
+            xo->lowTap = bind ("low");
+            xo->highTap = bind ("high");
+            xo->midTap = xo->threeBand ? bind ("mid") : -1;
+        }
     }
+    if (auto graph = std::atomic_load (&busGraph))
+        for (auto& bus : graph->buses)
+        {
+            bus.inputTap = -1;
+            if (bus.name == "main" || next >= kMaxNodeTaps) continue;
+            setNodeTapId (next, "bus:" + bus.name);
+            bus.inputTap = next++;
+        }
 }
 
 int SignalChain::findNodeTap (const juce::String& id) const noexcept
@@ -4804,68 +4842,52 @@ void SignalChain::storeTapLevels (NodeTapSlot& t, float pkL, float pkR, float rm
     const float heldR = t.peakR.load (std::memory_order_relaxed);
     const float heldRmsL = t.rmsL.load (std::memory_order_relaxed);
     const float heldRmsR = t.rmsR.load (std::memory_order_relaxed);
-    t.peakL.store (pkL >= heldL ? pkL : heldL * 0.88f, std::memory_order_relaxed);
-    t.peakR.store (pkR >= heldR ? pkR : heldR * 0.88f, std::memory_order_relaxed);
-    t.peak.store (pk >= held ? pk : held * 0.88f, std::memory_order_relaxed);
-    t.rmsL.store (rmsL >= heldRmsL ? rmsL : heldRmsL * 0.88f, std::memory_order_relaxed);
-    t.rmsR.store (rmsR >= heldRmsR ? rmsR : heldRmsR * 0.88f, std::memory_order_relaxed);
+    t.peakL.store (pkL >= heldL ? pkL : heldL * tapRelease, std::memory_order_relaxed);
+    t.peakR.store (pkR >= heldR ? pkR : heldR * tapRelease, std::memory_order_relaxed);
+    t.peak.store (pk >= held ? pk : held * tapRelease, std::memory_order_relaxed);
+    t.rmsL.store (rmsL >= heldRmsL ? rmsL : heldRmsL * tapRelease, std::memory_order_relaxed);
+    t.rmsR.store (rmsR >= heldRmsR ? rmsR : heldRmsR * tapRelease, std::memory_order_relaxed);
     t.gen.fetch_add (1, std::memory_order_release);
 }
 
-void SignalChain::writeNodeTap (int slot, const juce::AudioBuffer<float>& buf) noexcept
+void SignalChain::writeNodeTap (int slot, const juce::AudioBuffer<float>& buf, int samples) noexcept
 {
-    if (slot < 0 || slot >= kMaxNodeTaps)
-        return;
-    const int n = buf.getNumSamples();
-    const int nCh = buf.getNumChannels();
-    if (n <= 0 || nCh <= 0)
-        return;
+    if (! tapCaptureActive || slot < 0 || buf.getNumChannels() <= 0) return;
+    const int n = samples < 0 ? buf.getNumSamples() : juce::jmin (samples, buf.getNumSamples());
+    writeNodeTapAudio (slot, buf.getReadPointer (0), buf.getNumChannels() > 1 ? buf.getReadPointer (1) : nullptr, n);
+}
 
-    auto& t = nodeTaps[(size_t) slot];
-    const float* ch0 = buf.getReadPointer (0);
-    const float* ch1 = nCh > 1 ? buf.getReadPointer (1) : nullptr;
-    const float step = (float) n / (float) kNodeTapSamples;
-    float pkL = 0.f, pkR = 0.f, sumSqL = 0.f, sumSqR = 0.f;
-    for (int i = 0; i < kNodeTapSamples; ++i)
+void SignalChain::writeNodeTapAudio (int slot, const float* left, const float* right, int n) noexcept
+{
+    if (! tapCaptureActive || slot < 0 || slot >= kMaxNodeTaps) return;
+    auto& tap = nodeTaps[(size_t) slot];
+    float pkL = 0.f, pkR = 0.f;
+    double energyL = 0.0, energyR = 0.0;
+    if (left != nullptr && n > 0)
     {
-        const int idx = juce::jmin (n - 1, (int) (i * step));
-        const float xL = ch0[idx];
-        t.wave[(size_t) i] = xL;
-        pkL = juce::jmax (pkL, std::abs (xL));
-        sumSqL += xL * xL;
-        if (ch1 != nullptr)
+        if (right == nullptr) right = left;
+        for (int i = 0; i < n; ++i)
         {
-            const float xR = ch1[idx];
-            pkR = juce::jmax (pkR, std::abs (xR));
-            sumSqR += xR * xR;
+            const float l = std::isfinite (left[i]) ? left[i] : 0.f;
+            const float r = std::isfinite (right[i]) ? right[i] : 0.f;
+            pkL = juce::jmax (pkL, std::abs (l)); pkR = juce::jmax (pkR, std::abs (r));
+            energyL += (double) l * l; energyR += (double) r * r;
+        }
+        for (int i = 0; i < kNodeTapSamples; ++i)
+        {
+            const float value = left[juce::jmin (n - 1, (int) ((int64_t) i * n / kNodeTapSamples))];
+            tap.wave[(size_t) i].store (std::isfinite (value) ? value : 0.f, std::memory_order_relaxed);
         }
     }
-    if (ch1 == nullptr)
-    {
-        pkR = pkL;
-        sumSqR = sumSqL;
-    }
-    const float inv = 1.f / (float) kNodeTapSamples;
-    storeTapLevels (t, pkL, pkR, std::sqrt (sumSqL * inv), std::sqrt (sumSqR * inv));
+    else
+        for (auto& value : tap.wave) value.store (0.f, std::memory_order_relaxed);
+    const double inv = n > 0 ? 1.0 / n : 0.0;
+    storeTapLevels (tap, pkL, pkR, (float) std::sqrt (energyL * inv), (float) std::sqrt (energyR * inv));
 }
 
 void SignalChain::writeNodeTapLane (int slot, const float* src, int n) noexcept
 {
-    if (slot < 0 || slot >= kMaxNodeTaps || src == nullptr || n <= 0)
-        return;
-
-    auto& t = nodeTaps[(size_t) slot];
-    const float step = (float) n / (float) kNodeTapSamples;
-    float pk = 0.f, sumSq = 0.f;
-    for (int i = 0; i < kNodeTapSamples; ++i)
-    {
-        const float x = src[juce::jmin (n - 1, (int) (i * step))];
-        t.wave[(size_t) i] = x;
-        pk = juce::jmax (pk, std::abs (x));
-        sumSq += x * x;
-    }
-    const float rms = std::sqrt (sumSq / (float) kNodeTapSamples);
-    storeTapLevels (t, pk, pk, rms, rms);
+    writeNodeTapAudio (slot, src, nullptr, n);
 }
 
 bool SignalChain::copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept
@@ -4885,7 +4907,7 @@ bool SignalChain::copyNodeTap (const juce::String& id, float* dest, int destN) c
         const int i0 = (int) idx;
         const int i1 = juce::jmin (kNodeTapSamples - 1, i0 + 1);
         const float f = idx - (float) i0;
-        dest[s] = t.wave[(size_t) i0] * (1.f - f) + t.wave[(size_t) i1] * f;
+        dest[s] = t.wave[(size_t) i0].load (std::memory_order_relaxed) * (1.f - f) + t.wave[(size_t) i1].load (std::memory_order_relaxed) * f;
     }
     return true;
 }

@@ -127,3 +127,7 @@ describe("headless board model", () => {
     expect(east.some((p) => p.jackId === "out")).toBe(false);
   });
 });
+
+it("allows moving the input terminal", () => {
+  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(false);
+});

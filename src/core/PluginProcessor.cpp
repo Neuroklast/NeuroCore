@@ -146,7 +146,7 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     UiSettings::get().addListener (this);
     lastUiScalePercent = UiSettings::get().uiScalePercent();
     dspEngine.setLiveMode (UiSettings::get().liveMode());
-    telemetryPump.setWanted (false);
+    setTelemetryWanted (false);
     // WebView2 is born with the processor (NeuroMeter). Cubase scan createView
     // must not CreateCoreWebView2 on the IPlugView HWND.
     webViewHolder = std::make_unique<bridge::WebViewHolder> (*this);

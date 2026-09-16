@@ -208,3 +208,15 @@ Bandpass width now determines Q when no explicit resonance is supplied; an expli
 Unit readouts, level bars and spectrum share a -60 dBFS display floor; values below it stay on the floor. The scope uses the latest 256 consecutive host-rate samples across callback boundaries, so changing the host block size no longer changes its frequency/time scale. Scope traces show the channel average (mid for stereo); stereo energy is represented separately by the peak/RMS meters and goniometer. Truncated telemetry frames are ignored and shorter valid frames clear old samples.
 
 Shared settings writes merge only the changed preference keys into the newest settings file, so one instance changing frame rate does not overwrite another process's newer theme or processing setting. Host automation of oversampling/polisher queues atomic requests; persistence and instance notifications occur on the message-thread settings poll (up to 500 ms), including instances without an open editor.
+
+### Circuit signal monitoring
+
+An unsplit mono or stereo connection uses one cable. Explicit L/R and Mid/Side
+connections have distinct channel colours. Cable brightness follows peak level;
+packet density and speed follow RMS at the source. Mid/Side reads the encoded
+Mid and Side channels, crossover outputs read their individual bands, and bus
+inputs include send gain. The host sidechain has its own meter; it never borrows
+the main input level. Monitoring stops when the editor is closed.
+
+IN can be dragged and snapped like the other blocks. L/R split and join preserve
+the audio channels and retain their own measurement points.

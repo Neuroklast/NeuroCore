@@ -69,7 +69,7 @@ public:
 private:
     enum class NodeKind : uint8_t
     {
-        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch
+        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch, Xover
     };
 
     // Bind only variables actually read by each parameter expression. Construction
@@ -387,6 +387,7 @@ private:
         ExpressionEvaluator f1Hz, f2Hz;
         juce::SmoothedValue<float> f1Sm, f2Sm;
         bool threeBand { false };
+        int lowTap { -1 }, midTap { -1 }, highTap { -1 };
         float sampleRate { 44100.f };
         float lastF1 { -1.f }, lastF2 { -1.f };
         juce::AudioBuffer<float>* lowOut { nullptr };
@@ -802,6 +803,7 @@ private:
     struct Ms : Block
     {
         bool encode { true }; ///< true = L/R→M/S, false = M/S→L/R
+        bool passthrough { false }; ///< L/R split/join keeps both channels unchanged.
         void prepare (const juce::dsp::ProcessSpec&) override {}
         float process (int, float x) { return x; }
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -1078,14 +1080,15 @@ private:
     int extVoiceN { 0 };
 
     static constexpr int kNodeTapSamples = 64;
-    static constexpr int kMaxNodeTaps = 32;
+    static constexpr int kMaxNodeTaps = 128;
     static constexpr int kTapSlotIn = 0;
     static constexpr int kTapSlotOut = 1;
-    static constexpr int kTapSlotFirstChip = 2;
+    static constexpr int kTapSlotSidechain = 2;
+    static constexpr int kTapSlotFirstChip = 3;
     struct NodeTapSlot
     {
         std::array<char, 48> id {};
-        std::array<float, kNodeTapSamples> wave {};
+        std::array<std::atomic<float>, kNodeTapSamples> wave {};
         std::atomic<float> peak { 0.f };
         std::atomic<float> peakL { 0.f };
         std::atomic<float> peakR { 0.f };
@@ -1094,16 +1097,22 @@ private:
         std::atomic<uint32_t> gen { 0 };
     };
     std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
+    std::atomic<bool> tapsWanted { true };
+    bool tapCaptureActive { true };
+    float tapRelease { 0.88f };
 
     void publishSidechainSample (int sampleIndex) noexcept;
     void bindNodeTaps (Chain& c) noexcept;
     void setNodeTapId (int slot, const juce::String& id) noexcept;
     int findNodeTap (const juce::String& id) const noexcept;
     void storeTapLevels (NodeTapSlot& t, float pkL, float pkR, float rmsL, float rmsR) noexcept;
-    void writeNodeTap (int slot, const juce::AudioBuffer<float>& buf) noexcept;
+    void writeNodeTap (int slot, const juce::AudioBuffer<float>& buf, int samples = -1) noexcept;
+    void writeNodeTapAudio (int slot, const float* left, const float* right, int n) noexcept;
     void writeNodeTapLane (int slot, const float* src, int n) noexcept;
 
 public:
+
+    void setNodeTapsWanted (bool on) noexcept { tapsWanted.store (on, std::memory_order_relaxed); }
 
     /** Copy the latest post-block tap for `id` (`__in__`, `__out__`, or a node name). */
     bool copyNodeTap (const juce::String& id, float* dest, int destN) const noexcept;

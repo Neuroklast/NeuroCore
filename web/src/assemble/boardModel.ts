@@ -22,6 +22,7 @@ export type BoardNode = {
   label: string;
   channel: string;
   locked: boolean;
+  busName?: string;
 };
 
 export type BoardPort = {
@@ -167,7 +168,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   const rowY = BOARD_GRID * 4;
 
   const inJacks = canonicalIoJacks("in");
-  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", true);
+  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", false);
   addPorts(ports, "IN", inJacks, true);
   x += nodes.IN.w + CHIP_GAP;
 
@@ -189,6 +190,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       channelOf(n),
       isSidechainType(n.type),
     );
+    nodes[n.id]!.busName = n.busName;
     addPorts(ports, n.id, jacks, false);
     addPorts(ports, n.id, jacks, true);
     x = px + nodes[n.id]!.w + CHIP_GAP;
