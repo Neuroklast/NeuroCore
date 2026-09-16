@@ -14,8 +14,8 @@ export type AddableBlock = {
 
 export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "stage", label: "Drive", args: "y = x", category: "Dynamics" },
-  { type: "comp", label: "Comp", args: "threshold = 0.4; ratio = 4", category: "Dynamics" },
-  { type: "noisegate", label: "Gate", args: "threshold = 0.05", category: "Dynamics" },
+  { type: "comp", label: "Comp", args: "threshold = -18; ratio = 4; attack = 0.01; release = 0.1; ceiling = 0", category: "Dynamics" },
+  { type: "noisegate", label: "Gate", args: "threshold = -18; attack = 0.01; release = 0.1; ceiling = 0", category: "Dynamics" },
   { type: "limit", label: "Limit", args: "ceiling = -0.3; release = 0.08", category: "Dynamics" },
   { type: "filter", label: "Filter", args: "type = lowpass; cutoff = 1200; resonance = 0.3", category: "Tone" },
   { type: "eq", label: "EQ", args: "type = peak; freq = 1000; gain = 0", category: "Tone" },

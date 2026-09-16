@@ -260,3 +260,5 @@ Themes change the editor material as well as its hue: chip corner geometry, pane
 Terminal is a live script view of Circuit edits. In Edit mode, completion inserts complete block templates from the current block catalog; press Tab to step through the block ID and every parameter value. Save first validates the draft. A rejected or interrupted compile stays in Edit mode, shows markers, and leaves the last valid audio graph active.
 
 Local developer builds always reconfigure before compiling. On macOS/Linux run `scripts/build_local.sh` (Linux: run `scripts/install_linux_deps.sh` once); on Windows run `build_release.bat`. Set `JUCE_DIR` to a JUCE 8.0.6 checkout to build offline, or let CMake fetch the pinned release. Native CI validation is manual and does not publish releases.
+
+Hosts receive a tail length that includes serial delay, reverb and release stages on the longest audible bus path, so a second effect is not cut after transport stops. Parked blocks are excluded. Newly added compressor and gate blocks start at -18 dB with explicit attack, release and ceiling values.

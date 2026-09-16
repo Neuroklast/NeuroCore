@@ -283,6 +283,20 @@ public:
             expect (chain.getMaxTailTime() > 0.05f);
         }
 
+        beginTest ("serial delay tails add instead of reporting only the longest block");
+        {
+            auto tailFor = [&spec] (const juce::String& script)
+            {
+                dsl::SignalChain chain; chain.prepare (spec); juce::String err;
+                if (! chain.loadScript (script, err)) return -1.0f;
+                return chain.getMaxTailTime();
+            };
+            const float one = tailFor ("delay1: time = 420; feedback = 0.55; mix = 1");
+            const float two = tailFor ("delay1: time = 420; feedback = 0.55; mix = 1\ndelay2: time = 310; feedback = 0.5; mix = 1");
+            expect (one > 0.4f);
+            expect (two > one + 0.25f, "Serial tails must accumulate so hosts do not cut the second effect.");
+        }
+
         beginTest ("reverb block produces wet energy and finite output");
         {
             dsl::SignalChain chain;

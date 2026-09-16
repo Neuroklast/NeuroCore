@@ -163,3 +163,8 @@ describe('Circuit clipboard commands',()=>{
     expect(useAstStore.getState().lastValidScript).toMatch(/bus __park:\nfilter1:/);
   });
 });
+
+it('uses catalog units for newly added dynamics blocks',()=>{
+ expect(ADDABLE_BLOCKS.find(b=>b.type==='comp')?.args).toContain('threshold = -18');
+ expect(ADDABLE_BLOCKS.find(b=>b.type==='noisegate')?.args).toContain('threshold = -18');
+});

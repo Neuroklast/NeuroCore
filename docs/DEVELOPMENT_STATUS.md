@@ -193,3 +193,5 @@ Theme checkpoint: Signal, Gold, Azure and DIGICIDE now carry distinct frame cuts
 Terminal checkpoint: Circuit compile events hydrate the shared script view. Catalog-derived block snippets insert every parameter with Monaco Tab stops. Save retains the last valid graph and editor draft on lint, compiler or bridge failure; invalid native compiles are not added to undo history. Completion/compile/store contracts and TypeScript pass.
 
 Local build checkpoint: Windows Debug/Release and POSIX build entry points reconfigure on every run; the POSIX script supports pinned offline JUCE via JUCE_DIR and configurable build directory/config/jobs. Native CI is manual-only and cannot publish a release. Platform binary delivery remains cancelled.
+
+DSP tail/default checkpoint: reproduced serial-delay tail under-reporting; tail length now follows the longest audible bus path and accumulates serial effect releases without heap allocation. Parked buses do not extend host tails. Newly inserted compressor/gate blocks use the DSP's dB and seconds defaults rather than obsolete linear thresholds. The local DSP suite reports 0 failures.
