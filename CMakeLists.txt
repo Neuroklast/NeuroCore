@@ -518,6 +518,7 @@ add_custom_command(
     VERBATIM
 )
 add_custom_target(NeuroKoreWebEmbed DEPENDS "${_nk_web_zip}" "${_nk_web_rc}")
+add_dependencies(NeuroKoreWebEmbed NeuroKoreWeb)
 set_source_files_properties("${_nk_web_rc}" PROPERTIES GENERATED TRUE)
 
 if (WIN32)

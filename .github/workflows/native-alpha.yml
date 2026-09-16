@@ -54,7 +54,10 @@ jobs:
           python tests/test_realtime_source.py
           python tests/test_release_layout.py
       - name: Build plug-ins and full native test suite
-        run: cmake --build build --config Release --target NeuroKore_All NeuroKoreTests --parallel 3
+        run: |
+          cmake --build build --config Release --target NeuroKoreWebEmbed --parallel 3
+          cmake --build build --config Release --target NeuroKore_All --parallel 3
+          cmake --build build --config Release --target NeuroKoreTests --parallel 3
       - name: Full native suite (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a ctest --test-dir build -C Release --output-on-failure --timeout 900
