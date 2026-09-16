@@ -50,7 +50,7 @@ export function registerNeurokoreDsl(monaco: Monaco): void {
           insertTextRules: it.insertAsSnippet
             ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
             : undefined,
-          range,
+          range: it.replaceStart == null ? range : { ...range, startColumn: model.getPositionAt(it.replaceStart).column },
         })),
       };
     },

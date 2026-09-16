@@ -219,6 +219,8 @@ target_compile_features(NeuroKore PRIVATE cxx_std_17)
 target_compile_definitions(NeuroKore
     PUBLIC
         JUCE_WEB_BROWSER=1
+        # NEUROKORE ships VST3 only; never remap automation as a VST2 replacement.
+        JUCE_VST3_CAN_REPLACE_VST2=0
     PRIVATE
         NEUROKORE_HAS_WEB_EDITOR=1
         NEUROKORE_WEB_DIST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/web/dist"
@@ -451,6 +453,7 @@ file(GLOB_RECURSE _nk_web_sources CONFIGURE_DEPENDS
     "${_nk_web_dir}/tailwind.config.js"
     "${_nk_web_dir}/postcss.config.js"
 )
+list(FILTER _nk_web_sources EXCLUDE REGEX "/(node_modules|dist)/")
 # Vite embeds these during build; they must not be inputs or every build loops.
 list(FILTER _nk_web_sources EXCLUDE REGEX "\\.gen\\.(json|txt)$")
 

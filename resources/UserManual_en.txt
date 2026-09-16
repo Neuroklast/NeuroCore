@@ -265,3 +265,5 @@ Hosts receive a tail length that includes serial delay, reverb and release stage
 
 Circuit edits and Terminal drafts
 Rejected connections leave the last compiled graph and Terminal script intact. Native connection changes appear in both views only after successful compilation. A connection can be drawn from either end. Compiler diagnostics belong to the submitted draft; replies to older drafts do not replace diagnostics for current text. Copy, cut, paste and editor navigation remain available while typing; Circuit shortcuts act only in the active Circuit view.
+
+Terminal completion selects unused block IDs, keeps the reserved out mixer name, and offers catalog parameter defaults as Tab stops even while other lines are unfinished. Windows builds explicitly disable VST2 replacement compatibility; NEUROKORE ships VST3, Standalone and macOS AU. Existing VST3 parameter IDs are preserved.
