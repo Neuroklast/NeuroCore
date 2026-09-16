@@ -38,7 +38,7 @@ describe("unit logo glitch", () => {
   it("keeps logo alpha — no invert, no cream fill, overlays masked to the PNG", () => {
     expect(flashKeepsAlpha("brightness(2.4) saturate(1.2)")).toBe(true);
     expect(flashKeepsAlpha("invert(1) hue-rotate(180deg)")).toBe(false);
-    expect(flashKeepsAlpha("background:#f4f1ea")).toBe(false);
+    expect(flashKeepsAlpha("background:#ededed")).toBe(false);
     const mask = logoOverlayMask("./img/neurokore.png");
     expect(mask.maskImage).toContain("neurokore.png");
     expect(mask.maskSize).toBe("contain");

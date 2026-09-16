@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, paneShowsTechNoise, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
+import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -30,12 +30,6 @@ describe("workspace modes", () => {
     expect(terminalMounted("face")).toBe(false);
     expect(terminalMounted("assemble")).toBe(false);
     expect(terminalMounted("hack")).toBe(true);
-  });
-
-  it("keeps spectrograph speckle on Unit and off Circuit/Terminal", () => {
-    expect(paneShowsTechNoise("face")).toBe(true);
-    expect(paneShowsTechNoise("assemble")).toBe(false);
-    expect(paneShowsTechNoise("hack")).toBe(false);
   });
 
   it("paints Circuit cables only on that tab with a real pane", () => {

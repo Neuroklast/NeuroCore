@@ -12,6 +12,7 @@ import {
   knobLfo,
   lfoScopePath,
   logoRgbSplit,
+  logoReactiveStyle,
   minimapGraph,
   nodeIsMuted,
   osModeLabel,
@@ -107,6 +108,11 @@ describe("unit face logo reactive from bands + host", () => {
 
     const off = logoRgbSplit({ low: 1, mid: 1, high: 1 }, { motion: "off" });
     expect(off).toEqual({ redX: 0, cyanY: 0 });
+
+    const style = logoReactiveStyle(kick);
+    expect(style["--nk-logo-red-x"]).toBe(`${kick.redX}px`);
+    expect(style["--nk-logo-cyan-y"]).toBe("0px");
+    expect(logoReactiveStyle(air)["--nk-logo-cyan-y"]).toBe(`${air.cyanY}px`);
 
     expect(transientHit(0.82, 0.12)).toBe(true);
     expect(transientHit(0.81, 0.8)).toBe(false);

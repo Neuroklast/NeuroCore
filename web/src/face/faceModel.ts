@@ -184,13 +184,20 @@ export function logoRgbSplit(
   };
 }
 
+/** Alpha-following chroma offsets for the Unit mark ghosts. */
+export function logoReactiveStyle(split: { redX: number; cyanY: number }): Record<string, string> {
+  return {
+    "--nk-logo-red-x": `${split.redX}px`,
+    "--nk-logo-cyan-y": `${split.cyanY}px`,
+  };
+}
+
 export function transientHit(currPeak: number, prevPeak: number): boolean {
   if (! Number.isFinite(currPeak) || ! Number.isFinite(prevPeak)) {
     return false;
   }
   return currPeak - prevPeak > 0.22 && currPeak > 0.18;
 }
-
 
 export function nodeIsMuted(args: Record<string, string>): boolean {
   if (truthyArg(args.bypass) || truthyArg(args.mute) || truthyArg(args.disabled)) {

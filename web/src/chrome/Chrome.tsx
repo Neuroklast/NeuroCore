@@ -11,12 +11,9 @@ import { toolbarSlots, workspaceTabClass } from "./toolbarChrome";
 export function Hud() {
   const licensed = useHostStore((s) => s.licensed);
   return (
-    <div className="flex h-5 shrink-0 items-center justify-between px-2 font-mono text-[11px] tracking-[0.16em] text-muted">
-      <span>
-        {nk.osBanner}
-        {licensed ? " // LINK ACTIVE" : " // DEMO"}
-      </span>
-      <span className="text-muted">{nk.version}</span>
+    <div className="flex h-5 shrink-0 items-center justify-between px-3 font-mono text-[11px] tracking-[0.16em] text-muted">
+      <span>{nk.product}</span>
+      <span>{licensed ? "LICENSED" : "DEMO"}</span>
     </div>
   );
 }
@@ -163,7 +160,7 @@ export function Knobs({ bind = true, rail = "left" }: { bind?: boolean; rail?: "
   const knobs = useHostStore((s) => s.knobs);
   if (rail === "bottom") {
     return (
-      <div className="flex h-[148px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)]">
+      <div className="flex h-[152px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)] px-3 pb-2 pt-2">
         {knobs.map((k) => (
           <div key={k.id} className="min-w-0 flex-1">
             <Knob knob={k} bind={bind} compact />
@@ -215,7 +212,7 @@ export function MixOs() {
   const os = useHostStore((s) => s.os);
   const polisher = useHostStore((s) => s.polisher);
   return (
-    <div className="nk-macro-rule flex h-[30px] shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface px-1 text-[11px]">
+    <div className="nk-macro-rule flex h-[30px] shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface px-3 text-[11px]">
       <span className="font-brand text-muted">Input channel</span>
       <InputSwitch />
       <span className="font-brand text-muted">Oversampling</span>
@@ -251,10 +248,7 @@ export function MixOs() {
         <option value={1}>On</option>
       </select>
       <span className="font-brand text-ink">MIX</span>
-      <div
-        className="relative h-[18px] flex-1"
-        style={{ clipPath: "polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)" }}
-      >
+      <div className="nk-cut relative h-[18px] flex-1">
         <div className="absolute inset-0 border border-[var(--nk-line)] bg-surface-high" />
         <div
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-accent-dim to-accent"
@@ -290,8 +284,7 @@ export function Footer() {
   const cpu = Math.max(0, Math.min(100, Math.round(h.cpu)));
   const latMs = h.sr > 0 ? (h.lat / h.sr) * 1000 : 0;
   return (
-    <footer className="grid h-[28px] shrink-0 grid-cols-10 items-center border-t border-[var(--nk-line)] px-2 font-mono text-[12px] text-muted">
-      <span>NKOS</span>
+    <footer className="grid h-[28px] shrink-0 grid-cols-9 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
       <span>{h.mode === "SAFE" ? "SAFE" : h.mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
       <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${h.lat}smp` : `${h.lat}smp`}</span>

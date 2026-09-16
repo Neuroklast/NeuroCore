@@ -158,7 +158,7 @@ export function BindDropPad({
         width: w,
         height: h,
         zIndex: 20,
-        background: "#050508",
+        background: "var(--nk-well)",
         clipPath: CHIP_CLIP,
       }}
     >
@@ -185,9 +185,9 @@ export function BindDropPad({
               alignItems: "center",
               justifyContent: "center",
               gap: 6,
-              background: on ? "#1a3040" : "#181822",
-              border: "2px solid #00f0ff",
-              boxShadow: on ? "0 0 16px #00f0ff, inset 0 0 12px rgba(0,240,255,0.35)" : "none",
+              background: on ? "var(--nk-bind-hot)" : "var(--nk-bind-wired)",
+              border: "2px solid var(--nk-cyan)",
+              boxShadow: on ? "0 0 16px var(--nk-cyan), inset 0 0 12px rgb(var(--nk-cyan-rgb) / 0.35)" : "none",
               boxSizing: "border-box",
             }}
             onClick={(e) => {

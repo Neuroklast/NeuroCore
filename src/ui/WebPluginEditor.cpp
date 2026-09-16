@@ -18,18 +18,9 @@ struct QuietCorner : public juce::ResizableCornerComponent
 
 juce::Rectangle<int> innerBrowserBounds (juce::Rectangle<int> r)
 {
-    const int pad = 8;
-    const double ar = Config::kUiAspectRatio;
-    int availW = juce::jmax (1, r.getWidth() - pad * 2);
-    int availH = juce::jmax (1, r.getHeight() - pad * 2);
-    int w = availW;
-    int h = (int) std::lround ((double) w / ar);
-    if (h > availH)
-    {
-        h = availH;
-        w = (int) std::lround ((double) h * ar);
-    }
-    return { pad, pad, w, h };
+    // The web shell scales the 1280x860 design to fit, so the browser fills the
+    // editor edge to edge. No native bezel, aspect letterbox or red frame here.
+    return r;
 }
 } // namespace
 
@@ -87,20 +78,7 @@ WebPluginEditor::~WebPluginEditor()
 
 void WebPluginEditor::paint (juce::Graphics& g)
 {
-    auto r = getLocalBounds().toFloat();
     g.fillAll (juce::Colours::black);
-    g.setColour (juce::Colour (0x88ff003c));
-    g.drawRect (r.reduced (0.5f), 1.0f);
-    g.setColour (juce::Colour (0x33ff003c));
-    g.drawRect (r.reduced (3.5f), 1.0f);
-    const float x = r.getRight();
-    const float y = r.getBottom();
-    g.setColour (juce::Colour (0x66ff003c));
-    for (int i = 0; i < 3; ++i)
-    {
-        const float o = 5.0f + (float) i * 5.0f;
-        g.drawLine (x - o, y - 3.0f, x - 3.0f, y - o, 1.2f);
-    }
 }
 
 void WebPluginEditor::parentHierarchyChanged()

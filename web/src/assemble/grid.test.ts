@@ -122,10 +122,10 @@ describe("isValidLink", () => {
     expect(isValidLink({ kind: "mod", output: true }, { kind: "audio", output: false })).toBe(false);
   });
 
-  it("paints audio red+flow, param yellow bottom, LFO blue on the side plugs", () => {
-    expect(cableAccent("audio")).toBe("#ff003c");
-    expect(cableAccent("param")).toBe("#00f0ff");
-    expect(cableAccent("mod")).toBe("#00f0ff");
+  it("paints audio red+flow, param and LFO white on the side plugs", () => {
+    expect(cableAccent("audio")).toBe("#ff2222");
+    expect(cableAccent("param")).toBe("#ededed");
+    expect(cableAccent("mod")).toBe("#ededed");
     expect(cableFace("param")).toBe("bottom");
     expect(cableFace("mod")).toBe("side");
     expect(cableFace("audio")).toBe("side");

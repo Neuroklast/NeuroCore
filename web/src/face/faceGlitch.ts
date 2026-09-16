@@ -126,7 +126,7 @@ export function logoOverlayMask(src: string): Record<string, string> {
 }
 
 export function flashKeepsAlpha(css: string): boolean {
-  return ! /\binvert\s*\(/i.test(css) && ! /#f4f1ea|#ffffff|#fff\b/i.test(css);
+  return ! /\binvert\s*\(/i.test(css) && ! /#ededed|#ffffff|#fff\b/i.test(css);
 }
 
 export function pickFaceGlitch(roll: number): FaceGlitchKind {

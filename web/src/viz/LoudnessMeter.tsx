@@ -28,7 +28,7 @@ function Bar({
                 className="w-full"
                 style={{
                   height: 2,
-                  background: isPeak ? "#f4f1ea" : on ? color : "rgba(244,241,234,0.1)",
+                  background: isPeak ? "var(--nk-ink)" : on ? color : "rgb(var(--nk-ink-rgb) / 0.1)",
                   opacity: isPeak ? 0.95 : on ? 0.3 + fade * 0.7 : 0.2,
                 }}
               />

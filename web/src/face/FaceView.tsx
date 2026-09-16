@@ -5,7 +5,16 @@ import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { motionAllows } from "../theme/motionPolicy";
 import { unitMarkCssVars, unitMarkSrc } from "./faceGlitch";
-import { formatDbfs, formatHudFixed, osModeLabel, rmsReadout, stereoMetrics } from "./faceModel";
+import {
+  bandRms,
+  formatDbfs,
+  formatHudFixed,
+  logoReactiveStyle,
+  logoRgbSplit,
+  osModeLabel,
+  rmsReadout,
+  stereoMetrics,
+} from "./faceModel";
 
 export function FaceView() {
   const theme = useHostStore((s) => s.theme);
@@ -21,10 +30,23 @@ export function FaceView() {
   const mark = unitMarkSrc(theme);
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+
   const bloom = motionAllows("bloom", motion, reduced);
+  const scan = motionAllows("crtScan", motion, reduced);
+  const splitBands = bandRms(telemetry.scopeOut, sr > 0 ? sr : 48000);
+  const rgb = logoRgbSplit(splitBands, { motion, prefersReduced: reduced });
+  const chroma = rgb.redX > 0.05 || rgb.cyanY > 0.05;
+  const amp = Math.max(telemetry.outRms, telemetry.outPeak * 0.6);
+  const glow = amp > 0 ? Math.min(1, Math.log10(1 + amp * 9)) : 0;
+
   const stereo = stereoMetrics(telemetry.gonioL, telemetry.gonioR);
   const rms = rmsReadout(telemetry.outRms);
   const level = (value: number) => live ? formatHudFixed(Number(formatDbfs(value)), 1, 3) : "—";
+
+  const fxStyle = {
+    ...logoReactiveStyle(rgb),
+    ...unitMarkCssVars(mark, theme),
+  };
 
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
@@ -43,9 +65,26 @@ export function FaceView() {
         <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
       </aside>
       <div className="nk-face-logo">
-        <span className="nk-face-fx" style={unitMarkCssVars(mark, theme)}>
-          <img src={mark} alt={theme === "digicide" ? "DIGICIDE" : "NEUROKORE"}
-            className="nk-face-mark" style={{ filter: bloomFilter(Math.min(0.3, telemetry.outRms * 0.4), bloom) }} />
+        <span
+          className={[
+            "nk-face-fx",
+            scan ? "nk-face-scan" : "",
+            chroma ? "nk-face-chroma" : "",
+          ].filter(Boolean).join(" ")}
+          style={fxStyle}
+        >
+          <img
+            src={mark}
+            alt={theme === "digicide" ? "DIGICIDE" : "NEUROKORE"}
+            className="nk-face-mark"
+            style={{ filter: bloomFilter(glow, bloom) }}
+          />
+          {chroma ? (
+            <>
+              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-r" />
+              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-c" />
+            </>
+          ) : null}
         </span>
       </div>
       <div className="flex min-h-0 flex-1"><UnitAnalyzer /></div>

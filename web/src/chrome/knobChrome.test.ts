@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  KNOB_CARD_CLIP,
   formatKnobDisplay,
   knobArcLen,
   knobArcOffset,
@@ -35,8 +34,6 @@ describe("circuit knob chrome", () => {
     expect(knobArcOffset(0)).toBeCloseTo(knobArcLen());
     expect(knobArcOffset(1)).toBe(0);
     expect(knobArcOffset(0.5)).toBeCloseTo(knobArcLen() * 0.5);
-    expect(KNOB_CARD_CLIP.startsWith("polygon(")).toBe(true);
-    expect(KNOB_CARD_CLIP.includes("border-radius")).toBe(false);
   });
 
   it("dead knobs do not take drag or type", () => {

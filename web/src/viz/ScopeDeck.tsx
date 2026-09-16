@@ -124,14 +124,14 @@ export function UnitAnalyzer() {
         setMenu(menuPos(e.clientX, e.clientY, pane, 200, 320));
       }}
     >
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-2">
         <div className="min-h-0 flex-1" aria-hidden />
         <div className="nk-spec-fade min-h-0 flex-1">
           <ScopeCanvas scopeIn={scopeIn} scopeOut={scopeOut} count={scopeOut.length} sr={sr} />
         </div>
       </div>
       <div className="nk-unit-rule" aria-hidden />
-      <aside className="nk-unit-meters flex h-full w-[168px] shrink-0 flex-col gap-2">
+      <aside className="nk-unit-meters flex h-full w-[168px] shrink-0 flex-col gap-2 pb-2 pr-3">
         <div className="aspect-square w-full shrink-0 overflow-hidden border-b border-[var(--nk-line)]">
           <StereoField gonioL={gonioL} gonioR={gonioR} count={gonioL.length} />
         </div>

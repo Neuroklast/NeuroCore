@@ -38,9 +38,6 @@ export function knobArcOffset(value01: number, r = KNOB_ARC_R): number {
   return (1 - v) * knobArcLen(r);
 }
 
-export const KNOB_CARD_CLIP =
-  "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)";
-
 export function knobInteractive(active: boolean): boolean {
   return active;
 }

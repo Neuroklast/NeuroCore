@@ -255,7 +255,7 @@ Parameter binding: Numeric macro bindings persist with their range in the script
 
 Circuit editing: Select a processing block and use Ctrl/Cmd+C, X, V or D to copy, cut, paste or duplicate it. Ctrl/Cmd+P parks it on the inactive park bus. The same actions are available from the block context menu. Right-click a cable or click it to insert a block after its source. Oscillator blocks show their configured waveform and effective synced/free rate.
 
-Themes change the editor material as well as its hue: chip corner geometry, panel radius and background texture are theme-specific. Signal is angular and striped, Gold is compact and radial, Azure is rounded and spacious, and DIGICIDE is square with fine scan texture.
+Themes change the editor material as well as its hue: chip corner geometry, panel radius and background texture are theme-specific, and Gold and Azure now own their background, surfaces, ink and signal colours instead of borrowing Signal's. Signal is the Neuroklast red/black/white (red #FF2222 on void black with off-white text), angular and striped; Gold is compact and radial, Azure is rounded and spacious, and DIGICIDE is square with fine scan texture.
 
 Terminal is a live script view of Circuit edits. In Edit mode, completion inserts complete block templates from the current block catalog; press Tab to step through the block ID and every parameter value. Save first validates the draft. A rejected or interrupted compile stays in Edit mode, shows markers, and leaves the last valid audio graph active.
 

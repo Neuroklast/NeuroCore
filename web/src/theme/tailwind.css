@@ -45,7 +45,6 @@
   color: var(--nk-cyan);
   background: var(--nk-bg);
   border: 1px solid var(--nk-accent);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
   pointer-events: none;
 }
 
@@ -67,34 +66,82 @@
   --nk-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --nk-in: 0;
   --nk-out: 0;
-  --nk-accent: #ff003c;
-  --nk-accent-dim: #8a0021;
-  --nk-accent-dim-rgb: 138, 0, 33;
-  --nk-accent-deep: #3a0008;
+  --nk-accent: #ff2222;
+  --nk-accent-dim: #7a0d0d;
+  --nk-accent-dim-rgb: 122, 13, 13;
+  --nk-accent-deep: #2a0505;
   --nk-chip-cut: 10px;
+  --nk-cut-sm: 4px;
+  --nk-cut: 8px;
+  --nk-cut-lg: 12px;
   --nk-frame-cut: 10px;
   --nk-panel-radius: 0px;
   --nk-theme-texture: repeating-linear-gradient(135deg, rgba(var(--nk-accent-rgb), .025) 0 1px, transparent 1px 12px);
-  --nk-accent-rgb: 255, 0, 60;
-  --nk-cyan: #00f0ff;
-  --nk-cyan-rgb: 0, 240, 255;
-  --nk-warn: #fcee0a;
-  --nk-warn-rgb: 252, 238, 10;
-  --nk-ink: #f4f1ea;
-  --nk-ink-rgb: 244, 241, 234;
-  --nk-ink-muted: #8a909c;
-  --nk-ink-muted-rgb: 138, 144, 156;
-  --nk-ink-soft: #c8c8c8;
-  --nk-bg: #0a0a0c;
-  --nk-surface: #14141c;
-  --nk-surface-high: #1c1c26;
-  --nk-well: #07070a;
-  --nk-panel: #2a3038;
-  --nk-line: #2a3038;
-  --nk-line-rgb: 42, 48, 56;
-  --nk-error: #ff4d6d;
+  --nk-accent-rgb: 255, 34, 34;
+  --nk-cyan: #ededed;
+  --nk-cyan-rgb: 237, 237, 237;
+  --nk-warn: #ff6b6b;
+  --nk-warn-rgb: 255, 107, 107;
+  --nk-ink: #ededed;
+  --nk-ink-rgb: 237, 237, 237;
+  --nk-ink-muted: #9a9a9a;
+  --nk-ink-muted-rgb: 154, 154, 154;
+  --nk-ink-soft: #d4d4d4;
+  --nk-bg: #000000;
+  --nk-surface: #111111;
+  --nk-surface-high: #1a1a1a;
+  --nk-well: #000000;
+  --nk-panel: #333333;
+  --nk-line: #333333;
+  --nk-line-rgb: 51, 51, 51;
+  --nk-error: #ff5a5a;
+  --nk-error-deep: #2a0000;
+  --nk-ink-dim: #a0a0a0;
+  --nk-ink-faint: #555555;
+  --nk-well-high: #0a0a0a;
+  --nk-line-soft: #262626;
+  --nk-sc: #ffffff;
+  --nk-bind-wired: #141414;
+  --nk-bind-hot: #222222;
   --nk-white: #ffffff;
   --nk-black: #000000;
+}
+
+/*
+ * One cut-corner shape for every piece of chrome. The step comes from
+ * --nk-cut-size (default --nk-cut); .nk-cut-sm / .nk-cut-lg pick the other
+ * two steps. Never write a raw polygon anywhere else.
+ */
+.nk-cut,
+.nk-cut-sm,
+.nk-cut-lg,
+.nk-clip,
+.nk-ctx,
+.nk-ctx-flyout,
+.nk-mode-pair,
+.nk-preset-now,
+.nk-chip-expand,
+.nk-overlay,
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  clip-path: polygon(
+    var(--nk-cut-size, var(--nk-cut)) 0,
+    100% 0,
+    100% calc(100% - var(--nk-cut-size, var(--nk-cut))),
+    calc(100% - var(--nk-cut-size, var(--nk-cut))) 100%,
+    0 100%,
+    0 var(--nk-cut-size, var(--nk-cut))
+  );
+}
+
+.nk-cut-sm,
+.nk-chip-expand {
+  --nk-cut-size: var(--nk-cut-sm);
+}
+
+.nk-cut-lg,
+.nk-overlay {
+  --nk-cut-size: var(--nk-cut-lg);
 }
 
 html,
@@ -148,7 +195,6 @@ html[data-motion="off"] .nk-boot {
 }
 
 .nk-clip {
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   border: 1.4px solid var(--nk-ink-muted);
   background: var(--nk-surface-high);
   color: var(--nk-ink-soft);
@@ -274,8 +320,8 @@ html[data-motion="off"] .nk-boot {
     45deg,
     transparent,
     transparent 4px,
-    rgba(255, 0, 60, 0.1) 4px,
-    rgba(255, 0, 60, 0.1) 8px
+    rgb(var(--nk-accent-rgb) / 0.1) 4px,
+    rgb(var(--nk-accent-rgb) / 0.1) 8px
   );
 }
 
@@ -1219,7 +1265,6 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   height: 32px;
   flex-shrink: 0;
   overflow: hidden;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   border: 1.4px solid var(--nk-ink-muted);
   background: var(--nk-surface-high);
   box-shadow: inset 0 0 0 1px rgb(var(--nk-line-rgb) / 0.6);
@@ -1472,7 +1517,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   position: absolute;
   z-index: 20;
   min-width: 168px;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   border: 1px solid var(--nk-ink-muted);
   background: rgba(10, 10, 12, 0.94);
   padding: 4px;
@@ -1523,7 +1567,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   top: 0;
   z-index: 21;
   min-width: 132px;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   border: 1px solid var(--nk-accent);
   background: rgba(10, 10, 12, 0.96);
   padding: 4px;
@@ -1539,7 +1582,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   color: var(--nk-ink-muted);
   background: var(--nk-bg);
   border: 1px solid var(--nk-ink-muted);
-  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
   box-shadow: none;
   font-size: 14px;
   line-height: 1;
@@ -1586,7 +1628,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   width: 16px;
   height: 16px;
   border: 1px solid var(--nk-cyan);
-  background: #10161c;
+  background: var(--nk-surface);
   color: var(--nk-cyan);
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 9px;
@@ -1629,7 +1671,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 }
 
 .nk-overlay {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   border: 1px solid var(--nk-accent);
   background: rgba(10, 10, 12, 0.88);
   box-shadow: 0 0 0 1px rgba(var(--nk-accent-rgb), 0.28), 0 0 28px rgba(var(--nk-accent-rgb), 0.12);
@@ -1638,11 +1679,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 
 .nk-os {
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--nk-accent-rgb), 0.42),
-    inset 0 0 0 6px var(--nk-surface),
-    inset 0 0 16px 2px rgba(var(--nk-accent-rgb), 0.2),
-    inset 0 0 28px 4px rgba(var(--nk-cyan-rgb), 0.06);
   background:
     repeating-linear-gradient(
       to bottom,
@@ -1653,66 +1689,11 @@ html[data-motion="reduced"] .nk-lfo-lamp {
     ),
     radial-gradient(1100px 480px at 50% -8%, rgba(var(--nk-accent-rgb), 0.1), transparent 58%),
     radial-gradient(900px 360px at 100% 110%, rgba(var(--nk-cyan-rgb), 0.05), transparent 50%),
-    linear-gradient(180deg, #121218 0%, var(--nk-bg) 46%, #08080c 100%);
-}
-
-.nk-resize-grip {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  z-index: 80;
-  width: 22px;
-  height: 22px;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      135deg,
-      transparent 46%,
-      rgba(var(--nk-accent-rgb), 0.22) 47%,
-      rgba(var(--nk-accent-rgb), 0.22) 50%,
-      transparent 51%
-    ),
-    linear-gradient(
-      135deg,
-      transparent 62%,
-      rgba(var(--nk-accent-rgb), 0.38) 63%,
-      rgba(var(--nk-accent-rgb), 0.38) 66%,
-      transparent 67%
-    ),
-    linear-gradient(
-      135deg,
-      transparent 78%,
-      rgba(var(--nk-accent-rgb), 0.55) 79%,
-      rgba(var(--nk-accent-rgb), 0.55) 82%,
-      transparent 83%
-    );
+    linear-gradient(180deg, #121212 0%, var(--nk-bg) 46%, #080808 100%);
 }
 
 .nk-frame {
   position: relative;
-}
-
-.nk-frame::before,
-.nk-frame::after {
-  content: "";
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: var(--nk-accent);
-  border-style: solid;
-  pointer-events: none;
-}
-
-.nk-frame::before {
-  top: 0;
-  left: 0;
-  border-width: 1px 0 0 1px;
-}
-
-.nk-frame::after {
-  right: 0;
-  bottom: 0;
-  border-width: 0 1px 1px 0;
 }
 
 .nk-crt {
@@ -1757,15 +1738,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   border: 1px solid var(--nk-accent);
   background: #141414;
   pointer-events: auto;
-}
-
-.nk-frame > .nk-tech-noise {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
 }
 
 .nk-frame > .nk-crt-vignette {
@@ -1815,7 +1787,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 7px;
   letter-spacing: 0.12em;
-  color: #555560;
+  color: var(--nk-ink-faint);
   line-height: 1;
 }
 
@@ -1839,7 +1811,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-chip-headband .nk-clip-lamp {
   opacity: 1;
   background: var(--nk-bg);
-  border-color: #2a2a32;
+  border-color: var(--nk-line);
   box-shadow: none;
 }
 
@@ -1888,7 +1860,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-barcode i {
   display: block;
   width: 1px;
-  background: #555560;
+  background: var(--nk-ink-faint);
 }
 
 .nk-warn-tri {
@@ -1908,7 +1880,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-seg i {
   flex: 1;
-  background: #1c1c24;
+  background: var(--nk-line);
 }
 
 .nk-seg i.on {
@@ -1964,7 +1936,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   width: 100%;
   justify-content: space-between;
   padding: 0 5px 2px;
-  color: #55555e;
+  color: var(--nk-ink-faint);
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 8px;
   letter-spacing: 0.1em;
@@ -2164,7 +2136,6 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 18px;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   border: 1.4px solid var(--nk-ink-muted);
   background: var(--nk-surface);
   color: var(--nk-ink);
@@ -2549,10 +2520,10 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   -webkit-appearance: none;
 }
 .nk-bind-cell.is-wired {
-  background: #101820;
+  background: var(--nk-bind-wired);
 }
 .nk-bind-cell.is-hot {
-  background: #1a2a32;
+  background: var(--nk-bind-hot);
   color: #fff;
   box-shadow:
     0 0 16px rgb(var(--nk-cyan-rgb) / 0.85),
@@ -2648,13 +2619,13 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   height: var(--nk-socket-h);
   overflow: hidden;
   border: 1px solid rgb(var(--nk-line-rgb) / 0.95);
-  background: #08080c;
+  background: var(--nk-well);
   padding: 3px 5px;
   cursor: ns-resize;
 }
 
 .nk-sock:hover {
-  background: #101018;
+  background: var(--nk-surface);
   border-color: var(--nk-ink-muted);
 }
 
@@ -2695,7 +2666,7 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 8px;
   letter-spacing: 0.16em;
-  color: #5a6068;
+  color: var(--nk-ink-faint);
 }
 
 .nk-sat {

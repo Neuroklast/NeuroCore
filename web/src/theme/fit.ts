@@ -21,8 +21,10 @@ export function fitForWindow(width: number, height: number): number {
   return raw;
 }
 
-export function fitOrigin(_width: number, _height: number, _fit: number): { x: number; y: number } {
-  return { x: 0, y: 0 };
+export function fitOrigin(width: number, height: number, fit: number): { x: number; y: number } {
+  const x = Math.max(0, (width - DESIGN_W * fit) / 2);
+  const y = Math.max(0, (height - DESIGN_H * fit) / 2);
+  return { x, y };
 }
 
 /** WebView2 often reports 0×0 until the first host resize. */

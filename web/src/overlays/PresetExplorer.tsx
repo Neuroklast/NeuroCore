@@ -195,7 +195,7 @@ export function PresetExplorer() {
                 {row.factory === false ? "User" : "Factory"} · {row.category || "Unsorted"} · {row.author || "Neuroklast"}
                 {(row.tags ?? []).length ? ` · ${row.tags.join(", ")}` : ""}
               </div>
-              <p className="mt-2 max-h-16 overflow-auto text-[13px] text-[#d0d4dc]">{row.description || "No description."}</p>
+              <p className="mt-2 max-h-16 overflow-auto text-[13px] text-[var(--nk-ink-soft)]">{row.description || "No description."}</p>
             </>
           ) : (
             <div className="text-muted">No preset selected.</div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
+import { liveTheme } from "../theme/theme";
 import { subscribeVizClock } from "../theme/vizClock";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
 import { chipDragRef, nodeWithDrag } from "./boardDrag";
@@ -32,7 +33,7 @@ import type { Pt } from "./layout/types";
 const COLOR_VAR: Record<LaneColor, string> = {
   cyan: "var(--nk-cyan)",
   accent: "var(--nk-accent)",
-  warn: "var(--nk-warn)",
+  warn: "var(--nk-sc)",
 };
 
 function colorForKind(kind: BoardEdge["kind"]): LaneColor {
@@ -53,11 +54,11 @@ function resolveColor(css: string, fallback: string): string {
   return css;
 }
 
-const FALLBACK: Record<LaneColor, string> = {
-  cyan: "#3cf6ff",
-  accent: "#ff003c",
-  warn: "#e8c44a",
-};
+/** Only used when the computed CSS variable is empty (no live theme yet). */
+function fallbackColor(k: LaneColor): string {
+  const t = liveTheme();
+  return k === "cyan" ? t.cyan : k === "accent" ? t.accent : t.sc;
+}
 
 function tracePath(ctx: CanvasRenderingContext2D, pts: Array<{ x: number; y: number }>): void {
   ctx.beginPath();
@@ -113,17 +114,18 @@ function strokePackets(
   ctx.globalCompositeOperation = "screen";
   const glitch = animate ? streamGlitch(peak) : 0;
   if (glitch > 0) {
+    const chroma = liveTheme();
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.save();
     ctx.translate(-glitch, 0);
-    drawBeads("rgba(255, 0, 60, 1)");
+    drawBeads(chroma.accent);
     ctx.restore();
     ctx.save();
     ctx.translate(glitch, 0);
-    drawBeads("rgba(0, 255, 255, 1)");
+    drawBeads(chroma.cyan);
     ctx.restore();
-    drawBeads("#FFFFFF");
+    drawBeads(chroma.white);
   } else {
     ctx.globalAlpha = streamAlpha(peak);
     ctx.shadowColor = glow;
@@ -171,14 +173,18 @@ export function CableCanvas({
     if (! ctx) {
       return;
     }
-    const palette: Record<LaneColor, string> = { ...FALLBACK };
+    const palette: Record<LaneColor, string> = {
+      cyan: fallbackColor("cyan"),
+      accent: fallbackColor("accent"),
+      warn: fallbackColor("warn"),
+    };
     const geom = new Map<string, { stamp: string; lanes: Pt[][] }>();
     const offsets = new Map<string, number>();
     const trains = new Map<string, { k: number; c: number }>();
     let lastNow = 0;
     let paletteTheme = "";
-    const coreInk = () => resolveColor(PACKET_CORE, "#ffffff");
-    let core = FALLBACK.accent;
+    const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
+    let core = fallbackColor("accent");
     const draw = (now = 0) => {
       const t = now > 0 ? now : (typeof performance !== "undefined" ? performance.now() : 0);
       const dt = lastNow > 0 ? Math.max(0, (t - lastNow) / 1000) : 0;
@@ -202,7 +208,7 @@ export function CableCanvas({
       if (host.theme !== paletteTheme) {
         paletteTheme = host.theme;
         (Object.keys(COLOR_VAR) as LaneColor[]).forEach((k) => {
-          palette[k] = resolveColor(COLOR_VAR[k], FALLBACK[k]);
+          palette[k] = resolveColor(COLOR_VAR[k], fallbackColor(k));
         });
         core = coreInk();
       }

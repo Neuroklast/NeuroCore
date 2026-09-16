@@ -1,6 +1,11 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CHIP_PAD_X, CHIP_PAD_Y } from "../assemble/chipMetrics";
-import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, RESIZE_GRIP, SHELL_BEZEL, chipExpandOffset, chipExpandOutsideBody, frameCorners, framePoints, greebleCode, headbandEndPad, satLampOn, segmentFill, shellBezelCss } from "./chromeSpec";
+import { barcodeBits, CHIP_CLIP, CHIP_CUT, DETAIL_HIT, chipExpandOffset, chipExpandOutsideBody, frameCorners, framePoints, greebleCode, headbandEndPad, satLampOn, segmentFill } from "./chromeSpec";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 describe("cyberpunk chrome spec", () => {
   it("cuts two opposite corners at 45 degrees, never rounds", () => {
@@ -8,6 +13,16 @@ describe("cyberpunk chrome spec", () => {
     expect(CHIP_CLIP).toContain(`${CHIP_CUT}px 0`);
     expect(CHIP_CLIP).toContain(`0 ${CHIP_CUT}px`);
     expect(CHIP_CLIP.includes("border-radius") || CHIP_CLIP.includes("round")).toBe(false);
+  });
+
+  it("cuts every chrome corner from one token, never a raw pixel polygon", () => {
+    const css = readFileSync(path.resolve(here, "tailwind.css"), "utf8");
+    expect(css).toMatch(/--nk-cut-sm:\s*\d+px/);
+    expect(css).toMatch(/--nk-cut:\s*\d+px/);
+    expect(css).toMatch(/--nk-cut-lg:\s*\d+px/);
+    const firstArgs = [...css.matchAll(/clip-path:\s*polygon\(\s*([^,\s]+)/g)].map((m) => m[1]);
+    expect(firstArgs.length).toBeGreaterThan(0);
+    expect(firstArgs.filter((a) => ! a.startsWith("var("))).toEqual([]);
   });
 
   it("stamps a stable tech greeble and barcode per node id", () => {
@@ -40,15 +55,5 @@ describe("cyberpunk chrome spec", () => {
     expect(satLampOn(-1)).toBe(false);
     expect(segmentFill("0.850")).toBe(9);
     expect(segmentFill("not a number")).toBe(0);
-  });
-
-  it("draws a thin screen bezel and a bottom-right resize grip", () => {
-    expect(SHELL_BEZEL).toBeGreaterThanOrEqual(5);
-    expect(SHELL_BEZEL).toBeLessThanOrEqual(10);
-    expect(RESIZE_GRIP).toBeGreaterThanOrEqual(20);
-    const css = shellBezelCss();
-    expect(css).toContain("inset");
-    expect(css).toContain("--nk-accent-rgb");
-    expect(css).toMatch(/6px|7px|8px|5px/);
   });
 });

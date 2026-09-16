@@ -65,8 +65,12 @@ export function bloomFilter(amp: number, on: boolean): string {
     return "none";
   }
   const p = Math.max(0, Math.min(1, amp));
-  const a = 0.22 + p * 0.38;
-  return `drop-shadow(0 0 ${6 + p * 10}px ${themeRgba("accent", a)}) drop-shadow(0 0 ${18 + p * 22}px ${themeRgba("warn", a * 0.35)})`;
+  const a = 0.22 + p * 0.5;
+  return [
+    `drop-shadow(0 0 ${2 + p * 5}px ${themeRgba("accent", a)})`,
+    `drop-shadow(0 0 ${8 + p * 16}px ${themeRgba("accent", a * 0.5)})`,
+    `drop-shadow(0 0 ${20 + p * 34}px ${themeRgba("cyan", a * 0.15)})`,
+  ].join(" ");
 }
 
 function sameShell(a: OverlayShell, b: OverlayShell): boolean {

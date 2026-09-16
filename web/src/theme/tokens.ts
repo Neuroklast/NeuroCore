@@ -22,7 +22,6 @@ export const nk = {
   product: "NEUROKORE",
   company: "Neuroklast",
   byline: "by Neuroklast",
-  osBanner: "NEUROKORE // NEUROKLAST OS",
 } as const;
 
 export function kindLabel(type: string): string {

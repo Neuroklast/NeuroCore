@@ -25,7 +25,6 @@ import {
   shouldPushScopeRow,
   shouldResetScopeHist,
   SPEC_PAD,
-  paintTechNoise,
 } from "./scopeModel";
 
 function paintAxisLabel(
@@ -114,7 +113,6 @@ export function ScopeCanvas({
   const histIn = useRef<number[][]>([]);
   const histOut = useRef<number[][]>([]);
   const histDelta = useRef<number[][]>([]);
-  const frame = useRef(0);
   const lastTick = useRef(-1);
   const prevX = useRef(xScale);
   const prevY = useRef(yScale);
@@ -169,7 +167,6 @@ export function ScopeCanvas({
           histDelta.current = [];
         }
       }
-      frame.current += 1;
       ctx.fillStyle = theme.black;
       ctx.fillRect(0, 0, w, h);
 
@@ -214,12 +211,6 @@ export function ScopeCanvas({
           ctx.shadowBlur = 0;
         }
       }
-
-      ctx.fillStyle = themeRgba("cyan", 0.08, theme);
-      for (let y = 2; y < h; y += 3) {
-        ctx.fillRect(1, y, w - 2, 1);
-      }
-      paintTechNoise(ctx, w, h, frame.current, theme.cyan);
 
       if (grid) {
         ctx.strokeStyle = themeRgba("cyan", 0.08, theme);

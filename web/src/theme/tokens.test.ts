@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { formatBound, formatMapped, kindLabel, nk } from "./tokens";
 
 describe("board tokens", () => {
-  it("uses neon red plus yellow and cyan, not a single CRT red", () => {
-    expect(nk.accent).toBe("#ff003c");
-    expect(nk.warn).toBe("#fcee0a");
-    expect(nk.cyan).toBe("#00f0ff");
-    expect(nk.background).toBe("#0a0a0c");
-    expect(nk.surface).toBe("#14141c");
-    expect(nk.surfaceHigh).toBe("#1c1c26");
-    expect(nk.ink).toBe("#f4f1ea");
-    expect(nk.inkMuted).toBe("#8a909c");
+  it("uses the Neuroklast CI red, void black and off-white text", () => {
+    expect(nk.accent).toBe("#ff2222");
+    expect(nk.warn).toBe("#ff6b6b");
+    expect(nk.cyan).toBe("#ededed");
+    expect(nk.background).toBe("#000000");
+    expect(nk.surface).toBe("#111111");
+    expect(nk.surfaceHigh).toBe("#1a1a1a");
+    expect(nk.ink).toBe("#ededed");
+    expect(nk.inkMuted).toBe("#9a9a9a");
     expect(nk.version).toBe("0.6.4-beta");
   });
 

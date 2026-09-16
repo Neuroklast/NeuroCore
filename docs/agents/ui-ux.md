@@ -54,7 +54,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 
 ## Chrome
 
-- Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS. Hover does not rewrite the bar.
+- Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS / license. No product banner slot. Hover does not rewrite the bar.
 - CPU text is `Config::cpuDisplayPercent` (0–100). SAFE is a mode word, not a fake 173 %.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
 - Overlays size to their content (`preferredHeight`). If the last row is clipped, the overlay is too short — do not hide the controls.

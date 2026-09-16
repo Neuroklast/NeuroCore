@@ -33,11 +33,6 @@ export function terminalMounted(w: Workspace): boolean {
   return w === "hack";
 }
 
-/** Spectrograph speckle stays on Unit. Circuit and Terminal stay clean. */
-export function paneShowsTechNoise(w: Workspace): boolean {
-  return w === "face";
-}
-
 /** Cable canvas ticks only on Circuit with a laid-out pane. Hidden Unit keeps the heap, not the rAF. */
 export function circuitPaintActive(w: Workspace, paneW: number, paneH: number): boolean {
   return w === "assemble" && paneW > 40 && paneH > 40;

@@ -15,8 +15,7 @@ import { useAstStore } from "../store/astStore";
 
 import { useHostStore } from "../store/hostStore";
 
-import { RESIZE_GRIP } from "../theme/chromeSpec";
-import { CrtFx, PaneTechNoise, PaneVignette } from "../theme/CrtFx";
+import { CrtFx, PaneVignette } from "../theme/CrtFx";
 import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
 import { bindDocumentMotion, bindDocumentTheme } from "../theme/themeBind";
@@ -25,7 +24,7 @@ import { seedFactoryPresets } from "../presets/presetActions";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
 import { nk } from "../theme/tokens";
-import { knobBindEnabled, paneShowsTechNoise, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
+import { knobBindEnabled, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
 
 const HackView = lazy(() => import("../hack/HackView"));
 
@@ -181,7 +180,6 @@ export function App() {
               </Suspense>
             </div>
           ) : null}
-          {paneShowsTechNoise(workspace) ? <PaneTechNoise /> : null}
           <PaneVignette />
         </div>
         <MixOs />
@@ -194,7 +192,6 @@ export function App() {
       <Overlays />
 
       <CrtFx />
-      <div className="nk-resize-grip" style={{ width: RESIZE_GRIP, height: RESIZE_GRIP }} aria-hidden />
     </main>
     </ScaleShell>
   );

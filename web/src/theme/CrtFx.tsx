@@ -1,17 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useHostStore } from "../store/hostStore";
-import { fitCanvas } from "../viz/canvasFit";
-import { paintTechNoise } from "../viz/scopeModel";
-import { liveTheme } from "./theme";
 import { bindPeakCss } from "./fx";
 import { motionAllows } from "./motionPolicy";
-import { subscribeVizClock } from "./vizClock";
 
-export type CrtLayer = "scan" | "sweep" | "chroma" | "vignette" | "bloom" | "techNoise";
+export type CrtLayer = "scan" | "sweep" | "chroma" | "vignette" | "bloom";
 
-/** Scan/chroma/bloom sit on the OS chrome. Vignette stays on the workspace pane. Speckle is Unit-only. */
+/** Scan/chroma/bloom sit on the OS chrome. Vignette stays on the workspace pane. */
 export function crtHost(layer: CrtLayer): "os" | "pane" {
-  return layer === "vignette" || layer === "techNoise" ? "pane" : "os";
+  return layer === "vignette" ? "pane" : "os";
 }
 
 function prefersReducedMotion(): boolean {
@@ -30,41 +26,6 @@ export function PaneVignette() {
       <div className="nk-crt-vignette" aria-hidden />
     </>
   );
-}
-
-/** Spectrograph speckle on the workspace glass. Full motion only. */
-export function PaneTechNoise() {
-  const motion = useHostStore((s) => s.motion);
-  const on = motionAllows("techNoise", motion, prefersReducedMotion());
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (! on) {
-      return;
-    }
-    const canvas = ref.current;
-    if (! canvas) {
-      return;
-    }
-    const ctx = canvas.getContext("2d");
-    if (! ctx) {
-      return;
-    }
-    let frame = 0;
-    const draw = () => {
-      const { w, h, scale } = fitCanvas(canvas);
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-      paintTechNoise(ctx, w, h, frame, liveTheme().cyan);
-      frame += 1;
-    };
-    return subscribeVizClock(draw);
-  }, [on]);
-
-  if (! on || crtHost("techNoise") !== "pane") {
-    return null;
-  }
-  return <canvas ref={ref} className="nk-tech-noise" aria-hidden />;
 }
 
 export function CrtFx() {
