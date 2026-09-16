@@ -5,7 +5,7 @@ import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
 import { packRows, parkOutTerminal } from "./compactPack";
 import { placeWithElk } from "./elkPlace";
 import { GridMap, portInCell, portOutCell } from "./gridMap";
-import { DIR_E, DIR_W, type LayoutEdge, type LayoutMode, type LayoutNode, type LayoutResult, type LayoutView, type Pt } from "./types";
+import { DIR_E, type LayoutEdge, type LayoutMode, type LayoutNode, type LayoutResult, type LayoutView, type Pt } from "./types";
 
 function portY(nodeY: number, localY: number): number {
   return nodeY + localY;
@@ -89,6 +89,28 @@ export function pathLength(pts: Pt[]): number {
   return n;
 }
 
+type InkLines = Map<string, Array<{lo: number; hi: number}>>;
+
+/** Reserve final straight or chamfered ink, not just the A* centre cells. */
+function claimInk(lines: InkLines, pts: Pt[]): boolean {
+  const spans = pts.slice(1).map((b, i) => {
+    const a = pts[i]!;
+    const vertical = almost(a.x, b.x);
+    const slope = vertical ? 0 : (b.y - a.y) / (b.x - a.x);
+    return {
+      key: vertical ? `v:${a.x}` : `${slope}:${a.y - slope * a.x}`,
+      lo: Math.min(vertical ? a.y : a.x, vertical ? b.y : b.x),
+      hi: Math.max(vertical ? a.y : a.x, vertical ? b.y : b.x),
+    };
+  });
+  if (spans.some(s => (lines.get(s.key) ?? []).some(p => Math.min(p.hi, s.hi) - Math.max(p.lo, s.lo) > 0.1))) return false;
+  for (const s of spans) {
+    const row = lines.get(s.key) ?? [];
+    row.push(s); lines.set(s.key, row);
+  }
+  return true;
+}
+
 export async function runLayout(
   mode: LayoutMode,
   nodes: LayoutNode[],
@@ -104,7 +126,7 @@ export async function runLayout(
     }]))
     : mode === "COMPACT"
       ? packRows(nodes, edges, view)
-      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X);
+      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X * 2);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const map = new GridMap();
@@ -131,8 +153,8 @@ export async function runLayout(
     const goal = t ? portInCell(t.x, ty) : { c: 0, r: 0 };
     map.markExitStub(start.c, start.r);
     map.markEntryStub(goal.c, goal.r);
-    map.reserveRunway(e.id, start, 1, 3);
-    map.reserveRunway(e.id, goal, -1, 3);
+    map.reserveRunway(e.id, start, 1, 1);
+    map.reserveRunway(e.id, goal, -1, 1);
     return {
       e,
       from,
@@ -145,48 +167,35 @@ export async function runLayout(
   map.finishHalo();
   jobs.sort((a, b) => a.man - b.man);
 
-  const edgePaths: Record<string, string> = {};
-  for (const job of jobs) {
-    const srcBox = placed[job.e.source];
-    const dstBox = placed[job.e.target];
-    const wrap = srcBox && dstBox && isWrapJack(job.from, job.to);
-    let pts: Pt[];
-    if (wrap && srcBox && dstBox) {
-      pts = wrapRailRoute(job.from, job.to, wrapRailY(srcBox, dstBox));
-    } else if (almost(job.from.y, job.to.y) && job.to.x > job.from.x) {
-      const r = job.start.r;
-      const c0 = Math.min(job.start.c, job.goal.c);
-      const c1 = Math.max(job.start.c, job.goal.c);
-      const cells = [];
-      for (let c = c0; c <= c1; c += 1) {
-        cells.push({ c, r });
+  let edgePaths: Record<string, string> = {};
+  const tried = new Set<string>();
+  for (let attempt = 0; attempt <= jobs.length * 2; ++attempt) {
+    const order = jobs.map(j => j.e.id).join("\0");
+    if (tried.has(order)) throw new Error("Cable routing needs more space between blocks.");
+    tried.add(order);
+    map.cable.clear();
+    map.turns.clear();
+    edgePaths = {};
+    const ink: InkLines = new Map();
+    let failed = -1;
+    for (let index = 0; index < jobs.length; ++index) {
+      const job = jobs[index]!;
+      const cells = astarRoute(map, job.start, job.goal, DIR_E, false, job.e.id);
+      if (!cells?.length) { failed = index; break; }
+      map.occupy(cells, pathTurns(cells));
+      const pts = collapseColinear([job.from, ...cellsToPoints(map, cells), job.to]);
+      const cut = chamferWaypoints(pts);
+      let painted = hasLightning(cut) ? pts : cut;
+      if (!claimInk(ink, painted)) {
+        painted = pts;
+        if (!claimInk(ink, painted)) { failed = index; break; }
       }
-      if (cells.length > 0) {
-        map.occupy(cells, []);
-      }
-      pts = [job.from, job.to];
-    } else {
-      let cells = astarRoute(map, job.start, job.goal, DIR_E, false, job.e.id);
-      if (! cells || cells.length === 0) {
-        cells = astarRoute(map, job.start, job.goal, DIR_W, true, job.e.id);
-      }
-      if (cells && cells.length > 0) {
-        map.occupy(cells, pathTurns(cells));
-        pts = [job.from, ...cellsToPoints(map, cells), job.to];
-      } else {
-        pts = blockedRoute(job.from, job.to, srcBox, dstBox);
-      }
-      if (pathLength(pts) < BOARD_GRID) {
-        pts = hvhFallback(job.from, job.to);
-      }
-      pts = pinJackStubs(job.from, job.to, pts);
+      edgePaths[job.e.id] = waypointToSvgPath(painted);
     }
-    const cut = chamferWaypoints(pts);
-    pts = hasLightning(cut) ? pts : cut;
-    if (! wrap) {
-      pts = pinJackStubs(job.from, job.to, pts);
-    }
-    edgePaths[job.e.id] = waypointToSvgPath(pts);
+    if (failed < 0) break;
+    if (attempt === jobs.length * 2) throw new Error("Cable routing needs more space between blocks.");
+    // Reserve the constrained connection first, then reroute displaced nets.
+    jobs.unshift(...jobs.splice(failed, 1));
   }
 
   return { nodes: placed, edgePaths };

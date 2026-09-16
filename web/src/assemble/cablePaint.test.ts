@@ -268,3 +268,9 @@ it("uses the encoded channel for each MS lane and the actual sidechain tap", () 
   expect(peakForLane("sc", "IN", { IN: 0.9, SC: 0.1 }, {}, {}, "in")).toBe(0.1);
   expect(peakForLane("sc", "IN", { IN: 0.9 }, {}, {}, "in")).toBe(0);
 });
+
+it("paints Mid and Side on their reserved route without a second geometry rewrite", () => {
+  const route = [{x:200,y:80},{x:264,y:80},{x:264,y:176},{x:360,y:176}];
+  expect(buildCableLanes(route[0]!, route[3]!, route, "audio", "side"))
+    .toEqual(buildCableLanes(route[0]!, route[3]!, route, "audio", "mid"));
+});

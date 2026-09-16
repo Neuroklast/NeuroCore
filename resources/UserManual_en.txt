@@ -229,3 +229,14 @@ and repeating CSS animations. Off disables decoration, animation and transitions
 Meters, parameter values and routing feedback still update in every mode.
 Without an explicit motion preference, the startup animation respects the
 operating system's reduced-motion setting. Explicit Full remains an override.
+
+### Circuit routing and overview
+
+Each visible connection has its own socket, including fan-out and summed inputs.
+Blocks grow vertically when extra sockets need space. Arrange and Compact reserve
+separate tracks for cables and check straight connections against intervening
+blocks. Parallel branches retain their named bus rows in Compact. Lines use the
+router's stored geometry, including Mid/Side connections.
+
+The automatic overview fits the complete circuit, even below the usual manual
+zoom range. Zoom in around the pointer to edit small controls.

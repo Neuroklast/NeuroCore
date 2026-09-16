@@ -4,7 +4,7 @@ import type { PortKind } from "./boardModel";
 import { paintRoute } from "./boardPath";
 import { CABLE_STILL_DB, plasmaSpeedPxPerSec } from "./cableMotion";
 import { BOARD_BLOCK, BOARD_HALF } from "./grid";
-import { chamferWaypoints, hasLightning } from "./layout/chamfer";
+import { hasLightning } from "./layout/chamfer";
 import type { Pt } from "./layout/types";
 
 export type EdgePaintKind = "stereo" | "mono" | "mid" | "side" | "mod" | "sc";
@@ -114,16 +114,12 @@ export function buildCableLanes(
   kindHint: PortKind | string,
   jackId: string,
 ): Pt[][] {
-  const raw = paintRoute(from, to, route);
-  let pts = chamferWaypoints(raw);
+  const pts = paintRoute(from, to, route);
   const port: PaintPort = {
     jackId,
     kind: kindHint === "mod" ? "mod" : kindHint === "sc" ? "sc" : "audio",
   };
   const kind = edgePaintKind(port);
-  if (kind === "side") {
-    pts = sideBreakaway(pts);
-  }
   if (pts.length < 2) {
     return [];
   }

@@ -1,7 +1,8 @@
+import { BOARD_MIN_SCALE } from "./boardModel";
 import type { Origin } from "../bridge/ast";
 
 /** One floor for `<ReactFlow>` and `fitView`. Different values make fitView a no-op. */
-export const BOARD_MIN_ZOOM = 0.4;
+export const BOARD_MIN_ZOOM = BOARD_MIN_SCALE;
 
 export function keepLivePositions(origin: Origin): boolean {
   return origin === "canvas" || origin === "elk";

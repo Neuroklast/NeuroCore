@@ -37,6 +37,20 @@ geometry while brightness reports current level. Startup without an explicit
 preference respects OS reduced motion. Four previously failing motion contracts
 now pass (27 targeted tests); TypeScript checks pass.
 
+## Circuit routing contracts (2026-09-16)
+
+One obstacle-aware A* handles straight, offset and wrapped connections. Unsafe
+ignore-overlap fallbacks are removed. Search bounds are fixed, numeric search
+keys replace string state keys, and more expensive queued duplicates are pruned.
+Physical sockets are unique per edge while semantic DSP jack IDs stay intact.
+Bus/modulation rows survive graph-to-layout conversion; Compact reserves wider
+routing gutters. A bounded retry prioritizes blocked connections. Final chamfer
+ink is checked for overlap and canvas does not reshape that reserved geometry.
+All 317 factory graphs pass both Arrange and Compact at 1440x640, including final
+segment overlap checks. Browser review found and reproduced the 40% camera floor
+clipping tall circuits; fit is now content-based. Off has zero running CSS
+animations in browser inspection. Further UX, themes and visual cleanup remain.
+
 ## Jetzt
 
 Web-UI-Umbau (Strangler): DSL + `SignalChain` bleiben der Compiler. JSON-AST ist das UI-Dokument.

@@ -63,7 +63,7 @@ describe("astar grid router", () => {
     expect(d.startsWith("M")).toBe(true);
   });
 
-  it("treats the one-cell ring around a chip as solid except port stubs", () => {
+  it("penalizes the clearance ring without sealing narrow port gutters", () => {
     const map = new GridMap();
     map.markNode({ id: "b", w: 96, h: 64, ins: [], outs: [] }, 96, 32);
     const start = portOutCell(0, 64, 48);
@@ -71,7 +71,8 @@ describe("astar grid router", () => {
     map.markExitStub(start.c, start.r);
     map.markEntryStub(goal.c, goal.r);
     map.finishHalo();
-    expect(map.solid.has(map.key(3, 0))).toBe(true);
+    expect(map.halo.has(map.key(3, 0))).toBe(true);
+    expect(map.solid.has(map.key(3, 0))).toBe(false);
     expect(map.solid.has(map.key(start.c, start.r))).toBe(false);
     const cells = astarRoute(map, start, goal, DIR_E);
     expect(cells).toBeTruthy();
@@ -106,4 +107,13 @@ describe("astar grid router", () => {
     expect(portInCell(192, 48)).toEqual({ c: 5, r: 1 });
     expect(BOARD_GRID).toBe(32);
   });
+});
+
+it("keeps an unreachable search inside its prepared board bounds", () => {
+  const map = new GridMap();
+  map.expandTo(0, 0); map.expandTo(8, 8);
+  for (const [c, r] of [[7,8],[9,8],[8,7],[8,9]]) map.solid.add(map.key(c!,r!));
+  const bounds = [map.minC,map.minR,map.maxC,map.maxR];
+  expect(astarRoute(map,{c:0,r:0},{c:8,r:8})).toBeNull();
+  expect([map.minC,map.minR,map.maxC,map.maxR]).toEqual(bounds);
 });

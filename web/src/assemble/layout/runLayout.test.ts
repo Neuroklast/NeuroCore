@@ -354,3 +354,23 @@ describe("layout lands on jacks", () => {
     }
   });
 });
+
+describe("routing respects obstacles on every path", () => {
+  it("detours around a chip even when both jacks share a row", async () => {
+    const nodes: LayoutNode[] = [
+      { id: "a", x: 0, y: 0, w: 64, h: 96, ins: [], outs: [{ id: "out", y: 48 }] },
+      { id: "blocker", x: 192, y: 0, w: 96, h: 96, ins: [], outs: [] },
+      { id: "b", x: 416, y: 0, w: 64, h: 96, ins: [{ id: "in", y: 48 }], outs: [] },
+    ];
+    const r = await reroute(nodes, [{ id: "e", source: "a", target: "b", fromJack: "out", toJack: "in" }]);
+    const pts = parsePath(r.edgePaths.e!);
+    expect(pts.some(p => p.y < 0 || p.y > 96), r.edgePaths.e).toBe(true);
+    for (let i = 1; i < pts.length; ++i) {
+      const a = pts[i - 1]!, b = pts[i]!;
+      for (let t = 0; t <= 1; t += 0.02) {
+        const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+        expect(x > 192 && x < 288 && y > 0 && y < 96, r.edgePaths.e).toBe(false);
+      }
+    }
+  });
+});
