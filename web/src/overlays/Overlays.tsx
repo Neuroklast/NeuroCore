@@ -19,7 +19,7 @@ import {
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
-import { persistUi, UI_SCALES } from "../chrome/persistUi";
+import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
 import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
@@ -178,7 +178,6 @@ function SettingsBody() {
   const licensed = useHostStore((s) => s.licensed);
   const frameRate = useHostStore((s) => s.frameRate);
   const discardPrompt = useHostStore((s) => s.discardPrompt);
-  const scale = useHostStore((s) => s.scale);
   const setOverlay = useHostStore((s) => s.setOverlay);
   return (
     <div className="flex flex-col gap-4 text-[13px]">
@@ -231,14 +230,6 @@ function SettingsBody() {
         <p className="mt-2 text-[11px] leading-snug text-muted">
           Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work — more delay, the host reports it as latency. CPU in the status bar is 0–100. SAFE means the plugin went dry to protect the session, not a percent over 100.
         </p>
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">SCALE</div>
-        <Seg
-          value={String(scale === 150 ? 150 : scale === 125 ? 125 : 100)}
-          options={UI_SCALES.map((n) => ({ id: String(n), label: `${n}%` }))}
-          onPick={(id) => persistUi({ scale: Number(id) === 150 ? 150 : Number(id) === 125 ? 125 : 100 })}
-        />
       </section>
       <section>
         <div className="mb-1 text-[11px] tracking-widest text-ink">THEME</div>

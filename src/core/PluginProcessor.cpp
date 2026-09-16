@@ -144,7 +144,6 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     }
 
     UiSettings::get().addListener (this);
-    lastUiScalePercent = UiSettings::get().uiScalePercent();
     dspEngine.setLiveMode (UiSettings::get().liveMode());
     setTelemetryWanted (false);
     // WebView2 is born with the processor (NeuroMeter). Cubase scan createView
@@ -802,20 +801,6 @@ void NeuroKoreAudioProcessor::uiSettingsChanged()
     applySharedProcessingPrefs();
     if (webViewHolder != nullptr)
         webViewHolder->pushHost();
-    const int scale = UiSettings::get().uiScalePercent();
-    if (scale == lastUiScalePercent)
-        return;
-    lastUiScalePercent = scale;
-    if (auto* ed = getActiveEditor())
-    {
-        const float f = UiSettings::get().uiScaleFactor();
-        const int w = juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth,
-                                    juce::roundToInt ((float) Config::kUiDesignWidth * f));
-        const int h = juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight,
-                                    juce::roundToInt ((float) Config::kUiDesignHeight * f));
-        if (ed->getWidth() != w || ed->getHeight() != h)
-            ed->setSize (w, h);
-    }
 }
 
 juce::String NeuroKoreAudioProcessor::getIrName (const juce::String& slot) const

@@ -43,20 +43,6 @@ namespace Config
     inline constexpr int kUiMaxWindowWidth   = 1920;
     inline constexpr int kUiMaxWindowHeight  = 1290; // 1920 * 860/1280
     inline constexpr double kUiAspectRatio   = (double) kUiDesignWidth / (double) kUiDesignHeight;
-    inline constexpr int kUiScalePercentMin  = 100;
-    inline constexpr int kUiScalePercentMax  = 150;
-    inline constexpr int kUiScalePercentStep = 25;
-    /// Design-px per board cell. Host-scale fit snaps so this stays integer on screen.
-    inline constexpr int kUiBoardGrid = 16;
-
-    /** Snap a window-fit so `fit * kUiBoardGrid` is a whole number of host pixels. */
-    inline float snapUiFitToGrid (float fit) noexcept
-    {
-        const float g = (float) kUiBoardGrid;
-        if (! (fit > 0.f) || ! (g > 0.f))
-            return 1.f;
-        return juce::jmax (0.5f, std::floor (fit * g) / g);
-    }
 
     /** Footer CPU is 0–100. Load is host-callback ratio; over-budget still reads 100. */
     inline int cpuDisplayPercent (float load) noexcept

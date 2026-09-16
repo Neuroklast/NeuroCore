@@ -6,7 +6,7 @@ describe("shared UI prefs", () => {
   it("takes motion, cables, theme, fps, and unsaved prompt from the host snapshot", () => {
     const next = applyUiPrefs(
       { motion: "reduced", cables: "dots", theme: "gold", frameRate: 30, discardPrompt: false },
-      { motion: "full", cables: "wave", theme: "signal", frameRate: 60, discardPrompt: true, live: false, scale: 100 },
+      { motion: "full", cables: "wave", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
     );
     expect(next).toEqual({
       motion: "reduced",
@@ -15,17 +15,15 @@ describe("shared UI prefs", () => {
       frameRate: 30,
       discardPrompt: false,
       live: false,
-      scale: 100,
     });
   });
 
-  it("takes LIVE and ui scale from the host snapshot", () => {
+  it("takes LIVE from the host snapshot", () => {
     const next = applyUiPrefs(
-      { live: true, scale: 125, mode: "LIVE" },
-      { motion: "full", cables: "dots", theme: "signal", frameRate: 60, discardPrompt: true, live: false, scale: 100 },
+      { live: true, mode: "LIVE" },
+      { motion: "full", cables: "dots", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
     );
     expect(next.live).toBe(true);
-    expect(next.scale).toBe(125);
   });
 
   it("offers only 30 and 60 fps and maps Display/0 to 60", () => {
@@ -62,7 +60,7 @@ describe("shared UI prefs", () => {
   });
 
   it("ignores missing keys so a telemetry tick cannot wipe prefs", () => {
-    const cur = { motion: "off" as const, cables: "wave" as const, theme: "azure" as const, frameRate: 60 as const, discardPrompt: true, live: false, scale: 100 as const };
+    const cur = { motion: "off" as const, cables: "wave" as const, theme: "azure" as const, frameRate: 60 as const, discardPrompt: true, live: false };
     expect(applyUiPrefs({ cpu: 12 }, cur)).toEqual(cur);
   });
 
@@ -83,7 +81,6 @@ describe("shared UI prefs", () => {
         frameRate: 60,
         discardPrompt: true,
         live: false,
-        scale: 100,
         scopeSource: "both",
         scopeX: "samples",
         scopeY: "linear",

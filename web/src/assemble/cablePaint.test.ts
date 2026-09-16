@@ -153,6 +153,12 @@ describe("lane telemetry", () => {
     expect(gap(hot)).toBeCloseTo(STREAM_GAP_HOT);
     expect(gap(still)).toBeGreaterThan(gap(hot));
   });
+
+  it("crawls a lamp-lit still tube instead of freezing at the −60 dB floor", () => {
+    expect(streamSpeed(0, 0.0005)).toBe(0);
+    expect(streamSpeed(0, 0.0012)).toBeGreaterThan(0);
+    expect(streamSpeed(0, 1)).toBeGreaterThan(streamSpeed(0, 0.0012));
+  });
 });
 
 describe("pcb background traces", () => {

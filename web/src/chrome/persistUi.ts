@@ -10,20 +10,6 @@ export function clampFrameRate(n: unknown): FrameRate {
   return n === 30 ? 30 : 60;
 }
 
-export const UI_SCALES = [100, 125, 150] as const;
-export type UiScale = (typeof UI_SCALES)[number];
-
-export function clampUiScale(n: unknown): UiScale {
-  const v = Number(n);
-  if (v >= 150) {
-    return 150;
-  }
-  if (v >= 125) {
-    return 125;
-  }
-  return 100;
-}
-
 export type ScopeSourcePref = "in" | "out" | "both";
 export type ScopeXPref = "samples" | "time" | "freq";
 export type ScopeYPref = "linear" | "db";
@@ -35,7 +21,6 @@ export type UiPrefs = {
   frameRate?: FrameRate;
   discardPrompt?: boolean;
   live?: boolean;
-  scale?: UiScale;
   scopeSource?: ScopeSourcePref;
   scopeX?: ScopeXPref;
   scopeY?: ScopeYPref;
@@ -65,9 +50,6 @@ export function applyUiPrefs(p: Record<string, unknown>, current: UiPrefs): UiPr
     next.live = p.live;
   } else if (p.mode === "LIVE" || p.mode === "STUDIO") {
     next.live = p.mode === "LIVE";
-  }
-  if (p.scale != null && Number.isFinite(Number(p.scale))) {
-    next.scale = clampUiScale(p.scale);
   }
   if (p.scopeSource === "in" || p.scopeSource === "out" || p.scopeSource === "both") {
     next.scopeSource = p.scopeSource;
@@ -111,9 +93,6 @@ export function persistUi(partial: UiPrefs): void {
   if (typeof partial.live === "boolean") {
     patch.live = partial.live;
     patch.mode = partial.live ? "LIVE" : "STUDIO";
-  }
-  if (partial.scale === 100 || partial.scale === 125 || partial.scale === 150) {
-    patch.scale = partial.scale;
   }
   if (partial.scopeSource === "in" || partial.scopeSource === "out" || partial.scopeSource === "both") {
     patch.scopeSource = partial.scopeSource;
