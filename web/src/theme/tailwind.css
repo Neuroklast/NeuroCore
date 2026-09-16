@@ -2856,3 +2856,7 @@ html[data-motion="reduced"] *::after {
   transition-duration: 80ms !important;
   scroll-behavior: auto !important;
 }
+
+.nk-lfo-face { width: 44px; height: 18px; display: inline-flex; align-items: center; color: var(--nk-cyan); flex: 0 0 auto; }
+.nk-lfo-face svg { overflow: visible; }
+.nk-lfo-face path { fill: none; stroke: currentColor; stroke-width: 1.4; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px rgba(var(--nk-cyan-rgb), .55)); }

@@ -252,3 +252,5 @@ If native telemetry is unavailable, meters clear and a waiting message appears.
 Synthetic signals are confined to the explicitly labelled browser preview.
 
 Parameter binding: Numeric macro bindings persist with their range in the script. Linking an existing macro preserves its other destinations and maps the new destination explicitly. Binding an audio formula adds a neutral gain control without replacing the audio expression. Load-time options (filter type, oscillator shape, envelope unit/source) remain dropdown choices, not macro targets. Compressor, gate and limiter envelope times are expressed in seconds.
+
+Circuit editing: Select a processing block and use Ctrl/Cmd+C, X, V or D to copy, cut, paste or duplicate it. Ctrl/Cmd+P parks it on the inactive park bus. The same actions are available from the block context menu. Right-click a cable or click it to insert a block after its source. Oscillator blocks show their configured waveform and effective synced/free rate.

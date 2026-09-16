@@ -18,6 +18,7 @@ import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
+import { lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 
 export function BoardChip({
   node,
@@ -42,6 +43,8 @@ export function BoardChip({
   const peak = useHostStore((s) => s.clips[node.id] ?? 0);
   const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
   const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
+  const knobs = useHostStore((s) => s.knobs);
+  const bpm = useHostStore((s) => s.bpm);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
@@ -53,6 +56,8 @@ export function BoardChip({
   const showExpand = chipExpandAction(node.role, node.type) === "inspect";
   const binds = node.role === "chip" ? paintedBindKeys(node.type, node.args) : [];
   const bindOpen = bindOver && node.role === "chip" && binds.length > 0;
+  const lfoShape = parseLfoShape(node.args.shape ?? "sine");
+  const lfoHz = node.type === "osc" ? resolveLfoHz(node.args, knobs, bpm) : 0;
 
   return (
     <div
@@ -97,7 +102,7 @@ export function BoardChip({
           ) : chrome.lamp === "env" ? (
             <span className="nk-env-lamp" aria-hidden />
           ) : (
-            <span className="nk-lfo-lamp nk-lfo-sine" aria-hidden />
+            <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
           )
         ) : null}
         <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">

@@ -185,3 +185,5 @@ Unit measurement checkpoint: shared -60 dBFS floor, no false lit bar below it, v
 Shared settings: reproduced stale-process theme overwrite fixed with per-key merge/save; OS/polisher host callbacks now queue atomic requests instead of taking file locks or notifying listeners on the audio thread. Native global-preference contracts and zero-allocation request probe pass.
 
 Binding persistence: five reproduced failures fixed (script/range persistence, shared-macro preservation, formula audio preservation, load-time enum rejection, envelope unit labels). Native compile completes before setting a new macro default.
+
+Circuit edit checkpoint: copy/cut/paste/duplicate/park now operate on the script and are available from keyboard and context menus. Generated IDs are unbounded collision-free integers. LFO faces show the configured sine, triangle, saw, soft-saw, square, soft-square or noise waveform, with effective rate. Targeted edit/shortcut/LFO tests and TypeScript pass.

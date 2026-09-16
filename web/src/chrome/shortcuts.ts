@@ -1,7 +1,7 @@
 import { isRedoKey, isUndoKey } from "./undoModel";
 
 const CTRL_KEYS = new Set([
-  "a", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
+  "a", "c", "x", "v", "r", "s", "p", "f", "g", "u", "o", "n", "w", "t", "j", "d", "h", "l",
   "+", "-", "=", "0",
 ]);
 
@@ -108,7 +108,7 @@ export function browserShortcutStopsPropagation(
 ): boolean {
   if (! shouldBlockBrowserShortcut(e))
     return false;
-  if (! ctx.textTarget && isArrangeChord(e))
+  if (!ctx.textTarget && (isArrangeChord(e) || ((e.ctrlKey || e.metaKey) && ["c", "x", "v", "d", "p"].includes(e.key.toLowerCase()))))
     return false;
   return true;
 }

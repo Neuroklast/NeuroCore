@@ -1,6 +1,6 @@
 import { noteSteps, parseNoteToken, wholeToHz } from "../chrome/noteValue";
 
-export type LfoShape = "sine" | "saw" | "square" | "triangle" | "softsquare";
+export type LfoShape = "sine" | "saw" | "softsaw" | "square" | "triangle" | "softsquare" | "noise";
 
 export type LfoKnob = { id: string; value: number; min: number; max: number; isNote?: boolean };
 
@@ -54,13 +54,19 @@ export function resolveLfoHz(
 
 export function parseLfoShape(raw: string): LfoShape {
   const s = raw.trim().toLowerCase();
+  if (s.includes("noise")) {
+    return "noise";
+  }
+  if (s.includes("soft") && (s.includes("saw") || s.includes("ramp"))) {
+    return "softsaw";
+  }
   if (s.includes("soft")) {
     return "softsquare";
   }
   if (s.includes("square") || s.includes("pulse")) {
     return "square";
   }
-  if (s.includes("saw")) {
+  if (s.includes("saw") || s.includes("ramp")) {
     return "saw";
   }
   if (s.includes("tri")) {
@@ -83,11 +89,32 @@ export function lfoWave(phase01: number, shape: LfoShape): number {
   if (shape === "saw") {
     return p;
   }
+  if (shape === "softsaw") {
+    return 0.5 + 0.5 * Math.tanh((p * 2 - 1) * 2.2) / Math.tanh(2.2);
+  }
+  if (shape === "noise") {
+    const bin = Math.floor(p * 24);
+    const hash = Math.sin((bin + 1) * 91.345) * 47453.5453;
+    return hash - Math.floor(hash);
+  }
   if (shape === "triangle") {
     return p < 0.5 ? p * 2 : 2 - p * 2;
   }
   if (shape === "softsquare") {
-    return 0.5 + 0.5 * Math.tanh((p < 0.5 ? 1 : -1) * 2.4);
+    return 0.5 + 0.5 * Math.tanh(Math.sin(p * Math.PI * 2) * 2.8) / Math.tanh(2.8);
   }
   return 0.5 + 0.5 * Math.sin(p * Math.PI * 2);
+}
+
+/** A stable one-cycle path for the oscillator face. */
+export function lfoShapePath(shape: LfoShape, width = 42, height = 16): string {
+  const count = shape === "square" ? 65 : 48;
+  const points: string[] = [];
+  for (let i = 0; i <= count; i += 1) {
+    const phase = i / count;
+    const x = phase * width;
+    const y = (1 - lfoWave(phase, shape)) * (height - 2) + 1;
+    points.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  return points.join(" ");
 }

@@ -49,14 +49,14 @@ export function blocksInCategory(category: string): AddableBlock[] {
 export function nextBlockId(type: string, taken: Iterable<string>): string {
   const stem = type === "noisegate" ? "ngate" : type;
   const have = new Set([...taken].map((s) => s.toLowerCase()));
-  for (let n = 1; n < 100; n += 1) {
+  for (let n = 1; ; n += 1) {
     const id = `${stem}${n}`;
     if (! have.has(id)) {
       return id;
     }
   }
-  return `${stem}x`;
 }
+
 
 function nextRailName(script: string): string {
   const have = new Set(
@@ -324,3 +324,46 @@ export function renameCircuitBlock(oldId: string, newId: string): void {
   }
   publishScript(next, "canvas");
 }
+
+
+type CircuitClipboard = { type: string; args: string } | null;
+let circuitClipboard: CircuitClipboard = null;
+
+function nodeClipboard(id: string): CircuitClipboard {
+  const node = useAstStore.getState().ast?.nodes.find((n) => n.id === id);
+  if (!node || node.type === "in" || node.type === "out") return null;
+  return { type: node.type, args: Object.entries(node.args).map(([k, v]) => `${k} = ${v}`).join("; ") };
+}
+
+export function copyCircuitBlock(id: string): boolean {
+  const next = nodeClipboard(id);
+  if (!next) return false;
+  circuitClipboard = next;
+  return true;
+}
+
+export function pasteCircuitBlockAfter(afterId: string): string | null {
+  if (!circuitClipboard) return null;
+  return insertCircuitBlockAfter(afterId || "IN", circuitClipboard.type, circuitClipboard.args);
+}
+
+export function duplicateCircuitBlock(id: string): string | null {
+  return copyCircuitBlock(id) ? pasteCircuitBlockAfter(id) : null;
+}
+
+export function cutCircuitBlock(id: string): boolean {
+  if (!copyCircuitBlock(id)) return false;
+  removeCircuitBlock(id);
+  return true;
+}
+
+export function parkCircuitBlock(id: string): boolean {
+  const cur = useAstStore.getState();
+  const before = cur.lastValidScript || cur.script;
+  const next = parkNodeInScript(before, id);
+  if (next === before) return false;
+  publishScript(next, "canvas");
+  return true;
+}
+
+export function circuitClipboardHasData(): boolean { return circuitClipboard != null; }
