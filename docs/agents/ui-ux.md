@@ -9,6 +9,7 @@ Source of truth for Circuit is the **script**. The board is a headless graph (`b
 | Chip drag | Live xy in `chipDragRef` + CSS translate; store + A* on `pointerup`, snap 32. Do not `moveNode` on pointermove |
 | Camera | Live `{tx,ty,scale}` in a ref + CSS matrix on `.nk-board-world` and the canvas `camRef`. Zustand commits on pointerup / after fit. Do not subscribe React to `camera` |
 | Ports | Flush contact on the frame; 24 px hit; 30 px magnet. Equal pitch, inside AABB |
+| Hover focus | Pane carries `data-dof`, chips `data-focus`. Hovered chip + its neighbours + their cables stay sharp, rest is soft. Zoom (scale ≠ 1) must not disable the plane |
 | Drag cable | Cubic bezier, east/west normals. No A* while the pointer is down |
 | After drop | Layout worker runs ELK + A*. Canvas paints cached `edge.route` polylines; rAF only advances the aperiodic packet train. Pause the canvas when Circuit is hidden |
 | Compact | Rank columns, rail rows, wrap to `viewW`, no snake. Only init / Arrange / Compact — never after a user drag |

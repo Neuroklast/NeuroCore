@@ -169,6 +169,40 @@ describe("rerouteBoard layout generation", () => {
     await layoutBoard("ARRANGE", { w: 960, h: 420 }, { force: true });
     expect(useBoardStore.getState().layoutBusy).toBe(false);
   });
+
+  it("clears layoutBusy even when a newer hydrate supersedes a pending Arrange", async () => {
+    let reply: ((data: { nodes: Record<string, { x: number; y: number; w: number; h: number }>; edgePaths: Record<string, string> }) => void) | null = null;
+    const fake = {
+      postMessage(msg: { reqId: number }) {
+        reply = (data) => {
+          (fake as { onmessage?: (ev: { data: unknown }) => void }).onmessage?.({
+            data: { reqId: msg.reqId, ok: true, ...data },
+          });
+        };
+      },
+      terminate() {},
+    };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    useBoardStore.getState().hydrate(chain());
+
+    const pending = layoutBoard("ARRANGE", { w: 960, h: 420 }, { force: true });
+    expect(useBoardStore.getState().layoutBusy).toBe(true);
+
+    useBoardStore.getState().hydrate({
+      ...chain("filter1", "filter"),
+      edges: [{ from: "IN", to: "filter1", kind: "audio", fromJack: "out", toJack: "in" }],
+    });
+    if (reply == null) {
+      throw new Error("layout worker did not post");
+    }
+    reply({
+      nodes: { stage1: { x: 640, y: 96, w: 160, h: 96 }, IN: { x: 32, y: 32, w: 96, h: 96 } },
+      edgePaths: {},
+    });
+    await pending;
+
+    expect(useBoardStore.getState().layoutBusy).toBe(false);
+  });
 });
 
 describe("host echo is not a user drag", () => {

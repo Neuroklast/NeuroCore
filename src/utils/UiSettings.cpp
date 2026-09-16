@@ -5,7 +5,6 @@ namespace
 {
     constexpr const char* kCalmKey  = "calmUi";
     constexpr const char* kMotionKey = "motion";
-    constexpr const char* kScaleKey = "uiScalePercent";
     constexpr const char* kFontKey  = "editorFontPt";
     constexpr const char* kLiveKey  = "liveMode";
     constexpr const char* kHostTempoKey = "useHostTempo";
@@ -95,7 +94,6 @@ bool UiSettings::applyLoaded()
     if (props == nullptr)
         return false;
 
-    const int nextScale = clampScale (props->getIntValue (kScaleKey, Config::kUiScalePercentMin));
     const float nextFont = clampFont ((float) props->getDoubleValue (kFontKey, Config::kDefaultEditorFontPt));
     const bool nextLive = props->getBoolValue (kLiveKey, false);
     const bool nextHostTempo = props->getBoolValue (kHostTempoKey, true);
@@ -149,7 +147,6 @@ bool UiSettings::applyLoaded()
         }
     };
 
-    putInt (scalePercent, nextScale);
     putFloat (fontPt, nextFont);
     putBool (live, nextLive);
     putBool (hostTempo, nextHostTempo);
@@ -254,23 +251,6 @@ bool UiSettings::calmUi() const noexcept
 void UiSettings::setCalmUi (bool enabled)
 {
     setMotion (enabled ? CyberMotion::Off : CyberMotion::Full);
-}
-
-int UiSettings::uiScalePercent() const noexcept
-{
-    return scalePercent.load (std::memory_order_relaxed);
-}
-
-void UiSettings::setUiScalePercent (int percent)
-{
-    scalePercent.store (clampScale (percent), std::memory_order_relaxed);
-    persist ({ kScaleKey });
-    notifyListeners();
-}
-
-float UiSettings::uiScaleFactor() const noexcept
-{
-    return (float) uiScalePercent() / 100.f;
 }
 
 float UiSettings::editorFontPt() const noexcept
@@ -542,15 +522,6 @@ juce::String UiSettings::clampScopeY (const juce::String& id)
     return "linear";
 }
 
-int UiSettings::clampScale (int percent) noexcept
-{
-    if (percent >= Config::kUiScalePercentMax)
-        return Config::kUiScalePercentMax;
-    if (percent >= Config::kUiScalePercentMin + Config::kUiScalePercentStep)
-        return Config::kUiScalePercentMin + Config::kUiScalePercentStep;
-    return Config::kUiScalePercentMin;
-}
-
 CyberMotion UiSettings::clampMotion (int stored) noexcept
 {
     if (stored == (int) CyberMotion::Reduced) return CyberMotion::Reduced;
@@ -585,7 +556,6 @@ void UiSettings::persist (std::initializer_list<const char*> changedKeys)
     const auto m = clampMotion (motionValue.load (std::memory_order_relaxed));
     desired.setValue (kMotionKey, (int) m);
     desired.setValue (kCalmKey, m == CyberMotion::Off);
-    desired.setValue (kScaleKey, scalePercent.load (std::memory_order_relaxed));
     desired.setValue (kFontKey, (double) fontPt.load (std::memory_order_relaxed));
     desired.setValue (kLiveKey, live.load (std::memory_order_relaxed));
     desired.setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));

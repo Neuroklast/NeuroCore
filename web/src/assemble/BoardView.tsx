@@ -21,7 +21,7 @@ import { useBoardStore } from "./boardStore";
 import { keepBoardXy } from "./boardSync";
 import { CableCanvas, paintCablesNow } from "./CableCanvas";
 import { demoClipRows } from "./demoClips";
-import { applyBoardFocus, boardFocusEdgesRef, boardHoverRef, circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
+import { applyBoardFocus, applyDofGate, boardFocusEdgesRef, boardHoverRef, circuitDofAllowed, focusAttr, focusPlane } from "./circuitDof";
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
 import { circuitPaintActive } from "../app/workspace";
@@ -68,7 +68,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const paintFocus = useCallback(() => {
     const pane = paneRef.current;
     const g = useBoardStore.getState();
-    const allowed = circuitDofAllowed(motion, prefersReduced, camLive.current.scale);
+    const allowed = circuitDofAllowed(motion, prefersReduced);
     const plane = focusPlane({
       selectedNodeIds: selectedRef.current ? [selectedRef.current] : [],
       selectedEdgeIds: [],
@@ -81,6 +81,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     });
     boardFocusEdgesRef.current = allowed && plane.active ? plane.edges : null;
     if (pane) {
+      applyDofGate(pane, allowed);
       applyBoardFocus(pane.querySelectorAll("[data-node-id]"), (id) => focusAttr(allowed, plane, id));
     }
     paintCablesNow();
@@ -506,6 +507,12 @@ export function BoardView({ active = true }: { active?: boolean }) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onPointerLeave={() => {
+        if (boardHoverRef.current !== null) {
+          boardHoverRef.current = null;
+          paintFocus();
+        }
+      }}
       onWheel={onWheel}
       onDoubleClick={(e) => {
         const id = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id");
@@ -551,7 +558,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         gestureRef={camGesture}
         width={size.w}
         height={size.h}
-        active={active && ! layoutBusy && circuitPaintActive("assemble", size.w, size.h)}
+        active={active && circuitPaintActive("assemble", size.w, size.h)}
       />
       {layoutBusy ? (
         <div

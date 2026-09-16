@@ -31,7 +31,6 @@ export interface HostState {
   bpm: number;
   tempoSource: string;
   osFactor: number;
-  scale: number;
   presetName: string;
   originName: string;
   presetDirty: boolean;
@@ -240,7 +239,6 @@ export const useHostStore = create<HostState>((set) => ({
   bpm: 120,
   tempoSource: "HOST",
   osFactor: 4,
-  scale: 100,
   presetName: "",
   originName: "",
   presetDirty: false,
@@ -298,7 +296,6 @@ export const useHostStore = create<HostState>((set) => ({
       frameRate: s.frameRate,
       discardPrompt: s.discardPrompt,
       live: s.live,
-      scale: s.scale === 150 || s.scale === 125 ? s.scale : 100,
       scopeSource: s.scopeSource,
       scopeX: s.scopeX,
       scopeY: s.scopeY,
@@ -320,7 +317,6 @@ export const useHostStore = create<HostState>((set) => ({
     tempoSource: String(p.tempoSource ?? "HOST"),
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
-    scale: prefs.scale ?? Number(p.scale ?? s.scale),
     motion: prefs.motion ?? s.motion,
     cables: prefs.cables ?? s.cables,
     theme: prefs.theme ?? s.theme,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { motionAllows } from "../theme/motionPolicy";
 import {
   applyBoardFocus,
+  applyDofGate,
   circuitDofAllowed,
   focusAttr,
   focusPlane,
@@ -22,9 +23,20 @@ describe("circuit depth of field", () => {
     expect(circuitDofAllowed("full", false)).toBe(true);
     expect(circuitDofAllowed("off", false)).toBe(false);
     expect(circuitDofAllowed("full", true)).toBe(true);
-    expect(circuitDofAllowed("full", false, 1)).toBe(true);
-    expect(circuitDofAllowed("full", false, 0.4)).toBe(false);
-    expect(circuitDofAllowed("full", false, 0.7)).toBe(false);
+  });
+
+  it("gates the pane for the CSS plane at any camera zoom", () => {
+    const pane = {
+      attrs: {} as Record<string, string>,
+      setAttribute(key: string, value: string) {
+        this.attrs[key] = value;
+      },
+    };
+    applyDofGate(pane, true);
+    expect(pane.attrs["data-dof"]).toBe("on");
+    applyDofGate(pane, false);
+    expect(pane.attrs["data-dof"]).toBe("off");
+    applyDofGate(null, true);
   });
 
   it("selected chain is sharp; other chips/edges are soft", () => {

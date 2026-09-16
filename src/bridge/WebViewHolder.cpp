@@ -267,6 +267,11 @@ struct WebViewHolder::Impl : private juce::Timer,
         editor.addComponentListener (this);
         proc.setTelemetryWanted (true);
         syncNative (editor);
+        // Continuous host echo (clips/mods) must survive a re-attach. The timer is
+        // stopped on detach; restart it here so per-node clips keep flowing at 8 Hz
+        // and Circuit bead motion does not depend on discrete events only.
+        if (attachedTo != nullptr)
+            startTimerHz (8);
     }
 
     void detach (juce::Component& editor)
@@ -565,8 +570,6 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 if (args.size() > 0 && args[0].isObject())
                                 {
                                     const auto& o = args[0];
-                                    if (! o.getProperty ("scale", juce::var()).isVoid())
-                                        UiSettings::get().setUiScalePercent ((int) o.getProperty ("scale", 100));
                                     if (! o.getProperty ("live", juce::var()).isVoid())
                                         proc.setLiveMode ((bool) o.getProperty ("live", false));
                                     if (! o.getProperty ("bpmFollow", juce::var()).isVoid())

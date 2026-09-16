@@ -34,7 +34,6 @@ describe("hostStore", () => {
     expect(s.discardPrompt).toBe(false);
     expect(s.motion).toBe("reduced");
     expect(s.cables).toBe("dots");
-    expect(s.scale).toBe(100);
   });
 
   it("host snapshot applies Unit meter prefs", () => {
@@ -55,16 +54,14 @@ describe("hostStore", () => {
     expect(s.scopeDelta).toBe(true);
   });
 
-  it("host snapshot applies LIVE and ui scale", () => {
+  it("host snapshot applies LIVE", () => {
     useHostStore.getState().applyHost({
       mode: "LIVE",
       live: true,
-      scale: 150,
     });
     const s = useHostStore.getState();
     expect(s.mode).toBe("LIVE");
     expect(s.live).toBe(true);
-    expect(s.scale).toBe(150);
   });
 
   it("SAFE mode word does not turn LIVE off", () => {

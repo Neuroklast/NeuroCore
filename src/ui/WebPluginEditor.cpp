@@ -54,11 +54,10 @@ WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
     }
     else
     {
-        const float f = UiSettings::get().uiScaleFactor();
         setSize (juce::jlimit (Config::kUiMinWindowWidth, Config::kUiMaxWindowWidth,
-                               juce::roundToInt ((float) Config::kUiDesignWidth * f)),
+                               (int) Config::kUiDesignWidth),
                  juce::jlimit (Config::kUiMinWindowHeight, Config::kUiMaxWindowHeight,
-                               juce::roundToInt ((float) Config::kUiDesignHeight * f)));
+                               (int) Config::kUiDesignHeight));
     }
     cornerGrip = std::make_unique<QuietCorner> (this, &sizeConstrain);
     addAndMakeVisible (*cornerGrip);

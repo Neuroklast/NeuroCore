@@ -386,7 +386,6 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("bpm", proc.getEffectiveBpm());
     root->setProperty ("tempoSource", proc.isHostTempo() ? "HOST" : "USER");
     root->setProperty ("os", os);
-    root->setProperty ("scale", UiSettings::get().uiScalePercent());
     root->setProperty ("motion", juce::String (UiSettings::motionKey (UiSettings::get().motion())));
     root->setProperty ("cables", UiSettings::get().cableWaveform() ? "wave" : "dots");
     root->setProperty ("theme", UiSettings::get().themeId());

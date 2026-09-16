@@ -39,15 +39,20 @@ function pushAst(nextEdges: AstEdge[]): void {
   }, { updateScript: false });
 }
 
+let layoutBusyOwner = 0;
+
 export async function layoutBoard(
   mode: "ARRANGE" | "COMPACT" | "REROUTE",
   view: { w: number; h: number },
   opts: { force?: boolean } = {},
 ): Promise<void> {
   const epoch = useBoardStore.getState().layoutEpoch;
-  if (mode !== "REROUTE") {
+  const owns = mode !== "REROUTE";
+  if (owns) {
+    layoutBusyOwner += 1;
     useBoardStore.setState({ layoutBusy: true });
   }
+  const token = layoutBusyOwner;
   try {
     const g = useBoardStore.getState();
     const payload = graphToLayout(g);
@@ -79,7 +84,7 @@ export async function layoutBoard(
       useBoardStore.getState().setCamera(fitCamera(Object.values(next.nodes), view));
     }
   } finally {
-    if (mode !== "REROUTE" && useBoardStore.getState().layoutEpoch === epoch) {
+    if (owns && layoutBusyOwner === token) {
       useBoardStore.setState({ layoutBusy: false });
     }
   }

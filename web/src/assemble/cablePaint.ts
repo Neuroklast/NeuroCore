@@ -43,6 +43,9 @@ export const STREAM_BLUR_HOT = 15;
 /** Average packet gap at the noise floor / at full RMS. On-pixels stay. */
 export const STREAM_GAP_STILL = 10;
 export const STREAM_GAP_HOT = 2;
+/** Minimum energy factor so a tube whose clip/limiter lamp is lit still crawls
+ *  instead of freezing when its RMS sits below the still floor. */
+export const STREAM_FLOOR_T = 0.05;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
@@ -303,8 +306,13 @@ export function streamIdentityPhase(id: string, cycle: number): number {
  * Hot travel is a fraction of mean packet gap so one frame cannot jump a bead.
  */
 export function streamSpeed(rms: number, peak = 0): number {
-  const energy = Math.max(Number(rms) || 0, (Number(peak) || 0) * Math.SQRT1_2);
-  const t = energyT(energy);
+  const r = Number(rms) || 0;
+  const p = Number(peak) || 0;
+  const energy = Math.max(r, p * Math.SQRT1_2);
+  let t = energyT(energy);
+  if (t <= 0 && p > 0 && peakToDb(p) > CABLE_STILL_DB) {
+    t = STREAM_FLOOR_T;
+  }
   if (t <= 0) {
     return 0;
   }

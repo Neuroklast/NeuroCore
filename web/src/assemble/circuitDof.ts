@@ -11,12 +11,16 @@ export type FocusPlane = {
 export function circuitDofAllowed(
   motion: MotionPref,
   prefersReduced: boolean,
-  scale = 1,
 ): boolean {
-  if (! Number.isFinite(scale) || Math.abs(scale - 1) > 0.02) {
-    return false;
-  }
   return motionAllows("dof", motion, prefersReduced);
+}
+
+/** Pane gate for the CSS soft plane. Camera zoom does not disable the focus. */
+export function applyDofGate(
+  el: { setAttribute: (key: string, value: string) => void } | null,
+  allowed: boolean,
+): void {
+  el?.setAttribute("data-dof", allowed ? "on" : "off");
 }
 
 export const boardHoverRef: { current: string | null } = { current: null };

@@ -29,10 +29,6 @@ public:
     bool calmUi() const noexcept;
     void setCalmUi (bool enabled);
 
-    int uiScalePercent() const noexcept;
-    void setUiScalePercent (int percent);
-    float uiScaleFactor() const noexcept;
-
     float editorFontPt() const noexcept;
     void setEditorFontPt (float pt);
 
@@ -89,7 +85,6 @@ public:
     /** Re-read %AppData% ui.settings so another process's persist is visible. */
     bool reloadFromDisk();
 
-    static int clampScale (int percent) noexcept;
     static int clampFrameRate (int fps) noexcept;
     static CyberMotion clampMotion (int stored) noexcept;
     static const char* motionKey (CyberMotion motion) noexcept;
@@ -117,7 +112,6 @@ private:
     mutable std::unique_ptr<juce::InterProcessLock> fileLock;
     mutable juce::Time lastWrite;
     std::atomic<int>   motionValue { (int) CyberMotion::Full };
-    std::atomic<int>   scalePercent { 100 };
     std::atomic<float> fontPt { 18.f };
     std::atomic<bool>  live { false };
     std::atomic<bool>  hostTempo { true };
