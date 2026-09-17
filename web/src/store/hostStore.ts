@@ -19,6 +19,7 @@ export interface KnobState {
 export interface HostState {
   knobs: KnobState[];
   mix: number;
+  autoGain: number;
   os: number;
   polisher: number;
   input: number;
@@ -227,6 +228,7 @@ export const useHostStore = create<HostState>((set) => ({
     { id: "f", name: "Resonance", value: 0.4, active: true, min: 0.35, max: 1.1, isNote: false },
   ],
   mix: 1,
+  autoGain: 0,
   os: 2,
   polisher: 0,
   input: 1,
@@ -282,6 +284,7 @@ export const useHostStore = create<HostState>((set) => ({
   applyParams: (p) => set((s) => ({
     knobs: Array.isArray(p.knobs) ? mergeParamsKnobs(s.knobs, asKnobs(p.knobs), s.knobGestures, s.knobMeta) : s.knobs,
     mix: p.mix != null ? Number(p.mix) : s.mix,
+    autoGain: typeof p.autoGain === "number" && Number.isFinite(p.autoGain) ? Math.max(0, Math.min(1, p.autoGain)) : s.autoGain,
     os: p.os != null ? Number(p.os) : s.os,
     osFactor: p.os != null ? osFactorFromIndex(Number(p.os)) : s.osFactor,
     polisher: p.polisher != null ? Math.max(0, Math.min(1, Number(p.polisher))) : s.polisher,

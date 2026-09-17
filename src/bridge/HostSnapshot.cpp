@@ -358,6 +358,7 @@ juce::var paramsVar (NeuroKoreAudioProcessor& proc)
     }
     root->setProperty ("knobs", knobs);
     root->setProperty ("mix", raw01 (proc.apvts, EffectParameters::dryWet));
+    root->setProperty ("autoGain", raw01 (proc.apvts, EffectParameters::autoGain));
     root->setProperty ("os", choiceIndex (proc.apvts, EffectParameters::oversampling));
     root->setProperty ("polisher", choiceIndex (proc.apvts, EffectParameters::polisherMode));
     const bool L = raw01 (proc.apvts, EffectParameters::useInputLeft) > 0.5f;

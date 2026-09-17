@@ -195,10 +195,12 @@ export function nearestWhole(value: number, bpm: number, kind: "ms" | "hz"): num
 /** Map a time or Hz min/max onto the note grid. Order is preserved. */
 export function timeRangeToNote(min: number, max: number, bpm: number, unit?: string): { min: number; max: number } {
   const kind = boundKind(unit);
-  return { min: nearestWhole(min, bpm, kind), max: nearestWhole(max, bpm, kind) };
+  const factor = unit?.toLowerCase() === "s" ? 1000 : 1;
+  return { min: nearestWhole(min * factor, bpm, kind), max: nearestWhole(max * factor, bpm, kind) };
 }
 
 export function noteRangeToTime(minWhole: number, maxWhole: number, bpm: number, unit?: string): { min: number; max: number } {
   const conv = boundKind(unit) === "hz" ? wholeToHz : wholeToMs;
-  return { min: conv(minWhole, bpm), max: conv(maxWhole, bpm) };
+  const factor = unit?.toLowerCase() === "s" ? 0.001 : 1;
+  return { min: conv(minWhole, bpm) * factor, max: conv(maxWhole, bpm) * factor };
 }

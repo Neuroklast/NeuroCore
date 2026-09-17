@@ -1,3 +1,4 @@
+import { logicalSourceLines } from "../assemble/dslSource";
 import { wholeToNoteNorm } from "../chrome/noteValue";
 import type { AstDocument, AstEdge, AstJack, AstNode, AstParam } from "../bridge/ast";
 import { CHIP_GAP, CHIP_W, IO_W } from "../assemble/chipLayout";
@@ -301,7 +302,7 @@ export function parseDslSketch(script: string): { doc: AstDocument } {
   let currentBus = "main";
   let sawBlock = false;
 
-  for (const raw of script.split(/\r?\n/)) {
+  for (const raw of logicalSourceLines(script)) {
     const trimmed = raw.trim();
     if (! trimmed) {
       continue;

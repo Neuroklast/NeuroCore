@@ -13,6 +13,49 @@ public:
 
     void runTest() override
     {
+        beginTest ("multiline expressions compile and preserve source text");
+        {
+            bridge::CompileSession session;
+            const juce::String script = "stage1: y = tanh(\n x * 2 # drive\n)\nout: main = 1\n";
+            const auto result = session.seed (script);
+            expect (result.ok, "Multiline stage expression rejected");
+        }
+
+        beginTest ("graph edits preserve untouched multiline source and comments");
+        {
+            const juce::String source = "stage1: y = tanh(\n x * 2 # drive\n)\n# Output trim\nout: main = 1\n";
+            dsl::GraphDocument doc;
+            juce::String error;
+            expect(dsl::parse(source, doc, error), error);
+            if (doc.nodes.size() == 2) {
+                doc.nodes.back().args["gain"] = "-3";
+                const auto emitted = dsl::emit(doc);
+                expect(emitted.contains("tanh(\n x * 2 # drive\n)"));
+                expect(emitted.contains("# Output trim"));
+            }
+        }
+
+        beginTest ("factory graph emission retains DSP semantics");
+        {
+            const auto file = juce::File(NEUROKORE_RESOURCES_DIR).getChildFile("factory_presets.json");
+            const auto catalog = juce::JSON::parse(file);
+            int checked = 0, broken = 0;
+            juce::String first;
+            if (auto* rows = catalog.getArray()) for (const auto& row : *rows) {
+                dsl::GraphDocument original, emitted;
+                juce::String error;
+                const auto script = row.getProperty("script", "").toString();
+                ++checked;
+                if (!dsl::parse(script, original, error) || !dsl::parse(dsl::emit(original), emitted, error)
+                    || !dsl::semanticallyEqual(original, emitted)) {
+                    ++broken;
+                    if (first.isEmpty()) first = row.getProperty("name", "").toString() + ": " + error;
+                }
+            }
+            expect(checked > 300);
+            expectEquals(broken, 0, first);
+        }
+
         beginTest ("diagnosticFromError reads line from parser text");
         {
             const auto d = bridge::diagnosticFromError ("Missing ':' on line 4");

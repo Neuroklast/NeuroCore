@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { KnobState } from "../store/hostStore";
-import { applyKnobEdit, knobMenuFields, parseKnobBound, rewriteParamLine } from "./knobMenu";
+import { applyKnobEdit, knobMenuFields, noteTargetsAllowed, parseKnobBound, rewriteParamLine } from "./knobMenu";
 
 const base: KnobState = {
   id: "a",
   name: "Rate",
+  unit: "Hz",
   value: 0.4,
   active: true,
   min: 0.05,
@@ -65,4 +66,24 @@ describe("knob context menu", () => {
     expect(next).toContain("param a = Time [1/1, 1/16]");
     expect(next).toContain("delay1: time = a");
   });
+});
+it('never offers musical note mode for gain or ratio', () => {
+ expect(knobMenuFields({...base, unit:'dB'})).not.toContain('note');
+ expect(knobMenuFields({...base, unit:undefined, name:'Ratio'})).not.toContain('note');
+ expect(knobMenuFields({...base, unit:'ms'})).toContain('note');
+});
+it('converts seconds to note durations and back without a 1000x error', () => {
+ const on=applyKnobEdit({...base, unit:'s', min:0.125, max:2},{isNote:true},120);
+ expect(on.min).toBeCloseTo(0.0625);
+ expect(on.max).toBeCloseTo(1);
+ const off=applyKnobEdit(on,{isNote:false},120);
+ expect(off.min).toBeCloseTo(0.125);
+ expect(off.max).toBeCloseTo(2);
+});
+
+it('only offers notes when every consumer understands a note period', () => {
+ expect(noteTargetsAllowed('a',[{type:'filter',args:{cutoff:'a'}}])).toBe(false);
+ expect(noteTargetsAllowed('a',[{type:'osc',args:{freq:'a'}}])).toBe(true);
+ expect(noteTargetsAllowed('a',[{type:'delay',args:{time:'a'}},{type:'comp',args:{threshold:'a'}}])).toBe(false);
+ expect(noteTargetsAllowed('a',[{type:'delay',args:{time:'a * 2'}}])).toBe(false);
 });

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { menuPos } from "../theme/fit";
 import { OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
-import { applyKnobEdit, knobMenuFields, parseKnobBound, rewriteParamLine } from "./knobMenu";
+import { applyKnobEdit, knobMenuFields, noteTargetsAllowed, noteTargetUnit, parseKnobBound, rewriteParamLine } from "./knobMenu";
 import { publishScript } from "../assemble/addBlock";
 import { bindTargets } from "../assemble/bindLinks";
 import { bindHit, commitBind, resolveBindKey } from "../assemble/bindModel";
@@ -393,11 +393,18 @@ function commitKnobMeta(id: string, edit: Parameters<typeof applyKnobEdit>[1]) {
     return;
   }
   const bpm = useHostStore.getState().bpm;
-  const next = applyKnobEdit(cur, edit, bpm);
+  const unit = cur.unit ?? noteTargetUnit(id, useAstStore.getState().ast?.nodes ?? []);
+  if (edit.isNote === true && !cur.isNote && !noteTargetsAllowed(id, useAstStore.getState().ast?.nodes ?? [])) return;
+  const next = applyKnobEdit({...cur, unit}, edit, bpm);
   useHostStore.getState().patchKnob(id, next);
   const payload = { id, name: next.name, min: next.min, max: next.max, unit: next.unit, isNote: next.isNote };
   if (hasJuceBridge()) {
-    void getNativeFunction("setKnobMeta")(payload).catch(() => undefined);
+    void getNativeFunction("setKnobMeta")(payload).then(result => {
+      if (result !== true) throw new Error("Parameter edit could not be compiled.");
+    }).catch(error => {
+      useHostStore.getState().patchKnob(id, cur);
+      useAstStore.setState({diagnostics:[{line:1,column:1,message:String(error)}]});
+    });
     return;
   }
   const ast = useAstStore.getState();
@@ -447,7 +454,8 @@ function KnobEditMenu({
   top: number;
   onClose: () => void;
 }) {
-  const fields = knobMenuFields(knob);
+  const nodes = useAstStore((s) => s.ast?.nodes ?? []);
+  const fields = knobMenuFields({...knob, unit: knob.unit ?? noteTargetUnit(knob.id, nodes)}).filter(f => f !== "note" || knob.isNote || noteTargetsAllowed(knob.id, nodes));
   return (
     <OsContextMenu left={left} top={top} title={`KNOB ${knob.id.toUpperCase()}`} onDismiss={onClose}>
       {fields.includes("name") ? (

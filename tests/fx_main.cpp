@@ -1,3 +1,4 @@
+#include "ComparisonBankTest.h"
 #include "WebCompileTest.h"
 #include "GlobalPreferencesTest.h"
 #include "TelemetrySamplingTest.h"
@@ -15,6 +16,7 @@ int main(int argc, char** argv)
     if (argc == 2 && std::string(argv[1]) == "--benchmark") return runFxBenchmark();
     if (argc == 4 && std::string(argv[1]) == "--factory") return auditFactory(argv[2], argv[3]);
     if (argc == 4 && std::string(argv[1]) == "--factory-stress") return auditFactory(argv[2], argv[3], true);
+    ComparisonBankTest comparisonBank;
     WebCompileTest webCompile;
     GlobalPreferencesTest globalPreferences;
     TelemetrySamplingTest telemetrySampling;
@@ -25,7 +27,7 @@ int main(int argc, char** argv)
     EqSidechainTest eqSidechainTest;
     DynamicsBlocksTest dynamicsBlocksTest;
     IrXoverTest irXoverTest;
-    runner.runTests ({ &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest }, 12345);
+    runner.runTests ({ &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest }, 12345);
     int failures = 0;
     for (int i = 0; i < runner.getNumResults(); ++i)
         failures += runner.getResult(i)->failures;

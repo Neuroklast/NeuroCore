@@ -10,6 +10,8 @@ namespace dsl
 
 struct BlockDesc
 {
+    juce::String sourceText; // original physical expression lines
+    juce::String sourcePrefix; // comments between blocks
     juce::String type;    // stage, filter, comp, env, osc, bus, send, out
     juce::String name;    // stage1 / dirt / send / out
     juce::String busName; // "main" or named bus; empty for bus/out headers
