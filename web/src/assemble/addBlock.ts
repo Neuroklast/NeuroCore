@@ -1,3 +1,4 @@
+import { sourceBlock, replaceSourceArg, renameSourceToken } from "./dslSource";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
@@ -120,6 +121,11 @@ export function scriptAfterInsertAfter(script: string, afterId: string, type: st
   const taken = [...script.matchAll(/\b([a-z][a-z0-9]*)\s*:/gi)].map((m) => m[1]!);
   const id = nextBlockId(kind, taken);
   const line = `${id}: ${body}`;
+  const block = sourceBlock(script, afterId);
+  if (block) {
+    const prefix = script.slice(0, block.end);
+    return prefix + (prefix.endsWith("\n") ? "" : "\n") + line + "\n" + script.slice(block.end);
+  }
   const lines = script.replace(/\s+$/u, "").split("\n");
   const at = lines.findIndex((l) => new RegExp(`^\\s*${afterId}\\s*:`, "i").test(l));
   if (at >= 0) {
@@ -139,65 +145,11 @@ export function scriptAfterInsertAfter(script: string, afterId: string, type: st
 }
 
 export function scriptAfterRemove(script: string, id: string): string {
-  const re = new RegExp(`^\\s*${id}\\s*:`, "i");
-  return script
-    .split("\n")
-    .filter((line) => ! re.test(line))
-    .join("\n");
+  const block = sourceBlock(script, id);
+  return block ? script.slice(0, block.start) + script.slice(block.end) : script;
 }
-
-export function scriptAfterSetArg(script: string, id: string, key: string, value: string): string {
-  const re = new RegExp(`^(\\s*${id}\\s*:)(.*)$`, "im");
-  if (! re.test(script)) {
-    return script;
-  }
-  return script.replace(re, (_, head: string, rest: string) => {
-    const parts = rest.split(";").map((p) => p.trim()).filter(Boolean);
-    let hit = false;
-    const next = parts.map((p) => {
-      const eq = p.indexOf("=");
-      if (eq < 0) {
-        return p;
-      }
-      const k = p.slice(0, eq).trim();
-      if (k.toLowerCase() !== key.toLowerCase()) {
-        return p;
-      }
-      hit = true;
-      return `${k} = ${value}`;
-    });
-    if (! hit) {
-      next.push(`${key} = ${value}`);
-    }
-    return `${head} ${next.join("; ")}`;
-  });
-}
-
-/** Rewrite a chip id in its definition line and as a whole-word token elsewhere. */
-export function scriptAfterRename(script: string, oldId: string, newId: string): string {
-  const from = oldId.trim();
-  const to = newId.trim();
-  if (! from || ! to || from.toLowerCase() === to.toLowerCase()) {
-    return script;
-  }
-  if (! /^[a-z][a-z0-9_]*$/i.test(to)) {
-    return script;
-  }
-  const taken = [...script.matchAll(/\b([a-z][a-z0-9_]*)\s*:/gi)].map((m) => m[1]!.toLowerCase());
-  if (taken.includes(to.toLowerCase()) && from.toLowerCase() !== to.toLowerCase()) {
-    return script;
-  }
-  const def = new RegExp(`^(\\s*)${from}(\\s*:)`, "i");
-  return script
-    .split("\n")
-    .map((line) => {
-      if (def.test(line)) {
-        return line.replace(new RegExp(`^(\\s*)${from}(\\s*:)`, "i"), `$1${to}$2`);
-      }
-      return line.replace(new RegExp(`\\b${from}\\b`, "gi"), to);
-    })
-    .join("\n");
-}
+export const scriptAfterSetArg = replaceSourceArg;
+export const scriptAfterRename = renameSourceToken;
 
 export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "canvas"): void {
   const shown = stripMuteComments(script);
@@ -341,7 +293,10 @@ let circuitClipboard: CircuitClipboard = null;
 function nodeClipboard(id: string): CircuitClipboard {
   const node = useAstStore.getState().ast?.nodes.find((n) => n.id === id);
   if (!node || node.type === "in" || node.type === "out") return null;
-  return { type: node.type, args: Object.entries(node.args).map(([k, v]) => `${k} = ${v}`).join("; ") };
+  const state = useAstStore.getState();
+  const text = state.lastValidScript || state.script;
+  const block = sourceBlock(text, id);
+  return block ? { type: node.type, args: text.slice(block.body, block.end).trim() } : null;
 }
 
 export function copyCircuitBlock(id: string): boolean {

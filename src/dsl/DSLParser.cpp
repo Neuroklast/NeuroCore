@@ -386,9 +386,37 @@ bool DSLParser::parse(const juce::String& text,
 
     juce::StringArray lines;
     lines.addLines(expanded);
+    auto sourceLines = lines;
+    // Fold expression continuations into their first physical line. Keep empty
+    // placeholders so diagnostics for subsequent blocks retain source line numbers.
+    int expressionDepth = 0, expressionStart = 0;
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        const auto code = stripLineComment (lines[i]).trim();
+        const bool continuation = expressionDepth > 0 || code.startsWithChar (';');
+        if (continuation && i > 0)
+        {
+            sourceLines.set(expressionStart, sourceLines[expressionStart] + "\n" + sourceLines[i]);
+            sourceLines.set(i, {});
+            lines.set (expressionStart, lines[expressionStart] + " " + code);
+            lines.set (i, {});
+        }
+        else
+        {
+            expressionStart = i;
+            lines.set (i, code);
+        }
+        for (auto c : code)
+        {
+            if (c == '(' || c == '[') ++expressionDepth;
+            else if (c == ')' || c == ']') expressionDepth = juce::jmax (0, expressionDepth - 1);
+        }
+    }
+
 
     juce::StringArray seen;
     bool parsingParams = true;
+    juce::String pendingBlockComments;
     juce::String currentBus { "main" };
     int namedBusCount = 0;
     bool seenOut = false;
@@ -409,10 +437,16 @@ bool DSLParser::parse(const juce::String& text,
     for (int i = 0; i < lines.size(); ++i)
     {
         auto line = lines[i].trim();
+        const auto original = sourceLines[i].trimStart();
+        if (line.isEmpty() && (original.startsWithChar('#') || original.startsWith("//")) && !blocks.empty())
+            pendingBlockComments += sourceLines[i] + "\n";
         if (line.isEmpty())
             continue;
         if (line.startsWithChar('#') || line.startsWith("//"))
+        {
+            if (!blocks.empty()) pendingBlockComments += sourceLines[i] + "\n";
             continue;
+        }
         {
             const int sl = line.indexOf ("//");
             if (sl >= 0)
@@ -527,6 +561,9 @@ bool DSLParser::parse(const juce::String& text,
         const juce::String head = idTok.size() > 0 ? idTok[0] : juce::String();
 
         BlockDesc desc;
+        desc.sourceText = sourceLines[i];
+        desc.sourcePrefix = pendingBlockComments;
+        pendingBlockComments.clear();
         desc.name = id;
         desc.type = id.retainCharacters("abcdefghijklmnopqrstuvwxyz");
 

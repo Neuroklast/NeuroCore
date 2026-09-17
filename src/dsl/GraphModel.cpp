@@ -224,7 +224,9 @@ juce::String emitNode (const GraphNode& node)
     if (comment.isNotEmpty())
         line << "  # " << comment;
 
-    return line;
+    if (node.sourceText.isNotEmpty() && line == node.sourceCanonical)
+        return node.sourcePrefix + node.sourceText;
+    return node.sourcePrefix + line;
 }
 
 bool nearlyEqual (float a, float b) noexcept
@@ -306,6 +308,8 @@ bool parse (const juce::String& script, GraphDocument& out, juce::String& error)
     for (const auto& b : blocks)
     {
         GraphNode n;
+        n.sourceText = b.sourceText;
+        n.sourcePrefix = b.sourcePrefix;
         n.type = b.type;
         n.name = b.name;
         n.busName = b.busName;
@@ -321,7 +325,15 @@ bool parse (const juce::String& script, GraphDocument& out, juce::String& error)
 
     attachComments (script, out);
     for (auto& n : out.nodes)
+    {
+        // Derive inline layout from the actual block header, not continuation lines.
+        n.trailingComment = trailingHashComment(n.sourceText.upToFirstOccurrenceOf("\n", false, false));
         pullLayout (n);
+        const auto prefix = n.sourcePrefix;
+        n.sourcePrefix.clear();
+        n.sourceCanonical = emitNode(n);
+        n.sourcePrefix = prefix;
+    }
     return true;
 }
 

@@ -1,3 +1,4 @@
+import { sourceBlock } from "./dslSource";
 import type { AstJack } from "../bridge/ast";
 import { handleId } from "./handles";
 
@@ -168,16 +169,11 @@ export function parkNodeInScript(script: string, nodeId: string): string {
   if (! nodeId || isIoTerminal(nodeId)) {
     return script;
   }
-  const lines = script.replace(/\s+$/u, "").split("\n");
-  const re = new RegExp(`^\\s*${nodeId}\\s*:`, "i");
-  const idx = lines.findIndex((l) => re.test(l));
-  if (idx < 0) {
-    return script.endsWith("\n") ? script : `${script}\n`;
-  }
-  const [moved] = lines.splice(idx, 1);
-  if (! moved) {
-    return script;
-  }
+  const block = sourceBlock(script, nodeId);
+  if (!block) return script.endsWith("\n") ? script : `${script}\n`;
+  const moved = script.slice(block.start, block.end).trimEnd();
+  const remainder = script.slice(0, block.start) + script.slice(block.end);
+  const lines = remainder.replace(/\s+$/u, "").split("\n");
   const cleaned = lines.filter((l, i) => {
     if (! /^\s*bus\s+__park\s*:/i.test(l)) {
       return true;

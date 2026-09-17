@@ -12,6 +12,7 @@ namespace dsl
 /** One visual/script block, including bus headers, send, and out. */
 struct GraphNode
 {
+    juce::String sourceText, sourcePrefix, sourceCanonical; // editor-only round-trip data
     juce::String type;    // stage, filter, ir, bus, send, out, ...
     juce::String name;    // stage1, filter1, send, out, bus id
     juce::String busName; // main or named bus; empty for bus header / out

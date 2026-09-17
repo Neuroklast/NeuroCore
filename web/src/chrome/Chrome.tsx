@@ -1,3 +1,4 @@
+import { CompareControls } from "./CompareControls";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { requestPresetAction } from "../presets/presetActions";
 import { presetTitle } from "../presets/presetDirty";
@@ -188,7 +189,7 @@ export function WorkspaceTabs({
   setWorkspace: (w: "face" | "assemble" | "hack") => void;
 }) {
   return (
-    <div className="flex h-[26px] shrink-0">
+    <div className="flex min-h-[28px] shrink-0 items-center justify-between">
       {([
         { id: "face" as const, label: "Unit" },
         { id: "assemble" as const, label: "Circuit" },
@@ -203,6 +204,7 @@ export function WorkspaceTabs({
           {t.label}
         </button>
       ))}
+      <div className="ml-auto"><CompareControls /></div>
     </div>
   );
 }

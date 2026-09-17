@@ -4,6 +4,8 @@
 #include "../utils/PresetLibrary.h"
 #include "../utils/UiSettings.h"
 #include "CompileSession.h"
+#include "ComparisonBank.h"
+#include "../core/EffectParameters.h"
 #include "GraphOps.h"
 #include "HostKeys.h"
 #include "HostSnapshot.h"
@@ -517,6 +519,53 @@ struct WebViewHolder::Impl : private juce::Timer,
                                                                           paramsVar (proc));
                                 complete (juce::var (true));
                             })
+                        .withNativeFunction ("compare",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                const auto command = args.size() ? args[0] : juce::var();
+                                const auto action = command.getProperty ("action", "status").toString();
+                                auto capture = [this] {
+                                    ComparisonBank::Snapshot snapshot;
+                                    snapshot.script = proc.getScript();
+                                    proc.getStateInformation (snapshot.state);
+                                    return snapshot;
+                                };
+                                bool ok = true;
+                                if (action == "copy") comparisons.copyToOther(capture);
+                                else if (action == "switch")
+                                {
+                                    const int target = (int) command.getProperty ("slot", -1);
+                                    const auto before = capture();
+                                    // Match is a comparison preference, not a difference between A and B.
+                                    auto* match = proc.apvts.getParameter(EffectParameters::autoGain);
+                                    const float matchValue = match != nullptr ? match->getValue() : 0.f;
+                                    ok = comparisons.switchTo(target, capture, [&](const auto& snapshot) {
+                                        proc.setStateInformation(snapshot.state.getData(), (int)snapshot.state.getSize());
+                                        dsl::GraphDocument expected, actual;
+                                        juce::String error;
+                                        const bool restored = dsl::parse(snapshot.script, expected, error)
+                                            && dsl::parse(proc.getScript(), actual, error)
+                                            && dsl::semanticallyEqual(expected, actual);
+                                        if (!restored) proc.setStateInformation(before.state.getData(), (int)before.state.getSize());
+                                        if (match != nullptr) match->setValueNotifyingHost(matchValue);
+                                        return restored;
+                                    });
+                                    if (ok) {
+                                        auto seeded = session.seed(proc.getScript());
+                                        seeded.origin = "host";
+                                        pushOutcome(seeded);
+                                        pushHost();
+                                    }
+                                }
+                                else if (action != "status") ok = false;
+                                auto* result = new juce::DynamicObject();
+                                result->setProperty("ok", ok);
+                                result->setProperty("active", comparisons.active());
+                                result->setProperty("hasA", comparisons.has(0));
+                                result->setProperty("hasB", comparisons.has(1));
+                                if (!ok) result->setProperty("error", "Comparison state could not be restored.");
+                                complete(juce::var(result));
+                            })
                         .withNativeFunction ("setParam",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {
@@ -1025,6 +1074,7 @@ struct WebViewHolder::Impl : private juce::Timer,
     WebZipIndex zip;
     WebBridge bridge;
     CompileSession session;
+    ComparisonBank comparisons;
     juce::File distRoot;
     std::unique_ptr<juce::Component> surface;
     juce::Component* attachedTo { nullptr };

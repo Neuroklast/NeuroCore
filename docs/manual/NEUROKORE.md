@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is an insert or send effect by Neuroklast. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.4-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.4-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -268,3 +268,8 @@ Circuit edits and Terminal drafts
 Rejected connections leave the last compiled graph and Terminal script intact. Native connection changes appear in both views only after successful compilation. A connection can be drawn from either end. Compiler diagnostics belong to the submitted draft; replies to older drafts do not replace diagnostics for current text. Copy, cut, paste and editor navigation remain available while typing; Circuit shortcuts act only in the active Circuit view.
 
 Terminal completion selects unused block IDs, keeps the reserved out mixer name, and offers catalog parameter defaults as Tab stops even while other lines are unfinished. Windows builds explicitly disable VST2 replacement compatibility; NEUROKORE ships VST3, Standalone and macOS AU. Existing VST3 parameter IDs are preserved.
+Editing and comparison workflow
+Circuit value edits preserve surrounding comments and formatting. Insert, remove, park and copy handle entire multiline expressions. Terminal supports expressions continued inside parentheses and semicolon-led parameter continuation lines. Unchanged native graph blocks retain their original source text when another block is edited; changed routing blocks may be formatted canonically.
+Note mode is offered for directly bound delay time and oscillator frequency/sync macros whose consumers all understand note periods. It is hidden for gain, filter cutoff, mixed-purpose and expression-bound macros. Existing note macros can always return to numeric mode. Seconds and milliseconds convert using their actual units. Rejected parameter edits restore the previous visible value and display a diagnostic.
+A/B beside the workspace tabs stores complete processor sound states, including macros, mix, gains and loaded IRs. The first switch initializes the other slot from the current sound. Switching remembers edits to the slot being left; A→B or B→A overwrites the other slot. Save or discard a Terminal draft before switching. These comparison slots last for the processor instance lifetime and are not saved as two separate states in a DAW project. Save each desired variant as a preset. Shared processing preferences remain global.
+MATCH enables the existing RMS-based wet/dry level compensation and remains consistent when switching A/B. It is not LUFS normalization or a mastering loudness target. Factory mixing utilities complement the distortion/sound-design workflow; dedicated mastering analysis remains outside this feature set.

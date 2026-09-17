@@ -13,11 +13,11 @@ export type KnobEdit = {
 };
 
 /** Same actions in Unit and Circuit. Native menu: rename / min / max / MIDI. */
-export function knobMenuFields(knob: Pick<KnobState, "enums">): KnobMenuField[] {
+export function knobMenuFields(knob: Partial<Pick<KnobState, "enums" | "unit" | "isNote">>): KnobMenuField[] {
   if (knob.enums && knob.enums.length > 0) {
     return ["name", "learn"];
   }
-  return [...KNOB_MENU_FIELDS];
+  return KNOB_MENU_FIELDS.filter(f => f !== "note" || knob.isNote || ["ms", "s", "hz"].includes((knob.unit ?? "").toLowerCase()));
 }
 
 export function applyKnobEdit(knob: KnobState, edit: KnobEdit, bpm = 120): KnobState {
@@ -179,4 +179,23 @@ export function rewriteParamLine(script: string, letter: string, edit: KnobEdit)
     next.splice(insertAt, 0, `param ${id} = ${name} ${formatRange(min, max, Boolean(edit.isNote))}`);
   }
   return next.join("\n");
+}
+
+/** A note macro publishes a period in ms. Only consumers that understand that representation qualify. */
+export function noteTargetsAllowed(id: string, nodes: Array<{type: string; args: Record<string, string>}>): boolean {
+  let found = false;
+  for (const node of nodes) for (const [key, raw] of Object.entries(node.args)) {
+    if (!raw.match(/[a-z_][a-z_0-9]*/gi)?.some(token => token.toLowerCase() === id.toLowerCase())) continue;
+    found = true;
+    if (raw.trim() !== id) return false;
+    if (!(node.type.startsWith("delay") && ["time", "time_ms"].includes(key))
+      && !(node.type.startsWith("osc") && ["freq", "sync"].includes(key))) return false;
+  }
+  return found;
+}
+
+export function noteTargetUnit(id: string, nodes: Array<{type: string; args: Record<string, string>}>): string | undefined {
+  if (!noteTargetsAllowed(id, nodes)) return undefined;
+  const types = nodes.filter(n => Object.values(n.args).some(v => v.trim() === id)).map(n => n.type.startsWith("osc") ? "Hz" : "ms");
+  return new Set(types).size === 1 ? types[0] : undefined;
 }

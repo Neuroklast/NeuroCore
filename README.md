@@ -1,6 +1,8 @@
 # NEUROKORE
 
-Programmable real-time audio effect by **Neuroklast**. Load a factory sound, turn six knobs, or build your own chain.
+Modular distortion and sound design effect by **Neuroklast**, for heavy guitars, aggressive drums, industrial textures and animated bass. Combine nonlinear stages, filters, dynamics, modulation and parallel routing in Circuit or edit the same chain in Terminal. Six macros provide performance control.
+
+Factory presets include mixing utilities alongside creative effects. NEUROKORE is not advertised as a replacement for a dedicated mastering suite; its level compensation is RMS-based, not LUFS normalization.
 
 English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.6.4-beta**.
 
