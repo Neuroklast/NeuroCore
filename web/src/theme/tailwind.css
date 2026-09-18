@@ -119,6 +119,7 @@
 .nk-ctx,
 .nk-ctx-flyout,
 .nk-mode-pair,
+.nk-input-switch,
 .nk-preset-now,
 .nk-chip-expand,
 .nk-overlay,
@@ -198,9 +199,10 @@ html[data-motion="off"] .nk-boot {
   border: 1.4px solid var(--nk-ink-muted);
   background: var(--nk-surface-high);
   color: var(--nk-ink-soft);
-  min-height: 26px;
+  min-height: 32px;
   padding: 0 12px;
   font-family: "Apex", "Segoe UI", sans-serif;
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   box-shadow: inset 0 0 0 1px rgb(var(--nk-line-rgb) / 0.6);
@@ -711,25 +713,10 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   position: absolute;
   inset: -8%;
   background:
-    radial-gradient(ellipse at 50% 12%, rgba(var(--nk-accent-rgb), 0.13), transparent 52%),
-    radial-gradient(ellipse at 88% 92%, rgba(var(--nk-cyan-rgb), 0.07), transparent 48%);
+    radial-gradient(ellipse at 50% 12%, rgba(var(--nk-accent-rgb), 0.04), transparent 52%),
+    radial-gradient(ellipse at 88% 92%, rgba(var(--nk-cyan-rgb), 0.03), transparent 48%);
   mix-blend-mode: screen;
-  animation: nk-bloom-breathe 4.8s ease-in-out infinite;
-  will-change: opacity, transform;
-}
-
-@keyframes nk-bloom-breathe {
-  0%, 100% { opacity: 0.65; transform: translate3d(0, 0, 0) scale(1); }
-  50% { opacity: 1; transform: translate3d(0, 0, 0) scale(1.03); }
-}
-
-.nk-frame-bloom {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 40%, rgba(var(--nk-accent-rgb), 0.07), transparent 62%);
-  mix-blend-mode: screen;
 }
 
 .nk-crt-sweep {
@@ -1185,7 +1172,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 }
 
 .nk-term-tool {
-  min-height: 28px;
+  min-height: 32px;
   padding: 0 14px;
   margin: 0;
 }
@@ -1257,6 +1244,28 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   to { stroke-dashoffset: -16; }
 }
 
+.nk-ws-row {
+  display: flex;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nk-compare {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 4px;
+  height: 100%;
+}
+
+.nk-compare .nk-clip {
+  height: 100%;
+  min-height: 0;
+}
+
 .nk-mode-pair {
   display: flex;
   width: 148px;
@@ -1268,6 +1277,43 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   border: 1.4px solid var(--nk-ink-muted);
   background: var(--nk-surface-high);
   box-shadow: inset 0 0 0 1px rgb(var(--nk-line-rgb) / 0.6);
+}
+
+.nk-ab-pair {
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  height: 100%;
+}
+
+.nk-input-switch {
+  display: flex;
+  height: 32px;
+  min-width: 120px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1.4px solid var(--nk-ink-muted);
+  background: var(--nk-surface-high);
+  box-shadow: inset 0 0 0 1px rgb(var(--nk-line-rgb) / 0.6);
+}
+
+.nk-input-switch button {
+  flex: 1 1 33%;
+  min-width: 0;
+  border: 0;
+  border-top: 2px solid transparent;
+  background: transparent;
+  color: var(--nk-ink-muted);
+  font-family: "Apex", "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.nk-input-switch button.on {
+  background: var(--nk-surface);
+  border-top-color: var(--nk-accent);
+  color: var(--nk-ink);
 }
 
 .nk-mode-pair button {
@@ -1291,7 +1337,9 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 
 .nk-tab {
   flex: 1;
-  min-height: 26px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   border: 1.4px solid var(--nk-ink-muted);
   border-top: 2px solid transparent;
   background: var(--nk-surface);
@@ -1687,9 +1735,9 @@ html[data-motion="reduced"] .nk-lfo-lamp {
       transparent 1px,
       transparent 3px
     ),
-    radial-gradient(1100px 480px at 50% -8%, rgba(var(--nk-accent-rgb), 0.1), transparent 58%),
-    radial-gradient(900px 360px at 100% 110%, rgba(var(--nk-cyan-rgb), 0.05), transparent 50%),
-    linear-gradient(180deg, #121212 0%, var(--nk-bg) 46%, #080808 100%);
+    radial-gradient(1100px 480px at 50% -8%, rgba(var(--nk-accent-rgb), 0.03), transparent 58%),
+    radial-gradient(900px 360px at 100% 110%, rgba(var(--nk-cyan-rgb), 0.02), transparent 50%),
+    var(--nk-bg);
 }
 
 .nk-frame {
@@ -1745,8 +1793,8 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   inset: 0;
   z-index: 8;
   pointer-events: none;
-  box-shadow: inset 0 0 80px 18px rgba(0, 0, 0, 0.55);
-  background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.35) 100%);
+  box-shadow: inset 0 0 36px 8px rgba(0, 0, 0, 0.22);
+  background: radial-gradient(ellipse at center, transparent 72%, rgba(0, 0, 0, 0.16) 100%);
 }
 
 .nk-crt-chroma {
@@ -2131,7 +2179,7 @@ html[data-motion="reduced"] .nk-overlay[data-phase] {
   flex: 1 1 12rem;
   min-width: 144px;
   max-width: 18rem;
-  min-height: 36px;
+  min-height: 32px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

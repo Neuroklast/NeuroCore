@@ -23,6 +23,10 @@ describe("theme engine", () => {
     const gold = themeOf("gold");
     expect(gold.accent).toBe("#fcee0a");
     expect(gold.label).toBe("Gold");
+    expect(gold.background).toBe("#050400");
+    expect(gold.texture).not.toMatch(/warn-rgb/);
+    expect(gold.texture).not.toMatch(/radial-gradient/);
+    expect(gold.texture).toMatch(/repeating-linear-gradient/);
     const azure = themeOf("azure");
     expect(azure.accent).toBe("#2f6bff");
     expect(azure.accent).not.toBe(azure.cyan);

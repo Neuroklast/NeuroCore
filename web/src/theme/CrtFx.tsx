@@ -20,12 +20,7 @@ export function PaneVignette() {
   if (motion === "off" || crtHost("vignette") !== "pane") {
     return null;
   }
-  return (
-    <>
-      <div className="nk-frame-bloom" aria-hidden />
-      <div className="nk-crt-vignette" aria-hidden />
-    </>
-  );
+  return <div className="nk-crt-vignette" aria-hidden />;
 }
 
 export function CrtFx() {

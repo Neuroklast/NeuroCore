@@ -7,7 +7,7 @@ import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
 import { footerLicenseLabel } from "./footerLicense";
 import { footerBuf, footerSr } from "./footerStatus";
-import { toolbarSlots, workspaceTabClass } from "./toolbarChrome";
+import { headerClipClass, toolbarSlots, workspaceRowClass, workspaceTabClass } from "./toolbarChrome";
 
 export function Hud() {
   const licensed = useHostStore((s) => s.licensed);
@@ -51,7 +51,7 @@ export function Toolbar() {
       {toolbarSlots().map((slot) => {
         if (slot.id === "presetPrev") {
           return (
-            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void requestPresetAction({ action: "prev" })}>
+            <button key={slot.id} type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "prev" })}>
               &lt;
             </button>
           );
@@ -71,7 +71,7 @@ export function Toolbar() {
         }
         if (slot.id === "presetNext") {
           return (
-            <button key={slot.id} type="button" className="nk-clip shrink-0 px-2" onClick={() => void requestPresetAction({ action: "next" })}>
+            <button key={slot.id} type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "next" })}>
               &gt;
             </button>
           );
@@ -107,7 +107,7 @@ export function Toolbar() {
             <button
               key={slot.id}
               type="button"
-              className={`nk-clip nk-alert shrink-0 text-[12px] ${bypassed ? "on" : ""}`}
+              className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
               onClick={() => {
                 const value = useHostStore.getState().toggleBypass();
                 if (hasJuceBridge()) {
@@ -123,7 +123,7 @@ export function Toolbar() {
           : slot.id === "stages" ? "Stages"
             : slot.id === "settings" ? "Settings" : "Help";
         return (
-          <button key={slot.id} type="button" className="nk-clip shrink-0 text-[13px]" onClick={() => setOverlay(slot.id)}>
+          <button key={slot.id} type="button" className={headerClipClass("tool")} onClick={() => setOverlay(slot.id)}>
             {label}
           </button>
         );
@@ -135,14 +135,12 @@ export function Toolbar() {
 export function InputSwitch() {
   const input = useHostStore((s) => s.input);
   return (
-    <div className="grid grid-cols-3 gap-px">
+    <div className="nk-input-switch">
       {(["L", "BOTH", "R"] as const).map((lab, i) => (
         <button
           key={lab}
           type="button"
-          className={`min-h-[26px] border bg-surface-high text-[11px] font-brand ${
-            input === i ? "border-[var(--nk-line)] bg-surface text-ink" : "border-[var(--nk-line)] text-muted"
-          }`}
+          className={input === i ? "on" : ""}
           onClick={() => {
             useHostStore.getState().setInput(i);
             if (hasJuceBridge()) {
@@ -189,7 +187,7 @@ export function WorkspaceTabs({
   setWorkspace: (w: "face" | "assemble" | "hack") => void;
 }) {
   return (
-    <div className="flex min-h-[28px] shrink-0 items-center justify-between">
+    <div className={workspaceRowClass()}>
       {([
         { id: "face" as const, label: "Unit" },
         { id: "assemble" as const, label: "Circuit" },
@@ -204,7 +202,7 @@ export function WorkspaceTabs({
           {t.label}
         </button>
       ))}
-      <div className="ml-auto"><CompareControls /></div>
+      <CompareControls />
     </div>
   );
 }
@@ -214,12 +212,12 @@ export function MixOs() {
   const os = useHostStore((s) => s.os);
   const polisher = useHostStore((s) => s.polisher);
   return (
-    <div className="nk-macro-rule flex h-[30px] shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface px-3 text-[11px]">
+    <div className="nk-macro-rule flex h-8 shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface px-3 text-[11px]">
       <span className="font-brand text-muted">Input channel</span>
       <InputSwitch />
       <span className="font-brand text-muted">Oversampling</span>
       <select
-        className="h-[26px] border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
+        className="h-8 border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
         value={os}
         onChange={(e) => {
           const index = Number(e.target.value);
@@ -236,7 +234,7 @@ export function MixOs() {
       </select>
       <span className="font-brand text-muted">Soft Clip</span>
       <select
-        className="h-[26px] border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
+        className="h-8 border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
         value={polisher}
         onChange={(e) => {
           const index = Number(e.target.value);

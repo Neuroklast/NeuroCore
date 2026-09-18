@@ -6,6 +6,10 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Chrome tab row + Gold contrast (2026-09-18)
+
+Workspace row is 32 px: Unit / Circuit / Terminal flex, A|B is a 64 px mode pair, A→B and MATCH are equal-height clips (not `px-2` leftovers in a 28 px strip). Header tools, preset title, Mix/OS (L/BOTH/R + selects) share that 32 px token. Pane bloom is gone; vignette is a light edge, not a 0.55 inset fog. OS bloom is a faint wash. Gold is near-black with a hairline texture.
+
 ## Laufende DSP-Prüfung (2026-09-16)
 
 Branch `optimize/fx-runtime-factory`: parameter expressions bind referenced variables in prepare,

@@ -158,11 +158,7 @@ export function App() {
     <main data-ws={workspace} className="nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink">
       <Hud />
       <Toolbar />
-      <div className="flex h-[28px] shrink-0 items-stretch">
-        <div className="min-w-0 flex-1">
-          <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
-        </div>
-      </div>
+      <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
       <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
           {workspace === "face" ? (
