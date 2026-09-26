@@ -289,15 +289,13 @@
     "formula": "// auto-wah\n// Formulas: env peak · LPF(cutoff = f(env)) · softclip\nparam a = Base [200, 900]\nparam b = Span [600, 5000]\nparam c = Res [0.8, 3.5]\nenv1: type = peak; attack = 0.008; release = 0.12\nfilter1: type = lowpass; cutoff = a + env1 * b; resonance = c\nstage1: y = softclip(x, 1.15)"
   },
   {
-    "name": "chorus (delay + dual LFO)",
+    "name": "chorus",
     "category": "modulation",
-    "description": "Real short delay chorus colour + dual LFO AM thickness.",
+    "description": "Multi-voice delay chorus. Rate moves the taps, not the amplitude.",
     "formulas": [
-      "delay short",
-      "osc",
-      "softclip"
+      "chorus"
     ],
-    "formula": "// chorus (delay + dual LFO)\n// Formulas: short delay · dual LFO AM\nparam a = Rate [0.2, 3.5]\nparam b = Depth [0.1, 0.5]\nparam c = Time [8, 35]\nparam d = Mix [0.15, 0.55]\nosc1: shape = sine; freq = a; depth = 1.0\nosc2: shape = sine; freq = a * 1.37; depth = 1.0\ndelay1: time = c; feedback = 0.12; mix = d; damp = 9000\nstage1: y = softclip(x * (1.0 - b + b * 0.5 * ((0.5 + 0.5 * osc1) + (0.5 + 0.5 * osc2))), 1.08)"
+    "formula": "// chorus\nparam a = Rate [0.2, 3.5]\nparam b = Depth [0.1, 1]\nparam c = Time [8, 35]\nparam d = Mix [0.15, 0.55]\nchorus1: rate = a; depth = b; delay = c; voices = 3; mix = d; width = 0.8"
   },
   {
     "name": "mid/side glue",

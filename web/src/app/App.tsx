@@ -159,7 +159,7 @@ export function App() {
       <Hud />
       <Toolbar />
       <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
-      <div className="nk-bind-host relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="nk-bind-host nk-chrome-x relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
           {workspace === "face" ? (
             <div className="h-full min-h-0">

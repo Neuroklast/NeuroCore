@@ -117,6 +117,289 @@ public:
                     + juce::String (late, 3));
         }
 
+        beginTest ("comp mix, rms detector, and sub-ms attack");
+        {
+            juce::String err;
+            dsl::SignalChain fast;
+            expect (fast.loadScript (
+                "comp1: threshold = -12; ratio = 20; attack = 0.0002; release = 0.2; mix = 1; detector = peak",
+                err), err);
+            fast.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> step (1, 256);
+            for (int i = 0; i < 256; ++i)
+                step.setSample (0, i, 1.f);
+            fast.processBlock (step);
+            int halfAt = 256;
+            for (int i = 0; i < 256; ++i)
+            {
+                if (std::abs (step.getSample (0, i)) < 0.6f)
+                {
+                    halfAt = i;
+                    break;
+                }
+            }
+            expect (halfAt < 16,
+                    "attack 0.2 ms was floored, half-GR at sample " + juce::String (halfAt));
+
+            auto clickPeak = [] (const char* script)
+            {
+                dsl::SignalChain chain;
+                juce::String e;
+                chain.loadScript (script, e);
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                float pk = 0.f;
+                for (int b = 0; b < 8; ++b)
+                {
+                    buf.clear();
+                    buf.setSample (0, 0, 1.f);
+                    chain.processBlock (buf);
+                    pk = juce::jmax (pk, std::abs (buf.getSample (0, 0)));
+                }
+                return pk;
+            };
+            const float peakMode = clickPeak (
+                "comp1: threshold = -12; ratio = 10; attack = 0.0002; release = 0.02; detector = peak; mix = 1");
+            const float rmsMode = clickPeak (
+                "comp1: threshold = -12; ratio = 10; attack = 0.0002; release = 0.02; detector = rms; mix = 1");
+            expect (peakMode < 0.93f && rmsMode > 0.95f,
+                    "rms detector still follows the peak, peak=" + juce::String (peakMode, 3)
+                    + " rms=" + juce::String (rmsMode, 3));
+
+            dsl::SignalChain dry;
+            expect (dry.loadScript (
+                "comp1: threshold = -40; ratio = 20; attack = 0.0002; release = 0.05; mix = 0",
+                err), err);
+            dry.prepare ({ 48000.0, 256, 1 });
+            const float id = tonePeak (dry, 0.4f, 440.f, 48000.f, 4);
+            expect (std::abs (id - 0.4f) < 0.02f,
+                    "mix 0 is not dry, peak=" + juce::String (id, 3));
+        }
+
+        beginTest ("comp lookahead delays the hit and reports PDC");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "comp1: threshold = -12; ratio = 20; attack = 0.001; release = 0.2; mix = 1; lookahead = 5",
+                err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            expectEquals (chain.getIrLatencySamples(), 240);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+
+            int peakAt = 0;
+            float peak = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                const float a = std::abs (buf.getSample (0, i));
+                if (a > peak)
+                {
+                    peak = a;
+                    peakAt = i;
+                }
+            }
+            expect (peakAt > 200 && peakAt < 280,
+                    "comp lookahead peak not at 5 ms, at=" + juce::String (peakAt)
+                    + " peak=" + juce::String (peak, 3));
+            expect (std::abs (buf.getSample (0, 0)) < 0.05f,
+                    "comp lookahead still emits the hit at sample 0");
+        }
+
+        beginTest ("deesser reduces sibilance, not the vowel, and listen is the band");
+        {
+            auto run = [] (const char* script, float lowAmp, float highAmp, float& lowPeak, float& highMag)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                const bool ok = chain.loadScript (script, err);
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                int n = 0;
+                for (int b = 0; b < 12; ++b)
+                {
+                    for (int i = 0; i < 256; ++i, ++n)
+                    {
+                        const float t = (float) n / 48000.f;
+                        const float s = lowAmp * std::sin (2.f * juce::MathConstants<float>::pi * 200.f * t)
+                                      + highAmp * std::sin (2.f * juce::MathConstants<float>::pi * 6000.f * t);
+                        buf.setSample (0, i, s);
+                    }
+                    chain.processBlock (buf);
+                }
+                lowPeak = 0.f;
+                float re = 0.f, im = 0.f;
+                const float w = 2.f * juce::MathConstants<float>::pi * 6000.f / 48000.f;
+                for (int i = 0; i < 256; ++i)
+                {
+                    const float s = buf.getSample (0, i);
+                    lowPeak = juce::jmax (lowPeak, std::abs (s));
+                    re += s * std::cos (w * (float) i);
+                    im -= s * std::sin (w * (float) i);
+                }
+                highMag = std::sqrt (re * re + im * im) / 256.f;
+                return ok;
+            };
+
+            float vowel = 0.f, vowelHf = 0.f, ess = 0.f, essHf = 0.f;
+            float mixed = 0.f, mixedHf = 0.f, listenEss = 0.f, listenVowel = 0.f;
+            juce::String err;
+            dsl::SignalChain probe;
+            expect (probe.loadScript (
+                "deesser1: freq = 6000; threshold = -6; amount = 1; attack = 0.001; release = 0.05; mix = 1",
+                err), err);
+            expect (run ("deesser1: freq = 6000; threshold = -6; amount = 1; attack = 0.001; release = 0.05; mix = 1",
+                         0.5f, 0.f, vowel, vowelHf));
+            expect (run ("deesser1: freq = 6000; threshold = -6; amount = 1; attack = 0.001; release = 0.05; mix = 1",
+                         0.f, 0.3f, ess, essHf));
+            expect (run ("deesser1: freq = 6000; threshold = -6; amount = 1; attack = 0.001; release = 0.05; mix = 1",
+                         0.7f, 0.3f, mixed, mixedHf));
+            expect (run ("deesser1: freq = 6000; threshold = -6; amount = 1; listen = on; mix = 1",
+                         0.f, 0.3f, listenEss, listenVowel));
+            float listenLow = 0.f, listenLowHf = 0.f;
+            expect (run ("deesser1: freq = 6000; threshold = -6; amount = 1; listen = on; mix = 1",
+                         0.5f, 0.f, listenLow, listenLowHf));
+            expect (vowel > 0.35f, "vowel was ducked, peak=" + juce::String (vowel, 3));
+            expect (essHf < 0.04f, "sibilance was not reduced, hf=" + juce::String (essHf, 4));
+            expect (mixedHf > essHf * 3.f,
+                    "relative threshold did not spare HF under a vowel, mixed="
+                    + juce::String (mixedHf, 4) + " ess=" + juce::String (essHf, 4));
+            expect (listenEss > 0.08f && listenLow < 0.05f,
+                    "listen is not the sibilance band, ess=" + juce::String (listenEss, 3)
+                    + " vowel=" + juce::String (listenLow, 3));
+        }
+
+        beginTest ("transient boosts the hit, cuts the body, and leaves a settled tone alone");
+        {
+            struct Span { float peak = 0.f; float rms = 0.f; int nonFinite = 0; bool ok = false; };
+            auto run = [] (const char* script, auto fill, int peakFrom, int peakTo, int rmsFrom, int rmsTo)
+            {
+                Span s;
+                dsl::SignalChain chain;
+                juce::String err;
+                s.ok = chain.loadScript (script, err);
+                if (! s.ok)
+                    return s;
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                const int total = juce::jmax (peakTo, rmsTo);
+                const int blocks = (total + 255) / 256;
+                double sum = 0.0;
+                int rmsN = 0;
+                int n = 0;
+                for (int b = 0; b < blocks; ++b)
+                {
+                    for (int i = 0; i < 256; ++i, ++n)
+                        buf.setSample (0, i, fill (n));
+                    chain.processBlock (buf);
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        const int k = b * 256 + i;
+                        const float y = buf.getSample (0, i);
+                        if (! std::isfinite (y))
+                            ++s.nonFinite;
+                        const float a = std::abs (y);
+                        if (k >= peakFrom && k < peakTo && a > s.peak)
+                            s.peak = a;
+                        if (k >= rmsFrom && k < rmsTo)
+                        {
+                            sum += (double) y * (double) y;
+                            ++rmsN;
+                        }
+                    }
+                }
+                s.rms = rmsN > 0 ? (float) std::sqrt (sum / (double) rmsN) : 0.f;
+                return s;
+            };
+
+            const auto step = [] (int n) { return n < 960 ? 0.6f : 0.f; };
+            const auto body = [] (int n) { return n < 3840 ? 0.5f : 0.15f; };
+            const auto tone = [] (int n)
+            {
+                const float t = (float) n / 48000.f;
+                return 0.4f * std::sin (2.f * juce::MathConstants<float>::pi * 1000.f * t);
+            };
+            const auto hitUp = run (
+                "transient1: attack = 1; sustain = 0; fast = 0.001; slow = 0.05; mix = 1",
+                step, 0, 480, 0, 0);
+            const auto hitFlat = run (
+                "transient1: attack = 0; sustain = 0; fast = 0.001; slow = 0.05; mix = 1",
+                step, 0, 480, 0, 0);
+            const auto bodyCut = run (
+                "transient1: attack = 0; sustain = -1; fast = 0.001; slow = 0.05; mix = 1",
+                body, 0, 0, 4560, 5760);
+            const auto bodyFlat = run (
+                "transient1: attack = 0; sustain = 0; fast = 0.001; slow = 0.05; mix = 1",
+                body, 0, 0, 4560, 5760);
+            const auto settled = run (
+                "transient1: attack = 1; sustain = 0; fast = 0.005; slow = 0.08; mix = 1",
+                tone, 14144, 14400, 0, 0);
+            expect (hitUp.ok && hitUp.nonFinite == 0 && hitUp.peak > 1.0f,
+                    "hit was not boosted, peak=" + juce::String (hitUp.peak, 3)
+                    + " ok=" + juce::String ((int) hitUp.ok));
+            expect (hitFlat.peak < 0.75f,
+                    "zero attack still punched the step, peak=" + juce::String (hitFlat.peak, 3));
+            expect (bodyCut.nonFinite == 0 && bodyCut.rms < 0.10f && bodyFlat.rms > 0.12f,
+                    "sustain did not cut the body, cut=" + juce::String (bodyCut.rms, 3)
+                    + " flat=" + juce::String (bodyFlat.rms, 3));
+            expect (settled.peak > 0.32f && settled.peak < 0.48f,
+                    "settled tone was not left alone, peak=" + juce::String (settled.peak, 3));
+        }
+
+        beginTest ("utility gain is dB, pan is balance, polarity flips");
+        {
+            auto peakCh = [] (const char* script, int ch, float amp)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (script, err))
+                    return -1.f;
+                chain.prepare ({ 48000.0, 256, 2 });
+                juce::AudioBuffer<float> buf (2, 256);
+                float peak = 0.f;
+                for (int b = 0; b < 4; ++b)
+                {
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        const float t = (float) (b * 256 + i) / 48000.f;
+                        const float s = amp * std::sin (2.f * juce::MathConstants<float>::pi * 1000.f * t);
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    chain.processBlock (buf);
+                    for (int i = 0; i < 256; ++i)
+                        peak = juce::jmax (peak, std::abs (buf.getSample (ch, i)));
+                }
+                return peak;
+            };
+            const float ident = peakCh ("utility1: gain = 0; pan = 0; polarity = off", 0, 0.25f);
+            const float up = peakCh ("utility1: gain = 6; pan = 0; polarity = off", 0, 0.25f);
+            const float left = peakCh ("utility1: gain = 0; pan = -1; polarity = off", 0, 0.4f);
+            const float right = peakCh ("utility1: gain = 0; pan = -1; polarity = off", 1, 0.4f);
+            dsl::SignalChain flip;
+            juce::String err;
+            expect (flip.loadScript ("utility1: gain = 0; pan = 0; polarity = on", err), err);
+            flip.prepare ({ 48000.0, 64, 1 });
+            juce::AudioBuffer<float> dc (1, 64);
+            dc.clear();
+            dc.setSample (0, 0, 0.3f);
+            flip.processBlock (dc);
+            expect (ident > 0.23f && ident < 0.27f,
+                    "zero utility was not identity, peak=" + juce::String (ident, 3));
+            expect (up > 0.47f && up < 0.53f,
+                    "+6 dB was not a double, peak=" + juce::String (up, 3));
+            expect (left > 0.3f && right < 0.02f,
+                    "pan -1 did not keep left and kill right, L=" + juce::String (left, 3)
+                    + " R=" + juce::String (right, 3));
+            expect (dc.getSample (0, 0) < -0.2f,
+                    "polarity did not flip, y=" + juce::String (dc.getSample (0, 0), 3));
+        }
+
         beginTest ("comp makeup raises a signal below threshold");
         {
             dsl::SignalChain plain, boosted;
@@ -209,6 +492,40 @@ public:
                                   blocks, aliases, params, err), err);
             expectEquals ((int) blocks.size(), 1);
             expect (blocks[0].type.startsWith ("limit"));
+        }
+
+        beginTest ("limit lookahead delays the peak and reports PDC");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "limit1: ceiling = -6; release = 0.05; lookahead = 5", err), err);
+            chain.prepare ({ 48000.0, 512, 2 });
+            expectEquals (chain.getIrLatencySamples(), 240);
+
+            juce::AudioBuffer<float> buf (2, 512);
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+
+            int peakAt = 0;
+            float peak = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                const float a = std::abs (buf.getSample (0, i));
+                if (a > peak)
+                {
+                    peak = a;
+                    peakAt = i;
+                }
+            }
+            const float ceilLin = juce::Decibels::decibelsToGain (-6.f);
+            expect (peakAt > 200 && peakAt < 280,
+                    "lookahead peak not at 5 ms, at=" + juce::String (peakAt));
+            expect (peak <= ceilLin + 1.0e-4f,
+                    "lookahead exceeded ceiling, peak=" + juce::String (peak, 4));
         }
 
         beginTest ("limit holds a 0 dBFS sine under the ceiling");
@@ -306,6 +623,57 @@ public:
             expect (std::isfinite (loud));
             expect (loud < 2.2f, "OTT should not run away, peak=" + juce::String (loud, 3));
             expect (smash.getMaxTailTime() > 0.02f);
+        }
+
+        beginTest ("ott band amount ducks that band, not the other");
+        {
+            auto peakAt = [] (const char* script, float hz)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (script, err))
+                    return -1.f;
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                float peak = 0.f;
+                int n = 0;
+                for (int b = 0; b < 16; ++b)
+                {
+                    for (int i = 0; i < 256; ++i, ++n)
+                    {
+                        const float s = 0.5f * std::sin (2.f * juce::MathConstants<float>::pi * hz * (float) n / 48000.f);
+                        buf.setSample (0, i, s);
+                    }
+                    chain.processBlock (buf);
+                    if (b >= 12)
+                    {
+                        for (int i = 0; i < 256; ++i)
+                            peak = juce::jmax (peak, std::abs (buf.getSample (0, i)));
+                    }
+                }
+                return peak;
+            };
+            const char* flat = "ott1: depth = 1; time = 0; in = 1; low = 0; mid = 0; high = 0";
+            const char* lowOn = "ott1: depth = 1; time = 0; in = 1; low = 1; mid = 0; high = 0";
+            const char* highOn = "ott1: depth = 1; time = 0; in = 1; low = 0; mid = 0; high = 1";
+            const float lowFlat = peakAt (flat, 50.f);
+            const float lowDuck = peakAt (lowOn, 50.f);
+            const float lowSpare = peakAt (highOn, 50.f);
+            const float hiFlat = peakAt (flat, 8000.f);
+            const float hiDuck = peakAt (highOn, 8000.f);
+            const float hiSpare = peakAt (lowOn, 8000.f);
+            expect (lowDuck < lowFlat * 0.75f,
+                    "low amount did not duck 50 Hz, flat=" + juce::String (lowFlat, 3)
+                    + " duck=" + juce::String (lowDuck, 3));
+            expect (lowSpare > lowFlat * 0.85f,
+                    "high amount ducked the low band, flat=" + juce::String (lowFlat, 3)
+                    + " spare=" + juce::String (lowSpare, 3));
+            expect (hiDuck < hiFlat * 0.75f,
+                    "high amount did not duck 8 kHz, flat=" + juce::String (hiFlat, 3)
+                    + " duck=" + juce::String (hiDuck, 3));
+            expect (hiSpare > hiFlat * 0.85f,
+                    "low amount ducked the high band, flat=" + juce::String (hiFlat, 3)
+                    + " spare=" + juce::String (hiSpare, 3));
         }
 
         beginTest ("limit then silence stays finite");
@@ -512,6 +880,16 @@ public:
             const float ceilLin = juce::Decibels::decibelsToGain (-6.f);
             expect (peak <= ceilLin * 1.15f + 0.05f,
                     "ceiling -6 dB, peak=" + juce::String (peak, 3));
+            dsl::SignalChain deep;
+            expect (deep.loadScript (
+                "pitch1: semitones = 0; mix = 1; formant = 1; ceiling = -18", err), err);
+            deep.prepare ({ 48000.0, 256, 2 });
+            const float deepPeak = tonePeak (deep, 1.0f, 440.f, 48000.f, 16);
+            expect (deepPeak <= juce::Decibels::decibelsToGain (-18.f) * 1.15f + 0.02f,
+                    "ceiling -18 dB was not the published range, peak=" + juce::String (deepPeak, 3));
+            expect (deepPeak < peak * 0.5f,
+                    "deeper ceiling did not sit under -6, deep=" + juce::String (deepPeak, 3)
+                    + " shallow=" + juce::String (peak, 3));
         }
 
         beginTest ("comp ceiling soft-caps makeup boost");

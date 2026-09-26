@@ -783,7 +783,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 .nk-face-logo {
   position: absolute;
   left: calc((100% - 176px) / 2);
-  top: 35%;
+  top: 25%;
   z-index: 1;
   transform: translate(-50%, -50%);
   background: transparent;
@@ -1010,7 +1010,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 
 .nk-face-tele {
   position: absolute;
-  top: 10px;
+  top: 12px;
   z-index: 2;
   pointer-events: none;
   min-width: 168px;
@@ -1022,7 +1022,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 }
 
 .nk-face-tele-l { left: 12px; }
-.nk-face-tele-r { right: 180px; text-align: right; }
+.nk-face-tele-r { right: 192px; text-align: right; }
 
 .nk-face-row {
   display: flex;
@@ -1251,6 +1251,11 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   align-items: stretch;
   gap: 4px;
   min-width: 0;
+  padding-inline: 12px;
+}
+
+.nk-chrome-x {
+  padding-inline: 12px;
 }
 
 .nk-compare {
@@ -1288,7 +1293,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 
 .nk-input-switch {
   display: flex;
-  height: 32px;
+  height: 100%;
   min-width: 120px;
   flex-shrink: 0;
   overflow: hidden;

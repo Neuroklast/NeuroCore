@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   COMPARE_AB_MIN_PX,
   PRESET_MIN_PX,
+  CHROME_PAD_PX,
   WORKSPACE_ROW_H,
   compareClusterClass,
   comparePairClass,
@@ -71,6 +72,23 @@ describe("workspace row + compare cluster", () => {
     expect(css).toMatch(/\.nk-ws-row\s*\{[^}]*height:\s*32px/s);
     expect(css).toMatch(/\.nk-ab-pair\s*\{[^}]*width:\s*64px/s);
     expect(css).toMatch(/\.nk-compare\s*\{[^}]*flex:\s*0 0 auto/s);
+  });
+
+  it("uses one 12px inset vertically and horizontally", () => {
+    const scopeSrc = readFileSync(path.resolve(here, "../viz/ScopeDeck.tsx"), "utf8");
+    expect(CHROME_PAD_PX).toBe(12);
+    expect(appSrc).toContain("nk-chrome-x");
+    expect(chromeSrc).not.toMatch(/pb-2 pt-2/);
+    expect(chromeSrc).not.toMatch(/h-\[28px\]/);
+    expect(chromeSrc).not.toMatch(/h-\[152px\]/);
+    expect(css).toMatch(/\.nk-ws-row\s*\{[^}]*padding-inline:\s*12px/s);
+    expect(css).toMatch(/\.nk-chrome-x\s*\{[^}]*padding-inline:\s*12px/s);
+    expect(css).toMatch(/\.nk-input-switch\s*\{[^}]*height:\s*100%/s);
+    expect(css).toMatch(/\.nk-face-logo\s*\{[^}]*top:\s*25%/s);
+    expect(css).toMatch(/\.nk-face-tele\s*\{[^}]*top:\s*12px/s);
+    expect(scopeSrc).toContain("p-3");
+    expect(scopeSrc).not.toContain("pb-2");
+    expect(scopeSrc).not.toContain("pr-3");
   });
 
   it("does not squeeze A/B/MATCH with px-2 leftover clips in a 28px strip", () => {

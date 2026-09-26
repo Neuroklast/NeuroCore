@@ -600,7 +600,10 @@ static juce::String optimizeScriptLines (const juce::String& script,
         if (lower.startsWith ("filter") || lower.startsWith ("comp")
             || lower.startsWith ("osc") || lower.startsWith ("env")
             || lower.startsWith ("phaser") || lower.startsWith ("flanger")
-            || lower.startsWith ("flange")
+            || lower.startsWith ("flange") || lower.startsWith ("chorus")
+            || lower.startsWith ("deesser") || lower.startsWith ("deess")
+            || lower.startsWith ("transient") || lower.startsWith ("trans") || lower.startsWith ("td")
+            || lower.startsWith ("utility") || lower.startsWith ("util")
             || lower.startsWith ("param"))
         {
             outLines.add (line);

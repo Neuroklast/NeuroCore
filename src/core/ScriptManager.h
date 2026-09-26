@@ -39,6 +39,9 @@ public:
     /** Prepare all internal signal chains for the given processing spec. */
     void prepare(const juce::dsp::ProcessSpec& spec);
 
+    /** Host rate. The reverb tank clocks this, not the oversampled spec. */
+    void setHostRate(double hz) noexcept;
+
     /** Apply a new DSL formula.
         Updates variable names/active flags, loads script into signalChain,
         and sets previewSignalChain.  Does NOT register an undo action.

@@ -502,7 +502,7 @@ juce::var catalogVar()
     const char* types[] = {
         "stage", "filter", "eq", "comp", "gate", "limit", "delay", "reverb",
         "ott", "widen", "ir", "osc", "env", "xover", "octaver", "vocoder",
-        "phaser", "flanger", "pitch"
+        "phaser", "flanger", "chorus", "deesser", "transient", "utility", "pitch"
     };
     for (auto* t : types)
     {

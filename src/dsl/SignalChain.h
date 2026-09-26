@@ -45,6 +45,8 @@ public:
     void setMidiVariables(const MidiVariableMapper& mapper);
 
     /** Host-rate or OS-rate extra input. Null pointers = silence. */
+    void setHostRate (double hz) noexcept;
+    int reverbTankSteps() const noexcept;
     void setExternalSidechain (const float* left, const float* right, int numSamples) noexcept;
     void setVoiceInput (const float* left, const float* right, int numSamples) noexcept;
 
@@ -224,6 +226,10 @@ private:
 
     struct Filter : Block
     {
+        static constexpr float kQMin = 0.1f;
+        static constexpr float kQMax = 4.f;
+        static constexpr float kQMaxModulated = 2.2f;
+
         juce::dsp::StateVariableTPTFilter<float> filter;
         ExpressionEvaluator cutoff, resonance;
         // Parameters for extended bandpass support
@@ -287,11 +293,22 @@ private:
     struct Comp : Block
     {
         ExpressionEvaluator threshold, ratio, attack, release;
-        ExpressionEvaluator kneeDb, makeupDb, hpfHz, ceilingDb;
-        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm, kneeSm, makeupSm, hpfSm, ceilSm;
+        static constexpr float kMaxLookaheadSec = 0.02f;
+
+        ExpressionEvaluator kneeDb, makeupDb, hpfHz, ceilingDb, mixExpr, lookaheadMs;
+        juce::SmoothedValue<float> thrSm, ratioSm, atkSm, relSm, kneeSm, makeupSm, hpfSm, ceilSm, mixSm;
         bool followSidechain { false };
+        bool rmsDetect { false };
+        float rmsState { 0.f };
+        float rmsC { 0.f };
         float sampleRate { 44100.f };
         int channels { 1 };
+        int latencySamples { 0 };
+        int writePos { 0 };
+        int delayN { 0 };
+        std::vector<float> storageL, storageR;
+        float* delayL { nullptr };
+        float* delayR { nullptr };
         float envDb { 0.f };
         float hpfLpL { 0.f }, hpfLpR { 0.f };
         float hpfLpL2 { 0.f }, hpfLpR2 { 0.f };
@@ -364,16 +381,24 @@ private:
         void syncMixFromVars() noexcept;
     };
 
-    /** In-chain peak limiter. Instant attack, no lookahead. Distinct from Polisher. */
+    /** In-chain peak limiter. lookahead 0 is the ~80 µs mode. Lookahead joins PDC. */
     struct Limit : Block
     {
-        ExpressionEvaluator ceilingDb, release;
+        static constexpr float kMaxLookaheadSec = 0.02f;
+
+        ExpressionEvaluator ceilingDb, release, lookaheadMs;
         juce::SmoothedValue<float> ceilSm, relSm;
         float sampleRate { 44100.f };
         int channels { 1 };
+        int latencySamples { 0 };
+        int writePos { 0 };
+        int delayN { 0 };
         float gain { 1.f };
         float cachedCeil { 1.0e9f }, cachedRel { -1.f };
         float ceilLin { 1.f }, relC { 0.f }, atkC { 1.f };
+        std::vector<float> storageL, storageR;
+        float* delayL { nullptr };
+        float* delayR { nullptr };
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -488,6 +513,96 @@ private:
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
         void processFrame (float& left, float* right, float pol) noexcept;
+    };
+
+    /** Multi-voice chorus. One delay line per channel, taps via delayRead. Not a flanger. */
+    struct Chorus : Block
+    {
+        static constexpr int kMaxVoices = 4;
+        static constexpr float kMaxDelaySec = 0.05f;
+
+        ExpressionEvaluator rateExpr, depthExpr, delayExpr, voicesExpr, mixExpr, widthExpr;
+        juce::SmoothedValue<float> rateSm, depthSm, delaySm, mixSm, widthSm;
+        float sampleRate { 44100.f };
+        float invSr { 1.f / 44100.f };
+        float phase[kMaxVoices] {};
+        int maxDelaySamples { 0 };
+        int writePos { 0 };
+        int delayN { 0 };
+        std::vector<float> storageL, storageR;
+        float* delayL { nullptr };
+        float* delayR { nullptr };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int channel, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Quantize, then a recovery lowpass. The formula alone aliases. */
+    struct Bitcrush : Block
+    {
+        ExpressionEvaluator bitsExpr, mixExpr, toneExpr;
+        juce::SmoothedValue<float> bitsSm, mixSm, toneSm;
+        float sampleRate { 44100.f };
+        float coeff { 0.f };
+        float zL { 0.f }, zR { 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Linear gain in dB, balance pan, polarity. Not a shaper. */
+    struct Utility : Block
+    {
+        ExpressionEvaluator gainExpr, panExpr;
+        juce::SmoothedValue<float> gainSm, panSm;
+        bool polarity { false };
+        float sampleRate { 44100.f };
+        float cachedDb { -1000.f };
+        float lin { 1.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Fast envelope minus slow. The difference is gain, not a compressor. */
+    struct Transient : Block
+    {
+        ExpressionEvaluator attackExpr, sustainExpr, fastExpr, slowExpr, mixExpr;
+        juce::SmoothedValue<float> atkSm, susSm, fastSm, slowSm, mixSm;
+        float sampleRate { 44100.f };
+        float fastE { 0.f }, slowE { 0.f };
+        float fastC { 0.f }, slowC { 0.f };
+        float cachedFast { -1.f }, cachedSlow { -1.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Split-band de-esser. Band level versus broadband, not a comp with an HPF. */
+    struct Deesser : Block
+    {
+        ExpressionEvaluator freqExpr, thresholdExpr, amountExpr, attackExpr, releaseExpr, mixExpr;
+        juce::SmoothedValue<float> freqSm, thrSm, amtSm, atkSm, relSm, mixSm;
+        bool listen { false };
+        float sampleRate { 44100.f };
+        float broadE { 0.f }, bandE { 0.f }, gr { 0.f };
+        float detC { 0.f }, atkC { 0.f }, relC { 0.f };
+        float cachedAtk { -1.f }, cachedRel { -1.f }, cachedFreq { -1.f };
+        juce::dsp::StateVariableTPTFilter<float> band;
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
     };
 
     /**
@@ -636,6 +751,9 @@ private:
         ExpressionEvaluator feedback; ///< 0..~0.95
         ExpressionEvaluator mix;      ///< 0 = dry, 1 = wet
         ExpressionEvaluator dampHz;   ///< Feedback lowpass cutoff (Hz)
+        ExpressionEvaluator wowExpr;  ///< 0 = still, 1 = ±8 ms
+        ExpressionEvaluator rateExpr; ///< Wow rate in Hz, default 0.65
+        ExpressionEvaluator flutterExpr; ///< 0 = still, 1 = ±2 ms at 8 Hz
 
         bool useSync { false };
         float syncBeats { 0.25f };    ///< Note length in quarter-note beats (1/4 → 1.0)
@@ -654,6 +772,13 @@ private:
         float dampStateL { 0.f }, dampStateR { 0.f };
         float dcBlockL { 0.f }, dcBlockR { 0.f }; ///< Feedback HPF state (stability in loop)
         float lastDelaySamples { -1.f };           ///< Slew limit state for delay time
+        float wowPhase { 0.f };
+        float flutterPhase { 0.f };
+        juce::SmoothedValue<float> wowSm, rateSm, flutterSm;
+        bool liveExpression { false };
+        float liveDelaySamples { -1.f };
+        float samplesFromMs (float ms) const noexcept;
+        void noteLiveDelay (float samples) noexcept;
         float dcCoeff { 0.99f };
         juce::SmoothedValue<float> delaySm, fbSm, mixSm, dampCoeffSm;
 
@@ -689,38 +814,34 @@ private:
         {
             std::vector<float> storage;
             float* buf { nullptr };
-            int cap { 0 };
+            int ringN { 0 };
             int writePos { 0 };
-            int delayLen { 2 };
+            float delaySamps { 2.f };
             float filterStore { 0.f };
             void allocate (int maxN)
             {
-                cap = juce::jmax (4, maxN);
-                buf = DSPUtils::alignedRing (storage, cap);
+                ringN = juce::jmax (8, maxN + 8);
+                buf = DSPUtils::alignedRing (storage, ringN);
                 writePos = 0;
                 filterStore = 0.f;
-                delayLen = juce::jmin (delayLen, cap - 1);
+                delaySamps = juce::jlimit (2.f, (float) (ringN - 2), delaySamps);
             }
-            void setDelayLen (int n) noexcept
+            void setDelay (float n) noexcept
             {
-                delayLen = juce::jlimit (2, juce::jmax (2, cap - 1), n);
+                delaySamps = juce::jlimit (2.f, (float) juce::jmax (2, ringN - 2), n);
             }
             void clear() noexcept
             {
-                if (buf != nullptr && cap > 0)
-                    std::fill (buf, buf + cap, 0.f);
+                if (buf != nullptr && ringN > 0)
+                    std::fill (buf, buf + ringN, 0.f);
                 writePos = 0;
                 filterStore = 0.f;
             }
             float process (float input, float feedback, float damp) noexcept
             {
-                if (buf == nullptr || cap < 4)
+                if (buf == nullptr || ringN < 8)
                     return 0.f;
-                int readPos = writePos - delayLen;
-                const int N = cap;
-                if (readPos < 0)
-                    readPos += N;
-                const float y = buf[(size_t) readPos];
+                const float y = DSPUtils::delayRead (buf, writePos, delaySamps, ringN);
                 filterStore = y * (1.f - damp) + filterStore * damp;
                 if (std::abs (filterStore) < 1.0e-20f)
                     filterStore = 0.f;
@@ -731,7 +852,7 @@ private:
                 else if (std::abs (w) > 4.f)
                     w = 4.f * std::tanh (w * 0.25f);
                 buf[(size_t) writePos] = w;
-                if (++writePos >= N)
+                if (++writePos >= ringN)
                     writePos = 0;
                 return y;
             }
@@ -741,41 +862,37 @@ private:
         {
             std::vector<float> storage;
             float* buf { nullptr };
-            int cap { 0 };
+            int ringN { 0 };
             int writePos { 0 };
-            int delayLen { 2 };
+            float delaySamps { 2.f };
             void allocate (int maxN)
             {
-                cap = juce::jmax (4, maxN);
-                buf = DSPUtils::alignedRing (storage, cap);
+                ringN = juce::jmax (8, maxN + 8);
+                buf = DSPUtils::alignedRing (storage, ringN);
                 writePos = 0;
-                delayLen = juce::jmin (delayLen, cap - 1);
+                delaySamps = juce::jlimit (2.f, (float) (ringN - 2), delaySamps);
             }
-            void setDelayLen (int n) noexcept
+            void setDelay (float n) noexcept
             {
-                delayLen = juce::jlimit (2, juce::jmax (2, cap - 1), n);
+                delaySamps = juce::jlimit (2.f, (float) juce::jmax (2, ringN - 2), n);
             }
             void clear() noexcept
             {
-                if (buf != nullptr && cap > 0)
-                    std::fill (buf, buf + cap, 0.f);
+                if (buf != nullptr && ringN > 0)
+                    std::fill (buf, buf + ringN, 0.f);
                 writePos = 0;
             }
             float process (float input) noexcept
             {
-                if (buf == nullptr || cap < 4)
+                if (buf == nullptr || ringN < 8)
                     return input;
                 constexpr float g = 0.5f;
-                int readPos = writePos - delayLen;
-                const int N = cap;
-                if (readPos < 0)
-                    readPos += N;
-                const float bufOut = buf[(size_t) readPos];
+                const float bufOut = DSPUtils::delayRead (buf, writePos, delaySamps, ringN);
                 float y = -input + bufOut;
                 if (! std::isfinite (y))
                     y = 0.f;
                 buf[(size_t) writePos] = input + bufOut * g;
-                if (++writePos >= N)
+                if (++writePos >= ringN)
                     writePos = 0;
                 return y;
             }
@@ -786,6 +903,13 @@ private:
         std::array<int, kNumCombs> combBaseL {}, combBaseR {};
         std::array<int, kNumAllpass> apBaseL {}, apBaseR {};
         float lastSize { -1.f };
+        double hostRate { 0.0 };
+        double procRate { 44100.0 };
+        int tankRatio { 1 };
+        int tankPhase { 0 };
+        int tankSteps { 0 };
+        float tankAcc { 0.f };
+        float heldL { 0.f }, heldR { 0.f };
 
         juce::SmoothedValue<float> sizeSm, decaySm, dampSm, mixSm, widthSm;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
@@ -1049,6 +1173,7 @@ private:
     bool hostPlaying { false };
     juce::AudioProcessorValueTreeState* valueTreeState { nullptr };
     juce::dsp::ProcessSpec currentSpec {44100.0, 512, 2};
+    double hostRateHz { 0.0 };
     struct StoredIr
     {
         std::shared_ptr<juce::AudioBuffer<float>> audio;

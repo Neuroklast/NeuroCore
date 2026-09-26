@@ -704,6 +704,12 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type = "pitch";
             if (desc.type == "flange")
                 desc.type = "flanger";
+            if (desc.type == "deess" || desc.type == "ds" || desc.type == "de-esser")
+                desc.type = "deesser";
+            if (desc.type == "trans" || desc.type == "td" || desc.type == "transient_shaper")
+                desc.type = "transient";
+            if (desc.type == "util" || desc.type == "gainpan")
+                desc.type = "utility";
             if (desc.type == "probe")
                 desc.type = "meter";
             if (desc.type == "sc" || desc.type == "scin" || desc.type == "side_chain")
@@ -717,6 +723,11 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "octaver" && desc.type != "octave" && desc.type != "vocoder" &&
                 desc.type != "pitch" &&
                 desc.type != "phaser" && desc.type != "flanger" && desc.type != "flange" &&
+                desc.type != "chorus" &&
+                desc.type != "deesser" && desc.type != "deess" && desc.type != "ds" &&
+                desc.type != "transient" && desc.type != "trans" && desc.type != "td" &&
+                desc.type != "utility" && desc.type != "util" &&
+                desc.type != "bitcrush" && desc.type != "crush" &&
                 desc.type != "gate" && desc.type != "noisegate" &&
                 desc.type != "limit" && desc.type != "limiter" &&
                 desc.type != "xover" && desc.type != "crossover" &&

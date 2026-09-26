@@ -1,14 +1,14 @@
 # Entwicklungsstand NEUROKORE
 
 **Stand:** 2026-08-29 (docs catch-up: headless board, Help minus Install, global OS/meters)  
-**Version:** 0.6.4-beta  
+**Version:** 0.6.6-beta  
 **Branch:** `main`
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
 ## Chrome tab row + Gold contrast (2026-09-18)
 
-Workspace row is 32 px: Unit / Circuit / Terminal flex, A|B is a 64 px mode pair, A→B and MATCH are equal-height clips (not `px-2` leftovers in a 28 px strip). Header tools, preset title, Mix/OS (L/BOTH/R + selects) share that 32 px token. Pane bloom is gone; vignette is a light edge, not a 0.55 inset fog. OS bloom is a faint wash. Gold is near-black with a hairline texture.
+Workspace row is 32 px: Unit / Circuit / Terminal flex, A|B is a 64 px mode pair, A→B and MATCH are equal-height clips (not `px-2` leftovers in a 28 px strip). Header tools, preset title, Mix/OS (L/BOTH/R + selects) and the footer share that 32 px token. Shell bands and the unit pane use one 12 px inset, including vertically on the knob rail. Pane bloom is gone; vignette is a light edge, not a 0.55 inset fog. OS bloom is a faint wash. Gold is near-black with a hairline texture.
 
 ## Laufende DSP-Prüfung (2026-09-16)
 
@@ -126,7 +126,7 @@ Produkt-Default ist der Web-Editor. Vite-HMR: `NEUROKORE_WEB_DEV_URL=http://loca
 
 Detail und Dateien: `docs/ARCHITECTURE.md` § Audio-Runtime. Verträge: ExpressionEvaluatorTest, ArchitectureHardening, DelayReverb, WebShell (JIT-Flag / Mac-Zip).
 
-Delay liest linear mit Integer-Wrap (`delayRead`). Hermite-4-Punkt hat jedes Delay-Intervall Index 0 mit `N-1` gemischt — das war das periodische Knacken.
+Delay und Flanger lesen `DSPUtils::delayRead`: 4-Punkt Catmull-Rom nach Alter hinter dem Write-Head. Integer-Delay ist ein Sample. Das alte Hermite-Fenster, das Index 0 mit `N-1` mischte, ist weg. `chorus` ist ein eigener Block: 2–4 Stimmen, eine Leitung, LFO auf der Laufzeit. Das alte AM-Template ist dieser Block. Delay-`time` als Formel folgt dem LFO pro Sample; `sync` bleibt geslewt. Comp: Peak oder RMS in eine Hüllkurve, `mix` parallel, Attack-Floor 50 µs. Knee, Makeup, HPF, Mix, Detektor sind auf dem Chip. Limit-`lookahead` 0 bleibt der 80-µs-Modus. Comp- und Limit-Lookahead hängen sich in dieselbe PDC-Summe wie Pitch und IR. Der Comp-Detektor hört das aktuelle Signal. `deesser` ist Split-Band: Bandpegel gegen das Gesamtsignal, Listen ist das Band, kein Comp mit HPF. `transient` ist schnell minus langsam, nur Gain: Attack formt den Anschlag, Sustain den Körper. `utility` ist lineares dB-Gain, Balance-Pan und Polarität, kein Shaper. Filter-Q ist 0,1–4 auf Chip, Knob und beiden Pfaden. Ein bewegtes Cutoff hält bei 2,2. Nicht 10. Pitch-Ceiling ist −24…0 dB auf Chip und Engine. `sync` ändert Hop und Latenz nicht. OTT-`low`/`mid`/`high` bearbeiten nur ihr Band. `in` ist der Detektorpegel, 0,25–6, und steht auf dem Chip. Delay-`wow` 0 steht. `wow` 1 ist ±8 ms bei 0,65 Hz auf `delayRead`, kein zweites LFO. Der Shipping-Katalog fragt kein Q über 4 mehr an. De-Ess-Presets nutzen `deesser`. Click Sustain und Blastbeat nutzen `transient`. Jedes OTT nennt `in`, jedes Pitch nennt `ceiling`. Tape Echo Heads und Tape Echo Dirt nutzen `wow`. Delay-`flutter` ist ±2 ms bei 8 Hz auf derselben Leitung. `rate` setzt das Wow-Tempo, Standard 0,65 Hz. `bitcrush` quantisiert und filtert. VHS Tracking nutzt `rate`, nicht `osc1`. Die vier Artist-Namen sind eigene Presets: Peak Screamer, Midtempo Pump, Chaos Grid, Split Authority. Siebzehn geprüfte Presets liegen in Mastering, Metal, Bass, Drums, Club und Industrial. Formant-LFOs laufen nur nach oben. Der Reverb-Tank liest `delayRead` und taktet die Host-Rate, nicht 8×.
 
 Arrange is ELK layered RIGHT (readable L→R, 128/64 air). Compact wraps L→R into rows with WRAP_AIR (pad+rail+pad) between them; wrap cables ride that rail, not around the hull. IO tiles use pad gutters so IN/OUT titles fit. AST-JSON zeichnet MS-Gabeln und implizites OUT. Jeder Chip klappt Details auf (Schema-Zeilen, nicht nur Drive). Rechtsklick aufs Board öffnet den Add-Picker (Kategorien links, Blöcke rechts, kein verschachteltes Flyout). Custom ist `y =` plus extra Eingänge. Ctrl+Z / Ctrl+Y ist Formel-Undo. Circuit-Knobs: Bind-Buchse oben, keine A–F-Buchstaben auf dem Titel. Zählzeiten nur bei `param … [1/4, 1/16]`, nie bei numerischen Ranges. Ungetaggtes Chip zwischen MS-Encode/Decode liegt auf **beiden** Schienen (Screenshot 072440); `connectJack` von Encode.`side` schreibt `channel=side` und Mid läuft implizit Encode→Decode. Chip-Details-Platte sitzt außerhalb des Body-Clips. User-xy bleibt bis Arrange / neues Graph.
 

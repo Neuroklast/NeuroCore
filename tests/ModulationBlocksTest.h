@@ -145,6 +145,115 @@ public:
                     + " lobe=" + juce::String (lobe, 4));
         }
 
+        beginTest ("chorus moves sine zero-crossings; mix 0 is identity");
+        {
+            // Amplitude modulation keeps zero-crossings put. A modulated delay does not.
+            dsl::SignalChain wet;
+            juce::String err;
+            expect (wet.loadScript (
+                "chorus1: rate = 1.5; depth = 1; delay = 20; voices = 2; mix = 1; width = 0",
+                err), err);
+            wet.prepare ({ 48000.0, 512, 2 });
+
+            dsl::SignalChain dry;
+            expect (dry.loadScript (
+                "chorus1: rate = 1.5; depth = 1; delay = 20; voices = 2; mix = 0; width = 0",
+                err), err);
+            dry.prepare ({ 48000.0, 512, 2 });
+
+            const float hz = 200.f;
+            const float amp = 0.4f;
+            const float w = 2.f * juce::MathConstants<float>::pi * hz;
+            juce::AudioBuffer<float> buf (2, 512);
+            juce::AudioBuffer<float> id (2, 512);
+            float idErr = 0.f;
+            float prev = 0.f;
+            int prevZc = -1;
+            int minGap = 100000;
+            int maxGap = 0;
+            int gaps = 0;
+            int n = 0;
+            for (int b = 0; b < 80; ++b)
+            {
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float s = amp * std::sin (w * (float) (b * 512 + i) / 48000.f);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                    id.setSample (0, i, s);
+                    id.setSample (1, i, s);
+                }
+                wet.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                dry.processBlockSmoothed (id, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                if (b < 4)
+                    continue;
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float s = amp * std::sin (w * (float) (b * 512 + i) / 48000.f);
+                    idErr = juce::jmax (idErr, std::abs (id.getSample (0, i) - s));
+                    const float y = buf.getSample (0, i);
+                    if (prev <= 0.f && y > 0.f && prevZc >= 0)
+                    {
+                        const int gap = n - prevZc;
+                        if (gap > 40 && gap < 800)
+                        {
+                            minGap = juce::jmin (minGap, gap);
+                            maxGap = juce::jmax (maxGap, gap);
+                            ++gaps;
+                        }
+                        prevZc = n;
+                    }
+                    else if (prev <= 0.f && y > 0.f)
+                    {
+                        prevZc = n;
+                    }
+                    prev = y;
+                    ++n;
+                }
+            }
+            expect (idErr < 1.0e-3f, "chorus mix 0 is not identity, err=" + juce::String (idErr, 5));
+            expect (gaps > 20 && maxGap - minGap > 4,
+                    "chorus did not move zero-crossings, gaps=" + juce::String (gaps)
+                    + " span=" + juce::String (maxGap - minGap));
+        }
+
+        beginTest ("filter resonance 4 is the ceiling, 10 is not peakier");
+        {
+            auto peakAt = [] (float q)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                const auto script = "filter1: type = lowpass; cutoff = 1000; resonance = " + juce::String (q, 1);
+                if (! chain.loadScript (script, err))
+                    return -1.f;
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                float peak = 0.f;
+                for (int b = 0; b < 12; ++b)
+                {
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        const float t = (float) (b * 256 + i) / 48000.f;
+                        buf.setSample (0, i, 0.05f * std::sin (2.f * juce::MathConstants<float>::pi * 1000.f * t));
+                    }
+                    chain.processBlock (buf);
+                    if (b >= 6)
+                        peak = juce::jmax (peak, TestHelpers::peakAbs (buf));
+                }
+                return peak;
+            };
+            const float q35 = peakAt (3.5f);
+            const float q4 = peakAt (4.f);
+            const float q10 = peakAt (10.f);
+            expect (q4 > q35 * 1.05f,
+                    "Q 4 was swallowed by a lower clamp, q4=" + juce::String (q4, 3)
+                    + " q35=" + juce::String (q35, 3));
+            expect (q10 > 0.f && std::abs (q10 - q4) / juce::jmax (1.0e-6f, q4) < 0.08f,
+                    "Q 10 was peakier than the ceiling, q10=" + juce::String (q10, 3)
+                    + " q4=" + juce::String (q4, 3));
+        }
+
         beginTest ("env unit=db reports dBFS, lin stays 0-1");
         {
             juce::String err;

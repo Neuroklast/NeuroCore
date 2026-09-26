@@ -1194,6 +1194,7 @@ void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
     juce::dsp::ProcessSpec dslSpec { sampleRate * osFactor,
                                      static_cast<juce::uint32>(blockSize * (int)osFactor),
                                      static_cast<juce::uint32>(channels) };
+    scriptManager.setHostRate(sampleRate);
     scriptManager.prepare(dslSpec);
     refreshReportedLatency();
 

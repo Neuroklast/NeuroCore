@@ -848,17 +848,24 @@ private:
                 static const char* names[] = {
                     "CTZ Kick Master", "Loudness Wall", "Brickwall Techno",
                     "Master Bus Destroyer", "Kick Surgery", "Sub Zero Pummel",
-                    "Priest Split Authority", "Multiband Phase Lock",
+                    "Split Authority", "Multiband Phase Lock",
                     "Bass Fractionator", "Surgical Snare Designer",
                     "Depth Sculptor", "Multiband Punch Enhancer",
                     "Dynamic Space Former",
-                    "Zatox Screamer", "Hyper Cyberpunk Sweep", "Speaking Bass",
+                    "Peak Screamer", "Hyper Cyberpunk Sweep", "Speaking Bass",
                     "Hardstyle Tail Screech", "Acid Morph 303", "Frequency Assassin",
-                    "rekkt Midtempo Pump", "zerosum Chaos Grid", "Pulsing Electro",
+                    "Midtempo Pump", "Chaos Grid", "Pulsing Electro",
                     "Vital Saw Morph", "Hard Groove Machine", "Resonant Sweep Stab",
                     "Metal Percussion", "Field Recording Glitch",
                     "Downtuned Guitar Industrial", "Chaotic Stab Generator",
-                    "Granular Smear"
+                    "Granular Smear",
+                    "Reference Master Polish", "Impact Master Finish",
+                    "Metal Kick Beater", "Metal Snare Crack", "Metal Toms Controlled",
+                    "Metal Drum Bus Impact", "Metal Cymbal Tamer",
+                    "Reese Razor Mid", "Reese Formant Strike", "Reese Knife Edge",
+                    "DnB Snare Needle", "DnB Break Snap Bus",
+                    "Techno Kick Clipping Core", "Techno Serrated Front",
+                    "Techno Iron Rumble", "Techno Rail Drum Bus", "Techno Acid Fracture"
                 };
                 juce::String firstFail;
                 int ok = 0;
@@ -1314,6 +1321,76 @@ private:
             expect (lib.findByName ("Gabber Drive") != nullptr);
             expect (lib.findByName ("Acid Hash") != nullptr);
             expect (lib.getEntries().size() >= 200);
+        }
+
+        beginTest ("factory catalog matches the Q ceiling and delay wow");
+        {
+            const auto file = juce::File (NEUROKORE_RESOURCES_DIR).getChildFile ("factory_presets.json");
+            const auto text = file.loadFileAsString();
+            expect (text.isNotEmpty());
+            expect (! text.contains ("q = 5;"), "catalog still asks for Q 5");
+            expect (! text.contains ("q = 6;"), "catalog still asks for Q 6");
+            expect (! text.contains ("q = 8;"), "catalog still asks for Q 8");
+            expect (! text.contains ("Notch Width [3.0, 10.0]"), "notch width still exceeds Q 4");
+            const auto heads = text.fromFirstOccurrenceOf ("# Tape Echo Heads", false, false)
+                                   .upToFirstOccurrenceOf ("\"category\"", false, false);
+            expect (heads.contains ("wow = e"), "Tape Echo Heads does not use delay wow");
+            expect (! heads.contains ("osc1"), "Tape Echo Heads still fakes wow with an oscillator");
+            expect (text.contains ("deesser1"), "catalog still fakes de-ess");
+            expect (! text.contains ("xover1: f1 = b; f2 = 11000"), "De-Ess Shelf still splits");
+            expect (text.contains ("transient1: attack = a / 3.2"), "Click Sustain still fakes the transient");
+            expect (text.contains ("wow = e"), "tape presets do not expose wow");
+            expect (text.contains ("Warehouse Rumble"), "Warehouse Rumble missing");
+            expect (text.contains ("Sub Zero Pummel"), "Sub Zero Pummel missing");
+            const auto vhs = text.fromFirstOccurrenceOf ("# VHS Tracking", false, false)
+                                 .upToFirstOccurrenceOf ("\"category\"", false, false);
+            expect (vhs.contains ("rate = a"), "VHS Tracking does not use delay rate");
+            expect (! vhs.contains ("osc1"), "VHS Tracking still fakes wow with an oscillator");
+            expect (vhs.contains ("bitcrush1"), "VHS Tracking still uses the aliasing formula");
+            const auto scripts = text.replace ("\\n", "\n");
+            int ottBare = 0, pitchBare = 0;
+            for (int i = 0; i < scripts.length();)
+            {
+                const int nl = scripts.indexOfChar (i, '\n');
+                const auto line = scripts.substring (i, nl < 0 ? scripts.length() : nl);
+                if (line.contains ("ott") && line.contains (":") && line.contains ("depth")
+                    && ! line.contains ("in ="))
+                    ++ottBare;
+                if ((line.contains ("pitch1:") || line.contains ("pitch2:")) && ! line.contains ("ceiling"))
+                    ++pitchBare;
+                if (nl < 0) break;
+                i = nl + 1;
+            }
+            expect (ottBare == 0, "OTT lines missing in, count=" + juce::String (ottBare));
+            expect (pitchBare == 0, "pitch lines missing ceiling, count=" + juce::String (pitchBare));
+        }
+
+        beginTest ("bitcrush block rolls off what the formula leaves");
+        {
+            auto energy = [] (const char* script)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (script, err))
+                    return -1.f;
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::AudioBuffer<float> buf (1, 256);
+                double acc = 0.0;
+                for (int b = 0; b < 8; ++b)
+                {
+                    for (int i = 0; i < 256; ++i)
+                        buf.setSample (0, i, std::sin (2.f * juce::MathConstants<float>::pi * 8000.f * (float) (b * 256 + i) / 48000.f));
+                    chain.processBlock (buf);
+                    for (int i = 0; i < 256; ++i)
+                        acc += (double) buf.getSample (0, i) * buf.getSample (0, i);
+                }
+                return (float) acc;
+            };
+            const float raw = energy ("stage1: y = bitcrush(x, 4)");
+            const float rolled = energy ("bitcrush1: bits = 4; tone = 2000; mix = 1");
+            expect (raw > 1.f && rolled > 0.f && rolled < raw * 0.35f,
+                    "bitcrush block did not roll off, raw=" + juce::String (raw, 2)
+                    + " rolled=" + juce::String (rolled, 2));
         }
 
         beginTest ("Bitcrush lo-fi quick template has recovery LPF");

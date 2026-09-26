@@ -24,6 +24,35 @@ public:
             expectWithinAbsoluteError (DSPUtils::lutInterp (t, 4, 1.5f), 1.5f, 1.0e-6f);
         }
 
+        beginTest("delayRead is 4-point by age and ignores the write head");
+        {
+            const int N = 64;
+            std::vector<float> storage;
+            float* buf = DSPUtils::alignedRing (storage, N);
+            const float w = 2.f * juce::MathConstants<float>::pi * 6000.f / 48000.f;
+            float seamErr = 0.f;
+            float intErr = 0.f;
+            float poison = 0.f;
+            for (int writePos = 0; writePos < N; ++writePos)
+            {
+                std::fill (buf, buf + N, 0.f);
+                buf[writePos] = 1000.f;
+                for (int age = 1; age < N; ++age)
+                    buf[DSPUtils::delayAgeIndex (writePos, age, N)] = std::sin (-(float) age * w);
+                const float y = DSPUtils::delayRead (buf, writePos, 5.4f, N);
+                seamErr = juce::jmax (seamErr, std::abs (y - std::sin (-5.4f * w)));
+                poison = juce::jmax (poison, std::abs (y));
+                const float exact = DSPUtils::delayRead (buf, writePos, 8.f, N);
+                intErr = juce::jmax (intErr, std::abs (exact - std::sin (-8.f * w)));
+            }
+            // Linear on this sine is ~0.07. 0.02 fails that and passes Catmull-Rom.
+            // Poison at the write slot is 1000 — a seam mix cannot hide under 2.
+            expect (seamErr < 0.02f && intErr < 1.0e-6f && poison < 2.f,
+                    "delayRead seam/quality frac=" + juce::String (seamErr, 5)
+                    + " int=" + juce::String (intErr, 8)
+                    + " peak=" + juce::String (poison, 3));
+        }
+
         beginTest("autoGainCompensate scales samples toward dry RMS");
 
         juce::AudioBuffer<float> dryBuffer(2, 4);

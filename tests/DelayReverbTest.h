@@ -134,6 +134,50 @@ public:
                     + " sineDelta=" + juce::String (inDelta, 4));
         }
 
+        beginTest ("fractional delay of a 6 kHz sine beats linear interpolation");
+        {
+            // 7.3 ms at 48 kHz is 350.4 samples. Linear error on a 6 kHz sine
+            // sits near 0.03. A 4-point read must stay under 0.008.
+            dsl::SignalChain chain;
+            chain.prepare (spec);
+            juce::String err;
+            expect (chain.loadScript (
+                "delay1: time = 7.3; feedback = 0; mix = 1; damp = 18000", err), err);
+
+            const float hz = 6000.f;
+            const float amp = 0.5f;
+            const float delaySec = 0.0073f;
+            const float w = 2.f * juce::MathConstants<float>::pi * hz;
+            juce::AudioBuffer<float> buf (2, 512);
+            float errPeak = 0.f;
+            int compared = 0;
+            for (int b = 0; b < 4; ++b)
+            {
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float t = (float) (b * 512 + i) / 48000.f;
+                    const float s = amp * std::sin (w * t);
+                    buf.setSample (0, i, s);
+                    buf.setSample (1, i, s);
+                }
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+                expectEquals (TestHelpers::countNonFinite (buf), 0);
+                for (int i = 0; i < 512; ++i)
+                {
+                    const float t = (float) (b * 512 + i) / 48000.f;
+                    if (t < delaySec + 0.001f)
+                        continue;
+                    const float want = amp * std::sin (w * (t - delaySec));
+                    errPeak = juce::jmax (errPeak, std::abs (buf.getSample (0, i) - want));
+                    ++compared;
+                }
+            }
+            expect (compared > 1000, "fractional-delay contract compared too few samples");
+            expect (errPeak < 0.008f,
+                    "fractional delay error " + juce::String (errPeak, 5)
+                    + " — linear read, not a 4-point tap");
+        }
+
         beginTest ("static filter cutoff jump stays finite");
         {
             dsl::SignalChain chain;
@@ -295,6 +339,31 @@ public:
             const float two = tailFor ("delay1: time = 420; feedback = 0.55; mix = 1\ndelay2: time = 310; feedback = 0.5; mix = 1");
             expect (one > 0.4f);
             expect (two > one + 0.25f, "Serial tails must accumulate so hosts do not cut the second effect.");
+        }
+
+        beginTest ("reverb tank steps at host rate, not at 8x");
+        {
+            dsl::SignalChain chain;
+            chain.setHostRate (48000.0);
+            chain.prepare ({ 384000.0, 2048, 2 });
+            juce::String err;
+            expect (chain.loadScript (
+                "reverb1: size = 0.55; decay = 0.5; damp = 0.4; mix = 1; width = 1", err), err);
+            juce::AudioBuffer<float> buf (2, 2048);
+            buf.clear();
+            buf.setSample (0, 0, 1.0f);
+            buf.setSample (1, 0, 1.0f);
+            for (int b = 0; b < 5; ++b)
+            {
+                if (b > 0)
+                    buf.clear();
+                chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            }
+            const int steps = chain.reverbTankSteps();
+            expect (steps > 1000 && steps < 1600,
+                    "tank ran at OS rate, steps=" + juce::String (steps));
+            expect (TestHelpers::peakAbs (buf) > 1.0e-4f, "host-rate tank produced no wet");
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
         }
 
         beginTest ("reverb block produces wet energy and finite output");
@@ -626,6 +695,157 @@ public:
             }
             expect (laterPeak < 0.06f, "8x-rate wrap/write-head tick, peak="
                     + juce::String (laterPeak, 4) + " extras=" + juce::String (extraPeaks));
+        }
+
+        beginTest ("delay time follows an LFO inside one block");
+        {
+            // Block-latched time plus a 25 ms smoother holds one delay for the block.
+            // Three impulses a third of an LFO cycle apart must not share one echo delay.
+            juce::dsp::ProcessSpec wide { 48000.0, 8192, 2 };
+            dsl::SignalChain chain;
+            chain.prepare (wide);
+            juce::String err;
+            expect (chain.loadScript (
+                "osc1: shape = sine; freq = 20; depth = 1\n"
+                "delay1: time = 15 + osc1 * 5; feedback = 0; mix = 1; damp = 18000",
+                err), err);
+
+            juce::AudioBuffer<float> buf (2, 8192);
+            buf.clear();
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+
+            const int at[3] = { 2000, 2800, 3600 };
+            buf.clear();
+            for (int k = 0; k < 3; ++k)
+            {
+                buf.setSample (0, at[k], 1.f);
+                buf.setSample (1, at[k], 1.f);
+            }
+            chain.processBlockSmoothed (buf, TestHelpers::nullKnobs());
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+
+            int echo[3] = { -1, -1, -1 };
+            for (int k = 0; k < 3; ++k)
+            {
+                const int lo = at[k] + 384;
+                const int hi = juce::jmin (8191, at[k] + 1100);
+                float pk = 0.f;
+                for (int i = lo; i <= hi; ++i)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    if (a > pk)
+                    {
+                        pk = a;
+                        echo[k] = i - at[k];
+                    }
+                }
+            }
+            const int d01 = std::abs (echo[0] - echo[1]);
+            const int d12 = std::abs (echo[1] - echo[2]);
+            const int d20 = std::abs (echo[2] - echo[0]);
+            const int spread = juce::jmax (d01, juce::jmax (d12, d20));
+            expect (echo[0] > 0 && echo[1] > 0 && echo[2] > 0 && spread > 80,
+                    "delay did not follow the LFO inside the block, echoes="
+                    + juce::String (echo[0]) + "," + juce::String (echo[1]) + ","
+                    + juce::String (echo[2]) + " spread=" + juce::String (spread));
+        }
+
+        beginTest ("delay wow wanders the echo and wow 0 stays put");
+        {
+            auto lags = [] (const char* script, int& spread, bool& finite)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (script, err))
+                    return false;
+                chain.prepare ({ 48000.0, 256, 2 });
+                juce::AudioBuffer<float> buf (2, 256);
+                int minLag = 100000, maxLag = 0;
+                int n = 0;
+                int impulseAt = -100000;
+                for (int b = 0; b < 300; ++b)
+                {
+                    for (int i = 0; i < 256; ++i, ++n)
+                    {
+                        const float s = (n % 9600 == 0) ? 1.f : 0.f;
+                        if (s > 0.f)
+                            impulseAt = n;
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    chain.processBlock (buf);
+                    if (! std::isfinite (buf.getSample (0, 0)))
+                        finite = false;
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        const int k = b * 256 + i;
+                        if (impulseAt >= 0 && k > impulseAt && k < impulseAt + 4800
+                            && std::abs (buf.getSample (0, i)) > 0.2f)
+                        {
+                            const int lag = k - impulseAt;
+                            minLag = juce::jmin (minLag, lag);
+                            maxLag = juce::jmax (maxLag, lag);
+                            impulseAt = -100000;
+                        }
+                    }
+                }
+                spread = maxLag - minLag;
+                return minLag < 100000;
+            };
+            int still = 0, wander = 0;
+            bool finite = true;
+            expect (lags ("delay1: time = 80; feedback = 0; mix = 1; wow = 0", still, finite));
+            expect (lags ("delay1: time = 80; feedback = 0; mix = 1; wow = 1", wander, finite));
+            expect (still < 3, "wow 0 moved the echo, spread=" + juce::String (still));
+            expect (wander > 200 && wander < 900,
+                    "wow 1 did not wander ±8 ms, spread=" + juce::String (wander));
+            expect (finite);
+        }
+
+        beginTest ("delay flutter is smaller than wow and rate changes the speed");
+        {
+            auto spreadOf = [] (const char* script)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                if (! chain.loadScript (script, err))
+                    return -1;
+                chain.prepare ({ 48000.0, 256, 2 });
+                juce::AudioBuffer<float> buf (2, 256);
+                int minLag = 100000, maxLag = 0, n = 0, impulseAt = -100000;
+                for (int b = 0; b < 80; ++b)
+                {
+                    for (int i = 0; i < 256; ++i, ++n)
+                    {
+                        const float s = (n % 2400 == 0) ? 1.f : 0.f;
+                        if (s > 0.f) impulseAt = n;
+                        buf.setSample (0, i, s);
+                        buf.setSample (1, i, s);
+                    }
+                    chain.processBlock (buf);
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        const int k = b * 256 + i;
+                        if (impulseAt >= 0 && k > impulseAt && k < impulseAt + 2000
+                            && std::abs (buf.getSample (0, i)) > 0.2f)
+                        {
+                            const int lag = k - impulseAt;
+                            minLag = juce::jmin (minLag, lag);
+                            maxLag = juce::jmax (maxLag, lag);
+                            impulseAt = -100000;
+                        }
+                    }
+                }
+                return minLag < 100000 ? maxLag - minLag : -1;
+            };
+            const int still = spreadOf ("delay1: time = 40; feedback = 0; mix = 1; flutter = 0");
+            const int flutter = spreadOf ("delay1: time = 40; feedback = 0; mix = 1; flutter = 1");
+            const int slow = spreadOf ("delay1: time = 40; feedback = 0; mix = 1; wow = 1; rate = 0.2");
+            const int fast = spreadOf ("delay1: time = 40; feedback = 0; mix = 1; wow = 1; rate = 4");
+            expect (still >= 0 && still < 3, "flutter 0 moved, spread=" + juce::String (still));
+            expect (flutter > 40 && flutter < 220, "flutter 1 was not ±2 ms, spread=" + juce::String (flutter));
+            expect (fast > slow && fast > 80, "rate did not speed the wow, fast="
+                    + juce::String (fast) + " slow=" + juce::String (slow));
         }
 
         beginTest ("wow-modulated delay has no block-rate clicks");

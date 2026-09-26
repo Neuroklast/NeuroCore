@@ -159,7 +159,7 @@ export function Knobs({ bind = true, rail = "left" }: { bind?: boolean; rail?: "
   const knobs = useHostStore((s) => s.knobs);
   if (rail === "bottom") {
     return (
-      <div className="flex h-[152px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)] px-3 pb-2 pt-2">
+      <div className="flex h-[160px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)] py-3">
         {knobs.map((k) => (
           <div key={k.id} className="min-w-0 flex-1">
             <Knob knob={k} bind={bind} compact />
@@ -212,12 +212,12 @@ export function MixOs() {
   const os = useHostStore((s) => s.os);
   const polisher = useHostStore((s) => s.polisher);
   return (
-    <div className="nk-macro-rule flex h-8 shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface px-3 text-[11px]">
+    <div className="nk-macro-rule flex h-8 shrink-0 items-center gap-3 border-t border-b border-[var(--nk-line)] bg-surface text-[11px]">
       <span className="font-brand text-muted">Input channel</span>
       <InputSwitch />
       <span className="font-brand text-muted">Oversampling</span>
       <select
-        className="h-8 border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
+        className="h-full border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
         value={os}
         onChange={(e) => {
           const index = Number(e.target.value);
@@ -234,7 +234,7 @@ export function MixOs() {
       </select>
       <span className="font-brand text-muted">Soft Clip</span>
       <select
-        className="h-8 border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
+        className="h-full border border-[var(--nk-line)] bg-surface-high px-1 text-ink"
         value={polisher}
         onChange={(e) => {
           const index = Number(e.target.value);
@@ -284,7 +284,7 @@ export function Footer() {
   const cpu = Math.max(0, Math.min(100, Math.round(h.cpu)));
   const latMs = h.sr > 0 ? (h.lat / h.sr) * 1000 : 0;
   return (
-    <footer className="grid h-[28px] shrink-0 grid-cols-9 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
+    <footer className="grid h-8 shrink-0 grid-cols-9 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
       <span>{h.mode === "SAFE" ? "SAFE" : h.mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
       <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${h.lat}smp` : `${h.lat}smp`}</span>

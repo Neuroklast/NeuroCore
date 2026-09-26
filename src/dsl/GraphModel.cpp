@@ -1596,14 +1596,15 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
                                      "center", "width", "lowcut", "highcut", "channel", nullptr };
     static const char* kEq[] = { "type", "freq", "q", "gain", "channel", nullptr };
     static const char* kComp[] = { "threshold", "ratio", "attack", "release", "knee",
-                                   "makeup", "ceiling", "source", nullptr };
+                                   "makeup", "hpf", "mix", "detector", "ceiling", "lookahead", "source", nullptr };
     static const char* kGate[] = { "threshold", "hyst", "attack", "hold", "release",
                                    "range", "ceiling", "source", nullptr };
     static const char* kNoiseGate[] = { "threshold", "attack", "release", "ceiling", nullptr };
-    static const char* kLimit[] = { "ceiling", "release", nullptr };
+    static const char* kLimit[] = { "ceiling", "release", "lookahead", nullptr };
     static const char* kPitch[] = { "semitones", "shift", "mix", "formant", "ceiling", "sync", nullptr };
-    static const char* kDelay[] = { "time", "sync", "feedback", "mix", "damp",
+    static const char* kDelay[] = { "time", "sync", "feedback", "mix", "damp", "wow", "rate", "flutter",
                                     "pingpong", "channel", nullptr };
+    static const char* kBitcrush[] = { "bits", "mix", "tone", nullptr };
     static const char* kReverb[] = { "size", "decay", "damp", "mix", "width", nullptr };
     static const char* kIr[] = { "mix", "gain", nullptr };
     static const char* kOtt[] = { "depth", "time", "in", "low", "mid", "high", "f1", "f2", nullptr };
@@ -1613,6 +1614,10 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
                                   "invert", "depth", "source", "trigger", nullptr };
     static const char* kPhaser[] = { "stages", "rate", "depth", "center", "feedback", "mix", nullptr };
     static const char* kFlanger[] = { "rate", "depth", "delay", "feedback", "mix", "invert", nullptr };
+    static const char* kChorus[] = { "rate", "depth", "delay", "voices", "mix", "width", nullptr };
+    static const char* kDeesser[] = { "freq", "threshold", "amount", "attack", "release", "mix", "listen", nullptr };
+    static const char* kTransient[] = { "attack", "sustain", "fast", "slow", "mix", nullptr };
+    static const char* kUtility[] = { "gain", "pan", "polarity", nullptr };
     static const char* kSend[] = { "in", "main", nullptr };
     static const char* kOut[] = { "main", "gain", nullptr };
     static const char* kMs[] = { "mode", nullptr };
@@ -1640,6 +1645,11 @@ juce::StringArray editableArgKeys (const GraphNode& node, const GraphDocument* d
     else if (t.startsWith ("env")) keys = kEnv;
     else if (t.startsWith ("phaser")) keys = kPhaser;
     else if (t.startsWith ("flanger") || t.startsWith ("flange")) keys = kFlanger;
+    else if (t.startsWith ("chorus")) keys = kChorus;
+    else if (t.startsWith ("deesser") || t.startsWith ("deess")) keys = kDeesser;
+    else if (t.startsWith ("transient") || t == "trans" || t == "td") keys = kTransient;
+    else if (t.startsWith ("utility") || t == "util") keys = kUtility;
+    else if (t.startsWith ("bitcrush") || t == "crush") keys = kBitcrush;
     else if (t == "send") keys = kSend;
     else if (t == "out") keys = kOut;
     else if (t == "ms") keys = kMs;
@@ -2136,7 +2146,11 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
                           || t.startsWith ("noisegate") || t == "noise_gate"
                           || t.startsWith ("ott") || t.startsWith ("widen")
                           || t.startsWith ("phaser") || t.startsWith ("flanger")
-                          || t.startsWith ("flange");
+                          || t.startsWith ("flange") || t.startsWith ("chorus")
+                          || t.startsWith ("deesser") || t.startsWith ("deess")
+                          || t.startsWith ("transient") || t == "trans" || t == "td"
+                           || t.startsWith ("utility") || t == "util"
+                           || t.startsWith ("bitcrush") || t == "crush";
     if (extraParams)
     {
         for (const auto& key : editableArgKeys (node))

@@ -63,7 +63,7 @@ Alte Chains (JIT-Code, Delay-Ringe) hängen an `retiredChain` und sterben auf de
 | LUT | `DSPUtils::lutInterp(const float* NK_RESTRICT, int, float)` |
 | Macros | `NK_FORCEINLINE` / `NK_RESTRICT` in `Config.h` |
 
-`delayRead` ist **linear + Integer-Wrap** auf `float*`. Hermite-4-Punkt mischte Index 0 mit `N-1` und knackte einmal pro Periode.
+`delayRead` ist **ein** 4-Punkt-Catmull-Rom auf `float*`. Taps kommen über das Alter hinter dem Write-Head, nie als Fenster das Index 0 mit `N-1` mischt. Integer-Delay ist ein Sample. Delay und Flanger rufen nur diese Funktion.
 
 ### Oversampling (gemessen, nicht ersetzt)
 
@@ -191,7 +191,7 @@ Parameter-IDs für den APVTS:
 ### `SignalChain` (`src/dsl/SignalChain.h/.cpp`)
 - Führt die geparsten Blöcke aus. Audio: nur `processBlock` (eine Virtual / Chip / Callback)
 - Neue Kette wird gebaut, dann atomar veröffentlicht. Die vorherige hängt an `retiredChain` (Message-Thread)
-- Delay: linearer Tap, Integer-Wrap, 64-aligned Ring (`DSPUtils::alignedRing`)
+- Delay: `DSPUtils::delayRead` (4-Punkt, Alter hinter dem Write-Head), 64-aligned Ring (`DSPUtils::alignedRing`)
 - Sanitation-AA sitzt in der Engine **vor** dem Downsample, nicht im DSL-Delay
 - Nach jedem Block: `writeNodeTap` (64 Samples) für Circuit-Glow
 - Formelwechsel: `switchRamp` in `DspEngine` (kein Dual-Chain-Blend)

@@ -18,7 +18,7 @@ export const nk = {
   panelBorder: signal.panelBorder,
   gridLine: `rgba(${signal.accentRgb}, 0.16)`,
   well: signal.well,
-  version: "0.6.4-beta",
+  version: "0.6.6-beta",
   product: "NEUROKORE",
   company: "Neuroklast",
   byline: "by Neuroklast",
@@ -50,6 +50,10 @@ export function kindLabel(type: string): string {
   if (t.startsWith("pitch")) return "PITCH";
   if (t.startsWith("phaser")) return "PHASER";
   if (t.startsWith("flanger") || t.startsWith("flange")) return "FLANGE";
+  if (t.startsWith("chorus")) return "CHORUS";
+  if (t.startsWith("deesser") || t.startsWith("deess")) return "DEESS";
+  if (t.startsWith("transient") || t === "trans" || t === "td") return "TRANS";
+  if (t.startsWith("utility") || t === "util") return "UTIL";
   if (t.startsWith("vocod")) return "VOC";
   if (t.startsWith("env")) return "ENV";
   if (t.startsWith("osc")) return "LFO";

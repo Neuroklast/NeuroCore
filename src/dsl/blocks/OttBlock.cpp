@@ -143,7 +143,7 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
     {
         const float depth = juce::jlimit (0.f, 1.f, depthSm.getNextValue());
         const float time01 = juce::jlimit (0.f, 1.f, timeSm.getNextValue());
-        const float inG = juce::jlimit (0.2f, 8.f, inSm.getNextValue());
+        const float inG = juce::jlimit (0.25f, 6.f, inSm.getNextValue());
         const float amt[3] = {
             juce::jlimit (0.f, 1.4f, lowSm.getNextValue()),
             juce::jlimit (0.f, 1.4f, midSm.getNextValue()),
@@ -186,7 +186,10 @@ void SignalChain::Ott::processBlock (juce::AudioBuffer<float>& buffer)
             const float det = juce::jmax (std::abs (band[0][b]),
                                           useCh > 1 ? std::abs (band[1][b]) : 0.f);
             const float levelDb = juce::Decibels::gainToDecibels (det, -80.f);
-            envDb[b] += ((levelDb > envDb[b]) ? atkC : relC) * (levelDb - envDb[b]);
+            if (envDb[b] <= -79.f)
+                envDb[b] = levelDb;
+            else
+                envDb[b] += ((levelDb > envDb[b]) ? atkC : relC) * (levelDb - envDb[b]);
             if (! std::isfinite (envDb[b]))
                 envDb[b] = -80.f;
             envDb[b] = juce::jlimit (-80.f, 12.f, envDb[b]);

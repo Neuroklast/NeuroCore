@@ -4,14 +4,14 @@ Modular distortion and sound design effect by **Neuroklast**, for heavy guitars,
 
 Factory presets include mixing utilities alongside creative effects. NEUROKORE is not advertised as a replacement for a dedicated mastering suite; its level compensation is RMS-based, not LUFS normalization.
 
-English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.6.4-beta**.
+English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.6.6-beta**.
 
 Operator guide: [docs/manual/NEUROKORE.md](docs/manual/NEUROKORE.md). In-plugin Help is that guide minus Install.
 
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.4-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
+1. Run `NEUROKORE-0.6.6-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
 2. If Microsoft Edge WebView2 is missing, the setup installs it. Without that runtime the window is empty.
 3. Rescan plug-ins. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3`.
 4. Standalone is in the Start menu under Neuroklast. Uninstall keeps your presets and license.
@@ -42,7 +42,7 @@ Needs JUCE 8.0.6+ (`JUCE_DIR` or CMake fetches it) and a VST3 SDK.
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Linux first needs `./scripts/install_linux_deps.sh`. Windows uses `build_release.bat` and macOS/Linux use `scripts/build_local.sh`. Both entry points reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.4-beta.exe` / `.vst3` / `.component`).
+Linux first needs `./scripts/install_linux_deps.sh`. Windows uses `build_release.bat` and macOS/Linux use `scripts/build_local.sh`. Both entry points reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.6.6-beta.exe` / `.vst3` / `.component`).
 
 Package Windows zip + installer (after Release). Needs [Inno Setup 6](https://jrsoftware.org/isinfo.php):
 

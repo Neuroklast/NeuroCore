@@ -6,7 +6,10 @@ export type ToolbarSlot =
 /** Floor for the current-program title so BYPASS stays inside the 1280 bar. */
 export const PRESET_MIN_PX = 144;
 
-/** One chrome row: workspace tabs + compare. Same height as LIVE/STUDIO. */
+/** One inset for every shell band and the unit pane. */
+export const CHROME_PAD_PX = 12;
+
+/** One chrome row: workspace tabs + compare. Same height as LIVE/STUDIO and the footer. */
 export const WORKSPACE_ROW_H = 32;
 
 /** A and B are equal cells; 8px cut must not devour a letter. */

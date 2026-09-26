@@ -98,22 +98,43 @@ namespace DSPUtils
         return y;
     }
 
-    /** Linear delay tap. Same wrap as `Delay::delayRead` — no Hermite across index 0.
-        Hot path: `buf` live, `N >= 4`. */
-    NK_FORCEINLINE static float delayReadLinear (const float* NK_RESTRICT buf, int writePos,
-                                                float delaySamps, int N) noexcept
+    /** Index `age` samples behind `writePos`. Age is in [1, N-1], so this is never the write slot. */
+    NK_FORCEINLINE static int delayAgeIndex (int writePos, int age, int N) noexcept
     {
+        int i = writePos - age;
+        if (i < 0)
+            i += N;
+        return i;
+    }
+
+    /**
+        One delay tap. 4-point Catmull-Rom between ages `di` and `di+1`.
+        Taps are gathered by age, never by walking index 0 into N-1 across the write head
+        (that mix was the periodic click). Integer delays return the single sample at that age.
+        Hot path: `buf` live, `N >= 8`, delay clamped to [2, N-2].
+    */
+    NK_FORCEINLINE static float delayRead (const float* NK_RESTRICT buf, int writePos,
+                                           float delaySamps, int N) noexcept
+    {
+        if (buf == nullptr || N < 8)
+            return 0.f;
         prefetchRead (buf + ((writePos + 16) % N));
         const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
         const int di = (int) d;
         const float f = d - (float) di;
-        int i0 = writePos - di;
-        if (i0 < 0)
-            i0 += N;
-        int i1 = i0 - 1;
-        if (i1 < 0)
-            i1 += N;
-        return buf[i0] + f * (buf[i1] - buf[i0]);
+        if (f == 0.f)
+            return buf[delayAgeIndex (writePos, di, N)];
+
+        const float y0 = buf[delayAgeIndex (writePos, di - 1, N)];
+        const float y1 = buf[delayAgeIndex (writePos, di, N)];
+        const float y2 = buf[delayAgeIndex (writePos, di + 1, N)];
+        const float y3 = buf[delayAgeIndex (writePos, di + 2, N)];
+        const float f2 = f * f;
+        const float f3 = f2 * f;
+        return 0.5f * ((2.f * y1)
+                       + (-y0 + y2) * f
+                       + (2.f * y0 - 5.f * y1 + 4.f * y2 - y3) * f2
+                       + (-y0 + 3.f * y1 - 3.f * y2 + y3) * f3);
     }
 
     /** Feedback limiter. Transparent below 1.5 — same threshold as Delay. */

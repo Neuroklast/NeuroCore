@@ -112,7 +112,7 @@ filter2: type = bandpass; center = 1000; width = 500
 |---|---|---|
 | `type` | `lowpass` \| `highpass` \| `bandpass` \| `allpass` | Filtertyp (Kurzformen: `lpf`, `hpf`, `bpf`, `apf`) |
 | `cutoff` | Hz / Formel | Grenzfrequenz |
-| `resonance` | 0.1–10 | Gütefaktor |
+| `resonance` | 0.1–4 | Gütefaktor. Ein LFO oder eine Hüllkurve auf der Grenzfrequenz hält bei 2.2 |
 | `center` | Hz | Mittenfrequenz (Bandpass) |
 | `width` | Hz | Bandbreite (Bandpass) |
 | `lowcut` / `highcut` | Hz | Alternative Bandpass-Definition |
@@ -159,6 +159,25 @@ Delay 0.1–20 ms, LFO auf die Laufzeit. `invert = on` dreht den Nassanteil (Thr
 | `feedback` / `fb` | 0–0.95 | Kamm-Resonanz |
 | `mix` / `wet` | 0–1 | Nassanteil |
 | `invert` / `polarity` | `on`/`off` oder 0–1 | Nass-Polarität |
+
+---
+
+## `chorus` – mehrstimmiges moduliertes Delay
+
+```
+chorus1: rate = 0.6; depth = 0.5; delay = 18; voices = 3; mix = 0.5; width = 0.7
+```
+
+Zwei bis vier Stimmen lesen eine Leitung. Der LFO sitzt auf der Laufzeit, nicht auf der Amplitude. Kein Feedback — das ist der Flanger. `mix = 0` ist das trockene Signal.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `rate` | 0–5 Hz | LFO. 0 hält die Stimmen auf ihrem Phasenversatz |
+| `depth` | 0–1 | Sweep um `delay` (±40 %) |
+| `delay` / `time` | 5–40 ms | Zentrum |
+| `voices` / `n` | 2–4 | Stimmen auf derselben Leitung |
+| `mix` / `wet` | 0–1 | Nassanteil |
+| `width` | 0–1 | Phasenversatz L gegen R. 0 bleibt mono |
 
 ---
 
@@ -213,7 +232,7 @@ STFT phase vocoder (FFT 1024, hop 256). Shift in Semitones; optional `formant` s
 | `mix` | 0–1 | Nassanteil |
 | `formant` | 0.25–4 | Formant-Skalierung (1 = mit Pitch) |
 | `ceiling` / `ceil` | −24…0 dB | Soft-Ceiling auf Wet (Default −0.3) |
-| `sync` | `1/4`, `1/8`, … | Optional: hop an Tempo koppeln |
+| `sync` | `1/4`, `1/8`, … | Alte Skripte bleiben lesbar. Hop und Latenz bleiben fest. |
 
 Aliases: `pitchshift`, `pshift`.
 
@@ -247,7 +266,7 @@ Xfer-OTT-Stil: Split bei ~90 Hz / 3.2 kHz, pro Band Abwärts- **und** Aufwärtsk
 |---|---|---|
 | `depth` / `mix` | 0–1 | Nassanteil |
 | `time` | 0–1 | Hüllkurve (kurz → lang) |
-| `in` / `input` | 0.25–6 | Eingangs-Gain ins OTT |
+| `in` / `input` | 0.25–6 | Pegel in den Detektor. Nicht der Band-Anteil. |
 | `low` `mid` `high` | 0–1.4 | Prozessanteil pro Band |
 | `f1` `f2` | Hz | Trennfrequenzen (Default 90 / 3200) |
 
@@ -377,14 +396,16 @@ Dieselbe Engine wie `gate`, aber im Circuit-Overlay und in der Autocomplete nur 
 
 ```
 limit1: ceiling = -0.3; release = 0.08
+limit1: ceiling = -1; release = 0.05; lookahead = 5
 ```
 
-In der Kette, **nicht** der Engine-True-Peak-Brickwall danach. Instant Attack, kein Lookahead in diesem Block. Alias: `limiter1`.
+In der Kette, **nicht** der Engine-True-Peak danach. `lookahead = 0` ist der ~80-µs-Modus. Ein Lookahead verzögert das Signal und hängt sich in dieselbe PDC-Summe wie Pitch und IR. Alias: `limiter1`.
 
 | Argument | Werte | Beschreibung |
 |---|---|---|
 | `ceiling` / `threshold` | dB | Maximalpegel (Standard −0.3) |
 | `release` | s | Rückstellzeit (Standard 0.08) |
+| `lookahead` / `ahead` | 0–20 ms | 0 = schnell. Sonst Delay + Host-Latenz |
 
 ---
 
@@ -421,13 +442,16 @@ comp1: threshold = -16; ratio = 4; attack = 0.003; release = 0.22; knee = 6; mak
 comp1: source = sidechain
 ```
 
-Alte Skripte (nur threshold/ratio/attack/release) bleiben gültig. Attack-Floor **1 ms**.
+Alte Skripte (nur threshold/ratio/attack/release) bleiben gültig. `mix` fehlt = 1 (voll nass). `detector` fehlt = peak. Attack-Floor **50 µs**.
 
 | Argument | Beschreibung |
 |---|---|
 | `threshold` | Schwelle (dBFS oder Formel) |
 | `ratio` | Kompressionsverhältnis (≥ 1) |
-| `attack` | Anstiegszeit in Sekunden (min. 1 ms) |
+| `attack` | Anstiegszeit in Sekunden (min. 50 µs) |
+| `mix` / `wet` | 0 = trocken, 1 = nur komprimiert. Standard 1 |
+| `detector` / `det` | `peak` oder `rms`. Dieselbe Hüllkurve |
+| `lookahead` / `ahead` | 0–20 ms. 0 = sofort. Sonst Delay + Host-Latenz. Der Detektor hört das aktuelle Signal |
 | `release` | Abklingzeit in Sekunden |
 | `knee` | Soft-Knee in dB (0 = hart, optional) |
 | `makeup` / `gain` | Ausgangs-Anhebung in dB (optional) |
@@ -436,6 +460,58 @@ Alte Skripte (nur threshold/ratio/attack/release) bleiben gültig. Attack-Floor 
 | `source` | `sidechain` duckt vom Extra-Input (optional) |
 
 Chainwide: nach der Kette soft-shapet die Engine nur echte Overs (`|x| > 1`); musikalische Pegel bleiben unangetastet. Host-seitige Peak-Safety bleibt `OutputSanitizer`.
+
+---
+
+## `deesser` – Split-Band De-Esser
+
+```
+deesser1: freq = 6500; threshold = -8; amount = 0.7; attack = 0.002; release = 0.04; mix = 1; listen = off
+```
+
+Kein Comp mit Hochpass. Der Detektor ist ein Bandpass. Reduziert wird nur dieses Band, und nur wenn es laut gegenüber dem Gesamtsignal ist. `listen = on` spielt das Band.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `freq` / `center` | 2–12 kHz | Bandmitte |
+| `threshold` | −24…6 dB | Band darf so viele dB über dem Gesamtsignal liegen |
+| `amount` | 0–1 | Wie stark das Band dann gedämpft wird |
+| `listen` | `off`/`on` | Band allein hören |
+| `mix` | 0–1 | Standard 1 |
+
+---
+
+## `transient` – Transient
+
+```
+transient1: attack = 0.5; sustain = 0; fast = 0.002; slow = 0.08; mix = 1
+```
+
+Zwei Hüllkurven auf dem Betrag. Die Differenz ist der Transient. Nur Gain, kein Kompressor. Positives `attack` macht den Anschlag lauter, negatives leiser. Positives `sustain` hebt den Körper, negatives kürzt ihn.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `attack` | −1…1 | Anschlag |
+| `sustain` | −1…1 | Körper danach |
+| `fast` | 0.3–20 ms | Schnelle Hüllkurve |
+| `slow` | 10–400 ms | Langsame Hüllkurve |
+| `mix` | 0–1 | Standard 1 |
+
+---
+
+## `utility` – Gain, Pan, Polarität
+
+```
+utility1: gain = 0; pan = 0; polarity = off
+```
+
+Lineares Gain in dB. `pan = 0` lässt Stereo stehen. `pan = -1` ist nur links, `pan = 1` nur rechts, der andere Kanal fällt mit Equal-Power. `polarity = on` dreht das Vorzeichen. Kein Shaper.
+
+| Argument | Werte | Beschreibung |
+|---|---|---|
+| `gain` | −24…24 dB | Pegel |
+| `pan` | −1…1 | Balance, 0 = unverändert |
+| `polarity` | `off`/`on` | Vorzeichen |
 
 ---
 
@@ -479,14 +555,19 @@ delay2: sync = 1/8; feedback = 0.45; mix = 0.4; damp = 5000; pingpong = true
 | `feedback` / `fb` | 0…0.95 | Feedback-Gain |
 | `mix` / `wet` | 0…1 | Wet-Anteil (0 = dry, 1 = nur Delay) |
 | `damp` / `damping` / `tone` | Hz | One-Pole-LPF im Feedback (Dunkler bei niedriger Hz) |
+| `wow` | 0–1 | 0 steht. 1 ist ±8 ms. `rate` ist die Geschwindigkeit, Standard 0,65 Hz |
+| `rate` | 0,1–12 Hz | Wow-Tempo. 0,65 lässt den alten Wow stehen |
+| `flutter` | 0–1 | 0 steht. 1 ist ±2 ms bei 8 Hz auf derselben Leitung |
 | `pingpong` | `true` | Stereo-Kreuz-Feedback L↔R |
 | `channel` | `left`/`mid` \| `right`/`side` \| `both` | Kanal-Routing |
 
-**Hinweis:** Das ist eine echte Ringpuffer-Delay-Line (lineare Interpolation), **kein** 1-Sample-`y_prev`-Comb.
+**Hinweis:** Das ist eine echte Ringpuffer-Delay-Line (4-Punkt Catmull-Rom, Integer-Delay ist ein Sample), **kein** 1-Sample-`y_prev`-Comb. `time = 180 + osc1 * 8` folgt dem LFO pro Sample. `sync` bleibt geslewt, damit ein BPM-Sprung nicht knackt.
 
 ---
 
 ## `reverb` – algorithmischer Hall (Freeverb-Stil)
+
+Der Tank taktet die Host-Rate. Oversampling verarbeitet ihn nicht achtmal. Die Kammfilter lesen denselben fraktionalen Reader wie Delay.
 
 ```
 reverb1: size = 0.55; decay = 0.5; damp = 0.4; mix = 0.3; width = 1.0

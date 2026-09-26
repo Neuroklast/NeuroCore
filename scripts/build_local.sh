@@ -14,4 +14,4 @@ fi
 cmake "${cmake_args[@]}"
 cmake --build "$build_dir" --config "$config" --target NeuroKore_All --parallel "$jobs"
 
-printf 'NEUROKORE %s build complete: %s/NeuroKore_artefacts/%s\n' "0.6.4-beta" "$build_dir" "$config"
+printf 'NEUROKORE %s build complete: %s/NeuroKore_artefacts/%s\n' "0.6.5-beta" "$build_dir" "$config"

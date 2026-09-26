@@ -22,6 +22,12 @@ void ScriptManager::setValueTreeState(juce::AudioProcessorValueTreeState* vts) n
     previewSignalChain.setValueTreeState(vts);
 }
 
+void ScriptManager::setHostRate(double hz) noexcept
+{
+    signalChain.setHostRate(hz);
+    previewSignalChain.setHostRate(hz);
+}
+
 void ScriptManager::prepare(const juce::dsp::ProcessSpec& spec)
 {
     const juce::ScopedLock pl (processLock);

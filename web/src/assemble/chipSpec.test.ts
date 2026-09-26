@@ -20,14 +20,15 @@ const CATALOG: Array<{
 }> = [
   { id: "filter", label: "Filter", params: ["type", "cutoff", "resonance", "channel"] },
   { id: "eq", label: "EQ", params: ["type", "freq", "q", "gain", "channel"] },
-  { id: "delay", label: "Delay", params: ["time", "feedback", "mix", "sync", "pingpong"] },
+  { id: "delay", label: "Delay", params: ["time", "feedback", "mix", "wow", "rate", "flutter", "sync", "pingpong"] },
+  { id: "bitcrush", label: "Bitcrush", params: ["bits", "mix", "tone"] },
   { id: "reverb", label: "Reverb", params: ["size", "decay", "damp", "mix"] },
   { id: "stage", label: "Drive", params: ["y", "channel"] },
   { id: "custom", label: "Custom", params: ["y"] },
   { id: "comp", label: "Comp", params: ["threshold", "ratio", "attack", "release", "ceiling"] },
   { id: "noisegate", label: "Gate", params: ["threshold", "attack", "release", "ceiling"] },
   { id: "limit", label: "Limit", params: ["ceiling", "release"] },
-  { id: "ott", label: "OTT", params: ["depth", "time", "low", "mid", "high"] },
+  { id: "ott", label: "OTT", params: ["depth", "time", "in", "low", "mid", "high"] },
   { id: "ir", label: "IR", params: ["mix", "gain"] },
   { id: "env", label: "ENV", params: ["type", "unit", "attack", "release", "hold", "min", "max", "invert", "source"] },
   { id: "osc", label: "LFO", params: ["shape", "freq", "sync", "depth"] },
@@ -81,6 +82,14 @@ describe("ChipSpec registry", () => {
     expect(spec.ranges.max).toEqual({ min: 0, max: 1 });
     expect(spec.defaultArgs.min).toBe("0");
     expect(spec.defaultArgs.max).toBe("1");
+  });
+
+  it("publishes the filter Q ceiling the engine actually uses", () => {
+    expect(chipSpec("filter").ranges.resonance).toEqual({ min: 0.1, max: 4 });
+  });
+
+  it("publishes the pitch ceiling the engine actually uses", () => {
+    expect(chipSpec("pitch").ranges.ceiling).toEqual({ min: -24, max: 0, unit: "dB" });
   });
 
   it("gives EQ the same channel enum as filter", () => {

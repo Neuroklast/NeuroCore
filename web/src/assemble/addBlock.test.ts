@@ -124,6 +124,14 @@ describe("circuit add/remove", () => {
     expect(chipSpec("phaser").paramJacks).toEqual(["stages", "rate", "depth", "center", "feedback", "mix"]);
     expect(byLabel("Flanger")?.type).toBe("flanger");
     expect(chipSpec("flanger").enums.invert).toEqual(["off", "on"]);
+    expect(byLabel("Chorus")?.type).toBe("chorus");
+    expect(byLabel("De-esser")?.type).toBe("deesser");
+    expect(byLabel("Transient")?.type).toBe("transient");
+    expect(byLabel("Utility")?.type).toBe("utility");
+    expect(chipSpec("utility").enums.polarity).toEqual(["off", "on"]);
+    expect(chipSpec("transient").paramJacks).toEqual(["attack", "sustain", "fast", "slow", "mix"]);
+    expect(chipSpec("deesser").enums.listen).toEqual(["off", "on"]);
+    expect(chipSpec("chorus").paramJacks).toEqual(["rate", "depth", "delay", "voices", "mix", "width"]);
   });
 
   it("offers Cabinet IR and emits ir1: mix / gain", () => {

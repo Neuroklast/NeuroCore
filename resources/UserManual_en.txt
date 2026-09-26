@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.4-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.6-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -15,7 +15,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.4-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.6-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json`. There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
@@ -108,7 +108,7 @@ IN and OUT
 Blocks
 - A closed chip is a lamp to the left of the name, then a type code, mute/solo. Contacts are labelled `[ IN ]` `[ OUT ]` `[ MID ]` `[ SIDE ]`. The footer line is the instance id and live peak, not a fake serial — it sits above the south parameter sockets. The chevron opens Inspect (every parameter). Dragging a knob over the chip opens the bind list; south labels hide while that list is open.
 - Envelope: the lamp fills with the live level. Open it to pick **source** (`in` or `sidechain`) and **unit** (`lin` 0–1, or `db` for a compressor built from env + a formula stage).
-- Phaser is a real allpass cascade (rate, depth, center, feedback, mix, stages). Flanger is a short delay comb; invert is through-zero. Filter **allpass** is one phaser stage if you want to stack them yourself.
+- Phaser is a real allpass cascade (rate, depth, center, feedback, mix, stages). Flanger is a short delay comb; invert is through-zero. Chorus is two to four slow voices on one longer delay (rate, depth, delay, voices, mix, width) — not the flanger, and not an amplitude wobble. Delay time follows a formula every sample (`time = 180 + osc1 * 8`). Wow 0 leaves that time still. Wow 1 wanders it by ±8 ms. Rate is that speed, default 0.65 Hz. Flutter 1 is ±2 ms at 8 Hz, on the same read. Bitcrush quantizes and then lowpasses. The `bitcrush()` formula does not. Tempo sync still slews, so a BPM jump does not click. Comp is one envelope: `detector` is peak or rms, `mix` is parallel (1 = compressed, 0 = dry), attack can go under 1 ms. Knee, makeup, and the detector high-pass are on the chip. De-esser reduces the sibilance band when that band is loud relative to the whole signal, not when a high-pass simply crosses a level. Listen plays that band. Transient is two envelopes on the level: fast minus slow is the hit. Attack turns that difference up or down. Sustain turns the body up or down. It is not a compressor. Utility is linear gain in dB, a balance pan (center leaves stereo alone), and a polarity flip. It does not saturate. The reverb tank runs at the host sample rate, not at 2×/4×/8× oversampling. Comp `lookahead` 0 is immediate. A lookahead delays the audio, the detector hears ahead, and the host gets that delay. Limit `lookahead` 0 is the fast peak mode. A lookahead (ms) delays the signal and is reported to the host like pitch and cabinet latency. The output true-peak ceiling stays the safety net. Filter **allpass** is one phaser stage if you want to stack them yourself. Filter resonance is 0.1 to 4. A moving cutoff holds it at 2.2 so the filter does not scream.
 - Loading a preset closes open details, lays the chain out left to right, and fits it above the mix bar. Cables meet the jacks of that layout; they do not keep the previous sound's paths.
 
 Arrange and Compact
@@ -181,7 +181,7 @@ DSP corrections (0.6.4-beta)
 - Envelope detectors measure audio at their position in the signal chain.
 - Filter automation also advances when the host supplies one sample per callback.
 - Widen adds a mono-cancelling side signal to the original stereo image. Width zero and mono processing are transparent.
-- Pitch uses a fixed 1024-sample latency at its processing sample rate and aligns its internal dry/wet paths. Zero semitones with formant 1 reconstructs unity gain. Legacy pitch sync syntax remains readable; FFT overlap and latency no longer change with host tempo.
+- Pitch latency follows the sample-rate-scaled FFT (1024 at 48 kHz), not a fixed 1024 at every rate. Dry and wet share that delay. Zero semitones with formant 1 reconstructs unity gain. Ceiling is −24 to 0 dB. Legacy `sync` still parses; it does not move the hop or the latency.
 
 Alpha download packages include VST3 and Standalone on Windows/Linux, and VST3/AU/Standalone universal bundles on macOS. Each package includes license terms, a tester agreement, installation instructions and its source commit. Activation licenses are supplied separately. Linux embeds its editor assets. Unsigned/ad-hoc signed alpha packages do not imply notarisation or certification for every host.
 
@@ -192,7 +192,7 @@ DSP accuracy: triangle LFOs now have continuous triangular ramps; stage MS flags
 
 Parallel buses compensate shorter paths before sends and output summation; reported latency is the longest audible path, not the sum of parallel paths. Send/output gains accept compiled arithmetic and named controls with the same declared parameter ranges as effect blocks. Unknown gain variables reject the script. Internal buses preserve unity through 0 dBFS and gently compress overs into 6 dB of headroom; effect ceiling controls remain bounded at their stated levels, and final host-output sanitation still applies.
 
-Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doubling of engine rate), keeping analysis duration near 21 ms when oversampling. Dry/wet paths share the reported latency. OTT depth blends against the phase-matched crossover sum. Phaser/flanger feedback and mix changes are smoothed per sample. Limiter release is recalculated after sample-rate changes.
+Pitch uses a sample-rate-scaled FFT (1024 at 44.1/48 kHz, doubled with each doubling of engine rate), keeping analysis duration near 21 ms when oversampling. Dry/wet paths share the reported latency. OTT depth blends against the phase-matched crossover sum. Low, mid, and high are that band's process amount, not a level trim. In is the level into the detector, 0.25 to 6. Phaser/flanger feedback and mix changes are smoothed per sample. Limiter release is recalculated after sample-rate changes.
 
 External detector inputs are silent when disconnected or shorter than the current block; they do not fall back to the program signal or repeat the final sidechain sample. Offline renders retain CPU metering but do not enter realtime CPU-protection holds. Envelope min/max/hold expressions follow their controls.
 

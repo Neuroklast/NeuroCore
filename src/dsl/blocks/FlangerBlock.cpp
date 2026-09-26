@@ -87,7 +87,7 @@ void SignalChain::Flanger::processFrame (float& left, float* right, float pol) n
     const float dry = 1.f - mix;
 
     const float xL = left;
-    float wetL = DSPUtils::delayReadLinear (delayL, wp, dSamps, N) * pol;
+    float wetL = DSPUtils::delayRead (delayL, wp, dSamps, N) * pol;
     wetL = DSPUtils::flushDenorm (wetL);
     delayL[wp] = DSPUtils::satFb (xL + wetL * fb);
     left = xL * dry + wetL * mix;
@@ -95,7 +95,7 @@ void SignalChain::Flanger::processFrame (float& left, float* right, float pol) n
     if (right != nullptr && delayR != nullptr)
     {
         const float xR = *right;
-        float wetR = DSPUtils::delayReadLinear (delayR, wp, dSamps, N) * pol;
+        float wetR = DSPUtils::delayRead (delayR, wp, dSamps, N) * pol;
         wetR = DSPUtils::flushDenorm (wetR);
         delayR[wp] = DSPUtils::satFb (xR + wetR * fb);
         *right = xR * dry + wetR * mix;

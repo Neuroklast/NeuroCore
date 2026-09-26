@@ -152,7 +152,12 @@ void FormulaQualityAnalyzer::runStaticChecks (const juce::String& script, Formul
                  || b.type.startsWith ("reverb") || b.type == "verb"
                  || b.type.startsWith ("ir") || b.type.startsWith ("convolve")
                  || b.type.startsWith ("phaser") || b.type.startsWith ("flanger")
-                 || b.type.startsWith ("flange") || b.type.startsWith ("pitch"))
+                 || b.type.startsWith ("flange") || b.type.startsWith ("chorus")
+                 || b.type.startsWith ("deesser") || b.type.startsWith ("deess")
+                 || b.type.startsWith ("transient") || b.type == "trans" || b.type == "td"
+                 || b.type.startsWith ("utility") || b.type == "util"
+                  || b.type.startsWith ("pitch")
+                  || b.type.startsWith ("bitcrush") || b.type == "crush")
         {
             hasAudioPath = true;
             const auto typeStr = b.args.count ("type") ? b.args.at ("type").toLowerCase()

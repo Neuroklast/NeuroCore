@@ -1,4 +1,4 @@
-NEUROKORE 0.6.4-beta — alpha installation
+NEUROKORE 0.6.6-beta — alpha installation
 
 Read LICENSE.txt, EULA.txt and ALPHA_TESTER_AGREEMENT.txt. Personal activation
 files (.lic) are issued separately by NEUROKLAST. The signing key and license

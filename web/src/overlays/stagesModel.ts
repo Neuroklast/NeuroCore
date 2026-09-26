@@ -67,6 +67,10 @@ export function stageRole(type: string): string {
   if (t.startsWith("pitch")) return "Pitch — phase-vocoder shift in semitones.";
   if (t.startsWith("phaser")) return "Phaser — allpass notches swept by an LFO.";
   if (t.startsWith("flanger") || t.startsWith("flange")) return "Flanger — short delay comb, invert for through-zero.";
+  if (t.startsWith("chorus")) return "Chorus — several slow delay voices, not a flanger.";
+  if (t.startsWith("deesser") || t.startsWith("deess")) return "De-esser — sibilance band versus the full signal. Listen is that band.";
+  if (t.startsWith("transient") || t === "trans" || t === "td") return "Transient — fast envelope minus slow. Attack is the hit, sustain is the body.";
+  if (t.startsWith("utility") || t === "util") return "Utility — gain in dB, balance pan, polarity. Not a shaper.";
   if (t.startsWith("vocod")) return "Vocoder — imprints one spectrum onto another.";
   return `Block of type ${type}.`;
 }

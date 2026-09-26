@@ -68,6 +68,23 @@ void SignalChain::setValueTreeState(juce::AudioProcessorValueTreeState* vts) noe
     valueTreeState = vts;
 }
 
+void SignalChain::setHostRate (double hz) noexcept
+{
+    hostRateHz = hz > 0.0 ? hz : 0.0;
+}
+
+int SignalChain::reverbTankSteps() const noexcept
+{
+    auto chainPtr = std::atomic_load (&chain);
+    if (! chainPtr)
+        return 0;
+    int n = 0;
+    for (const auto& b : *chainPtr)
+        if (const auto* rv = dynamic_cast<const Reverb*> (b.get()))
+            n += rv->tankSteps;
+    return n;
+}
+
 void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
 {
     currentSpec = spec;
@@ -90,6 +107,8 @@ void SignalChain::prepare(const juce::dsp::ProcessSpec& spec)
         {
             if (auto* st = dynamic_cast<Stage*>(b.get()))
                 st->paramSmoothers = { &paramSmooth[0], &paramSmooth[1], &paramSmooth[2], &paramSmooth[3] };
+            if (auto* rv = dynamic_cast<Reverb*> (b.get()))
+                rv->hostRate = hostRateHz;
             b->prepare (spec);
             if (auto* irb = dynamic_cast<Ir*> (b.get()))
             {
@@ -586,6 +605,40 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 dl->mix.parseFormula ("0.35");
 
+            if (d.args.count ("wow"))
+            {
+                auto expr = addDefaultMap (d.args.at ("wow"), 0.f, 1.f);
+                dl->wowExpr.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " wow [0..1]");
+            }
+            else
+                dl->wowExpr.parseFormula ("0");
+
+            if (d.args.count ("rate") || d.args.count ("wowrate"))
+            {
+                const auto& raw = d.args.count ("rate") ? d.args.at ("rate") : d.args.at ("wowrate");
+                auto expr = addDefaultMap (raw, 0.1f, 12.f);
+                dl->rateExpr.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " rate [Hz]");
+            }
+            else
+                dl->rateExpr.parseFormula ("0.65");
+
+            if (d.args.count ("flutter"))
+            {
+                auto expr = addDefaultMap (d.args.at ("flutter"), 0.f, 1.f);
+                dl->flutterExpr.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " flutter [0..1]");
+            }
+            else
+                dl->flutterExpr.parseFormula ("0");
+
             if (d.args.count ("damp") || d.args.count ("damping") || d.args.count ("tone"))
             {
                 const auto& raw = d.args.count ("damp") ? d.args.at ("damp")
@@ -904,11 +957,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
             if (d.args.count("resonance"))
             {
-                auto expr = addDefaultMap(d.args.at("resonance"), 0.1f, 4.5f);
+                auto expr = addDefaultMap(d.args.at("resonance"), Filter::kQMin, Filter::kQMax);
                 fi->resonance.parseFormula(expr.toStdString());
                 auto pn = findParam(expr);
                 if (pn.isNotEmpty())
-                    parameterMappings[pn].add(d.name + " resonance [0.1..4.5]");
+                    parameterMappings[pn].add(d.name + " resonance [0.1..4]");
             }
             else if (! fi->useCenterWidth && ! fi->useLowHigh)
                 fi->resonance.parseFormula("0.7");
@@ -1118,11 +1171,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 co->ratio.parseFormula("1.0");
             if (d.args.count("attack"))
             {
-                auto expr = addDefaultMap(d.args.at("attack"), 0.001f, 0.3f);
+                auto expr = addDefaultMap(d.args.at("attack"), 0.00005f, 0.3f);
                 co->attack.parseFormula(expr.toStdString());
                 auto pn = findParam(expr);
                 if (pn.isNotEmpty())
-                    parameterMappings[pn].add(d.name + " attack [0.001..0.3 s]");
+                    parameterMappings[pn].add(d.name + " attack [0.00005..0.3 s]");
             }
             else
                 co->attack.parseFormula("0.01");
@@ -1152,7 +1205,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 const auto raw = d.args.count ("hpf") ? d.args.at ("hpf")
                                : (d.args.count ("detect_hpf") ? d.args.at ("detect_hpf")
                                                               : d.args.at ("sidechain_hpf"));
-                co->hpfHz.parseFormula (addDefaultMap (raw, 0.f, 400.f).toStdString());
+                co->hpfHz.parseFormula (addDefaultMap (raw, 0.f, 800.f).toStdString());
             }
             else
                 co->hpfHz.parseFormula ("0.0");
@@ -1165,6 +1218,26 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             else
                 co->ceilingDb.parseFormula ("0.0");
+            if (d.args.count ("mix") || d.args.count ("wet"))
+            {
+                const auto raw = d.args.count ("mix") ? d.args.at ("mix") : d.args.at ("wet");
+                co->mixExpr.parseFormula (addDefaultMap (raw, 0.f, 1.f).toStdString());
+            }
+            else
+                co->mixExpr.parseFormula ("1");
+            if (d.args.count ("detector") || d.args.count ("det"))
+            {
+                const auto det = (d.args.count ("detector") ? d.args.at ("detector") : d.args.at ("det"))
+                                     .trim().toLowerCase();
+                co->rmsDetect = (det == "rms");
+            }
+            if (d.args.count ("lookahead") || d.args.count ("ahead"))
+            {
+                const auto raw = d.args.count ("lookahead") ? d.args.at ("lookahead") : d.args.at ("ahead");
+                co->lookaheadMs.parseFormula (addDefaultMap (raw, 0.f, 20.f).toStdString());
+            }
+            else
+                co->lookaheadMs.parseFormula ("0");
             if (d.args.count ("source"))
             {
                 const auto src = d.args.at ("source").trim().toLowerCase();
@@ -1246,6 +1319,13 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 lim->release.parseFormula (addDefaultMap (d.args.at ("release"), 0.01f, 0.5f).toStdString());
             else
                 lim->release.parseFormula ("0.08");
+            if (d.args.count ("lookahead") || d.args.count ("ahead"))
+            {
+                const auto raw = d.args.count ("lookahead") ? d.args.at ("lookahead") : d.args.at ("ahead");
+                lim->lookaheadMs.parseFormula (addDefaultMap (raw, 0.f, 20.f).toStdString());
+            }
+            else
+                lim->lookaheadMs.parseFormula ("0");
             lim->varPtr = &variables;
             newChain->push_back (std::move (lim));
         }
@@ -1360,6 +1440,134 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 fl->invertExpr.parseFormula ("0");
             fl->varPtr = &variables;
             newChain->push_back (std::move (fl));
+        }
+        else if (d.type.startsWith ("chorus"))
+        {
+            auto ch = std::make_unique<Chorus>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", "freq", 0.f, 5.f, "0.6", ch->rateExpr, "rate [Hz]");
+            parseAmt ("depth", nullptr, 0.f, 1.f, "0.5", ch->depthExpr, "depth [0..1]");
+            parseAmt ("delay", "time", 5.f, 40.f, "18", ch->delayExpr, "delay [ms]");
+            parseAmt ("voices", "n", 2.f, 4.f, "3", ch->voicesExpr, "voices [2..4]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "0.5", ch->mixExpr, "mix [0..1]");
+            parseAmt ("width", nullptr, 0.f, 1.f, "0.7", ch->widthExpr, "width [0..1]");
+            ch->varPtr = &variables;
+            newChain->push_back (std::move (ch));
+        }
+        else if (d.type.startsWith ("deesser"))
+        {
+            auto ds = std::make_unique<Deesser>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("freq", "center", 2000.f, 12000.f, "6500", ds->freqExpr, "freq [Hz]");
+            parseAmt ("threshold", "thresh", -24.f, 6.f, "-8", ds->thresholdExpr, "threshold [dB]");
+            parseAmt ("amount", "depth", 0.f, 1.f, "0.7", ds->amountExpr, "amount [0..1]");
+            parseAmt ("attack", nullptr, 0.0002f, 0.05f, "0.002", ds->attackExpr, "attack [s]");
+            parseAmt ("release", nullptr, 0.005f, 0.3f, "0.04", ds->releaseExpr, "release [s]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", ds->mixExpr, "mix [0..1]");
+            if (d.args.count ("listen"))
+            {
+                const auto v = d.args.at ("listen").trim().toLowerCase();
+                ds->listen = (v == "on" || v == "true" || v == "yes" || v == "1");
+            }
+            ds->varPtr = &variables;
+            newChain->push_back (std::move (ds));
+        }
+        else if (d.type.startsWith ("transient"))
+        {
+            auto tr = std::make_unique<Transient>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("attack", nullptr, -1.f, 1.f, "0.5", tr->attackExpr, "attack [-1..1]");
+            parseAmt ("sustain", nullptr, -1.f, 1.f, "0", tr->sustainExpr, "sustain [-1..1]");
+            parseAmt ("fast", nullptr, 0.0003f, 0.02f, "0.002", tr->fastExpr, "fast [s]");
+            parseAmt ("slow", nullptr, 0.01f, 0.4f, "0.08", tr->slowExpr, "slow [s]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", tr->mixExpr, "mix [0..1]");
+            tr->varPtr = &variables;
+            newChain->push_back (std::move (tr));
+        }
+        else if (d.type.startsWith ("bitcrush") || d.type == "crush")
+        {
+            auto bc = std::make_unique<Bitcrush>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("bits", "bit", 1.f, 16.f, "8", bc->bitsExpr, "bits [1..16]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", bc->mixExpr, "mix [0..1]");
+            parseAmt ("tone", "cutoff", 800.f, 16000.f, "8000", bc->toneExpr, "tone [Hz]");
+            bc->varPtr = &variables;
+            newChain->push_back (std::move (bc));
+        }
+        else if (d.type.startsWith ("utility") || d.type == "util")
+        {
+            auto ut = std::make_unique<Utility>();
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                      : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("gain", "db", -24.f, 24.f, "0", ut->gainExpr, "gain [dB]");
+            parseAmt ("pan", "balance", -1.f, 1.f, "0", ut->panExpr, "pan [-1..1]");
+            if (d.args.count ("polarity") || d.args.count ("phase"))
+            {
+                const auto v = (d.args.count ("polarity") ? d.args.at ("polarity") : d.args.at ("phase"))
+                                   .trim().toLowerCase();
+                ut->polarity = (v == "on" || v == "true" || v == "yes" || v == "1" || v == "invert");
+            }
+            ut->varPtr = &variables;
+            newChain->push_back (std::move (ut));
         }
         else if (d.type.startsWith ("widen") || d.type.startsWith ("stereo"))
         {
@@ -1608,6 +1816,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         {
             if (auto* st = dynamic_cast<Stage*>(b.get()))
                 st->paramSmoothers = { &paramSmooth[0], &paramSmooth[1], &paramSmooth[2], &paramSmooth[3] };
+            if (auto* rv = dynamic_cast<Reverb*> (b.get()))
+                rv->hostRate = hostRateHz;
             b->prepare (currentSpec);
             if (auto* irb = dynamic_cast<Ir*> (b.get()))
             {
@@ -1763,6 +1973,8 @@ void SignalChain::prepareBusLatency (Chain& c, BusGraph& g)
             if (node->busIndex != (int) bi) continue;
             if (auto* ir = dynamic_cast<Ir*> (node.get())) end += ir->latencySamples;
             if (auto* pitch = dynamic_cast<Pitch*> (node.get())) end += pitch->latencySamples;
+            if (auto* lim = dynamic_cast<Limit*> (node.get())) end += lim->latencySamples;
+            if (auto* co = dynamic_cast<Comp*> (node.get())) end += co->latencySamples;
             if (auto* xover = dynamic_cast<Xover*> (node.get()))
                 for (auto* dest : { xover->lowOut, xover->midOut, xover->highOut })
                     if (dest != nullptr)
@@ -2245,12 +2457,32 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                     auto* dl = static_cast<Delay*> (b.get());
                     auto* L = work.getWritePointer (0);
                     auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
-                    const int mid = juce::jmax (0, nWork - 1);
-                    injectKnobsAt (mid);
-                    writeModsAt (mid);
-                    dl->syncFromVariables();
-                    for (int i = 0; i < nWork; ++i)
-                        dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
+                    if (dl->useSync)
+                    {
+                        const int mid = juce::jmax (0, nWork - 1);
+                        injectKnobsAt (mid);
+                        writeModsAt (mid);
+                        dl->syncFromVariables();
+                        for (int i = 0; i < nWork; ++i)
+                            dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
+                    }
+                    else
+                    {
+                        // Expression time is the musical rate (reader, per sample).
+                        // Sync stays on the slew path above — a BPM jump must not click.
+                        dl->syncFromVariables();
+                        for (int i = 0; i < nWork; ++i)
+                        {
+                            injectKnobsAt (i);
+                            writeModsAt (i);
+                            dl->bindings.refresh();
+                            float ms = dl->timeMs.evaluateLive (0.f);
+                            if (! std::isfinite (ms))
+                                ms = 250.f;
+                            dl->noteLiveDelay (dl->samplesFromMs (ms));
+                            dl->processFrame (L[i], R != nullptr ? &R[i] : nullptr);
+                        }
+                    }
                     if (b->tapSlot >= 0)
                         writeNodeTap (b->tapSlot, slice);
                     continue;
@@ -3043,7 +3275,7 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
             if (! std::isfinite (w) || w < 1.0f) w = 500.0f;
             fc = c;
             if (! resonance.isValid())
-                res = juce::jlimit (0.1f, 4.5f, c / w);
+                res = juce::jlimit (Filter::kQMin, Filter::kQMax, c / w);
         }
         else if (useLowHigh)
         {
@@ -3053,7 +3285,7 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
             if (! std::isfinite (hi)) hi = 2000.0f;
             fc = (lo + hi) * 0.5f;
             if (! resonance.isValid())
-                res = ((hi - lo) != 0.0f ? juce::jlimit (0.1f, 4.5f, fc / (hi - lo)) : res);
+                res = ((hi - lo) != 0.0f ? juce::jlimit (Filter::kQMin, Filter::kQMax, fc / (hi - lo)) : res);
         }
     }
 
@@ -3062,8 +3294,8 @@ void SignalChain::Filter::advanceCoeffsFor (int samples) noexcept
     if (! std::isfinite (fc))  fc  = 1000.0f;
     if (! std::isfinite (res)) res = 0.7f;
     fc = juce::jlimit (20.0f, maxFc, fc);
-    const float maxQ = modulated ? 2.2f : 4.0f;
-    res = juce::jlimit (0.1f, maxQ, res);
+    const float maxQ = modulated ? kQMaxModulated : kQMax;
+    res = juce::jlimit (kQMin, maxQ, res);
 
     cutoffSm.setTargetValue (fc);
     resSm.setTargetValue (res);
@@ -3151,7 +3383,7 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
             if (! std::isfinite (w) || w < 1.0f) w = 500.0f;
             fc = c;
             if (! resonance.isValid())
-                res = juce::jlimit(0.1f, 4.5f, c / w);
+                res = juce::jlimit(Filter::kQMin, Filter::kQMax, c / w);
         }
         else if (useLowHigh)
         {
@@ -3161,7 +3393,7 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
             if (! std::isfinite (hi)) hi = 2000.0f;
             fc = (lo + hi) * 0.5f;
             if (! resonance.isValid())
-                res = ((hi - lo) != 0.0f ? juce::jlimit(0.1f, 4.5f, fc / (hi - lo)) : res);
+                res = ((hi - lo) != 0.0f ? juce::jlimit(Filter::kQMin, Filter::kQMax, fc / (hi - lo)) : res);
         }
     }
 
@@ -3170,9 +3402,8 @@ void SignalChain::Filter::processBlock(juce::AudioBuffer<float>& buffer)
     if (! std::isfinite (fc))  fc  = 1000.0f;
     if (! std::isfinite (res)) res = 0.7f;
     fc  = juce::jlimit(20.0f, maxFc, fc);
-    // Cap Q — modulated LFO filters self-osc above ~2.2 (phaser hang)
-    const float maxQ = modulated ? 2.2f : 3.5f;
-    res = juce::jlimit(0.1f, maxQ, res);
+    const float maxQ = modulated ? kQMaxModulated : kQMax;
+    res = juce::jlimit(kQMin, maxQ, res);
 
     cutoffSm.setTargetValue(fc);
     resSm.setTargetValue(res);
@@ -3756,24 +3987,6 @@ inline float flushDenorm (float x) noexcept
     return (std::abs (x) < 1.0e-20f) ? 0.f : x;
 }
 
-/** Linear read, integer wrap. Hermite's 4-tap window crossed index 0 every
-    delay period (i0 = N-1 next to a live sample) and clicked. */
-NK_FORCEINLINE float delayRead (const float* NK_RESTRICT buf, int writePos, float delaySamps, int N) noexcept
-{
-    if (buf == nullptr || N < 4)
-        return 0.f;
-    DSPUtils::prefetchRead (buf + ((writePos + 16) % N));
-    const float d = juce::jlimit (2.0f, (float) (N - 2), delaySamps);
-    const int di = (int) d;
-    const float f = d - (float) di;
-    int i0 = writePos - di;
-    if (i0 < 0)
-        i0 += N;
-    int i1 = i0 - 1;
-    if (i1 < 0)
-        i1 += N;
-    return buf[i0] + f * (buf[i1] - buf[i0]);
-}
 } // namespace
 
 void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
@@ -3795,10 +4008,14 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     fbSm.reset (sampleRate, 0.04);
     mixSm.reset (sampleRate, 0.025);
     dampCoeffSm.reset (sampleRate, 0.06);
+    wowSm.reset (sampleRate, 0.05);
+    rateSm.reset (sampleRate, 0.05);
+    flutterSm.reset (sampleRate, 0.05);
+    wowPhase = flutterPhase = 0.f;
 
     if (varPtr != nullptr)
     {
-        bindings.prepare (varPtr, { &timeMs, &feedback, &mix, &dampHz });
+        bindings.prepare (varPtr, { &timeMs, &feedback, &mix, &dampHz, &wowExpr, &rateExpr, &flutterExpr });
     }
 
     const float ds = resolveDelaySamples();
@@ -3814,6 +4031,15 @@ void SignalChain::Delay::prepare (const juce::dsp::ProcessSpec& spec)
     dampHz0 = juce::jlimit (200.f, sampleRate * 0.45f, dampHz0);
     const float dampA0 = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHz0 / sampleRate);
     dampCoeffSm.setCurrentAndTargetValue (juce::jlimit (0.0f, 0.99f, dampA0));
+    float wow0 = wowExpr.evaluate (0.f);
+    if (! std::isfinite (wow0)) wow0 = 0.f;
+    wowSm.setCurrentAndTargetValue (juce::jlimit (0.f, 1.f, wow0));
+    float rate0 = rateExpr.evaluate (0.f);
+    if (! std::isfinite (rate0)) rate0 = 0.65f;
+    rateSm.setCurrentAndTargetValue (juce::jlimit (0.1f, 12.f, rate0));
+    float fl0 = flutterExpr.evaluate (0.f);
+    if (! std::isfinite (fl0)) fl0 = 0.f;
+    flutterSm.setCurrentAndTargetValue (juce::jlimit (0.f, 1.f, fl0));
     dcCoeff = std::exp (-2.0f * juce::MathConstants<float>::pi * 40.0f / sampleRate);
 }
 
@@ -3827,6 +4053,7 @@ void SignalChain::Delay::clearRuntimeState() noexcept
     dampStateL = dampStateR = 0.f;
     dcBlockL = dcBlockR = 0.f;
     lastDelaySamples = -1.f;
+    wowPhase = flutterPhase = 0.f;
 }
 
 void SignalChain::Delay::applyTempo (double bpm) noexcept
@@ -3849,10 +4076,21 @@ float SignalChain::Delay::resolveDelaySamples() const noexcept
         if (! std::isfinite (ms))
             ms = 250.f;
     }
+    return samplesFromMs (ms);
+}
+
+float SignalChain::Delay::samplesFromMs (float ms) const noexcept
+{
+    if (! std::isfinite (ms))
+        ms = 250.f;
     ms = juce::jlimit (0.1f, kMaxDelaySec * 1000.f, ms);
-    // At least 2 samples behind the write slot so linear taps never scrape it.
-    const float minSamps = 2.0f;
-    return juce::jlimit (minSamps, (float) (maxDelaySamples - 2), ms * 0.001f * sampleRate);
+    return juce::jlimit (2.0f, (float) (juce::jmax (4, maxDelaySamples) - 2), ms * 0.001f * sampleRate);
+}
+
+void SignalChain::Delay::noteLiveDelay (float samples) noexcept
+{
+    liveExpression = true;
+    liveDelaySamples = samples;
 }
 
 float SignalChain::Delay::tailSeconds() const noexcept
@@ -3896,7 +4134,7 @@ float SignalChain::Delay::process (int ch, float x)
     wet = juce::jlimit (0.f, 1.f, wet);
 
     float* NK_RESTRICT buf = (ch == 1 && delayR != nullptr) ? delayR : delayL;
-    float delayed = delayRead (buf, writePos, dSamps, delayN);
+    float delayed = DSPUtils::delayRead (buf, writePos, dSamps, delayN);
     if (! std::isfinite (delayed))
         delayed = 0.f;
 
@@ -3941,21 +4179,34 @@ void SignalChain::Delay::syncFromVariables() noexcept
     dampHzV = juce::jlimit (200.f, sampleRate * 0.45f, dampHzV);
     const float dampA = std::exp (-2.0f * juce::MathConstants<float>::pi * dampHzV / sampleRate);
     dampCoeffSm.setTargetValue (juce::jlimit (0.0f, 0.99f, dampA));
+
+    float wow = wowExpr.evaluateLive (0.f);
+    if (! std::isfinite (wow)) wow = 0.f;
+    wowSm.setTargetValue (juce::jlimit (0.f, 1.f, wow));
+    float rate = rateExpr.evaluateLive (0.f);
+    if (! std::isfinite (rate)) rate = 0.65f;
+    rateSm.setTargetValue (juce::jlimit (0.1f, 12.f, rate));
+    float flutter = flutterExpr.evaluateLive (0.f);
+    if (! std::isfinite (flutter)) flutter = 0.f;
+    flutterSm.setTargetValue (juce::jlimit (0.f, 1.f, flutter));
 }
 
 void SignalChain::Delay::processFrame (float& left, float* right) noexcept
 {
     if (maxDelaySamples <= 2 || delayL == nullptr || delayR == nullptr)
+    {
+        liveExpression = false;
         return;
+    }
 
-    // Control-rate only in processBlock / the chain's once-per-block sync.
-    // Per-sample setVariable + evaluate() takes the parser lock and reset ADAA —
-    // that is the Space Echo / 8x crackle (CPU dropouts).
-
+    // Expression time is already the per-sample value (evaluateLive, no lock).
+    // Sync still comes from the smoother. Either way, a jump bigger than the
+    // musical slope is slewed — that is the Space Echo crackle guard.
     const float dcA = dcCoeff;
     const float maxDelayDelta = juce::jmax (1.0f, sampleRate * 0.002f);
 
-    float dSamps = delaySm.getNextValue();
+    float dSamps = liveExpression ? liveDelaySamples : delaySm.getNextValue();
+    liveExpression = false;
     if (lastDelaySamples > 0.f)
     {
         const float delta = dSamps - lastDelaySamples;
@@ -3963,14 +4214,35 @@ void SignalChain::Delay::processFrame (float& left, float* right) noexcept
             dSamps = lastDelaySamples + std::copysign (maxDelayDelta, delta);
     }
     lastDelaySamples = dSamps;
+    const float wow = wowSm.getNextValue();
+    if (wow > 1.0e-4f)
+    {
+        constexpr float kWowSec = 0.008f;
+        const float rate = rateSm.getNextValue();
+        wowPhase += rate * juce::MathConstants<float>::twoPi / sampleRate;
+        if (wowPhase >= juce::MathConstants<float>::twoPi)
+            wowPhase -= juce::MathConstants<float>::twoPi;
+        dSamps += wow * (kWowSec * sampleRate) * std::sin (wowPhase);
+    }
+    if (flutterSm.getTargetValue() > 1.0e-4f || flutterSm.getCurrentValue() > 1.0e-4f)
+    {
+        constexpr float kFlutterHz = 8.f;
+        constexpr float kFlutterSec = 0.002f;
+        const float flutter = flutterSm.getNextValue();
+        flutterPhase += kFlutterHz * juce::MathConstants<float>::twoPi / sampleRate;
+        if (flutterPhase >= juce::MathConstants<float>::twoPi)
+            flutterPhase -= juce::MathConstants<float>::twoPi;
+        dSamps += flutter * (kFlutterSec * sampleRate) * std::sin (flutterPhase);
+    }
+    dSamps = juce::jlimit (2.f, (float) (delayN - 2), dSamps);
 
     const float fbk    = fbSm.getNextValue();
     const float wet    = mixSm.getNextValue();
     const float dryG   = 1.0f - wet;
     const float dampA_ = dampCoeffSm.getNextValue();
 
-    float wetL = delayRead (delayL, writePos, dSamps, delayN);
-    float wetR = delayRead (delayR, writePos, dSamps, delayN);
+    float wetL = DSPUtils::delayRead (delayL, writePos, dSamps, delayN);
+    float wetR = DSPUtils::delayRead (delayR, writePos, dSamps, delayN);
     if (! std::isfinite (wetL)) wetL = 0.f;
     if (! std::isfinite (wetR)) wetR = 0.f;
 
@@ -4050,6 +4322,9 @@ void SignalChain::Reverb::clearRuntimeState() noexcept
         apL[(size_t) i].clear();
         apR[(size_t) i].clear();
     }
+    tankPhase = 0;
+    tankAcc = 0.f;
+    heldL = heldR = 0.f;
 }
 
 void SignalChain::Reverb::allocateMaxBuffers() noexcept
@@ -4089,25 +4364,38 @@ void SignalChain::Reverb::applySize (float size01) noexcept
 
     for (int i = 0; i < kNumCombs; ++i)
     {
-        combL[(size_t) i].setDelayLen (juce::jmax (2, (int) std::lround (combBase[i] * scale)));
-        combR[(size_t) i].setDelayLen (juce::jmax (2, (int) std::lround ((combBase[i] + stereoSpread) * scale)));
+        combL[(size_t) i].setDelay ((float) combBase[i] * scale);
+        combR[(size_t) i].setDelay ((float) (combBase[i] + stereoSpread) * scale);
     }
     for (int i = 0; i < kNumAllpass; ++i)
     {
-        apL[(size_t) i].setDelayLen (juce::jmax (2, (int) std::lround (apBase[i] * scale)));
-        apR[(size_t) i].setDelayLen (juce::jmax (2, (int) std::lround ((apBase[i] + stereoSpread / 2) * scale)));
+        apL[(size_t) i].setDelay ((float) apBase[i] * scale);
+        apR[(size_t) i].setDelay ((float) (apBase[i] + stereoSpread / 2) * scale);
     }
     lastSize = size01;
 }
 
 void SignalChain::Reverb::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
-    sizeSm.reset (sampleRate, 0.12);
-    decaySm.reset (sampleRate, 0.05);
-    dampSm.reset (sampleRate, 0.05);
-    mixSm.reset (sampleRate, 0.02);
-    widthSm.reset (sampleRate, 0.05);
+    procRate = spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0;
+    const double host = hostRate > 1000.0 ? hostRate : procRate;
+    int ratio = 1;
+    if (procRate > host * 1.5)
+    {
+        const double q = procRate / host;
+        ratio = q > 6.0 ? 8 : q > 3.0 ? 4 : 2;
+    }
+    tankRatio = ratio;
+    sampleRate = (float) (ratio == 1 ? procRate : host);
+    tankPhase = 0;
+    tankSteps = 0;
+    tankAcc = 0.f;
+    heldL = heldR = 0.f;
+    sizeSm.reset (procRate, 0.12);
+    decaySm.reset (procRate, 0.05);
+    dampSm.reset (procRate, 0.05);
+    mixSm.reset (procRate, 0.02);
+    widthSm.reset (procRate, 0.05);
 
     if (varPtr != nullptr)
     {
@@ -4240,35 +4528,48 @@ void SignalChain::Reverb::processBlock (juce::AudioBuffer<float>& buffer)
         const float inR = R != nullptr ? (std::isfinite (R[i]) ? R[i] : 0.f) : inL;
         const float input = doL && doR ? 0.5f * (inL + inR) : (doL ? inL : inR);
 
-        float outL = 0.f, outR = 0.f;
-        for (int c = 0; c < kNumCombs; ++c)
+        auto tick = [&] (float in)
         {
-            outL += combL[(size_t) c].process (input, feedback, dampAmt);
-            outR += combR[(size_t) c].process (input, feedback, dampAmt);
-        }
-        outL *= (1.0f / (float) kNumCombs);
-        outR *= (1.0f / (float) kNumCombs);
+            float outL = 0.f, outR = 0.f;
+            for (int c = 0; c < kNumCombs; ++c)
+            {
+                outL += combL[(size_t) c].process (in, feedback, dampAmt);
+                outR += combR[(size_t) c].process (in, feedback, dampAmt);
+            }
+            outL *= (1.0f / (float) kNumCombs);
+            outR *= (1.0f / (float) kNumCombs);
+            for (int a = 0; a < kNumAllpass; ++a)
+            {
+                outL = apL[(size_t) a].process (outL);
+                outR = apR[(size_t) a].process (outR);
+            }
+            const float mono = 0.5f * (outL + outR);
+            outL = mono * (1.f - w) + outL * w;
+            outR = mono * (1.f - w) + outR * w;
+            if (! std::isfinite (outL)) outL = 0.f;
+            if (! std::isfinite (outR)) outR = 0.f;
+            heldL = DSPUtils::softCeilSample (outL, 1.2f);
+            heldR = DSPUtils::softCeilSample (outR, 1.2f);
+            ++tankSteps;
+        };
 
-        for (int a = 0; a < kNumAllpass; ++a)
+        if (tankRatio <= 1)
+            tick (input);
+        else
         {
-            outL = apL[(size_t) a].process (outL);
-            outR = apR[(size_t) a].process (outR);
+            tankAcc += input;
+            if (++tankPhase >= tankRatio)
+            {
+                const float tickIn = tankAcc / (float) tankRatio;
+                tankAcc = 0.f;
+                tankPhase = 0;
+                tick (tickIn);
+            }
         }
 
-        // Stereo width: blend toward mono wet
-        const float mono = 0.5f * (outL + outR);
-        outL = mono * (1.f - w) + outL * w;
-        outR = mono * (1.f - w) + outR * w;
-
-        // Soft-limit only true peaks (constant tanh = HF/crackle on bright rooms)
-        if (! std::isfinite (outL)) outL = 0.f;
-        if (! std::isfinite (outR)) outR = 0.f;
-        outL = DSPUtils::softCeilSample (outL, 1.2f);
-        outR = DSPUtils::softCeilSample (outR, 1.2f);
-
-        if (doL) L[i] = inL * dryG + outL * wet;
+        if (doL) L[i] = inL * dryG + heldL * wet;
         if (doR)
-            R[i] = inR * dryG + outR * wet;
+            R[i] = inR * dryG + heldR * wet;
     }
 }
 

@@ -8,6 +8,8 @@ using namespace dsl;
 void SignalChain::Comp::clearRuntimeState() noexcept
 {
     envDb = 0.f;
+    rmsState = 0.f;
+    writePos = 0;
     hpfLpL = 0.f;
     hpfLpR = 0.f;
     hpfLpL2 = 0.f;
@@ -35,9 +37,20 @@ void SignalChain::Comp::prepare (const juce::dsp::ProcessSpec& spec)
     resetSm (makeupSm, makeupDb, 0.f);
     resetSm (hpfSm, hpfHz, 0.f);
     resetSm (ceilSm, ceilingDb, 0.f);
+    resetSm (mixSm, mixExpr, 1.f);
+    rmsC = 1.f - std::exp (-1.f / (0.01f * sampleRate));
+    float aheadMs = lookaheadMs.evaluate (0.f);
+    if (! std::isfinite (aheadMs))
+        aheadMs = 0.f;
+    aheadMs = juce::jlimit (0.f, kMaxLookaheadSec * 1000.f, aheadMs);
+    const int ahead = (int) std::lround ((double) aheadMs * 0.001 * (double) sampleRate);
+    delayN = juce::jmax (8, (int) std::ceil ((double) sampleRate * (double) kMaxLookaheadSec) + 4);
+    delayL = DSPUtils::alignedRing (storageL, delayN);
+    delayR = DSPUtils::alignedRing (storageR, delayN);
+    latencySamples = (ahead >= 2 && ahead <= delayN - 2) ? ahead : 0;
     clearRuntimeState();
     ceilLin = juce::Decibels::decibelsToGain (juce::jlimit (-24.f, 0.f, ceilSm.getCurrentValue()));
-    bindings.prepare (varPtr, { &threshold, &ratio, &attack, &release, &kneeDb, &makeupDb, &hpfHz, &ceilingDb });
+    bindings.prepare (varPtr, { &threshold, &ratio, &attack, &release, &kneeDb, &makeupDb, &hpfHz, &ceilingDb, &mixExpr, &lookaheadMs });
     yPtr = nullptr;
     if (varPtr != nullptr)
     {
@@ -92,6 +105,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     makeupSm.setTargetValue (ev (makeupDb, 0.f));
     hpfSm.setTargetValue (ev (hpfHz, 0.f));
     ceilSm.setTargetValue (ev (ceilingDb, 0.f));
+    mixSm.setTargetValue (ev (mixExpr, 1.f));
 
     float* out[2] {};
     const int useCh = juce::jmin (nCh, 2);
@@ -100,7 +114,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
 
     const bool live = thrSm.isSmoothing() || ratioSm.isSmoothing() || atkSm.isSmoothing()
                    || relSm.isSmoothing() || kneeSm.isSmoothing() || makeupSm.isSmoothing()
-                   || hpfSm.isSmoothing() || ceilSm.isSmoothing();
+                   || hpfSm.isSmoothing() || ceilSm.isSmoothing() || mixSm.isSmoothing();
 
     auto refreshCached = [this] (float atk, float rel, float hpf, float makeup, float ceilDb) noexcept
     {
@@ -137,7 +151,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
     float rat = juce::jlimit (1.f, 40.f, ratioSm.getCurrentValue());
     float knee = juce::jlimit (0.f, 24.f, kneeSm.getCurrentValue());
     float hpf = juce::jlimit (0.f, 800.f, hpfSm.getCurrentValue());
-    refreshCached (juce::jmax (0.001f, atkSm.getCurrentValue()),
+    float mix = juce::jlimit (0.f, 1.f, mixSm.getCurrentValue());
+    refreshCached (juce::jmax (0.00005f, atkSm.getCurrentValue()),
                    juce::jmax (0.005f, relSm.getCurrentValue()),
                    hpf,
                    juce::jlimit (-24.f, 24.f, makeupSm.getCurrentValue()),
@@ -149,7 +164,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         {
             thr = juce::jlimit (-80.f, 0.f, thrSm.getNextValue());
             rat = juce::jlimit (1.f, 40.f, ratioSm.getNextValue());
-            const float atk = juce::jmax (0.001f, atkSm.getNextValue());
+            mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
+            const float atk = juce::jmax (0.00005f, atkSm.getNextValue());
             const float rel = juce::jmax (0.005f, relSm.getNextValue());
             knee = juce::jlimit (0.f, 24.f, kneeSm.getNextValue());
             const float makeup = juce::jlimit (-24.f, 24.f, makeupSm.getNextValue());
@@ -191,8 +207,17 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             if (std::abs (hpfLpR2) < 1.0e-20f) hpfLpR2 = 0.f;
         }
 
-        const float det = juce::jmax (std::abs (detL), std::abs (detR));
-        const float levelDb = juce::Decibels::gainToDecibels (det, -100.f);
+        const float peak = juce::jmax (std::abs (detL), std::abs (detR));
+        float level = peak;
+        if (rmsDetect)
+        {
+            const float ms = 0.5f * (detL * detL + detR * detR);
+            rmsState += rmsC * (ms - rmsState);
+            if (rmsState < 1.0e-20f)
+                rmsState = 0.f;
+            level = std::sqrt (rmsState);
+        }
+        const float levelDb = juce::Decibels::gainToDecibels (level, -100.f);
         const float grDb = computeGrDb (levelDb, thr, rat, knee);
 
         envDb += ((grDb > envDb) ? atkC : relC) * (grDb - envDb);
@@ -201,8 +226,26 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
         envDb = juce::jlimit (0.f, 60.f, envDb);
 
         const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
+        const float dryG = 1.f - mix;
+        float dryL = out[0][i];
+        float dryR = useCh > 1 ? out[1][i] : dryL;
+        if (latencySamples >= 2 && delayL != nullptr)
+        {
+            dryL = DSPUtils::delayRead (delayL, writePos, (float) latencySamples, delayN);
+            if (useCh > 1 && delayR != nullptr)
+                dryR = DSPUtils::delayRead (delayR, writePos, (float) latencySamples, delayN);
+            delayL[writePos] = std::isfinite (out[0][i]) ? out[0][i] : 0.f;
+            if (delayR != nullptr)
+                delayR[writePos] = useCh > 1 && std::isfinite (out[1][i]) ? out[1][i] : delayL[writePos];
+            if (++writePos >= delayN)
+                writePos = 0;
+        }
+        const float wets[2] = { dryL, dryR };
         for (int c = 0; c < useCh; ++c)
-            out[c][i] = DSPUtils::softCeilSample (out[c][i] * g, ceilLin);
+        {
+            const float wet = DSPUtils::softCeilSample (wets[c] * g, ceilLin);
+            out[c][i] = wets[c] * dryG + wet * mix;
+        }
     }
 
     if (! live)
@@ -217,6 +260,7 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             makeupSm.skip (nS);
             hpfSm.skip (nS);
             ceilSm.skip (nS);
+            mixSm.skip (nS);
         }
     }
 

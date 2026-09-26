@@ -89,7 +89,7 @@ function writeJson (path, json) {
   console.log ("wrote", path);
 }
 
-function stripVst3Junk (bundle) {
+function stripVst3Junk (bundle, version) {
   const root = resolve (bundle);
   for (const p of [
     join (root, "resources"),
@@ -109,7 +109,7 @@ function stripVst3Junk (bundle) {
       if (! name.toLowerCase().endsWith (".vst3")) {
         continue;
       }
-      if (name.toLowerCase().includes ("0.6.4-beta")) {
+      if (version && name.toLowerCase().includes (version.toLowerCase())) {
         continue;
       }
       const p = join (win, name);
@@ -133,7 +133,7 @@ function stripVst3Junk (bundle) {
 
 const args = process.argv.slice (2);
 let endian = process.platform === "win32" ? "windows" : "apple";
-let version = "0.6.4-beta";
+let version = "0.6.6-beta";
 let out = "";
 const also = [];
 let bundle = "";
@@ -167,5 +167,5 @@ for (const extra of also) {
   writeJson (extra, json);
 }
 if (bundle) {
-  stripVst3Junk (bundle);
+  stripVst3Junk (bundle, version);
 }

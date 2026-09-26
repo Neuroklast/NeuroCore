@@ -155,7 +155,7 @@ add({
   },
   ranges: {
     cutoff: { min: 20, max: 20000, unit: "Hz" },
-    resonance: { min: 0.1, max: 10 },
+    resonance: { min: 0.1, max: 4 },
   },
   defaultArgs: { type: "lowpass", cutoff: "1000", resonance: "0.4", channel: "both" },
   blurb: "State-variable filter, cutoff in Hz.",
@@ -187,7 +187,7 @@ add({
   typeCodePrefix: "DL",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["time", "feedback", "mix", "sync", "pingpong"],
+  paramJacks: ["time", "feedback", "mix", "wow", "rate", "flutter", "sync", "pingpong"],
   enums: {
     sync: [...NOTES],
     pingpong: ["off", "on"],
@@ -196,9 +196,28 @@ add({
     time: { min: 1, max: 2000, unit: "ms" },
     feedback: { min: 0, max: 0.95 },
     mix: { min: 0, max: 1, unit: "%" },
+    wow: { min: 0, max: 1 },
+    rate: { min: 0.1, max: 12, unit: "Hz" },
+    flutter: { min: 0, max: 1 },
   },
-  defaultArgs: { time: "250", feedback: "0.25", mix: "0.3", sync: "off", pingpong: "off" },
-  blurb: "Delay line, time in ms.",
+  defaultArgs: { time: "250", feedback: "0.25", mix: "0.3", wow: "0", rate: "0.65", flutter: "0", sync: "off", pingpong: "off" },
+  blurb: "Delay line. Wow 0 is still. Wow 1 is ±8 ms. Rate is the wow speed, default 0.65 Hz. Flutter 1 is ±2 ms at 8 Hz.",
+});
+
+add({
+  id: "bitcrush",
+  label: "Bitcrush",
+  typeCodePrefix: "BC",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["bits", "mix", "tone"],
+  ranges: {
+    bits: { min: 1, max: 16 },
+    mix: { min: 0, max: 1, unit: "%" },
+    tone: { min: 800, max: 16000, unit: "Hz" },
+  },
+  defaultArgs: { bits: "8", mix: "1", tone: "8000" },
+  blurb: "Quantize, then a recovery lowpass. The formula alone aliases.",
 });
 
 add({
@@ -247,16 +266,25 @@ add({
   typeCodePrefix: "CP",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "ratio", "attack", "release", "ceiling"],
+  paramJacks: ["threshold", "ratio", "attack", "release", "knee", "makeup", "hpf", "mix", "detector", "lookahead", "ceiling"],
+  enums: { detector: ["peak", "rms"] },
   ranges: {
     threshold: { min: -60, max: 0, unit: "dB" },
     ratio: { min: 1, max: 20 },
-    attack: { min: 0.001, max: 1, unit: "s" },
-    release: { min: 0.001, max: 2, unit: "s" },
-    ceiling: { min: -12, max: 0, unit: "dB" },
+    attack: { min: 0.00005, max: 0.3, unit: "s" },
+    release: { min: 0.005, max: 1, unit: "s" },
+    knee: { min: 0, max: 24, unit: "dB" },
+    makeup: { min: -24, max: 24, unit: "dB" },
+    hpf: { min: 0, max: 800, unit: "Hz" },
+    mix: { min: 0, max: 1, unit: "%" },
+    lookahead: { min: 0, max: 20, unit: "ms" },
+    ceiling: { min: -24, max: 0, unit: "dB" },
   },
-  defaultArgs: { threshold: "-18", ratio: "4", attack: "0.01", release: "0.1", ceiling: "0" },
-  blurb: "Compressor.",
+  defaultArgs: {
+    threshold: "-18", ratio: "4", attack: "0.01", release: "0.1",
+    knee: "0", makeup: "0", hpf: "0", mix: "1", detector: "peak", lookahead: "0", ceiling: "0",
+  },
+  blurb: "One compressor. Peak or RMS into the same envelope. Mix is parallel.",
 });
 
 add({
@@ -282,13 +310,14 @@ add({
   typeCodePrefix: "LM",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["ceiling", "release"],
+  paramJacks: ["ceiling", "release", "lookahead"],
   ranges: {
     ceiling: { min: -12, max: 0, unit: "dB" },
     release: { min: 0.001, max: 1, unit: "s" },
+    lookahead: { min: 0, max: 20, unit: "ms" },
   },
-  defaultArgs: { ceiling: "-0.3", release: "0.1" },
-  blurb: "Brickwall limiter.",
+  defaultArgs: { ceiling: "-0.3", release: "0.1", lookahead: "0" },
+  blurb: "Peak limiter. Lookahead 0 is the fast mode. A lookahead joins host delay compensation.",
 });
 
 add({
@@ -297,16 +326,17 @@ add({
   typeCodePrefix: "OT",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["depth", "time", "low", "mid", "high"],
+  paramJacks: ["depth", "time", "in", "low", "mid", "high"],
   ranges: {
     depth: { min: 0, max: 1, unit: "%" },
     time: { min: 0, max: 1 },
+    in: { min: 0.25, max: 6 },
     low: { min: 0, max: 1.4, unit: "%" },
     mid: { min: 0, max: 1.4, unit: "%" },
     high: { min: 0, max: 1.4, unit: "%" },
   },
-  defaultArgs: { depth: "1", time: "0.3", low: "1", mid: "1", high: "1" },
-  blurb: "Multiband up/down compression.",
+  defaultArgs: { depth: "1", time: "0.3", in: "1", low: "1", mid: "1", high: "1" },
+  blurb: "Multiband up/down. Band amounts process that band only. In is the level into the detector.",
 });
 
 add({
@@ -416,6 +446,79 @@ add({
 });
 
 add({
+  id: "chorus",
+  label: "Chorus",
+  typeCodePrefix: "CH",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "depth", "delay", "voices", "mix", "width"],
+  ranges: {
+    rate: { min: 0, max: 5, unit: "Hz" },
+    depth: { min: 0, max: 1 },
+    delay: { min: 5, max: 40, unit: "ms" },
+    voices: { min: 2, max: 4 },
+    mix: { min: 0, max: 1, unit: "%" },
+    width: { min: 0, max: 1 },
+  },
+  defaultArgs: { rate: "0.6", depth: "0.5", delay: "18", voices: "3", mix: "0.5", width: "0.7" },
+  blurb: "Multi-voice modulated delay. Not a flanger.",
+});
+
+add({
+  id: "deesser",
+  label: "De-esser",
+  typeCodePrefix: "DS",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["freq", "threshold", "amount", "attack", "release", "mix", "listen"],
+  enums: { listen: ["off", "on"] },
+  ranges: {
+    freq: { min: 2000, max: 12000, unit: "Hz" },
+    threshold: { min: -24, max: 6, unit: "dB" },
+    amount: { min: 0, max: 1 },
+    attack: { min: 0.0002, max: 0.05, unit: "s" },
+    release: { min: 0.005, max: 0.3, unit: "s" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { freq: "6500", threshold: "-8", amount: "0.7", attack: "0.002", release: "0.04", mix: "1", listen: "off" },
+  blurb: "Split-band de-esser. Threshold is band level versus the full signal. Listen is the band.",
+});
+
+add({
+  id: "transient",
+  label: "Transient",
+  typeCodePrefix: "TR",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["attack", "sustain", "fast", "slow", "mix"],
+  ranges: {
+    attack: { min: -1, max: 1 },
+    sustain: { min: -1, max: 1 },
+    fast: { min: 0.0003, max: 0.02, unit: "s" },
+    slow: { min: 0.01, max: 0.4, unit: "s" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { attack: "0.5", sustain: "0", fast: "0.002", slow: "0.08", mix: "1" },
+  blurb: "Fast envelope minus slow. Attack punches the hit, sustain shapes the body. Not a compressor.",
+});
+
+add({
+  id: "utility",
+  label: "Utility",
+  typeCodePrefix: "UT",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["gain", "pan", "polarity"],
+  enums: { polarity: ["off", "on"] },
+  ranges: {
+    gain: { min: -24, max: 24, unit: "dB" },
+    pan: { min: -1, max: 1 },
+  },
+  defaultArgs: { gain: "0", pan: "0", polarity: "off" },
+  blurb: "Linear gain in dB, balance pan, polarity. Not a shaper.",
+});
+
+add({
   id: "octaver",
   label: "Octaver",
   typeCodePrefix: "OC",
@@ -444,7 +547,7 @@ add({
     semitones: { min: -24, max: 24, unit: "st" },
     mix: { min: 0, max: 1, unit: "%" },
     formant: { min: 0.25, max: 4 },
-    ceiling: { min: -12, max: 0, unit: "dB" },
+    ceiling: { min: -24, max: 0, unit: "dB" },
   },
   defaultArgs: { semitones: "0", mix: "1", formant: "1", ceiling: "-0.3" },
   blurb: "Phase-vocoder pitch shift.",
@@ -642,6 +745,10 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("pitch")) return "pitch";
   if (t.startsWith("phaser")) return "phaser";
   if (t.startsWith("flanger") || t.startsWith("flange")) return "flanger";
+  if (t.startsWith("chorus")) return "chorus";
+  if (t.startsWith("deesser") || t.startsWith("deess")) return "deesser";
+  if (t.startsWith("transient") || t === "trans" || t === "td") return "transient";
+  if (t.startsWith("utility") || t === "util") return "utility";
   if (t.startsWith("vocod")) return "vocoder";
   if (t === "send") return "send";
   if (t === "out") return "out";

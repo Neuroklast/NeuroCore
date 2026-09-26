@@ -7,8 +7,8 @@ if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set (CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS for VST3/AU")
 endif()
 
-set(NEUROKORE_VERSION_NUMERIC "0.6.4")
-set(NEUROKORE_VERSION_LABEL "0.6.4-beta")
+set(NEUROKORE_VERSION_NUMERIC "0.6.6")
+set(NEUROKORE_VERSION_LABEL "0.6.6-beta")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
@@ -131,6 +131,11 @@ set(SOURCE_FILES
     src/dsl/blocks/PitchBlock.cpp
     src/dsl/blocks/PhaserBlock.cpp
     src/dsl/blocks/FlangerBlock.cpp
+    src/dsl/blocks/ChorusBlock.cpp
+    src/dsl/blocks/DeesserBlock.cpp
+    src/dsl/blocks/TransientBlock.cpp
+    src/dsl/blocks/UtilityBlock.cpp
+    src/dsl/blocks/BitcrushBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/ExprTape.cpp
     src/utils/ExprTapeJit.cpp
