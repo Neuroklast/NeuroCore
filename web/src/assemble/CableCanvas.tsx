@@ -76,6 +76,7 @@ function strokePackets(
   peak: number,
   bloom: boolean,
   animate: boolean,
+  dim: boolean,
 ): void {
   ctx.lineCap = "butt";
   ctx.lineJoin = "miter";
@@ -83,7 +84,7 @@ function strokePackets(
   ctx.setLineDash([]);
   ctx.shadowBlur = 0;
   ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 0.15;
+  ctx.globalAlpha = dim ? 0.22 : 0.42;
   ctx.strokeStyle = glow;
   tracePath(ctx, pts);
   ctx.stroke();
@@ -286,9 +287,6 @@ export function CableCanvas({
             pass.animate ? integrated : 0,
           );
           ctx.save();
-          if (dim) {
-            ctx.globalAlpha = 0.12;
-          }
           strokePackets(
             ctx,
             painted,
@@ -299,6 +297,7 @@ export function CableCanvas({
             peak,
             pass.glow,
             pass.animate,
+            Boolean(dim),
           );
           ctx.restore();
         });

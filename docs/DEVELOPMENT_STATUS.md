@@ -8,7 +8,7 @@ Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
 ## Circuit interaction pass (2026-09-27)
 
-Circuit now shows Add, Arrange, Compact, Fit, Undo and Redo controls. Audio cables have insertion controls. Source edits are accepted only when a sketch topology check confirms the selected edge becomes source → new block → destination; unsupported cases report the limitation without changing the script. Dragging empty space selects multiple chips; Shift+click and Ctrl/Cmd+A extend selection. Middle mouse/Space+drag pans. Selected blocks open a resizable inspector beside the board. The picker now exposes the Drive category. Browser visual inspection and native plug-in testing are still pending.
+Circuit keeps the original full-width board and animated Inspect overlay; click selects, left-drag moves, middle mouse or Space+left-drag pans, and the wheel zooms. The permanent toolbar and cable plus controls were removed. Clicking a cable opens the insertion picker; right-click exposes contextual insertion, inspection and removal. Source edits are accepted only when a sketch topology check confirms the selected edge becomes source → new block → destination; unsupported cases report the limitation without changing the script. Dragging empty space selects multiple chips; Shift+click and Ctrl/Cmd+A extend selection. Middle mouse/Space+drag pans. Chevron or double-click explicitly opens Inspect without moving the graph. Cable traces remain legible at rest. Knob bind jacks drag onto highlighted chip parameters. The picker now exposes the Drive category. Browser visual inspection and native plug-in testing are still pending.
 
 ## Look pass (2026-09-27)
 

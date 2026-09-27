@@ -25,7 +25,6 @@ export function BoardChip({
   node,
   ports,
   selected,
-  inspectorOpen = false,
   focus,
   bindOver = false,
   bindLocal = { x: 0, y: 0 },
@@ -34,7 +33,6 @@ export function BoardChip({
   node: BoardNode;
   ports: BoardPort[];
   selected: boolean;
-  inspectorOpen?: boolean;
   focus?: "off" | "soft" | "sharp";
   bindOver?: boolean;
   bindLocal?: { x: number; y: number };
@@ -53,7 +51,7 @@ export function BoardChip({
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const theme = useHostStore((s) => s.theme);
-  const inspectOpen = useHostStore((s) => s.inspectId === node.id) || inspectorOpen;
+  const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
   const title = node.role === "io" ? node.label : face.title;

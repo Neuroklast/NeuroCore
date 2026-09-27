@@ -6,11 +6,10 @@ import { subscribeVizClock } from "../theme/vizClock";
 import { shouldCollapseChipDetail, useChipViewStore } from "../store/expandStore";
 import { useBindStore } from "../store/telemetryStore";
 import { OsAddPicker, OsContextMenu, OsMenuItem } from "../overlays/OsContextMenu";
-import { InspectBody } from "../overlays/Overlays";
 import { undoTargetIsText } from "../chrome/undoModel";
 import { isArrangeChord } from "../chrome/shortcuts";
-import { isIrSlotId } from "../presets/irSlots";
-import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, redoCircuit, removeCircuitBlock, undoCircuit } from "./addBlock";
+import { chipOverlay } from "../presets/irSlots";
+import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
@@ -59,23 +58,10 @@ export function BoardView({ active = true }: { active?: boolean }) {
   selectedRef.current = selected;
   const selectionRef = useRef<string[]>([]);
   selectionRef.current = selection;
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [inspectorWidth, setInspectorWidth] = useState(340);
-  const beginInspectorResize = (event: PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const start = event.clientX;
-    const width = inspectorWidth;
-    const move = (e: globalThis.PointerEvent) => setInspectorWidth(Math.max(280, Math.min(500, width + start - e.clientX)));
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up, { once: true });
-  };
   const inspectChip = (id: string, type: string) => {
     setSelection([id]);
-    setInspectorOpen(true);
-    if (isIrSlotId(id) || isIrSlotId(type)) {
-      useHostStore.getState().setOverlay("ir", id);
-    }
+    const o = chipOverlay(id, type);
+    useHostStore.getState().setOverlay(o.overlay, o.inspectId);
   };
   const [menu, setMenu] = useState<BoardMenu | null>(null);
   const [insertError, setInsertError] = useState("");
@@ -93,7 +79,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     const g = useBoardStore.getState();
     const allowed = circuitDofAllowed(motion, prefersReduced);
     const plane = focusPlane({
-      selectedNodeIds: selectionRef.current,
+      selectedNodeIds: [],
       selectedEdgeIds: [],
       hoverNodeId: boardHoverRef.current,
       edges: Object.values(g.edges).map((e) => ({
@@ -293,7 +279,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
     const portEl = (e.target as HTMLElement).closest("[data-port-id]");
     const portIdHit = portEl?.getAttribute("data-port-id");
-    if (portIdHit) {
+    if (portIdHit && e.button === 0) {
       const g = useBoardStore.getState();
       const port = g.ports[portIdHit] as BoardPort | undefined;
       const node = port ? g.nodes[port.nodeId] : undefined;
@@ -315,7 +301,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         return;
       }
     }
-    if (e.button === 1 || spaceRef.current) {
+    if (e.button === 1 || (e.button === 0 && spaceRef.current)) {
       panRef.current = { x: e.clientX, y: e.clientY, tx: cam.tx, ty: cam.ty };
       camGesture.current = true;
       pane.setPointerCapture(e.pointerId);
@@ -354,7 +340,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
     setSelection(group);
-    setInspectorOpen(true);
     if (! n || n.locked) {
       return;
     }
@@ -557,9 +542,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
   }, [applyLiveCamera, paintFocus]);
 
   const graph = { nodes, ports, edges };
-  const mainOutEdge = Object.values(edges).find((e) => e.kind === "audio" && e.targetNodeId === "OUT"
-    && (ports[e.targetPortId]?.jackId === "main" || ports[e.targetPortId]?.jackId === "in"));
-  const insertAfter = selected === "OUT" ? mainOutEdge?.sourceNodeId ?? "IN" : selected ?? "IN";
   const portsByNode = useMemo(() => {
     const m: Record<string, BoardPort[]> = {};
     for (const p of Object.values(ports)) {
@@ -586,10 +568,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
   }, [bindLetter, bindX, bindY, nodes]);
 
   return (
-    <div className="nk-board-shell">
     <div
       ref={paneRef}
-      className="nk-board nk-circuit relative h-full min-h-0 min-w-0 flex-1 overflow-hidden bg-black"
+      className="nk-board nk-circuit relative h-full min-h-0 w-full overflow-hidden bg-black"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -683,45 +664,23 @@ export function BoardView({ active = true }: { active?: boolean }) {
             node={n}
             ports={portsByNode[n.id] ?? []}
             selected={selection.includes(n.id)}
-            inspectorOpen={inspectorOpen && selected === n.id}
             bindOver={bindAim?.id === n.id}
             bindLocal={bindAim?.id === n.id ? bindAim.local : { x: 0, y: 0 }}
             onInspect={() => inspectChip(n.id, n.type)}
           />
         ))}
-        {Object.values(edges).filter((e) => e.kind === "audio").map((edge) => {
-          const at = routeMidpoint(edgeRoute(graph, edge));
-          if (!at) return null;
-          return <button type="button" key={edge.id} className="nk-board-edge-add" data-board-control="" style={{ left: at.x, top: at.y }}
-            title={`Insert after ${edge.sourceNodeId} toward ${edge.targetNodeId}`}
-            aria-label={`Insert after ${edge.sourceNodeId} toward ${edge.targetNodeId}`}
-            onClick={(event) => {
-              const pane = paneRef.current?.getBoundingClientRect();
-              if (!pane) return;
-              setMenu({ kind: "add", left: event.clientX - pane.left, top: event.clientY - pane.top + 18, afterId: edge.sourceNodeId, targetId: edge.targetNodeId });
-            }}>+</button>;
-        })}
       </div>
       {lasso ? (() => {
         const a = screenFromWorld(camLive.current, lasso.x0, lasso.y0);
         const b = screenFromWorld(camLive.current, lasso.x1, lasso.y1);
         return <div className="nk-board-lasso" style={{ left: Math.min(a.x, b.x), top: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) }} />;
       })() : null}
-      <div className="nk-board-toolbar" data-board-control="">
-        <button type="button" className="nk-board-tool nk-board-primary" onClick={() => setMenu({ kind: "add", left: 12, top: 54, afterId: insertAfter, targetId: selected === "OUT" && mainOutEdge ? "OUT" : undefined })}>+ Add module</button>
-        <span className="nk-board-tool-label">{selected === "OUT" ? "Before output" : selected ? `After ${selected}` : "Start of chain"}</span>
-        <button type="button" className="nk-board-tool" title="Undo" onClick={() => void undoCircuit()}>↶</button>
-        <button type="button" className="nk-board-tool" title="Redo" onClick={() => void redoCircuit()}>↷</button>
-        <button type="button" className="nk-board-tool" onClick={() => void layoutBoard("ARRANGE", size, { force: true })}>Arrange</button>
-        <button type="button" className="nk-board-tool" onClick={() => void layoutBoard("COMPACT", size, { force: true })}>Compact</button>
-        <button type="button" className="nk-board-tool" onClick={() => useBoardStore.getState().setCamera(fitCamera(Object.values(nodes), size))}>Fit</button>
-      </div>
       {menu?.kind === "pane" ? (
         <OsContextMenu left={menu.left} top={menu.top} title="Add unconnected module" onDismiss={() => setMenu(null)}>
           <OsAddPicker onPick={(type, args) => {
             placeRef.current = menu.world;
             const id = addCircuitBlock(type, args);
-            if (id) { setSelection([id]); setInspectorOpen(true); }
+            if (id) setSelection([id]);
             setMenu(null);
           }} />
           <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("ARRANGE", size, { force: true }); }}>Arrange</OsMenuItem>
@@ -767,29 +726,13 @@ export function BoardView({ active = true }: { active?: boolean }) {
               ? await insertCircuitBlockOnEdge(menu.afterId, menu.targetId, type, args)
               : insertCircuitBlockAfter(menu.afterId, type, args);
             if (!id) { placeRef.current = null; setInsertError("This module cannot be inserted on this connection. Choose an audio block or another connection."); return; }
-            if (id) { setSelection([id]); setInspectorOpen(true); }
+            if (id) setSelection([id]);
             setInsertError("");
             setMenu(null);
           }} />
           {insertError ? <div className="nk-board-insert-error" role="alert">{insertError}</div> : null}
         </OsContextMenu>
       ) : null}
-    </div>
-    {inspectorOpen && selected && nodes[selected] ? (
-      <aside className="nk-circuit-inspector" aria-label="Module inspector" style={{ flexBasis: inspectorWidth }}>
-        <div className="nk-circuit-inspector-resize" role="separator" aria-label="Resize inspector" aria-orientation="vertical" onPointerDown={beginInspectorResize} />
-        <div className="nk-circuit-inspector-head">
-          <div><div className="nk-circuit-eyebrow">MODULE / {nodes[selected].type.toUpperCase()}</div>
-            <strong>{nodes[selected].label || selected}</strong><small>{selected}</small></div>
-          <button type="button" className="nk-board-tool" aria-label="Close inspector" onClick={() => setInspectorOpen(false)}>×</button>
-        </div>
-        <div className="nk-circuit-inspector-body"><InspectBody nodeId={selected} /></div>
-        {canDeleteChip(nodes[selected]) ? <div className="nk-circuit-inspector-actions">
-          <button type="button" className="nk-board-tool" onClick={() => { const id = duplicateCircuitBlock(selected); if (id) setSelection([id]); }}>Duplicate</button>
-          <button type="button" className="nk-board-tool nk-board-danger" onClick={() => { removeCircuitBlock(selected); setSelection([]); }}>Remove</button>
-        </div> : null}
-      </aside>
-    ) : null}
     </div>
   );
 }
