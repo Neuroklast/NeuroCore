@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
 import { chipOverlay } from "../presets/irSlots";
-import { explainDrive, formatParamRange, stageCards, stageHeadline, stageRole } from "./stagesModel";
+import { explainDrive, formatParamRange, stageCards, stageHeadline, stageKnobLive, stageParamLine, stageRole, stageSelAfterKey } from "./stagesModel";
 
 const ast: AstDocument = {
   version: 1,
@@ -61,5 +61,39 @@ describe("stages overlay model", () => {
     expect(stageRole("ir")).toMatch(/cabinet|impulse/i);
     expect(stageHeadline(ir)).toMatch(/Cab mix/i);
     expect(chipOverlay(ir.id, ir.type).overlay).toBe("ir");
+  });
+});
+
+describe("stage param sheet", () => {
+  const knobs = [
+    { id: "c", name: "Low", value: 0.3, min: 30, max: 70, unit: "Hz" },
+  ];
+
+  it("shows bound cutoff as knob name plus unit, not 42.000", () => {
+    expect(stageParamLine("cutoff", "c", knobs)).toEqual({
+      key: "cutoff",
+      binding: "c Low",
+      live: "42 Hz",
+    });
+    expect(stageParamLine("cutoff", "c", knobs).live).not.toContain("42.000");
+  });
+
+  it("leaves unbound literals as themselves", () => {
+    expect(stageParamLine("resonance", "0.2", knobs)).toEqual({
+      key: "resonance",
+      binding: "0.2",
+      live: "",
+    });
+  });
+
+  it("prints live knobs, not ranges", () => {
+    expect(stageKnobLive({ alias: "c", name: "Low" }, knobs)).toBe("c Low 42 Hz");
+    expect(stageKnobLive({ alias: "c", name: "Low" }, knobs)).not.toMatch(/\[/);
+  });
+
+  it("moves the chain with arrows", () => {
+    expect(stageSelAfterKey(0, "ArrowDown", 4)).toBe(1);
+    expect(stageSelAfterKey(3, "ArrowDown", 4)).toBe(3);
+    expect(stageSelAfterKey(0, "ArrowUp", 4)).toBe(0);
   });
 });

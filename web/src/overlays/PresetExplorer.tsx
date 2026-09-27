@@ -5,6 +5,7 @@ import { findFactory } from "../presets/factoryCatalog";
 import { useHostStore } from "../store/hostStore";
 import { explorerSession, patchExplorer, type ExplorerScope } from "./explorerSession";
 import { cyclePresetStar, readPresetStars, starGlyphs } from "../presets/presetStars";
+import { revealLoadedPreset } from "./revealLoadedPreset";
 
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
@@ -23,15 +24,6 @@ export function PresetExplorer() {
   const folderRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (folderRef.current) {
-      folderRef.current.scrollTop = explorerSession.folderScroll;
-    }
-    if (listRef.current) {
-      listRef.current.scrollTop = explorerSession.listScroll;
-    }
-  }, []);
-
   const persist = (partial: Partial<typeof explorerSession>) => {
     patchExplorer(partial);
     if (partial.q !== undefined) setQ(partial.q);
@@ -40,6 +32,27 @@ export function PresetExplorer() {
     if (partial.sel !== undefined) setSel(partial.sel);
     if (partial.sortKey !== undefined) setSortKey(partial.sortKey);
   };
+
+  useEffect(() => {
+    const revealed = revealLoadedPreset(presets, current);
+    if (revealed) {
+      persist({ ...revealed, sortKey: "name" });
+      if (hasJuceBridge()) {
+        void getNativeFunction("setUi")({ explorerCat: revealed.cat }).catch(() => undefined);
+      }
+      requestAnimationFrame(() => {
+        listRef.current?.querySelector(`[data-row="${revealed.sel}"]`)?.scrollIntoView({ block: "center" });
+        folderRef.current?.querySelector(`[data-folder="${revealed.cat || "all"}"]`)?.scrollIntoView({ block: "nearest" });
+      });
+      return;
+    }
+    if (folderRef.current) {
+      folderRef.current.scrollTop = explorerSession.folderScroll;
+    }
+    if (listRef.current) {
+      listRef.current.scrollTop = explorerSession.listScroll;
+    }
+  }, []);
 
   const inScope = useMemo(() => presets.filter((p) => {
     if (scope === "factory") return p.factory !== false;
@@ -116,6 +129,7 @@ export function PresetExplorer() {
             <button
               key={f.label}
               type="button"
+              data-folder={f.name || "all"}
               className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
                 cat === f.name ? "bg-surface-high" : ""
               }`}
@@ -165,6 +179,7 @@ export function PresetExplorer() {
               {filtered.map((p, i) => (
                 <tr
                   key={`${p.name}-${i}`}
+                  data-row={i}
                   className={`cursor-pointer ${i === sel ? "bg-surface-high" : i % 2 ? "bg-[#0a0a0a]" : ""}`}
                   onClick={() => persist({ sel: i })}
                   onDoubleClick={() => load(p.name)}

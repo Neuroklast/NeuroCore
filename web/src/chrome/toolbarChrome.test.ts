@@ -48,8 +48,8 @@ describe("toolbar preset chrome", () => {
 
 describe("header paint hierarchy", () => {
   it("marks the active tab with a class, never a filled accent block", () => {
-    expect(workspaceTabClass(true)).toBe("nk-tab is-on");
-    expect(workspaceTabClass(false)).toBe("nk-tab");
+    expect(workspaceTabClass(true)).toBe("nk-clip nk-ws-tab on");
+    expect(workspaceTabClass(false)).toBe("nk-clip nk-ws-tab");
     expect(workspaceTabClass(true)).not.toMatch(/bg-accent|accent/);
     expect(workspaceTabClass(false)).not.toMatch(/accent/);
   });
@@ -63,15 +63,19 @@ describe("toolbar budget at 1280", () => {
 });
 
 describe("workspace row + compare cluster", () => {
-  it("is one 32px band: tabs flex, compare intrinsic, A/B equal cells", () => {
+  it("is one 32px band: compact equal clips, compare right, A/B equal cells", () => {
     expect(WORKSPACE_ROW_H).toBe(32);
     expect(COMPARE_AB_MIN_PX).toBe(WORKSPACE_ROW_H);
     expect(workspaceRowClass()).toBe("nk-ws-row");
     expect(compareClusterClass()).toBe("nk-compare");
     expect(comparePairClass()).toBe("nk-mode-pair nk-ab-pair");
     expect(css).toMatch(/\.nk-ws-row\s*\{[^}]*height:\s*32px/s);
+    expect(css).toMatch(/\.nk-ws-row\s*\{[^}]*gap:\s*8px/s);
     expect(css).toMatch(/\.nk-ab-pair\s*\{[^}]*width:\s*64px/s);
     expect(css).toMatch(/\.nk-compare\s*\{[^}]*flex:\s*0 0 auto/s);
+    expect(css).toMatch(/\.nk-compare\s*\{[^}]*margin-left:\s*auto/s);
+    expect(css).toMatch(/\.nk-ws-tab\s*\{[^}]*flex:\s*0 0 auto/s);
+    expect(css).not.toMatch(/\.nk-tab\s*\{[^}]*flex:\s*1/s);
   });
 
   it("uses one 12px inset vertically and horizontally", () => {

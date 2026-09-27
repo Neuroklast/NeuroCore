@@ -23,6 +23,7 @@ import { setVizFpsCap } from "../theme/vizClock";
 import { seedFactoryPresets } from "../presets/presetActions";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
+import { dismissSplash, setSplashProgress } from "../theme/splash";
 import { nk } from "../theme/tokens";
 import { knobBindEnabled, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
 
@@ -36,10 +37,6 @@ export function App() {
   const motion = useHostStore((s) => s.motion);
   useEffect(() => {
     bindDocumentTheme(theme);
-    requestAnimationFrame(() => {
-      document.documentElement.dataset.nkReady = "1";
-      document.getElementById("nk-splash")?.remove();
-    });
   }, [theme]);
   useEffect(() => {
     bindDocumentMotion(motion);
@@ -140,10 +137,20 @@ export function App() {
     window.addEventListener("wheel", onWheel, { capture: true, passive: false });
     window.addEventListener("contextmenu", onContextMenu, true);
 
+    setSplashProgress(70);
     if (hasJuceBridge()) {
-      void getNativeFunction("UI_READY")({ build: nk.version }).catch(() => undefined);
-    } else if (useAstStore.getState().ast == null) {
-      seedFactoryPresets();
+      void getNativeFunction("UI_READY")({ build: nk.version })
+        .catch(() => undefined)
+        .finally(() => {
+          setSplashProgress(100);
+          dismissSplash();
+        });
+    } else {
+      if (useAstStore.getState().ast == null) {
+        seedFactoryPresets();
+      }
+      setSplashProgress(100);
+      dismissSplash();
     }
     return () => {
       subscriptions.forEach(unsubscribe => unsubscribe());

@@ -1,5 +1,55 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
-import { formatBound, kindLabel } from "../theme/tokens";
+import { formatBound, kindLabel, mappedValue } from "../theme/tokens";
+
+export type StageKnob = {
+  id: string;
+  name: string;
+  value: number;
+  min: number;
+  max: number;
+  unit?: string;
+};
+
+export function stageParamLine(
+  key: string,
+  value: string,
+  knobs: StageKnob[],
+): { key: string; binding: string; live: string } {
+  const letter = value.trim().toLowerCase();
+  const knob = /^[a-f]$/.test(letter) ? knobs.find((k) => k.id === letter) : undefined;
+  if (! knob) {
+    return { key, binding: value, live: "" };
+  }
+  const n = formatBound(mappedValue(knob.value, knob.min, knob.max));
+  const unit = knob.unit ? ` ${knob.unit}` : "";
+  return { key, binding: `${letter} ${knob.name}`, live: `${n}${unit}`.trim() };
+}
+
+export function stageKnobLive(
+  param: { alias: string; name: string },
+  knobs: StageKnob[],
+): string {
+  const k = knobs.find((x) => x.id === param.alias);
+  if (! k) {
+    return `${param.alias} ${param.name}`;
+  }
+  const n = formatBound(mappedValue(k.value, k.min, k.max));
+  const unit = k.unit ? ` ${k.unit}` : "";
+  return `${param.alias} ${param.name} ${n}${unit}`.trim();
+}
+
+export function stageSelAfterKey(sel: number, key: string, n: number): number {
+  if (n <= 0) {
+    return 0;
+  }
+  if (key === "ArrowDown") {
+    return Math.min(n - 1, sel + 1);
+  }
+  if (key === "ArrowUp") {
+    return Math.max(0, sel - 1);
+  }
+  return sel;
+}
 
 export function formatParamRange(min: number, max: number): string {
   return `[${formatBound(min)} … ${formatBound(max)}]`;

@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
-import { liveArg } from "../assemble/liveArg";
+import { useEffect, useMemo, useState } from "react";
 import { chipOverlay } from "../presets/irSlots";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
-import { formatParamRange, stageCards } from "./stagesModel";
+import { stageCards, stageKnobLive, stageParamLine, stageSelAfterKey } from "./stagesModel";
 
 export function StagesPanel() {
   const ast = useAstStore((s) => s.ast);
@@ -13,6 +12,22 @@ export function StagesPanel() {
   const [sel, setSel] = useState(0);
   const card = cards[Math.min(sel, Math.max(0, cards.length - 1))];
   const params = ast?.params ?? [];
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setSel((s) => stageSelAfterKey(s, e.key, cards.length));
+        return;
+      }
+      if (e.key === "Enter" && card) {
+        e.preventDefault();
+        setOverlay("inspect", card.id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [card, cards.length, setOverlay]);
 
   return (
     <div className="flex h-full min-h-0 w-full gap-3 text-[13px]">
@@ -52,10 +67,8 @@ export function StagesPanel() {
             <div className="mb-1 text-[11px] tracking-widest text-muted">KNOBS</div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px]">
               {params.map((p) => (
-                <span key={p.alias}>
-                  <span className="text-accent">{p.alias}</span>
-                  {" "}{p.name}
-                  <span className="text-muted"> {formatParamRange(p.min, p.max)}</span>
+                <span key={p.alias} className="text-ink">
+                  {stageKnobLive(p, knobs)}
                 </span>
               ))}
             </div>
@@ -67,10 +80,10 @@ export function StagesPanel() {
         ) : (
           <>
             <div>
+              <h2 className="nk-chip-title text-[18px] text-accent">
+                {String(card.index).padStart(2, "0")} {card.label}
+              </h2>
               <div className="text-[11px] tracking-widest text-muted">{card.id}</div>
-              <h2 className="nk-chip-title text-[18px] text-accent">{card.label}</h2>
-              <p className="mt-1 text-[14px] leading-6 text-ink">{card.role}</p>
-              <p className="mt-2 border-l-2 border-accent/70 pl-3 text-[13px] text-ink">{card.headline}</p>
               {card.comment ? <p className="mt-1 text-[12px] text-muted">{card.comment}</p> : null}
             </div>
 
@@ -82,36 +95,21 @@ export function StagesPanel() {
 
             {card.args.length > 0 ? (
               <div>
-                <div className="mb-1 text-[11px] tracking-widest text-muted">WHAT IT IS SET TO</div>
+                <div className="mb-1 text-[11px] tracking-widest text-muted">PARAMETERS</div>
                 <table className="w-full border-collapse">
                   <tbody>
                     {card.args.map((row) => {
-                      const live = liveArg(row.value, knobs);
+                      const line = stageParamLine(row.key, row.value, knobs);
                       return (
                         <tr key={row.key} className="border-b border-accent/20">
-                          <td className="w-28 py-1.5 pr-2 text-muted">{row.key}</td>
-                          <td className="py-1.5 font-mono text-ink">{row.value}</td>
-                          <td className="w-28 py-1.5 text-right font-mono text-accent">
-                            {live.live !== row.value ? live.live : ""}
-                          </td>
+                          <td className="w-28 py-1.5 pr-2 text-muted">{line.key}</td>
+                          <td className="py-1.5 font-mono text-ink">{line.binding}</td>
+                          <td className="w-28 py-1.5 text-right font-mono text-accent">{line.live}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-              </div>
-            ) : null}
-
-            {card.knobs.length > 0 ? (
-              <div>
-                <div className="mb-1 text-[11px] tracking-widest text-muted">TURN THESE</div>
-                <div className="flex flex-wrap gap-2">
-                  {card.knobs.map((k) => (
-                    <span key={k.id} className="nk-clip px-2 py-1 text-[12px]">
-                      {k.id.toUpperCase()} {k.name}
-                    </span>
-                  ))}
-                </div>
               </div>
             ) : null}
 
