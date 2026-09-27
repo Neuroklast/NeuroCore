@@ -25,6 +25,7 @@ export function BoardChip({
   node,
   ports,
   selected,
+  inspectorOpen = false,
   focus,
   bindOver = false,
   bindLocal = { x: 0, y: 0 },
@@ -33,6 +34,7 @@ export function BoardChip({
   node: BoardNode;
   ports: BoardPort[];
   selected: boolean;
+  inspectorOpen?: boolean;
   focus?: "off" | "soft" | "sharp";
   bindOver?: boolean;
   bindLocal?: { x: number; y: number };
@@ -51,7 +53,7 @@ export function BoardChip({
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const theme = useHostStore((s) => s.theme);
-  const inspectOpen = useHostStore((s) => s.inspectId === node.id);
+  const inspectOpen = useHostStore((s) => s.inspectId === node.id) || inspectorOpen;
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
   const title = node.role === "io" ? node.label : face.title;
@@ -131,11 +133,11 @@ export function BoardChip({
         <polygon
           points={framePoints(node.w, node.h, frameCut)}
           fill="none"
-          stroke={selected || isIn ? "var(--nk-cyan)" : "var(--nk-ink-muted)"}
-          strokeWidth="1.4"
+          stroke={selected ? "var(--nk-accent)" : isIn ? "var(--nk-cyan)" : "var(--nk-ink-muted)"}
+          strokeWidth={selected ? "2.2" : "1.4"}
         />
         {frameCorners(node.w, node.h, frameCut).map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={selected || isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"} strokeWidth="2.7" />
+          <path key={i} d={d} fill="none" stroke={selected ? "var(--nk-accent)" : isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"} strokeWidth="2.7" />
         ))}
       </svg>
       <div className="nk-chip-body" style={{ pointerEvents: "none", visibility: bindOpen ? "hidden" : "visible" }}>

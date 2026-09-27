@@ -1,6 +1,7 @@
 export type ChipDrag = { id: string; x: number; y: number };
 
 export const chipDragRef: { current: ChipDrag | null } = { current: null };
+export const chipDragGroupRef: { current: Record<string, ChipDrag> | null } = { current: null };
 
 export function nodeWithDrag<T extends { id: string; x: number; y: number }>(
   node: T,

@@ -59,6 +59,8 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
 - Overlays size to their content (`height: auto`). Wide explorers keep the 720 px stage. If the last row is clipped, the overlay is too short — do not hide the controls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
 - One overlay at a time. Double-click a node → inspect **all** editable keys.
+- Circuit selection opens a resizable side inspector while the graph remains interactive. The shared Inspect controls still serve other contexts. Ctrl/Cmd+A selects all, Ctrl/Cmd+Shift+A arranges. Empty-pane drag selects; middle mouse or Space+drag pans.
+- Cable + inserts only when the script sketch confirms the exact source → new → destination audio path; unsupported branches keep the script unchanged and explain why. Empty-pane Add explicitly parks the new module.
 - Help is the operator manual minus Install and Troubleshooting. Talk to the operator, not about the documentation. No “this file”, no “except Install because the plugin is already running”. Apex 400 titles, JetBrains body. Not a `<pre>` dump.
 - Knob right-click (Unit and Circuit) opens `OsContextMenu`: Name / Min / Max / Unit / Note / MIDI Learn. Never the browser menu.
 

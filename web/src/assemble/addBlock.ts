@@ -46,7 +46,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "custom", label: "Custom", args: "y = x", category: "Custom" },
 ];
 
-export const ADD_CATEGORIES = ["Dynamics", "Tone", "Time", "Mod", "Routing", "Custom"] as const;
+export const ADD_CATEGORIES = ["Dynamics", "Drive", "Tone", "Time", "Mod", "Routing", "Custom"] as const;
 
 export function blocksInCategory(category: string): AddableBlock[] {
   return ADDABLE_BLOCKS.filter((b) => b.category === category);
@@ -147,6 +147,38 @@ export function scriptAfterInsertAfter(script: string, afterId: string, type: st
     return `${lines.join("\n")}\n`;
   }
   return parkNodeInScript(insertBeforeMixer(script, line), id);
+}
+
+/** Insert only if the same actual audio edge is replaced by source→new→target. */
+export function scriptAfterInsertOnEdge(
+  script: string, sourceId: string, targetId: string, type: string, args?: string,
+): { script: string; id: string } | null {
+  if (type === "bus" || type === "osc" || targetId.toLowerCase() === "in") return null;
+  const before = parseDslSketch(script).doc;
+  const hasAudio = (doc: typeof before, from: string, to: string) =>
+    doc.edges?.some((e) => e.kind === "audio" && e.from.toLowerCase() === from.toLowerCase() && e.to.toLowerCase() === to.toLowerCase()) === true;
+  if (!hasAudio(before, sourceId, targetId)) return null;
+  const target = sourceBlock(script, targetId);
+  if (!target && targetId.toLowerCase() !== "out") return null;
+  const at = target?.start ?? script.length;
+  const kind = ADDABLE_BLOCKS.find((b) => b.type === type)?.type ?? type;
+  const id = nextBlockId(kind, before.nodes.map((n) => n.id));
+  const body = args ?? ADDABLE_BLOCKS.find((b) => b.type === type)?.args ?? "y = x";
+  const indent = target ? (script.slice(target.start, target.body).match(/^\s*/)?.[0] ?? "") : "";
+  const prefix = script.slice(0, at);
+  const next = prefix + (prefix && !prefix.endsWith("\n") ? "\n" : "") + `${indent}${id}: ${body}\n` + script.slice(at);
+  const after = parseDslSketch(next).doc;
+  if (!hasAudio(after, sourceId, id) || !hasAudio(after, id, targetId) || hasAudio(after, sourceId, targetId)) return null;
+  return { script: next, id };
+}
+
+export async function insertCircuitBlockOnEdge(sourceId: string, targetId: string, type: string, args?: string): Promise<string | null> {
+  const cur = useAstStore.getState();
+  const next = scriptAfterInsertOnEdge(cur.lastValidScript || cur.script, sourceId, targetId, type, args);
+  if (!next) return null;
+  const result = await publishScript(next.script, "canvas");
+  if (result && typeof result === "object" && "ok" in result && result.ok === false) return null;
+  return next.id;
 }
 
 export function scriptAfterRemove(script: string, id: string): string {

@@ -344,6 +344,36 @@ html[data-motion="off"] .nk-boot {
   user-select: none;
   -webkit-user-select: none;
 }
+.nk-board-shell { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.nk-board-toolbar { position: absolute; z-index: 12; left: 12px; top: 12px; right: 12px; display: flex; align-items: center; gap: 5px; width: max-content; max-width: calc(100% - 24px); padding: 5px; border: 1px solid var(--nk-ink-muted); background: rgb(10 10 12 / 0.94); box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); }
+.nk-board-tool { min-height: 30px; padding: 4px 9px; border: 1px solid transparent; color: var(--nk-ink); background: transparent; font: 11px "Apex", "Segoe UI", sans-serif; cursor: pointer; white-space: nowrap; }
+.nk-board-tool:hover, .nk-board-tool:focus-visible { border-color: var(--nk-cyan); background: var(--nk-surface-high); outline: none; }
+.nk-board-primary { border-color: var(--nk-cyan); color: var(--nk-cyan); }
+.nk-board-danger { color: var(--nk-accent); }
+.nk-board-tool-label { padding: 0 9px; color: var(--nk-ink-muted); font: 10px "JetBrains Mono", monospace; white-space: nowrap; }
+.nk-board-insert-error { max-width: 285px; padding: 9px; color: var(--nk-accent); font: 11px/1.4 "Segoe UI", sans-serif; }
+.nk-board-edge-add { position: absolute; z-index: 8; transform: translate(-50%, -50%); width: 28px; height: 28px; border: 1px solid var(--nk-ink-soft); background: var(--nk-bg); color: var(--nk-cyan); font: 18px/24px "Segoe UI", sans-serif; opacity: .7; cursor: pointer; transition: opacity 130ms, border-color 130ms, box-shadow 130ms; }
+.nk-board-edge-add:hover, .nk-board-edge-add:focus-visible { opacity: 1; border-color: var(--nk-cyan); box-shadow: 0 0 12px color-mix(in srgb, var(--nk-cyan) 25%, transparent); outline: none; }
+.nk-board-lasso { position: absolute; z-index: 9; pointer-events: none; border: 1px solid var(--nk-cyan); background: color-mix(in srgb, var(--nk-cyan) 10%, transparent); }
+.nk-circuit-inspector { position: relative; display: flex; flex-direction: column; flex: 0 0 340px; min-width: 0; min-height: 0; border-left: 1px solid var(--nk-ink-muted); background: var(--nk-bg); }
+.nk-circuit-inspector-resize { position: absolute; z-index: 14; left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; }
+.nk-circuit-inspector-resize:hover { background: color-mix(in srgb, var(--nk-cyan) 12%, transparent); }
+.nk-circuit-inspector-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 18px; border-bottom: 1px solid var(--nk-ink-muted); }
+.nk-circuit-inspector-head strong { display: block; margin: 5px 0; color: var(--nk-ink); font: 18px "Apex", "Segoe UI", sans-serif; }
+.nk-circuit-inspector-head small { color: var(--nk-ink-muted); font: 10px "JetBrains Mono", monospace; }
+.nk-circuit-eyebrow { color: var(--nk-cyan); font: 10px "JetBrains Mono", monospace; letter-spacing: .11em; }
+.nk-circuit-inspector-body { flex: 1; min-height: 0; overflow: auto; padding: 17px; }
+.nk-circuit-inspector-body section { padding: 13px 0; border-bottom: 1px solid var(--nk-ink-muted); }
+.nk-circuit-inspector-body section:first-child { padding-top: 0; }
+.nk-inspect-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.nk-inspect-field { display: flex; flex-direction: column; min-width: 0; gap: 6px; padding: 10px; border: 1px solid var(--nk-ink-muted); background: var(--nk-surface); }
+.nk-inspect-field > span { color: var(--nk-ink-soft); font: 11px "Apex", "Segoe UI", sans-serif; text-transform: capitalize; }
+.nk-inspect-field:focus-within { border-color: var(--nk-cyan); }
+.nk-inspect-field input, .nk-inspect-field select { min-width: 0; }
+.nk-inspect-field:has(input[type="text"]), .nk-inspect-field:has(.nk-clip) { grid-column: span 2; }
+.nk-circuit-inspector-body input, .nk-circuit-inspector-body select { min-height: 32px; padding: 4px 8px; }
+.nk-circuit-inspector-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 10px 16px; border-top: 1px solid var(--nk-ink-muted); }
+@media (max-width: 850px) { .nk-circuit-inspector { flex-basis: 280px; } .nk-board-tool-label { display: none; } }
 .nk-board input,
 .nk-board textarea {
   user-select: text;
