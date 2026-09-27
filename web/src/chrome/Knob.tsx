@@ -129,6 +129,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   }, []);
 
   const onPointer = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
     if ((e.target as HTMLElement | null)?.closest?.("[data-knob-bind]")) {
       return;
     }
@@ -235,6 +236,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
             title={`Drag ${knob.id.toUpperCase()} onto a parameter`}
             aria-label={`Bind ${knob.id.toUpperCase()}`}
             onPointerDown={(e) => {
+              if (e.button !== 0) return;
               e.preventDefault();
               e.stopPropagation();
               startBindDrag(knob.id, e.clientX, e.clientY);
