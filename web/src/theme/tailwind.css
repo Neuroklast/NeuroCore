@@ -1249,7 +1249,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   height: 32px;
   flex-shrink: 0;
   align-items: stretch;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
   padding-inline: 12px;
 }
@@ -1262,11 +1262,12 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
-  gap: 4px;
+  gap: 8px;
   height: 100%;
+  margin-left: auto;
 }
 
-.nk-compare .nk-clip {
+.nk-ws-row .nk-clip {
   height: 100%;
   min-height: 0;
 }
@@ -1340,25 +1341,11 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   color: var(--nk-ink);
 }
 
-.nk-tab {
-  flex: 1;
+.nk-ws-tab {
+  flex: 0 0 auto;
   height: 100%;
-  min-width: 0;
+  min-width: 112px;
   min-height: 0;
-  border: 1.4px solid var(--nk-ink-muted);
-  border-top: 2px solid transparent;
-  background: var(--nk-surface);
-  color: var(--nk-ink-muted);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.nk-tab.is-on {
-  background: var(--nk-surface-high);
-  border-color: var(--nk-ink-muted);
-  border-top-color: var(--nk-accent);
-  color: var(--nk-ink);
 }
 
 .nk-tube-bloom {

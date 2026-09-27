@@ -8,7 +8,9 @@ Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
 ## Chrome tab row + Gold contrast (2026-09-18)
 
-Workspace row is 32 px: Unit / Circuit / Terminal flex, A|B is a 64 px mode pair, A→B and MATCH are equal-height clips (not `px-2` leftovers in a 28 px strip). Header tools, preset title, Mix/OS (L/BOTH/R + selects) and the footer share that 32 px token. Shell bands and the unit pane use one 12 px inset, including vertically on the knob rail. Pane bloom is gone; vignette is a light edge, not a 0.55 inset fog. OS bloom is a faint wash. Gold is near-black with a hairline texture.
+Factory tags: vocoder ≠ sidechain; every factory row has tags; web catalog keeps `irs` / `inputGain` / `outputGain`. Named buses: 12 (`kMaxNamedBuses`), not 4. softclip is atan+ADAA. Use-case contracts: duck, Reese sub centre, master ceiling.
+
+Workspace row is 32 px: Unit / Circuit / Terminal are compact equal clips (not flex-fill), A|B is a 64 px mode pair on the right, A→B and MATCH are equal-height clips (not `px-2` leftovers in a 28 px strip). Boot splash is the NK mark plus a bar; it stays until `UI_READY`. Header tools, preset title, Mix/OS (L/BOTH/R + selects) and the footer share that 32 px token. Shell bands and the unit pane use one 12 px inset, including vertically on the knob rail. Pane bloom is gone; vignette is a light edge, not a 0.55 inset fog. OS bloom is a faint wash. Gold is near-black with a hairline texture.
 
 ## Laufende DSP-Prüfung (2026-09-16)
 

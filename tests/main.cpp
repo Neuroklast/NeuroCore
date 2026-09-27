@@ -23,6 +23,7 @@
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
 #include "FactoryLoudnessTest.h"
+#include "FactoryUseCaseTest.h"
 #include "AstJsonTest.h"
 #include "WebShellTest.h"
 #include "WebCompileTest.h"
@@ -62,6 +63,7 @@ int main (int argc, char* argv[])
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
   FactoryLoudnessTest factoryLoudnessTest;
+  FactoryUseCaseTest factoryUseCaseTest;
   TelemetrySamplingTest telemetrySamplingTest;
   GlobalPreferencesTest globalPreferencesTest;
   AstJsonTest astJsonTest;

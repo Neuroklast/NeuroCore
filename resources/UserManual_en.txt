@@ -8,7 +8,7 @@ Put NEUROKORE on a track, or on a send return. Three views share one sound:
 - **Circuit** — the board. Blocks, jacks, cables.
 - **Terminal** — the same sound as text. Edit, then Save. The editor is inside the plugin; it does not load from the internet.
 
-Click the wordmark to open neuroklast.net in your browser. There is no address bar inside the plugin.
+Click the wordmark to open neuroklast.net in your browser. There is no address bar inside the plugin. Opening the window shows the NK mark with a bar until the editor is ready.
 
 ---
 
@@ -51,8 +51,9 @@ L / BOTH / R chooses which input side the sound hears. BOTH is the default. A de
 
 Top bar
 - Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
+- Unit / Circuit / Terminal — three equal clips on the next row. A | B, A→B and MATCH sit on the right of that row.
 - Functions — look up formula words and insert them.
-- Stages — blocks in the current sound. Select an IR block to open that cabinet slot.
+- Stages — chain on the left, parameters of the selected block on the right. Arrow keys move the selection; Enter opens Inspect. The title X closes it. Select an IR block to open that cabinet slot.
 - Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. Live/Studio does not change the window size. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine. It does not resize the window.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
@@ -78,7 +79,7 @@ Unit meters
 
 ## Presets
 
-Click the preset name.
+Click the preset name. The library opens on the category of the sound that is loaded, with that row selected in the middle of the list.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
 - **Your** sounds live in your user preset folder as `.nrk` files.

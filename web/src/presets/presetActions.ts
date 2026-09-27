@@ -45,6 +45,13 @@ function applyLocal(name: string): void {
     knobs: knobsFromSketch(preset.script, preset.knobs),
     mix: preset.mix,
   });
+  useHostStore.getState().applyIr({
+    slots: Object.entries(preset.irs ?? {}).map(([slot, file]) => ({
+      slot,
+      name: file,
+      loaded: false,
+    })),
+  });
   useAstStore.getState().applyAstEvent({
     origin: "preset",
     script: preset.script,

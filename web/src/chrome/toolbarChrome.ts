@@ -22,7 +22,7 @@ export function toolbarFixedMinPx(): number {
 
 /** Active workspace is a hairline, never a filled accent slab. */
 export function workspaceTabClass(active: boolean): string {
-  return active ? "nk-tab is-on" : "nk-tab";
+  return active ? "nk-clip nk-ws-tab on" : "nk-clip nk-ws-tab";
 }
 
 export function workspaceRowClass(): string {
