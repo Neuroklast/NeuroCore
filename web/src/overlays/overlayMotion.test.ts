@@ -13,6 +13,11 @@ describe("overlay chrome", () => {
     expect(OVERLAY_BACKDROP_BLUR).toMatch(/^blur\(\d+px\)$/);
   });
 
+  it("assemble 400 ms and disassemble 320 ms stay in lockstep", () => {
+    expect(OVERLAY_ASSEMBLE.ms).toBe(400);
+    expect(OVERLAY_DISASSEMBLE.ms).toBe(320);
+  });
+
   it("assemble and disassemble are clip-path, not fade-only", () => {
     expect(OVERLAY_ASSEMBLE.from).toContain("inset");
     expect(OVERLAY_ASSEMBLE.to).toBe("inset(0 0 0 0)");

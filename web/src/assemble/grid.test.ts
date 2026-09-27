@@ -123,9 +123,9 @@ describe("isValidLink", () => {
   });
 
   it("paints audio red+flow, param and LFO white on the side plugs", () => {
-    expect(cableAccent("audio")).toBe("#ff2222");
-    expect(cableAccent("param")).toBe("#ededed");
-    expect(cableAccent("mod")).toBe("#ededed");
+    expect(cableAccent("audio")).toBe("#c42a2a");
+    expect(cableAccent("param")).toBe("#3ec8e0");
+    expect(cableAccent("mod")).toBe("#3ec8e0");
     expect(cableFace("param")).toBe("bottom");
     expect(cableFace("mod")).toBe("side");
     expect(cableFace("audio")).toBe("side");

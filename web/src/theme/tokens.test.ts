@@ -3,9 +3,10 @@ import { formatBound, formatMapped, kindLabel, nk } from "./tokens";
 
 describe("board tokens", () => {
   it("uses the Neuroklast CI red, void black and off-white text", () => {
-    expect(nk.accent).toBe("#ff2222");
-    expect(nk.warn).toBe("#ff6b6b");
-    expect(nk.cyan).toBe("#ededed");
+    expect(nk.accent).toBe("#c42a2a");
+    expect(nk.warn).toBe("#e85a4a");
+    expect(nk.cyan).toBe("#3ec8e0");
+    expect(nk.cyan).not.toBe(nk.ink);
     expect(nk.background).toBe("#000000");
     expect(nk.surface).toBe("#111111");
     expect(nk.surfaceHigh).toBe("#1a1a1a");

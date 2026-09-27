@@ -132,6 +132,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         clipsRms: parsed.rms,
         clipsRmsL: parsed.rmsL,
         clipsRmsR: parsed.rmsR,
+        clipsPeaks: parsed.peaks,
       });
     });
   }, []);

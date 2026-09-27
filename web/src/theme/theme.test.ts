@@ -14,8 +14,9 @@ describe("theme engine", () => {
     expect(DEFAULT_THEME).toBe("signal");
     expect(themeIds()).toEqual(["signal", "gold", "azure", "digicide"]);
     const signal = themeOf("signal");
-    expect(signal.accent).toBe("#ff2222");
-    expect(signal.cyan).toBe("#ededed");
+    expect(signal.accent).toBe("#c42a2a");
+    expect(signal.cyan).toBe("#3ec8e0");
+    expect(signal.cyan).not.toBe(signal.ink);
     expect(signal.background).toBe("#000000");
     expect(signal.white).toBe("#ffffff");
     expect(signal.ink).toBe("#ededed");
@@ -23,7 +24,10 @@ describe("theme engine", () => {
     const gold = themeOf("gold");
     expect(gold.accent).toBe("#fcee0a");
     expect(gold.label).toBe("Gold");
-    expect(gold.background).toBe("#050400");
+    expect(gold.cyan).toBe("#5ec8f0");
+    expect(gold.sc).toBe("#2dd4bf");
+    expect(gold.cyan).not.toBe(gold.sc);
+    expect(gold.background).toBe("#0a0a0a");
     expect(gold.texture).not.toMatch(/warn-rgb/);
     expect(gold.texture).not.toMatch(/radial-gradient/);
     expect(gold.texture).toMatch(/repeating-linear-gradient/);

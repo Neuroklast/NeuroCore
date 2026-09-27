@@ -182,12 +182,13 @@ export type TermFrame = {
   frame: "muted" | "accent";
   caret: boolean;
   readOnly: boolean;
+  lineNumbers: "on" | "off";
 };
 
 export function termFrame(editing: boolean): TermFrame {
   return editing
-    ? { mode: "edit", frame: "accent", caret: true, readOnly: false }
-    : { mode: "view", frame: "muted", caret: false, readOnly: true };
+    ? { mode: "edit", frame: "accent", caret: true, readOnly: false, lineNumbers: "on" }
+    : { mode: "view", frame: "muted", caret: false, readOnly: true, lineNumbers: "off" };
 }
 
 export const dslMonarch = {

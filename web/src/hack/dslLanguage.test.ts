@@ -94,12 +94,14 @@ describe("view vs edit frame", () => {
       frame: "muted",
       caret: false,
       readOnly: true,
+      lineNumbers: "off",
     });
     expect(termFrame(true)).toEqual({
       mode: "edit",
       frame: "accent",
       caret: true,
       readOnly: false,
+      lineNumbers: "on",
     });
   });
 });

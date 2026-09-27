@@ -168,27 +168,29 @@ export function bandRms(samples: ArrayLike<number>, sr = 48000): {
   return { low: norm(low, nL), mid: norm(mid, nM), high: norm(high, nH) };
 }
 
-const RGB_PX = 8;
+const RGB_PX = 14;
 
 export function logoRgbSplit(
   bands: { low: number; mid: number; high: number },
   opts: { motion?: MotionPref; prefersReduced?: boolean } = {},
-): { redX: number; cyanY: number } {
+): { redX: number; greenY: number; blueX: number } {
   const motion = opts.motion ?? "full";
   if (motion === "off" || motion === "reduced" || (opts.prefersReduced === true && motion !== "full")) {
-    return { redX: 0, cyanY: 0 };
+    return { redX: 0, greenY: 0, blueX: 0 };
   }
   return {
     redX: clamp01(bands.low) * RGB_PX,
-    cyanY: clamp01(bands.high) * RGB_PX,
+    greenY: clamp01(bands.mid) * RGB_PX,
+    blueX: clamp01(bands.high) * RGB_PX,
   };
 }
 
 /** Alpha-following chroma offsets for the Unit mark ghosts. */
-export function logoReactiveStyle(split: { redX: number; cyanY: number }): Record<string, string> {
+export function logoReactiveStyle(split: { redX: number; greenY: number; blueX: number }): Record<string, string> {
   return {
     "--nk-logo-red-x": `${split.redX}px`,
-    "--nk-logo-cyan-y": `${split.cyanY}px`,
+    "--nk-logo-green-y": `${split.greenY}px`,
+    "--nk-logo-blue-x": `${split.blueX}px`,
   };
 }
 

@@ -122,6 +122,13 @@ describe("hostStore", () => {
     expect(s.clipsRmsL.stage1).toBeLessThan(s.clipsL.stage1);
   });
 
+  it("stores tap peak fractions from the host snapshot", () => {
+    useHostStore.getState().applyHost({
+      clips: [{ id: "stage1", peak: 0.8, peaks: [0.25, 0.5, 1.4, "x"] }],
+    });
+    expect(useHostStore.getState().clipsPeaks.stage1).toEqual([0.25, 0.5]);
+  });
+
   it("falls back to peak when the host omits rms so old snapshots still stream", () => {
     useHostStore.getState().applyHost({
       clips: [{ id: "stage1", peak: 0.5, peakL: 0.5, peakR: 0.1 }],

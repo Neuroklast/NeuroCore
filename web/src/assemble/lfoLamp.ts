@@ -75,6 +75,23 @@ export function parseLfoShape(raw: string): LfoShape {
   return "sine";
 }
 
+/** CSS class for the chip lamp pulse. Noise and softsaw share sine/saw. */
+export function lfoLampClass(shape: LfoShape): string {
+  if (shape === "saw" || shape === "softsaw") {
+    return "nk-lfo-saw";
+  }
+  if (shape === "square") {
+    return "nk-lfo-square";
+  }
+  if (shape === "triangle") {
+    return "nk-lfo-triangle";
+  }
+  if (shape === "softsquare") {
+    return "nk-lfo-softsquare";
+  }
+  return "nk-lfo-sine";
+}
+
 export function lfoPeriodMs(hz: number): number {
   const f = Number.isFinite(hz) && hz > 0.05 ? hz : 1;
   return Math.max(50, Math.min(8000, Math.round(1000 / f)));

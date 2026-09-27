@@ -19,7 +19,7 @@ import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
-import { lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
+import { lfoLampClass, lfoPeriodMs, lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 
 export function BoardChip({
   node,
@@ -44,6 +44,10 @@ export function BoardChip({
   const peak = useHostStore((s) => s.clips[node.id] ?? 0);
   const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
   const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
+  const envLevel = useHostStore((s) => {
+    const v = s.mods[node.id];
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v as number)) : 0;
+  });
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const theme = useHostStore((s) => s.theme);
@@ -103,9 +107,20 @@ export function BoardChip({
           chrome.lamp === "clip" ? (
             <span className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`} aria-hidden />
           ) : chrome.lamp === "env" ? (
-            <span className="nk-env-lamp" aria-hidden />
+            <span
+              className="nk-env-lamp"
+              aria-hidden
+              style={{ "--nk-env": String(envLevel) } as CSSProperties}
+            />
           ) : (
-            <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
+            <>
+              <span
+                className={`nk-lfo-lamp ${lfoLampClass(lfoShape)}`}
+                style={{ "--nk-lfo-ms": `${lfoPeriodMs(lfoHz)}ms` } as CSSProperties}
+                aria-hidden
+              />
+              <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
+            </>
           )
         ) : null}
         <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
@@ -207,7 +222,7 @@ export function BoardChip({
             key={`warn-${p.id}`}
             className="nk-overload"
             aria-hidden
-            style={{ top: p.count > 1 ? loc.y : "50%" }}
+            style={{ top: loc.y }}
           >
             <ClipWarnSvg />
             <em>{hot}</em>

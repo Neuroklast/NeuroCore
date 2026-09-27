@@ -4,7 +4,16 @@ import { demoGonioLr, demoLoudness } from "../viz/scopeModel";
 export function demoClipRows(
   ids: string[],
   t: number,
-): Array<{ id: string; peak: number; peakL: number; peakR: number; rms: number; rmsL: number; rmsR: number }> {
+): Array<{
+  id: string;
+  peak: number;
+  peakL: number;
+  peakR: number;
+  rms: number;
+  rmsL: number;
+  rmsR: number;
+  peaks: number[];
+}> {
   const { inPeak, outPeak, inRms, outRms } = demoLoudness(t);
   const lr = demoGonioLr(0, 1, t);
   const lAbs = Math.abs(lr.l);
@@ -15,6 +24,7 @@ export function demoClipRows(
     const u = i / n;
     const peak = inPeak * (1 - u) + outPeak * u;
     const rms = inRms * (1 - u) + outRms * u;
+    const wrap = (f: number) => ((f % 1) + 1) % 1;
     return {
       id,
       peak,
@@ -23,6 +33,7 @@ export function demoClipRows(
       rms,
       rmsL: rms * (lAbs / span),
       rmsR: rms * (rAbs / span),
+      peaks: peak > 0.02 ? [wrap(0.18 + u * 0.1), wrap(0.52 + t * 0.03), wrap(0.81)] : [],
     };
   });
 }

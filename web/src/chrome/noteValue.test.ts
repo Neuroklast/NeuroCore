@@ -16,6 +16,7 @@ import {
 
 describe("knob note values", () => {
   it("parses 1/4, dotted, and bar", () => {
+    expect(parseNoteToken("8/1")).toBeCloseTo(8);
     expect(parseNoteToken("1/4")).toBeCloseTo(0.25);
     expect(parseNoteToken("1/2")).toBeCloseTo(0.5);
     expect(parseNoteToken("1/4.")).toBeCloseTo(0.375);

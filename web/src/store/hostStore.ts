@@ -80,6 +80,8 @@ export interface HostState {
   clipsRms: Record<string, number>;
   clipsRmsL: Record<string, number>;
   clipsRmsR: Record<string, number>;
+  /** Local-max fractions 0..1 from the source tap window. */
+  clipsPeaks: Record<string, number[]>;
   theme: ThemeId;
   knobGestures: Record<string, true>;
   knobMeta: Record<string, Partial<KnobState>>;
@@ -104,25 +106,43 @@ export interface HostState {
   setInput: (index: number) => void;
 }
 
-function aliasIoPeak(next: Record<string, number>, id: string, peak: number): void {
-  next[id] = peak;
+function aliasIoId<T>(next: Record<string, T>, id: string, value: T): void {
+  next[id] = value;
   if (id === "__out__") {
-    next.OUT = peak;
+    next.OUT = value;
   }
   if (id === "OUT") {
-    next.__out__ = peak;
+    next.__out__ = value;
   }
   if (id === "__in__") {
-    next.IN = peak;
+    next.IN = value;
   }
   if (id === "IN") {
-    next.__in__ = peak;
+    next.__in__ = value;
   }
+}
+
+function aliasIoPeak(next: Record<string, number>, id: string, peak: number): void {
+  aliasIoId(next, id, peak);
 }
 
 function finiteOr(raw: unknown, fallback: number): number {
   const n = Number(raw);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function parsePeakFractions(raw: unknown): number[] {
+  if (! Array.isArray(raw)) {
+    return [];
+  }
+  const out: number[] = [];
+  for (const v of raw) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n >= 0 && n <= 1) {
+      out.push(n);
+    }
+  }
+  return out;
 }
 
 export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
@@ -132,6 +152,7 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
   rms: Record<string, number>;
   rmsL: Record<string, number>;
   rmsR: Record<string, number>;
+  peaks: Record<string, number[]>;
 } {
   const peak: Record<string, number> = {};
   const peakL: Record<string, number> = {};
@@ -139,6 +160,7 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
   const rms: Record<string, number> = {};
   const rmsL: Record<string, number> = {};
   const rmsR: Record<string, number> = {};
+  const peaks: Record<string, number[]> = {};
   for (const raw of rows) {
     const id = String(raw.id ?? "");
     if (! id) {
@@ -157,8 +179,9 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
     aliasIoPeak(rms, id, e);
     aliasIoPeak(rmsL, id, eL);
     aliasIoPeak(rmsR, id, eR);
+    aliasIoId(peaks, id, parsePeakFractions(raw.peaks));
   }
-  return { peak, peakL, peakR, rms, rmsL, rmsR };
+  return { peak, peakL, peakR, rms, rmsL, rmsR, peaks };
 }
 
 export function osFactorFromIndex(index: number): number {
@@ -277,6 +300,7 @@ export const useHostStore = create<HostState>((set) => ({
   clipsRms: {},
   clipsRmsL: {},
   clipsRmsR: {},
+  clipsPeaks: {},
   theme: DEFAULT_THEME,
   knobGestures: {} as Record<string, true>,
   knobMeta: {} as Record<string, Partial<KnobState>>,
@@ -346,6 +370,7 @@ export const useHostStore = create<HostState>((set) => ({
     clipsRms: parsedClips ? parsedClips.rms : s.clipsRms,
     clipsRmsL: parsedClips ? parsedClips.rmsL : s.clipsRmsL,
     clipsRmsR: parsedClips ? parsedClips.rmsR : s.clipsRmsR,
+    clipsPeaks: parsedClips ? parsedClips.peaks : s.clipsPeaks,
   };
   }),
   applyPresets: (p) => set((s) => {

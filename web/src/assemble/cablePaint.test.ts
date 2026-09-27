@@ -4,6 +4,8 @@ import {
   buildCableLanes,
   cableGeomStamp,
   cablePaintPass,
+  peakDistances,
+  tapPeakFractions,
   edgeLanes,
   edgePaintKind,
   MAIN_DASH,
@@ -28,14 +30,11 @@ import {
   streamDash,
   streamAdvance,
   streamDashOffset,
+  chromaSplit,
   streamGlitch,
   streamIdentityPhase,
   streamSpeed,
   twinsCross,
-  packetDistances,
-  packetGapAt,
-  packetMeanGap,
-  packetSeed,
 } from "./cablePaint";
 import { chamferWaypoints, hasLightning } from "./layout/chamfer";
 
@@ -141,6 +140,8 @@ describe("lane telemetry", () => {
     expect(streamBlur(1)).toBe(STREAM_BLUR_HOT);
     expect(streamGlitch(1)).toBe(0);
     expect(streamGlitch(1.2)).toBeGreaterThan(0);
+    expect(chromaSplit(0)).toBe(0);
+    expect(chromaSplit(1)).toBeGreaterThan(0);
     expect(streamIdentityPhase("e0:L", 30)).not.toBe(streamIdentityPhase("e0:R", 30));
     expect(streamIdentityPhase("stage1:L", 30)).not.toBe(streamIdentityPhase("filter1:L", 30));
     expect(streamIdentityPhase("e0:L", 30)).toBe(streamIdentityPhase("e0:L", 30));
@@ -162,9 +163,9 @@ describe("lane telemetry", () => {
 });
 
 describe("pcb background traces", () => {
-  it("drops traces and glow while the camera is moving", () => {
+  it("keeps traces and glow while the camera pans; beads freeze", () => {
     expect(cablePaintPass(false)).toEqual({ traces: true, glow: true, animate: true });
-    expect(cablePaintPass(true)).toEqual({ traces: false, glow: false, animate: false });
+    expect(cablePaintPass(true)).toEqual({ traces: true, glow: true, animate: false });
   });
 
   it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
@@ -208,52 +209,26 @@ describe("pcb background traces", () => {
   });
 });
 
-describe("aperiodic packet train", () => {
-  it("does not repeat a short spacing pattern so flow cannot look reversed", () => {
-    const mean = 16;
-    const seed = packetSeed("e0:L");
-    const gaps = Array.from({ length: 24 }, (_, k) => packetGapAt(k, seed, mean));
-    const period2 = gaps.every((g, i) => Math.abs(g - gaps[i % 2]!) < 0.05);
-    expect(period2).toBe(false);
-    for (let i = 1; i < gaps.length; i += 1) {
-      expect(Math.abs(gaps[i]! - gaps[i - 1]!)).toBeGreaterThan(1);
-    }
-    expect(Math.max(...gaps) - Math.min(...gaps)).toBeGreaterThan(mean * 0.4);
-    const onCable = packetDistances(220, 0, mean, seed);
-    const spacings = onCable.slice(1).map((d, i) => d - onCable[i]!);
-    const unique = new Set(spacings.map((g) => Math.round(g * 4)));
-    expect(unique.size).toBeGreaterThan(2);
+describe("tap peak beads", () => {
+  it("sits beads on local maxima, not a lattice", () => {
+    const wave = new Float32Array(9);
+    wave[2] = 0.9;
+    wave[6] = -0.8;
+    const frac = tapPeakFractions(wave);
+    expect(frac).toEqual([2 / 8, 6 / 8]);
+    expect(tapPeakFractions(new Float32Array(9))).toEqual([]);
   });
 
-  it("translates the train toward dest when travel increases", () => {
-    const mean = 16;
-    const seed = 0.31;
-    const a = packetDistances(240, 10, mean, seed);
-    const b = packetDistances(240, 14, mean, seed);
-    const interior = a.filter((d) => d > 8 && d < 220);
-    expect(interior.length).toBeGreaterThan(4);
-    for (const d of interior) {
-      expect(b.some((x) => Math.abs(x - (d + 4)) < 0.51)).toBe(true);
-    }
+  it("maps fractions onto the polyline and wraps travel toward dest", () => {
+    const a = peakDistances(200, [0.25, 0.5]);
+    expect(a).toEqual([50, 100]);
+    const b = peakDistances(200, [0.25, 0.5], 10);
+    expect(b[0]).toBeCloseTo(60);
+    expect(b[1]).toBeCloseTo(110);
+    expect(peakDistances(200, [0.9], 40)[0]).toBeCloseTo(20);
   });
 
-  it("packs denser when RMS is hot, never a 2 px lattice", () => {
-    expect(packetMeanGap(0)).toBeGreaterThan(packetMeanGap(1));
-    expect(packetMeanGap(1)).toBeGreaterThan(8);
-  });
-
-  it("keeps L and R on different trains", () => {
-    const L = packetDistances(200, 0, 16, packetSeed("e0:L"));
-    const R = packetDistances(200, 0, 16, packetSeed("e0:R"));
-    expect(L).not.toEqual(R);
-  });
-
-  it("advances less than half the smallest gap per 60 fps frame so the eye cannot reverse", () => {
-    const mean = packetMeanGap(1);
-    const gaps = Array.from({ length: 32 }, (_, k) => packetGapAt(k, 0.2, mean));
-    const smallest = Math.min(...gaps);
-    const step = streamSpeed(1) / 60;
-    expect(step).toBeLessThan(smallest * 0.5);
+  it("30 and 60 fps travel the same distance", () => {
     expect(streamAdvance(0, 1, 1 / 60) * 2).toBeCloseTo(streamAdvance(0, 1, 1 / 30));
   });
 });

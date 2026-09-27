@@ -125,6 +125,9 @@ public:
                         expect (peakL > 0.7f, "sine peak missing");
                         expect (rmsL > 0.4f && rmsL < peakL - 0.05f, "rms must sit below peak on a sine");
                         expect (rmsR < 0.05f, "right rms should stay quiet");
+                        expect (o->hasProperty ("peaks"));
+                        expect (o->getProperty ("peaks").isArray());
+                        expect (o->getProperty ("peaks").size() > 0, "sine tap must report local maxima");
                     }
                 }
             }

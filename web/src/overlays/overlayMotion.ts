@@ -12,6 +12,8 @@ export type OverlayShell = {
 
 /** Backdrop on the board, not a flat dimmer. Keep in sync with `.nk-overlay-host`. */
 export const OVERLAY_BACKDROP_BLUR = "blur(10px)";
+export const OVERLAY_BACKDROP_ALPHA = 0.45;
+export const OVERLAY_PANEL_ALPHA = 0.82;
 
 export const OVERLAY_ASSEMBLE = {
   from: "inset(0 100% 0 0)",

@@ -35,7 +35,7 @@ export function FaceView() {
   const scan = motionAllows("crtScan", motion, reduced);
   const splitBands = bandRms(telemetry.scopeOut, sr > 0 ? sr : 48000);
   const rgb = logoRgbSplit(splitBands, { motion, prefersReduced: reduced });
-  const chroma = rgb.redX > 0.05 || rgb.cyanY > 0.05;
+  const chroma = rgb.redX > 0.05 || rgb.greenY > 0.05 || rgb.blueX > 0.05;
   const amp = Math.max(telemetry.outRms, telemetry.outPeak * 0.6);
   const glow = amp > 0 ? Math.min(1, Math.log10(1 + amp * 9)) : 0;
 
@@ -77,12 +77,18 @@ export function FaceView() {
             src={mark}
             alt={theme === "digicide" ? "DIGICIDE" : "NEUROKORE"}
             className="nk-face-mark"
-            style={{ filter: bloomFilter(glow, bloom) }}
+            style={{
+              filter: [
+                bloom ? bloomFilter(glow, true) : "",
+                "drop-shadow(0 12px 20px rgba(0,0,0,0.55))",
+              ].filter(Boolean).join(" "),
+            }}
           />
           {chroma ? (
             <>
               <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-r" />
-              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-c" />
+              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-g" />
+              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-b" />
             </>
           ) : null}
         </span>

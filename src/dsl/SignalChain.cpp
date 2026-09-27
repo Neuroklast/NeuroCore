@@ -3134,6 +3134,25 @@ void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
         o->setProperty ("rms", juce::jmax (rmsL, rmsR));
         o->setProperty ("rmsL", rmsL);
         o->setProperty ("rmsR", rmsR);
+        juce::Array<juce::var> peaks;
+        float absv[kNodeTapSamples];
+        float wmax = 0.f;
+        for (int s = 0; s < kNodeTapSamples; ++s)
+        {
+            const float a = std::abs (t.wave[(size_t) s].load (std::memory_order_relaxed));
+            absv[s] = a;
+            wmax = juce::jmax (wmax, a);
+        }
+        const float thresh = juce::jmax (1.0e-3f, wmax * 0.35f);
+        if (wmax > 1.0e-3f)
+        {
+            for (int s = 1; s < kNodeTapSamples - 1; ++s)
+            {
+                if (absv[s] >= thresh && absv[s] >= absv[s - 1] && absv[s] > absv[s + 1])
+                    peaks.add (s / (float) (kNodeTapSamples - 1));
+            }
+        }
+        o->setProperty ("peaks", peaks);
         dest.add (juce::var (o));
     }
 }

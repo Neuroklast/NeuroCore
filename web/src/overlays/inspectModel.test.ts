@@ -3,8 +3,12 @@ import type { AstDocument } from "../bridge/ast";
 import {
   boundKnobRows,
   clampInspectArg,
+  inspectArgFields,
   inspectBlurb,
   inspectEnumOptions,
+  inspectNoteChoices,
+  inspectSnapNote,
+  inspectValueFromNote,
   inspectRows,
 } from "./inspectModel";
 
@@ -87,6 +91,46 @@ describe("inspect enums / ranges / blurb / bindings", () => {
     expect(a.value).toContain("200.00");
     expect(a.value).toContain("2500.00");
     expect(a.value).toContain("Hz");
+  });
+
+  it("offers VALUE/NOTE on time fields and clamps notes to chipSpec range", () => {
+    const gate = inspectArgFields({
+      id: "gate1",
+      type: "gate",
+      busName: "main",
+      args: { hold: "0.03", threshold: "-46", attack: "0.01", release: "0.1" },
+      trailingComment: "",
+    });
+    const hold = gate.find((f) => f.key === "hold")!;
+    expect(hold.timing).toBe(true);
+    expect(hold.unit).toBe("s");
+    const attack = gate.find((f) => f.key === "attack")!;
+    expect(attack.timing).toBe(true);
+    expect(inspectNoteChoices("s", 0.001, 1, 120)).toContain("1/16");
+    expect(inspectNoteChoices("s", 0.001, 1, 120)).not.toContain("8/1");
+    expect(inspectValueFromNote("1/16", "s", 120)).toBe("0.125");
+    expect(inspectSnapNote("0.13", "s", 0.001, 1, 120)).toBe("1/16");
+    const delay = inspectNoteChoices("ms", 1, 2000, 120);
+    expect(delay).toContain("1/1");
+    expect(delay).not.toContain("8/1");
+    const lfo = inspectNoteChoices("Hz", 0.01, 40, 120);
+    expect(lfo).toContain("8/1");
+    expect(lfo).toContain("1/16");
+    const osc = inspectArgFields({
+      id: "osc1",
+      type: "osc",
+      busName: "mod",
+      args: { freq: "2" },
+      trailingComment: "",
+    });
+    expect(osc.find((f) => f.key === "freq")!.timing).toBe(true);
+    expect(inspectArgFields({
+      id: "filter1",
+      type: "filter",
+      busName: "main",
+      args: { cutoff: "1000" },
+      trailingComment: "",
+    })[0]!.timing).toBe(false);
   });
 
   it("shows note tokens for a note-range bound knob", () => {

@@ -67,12 +67,12 @@ export function defineDslTheme(monaco: Monaco, theme = liveTheme()): void {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "c8c8c8" },
+      { token: "comment", foreground: theme.inkMuted.replace("#", "") },
       { token: "keyword", foreground: accent },
       { token: "knob", foreground: accent },
-      { token: "number", foreground: "fff5f5" },
-      { token: "identifier", foreground: "fff5f5" },
-      { token: "operator", foreground: "c8c8c8" },
+      { token: "number", foreground: theme.cyan.replace("#", "") },
+      { token: "identifier", foreground: theme.ink.replace("#", "") },
+      { token: "operator", foreground: theme.inkMuted.replace("#", "") },
     ],
     colors: {
       "editor.background": theme.black,

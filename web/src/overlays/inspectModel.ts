@@ -1,6 +1,12 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
 import { chipSpec } from "../assemble/chipSpec";
-import { labelForWhole } from "../chrome/noteValue";
+import {
+  labelForWhole,
+  NOTE_GRID,
+  parseNoteToken,
+  wholeToHz,
+  wholeToMs,
+} from "../chrome/noteValue";
 
 export interface InspectRow {
   group: "meta" | "arg" | "jack" | "param" | "var";
@@ -16,7 +22,14 @@ export interface InspectArgField {
   kind: InspectArgKind;
   options: string[];
   unit: string;
+  min: number;
+  max: number;
+  timing: boolean;
 }
+
+/** Inspect note picker: 8 bars down to a sixteenth, plus dotted/triplet in that span. */
+export const INSPECT_NOTE_MIN = 0.0625;
+export const INSPECT_NOTE_MAX = 8;
 
 export interface BoundKnobRow {
   letter: string;
@@ -94,18 +107,112 @@ export function inspectBlurb(type: string): string {
   return chipSpec(type).blurb;
 }
 
+export function inspectTimingUnit(unit: string): boolean {
+  const u = unit.toLowerCase();
+  return u === "s" || u === "ms" || u === "hz";
+}
+
+/** NOTE is duration or LFO rate, not a filter cutoff in Hz. */
+export function inspectTimingField(key: string, unit: string): boolean {
+  const u = unit.toLowerCase();
+  if (u === "s" || u === "ms") {
+    return true;
+  }
+  if (u === "hz") {
+    const k = key.toLowerCase();
+    return k === "freq" || k === "rate";
+  }
+  return false;
+}
+
+function noteMapped(whole: number, unit: string, bpm: number): number {
+  const u = unit.toLowerCase();
+  if (u === "hz") {
+    return wholeToHz(whole, bpm);
+  }
+  const ms = wholeToMs(whole, bpm);
+  return u === "s" ? ms / 1000 : ms;
+}
+
+function inRange(n: number, min: number, max: number): boolean {
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  return n + 1e-9 >= lo && n - 1e-9 <= hi;
+}
+
+export function inspectNoteChoices(unit: string, min: number, max: number, bpm: number): string[] {
+  if (! inspectTimingUnit(unit)) {
+    return [];
+  }
+  return NOTE_GRID
+    .filter((g) => g.whole + 1e-9 >= INSPECT_NOTE_MIN && g.whole - 1e-9 <= INSPECT_NOTE_MAX)
+    .filter((g) => inRange(noteMapped(g.whole, unit, bpm), min, max))
+    .map((g) => g.label);
+}
+
+export function inspectValueFromNote(label: string, unit: string, bpm: number): string | null {
+  const whole = parseNoteToken(label);
+  if (whole == null || ! inspectTimingUnit(unit)) {
+    return null;
+  }
+  const n = noteMapped(whole, unit, bpm);
+  if (! Number.isFinite(n)) {
+    return null;
+  }
+  if (Number.isInteger(n)) {
+    return String(n);
+  }
+  const digits = unit.toLowerCase() === "s" ? 5 : 3;
+  return String(Number(n.toFixed(digits)));
+}
+
+export function inspectSnapNote(raw: string, unit: string, min: number, max: number, bpm: number): string | null {
+  const choices = inspectNoteChoices(unit, min, max, bpm);
+  if (choices.length === 0) {
+    return null;
+  }
+  const n = Number(raw);
+  if (! Number.isFinite(n)) {
+    return choices[0] ?? null;
+  }
+  let best = choices[0]!;
+  let err = Number.POSITIVE_INFINITY;
+  for (const label of choices) {
+    const mapped = Number(inspectValueFromNote(label, unit, bpm));
+    if (! Number.isFinite(mapped)) {
+      continue;
+    }
+    const e = Math.abs(mapped - n);
+    if (e < err) {
+      err = e;
+      best = label;
+    }
+  }
+  return best;
+}
+
 export function inspectArgFields(node: AstNode): InspectArgField[] {
   const spec = chipSpec(node.type, node.args);
   return Object.entries(node.args).map(([key, value]) => {
     const options = inspectEnumOptions(node.type, key);
     if (options.length > 0) {
-      return { key, value, kind: "enum", options, unit: "" };
+      return { key, value, kind: "enum", options, unit: "", min: 0, max: 0, timing: false };
     }
     const range = spec.ranges[key];
     if (range) {
-      return { key, value, kind: "number", options: [], unit: range.unit ?? "" };
+      const unit = range.unit ?? "";
+      return {
+        key,
+        value,
+        kind: "number",
+        options: [],
+        unit,
+        min: range.min,
+        max: range.max,
+        timing: inspectTimingField(key, unit),
+      };
     }
-    return { key, value, kind: "text", options: [], unit: "" };
+    return { key, value, kind: "text", options: [], unit: "", min: 0, max: 0, timing: false };
   });
 }
 

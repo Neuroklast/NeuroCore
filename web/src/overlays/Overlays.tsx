@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getNativeFunction } from "../bridge/juce";
 import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
@@ -10,14 +10,19 @@ import { LicensePanel } from "./LicensePanel";
 import { settingsAboutTarget } from "./aboutModel";
 import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
 import { isIrSlotId } from "../presets/irSlots";
+import { peakToDb } from "../bridge/telemetry";
 import {
   clampInspectArg,
   inspectArgFields,
   inspectBlurb,
   inspectRows,
+  inspectNoteChoices,
+  inspectSnapNote,
+  inspectValueFromNote,
+  type InspectArgField,
 } from "./inspectModel";
 import { OptimizePanel } from "./OptimizePanel";
-import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose } from "./overlayChrome";
+import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose, overlaySizesToContent } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
 import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
@@ -60,8 +65,97 @@ function setNodeArg(nodeId: string, key: string, value: string): void {
   });
 }
 
+function InspectArgControl({
+  nodeId,
+  type,
+  field,
+}: {
+  nodeId: string;
+  type: string;
+  field: InspectArgField;
+}) {
+  const bpm = useHostStore((s) => s.bpm);
+  const notes = field.timing ? inspectNoteChoices(field.unit, field.min, field.max, bpm) : [];
+  const [mode, setMode] = useState<"value" | "note">("value");
+  const fieldClass = "h-7 w-full border border-[var(--nk-line)] bg-black px-1 text-ink";
+  if (field.kind === "enum") {
+    return (
+      <select
+        className={fieldClass}
+        value={field.options.includes(field.value) ? field.value : field.options[0]}
+        onChange={(e) => setNodeArg(nodeId, field.key, e.target.value)}
+      >
+        {field.options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  const commit = (raw: string) => {
+    const next = clampInspectArg(type, field.key, raw);
+    setNodeArg(nodeId, field.key, next);
+    return next;
+  };
+  const pickNote = (label: string) => {
+    const mapped = inspectValueFromNote(label, field.unit, bpm);
+    if (mapped != null) {
+      commit(mapped);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1">
+      {notes.length > 0 ? (
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className={`nk-clip h-7 min-w-[52px] px-2 ${mode === "value" ? "on" : ""}`}
+            onClick={() => setMode("value")}
+          >
+            VALUE
+          </button>
+          <button
+            type="button"
+            className={`nk-clip h-7 min-w-[52px] px-2 ${mode === "note" ? "on" : ""}`}
+            onClick={() => setMode("note")}
+          >
+            NOTE
+          </button>
+        </div>
+      ) : null}
+      {mode === "note" && notes.length > 0 ? (
+        <select
+          className={fieldClass}
+          value={inspectSnapNote(field.value, field.unit, field.min, field.max, bpm) ?? notes[0]}
+          onChange={(e) => pickNote(e.target.value)}
+        >
+          {notes.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            className={fieldClass}
+            defaultValue={field.value}
+            key={`${field.key}:${field.value}`}
+            onBlur={(e) => {
+              e.target.value = commit(e.target.value);
+            }}
+          />
+          {field.unit ? <span className="shrink-0 text-[11px] text-muted">{field.unit}</span> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InspectBody({ nodeId }: { nodeId: string | null }) {
   const ast = useAstStore((s) => s.ast);
+  const peak = useHostStore((s) => (nodeId ? s.clips[nodeId] : undefined));
   const node = ast?.nodes.find((n) => n.id === nodeId);
   const rows = inspectRows(node, ast);
   if (! node) {
@@ -77,7 +171,7 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
     var: "VARIABLES",
   };
   const blurb = inspectBlurb(node.type);
-  const fieldClass = "h-7 w-full border border-accent/40 bg-black px-1 text-accent";
+  const peakDb = peak != null && Number.isFinite(peak) ? peakToDb(peak) : null;
   return (
     <div className="flex flex-col gap-3 text-[12px]">
       {groups.map((g) => {
@@ -94,31 +188,7 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
                     <tr key={`arg-${f.key}`} className="border-b border-accent/20">
                       <td className="w-28 py-1 pr-2 text-muted">{f.key}</td>
                       <td className="py-1 text-ink">
-                        {f.kind === "enum" ? (
-                          <select
-                            className={fieldClass}
-                            value={f.options.includes(f.value) ? f.value : f.options[0]}
-                            onChange={(e) => setNodeArg(node.id, f.key, e.target.value)}
-                          >
-                            {f.options.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            className={fieldClass}
-                            defaultValue={f.value}
-                            onBlur={(e) => {
-                              const next = clampInspectArg(node.type, f.key, e.target.value);
-                              if (next !== e.target.value) {
-                                e.target.value = next;
-                              }
-                              setNodeArg(node.id, f.key, next);
-                            }}
-                          />
-                        )}
+                        <InspectArgControl nodeId={node.id} type={node.type} field={f} />
                       </td>
                     </tr>
                   ))}
@@ -147,6 +217,12 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
           </section>
         );
       })}
+      {peakDb != null ? (
+        <section>
+          <div className="mb-1 text-[11px] tracking-widest text-muted">LEVEL</div>
+          <p className="text-ink tabular-nums">{peakDb.toFixed(1)} dB</p>
+        </section>
+      ) : null}
       {blurb ? (
         <section>
           <div className="mb-1 text-[11px] tracking-widest text-muted">ABOUT</div>
@@ -354,12 +430,25 @@ export function Overlays() {
         data-phase={shell.phase}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="nk-overlay-hud" aria-hidden>
+          <span className="nk-overlay-corner nk-overlay-corner--tl" />
+          <span className="nk-overlay-corner nk-overlay-corner--tr" />
+          <span className="nk-overlay-corner nk-overlay-corner--bl" />
+          <span className="nk-overlay-corner nk-overlay-corner--br" />
+        </div>
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-accent px-3">
           <span className="nk-overlay-led inline-block h-2 w-2 rounded-full bg-accent" />
           <span className="text-[14px] text-ink">{title}</span>
-          <button type="button" className="nk-clip px-3" onClick={() => (name === "discard" ? cancelDiscard() : setOverlay(null))}>X</button>
+          <button
+            type="button"
+            className="nk-overlay-x"
+            aria-label="Close"
+            onClick={() => (name === "discard" ? cancelDiscard() : setOverlay(null))}
+          />
         </div>
-        <div className={`min-h-0 flex-1 p-5 text-ink ${
+        <div className={`min-h-0 p-5 text-ink ${
+          overlaySizesToContent(name) ? "" : "flex-1"
+        } ${
           overlayBodyOverflow(name) === "hidden" ? "flex overflow-hidden" : "overflow-auto"
         }`}>
           {name === "presets" && <PresetExplorer />}

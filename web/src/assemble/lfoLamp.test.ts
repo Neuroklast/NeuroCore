@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { lfoChaseMs } from "./cableMotion";
 import { noteSteps } from "../chrome/noteValue";
-import { lfoPeriodMs, lfoWave, parseLfoShape, resolveLfoHz } from "./lfoLamp";
+import { lfoLampClass, lfoPeriodMs, lfoWave, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 
 describe("LFO lamp", () => {
   it("blinks at the LFO rate and follows the oscillator shape", () => {
@@ -9,6 +9,10 @@ describe("LFO lamp", () => {
     expect(parseLfoShape("sawtooth")).toBe("saw");
     expect(parseLfoShape("softsquare")).toBe("softsquare");
     expect(parseLfoShape("triangle")).toBe("triangle");
+    expect(lfoLampClass("sine")).toBe("nk-lfo-sine");
+    expect(lfoLampClass("square")).toBe("nk-lfo-square");
+    expect(lfoLampClass("saw")).toBe("nk-lfo-saw");
+    expect(lfoLampClass("softsaw")).toBe("nk-lfo-saw");
     expect(lfoPeriodMs(2)).toBe(500);
     expect(lfoPeriodMs(0)).toBe(1000);
     expect(lfoWave(0.25, "sine")).toBeGreaterThan(0.9);

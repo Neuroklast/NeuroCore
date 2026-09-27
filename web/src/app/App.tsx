@@ -192,9 +192,8 @@ export function App() {
       </div>
       <TelemetryPump telemetryPath={telemetryPath} intervalMs={telemetryIntervalMs(workspace, frameRate)} />
       <Footer />
-      <Overlays />
-
       <CrtFx />
+      <Overlays />
     </main>
     </ScaleShell>
   );

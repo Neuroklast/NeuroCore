@@ -177,6 +177,7 @@ export function HackView() {
         }`}
         data-mode={frame.mode}
       >
+        <div className="nk-term-glow pointer-events-none" aria-hidden />
         <div className="nk-term-scan pointer-events-none" aria-hidden />
         <Editor
           height="100%"
@@ -195,7 +196,12 @@ export function HackView() {
             minimap: { enabled: false },
             fontFamily: "JetBrains Mono, ui-monospace, Consolas, monospace",
             fontSize: formulaPt,
-            lineNumbers: "on",
+            lineNumbers: frame.lineNumbers,
+            glyphMargin: false,
+            folding: false,
+            lineDecorationsWidth: frame.mode === "edit" ? 10 : 0,
+            lineNumbersMinChars: frame.mode === "edit" ? 3 : 2,
+            padding: { top: 10, bottom: 10 },
             scrollBeyondLastLine: false,
             wordWrap: "on",
             tabSize: 2,

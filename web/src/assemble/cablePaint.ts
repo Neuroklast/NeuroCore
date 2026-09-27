@@ -1,5 +1,5 @@
 import { motionAllows } from "../theme/motionPolicy";
-import { peakToDb } from "../bridge/telemetry";
+import { DISPLAY_AMP_FLOOR, peakToDb } from "../bridge/telemetry";
 import type { PortKind } from "./boardModel";
 import { paintRoute } from "./boardPath";
 import { CABLE_STILL_DB, plasmaSpeedPxPerSec } from "./cableMotion";
@@ -33,7 +33,6 @@ export const PACKET_MEAN_STILL = 28;
 export const PACKET_MEAN_HOT = 12;
 /** Bead length along the polyline. */
 export const PACKET_SPAN = 6;
-const PACKET_PHI = 0.6180339887498949;
 /** IEEE 0 dBFS. Glitch only when the float peak exceeds full scale. */
 export const GLITCH_PEAK = 1;
 export const STREAM_ALPHA_STILL = 0.4;
@@ -49,15 +48,15 @@ export const STREAM_FLOOR_T = 0.05;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
-/** Gestures skip decoration. Only Full advances packets; meters stay live. */
+/** Camera pan keeps traces and glow. Only Full advances beads; meters stay live. */
 export function cablePaintPass(
   gesture: boolean,
   motion: "full" | "reduced" | "off" = "full",
 ): { traces: boolean; glow: boolean; animate: boolean } {
   return {
-    traces: !gesture && motion !== "off",
-    glow: !gesture && motionAllows("bloom", motion, false) && motion === "full",
-    animate: !gesture && motionAllows("pipeWave", motion, false),
+    traces: motion !== "off",
+    glow: motionAllows("bloom", motion, false) && motion === "full",
+    animate: ! gesture && motionAllows("pipeWave", motion, false),
   };
 }
 
@@ -401,90 +400,53 @@ export function pointAlong(pts: Pt[], dist: number): Pt | null {
   return null;
 }
 
-export function packetMeanGap(rms: number): number {
-  const t = energyT(rms);
-  return PACKET_MEAN_HOT + (PACKET_MEAN_STILL - PACKET_MEAN_HOT) * (1 - t);
-}
+/** Local-max threshold as a fraction of the tap window peak. */
+export const TAP_PEAK_REL = 0.35;
 
-/** Lane id → (0,1) so L/R never share a train. */
-export function packetSeed(id: string): number {
-  if (! id) {
-    return 0;
+/** Sample indices of local maxima in a tap window, as 0..1 along that window. */
+export function tapPeakFractions(wave: ArrayLike<number>, floor = DISPLAY_AMP_FLOOR): number[] {
+  const n = wave.length;
+  if (n < 3) {
+    return [];
   }
-  let n = 2166136261;
-  for (let i = 0; i < id.length; i += 1) {
-    n ^= id.charCodeAt(i);
-    n = Math.imul(n, 16777619);
+  let max = 0;
+  for (let i = 0; i < n; i += 1) {
+    const a = Math.abs(wave[i]!);
+    if (a > max) {
+      max = a;
+    }
   }
-  return (n >>> 0) / 4294967296;
+  if (! (max > floor)) {
+    return [];
+  }
+  const thresh = Math.max(floor, max * TAP_PEAK_REL);
+  const out: number[] = [];
+  for (let i = 1; i < n - 1; i += 1) {
+    const a = Math.abs(wave[i]!);
+    if (a >= thresh && a >= Math.abs(wave[i - 1]!) && a > Math.abs(wave[i + 1]!)) {
+      out.push(i / (n - 1));
+    }
+  }
+  return out;
 }
 
-/**
- * Weyl (golden-ratio) gaps. Consecutive spacings always differ; the sequence
- * has no short period, so a fast tube cannot alias into reverse flow.
- */
-export function packetGapAt(k: number, seed: number, mean: number): number {
-  const i = Number.isFinite(k) ? k : 0;
-  const s = Number.isFinite(seed) ? seed : 0;
-  const m = Number.isFinite(mean) && mean > 0 ? mean : PACKET_MEAN_STILL;
-  const u = ((s + (i + 1) * PACKET_PHI) % 1 + 1) % 1;
-  return m * (0.45 + 1.1 * u);
-}
-
-export type PacketCursor = { k: number; c: number };
-
-/**
- * Packet k sits at train coordinate C(k). World = C(k) + travel so increasing
- * travel walks source → dest. `cursor` is the last first-visible packet so a
- * long session does not walk from the origin.
- */
-export function packetDistancesFromCursor(
-  pathLen: number,
-  travel: number,
-  mean: number,
-  seed: number,
-  cursor: PacketCursor = { k: 0, c: 0 },
-): { distances: number[]; cursor: PacketCursor } {
-  if (! (pathLen > 0) || ! (mean > 0)) {
-    return { distances: [], cursor };
+/** Map tap-peak fractions onto a polyline. `travel` wraps source → dest. */
+export function peakDistances(pathLen: number, fractions: number[], travel = 0): number[] {
+  if (! (pathLen > 0) || fractions.length === 0) {
+    return [];
   }
   const t = Number.isFinite(travel) ? travel : 0;
-  let k = Number.isFinite(cursor.k) ? cursor.k : 0;
-  let c = Number.isFinite(cursor.c) ? cursor.c : 0;
-  let n = 0;
-  while (c + t > 0 && n < 64) {
-    k -= 1;
-    c -= packetGapAt(k, seed, mean);
-    n += 1;
-  }
-  n = 0;
-  while (c + packetGapAt(k, seed, mean) + t <= 0 && n < 64) {
-    c += packetGapAt(k, seed, mean);
-    k += 1;
-    n += 1;
-  }
-  const distances: number[] = [];
-  let first: PacketCursor = { k, c };
-  let saw = false;
-  n = 0;
-  while (c + t < pathLen && n < 512) {
-    const pos = c + t;
-    if (pos >= 0) {
-      if (! saw) {
-        first = { k, c };
-        saw = true;
-      }
-      distances.push(pos);
+  const out: number[] = [];
+  for (const f of fractions) {
+    if (! Number.isFinite(f)) {
+      continue;
     }
-    c += packetGapAt(k, seed, mean);
-    k += 1;
-    n += 1;
+    let p = f * pathLen + t;
+    p = ((p % pathLen) + pathLen) % pathLen;
+    out.push(p);
   }
-  return { distances, cursor: saw ? first : { k, c } };
-}
-
-export function packetDistances(pathLen: number, travel: number, mean: number, seed = 0): number[] {
-  return packetDistancesFromCursor(pathLen, travel, mean, seed, { k: 0, c: 0 }).distances;
+  out.sort((a, b) => a - b);
+  return out;
 }
 
 /** Beads are not equally bright. Phase rides the same travel as motion. */
@@ -500,12 +462,11 @@ export function packetDash(base: [number, number], rms: number): [number, number
 
 /** RGB split in px. Zero when this chip is still; grows with its own peak. */
 export function chromaSplit(peak: number): number {
-  const spd = plasmaSpeedPxPerSec(peak);
-  const max = plasmaSpeedPxPerSec(1);
-  if (spd <= 0 || max <= 0) {
+  const t = clampPeak(peak);
+  if (t <= 0) {
     return 0;
   }
-  return (spd / max) * (STEREO_OFFSET * 0.5);
+  return t * STEREO_OFFSET;
 }
 
 export function glowForPeak(peak: number): number {

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { peakToDb } from "../bridge/telemetry";
 import {
@@ -56,6 +59,9 @@ describe("closed chip chrome", () => {
     expect(mark.dot.r).toBeGreaterThan(0);
     expect(overloadLabel(0.99)).toBeNull();
     expect(overloadLabel(1)).not.toBeNull();
+    const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../theme/tailwind.css"), "utf8");
+    expect(css).toContain(".nk-board-chip:has(.nk-overload)");
+    expect(css).toContain("translateY(-100%)");
   });
 
   it("hides the south bind rail while the overlay is open", () => {

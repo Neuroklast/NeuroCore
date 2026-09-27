@@ -15,8 +15,11 @@ export function formatKnobDisplay(mapped: number, unit?: string): string {
   return unit ? `${body} ${unit}` : body;
 }
 
-/** Whole-note fractions. `1/4` = 0.25 of a bar. Matches `dsl::NoteValues`. */
+/** Whole-note fractions. `1/4` = 0.25 of a bar. Matches `dsl::NoteValues` plus multi-bar. */
 export const NOTE_GRID: Array<{ whole: number; label: string }> = [
+  { whole: 8, label: "8/1" },
+  { whole: 4, label: "4/1" },
+  { whole: 2, label: "2/1" },
   { whole: 1, label: "1/1" },
   { whole: 0.75, label: "1/2." },
   { whole: 0.5, label: "1/2" },

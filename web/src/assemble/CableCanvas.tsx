@@ -15,10 +15,8 @@ import {
   edgePaintKind,
   PACKET_CORE,
   PACKET_SPAN,
-  packetDistancesFromCursor,
-  packetMeanGap,
-  packetSeed,
   pathLength,
+  peakDistances,
   peakForLane,
   pointAlong,
   rmsForLane,
@@ -109,23 +107,40 @@ function strokePackets(
     ctx.stroke();
   };
 
+  const glitch = animate ? streamGlitch(peak) : 0;
+  if (glitch > 0) {
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.save();
+    ctx.translate(-glitch, 0);
+    ctx.strokeStyle = "rgba(255, 0, 60, 1)";
+    tracePath(ctx, pts);
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(glitch, 0);
+    ctx.strokeStyle = "rgba(0, 255, 255, 1)";
+    tracePath(ctx, pts);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   ctx.lineCap = "round";
   ctx.lineWidth = Math.max(1.6, width * 1.15);
   ctx.globalCompositeOperation = "screen";
-  const glitch = animate ? streamGlitch(peak) : 0;
   if (glitch > 0) {
-    const chroma = liveTheme();
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.save();
     ctx.translate(-glitch, 0);
-    drawBeads(chroma.accent);
+    drawBeads("rgba(255, 0, 60, 1)");
     ctx.restore();
     ctx.save();
     ctx.translate(glitch, 0);
-    drawBeads(chroma.cyan);
+    drawBeads("rgba(0, 255, 255, 1)");
     ctx.restore();
-    drawBeads(chroma.white);
+    drawBeads("#ffffff");
   } else {
     ctx.globalAlpha = streamAlpha(peak);
     ctx.shadowColor = glow;
@@ -180,7 +195,6 @@ export function CableCanvas({
     };
     const geom = new Map<string, { stamp: string; lanes: Pt[][] }>();
     const offsets = new Map<string, number>();
-    const trains = new Map<string, { k: number; c: number }>();
     let lastNow = 0;
     let paletteTheme = "";
     const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
@@ -230,6 +244,7 @@ export function CableCanvas({
       const rms = host.clipsRms;
       const rmsL = host.clipsRmsL;
       const rmsR = host.clipsRmsR;
+      const tapPeaks = host.clipsPeaks;
       const live = chipDragRef.current;
       const hot = boardFocusEdgesRef.current;
       for (const e of Object.values(g.edges)) {
@@ -265,17 +280,11 @@ export function CableCanvas({
           const key = `${e.id}:${lane.id}`;
           const integrated = streamAdvance(offsets.get(key) ?? 0, energy, pass.animate ? dt : 0, peak);
           offsets.set(key, integrated);
-          const mean = packetMeanGap(pass.animate ? energy : 0);
-          const seed = packetSeed(key);
-          const next = packetDistancesFromCursor(
+          const beads = peakDistances(
             pathLength(painted),
-            integrated,
-            mean,
-            seed,
-            trains.get(key) ?? { k: 0, c: 0 },
+            tapPeaks[e.sourceNodeId] ?? tapPeaks[sn.id] ?? [],
+            pass.animate ? integrated : 0,
           );
-          trains.set(key, next.cursor);
-          const beads = next.distances;
           ctx.save();
           if (dim) {
             ctx.globalAlpha = 0.12;

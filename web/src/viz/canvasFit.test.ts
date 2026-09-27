@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { fitCanvas } from "./canvasFit";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 describe("scope canvas fit", () => {
   it("sizes the backing store to the CSS box times dpr, not a stretched 720×128", () => {
@@ -15,5 +20,11 @@ describe("scope canvas fit", () => {
     expect(r.scale).toBe(2);
     expect(el.width).toBe(1800);
     expect(el.height).toBe(220);
+  });
+
+  it("FunctionPlot fits the CSS box instead of stretching a 520×220 bitmap", () => {
+    const src = readFileSync(path.resolve(here, "../functions/FunctionPlot.tsx"), "utf8");
+    expect(src).toContain("fitCanvas");
+    expect(src).not.toMatch(/width=\{520\}/);
   });
 });

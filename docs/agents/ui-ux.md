@@ -42,10 +42,10 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | IN sources east only | Any target jack on IN. `sc` is an east **output** (host sidechain). OUT targets west only; gain is overlay-only |
 | Camera fits the chain | After preset/Arrange the pane still shows the previous graph, or board `minZoom` ≠ `fitView` minZoom |
 | Overlay vs south rail | Open detail still paints south bind captions under the overlay |
-| Stereo bus is L cyan + R accent, ±4 px | One A* then `parallelOffset`. Split mid/side is not L/R. Stored route has no curves. Packets `C(k)+travel` source → dest |
+| Stereo bus is L cyan + R accent, ±4 px | One A* then `parallelOffset`. Split mid/side is not L/R. Stored route has no curves. Beads sit on tap peaks + travel source → dest |
 | Port labels are `[ MID ]` / `[ SIDE ]` | Caption is `mid` or a fake UUID / `REV.45-B` |
 | Chip foot is `node.id` + live dB | Invented UGID, barcode, TRG, or grip greeble |
-| Cable beads follow that chip | **RMS** of the source lane sets mean packet gap (still 28 → hot 12) and speed. Gaps are a Weyl/golden sequence (no short repeating lattice) so fast tubes cannot look reversed. Per-frame travel stays under half the smallest gap. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** is the 3-pass chroma glitch. ≤ −60 dBFS RMS = still. Do not drive glow from RMS or density from peak |
+| Cable beads follow that chip | Beads are **local maxima** of the source tap window, mapped 0…1 along the polyline. **RMS** sets travel speed. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** is the 3-pass chroma glitch. ≤ −60 dBFS RMS = still. Camera pan keeps traces and glow. Do not drive glow from RMS or density from peak |
 | Clip lamp and hazard are uncovered chrome | Peak LED sits **left of the title** with `CHIP_PAD_X` gap, not under the chevron. Hazard stripes clip on a `::before` layer; the band itself is `overflow: visible`. Clip warn is an outlined Δ + bang at the east jack (`left: 100%`), size `TITLE_H` |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
 | Param cables follow the board router | Bind path through a chip, no 32 px stubs, lightning, or dest jack above the knob with an empty path |
@@ -57,7 +57,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 - Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS / license. No product banner slot. Hover does not rewrite the bar.
 - CPU text is `Config::cpuDisplayPercent` (0–100). SAFE is a mode word, not a fake 173 %.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
-- Overlays size to their content (`preferredHeight`). If the last row is clipped, the overlay is too short — do not hide the controls.
+- Overlays size to their content (`height: auto`). Wide explorers keep the 720 px stage. If the last row is clipped, the overlay is too short — do not hide the controls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
 - One overlay at a time. Double-click a node → inspect **all** editable keys.
 - Help is the operator manual minus Install and Troubleshooting. Talk to the operator, not about the documentation. No “this file”, no “except Install because the plugin is already running”. Apex 400 titles, JetBrains body. Not a `<pre>` dump.
 - Knob right-click (Unit and Circuit) opens `OsContextMenu`: Name / Min / Max / Unit / Note / MIDI Learn. Never the browser menu.

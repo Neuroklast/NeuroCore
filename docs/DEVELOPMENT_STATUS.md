@@ -6,6 +6,14 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Look pass (2026-09-27)
+
+Signal is Band-Land crimson `#c42a2a` plus cyan `#3ec8e0` (not off-white). Gold is CP2077: yellow `#fcee0a`, sky `#5ec8f0`, teal `#2dd4bf`, olive surfaces, black `#0a0a0a`. Overlay closer is the title X only. Function plots use `fitCanvas` (no 520×220 stretch). Unit logo sits at 38% and RGB-splits from low/mid/high. Terminal view drops line numbers.
+
+## Overlay / Inspect / cables (2026-09-27)
+
+Inspect and settings hug content (`height: auto`, host `align-items: center`). Wide explorers stay 720×1240. Backdrop is 45% black. CRT sits under overlays (z 30 / 40) so Functions plots stay sharp. Clip assemble 400 ms / disassemble 320 ms match JS and CSS. Inspect time fields (s/ms/Hz) switch VALUE and NOTE (8/1…1/16 inside chipSpec range); commit is the number at current BPM. Cable beads are tap-window local maxima, not a Weyl lattice. Camera pan keeps traces and glow. Terminal pane has CRT scan + phosphor glow.
+
 ## Chrome tab row + Gold contrast (2026-09-18)
 
 Factory tags: vocoder ≠ sidechain; every factory row has tags; web catalog keeps `irs` / `inputGain` / `outputGain`. Named buses: 12 (`kMaxNamedBuses`), not 4. softclip is atan+ADAA. Use-case contracts: duck, Reese sub centre, master ceiling.
