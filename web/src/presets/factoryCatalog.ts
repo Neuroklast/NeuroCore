@@ -42,36 +42,58 @@ export type FactoryRow = {
   tags: string[];
   script: string;
   mix: number;
+  inputGain: number;
+  outputGain: number;
+  irs: Record<string, string>;
   knobs: FactoryKnob[];
 };
 
+function catalogIrs(raw: unknown): Record<string, string> {
+  if (! raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  return Object.fromEntries(Object.entries(raw as Record<string, unknown>).map(([k, v]) => [k, String(v)]));
+}
+
 const rows: FactoryRow[] = factory
   .filter((p) => typeof p?.name === "string" && p.name.length > 0)
-  .map((p) => ({
-    name: p.name,
-    category: String(p.category ?? "Factory"),
-    description: String(p.description ?? ""),
-    author: "Neuroklast",
-    factory: true,
-    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
-    script: String(p.script ?? ""),
-    mix: Number((p as { mix?: number }).mix ?? 1),
-    knobs: Array.isArray((p as { knobs?: FactoryKnob[] }).knobs)
-      ? (p as { knobs: FactoryKnob[] }).knobs.map((k) => ({
-          id: String(k.id ?? ""),
-          name: String(k.name ?? ""),
-          min: Number(k.min ?? 0),
-          max: Number(k.max ?? 1),
-          default: Number(k.default ?? 0),
-        }))
-      : [],
-  }));
+  .map((p) => {
+    const rec = p as typeof p & {
+      mix?: number;
+      inputGain?: number;
+      outputGain?: number;
+      irs?: Record<string, string>;
+      knobs?: FactoryKnob[];
+    };
+    return {
+      name: p.name,
+      category: String(p.category ?? "Factory"),
+      description: String(p.description ?? ""),
+      author: "Neuroklast",
+      factory: true,
+      tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+      script: String(p.script ?? ""),
+      mix: Number(rec.mix ?? 1),
+      inputGain: Number(rec.inputGain ?? 0),
+      outputGain: Number(rec.outputGain ?? 0),
+      irs: catalogIrs(rec.irs),
+      knobs: Array.isArray(rec.knobs)
+        ? rec.knobs.map((k) => ({
+            id: String(k.id ?? ""),
+            name: String(k.name ?? ""),
+            min: Number(k.min ?? 0),
+            max: Number(k.max ?? 1),
+            default: Number(k.default ?? 0),
+          }))
+        : [],
+    };
+  });
 
 export function factoryRows(): FactoryRow[] {
   return rows;
 }
 
-export function factoryExplorerRows(): Array<Omit<FactoryRow, "script" | "knobs" | "mix">> {
+export function factoryExplorerRows(): Array<Omit<FactoryRow, "script" | "knobs" | "mix" | "irs" | "inputGain" | "outputGain">> {
   return rows.map((row) => ({
     name: row.name,
     category: row.category,

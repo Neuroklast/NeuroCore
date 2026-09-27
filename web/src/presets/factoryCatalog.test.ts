@@ -65,4 +65,22 @@ describe("factory catalog", () => {
       expect(`${row.description}\n${row.script}`, row.name).not.toMatch(/â.|Ã.|Â./);
     }
   });
+
+  it("tags every factory row and does not mark a duck as a vocoder", () => {
+    const duck = findFactory("Sidechain Duck Bass");
+    expect(duck?.tags.length).toBeGreaterThan(0);
+    expect(duck?.tags).toContain("sidechain");
+    expect(duck?.tags).not.toContain("vocoder");
+    const empty = factoryRows().filter((r) => r.tags.length === 0).map((r) => r.name);
+    expect(empty, empty.join(", ")).toEqual([]);
+  });
+
+  it("keeps factory IR and gain fields that native applyPreset reads", () => {
+    const cab = findFactory("Mesa High Gain");
+    expect(cab?.irs?.ir1).toMatch(/\.wav$/i);
+    expect(typeof cab?.inputGain).toBe("number");
+    expect(typeof cab?.outputGain).toBe("number");
+    const withIr = factoryRows().filter((r) => r.irs && Object.keys(r.irs).length > 0);
+    expect(withIr.length).toBeGreaterThanOrEqual(30);
+  });
 });

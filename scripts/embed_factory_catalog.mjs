@@ -5,6 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { inferTags } from "./factoryTags.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = path.join(root, "resources", "factory_presets.json");
@@ -29,13 +30,19 @@ const slim = raw.map((p) => {
       default: Number(rec.default ?? 0),
     }];
   });
+  const irs = (p.irs && typeof p.irs === "object" && ! Array.isArray(p.irs))
+    ? Object.fromEntries(Object.entries(p.irs).map(([k, v]) => [String(k), String(v)]))
+    : {};
   return {
     name: String(p.name ?? ""),
     category: String(p.category ?? "Factory"),
     description: String(p.description ?? ""),
-    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+    tags: inferTags(String(p.script ?? ""), String(p.name ?? ""), String(p.description ?? ""), String(p.category ?? "Factory")),
     script: String(p.script ?? ""),
     mix: Number(p.mix ?? 1),
+    inputGain: Number(p.inputGain ?? 0),
+    outputGain: Number(p.outputGain ?? 0),
+    irs,
     knobs,
   };
 });

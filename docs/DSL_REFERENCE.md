@@ -626,7 +626,7 @@ out: main = 1; dirt = c; verb = d
 |---|---|
 | `in` | Read-only Kopie des Ketten-Eingangs |
 | `main` | Impliziter Bus. Alle Blöcke vor dem ersten `bus`/`out`. Startet als Kopie von `in` |
-| `bus name:` | Öffnet einen benannten Bus (max. 4). Folgende Blöcke gehören dazu |
+| `bus name:` | Öffnet einen benannten Bus (max. 12). Folgende Blöcke gehören dazu |
 | `send: src = gain` | `busInput += gain * src` (`src` = `in`, `main` oder ein **früherer** Bus) |
 | `out: name = gain; …` | Gewichtete Summe. Ohne `out:` ist der Output `main` |
 

@@ -120,6 +120,10 @@ inline juce::StringArray inferTags (const juce::String& script,
     }
     if (has ("env"))
         addTag (tags, "envelope");
+    if (has ("vocoder"))
+        addTag (tags, "vocoder");
+    if (has ("sidechain"))
+        addTag (tags, "sidechain");
 
     static constexpr const char* kWords[] = {
         "tape", "crunch", "vocal", "drum", "kick", "snare", "hat",
@@ -128,7 +132,7 @@ inline juce::StringArray inferTags (const juce::String& script,
         "width", "mono", "room", "master", "crush", "lofi", "edm",
         "synth", "pad", "lead", "send", "drive", "saturate", "clipper",
         "haas", "cinematic", "trailer", "score", "dialogue", "boom", "impact",
-        "octaver", "vocoder"
+        "octaver"
     };
     for (auto* w : kWords)
         if (hasWord (w))
