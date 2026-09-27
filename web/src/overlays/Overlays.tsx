@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getNativeFunction } from "../bridge/juce";
+import { hasJuceBridge } from "../bridge/juce";
+import { setCircuitArg } from "../assemble/addBlock";
 import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
@@ -56,6 +58,10 @@ function Seg({
 }
 
 function setNodeArg(nodeId: string, key: string, value: string): void {
+  if (!hasJuceBridge()) {
+    setCircuitArg(nodeId, key, value);
+    return;
+  }
   void getNativeFunction("graphOp")({
     origin: "canvas",
     op: "setArg",
@@ -142,8 +148,13 @@ function InspectArgControl({
             className={fieldClass}
             defaultValue={field.value}
             key={`${field.key}:${field.value}`}
+            aria-label={field.key}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") { e.currentTarget.value = field.value; e.currentTarget.blur(); }
+            }}
             onBlur={(e) => {
-              e.target.value = commit(e.target.value);
+              if (e.target.value !== field.value) e.target.value = commit(e.target.value);
             }}
           />
           {field.unit ? <span className="shrink-0 text-[11px] text-muted">{field.unit}</span> : null}
@@ -153,7 +164,7 @@ function InspectArgControl({
   );
 }
 
-function InspectBody({ nodeId }: { nodeId: string | null }) {
+export function InspectBody({ nodeId }: { nodeId: string | null }) {
   const ast = useAstStore((s) => s.ast);
   const peak = useHostStore((s) => (nodeId ? s.clips[nodeId] : undefined));
   const node = ast?.nodes.find((n) => n.id === nodeId);
@@ -182,18 +193,14 @@ function InspectBody({ nodeId }: { nodeId: string | null }) {
           return (
             <section key={g}>
               <div className="mb-1 text-[11px] tracking-widest text-muted">{label.arg}</div>
-              <table className="w-full border-collapse">
-                <tbody>
-                  {argFields.map((f) => (
-                    <tr key={`arg-${f.key}`} className="border-b border-accent/20">
-                      <td className="w-28 py-1 pr-2 text-muted">{f.key}</td>
-                      <td className="py-1 text-ink">
-                        <InspectArgControl nodeId={node.id} type={node.type} field={f} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="nk-inspect-fields">
+                {argFields.map((f) => (
+                  <label key={`arg-${f.key}`} className="nk-inspect-field">
+                    <span>{f.key.replace(/[_-]/g, " ")}</span>
+                    <InspectArgControl nodeId={node.id} type={node.type} field={f} />
+                  </label>
+                ))}
+              </div>
             </section>
           );
         }

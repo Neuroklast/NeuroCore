@@ -6,6 +6,10 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Circuit interaction pass (2026-09-27)
+
+Circuit now shows Add, Arrange, Compact, Fit, Undo and Redo controls. Audio cables have insertion controls. Source edits are accepted only when a sketch topology check confirms the selected edge becomes source → new block → destination; unsupported cases report the limitation without changing the script. Dragging empty space selects multiple chips; Shift+click and Ctrl/Cmd+A extend selection. Middle mouse/Space+drag pans. Selected blocks open a resizable inspector beside the board. The picker now exposes the Drive category. Browser visual inspection and native plug-in testing are still pending.
+
 ## Look pass (2026-09-27)
 
 Signal is Band-Land crimson `#c42a2a` plus cyan `#3ec8e0` (not off-white). Gold is CP2077: yellow `#fcee0a`, sky `#5ec8f0`, teal `#2dd4bf`, olive surfaces, black `#0a0a0a`. Overlay closer is the title X only. Function plots use `fitCanvas` (no 520×220 stretch). Unit logo sits at 38% and RGB-splits from low/mid/high. Terminal view drops line numbers.

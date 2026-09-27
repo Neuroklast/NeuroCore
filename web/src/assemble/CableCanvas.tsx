@@ -3,7 +3,7 @@ import { useHostStore } from "../store/hostStore";
 import { liveTheme } from "../theme/theme";
 import { subscribeVizClock } from "../theme/vizClock";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
-import { chipDragRef, nodeWithDrag } from "./boardDrag";
+import { chipDragGroupRef, chipDragRef, nodeWithDrag } from "./boardDrag";
 import { bezierPreview, connectDragRef } from "./boardConnect";
 import { boardFocusEdgesRef } from "./circuitDof";
 import {
@@ -255,8 +255,8 @@ export function CableCanvas({
         if (! sn0 || ! tn0 || ! sp || ! tp) {
           continue;
         }
-        const sn = nodeWithDrag(sn0, live);
-        const tn = nodeWithDrag(tn0, live);
+        const sn = nodeWithDrag(sn0, chipDragGroupRef.current?.[sn0.id] ?? live);
+        const tn = nodeWithDrag(tn0, chipDragGroupRef.current?.[tn0.id] ?? live);
         const from = portGlobal(sn, sp);
         const to = portGlobal(tn, tp);
         const stamp = cableGeomStamp(e.id, e.route, from, to, e.kind, sp.jackId);

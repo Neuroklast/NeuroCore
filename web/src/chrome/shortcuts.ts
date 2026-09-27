@@ -94,14 +94,14 @@ const PUNCT_CODES = new Set([
   "BracketLeft", "BracketRight", "Backslash", "Minus", "Equal", "Backquote",
 ]);
 
-/** Ctrl/Cmd+A — Circuit Arrange (AssembleView bubble listener). */
+/** Ctrl/Cmd+A belongs to Circuit; Shift chooses Arrange, otherwise select all. */
 export function isArrangeChord(e: { key: string; ctrlKey: boolean; metaKey: boolean }): boolean {
   return (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a";
 }
 
 /**
- * Capture-phase browser-shortcut blocker must preventDefault Ctrl+A (no select-all)
- * but must not stopPropagation so AssembleView Arrange still receives the chord.
+ * Capture-phase browser-shortcut blocker prevents native text selection but
+ * lets Circuit receive its own Select All / Arrange chord.
  */
 export function browserShortcutStopsPropagation(
   e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean },
@@ -138,7 +138,7 @@ export function canForwardHostKey(e: { key: string; code?: string }): boolean {
   return false;
 }
 
-/** Ctrl/Cmd+A Arrange, Shift+A Compact, undo, blocked browser chords, Circuit delete, overlay modal. */
+/** Ctrl/Cmd+A Select All, Ctrl/Cmd+Shift+A Arrange, Shift+A Compact and editing chords. */
 export function isPluginOwnedKey(e: HostKeyEvent, ctx: HostKeyContext): boolean {
   if (ctx.overlayOpen)
     return true;

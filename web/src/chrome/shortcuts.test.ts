@@ -126,7 +126,7 @@ describe("non-text keys reach the DAW host", () => {
     expect(canForwardHostKey({ key: "Unidentified", code: "AudioVolumeMute" })).toBe(false);
   });
 
-  it("keeps Ctrl/Cmd+A plugin-owned but lets Arrange bubble past the capture blocker", () => {
+  it("keeps Ctrl/Cmd+A plugin-owned and lets Circuit selection bubble past the capture blocker", () => {
     expect(shouldForwardToHost({ ...bare, key: "a", ctrlKey: true }, none)).toBe(false);
     expect(shouldBlockBrowserShortcut({ key: "a", ctrlKey: true, metaKey: false, altKey: false })).toBe(true);
     expect(browserShortcutStopsPropagation(

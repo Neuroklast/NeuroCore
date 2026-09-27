@@ -6,6 +6,7 @@ import {
   nextBlockId,
   scriptAfterAdd,
   scriptAfterInsertAfter,
+  scriptAfterInsertOnEdge,
   scriptAfterRemove,
   scriptAfterRename,
   scriptAfterSetArg,
@@ -14,6 +15,18 @@ import { chipSpec } from "./chipSpec";
 import { useAstStore } from "../store/astStore";
 
 describe("circuit add/remove", () => {
+  it("inserts into the selected serial edge and refuses to alter an unrelated branch", () => {
+    const script = "stage1: y = x\nfilter1: cutoff = 800\nlimit1: ceiling = -0.3\n";
+    const exact = scriptAfterInsertOnEdge(script, "stage1", "filter1", "eq");
+    expect(exact?.script).toMatch(/stage1:[^\n]*\neq1:[^\n]*\nfilter1:/);
+    expect(scriptAfterInsertOnEdge(script, "stage1", "limit1", "eq")).toBeNull();
+  });
+  it("shows every module in exactly one visible picker category", () => {
+    for (const block of ADDABLE_BLOCKS) {
+      expect(ADD_CATEGORIES).toContain(block.category);
+      expect(blocksInCategory(block.category)).toContain(block);
+    }
+  });
   it("lists addable chips and inserts a legal line before out", () => {
     expect(ADDABLE_BLOCKS.some((b) => b.type === "filter")).toBe(true);
     const next = scriptAfterAdd("stage1: y = x\nout: main = 1\n", "filter");
