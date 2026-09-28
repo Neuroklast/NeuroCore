@@ -79,7 +79,7 @@ Unit meters
 
 ## Presets
 
-Click the preset name. The library opens on the category of the sound that is loaded, with that row selected in the middle of the list.
+Click the preset name. The library opens on the category of the sound that is loaded, with that preset card selected in the archive. Categories stay on the left. Click a card to select it, then choose Load, or double-click to load directly. Enter loads a focused card. Search includes names, tags and descriptions; Sort offers name or category. Each card shows its description and author, and its rating button changes the stored star rating.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
 - **Your** sounds live in your user preset folder as `.nrk` files.
@@ -249,7 +249,7 @@ Unit shows measured input/output peaks and output RMS with a −60 dBFS display
 floor. Peaks come from audio-block telemetry, not the downsampled stereo plot.
 Engine status shows sample rate, buffer size, latency, oversampling and CPU load.
 The former decorative temperature and checksum readouts are removed. The logo
-uses restrained level-reactive light without random glitches or scrolling code.
+assembles from horizontal image slices, then holds still between brief slice glitches. Audio transients trigger short tears, with intensity following the output level. Reduced and Off motion keep the logo intact; Off also disables reactive bloom. The original full-resolution image supplies every slice.
 If native telemetry is unavailable, meters clear and a waiting message appears.
 Synthetic signals are confined to the explicitly labelled browser preview.
 

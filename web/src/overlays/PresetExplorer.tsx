@@ -117,9 +117,9 @@ export function PresetExplorer() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full gap-3 text-[13px]">
+    <div className="nk-preset-browser flex h-full min-h-0 w-full gap-3 text-[13px]">
       <aside className="flex w-[208px] shrink-0 flex-col">
-        <div className="mb-1 shrink-0 text-[11px] tracking-widest text-muted">FOLDERS</div>
+        <div className="nk-archive-label mb-1 shrink-0">PRESET ARCHIVE</div>
         <div
           ref={folderRef}
           className="min-h-0 flex-1 overflow-auto border border-panel"
@@ -130,6 +130,7 @@ export function PresetExplorer() {
               key={f.label}
               type="button"
               data-folder={f.name || "all"}
+              aria-pressed={cat === f.name}
               className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
                 cat === f.name ? "bg-surface-high" : ""
               }`}
@@ -147,8 +148,9 @@ export function PresetExplorer() {
       </aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <span className="text-[11px] text-muted">SEARCH</span>
+          <label htmlFor="preset-search" className="nk-archive-label">SEARCH</label>
           <input
+            id="preset-search"
             className="h-8 min-w-[16rem] flex-1 border border-panel bg-surface-high px-2 text-white"
             placeholder="Search name, tags, formula (delay, kick, techno)..."
             value={q}
@@ -166,43 +168,45 @@ export function PresetExplorer() {
           className="min-h-0 flex-1 overflow-auto border border-panel"
           onScroll={(e) => { explorerSession.listScroll = e.currentTarget.scrollTop; }}
         >
-          <table className="w-full border-collapse text-left">
-            <thead className="sticky top-0 bg-black text-muted">
-              <tr>
-                <th className="cursor-pointer px-2 py-1" onClick={() => persist({ sortKey: "name" })}>Name</th>
-                <th className="cursor-pointer px-2 py-1" onClick={() => persist({ sortKey: "category" })}>Category</th>
-                <th className="px-2 py-1">Author</th>
-                <th className="px-2 py-1">★</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="nk-archive-heading">
+            <span>{scope.toUpperCase()} / {cat || "ALL PRESETS"}</span>
+            <label>Sort <select aria-label="Sort presets" value={sortKey} onChange={(e) => persist({ sortKey: e.target.value as "name" | "category", sel: 0 })}>
+              <option value="name">Name</option><option value="category">Category</option>
+            </select></label>
+          </div>
+          <div className="nk-preset-grid" role="list" aria-label="Presets">
               {filtered.map((p, i) => (
-                <tr
+                <div
                   key={`${p.name}-${i}`}
                   data-row={i}
-                  className={`cursor-pointer ${i === sel ? "bg-surface-high" : i % 2 ? "bg-[#0a0a0a]" : ""}`}
-                  onClick={() => persist({ sel: i })}
-                  onDoubleClick={() => load(p.name)}
+                  data-selected={i === sel}
+                  className="nk-preset-card"
+                  role="listitem"
                 >
-                  <td className={`px-2 py-1 ${p.name === current ? "text-accent" : "text-ink"}`}>{p.name}</td>
-                  <td className="px-2 py-1 text-muted">{p.category}</td>
-                  <td className="px-2 py-1 text-muted">{p.author || "Neuroklast"}</td>
-                  <td className="px-2 py-1 font-mono text-cyan" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="nk-preset-select" aria-pressed={i === sel}
+                    onClick={() => persist({ sel: i })} onDoubleClick={() => load(p.name)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); load(p.name); } }}>
+                    <span className="nk-archive-label">{p.category || "Unsorted"}{p.name === current ? " / LOADED" : ""}</span>
+                    <strong>{p.name}</strong>
+                    <span className="nk-preset-summary">{p.description || "No description."}</span>
+                  </button>
+                  <div className="nk-preset-card-foot">
+                    <span>{p.author || "Neuroklast"}</span>
                     <button
                       type="button"
-                      className="nk-clip px-1"
-                      data-tip="Rate"
+                      className="nk-preset-rate"
+                      aria-label={`Rate ${p.name}: ${stars[p.name] ?? 0} of 5`}
                       onClick={() => setStars(cyclePresetStar(p.name, stars))}
                     >
                       {starGlyphs(stars[p.name] ?? 0)}
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+          </div>
+          {filtered.length === 0 ? <p className="p-5 text-muted">No matching presets. Change the search or category.</p> : null}
         </div>
-        <div className="shrink-0 border border-panel p-3">
+        <div className="nk-preset-detail shrink-0 border border-panel p-3">
           {row ? (
             <>
               <div className="text-[18px] text-ink">{row.name}</div>
