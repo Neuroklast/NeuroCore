@@ -6,13 +6,17 @@
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
+## Reference UI and slice logo (2026-09-28)
+
+Reference-inspired angular red chrome, overlay title rails and staggered HUD corners build on the existing 400/320 ms overlay transitions. Presets use an archive card grid with category navigation, descriptions, ratings, search and name/category sorting. Unit uses twelve original-resolution logo slices with entry assembly, brief idle tears and level-sensitive transient response on the shared visual clock. Reduced/Off keep the mark intact. Targeted contracts and TypeScript are checked; browser/native visual validation is pending because the cloud browser cannot reach the local preview.
+
 ## Circuit interaction pass (2026-09-27)
 
 Circuit keeps the original full-width board and animated Inspect overlay; click selects, left-drag moves, middle mouse or Space+left-drag pans, and the wheel zooms. The permanent toolbar and cable plus controls were removed. Clicking a cable opens the insertion picker; right-click exposes contextual insertion, inspection and removal. Source edits are accepted only when a sketch topology check confirms the selected edge becomes source → new block → destination; unsupported cases report the limitation without changing the script. Dragging empty space selects multiple chips; Shift+click and Ctrl/Cmd+A extend selection. Middle mouse/Space+drag pans. Chevron or double-click explicitly opens Inspect without moving the graph. Cable traces remain legible at rest. Knob bind jacks drag onto highlighted chip parameters. The picker now exposes the Drive category. Browser visual inspection and native plug-in testing are still pending.
 
 ## Look pass (2026-09-27)
 
-Signal is Band-Land crimson `#c42a2a` plus cyan `#3ec8e0` (not off-white). Gold is CP2077: yellow `#fcee0a`, sky `#5ec8f0`, teal `#2dd4bf`, olive surfaces, black `#0a0a0a`. Overlay closer is the title X only. Function plots use `fitCanvas` (no 520×220 stretch). Unit logo sits at 38% and RGB-splits from low/mid/high. Terminal view drops line numbers.
+Signal is Band-Land crimson `#c42a2a` plus cyan `#3ec8e0` (not off-white). Gold is CP2077: yellow `#fcee0a`, sky `#5ec8f0`, teal `#2dd4bf`, olive surfaces, black `#0a0a0a`. Overlay closer is the title X only. Function plots use `fitCanvas` (no 520×220 stretch). Unit logo sits at 38%; the slice animation is described above. Terminal view drops line numbers.
 
 ## Overlay / Inspect / cables (2026-09-27)
 

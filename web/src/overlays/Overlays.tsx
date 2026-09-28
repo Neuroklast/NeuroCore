@@ -443,9 +443,9 @@ export function Overlays() {
           <span className="nk-overlay-corner nk-overlay-corner--bl" />
           <span className="nk-overlay-corner nk-overlay-corner--br" />
         </div>
-        <div className="flex h-10 shrink-0 items-center justify-between border-b border-accent px-3">
+        <div className="nk-overlay-titlebar flex h-10 shrink-0 items-center justify-between border-b border-accent px-3">
           <span className="nk-overlay-led inline-block h-2 w-2 rounded-full bg-accent" />
-          <span className="text-[14px] text-ink">{title}</span>
+          <span className="nk-overlay-caption text-[14px] text-ink">{title}</span>
           <button
             type="button"
             className="nk-overlay-x"

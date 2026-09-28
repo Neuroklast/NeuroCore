@@ -4,13 +4,11 @@ import { UnitAnalyzer } from "../viz/ScopeDeck";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { motionAllows } from "../theme/motionPolicy";
-import { unitMarkCssVars, unitMarkSrc } from "./faceGlitch";
+import { unitMarkSrc } from "./faceGlitch";
+import { LogoMark } from "./LogoMark";
 import {
-  bandRms,
   formatDbfs,
   formatHudFixed,
-  logoReactiveStyle,
-  logoRgbSplit,
   osModeLabel,
   rmsReadout,
   stereoMetrics,
@@ -32,21 +30,12 @@ export function FaceView() {
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
   const bloom = motionAllows("bloom", motion, reduced);
-  const scan = motionAllows("crtScan", motion, reduced);
-  const splitBands = bandRms(telemetry.scopeOut, sr > 0 ? sr : 48000);
-  const rgb = logoRgbSplit(splitBands, { motion, prefersReduced: reduced });
-  const chroma = rgb.redX > 0.05 || rgb.greenY > 0.05 || rgb.blueX > 0.05;
   const amp = Math.max(telemetry.outRms, telemetry.outPeak * 0.6);
   const glow = amp > 0 ? Math.min(1, Math.log10(1 + amp * 9)) : 0;
 
   const stereo = stereoMetrics(telemetry.gonioL, telemetry.gonioR);
   const rms = rmsReadout(telemetry.outRms);
   const level = (value: number) => live ? formatHudFixed(Number(formatDbfs(value)), 1, 3) : "—";
-
-  const fxStyle = {
-    ...logoReactiveStyle(rgb),
-    ...unitMarkCssVars(mark, theme),
-  };
 
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
@@ -65,33 +54,7 @@ export function FaceView() {
         <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
       </aside>
       <div className="nk-face-logo">
-        <span
-          className={[
-            "nk-face-fx",
-            scan ? "nk-face-scan" : "",
-            chroma ? "nk-face-chroma" : "",
-          ].filter(Boolean).join(" ")}
-          style={fxStyle}
-        >
-          <img
-            src={mark}
-            alt={theme === "digicide" ? "DIGICIDE" : "NEUROKORE"}
-            className="nk-face-mark"
-            style={{
-              filter: [
-                bloom ? bloomFilter(glow, true) : "",
-                "drop-shadow(0 12px 20px rgba(0,0,0,0.55))",
-              ].filter(Boolean).join(" "),
-            }}
-          />
-          {chroma ? (
-            <>
-              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-r" />
-              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-g" />
-              <img src={mark} alt="" className="nk-face-ghost nk-face-ghost-b" />
-            </>
-          ) : null}
-        </span>
+        <LogoMark src={mark} theme={theme} filter={bloom ? bloomFilter(glow, true) : "none"} />
       </div>
       <div className="flex min-h-0 flex-1"><UnitAnalyzer /></div>
     </section>
