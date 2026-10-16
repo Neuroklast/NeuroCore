@@ -213,6 +213,14 @@ export function buildDust(count: number): BallDust {
   return { home, seed, count: k, rows };
 }
 
+/** Fraction of the pane's short side. Radius is half of that. */
+export const BALL_SIZE = 0.7;
+
+export function ballRadius(width: number, height: number): number {
+  const short = Math.min(Math.max(0, width), Math.max(0, height));
+  return Math.max(8, (BALL_SIZE * short) / 2);
+}
+
 /** Quiet rim. Loudness only lifts the glow; particles take the rest of the audio. */
 export const BALL_CONFIG = {
   strands: 5,

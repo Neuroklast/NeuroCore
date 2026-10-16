@@ -14,6 +14,7 @@ import {
   ballCapable,
   ballDustCount,
   ballDrive,
+  ballRadius,
   ballStill,
   buildDust,
   buildPalette,
@@ -22,11 +23,17 @@ import {
   stereoWidth,
   type BallDrive,
 } from "./ballModel";
+import {
+  CONTAINMENT_STATIC,
+  containmentLayout,
+  containmentPalette,
+  orbitShards,
+} from "./containmentModel";
+import { createContainment } from "./containmentPass";
 
 const PIXEL_BUDGET = 4.5e6;
 const INTRO_SECONDS = 2.2;
 const SETTLE_SECONDS = 7;
-const BALL_SIZE = 0.7;
 
 const PASS_VS = `#version 300 es
 layout(location = 0) in vec2 position;
@@ -561,6 +568,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       setFailed(true);
       return undefined;
     }
+    const containment = createContainment(gl);
     const encode = halfFloat ? 1 : 0.25;
 
     const locations = (prog: WebGLProgram, names: string[]) => {
@@ -802,7 +810,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       });
       const d = drive;
 
-      const radius = Math.max(8, (BALL_SIZE * Math.min(width, height)) / 2);
+      const radius = ballRadius(width, height);
       const presence = 1 - Math.pow(1 - Math.min(1, Math.max(0, introClock / 0.42)), 3);
       const unfold = 1 - Math.pow(1 - Math.min(1, Math.max(0, introClock / 0.32)), 3);
       const inside = Math.min(1, Math.max(0, (introClock - 0.2) / 0.75));
@@ -872,6 +880,28 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.disable(gl.BLEND);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
+
+      const cLayout = containment ? containmentLayout(width, height) : null;
+      const cArgs = cLayout
+        ? {
+            layout: cLayout,
+            pose: CONTAINMENT_STATIC,
+            shards: orbitShards(cLayout, CONTAINMENT_STATIC.orbitPhase),
+            palette: containmentPalette(themeOf(themeId || "signal")),
+            dpr,
+            encode,
+          }
+        : null;
+      if (containment && cArgs) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        containment.draw(0, "metal", cArgs);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        containment.draw(0, "energy", cArgs);
+        while (gl.getError() !== gl.NO_ERROR) {
+          // Containment faults must not unmount the ball.
+        }
+      }
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
@@ -995,6 +1025,25 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.bindVertexArray(null);
       }
 
+      if (firstFrame) {
+        const err = gl.getError();
+        if (err !== gl.NO_ERROR) {
+          setFailed(true);
+          return;
+        }
+      }
+
+      if (containment && cArgs) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        containment.draw(1, "metal", cArgs);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        containment.draw(1, "energy", cArgs);
+        while (gl.getError() !== gl.NO_ERROR) {
+          // Containment faults must not unmount the ball.
+        }
+      }
+
       gl.disable(gl.BLEND);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, devW, devH);
@@ -1041,6 +1090,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.deleteProgram(field);
       gl.deleteProgram(dust);
       gl.deleteProgram(composite);
+      containment?.dispose();
       if (stir) {
         gl.deleteProgram(stir);
       }

@@ -7,6 +7,7 @@ import {
   ballCapable,
   ballDustCount,
   ballDrive,
+  ballRadius,
   ballStill,
   rgbTriplet,
   stereoWidth,
@@ -136,5 +137,10 @@ describe("ball capability and fixtures", () => {
     expect(ballDustCount(0, 0)).toBe(6000);
     expect(ballDustCount(1280, 860)).toBeLessThanOrEqual(40000);
     expect(ballDustCount(1280, 860)).toBeGreaterThan(6000);
+  });
+
+  it("scales the ball radius from the short side", () => {
+    expect(ballRadius(1256, 500)).toBe(175);
+    expect(ballRadius(0, 0)).toBe(8);
   });
 });
