@@ -1,5 +1,6 @@
 import { hasJuceBridge } from "../bridge/juce";
 import { bloomFilter } from "../overlays/overlayMotion";
+import { BallGl } from "../viz/BallGl";
 import { UnitAnalyzer } from "../viz/ScopeDeck";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
@@ -13,6 +14,9 @@ import {
   rmsReadout,
   stereoMetrics,
 } from "./faceModel";
+
+/** Flip to true to restore the classic Unit centre (wordmark + analyzer) unconditionally. */
+const UNIT_FACE_LEGACY = false;
 
 export function FaceView() {
   const theme = useHostStore((s) => s.theme);
@@ -37,6 +41,15 @@ export function FaceView() {
   const rms = rmsReadout(telemetry.outRms);
   const level = (value: number) => live ? formatHudFixed(Number(formatDbfs(value)), 1, 3) : "—";
 
+  const legacyCenter = (
+    <>
+      <div className="nk-face-logo">
+        <LogoMark src={mark} theme={theme} filter={bloom ? bloomFilter(glow, true) : "none"} />
+      </div>
+      <div className="flex min-h-0 flex-1"><UnitAnalyzer /></div>
+    </>
+  );
+
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
       <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
@@ -53,10 +66,7 @@ export function FaceView() {
         <FaceRow k="OUTPUT RMS" num={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} unit={rms.unit} />
         <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
       </aside>
-      <div className="nk-face-logo">
-        <LogoMark src={mark} theme={theme} filter={bloom ? bloomFilter(glow, true) : "none"} />
-      </div>
-      <div className="flex min-h-0 flex-1"><UnitAnalyzer /></div>
+      {UNIT_FACE_LEGACY ? legacyCenter : <BallGl fallback={legacyCenter} />}
     </section>
   );
 }
