@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.6-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.8-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -15,7 +15,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.6-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.8-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json`. There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
@@ -50,11 +50,11 @@ L / BOTH / R chooses which input side the sound hears. BOTH is the default. A de
 ## Playing
 
 Top bar
-- Preset name — click for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds.
-- Unit / Circuit / Terminal — three equal clips on the next row. A | B, A→B and MATCH sit on the right of that row.
+- Mark left, preset name in the centre — click the name for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds. Undo / Redo, Settings and Help sit on the right of this row.
+- LIVE / STUDIO is the mode switch on the left of the row under it. Unit / Circuit / Terminal are the views next to it. Functions and Stages are tools on that same row, not views. A | B, A→B and MATCH sit together on the right. Bypass is last, always in the same place.
 - Functions — look up formula words and insert them.
 - Stages — chain on the left, parameters of the selected block on the right. Arrow keys move the selection; Enter opens Inspect. The title X closes Inspect and every other overlay. Select an IR block to open that cabinet slot.
-- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. Live/Studio does not change the window size. Signal is crimson plus cyan. Gold is Cyberpunk 2077 yellow, sky, and teal. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
+- Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. The UI scales with the display (4K / HiDPI): the frame and the web UI grow together. Live/Studio does not change the window size. Signal is crimson plus cyan. Gold is Cyberpunk 2077 yellow, sky, and teal. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine. It does not resize the window.
 - Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
 - Help — this guide.
@@ -74,6 +74,8 @@ Unit meters
 - Right-click the floor plot: Input / Output / Both, Samples / Time / Frequency, Linear / Decibel, grid, invert Y, delta. Those choices apply to every instance and survive the next launch.
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
 - The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
+- The centre of Unit shows a glass ball in the theme accent colour, inside a metal containment cage. Stereo width pushes the dust outward. Bass and transients whirl it up. Loudness only glows the rim. The pointer does nothing. Motion Off freezes it as a still frame; Reduced calms it. While the ball is shown the floor plot, the goniometer, the peak/RMS bars and the plot right-click menu are replaced. Without WebGL2 the wordmark and the full analyzer panel come back exactly as before.
+- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. The spectrum only labels frequencies the 256-sample window can resolve.
 
 ---
 
@@ -270,7 +272,7 @@ Rejected connections leave the last compiled graph and Terminal script intact. N
 
 Terminal completion selects unused block IDs, keeps the reserved out mixer name, and offers catalog parameter defaults as Tab stops even while other lines are unfinished. Windows builds explicitly disable VST2 replacement compatibility; NEUROKORE ships VST3, Standalone and macOS AU. Existing VST3 parameter IDs are preserved.
 Editing and comparison workflow
-Circuit value edits preserve surrounding comments and formatting. Insert, remove, park and copy handle entire multiline expressions. Terminal supports expressions continued inside parentheses and semicolon-led parameter continuation lines. Unchanged native graph blocks retain their original source text when another block is edited; changed routing blocks may be formatted canonically.
+Circuit value edits preserve surrounding comments and formatting. Insert, remove, park and copy handle entire multiline expressions. Terminal supports expressions continued inside parentheses and semicolon-led parameter continuation lines. A formula nested more than 64 deep is rejected. Unchanged native graph blocks retain their original source text when another block is edited; changed routing blocks may be formatted canonically.
 Note mode is offered for directly bound delay time and oscillator frequency/sync macros whose consumers all understand note periods. It is hidden for gain, filter cutoff, mixed-purpose and expression-bound macros. Existing note macros can always return to numeric mode. Seconds and milliseconds convert using their actual units. Rejected parameter edits restore the previous visible value and display a diagnostic.
 A/B beside the workspace tabs stores complete processor sound states, including macros, mix, gains and loaded IRs. The first switch initializes the other slot from the current sound. Switching remembers edits to the slot being left; A→B or B→A overwrites the other slot. Save or discard a Terminal draft before switching. These comparison slots last for the processor instance lifetime and are not saved as two separate states in a DAW project. Save each desired variant as a preset. Shared processing preferences remain global.
 MATCH enables the existing RMS-based wet/dry level compensation and remains consistent when switching A/B. It is not LUFS normalization or a mastering loudness target. Factory mixing utilities complement the distortion/sound-design workflow; dedicated mastering analysis remains outside this feature set.

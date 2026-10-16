@@ -27,6 +27,12 @@ export const RING_COUNT = 3;
 export const CLAMP_COUNT = 4;
 export const SHARD_COUNT = 16;
 export const CLAMP_ANGLES: readonly number[] = [
+  0,
+  Math.PI / 2,
+  Math.PI,
+  (3 * Math.PI) / 2,
+];
+export const BRACE_ANGLES: readonly number[] = [
   Math.PI / 4,
   (3 * Math.PI) / 4,
   (5 * Math.PI) / 4,
@@ -38,7 +44,7 @@ export const RING_OMEGA: readonly number[] = [0.065, -0.042, 0.028];
 export const RING_REST: readonly number[] = [0.18, -0.41, 0.62];
 
 export const TELE_L = { x: 12, y: 12, w: 188, h: 90 };
-export const TELE_RIGHT_INSET = 192;
+export const TELE_RIGHT_INSET = 12;
 export const TELE_W = 168;
 export const TELE_H = 90;
 export const EDGE_MARGIN = 20;
@@ -101,6 +107,7 @@ export type ContainmentPose = {
   clampSurge: number;
   orbitPhase: number;
   discharge: [number, number, number, number];
+  glow: number;
   still: boolean;
 };
 
@@ -120,8 +127,19 @@ export const CONTAINMENT_STATIC: ContainmentPose = {
   clampSurge: 0,
   orbitPhase: 0.37,
   discharge: [0, 0, 0, 0],
+  glow: 0.18,
   still: true,
 };
+
+let publishedPose: ContainmentPose = CONTAINMENT_STATIC;
+
+export function publishCagePose(pose: ContainmentPose): void {
+  publishedPose = pose;
+}
+
+export function readCagePose(): ContainmentPose {
+  return publishedPose;
+}
 
 export function teleBoxes(paneW: number, paneH: number): TeleBox[] {
   const w = Math.max(0, paneW);
@@ -161,32 +179,32 @@ export function containmentLayout(paneW: number, paneH: number): ContainmentLayo
   const span = Math.max(8, outerR - ballR);
 
   const rings: RingSpec[] = [
-    { r: ballR + span * 0.62, thick: Math.max(2.2, ballR * 0.018), segments: 3, gap: 0.2, phase: 0.15, bright: 0.95 },
-    { r: ballR + span * 0.88, thick: Math.max(3.4, ballR * 0.028), segments: 2, gap: 0.24, phase: 0.7, bright: 0.52 },
-    { r: outerR - Math.max(1.0, ballR * 0.008), thick: Math.max(2.0, ballR * 0.016), segments: 4, gap: 0.18, phase: 1.1, bright: 0.28 },
+    { r: ballR + span * 0.5, thick: Math.max(1.6, ballR * 0.011), segments: 3, gap: 0.34, phase: 0.12, bright: 1 },
+    { r: ballR + span * 0.78, thick: Math.max(6.2, ballR * 0.048), segments: 2, gap: 0.38, phase: 0.82, bright: 0.7 },
+    { r: outerR - Math.max(1.4, ballR * 0.01), thick: Math.max(2.8, ballR * 0.022), segments: 5, gap: 0.28, phase: 1.35, bright: 0.4 },
   ];
 
   const clamp: ClampSpec = {
-    jawX: ballR + span * 0.12,
-    jawHx: span * 0.2,
-    jawHy: Math.max(7, ballR * 0.055),
+    jawX: ballR + span * 0.08,
+    jawHx: span * 0.34,
+    jawHy: Math.max(16, ballR * 0.125),
     armX: ballR + span * 0.48,
-    armHx: span * 0.34,
-    armHy: Math.max(2.4, ballR * 0.018),
-    yokeX: outerR + span * 0.02,
-    yokeHx: Math.max(6, span * 0.22),
-    yokeHy: Math.max(9, ballR * 0.07),
-    hingeX: outerR - span * 0.08,
-    hingeR: Math.max(3.2, ballR * 0.028),
-    pipX: ballR + Math.max(2.5, span * 0.06),
-    pipR: Math.max(1.4, ballR * 0.01),
-    splitX: ballR + span * 0.4,
+    armHx: span * 0.4,
+    armHy: Math.max(5, ballR * 0.036),
+    yokeX: outerR + span * 0.08,
+    yokeHx: Math.max(14, span * 0.42),
+    yokeHy: Math.max(22, ballR * 0.16),
+    hingeX: outerR - span * 0.06,
+    hingeR: Math.max(4.2, ballR * 0.034),
+    pipX: ballR + Math.max(3, span * 0.05),
+    pipR: Math.max(1.8, ballR * 0.012),
+    splitX: ballR + span * 0.38,
   };
 
-  const maxRx = Math.max(outerR, Math.min(w * 0.42, outerR * 1.42));
+  const maxRx = Math.max(outerR, Math.min(w * 0.4, outerR * 1.38));
   const orbits: OrbitSpec[] = [
-    { rx: maxRx, ry: Math.max(18, outerR * 0.36), tilt: 0.32, count: 10 },
-    { rx: maxRx * 0.92, ry: Math.max(14, outerR * 0.28), tilt: -0.22, count: 6 },
+    { rx: maxRx, ry: Math.max(24, outerR * 0.52), tilt: 0.76, count: 6 },
+    { rx: maxRx * 0.86, ry: Math.max(18, outerR * 0.38), tilt: -0.5, count: 4 },
   ];
 
   return {
@@ -218,7 +236,7 @@ export function orbitShards(layout: ContainmentLayout, phase: number): OrbitShar
         x: layout.cx + x0,
         y: layout.cy + y0 * ct,
         z: y0 * st,
-        size: 1.6 + (n % 3) * 0.7,
+        size: (1.5 + (n % 3) * 0.55) * (y0 * st < 0 ? 0.55 : 1),
       });
       n += 1;
     }
@@ -231,9 +249,9 @@ export function containmentPalette(theme: ThemePalette): ContainmentPalette {
   const muted = rgbTriplet(theme.inkMutedRgb);
   const ink = rgbTriplet(theme.inkRgb);
   return {
-    metalLo: mixColor(line, muted, 0.18),
-    metal: mixColor(muted, line, 0.35),
-    metalHi: mixColor(muted, ink, 0.55),
+    metalLo: mixColor(line, muted, 0.08),
+    metal: mixColor(muted, line, 0.28),
+    metalHi: mixColor(muted, ink, 0.72),
     accent: rgbTriplet(theme.accentRgb),
     cyan: rgbTriplet(theme.cyanRgb),
   };
@@ -272,6 +290,7 @@ export function containmentPose(
     clampSurge: ease(p.clampSurge, surgeTarget, dt, 0.03, 0.11),
     orbitPhase: CONTAINMENT_STATIC.orbitPhase + t * 0.11 * (0.55 + drive.swirl) * scale,
     discharge,
+    glow: ease(p.glow, (0.12 + 0.5 * drive.glow) * (motion === "reduced" ? 0.55 : 1), dt, 0.18, 0.22),
     still: false,
   };
 }

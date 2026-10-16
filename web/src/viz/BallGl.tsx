@@ -27,7 +27,10 @@ import {
   CONTAINMENT_STATIC,
   containmentLayout,
   containmentPalette,
+  containmentPose,
   orbitShards,
+  publishCagePose,
+  type ContainmentPose,
 } from "./containmentModel";
 import { createContainment } from "./containmentPass";
 
@@ -730,6 +733,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let palette = buildPalette(accent, cyan);
     let tones = new Float32Array(palette.tones.flat());
     let drive: BallDrive | null = null;
+    let cagePose: ContainmentPose = CONTAINMENT_STATIC;
     let prevPeak = 0;
     let rimTime = 0;
     let dustTime = 0;
@@ -882,11 +886,17 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       const cLayout = containment ? containmentLayout(width, height) : null;
+      if (containment) {
+        cagePose = still
+          ? CONTAINMENT_STATIC
+          : containmentPose(cagePose, d, dt, rimTime, host.motion);
+        publishCagePose(cagePose);
+      }
       const cArgs = cLayout
         ? {
             layout: cLayout,
-            pose: CONTAINMENT_STATIC,
-            shards: orbitShards(cLayout, CONTAINMENT_STATIC.orbitPhase),
+            pose: cagePose,
+            shards: orbitShards(cLayout, cagePose.orbitPhase),
             palette: containmentPalette(themeOf(themeId || "signal")),
             dpr,
             encode,

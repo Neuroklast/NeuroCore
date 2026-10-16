@@ -7,6 +7,7 @@ import { useTelemetryStore } from "../store/telemetryStore";
 import { motionAllows } from "../theme/motionPolicy";
 import { unitMarkSrc } from "./faceGlitch";
 import { LogoMark } from "./LogoMark";
+import { CoreDiagnostics } from "./CoreDiagnostics";
 import {
   formatDbfs,
   formatHudFixed,
@@ -66,6 +67,7 @@ export function FaceView() {
         <FaceRow k="OUTPUT RMS" num={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} unit={rms.unit} />
         <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
       </aside>
+      {UNIT_FACE_LEGACY ? null : <CoreDiagnostics live={live} />}
       {UNIT_FACE_LEGACY ? legacyCenter : <BallGl fallback={legacyCenter} />}
     </section>
   );

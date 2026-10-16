@@ -62,10 +62,10 @@ describe("containment layout", () => {
     expect(L.outerR).toBeGreaterThan(L.ballR);
   });
 
-  it("places four layered clamps on the diagonals and three unequal rings with gaps", () => {
+  it("places four cardinal field projectors and three unequal rings with gaps", () => {
     const L = containmentLayout(PANE.w, PANE.h);
     expect(CLAMP_ANGLES).toHaveLength(CLAMP_COUNT);
-    expect(CLAMP_ANGLES.map((a) => Math.round((a * 180) / Math.PI))).toEqual([45, 135, 225, 315]);
+    expect(CLAMP_ANGLES.map((a) => Math.round((a * 180) / Math.PI) % 360)).toEqual([0, 90, 180, 270]);
     expect(L.rings).toHaveLength(RING_COUNT);
     expect(L.rings[0]!.bright).toBeGreaterThan(L.rings[1]!.bright);
     expect(L.rings[1]!.bright).toBeGreaterThan(L.rings[2]!.bright);
@@ -80,7 +80,12 @@ describe("containment layout", () => {
     expect(L.clamp.jawX).toBeLessThan(L.clamp.splitX);
     expect(L.clamp.splitX).toBeLessThan(L.clamp.yokeX);
     expect(L.clamp.yokeHy).toBeGreaterThan(L.clamp.armHy);
+    expect(L.clamp.yokeHy).toBeGreaterThanOrEqual(L.ballR * 0.1);
+    expect(L.clamp.jawHy).toBeGreaterThanOrEqual(L.ballR * 0.08);
     expect(L.clamp.pipX).toBeLessThan(L.clamp.yokeX);
+    expect(Math.abs(L.orbits[0]!.tilt)).toBeGreaterThan(0.5);
+    expect(Math.abs(L.orbits[1]!.tilt)).toBeGreaterThan(0.35);
+    expect(Math.sign(L.orbits[0]!.tilt)).not.toBe(Math.sign(L.orbits[1]!.tilt));
   });
 
   it("does not let the outer ring cover the tele HUD boxes", () => {
@@ -108,7 +113,8 @@ describe("containment layout", () => {
   it("splits orbit shards in front of and behind the core, inside the pane", () => {
     const L = containmentLayout(PANE.w, PANE.h);
     const shards = orbitShards(L, CONTAINMENT_STATIC.orbitPhase);
-    expect(shards.length).toBeGreaterThanOrEqual(12);
+    expect(shards.length).toBeGreaterThanOrEqual(8);
+    expect(shards.length).toBeLessThanOrEqual(16);
     expect(shards.some((s) => s.z < 0)).toBe(true);
     expect(shards.some((s) => s.z > 0)).toBe(true);
     for (const s of shards) {
@@ -185,6 +191,15 @@ describe("containment palette", () => {
     expect(gold.accent[1]).toBeGreaterThan(0.7);
   });
 
+  it("projectors and rings are layered capsules and conductors, not a single box", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "containmentPass.ts"), "utf8");
+    expect(src).toContain("sdCapsule");
+    expect(src).toContain("dCond");
+    expect(src).toContain("dShroud");
+    expect(src).toContain("dFlangeA");
+  });
+
   it("does not hardcode Signal red in containment sources", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const blob = ["containmentModel.ts", "containmentPass.ts"]
@@ -192,6 +207,13 @@ describe("containment palette", () => {
       .join("\n");
     expect(blob).not.toMatch(/#c42a2a/i);
     expect(blob).not.toMatch(/196\s*,\s*42\s*,\s*42/);
+  });
+
+  it("BallGl drives live pose and freezes on motion off", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
+    expect(src).toContain("containmentPose(");
+    expect(src).toContain("CONTAINMENT_STATIC");
   });
 });
 

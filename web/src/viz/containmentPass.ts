@@ -1,4 +1,5 @@
 import {
+  BRACE_ANGLES,
   CLAMP_ANGLES,
   SHARD_COUNT,
   type ContainmentLayout,
@@ -26,6 +27,7 @@ uniform float uLayer;
 uniform float uPass;
 uniform float uPulse;
 uniform float uSurge;
+uniform float uGlow;
 uniform vec3 uMetalLo;
 uniform vec3 uMetal;
 uniform vec3 uMetalHi;
@@ -45,6 +47,7 @@ uniform vec3 uHinge;
 uniform vec3 uPip;
 uniform float uSplitX;
 uniform float uClampAng[4];
+uniform float uBraceAng[4];
 uniform float uDischarge[4];
 uniform vec4 uOrbit0;
 uniform vec4 uOrbit1;
@@ -63,6 +66,13 @@ float sdBox(vec2 p, vec2 b, float r) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+float sdCapsule(vec2 p, vec2 a, vec2 b, float r) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+
 float arcMask(float theta, float rot, float n, float gap, float phase) {
   float a = theta - rot - phase;
   a = a - TAU * floor(a / TAU);
@@ -72,12 +82,13 @@ float arcMask(float theta, float rot, float n, float gap, float phase) {
 }
 
 vec3 shadeMetal(vec3 n, float bright) {
+  vec3 nn = normalize(n);
   vec3 L = normalize(LIGHT);
-  float ndl = clamp(dot(normalize(n), L), 0.0, 1.0);
-  vec3 col = mix(uMetalLo, uMetal, 0.4 + 0.6 * ndl);
-  col = mix(col, uMetalHi, pow(ndl, 8.0) * 0.72);
-  float rim = pow(1.0 - clamp(n.z, 0.0, 1.0), 1.5) * 0.4;
-  col += uMetalHi * rim;
+  float ndl = clamp(dot(nn, L), 0.0, 1.0);
+  vec3 col = mix(uMetalLo, uMetal, 0.25 + 0.75 * ndl);
+  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+  col = mix(col, uMetalHi, pow(clamp(dot(nn, H), 0.0, 1.0), 28.0) * 0.95);
+  col += uMetalHi * pow(1.0 - clamp(nn.z, 0.0, 1.0), 2.4) * 0.35;
   return col * bright;
 }
 
@@ -106,49 +117,60 @@ void main() {
   vec3 metalRgb = vec3(0.0);
   vec3 glow = vec3(0.0);
 
-  if (! front) {
-    for (int i = 0; i < 3; i++) {
-      float R = uRingR[i] * (1.0 + uPulse);
-      float w = uRingW[i];
-      float d = abs(r - R) - w * 0.5;
-      float mask = arcMask(theta, uRingRot[i], uRingSeg[i], uRingGap[i], uRingPhase[i]);
-      if (mask < 0.01) {
-        continue;
+  for (int i = 0; i < 3; i++) {
+    float R = uRingR[i] * (1.0 + uPulse);
+    float w = uRingW[i];
+    float mask = arcMask(theta, uRingRot[i], uRingSeg[i], uRingGap[i], uRingPhase[i]);
+    if (mask < 0.01) {
+      continue;
+    }
+    float dBody = abs(r - R) - w * 0.5;
+    float dRail = abs(r - (R - w * 0.32)) - w * 0.11;
+    float dLip = abs(r - (R + w * 0.28)) - w * 0.07;
+    float dCond = abs(r - (R - w * 0.18)) - w * 0.045;
+    float inner = r - (R - w * 0.5);
+    float outer = (R + w * 0.5) - r;
+    float bevel = clamp(min(inner, outer) / max(w * 0.38, 0.7), 0.0, 1.0);
+    vec2 rad = p / max(r, 1e-3);
+    vec3 n = normalize(vec3(rad * (r > R ? 1.0 : -1.0), 0.12 + 0.88 * bevel));
+    float segU = fract((theta - uRingRot[i] - uRingPhase[i]) / TAU * uRingSeg[i]);
+    float seam = 1.0 - smoothstep(0.0, 0.04, min(segU, max(0.0, 1.0 - uRingGap[i] - segU)));
+    float bright = uRingBright[i] * (0.72 + 0.28 * mask) * (1.0 - 0.55 * seam);
+    float groove = 1.0 - smoothstep(0.0, w * 0.1, abs(r - R));
+    bright *= 1.0 - 0.22 * groove;
+    float rivetU = fract(theta * (10.0 + float(i) * 3.0) + uRingPhase[i]);
+    float rivet = (1.0 - smoothstep(0.028, 0.07, abs(rivetU - 0.5))) * (1.0 - smoothstep(w * 0.2, w * 0.55, abs(r - R)));
+    if (! front) {
+      float z = (1.0 - mask) * 6.0;
+      cover(metalA, metalRgb, dBody + z, n, bright);
+      cover(metalA, metalRgb, dRail + z, n, bright * 1.18);
+      cover(metalA, metalRgb, dLip + z, n, bright * 0.82);
+      float joint = abs(r - R) - w * 0.72;
+      cover(metalA, metalRgb, joint + (1.0 - seam) * 8.0, vec3(rad, 0.55), 1.08);
+      cover(metalA, metalRgb, length(vec2(abs(r - R), (rivetU - 0.5) * R * 0.12)) - 1.15 + (1.0 - rivet) * 6.0, vec3(0.1, 0.15, 1.0), 1.2);
+      metalRgb = mix(metalRgb, uAccent, (1.0 - smoothstep(-0.35, 0.85, dCond)) * mask * 0.55);
+      if (energy) {
+        glow += uAccent * mask * (0.18 + 0.5 * uGlow) * (1.0 - smoothstep(0.3, 1.6, abs(dCond)));
       }
-      float inner = r - (R - w * 0.5);
-      float outer = (R + w * 0.5) - r;
-      float bevel = clamp(min(inner, outer) / max(w * 0.42, 0.6), 0.0, 1.0);
-      vec2 rad = p / max(r, 1e-3);
-      float side = r > R ? 1.0 : -1.0;
-      vec3 n = normalize(vec3(rad * side, 0.22 + 0.78 * bevel));
-      float bright = uRingBright[i] * (0.82 + 0.18 * mask);
-      float segU = fract((theta - uRingRot[i] - uRingPhase[i]) / TAU * uRingSeg[i]);
-      float seam = 1.0 - smoothstep(0.0, 0.05, min(segU, max(0.0, 1.0 - uRingGap[i] - segU)));
-      bright *= 1.0 - 0.45 * seam * mask;
-      float groove = 1.0 - smoothstep(0.0, w * 0.12, abs(r - R));
-      bright *= 1.0 - 0.22 * groove;
-      float rivetU = fract(theta * 9.0 + float(i) * 0.4);
-      float rivet = (1.0 - smoothstep(0.03, 0.07, abs(rivetU - 0.5))) * (1.0 - smoothstep(1.1, 2.0, abs(r - R)));
-      bright *= 1.0 - 0.35 * rivet;
-      cover(metalA, metalRgb, d + (1.0 - mask) * 6.0, n, bright);
-      float lip = 1.0 - smoothstep(0.5, 1.7, abs(r - (R - w * 0.42)));
-      if (i == 0) {
-        metalRgb = mix(metalRgb, uAccent, lip * mask * 0.22);
-        if (energy) {
-          glow += uAccent * lip * mask * 0.6;
-        }
+    } else if (i == 0 && r > pulseR * 0.94) {
+      float lip = abs(r - (R - w * 0.42)) - w * 0.08;
+      cover(metalA, metalRgb, lip + (1.0 - mask) * 6.0, n, 1.05);
+      metalRgb = mix(metalRgb, uAccent, (1.0 - smoothstep(0.4, 1.6, abs(r - (R - w * 0.42)))) * mask * 0.45);
+      if (energy) {
+        glow += uAccent * mask * uGlow * 0.55 * (1.0 - smoothstep(0.4, 1.8, abs(r - (R - w * 0.42))));
       }
     }
+  }
 
+  if (front) {
     float tickR0 = uTicks.x;
     float tickR1 = uTicks.y;
     float nTick = max(uTicks.z, 1.0);
     float tU = fract((theta + PI) / TAU * nTick);
-    float tickOn = 1.0 - smoothstep(0.06, 0.12, abs(tU - 0.5));
+    float tickOn = 1.0 - smoothstep(0.05, 0.11, abs(tU - 0.5));
     float tickD = abs(r - 0.5 * (tickR0 + tickR1)) - 0.5 * (tickR1 - tickR0);
     if (tickOn > 0.05) {
-      vec3 n = normalize(vec3(p / max(r, 1e-3), 0.4));
-      cover(metalA, metalRgb, tickD + (1.0 - tickOn) * 4.0, n, 0.4);
+      cover(metalA, metalRgb, tickD + (1.0 - tickOn) * 4.0, normalize(vec3(p / max(r, 1e-3), 0.45)), 0.48);
     }
   }
 
@@ -157,50 +179,90 @@ void main() {
     float ca = cos(ang);
     float sa = sin(ang);
     vec2 q = vec2(ca * p.x + sa * p.y, -sa * p.x + ca * p.y);
-    float innerW = 1.0 - smoothstep(uSplitX - 6.0, uSplitX + 9.0, q.x);
-    float outerW = smoothstep(uSplitX - 9.0, uSplitX + 6.0, q.x);
+    float innerW = 1.0 - smoothstep(uSplitX - 8.0, uSplitX + 12.0, q.x);
+    float outerW = smoothstep(uSplitX - 12.0, uSplitX + 8.0, q.x);
     float zone = front ? innerW : outerW;
     if (zone < 0.01) {
       continue;
     }
-    float surge = 1.0 + uSurge * 0.12;
-    float d = 1e5;
-    vec3 n = vec3(ca, sa, 0.45);
+    float surge = 1.0 + uSurge * 0.14;
+    vec3 n = normalize(vec3(ca, sa, 0.55));
+    float z = 1.0 - zone;
+    float top = smoothstep(uJaw.z * 0.15, -uJaw.z * 0.85, q.y);
+    vec3 nLit = normalize(vec3(ca * 0.45, sa * 0.45, 0.35 + 0.65 * top));
     if (! front) {
-      float dYoke = sdBox(q - vec2(uYoke.x, 0.0), vec2(uYoke.y * surge, uYoke.z), 1.7);
-      float dHinge = length(q - vec2(uHinge.x, 0.0)) - uHinge.y * surge;
-      float dArm = sdBox(q - vec2(uArm.x, 0.0), vec2(uArm.y, uArm.z), 1.05);
-      float dBoltA = length(q - vec2(uYoke.x + 1.2, uYoke.z * 0.42)) - 1.55;
-      float dBoltB = length(q - vec2(uYoke.x + 1.2, -uYoke.z * 0.42)) - 1.55;
-      d = min(min(dYoke, dHinge), dArm);
-      n = normalize(vec3(ca, sa, 0.5));
-      cover(metalA, metalRgb, d + (1.0 - zone) * 5.0, n, 0.78 + 0.22 * uSurge);
-      cover(metalA, metalRgb, dBoltA + (1.0 - zone) * 5.0, vec3(0.1, 0.2, 0.95), 1.05);
-      cover(metalA, metalRgb, dBoltB + (1.0 - zone) * 5.0, vec3(0.1, 0.2, 0.95), 1.05);
-      float seam = abs(q.y) - 0.6;
-      cover(metalA, metalRgb, max(dYoke, seam) + (1.0 - zone) * 5.0, n, 0.45);
+      float dHouse = sdBox(q - vec2(uYoke.x, 0.0), vec2(uYoke.y * surge, uYoke.z), 3.2);
+      float dCut = sdBox(q - vec2(uYoke.x + uYoke.y * 0.18, 0.0), vec2(uYoke.y * 0.5, uYoke.z * 0.42), 1.2);
+      float dCollar = sdBox(q - vec2(uHinge.x, 0.0), vec2(uArm.y * 0.62, uArm.z * 2.35), 1.6);
+      float dHinge = length(q - vec2(uHinge.x, 0.0)) - uHinge.y * surge * 1.15;
+      float dHingeHole = length(q - vec2(uHinge.x, 0.0)) - uHinge.y * 0.42;
+      float dArm = sdCapsule(q, vec2(uArm.x - uArm.y, 0.0), vec2(uYoke.x - uYoke.y * 0.2, 0.0), uArm.z * 1.35);
+      float dFin = sdBox(q - vec2(uYoke.x - uYoke.y * 0.2, 0.0), vec2(1.1, uYoke.z * 0.92), 0.3);
+      float dBoltA = length(q - vec2(uYoke.x + 1.8, uYoke.z * 0.52)) - 2.15;
+      float dBoltB = length(q - vec2(uYoke.x + 1.8, -uYoke.z * 0.52)) - 2.15;
+      float dBoltC = length(q - vec2(uHinge.x - 1.2, uHinge.y * 0.7)) - 1.35;
+      cover(metalA, metalRgb, dHouse + z * 5.0, nLit, 0.7 + 0.22 * uSurge);
+      cover(metalA, metalRgb, max(dHouse, -dCut - 0.8) + z * 5.0, vec3(ca, sa, 0.18), 0.38);
+      cover(metalA, metalRgb, dCollar + z * 5.0, nLit, 0.88);
+      cover(metalA, metalRgb, max(dHinge, -dHingeHole) + z * 5.0, vec3(0.12, 0.18, 0.98), 1.12);
+      cover(metalA, metalRgb, dArm + z * 5.0, nLit, 0.8);
+      cover(metalA, metalRgb, dFin + z * 5.0, n, 0.62);
+      cover(metalA, metalRgb, dBoltA + z * 5.0, vec3(0.08, 0.12, 1.0), 1.18);
+      cover(metalA, metalRgb, dBoltB + z * 5.0, vec3(0.08, 0.12, 1.0), 1.18);
+      cover(metalA, metalRgb, dBoltC + z * 5.0, vec3(0.1, 0.14, 1.0), 1.1);
     } else {
-      float dJaw = sdBox(q - vec2(uJaw.x, 0.0), vec2(uJaw.y * surge, uJaw.z), 2.1);
-      float dToothA = sdBox(q - vec2(uJaw.x - uJaw.y * 0.35, uJaw.z * 0.72), vec2(uJaw.y * 0.28, 2.1), 0.7);
-      float dToothB = sdBox(q - vec2(uJaw.x - uJaw.y * 0.35, -uJaw.z * 0.72), vec2(uJaw.y * 0.28, 2.1), 0.7);
-      float dArm = sdBox(q - vec2(uArm.x * 0.72, 0.0), vec2(uArm.y * 0.5, uArm.z * 1.05), 1.0);
-      d = min(min(dJaw, dArm), min(dToothA, dToothB));
-      n = normalize(vec3(ca * 0.4, sa * 0.4, 0.82));
-      cover(metalA, metalRgb, d + (1.0 - zone) * 5.0, n, 0.9 + 0.25 * uSurge);
+      float radY = uJaw.z * 0.62;
+      float dShroud = sdCapsule(q, vec2(uJaw.x - uJaw.y * 0.55, 0.0), vec2(uJaw.x + uJaw.y * 0.7, 0.0), radY * 1.08);
+      float dBarrel = sdCapsule(q, vec2(uJaw.x - uJaw.y * 0.35, 0.0), vec2(uJaw.x + uJaw.y * 0.55, 0.0), radY);
+      float dHead = sdBox(q - vec2(uPip.x + 2.0, 0.0), vec2(uJaw.y * 0.38, uJaw.z * 0.92), radY * 0.45);
+      float dWell = length(q - vec2(uPip.x, 0.0)) - uJaw.z * 0.34;
+      float dFlangeA = abs(length(q - vec2(uJaw.x - uJaw.y * 0.15, 0.0)) - radY * 1.02) - 1.35;
+      float dFlangeB = abs(length(q - vec2(uJaw.x + uJaw.y * 0.35, 0.0)) - radY * 0.95) - 1.15;
+      float dGroove = abs(q.y) - 0.55;
+      vec3 nf = normalize(vec3(ca * 0.25, sa * 0.25, 0.55 + 0.45 * top));
+      cover(metalA, metalRgb, dShroud + z * 5.0, nf, 0.78 + 0.18 * uSurge);
+      cover(metalA, metalRgb, dBarrel + z * 5.0, nf, 1.02 + 0.18 * uSurge);
+      cover(metalA, metalRgb, dHead + z * 5.0, nf, 1.08);
+      cover(metalA, metalRgb, max(dBarrel, dGroove) + z * 5.0, vec3(ca, sa, 0.2), 0.42);
+      cover(metalA, metalRgb, dFlangeA + z * 5.0, nLit, 1.12);
+      cover(metalA, metalRgb, dFlangeB + z * 5.0, nLit, 1.05);
+      cover(metalA, metalRgb, dWell + z * 5.0, vec3(0.0, 0.0, 0.15), 0.28);
       if (energy) {
-        float pip = length(q - vec2(uPip.x, 0.0)) - uPip.y * (1.0 + uSurge * 0.4);
-        float pipG = 1.0 - smoothstep(-0.4, 1.6, pip);
-        glow += uCyan * pipG * (0.55 + 0.45 * uSurge);
-        float contact = 1.0 - smoothstep(1.2, 4.5, abs(q.x - pulseR));
-        contact *= 1.0 - smoothstep(uJaw.z * 0.85, uJaw.z * 1.4, abs(q.y));
-        glow += uAccent * contact * 0.28 * (0.4 + 0.6 * uSurge);
+        float pip = length(q - vec2(uPip.x, 0.0)) - uPip.y * (1.35 + uSurge * 0.5);
+        glow += uCyan * (1.0 - smoothstep(-0.6, 2.1, pip)) * (0.4 + 0.6 * uGlow);
+        float bezel = abs(length(q - vec2(uPip.x, 0.0)) - uPip.y * 2.1) - 0.7;
+        glow += uCyan * (1.0 - smoothstep(0.0, 1.2, bezel)) * 0.22;
+        float contact = (1.0 - smoothstep(1.0, 5.5, abs(q.x - pulseR)))
+          * (1.0 - smoothstep(uJaw.z * 0.7, uJaw.z * 1.35, abs(q.y)));
+        glow += uAccent * contact * (0.35 + 0.65 * uSurge) * (0.5 + 0.5 * uGlow);
         float dis = uDischarge[k];
         if (dis > 0.01) {
-          float arc = abs(q.y) + abs(q.x - pulseR - 3.0) * 0.65;
-          float bolt = 1.0 - smoothstep(0.6, 2.8 + dis * 2.0, arc);
-          glow += mix(uAccent, uCyan, 0.35) * bolt * dis * 1.4;
+          float arc = abs(q.y) + abs(q.x - pulseR - 2.5) * 0.55;
+          glow += mix(uAccent, uCyan, 0.3) * (1.0 - smoothstep(0.5, 2.6 + dis * 2.2, arc)) * dis * 1.6;
         }
       }
+    }
+    if (! energy) {
+      vec2 emit = vec2(ca, sa) * (pulseR + 4.0);
+      float att = exp(-length(p - emit) * 0.045) * (0.2 + 0.8 * uSurge);
+      metalRgb += uAccent * att * 0.22 * metalA;
+    }
+  }
+
+  for (int b = 0; b < 4; b++) {
+    float ang = uBraceAng[b];
+    float ca = cos(ang);
+    float sa = sin(ang);
+    vec2 q = vec2(ca * p.x + sa * p.y, -sa * p.x + ca * p.y);
+    float sc = 0.38;
+    if (front) {
+      float dPad = sdBox(q - vec2(uJaw.x, 0.0), vec2(uJaw.y * sc, uJaw.z * sc * 0.7), 0.8);
+      cover(metalA, metalRgb, dPad, normalize(vec3(ca * 0.4, sa * 0.4, 0.85)), 0.7);
+    } else {
+      float dBar = sdBox(q - vec2(uArm.x, 0.0), vec2(uArm.y * sc * 1.1, uArm.z * sc * 1.4), 0.7);
+      float dCap = sdBox(q - vec2(uYoke.x * 0.92, 0.0), vec2(uYoke.y * sc * 0.7, uYoke.z * sc * 0.55), 1.0);
+      cover(metalA, metalRgb, dBar, normalize(vec3(ca, sa, 0.5)), 0.55);
+      cover(metalA, metalRgb, dCap, normalize(vec3(ca, sa, 0.45)), 0.6);
     }
   }
 
@@ -219,16 +281,28 @@ void main() {
     }
   }
 
-  if (energy) {
-    for (int o = 0; o < 2; o++) {
-      vec4 orb = o == 0 ? uOrbit0 : uOrbit1;
-      vec2 ab = vec2(orb.x, max(1.0, orb.y * cos(orb.z)));
-      vec2 qe = p / ab;
-      float dEl = (length(qe) - 1.0) * min(ab.x, ab.y);
-      float rail = 1.0 - smoothstep(0.0, 1.35, abs(dEl));
-      float hideCore = smoothstep(pulseR * 0.96, pulseR * 1.04, r);
-      glow += mix(uAccent, uCyan, 0.55) * rail * hideCore * (front ? 0.18 : 0.28);
+  for (int o = 0; o < 2; o++) {
+    vec4 orb = o == 0 ? uOrbit0 : uOrbit1;
+    vec2 ab = vec2(orb.x, max(1.0, orb.y * cos(orb.z)));
+    vec2 qe = p / ab;
+    float dEl = (length(qe) - 1.0) * min(ab.x, ab.y);
+    float hideCore = smoothstep(pulseR * 1.04, pulseR * 1.16, r);
+    bool backHalf = (p.y * orb.z) > 0.0;
+    if (backHalf == front) {
+      continue;
     }
+    float dock = 1.0 - smoothstep(4.0, 14.0, abs(r - uRingR[2]));
+    if (! energy) {
+      cover(metalA, metalRgb, abs(dEl) - 0.85, normalize(vec3(p / max(r, 1e-3), 0.4)), (front ? 0.5 : 0.22) * hideCore);
+      cover(metalA, metalRgb, abs(dEl) - 1.6 + (1.0 - dock) * 8.0, vec3(0.2, 0.15, 0.9), 0.7 * hideCore);
+    } else {
+      float rail = 1.0 - smoothstep(0.0, 1.45, abs(dEl));
+      float dim = front ? 0.62 * (0.45 + 0.55 * uGlow) : 0.22 * (0.35 + 0.4 * uGlow);
+      glow += mix(uAccent, uCyan, front ? 0.35 : 0.1) * rail * hideCore * dim;
+      glow += uAccent * dock * rail * hideCore * 0.25;
+    }
+  }
+  if (energy) {
     for (int s = 0; s < 16; s++) {
       vec4 sh = uShards[s];
       if (sh.w < 0.2) {
@@ -241,9 +315,9 @@ void main() {
       vec2 sp = vec2(sh.x - uCenter.x, uCenter.y - sh.y);
       vec2 d = p - sp;
       float diam = (abs(d.x) + abs(d.y)) - sh.w;
-      float g = 1.0 - smoothstep(-0.4, 2.2, diam);
-      float hideCore = smoothstep(pulseR * 0.95, pulseR * 1.02, length(sp));
-      glow += mix(uAccent, uCyan, back ? 0.2 : 0.55) * g * hideCore * (back ? 0.45 : 0.8);
+      float g = 1.0 - smoothstep(-0.3, 1.8, diam);
+      float hideCore = smoothstep(pulseR * 1.0, pulseR * 1.08, length(sp));
+      glow += mix(uAccent, uCyan, back ? 0.12 : 0.45) * g * hideCore * (back ? 0.4 : 1.05) * (0.45 + 0.55 * uGlow);
     }
   }
 
@@ -334,6 +408,7 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
     uPass: loc("uPass"),
     uPulse: loc("uPulse"),
     uSurge: loc("uSurge"),
+    uGlow: loc("uGlow"),
     uMetalLo: loc("uMetalLo"),
     uMetal: loc("uMetal"),
     uMetalHi: loc("uMetalHi"),
@@ -353,6 +428,7 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
     uPip: loc("uPip"),
     uSplitX: loc("uSplitX"),
     uClampAng: loc("uClampAng[0]"),
+    uBraceAng: loc("uBraceAng[0]"),
     uDischarge: loc("uDischarge[0]"),
     uOrbit0: loc("uOrbit0"),
     uOrbit1: loc("uOrbit1"),
@@ -371,6 +447,7 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
 
   const shardPack = new Float32Array(SHARD_COUNT * 4);
   const clampAng = new Float32Array(CLAMP_ANGLES);
+  const braceAng = new Float32Array(BRACE_ANGLES);
   const discharge = new Float32Array(4);
 
   return {
@@ -386,6 +463,7 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
       gl.uniform1f(u.uPass, pass === "energy" ? 1 : 0);
       gl.uniform1f(u.uPulse, pose.pulse);
       gl.uniform1f(u.uSurge, pose.clampSurge);
+      gl.uniform1f(u.uGlow, pose.glow);
       gl.uniform3fv(u.uMetalLo, palette.metalLo);
       gl.uniform3fv(u.uMetal, palette.metal);
       gl.uniform3fv(u.uMetalHi, palette.metalHi);
@@ -407,6 +485,7 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
       gl.uniform3f(u.uPip, c.pipX, c.pipR, 0);
       gl.uniform1f(u.uSplitX, c.splitX);
       gl.uniform1fv(u.uClampAng, clampAng);
+      gl.uniform1fv(u.uBraceAng, braceAng);
       discharge[0] = pose.discharge[0];
       discharge[1] = pose.discharge[1];
       discharge[2] = pose.discharge[2];
