@@ -16,6 +16,8 @@ export interface TelemetryViews {
   scopeOut: Float32Array;
   gonioX: Float32Array;
   gonioY: Float32Array;
+  onsetCount: number;
+  onsetAmp: number;
 }
 
 export function createTelemetryViews(): TelemetryViews {
@@ -31,6 +33,8 @@ export function createTelemetryViews(): TelemetryViews {
     scopeOut: new Float32Array(SCOPE_N),
     gonioX: new Float32Array(GONIO_N),
     gonioY: new Float32Array(GONIO_N),
+    onsetCount: 0,
+    onsetAmp: 0,
   };
 }
 
@@ -49,6 +53,9 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   const readings = [8, 12, 16, 20, 24].map((offset) => view.getFloat32(offset, true));
   if (readings.some((value) => !Number.isFinite(value) || value < 0)) return false;
   [dest.inPeak, dest.outPeak, dest.inRms, dest.outRms, dest.cpu01] = readings as [number, number, number, number, number];
+  const packed = view.getUint16(6, true);
+  dest.onsetCount = (packed >> 8) & 0xff;
+  dest.onsetAmp = (packed & 0xff) / 255;
   dest.scopeN = Math.min(scopeN, dest.scopeIn.length);
   dest.gonioN = Math.min(gonioN, dest.gonioX.length);
   const f32 = new Float32Array(ab, 32, scopeN * 2 + gonioN * 2);

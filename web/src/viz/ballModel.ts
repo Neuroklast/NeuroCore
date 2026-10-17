@@ -213,6 +213,14 @@ export function buildDust(count: number): BallDust {
   return { home, seed, count: k, rows };
 }
 
+/** Fraction of the pane's short side. Radius is half of that. */
+export const BALL_SIZE = 0.7;
+
+export function ballRadius(width: number, height: number): number {
+  const short = Math.min(Math.max(0, width), Math.max(0, height));
+  return Math.max(8, (BALL_SIZE * short) / 2);
+}
+
 /** Quiet rim. Loudness only lifts the glow; particles take the rest of the audio. */
 export const BALL_CONFIG = {
   strands: 5,
@@ -231,12 +239,14 @@ export const BALL_CONFIG = {
 
 /** Audio meters → particle forces + rim glow. No pointer. */
 export type BallDrive = {
-  /** Stereo width: radial outward force. */
+  /** Stereo width: rest-radius bias, not a force. */
   spread: number;
-  /** Bass: continuous upward force. */
+  /** Bass: rest-offset bias (pulse), not a continuous lift. */
   lift: number;
-  /** Transient: vertical kick impulse. */
+  /** Decaying visual envelope for rings / projectors. */
   kick: number;
+  /** One-shot impulse this step. Shader applies it once. */
+  impulse: number;
   /** Loudness: rim glow 0..1, kept small. */
   glow: number;
   twinkle: number;
@@ -250,6 +260,7 @@ export const BALL_STATIC: BallDrive = {
   spread: 0,
   lift: 0,
   kick: 0,
+  impulse: 0,
   glow: 0.18,
   twinkle: 0.12,
   swirl: 0.2,
@@ -301,7 +312,7 @@ export function ballDrive(
   rms: number,
   width: number,
   dt: number,
-  opts: { motion?: MotionPref; prefersReduced?: boolean; transient?: boolean } = {},
+  opts: { motion?: MotionPref; prefersReduced?: boolean; transient?: boolean; onset?: number } = {},
 ): BallDrive {
   const motion = opts.motion ?? "full";
   if (ballStill(motion)) {
@@ -314,12 +325,13 @@ export function ballDrive(
   const r = clamp01(rms);
   const w = clamp01(width);
   const p = prev ?? BALL_STATIC;
-  const kickTarget = opts.transient === true ? scale : 0;
+  const onset = clamp01(opts.onset ?? (opts.transient === true ? 1 : 0)) * scale;
 
   return {
     spread: ease(p.spread, w * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
-    lift: ease(p.lift, (0.55 * low + 0.45 * kickTarget) * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
-    kick: ease(p.kick, kickTarget, dt, 0.02, KICK_RELEASE),
+    lift: ease(p.lift, 0.55 * low * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
+    kick: ease(p.kick, onset > 0 ? onset : 0, dt, 0.015, KICK_RELEASE),
+    impulse: onset,
     glow: ease(p.glow, 0.12 + 0.38 * r, dt, DRIVE_RELEASE, DRIVE_RELEASE),
     twinkle: ease(p.twinkle, 0.08 + 0.35 * high, dt, DRIVE_ATTACK, DRIVE_RELEASE),
     swirl: ease(p.swirl, 0.15 + 0.45 * mid, dt, DRIVE_RELEASE, DRIVE_RELEASE),

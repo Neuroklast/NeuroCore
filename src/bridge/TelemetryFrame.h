@@ -19,6 +19,8 @@ struct TelemetryDesc
     float cpu01 { 0.f };
     std::uint16_t scopeN { 0 };
     std::uint16_t gonioN { 0 };
+    std::uint8_t onsetCount { 0 };
+    float onsetAmp { 0.f };
 };
 
 inline std::size_t telemetryByteSize (const TelemetryDesc& d) noexcept

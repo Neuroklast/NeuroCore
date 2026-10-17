@@ -13,6 +13,10 @@ void TelemetryPump::reset() noexcept
     std::fill (std::begin (scopeIn), std::end (scopeIn), 0.f);
     std::fill (std::begin (scopeOut), std::end (scopeOut), 0.f);
     lastInPeak = lastInRms = 0.f;
+    envFast = envSlow = 0.f;
+    onsetHold = 0;
+    onsetCount = 0;
+    onsetAmp = 0.f;
 }
 
 void TelemetryPump::captureScope (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept
@@ -74,6 +78,50 @@ float TelemetryPump::rmsOf (const juce::AudioBuffer<float>& src) noexcept
     return (float) std::sqrt (acc / (double) count);
 }
 
+void TelemetryPump::scanOnset (const juce::AudioBuffer<float>& src) noexcept
+{
+    const int n = src.getNumSamples();
+    const int ch = src.getNumChannels();
+    if (n <= 0 || ch <= 0)
+        return;
+    const float sr = hostSr > 1.0 ? (float) hostSr : 48000.f;
+    const float dt = 1.f / sr;
+    const float fr = 1.f - std::exp (-dt / 0.05f);
+    const float sa = 1.f - std::exp (-dt / 0.025f);
+    const float sl = 1.f - std::exp (-dt / 0.22f);
+    const int holdN = juce::jmax (1, (int) std::round (0.045 * (double) sr));
+    for (int i = 0; i < n; ++i)
+    {
+        float a = 0.f;
+        for (int c = 0; c < ch; ++c)
+        {
+            const float s = std::abs (src.getReadPointer (c)[i]);
+            if (s > a)
+                a = s;
+        }
+        if (a > envFast)
+            envFast = a;
+        else
+            envFast += (a - envFast) * fr;
+        envSlow += (a - envSlow) * (a > envSlow ? sa : sl);
+        if (onsetHold > 0)
+        {
+            --onsetHold;
+            continue;
+        }
+        const float flux = envFast - envSlow;
+        const float gate = 0.055f + 0.42f * envSlow;
+        if (flux > gate && a > 0.12f)
+        {
+            if (onsetCount < 255)
+                ++onsetCount;
+            if (flux > onsetAmp)
+                onsetAmp = flux > 1.f ? 1.f : flux;
+            onsetHold = holdN;
+        }
+    }
+}
+
 void TelemetryPump::noteInput (const juce::AudioBuffer<float>& in) noexcept
 {
     if (! wanted.load (std::memory_order_relaxed))
@@ -104,9 +152,14 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
     d.outPeak = peakOf (out);
     d.inRms = lastInRms;
     d.outRms = rmsOf (out);
+    scanOnset (out);
     d.cpu01 = cpu01;
     d.scopeN = (std::uint16_t) kScopeN;
     d.gonioN = (std::uint16_t) kGonioN;
+    d.onsetCount = onsetCount;
+    d.onsetAmp = onsetAmp > 1.f ? 1.f : onsetAmp;
+    onsetCount = 0;
+    onsetAmp = 0.f;
 
     const int w = 1 - published.load (std::memory_order_relaxed);
     const auto wrote = writeTelemetryFrame (slots[w].bytes, kMaxBytes, d,

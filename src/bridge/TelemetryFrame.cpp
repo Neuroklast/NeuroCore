@@ -71,7 +71,16 @@ std::size_t writeTelemetryFrame (void* dest, std::size_t destBytes, const Teleme
     auto* p = static_cast<std::uint8_t*> (dest);
     writeU32 (p + 0, kTelemetryMagic);
     writeU16 (p + 4, kTelemetryVersion);
-    writeU16 (p + 6, 0);
+    {
+        const int count = desc.onsetCount > 255 ? 255 : (int) desc.onsetCount;
+        float amp = desc.onsetAmp;
+        if (! (amp > 0.f))
+            amp = 0.f;
+        if (amp > 1.f)
+            amp = 1.f;
+        const int a = (int) (amp * 255.f + 0.5f);
+        writeU16 (p + 6, (std::uint16_t) ((count << 8) | (a > 255 ? 255 : a)));
+    }
     writeF32 (p + 8, desc.inPeak);
     writeF32 (p + 12, desc.outPeak);
     writeF32 (p + 16, desc.inRms);

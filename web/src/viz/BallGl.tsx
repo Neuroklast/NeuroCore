@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { bandRms, transientHit } from "../face/faceModel";
+import { onsetScan, ONSET_STATIC, type OnsetState } from "./onsetModel";
+import {
+  STIR_DAMP,
+  STIR_IMPULSE,
+  STIR_LIFT_BIAS,
+  STIR_SHELL,
+  STIR_SPREAD_BIAS,
+  STIR_STEP,
+  STIR_VMAX,
+} from "./stirModel";
+import { cachedBands, publishViz } from "./vizSnap";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { themeOf } from "../theme/theme";
@@ -14,6 +24,7 @@ import {
   ballCapable,
   ballDustCount,
   ballDrive,
+  ballRadius,
   ballStill,
   buildDust,
   buildPalette,
@@ -22,11 +33,20 @@ import {
   stereoWidth,
   type BallDrive,
 } from "./ballModel";
+import {
+  CONTAINMENT_STATIC,
+  containmentLayout,
+  containmentPalette,
+  containmentPose,
+  orbitShards,
+  publishCagePose,
+  type ContainmentPose,
+} from "./containmentModel";
+import { createContainment } from "./containmentPass";
 
 const PIXEL_BUDGET = 4.5e6;
 const INTRO_SECONDS = 2.2;
-const SETTLE_SECONDS = 7;
-const BALL_SIZE = 0.7;
+
 
 const PASS_VS = `#version 300 es
 layout(location = 0) in vec2 position;
@@ -351,7 +371,7 @@ uniform float uDt;
 uniform float uReset;
 uniform float uSpread;
 uniform float uLiftForce;
-uniform float uKick;
+uniform float uImpulse;
 uniform float uSwirl;
 layout(location = 0) out vec4 outOffset;
 layout(location = 1) out vec4 outVelocity;
@@ -383,32 +403,34 @@ void main() {
   vec3 p = base + o;
 
   float k = mix(0.8, 2.2, random(id * 7u + 11u));
-  vec3 acc = -k * o - 1.5 * sqrt(k) * v;
-
   float rxy = length(p.xy);
-  if (rxy > 1e-4) {
-    acc.xy += (p.xy / rxy) * uSpread * 3.2;
-  }
-  acc.y += uLiftForce * 2.4;
+  vec2 radial = rxy > 1e-4 ? p.xy / rxy : vec2(0.0);
+  vec3 bias = vec3(radial * uSpread * ${STIR_SPREAD_BIAS}, 0.0);
+  bias.y -= uLiftForce * ${STIR_LIFT_BIAS};
+  vec3 acc = -k * (o - bias) - ${STIR_DAMP} * sqrt(k) * v;
   float pace = length(v);
   if (pace > 1e-4) {
     vec3 heading = v / pace;
     vec3 curl = swirl(p * 1.6);
-    acc += (curl - heading * dot(curl, heading)) * min(pace, 2.0) * (1.2 * uSwirl);
+    acc += (curl - heading * dot(curl, heading)) * min(pace, 2.0) * (0.55 * uSwirl);
   }
 
-  if (uKick > 0.0) {
+  if (uImpulse > 0.0) {
     float jitter = random(id * 7u + 12u) - 0.5;
-    v += vec3(jitter * 0.12, 0.85 + 0.4 * random(id * 7u + 15u), jitter * 0.12) * uKick;
+    v += vec3(radial * 0.85, 0.28 + 0.35 * radial.y, jitter * 0.12) * uImpulse * ${STIR_IMPULSE};
   }
 
   v += acc * uDt;
+  float speed = length(v);
+  if (speed > ${STIR_VMAX}) {
+    v *= ${STIR_VMAX} / speed;
+  }
   o += v * uDt;
   vec3 q = base + o;
   float len = length(q);
-  if (len > 0.97) {
+  if (len > ${STIR_SHELL}) {
     vec3 n = q / len;
-    o -= n * (len - 0.97);
+    o -= n * (len - ${STIR_SHELL});
     v -= n * max(dot(v, n), 0.0) * 1.5;
   }
   outOffset = vec4(o, 1.0);
@@ -561,6 +583,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       setFailed(true);
       return undefined;
     }
+    const containment = createContainment(gl);
     const encode = halfFloat ? 1 : 0.25;
 
     const locations = (prog: WebGLProgram, names: string[]) => {
@@ -582,7 +605,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       "uDustTime", "uTurn", "uMotion", "uFill",
     ]);
     const stirU = stir
-      ? locations(stir, ["tHome", "tSeed", "tOffset", "tVelocity", "uDt", "uReset", "uSpread", "uLiftForce", "uKick", "uSwirl", "uDustTime", "uTurn", "uMotion", "uFill"])
+      ? locations(stir, ["tHome", "tSeed", "tOffset", "tVelocity", "uDt", "uReset", "uSpread", "uLiftForce", "uImpulse", "uSwirl", "uDustTime", "uTurn", "uMotion", "uFill"])
       : {};
     const compositeU = locations(composite, ["tScene", "uLight", "uDecode"]);
 
@@ -722,12 +745,13 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let palette = buildPalette(accent, cyan);
     let tones = new Float32Array(palette.tones.flat());
     let drive: BallDrive | null = null;
-    let prevPeak = 0;
+    let cagePose: ContainmentPose = CONTAINMENT_STATIC;
     let rimTime = 0;
     let dustTime = 0;
     let swayClock = 0;
     let introClock = 0;
-    let stirring = 0;
+    let onset: OnsetState = ONSET_STATIC;
+    let lastTelTick = -1;
     let last = 0;
     let lastW = 0;
     let lastH = 0;
@@ -791,18 +815,28 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       }
 
       const telemetry = useTelemetryStore.getState();
-      const bands = bandRms(telemetry.scopeOut, host.sr > 0 ? host.sr : 48000);
-      const transient = transientHit(telemetry.outPeak, prevPeak);
-      prevPeak = telemetry.outPeak;
+      const rate = host.sr > 0 ? host.sr : 48000;
+      const live = telemetry.available;
+      const packed = cachedBands(telemetry.tick, telemetry.scopeOut, rate, live);
+      let impulse = 0;
+      if (telemetry.tick !== lastTelTick) {
+        lastTelTick = telemetry.tick;
+        const scanned = onsetScan(onset, telemetry.scopeOut, rate);
+        onset = scanned.state;
+        impulse = Math.max(scanned.intensity, telemetry.onsetAmp);
+        if (telemetry.onsetCount < 1 && scanned.count < 1) {
+          impulse = 0;
+        }
+      }
       const width01 = stereoWidth(telemetry.gonioL, telemetry.gonioR);
-      drive = ballDrive(drive, bands, telemetry.outRms, width01, dt, {
+      drive = ballDrive(drive, packed.bands, telemetry.outRms, width01, dt, {
         motion: host.motion,
         prefersReduced: reduced,
-        transient,
+        onset: impulse,
       });
       const d = drive;
 
-      const radius = Math.max(8, (BALL_SIZE * Math.min(width, height)) / 2);
+      const radius = ballRadius(width, height);
       const presence = 1 - Math.pow(1 - Math.min(1, Math.max(0, introClock / 0.42)), 3);
       const unfold = 1 - Math.pow(1 - Math.min(1, Math.max(0, introClock / 0.32)), 3);
       const inside = Math.min(1, Math.max(0, (introClock - 0.2) / 0.75));
@@ -873,6 +907,35 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
+      const cLayout = containment ? containmentLayout(width, height) : null;
+      if (containment) {
+        cagePose = still
+          ? CONTAINMENT_STATIC
+          : containmentPose(cagePose, d, dt, rimTime, host.motion);
+        publishCagePose(cagePose);
+      }
+      publishViz(d, cagePose, telemetry.tick);
+      const cArgs = cLayout
+        ? {
+            layout: cLayout,
+            pose: cagePose,
+            shards: orbitShards(cLayout, cagePose.orbitPhase),
+            palette: containmentPalette(themeOf(themeId || "signal")),
+            dpr,
+            encode,
+          }
+        : null;
+      if (containment && cArgs) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        containment.draw(0, "metal", cArgs);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        containment.draw(0, "energy", cArgs);
+        while (gl.getError() !== gl.NO_ERROR) {
+          // Containment faults must not unmount the ball.
+        }
+      }
+
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
       gl.useProgram(field);
@@ -913,21 +976,22 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.bindVertexArray(quadVao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-      if (stir && stateRead && stateWrite) {
-        if (d.spread + d.lift + d.kick > 0.002) {
-          stirring = SETTLE_SECONDS;
-        }
-        if (stirring > 0) {
+      if (stir && stateRead && stateWrite && ! still) {
+        const steps = dt > STIR_STEP * 1.33 ? 2 : 1;
+        const h = Math.min(dt, 0.05) / steps;
+        let read = stateRead;
+        let write = stateWrite;
+        for (let s = 0; s < steps; s += 1) {
           gl.useProgram(stir);
           gl.uniform1i(stirU.tHome, 0);
           gl.uniform1i(stirU.tSeed, 1);
           gl.uniform1i(stirU.tOffset, 2);
           gl.uniform1i(stirU.tVelocity, 3);
-          gl.uniform1f(stirU.uDt, Math.min(dt, 1 / 30));
+          gl.uniform1f(stirU.uDt, h);
           gl.uniform1f(stirU.uReset, 0);
           gl.uniform1f(stirU.uSpread, d.spread);
           gl.uniform1f(stirU.uLiftForce, d.lift);
-          gl.uniform1f(stirU.uKick, d.kick);
+          gl.uniform1f(stirU.uImpulse, s === 0 ? d.impulse : 0);
           gl.uniform1f(stirU.uSwirl, d.swirl);
           gl.uniform1f(stirU.uDustTime, dustTime);
           gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
@@ -938,25 +1002,22 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
           gl.activeTexture(gl.TEXTURE1);
           gl.bindTexture(gl.TEXTURE_2D, seedTex);
           gl.activeTexture(gl.TEXTURE2);
-          gl.bindTexture(gl.TEXTURE_2D, stateRead.textures[0]!);
+          gl.bindTexture(gl.TEXTURE_2D, read.textures[0]!);
           gl.activeTexture(gl.TEXTURE3);
-          gl.bindTexture(gl.TEXTURE_2D, stateRead.textures[1]!);
+          gl.bindTexture(gl.TEXTURE_2D, read.textures[1]!);
           gl.disable(gl.BLEND);
           gl.bindVertexArray(quadVao);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, stateWrite.fb);
-          gl.viewport(0, 0, stateWrite.w, stateWrite.h);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, write.fb);
+          gl.viewport(0, 0, write.w, write.h);
           gl.drawArrays(gl.TRIANGLES, 0, 3);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fb);
-          gl.viewport(0, 0, devW, devH);
-          const swap = stateRead;
-          stateRead = stateWrite;
-          stateWrite = swap;
-          stirring -= dt;
-          if (stirring <= 0) {
-            stirring = 0;
-            resetStir();
-          }
+          const swap = read;
+          read = write;
+          write = swap;
         }
+        stateRead = read;
+        stateWrite = write;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fb);
+        gl.viewport(0, 0, devW, devH);
       }
 
       if (homeTex && seedTex && dustCount > 0) {
@@ -966,7 +1027,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.uniform1i(dustU.tHome, 0);
         gl.uniform1i(dustU.tSeed, 1);
         gl.uniform1i(dustU.tOffset, 2);
-        gl.uniform1f(dustU.uStirred, stirring > 0 && stateRead ? 1 : 0);
+        gl.uniform1f(dustU.uStirred, stateRead ? 1 : 0);
         gl.uniform2f(dustU.uCenter, width / 2, height / 2);
         gl.uniform2f(dustU.uViewport, width, height);
         gl.uniform1f(dustU.uRadius, radius);
@@ -993,6 +1054,25 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.bindVertexArray(dustVao);
         gl.drawArrays(gl.POINTS, 0, dustCount);
         gl.bindVertexArray(null);
+      }
+
+      if (firstFrame) {
+        const err = gl.getError();
+        if (err !== gl.NO_ERROR) {
+          setFailed(true);
+          return;
+        }
+      }
+
+      if (containment && cArgs) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        containment.draw(1, "metal", cArgs);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        containment.draw(1, "energy", cArgs);
+        while (gl.getError() !== gl.NO_ERROR) {
+          // Containment faults must not unmount the ball.
+        }
       }
 
       gl.disable(gl.BLEND);
@@ -1041,6 +1121,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.deleteProgram(field);
       gl.deleteProgram(dust);
       gl.deleteProgram(composite);
+      containment?.dispose();
       if (stir) {
         gl.deleteProgram(stir);
       }

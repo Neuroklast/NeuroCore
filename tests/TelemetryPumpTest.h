@@ -42,6 +42,24 @@ public:
             expectEquals ((int) words[0], (int) bridge::kTelemetryMagic);
         }
 
+        beginTest ("a click in a quiet block is packed as one onset");
+        {
+            bridge::TelemetryPump pump;
+            pump.setSampleRate (48000.0);
+            juce::AudioBuffer<float> in (1, 256), out (1, 256);
+            in.clear();
+            out.clear();
+            out.setSample (0, 40, 1.0f);
+            pump.noteInput (in);
+            pump.publish (out, 0.1f);
+            std::uint8_t buf[4096];
+            const auto n = pump.copyLatest (buf, sizeof (buf));
+            expect (n >= bridge::kTelemetryHeaderBytes);
+            const auto packed = (std::uint16_t) buf[6] | (std::uint16_t) ((std::uint16_t) buf[7] << 8);
+            expect ((packed >> 8) >= 1);
+            expect ((packed & 0xff) > 20);
+        }
+
         beginTest ("empty pump copies nothing");
         {
             bridge::TelemetryPump pump;
