@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (Unit impulse / resize)  
+**Stand:** 2026-10-18 (continuous particle spread)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/unit-impulse-hud`
+**Branch:** `fix/continuous-particle-spread`
+
+## Continuous stereo plume (2026-10-18)
+
+The screenshot after #250 exposed a hard centre seam: sign(x) applied a nonzero outward impulse immediately on either side of the centre, and displaced positions amplified separation on repeated kicks. CPU and production GPU now use a continuous fan from the unforced particle field, with lower lateral strength. Upward impulses, spring return and existing curl motion remain active. Three new failing CPU contracts reproduced the seam, displacement feedback and centre gap under repeated kicks before the correction. They pass after the correction; production float-MRT GPU readback also verifies near-centre continuity at 1x and 2x DPI. Production build passes. All 82 visualisation Vitest contracts and both GPU readback cases pass. No native binary rebuilt.
 
 ## Unit particle impulse correction (2026-10-18)
 
@@ -12,7 +16,7 @@ HUD placement uses logical offsets within a fixed design canvas scaled by transf
 
 Validation: production build passes; 128 focused Vitest contracts pass. Browser layout/navigation/theme/native-bridge contracts pass (24 cases across 1x/2x DPI), plus four added rapid-resize/menu cases. The latter resize the same mounted window through 25 width-only, height-only and diagonal changes in both directions and verify original geometry returns. Production GPU shader compile and float-MRT velocity readback pass at both DPI settings. Full WebGL rendering also passes six consecutive viewport sizes at both DPI settings. Screenshots are captured by the browser suite; CI uploads its evidence. The full Vitest suite has 714 passes and four failures reproduced on untouched main (chipSpec catalog parameters, runLayout crossover fixture, chromeSpec polygon token, crtFx source-string rule).
 
-Native `WebPluginEditor::resized()` and `WebViewHolder::layout()` propagate both dimensions; the editor uses its existing aspect-ratio constrainer. No native binary has been rebuilt and physical DAW window dragging is not certified by these browser tests. PR #250; no merge to main.
+Native `WebPluginEditor::resized()` and `WebViewHolder::layout()` propagate both dimensions; the editor uses its existing aspect-ratio constrainer. No native binary has been rebuilt and physical DAW window dragging is not certified by these browser tests. PR #250 merged to main.
 
 ## UI perf (2026-10-17)
 

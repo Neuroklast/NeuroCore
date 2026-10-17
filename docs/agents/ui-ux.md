@@ -96,6 +96,7 @@ Unit HUD is `.nk-face-hud`: three columns, two rows. Telemetry is row 1; diagnos
 
 ## Unit motion and resize contracts
 
+- Stereo fan force must approach zero continuously at the centre and use the unforced field position. Do not use sign(x) with a minimum outward force or reinforce existing lateral displacement. Repeated-kick contracts must preserve centre density.
 - Kick and sub attacks apply one-shot +Y velocity to the particle bowl. Stereo side-energy controls the horizontal fan, never radial expansion on both axes. A held sub can raise the spring rest position, and silence must let the particles settle.
 - Consume each telemetry tick once. Overlapping scope snapshots are not consecutive audio blocks. Dry input drives bass response independently of the wet effect output.
 - Audio may change ring/projector brightness. Mechanical radius, projector housing dimensions, electric contour displacement and ring rotation rate must not depend on kick envelopes.
