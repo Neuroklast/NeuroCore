@@ -134,9 +134,9 @@ void main() {
 
   float delta = mod(theta - uHeat.x + PI, TAU) - PI;
   float heat = uHeat.z * uHeat.y * exp(-delta * delta / 0.3);
-  float crackle = uCrackle + heat * 0.9;
+  float crackle = uCrackle;
   float amp = R * 0.016 * (0.3 + 1.4 * crackle) * uUnfold;
-  float jitterAmp = R * 0.0048 * (0.3 + 1.4 * uCrackle) * uUnfold * (1.0 + heat * 0.3);
+  float jitterAmp = R * 0.0048 * (0.3 + 1.4 * uCrackle) * uUnfold;
   float flareAmp = R * 0.064 * (0.4 + 1.2 * crackle) * uFlares * 1.6 * uUnfold;
 
   if (abs(dr) < amp * 2.0 + flareAmp + R * 0.3) {
@@ -166,7 +166,7 @@ void main() {
       float grade = (off1 - off0) / (step * max(r, 1.0));
       float d = abs(r - rc) * inversesqrt(1.0 + grade * grade);
       float swell = 0.8 + 0.4 * (0.5 + 0.5 * sin(3.0 * theta + uTime * 0.7 + tone.x * 1.7));
-      float width = uLine * look.w * swell * (1.0 + heat * 0.25);
+      float width = uLine * look.w * swell;
       float core = exp(-d * d / (width * width));
       float sheath = exp(-d * d / (width * width * 3.0));
       float bright = tone.w * (1.0 + heat * 0.45) * uPresence;
@@ -174,7 +174,7 @@ void main() {
       hot += core * bright;
       vec3 fargs = shape.xyz * theta + look.xyz * uTime + tone.xyz;
       float flare = max(0.0, (sin(fargs.x) + sin(fargs.y) + sin(fargs.z)) / 3.0);
-      flare = (flare * flare + heat * 0.35) * flareAmp;
+      flare = (flare * flare) * flareAmp;
       float dw = abs(r - rc - flare);
       float dm = abs(r - rc - flare * 0.6);
       float dn = abs(r - rc - flare * 0.25);
