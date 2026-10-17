@@ -34,7 +34,7 @@ test.describe("preset explorer panes", () => {
     expect(h).toBe(44);
     const n = await rows.count();
     if (n > 1) {
-      await rows.nth(1).click({ force: true });
+      await rows.nth(1).click();
     }
     assertStableHitbox(chromeBox, await box(chrome), "search");
     assertStableHitbox(listBox, await box(list), "list");
@@ -45,7 +45,7 @@ test.describe("preset explorer panes", () => {
     const folders = page.locator("[data-folder]");
     const count = await folders.count();
     for (let i = 0; i < count; i += 1) {
-      await folders.nth(i).click({ force: true });
+      await folders.nth(i).click();
       const n = await page.locator(".nk-preset-row").count();
       if (n >= 1 && n <= 9) {
         const list = page.locator(".nk-preset-list");
