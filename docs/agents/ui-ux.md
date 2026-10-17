@@ -55,7 +55,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 ## Chrome
 
 - Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS / license. No product banner slot. Hover does not rewrite the bar.
-- Header is the mark, the centred preset picker, Undo/Redo, and Settings/Help (`headerSlots`), never a product/LICENSED strip. The one 32 px row (`nk-ws-row`) is LIVE/STUDIO, Unit/Circuit/Terminal, Functions/Stages tools, compare, Bypass last. No second button row. Active views use the red hairline (`nk-ws-tab.on`); tools and actions do not.
+- Header is one flex row: mark | `.nk-preset-cluster` | `.nk-header-right` (Functions, Stages, Settings, Help, LIVE/STUDIO, Bypass). The cluster is not absolutely parked. The 32 px row (`nk-ws-row`) is Unit/Circuit/Terminal plus compare. Active views use the red hairline (`nk-ws-tab.on`); tools and actions do not.
 - CPU text is `Config::cpuDisplayPercent` (0–100). SAFE is a mode word, not a fake 173 %.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
 - Overlays size to their content (`height: auto`). Wide explorers fill the host (`height: 100%`, `min-height: 0`) and never paint outside the window. The list pane scrolls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
@@ -86,7 +86,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 
 **G. No visual regressions.** A functional change must not move, hide or disable unrelated chrome.
 
-Unit HUD is `.nk-face-hud`: three columns, two rows. Telemetry is row 1; diagnostic stacks are row 2. The ball is a full-viewport layer behind the grid. Preset chrome is `.nk-preset-cluster`: arrow | name | arrow with a fixed name width.
+Unit HUD is `.nk-face-hud`: three columns, two rows. Telemetry is row 1; diagnostic stacks are row 2. The ball is a full-viewport layer behind the grid. Header is one flex row: mark | `.nk-preset-cluster` | `.nk-header-right`. The cluster is arrow | name | arrow in flow, not absolutely parked. Name width is `--nk-preset-name-min` to `--nk-preset-name`.
 
 ## Settings / scale
 

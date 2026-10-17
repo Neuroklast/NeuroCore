@@ -1614,14 +1614,15 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 .nk-preset-cluster {
   --nk-preset-arrow: 32px;
   --nk-preset-name: 240px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  --nk-preset-name-min: 144px;
   display: grid;
-  grid-template-columns: var(--nk-preset-arrow) var(--nk-preset-name) var(--nk-preset-arrow);
+  grid-template-columns: var(--nk-preset-arrow) minmax(0, 1fr) var(--nk-preset-arrow);
   align-items: center;
   column-gap: 8px;
-  width: calc(var(--nk-preset-arrow) * 2 + var(--nk-preset-name) + 16px);
+  flex: 1 1 auto;
+  min-width: calc(var(--nk-preset-arrow) * 2 + var(--nk-preset-name-min) + 16px);
+  max-width: calc(var(--nk-preset-arrow) * 2 + var(--nk-preset-name) + 16px);
+  width: 100%;
 }
 
 .nk-header-right {
@@ -2736,9 +2737,9 @@ html[data-motion="off"] .nk-term-glow {
 
 .nk-preset-now {
   position: relative;
-  width: var(--nk-preset-name);
-  min-width: var(--nk-preset-name);
-  max-width: var(--nk-preset-name);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 32px;
   overflow: hidden;
   padding: 0 18px;

@@ -27,7 +27,7 @@ export function Toolbar() {
   const setOverlay = useHostStore((s) => s.setOverlay);
   const bypassed = mix <= 1e-5;
   return (
-    <header className="relative flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
+    <header className="flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
       <button
         type="button"
         className="mr-2 flex shrink-0 items-center gap-3 border-0 bg-transparent p-0 text-left"
@@ -65,6 +65,7 @@ export function Toolbar() {
           &gt;
         </button>
       </div>
+      <div className="nk-header-right">
       {toolbarSlots().map((slot) => {
         if (slot.id === "presetPrev" || slot.id === "presetNow" || slot.id === "presetNext") {
           return null;
@@ -121,6 +122,7 @@ export function Toolbar() {
           </button>
         );
       })}
+      </div>
     </header>
   );
 }

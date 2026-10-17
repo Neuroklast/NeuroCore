@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (Preset Explorer list)  
+**Stand:** 2026-10-17 (header layout contracts)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/preset-explorer-list`
+**Branch:** `fix/ui-layout-contracts`
+
+## Header layout contracts (2026-10-17)
+
+Preset cluster was absolutely parked at 50% and sat on LIVE. Header is one flex row: mark | cluster | tools. Name width is 144–240 px. Playwright: cluster vs LIVE, click opens explorer.
 
 ## Preset Explorer list (2026-10-17)
 
@@ -10,7 +14,7 @@ Card grid replaced with categories | 44px name rows | detail. Selection is prese
 
 ## Unit HUD grid (2026-10-17)
 
-Absolute telemetry/diag stacks overlapped. Unit HUD is `.nk-face-hud` (3 columns × 2 rows). Meter rows are label / number / unit with the same grid on both sides. Preset chrome is a fixed 32 / 240 / 32 cluster. Layout contracts in `docs/agents/ui-ux.md`. Playwright `web/e2e`.
+Absolute telemetry/diag stacks overlapped. Unit HUD is `.nk-face-hud` (3 columns × 2 rows). Meter rows are label / number / unit with the same grid on both sides. Preset chrome is a 32 / 144–240 / 32 cluster in the header flex row. Layout contracts in `docs/agents/ui-ux.md`. Playwright `web/e2e`.
 
 ## Unit audio viz (2026-10-17)
 
