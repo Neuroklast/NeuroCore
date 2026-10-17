@@ -91,7 +91,10 @@ describe("workspace row + compare cluster", () => {
     expect(css).toMatch(/\.nk-face-logo\s*\{[^}]*top:\s*38%/s);
     expect(css).toMatch(/\.nk-face-hud\s*\{[^}]*display:\s*grid/s);
     expect(css).toMatch(/\.nk-preset-cluster\s*\{[^}]*grid-template-columns:\s*var\(--nk-preset-arrow\)/s);
+    expect(css).toMatch(/\.nk-preset-cluster\s*\{[^}]*--nk-preset-name-min:\s*144px/s);
+    expect(css).not.toMatch(/\.nk-preset-cluster\s*\{[^}]*position:\s*absolute/s);
     expect(chromeSrc).toContain("nk-preset-cluster");
+    expect(chromeSrc).toContain("nk-header-right");
     expect(scopeSrc).toContain("p-3");
     expect(scopeSrc).not.toContain("pb-2");
     expect(scopeSrc).not.toContain("pr-3");
@@ -122,7 +125,7 @@ describe("header clip size", () => {
     expect(chromeSrc).not.toMatch(/h-\[26px\]/);
     expect(chromeSrc).not.toMatch(/h-\[30px\]/);
     expect(css).toMatch(/\.nk-preset-now\s*\{[^}]*min-height:\s*32px/s);
-    expect(css).toMatch(/\.nk-preset-now\s*\{[^}]*width:\s*var\(--nk-preset-name\)/s);
+    expect(css).toMatch(/\.nk-preset-now\s*\{[^}]*width:\s*100%/s);
   });
 });
 

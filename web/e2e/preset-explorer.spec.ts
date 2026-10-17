@@ -1,13 +1,17 @@
 import { test, expect, type Locator } from "@playwright/test";
-import { assertNoOverlap, assertStableHitbox, boxOf, type Box } from "./layout";
+import { assertNoOverlap, assertStableHitbox, type Box } from "./layout";
 
 async function box(el: Locator): Promise<Box> {
-  return boxOf(await el.boundingBox() ?? { x: 0, y: 0, width: 0, height: 0 });
+  return el.evaluate((n) => {
+    const r = n.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
 }
 
 test.describe("preset explorer panes", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
+    await page.locator("html[data-nk-ready='1']").waitFor();
     await page.locator(".nk-preset-now").waitFor();
     await page.locator(".nk-preset-now").click();
     await page.locator(".nk-preset-browser").waitFor();

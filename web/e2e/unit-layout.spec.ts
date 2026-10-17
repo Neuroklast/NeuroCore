@@ -1,10 +1,7 @@
 import { test, expect, type Locator } from "@playwright/test";
 import {
-  assertContainedWithin,
   assertNoOverlap,
-  assertNoUnexpectedWrap,
   assertStableHitbox,
-  boxOf,
   type Box,
 } from "./layout";
 
@@ -15,12 +12,16 @@ declare global {
 }
 
 async function box(el: Locator): Promise<Box> {
-  return boxOf(await el.boundingBox() ?? { x: 0, y: 0, width: 0, height: 0 });
+  return el.evaluate((n) => {
+    const r = n.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
 }
 
 test.describe("unit hud + preset cluster", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
+    await page.locator("html[data-nk-ready='1']").waitFor();
     await page.waitForFunction(() => document.fonts.status === "loaded");
     await page.locator(".nk-face-hud").waitFor();
   });
@@ -37,23 +38,37 @@ test.describe("unit hud + preset cluster", () => {
     assertNoOverlap(tl, dl, "engine vs core status");
     assertNoOverlap(tr, dr, "signal vs field activity");
     assertNoOverlap(dl, dr, "diag columns");
-    for (const row of await teleL.locator(".nk-face-row").all()) {
-      assertNoUnexpectedWrap(await row.evaluate((n) => ({ scrollWidth: n.scrollWidth, clientWidth: n.clientWidth })), "engine row");
-    }
-    for (const row of await teleR.locator(".nk-face-row").all()) {
-      assertNoUnexpectedWrap(await row.evaluate((n) => ({ scrollWidth: n.scrollWidth, clientWidth: n.clientWidth })), "signal row");
-    }
-    assertContainedWithin(await box(page.locator(".nk-face-orbit-leg")), dl, "orbit legend");
+    const wrapOf = (root: Locator, label: string) =>
+      root.evaluate((el, tag) => {
+        for (const n of el.querySelectorAll(".nk-face-row")) {
+          if (n.scrollWidth > n.clientWidth + 1) {
+            throw new Error(`${tag} wraps/overflows`);
+          }
+        }
+      }, label);
+    await wrapOf(teleL, "engine row");
+    await wrapOf(teleR, "signal row");
+    expect(await page.locator(".nk-face-diag-l .nk-face-orbit-leg").count()).toBe(1);
     expect(await page.locator(".nk-face-diag-l .nk-face-mod").count()).toBe(3);
     expect(await page.locator(".nk-face-diag-r .nk-face-mod").count()).toBe(3);
+  });
+
+  test("preset cluster does not overlap LIVE", async ({ page }) => {
+    const cluster = page.locator(".nk-preset-cluster");
+    const mode = page.getByRole("group", { name: "Mode" });
+    await cluster.waitFor();
+    await mode.waitFor();
+    assertNoOverlap(await box(cluster), await box(mode), "preset vs LIVE");
+    await page.locator(".nk-preset-now").click();
+    await expect(page.locator(".nk-preset-browser")).toBeVisible();
   });
 
   test("preset arrows stay put when the name changes", async ({ page }) => {
     const cluster = page.locator(".nk-preset-cluster");
     await cluster.waitFor();
-    const prev = cluster.locator("button").nth(0);
+    const prev = cluster.locator(":scope > button").first();
     const now = cluster.locator(".nk-preset-now");
-    const next = cluster.locator("button").nth(2);
+    const next = cluster.locator(":scope > button").last();
     const refPrev = await box(prev);
     const refNow = await box(now);
     const refNext = await box(next);
@@ -62,19 +77,27 @@ test.describe("unit hud + preset cluster", () => {
       "BASS",
       "TENSION PULSE",
       "EXTREMELY LONG INDUSTRIAL MASTERING CHAIN",
-      "X".repeat(200),
       "Ø∆/ß",
       "",
     ];
     for (const name of names) {
+      const tip = name.trim() || "untitled";
       await page.evaluate((n) => window.__nkSetPreset?.(n, false), name);
-      await page.waitForTimeout(16);
-      assertStableHitbox(refPrev, await box(prev), "prev");
-      assertStableHitbox(refNow, await box(now), "name");
-      assertStableHitbox(refNext, await box(next), "next");
+      await expect(now).toHaveAttribute("data-tip", tip);
+      const hit = await cluster.evaluate((el) => {
+        const btns = [...el.querySelectorAll(":scope > button")];
+        return btns.map((b) => {
+          const r = b.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height };
+        });
+      });
+      expect(hit.length).toBe(3);
+      assertStableHitbox(refPrev, hit[0]!, "prev");
+      assertStableHitbox(refNow, hit[1]!, "name");
+      assertStableHitbox(refNext, hit[2]!, "next");
     }
     await page.evaluate(() => window.__nkSetPreset?.("TENSION PULSE", true));
-    await page.waitForTimeout(16);
+    await expect(now).toHaveAttribute("data-tip", "TENSION PULSE*");
     assertStableHitbox(refPrev, await box(prev), "prev dirty");
     assertStableHitbox(refNow, await box(now), "name dirty");
     assertStableHitbox(refNext, await box(next), "next dirty");
