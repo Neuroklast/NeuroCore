@@ -42,15 +42,17 @@ export function ScaleShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div ref={host} className="nk-scale-host h-full w-full overflow-hidden">
+    <div ref={host} className="nk-scale-host relative h-full w-full overflow-hidden">
       <div
         className="nk-scale-stage"
         style={{
           width: DESIGN_W,
           height: DESIGN_H,
-          zoom: fit,
-          marginLeft: origin.x,
-          marginTop: origin.y,
+          position: "absolute",
+          transform: `scale(${fit})`,
+          transformOrigin: "top left",
+          left: origin.x,
+          top: origin.y,
         } as CSSProperties}
       >
         {children}

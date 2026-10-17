@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { subscribeVizClock } from "../theme/vizClock";
@@ -72,7 +72,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
   const waveOutRef = useRef<SVGPathElement>(null);
   const [, setTick] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const host = probeRef.current?.parentElement;
     const left = diagLRef.current;
     const right = diagRRef.current;
@@ -80,15 +80,13 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       return undefined;
     }
     const measure = () => {
-      const face = host.getBoundingClientRect();
-      if (face.width > 8 && face.height > 8) {
-        paneRef.current = { w: face.width, h: face.height };
-      }
-      const box = (el: HTMLElement): TeleBox => {
-        const r = el.getBoundingClientRect();
-        return { x: r.left - face.left, y: r.top - face.top, w: r.width, h: r.height };
-      };
-      colsRef.current = [box(left), box(right)];
+      if (host.clientWidth < 1 || host.clientHeight < 1) return;
+      // Offsets belong to the logical HUD grid. DOMRects belong to the scaled host.
+      paneRef.current = { w: host.clientWidth, h: host.clientHeight };
+      const box = (el: HTMLElement): TeleBox => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
+      colsRef.current = [box(left), box(right), ...Array.from(host.querySelectorAll<HTMLElement>(".nk-face-tele"), box)];
+      frameRef.current = { ...frameRef.current, cage: containmentLayout(host.clientWidth, host.clientHeight) };
+      setTick(n => n + 1);
     };
     const ro = new ResizeObserver(measure);
     ro.observe(host);
@@ -188,7 +186,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       </aside>
       <aside ref={diagRRef} className="nk-face-diag nk-face-diag-r" aria-label="field visualization">
         <Mod title="FIELD ACTIVITY" sub="VIZ">
-          <div className="nk-face-bars">
+          <div className="nk-face-field-bars">
             {stacks.map((s) => (
               <SegStack key={s.id} v={s.v} kind={s.id === "FIELD" ? "accent" : "cyan"} label={s.id} />
             ))}
@@ -232,12 +230,13 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         preserveAspectRatio="none"
         aria-hidden
       >
-        <path d={leadPath(calls.core, "core")} />
-        <path d={leadPath(calls.ring, "ring")} />
+        {calls.core.box.w > 0 && <path d={leadPath(calls.core, "core")} />}
+        {calls.ring.box.w > 0 && <path d={leadPath(calls.ring, "ring")} />}
       </svg>
       <div
         className="nk-face-callout"
-        style={{ left: calls.core.box.x, top: calls.core.box.y, width: calls.core.box.w }}
+        hidden={calls.core.box.w === 0}
+        style={{ left: calls.core.box.x, top: calls.core.box.y, width: calls.core.box.w, height: calls.core.box.h }}
       >
         <div className="nk-face-callout-box">
           <b>CORE</b>
@@ -247,7 +246,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       </div>
       <div
         className="nk-face-callout"
-        style={{ left: calls.ring.box.x, top: calls.ring.box.y, width: calls.ring.box.w }}
+        hidden={calls.ring.box.w === 0}
+        style={{ left: calls.ring.box.x, top: calls.ring.box.y, width: calls.ring.box.w, height: calls.ring.box.h }}
       >
         <div className="nk-face-callout-box">
           <b>RING</b>

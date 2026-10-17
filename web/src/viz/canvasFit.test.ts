@@ -28,3 +28,13 @@ describe("scope canvas fit", () => {
     expect(src).not.toMatch(/width=\{520\}/);
   });
 });
+
+it('includes host scaling in the backing store while preserving logical geometry', () => {
+  const el = { clientWidth: 900, clientHeight: 110, width: 900, height: 110,
+    getBoundingClientRect: () => ({ width: 1350, height: 165 }) } as HTMLCanvasElement;
+  const fit=fitCanvas(el,2);
+  expect(fit.w).toBe(900);
+  expect(fit.scale).toBe(3);
+  expect(el.width).toBe(2700);
+  expect(el.height).toBe(330);
+});

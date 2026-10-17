@@ -1,4 +1,5 @@
 import {
+  analyzeFrame,
   createAnalyze,
   feedAnalyze,
   idleAnalyze,
@@ -63,4 +64,13 @@ export function cachedBands(
   bandCache = { tick, live, bands: out.bands, spec: out.spec };
   perfEnd("bands");
   return bandCache;
+}
+
+// The dry input drives motion independently of effects which remove sub energy.
+let inputCache = { tick: -1, sr: 0, live: false, bands: { low: 0, mid: 0, high: 0 } };
+export function cachedInputBands(tick: number, samples: ArrayLike<number>, sr: number, live: boolean) {
+  if (tick !== inputCache.tick || sr !== inputCache.sr || live !== inputCache.live) {
+    inputCache = { tick, sr, live, bands: live ? analyzeFrame(samples, sr).bands : { low: 0, mid: 0, high: 0 } };
+  }
+  return inputCache.bands;
 }

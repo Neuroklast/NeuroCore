@@ -3,10 +3,12 @@ import type { BallDrive } from "./ballModel";
 export const STIR_STEP = 1 / 60;
 export const STIR_VMAX = 2.2;
 export const STIR_SHELL = 0.97;
-export const STIR_LIFT_BIAS = 0.1;
-export const STIR_SPREAD_BIAS = 0.11;
+export const STIR_LIFT_BIAS = 0.22;
+export const STIR_SPREAD_BIAS = 0.16;
 export const STIR_IMPULSE = 1.55;
 export const STIR_DAMP = 1.5;
+export const STIR_FAN = 0.65;
+export const STIR_BOTTOM_BOOST = 0.25;
 
 export type StirP = {
   o: [number, number, number];
@@ -29,7 +31,7 @@ export function stirStep(
   drive: Pick<BallDrive, "lift" | "spread" | "swirl">,
   impulse: number,
   dt: number,
-  k = 1.4,
+  k = 6,
 ): StirP {
   if (! (dt > 0) || ! Number.isFinite(dt)) {
     return p;
@@ -45,12 +47,11 @@ export function stirStep(
   let vz = p.v[2];
   const px = hx + ox;
   const py = hy + oy;
-  const pz = hz + oz;
   const rxy = Math.hypot(px, py);
   const nx = rxy > 1e-4 ? px / rxy : 0;
   const ny = rxy > 1e-4 ? py / rxy : 0;
-  const bx = nx * drive.spread * STIR_SPREAD_BIAS;
-  const by = -drive.lift * STIR_LIFT_BIAS;
+  const bx = hx * drive.spread * STIR_SPREAD_BIAS;
+  const by = drive.lift * STIR_LIFT_BIAS;
   const damp = STIR_DAMP * Math.sqrt(Math.max(k, 1e-6));
   let ax = -k * (ox - bx) - damp * vx;
   let ay = -k * (oy - by) - damp * vy;
@@ -58,15 +59,15 @@ export function stirStep(
   const swirl = drive.swirl ?? 0;
   if (swirl > 0) {
     const pace = Math.hypot(vx, vy, vz);
-    const spin = Math.max(Math.min(pace, 2), 0.35) * 0.55 * swirl;
+    const spin = Math.max(Math.min(pace, 2), 0.55) * 0.55 * swirl;
     ax += -ny * spin;
     ay += nx * spin;
   }
   if (impulse > 0) {
     const j = impulse * STIR_IMPULSE;
-    vx += nx * j * 0.85;
-    vy += (ny * 0.35 + 0.28) * j;
-    vz += (pz > 1e-4 ? pz / Math.max(Math.hypot(px, py, pz), 1e-4) : 0) * j * 0.4;
+    // View projection is +Y up. Width only fans the impulse on the horizontal axis.
+    vx += Math.sign(px) * (0.3 + 0.7 * Math.min(1, Math.abs(px))) * drive.spread * STIR_FAN * j;
+    vy += (1 + STIR_BOTTOM_BOOST * Math.max(0, -py)) * j;
   }
   vx += ax * dt;
   vy += ay * dt;
@@ -102,7 +103,7 @@ export function stirIntegrate(
   drive: Pick<BallDrive, "lift" | "spread" | "swirl">,
   impulse: number,
   dt: number,
-  k = 1.4,
+  k = 6,
 ): StirP {
   let left = Math.max(0, Math.min(0.05, dt));
   let hit = impulse;

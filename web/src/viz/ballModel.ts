@@ -240,11 +240,11 @@ export const BALL_CONFIG = {
 
 /** Audio meters → particle forces + rim glow. No pointer. */
 export type BallDrive = {
-  /** Stereo width: rest-radius bias, not a force. */
+  /** Stereo side-energy share: horizontal rest bias and impulse fan. */
   spread: number;
-  /** Bass: rest-offset bias (pulse), not a continuous lift. */
+  /** Bass: positive-Y rest offset. Returns under spring/damping. */
   lift: number;
-  /** Decaying visual envelope for rings / projectors. */
+  /** Decaying particle activity / projector-light envelope. No mechanical deformation. */
   kick: number;
   /** One-shot impulse this step. Shader applies it once. */
   impulse: number;

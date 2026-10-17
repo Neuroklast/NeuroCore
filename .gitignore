@@ -399,3 +399,7 @@ build-dsp*/
 /release/
 
 /build-validator/
+
+# Browser contract evidence
+web/test-results/
+web/playwright-report/

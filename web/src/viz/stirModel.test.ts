@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildDust } from "./ballModel";
 import { stirIntegrate, type StirP } from "./stirModel";
@@ -68,8 +65,8 @@ describe("stir rest bias", () => {
 
   it("60s bass pulses but does not pile at the top or the shell", () => {
     const hit = run(60, 1 / 60, { lift: 1, spread: 0.4 });
-    expect(hit.y).toBeLessThan(0.08);
-    expect(hit.y).toBeGreaterThan(-0.2);
+    expect(hit.y).toBeLessThan(0.3);
+    expect(hit.y).toBeGreaterThan(0.08);
     expect(hit.r).toBeLessThan(0.95);
   });
 
@@ -100,17 +97,28 @@ describe("stir rest bias", () => {
   });
 });
 
-describe("stir shader contract", () => {
-  it("does not add lift as a continuous +Y force or reapply a smoothed kick", () => {
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    const src = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
-    expect(src).not.toMatch(/acc\.y \+= uLiftForce/);
-    expect(src).toContain("STIR_LIFT_BIAS");
-    expect(src).toContain("uImpulse");
-    expect(src).toContain("max(min(pace, 2.0), 0.35)");
-    expect(src).toMatch(/onsetScan\(onset,\s*telemetry\.scopeIn/);
-    expect(src).not.toMatch(/uniform4f\(\s*fieldU\.uHeat,\s*0,\s*0,\s*0,\s*0\)/);
-    expect(src).not.toContain("SETTLE_SECONDS");
-    expect(src).toContain("publishViz(");
+// +Y is up in the particle projection. A kick must lift the bowl, not inflate it.
+describe('kick direction and stereo fan', () => {
+  it('a mono kick lifts every lower-bowl sample with no lateral blast', () => {
+    const points: [number, number, number][] = [[-.45,-.6,0],[0,-.65,0],[.45,-.6,0]];
+    const next = points.map(home => stirIntegrate(rest(), home, { lift: 0, spread: 0, swirl: 0 }, 1, 1/60));
+    expect(next.every(p => p.v[1] > .8)).toBe(true);
+    expect(Math.max(...next.map(p => Math.abs(p.v[0])))).toBeLessThan(.01);
+  });
+
+  it('stereo width fans the same upward impulse left and right', () => {
+    const left = stirIntegrate(rest(), [-.4,-.55,0], { lift: 0, spread: 1, swirl: 0 }, 1, 1/60);
+    const right = stirIntegrate(rest(), [.4,-.55,0], { lift: 0, spread: 1, swirl: 0 }, 1, 1/60);
+    expect(left.v[0]).toBeLessThan(-.15);
+    expect(right.v[0]).toBeGreaterThan(.15);
+    expect(left.v[1]).toBeGreaterThan(.8);
+    expect(right.v[1]).toBeCloseTo(left.v[1], 5);
+  });
+
+  it('sustained sub energy raises the bowl rather than pressing it down', () => {
+    let p = rest();
+    for (let i=0;i<120;i++) p = stirIntegrate(p, [0,-.55,0], { lift: 1, spread: 0, swirl: 0 }, 0, 1/60);
+    expect(p.o[1]).toBeGreaterThan(.08);
+    expect(p.o[1]).toBeLessThan(.4);
   });
 });

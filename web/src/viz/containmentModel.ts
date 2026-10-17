@@ -269,7 +269,6 @@ export function containmentPose(
   }
   const scale = motion === "reduced" ? 0.35 : 1;
   const p = prev ?? CONTAINMENT_STATIC;
-  const pulseTarget = clamp01(drive.lift * 0.55 + drive.kick) * PULSE_MAX * scale;
   const surgeTarget = clamp01(drive.kick * 0.85 + drive.lift * 0.25) * scale;
   const rot: [number, number, number] = [
     RING_REST[0]! + t * RING_OMEGA[0]! * scale,
@@ -286,7 +285,7 @@ export function containmentPose(
   }
   return {
     ringRot: rot,
-    pulse: ease(p.pulse, pulseTarget, dt, 0.04, 0.12),
+    pulse: 0,
     clampSurge: ease(p.clampSurge, surgeTarget, dt, 0.03, 0.11),
     orbitPhase: CONTAINMENT_STATIC.orbitPhase + t * 0.11 * (0.55 + drive.swirl) * scale,
     discharge,

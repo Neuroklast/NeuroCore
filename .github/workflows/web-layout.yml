@@ -30,3 +30,10 @@ jobs:
       - name: Layout contracts
         working-directory: web
         run: npm run test:layout
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-layout-evidence
+          path: web/test-results/
+          retention-days: 14
