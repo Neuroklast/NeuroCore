@@ -12,6 +12,8 @@ interface TelemetryState {
   scopeOut: Float32Array;
   gonioL: Float32Array;
   gonioR: Float32Array;
+  onsetCount: number;
+  onsetAmp: number;
   applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
 }
@@ -27,6 +29,8 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   scopeOut: new Float32Array(SCOPE_N),
   gonioL: new Float32Array(GONIO_N),
   gonioR: new Float32Array(GONIO_N),
+  onsetCount: 0,
+  onsetAmp: 0,
   applyViews: (v, available = true) => {
     const s = get();
     s.scopeIn.set(v.scopeIn.subarray(0, s.scopeIn.length));
@@ -40,6 +44,8 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
       outPeak: v.outPeak,
       inRms: v.inRms,
       outRms: v.outRms,
+      onsetCount: v.onsetCount,
+      onsetAmp: v.onsetAmp,
     });
   },
   waveFor: (nodeId) => {

@@ -2,10 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { subscribeVizClock } from "../theme/vizClock";
-import { stereoMetrics } from "./faceModel";
+import { formatHudFixed, stereoMetrics } from "./faceModel";
 import {
   coreCallouts,
-  coreDrivePose,
   coreWave,
   fieldStacks,
   formatViz,
@@ -20,15 +19,15 @@ import {
   type CalloutGeom,
   type CoreViz,
 } from "./coreDiagModel";
-import { BALL_STATIC, type BallDrive } from "../viz/ballModel";
+import { BALL_STATIC } from "../viz/ballModel";
 import {
   CONTAINMENT_STATIC,
   containmentLayout,
   orbitShards,
-  readCagePose,
   type ContainmentLayout,
   type OrbitShard,
 } from "../viz/containmentModel";
+import { cachedBands, readViz } from "../viz/vizSnap";
 
 type Frame = {
   viz: CoreViz;
@@ -59,11 +58,14 @@ const PANE0 = { w: 1256, h: 500 };
 export function CoreDiagnostics({ live }: { live: boolean }) {
   const motion = useHostStore((s) => s.motion);
   const sr = useHostStore((s) => s.sr);
-  const driveRef = useRef<BallDrive | null>(null);
-  const lastRef = useRef(0);
+  const numAt = useRef(0);
   const paneRef = useRef(PANE0);
   const probeRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<Frame>(IDLE);
+  const specFillRef = useRef<SVGPathElement>(null);
+  const specTraceRef = useRef<SVGPathElement>(null);
+  const waveInRef = useRef<SVGPathElement>(null);
+  const waveOutRef = useRef<SVGPathElement>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -83,45 +85,36 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
 
   useEffect(() => {
     const paint = (now: number) => {
-      if (now - lastRef.current < 66 && lastRef.current > 0) {
-        return;
-      }
-      const dt = lastRef.current > 0 ? Math.min(0.08, (now - lastRef.current) / 1000) : 1 / 15;
-      lastRef.current = now;
       const tel = useTelemetryStore.getState();
       const rate = sr > 0 ? sr : 48000;
-      const cagePose = readCagePose();
-      const packed = coreDrivePose(
-        tel.scopeOut,
-        tel.outRms,
-        tel.gonioL,
-        tel.gonioR,
-        dt,
-        0,
-        motion,
-        driveRef.current,
-        cagePose,
-        live,
-        rate,
-      );
-      driveRef.current = packed.drive;
+      const snap = readViz();
       const pane = paneRef.current;
       const cage = containmentLayout(pane.w, pane.h);
+      const packed = cachedBands(tel.tick, tel.scopeOut, rate, live);
+      const wave = coreWave(tel.scopeOut, live, 48);
+      const waveIn = coreWave(tel.scopeIn, live, 48);
+      specFillRef.current?.setAttribute("d", specLogArea(packed.spec, rate, 200, 66));
+      specTraceRef.current?.setAttribute("d", specLogPath(packed.spec, rate, 200, 66));
+      waveInRef.current?.setAttribute("d", polyline(waveIn, 200, 78, true));
+      waveOutRef.current?.setAttribute("d", polyline(wave, 200, 78, true));
+      if (now - numAt.current < 80 && numAt.current > 0) {
+        return;
+      }
+      numAt.current = now;
       frameRef.current = {
-        viz: coreViz(packed.drive, cagePose),
+        viz: coreViz(snap.drive, snap.pose),
         spec: packed.spec,
-        wave: packed.wave,
-        waveIn: coreWave(tel.scopeIn, live, 48),
+        wave,
+        waveIn,
         corr: live ? stereoMetrics(tel.gonioL, tel.gonioR).corr : 0,
         gonio: gonioDots(tel.gonioL, tel.gonioR, live, 48),
-        shards: orbitShards(cage, cagePose.orbitPhase),
+        shards: orbitShards(cage, snap.pose.orbitPhase),
         cage,
         sr: rate,
       };
       setTick((n) => n + 1);
     };
     if (motion === "off") {
-      driveRef.current = BALL_STATIC;
       const cage = containmentLayout(paneRef.current.w, paneRef.current.h);
       frameRef.current = {
         ...IDLE,
@@ -156,8 +149,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         <Mod title="SPECTRUM">
           <svg className="nk-face-mod-svg nk-face-mod-svg-lg" viewBox="0 0 200 78" aria-hidden>
             <path d="M0 18 H200 M0 36 H200 M0 54 H200" className="nk-face-mod-grid" />
-            <path d={specLogArea(f.spec, f.sr, 200, 66)} className="nk-face-mod-fill" />
-            <path d={specLogPath(f.spec, f.sr, 200, 66)} className="nk-face-mod-trace" />
+            <path ref={specFillRef} d={specLogArea(f.spec, f.sr, 200, 66)} className="nk-face-mod-fill" />
+            <path ref={specTraceRef} d={specLogPath(f.spec, f.sr, 200, 66)} className="nk-face-mod-trace" />
             {ticks.map((hz) => {
               const x = specLogX(hz, f.sr) * 200;
               return (
@@ -199,8 +192,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
           <svg className="nk-face-mod-svg nk-face-mod-svg-lg" viewBox="0 0 200 78" aria-hidden>
             <path d="M0 20 H200 M0 58 H200 M50 6 V72 M100 6 V72 M150 6 V72" className="nk-face-mod-grid" />
             <path d="M0 39 H200" className="nk-face-mod-zero" />
-            <path d={polyline(f.waveIn, 200, 78, true)} className="nk-face-mod-trace-dim" />
-            <path d={polyline(f.wave, 200, 78, true)} className="nk-face-mod-trace" />
+            <path ref={waveInRef} d={polyline(f.waveIn, 200, 78, true)} className="nk-face-mod-trace-dim" />
+            <path ref={waveOutRef} d={polyline(f.wave, 200, 78, true)} className="nk-face-mod-trace" />
           </svg>
         </Mod>
         <Mod title="STEREO FIELD">
@@ -214,7 +207,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
               <text x="36" y="10" className="nk-face-mod-axis" textAnchor="middle">MID</text>
               <text x="70" y="38" className="nk-face-mod-axis" textAnchor="end">SIDE</text>
             </svg>
-            <Row k="CORR" v={live ? f.corr.toFixed(2) : "—"} />
+            <Row k="CORR" v={live ? formatHudFixed(f.corr, 2, 1) : "—"} />
           </div>
         </Mod>
       </aside>

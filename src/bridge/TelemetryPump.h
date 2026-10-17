@@ -17,6 +17,7 @@ public:
     static constexpr std::size_t kMaxBytes = 4096;
 
     void reset() noexcept;
+    void setSampleRate (double sr) noexcept { hostSr = sr > 1.0 ? sr : 48000.0; }
     /** Audio thread: skip noteInput/publish when no editor is reading NKTM. */
     void setWanted (bool on) noexcept { wanted.store (on, std::memory_order_relaxed); }
     bool isWanted() const noexcept { return wanted.load (std::memory_order_relaxed); }
@@ -44,6 +45,14 @@ private:
     float gonioY[kGonioN] {};
     float lastInPeak { 0.f };
     float lastInRms { 0.f };
+    double hostSr { 48000.0 };
+    float envFast { 0.f };
+    float envSlow { 0.f };
+    int onsetHold { 0 };
+    std::uint8_t onsetCount { 0 };
+    float onsetAmp { 0.f };
+
+    void scanOnset (const juce::AudioBuffer<float>& src) noexcept;
 };
 
 } // namespace bridge

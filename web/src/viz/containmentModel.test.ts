@@ -28,6 +28,7 @@ const loud: BallDrive = {
   spread: 0.8,
   lift: 1,
   kick: 1,
+  impulse: 0,
   glow: 0.5,
   twinkle: 0.9,
   swirl: 0.8,

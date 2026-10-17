@@ -25,6 +25,20 @@ function sum(xs: number[]): number {
   return xs.reduce((a, b) => a + b, 0);
 }
 
+describe("hud number slots", () => {
+  it("keeps a fixed width across sign and 9.99 / 10.00", () => {
+    const a = formatHudFixed(0, 1, 3);
+    const b = formatHudFixed(-60, 1, 3);
+    const c = formatHudFixed(9.99, 2, 2);
+    const d = formatHudFixed(10, 2, 2);
+    const e = formatHudFixed(-0.01, 2, 1);
+    expect(a.length).toBe(b.length);
+    expect(c.length).toBe(d.length);
+    expect(e.length).toBe(formatHudFixed(0.01, 2, 1).length);
+    expect(a).toContain("0.0");
+  });
+});
+
 describe("unit face spectrum and bands", () => {
   it("anchors the band display to the unit floor, not a mid band", () => {
     const frame = faceFftFrame();

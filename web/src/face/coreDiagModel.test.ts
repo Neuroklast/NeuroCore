@@ -164,6 +164,16 @@ describe("hud drawing helpers", () => {
     expect(pts.every((p) => p.x >= -1 && p.x <= 1 && p.y >= -1 && p.y <= 1)).toBe(true);
   });
 
+  it("HUD reads the shared viz snap and does not run a second drive", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "CoreDiagnostics.tsx"), "utf8");
+    const face = readFileSync(path.join(here, "FaceView.tsx"), "utf8");
+    expect(src).toContain("readViz");
+    expect(src).not.toContain("coreDrivePose");
+    expect(face).not.toMatch(/useTelemetryStore\(\)/);
+    expect(face).toContain("useTelemetryStore((s) => s.inPeak)");
+  });
+
   it("diagnostic type is at least 10px and field segments stay drawn when idle", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const css = readFileSync(path.join(here, "../theme/tailwind.css"), "utf8");
@@ -174,5 +184,7 @@ describe("hud drawing helpers", () => {
     expect(Number(row?.[1])).toBeGreaterThanOrEqual(10);
     expect(Number(axis?.[1])).toBeGreaterThanOrEqual(9);
     expect(css).toMatch(/\.nk-face-seg i\s*\{[^}]*background:\s*rgba/);
+    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*grid-template-columns/);
+    expect(css).toMatch(/\.nk-face-mod-row\s*\{[^}]*grid-template-columns/);
   });
 });

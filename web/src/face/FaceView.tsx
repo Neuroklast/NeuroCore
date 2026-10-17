@@ -27,19 +27,24 @@ export function FaceView() {
   const sr = useHostStore((s) => s.sr);
   const latency = useHostStore((s) => s.lat);
   const osFactor = useHostStore((s) => s.osFactor);
-  const telemetry = useTelemetryStore();
+  const inPeak = useTelemetryStore((s) => s.inPeak);
+  const outPeak = useTelemetryStore((s) => s.outPeak);
+  const outRms = useTelemetryStore((s) => s.outRms);
+  const gonioL = useTelemetryStore((s) => s.gonioL);
+  const gonioR = useTelemetryStore((s) => s.gonioR);
+  const available = useTelemetryStore((s) => s.available);
   const preview = !hasJuceBridge();
-  const live = preview || telemetry.available;
+  const live = preview || available;
   const mark = unitMarkSrc(theme);
   const reduced = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
   const bloom = motionAllows("bloom", motion, reduced);
-  const amp = Math.max(telemetry.outRms, telemetry.outPeak * 0.6);
+  const amp = Math.max(outRms, outPeak * 0.6);
   const glow = amp > 0 ? Math.min(1, Math.log10(1 + amp * 9)) : 0;
 
-  const stereo = stereoMetrics(telemetry.gonioL, telemetry.gonioR);
-  const rms = rmsReadout(telemetry.outRms);
+  const stereo = stereoMetrics(gonioL, gonioR);
+  const rms = rmsReadout(outRms);
   const level = (value: number) => live ? formatHudFixed(Number(formatDbfs(value)), 1, 3) : "—";
 
   const legacyCenter = (
@@ -62,8 +67,8 @@ export function FaceView() {
         {preview ? <FaceRow k="PREVIEW" v="Synthetic audio" /> : !live ? <FaceRow k="METERS" v="Waiting for audio data" /> : null}
       </aside>
       <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
-        <FaceRow k="INPUT PEAK" num={level(telemetry.inPeak)} unit="dBFS" />
-        <FaceRow k="OUTPUT PEAK" num={level(telemetry.outPeak)} unit="dBFS" />
+        <FaceRow k="INPUT PEAK" num={level(inPeak)} unit="dBFS" />
+        <FaceRow k="OUTPUT PEAK" num={level(outPeak)} unit="dBFS" />
         <FaceRow k="OUTPUT RMS" num={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} unit={rms.unit} />
         <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
       </aside>
