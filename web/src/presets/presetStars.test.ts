@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cyclePresetStar, starGlyphs, writePresetStar } from "./presetStars";
+import { cyclePresetStar, isPresetFavorite, starGlyphs, togglePresetStar, writePresetStar } from "./presetStars";
 
 describe("preset stars", () => {
   it("clamps 1..5", () => {
@@ -9,6 +9,18 @@ describe("preset stars", () => {
     expect(writePresetStar("Phaser Lab", 9, a)["Phaser Lab"]).toBe(5);
     expect(starGlyphs(0)).toBe("☆☆☆☆☆");
     expect(starGlyphs(3)).toBe("★★★☆☆");
+  });
+
+  it("toggles a favorite from any stored rating", () => {
+    let row: Record<string, number> = {};
+    expect(isPresetFavorite("Airy", row)).toBe(false);
+    row = togglePresetStar("Airy", row);
+    expect(row.Airy).toBe(1);
+    expect(isPresetFavorite("Airy", row)).toBe(true);
+    row = writePresetStar("Airy", 5, row);
+    expect(isPresetFavorite("Airy", row)).toBe(true);
+    row = togglePresetStar("Airy", row);
+    expect(row.Airy).toBeUndefined();
   });
 
   it("cycles a single list cell through empty and five stars", () => {

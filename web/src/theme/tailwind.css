@@ -2198,28 +2198,52 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 }
 
 .nk-archive-label { color: var(--nk-accent); font: 10px/1.5 "JetBrains Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+.nk-preset-browser { display: flex; height: 100%; min-height: 0; width: 100%; flex-direction: column; gap: 12px; font-size: 13px; }
+.nk-preset-chrome { display: flex; height: 40px; flex-shrink: 0; align-items: center; gap: 8px; }
+.nk-preset-body { display: flex; min-height: 0; flex: 1; gap: 12px; }
+.nk-preset-folders { display: flex; width: 208px; flex-shrink: 0; flex-direction: column; min-height: 0; }
+.nk-preset-folder-list { min-height: 0; flex: 1; overflow: auto; border: 1px solid var(--nk-panel); }
 .nk-preset-browser aside { border-top: 2px solid var(--nk-accent); padding-top: 8px; }
 .nk-preset-browser [data-folder] { min-height: 32px; border-left: 2px solid transparent; transition: background-color 120ms, border-color 120ms; }
 .nk-preset-browser [data-folder]:hover { background: rgba(var(--nk-accent-rgb), .07); }
 .nk-preset-browser [data-folder][aria-pressed="true"] { border-left-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .12); color: var(--nk-ink); }
-.nk-archive-heading { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px; background: var(--nk-bg); border-bottom: 1px solid var(--nk-line); font: 10px "JetBrains Mono", monospace; color: var(--nk-ink-muted); }
-.nk-archive-heading select { min-height: 26px; margin-left: 6px; border: 1px solid var(--nk-line); background: var(--nk-well); color: var(--nk-ink); }
-.nk-preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
-.nk-preset-card { position: relative; min-width: 0; border: 1px solid rgba(var(--nk-accent-rgb), .28); background: var(--nk-well); transition: border-color 140ms, background-color 140ms; }
-.nk-preset-card::before, .nk-preset-card::after { content: ""; position: absolute; width: 10px; height: 10px; border-color: var(--nk-accent); pointer-events: none; opacity: .7; }
-.nk-preset-card::before { left: -1px; top: -1px; border-left: 2px solid; border-top: 2px solid; color: var(--nk-accent); }
-.nk-preset-card::after { right: -1px; bottom: -1px; border-right: 2px solid; border-bottom: 2px solid; color: var(--nk-accent); }
-.nk-preset-card:hover, .nk-preset-card[data-selected="true"] { border-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .07); }
-.nk-preset-card[data-selected="true"] { box-shadow: inset 3px 0 var(--nk-accent); }
-.nk-preset-select { display: flex; flex-direction: column; width: 100%; min-height: 108px; gap: 6px; padding: 12px 14px; text-align: left; }
-.nk-preset-select strong { color: var(--nk-ink); font: 15px "Apex", sans-serif; letter-spacing: .06em; }
-.nk-preset-summary { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--nk-ink-muted); font: 11px/1.5 "JetBrains Mono", monospace; }
-.nk-preset-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 12px; border-top: 1px solid var(--nk-line); font: 10px "JetBrains Mono", monospace; color: var(--nk-ink-muted); }
-.nk-preset-card-foot > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nk-preset-rate { min-height: 28px; color: var(--nk-cyan); letter-spacing: .08em; }
-.nk-preset-detail { border-left: 2px solid var(--nk-accent); background: linear-gradient(90deg, rgba(var(--nk-accent-rgb), .06), transparent); }
+.nk-preset-results { display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; border: 1px solid var(--nk-panel); }
+.nk-archive-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 32px; flex-shrink: 0; padding: 0 12px; background: var(--nk-bg); border-bottom: 1px solid var(--nk-line); font: 10px "JetBrains Mono", monospace; color: var(--nk-ink-muted); }
+.nk-preset-list { min-height: 0; flex: 1; overflow: auto; }
+.nk-preset-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--nk-line);
+  background: transparent;
+  color: var(--nk-ink);
+  text-align: left;
+  overflow: hidden;
+}
+.nk-preset-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nk-preset-row:hover { background: rgba(var(--nk-accent-rgb), .07); }
+.nk-preset-row[data-selected="true"] { border-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .07); }
+.nk-preset-loaded { flex-shrink: 0; color: var(--nk-accent); font: 10px "JetBrains Mono", monospace; letter-spacing: .12em; }
+.nk-preset-detail { display: flex; width: 280px; flex-shrink: 0; flex-direction: column; min-height: 0; border: 1px solid var(--nk-panel); border-left: 2px solid var(--nk-accent); background: linear-gradient(90deg, rgba(var(--nk-accent-rgb), .06), transparent); }
+.nk-preset-detail-body { min-height: 0; flex: 1; overflow: auto; padding: 12px; }
+.nk-preset-detail-name { margin: 6px 0 4px; color: var(--nk-ink); font: 18px "Apex", sans-serif; letter-spacing: .06em; }
+.nk-preset-detail-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--nk-ink-muted); font-size: 12px; }
+.nk-preset-fav { min-width: 26px; min-height: 26px; color: var(--nk-cyan); }
+.nk-preset-detail-blurb { margin: 10px 0 0; color: var(--nk-ink-soft); font: 13px/1.5 "JetBrains Mono", monospace; }
+.nk-preset-tags { margin-top: 14px; }
+.nk-preset-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.nk-preset-tag { padding: 2px 8px; border: 1px solid var(--nk-line); color: var(--nk-ink-muted); font: 11px "JetBrains Mono", monospace; }
+.nk-preset-load { margin: 12px; min-height: 32px; flex-shrink: 0; }
+.nk-preset-foot { display: flex; height: 32px; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
 .nk-preset-browser :is(button, input, select):focus-visible { outline: 1px solid var(--nk-cyan); outline-offset: -2px; }
-@media (max-width: 900px) { .nk-preset-grid { grid-template-columns: minmax(0, 1fr); } }
 
 
 

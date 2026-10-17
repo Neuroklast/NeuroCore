@@ -75,13 +75,13 @@ Unit meters
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
 - The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
 - The centre of Unit shows a glass ball in the theme accent colour, inside a metal containment cage. Stereo width pushes the dust outward. Bass and transients whirl it up. Loudness only glows the rim. The pointer does nothing. Motion Off freezes it as a still frame; Reduced calms it. While the ball is shown the floor plot, the goniometer, the peak/RMS bars and the plot right-click menu are replaced. Without WebGL2 the wordmark and the full analyzer panel come back exactly as before.
-- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters as the ball. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. Spectrum is logarithmic 20 Hz to Nyquist with a −60 dBFS height. Each meter row is label, number, unit on one line.
+- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters as the ball. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. Spectrum is logarithmic 20 Hz to Nyquist with a −60 dBFS height. Each meter row is label, number, unit on one line. The Unit HUD is a three-column grid; telemetry sits above the diagnostic stacks. The preset name in the header has a fixed width — long names ellipsize, the arrows do not move.
 
 ---
 
 ## Presets
 
-Click the preset name. The library opens on the category of the sound that is loaded, with that preset card selected in the archive. Categories stay on the left. Click a card to select it, then choose Load, or double-click to load directly. Enter loads a focused card. Search includes names, tags and descriptions; Sort offers name or category. Each card shows its description and author, and its rating button changes the stored star rating.
+Click the preset name. Categories stay on the left, names in the middle, details on the right. The last search, category and scroll come back when you reopen; the first open highlights the sound that is loaded. Click a name to read it, then Load Preset, or double-click / Enter to load. Search includes names, tags and descriptions. A star on the detail pane marks a favourite. The title X closes the library.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
 - **Your** sounds live in your user preset folder as `.nrk` files.

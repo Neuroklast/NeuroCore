@@ -431,8 +431,8 @@ export function Overlays() {
       <div
         className={`nk-overlay flex w-full flex-col ${
           overlayIsWide(name)
-            ? "h-[720px] max-h-[calc(100%-40px)] max-w-[1240px]"
-            : "max-h-[calc(100%-40px)] max-w-[760px]"
+            ? "nk-overlay--stage max-w-[1240px]"
+            : "max-w-[760px]"
         }`}
         data-phase={shell.phase}
         onClick={(e) => e.stopPropagation()}
