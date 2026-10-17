@@ -2,6 +2,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
 import { liveTheme } from "../theme/theme";
 import { subscribeVizClock } from "../theme/vizClock";
+import { perfBegin, perfEnd } from "../perf/marks";
 import { portGlobal, type BoardCamera, type BoardEdge, type BoardGraph } from "./boardModel";
 import { chipDragGroupRef, chipDragRef, nodeWithDrag } from "./boardDrag";
 import { bezierPreview, connectDragRef } from "./boardConnect";
@@ -201,6 +202,7 @@ export function CableCanvas({
     const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
     let core = fallbackColor("accent");
     const draw = (now = 0) => {
+      perfBegin("cables");
       const t = now > 0 ? now : (typeof performance !== "undefined" ? performance.now() : 0);
       const dt = lastNow > 0 ? Math.max(0, (t - lastNow) / 1000) : 0;
       lastNow = t;
@@ -319,6 +321,7 @@ export function CableCanvas({
         ctx.restore();
       }
       ctx.restore();
+      perfEnd("cables");
     };
     drawNow = draw;
     const off = subscribeVizClock(draw);

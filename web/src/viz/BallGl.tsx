@@ -10,6 +10,7 @@ import {
   STIR_VMAX,
 } from "./stirModel";
 import { cachedBands, publishViz } from "./vizSnap";
+import { perfBegin, perfEnd } from "../perf/marks";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { themeOf } from "../theme/theme";
@@ -799,6 +800,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       }
       lastW = width;
       lastH = height;
+      perfBegin("ball");
       const dt = last > 0 ? Math.min(0.05, Math.max(1 / 240, (now - last) / 1000)) : 1 / 60;
       last = now;
       // A still frame is the ball fully formed, just frozen.
@@ -1062,6 +1064,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         const err = gl.getError();
         if (err !== gl.NO_ERROR) {
           setFailed(true);
+          perfEnd("ball");
           return;
         }
       }
@@ -1099,9 +1102,11 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         if (err !== gl.NO_ERROR) {
           // Silent GL wiring faults would show a dead canvas; fall back instead.
           setFailed(true);
+          perfEnd("ball");
           return;
         }
       }
+      perfEnd("ball");
     };
 
     const onLost = () => setFailed(true);

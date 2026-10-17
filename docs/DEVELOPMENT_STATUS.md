@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (header layout contracts)  
+**Stand:** 2026-10-17 (UI perf marks)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/ui-layout-contracts`
+**Branch:** `perf/ui-baseline`
+
+## UI perf marks (2026-10-17)
+
+Opt-in `nk:ball` / `nk:cables` / `nk:bands` measures (`?nkperf=1` or `localStorage.nkperf`). Off by default. How to capture: `docs/performance/README.md`. Native WebView2 not measured.
 
 ## Header layout contracts (2026-10-17)
 

@@ -5,6 +5,7 @@ import {
   resetAnalyze,
   type AnalyzeState,
 } from "./audioAnalyze";
+import { perfBegin, perfEnd } from "../perf/marks";
 import { BALL_STATIC, type BallDrive } from "./ballModel";
 import { CONTAINMENT_STATIC, type ContainmentPose } from "./containmentModel";
 
@@ -57,7 +58,9 @@ export function cachedBands(
     bandCache = { tick, live, ...idleAnalyze() };
     return bandCache;
   }
+  perfBegin("bands");
   const out = feedAnalyze(analyzer, samples, sr, 1 / 45);
   bandCache = { tick, live, bands: out.bands, spec: out.spec };
+  perfEnd("bands");
   return bandCache;
 }
