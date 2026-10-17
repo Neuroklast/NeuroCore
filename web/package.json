@@ -1,14 +1,15 @@
 {
   "name": "neurokore-web",
   "private": true,
-  "version": "0.6.6",
+  "version": "0.6.8",
   "type": "module",
   "scripts": {
     "embed-presets": "node ../scripts/embed_factory_catalog.mjs",
     "dev": "npm run embed-presets && vite",
     "build": "npm run embed-presets && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "npm run embed-presets && vitest run"
+    "test": "npm run embed-presets && vitest run",
+    "test:layout": "playwright test"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
@@ -19,6 +20,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

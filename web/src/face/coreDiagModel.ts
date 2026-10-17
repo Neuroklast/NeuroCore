@@ -50,9 +50,6 @@ export function coreWave(samples: ArrayLike<number>, live: boolean, points = 48)
 export const FIELD_SEGS = 12;
 
 export const HUD = {
-  inset: 12,
-  diagTop: 118,
-  diagW: 228,
   calloutW: 108,
   calloutH: 48,
 } as const;
@@ -62,13 +59,21 @@ export type CalloutGeom = {
   tip: { x: number; y: number };
 };
 
-export function hudBoxes(paneW: number, paneH: number): TeleBox[] {
+/** Fallback only when the HUD has not been measured yet. CSS owns the real grid. */
+export function hudBoxes(paneW: number, paneH: number, measured?: TeleBox[]): TeleBox[] {
+  if (measured && measured.length >= 2) {
+    return measured;
+  }
   const w = Math.max(0, paneW);
   const h = Math.max(0, paneH);
-  const boxH = Math.max(0, h - HUD.diagTop - 8);
+  const inset = 12;
+  const col = 320;
+  const tele = 72;
+  const gap = 10;
+  const y = inset + tele + gap;
   return [
-    { x: HUD.inset, y: HUD.diagTop, w: Math.min(HUD.diagW, w), h: boxH },
-    { x: Math.max(0, w - HUD.inset - HUD.diagW), y: HUD.diagTop, w: HUD.diagW, h: boxH },
+    { x: inset, y, w: Math.min(col, w), h: Math.max(0, h - y - inset) },
+    { x: Math.max(0, w - inset - col), y, w: col, h: Math.max(0, h - y - inset) },
   ];
 }
 
@@ -79,16 +84,40 @@ export function fieldStacks(viz: CoreViz): Array<{ id: "FIELD" | "ACT"; v: numbe
   ];
 }
 
-export function coreCallouts(layout: ContainmentLayout): { core: CalloutGeom; ring: CalloutGeom } {
+function hits(a: TeleBox, b: TeleBox): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function park(pref: TeleBox, banned: TeleBox[], paneW: number, paneH: number): TeleBox {
+  const alts: TeleBox[] = [
+    pref,
+    { ...pref, y: Math.min(paneH - pref.h - 8, pref.y + pref.h + 12) },
+    { ...pref, y: Math.max(8, pref.y - pref.h - 12) },
+  ];
+  for (const box of alts) {
+    if (box.x < 0 || box.y < 0 || box.x + box.w > paneW || box.y + box.h > paneH) {
+      continue;
+    }
+    if (! banned.some((b) => hits(box, b))) {
+      return box;
+    }
+  }
+  return pref;
+}
+
+export function coreCallouts(
+  layout: ContainmentLayout,
+  measured?: TeleBox[],
+): { core: CalloutGeom; ring: CalloutGeom } {
   const { cx, cy, ballR, paneW, paneH } = layout;
   const w = HUD.calloutW;
   const h = HUD.calloutH;
   const gap = 12;
-  const cols = hudBoxes(paneW, paneH);
+  const cols = hudBoxes(paneW, paneH, measured);
   const leftCol = cols[0]!;
   const rightCol = cols[1]!;
   const tipCore = { x: cx - layout.clamp.pipX, y: cy };
-  const coreBox: TeleBox = {
+  const corePref: TeleBox = {
     x: Math.max(leftCol.x + leftCol.w + 8, Math.min(cx - ballR - gap - w, tipCore.x - gap - w)),
     y: Math.max(8, tipCore.y - ballR * 0.55 - h),
     w,
@@ -97,15 +126,15 @@ export function coreCallouts(layout: ContainmentLayout): { core: CalloutGeom; ri
   const ringR = layout.rings[1]?.r ?? layout.outerR;
   const ang = 0.62;
   const tipRing = { x: cx + ringR * Math.cos(ang), y: cy + ringR * Math.sin(ang) };
-  const ringBox: TeleBox = {
+  const ringPref: TeleBox = {
     x: Math.min(rightCol.x - 8 - w, Math.max(cx + ballR + gap, tipRing.x + gap)),
     y: Math.min(paneH - 8 - h, Math.max(cy + 12, tipRing.y + gap)),
     w,
     h,
   };
   return {
-    core: { box: coreBox, tip: tipCore },
-    ring: { box: ringBox, tip: tipRing },
+    core: { box: park(corePref, cols, paneW, paneH), tip: tipCore },
+    ring: { box: park(ringPref, cols, paneW, paneH), tip: tipRing },
   };
 }
 

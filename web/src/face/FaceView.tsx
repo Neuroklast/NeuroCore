@@ -58,34 +58,36 @@ export function FaceView() {
 
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
-      <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
-        <FaceRow k="SAMPLE RATE" num={sr > 0 ? (sr / 1000).toFixed(1) : "—"} unit="kHz" />
-        <FaceRow k="BUFFER" num={buf > 0 ? String(buf) : "—"} unit="samples" />
-        <FaceRow k="LATENCY" num={sr > 0 ? (latency / sr * 1000).toFixed(2) : "—"} unit="ms" />
-        <FaceRow k="OVERSAMPLING" num={osModeLabel(osFactor)} />
-        <FaceRow k="CPU" num={`${Math.round(cpu)}`} unit="%" />
-        {preview ? <FaceRow k="PREVIEW" num="Synthetic" /> : !live ? <FaceRow k="METERS" num="Waiting" /> : null}
-      </aside>
-      <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
-        <FaceRow k="INPUT PEAK" num={level(inPeak)} unit="dBFS" />
-        <FaceRow k="OUTPUT PEAK" num={level(outPeak)} unit="dBFS" />
-        <FaceRow k="OUTPUT RMS" num={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} unit={rms.unit} />
-        <FaceRow k="STEREO CORRELATION" num={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} />
-      </aside>
-      {UNIT_FACE_LEGACY ? null : <CoreDiagnostics live={live} />}
       {UNIT_FACE_LEGACY ? legacyCenter : <BallGl fallback={legacyCenter} />}
+      {UNIT_FACE_LEGACY ? null : (
+        <div className="nk-face-hud">
+          <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
+            <FaceMeter k="SAMPLE RATE" n={sr > 0 ? (sr / 1000).toFixed(1) : "—"} u="kHz" />
+            <FaceMeter k="BUFFER" n={buf > 0 ? String(buf) : "—"} u="samples" />
+            <FaceMeter k="LATENCY" n={sr > 0 ? (latency / sr * 1000).toFixed(2) : "—"} u="ms" />
+            <FaceMeter k="OVERSAMPLING" n={osModeLabel(osFactor)} u="" />
+            <FaceMeter k="CPU" n={`${Math.round(cpu)}`} u="%" />
+            {preview ? <FaceMeter k="PREVIEW" n="Synthetic" u="" /> : !live ? <FaceMeter k="METERS" n="Waiting" u="" /> : null}
+          </aside>
+          <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
+            <FaceMeter k="INPUT PEAK" n={level(inPeak)} u="dBFS" />
+            <FaceMeter k="OUTPUT PEAK" n={level(outPeak)} u="dBFS" />
+            <FaceMeter k="OUTPUT RMS" n={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} u={rms.unit} />
+            <FaceMeter k="STEREO CORRELATION" n={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} u="" />
+          </aside>
+          <CoreDiagnostics live={live} />
+        </div>
+      )}
     </section>
   );
 }
 
-function FaceRow({ k, v, num, unit }: { k: string; v?: string; num?: string; unit?: string }) {
+function FaceMeter({ k, n, u }: { k: string; n: string; u: string }) {
   return (
     <div className="nk-face-row">
-      <span>{k}</span>
-      {num != null ? (
-        <span className="nk-face-val"><span className="nk-face-num">{num}</span>
-          {unit ? <span className="nk-face-unit">{unit}</span> : null}</span>
-      ) : <span>{v}</span>}
+      <span className="nk-face-k">{k}</span>
+      <span className="nk-face-n">{n}</span>
+      <span className="nk-face-u">{u}</span>
     </div>
   );
 }

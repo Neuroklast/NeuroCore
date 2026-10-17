@@ -8,6 +8,10 @@
 
 Card grid replaced with categories | 44px name rows | detail. Selection is preset name, not list index. Open restores search/category/scroll; first open still selects the loaded row. Favourite is one star in the detail pane. Title X is the closer. Vitest layout/identity contracts.
 
+## Unit HUD grid (2026-10-17)
+
+Absolute telemetry/diag stacks overlapped. Unit HUD is `.nk-face-hud` (3 columns × 2 rows). Meter rows are label / number / unit with the same grid on both sides. Preset chrome is a fixed 32 / 240 / 32 cluster. Layout contracts in `docs/agents/ui-ux.md`. Playwright `web/e2e`.
+
 ## Unit audio viz (2026-10-17)
 
 Meters showed real dBFS while spectrum, field and particles stayed dead: 256-sample linear DFT painted as linear 0–1 (~172 Hz bins). Analyzer is a 2048 hop, log 20 Hz–Nyquist, −60 dBFS height, attack/release bands. Telemetry is label / number / unit, nowrap. Heat and arcs follow onsets. Metal AA tightened. No DSP sound change.

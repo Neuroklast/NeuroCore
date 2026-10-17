@@ -26,6 +26,7 @@ import {
   orbitShards,
   type ContainmentLayout,
   type OrbitShard,
+  type TeleBox,
 } from "../viz/containmentModel";
 import { cachedBands, readViz } from "../viz/vizSnap";
 
@@ -61,6 +62,9 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
   const numAt = useRef(0);
   const paneRef = useRef(PANE0);
   const probeRef = useRef<HTMLDivElement>(null);
+  const diagLRef = useRef<HTMLElement>(null);
+  const diagRRef = useRef<HTMLElement>(null);
+  const colsRef = useRef<TeleBox[]>([]);
   const frameRef = useRef<Frame>(IDLE);
   const specFillRef = useRef<SVGPathElement>(null);
   const specTraceRef = useRef<SVGPathElement>(null);
@@ -70,16 +74,27 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
 
   useEffect(() => {
     const host = probeRef.current?.parentElement;
-    if (! host) {
+    const left = diagLRef.current;
+    const right = diagRRef.current;
+    if (! host || ! left || ! right) {
       return undefined;
     }
-    const ro = new ResizeObserver((entries) => {
-      const r = entries[0]?.contentRect;
-      if (r && r.width > 8 && r.height > 8) {
-        paneRef.current = { w: r.width, h: r.height };
+    const measure = () => {
+      const face = host.getBoundingClientRect();
+      if (face.width > 8 && face.height > 8) {
+        paneRef.current = { w: face.width, h: face.height };
       }
-    });
+      const box = (el: HTMLElement): TeleBox => {
+        const r = el.getBoundingClientRect();
+        return { x: r.left - face.left, y: r.top - face.top, w: r.width, h: r.height };
+      };
+      colsRef.current = [box(left), box(right)];
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(host);
+    ro.observe(left);
+    ro.observe(right);
+    measure();
     return () => ro.disconnect();
   }, []);
 
@@ -131,12 +146,12 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
   const f = frameRef.current;
   const ticks = specTickHz(f.sr);
   const stacks = fieldStacks(f.viz);
-  const calls = coreCallouts(f.cage);
+  const calls = coreCallouts(f.cage, colsRef.current);
 
   return (
     <>
       <div ref={probeRef} className="nk-face-probe" aria-hidden />
-      <aside className="nk-face-diag nk-face-diag-l" aria-label="core visualization">
+      <aside ref={diagLRef} className="nk-face-diag nk-face-diag-l" aria-label="core visualization">
         <Mod title="CORE STATUS" sub="VIZ">
           <div className="nk-face-mod-gridrow">
             <Row k="ACTIVITY" v={formatViz(f.viz.activity)} />
@@ -171,7 +186,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
           </div>
         </Mod>
       </aside>
-      <aside className="nk-face-diag nk-face-diag-r" aria-label="field visualization">
+      <aside ref={diagRRef} className="nk-face-diag nk-face-diag-r" aria-label="field visualization">
         <Mod title="FIELD ACTIVITY" sub="VIZ">
           <div className="nk-face-bars">
             {stacks.map((s) => (

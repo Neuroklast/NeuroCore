@@ -55,9 +55,10 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 ## Chrome
 
 - Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS / license. No product banner slot. Hover does not rewrite the bar.
+- Header is the mark, the centred preset picker, Undo/Redo, and Settings/Help (`headerSlots`), never a product/LICENSED strip. The one 32 px row (`nk-ws-row`) is LIVE/STUDIO, Unit/Circuit/Terminal, Functions/Stages tools, compare, Bypass last. No second button row. Active views use the red hairline (`nk-ws-tab.on`); tools and actions do not.
 - CPU text is `Config::cpuDisplayPercent` (0–100). SAFE is a mode word, not a fake 173 %.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
-- Overlays size to their content (`height: auto`). Wide explorers keep the 720 px stage. If the last row is clipped, the overlay is too short — do not hide the controls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
+- Overlays size to their content (`height: auto`). Wide explorers fill the host (`height: 100%`, `min-height: 0`) and never paint outside the window. The list pane scrolls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
 - One overlay at a time. Double-click a node → inspect **all** editable keys.
 - Circuit click selects and left-drag moves a chip without opening Inspect. The chevron, double-click, or Inspect context action opens the animated overlay without changing the board width. Ctrl/Cmd+A selects all, Ctrl/Cmd+Shift+A arranges. Empty-pane left-drag selects; middle mouse or Space+left-drag pans; the wheel zooms. Right-click opens context actions and never initiates a knob or port drag. Drag a knob bind jack onto a highlighted chip parameter to connect it.
 - Clicking an audio cable inserts only when the script sketch confirms the exact source → new → destination audio path; unsupported branches keep the script unchanged and explain why. Empty-pane Add explicitly parks the new module.
@@ -69,7 +70,25 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 - LFO traces: still ink, **pulses** travel at Hz, brightness = amplitude. No diamond, no oscilloscope on the wire.
 - Drag-cable is a free line. PCB routing runs **after** drop only.
 
+## Layout Stability Contracts
+
+**A. Content must not move controls.** Dynamic text, numbers, preset names, status and units must not shift neighbouring buttons or hitboxes.
+
+**B. Fixed interaction geometry.** Navigation keeps position and size across state changes.
+
+**C. Explicit layout ownership.** Shared space uses one layout container. Do not absolutely park siblings that compete for the same band.
+
+**D. Bounded dynamic content.** Dynamic strings have a defined box and overflow (ellipsis or clip).
+
+**E. Stable numeric formatting.** Tabular nums, reserved sign/unit columns, no wrap inside a meter.
+
+**F. Single source of geometry.** Shared sizes live as CSS custom properties on the owner (`--nk-face-*`, `--nk-preset-*`). Do not restated them as magic numbers in TS except as a measure fallback.
+
+**G. No visual regressions.** A functional change must not move, hide or disable unrelated chrome.
+
+Unit HUD is `.nk-face-hud`: three columns, two rows. Telemetry is row 1; diagnostic stacks are row 2. The ball is a full-viewport layer behind the grid. Preset chrome is `.nk-preset-cluster`: arrow | name | arrow with a fixed name width.
+
 ## Settings / scale
 
 - Theme engine: `signal` (red/cyan/black/white, default), `gold` (yellow/cyan/black), `azure` (blue/cyan/black), `digicide` (steel/teal/black; Unit uses the Digicide mask). Paint is `--nk-*` / `themeOf(id)` — no private hex in UI code. Settings → THEME. Frame rate is 30 or 60. Shared UI prefs (theme, motion, LIVE, fps, cables, unsaved prompt, OS, Soft Clip, Unit meters) live in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`, not WebView2 localStorage. Reload that file when another process writes it. They hit every running processor, including inserts with no editor (parked WebView stays visible for host events). Mix, knobs, and the formula stay per insert. Host `setStateInformation` must re-apply OS/polisher from UiSettings after `replaceState` — the session chunk must not write them back to AppData.
-- Window fit is drag-resize. No Settings zoom or formula-pt control. `getDesktopScaleFactor() == 1`. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.
+- Window fit is drag-resize. No Settings zoom or formula-pt control. `getDesktopScaleFactor() == 1`; DPI comes from the host-scaled editor window plus the physical park rect (`bridge::computeParkGeometry`). The parked WebView HWND must cover the **editor**, not the peer HWND client: the standalone draws its title bar (and the close button) *inside* that client, so a park sized to the whole client hides the X and the window can no longer be closed. The WebView component must be `parkPhysical / parkScale`, so the frame and the web UI scale together at 100–200 %. Fit snaps **down** so `fit * 16` is an integer pixel and the canvas never exceeds the host window.
