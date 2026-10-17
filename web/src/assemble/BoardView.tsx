@@ -117,7 +117,12 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (hasJuceBridge()) {
       return;
     }
+    let lastDemo = 0;
     return subscribeVizClock((now) => {
+      if (now - lastDemo < 125) {
+        return;
+      }
+      lastDemo = now;
       const list = Object.values(useBoardStore.getState().nodes)
         .sort((a, b) => a.x - b.x || a.y - b.y)
         .map((n) => n.id);

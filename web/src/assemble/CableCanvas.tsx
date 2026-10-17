@@ -21,6 +21,7 @@ import {
   peakForLane,
   pointAlong,
   rmsForLane,
+  shouldSkipClockPaint,
   streamAlpha,
   streamBlur,
   streamAdvance,
@@ -195,17 +196,25 @@ export function CableCanvas({
       accent: fallbackColor("accent"),
       warn: fallbackColor("warn"),
     };
-    const geom = new Map<string, { stamp: string; lanes: Pt[][] }>();
+    const geom = new Map<string, { stamp: string; lanes: Pt[][]; lengths: number[] }>();
     const offsets = new Map<string, number>();
     let lastNow = 0;
+    let gesturePaintAt = 0;
     let paletteTheme = "";
     const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
     let core = fallbackColor("accent");
     const draw = (now = 0) => {
+      const fromClock = now > 0;
+      const t = fromClock ? now : (typeof performance !== "undefined" ? performance.now() : 0);
+      if (fromClock && shouldSkipClockPaint(t, gesturePaintAt)) {
+        return;
+      }
       perfBegin("cables");
-      const t = now > 0 ? now : (typeof performance !== "undefined" ? performance.now() : 0);
       const dt = lastNow > 0 ? Math.max(0, (t - lastNow) / 1000) : 0;
       lastNow = t;
+      if (! fromClock) {
+        gesturePaintAt = t;
+      }
       const { width: w, height: h } = sizeRef.current;
       const g = graphRef.current;
       const cam = cameraRef.current;
@@ -265,7 +274,8 @@ export function CableCanvas({
         const stamp = cableGeomStamp(e.id, e.route, from, to, e.kind, sp.jackId);
         let cached = geom.get(e.id);
         if (! cached || cached.stamp !== stamp) {
-          cached = { stamp, lanes: buildCableLanes(from, to, e.route, e.kind, sp.jackId) };
+          const lanes = buildCableLanes(from, to, e.route, e.kind, sp.jackId);
+          cached = { stamp, lanes, lengths: lanes.map((lane) => pathLength(lane)) };
           geom.set(e.id, cached);
         }
         if (cached.lanes.length === 0) {
@@ -284,11 +294,10 @@ export function CableCanvas({
           const integrated = streamAdvance(offsets.get(key) ?? 0, energy, pass.animate ? dt : 0, peak);
           offsets.set(key, integrated);
           const beads = peakDistances(
-            pathLength(painted),
+            cached.lengths[i] ?? 0,
             tapPeaks[e.sourceNodeId] ?? tapPeaks[sn.id] ?? [],
             pass.animate ? integrated : 0,
           );
-          ctx.save();
           strokePackets(
             ctx,
             painted,
@@ -301,7 +310,6 @@ export function CableCanvas({
             pass.animate,
             Boolean(dim),
           );
-          ctx.restore();
         });
       }
       const drag = connectDragRef.current;

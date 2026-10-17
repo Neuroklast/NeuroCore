@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { peakToDb } from "../bridge/telemetry";
 import {
   buildCableLanes,
   cableGeomStamp,
   cablePaintPass,
+  shouldSkipClockPaint,
   peakDistances,
   tapPeakFractions,
   edgeLanes,
@@ -166,6 +170,20 @@ describe("pcb background traces", () => {
   it("keeps traces and glow while the camera pans; beads freeze", () => {
     expect(cablePaintPass(false)).toEqual({ traces: true, glow: true, animate: true });
     expect(cablePaintPass(true)).toEqual({ traces: true, glow: true, animate: false });
+  });
+
+  it("skips a clock tick that lands in the same vsync as a gesture paint", () => {
+    expect(shouldSkipClockPaint(16.4, 16)).toBe(true);
+    expect(shouldSkipClockPaint(33, 16)).toBe(false);
+    expect(shouldSkipClockPaint(16, 0)).toBe(false);
+  });
+
+  it("caches lane length with geometry and coalesces gesture paints", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "CableCanvas.tsx"), "utf8");
+    expect(src).toContain("lengths: lanes.map");
+    expect(src).toContain("shouldSkipClockPaint");
+    expect(src).toContain("cached.lengths[i]");
   });
 
   it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
