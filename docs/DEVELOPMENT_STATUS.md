@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (Unit HUD grid + preset cluster)  
+**Stand:** 2026-10-17 (Preset Explorer list)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/unit-hud-layout`
+**Branch:** `fix/preset-explorer-list`
+
+## Preset Explorer list (2026-10-17)
+
+Card grid replaced with categories | 44px name rows | detail. Selection is preset name, not list index. Open restores search/category/scroll; first open still selects the loaded row. Favourite is one star in the detail pane. Title X is the closer. Vitest layout/identity contracts.
 
 ## Unit HUD grid (2026-10-17)
 

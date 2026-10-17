@@ -11,7 +11,7 @@ export function overlayIsWide(name: string): boolean {
   return overlayIsSplit(name) || name === "about";
 }
 
-/** Inspect/settings hug content. Wide explorers keep the 720 px stage. */
+/** Inspect/settings hug content. Wide explorers fill the host and scroll inside. */
 export function overlaySizesToContent(name: string): boolean {
   return ! overlayIsWide(name);
 }

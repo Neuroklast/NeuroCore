@@ -4,8 +4,7 @@ export type ExplorerSession = {
   q: string;
   scope: ExplorerScope;
   cat: string;
-  sel: number;
-  sortKey: "name" | "category";
+  selectedName: string;
   folderScroll: number;
   listScroll: number;
 };
@@ -14,8 +13,7 @@ export const explorerSession: ExplorerSession = {
   q: "",
   scope: "all",
   cat: "",
-  sel: 0,
-  sortKey: "name",
+  selectedName: "",
   folderScroll: 0,
   listScroll: 0,
 };

@@ -81,7 +81,7 @@ Unit meters
 
 ## Presets
 
-Click the preset name. The library opens on the category of the sound that is loaded, with that preset card selected in the archive. Categories stay on the left. Click a card to select it, then choose Load, or double-click to load directly. Enter loads a focused card. Search includes names, tags and descriptions; Sort offers name or category. Each card shows its description and author, and its rating button changes the stored star rating.
+Click the preset name. Categories stay on the left, names in the middle, details on the right. The last search, category and scroll come back when you reopen; the first open highlights the sound that is loaded. Click a name to read it, then Load Preset, or double-click / Enter to load. Search includes names, tags and descriptions. A star on the detail pane marks a favourite. The title X closes the library.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
 - **Your** sounds live in your user preset folder as `.nrk` files.

@@ -39,6 +39,20 @@ export function writePresetStar(name: string, stars: number, prev = readPresetSt
   return persistStars({ ...prev, [name]: n });
 }
 
+export function isPresetFavorite(name: string, stars: Record<string, number>): boolean {
+  return (stars[name] ?? 0) >= 1;
+}
+
+export function togglePresetStar(name: string, prev = readPresetStars()): Record<string, number> {
+  const next = { ...prev };
+  if ((next[name] ?? 0) >= 1) {
+    delete next[name];
+  } else {
+    next[name] = 1;
+  }
+  return persistStars(next);
+}
+
 /** One list cell. Click cycles empty → 1…5 → empty. */
 export function cyclePresetStar(name: string, prev = readPresetStars()): Record<string, number> {
   const cur = prev[name] ?? 0;

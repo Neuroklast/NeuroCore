@@ -28,13 +28,18 @@ describe("overlay chrome", () => {
     expect(overlayIsWide("validate")).toBe(false);
   });
 
-  it("sizes inspect to content and keeps explorers on the wide stage", () => {
+  it("sizes inspect to content and keeps explorers inside the host", () => {
     expect(overlaySizesToContent("inspect")).toBe(true);
     expect(overlaySizesToContent("settings")).toBe(true);
     expect(overlaySizesToContent("functions")).toBe(false);
     expect(css).toMatch(/\.nk-overlay-host[\s\S]*?align-items:\s*center/);
+    expect(css).toMatch(/\.nk-overlay-host[\s\S]*?overflow:\s*hidden/);
     expect(css).toMatch(/\.nk-overlay \{[\s\S]*?height:\s*auto/);
+    expect(css).toMatch(/\.nk-overlay--stage \{[\s\S]*?height:\s*100%/);
     expect(css).not.toMatch(/\.nk-overlay \{\s*max-height:\s*100%;\s*height:\s*100%;/);
+    const src = readFileSync(path.resolve(here, "Overlays.tsx"), "utf8");
+    expect(src).toContain("nk-overlay--stage");
+    expect(src).not.toContain("h-[720px]");
   });
 
   it("keeps CRT under the overlay so Functions stays sharp", () => {
