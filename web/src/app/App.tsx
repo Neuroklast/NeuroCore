@@ -45,6 +45,15 @@ export function App() {
     setVizFpsCap(frameRate);
   }, [frameRate]);
   useEffect(() => {
+    const w = window as Window & { __nkSetPreset?: (name: string, dirty?: boolean) => void };
+    w.__nkSetPreset = (name, dirty) => {
+      useHostStore.setState({ presetName: name, presetDirty: dirty === true });
+    };
+    return () => {
+      delete w.__nkSetPreset;
+    };
+  }, []);
+  useEffect(() => {
     const subscriptions: Array<() => void> = [];
     const listen = (id: string, fn: (payload: unknown) => void) => {
       subscriptions.push(onNativeEvent(id, fn));

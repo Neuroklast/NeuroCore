@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (Unit audio viz)  
+**Stand:** 2026-10-17 (Unit HUD grid + preset cluster)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/unit-audio-viz`
+**Branch:** `fix/unit-hud-layout`
+
+## Unit HUD grid (2026-10-17)
+
+Absolute telemetry/diag stacks overlapped. Unit HUD is `.nk-face-hud` (3 columns × 2 rows). Meter rows are label / number / unit with the same grid on both sides. Preset chrome is a fixed 32 / 240 / 32 cluster. Layout contracts in `docs/agents/ui-ux.md`. Playwright `web/e2e`.
 
 ## Unit audio viz (2026-10-17)
 
