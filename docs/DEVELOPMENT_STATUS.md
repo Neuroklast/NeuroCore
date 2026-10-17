@@ -4,6 +4,10 @@
 **Version:** 0.6.8-beta  
 **Branch:** `perf/ui-baseline`
 
+## Unit particle impulse correction (2026-10-18)
+
+Dry-input sub attacks and native transient events drive one-shot +Y particle impulses. Stereo side-energy controls the horizontal fan. Held sub energy raises a bounded spring rest position; it no longer presses particles down. Overlapping scope windows are not rescanned as consecutive audio. Mechanical ring radius and rotation speed do not follow kicks; projector brightness can respond. Fixed invalid GLSL vec3 construction which disabled the physics pass. Production shader compile and float-MRT velocity readback pass in Chromium; 43 focused physics/audio/model contracts pass. HUD resize validation is in progress. No native binary has been rebuilt.
+
 ## UI perf (2026-10-17)
 
 Same look. Less work: opt-in `nk:*` marks, reused FFT buffers, no per-frame `getError`, containment uniforms once per frame, cable paint coalesce, Footer/chip/knob/Face fan-out cut, vizClock pauses while hidden, peak CSS off when motion is off. Notes: `docs/performance/`. Native WebView2 not measured.

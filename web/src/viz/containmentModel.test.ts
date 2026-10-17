@@ -134,7 +134,7 @@ describe("containment pose", () => {
     expect(containmentPose(hit, loud, 1 / 60, 9, "off")).toEqual(CONTAINMENT_STATIC);
   });
 
-  it("rings rotate opposite ways; reduced is slower; pulse stays within 2% of radius", () => {
+  it("rings rotate opposite ways; reduced is slower; mechanical radius stays fixed", () => {
     expect(Math.sign(RING_OMEGA[0]!)).not.toBe(Math.sign(RING_OMEGA[1]!));
     const full = runPose("full", loud, 2);
     const reduced = runPose("reduced", loud, 2);
@@ -142,8 +142,8 @@ describe("containment pose", () => {
     expect(Math.abs(full.ringRot[0]! - CONTAINMENT_STATIC.ringRot[0]!))
       .toBeGreaterThan(Math.abs(reduced.ringRot[0]! - CONTAINMENT_STATIC.ringRot[0]!));
     expect(full.pulse).toBeLessThanOrEqual(PULSE_MAX + 1e-6);
-    expect(full.pulse).toBeGreaterThan(0.005);
-    expect(reduced.pulse).toBeLessThan(full.pulse);
+    expect(full.pulse).toBe(0);
+    expect(reduced.pulse).toBe(0);
   });
 
   it("silence has no discharges; a high-band drive can spark a clamp", () => {
@@ -153,14 +153,15 @@ describe("containment pose", () => {
     expect(hot.discharge.some((d) => d > 0)).toBe(true);
   });
 
-  it("pulse decays inside 80–160 ms after the kick drops", () => {
+  it("projector light decays after a kick without mechanical pulsation", () => {
     let p = containmentPose(null, loud, 1 / 60, 0, "full");
     for (let i = 1; i < 30; i += 1) {
       p = containmentPose(p, loud, 1 / 60, i / 60, "full");
     }
-    expect(p.pulse).toBeGreaterThan(0.008);
+    expect(p.clampSurge).toBeGreaterThan(0.5);
     const after = runFrom(p, BALL_STATIC, 0.16);
-    expect(after.pulse).toBeLessThan(p.pulse * 0.45);
+    expect(after.clampSurge).toBeLessThan(p.clampSurge * 0.45);
+    expect(after.pulse).toBe(0);
   });
 });
 
@@ -241,6 +242,14 @@ describe("ballDrive stays the source of truth", () => {
     const d = ballDrive(null, { low: 1, mid: 0, high: 0 }, 0.4, 0, 1 / 60, { motion: "full", transient: true });
     const pose = containmentPose(null, d, 1 / 60, 0.1, "full");
     expect(d.kick).toBeGreaterThan(0.3);
-    expect(pose.pulse).toBeGreaterThan(0);
+    expect(pose.pulse).toBe(0);
+    expect(pose.clampSurge).toBeGreaterThan(0);
   });
+});
+
+it('audio cannot inflate, translate or accelerate the mechanical rings', () => {
+  const quiet = containmentPose(null, BALL_STATIC, 1/60, 3, 'full');
+  const hit = containmentPose(null, loud, 1/60, 3, 'full');
+  expect(hit.pulse).toBe(0);
+  expect(hit.ringRot).toEqual(quiet.ringRot);
 });

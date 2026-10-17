@@ -186,7 +186,7 @@ void main() {
     if (zone < 0.01) {
       continue;
     }
-    float surge = 1.0 + uSurge * 0.14;
+    float surge = 1.0;
     vec3 n = normalize(vec3(ca, sa, 0.55));
     float z = 1.0 - zone;
     float top = smoothstep(uJaw.z * 0.15, -uJaw.z * 0.85, q.y);

@@ -5,6 +5,7 @@ export default defineConfig({
   testMatch: "*.spec.ts",
   timeout: 60000,
   use: {
+    launchOptions: process.env.NK_CHROMIUM ? { executablePath: process.env.NK_CHROMIUM, args: ["--no-sandbox", ...(process.env.NK_DISABLE_WEBGL ? ["--disable-webgl"] : ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])] } : {},
     baseURL: "http://127.0.0.1:4173",
     viewport: { width: 1280, height: 860 },
     deviceScaleFactor: 1,
