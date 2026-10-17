@@ -46,6 +46,28 @@ export function resetAnalyze(s: AnalyzeState): void {
   s.env = { low: 0, mid: 0, high: 0 };
 }
 
+const reWork = new Float32Array(ANALYZE_N);
+const imWork = new Float32Array(ANALYZE_N);
+const unwrapWork = new Float32Array(ANALYZE_N);
+const hannByN = new Map<number, { w: Float32Array; sum: number }>();
+
+function hann(n: number): { w: Float32Array; sum: number } {
+  const hit = hannByN.get(n);
+  if (hit) {
+    return hit;
+  }
+  const w = new Float32Array(n);
+  const den = Math.max(1, n - 1);
+  let sum = 0;
+  for (let i = 0; i < n; i += 1) {
+    w[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / den);
+    sum += w[i]!;
+  }
+  const row = { w, sum };
+  hannByN.set(n, row);
+  return row;
+}
+
 function fft(re: Float32Array, im: Float32Array, n: number): void {
   let j = 0;
   for (let i = 1; i < n; i += 1) {
@@ -109,19 +131,15 @@ export function analyzeFrame(
   }
   const n = pow2le(rawN);
   const off = rawN - n;
-  const re = new Float32Array(n);
-  const im = new Float32Array(n);
-  let winSum = 0;
+  const win = hann(n);
   let acc2 = 0;
-  const den = Math.max(1, n - 1);
   for (let i = 0; i < n; i += 1) {
-    const w = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / den);
     const x = samples[off + i] ?? 0;
-    re[i] = x * w;
-    winSum += w;
+    reWork[i] = x * win.w[i]!;
+    imWork[i] = 0;
     acc2 += x * x;
   }
-  fft(re, im, n);
+  fft(reWork, imWork, n);
   const nyq = rate * 0.5;
   const logSpan = Math.log(Math.max(nyq / FMIN, 1.0001));
   const peak = new Array<number>(bins).fill(0);
@@ -132,10 +150,10 @@ export function analyzeFrame(
   let highA = 0;
   let highN = 0;
   const half = n >> 1;
-  const gain = Math.max(winSum, 1e-6);
+  const gain = Math.max(win.sum, 1e-6);
   for (let k = 0; k < half; k += 1) {
     const hz = (k * rate) / n;
-    const mag = (k === 0 ? 1 : 2) * Math.hypot(re[k] ?? 0, im[k] ?? 0) / gain;
+    const mag = (k === 0 ? 1 : 2) * Math.hypot(reWork[k] ?? 0, imWork[k] ?? 0) / gain;
     const t = hz <= FMIN ? 0 : Math.log(hz / FMIN) / logSpan;
     const b = Math.max(0, Math.min(bins - 1, Math.floor(t * bins)));
     if (mag > (peak[b] ?? 0)) {
@@ -182,19 +200,18 @@ export function feedAnalyze(
     }
   }
   const n = s.filled;
-  const buf = new Float32Array(n);
   let i = s.at - n;
   if (i < 0) {
     i += ANALYZE_N;
   }
   for (let k = 0; k < n; k += 1) {
-    buf[k] = s.ring[i]!;
+    unwrapWork[k] = s.ring[i]!;
     i += 1;
     if (i >= ANALYZE_N) {
       i = 0;
     }
   }
-  const frame = analyzeFrame(buf, sr);
+  const frame = analyzeFrame(unwrapWork.subarray(0, n), sr);
   const tau = Math.max(dt, 0);
   const ease = (cur: number, tgt: number) => {
     const a = tgt > cur ? ATTACK : RELEASE;

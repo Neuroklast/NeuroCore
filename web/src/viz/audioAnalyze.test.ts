@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   ANALYZE_N,
@@ -79,5 +82,23 @@ describe("unit audio analyze", () => {
     resetAnalyze(s);
     const quiet = feedAnalyze(s, new Float32Array(256), SR, 1 / 60);
     expect(quiet.bands.low + quiet.bands.mid + quiet.bands.high).toBe(0);
+  });
+
+  it("a second hop on the same samples matches the first", () => {
+    const x = tone(1000, SR, ANALYZE_N);
+    const a = analyzeFrame(x, SR);
+    const b = analyzeFrame(x, SR);
+    expect(b.spec).toEqual(a.spec);
+    expect(b.bands).toEqual(a.bands);
+    expect(b.rms).toBe(a.rms);
+  });
+
+  it("analyzeFrame and feedAnalyze do not allocate Float32Array per hop", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "audioAnalyze.ts"), "utf8");
+    const frame = src.slice(src.indexOf("export function analyzeFrame"), src.indexOf("export function feedAnalyze"));
+    const feed = src.slice(src.indexOf("export function feedAnalyze"), src.indexOf("export function idleAnalyze"));
+    expect(frame).not.toContain("new Float32Array");
+    expect(feed).not.toContain("new Float32Array");
   });
 });
