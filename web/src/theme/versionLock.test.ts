@@ -22,5 +22,15 @@ describe("product version is one string", () => {
     const pack = readFileSync(join(root, "scripts/package_windows.ps1"), "utf8");
     expect(pack).toContain(`$version = "${nk.version}"`);
     expect(pack).toContain(`$numeric = "${numeric}"`);
+    expect(pack).toContain('Filter "NEUROKORE.vst3"');
+    expect(pack).not.toContain('Filter "$stem.vst3"');
+
+    const cmake = readFileSync(join(root, "CMakeLists.txt"), "utf8");
+    expect(cmake).toMatch(/NeuroKore_VST3 PROPERTIES OUTPUT_NAME "NEUROKORE"/);
+    expect(cmake).not.toMatch(/NeuroKore_VST3 PROPERTIES OUTPUT_NAME "\$\{NEUROKORE_FILE_STEM\}"/);
+
+    const modinfo = readFileSync(join(root, "scripts/write_vst3_moduleinfo.mjs"), "utf8");
+    expect(modinfo).toContain('name.toLowerCase() === "neurokore.vst3"');
+    expect(modinfo).not.toContain("name.toLowerCase().includes (version.toLowerCase())");
   });
 });

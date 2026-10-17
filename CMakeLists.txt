@@ -280,12 +280,13 @@ if (NK_HAS_EXPR_JIT)
     target_link_libraries (NeuroKore PRIVATE asmjit::asmjit)
 endif()
 
-# Always stamp the version on the built binaries (exe / .vst3 / .component).
+# Standalone/AU keep the versioned file name. The VST3 *module* inside
+# NEUROKORE.vst3/Contents/x86_64-win is always NEUROKORE.vst3 — never a version.
 if(TARGET NeuroKore_Standalone)
     set_target_properties(NeuroKore_Standalone PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
 endif()
 if(TARGET NeuroKore_VST3)
-    set_target_properties(NeuroKore_VST3 PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")
+    set_target_properties(NeuroKore_VST3 PROPERTIES OUTPUT_NAME "NEUROKORE")
 endif()
 if(TARGET NeuroKore_AU)
     set_target_properties(NeuroKore_AU PROPERTIES OUTPUT_NAME "${NEUROKORE_FILE_STEM}")

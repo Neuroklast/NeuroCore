@@ -109,7 +109,7 @@ function stripVst3Junk (bundle, version) {
       if (! name.toLowerCase().endsWith (".vst3")) {
         continue;
       }
-      if (version && name.toLowerCase().includes (version.toLowerCase())) {
+      if (name.toLowerCase() === "neurokore.vst3") {
         continue;
       }
       const p = join (win, name);

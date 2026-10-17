@@ -63,13 +63,10 @@ if (-not $srcBundle) {
 $inner = $null
 $binDir = Join-Path $srcBundle "Contents\x86_64-win"
 if (Test-Path $binDir) {
-    $inner = Get-ChildItem $binDir -Filter "$stem.vst3" -File | Select-Object -First 1
-    if (-not $inner) {
-        $inner = Get-ChildItem $binDir -Filter "*.vst3" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    }
+    $inner = Get-ChildItem $binDir -Filter "NEUROKORE.vst3" -File | Select-Object -First 1
 }
 if (-not $inner) {
-    throw "No VST3 binary inside $srcBundle\Contents\x86_64-win"
+    throw "VST3 module binary must be $binDir\NEUROKORE.vst3 (no version)"
 }
 
 $exe = $null
@@ -90,7 +87,7 @@ New-Item -ItemType Directory -Force -Path $out | Out-Null
 $stageBundle = Join-Path $stage $bundleName
 $stageBin = Join-Path $stageBundle "Contents\x86_64-win"
 New-Item -ItemType Directory -Force -Path $stageBin | Out-Null
-Copy-Item -Force $inner.FullName (Join-Path $stageBin $inner.Name)
+Copy-Item -Force $inner.FullName (Join-Path $stageBin "NEUROKORE.vst3")
 
 $modSrc = Join-Path $srcBundle "Contents\Resources\moduleinfo.json"
 if (-not (Test-Path $modSrc)) {
