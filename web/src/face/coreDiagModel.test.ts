@@ -185,9 +185,10 @@ describe("hud drawing helpers", () => {
     expect(Number(row?.[1])).toBeGreaterThanOrEqual(10);
     expect(Number(axis?.[1])).toBeGreaterThanOrEqual(9);
     expect(css).toMatch(/\.nk-face-seg i\s*\{[^}]*background:\s*rgba/);
-    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*grid-template-columns:\s*13ch 7ch 7ch/);
-    expect(css).toMatch(/\.nk-face-tele-r \.nk-face-row\s*\{[^}]*grid-template-columns:\s*7ch 7ch 20ch/);
-    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*white-space:\s*nowrap/);
+    expect(css).toMatch(/--nk-face-k:/);
+    expect(css).toMatch(/\.nk-face-hud\s*\{[^}]*display:\s*grid/s);
+    expect(css).not.toMatch(/\.nk-face-tele-r \.nk-face-row > span:first-child/);
+    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*white-space:\s*nowrap/s);
     expect(css).toMatch(/\.nk-face-mod-row\s*\{[^}]*grid-template-columns/);
   });
 });

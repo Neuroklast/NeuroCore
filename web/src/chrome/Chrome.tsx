@@ -27,7 +27,7 @@ export function Toolbar() {
   const setOverlay = useHostStore((s) => s.setOverlay);
   const bypassed = mix <= 1e-5;
   return (
-    <header className="flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
+    <header className="relative flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
       <button
         type="button"
         className="mr-2 flex shrink-0 items-center gap-3 border-0 bg-transparent p-0 text-left"
@@ -48,33 +48,26 @@ export function Toolbar() {
           </span>
         </span>
       </button>
+      <div className="nk-preset-cluster">
+        <button type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "prev" })}>
+          &lt;
+        </button>
+        <button
+          type="button"
+          className="nk-preset-now"
+          data-dirty={dirty ? "true" : "false"}
+          data-tip={presetTitle(name, dirty)}
+          onClick={() => setOverlay("presets")}
+        >
+          <span className="nk-preset-now-text">{presetTitle(name, false)}</span>
+        </button>
+        <button type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "next" })}>
+          &gt;
+        </button>
+      </div>
       {toolbarSlots().map((slot) => {
-        if (slot.id === "presetPrev") {
-          return (
-            <button key={slot.id} type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "prev" })}>
-              &lt;
-            </button>
-          );
-        }
-        if (slot.id === "presetNow") {
-          return (
-            <button
-              key={slot.id}
-              type="button"
-              className={slot.className}
-              data-tip="Open preset explorer"
-              onClick={() => setOverlay(slot.opens)}
-            >
-              {presetTitle(name, dirty)}
-            </button>
-          );
-        }
-        if (slot.id === "presetNext") {
-          return (
-            <button key={slot.id} type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "next" })}>
-              &gt;
-            </button>
-          );
+        if (slot.id === "presetPrev" || slot.id === "presetNow" || slot.id === "presetNext") {
+          return null;
         }
         if (slot.id === "mode") {
           const pick = (next: "LIVE" | "STUDIO") => {
