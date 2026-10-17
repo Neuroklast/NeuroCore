@@ -151,6 +151,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     const startY = e.clientY;
     const start = live.current;
     gesture.current = true;
+    setSpin(start);
     send(start, "begin");
     setHud(true);
     const move = (ev: globalThis.PointerEvent) => {
