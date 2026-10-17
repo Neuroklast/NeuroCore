@@ -1,3 +1,4 @@
+import { hasJuceBridge } from "../bridge/juce";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { particleAudio, PARTICLE_AUDIO_IDLE } from "./particleAudio";
 import { STIR_STEP } from "./stirModel";
@@ -615,6 +616,8 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let introClock = 0;
     let audioState = PARTICLE_AUDIO_IDLE;
     let last = 0;
+    let lastScreenW = 0;
+    let lastPixelRatio = 0;
     let lastW = 0;
     let lastH = 0;
     let stillDrawn = false;
@@ -659,12 +662,16 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (width <= 1 || height <= 1) {
         return;
       }
-      const sizeChanged = width !== lastW || height !== lastH;
+      const screenW = canvas.getBoundingClientRect().width;
+      const pixelRatio = window.devicePixelRatio || 1;
+      const sizeChanged = width !== lastW || height !== lastH || screenW !== lastScreenW || pixelRatio !== lastPixelRatio || themeId !== host.theme;
       if (still && stillDrawn && ! sizeChanged) {
         return;
       }
       lastW = width;
       lastH = height;
+      lastScreenW = screenW;
+      lastPixelRatio = pixelRatio;
       perfBegin("ball");
       const dt = last > 0 ? Math.min(0.05, Math.max(1 / 240, (now - last) / 1000)) : 1 / 60;
       last = now;
@@ -684,7 +691,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
 
       const telemetry = useTelemetryStore.getState();
       const rate = host.sr > 0 ? host.sr : 48000;
-      const live = telemetry.available;
+      const live = telemetry.available || !hasJuceBridge();
       const bands = cachedInputBands(telemetry.tick, telemetry.scopeIn, rate, live);
       const hit = particleAudio(audioState, {
         tick: telemetry.tick, bass: bands.low, live,
@@ -844,7 +851,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
       if (stir && stateRead && stateWrite && ! still) {
-        const steps = dt > STIR_STEP * 1.33 ? 2 : 1;
+        const steps = Math.max(1, Math.ceil(Math.min(dt, 0.05) / STIR_STEP));
         const h = Math.min(dt, 0.05) / steps;
         let read = stateRead;
         let write = stateWrite;
