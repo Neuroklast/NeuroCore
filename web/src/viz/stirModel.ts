@@ -26,7 +26,7 @@ function clampV(v: [number, number, number], max: number): [number, number, numb
 export function stirStep(
   p: StirP,
   home: [number, number, number],
-  drive: Pick<BallDrive, "lift" | "spread">,
+  drive: Pick<BallDrive, "lift" | "spread" | "swirl">,
   impulse: number,
   dt: number,
   k = 1.4,
@@ -55,6 +55,13 @@ export function stirStep(
   let ax = -k * (ox - bx) - damp * vx;
   let ay = -k * (oy - by) - damp * vy;
   let az = -k * oz - damp * vz;
+  const swirl = drive.swirl ?? 0;
+  if (swirl > 0) {
+    const pace = Math.hypot(vx, vy, vz);
+    const spin = Math.max(Math.min(pace, 2), 0.35) * 0.55 * swirl;
+    ax += -ny * spin;
+    ay += nx * spin;
+  }
   if (impulse > 0) {
     const j = impulse * STIR_IMPULSE;
     vx += nx * j * 0.85;
@@ -92,7 +99,7 @@ export function stirStep(
 export function stirIntegrate(
   p: StirP,
   home: [number, number, number],
-  drive: Pick<BallDrive, "lift" | "spread">,
+  drive: Pick<BallDrive, "lift" | "spread" | "swirl">,
   impulse: number,
   dt: number,
   k = 1.4,

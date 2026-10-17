@@ -93,6 +93,15 @@ describe("unit audio analyze", () => {
     expect(b.rms).toBe(a.rms);
   });
 
+  it("log spec has no hole bins in the sub for an 80 Hz tone or noise", () => {
+    const bass = analyzeFrame(tone(80, SR, ANALYZE_N), SR);
+    const hiss = analyzeFrame(noise(ANALYZE_N), SR);
+    const span = Math.log((SR * 0.5) / 20);
+    const subN = Math.max(2, Math.floor(SPEC_BINS * (Math.log(200 / 20) / span)));
+    expect(bass.spec.slice(0, subN).some((v) => v > 0.2)).toBe(true);
+    expect(hiss.spec.slice(1, subN).every((v) => v > 0)).toBe(true);
+  });
+
   it("analyzeFrame and feedAnalyze do not allocate Float32Array per hop", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(path.join(here, "audioAnalyze.ts"), "utf8");

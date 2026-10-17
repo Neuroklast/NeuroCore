@@ -1,5 +1,5 @@
 export const TELEMETRY_MAGIC = 0x4E4B544D;
-export const SCOPE_N = 256;
+export const SCOPE_N = 2048;
 export const GONIO_N = 128;
 export const DISPLAY_DB_FLOOR = -60;
 export const DISPLAY_AMP_FLOOR = 10 ** (DISPLAY_DB_FLOOR / 20);

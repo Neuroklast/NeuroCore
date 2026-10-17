@@ -12,9 +12,9 @@ namespace bridge
 class TelemetryPump
 {
 public:
-    static constexpr int kScopeN = 256;
+    static constexpr int kScopeN = 2048;
     static constexpr int kGonioN = 128;
-    static constexpr std::size_t kMaxBytes = 4096;
+    static constexpr std::size_t kMaxBytes = 20480;
 
     void reset() noexcept;
     void setSampleRate (double sr) noexcept { hostSr = sr > 1.0 ? sr : 48000.0; }

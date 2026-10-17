@@ -412,11 +412,10 @@ void main() {
   bias.y -= uLiftForce * ${STIR_LIFT_BIAS};
   vec3 acc = -k * (o - bias) - ${STIR_DAMP} * sqrt(k) * v;
   float pace = length(v);
-  if (pace > 1e-4) {
-    vec3 heading = v / pace;
-    vec3 curl = swirl(p * 1.6);
-    acc += (curl - heading * dot(curl, heading)) * min(pace, 2.0) * (0.55 * uSwirl);
-  }
+  vec3 heading = pace > 1e-4 ? v / pace : vec3(-radial.y, radial.x, 0.0);
+  if (dot(heading, heading) < 1e-8) heading = vec3(1.0, 0.0, 0.0);
+  vec3 curl = swirl(p * 1.6);
+  acc += (curl - heading * dot(curl, heading)) * max(min(pace, 2.0), 0.35) * (0.55 * uSwirl);
 
   if (uImpulse > 0.0) {
     float jitter = random(id * 7u + 12u) - 0.5;
@@ -830,7 +829,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       let impulse = 0;
       if (telemetry.tick !== lastTelTick) {
         lastTelTick = telemetry.tick;
-        const scanned = onsetScan(onset, telemetry.scopeOut, rate);
+        const scanned = onsetScan(onset, telemetry.scopeIn, rate);
         onset = scanned.state;
         impulse = Math.max(scanned.intensity, telemetry.onsetAmp);
         if (telemetry.onsetCount < 1 && scanned.count < 1) {

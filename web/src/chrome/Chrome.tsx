@@ -288,7 +288,7 @@ export function Footer() {
   const cpu = Math.max(0, Math.min(100, Math.round(cpuRaw)));
   const latMs = sr > 0 ? (lat / sr) * 1000 : 0;
   return (
-    <footer className="grid h-8 shrink-0 grid-cols-9 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
+    <footer className="nk-foot h-8 shrink-0 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
       <span>{mode === "SAFE" ? "SAFE" : mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
       <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${lat}smp` : `${lat}smp`}</span>

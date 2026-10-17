@@ -257,7 +257,7 @@ export function specLogPath(spec: number[], sr: number, w: number, h: number): s
 export function specTickHz(sr: number): number[] {
   const f0 = specFloorHz(sr);
   const f1 = (sr > 0 ? sr : 48000) / 2;
-  const cand = [200, 500, 1000, 2000, 5000, 10000, 20000];
+  const cand = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   return cand.filter((hz) => hz >= f0 * 1.05 && hz <= f1 * 0.98);
 }
 

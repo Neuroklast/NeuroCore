@@ -14,7 +14,9 @@ public:
         {
             bridge::TelemetryPump pump;
             juce::AudioBuffer<float> b (2, blockSize);
-            const int blocks = 512 / blockSize;
+            const int nScope = bridge::TelemetryPump::kScopeN;
+            const int total = nScope + 512;
+            const int blocks = total / blockSize;
             for (int block = 0; block < blocks; ++block)
             {
                 for (int i = 0; i < blockSize; ++i)
@@ -26,11 +28,12 @@ public:
             std::uint8_t frame[bridge::TelemetryPump::kMaxBytes] {};
             expect (pump.copyLatest (frame, sizeof (frame)) > 32);
             float error = 0.f;
-            for (int i = 0; i < bridge::TelemetryPump::kScopeN; ++i)
+            const int origin = total - nScope;
+            for (int i = 0; i < nScope; ++i)
             {
                 float actual = 0;
                 std::memcpy (&actual, frame + 32 + i * sizeof (float), sizeof (float));
-                error = std::max (error, std::abs (actual - 0.2f * std::sin ((256 + i) * 0.057f)));
+                error = std::max (error, std::abs (actual - 0.2f * std::sin ((origin + i) * 0.057f)));
             }
             expect (error < 1.e-6f, "block=" + juce::String (blockSize) + " resampling error=" + juce::String (error));
         }

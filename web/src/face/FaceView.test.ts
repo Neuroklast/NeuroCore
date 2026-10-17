@@ -18,7 +18,8 @@ it("shows meaningful meters without invented thermal readings or data rain",()=>
    expect(html).not.toContain('44.1 kHz');
  expect(html).toContain('CORE STATUS');
  expect(html).toContain('SPECTRUM');
- expect(html).toContain('PARTICLE ORBITS');
+  expect(html).toContain('PARTICLE ORBITS');
+  expect(html).toContain('ORBIT 3');
   expect(html).toContain('FIELD ACTIVITY');
   expect(html).toContain('SIGNAL FIELD');
   expect(html).toContain('STEREO FIELD');

@@ -94,7 +94,7 @@ describe("hud drawing helpers", () => {
     const ticks = specTickHz(48000);
     expect(specFloorHz(48000)).toBe(20);
     expect(ticks.every((hz) => hz >= specFloorHz(48000))).toBe(true);
-    expect(ticks[0]).toBeGreaterThanOrEqual(200);
+    expect(ticks[0]).toBe(50);
   });
 
   it("sine is peaked, noise fills more bins, a click is broadband, silence stays zero", () => {
@@ -140,6 +140,10 @@ describe("hud drawing helpers", () => {
     expect(c.core.tip.x).toBeCloseTo(L.cx - L.clamp.pipX, 5);
     expect(c.core.tip.y).toBeCloseTo(L.cy, 5);
     expect(Math.hypot(c.ring.tip.x - L.cx, c.ring.tip.y - L.cy)).toBeCloseTo(L.rings[1]!.r, 5);
+  });
+
+  it("spectrum ticks include 50 Hz and 100 Hz so the sub is labelled", () => {
+    expect(specTickHz(44100)).toEqual(expect.arrayContaining([50, 100, 200]));
   });
 
   it("log spectrum is flat for silence and peaked for a sine", () => {
@@ -192,5 +196,9 @@ describe("hud drawing helpers", () => {
     expect(css).not.toMatch(/\.nk-face-tele-r \.nk-face-row > span:first-child/);
     expect(css).toMatch(/\.nk-face-row\s*\{[^}]*white-space:\s*nowrap/s);
     expect(css).toMatch(/\.nk-face-mod-row\s*\{[^}]*grid-template-columns/);
+    const diag = readFileSync(path.join(here, "CoreDiagnostics.tsx"), "utf8");
+    expect(diag).toMatch(/viewBox="0 0 200 88"/);
+    expect(diag).toMatch(/y="86"/);
+    expect(css).toMatch(/\.nk-face-mod-svg-lg\s*\{[^}]*min-height:\s*0/);
   });
 });

@@ -1233,7 +1233,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   flex: 1 1 0;
   min-height: 56px;
 }
-.nk-face-mod-svg-lg { min-height: 72px; }
+.nk-face-mod-svg-lg { min-height: 0; }
 .nk-face-mod-round { width: 72px; height: 72px; flex-shrink: 0; }
 .nk-face-mod-grid {
   fill: none;
@@ -2258,6 +2258,21 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-preset-browser :is(button, input, select):focus-visible { outline: 1px solid var(--nk-cyan); outline-offset: -2px; }
 
 
+
+.nk-foot {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) max-content;
+}
+.nk-foot > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nk-foot > span:last-child {
+  overflow: visible;
+  text-overflow: clip;
+}
 
 .nk-os {
   background:
