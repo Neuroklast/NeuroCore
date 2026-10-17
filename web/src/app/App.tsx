@@ -20,6 +20,7 @@ import { ScaleShell } from "../theme/ScaleShell";
 import { FaceView } from "../face/FaceView";
 import { bindDocumentMotion, bindDocumentTheme } from "../theme/themeBind";
 import { setVizFpsCap } from "../theme/vizClock";
+import { syncPerfFlag } from "../perf/marks";
 import { seedFactoryPresets } from "../presets/presetActions";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
@@ -44,6 +45,9 @@ export function App() {
   useEffect(() => {
     setVizFpsCap(frameRate);
   }, [frameRate]);
+  useEffect(() => {
+    syncPerfFlag();
+  }, []);
   useEffect(() => {
     const w = window as Window & { __nkSetPreset?: (name: string, dirty?: boolean) => void };
     w.__nkSetPreset = (name, dirty) => {

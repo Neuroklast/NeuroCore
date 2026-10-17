@@ -48,6 +48,11 @@ export const STREAM_FLOOR_T = 0.05;
 export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
+/** Gesture paint already filled this vsync; the clock tick must not draw again. */
+export function shouldSkipClockPaint(clockNow: number, gestureAt: number, slack = 8): boolean {
+  return gestureAt > 0 && clockNow - gestureAt < slack;
+}
+
 /** Camera pan keeps traces and glow. Only Full advances beads; meters stay live. */
 export function cablePaintPass(
   gesture: boolean,

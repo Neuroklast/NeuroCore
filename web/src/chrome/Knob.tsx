@@ -70,18 +70,20 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
   const bindKind = knobBindKind(compact);
   const live = useRef(knob.value);
   const gesture = useRef(false);
+  const [spin, setSpin] = useState(knob.value);
   if (! gesture.current) {
     live.current = knob.value;
   }
+  const shown = gesture.current ? spin : knob.value;
   const [hud, setHud] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
   const bpm = useHostStore((s) => s.bpm);
   const enums = knob.enums;
   const scaleMode = knobScaleMode(enums);
-  const mapped = mappedValue(knob.value, knob.min, knob.max);
-  const noteReadout = noteLabelForMapped(mapped, knob.min, knob.max, bpm, knob.isNote, knob.value);
-  const enumFull = enums && enums.length > 0 ? enumLabelAt01(knob.value, enums) : null;
+  const mapped = mappedValue(shown, knob.min, knob.max);
+  const noteReadout = noteLabelForMapped(mapped, knob.min, knob.max, bpm, knob.isNote, shown);
+  const enumFull = enums && enums.length > 0 ? enumLabelAt01(shown, enums) : null;
   const enumReadout = enumFull ? enumAbbrev(enumFull) : null;
   const readout = noteReadout ?? enumReadout ?? formatKnobDisplay(mapped, knob.unit);
   const minTxt = enums && enums.length > 0
@@ -92,14 +94,14 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     : (formatNoteBound(knob.min, knob.max, "max", knob.isNote) ?? formatBound(knob.max));
   const bindLetter = useBindStore((s) => s.letter);
   const bindFace = knobBindFace(knob.id, bindLetter);
-  const angle = START + knob.value * (END - START);
+  const angle = START + shown * (END - START);
   const p1x = KNOB_CX + 22 * Math.sin(angle);
   const p1y = KNOB_CY - 22 * Math.cos(angle);
   const p0x = KNOB_CX + 5 * Math.sin(angle);
   const p0y = KNOB_CY - 5 * Math.cos(angle);
   const circ = knobCircumference();
   const arc = knobArcLen();
-  const offset = knobArcOffset(knob.value);
+  const offset = knobArcOffset(shown);
   const ticks = scaleMode === "ticks" ? knobTickNorms(enums?.length ?? 0) : [];
   const gid = `nk-kg-${knob.id}`;
   const liveKnob = knobInteractive(knob.active);
@@ -109,7 +111,9 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     if (phase === "begin") {
       useHostStore.getState().beginKnobGesture(knob.id);
     }
-    useHostStore.getState().setKnob(knob.id, next);
+    if (phase !== "change") {
+      useHostStore.getState().setKnob(knob.id, next);
+    }
     void getNativeFunction("setParam")({ id: knob.id, value: next, gesture: phase });
     if (phase === "end") {
       useHostStore.getState().endKnobGesture(knob.id);
@@ -147,12 +151,14 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     const startY = e.clientY;
     const start = live.current;
     gesture.current = true;
+    setSpin(start);
     send(start, "begin");
     setHud(true);
     const move = (ev: globalThis.PointerEvent) => {
       const raw = Math.max(0, Math.min(1, start - (ev.clientY - startY) / 140));
       const next = enums && enums.length > 0 ? snapEnum01(raw, enums.length) : raw;
       live.current = next;
+      setSpin(next);
       send(next, "change");
     };
     const up = (ev: globalThis.PointerEvent) => {
@@ -188,6 +194,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
         ? snapEnum01(live.current + (e.deltaY > 0 ? -1 : 1) / (enums.length - 1), enums.length)
         : applyWheel01(live.current, e.deltaY, e.shiftKey);
       live.current = next;
+      setSpin(next);
       send(next, "change");
       window.clearTimeout(endTimer);
       endTimer = window.setTimeout(() => {
@@ -296,7 +303,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
             const y0 = KNOB_CY - (KNOB_ARC_R - 4) * Math.cos(a);
             const x1 = KNOB_CX + (KNOB_ARC_R + 3) * Math.sin(a);
             const y1 = KNOB_CY - (KNOB_ARC_R + 3) * Math.cos(a);
-            const on = Math.abs(t - knob.value) < 1e-6;
+            const on = Math.abs(t - shown) < 1e-6;
             return (
               <line
                 key={t}

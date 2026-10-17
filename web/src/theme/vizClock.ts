@@ -23,9 +23,21 @@ export function shouldEmitFrame(now: number, last: number, fps: number): boolean
   return now - last >= 1000 / fps - 0.5;
 }
 
+export function clockShouldTick(now: number, last: number, fps: number, hidden: boolean): boolean {
+  if (hidden) {
+    return false;
+  }
+  return shouldEmitFrame(now, last, fps);
+}
+
 function loop(now: number) {
   raf = window.requestAnimationFrame(loop);
-  if (! shouldEmitFrame(now, lastEmit, fpsCap)) {
+  const hidden = typeof document !== "undefined" && document.hidden;
+  if (hidden) {
+    lastEmit = now;
+    return;
+  }
+  if (! clockShouldTick(now, lastEmit, fpsCap, false)) {
     return;
   }
   lastEmit = now;

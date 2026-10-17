@@ -275,20 +275,29 @@ export function MixOs() {
 }
 
 export function Footer() {
-  const h = useHostStore();
-  const cpu = Math.max(0, Math.min(100, Math.round(h.cpu)));
-  const latMs = h.sr > 0 ? (h.lat / h.sr) * 1000 : 0;
+  const mode = useHostStore((s) => s.mode);
+  const cpuRaw = useHostStore((s) => s.cpu);
+  const lat = useHostStore((s) => s.lat);
+  const sr = useHostStore((s) => s.sr);
+  const buf = useHostStore((s) => s.buf);
+  const bpm = useHostStore((s) => s.bpm);
+  const tempoSource = useHostStore((s) => s.tempoSource);
+  const osFactor = useHostStore((s) => s.osFactor);
+  const licensed = useHostStore((s) => s.licensed);
+  const demoRemainSec = useHostStore((s) => s.demoRemainSec);
+  const cpu = Math.max(0, Math.min(100, Math.round(cpuRaw)));
+  const latMs = sr > 0 ? (lat / sr) * 1000 : 0;
   return (
     <footer className="grid h-8 shrink-0 grid-cols-9 items-center border-t border-[var(--nk-line)] px-3 font-mono text-[12px] text-muted">
-      <span>{h.mode === "SAFE" ? "SAFE" : h.mode}</span>
+      <span>{mode === "SAFE" ? "SAFE" : mode}</span>
       <span>CPU {String(cpu).padStart(3, " ")}%</span>
-      <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${h.lat}smp` : `${h.lat}smp`}</span>
-      <span>SR {footerSr(h.sr)}</span>
-      <span>BUF {footerBuf(h.buf)}</span>
-      <span>BPM {h.bpm.toFixed(1)}</span>
-      <span>{h.tempoSource}</span>
-      <span>OS {h.osFactor}x</span>
-      <span className="text-right">{footerLicenseLabel(h.licensed, h.demoRemainSec)}</span>
+      <span>LAT {latMs > 0 ? `${latMs.toFixed(1)}ms/${lat}smp` : `${lat}smp`}</span>
+      <span>SR {footerSr(sr)}</span>
+      <span>BUF {footerBuf(buf)}</span>
+      <span>BPM {bpm.toFixed(1)}</span>
+      <span>{tempoSource}</span>
+      <span>OS {osFactor}x</span>
+      <span className="text-right">{footerLicenseLabel(licensed, demoRemainSec)}</span>
     </footer>
   );
 }

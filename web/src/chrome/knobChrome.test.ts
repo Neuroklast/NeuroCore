@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   formatKnobDisplay,
@@ -91,5 +92,10 @@ describe("circuit knob chrome", () => {
     expect(applyWheel01(0.4, 120, true)).toBeCloseTo(0.3925);
     expect(applyWheel01(0.99, -120)).toBe(1);
     expect(applyWheel01(0.01, 120)).toBe(0);
+  });
+
+  it("pointer-down paints from the live value, not a stale spin", () => {
+    const src = readFileSync(new URL("./Knob.tsx", import.meta.url), "utf8");
+    expect(src).toMatch(/gesture\.current = true;\s*setSpin\(start\);/);
   });
 });

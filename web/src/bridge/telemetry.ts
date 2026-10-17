@@ -60,6 +60,15 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   dest.gonioN = Math.min(gonioN, dest.gonioX.length);
   const f32 = new Float32Array(ab, 32, scopeN * 2 + gonioN * 2);
   const copy = (target: Float32Array, offset: number, length: number) => {
+    if (length === target.length) {
+      target.set(f32.subarray(offset, offset + length));
+      for (let i = 0; i < length; i += 1) {
+        if (! Number.isFinite(target[i]!)) {
+          target[i] = 0;
+        }
+      }
+      return;
+    }
     target.fill(0);
     for (let i = 0; i < length; i += 1) {
       const value = f32[offset + i]!;

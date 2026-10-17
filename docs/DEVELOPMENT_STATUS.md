@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (header layout contracts)  
+**Stand:** 2026-10-17 (UI perf)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/ui-layout-contracts`
+**Branch:** `perf/ui-baseline`
+
+## UI perf (2026-10-17)
+
+Same look. Less work: opt-in `nk:*` marks, reused FFT buffers, no per-frame `getError`, containment uniforms once per frame, cable paint coalesce, Footer/chip/knob/Face fan-out cut, vizClock pauses while hidden, peak CSS off when motion is off. Notes: `docs/performance/`. Native WebView2 not measured.
 
 ## Header layout contracts (2026-10-17)
 

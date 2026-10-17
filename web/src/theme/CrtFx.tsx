@@ -30,7 +30,12 @@ export function CrtFx() {
   const bloom = motionAllows("bloom", motion, reduced);
   const jit = motionAllows("jitter", motion, reduced);
 
-  useEffect(() => bindPeakCss(document.documentElement), []);
+  useEffect(() => {
+    if (motion === "off") {
+      return undefined;
+    }
+    return bindPeakCss(document.documentElement);
+  }, [motion]);
 
   if (motion === "off") {
     return null;

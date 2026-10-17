@@ -172,7 +172,9 @@ describe("hud drawing helpers", () => {
     expect(src).toContain("readViz");
     expect(src).not.toContain("coreDrivePose");
     expect(face).not.toMatch(/useTelemetryStore\(\)/);
-    expect(face).toContain("useTelemetryStore((s) => s.inPeak)");
+    const head = face.slice(0, face.indexOf("function FaceSignalMeters"));
+    expect(head).not.toContain("s.inPeak");
+    expect(face).toContain("function FaceSignalMeters");
   });
 
   it("diagnostic type is at least 10px and field segments stay drawn when idle", () => {
