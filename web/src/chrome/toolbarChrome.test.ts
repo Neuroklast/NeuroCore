@@ -110,6 +110,11 @@ describe("workspace row + compare cluster", () => {
 });
 
 describe("header clip size", () => {
+  it("footer license cell is max-content so LIC is not clipped to LI", () => {
+    expect(chromeSrc).toContain("nk-foot");
+    expect(css).toMatch(/\.nk-foot\s*\{[^}]*max-content/s);
+  });
+
   it("uses one clip class — no 12px/13px split", () => {
     expect(headerClipClass("tool")).toBe("nk-clip shrink-0");
     expect(headerClipClass("bypass")).toBe("nk-clip nk-alert shrink-0");

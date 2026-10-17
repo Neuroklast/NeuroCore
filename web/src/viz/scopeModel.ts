@@ -172,6 +172,7 @@ export function waveSampleMarks(nSamples: number, bins = SPEC_BINS): Array<{ bin
 
 function dftMagnitudes(samples: ArrayLike<number>): { mags: number[]; n: number } {
   const n = Math.min(samples.length, 256);
+  const off = Math.max(0, samples.length - n);
   const half = Math.max(0, Math.floor(n / 2));
   const mags = new Array<number>(half + 1).fill(0);
   if (n < 2) {
@@ -182,7 +183,7 @@ function dftMagnitudes(samples: ArrayLike<number>): { mags: number[]; n: number 
     let im = 0;
     const w = (-2 * Math.PI * k) / n;
     for (let i = 0; i < n; i += 1) {
-      const x = Number(samples[i] ?? 0);
+      const x = Number(samples[off + i] ?? 0);
       re += x * Math.cos(w * i);
       im += x * Math.sin(w * i);
     }

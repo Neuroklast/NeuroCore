@@ -162,7 +162,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
           <div className="nk-face-mod-state" data-mode={f.viz.mode}>{f.viz.mode}</div>
         </Mod>
         <Mod title="SPECTRUM">
-          <svg className="nk-face-mod-svg nk-face-mod-svg-lg" viewBox="0 0 200 78" aria-hidden>
+          <svg className="nk-face-mod-svg nk-face-mod-svg-lg" viewBox="0 0 200 88" aria-hidden>
             <path d="M0 18 H200 M0 36 H200 M0 54 H200" className="nk-face-mod-grid" />
             <path ref={specFillRef} d={specLogArea(f.spec, f.sr, 200, 66)} className="nk-face-mod-fill" />
             <path ref={specTraceRef} d={specLogPath(f.spec, f.sr, 200, 66)} className="nk-face-mod-trace" />
@@ -171,7 +171,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
               return (
                 <g key={hz}>
                   <path d={`M ${x.toFixed(1)} 0 V 66`} className="nk-face-mod-grid" />
-                  <text x={x.toFixed(1)} y="76" className="nk-face-mod-axis" textAnchor="middle">{labelHz(hz)}</text>
+                  <text x={x.toFixed(1)} y="86" className="nk-face-mod-axis" textAnchor="middle">{labelHz(hz)}</text>
                 </g>
               );
             })}

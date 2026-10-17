@@ -81,6 +81,24 @@ describe("scope deck model", () => {
     expect(treble).toBeGreaterThan(mark(200).bin + 8);
   });
 
+  it("dfts the newest 256 samples of a longer buffer", () => {
+    const sr = 48000;
+    const hz = 4000;
+    const tail = 256;
+    const toneAt = (start: number) => {
+      const buf = new Float32Array(2048);
+      for (let i = 0; i < tail; i += 1) {
+        buf[start + i] = Math.sin((2 * Math.PI * hz * i) / sr);
+      }
+      return buf;
+    };
+    const peak = (row: number[]) => Math.max(...row);
+    const newest = logSpectrumBins(toneAt(2048 - tail), sr);
+    const oldest = logSpectrumBins(toneAt(0), sr);
+    expect(peak(newest)).toBeGreaterThan(0.05);
+    expect(peak(oldest)).toBeLessThan(peak(newest) * 0.25);
+  });
+
   it("maps frequency height in dB even when Y is set to linear", () => {
     const row = liftScopeMags([0.03, 0.3, 1], "freq", "linear");
     expect(row[0]).toBeCloseTo(specMag01(0.03));

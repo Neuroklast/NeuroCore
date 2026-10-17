@@ -38,7 +38,7 @@ function meanR(c: { home: [number, number, number]; p: StirP }[]): number {
 function run(
   seconds: number,
   dt: number,
-  drive: { lift: number; spread: number },
+  drive: { lift: number; spread: number; swirl?: number },
   impulseAt = -1,
 ): { y: number; r: number; vmax: number } {
   const c = cloud(32);
@@ -73,6 +73,11 @@ describe("stir rest bias", () => {
     expect(hit.r).toBeLessThan(0.95);
   });
 
+  it("swirl from rest starts motion without a +Y lift force", () => {
+    const hit = run(1, 1 / 60, { lift: 0, spread: 0, swirl: 1 });
+    expect(hit.vmax).toBeGreaterThan(0.05);
+  });
+
   it("a single impulse kicks then returns", () => {
     const c = cloud(16);
     const home = c[0]!.home;
@@ -102,6 +107,8 @@ describe("stir shader contract", () => {
     expect(src).not.toMatch(/acc\.y \+= uLiftForce/);
     expect(src).toContain("STIR_LIFT_BIAS");
     expect(src).toContain("uImpulse");
+    expect(src).toContain("max(min(pace, 2.0), 0.35)");
+    expect(src).toMatch(/onsetScan\(onset,\s*telemetry\.scopeIn/);
     expect(src).not.toMatch(/uniform4f\(\s*fieldU\.uHeat,\s*0,\s*0,\s*0,\s*0\)/);
     expect(src).not.toContain("SETTLE_SECONDS");
     expect(src).toContain("publishViz(");

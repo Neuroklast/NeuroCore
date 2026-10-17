@@ -26,7 +26,7 @@ public:
             pump.noteInput (in);
             pump.publish (out, 0.42f);
 
-            std::uint8_t buf[4096];
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
             const auto n = pump.copyLatest (buf, sizeof (buf));
             expect (n >= bridge::kTelemetryHeaderBytes);
 
@@ -52,7 +52,7 @@ public:
             out.setSample (0, 40, 1.0f);
             pump.noteInput (in);
             pump.publish (out, 0.1f);
-            std::uint8_t buf[4096];
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
             const auto n = pump.copyLatest (buf, sizeof (buf));
             expect (n >= bridge::kTelemetryHeaderBytes);
             const auto packed = (std::uint16_t) buf[6] | (std::uint16_t) ((std::uint16_t) buf[7] << 8);
@@ -79,7 +79,7 @@ public:
             }
             pump.noteInput (in);
             pump.publish (out, 0.5f);
-            std::uint8_t buf[4096];
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
             expectEquals ((int) pump.copyLatest (buf, sizeof (buf)), 0,
                           "NKTM must not scan when no editor is reading");
         }
@@ -97,7 +97,7 @@ public:
             }
             juce::MidiBuffer midi;
             proc.processBlock (buf, midi);
-            std::uint8_t frame[4096];
+            std::uint8_t frame[bridge::TelemetryPump::kMaxBytes];
             expectEquals ((int) proc.getTelemetry().copyLatest (frame, sizeof (frame)), 0,
                           "headless insert must not fill telemetry.bin");
             expectEquals (TestHelpers::countNonFinite (buf), 0);

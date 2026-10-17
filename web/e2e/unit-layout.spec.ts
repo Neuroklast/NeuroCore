@@ -48,7 +48,19 @@ test.describe("unit hud + preset cluster", () => {
       }, label);
     await wrapOf(teleL, "engine row");
     await wrapOf(teleR, "signal row");
-    expect(await page.locator(".nk-face-diag-l .nk-face-orbit-leg").count()).toBe(1);
+    const orbitLeg = page.locator(".nk-face-diag-l .nk-face-orbit-leg");
+    expect(await orbitLeg.count()).toBe(1);
+    expect(await orbitLeg.locator("span").count()).toBe(3);
+    const orbitClip = await orbitLeg.evaluate((el) => {
+      const host = el.closest(".nk-face-mod");
+      if (! host) {
+        throw new Error("orbit legend has no card");
+      }
+      const a = el.getBoundingClientRect();
+      const b = host.getBoundingClientRect();
+      return a.bottom > b.bottom + 1 || a.right > b.right + 1;
+    });
+    expect(orbitClip).toBe(false);
     expect(await page.locator(".nk-face-diag-l .nk-face-mod").count()).toBe(3);
     expect(await page.locator(".nk-face-diag-r .nk-face-mod").count()).toBe(3);
   });

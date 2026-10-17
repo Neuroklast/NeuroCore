@@ -22,7 +22,7 @@ Absolute telemetry/diag stacks overlapped. Unit HUD is `.nk-face-hud` (3 columns
 
 ## Unit audio viz (2026-10-17)
 
-Meters showed real dBFS while spectrum, field and particles stayed dead: 256-sample linear DFT painted as linear 0–1 (~172 Hz bins). Analyzer is a 2048 hop, log 20 Hz–Nyquist, −60 dBFS height, attack/release bands. Telemetry is label / number / unit, nowrap. Heat and arcs follow onsets. Metal AA tightened. No DSP sound change.
+Meters showed real dBFS while spectrum, field and particles stayed dead: 256-sample hops (~172 Hz) mapped FFT→log with `floor()`, so sub bins were empty; swirl only ran if |v|>0 and onset scanned wet `scopeOut`. Scope ring is 2048 consecutive host-rate samples. Log spec interpolates display→FFT. Stir swirl starts from rest; onset follows `scopeIn`. Spectrum ticks include 50/100 Hz; orbit legend and footer LIC are not clipped. No DSP sound change.
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 
