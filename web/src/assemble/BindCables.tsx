@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAstStore } from "../store/astStore";
 import { useBindStore } from "../store/telemetryStore";
@@ -45,11 +46,11 @@ export function BindDragGhost() {
   if (! letter) {
     return null;
   }
-  return (
+  return createPortal(
     <div className="nk-bind-ghost pointer-events-none" style={{ left: x, top: y }}>
       <i className="nk-bind-cross" aria-hidden />
       <span className="nk-bind-ghost-letter">{letter.toUpperCase()}</span>
-    </div>
+    </div>, document.body
   );
 }
 

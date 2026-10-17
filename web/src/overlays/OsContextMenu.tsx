@@ -31,10 +31,10 @@ export function OsContextMenu({
     let x = left;
     let y = top;
     if (r.bottom > hr.bottom) {
-      y = Math.max(0, top - (r.bottom - hr.bottom));
+      y = Math.max(0, top - (r.bottom - hr.bottom) * host.clientHeight / hr.height);
     }
     if (r.right > hr.right) {
-      x = Math.max(0, left - (r.right - hr.right));
+      x = Math.max(0, left - (r.right - hr.right) * host.clientWidth / hr.width);
     }
     if (x !== left || y !== top) {
       setPos({ left: x, top: y });
