@@ -16,4 +16,10 @@ describe("Circuit interaction surface", () => {
     expect(board).not.toContain('className="nk-board-edge-add"');
     expect(board).toContain('selectedNodeIds: []');
   });
+
+  it("BoardChip does not subscribe every chip to the knobs array", () => {
+    const chip = readFileSync(new URL("./BoardChip.tsx", import.meta.url), "utf8");
+    expect(chip).not.toMatch(/useHostStore\(\(s\) => s\.knobs\)/);
+    expect(chip).toContain('node.type === "osc"');
+  });
 });

@@ -21,6 +21,8 @@ import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 
+const NO_KNOBS: Array<{ id: string; value: number; min: number; max: number; isNote?: boolean }> = [];
+
 export function BoardChip({
   node,
   ports,
@@ -48,7 +50,7 @@ export function BoardChip({
     const v = s.mods[node.id];
     return Number.isFinite(v) ? Math.max(0, Math.min(1, v as number)) : 0;
   });
-  const knobs = useHostStore((s) => s.knobs);
+  const knobs = useHostStore((s) => (node.type === "osc" ? s.knobs : NO_KNOBS));
   const bpm = useHostStore((s) => s.bpm);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
