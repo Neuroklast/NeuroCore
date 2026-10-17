@@ -116,7 +116,7 @@ void main() {
   acc += (curl - heading * dot(curl, heading)) * max(min(pace, 2.0), 0.55) * (0.55 * uSwirl);
 
   if (uImpulse > 0.0) {
-    float fan = sign(p.x) * (0.3 + 0.7 * min(1.0, abs(p.x))) * uSpread * ${STIR_FAN};
+    float fan = base.x * uSpread * ${STIR_FAN};
     float up = 1.0 + ${STIR_BOTTOM_BOOST} * max(0.0, -p.y);
     v += vec3(fan, up, 0.0) * uImpulse * ${STIR_IMPULSE};
   }

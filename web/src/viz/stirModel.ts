@@ -7,7 +7,7 @@ export const STIR_LIFT_BIAS = 0.22;
 export const STIR_SPREAD_BIAS = 0.16;
 export const STIR_IMPULSE = 1.55;
 export const STIR_DAMP = 1.5;
-export const STIR_FAN = 0.65;
+export const STIR_FAN = 0.45;
 export const STIR_BOTTOM_BOOST = 0.25;
 
 export type StirP = {
@@ -65,8 +65,9 @@ export function stirStep(
   }
   if (impulse > 0) {
     const j = impulse * STIR_IMPULSE;
-    // View projection is +Y up. Width only fans the impulse on the horizontal axis.
-    vx += Math.sign(px) * (0.3 + 0.7 * Math.min(1, Math.abs(px))) * drive.spread * STIR_FAN * j;
+    // A continuous fan from the rest field keeps the centre connected.
+    // Do not feed displaced position back into the outward impulse.
+    vx += hx * drive.spread * STIR_FAN * j;
     vy += (1 + STIR_BOTTOM_BOOST * Math.max(0, -py)) * j;
   }
   vx += ax * dt;

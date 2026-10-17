@@ -122,3 +122,32 @@ describe('kick direction and stereo fan', () => {
     expect(p.o[1]).toBeLessThan(.4);
   });
 });
+
+
+describe('continuous stereo plume', () => {
+  it('keeps adjacent centre particles together during wide kicks', () => {
+    const xs = [-.0001, 0, .0001];
+    const velocities = xs.map(x => stirIntegrate(rest(), [x,-.55,0], {lift:0,spread:1,swirl:0}, 1, 1/60).v[0]);
+    expect(Math.max(...velocities.map(Math.abs))).toBeLessThan(.001);
+  });
+
+  it('does not amplify existing lateral displacement into a split', () => {
+    const shifted = {o:[.2,0,0],v:[0,0,0]} as StirP;
+    const kick = stirIntegrate(shifted, [0,-.55,0], {lift:0,spread:1,swirl:0}, 1, 1/60);
+    expect(kick.v[0]).toBeLessThan(0);
+    expect(kick.v[1]).toBeGreaterThan(.8);
+  });
+
+  it('repeated wide kicks preserve a connected centre and settle after release', () => {
+    const points = Array.from({length:101},(_,i)=>({home:[(i-50)*.008,-.55,0] as [number,number,number], p:rest()}));
+    let maxGap=0;
+    for(let frame=0;frame<600;frame++) {
+      for(const point of points) point.p=stirIntegrate(point.p,point.home,{lift:.4,spread:1,swirl:0},frame%12===0?1:0,1/60);
+      const xs=points.map(point=>point.home[0]+point.p.o[0]).sort((a,b)=>a-b);
+      maxGap=Math.max(maxGap,xs[51]!-xs[49]!);
+    }
+    expect(maxGap).toBeLessThan(.03);
+    for(let frame=0;frame<180;frame++) for(const point of points) point.p=stirIntegrate(point.p,point.home,{lift:0,spread:0,swirl:0},0,1/60);
+    expect(Math.max(...points.map(point=>Math.hypot(...point.p.o)))).toBeLessThan(.01);
+  });
+});
