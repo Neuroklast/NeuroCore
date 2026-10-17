@@ -6,7 +6,7 @@
 
 ## Unit particle impulse correction (2026-10-18)
 
-Dry-input sub attacks and native transient events drive one-shot +Y particle impulses. Stereo side-energy controls the horizontal fan. Held sub energy raises a bounded spring rest position; it no longer presses particles down. Overlapping scope windows are not rescanned as consecutive audio. Mechanical ring radius and rotation speed do not follow kicks; projector brightness can respond. Fixed invalid GLSL vec3 construction which disabled the physics pass. Production shader compile and float-MRT velocity readback pass in Chromium; 43 focused physics/audio/model contracts pass. HUD resize validation is in progress. No native binary has been rebuilt.
+Dry-input sub attacks and native transient events drive one-shot +Y particle impulses. Stereo side-energy controls the horizontal fan. Held sub energy raises a bounded spring rest position; it no longer presses particles down. Overlapping scope windows are not rescanned as consecutive audio. Mechanical ring radius and rotation speed do not follow kicks; projector brightness can respond. Fixed invalid GLSL vec3 construction which disabled the physics pass. Production shader compile and float-MRT velocity readback pass in Chromium; 43 focused physics/audio/model contracts pass. HUD placement now uses logical offsets, with a fixed design canvas scaled by transform. Field meters have their own CSS selector and panel children are bounded. The first resize contract passed six consecutive host sizes; multi-theme/DPI and GPU appearance checks are in progress. No native binary has been rebuilt.
 
 ## UI perf (2026-10-17)
 

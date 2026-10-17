@@ -51,7 +51,7 @@ export const FIELD_SEGS = 12;
 
 export const HUD = {
   calloutW: 108,
-  calloutH: 48,
+  calloutH: 60,
 } as const;
 
 export type CalloutGeom = {
@@ -89,20 +89,14 @@ function hits(a: TeleBox, b: TeleBox): boolean {
 }
 
 function park(pref: TeleBox, banned: TeleBox[], paneW: number, paneH: number): TeleBox {
-  const alts: TeleBox[] = [
-    pref,
-    { ...pref, y: Math.min(paneH - pref.h - 8, pref.y + pref.h + 12) },
-    { ...pref, y: Math.max(8, pref.y - pref.h - 12) },
-  ];
-  for (const box of alts) {
-    if (box.x < 0 || box.y < 0 || box.x + box.w > paneW || box.y + box.h > paneH) {
-      continue;
-    }
-    if (! banned.some((b) => hits(box, b))) {
-      return box;
-    }
-  }
-  return pref;
+  const xs = [pref.x, 0, paneW - pref.w, ...banned.flatMap(b => [b.x - pref.w, b.x + b.w])];
+  const ys = [pref.y, 0, paneH - pref.h, ...banned.flatMap(b => [b.y - pref.h, b.y + b.h])];
+  const candidates = xs.flatMap(x => ys.map(y => ({ ...pref, x, y })))
+    .filter(box => box.x >= 0 && box.y >= 0 && box.x + box.w <= paneW && box.y + box.h <= paneH
+      && !banned.some(b => hits(box, b)))
+    .sort((a, b) => Math.hypot(a.x - pref.x, a.y - pref.y) - Math.hypot(b.x - pref.x, b.y - pref.y));
+  // No free cell: omit a secondary readout instead of drawing over diagnostics.
+  return candidates[0] ?? { x: 0, y: 0, w: 0, h: 0 };
 }
 
 export function coreCallouts(
@@ -132,10 +126,10 @@ export function coreCallouts(
     w,
     h,
   };
-  return {
-    core: { box: park(corePref, cols, paneW, paneH), tip: tipCore },
-    ring: { box: park(ringPref, cols, paneW, paneH), tip: tipRing },
-  };
+  const forbidden = [...cols, { x: cx - ballR, y: cy - ballR, w: ballR * 2, h: ballR * 2 }];
+  const core = park(corePref, forbidden, paneW, paneH);
+  const ring = park(ringPref, [...forbidden, core], paneW, paneH);
+  return { core: { box: core, tip: tipCore }, ring: { box: ring, tip: tipRing } };
 }
 
 export function coreViz(drive: BallDrive, pose: ContainmentPose): CoreViz {
