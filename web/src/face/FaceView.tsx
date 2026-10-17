@@ -47,7 +47,7 @@ export function FaceView() {
 
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
-      {UNIT_FACE_LEGACY ? legacyCenter : <BallGl fallback={legacyCenter} />}
+      {UNIT_FACE_LEGACY ? legacyCenter : <BallGl fallback={<div className="nk-face-fallback">{legacyCenter}</div>} />}
       {UNIT_FACE_LEGACY ? null : (
         <div className="nk-face-hud">
           <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">

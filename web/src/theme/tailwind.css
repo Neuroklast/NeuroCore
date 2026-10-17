@@ -1050,6 +1050,15 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 
 
 
+.nk-face-fallback {
+  position: absolute;
+  inset: 0 calc(var(--nk-face-inset) + var(--nk-face-col) + var(--nk-face-gap));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  contain: paint;
+}
+
 .nk-face-hud {
   position: absolute;
   inset: 0;
