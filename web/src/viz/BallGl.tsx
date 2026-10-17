@@ -756,7 +756,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let lastW = 0;
     let lastH = 0;
     let stillDrawn = false;
-    let nextArc = 0.3;
+
     let alive = true;
     let checked = false;
     const liveArcs: Arc[] = [];
@@ -847,12 +847,8 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         rimTime += step;
         dustTime += dt * d.dustSpeed;
         swayClock += dt * Math.max(0.15, d.dustSpeed * 0.6);
-        if (BALL_CONFIG.sparks > 0.01 && introClock > 0.55) {
-          nextArc -= step * BALL_CONFIG.sparks * 2;
-          if (nextArc <= 0) {
-            spawnArc(arcRoll() * Math.PI * 2, 0.55);
-            nextArc = 0.4 + arcRoll() * 0.8;
-          }
+        if (introClock > 0.55 && (d.impulse > 0.18 || d.kick > 0.35)) {
+          spawnArc(arcRoll() * Math.PI * 2, 0.4 + 0.5 * Math.max(d.impulse, d.kick));
         }
         for (let i = liveArcs.length - 1; i >= 0; i -= 1) {
           const arc = liveArcs[i]!;
@@ -965,7 +961,13 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.uniform3fv(fieldU.uSparkGlow, palette.sparkGlow);
       gl.uniform3fv(fieldU.uHazeColor, palette.haze);
       gl.uniform3fv(fieldU.uEdgeColor, palette.edge);
-      gl.uniform4f(fieldU.uHeat, 0, 0, 0, 0);
+      gl.uniform4f(
+        fieldU.uHeat,
+        (rimTime * 0.9) % (Math.PI * 2),
+        d.kick,
+        0.35 + 0.65 * d.kick,
+        d.lift,
+      );
       gl.uniform4fv(fieldU["uHarmonics[0]"] as WebGLUniformLocation, harmonics);
       gl.uniform4fv(fieldU["uRates[0]"] as WebGLUniformLocation, rates);
       gl.uniform4fv(fieldU["uPhases[0]"] as WebGLUniformLocation, phases);

@@ -59,12 +59,12 @@ export function FaceView() {
   return (
     <section className="nk-face relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--nk-bg)]">
       <aside className="nk-face-tele nk-face-tele-l" aria-label="engine status">
-        <FaceRow k="SAMPLE RATE" v={sr > 0 ? `${(sr / 1000).toFixed(1)} kHz` : "—"} />
-        <FaceRow k="BUFFER" v={buf > 0 ? `${buf} samples` : "—"} />
-        <FaceRow k="LATENCY" v={sr > 0 ? `${(latency / sr * 1000).toFixed(2)} ms` : "—"} />
-        <FaceRow k="OVERSAMPLING" v={osModeLabel(osFactor)} />
-        <FaceRow k="CPU" v={`${Math.round(cpu)}%`} />
-        {preview ? <FaceRow k="PREVIEW" v="Synthetic audio" /> : !live ? <FaceRow k="METERS" v="Waiting for audio data" /> : null}
+        <FaceRow k="SAMPLE RATE" num={sr > 0 ? (sr / 1000).toFixed(1) : "—"} unit="kHz" />
+        <FaceRow k="BUFFER" num={buf > 0 ? String(buf) : "—"} unit="samples" />
+        <FaceRow k="LATENCY" num={sr > 0 ? (latency / sr * 1000).toFixed(2) : "—"} unit="ms" />
+        <FaceRow k="OVERSAMPLING" num={osModeLabel(osFactor)} />
+        <FaceRow k="CPU" num={`${Math.round(cpu)}`} unit="%" />
+        {preview ? <FaceRow k="PREVIEW" num="Synthetic" /> : !live ? <FaceRow k="METERS" num="Waiting" /> : null}
       </aside>
       <aside className="nk-face-tele nk-face-tele-r" aria-label="signal metrics">
         <FaceRow k="INPUT PEAK" num={level(inPeak)} unit="dBFS" />

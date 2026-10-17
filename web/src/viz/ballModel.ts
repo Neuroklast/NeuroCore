@@ -1,4 +1,5 @@
 import type { MotionPref } from "../theme/motionPolicy";
+import { specMag01 } from "./scopeModel";
 
 /**
  * Unit-face ball. A glass sphere with an electric rim, glowing dust and a GPU
@@ -230,7 +231,7 @@ export const BALL_CONFIG = {
   haze: 0.65,
   sparks: 0,
   fill: 0.52,
-  motion: "rise",
+  motion: "drift",
   shape: "square",
   depth: 0.55,
   sway: 0.12,
@@ -322,21 +323,21 @@ export function ballDrive(
   const low = clamp01(bands.low);
   const mid = clamp01(bands.mid);
   const high = clamp01(bands.high);
-  const r = clamp01(rms);
+  const loud = specMag01(clamp01(rms));
   const w = clamp01(width);
   const p = prev ?? BALL_STATIC;
   const onset = clamp01(opts.onset ?? (opts.transient === true ? 1 : 0)) * scale;
 
   return {
     spread: ease(p.spread, w * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
-    lift: ease(p.lift, 0.55 * low * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
+    lift: ease(p.lift, 0.7 * low * scale, dt, DRIVE_ATTACK, DRIVE_RELEASE),
     kick: ease(p.kick, onset > 0 ? onset : 0, dt, 0.015, KICK_RELEASE),
     impulse: onset,
-    glow: ease(p.glow, 0.12 + 0.38 * r, dt, DRIVE_RELEASE, DRIVE_RELEASE),
-    twinkle: ease(p.twinkle, 0.08 + 0.35 * high, dt, DRIVE_ATTACK, DRIVE_RELEASE),
-    swirl: ease(p.swirl, 0.15 + 0.45 * mid, dt, DRIVE_RELEASE, DRIVE_RELEASE),
-    size: ease(p.size, 0.65 + 0.35 * r, dt, DRIVE_ATTACK, DRIVE_RELEASE),
-    dustSpeed: ease(p.dustSpeed, 0.55 + 0.7 * r, dt, DRIVE_RELEASE, DRIVE_RELEASE),
+    glow: ease(p.glow, 0.12 + 0.38 * loud, dt, DRIVE_RELEASE, DRIVE_RELEASE),
+    twinkle: ease(p.twinkle, 0.08 + 0.45 * high, dt, DRIVE_ATTACK, DRIVE_RELEASE),
+    swirl: ease(p.swirl, 0.15 + 0.55 * mid, dt, DRIVE_RELEASE, DRIVE_RELEASE),
+    size: ease(p.size, 0.65 + 0.35 * loud, dt, DRIVE_ATTACK, DRIVE_RELEASE),
+    dustSpeed: ease(p.dustSpeed, 0.45 + 0.85 * loud, dt, DRIVE_RELEASE, DRIVE_RELEASE),
     still: false,
   };
 }

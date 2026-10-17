@@ -43,9 +43,9 @@ export const BRACE_ANGLES: readonly number[] = [
 export const RING_OMEGA: readonly number[] = [0.065, -0.042, 0.028];
 export const RING_REST: readonly number[] = [0.18, -0.41, 0.62];
 
-export const TELE_L = { x: 12, y: 12, w: 188, h: 90 };
+export const TELE_L = { x: 12, y: 12, w: 288, h: 90 };
 export const TELE_RIGHT_INSET = 12;
-export const TELE_W = 168;
+export const TELE_W = 360;
 export const TELE_H = 90;
 export const EDGE_MARGIN = 20;
 export const OUTER_K_MIN = 1.1;

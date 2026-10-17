@@ -6,6 +6,7 @@ import { parseLfoShape, resolveLfoHz, lfoWave, type LfoKnob, type LfoShape } fro
 import { visualAudioEdges } from "../assemble/visualEdges";
 import { kindLabel } from "../theme/tokens";
 import { specMag01 } from "../viz/scopeModel";
+import { analyzeFrame } from "../viz/audioAnalyze";
 import type { MotionPref } from "../theme/motionPolicy";
 
 function clamp01(n: number): number {
@@ -101,39 +102,9 @@ export function faceFftBar(bin: number, viewH: number): { y: number; h: number }
   return { y: viewH - h, h };
 }
 
-/** Magnitude spectrum. Integer DFT bins 0..N/2 folded into `binCount` slots. */
-export function spectrumBins(samples: ArrayLike<number>, binCount: number): number[] {
-  const bins = Math.max(1, Math.floor(binCount));
-  const n = Math.min(samples.length, 256);
-  const out = new Array<number>(bins).fill(0);
-  if (n < 2) {
-    return out;
-  }
-  const half = Math.floor(n / 2);
-  const mags = new Array<number>(half + 1).fill(0);
-  for (let k = 0; k <= half; k += 1) {
-    let re = 0;
-    let im = 0;
-    const w = (-2 * Math.PI * k) / n;
-    for (let i = 0; i < n; i += 1) {
-      const x = samples[i] ?? 0;
-      re += x * Math.cos(w * i);
-      im += x * Math.sin(w * i);
-    }
-    mags[k] = Math.sqrt(re * re + im * im) / n;
-  }
-  for (let b = 0; b < bins; b += 1) {
-    const i0 = Math.floor((b * (half + 1)) / bins);
-    const i1 = Math.max(i0 + 1, Math.floor(((b + 1) * (half + 1)) / bins));
-    let acc = 0;
-    let c = 0;
-    for (let i = i0; i < i1 && i < mags.length; i += 1) {
-      acc += mags[i] ?? 0;
-      c += 1;
-    }
-    out[b] = c > 0 ? acc / c : 0;
-  }
-  return out;
+/** Log-spaced magnitude spectrum, dB-mapped 0..1. */
+export function spectrumBins(samples: ArrayLike<number>, binCount: number, sr = 48000): number[] {
+  return analyzeFrame(samples, sr, Math.max(1, Math.floor(binCount))).spec;
 }
 
 export function bandRms(samples: ArrayLike<number>, sr = 48000): {
@@ -141,31 +112,7 @@ export function bandRms(samples: ArrayLike<number>, sr = 48000): {
   mid: number;
   high: number;
 } {
-  const spec = spectrumBins(samples, 32);
-  const nyquist = Math.max(1, sr / 2);
-  const hzOf = (k: number) => ((k + 0.5) / spec.length) * nyquist;
-  let low = 0;
-  let mid = 0;
-  let high = 0;
-  let nL = 0;
-  let nM = 0;
-  let nH = 0;
-  for (let k = 0; k < spec.length; k += 1) {
-    const hz = hzOf(k);
-    const v = spec[k] ?? 0;
-    if (hz < 400) {
-      low += v;
-      nL += 1;
-    } else if (hz < 4000) {
-      mid += v;
-      nM += 1;
-    } else {
-      high += v;
-      nH += 1;
-    }
-  }
-  const norm = (acc: number, n: number) => clamp01(n > 0 ? (acc / n) * 8 : 0);
-  return { low: norm(low, nL), mid: norm(mid, nM), high: norm(high, nH) };
+  return analyzeFrame(samples, sr).bands;
 }
 
 const RGB_PX = 14;

@@ -1,4 +1,5 @@
-import { spectrumBins, stereoMetrics } from "./faceModel";
+import { stereoMetrics } from "./faceModel";
+import { analyzeFrame, FMIN } from "../viz/audioAnalyze";
 import {
   CONTAINMENT_STATIC,
   PULSE_MAX,
@@ -26,11 +27,11 @@ export type CoreViz = {
   mode: "IDLE" | "STABLE" | "ACTIVE";
 };
 
-export function coreSpectrum(samples: ArrayLike<number>, live: boolean, bins = 32): number[] {
+export function coreSpectrum(samples: ArrayLike<number>, live: boolean, bins = 32, sr = 48000): number[] {
   if (! live || samples.length < 2) {
     return new Array(Math.max(1, bins)).fill(0);
   }
-  return spectrumBins(samples, bins).map(clamp01);
+  return analyzeFrame(samples, sr, bins).spec;
 }
 
 export function coreWave(samples: ArrayLike<number>, live: boolean, points = 48): number[] {
@@ -50,7 +51,7 @@ export const FIELD_SEGS = 12;
 
 export const HUD = {
   inset: 12,
-  diagTop: 108,
+  diagTop: 118,
   diagW: 228,
   calloutW: 108,
   calloutH: 48,
@@ -121,32 +122,6 @@ export function coreViz(drive: BallDrive, pose: ContainmentPose): CoreViz {
   return { activity, stability, excitation, sync, field, mode };
 }
 
-function bandsFromSpec(spec: number[], sr: number): { low: number; mid: number; high: number } {
-  const nyquist = Math.max(1, sr / 2);
-  let low = 0;
-  let mid = 0;
-  let high = 0;
-  let nL = 0;
-  let nM = 0;
-  let nH = 0;
-  for (let k = 0; k < spec.length; k += 1) {
-    const hz = ((k + 0.5) / spec.length) * nyquist;
-    const v = spec[k] ?? 0;
-    if (hz < 400) {
-      low += v;
-      nL += 1;
-    } else if (hz < 4000) {
-      mid += v;
-      nM += 1;
-    } else {
-      high += v;
-      nH += 1;
-    }
-  }
-  const norm = (acc: number, n: number) => clamp01(n > 0 ? (acc / n) * 8 : 0);
-  return { low: norm(low, nL), mid: norm(mid, nM), high: norm(high, nH) };
-}
-
 export function coreDrivePose(
   samples: ArrayLike<number>,
   rms: number,
@@ -164,23 +139,22 @@ export function coreDrivePose(
     drive: BALL_STATIC,
     pose: CONTAINMENT_STATIC,
     viz: coreViz(BALL_STATIC, CONTAINMENT_STATIC),
-    spec: coreSpectrum(samples, false, 32),
+    spec: coreSpectrum(samples, false, 32, sr),
     wave: coreWave(samples, false, 48),
   };
   if (! live || motion === "off") {
     return idle;
   }
-  const raw = spectrumBins(samples, 32);
-  const bands = bandsFromSpec(raw, sr);
+  const packed = analyzeFrame(samples, sr, 32);
   const width = stereoMetrics(gonioX, gonioY);
   const side = Math.max(0, 1 - Math.abs(width.corr));
-  const drive = ballDrive(prevDrive, bands, rms, side, dt, { motion });
+  const drive = ballDrive(prevDrive, packed.bands, rms, side, dt, { motion });
   const pose = containmentPose(prevPose, drive, dt, t, motion);
   return {
     drive,
     pose,
     viz: coreViz(drive, pose),
-    spec: raw.map(clamp01),
+    spec: packed.spec,
     wave: coreWave(samples, true, 48),
   };
 }
@@ -207,9 +181,8 @@ export function formatViz(n: number): string {
 
 export const SCOPE_WIN = 256;
 
-export function specFloorHz(sr: number, n = SCOPE_WIN): number {
-  const rate = sr > 0 ? sr : 48000;
-  return rate / Math.max(2, n);
+export function specFloorHz(_sr?: number, _n = SCOPE_WIN): number {
+  return FMIN;
 }
 
 export function specLogX(hz: number, sr: number, n = SCOPE_WIN): number {
@@ -235,10 +208,11 @@ export function specLogPath(spec: number[], sr: number, w: number, h: number): s
     return "";
   }
   const nyquist = Math.max(1, (sr > 0 ? sr : 48000) / 2);
+  const span = Math.log(nyquist / FMIN);
   let d = "";
   let started = false;
   for (let i = 0; i < n; i += 1) {
-    const hz = ((i + 0.5) / n) * nyquist;
+    const hz = FMIN * Math.exp(((i + 0.5) / n) * span);
     const x = specLogX(hz, sr) * w;
     const y = h - clamp01(spec[i] ?? 0) * (h - 8);
     if (! started) {

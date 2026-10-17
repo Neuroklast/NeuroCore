@@ -90,10 +90,11 @@ describe("core diagnostics mapping", () => {
 });
 
 describe("hud drawing helpers", () => {
-  it("does not label frequencies below the 256-sample window", () => {
+  it("labels from 20 Hz, not the old 256-sample DFT floor", () => {
     const ticks = specTickHz(48000);
+    expect(specFloorHz(48000)).toBe(20);
     expect(ticks.every((hz) => hz >= specFloorHz(48000))).toBe(true);
-    expect(ticks).not.toContain(20);
+    expect(ticks[0]).toBeGreaterThanOrEqual(200);
   });
 
   it("sine is peaked, noise fills more bins, a click is broadband, silence stays zero", () => {
@@ -105,7 +106,7 @@ describe("hud drawing helpers", () => {
       return ((t >>> 0) / 4294967296) * 2 - 1;
     });
     const click = new Float32Array(n);
-    click[0] = 1;
+    click[n >> 1] = 1;
     const sSpec = coreSpectrum(sine, true, 32);
     const nSpec = coreSpectrum(noise, true, 32);
     const cSpec = coreSpectrum(click, true, 32);
@@ -184,7 +185,9 @@ describe("hud drawing helpers", () => {
     expect(Number(row?.[1])).toBeGreaterThanOrEqual(10);
     expect(Number(axis?.[1])).toBeGreaterThanOrEqual(9);
     expect(css).toMatch(/\.nk-face-seg i\s*\{[^}]*background:\s*rgba/);
-    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*grid-template-columns/);
+    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*grid-template-columns:\s*13ch 7ch 7ch/);
+    expect(css).toMatch(/\.nk-face-tele-r \.nk-face-row\s*\{[^}]*grid-template-columns:\s*7ch 7ch 20ch/);
+    expect(css).toMatch(/\.nk-face-row\s*\{[^}]*white-space:\s*nowrap/);
     expect(css).toMatch(/\.nk-face-mod-row\s*\{[^}]*grid-template-columns/);
   });
 });
