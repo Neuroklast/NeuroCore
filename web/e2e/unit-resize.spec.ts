@@ -94,6 +94,45 @@ test('scaled knob menus and bind cursor follow the pointer', async ({page})=>{
   expect(g!.x+g!.width/2).toBeCloseTo(450,0);
   expect(g!.y+g!.height/2).toBeCloseTo(360,0);
   await page.mouse.up();
+  await page.locator('.nk-prm').last().click({button:'right'});
+  const menu=page.locator('.nk-ctx');
+  await expect(menu).toBeVisible();
+  const m=await menu.boundingBox();
+  assertContainedWithin({x:m!.x,y:m!.y,w:m!.width,h:m!.height},{x:0,y:0,w:960,h:645},'scaled knob menu');
+});
+
+test('rapid manual window resizing preserves HUD geometry in both directions', async ({page})=>{
+  await installUnitHost(page);
+  await page.goto('/');
+  await expect(page.locator('.nk-face-hud')).toHaveCSS('display','grid');
+  await page.evaluate(()=>document.fonts.ready);
+  const measure=()=>page.evaluate(()=>{
+    const face=document.querySelector<HTMLElement>('.nk-face')!;
+    const root=face.getBoundingClientRect(), scale=root.width/face.clientWidth;
+    return {
+      face:{x:root.x,y:root.y,w:root.width,h:root.height},
+      anchors:[...face.querySelectorAll('.nk-face-tele, .nk-face-diag, .nk-face-callout:not([hidden])')].map(el=>{
+        const r=el.getBoundingClientRect();
+        return {x:(r.x-root.x)/scale,y:(r.y-root.y)/scale,w:r.width/scale,h:r.height/scale};
+      }),
+    };
+  });
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  const initial=await measure();
+  // Same mounted page: width-only, height-only, then diagonal edge-drag paths.
+  const sizes:number[][]=[];
+  for(const width of [1200,1100,1000,900,800,900,1000,1200,1440,1280]) sizes.push([width,860]);
+  for(const height of [780,700,620,538,620,700,860,1000,860]) sizes.push([1280,height]);
+  sizes.push([1100,740],[900,605],[800,538],[960,645],[1440,968],[1280,860]);
+  for(const [width,height] of sizes) {
+    await page.setViewportSize({width,height});
+    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+    const current=await measure();
+    assertContainedWithin(current.face,{x:0,y:0,w:width,h:height},'Unit within resized window');
+    expect(current.anchors).toHaveLength(initial.anchors.length);
+    current.anchors.forEach((box,i)=>assertStableHitbox(initial.anchors[i]!,box,'HUD during edge drag'));
+  }
+  assertStableHitbox(initial.face,(await measure()).face,'original window restored');
 });
 
 test('dynamic telemetry numbers cannot move HUD controls or overflow their columns', async ({page})=>{
