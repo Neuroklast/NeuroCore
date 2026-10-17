@@ -1,3 +1,4 @@
+import { installUnitHost } from "./unit-host";
 import { test, expect, type Locator } from "@playwright/test";
 import {
   assertNoOverlap,
@@ -20,6 +21,7 @@ async function box(el: Locator): Promise<Box> {
 
 test.describe("unit hud + preset cluster", () => {
   test.beforeEach(async ({ page }) => {
+    await installUnitHost(page);
     await page.goto("/");
     await page.locator("html[data-nk-ready='1']").waitFor();
     await page.waitForFunction(() => document.fonts.status === "loaded");

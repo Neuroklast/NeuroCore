@@ -19,6 +19,7 @@ export async function installUnitHost(page: Page, theme='signal', motion='off') 
   await page.addInitScript(({ theme, motion })=>{
     const listeners=new Map<string,((p:unknown)=>void)[]>();
     const emit=(id:string,p:unknown)=>listeners.get(id)?.forEach(fn=>fn(p));
+    window.addEventListener("unit-contract-host", event => emit("host", (event as CustomEvent).detail));
     window.__JUCE__={backend:{
       addEventListener(id,fn){ const rows=listeners.get(id)??[];rows.push(fn);listeners.set(id,rows); },
       emitEvent(id,payload){

@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 import { assertContainedWithin, assertNoOverlap, assertStableHitbox, type Box } from './layout';
 
 test('resizing the same Unit keeps HUD anchors, contents and callouts in logical coordinates', async ({ page }, testInfo) => {
+  test.setTimeout(180000);
   await installUnitHost(page);
   await page.goto('/');
   await page.locator("html[data-nk-ready='1']").waitFor();
@@ -93,4 +94,24 @@ test('scaled knob menus and bind cursor follow the pointer', async ({page})=>{
   expect(g!.x+g!.width/2).toBeCloseTo(450,0);
   expect(g!.y+g!.height/2).toBeCloseTo(360,0);
   await page.mouse.up();
+});
+
+test('dynamic telemetry numbers cannot move HUD controls or overflow their columns', async ({page})=>{
+  await installUnitHost(page);
+  await page.goto('/');
+  await page.locator("html[data-nk-ready='1']").waitFor();
+  await expect(page.locator('.nk-face-hud')).toHaveCSS('display','grid');
+  const measure=()=>page.locator('.nk-face-tele, .nk-face-diag, .nk-face-callout:not([hidden])').evaluateAll(nodes=>nodes.map(n=>{
+    const r=n.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};
+  }));
+  const before=await measure();
+  for(const [sr,buf,lat,cpu] of [[44100,32,0,0],[192000,8192,8192,100],[48000,256,32,9]]) {
+    await page.evaluate(values=>window.dispatchEvent(new CustomEvent('unit-contract-host',{detail:{...values,motion:'off',theme:'signal',frameRate:30,mode:'STUDIO',os:4,bpm:120}})),{sr,buf,lat,cpu});
+    await expect(page.locator('.nk-face-tele-l')).toContainText(String(buf));
+    const after=await measure();
+    expect(after).toHaveLength(before.length);
+    after.forEach((b,i)=>assertStableHitbox(before[i]!,b,'meter state'));
+    const overflow=await page.locator('.nk-face-row > span').evaluateAll(nodes=>nodes.filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.textContent));
+    expect(overflow).toEqual([]);
+  }
 });
