@@ -102,6 +102,7 @@ describe("stir shader contract", () => {
     expect(src).not.toMatch(/acc\.y \+= uLiftForce/);
     expect(src).toContain("STIR_LIFT_BIAS");
     expect(src).toContain("uImpulse");
+    expect(src).not.toMatch(/uniform4f\(\s*fieldU\.uHeat,\s*0,\s*0,\s*0,\s*0\)/);
     expect(src).not.toContain("SETTLE_SECONDS");
     expect(src).toContain("publishViz(");
   });

@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-08-29 (docs catch-up: headless board, Help minus Install, global OS/meters)  
-**Version:** 0.6.6-beta  
-**Branch:** `main`
+**Stand:** 2026-10-17 (Unit audio viz)  
+**Version:** 0.6.8-beta  
+**Branch:** `fix/unit-audio-viz`
+
+## Unit audio viz (2026-10-17)
+
+Meters showed real dBFS while spectrum, field and particles stayed dead: 256-sample linear DFT painted as linear 0–1 (~172 Hz bins). Analyzer is a 2048 hop, log 20 Hz–Nyquist, −60 dBFS height, attack/release bands. Telemetry is label / number / unit, nowrap. Heat and arcs follow onsets. Metal AA tightened. No DSP sound change.
 
 Alte Tages-Checklisten: `docs/archive/DEVELOPMENT_STATUS_HISTORY.md`.
 

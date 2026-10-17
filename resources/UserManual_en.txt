@@ -75,7 +75,7 @@ Unit meters
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
 - The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
 - The centre of Unit shows a glass ball in the theme accent colour, inside a metal containment cage. Stereo width pushes the dust outward. Bass and transients whirl it up. Loudness only glows the rim. The pointer does nothing. Motion Off freezes it as a still frame; Reduced calms it. While the ball is shown the floor plot, the goniometer, the peak/RMS bars and the plot right-click menu are replaced. Without WebGL2 the wordmark and the full analyzer panel come back exactly as before.
-- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters as the ball. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. The spectrum only labels frequencies the 256-sample window can resolve. Numbers stay in fixed columns.
+- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters as the ball. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. Spectrum is logarithmic 20 Hz to Nyquist with a −60 dBFS height. Each meter row is label, number, unit on one line.
 
 ---
 

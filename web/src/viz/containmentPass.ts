@@ -78,7 +78,8 @@ float arcMask(float theta, float rot, float n, float gap, float phase) {
   a = a - TAU * floor(a / TAU);
   float u = fract(a / TAU * max(n, 1.0));
   float on = clamp(1.0 - gap, 0.2, 0.95);
-  return smoothstep(0.0, 0.035, u) * smoothstep(on + 0.035, on, u);
+  float aa = 0.008;
+  return smoothstep(0.0, aa, u) * smoothstep(on + aa, on, u);
 }
 
 vec3 shadeMetal(vec3 n, float bright) {
@@ -93,7 +94,7 @@ vec3 shadeMetal(vec3 n, float bright) {
 }
 
 void cover(inout float a, inout vec3 rgb, float d, vec3 n, float bright) {
-  float w = 1.0 - smoothstep(-0.9, 1.15, d);
+  float w = 1.0 - smoothstep(-0.4, 0.5, d);
   if (w <= 0.001) {
     return;
   }

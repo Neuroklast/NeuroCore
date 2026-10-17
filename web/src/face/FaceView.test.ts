@@ -8,8 +8,11 @@ it("shows meaningful meters without invented thermal readings or data rain",()=>
  expect(html).not.toContain('AST_CHECKSUM');
  expect(html).not.toContain('TEMP (K)');
  expect(html).not.toContain('nk-face-rain-col');
- expect(html).toContain('INPUT PEAK');
- expect(html).toContain('OUTPUT PEAK');
+  expect(html).toContain('INPUT PEAK');
+  expect(html).toContain('OUTPUT PEAK');
+  expect(html).toContain('nk-face-unit');
+  expect(html).toContain('kHz');
+  expect(html).not.toContain('44.1 kHz');
  expect(html).toContain('CORE STATUS');
  expect(html).toContain('SPECTRUM');
  expect(html).toContain('PARTICLE ORBITS');

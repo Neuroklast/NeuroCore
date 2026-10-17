@@ -1,4 +1,10 @@
-import { bandRms, spectrumBins } from "../face/faceModel";
+import {
+  createAnalyze,
+  feedAnalyze,
+  idleAnalyze,
+  resetAnalyze,
+  type AnalyzeState,
+} from "./audioAnalyze";
 import { BALL_STATIC, type BallDrive } from "./ballModel";
 import { CONTAINMENT_STATIC, type ContainmentPose } from "./containmentModel";
 
@@ -34,7 +40,9 @@ let bandCache: BandCache = {
   spec: new Array(32).fill(0),
 };
 
-/** DFT once per telemetry tick. Shared by the ball and the HUD. */
+let analyzer: AnalyzeState = createAnalyze();
+
+/** One analyze hop per telemetry tick. Shared by the ball and the HUD. */
 export function cachedBands(
   tick: number,
   samples: ArrayLike<number>,
@@ -44,10 +52,12 @@ export function cachedBands(
   if (tick === bandCache.tick && live === bandCache.live) {
     return bandCache;
   }
-  const spec = live && samples.length >= 2
-    ? spectrumBins(samples, 32).map((v) => (v > 1 ? 1 : v < 0 ? 0 : v))
-    : new Array(32).fill(0);
-  const bands = live ? bandRms(samples, sr) : { low: 0, mid: 0, high: 0 };
-  bandCache = { tick, live, bands, spec };
+  if (! live) {
+    resetAnalyze(analyzer);
+    bandCache = { tick, live, ...idleAnalyze() };
+    return bandCache;
+  }
+  const out = feedAnalyze(analyzer, samples, sr, 1 / 45);
+  bandCache = { tick, live, bands: out.bands, spec: out.spec };
   return bandCache;
 }
