@@ -390,7 +390,8 @@ export type ContainmentDraw = {
 };
 
 export type ContainmentGpu = {
-  draw: (layer: 0 | 1, pass: "metal" | "energy", args: ContainmentDraw) => void;
+  bind: (args: ContainmentDraw) => void;
+  draw: (layer: 0 | 1, pass: "metal" | "energy") => void;
   dispose: () => void;
 };
 
@@ -452,16 +453,13 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
   const discharge = new Float32Array(4);
 
   return {
-    draw(layer, pass, args) {
+    bind(args) {
       const { layout: L, pose, shards, palette, dpr, encode } = args;
       gl.useProgram(prog);
-      gl.bindVertexArray(vao);
       gl.uniform2f(u.uCenter, L.cx, L.cy);
       gl.uniform1f(u.uBallR, L.ballR);
       gl.uniform1f(u.uDpr, dpr);
       gl.uniform1f(u.uEncode, encode);
-      gl.uniform1f(u.uLayer, layer);
-      gl.uniform1f(u.uPass, pass === "energy" ? 1 : 0);
       gl.uniform1f(u.uPulse, pose.pulse);
       gl.uniform1f(u.uSurge, pose.clampSurge);
       gl.uniform1f(u.uGlow, pose.glow);
@@ -507,6 +505,12 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
         shardPack[i * 4 + 3] = s.size;
       }
       gl.uniform4fv(u.uShards, shardPack);
+    },
+    draw(layer, pass) {
+      gl.useProgram(prog);
+      gl.bindVertexArray(vao);
+      gl.uniform1f(u.uLayer, layer);
+      gl.uniform1f(u.uPass, pass === "energy" ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.bindVertexArray(null);
     },

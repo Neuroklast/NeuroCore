@@ -41,6 +41,8 @@ import {
   containmentPose,
   orbitShards,
   publishCagePose,
+  type ContainmentLayout,
+  type ContainmentPalette,
   type ContainmentPose,
 } from "./containmentModel";
 import { createContainment } from "./containmentPass";
@@ -757,6 +759,10 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let lastW = 0;
     let lastH = 0;
     let stillDrawn = false;
+    let cageLayout: ContainmentLayout | null = null;
+    let cageLayoutW = 0;
+    let cageLayoutH = 0;
+    let cagePalette: ContainmentPalette = containmentPalette(themeOf("signal"));
 
     let alive = true;
     let checked = false;
@@ -814,6 +820,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         cyan = rgbTriplet(themePalette.cyanRgb);
         palette = buildPalette(accent, cyan);
         tones = new Float32Array(palette.tones.flat());
+        cagePalette = containmentPalette(themePalette);
       }
 
       const telemetry = useTelemetryStore.getState();
@@ -905,7 +912,12 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      const cLayout = containment ? containmentLayout(width, height) : null;
+      if (containment && (cageLayoutW !== width || cageLayoutH !== height || ! cageLayout)) {
+        cageLayoutW = width;
+        cageLayoutH = height;
+        cageLayout = containmentLayout(width, height);
+      }
+      const cLayout = containment ? cageLayout : null;
       if (containment) {
         cagePose = still
           ? CONTAINMENT_STATIC
@@ -918,20 +930,18 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
             layout: cLayout,
             pose: cagePose,
             shards: orbitShards(cLayout, cagePose.orbitPhase),
-            palette: containmentPalette(themeOf(themeId || "signal")),
+            palette: cagePalette,
             dpr,
             encode,
           }
         : null;
       if (containment && cArgs) {
+        containment.bind(cArgs);
         gl.enable(gl.BLEND);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        containment.draw(0, "metal", cArgs);
+        containment.draw(0, "metal");
         gl.blendFunc(gl.ONE, gl.ONE);
-        containment.draw(0, "energy", cArgs);
-        while (gl.getError() !== gl.NO_ERROR) {
-          // Containment faults must not unmount the ball.
-        }
+        containment.draw(0, "energy");
       }
 
       gl.enable(gl.BLEND);
@@ -985,32 +995,32 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         const h = Math.min(dt, 0.05) / steps;
         let read = stateRead;
         let write = stateWrite;
+        gl.useProgram(stir);
+        gl.uniform1i(stirU.tHome, 0);
+        gl.uniform1i(stirU.tSeed, 1);
+        gl.uniform1i(stirU.tOffset, 2);
+        gl.uniform1i(stirU.tVelocity, 3);
+        gl.uniform1f(stirU.uDt, h);
+        gl.uniform1f(stirU.uReset, 0);
+        gl.uniform1f(stirU.uSpread, d.spread);
+        gl.uniform1f(stirU.uLiftForce, d.lift);
+        gl.uniform1f(stirU.uSwirl, d.swirl);
+        gl.uniform1f(stirU.uDustTime, dustTime);
+        gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
+        gl.uniform1f(stirU.uFill, BALL_CONFIG.fill);
+        gl.uniform2f(stirU.uTurn, turnX, turnY);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, homeTex);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, seedTex);
+        gl.disable(gl.BLEND);
+        gl.bindVertexArray(quadVao);
         for (let s = 0; s < steps; s += 1) {
-          gl.useProgram(stir);
-          gl.uniform1i(stirU.tHome, 0);
-          gl.uniform1i(stirU.tSeed, 1);
-          gl.uniform1i(stirU.tOffset, 2);
-          gl.uniform1i(stirU.tVelocity, 3);
-          gl.uniform1f(stirU.uDt, h);
-          gl.uniform1f(stirU.uReset, 0);
-          gl.uniform1f(stirU.uSpread, d.spread);
-          gl.uniform1f(stirU.uLiftForce, d.lift);
           gl.uniform1f(stirU.uImpulse, s === 0 ? d.impulse : 0);
-          gl.uniform1f(stirU.uSwirl, d.swirl);
-          gl.uniform1f(stirU.uDustTime, dustTime);
-          gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
-          gl.uniform1f(stirU.uFill, BALL_CONFIG.fill);
-          gl.uniform2f(stirU.uTurn, turnX, turnY);
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, homeTex);
-          gl.activeTexture(gl.TEXTURE1);
-          gl.bindTexture(gl.TEXTURE_2D, seedTex);
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, read.textures[0]!);
           gl.activeTexture(gl.TEXTURE3);
           gl.bindTexture(gl.TEXTURE_2D, read.textures[1]!);
-          gl.disable(gl.BLEND);
-          gl.bindVertexArray(quadVao);
           gl.bindFramebuffer(gl.FRAMEBUFFER, write.fb);
           gl.viewport(0, 0, write.w, write.h);
           gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1072,12 +1082,9 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (containment && cArgs) {
         gl.enable(gl.BLEND);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        containment.draw(1, "metal", cArgs);
+        containment.draw(1, "metal");
         gl.blendFunc(gl.ONE, gl.ONE);
-        containment.draw(1, "energy", cArgs);
-        while (gl.getError() !== gl.NO_ERROR) {
-          // Containment faults must not unmount the ball.
-        }
+        containment.draw(1, "energy");
       }
 
       gl.disable(gl.BLEND);

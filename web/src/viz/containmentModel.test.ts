@@ -216,6 +216,24 @@ describe("containment palette", () => {
     expect(src).toContain("containmentPose(");
     expect(src).toContain("CONTAINMENT_STATIC");
   });
+
+  it("does not drain GL errors after containment on every frame", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
+    expect(src).not.toMatch(/containment\.draw\(0[\s\S]{0,500}while \(gl\.getError/);
+    expect(src).not.toMatch(/containment\.draw\(1[\s\S]{0,500}while \(gl\.getError/);
+    expect((src.match(/while \(gl\.getError/g) ?? []).length).toBe(1);
+  });
+
+  it("binds containment uniforms once then draws four layers", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const ball = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
+    const pass = readFileSync(path.join(here, "containmentPass.ts"), "utf8");
+    expect(ball).toContain("containment.bind(");
+    expect(pass).toContain("bind(args)");
+    expect(ball).toContain('containment.draw(0, "metal")');
+    expect(ball).toContain('containment.draw(1, "energy")');
+  });
 });
 
 describe("ballDrive stays the source of truth", () => {
