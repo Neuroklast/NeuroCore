@@ -47,8 +47,10 @@ test('the production physics shader compiles and kicks the bowl up with a stereo
       return [...pixels];
     };
     const mono=run(0), wide=run(1);
+    texture(0,[-.0001,-.55,0,0, 0,-.55,0,0, .0001,-.55,0,0]);
+    const centre=run(1);
     gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return {mono,wide};
+    return {mono,wide,centre};
   }, STIR_FS);
   for(const at of [0,4,8]) {
     expect(result.mono[at+1]).toBeGreaterThan(.8);
@@ -57,4 +59,5 @@ test('the production physics shader compiles and kicks the bowl up with a stereo
   }
   expect(result.wide[0]).toBeLessThan(-.15);
   expect(result.wide[8]).toBeGreaterThan(.15);
+  expect(Math.max(...[0,4,8].map(at=>Math.abs(result.centre[at]!)))).toBeLessThan(.001);
 });
