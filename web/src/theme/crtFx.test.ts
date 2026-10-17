@@ -30,4 +30,10 @@ describe("CRT layer host", () => {
   it("does not fog the board with a heavy inset vignette", () => {
     expect(css).not.toMatch(/inset 0 0 80px 18px rgba\(0, 0, 0, 0\.55\)/);
   });
+
+  it("unbinds peak CSS when motion is off", () => {
+    expect(fxSrc).toContain("if (motion === \"off\")");
+    expect(fxSrc).toContain("bindPeakCss(document.documentElement)");
+    expect(fxSrc).toContain("}, [motion]);");
+  });
 });

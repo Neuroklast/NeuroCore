@@ -1,12 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-17 (UI perf marks)  
+**Stand:** 2026-10-17 (UI perf)  
 **Version:** 0.6.8-beta  
 **Branch:** `perf/ui-baseline`
 
-## UI perf marks (2026-10-17)
+## UI perf (2026-10-17)
 
-Opt-in `nk:ball` / `nk:cables` / `nk:bands` measures (`?nkperf=1` or `localStorage.nkperf`). Off by default. How to capture: `docs/performance/README.md`. Native WebView2 not measured.
+Same look. Less work: opt-in `nk:*` marks, reused FFT buffers, no per-frame `getError`, containment uniforms once per frame, cable paint coalesce, Footer/chip/knob/Face fan-out cut, vizClock pauses while hidden, peak CSS off when motion is off. Notes: `docs/performance/`. Native WebView2 not measured.
 
 ## Header layout contracts (2026-10-17)
 
