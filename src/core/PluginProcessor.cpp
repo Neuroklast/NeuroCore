@@ -162,6 +162,7 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
 #endif
     }
 
+    midiLearnManager.bind (apvts);
     UiSettings::get().addListener (this);
     dspEngine.setLiveMode (UiSettings::get().liveMode());
     setTelemetryWanted (false);
@@ -440,7 +441,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 
     // MIDI: Learn CC mappings + update DSL MIDI variables
-    midiLearnManager.processMidiMessages(midiMessages, apvts);
+    midiLearnManager.processMidiMessages (midiMessages);
     midiVariableMapper.processMidi(midiMessages);
 
     const int nSamp = main.getNumSamples();

@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (IR preview snapshot)  
+**Stand:** 2026-10-18 (MIDI learn realtime)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/ir-preview-snapshot`
+**Branch:** `fix/midi-learn-realtime`
+
+## MIDI learn realtime (2026-10-18)
+
+The audio callback maps CC through a 128-slot atomic parameter-pointer table. The first learned CC is one atomic event; string maps and `setMapping` run on the message thread via `drainLearnEvents`. No SpinLock and no `juce::String` on that path.
 
 ## IR preview snapshot (2026-10-18)
 
