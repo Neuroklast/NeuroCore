@@ -28,6 +28,14 @@ export function telemetryIntervalMs(w: Workspace, fps = 60): number {
   return fps === 30 ? 33 : 16;
 }
 
+/** Sleep so fetch + wait stays on the interval, not fetch-time plus the interval. */
+export function telemetryWaitMs(intervalMs: number, elapsedMs: number): number {
+  if (! (intervalMs > 0)) {
+    return 0;
+  }
+  return Math.max(0, intervalMs - Math.max(0, elapsedMs));
+}
+
 /** Monaco cannot init in display:none. Terminal mounts only on that tab. */
 export function terminalMounted(w: Workspace): boolean {
   return w === "hack";

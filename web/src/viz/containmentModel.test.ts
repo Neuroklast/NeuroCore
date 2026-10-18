@@ -19,6 +19,8 @@ import {
   containmentPalette,
   containmentPose,
   orbitShards,
+  packOrbitShards,
+  SHARD_COUNT,
   teleBoxes,
 } from "./containmentModel";
 
@@ -125,6 +127,20 @@ describe("containment layout", () => {
       expect(s.y).toBeLessThan(PANE.h);
     }
   });
+
+  it("packs the same shard positions the HUD list uses", () => {
+    const L = containmentLayout(PANE.w, PANE.h);
+    const shards = orbitShards(L, 0.4);
+    const pack = new Float32Array(SHARD_COUNT * 4);
+    packOrbitShards(L, 0.4, pack);
+    expect(shards.length).toBeGreaterThan(0);
+    for (let i = 0; i < shards.length; i += 1) {
+      expect(pack[i * 4]).toBeCloseTo(shards[i]!.x, 8);
+      expect(pack[i * 4 + 1]).toBeCloseTo(shards[i]!.y, 8);
+      expect(pack[i * 4 + 2]).toBeCloseTo(shards[i]!.z, 8);
+      expect(pack[i * 4 + 3]).toBeCloseTo(shards[i]!.size, 8);
+    }
+  });
 });
 
 describe("containment pose", () => {
@@ -223,7 +239,9 @@ describe("containment palette", () => {
     const src = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
     expect(src).not.toMatch(/containment\.draw\(0[\s\S]{0,500}while \(gl\.getError/);
     expect(src).not.toMatch(/containment\.draw\(1[\s\S]{0,500}while \(gl\.getError/);
-    expect((src.match(/while \(gl\.getError/g) ?? []).length).toBe(1);
+    expect(src).not.toMatch(/while \(gl\.getError/);
+    const frame = src.slice(src.indexOf("const frame = (now: number)"), src.indexOf("const onLost"));
+    expect(frame).not.toContain("getError");
   });
 
   it("binds containment uniforms once then draws four layers", () => {

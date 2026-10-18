@@ -58,10 +58,28 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   const gonioN = view.getUint16(30, true);
   const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
   const requiredBytes = version >= 2 ? body + TELEMETRY_TAIL : body;
-  if (version < TELEMETRY_VERSION_MIN || version > TELEMETRY_VERSION_MAX || ab.byteLength < requiredBytes) return false;
-  const readings = [8, 12, 16, 20, 24].map((offset) => view.getFloat32(offset, true));
-  if (readings.some((value) => !Number.isFinite(value) || value < 0)) return false;
-  [dest.inPeak, dest.outPeak, dest.inRms, dest.outRms, dest.cpu01] = readings as [number, number, number, number, number];
+  if (version < TELEMETRY_VERSION_MIN || version > TELEMETRY_VERSION_MAX || ab.byteLength < requiredBytes) {
+    return false;
+  }
+  const inPeak = view.getFloat32(8, true);
+  const outPeak = view.getFloat32(12, true);
+  const inRms = view.getFloat32(16, true);
+  const outRms = view.getFloat32(20, true);
+  const cpu01 = view.getFloat32(24, true);
+  if (
+    ! Number.isFinite(inPeak) || inPeak < 0
+    || ! Number.isFinite(outPeak) || outPeak < 0
+    || ! Number.isFinite(inRms) || inRms < 0
+    || ! Number.isFinite(outRms) || outRms < 0
+    || ! Number.isFinite(cpu01) || cpu01 < 0
+  ) {
+    return false;
+  }
+  dest.inPeak = inPeak;
+  dest.outPeak = outPeak;
+  dest.inRms = inRms;
+  dest.outRms = outRms;
+  dest.cpu01 = cpu01;
   const packed = view.getUint16(6, true);
   dest.onsetCount = (packed >> 8) & 0xff;
   dest.onsetAmp = (packed & 0xff) / 255;
@@ -95,6 +113,27 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   copy(dest.gonioX, scopeN * 2, dest.gonioN);
   copy(dest.gonioY, scopeN * 2 + gonioN, dest.gonioN);
   return true;
+}
+
+/** Native gonio buffers are raw L/R. Pearson correlation of those channels. */
+export function gonioCorr(left: ArrayLike<number>, right: ArrayLike<number>): number {
+  const n = Math.min(left.length, right.length);
+  let accLr = 0;
+  let accL2 = 0;
+  let accR2 = 0;
+  for (let i = 0; i < n; i += 1) {
+    const l = left[i] ?? 0;
+    const r = right[i] ?? 0;
+    accLr += l * r;
+    accL2 += l * l;
+    accR2 += r * r;
+  }
+  const den = Math.sqrt(accL2 * accR2);
+  if (! (den > 1e-12)) {
+    return 0;
+  }
+  const corr = accLr / den;
+  return corr < -1 ? -1 : corr > 1 ? 1 : corr;
 }
 
 export function peakToDb(p: number): number {

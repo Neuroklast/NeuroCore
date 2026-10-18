@@ -1,3 +1,6 @@
+import { perfEnabled } from "../perf/marks";
+import { recordPresentMs, recordWorkMs } from "../perf/stats";
+
 /** One rAF. Visuals subscribe; unsubscribing the last listener stops the loop. */
 
 export type VizTick = (now: number) => void;
@@ -40,9 +43,17 @@ function loop(now: number) {
   if (! clockShouldTick(now, lastEmit, fpsCap, false)) {
     return;
   }
+  const prev = lastEmit;
   lastEmit = now;
+  const t0 = perfEnabled() ? performance.now() : 0;
   for (const tick of subs) {
     tick(now);
+  }
+  if (perfEnabled()) {
+    recordWorkMs(performance.now() - t0);
+    if (prev > 0) {
+      recordPresentMs(now - prev, fpsCap === 30 ? 1000 / 30 : 1000 / 60);
+    }
   }
 }
 

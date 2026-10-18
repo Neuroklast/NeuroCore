@@ -58,6 +58,12 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 
 - Unit sample/time traces use the spectrogram camera: mag 0 is the 3D floor (−1), mag 1 is +peak. Do not run a second signed `waveProject` — that punches −1 through the floor. Paint the live buffer. A trigger lock (or holding the last row) freezes the wave and looks laggy; a first-crossing hunt flickers.
 
+## UI performance
+
+- Production WebGL frame loops do not call `getError` or drain errors. Check compile/link and framebuffer completeness at init. Opt-in GPU timers (`EXT_disjoint_timer_query_webgl2`) are async and discard disjoint results.
+- One spectrum hop per new telemetry snapshot. Include sample rate in the cache identity. Spectrogram hops use a rectangular FFT of the last 256 samples, not a nested trigonometric DFT.
+- Several Circuit gesture paints in one display frame coalesce to one canvas draw. The clock tick skips when that draw is already queued.
+
 ## Chrome / knobs
 
 - In-plugin Help is the operator guide minus Install and Troubleshooting. Empty-window / WebView2 lives in Install — you cannot read Help if the window is empty. One markdown file feeds the installer *and* Help. Do not write Overview as a note about that pipeline (“this file”, “except Install”, “already running”). Apex 400 titles, JetBrains body, cyan chips. Not a `<pre>` dump.

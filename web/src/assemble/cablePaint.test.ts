@@ -7,6 +7,7 @@ import {
   buildCableLanes,
   cableGeomStamp,
   cablePaintPass,
+  shouldCoalescePaint,
   shouldSkipClockPaint,
   peakDistances,
   tapPeakFractions,
@@ -176,6 +177,9 @@ describe("pcb background traces", () => {
     expect(shouldSkipClockPaint(16.4, 16)).toBe(true);
     expect(shouldSkipClockPaint(33, 16)).toBe(false);
     expect(shouldSkipClockPaint(16, 0)).toBe(false);
+    expect(shouldSkipClockPaint(33, 0, 8, true)).toBe(true);
+    expect(shouldCoalescePaint(true)).toBe(true);
+    expect(shouldCoalescePaint(false)).toBe(false);
   });
 
   it("caches lane length with geometry and coalesces gesture paints", () => {
@@ -183,6 +187,7 @@ describe("pcb background traces", () => {
     const src = readFileSync(path.join(here, "CableCanvas.tsx"), "utf8");
     expect(src).toContain("lengths: lanes.map");
     expect(src).toContain("shouldSkipClockPaint");
+    expect(src).toContain("shouldCoalescePaint");
     expect(src).toContain("cached.lengths[i]");
   });
 

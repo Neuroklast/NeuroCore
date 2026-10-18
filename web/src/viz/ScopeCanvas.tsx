@@ -91,14 +91,8 @@ function paintSpectrogramAxes(
 }
 
 export function ScopeCanvas({
-  scopeIn,
-  scopeOut,
-  count,
   sr,
 }: {
-  scopeIn: Float32Array;
-  scopeOut: Float32Array;
-  count: number;
   sr: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -109,19 +103,12 @@ export function ScopeCanvas({
   const invertY = useHostStore((s) => s.scopeInvertY);
   const themeId = useHostStore((s) => s.theme);
   const delta = useHostStore((s) => s.scopeDelta);
-  const tick = useTelemetryStore((s) => s.tick);
   const histIn = useRef<number[][]>([]);
   const histOut = useRef<number[][]>([]);
   const histDelta = useRef<number[][]>([]);
   const lastTick = useRef(-1);
   const prevX = useRef(xScale);
   const prevY = useRef(yScale);
-  const tickRef = useRef(tick);
-  const inRef = useRef(scopeIn);
-  const outRef = useRef(scopeOut);
-  inRef.current = scopeIn;
-  outRef.current = scopeOut;
-  tickRef.current = tick;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -143,14 +130,15 @@ export function ScopeCanvas({
       }
       prevX.current = xScale;
       prevY.current = yScale;
+      const tel = useTelemetryStore.getState();
       const ids = scopeSpectra(source);
       const wave = isWaveScope(xScale) && yScale === "linear";
       const project = spectrogramProject;
       const zeroMag = 0;
-      if (shouldPushScopeRow(tickRef.current, lastTick.current)) {
-        lastTick.current = tickRef.current;
+      if (shouldPushScopeRow(tel.tick, lastTick.current)) {
+        lastTick.current = tel.tick;
         for (const id of scopeRecordIds()) {
-          const samples = id === "in" ? inRef.current : outRef.current;
+          const samples = id === "in" ? tel.scopeIn : tel.scopeOut;
           const hist = id === "in" ? histIn : histOut;
           const row = xScale === "freq"
             ? liftScopeMags(logSpectrumBins(samples, sr, SPEC_BINS), xScale, yScale)
@@ -158,7 +146,7 @@ export function ScopeCanvas({
           hist.current = spectrogramPush(hist.current, row);
         }
         if (delta) {
-          const d = deltaSamples(outRef.current, inRef.current, outRef.current.length);
+          const d = deltaSamples(tel.scopeOut, tel.scopeIn, tel.scopeOut.length);
           const row = xScale === "freq"
             ? liftScopeMags(logSpectrumBins(d, sr, SPEC_BINS), xScale, yScale)
             : standingWaveRow(d, SPEC_BINS, yScale);
@@ -225,10 +213,10 @@ export function ScopeCanvas({
         ctx.stroke();
       }
 
-      paintSpectrogramAxes(ctx, w, h, sr, theme.cyan, xScale, yScale, inRef.current.length);
+      paintSpectrogramAxes(ctx, w, h, sr, theme.cyan, xScale, yScale, tel.scopeIn.length);
     };
     return subscribeVizClock(draw);
-  }, [count, delta, grid, invertY, source, sr, themeId, xScale, yScale]);
+  }, [delta, grid, invertY, source, sr, themeId, xScale, yScale]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

@@ -30,6 +30,7 @@ export function readViz(): VizSnap {
 
 type BandCache = {
   tick: number;
+  sr: number;
   live: boolean;
   bands: { low: number; mid: number; high: number };
   spec: number[];
@@ -37,6 +38,7 @@ type BandCache = {
 
 let bandCache: BandCache = {
   tick: -1,
+  sr: 0,
   live: false,
   bands: { low: 0, mid: 0, high: 0 },
   spec: new Array(32).fill(0),
@@ -51,17 +53,27 @@ export function cachedBands(
   sr: number,
   live: boolean,
 ): { bands: { low: number; mid: number; high: number }; spec: number[] } {
-  if (tick === bandCache.tick && live === bandCache.live) {
+  const rate = sr > 0 && Number.isFinite(sr) ? sr : 48000;
+  if (tick === bandCache.tick && live === bandCache.live && rate === bandCache.sr) {
     return bandCache;
   }
   if (! live) {
     resetAnalyze(analyzer);
-    bandCache = { tick, live, ...idleAnalyze() };
+    const idle = idleAnalyze();
+    bandCache = { tick, sr: rate, live, bands: idle.bands, spec: idle.spec };
     return bandCache;
   }
   perfBegin("bands");
-  const out = feedAnalyze(analyzer, samples, sr, 1 / 45);
-  bandCache = { tick, live, bands: out.bands, spec: out.spec };
+  const out = feedAnalyze(analyzer, samples, rate, 1 / 45);
+  let spec = bandCache.spec;
+  if (spec.length !== out.spec.length) {
+    spec = out.spec.slice();
+  } else {
+    for (let i = 0; i < out.spec.length; i += 1) {
+      spec[i] = out.spec[i]!;
+    }
+  }
+  bandCache = { tick, sr: rate, live, bands: out.bands, spec };
   perfEnd("bands");
   return bandCache;
 }

@@ -1,5 +1,6 @@
 import { hasJuceBridge } from "../bridge/juce";
 import { useEffect, useRef, useState } from "react";
+import { telemetryWaitMs } from "../app/workspace";
 import { createTelemetryViews, decodeTelemetry, SCOPE_N } from "../bridge/telemetry";
 import { persistUi } from "../chrome/persistUi";
 import { useHostStore } from "../store/hostStore";
@@ -52,6 +53,7 @@ export function TelemetryPump({
     let t = 0;
     const tick = async () => {
       while (live) {
+        const started = performance.now();
         let ok = false;
         if (telemetryPath) {
           try {
@@ -71,7 +73,10 @@ export function TelemetryPump({
           t += 1;
         }
         useTelemetryStore.getState().applyViews(views, ok);
-        await new Promise((r) => window.setTimeout(r, ms));
+        const wait = telemetryWaitMs(ms, performance.now() - started);
+        if (wait > 0) {
+          await new Promise((r) => window.setTimeout(r, wait));
+        }
       }
     };
     void tick();
@@ -86,12 +91,6 @@ export function UnitAnalyzer() {
   const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const sr = useHostStore((s) => s.sr);
-  const scopeIn = useTelemetryStore((s) => s.scopeIn);
-  const scopeOut = useTelemetryStore((s) => s.scopeOut);
-  const gonioL = useTelemetryStore((s) => s.gonioL);
-  const gonioR = useTelemetryStore((s) => s.gonioR);
-  const tick = useTelemetryStore((s) => s.tick);
-  void tick;
 
   const onMenu = (kind: "source" | "x" | "y" | "flag", id: string) => {
     const cur = useHostStore.getState();
@@ -127,13 +126,13 @@ export function UnitAnalyzer() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="min-h-0 flex-1" aria-hidden />
         <div className="nk-spec-fade min-h-0 flex-1">
-          <ScopeCanvas scopeIn={scopeIn} scopeOut={scopeOut} count={scopeOut.length} sr={sr} />
+          <ScopeCanvas sr={sr} />
         </div>
       </div>
       <div className="nk-unit-rule" aria-hidden />
       <aside className="nk-unit-meters flex h-full w-[168px] shrink-0 flex-col gap-3">
         <div className="aspect-square w-full shrink-0 overflow-hidden border-b border-[var(--nk-line)]">
-          <StereoField gonioL={gonioL} gonioR={gonioR} count={gonioL.length} />
+          <StereoField />
         </div>
         <div className="min-h-0 min-w-0 flex-1">
           <LoudnessMeter />

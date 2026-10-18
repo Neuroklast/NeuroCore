@@ -13,7 +13,6 @@ import {
   formatHudFixed,
   osModeLabel,
   rmsReadout,
-  stereoMetrics,
 } from "./faceModel";
 
 /** Flip to true to restore the classic Unit centre (wordmark + analyzer) unconditionally. */
@@ -70,9 +69,7 @@ function FaceSignalMeters({ live }: { live: boolean }) {
   const inPeak = useTelemetryStore((s) => s.inPeak);
   const outPeak = useTelemetryStore((s) => s.outPeak);
   const outRms = useTelemetryStore((s) => s.outRms);
-  const gonioL = useTelemetryStore((s) => s.gonioL);
-  const gonioR = useTelemetryStore((s) => s.gonioR);
-  const stereo = stereoMetrics(gonioL, gonioR);
+  const corr = useTelemetryStore((s) => s.corr);
   const rms = rmsReadout(outRms);
   const level = (value: number) => live ? formatHudFixed(Number(formatDbfs(value)), 1, 3) : "—";
   return (
@@ -80,7 +77,7 @@ function FaceSignalMeters({ live }: { live: boolean }) {
       <FaceMeter k="INPUT PEAK" n={level(inPeak)} u="dBFS" />
       <FaceMeter k="OUTPUT PEAK" n={level(outPeak)} u="dBFS" />
       <FaceMeter k="OUTPUT RMS" n={live ? formatHudFixed(Number(rms.value), 1, 3) : "—"} u={rms.unit} />
-      <FaceMeter k="STEREO CORRELATION" n={live ? formatHudFixed(stereo.corr, 2, 2) : "—"} u="" />
+      <FaceMeter k="STEREO CORRELATION" n={live ? formatHudFixed(corr, 2, 2) : "—"} u="" />
     </aside>
   );
 }

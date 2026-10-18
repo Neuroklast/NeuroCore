@@ -21,6 +21,7 @@ import { FaceView } from "../face/FaceView";
 import { bindDocumentMotion, bindDocumentTheme } from "../theme/themeBind";
 import { setVizFpsCap } from "../theme/vizClock";
 import { syncPerfFlag } from "../perf/marks";
+import { PerfHud } from "../perf/PerfHud";
 import { seedFactoryPresets } from "../presets/presetActions";
 import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
@@ -207,6 +208,7 @@ export function App() {
       <Footer />
       <CrtFx />
       <Overlays />
+      <PerfHud />
     </main>
     </ScaleShell>
   );

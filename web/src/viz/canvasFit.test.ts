@@ -38,3 +38,18 @@ it('includes host scaling in the backing store while preserving logical geometry
   expect(el.width).toBe(2700);
   expect(el.height).toBe(330);
 });
+
+it("uses a host-scale hint without a second layout read", () => {
+  const el = {
+    clientWidth: 900,
+    clientHeight: 110,
+    width: 900,
+    height: 110,
+    getBoundingClientRect: () => {
+      throw new Error("layout read");
+    },
+  } as unknown as HTMLCanvasElement;
+  const fit = fitCanvas(el, 2, Number.POSITIVE_INFINITY, 1.5);
+  expect(fit.scale).toBe(3);
+  expect(el.width).toBe(2700);
+});

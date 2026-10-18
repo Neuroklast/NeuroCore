@@ -49,8 +49,21 @@ export const SIDE_BREAK = BOARD_HALF;
 export const PACKET_CORE = "var(--nk-ink)";
 
 /** Gesture paint already filled this vsync; the clock tick must not draw again. */
-export function shouldSkipClockPaint(clockNow: number, gestureAt: number, slack = 8): boolean {
+export function shouldSkipClockPaint(
+  clockNow: number,
+  gestureAt: number,
+  slack = 8,
+  pending = false,
+): boolean {
+  if (pending) {
+    return true;
+  }
   return gestureAt > 0 && clockNow - gestureAt < slack;
+}
+
+/** Several pointer paints in one display frame collapse to one draw. */
+export function shouldCoalescePaint(pending: boolean): boolean {
+  return pending;
 }
 
 /** Camera pan keeps traces and glow. Only Full advances beads; meters stay live. */

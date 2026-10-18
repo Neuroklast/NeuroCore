@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { GONIO_N, SCOPE_N, type TelemetryViews } from "../bridge/telemetry";
+import { GONIO_N, SCOPE_N, gonioCorr, type TelemetryViews } from "../bridge/telemetry";
 
 const EMPTY_WAVE = new Float32Array(0);
 
@@ -18,6 +18,7 @@ interface TelemetryState {
   onsetAmp: number;
   seq: number;
   samplePos: number;
+  corr: number;
   applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
 }
@@ -37,6 +38,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   onsetAmp: 0,
   seq: 0,
   samplePos: 0,
+  corr: 0,
   applyViews: (v, available = true) => {
     const s = get();
     if (v.seq > 0 && v.seq === s.seq) {
@@ -57,6 +59,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
       onsetAmp: v.onsetAmp,
       seq: v.seq,
       samplePos: v.samplePos,
+      corr: gonioCorr(s.gonioL, s.gonioR),
     });
   },
   waveFor: (nodeId) => {

@@ -13,7 +13,9 @@ import {
 import { midSideEnergy, stereoBalance } from "./audioFeatures";
 import { HASH, DUST_COMMON, STIR_FS } from "./particleShader";
 import { cachedInputBands, publishViz } from "./vizSnap";
-import { perfBegin, perfEnd } from "../perf/marks";
+import { perfBegin, perfEnd, perfEnabled } from "../perf/marks";
+import { noteDraw, noteProgram, noteResize, noteTexAlloc } from "../perf/counters";
+import { createGpuTimer } from "../perf/gpuTimer";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { themeOf } from "../theme/theme";
@@ -42,7 +44,6 @@ import {
   containmentLayout,
   containmentPalette,
   containmentPose,
-  orbitShards,
   publishCagePose,
   type ContainmentLayout,
   type ContainmentPalette,
@@ -376,7 +377,7 @@ function buildProgram(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string):
   return prog;
 }
 
-type Target = { fb: WebGLFramebuffer; textures: WebGLTexture[]; w: number; h: number };
+type Target = { fb: WebGLFramebuffer; textures: WebGLTexture[]; w: number; h: number; ok: boolean };
 
 function makeTexture(
   gl: WebGL2RenderingContext,
@@ -386,6 +387,7 @@ function makeTexture(
   type: number,
   data: ArrayBufferView | null = null,
 ): WebGLTexture {
+  noteTexAlloc();
   const tex = gl.createTexture() as WebGLTexture;
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, gl.RGBA, type, data);
@@ -415,8 +417,9 @@ function makeTarget(
     attachments.push(gl.COLOR_ATTACHMENT0 + i);
   }
   gl.drawBuffers(attachments);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return { fb, textures, w, h };
+  return { fb, textures, w, h, ok };
 }
 
 type Arc = { start: number; span: number; curl: number; life: number; duration: number; drift: number; strength: number };
@@ -459,6 +462,10 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       return undefined;
     }
     const containment = createContainment(gl);
+    if (gl.getError() !== gl.NO_ERROR) {
+      setFailed(true);
+      return undefined;
+    }
     const encode = halfFloat ? 1 : 0.25;
 
     const locations = (prog: WebGLProgram, names: string[]) => {
@@ -517,6 +524,20 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     const stateType = fullFloat ? gl.FLOAT : gl.HALF_FLOAT;
 
     let scene = makeTarget(gl, 1, 1, 1, sceneFormat, sceneType);
+    if (! scene.ok) {
+      setFailed(true);
+      return undefined;
+    }
+    const gpu = perfEnabled() ? createGpuTimer(gl) : null;
+    const drawArrays = (mode: number, first: number, count: number) => {
+      noteDraw();
+      gl.drawArrays(mode, first, count);
+    };
+    let fieldStatics = false;
+    let fieldLayoutKey = "";
+    let fieldThemeId = "";
+    let dustStatics = false;
+    let stirStatics = false;
     let homeTex: WebGLTexture | null = null;
     let seedTex: WebGLTexture | null = null;
     let stateRead: Target | null = null;
@@ -552,6 +573,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (! stir || ! stateRead || ! stateWrite) {
         return;
       }
+      stirStatics = false;
       gl.useProgram(stir);
       gl.uniform1i(stirU.tHome, 0);
       gl.uniform1i(stirU.tSeed, 1);
@@ -571,9 +593,9 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       gl.bindVertexArray(quadVao);
       gl.bindFramebuffer(gl.FRAMEBUFFER, stateRead.fb);
       gl.viewport(0, 0, stateRead.w, stateRead.h);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      drawArrays(gl.TRIANGLES, 0, 3);
       gl.bindFramebuffer(gl.FRAMEBUFFER, stateWrite.fb);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      drawArrays(gl.TRIANGLES, 0, 3);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.bindVertexArray(null);
     };
@@ -642,7 +664,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let cagePalette: ContainmentPalette = containmentPalette(themeOf("signal"));
 
     let alive = true;
-    let checked = false;
     const liveArcs: Arc[] = [];
 
     let arcRandom = 913;
@@ -670,6 +691,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (! alive) {
         return;
       }
+      gpu?.poll();
       const host = useHostStore.getState();
       const still = ballStill(host.motion);
       width = Math.max(1, canvas.clientWidth);
@@ -677,8 +699,8 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (width <= 1 || height <= 1) {
         return;
       }
-      const screenW = canvas.getBoundingClientRect().width;
       const pixelRatio = window.devicePixelRatio || 1;
+      const screenW = canvas.getBoundingClientRect().width;
       const sizeChanged = width !== lastW || height !== lastH || screenW !== lastScreenW || pixelRatio !== lastPixelRatio || themeId !== host.theme;
       if (still && stillDrawn && ! sizeChanged) {
         return;
@@ -690,7 +712,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       perfBegin("ball");
       const dt = last > 0 ? Math.min(0.05, Math.max(1 / 240, (now - last) / 1000)) : 1 / 60;
       last = now;
-      // A still frame is the ball fully formed, just frozen.
       introClock = still ? 1 : Math.min(1, introClock + dt / INTRO_SECONDS);
       stillDrawn = still;
 
@@ -702,6 +723,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         palette = buildPalette(accent, cyan);
         tones = new Float32Array(palette.tones.flat());
         cagePalette = containmentPalette(themePalette);
+        fieldThemeId = "";
       }
 
       const telemetry = useTelemetryStore.getState();
@@ -769,13 +791,20 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         2,
         Math.sqrt(PIXEL_BUDGET / (width * height)),
       );
-      const fit = fitCanvas(canvas, dpr, PIXEL_BUDGET);
+      const hostScale = screenW > 0 ? screenW / width : 1;
+      const fit = fitCanvas(canvas, dpr, PIXEL_BUDGET, hostScale);
       dpr = fit.scale;
       const devW = canvas.width;
       const devH = canvas.height;
       if (scene.w !== devW || scene.h !== devH) {
+        noteResize();
         disposeTarget(scene);
         scene = makeTarget(gl, devW, devH, 1, sceneFormat, sceneType);
+        if (! scene.ok) {
+          setFailed(true);
+          perfEnd("ball");
+          return;
+        }
       }
 
       rebuildDust(ballDustCount(width, height));
@@ -785,13 +814,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
 
       gl.disable(gl.DEPTH_TEST);
       gl.depthMask(false);
-      const firstFrame = ! checked;
-      if (firstFrame) {
-        // Drain setup noise so the check below only sees this frame's draws.
-        while (gl.getError() !== gl.NO_ERROR) {
-          // drain
-        }
-      }
       gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fb);
       gl.viewport(0, 0, devW, devH);
       gl.disable(gl.BLEND);
@@ -815,50 +837,68 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         ? {
             layout: cLayout,
             pose: cagePose,
-            shards: orbitShards(cLayout, cagePose.orbitPhase),
             palette: cagePalette,
             dpr,
             encode,
           }
         : null;
       if (containment && cArgs) {
+        gpu?.begin("contain-back");
         containment.bind(cArgs);
         gl.enable(gl.BLEND);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         containment.draw(0, "metal");
         gl.blendFunc(gl.ONE, gl.ONE);
         containment.draw(0, "energy");
+        gpu?.end();
       }
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
       gl.useProgram(field);
-      gl.uniform2f(fieldU.uCenter, width / 2, height / 2);
-      gl.uniform1f(fieldU.uRadius, radius);
-      gl.uniform1f(fieldU.uDpr, dpr);
-      gl.uniform1f(fieldU.uLine, Math.max(0.6, radius * 0.0035));
+      noteProgram();
+      if (! fieldStatics) {
+        gl.uniform1f(fieldU.uStrands, BALL_CONFIG.strands);
+        gl.uniform1f(fieldU.uCrackle, BALL_CONFIG.crackle);
+        gl.uniform1f(fieldU.uFlares, BALL_CONFIG.flares);
+        gl.uniform1f(fieldU.uHaze, BALL_CONFIG.haze);
+        gl.uniform1f(fieldU.uFill, BALL_CONFIG.fill);
+        gl.uniform4fv(fieldU["uHarmonics[0]"] as WebGLUniformLocation, harmonics);
+        gl.uniform4fv(fieldU["uRates[0]"] as WebGLUniformLocation, rates);
+        gl.uniform4fv(fieldU["uPhases[0]"] as WebGLUniformLocation, phases);
+        gl.uniform4fv(fieldU["uFlareHarmonics[0]"] as WebGLUniformLocation, flareHarmonics);
+        gl.uniform4fv(fieldU["uFlareRates[0]"] as WebGLUniformLocation, flareRates);
+        gl.uniform4fv(fieldU["uFlarePhases[0]"] as WebGLUniformLocation, flarePhases);
+        fieldStatics = true;
+      }
+      const nextFieldLayout = `${width}|${height}|${dpr}|${radius}|${encode}`;
+      if (nextFieldLayout !== fieldLayoutKey) {
+        fieldLayoutKey = nextFieldLayout;
+        gl.uniform2f(fieldU.uCenter, width / 2, height / 2);
+        gl.uniform1f(fieldU.uRadius, radius);
+        gl.uniform1f(fieldU.uDpr, dpr);
+        gl.uniform1f(fieldU.uLine, Math.max(0.6, radius * 0.0035));
+        gl.uniform1f(fieldU.uBins, Math.max(240, Math.min(900, Math.round((Math.PI * 2 * radius) / 2.6))));
+        gl.uniform1f(fieldU.uEncode, encode);
+      }
+      if (fieldThemeId !== themeId) {
+        fieldThemeId = themeId;
+        gl.uniform3fv(fieldU.uRim, palette.rim);
+        gl.uniform3fv(fieldU.uRimHot, palette.rimHot);
+        gl.uniform3fv(fieldU.uRimMid, palette.rimMid);
+        gl.uniform3fv(fieldU.uRimDeep, palette.rimDeep);
+        gl.uniform3fv(fieldU.uSpark, palette.spark);
+        gl.uniform3fv(fieldU.uSparkGlow, palette.sparkGlow);
+        gl.uniform3fv(fieldU.uHazeColor, palette.haze);
+        gl.uniform3fv(fieldU.uEdgeColor, palette.edge);
+      }
       gl.uniform1f(fieldU.uTime, rimTime);
       gl.uniform1f(fieldU.uFrame, Math.floor(rimTime * 24) % 100000);
-      gl.uniform1f(fieldU.uBins, Math.max(240, Math.min(900, Math.round((Math.PI * 2 * radius) / 2.6))));
-      gl.uniform1f(fieldU.uStrands, BALL_CONFIG.strands);
-      gl.uniform1f(fieldU.uCrackle, BALL_CONFIG.crackle);
-      gl.uniform1f(fieldU.uFlares, BALL_CONFIG.flares);
       gl.uniform1f(fieldU.uGlow, BALL_CONFIG.glow * (0.55 + 0.9 * d.glow));
-      gl.uniform1f(fieldU.uHaze, BALL_CONFIG.haze);
-      gl.uniform1f(fieldU.uFill, BALL_CONFIG.fill);
       gl.uniform1f(fieldU.uPresence, presence);
       gl.uniform1f(fieldU.uUnfold, unfold);
       gl.uniform1f(fieldU.uBloom, presence * presence);
       gl.uniform1f(fieldU.uInside, inside);
-      gl.uniform1f(fieldU.uEncode, encode);
-      gl.uniform3fv(fieldU.uRim, palette.rim);
-      gl.uniform3fv(fieldU.uRimHot, palette.rimHot);
-      gl.uniform3fv(fieldU.uRimMid, palette.rimMid);
-      gl.uniform3fv(fieldU.uRimDeep, palette.rimDeep);
-      gl.uniform3fv(fieldU.uSpark, palette.spark);
-      gl.uniform3fv(fieldU.uSparkGlow, palette.sparkGlow);
-      gl.uniform3fv(fieldU.uHazeColor, palette.haze);
-      gl.uniform3fv(fieldU.uEdgeColor, palette.edge);
       gl.uniform4f(
         fieldU.uHeat,
         (rimTime * 0.9) % (Math.PI * 2),
@@ -866,15 +906,11 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         0.35 + 0.65 * d.kick,
         d.lift,
       );
-      gl.uniform4fv(fieldU["uHarmonics[0]"] as WebGLUniformLocation, harmonics);
-      gl.uniform4fv(fieldU["uRates[0]"] as WebGLUniformLocation, rates);
-      gl.uniform4fv(fieldU["uPhases[0]"] as WebGLUniformLocation, phases);
-      gl.uniform4fv(fieldU["uFlareHarmonics[0]"] as WebGLUniformLocation, flareHarmonics);
-      gl.uniform4fv(fieldU["uFlareRates[0]"] as WebGLUniformLocation, flareRates);
-      gl.uniform4fv(fieldU["uFlarePhases[0]"] as WebGLUniformLocation, flarePhases);
       gl.uniform4fv(fieldU["uArcs[0]"] as WebGLUniformLocation, arcs);
       gl.bindVertexArray(quadVao);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gpu?.begin("field");
+      drawArrays(gl.TRIANGLES, 0, 3);
+      gpu?.end();
 
       if (stir && stateRead && stateWrite && ! still) {
         const steps = Math.max(1, Math.ceil(Math.min(dt, 0.05) / STIR_STEP));
@@ -882,18 +918,22 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         let read = stateRead;
         let write = stateWrite;
         gl.useProgram(stir);
-        gl.uniform1i(stirU.tHome, 0);
-        gl.uniform1i(stirU.tSeed, 1);
-        gl.uniform1i(stirU.tOffset, 2);
-        gl.uniform1i(stirU.tVelocity, 3);
+        noteProgram();
+        if (! stirStatics) {
+          gl.uniform1i(stirU.tHome, 0);
+          gl.uniform1i(stirU.tSeed, 1);
+          gl.uniform1i(stirU.tOffset, 2);
+          gl.uniform1i(stirU.tVelocity, 3);
+          gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
+          gl.uniform1f(stirU.uFill, BALL_CONFIG.fill);
+          stirStatics = true;
+        }
         gl.uniform1f(stirU.uDt, h);
         gl.uniform1f(stirU.uReset, 0);
         gl.uniform1f(stirU.uSpread, d.spread);
         gl.uniform1f(stirU.uLiftForce, d.lift);
         gl.uniform1f(stirU.uSwirl, d.swirl);
         gl.uniform1f(stirU.uDustTime, dustTime);
-        gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
-        gl.uniform1f(stirU.uFill, BALL_CONFIG.fill);
         gl.uniform2f(stirU.uTurn, turnX, turnY);
         const packed = packForceUniforms(forces);
         gl.uniform4fv(stirU["uForcePos[0]"] as WebGLUniformLocation, packed.pos);
@@ -904,6 +944,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.bindTexture(gl.TEXTURE_2D, seedTex);
         gl.disable(gl.BLEND);
         gl.bindVertexArray(quadVao);
+        gpu?.begin("stir");
         for (let s = 0; s < steps; s += 1) {
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, read.textures[0]!);
@@ -911,11 +952,12 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
           gl.bindTexture(gl.TEXTURE_2D, read.textures[1]!);
           gl.bindFramebuffer(gl.FRAMEBUFFER, write.fb);
           gl.viewport(0, 0, write.w, write.h);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
+          drawArrays(gl.TRIANGLES, 0, 3);
           const swap = read;
           read = write;
           write = swap;
         }
+        gpu?.end();
         stateRead = read;
         stateWrite = write;
         gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fb);
@@ -927,15 +969,22 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE);
         gl.useProgram(dust);
-        gl.uniform1i(dustU.tHome, 0);
-        gl.uniform1i(dustU.tSeed, 1);
-        gl.uniform1i(dustU.tOffset, 2);
+        noteProgram();
+        if (! dustStatics) {
+          gl.uniform1i(dustU.tHome, 0);
+          gl.uniform1i(dustU.tSeed, 1);
+          gl.uniform1i(dustU.tOffset, 2);
+          gl.uniform1f(dustU.uDepth, BALL_CONFIG.depth);
+          gl.uniform1f(dustU.uShape, SHAPES[BALL_CONFIG.shape] ?? 0);
+          gl.uniform1f(dustU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
+          gl.uniform1f(dustU.uFill, BALL_CONFIG.fill);
+          dustStatics = true;
+        }
         gl.uniform1f(dustU.uStirred, stateRead ? 1 : 0);
         gl.uniform2f(dustU.uCenter, width / 2, height / 2);
         gl.uniform2f(dustU.uViewport, width, height);
         gl.uniform1f(dustU.uRadius, radius);
         gl.uniform1f(dustU.uDpr, dpr);
-        gl.uniform1f(dustU.uDepth, BALL_CONFIG.depth);
         gl.uniform1f(dustU.uTwinkle, d.twinkle);
         gl.uniform1f(dustU.uPointScale, Math.max(1, radius / 380) * d.size * 1.3);
         gl.uniform1f(dustU.uReveal, unfold);
@@ -943,11 +992,8 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.uniform1f(dustU.uEncode, encode);
         gl.uniform3fv(dustU["uTones[0]"] as WebGLUniformLocation, tones);
         gl.uniform3fv(dustU.uRimTone, palette.rim);
-        gl.uniform1f(dustU.uShape, SHAPES[BALL_CONFIG.shape] ?? 0);
         gl.uniform1f(dustU.uDustTime, dustTime);
         gl.uniform2f(dustU.uTurn, turnX, turnY);
-        gl.uniform1f(dustU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
-        gl.uniform1f(dustU.uFill, BALL_CONFIG.fill);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, homeTex);
         gl.activeTexture(gl.TEXTURE1);
@@ -955,57 +1001,45 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, stateRead ? stateRead.textures[0]! : blank);
         gl.bindVertexArray(dustVao);
-        gl.drawArrays(gl.POINTS, 0, dustCount);
+        gpu?.begin("dust");
+        drawArrays(gl.POINTS, 0, dustCount);
+        gpu?.end();
         gl.bindVertexArray(null);
       }
 
-      if (firstFrame) {
-        const err = gl.getError();
-        if (err !== gl.NO_ERROR) {
-          setFailed(true);
-          perfEnd("ball");
-          return;
-        }
-      }
-
       if (containment && cArgs) {
+        gpu?.begin("contain-front");
         gl.enable(gl.BLEND);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         containment.draw(1, "metal");
         gl.blendFunc(gl.ONE, gl.ONE);
         containment.draw(1, "energy");
+        gpu?.end();
       }
 
       gl.disable(gl.BLEND);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, devW, devH);
       gl.useProgram(composite);
+      noteProgram();
       gl.uniform1i(compositeU.tScene, 6);
       gl.uniform1f(compositeU.uLight, 0);
       gl.uniform1f(compositeU.uDecode, 1 / encode);
       gl.activeTexture(gl.TEXTURE6);
       gl.bindTexture(gl.TEXTURE_2D, scene.textures[0]!);
       gl.bindVertexArray(quadVao);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gpu?.begin("composite");
+      drawArrays(gl.TRIANGLES, 0, 3);
+      gpu?.end();
       gl.bindVertexArray(null);
-      // Unbind: a scene texture left on a unit forms a feedback loop with the
-      // scene framebuffer on the next frame's field pass.
       gl.bindTexture(gl.TEXTURE_2D, null);
-
-      if (firstFrame) {
-        checked = true;
-        const err = gl.getError();
-        if (err !== gl.NO_ERROR) {
-          // Silent GL wiring faults would show a dead canvas; fall back instead.
-          setFailed(true);
-          perfEnd("ball");
-          return;
-        }
-      }
       perfEnd("ball");
     };
 
-    const onLost = () => setFailed(true);
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setFailed(true);
+    };
     canvas.addEventListener("webglcontextlost", onLost, false);
     const onBrush = (ev: PointerEvent) => {
       if (! brush || width < 2 || height < 2) {
@@ -1042,6 +1076,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       unsubscribe();
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("pointermove", onBrush);
+      gpu?.dispose();
       disposeDust();
       disposeTarget(scene);
       gl.deleteTexture(blank);

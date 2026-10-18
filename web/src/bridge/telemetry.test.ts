@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createTelemetryViews, decodeTelemetry, peakToDb, TELEMETRY_MAGIC } from "./telemetry";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createTelemetryViews, decodeTelemetry, gonioCorr, peakToDb, TELEMETRY_MAGIC } from "./telemetry";
+import { stereoMetrics } from "../face/faceModel";
 
 function writeF32(buf: DataView, off: number, v: number) {
   buf.setFloat32(off, v, true);
@@ -85,6 +89,19 @@ it("rejects truncated telemetry without changing the last valid frame", () => {
   header.setUint16(28, 256, true);
   expect(decodeTelemetry(ab, dest)).toBe(false);
   expect(dest.inPeak).toBe(0.5);
+});
+
+it("decodes peaks without allocating a mapped readings array", () => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const src = readFileSync(path.join(here, "telemetry.ts"), "utf8");
+  const body = src.slice(src.indexOf("export function decodeTelemetry"), src.indexOf("export function gonioCorr"));
+  expect(body).not.toContain(".map(");
+});
+
+it("gonioCorr matches stereoMetrics.corr", () => {
+  const x = new Float32Array([0.1, -0.2, 0.05]);
+  const y = new Float32Array([-0.4, 0.1, 0.2]);
+  expect(gonioCorr(x, y)).toBeCloseTo(stereoMetrics(x, y).corr, 10);
 });
 
 it("clears unused scope samples when a shorter valid frame arrives", () => {

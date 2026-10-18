@@ -199,4 +199,12 @@ describe("hud drawing helpers", () => {
     expect(diag).toMatch(/y="86"/);
     expect(css).toMatch(/\.nk-face-mod-svg-lg\s*\{[^}]*min-height:\s*0/);
   });
+
+  it("updates live numbers on the viz clock without a React setTick", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "CoreDiagnostics.tsx"), "utf8");
+    const paint = src.slice(src.indexOf("const paint = (now: number)"), src.indexOf("if (motion === \"off\")"));
+    expect(paint).toContain("writeLive");
+    expect(paint).not.toContain("setTick");
+  });
 });

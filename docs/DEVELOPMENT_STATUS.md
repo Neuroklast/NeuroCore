@@ -1,12 +1,16 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (0.6.9-beta)  
+**Stand:** 2026-10-18 (0.6.9-beta + UI perf)  
 **Version:** 0.6.9-beta  
-**Branch:** `viz/local-force-fields`
+**Branch:** `perf/ui-optimization`
 
 ## 0.6.9-beta (2026-10-18)
 
 Local particle force fields, measured Unit meters, NKTM v2, Terminal↔Circuit identity, honest Inspect taps. Live gonio is raw L/R. Version lock is 0.6.9-beta.
+
+## UI performance (2026-10-18)
+
+Same look. Less work on the Unit ball, telemetry hops and Circuit paints. Opt-in `nk:*` marks plus work/present/GPU percentiles (`?nkperf=1`). Production WebGL no longer drains `getError` in the frame loop; containment uniforms split static/layout/theme/dynamic; spectrogram 256-point hop is an FFT; `cachedBands` keys on sample rate; Circuit gesture paints coalesce to one vsync; CoreDiagnostics/BoardChip/UnitAnalyzer stop full-tree React updates on every telemetry tick. Particle count, DPR, shaders, colours and motion timing are unchanged. Native WebView2 / DAW not profiled; Vite preview is not proof of audio-thread cost. Notes: `docs/performance/`.
 
 ## Circuit / Terminal node identity (2026-10-18)
 
@@ -14,7 +18,7 @@ Terminal caret and Circuit selection share `focusNodeId`. Node ranges come from 
 
 ## Local particle fields and measured HUD (2026-10-18)
 
-Global +Y bowl kicks are gone. Transients spawn at most four local travelling force fields (Gaussian spatial weight, time envelope whose integral is 1). Nearby particles move more than distant ones; stereo balance places the origin; centre density stays continuous. Ambient curl runs at rest. Unit DYNAMICS / BAND ENERGY / STEREO report peak, RMS, crest, bands and correlation from the same feature functions as the ball. Unavailable values show —. NKTM v2 appends seq + samplePos so a snapshot is consumed once. DSP sound is unchanged. Native binary not rebuilt.
+Global +Y bowl kicks are gone. Transients spawn at most four local travelling force fields (Gaussian spatial weight, time envelope whose integral is 1). Nearby particles move more than distant ones; stereo balance places the origin; centre density stays continuous. Ambient curl runs at rest. Unit DYNAMICS / BAND ENERGY / STEREO report peak, RMS, crest, bands and correlation from the same feature functions as the ball. Unavailable values show —. NKTM v2 appends seq + samplePos so a snapshot is consumed once. DSP sound is unchanged. Native binary rebuilt for 0.6.9-beta.
 
 ## Continuous stereo plume (2026-10-18)
 
