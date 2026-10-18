@@ -31,3 +31,14 @@ export function zoomMayMovePorts(_level: SemanticZoomLevel): boolean {
 export function zoomMayResizeChip(_level: SemanticZoomLevel): boolean {
   return false;
 }
+
+/** One board attribute. Do not subscribe chips to the camera store. */
+export function applyBoardZoom(
+  pane: { dataset: DOMStringMap } | null,
+  scale: number,
+): void {
+  if (! pane) {
+    return;
+  }
+  pane.dataset.zoom = semanticZoomLevel(scale);
+}

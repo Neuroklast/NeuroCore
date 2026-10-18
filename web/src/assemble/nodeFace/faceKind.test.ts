@@ -31,7 +31,7 @@ describe("NodeFace catalog", () => {
     expect(faceKindForType("in")).toBe("io");
   });
 
-  it("keeps the closed plate as title + typecode, with an empty param face", () => {
+  it("keeps the closed plate as title + typecode, with filter/reverb as the reference faces", () => {
     expect(collapsedFace("filter", { type: "lowpass", cutoff: "900" })).toEqual({
       title: "FILTER",
       code: "FL-LP-900",
@@ -41,11 +41,13 @@ describe("NodeFace catalog", () => {
       code: "RV-0.40",
     });
     expect(faceParamKeys(allChipSpecs()[0]!)).toEqual([]);
-    expect(closedFaceGlyph("filter")).toBe("empty-pad");
-    expect(closedFaceGlyph("reverb")).toBe("empty-pad");
+    expect(closedFaceGlyph("filter")).toBe("response");
+    expect(closedFaceGlyph("reverb")).toBe("decay");
     expect(closedFaceGlyph("delay")).toBe("empty-pad");
     expect(closedFaceGlyph("lfo")).toBe("lfo-shape");
     expect(closedChipChrome("osc", "osc1").lamp).toBe("lfo");
+    expect(closedChipChrome("filter", "filter1").lamp).toBe("clip");
+    expect(closedChipChrome("reverb", "reverb1").lamp).toBe("clip");
   });
 
   it.fails("gives each DSP family a distinct closed-face glyph", () => {

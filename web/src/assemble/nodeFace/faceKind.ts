@@ -22,8 +22,8 @@ export const FACE_KINDS = [
 
 export type FaceKind = (typeof FACE_KINDS)[number];
 
-/** What the closed plate paints today. */
-export type ClosedFaceGlyph = "empty-pad" | "lfo-shape" | "lamp" | "io";
+/** What the closed plate paints today. Filter/reverb are the PR B reference faces. */
+export type ClosedFaceGlyph = "empty-pad" | "lfo-shape" | "lamp" | "io" | "response" | "decay";
 
 /** What the closed plate must paint after the face migration. */
 export type TargetFaceGlyph =
@@ -98,8 +98,14 @@ export function faceKindForType(type: string): FaceKind {
   return BY_SPEC[chipSpec(type).id] ?? "utility";
 }
 
-/** Closed-plate glyph in 0.6.10-beta. LFO is the only job-specific drawing. */
+/** Closed-plate glyph. Filter/reverb use the NodeFace registry; others stay baseline. */
 export function closedFaceGlyph(kind: FaceKind): ClosedFaceGlyph {
+  if (kind === "filter") {
+    return "response";
+  }
+  if (kind === "reverb") {
+    return "decay";
+  }
   if (kind === "lfo") {
     return "lfo-shape";
   }

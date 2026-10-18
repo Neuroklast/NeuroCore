@@ -12,6 +12,7 @@ import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute, hitBoardEdge } from "./boardEdit";
@@ -34,6 +35,14 @@ type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
   | { kind: "chip"; left: number; top: number; id: string }
   | { kind: "add"; left: number; top: number; afterId: string; targetId?: string };
+
+function capturePanePointer(pane: HTMLElement, pointerId: number) {
+  try {
+    pane.setPointerCapture(pointerId);
+  } catch {
+    /* synthetic pointerdown has no active pointer id */
+  }
+}
 
 export function BoardView({ active = true }: { active?: boolean }) {
   const ast = useAstStore((s) => s.ast);
@@ -254,6 +263,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (worldRef.current) {
       applyCameraTransform(worldRef.current, cam);
     }
+    applyBoardZoom(paneRef.current, cam.scale);
     paintCablesNow();
     if (commit) {
       useBoardStore.getState().setCamera(cam);
@@ -340,14 +350,14 @@ export function BoardView({ active = true }: { active?: boolean }) {
           snapPortId: null,
           kind: port.kind,
         };
-        pane.setPointerCapture(e.pointerId);
+        capturePanePointer(pane, e.pointerId);
         return;
       }
     }
     if (e.button === 1 || (e.button === 0 && spaceRef.current)) {
       panRef.current = { x: e.clientX, y: e.clientY, tx: cam.tx, ty: cam.ty };
       camGesture.current = true;
-      pane.setPointerCapture(e.pointerId);
+      capturePanePointer(pane, e.pointerId);
       return;
     }
     if (e.button === 0 && !(e.target as HTMLElement).closest("[data-node-id], [data-port-id]")) {
@@ -365,7 +375,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       lassoRef.current = { x0: world.x, y0: world.y, x1: world.x, y1: world.y };
       setLasso(lassoRef.current);
       if (!e.shiftKey) clearBoardFocus();
-      pane.setPointerCapture(e.pointerId);
+      capturePanePointer(pane, e.pointerId);
       return;
     }
     if (e.button !== 0) {
@@ -392,7 +402,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }));
     dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y,
       startX: e.clientX, startY: e.clientY, group: origins };
-    pane.setPointerCapture(e.pointerId);
+    capturePanePointer(pane, e.pointerId);
   }, []);
 
   const onPointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
@@ -668,7 +678,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
       onClick={(e) => {
         if (lassoCompletedRef.current) { lassoCompletedRef.current = false; return; }
         if (shouldCollapseChipDetail(e.target, useBindStore.getState().letter)) {
-          if (!(e.target as HTMLElement).closest("[data-node-id], [data-board-control], .nk-ctx")) {
+          const hit = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
+            ?? (e.target as HTMLElement);
+          if (! hit.closest("[data-node-id], [data-board-control], .nk-ctx")) {
             useChipViewStore.getState().collapseAll();
             clearBoardFocus();
           }
