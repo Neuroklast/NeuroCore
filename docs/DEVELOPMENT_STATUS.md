@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (Unit shared plugin.out analysis)  
+**Stand:** 2026-10-18 (ORBITS panel title)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/unit-shared-out-analysis`
+**Branch:** `fix/orbits-panel-title`
+
+## ORBITS panel title (2026-10-18)
+
+The left diagnostic card that shows orbit shards and LOW/MID/HIGH drive energy is titled ORBITS. It no longer says PARTICLE ORBITS.
 
 ## Unit shared plugin.out analysis (2026-10-18)
 
