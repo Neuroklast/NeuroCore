@@ -327,6 +327,8 @@ private:
 
     /** Last successful wet block. Replay on lock-miss / CPU-hold — never splice dry. */
     juce::AudioBuffer<float> continuityBuf;
+    /** Mix-0 lock-miss dry, delayed by host PDC. Independent of the DSL graph. */
+    LatencyAlignedSidechain lockMissDry;
     int continuityN { 0 };
     int continuityCh { 0 };
     float continuityDecay { 0.f };

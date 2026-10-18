@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (MIDI note spans)  
+**Stand:** 2026-10-18 (lock-miss dry delay)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/midi-note-spans`
+**Branch:** `fix/lock-miss-dry-delay`
+
+## Lock-miss dry delay (2026-10-18)
+
+Mix 0 while the script lock is held still leaves on host PDC. A dedicated delay line, independent of the DSL graph, is fed every callback. Formula swap at Mix 0 no longer emits undelayed input.
 
 ## MIDI note spans (2026-10-18)
 

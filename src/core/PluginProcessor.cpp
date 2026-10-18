@@ -463,6 +463,8 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // output — that click is the "buffer overflow" live-only glitch.
     // Mix 0% still runs the engine: host PDC delays other tracks by OS+IR,
     // so dry must leave on that same timeline (bypass path delays dry).
+    lockMissDry.pushAndRead (main, nSamp);
+
     const bool cpuHold = cpuProtect.shouldHoldAudio (nSamp, sr, isNonRealtime());
     if (cpuHold)
     {
@@ -521,15 +523,18 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
         else if (mix <= 1.0e-5f)
         {
-            // Formula swap while the user is fully dry: keep the input, do not
-            // replay the last wet block over a dry request.
-            for (int ch = 0; ch < main.getNumChannels(); ++ch)
+            const auto& delayed = lockMissDry.getAligned();
+            const int ch = juce::jmin (main.getNumChannels(), delayed.getNumChannels());
+            const int n = juce::jmin (nSamp, delayed.getNumSamples());
+            for (int c = 0; c < ch; ++c)
             {
-                auto* d = main.getWritePointer (ch);
-                for (int i = 0; i < nSamp; ++i)
-                    if (! std::isfinite (d[i]))
-                        d[i] = 0.f;
+                const float* s = delayed.getReadPointer (c);
+                float* d = main.getWritePointer (c);
+                for (int i = 0; i < n; ++i)
+                    d[i] = std::isfinite (s[i]) ? s[i] : 0.f;
             }
+            for (int c = ch; c < main.getNumChannels(); ++c)
+                main.clear (c, 0, nSamp);
             dspEngine.publishOutputMeter (main);
         }
         else
@@ -788,6 +793,8 @@ void NeuroKoreAudioProcessor::refreshReportedLatency()
     const int lat = wetLat + dspEngine.getSanitationLatency();
     setLatencySamples (lat);
     dspEngine.setDryAlignLatency (wetLat);
+    const int capN = juce::jmax (getBlockSize(), 1024);
+    lockMissDry.prepare (juce::jmax (1, getTotalNumOutputChannels()), capN, lat);
 }
 
 bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
@@ -1306,6 +1313,7 @@ void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
         continuityBuf.setSize (juce::jmax (channels, continuityBuf.getNumChannels()),
                                juce::jmax (contN, continuityBuf.getNumSamples()),
                                false, true, true);
+    lockMissDry.prepare (channels, contN, getLatencySamples());
 }
 
 void NeuroKoreAudioProcessor::handleAsyncUpdate()
