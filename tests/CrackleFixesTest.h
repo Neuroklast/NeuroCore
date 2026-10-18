@@ -330,6 +330,70 @@ public:
             proc.releaseResources();
         }
 
+        beginTest ("mix 0 lock miss stays on host latency");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                proc.apvts.getParameter (EffectParameters::oversampling));
+            expect (choice != nullptr);
+            choice->setValueNotifyingHost (choice->convertTo0to1 (2.f));
+            proc.prepareToPlay (48000.0, 128);
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.f);
+            const int lat = proc.getLatencySamples();
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            int peakAt = -1;
+            float peak = 0.f;
+            int sample = 0;
+            {
+                const juce::ScopedLock sl (proc.getProcessLock());
+                proc.processBlock (buf, midi);
+                for (int i = 0; i < 128; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    if (a > peak)
+                    {
+                        peak = a;
+                        peakAt = sample;
+                    }
+                }
+                for (int b = 0; b < 16; ++b)
+                {
+                    buf.clear();
+                    proc.processBlock (buf, midi);
+                    for (int i = 0; i < 128; ++i, ++sample)
+                    {
+                        const float a = std::abs (buf.getSample (0, i));
+                        if (a > peak)
+                        {
+                            peak = a;
+                            peakAt = sample;
+                        }
+                    }
+                }
+            }
+            expect (peak > 0.25f, "lock-miss mix0 impulse must appear, peak="
+                    + juce::String (peak, 3));
+            if (lat > 0)
+                expect (std::abs (peakAt - lat) <= 2,
+                        "lock-miss mix0 peakAt=" + juce::String (peakAt)
+                        + " lat=" + juce::String (lat));
+            else
+                expectEquals (peakAt, 0);
+            proc.releaseResources();
+        }
+
         beginTest ("host bypass dry is delayed by reported host latency");
         {
             // Cubase host-bypass calls processBlockBypassed. JUCE default does

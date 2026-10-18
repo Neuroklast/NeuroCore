@@ -166,7 +166,7 @@ The Software is licensed, not sold. Third-party pieces (including the audio engi
 Status bar (left to right)
 - **MODE** — STUDIO, LIVE, or SAFE. SAFE means the plugin went dry because the audio callback ran too long. It is a word, not a percent. CPU never reads above 100.
 - **CPU** — 0–100, share of the audio buffer. If you ride near 100, drop OS, simplify the board, or switch Live vs Studio.
-- **LAT** — delay the host should compensate (milliseconds and samples). Same number as the DAW’s plugin delay. Live is short. Studio plus a long cabinet is longer.
+- **LAT** — delay the host should compensate (milliseconds and samples). Same number as the DAW’s plugin delay. Live is short. Studio plus a long cabinet is longer. Mix 0 and a formula change at Mix 0 stay on that delay.
 - **SR / BUF / BPM** — sample rate, block size, tempo. HOST follows the DAW; USER is the tempo you typed in Settings.
 
 If something is wrong
