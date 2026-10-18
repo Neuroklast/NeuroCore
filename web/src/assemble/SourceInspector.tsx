@@ -47,6 +47,7 @@ export function SourceInspector({
         dock === "bottom" ? "border-t" : "border-l"
       }`}
       data-dock={dock}
+      data-chip-id={primaryId ?? ""}
       style={style}
     >
       <div className="flex shrink-0 items-center gap-2 border-b border-panel px-2 py-1">

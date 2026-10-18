@@ -47,18 +47,17 @@ describe("circuit depth of field", () => {
       edges,
     });
     expect(plane.active).toBe(true);
-    expect([...plane.nodes].sort()).toEqual(["a", "b"]);
-    expect([...plane.edges].sort()).toEqual(["e-a-b"]);
+    expect(plane.nodes.has("a")).toBe(true);
+    expect(plane.nodes.has("b")).toBe(true);
+    expect(plane.edges.has("e-a-b")).toBe(true);
     expect(focusAttr(true, plane, "a")).toBe("sharp");
-    expect(focusAttr(true, plane, "IN")).toBe("soft");
     expect(focusAttr(true, plane, "e-a-b", "edge")).toBe("sharp");
-    expect(focusAttr(true, plane, "e-in-a", "edge")).toBe("soft");
   });
 
   it("writes data-focus on chip nodes without a React hover state", () => {
     const chips = [
       { id: "a", attr: "" },
-      { id: "IN", attr: "" },
+      { id: "OUT", attr: "" },
     ];
     const plane = focusPlane({
       selectedNodeIds: ["a"],
@@ -69,6 +68,20 @@ describe("circuit depth of field", () => {
     applyBoardFocus(chips, (id) => focusAttr(true, plane, id));
     expect(chips[0]?.attr).toBe("sharp");
     expect(chips[1]?.attr).toBe("soft");
+  });
+
+  it("a selected chip highlights its incident cables and neighbors", () => {
+    const plane = focusPlane({
+      selectedNodeIds: ["a"],
+      selectedEdgeIds: [],
+      hoverNodeId: null,
+      edges,
+    });
+    expect([...plane.nodes].sort()).toEqual(["IN", "a", "b"]);
+    expect([...plane.edges].sort()).toEqual(["e-a-b", "e-in-a"]);
+    expect(focusAttr(true, plane, "a")).toBe("sharp");
+    expect(focusAttr(true, plane, "e-in-a", "edge")).toBe("sharp");
+    expect(focusAttr(true, plane, "OUT")).toBe("soft");
   });
 
   it("hover path expands to incident edges and neighbor chips", () => {

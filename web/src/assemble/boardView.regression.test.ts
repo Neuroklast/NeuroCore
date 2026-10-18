@@ -14,7 +14,8 @@ describe("Circuit interaction surface", () => {
   it("keeps the signal path and chips clear of permanent insertion controls", () => {
     expect(board).not.toContain('className="nk-board-toolbar"');
     expect(board).not.toContain('className="nk-board-edge-add"');
-    expect(board).toContain('selectedNodeIds: []');
+    expect(board).toMatch(/selectedNodeIds:\s*selection/);
+    expect(board).not.toContain("selectedNodeIds: []");
   });
 
   it("BoardChip does not subscribe every chip to the knobs array", () => {

@@ -34,6 +34,19 @@ export function chipFootPeak(peak: number): string {
   return `${sign}${n}dB`;
 }
 
+export type ChipKindMark = "io" | "mod" | "audio";
+
+/** Family mark for Circuit chips. Title already names the job; this is not color-only. */
+export function chipKindMark(type: string, id: string, role: string): ChipKindMark {
+  if (role === "io") {
+    return "io";
+  }
+  if (isEnvNode({ type, id }) || isLfoNode({ type, id })) {
+    return "mod";
+  }
+  return "audio";
+}
+
 /** One foot line from real tape values. Never a UUID. */
 export function chipFootLine(id: string, peak: number): string {
   return `${id.trim()}  ${chipFootPeak(peak)}`;

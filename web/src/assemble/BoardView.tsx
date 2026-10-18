@@ -107,7 +107,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     const g = useBoardStore.getState();
     const allowed = circuitDofAllowed(motion, prefersReduced);
     const plane = focusPlane({
-      selectedNodeIds: [],
+      selectedNodeIds: selectionRef.current,
       selectedEdgeIds: [],
       hoverNodeId: boardHoverRef.current,
       edges: Object.values(g.edges).map((e) => ({

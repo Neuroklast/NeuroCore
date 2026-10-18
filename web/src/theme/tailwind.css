@@ -275,6 +275,38 @@ html[data-motion="off"] .nk-boot {
   border-radius: var(--nk-panel-radius);
 }
 
+.nk-board-chip[data-kind] .nk-chip-fill::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  pointer-events: none;
+}
+
+.nk-board-chip[data-kind="audio"] .nk-chip-fill::before {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--nk-accent) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+.nk-board-chip[data-kind="mod"] .nk-chip-fill::before {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--nk-cyan) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.nk-board-chip[data-kind="io"] .nk-chip-fill::before {
+  width: 3px;
+  background: var(--nk-ink);
+  box-shadow: 3px 0 0 var(--nk-cyan);
+}
+
 .nk-chip-pads {
   position: absolute;
   top: var(--nk-pad-top);
