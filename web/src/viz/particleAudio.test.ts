@@ -43,3 +43,20 @@ it('a native seq is consumed once even when the display tick advances', () => {
   expect(first.spawn?.amp).toBeCloseTo(0.6);
   expect(particleAudio(first.state, { ...frame, tick: 2 }, 1 / 60).spawn).toBeNull();
 });
+
+it('drains two queued onsets and ignores them on the next snapshot', () => {
+  const onsets = [
+    { samplePos: 40, amp: 0.5 },
+    { samplePos: 4000, amp: 0.8 },
+  ];
+  const first = particleAudio(PARTICLE_AUDIO_IDLE, {
+    tick: 1, seq: 4, bass: 0, onsetCount: 1, onsetAmp: 0.8, onsets, live: true,
+  }, 1 / 60);
+  expect(first.spawns).toHaveLength(2);
+  expect(first.spawns[0]?.amp).toBeCloseTo(0.5);
+  expect(first.spawns[1]?.amp).toBeCloseTo(0.8);
+  const again = particleAudio(first.state, {
+    tick: 2, seq: 5, bass: 0, onsetCount: 0, onsetAmp: 0, onsets, live: true,
+  }, 1 / 60);
+  expect(again.spawns).toHaveLength(0);
+});

@@ -97,6 +97,18 @@ std::size_t writeTelemetryFrame (void* dest, std::size_t destBytes, const Teleme
     writeU32 (body, desc.seq);
     body += 4;
     writeU32 (body, desc.samplePos);
+    body += 4;
+    const int nOn = desc.onsetN > kTelemetryMaxOnsets ? kTelemetryMaxOnsets : (int) desc.onsetN;
+    writeU16 (body, (std::uint16_t) nOn);
+    writeU16 (body + 2, 0);
+    body += 4;
+    for (int i = 0; i < nOn; ++i)
+    {
+        writeU32 (body, desc.onsets[i].samplePos);
+        body += 4;
+        writeF32 (body, desc.onsets[i].amp);
+        body += 4;
+    }
     return need;
 }
 
@@ -121,6 +133,7 @@ bool readTelemetryHeader (const void* src, std::size_t srcBytes, TelemetryDesc& 
     dest.gonioN = readU16 (p + 30);
     dest.seq = 0;
     dest.samplePos = 0;
+    dest.onsetN = 0;
     const auto body = kTelemetryHeaderBytes
         + (std::size_t) dest.scopeN * sizeof (float) * 2
         + (std::size_t) dest.gonioN * sizeof (float) * 2;
@@ -131,6 +144,26 @@ bool readTelemetryHeader (const void* src, std::size_t srcBytes, TelemetryDesc& 
         const auto* tail = p + body;
         dest.seq = readU32 (tail);
         dest.samplePos = readU32 (tail + 4);
+    }
+    if (ver >= 3)
+    {
+        const auto list = body + kTelemetryTailBytes;
+        if (srcBytes < list + kTelemetryOnsetListHeader)
+            return false;
+        const auto* q = p + list;
+        const int nOn = readU16 (q);
+        if (nOn < 0 || nOn > kTelemetryMaxOnsets)
+            return false;
+        if (srcBytes < list + kTelemetryOnsetListHeader + (std::size_t) nOn * kTelemetryOnsetBytes)
+            return false;
+        dest.onsetN = (std::uint8_t) nOn;
+        q += 4;
+        for (int i = 0; i < nOn; ++i)
+        {
+            dest.onsets[i].samplePos = readU32 (q);
+            dest.onsets[i].amp = readF32 (q + 4);
+            q += 8;
+        }
     }
     return body <= srcBytes;
 }

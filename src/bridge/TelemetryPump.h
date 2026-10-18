@@ -53,6 +53,8 @@ private:
     int onsetHold { 0 };
     std::uint8_t onsetCount { 0 };
     float onsetAmp { 0.f };
+    OnsetEvent onsetRing[kTelemetryMaxOnsets] {};
+    std::uint32_t onsetWrite { 0 };
 
     void scanOnset (const juce::AudioBuffer<float>& src) noexcept;
 };

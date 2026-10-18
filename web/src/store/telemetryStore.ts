@@ -18,6 +18,7 @@ interface TelemetryState {
   onsetAmp: number;
   seq: number;
   samplePos: number;
+  onsets: { samplePos: number; amp: number }[];
   corr: number;
   applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
@@ -38,6 +39,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   onsetAmp: 0,
   seq: 0,
   samplePos: 0,
+  onsets: [],
   corr: 0,
   applyViews: (v, available = true) => {
     const s = get();
@@ -59,6 +61,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
       onsetAmp: v.onsetAmp,
       seq: v.seq,
       samplePos: v.samplePos,
+      onsets: v.onsets ?? [],
       corr: gonioCorr(s.gonioL, s.gonioR),
     });
   },

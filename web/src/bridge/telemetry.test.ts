@@ -43,6 +43,38 @@ describe("decodeTelemetry", () => {
     expect(dest.seq).toBe(0);
   });
 
+  it("reads v3 onset events after the v2 tail", () => {
+    const scopeN = 1;
+    const gonioN = 1;
+    const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
+    const list = body + 8;
+    const ab = new ArrayBuffer(list + 4 + 16);
+    const v = new DataView(ab);
+    v.setUint32(0, TELEMETRY_MAGIC, true);
+    v.setUint16(4, 3, true);
+    writeF32(v, 8, 0.2);
+    writeF32(v, 12, 0.1);
+    writeF32(v, 16, 0.05);
+    writeF32(v, 20, 0.04);
+    writeF32(v, 24, 0.1);
+    v.setUint16(28, scopeN, true);
+    v.setUint16(30, gonioN, true);
+    v.setUint32(body, 9, true);
+    v.setUint32(body + 4, 100, true);
+    v.setUint16(list, 2, true);
+    v.setUint32(list + 4, 40, true);
+    writeF32(v, list + 8, 0.7);
+    v.setUint32(list + 12, 4000, true);
+    writeF32(v, list + 16, 0.4);
+    const dest = createTelemetryViews();
+    expect(decodeTelemetry(ab, dest)).toBe(true);
+    expect(dest.seq).toBe(9);
+    expect(dest.onsets).toHaveLength(2);
+    expect(dest.onsets[0]?.samplePos).toBe(40);
+    expect(dest.onsets[0]?.amp).toBeCloseTo(0.7);
+    expect(dest.onsets[1]?.samplePos).toBe(4000);
+  });
+
   it("reads v2 seq and sample position after the payload", () => {
     const scopeN = 1;
     const gonioN = 1;
