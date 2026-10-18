@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (telemetry copy claim)  
+**Stand:** 2026-10-18 (onset samplePos wrap)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/telemetry-copy-stable`
+**Branch:** `fix/onset-samplepos-wrap`
+
+## Onset samplePos wrap (2026-10-18)
+
+Particle drain treats onset `samplePos` as unsigned 32-bit serial. A click after the counter wraps is still a new hit. Signed `<= lastOnsetPos` dropped every post-wrap transient.
 
 ## Telemetry copy claim (2026-10-18)
 

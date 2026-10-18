@@ -14,6 +14,18 @@ export const PARTICLE_AUDIO_IDLE: ParticleAudioState = {
 
 export type ParticleSpawn = { amp: number; band: "low" | "mid" | "high"; balance: number };
 
+/** Unsigned 32-bit serial: a click after wrap is still newer than 0xffffff00. */
+export function onsetIsNew(samplePos: number, lastPos: number): boolean {
+  if (! Number.isFinite(samplePos)) {
+    return false;
+  }
+  if (! Number.isFinite(lastPos) || lastPos < 0) {
+    return true;
+  }
+  const d = ((samplePos >>> 0) - (lastPos >>> 0)) >>> 0;
+  return d > 0 && d < 0x80000000;
+}
+
 export function particleAudio(
   previous: ParticleAudioState,
   frame: {
@@ -48,7 +60,7 @@ export function particleAudio(
   const queued = frame.onsets ?? [];
   if (queued.length > 0) {
     for (const e of queued) {
-      if (e.samplePos <= lastOnsetPos) {
+      if (! onsetIsNew(e.samplePos, lastOnsetPos)) {
         continue;
       }
       const amp = clamp(e.amp);
