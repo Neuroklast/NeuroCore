@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (WebView2 installer pv)  
+**Stand:** 2026-10-18 (one hit one field)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/installer-webview2-pv`
+**Branch:** `fix/one-hit-one-field`
+
+## One hit one field (2026-10-18)
+
+A native transient and a simultaneous bass rise spawn one force field. Bass swell is the fallback when the onset ring is silent. The native click also arms the bass hold so a late FFT rise of the same kick does not add a second field.
 
 ## WebView2 installer pv (2026-10-18)
 

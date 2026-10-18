@@ -114,7 +114,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - SIMD for tape is `exprTapeEvalSimd`, not the AST `evalSimd` tree. ADAA is sequential — `softclip`/`tube`/`diode` stay on the sample loop. `hasLiveTape()` must not force scalar for `y = x * a`.
 - JIT Call/ADAA is `call` into `exprTapeDiv` / `exprTapeCallAdaa` and friends. asmjit Invoke into C++ shapers crashed factory load. Failed emit leaves `fn` null.
 - `display: none` does not stop rAF or React. Unmount Unit analyzers. One viz clock; last subscriber cancels the frame.
-- Audio events are local travelling force fields, not a global +Y velocity on every particle. Consume each telemetry seq/tick once. Glow/swirl/kick envelopes are not audio meters.
+- Audio events are local travelling force fields, not a global +Y velocity on every particle. Consume each telemetry seq/tick once. Glow/swirl/kick envelopes are not audio meters. A native onset is the hit; do not also spawn from the FFT bass rise of that same snapshot. Arm bass hold on any spawn so a late band hop does not add a second field.
 - Do not `xorps` against a 4-byte const pool entry. SSE reads 16 bytes. Negate with `mulss -1`.
 - Do not `JitRuntime::release` / destroy delay rings when `processBlock`'s local `shared_ptr` dies. Retire the old chain on the next `loadScript` (message thread).
 - JUCE half-band FIR already strides `k += 2`. Do not dual-own OS next to sanitation AA.
