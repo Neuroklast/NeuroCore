@@ -4,16 +4,25 @@ import { closedFaceGlyph, faceKindForType, TARGET_CLOSED_FACE } from "./faceKind
 
 const filterFace = readFileSync(new URL("./FilterFace.tsx", import.meta.url), "utf8");
 const reverbFace = readFileSync(new URL("./ReverbFace.tsx", import.meta.url), "utf8");
+const delayFace = readFileSync(new URL("./DelayFace.tsx", import.meta.url), "utf8");
+const lfoFace = readFileSync(new URL("./LfoFace.tsx", import.meta.url), "utf8");
+const dynamicsFace = readFileSync(new URL("./DynamicsFace.tsx", import.meta.url), "utf8");
 const nodeFace = readFileSync(new URL("./NodeFace.tsx", import.meta.url), "utf8");
 const boardChip = readFileSync(new URL("../BoardChip.tsx", import.meta.url), "utf8");
 
 describe("reference NodeFaces", () => {
-  it("registers filter and reverb as distinct calculated plots", () => {
+  it("registers filter, reverb, delay, LFO and dynamics as distinct calculated plots", () => {
     expect(faceKindForType("filter")).toBe("filter");
     expect(faceKindForType("eq")).toBe("filter");
     expect(faceKindForType("reverb")).toBe("reverb");
+    expect(faceKindForType("delay")).toBe("delay");
+    expect(faceKindForType("osc")).toBe("lfo");
+    expect(faceKindForType("comp")).toBe("dynamics");
     expect(closedFaceGlyph("filter")).toBe(TARGET_CLOSED_FACE.filter);
     expect(closedFaceGlyph("reverb")).toBe(TARGET_CLOSED_FACE.reverb);
+    expect(closedFaceGlyph("delay")).toBe(TARGET_CLOSED_FACE.delay);
+    expect(closedFaceGlyph("lfo")).toBe(TARGET_CLOSED_FACE.lfo);
+    expect(closedFaceGlyph("dynamics")).toBe(TARGET_CLOSED_FACE.dynamics);
     expect(closedFaceGlyph("filter")).not.toBe(closedFaceGlyph("reverb"));
     expect(filterFace).toContain('data-glyph="response"');
     expect(filterFace).toContain("calculated filter response");
@@ -25,8 +34,18 @@ describe("reference NodeFaces", () => {
     expect(reverbFace).toContain('data-curve="decay"');
     expect(nodeFace).toContain("FilterFace");
     expect(nodeFace).toContain("ReverbFace");
+    expect(nodeFace).toContain("DelayFace");
+    expect(nodeFace).toContain("LfoFace");
+    expect(nodeFace).toContain("DynamicsFace");
+    expect(delayFace).toContain("delayTapsPath");
+    expect(delayFace).toContain('data-curve="taps"');
+    expect(lfoFace).toContain("lfoWaveformPath");
+    expect(lfoFace).toContain('data-curve="waveform"');
+    expect(dynamicsFace).toContain("dynamicsCurvePath");
+    expect(dynamicsFace).toContain('data-curve="curve"');
     expect(nodeFace).toContain("args");
     expect(boardChip).toContain("args={node.args}");
     expect(boardChip).toContain("type={node.type}");
+    expect(boardChip).not.toContain("nk-lfo-face");
   });
 });

@@ -17,7 +17,7 @@ import { collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
-import { lfoLampClass, lfoPeriodMs, lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
+import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { ChipShell } from "./nodeFace/ChipShell";
 import { NodeFace } from "./nodeFace/NodeFace";
 import { chipDepth } from "./nodeFace/chipChrome";
@@ -71,14 +71,11 @@ export function BoardChip({
       headerStart = <ChipEnvLamp nodeId={node.id} />;
     } else if (chrome.lamp === "lfo") {
       headerStart = (
-        <>
-          <span
-            className={`nk-lfo-lamp ${lfoLampClass(lfoShape)}`}
-            style={{ "--nk-lfo-ms": `${lfoPeriodMs(lfoHz)}ms` } as CSSProperties}
-            aria-hidden
-          />
-          <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
-        </>
+        <span
+          className={`nk-lfo-lamp ${lfoLampClass(lfoShape)}`}
+          style={{ "--nk-lfo-ms": `${lfoPeriodMs(lfoHz)}ms` } as CSSProperties}
+          aria-hidden
+        />
       );
     }
   }
