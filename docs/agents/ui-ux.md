@@ -97,7 +97,8 @@ Unit HUD is `.nk-face-hud`: three columns, two rows. Telemetry is row 1; diagnos
 ## Unit motion and resize contracts
 
 - Stereo fan force must approach zero continuously at the centre and use the unforced field position. Do not use sign(x) with a minimum outward force or reinforce existing lateral displacement. Repeated-kick contracts must preserve centre density.
-- Kick and sub attacks apply one-shot +Y velocity to the particle bowl. Stereo side-energy controls the horizontal fan, never radial expansion on both axes. A held sub can raise the spring rest position, and silence must let the particles settle.
+- Kick and sub attacks spawn a **local travelling force field** in the particle bowl. Nearby particles accelerate more than distant ones. Do not apply a global +Y velocity to every particle. Stereo **balance** places the field origin; do not use sign(x) with a minimum outward force or reinforce existing lateral displacement. Repeated-kick contracts must preserve centre density.
+- A held sub can raise the spring rest position. Silence keeps a bounded ambient curl and lets one-shot fields expire. Consume each telemetry snapshot / seq once.
 - Consume each telemetry tick once. Overlapping scope snapshots are not consecutive audio blocks. Dry input drives bass response independently of the wet effect output.
 - Audio may change ring/projector brightness. Mechanical radius, projector housing dimensions, electric contour displacement and ring rotation rate must not depend on kick envelopes.
 - The 1280×860 stage scales by one transform with a top-left origin. Keep layout in logical pixels, including callout placement and hitboxes. Only canvas backing stores use host scale × device pixel ratio, with the renderer pixel budget retained.

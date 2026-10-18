@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (continuous particle spread)  
+**Stand:** 2026-10-18 (local particle force fields)  
 **Version:** 0.6.8-beta  
-**Branch:** `fix/continuous-particle-spread`
+**Branch:** `viz/local-force-fields`
+
+## Local particle fields and measured HUD (2026-10-18)
+
+Global +Y bowl kicks are gone. Transients spawn at most four local travelling force fields (Gaussian spatial weight, time envelope whose integral is 1). Nearby particles move more than distant ones; stereo balance places the origin; centre density stays continuous. Ambient curl runs at rest. Unit DYNAMICS / BAND ENERGY / STEREO report peak, RMS, crest, bands and correlation from the same feature functions as the ball. Unavailable values show —. NKTM v2 appends seq + samplePos so a snapshot is consumed once. DSP sound is unchanged. Native binary not rebuilt.
 
 ## Continuous stereo plume (2026-10-18)
 
