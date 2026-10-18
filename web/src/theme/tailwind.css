@@ -335,8 +335,22 @@ html[data-motion="off"] .nk-boot {
 .nk-face-plot {
   position: absolute;
   inset: 6px 2px 8px;
+  overflow: hidden;
   border-left: 1px solid var(--nk-ink-faint);
   border-bottom: 1px solid var(--nk-ink-faint);
+}
+
+.nk-face-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nk-face-plot path {
+  fill: none;
+  stroke: var(--nk-ink);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
 }
 
 .nk-face-plot[data-axis="log-freq"] {

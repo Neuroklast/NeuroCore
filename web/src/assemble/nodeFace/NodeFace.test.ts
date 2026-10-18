@@ -5,6 +5,7 @@ import { closedFaceGlyph, faceKindForType, TARGET_CLOSED_FACE } from "./faceKind
 const filterFace = readFileSync(new URL("./FilterFace.tsx", import.meta.url), "utf8");
 const reverbFace = readFileSync(new URL("./ReverbFace.tsx", import.meta.url), "utf8");
 const nodeFace = readFileSync(new URL("./NodeFace.tsx", import.meta.url), "utf8");
+const boardChip = readFileSync(new URL("../BoardChip.tsx", import.meta.url), "utf8");
 
 describe("reference NodeFaces", () => {
   it("registers filter and reverb as distinct calculated plots", () => {
@@ -16,9 +17,16 @@ describe("reference NodeFaces", () => {
     expect(closedFaceGlyph("filter")).not.toBe(closedFaceGlyph("reverb"));
     expect(filterFace).toContain('data-glyph="response"');
     expect(filterFace).toContain("calculated filter response");
+    expect(filterFace).toContain("filterCurvePath");
+    expect(filterFace).toContain('data-curve="response"');
     expect(reverbFace).toContain('data-glyph="decay"');
     expect(reverbFace).toContain("calculated decay envelope");
+    expect(reverbFace).toContain("reverbDecayPath");
+    expect(reverbFace).toContain('data-curve="decay"');
     expect(nodeFace).toContain("FilterFace");
     expect(nodeFace).toContain("ReverbFace");
+    expect(nodeFace).toContain("args");
+    expect(boardChip).toContain("args={node.args}");
+    expect(boardChip).toContain("type={node.type}");
   });
 });
