@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import { chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../theme/chromeSpec";
 import { themeOf } from "../theme/theme";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
@@ -8,8 +7,6 @@ import { chipExpandAction } from "./boardEdit";
 import {
   bindRailVisible,
   chipKindMark,
-  chipFootLine,
-  chipFootPeak,
   clipWarnMark,
   closedChipChrome,
   overloadLabel,
@@ -21,6 +18,10 @@ import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, lfoShapePath, parseLfoShape, resolveLfoHz } from "./lfoLamp";
+import { ChipShell } from "./nodeFace/ChipShell";
+import { NodeFace } from "./nodeFace/NodeFace";
+import { chipDepth } from "./nodeFace/chipChrome";
+import { faceKindForType } from "./nodeFace/faceKind";
 
 const NO_KNOBS: Array<{ id: string; value: number; min: number; max: number; isNote?: boolean }> = [];
 
@@ -51,9 +52,7 @@ export function BoardChip({
   const chrome = closedChipChrome(node.type, node.id);
   const face = collapsedFace(node.type, node.args);
   const title = node.role === "io" ? node.label : face.title;
-  const expandAt = chipExpandOffset();
   const canMs = ! isFlowBlockId(node.id) && node.role === "chip";
-  const isIn = node.type === "in";
   const ioInset = node.role === "io" ? ioBodyInset() : null;
   const showExpand = chipExpandAction(node.role, node.type) === "inspect";
   const binds = node.role === "chip" ? paintedBindKeys(node.type, node.args) : [];
@@ -61,12 +60,52 @@ export function BoardChip({
   const lfoShape = parseLfoShape(node.args.shape ?? "sine");
   const lfoHz = node.type === "osc" ? resolveLfoHz(node.args, knobs, bpm) : 0;
   const frameCut = themeOf(theme).frameCut;
+  const kind = faceKindForType(node.type);
+  const depth = chipDepth({ selected, focus, bindOpen });
+
+  let headerStart = null;
+  if (node.role === "chip") {
+    if (chrome.lamp === "clip") {
+      headerStart = <ChipClipLamp nodeId={node.id} />;
+    } else if (chrome.lamp === "env") {
+      headerStart = <ChipEnvLamp nodeId={node.id} />;
+    } else if (chrome.lamp === "lfo") {
+      headerStart = (
+        <>
+          <span
+            className={`nk-lfo-lamp ${lfoLampClass(lfoShape)}`}
+            style={{ "--nk-lfo-ms": `${lfoPeriodMs(lfoHz)}ms` } as CSSProperties}
+            aria-hidden
+          />
+          <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
+        </>
+      );
+    }
+  }
 
   return (
-    <div
-      className={node.role === "io" ? "nk-chip-io nk-board-chip" : "nk-chip nk-board-chip"}
-      data-node-id={node.id}
-      data-bind-node={node.id}
+    <ChipShell
+      nodeId={node.id}
+      role={node.role}
+      selected={selected}
+      kind={kind}
+      depth={depth}
+      audible={isAudible}
+      title={title}
+      typecode={face.code}
+      frameCut={frameCut}
+      inAccent={node.type === "in"}
+      bindOpen={bindOpen}
+      showExpand={showExpand}
+      inspectOpen={inspectOpen}
+      onInspect={onInspect}
+      headerStart={headerStart}
+      bodyStart={canMs ? (
+        <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
+          <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
+          <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
+        </div>
+      ) : null}
       data-selected={selected ? "on" : "off"}
       data-focus={bindOpen ? "sharp" : (focus ?? "off")}
       data-kind={chipKindMark(node.type, node.id, node.role)}
@@ -77,12 +116,7 @@ export function BoardChip({
         top: node.y,
         width: node.w,
         height: node.h,
-        opacity: isAudible ? 1 : 0.4,
-        overflow: "visible",
-        ...({
-          ...chipChromeVars(node.role),
-          "--nk-chip-cut": `${frameCut}px`,
-        } as CSSProperties),
+        ...chipChromeVars(node.role),
         ...(ioInset
           ? {
             "--nk-label-col": `${ioInset.left}px`,
@@ -91,79 +125,7 @@ export function BoardChip({
           : {}),
       }}
     >
-      <div className="nk-chip-fill" style={bindOpen ? { opacity: 0.25 } : undefined} />
-      {node.role === "chip" ? <div className="nk-chip-pads" aria-hidden /> : null}
-      <div
-        className="nk-chip-headband"
-        style={{
-          visibility: bindOpen ? "hidden" : "visible",
-          ...({ "--nk-head-end": `${headbandEndPad(showExpand)}px` } as CSSProperties),
-        }}
-      >
-        {node.role === "chip" ? (
-          chrome.lamp === "clip" ? (
-            <ChipClipLamp nodeId={node.id} />
-          ) : chrome.lamp === "env" ? (
-            <ChipEnvLamp nodeId={node.id} />
-          ) : (
-            <>
-              <span
-                className={`nk-lfo-lamp ${lfoLampClass(lfoShape)}`}
-                style={{ "--nk-lfo-ms": `${lfoPeriodMs(lfoHz)}ms` } as CSSProperties}
-                aria-hidden
-              />
-              <span className="nk-lfo-face" title={`${lfoShape} · ${lfoHz.toFixed(2)} Hz`} aria-label={`${lfoShape} LFO at ${lfoHz.toFixed(2)} hertz`}><svg width="42" height="16" viewBox="0 0 42 16" aria-hidden><path d={lfoShapePath(lfoShape)} /></svg></span>
-            </>
-          )
-        ) : null}
-        <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
-          {title}
-        </span>
-      </div>
-      <svg className="nk-chip-frame" width={node.w} height={node.h} viewBox={`0 0 ${node.w} ${node.h}`} aria-hidden>
-        <polygon
-          points={framePoints(node.w, node.h, frameCut)}
-          fill="none"
-          stroke={selected ? "var(--nk-accent)" : isIn ? "var(--nk-cyan)" : "var(--nk-ink-muted)"}
-          strokeWidth={selected ? "2.2" : "1.4"}
-        />
-        {frameCorners(node.w, node.h, frameCut).map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={selected ? "var(--nk-accent)" : isIn ? "var(--nk-cyan)" : "var(--nk-ink-soft)"} strokeWidth="2.7" />
-        ))}
-      </svg>
-      <div className="nk-chip-body" style={{ pointerEvents: "none", visibility: bindOpen ? "hidden" : "visible" }}>
-        {node.role === "chip" ? (
-          <span className="nk-chip-typecode">{face.code}</span>
-        ) : null}
-        {canMs ? (
-          <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
-            <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
-            <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
-          </div>
-        ) : null}
-      </div>
-      <ChipFoot nodeId={node.id} bindOpen={bindOpen} />
-      {showExpand && ! bindOpen ? (
-        <button
-          type="button"
-          className="nk-chip-expand nodrag nopan"
-          data-chip-keep-open=""
-          aria-expanded={inspectOpen || bindOpen}
-          style={{
-            position: "absolute",
-            top: expandAt.top,
-            right: expandAt.right,
-            zIndex: 6,
-            width: expandAt.size,
-            height: expandAt.size,
-            minWidth: DETAIL_HIT,
-            minHeight: DETAIL_HIT,
-          }}
-          onClick={(e) => { e.stopPropagation(); onInspect?.(); }}
-        >
-          {inspectOpen ? "▴" : "▾"}
-        </button>
-      ) : null}
+      {node.role === "chip" ? <NodeFace kind={kind} /> : null}
       {bindRailVisible(bindOpen, binds) ? (
         <BindRail
           nodeId={node.id}
@@ -196,7 +158,7 @@ export function BoardChip({
       {bindOpen ? (
         <BindDropPad nodeId={node.id} keys={binds} args={node.args} w={node.w} h={node.h} local={bindLocal} />
       ) : null}
-    </div>
+    </ChipShell>
   );
 }
 
@@ -216,16 +178,6 @@ function ChipEnvLamp({ nodeId }: { nodeId: string }) {
       aria-hidden
       style={{ "--nk-env": String(envLevel) } as CSSProperties}
     />
-  );
-}
-
-function ChipFoot({ nodeId, bindOpen }: { nodeId: string; bindOpen: boolean }) {
-  const peak = useHostStore((s) => s.clips[nodeId] ?? 0);
-  return (
-    <div className="nk-chip-foot" title={chipFootLine(nodeId, peak)} style={{ visibility: bindOpen ? "hidden" : "visible" }}>
-      <span>{nodeId}</span>
-      <span>{chipFootPeak(peak)}</span>
-    </div>
   );
 }
 

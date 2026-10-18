@@ -26,13 +26,11 @@ describe("signal lab tokens", () => {
     expect(SIGNAL_LAB.depth.interaction).toBe(3);
   });
 
-  it("records the current closed-chip type that is smaller than the lab scale", () => {
-    expect(css).toMatch(/\.nk-chip-foot\s*\{[^}]*font-size:\s*8px/s);
+  it("keeps typecode at the param scale", () => {
     expect(css).toMatch(/\.nk-chip-typecode\s*\{[^}]*font-size:\s*11px/s);
-    expect(css).not.toMatch(/\.nk-chip-title\s*\{[^}]*font-size:/s);
   });
 
-  it.fails("paints chip titles and feet at the lab type scale", () => {
+  it("paints chip titles and feet at the lab type scale", () => {
     expect(css).toMatch(new RegExp(`\\.nk-chip-title\\s*\\{[^}]*font-size:\\s*${SIGNAL_LAB.type.titlePx}px`, "s"));
     expect(css).toMatch(new RegExp(`\\.nk-chip-foot\\s*\\{[^}]*font-size:\\s*${SIGNAL_LAB.type.secondaryMinPx}px`, "s"));
   });

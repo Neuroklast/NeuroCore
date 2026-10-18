@@ -26,7 +26,7 @@ export function bindHit(el: Element | null): { node: string; key: string } | nul
     return { node: jack.dataset.bindNode, key: jack.dataset.bindKey ?? "" };
   }
   const pad = (el as HTMLElement).closest?.(
-    "[data-bind-node], [data-node-id], .nk-chip, .nk-chip-io, .react-flow__node",
+    "[data-bind-node], [data-node-id], .nk-chip, .nk-chip-io",
   ) as HTMLElement | null;
   if (! pad) {
     return null;

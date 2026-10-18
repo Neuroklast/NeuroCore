@@ -1,12 +1,16 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR A)  
+**Stand:** 2026-10-18 (signal lab PR B)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/signal-lab-pr-a`
+**Branch:** `feat/signal-lab-pr-b`
+
+## Circuit shared module chrome (2026-10-18)
+
+PR B is the shared chip frame (`ChipShell` + `NodeFace` registry). Filter and reverb are the reference faces (log-freq response well vs time decay well). Idle fill is `--nk-surface`; selected/hover `--nk-surface-high`; bind-open `--nk-well-high`. Title 13 px, foot 10 px on `--nk-ink-muted`. Semantic zoom writes `data-zoom` on `.nk-board`. Leftover `.react-flow` CSS is gone. Functional curves stay PR C. Serial wrap and Terminal navigator stay later PRs. Drone Low Bed factory `decay = 2.6` is unchanged. Native DAW not in this PR.
 
 ## Circuit / Terminal Signal Laboratory (2026-10-18)
 
-PR A is baseline only: face-kind catalog, semantic-zoom constants, structure model, CSS inventory, factory layout dumps, and target `it.fails` contracts. No chrome restyle. Latest `main` is #290 (`bb13ffd`). Known existing issues (not new in this PR): identical closed DSP plates except LFO shape; 8 px chip feet; leftover `.react-flow` CSS; Drone Low Bed factory `decay = 2.6` vs engine 0–1; compact serial chains wrap on the 896 px Circuit pane because DSP plates are 256×224 with 128 px air. Native DAW not in this PR.
+PR A is baseline only: face-kind catalog, semantic-zoom constants, structure model, CSS inventory, factory layout dumps, and target `it.fails` contracts. Latest `main` is #291 (`7026f14`). Compact serial chains wrap on the 896 px Circuit pane because DSP plates are 256×224 with 128 px air.
 
 ## Patch workspace Pad Cloud Hall (2026-10-18)
 

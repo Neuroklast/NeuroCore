@@ -23,4 +23,9 @@ describe("Circuit interaction surface", () => {
     expect(chip).not.toMatch(/useHostStore\(\(s\) => s\.knobs\)/);
     expect(chip).toContain('node.type === "osc"');
   });
+
+  it("empty-board deselect hit-tests the pointer, not a captured pane target", () => {
+    expect(board).toContain("elementFromPoint");
+    expect(board).toContain("capturePanePointer");
+  });
 });

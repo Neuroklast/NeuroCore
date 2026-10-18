@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BOARD_MAX_SCALE, BOARD_MIN_SCALE } from "../boardModel";
 import { chipBox, jackAnchor } from "../chipLayout";
@@ -5,6 +6,7 @@ import { handleId } from "../handles";
 import { visualJacksFor } from "../visualEdges";
 import {
   SEMANTIC_ZOOM,
+  applyBoardZoom,
   semanticZoomLevel,
   zoomMayMovePorts,
   zoomMayResizeChip,
@@ -42,5 +44,18 @@ describe("semantic zoom", () => {
       expect(box.w % 32, level).toBe(0);
       expect(box.h % 32, level).toBe(0);
     }
+  });
+
+  it("writes data-zoom on the board pane, not on each chip", () => {
+    const pane = { dataset: {} as DOMStringMap };
+    applyBoardZoom(pane, 0.4);
+    expect(pane.dataset.zoom).toBe("overview");
+    applyBoardZoom(pane, 0.7);
+    expect(pane.dataset.zoom).toBe("normal");
+    applyBoardZoom(pane, 1);
+    expect(pane.dataset.zoom).toBe("focused");
+    applyBoardZoom(null, 1);
+    const boardView = readFileSync(new URL("../BoardView.tsx", import.meta.url), "utf8");
+    expect(boardView).toContain("applyBoardZoom(paneRef.current, cam.scale)");
   });
 });

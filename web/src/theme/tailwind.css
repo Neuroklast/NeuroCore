@@ -243,10 +243,6 @@ html[data-motion="off"] .nk-boot {
   cursor: grab;
 }
 
-.react-flow__node:has([data-detail="on"]) {
-  z-index: 24 !important;
-}
-
 .nk-chip:active,
 .nk-chip-io:active {
   cursor: grabbing;
@@ -271,8 +267,21 @@ html[data-motion="off"] .nk-boot {
   inset: 0;
   z-index: 0;
   clip-path: polygon(var(--nk-chip-cut) 0, 100% 0, 100% calc(100% - var(--nk-chip-cut)), calc(100% - var(--nk-chip-cut)) 100%, 0 100%, 0 var(--nk-chip-cut));
-  background: var(--nk-black);
+  background: var(--nk-surface);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.06),
+    inset 0 -1px 0 rgb(0 0 0 / 0.45);
   border-radius: var(--nk-panel-radius);
+}
+
+.nk-board-chip[data-depth="2"] .nk-chip-fill,
+.nk-board-chip[data-selected="on"] .nk-chip-fill,
+.nk-board-chip[data-focus="sharp"] .nk-chip-fill {
+  background: var(--nk-surface-high);
+}
+
+.nk-board-chip[data-depth="3"] .nk-chip-fill {
+  background: var(--nk-well-high);
 }
 
 .nk-board-chip[data-kind] .nk-chip-fill::before {
@@ -307,7 +316,8 @@ html[data-motion="off"] .nk-boot {
   box-shadow: 3px 0 0 var(--nk-cyan);
 }
 
-.nk-chip-pads {
+.nk-chip-pads,
+.nk-node-face {
   position: absolute;
   top: var(--nk-pad-top);
   right: var(--nk-pad-right);
@@ -315,8 +325,38 @@ html[data-motion="off"] .nk-boot {
   left: var(--nk-pad-left);
   z-index: 1;
   pointer-events: none;
+}
+
+.nk-chip-pads {
   background-image: radial-gradient(circle, var(--nk-ink-muted) 0.7px, transparent 0.85px);
   background-size: var(--nk-chip-pad-y) var(--nk-chip-pad-y);
+}
+
+.nk-face-plot {
+  position: absolute;
+  inset: 6px 2px 8px;
+  border-left: 1px solid var(--nk-ink-faint);
+  border-bottom: 1px solid var(--nk-ink-faint);
+}
+
+.nk-face-plot[data-axis="log-freq"] {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 16%,
+    rgb(var(--nk-ink-muted-rgb) / 0.35) 16%,
+    rgb(var(--nk-ink-muted-rgb) / 0.35) calc(16% + 1px)
+  );
+}
+
+.nk-face-plot[data-axis="time"] {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 28%,
+    rgb(var(--nk-ink-muted-rgb) / 0.35) 28%,
+    rgb(var(--nk-ink-muted-rgb) / 0.35) calc(28% + 1px)
+  );
 }
 
 .nk-chip-headband {
@@ -349,7 +389,7 @@ html[data-motion="off"] .nk-boot {
     0 100%,
     0 var(--nk-chip-cut)
   );
-  background-color: var(--nk-black);
+  background-color: var(--nk-well);
   background-image: repeating-linear-gradient(
     45deg,
     transparent,
@@ -375,6 +415,17 @@ html[data-motion="off"] .nk-boot {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.nk-board[data-zoom="overview"] .nk-chip-typecode,
+.nk-board[data-zoom="overview"] .nk-chip-foot,
+.nk-board[data-zoom="overview"] .nk-bind-jack-cap {
+  visibility: hidden;
+}
+
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-typecode,
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot {
+  visibility: visible;
 }
 .nk-source-toggle {
   position: absolute;
@@ -614,11 +665,6 @@ html[data-motion="off"] .nk-boot {
   font-size: 10px;
 }
 
-.react-flow__node {
-  overflow: visible !important;
-  padding: 0 !important;
-}
-
 /* Circuit DoF: soft plane when data-dof=on (motion full only). */
 [data-dof="on"] .nk-chip[data-focus="soft"],
 [data-dof="on"] .nk-chip-io[data-focus="soft"],
@@ -653,25 +699,6 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   filter: none;
 }
 
-.react-flow__node-io,
-.react-flow__node-chip {
-  box-sizing: border-box;
-}
-
-.react-flow__attribution {
-  display: none !important;
-}
-
-.react-flow,
-.react-flow__renderer,
-.react-flow__pane {
-  overflow: hidden !important;
-}
-
-.react-flow__background {
-  background-color: var(--nk-bg) !important;
-}
-
 .nk-board-grid {
   position: absolute;
   inset: 0;
@@ -679,15 +706,6 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   height: 100%;
   pointer-events: none;
   z-index: 0;
-}
-
-.react-flow__minimap,
-.react-flow__controls {
-  display: none !important;
-}
-
-.react-flow__edge-path {
-  stroke: var(--nk-accent);
 }
 
 .nk-jack-shell {
@@ -713,49 +731,6 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 
 .nk-jack-shell::before { top: 0; }
 .nk-jack-shell::after { bottom: 0; }
-
-.react-flow__handle,
-.react-flow__handle.nk-plug {
-  width: var(--nk-trace, 16px) !important;
-  height: var(--nk-trace, 16px) !important;
-  min-width: var(--nk-trace, 16px);
-  min-height: var(--nk-trace, 16px);
-  border-radius: 0 !important;
-  border: 1px solid var(--nk-accent);
-  background: transparent;
-  box-shadow: none;
-  margin: 0 !important;
-}
-
-.react-flow__handle.nk-plug:not(.nk-plug-face) {
-  margin: 0 !important;
-}
-
-.react-flow__handle.nk-plug.connected,
-.react-flow__handle.connected {
-  background: var(--nk-accent);
-  border-color: var(--nk-accent);
-  box-shadow: none;
-}
-
-.react-flow__handle.nk-plug-face {
-  margin-left: calc(var(--nk-trace, 16px) / -2);
-  border-color: var(--nk-ink-muted);
-  background: transparent;
-  box-shadow: none;
-}
-
-.react-flow__handle.nk-plug-mod {
-  border-color: var(--nk-ink-muted);
-  background: transparent;
-}
-
-.react-flow__handle.nk-plug-face.connected,
-.react-flow__handle.nk-plug-mod.connected {
-  background: var(--nk-cyan);
-  border-color: var(--nk-cyan);
-  box-shadow: none;
-}
 
 .nk-plug-label {
   position: absolute;
@@ -1631,7 +1606,7 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
 }
 
 .nk-term--view {
-  border-color: rgba(200, 200, 200, 0.28);
+  border-color: var(--nk-line);
 }
 
 .nk-term--edit {
@@ -2040,23 +2015,6 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   animation: none;
 }
 
-.nk-flow .react-flow__handle-connecting,
-.nk-flow .react-flow__handle.connectingto,
-.nk-flow .react-flow__handle.connectingfrom {
-  background: var(--nk-accent-deep);
-}
-
-.nk-flow .react-flow__handle-valid,
-.nk-flow .react-flow__handle.valid {
-  background: var(--nk-accent);
-  box-shadow: 0 0 0 3px rgba(var(--nk-accent-rgb), 0.35);
-}
-
-.react-flow__edge.temp .react-flow__edge-path {
-  stroke-dasharray: 5 5;
-  opacity: 0.55;
-}
-
 .nk-drag {
   cursor: grab;
 }
@@ -2456,26 +2414,13 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-chip-title {
   font-family: "Apex", "Segoe UI", sans-serif;
   font-weight: 700;
+  font-size: 13px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.react-flow__node-io .react-flow__handle:not(.nk-plug),
-.react-flow__node-chip .react-flow__handle:not(.nk-plug),
-.nk-chip-io[data-io="in"] .react-flow__handle.target,
-.nk-chip-io[data-io="in"] .react-flow__handle-left {
-  display: none !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  border: 0 !important;
-  opacity: 0 !important;
 }
 
 .nk-greeble {
@@ -2531,9 +2476,9 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   margin: 0;
   pointer-events: none;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--nk-ink-muted);
   line-height: 1;
   overflow: hidden;
   white-space: nowrap;
@@ -3250,21 +3195,6 @@ html[data-motion="off"] .nk-term-glow {
   text-align: center;
   pointer-events: none;
   text-shadow: 0 0 4px var(--nk-black), 0 1px 0 var(--nk-black);
-}
-
-.nk-chip .react-flow__handle {
-  background: transparent;
-  border: 1px solid var(--nk-accent);
-  border-radius: 0;
-  width: var(--nk-trace, 16px);
-  height: var(--nk-trace, 16px);
-  min-width: 16px;
-  min-height: 16px;
-}
-
-.nk-chip .react-flow__handle::before,
-.nk-chip .react-flow__handle::after {
-  display: none;
 }
 
 .nk-cable-still {
