@@ -92,10 +92,10 @@ stage2: channel = right; y = tube(x, b)
 | `t` | Zeit in Sekunden |
 | `sr` | Sample-Rate in Hz |
 | `pi` | π |
-| `midi_note` | MIDI-Note (0–127) |
-| `midi_freq` | Frequenz der MIDI-Note in Hz |
-| `midi_vel` | Velocity (0.0–1.0) |
-| `midi_gate` | 1.0 wenn Note aktiv |
+| `midi_note` | Last-note MIDI note (0–127, 0 when none held) |
+| `midi_freq` | Frequency of that note in Hz |
+| `midi_vel` | Velocity of that note (0.0–1.0) |
+| `midi_gate` | 1.0 while any note is held |
 | `midi_bend` | Pitch Bend (-1.0 … +1.0) |
 | `midi_mod` | CC1 Mod Wheel (0.0–1.0) |
 

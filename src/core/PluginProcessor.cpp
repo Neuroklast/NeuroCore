@@ -287,6 +287,7 @@ void NeuroKoreAudioProcessor::changeProgramName (int, const juce::String&) {}
 void NeuroKoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     cpuProtect.reset();
+    midiVariableMapper.reset();
     continuityN = 0;
     continuityCh = 0;
     continuityDecay = 0.f;
@@ -447,9 +448,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
 
-    // MIDI: Learn CC mappings + update DSL MIDI variables
     midiLearnManager.processMidiMessages (midiMessages);
-    midiVariableMapper.processMidi(midiMessages);
 
     const int nSamp = main.getNumSamples();
     const double sr = getSampleRate();
@@ -467,6 +466,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const bool cpuHold = cpuProtect.shouldHoldAudio (nSamp, sr, isNonRealtime());
     if (cpuHold)
     {
+        midiVariableMapper.processMidi (midiMessages);
         cpuProtect.noteHoldDisplay();
         replayContinuity (main);
         fadeInRemain = juce::jmax (fadeInRemain, nSamp);
@@ -489,7 +489,6 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         TryLock lock (scriptManager.getProcessLock());
         if (lock.held)
         {
-            scriptManager.signalChain.setMidiVariables(midiVariableMapper);
             double ppq = 0.0;
             bool playing = false;
             if (auto* head = getPlayHead())
@@ -505,8 +504,17 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             }
             scriptManager.signalChain.setTempo (getEffectiveBpm(), ppq, playing);
             hostBlock.store (nSamp, std::memory_order_relaxed);
-            dspEngine.setHostSidechain (scL, scR, scN);
-            dspEngine.processBlock (main, scriptManager.signalChain);
+            const int nCh = main.getNumChannels();
+            midiVariableMapper.walkSpans (midiMessages, nSamp, [&] (int start, int count)
+            {
+                scriptManager.signalChain.setMidiVariables (midiVariableMapper);
+                juce::AudioBuffer<float> slice (main.getArrayOfWritePointers(), nCh, start, count);
+                const float* sl = (scL != nullptr && start < scN) ? scL + start : nullptr;
+                const float* srSc = (scR != nullptr && start < scN) ? scR + start : nullptr;
+                const int sn = sl != nullptr ? juce::jmax (0, scN - start) : 0;
+                dspEngine.setHostSidechain (sl, srSc, sn);
+                dspEngine.processBlock (slice, scriptManager.signalChain);
+            });
             ranWet = true;
             fadeInAfterGap (main);
             storeContinuity (main);
