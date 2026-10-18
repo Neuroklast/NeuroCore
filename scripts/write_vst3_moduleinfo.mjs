@@ -37,9 +37,26 @@ function cid (type, windows) {
     .join ("");
 }
 
+function classEntry (cidHex, category, version, subCategories) {
+  return `    {
+      "CID": "${cidHex}",
+      "Category": "${category}",
+      "Name": "NEUROKORE",
+      "Vendor": "Neuroklast",
+      "Version": "${version}",
+      "SDKVersion": "VST 3.7.12",
+      "Sub Categories": ${subCategories},
+      "Class Flags": 0,
+      "Cardinality": 2147483647,
+      "Snapshots": []
+    }`;
+}
+
 function moduleInfo (version, windows) {
   const component = cid ("component", windows);
   const controller = cid ("controller", windows);
+  const compatibility = cid ("compatibility", windows);
+  const fx = '["Fx", "Distortion"]';
   return `{
   "Name": "NEUROKORE",
   "Version": "${version}",
@@ -54,30 +71,9 @@ function moduleInfo (version, windows) {
     }
   },
   "Classes": [
-    {
-      "CID": "${component}",
-      "Category": "Audio Module Class",
-      "Name": "NEUROKORE",
-      "Vendor": "Neuroklast",
-      "Version": "${version}",
-      "SDKVersion": "VST 3.7.12",
-      "Sub Categories": ["Fx", "Distortion"],
-      "Class Flags": 0,
-      "Cardinality": 2147483647,
-      "Snapshots": []
-    },
-    {
-      "CID": "${controller}",
-      "Category": "Component Controller Class",
-      "Name": "NEUROKORE",
-      "Vendor": "Neuroklast",
-      "Version": "${version}",
-      "SDKVersion": "VST 3.7.12",
-      "Sub Categories": ["Fx", "Distortion"],
-      "Class Flags": 0,
-      "Cardinality": 2147483647,
-      "Snapshots": []
-    }
+${classEntry (component, "Audio Module Class", version, fx)},
+${classEntry (controller, "Component Controller Class", version, fx)},
+${classEntry (compatibility, "Plugin Compatibility Class", version, "[]")}
   ]
 }
 `;

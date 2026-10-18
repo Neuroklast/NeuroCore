@@ -173,21 +173,53 @@ public:
             expect (bridge::keepWebViewVisibleForHostEvents());
         }
 
-        beginTest ("VST3 moduleinfo.json names NEUROKORE and matches the JUCE class CID");
+        beginTest ("VST3 moduleinfo lists every factory class with frozen JUCE CIDs");
         {
+            using Type = juce::VST3ClientExtensions::InterfaceType;
+            const auto component = bridge::vst3CidHex (Type::component);
+            const auto controller = bridge::vst3CidHex (Type::controller);
+            const auto compatibility = bridge::vst3CidHex (Type::compatibility);
+            expect (component.length() == 32, component);
+            expect (controller.length() == 32, controller);
+            expect (compatibility.length() == 32, compatibility);
+            expect (component != controller);
+            expect (component != compatibility);
+            expect (controller != compatibility);
+
             const auto json = bridge::vst3ModuleInfoJson();
-            const auto cid = bridge::vst3CidHex (juce::VST3ClientExtensions::InterfaceType::component);
-            expect (cid.length() == 32, cid);
             expect (json.contains ("\"Name\": \"NEUROKORE\""), json);
             expect (json.contains ("Audio Module Class"), json);
-            expect (json.contains (cid), json);
+            expect (json.contains ("Component Controller Class"), json);
+            expect (json.contains ("Plugin Compatibility Class"), json);
+            expect (json.contains (component), json);
+            expect (json.contains (controller), json);
+            expect (json.contains (compatibility), json);
+
+            int cidCount = 0;
+            for (int from = 0;;)
+            {
+                const int at = json.indexOf (from, "\"CID\":");
+                if (at < 0)
+                    break;
+                ++cidCount;
+                from = at + 6;
+            }
+            expectEquals (cidCount, 3, json);
+
+#if JUCE_WINDOWS
+            // Shipped Windows identity. Do not retune convertJucePluginId / REPLACE_VST2.
+            expectEquals (component, juce::String ("01EFCDAB8291EBFA4E524B4C4E524B4F"));
+            expectEquals (controller, juce::String ("01EFCDAB3412CDAB4E524B4C4E524B4F"));
+#endif
+
             const auto disk = juce::File (NEUROKORE_RESOURCES_DIR).getChildFile ("moduleinfo.json");
             expect (disk.existsAsFile(), disk.getFullPathName());
             const auto onDisk = disk.loadFileAsString();
             expect (onDisk.contains ("NEUROKORE"), onDisk);
-#if JUCE_WINDOWS
-            expect (onDisk.contains (cid), onDisk);
-#endif
+            expect (onDisk.contains ("Plugin Compatibility Class"), onDisk);
+            expect (onDisk.contains (component), onDisk);
+            expect (onDisk.contains (controller), onDisk);
+            expect (onDisk.contains (compatibility), onDisk);
         }
 
         beginTest ("Space is host transport, never a plugin command");
