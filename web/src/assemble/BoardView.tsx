@@ -256,9 +256,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     const last = selection.length ? selection[selection.length - 1]! : null;
-    if (! last) {
-      return;
-    }
     if (useHostStore.getState().focusNodeId !== last) {
       useHostStore.getState().setFocusNodeId(last);
     }
@@ -544,7 +541,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         if (id && canDeleteChip(n)) {
           e.preventDefault();
           removeCircuitBlock(id);
-          setSelection([]);
+          clearBoardFocus();
         }
       }
     };
@@ -743,7 +740,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
           {canDeleteChip(nodes[menu.id]) ? (
             <OsMenuItem danger onClick={() => {
               removeCircuitBlock(menu.id);
-              setSelection([]);
+              clearBoardFocus();
               setMenu(null);
             }}>Delete</OsMenuItem>
           ) : null}

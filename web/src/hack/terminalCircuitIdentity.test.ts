@@ -26,6 +26,9 @@ describe("Terminal and Circuit share one node identity", () => {
     expect(board).toContain("boardIdForSource");
     expect(board).not.toMatch(/focusNodeId[^\n]*fitCamera/);
     expect(board).not.toMatch(/fitCamera[^\n]*focusNodeId/);
+    expect(board).toContain("removeCircuitBlock(id)");
+    expect(board).toContain("clearBoardFocus()");
+    expect(board).not.toMatch(/removeCircuitBlock\(id\);\s*setSelection\(\[\]\)/);
   });
 
   it("Inspect names the honest tap; DSP chips are No tap; waveFor is IN/OUT only", () => {

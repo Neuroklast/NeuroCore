@@ -9,7 +9,7 @@ import {
   rmsAbs,
   stereoBalance,
 } from "./audioFeatures";
-import { gonioFromLr, silence, tone } from "./audioSignals";
+import { silence, tone } from "./audioSignals";
 
 describe("audio feature contracts", () => {
   it("peak and rms of a full-scale sine match the analytic values", () => {
@@ -52,11 +52,17 @@ describe("audio feature contracts", () => {
     expect(dead.crestDb).toBeNull();
   });
 
-  it("mono gonio has high correlation and no side energy", () => {
+  it("native gonio buffers are raw L/R, not encoded mid/side", () => {
     const m = tone(400, 48000, 128, 0.5);
-    const g = gonioFromLr(m, m, 64);
-    const f = measureFeatures(m, g.x, g.y, 48000);
-    expect(f.corr).toBeGreaterThan(0.95);
-    expect(Math.abs(f.balance)).toBeLessThan(0.05);
+    const z = silence(128);
+    const mono = measureFeatures(m, m, m, 48000);
+    expect(mono.corr).toBeGreaterThan(0.95);
+    expect(Math.abs(mono.balance)).toBeLessThan(0.05);
+    expect(mono.sideEnergy).toBeLessThan(mono.midEnergy * 0.05);
+    const hardL = measureFeatures(m, m, z, 48000);
+    expect(hardL.balance).toBeCloseTo(-1, 5);
+    expect(Math.abs(hardL.corr)).toBeLessThan(0.2);
+    const hardR = measureFeatures(m, z, m, 48000);
+    expect(hardR.balance).toBeCloseTo(1, 5);
   });
 });

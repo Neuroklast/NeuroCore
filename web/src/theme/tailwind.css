@@ -1205,7 +1205,8 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   letter-spacing: 0.16em;
   text-align: center;
 }
-.nk-face-mod-state[data-mode="ACTIVE"] {
+.nk-face-mod-state[data-mode="ACTIVE"],
+.nk-face-mod-state[data-mode="LIVE"] {
   border-color: var(--nk-accent);
   color: var(--nk-accent);
 }

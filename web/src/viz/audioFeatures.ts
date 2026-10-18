@@ -80,14 +80,15 @@ export function stereoBalance(peakL: number, peakR: number): number {
   return (r - l) / s;
 }
 
-export function midSideEnergy(gonioX: ArrayLike<number>, gonioY: ArrayLike<number>): {
+/** Native gonio buffers are raw L/R. */
+export function midSideEnergy(left: ArrayLike<number>, right: ArrayLike<number>): {
   mid: number;
   side: number;
   peakL: number;
   peakR: number;
   corr: number;
 } {
-  const n = Math.min(gonioX.length, gonioY.length);
+  const n = Math.min(left.length, right.length);
   let mid = 0;
   let side = 0;
   let peakL = 0;
@@ -96,12 +97,12 @@ export function midSideEnergy(gonioX: ArrayLike<number>, gonioY: ArrayLike<numbe
   let accL2 = 0;
   let accR2 = 0;
   for (let i = 0; i < n; i += 1) {
-    const x = gonioX[i] ?? 0;
-    const y = gonioY[i] ?? 0;
-    side += x * x;
-    mid += y * y;
-    const l = x - y;
-    const r = -x - y;
+    const l = left[i] ?? 0;
+    const r = right[i] ?? 0;
+    const m = 0.5 * (l + r);
+    const s = 0.5 * (l - r);
+    mid += m * m;
+    side += s * s;
     const al = Math.abs(l);
     const ar = Math.abs(r);
     if (al > peakL) {

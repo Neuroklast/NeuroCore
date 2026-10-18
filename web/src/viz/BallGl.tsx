@@ -724,7 +724,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         forces = pushForce(forces, spawnForce(forceId, bandIndex(hit.spawn.band), balance, hit.spawn.amp));
         forceId += 1;
       }
-      forces = stepForces(forces, dt);
       const width01 = stereoWidth(telemetry.gonioL, telemetry.gonioR);
       drive = ballDrive(drive, bands, telemetry.outRms, width01, dt, {
         motion: host.motion,
@@ -922,6 +921,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fb);
         gl.viewport(0, 0, devW, devH);
       }
+      forces = stepForces(forces, dt);
 
       if (homeTex && seedTex && dustCount > 0) {
         gl.enable(gl.BLEND);

@@ -60,6 +60,8 @@ describe("core diagnostics mapping", () => {
     const src = readFileSync(path.join(here, "coreDiagModel.ts"), "utf8");
     expect(src).toContain("coreHud");
     expect(src).not.toMatch(/pose\.glow/);
+    const css = readFileSync(path.join(here, "../theme/tailwind.css"), "utf8");
+    expect(css).toMatch(/nk-face-mod-state\[data-mode="LIVE"\]/);
   });
 
   it("motion off returns the static pose even with loud samples", () => {
