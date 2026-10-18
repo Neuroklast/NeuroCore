@@ -70,6 +70,9 @@ test.describe("signal lab shared module chrome", () => {
     expect(reverbD && reverbD.length > 8).toBe(true);
     expect(filterD).not.toBe(reverbD);
     await expect(reverb.locator("[data-glyph='decay']")).toHaveAttribute("data-decay", "0.95");
+    const size = Number(await reverb.locator("[data-glyph='decay']").getAttribute("data-size"));
+    expect(size).toBeGreaterThan(0.5);
+    expect(size).toBeLessThan(0.7);
     await expect(board).toHaveAttribute("data-zoom", /^(overview|normal|focused)$/);
 
     const titleSize = await filter.locator(".nk-chip-title").evaluate((n) => getComputedStyle(n).fontSize);

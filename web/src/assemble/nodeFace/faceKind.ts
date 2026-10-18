@@ -1,4 +1,5 @@
 import { chipSpec } from "../chipSpec";
+import type { FaceHost } from "./faceArgs";
 
 /**
  * Visual family for a Circuit chip. One kind per DSP job, not one renderer
@@ -28,6 +29,7 @@ export type FaceProps = {
   type: string;
   args: Record<string, string>;
   id?: string;
+  host?: FaceHost;
 };
 
 /** What the closed plate paints today. */

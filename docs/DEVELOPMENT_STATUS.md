@@ -1,12 +1,16 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR C4)  
+**Stand:** 2026-10-18 (signal lab PR C4 FaceHost)  
 **Version:** 0.6.10-beta  
 **Branch:** `feat/signal-lab-pr-c4`
 
+## Circuit FaceHost knobs / tempo / sample rate (2026-10-18)
+
+Closed faces read `FaceHost` (live knobs, host BPM, host sample rate). Bound letters (`cutoff = b`, `size = c`) and `map(...)` follow the knob; mixed formulas stay on the ChipSpec default. Delay/LFO sync notes use host BPM (120 when missing). EQ biquads use host sample rate (48 kHz when missing). Drive still uses the outer named shaper only — no eval. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
+
 ## Circuit routing / modfx / cab / io / utility faces (2026-10-18)
 
-PR C4 registers the remaining families on the NodeFace registry. Routing paints ChipSpec ports (width is two lanes; join uses mix). Phaser/flanger/chorus paint one engine LFO cycle (chorus averages voices; flanger invert flips the sign). Cab paints dry/wet mix; the IR WAV name is the host slot keyed by node id. IN/OUT/SC paint a jack schematic; real ports stay on the frame. Utility paints gain and pan marks. Formulas fall back to ChipSpec defaults. `TARGET_CLOSED_FACE` now matches `closedFaceGlyph`. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
+PR C4 registers the remaining families on the NodeFace registry. Routing paints ChipSpec ports (width is two lanes; join uses mix). Phaser/flanger/chorus paint one engine LFO cycle (chorus averages voices; flanger invert flips the sign). Cab paints dry/wet mix; the IR WAV name is the host slot keyed by node id. IN/OUT/SC paint a jack schematic; real ports stay on the frame. Utility paints gain and pan marks. Bound letters follow FaceHost knobs. `TARGET_CLOSED_FACE` now matches `closedFaceGlyph`. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
 
 ## Circuit env / pitch / drive faces (2026-10-18)
 

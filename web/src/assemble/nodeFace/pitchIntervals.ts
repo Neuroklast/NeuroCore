@@ -1,4 +1,4 @@
-import { parseFaceNumber } from "./faceArgs";
+import { parseFaceNumber, type FaceHost } from "./faceArgs";
 
 const VIEW_W = 100;
 const VIEW_H = 40;
@@ -35,14 +35,14 @@ function pitchMode(chipType: string): PitchMode {
   return "octaver";
 }
 
-export function pitchFaceModel(chipType: string, args: Record<string, string>): PitchFaceModel {
+export function pitchFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): PitchFaceModel {
   return {
     mode: pitchMode(chipType),
-    sub: parseFaceNumber(args.sub, 1, 0, 1.5),
-    up: parseFaceNumber(args.up, 0, 0, 1.5),
-    mix: parseFaceNumber(args.mix, defaultMix(chipType), 0, 1),
-    semitones: parseFaceNumber(args.semitones, 0, -24, 24),
-    bands: Math.round(parseFaceNumber(args.bands, 16, 3, 32)),
+    sub: parseFaceNumber(args.sub, 1, 0, 1.5, host),
+    up: parseFaceNumber(args.up, 0, 0, 1.5, host),
+    mix: parseFaceNumber(args.mix, defaultMix(chipType), 0, 1, host),
+    semitones: parseFaceNumber(args.semitones, 0, -24, 24, host),
+    bands: Math.round(parseFaceNumber(args.bands, 16, 3, 32, host)),
   };
 }
 
@@ -53,8 +53,8 @@ function stem(x: number, amp: number): PitchStem {
 }
 
 /** Sub / dry / up mix, or a semitone marker, or vocoder band count. No spectrum. */
-export function pitchStems(chipType: string, args: Record<string, string>): PitchStem[] {
-  const m = pitchFaceModel(chipType, args);
+export function pitchStems(chipType: string, args: Record<string, string>, host?: FaceHost): PitchStem[] {
+  const m = pitchFaceModel(chipType, args, host);
   if (m.mode === "shift") {
     const x = VIEW_W * (m.semitones + 24) / 48;
     return [stem(x, m.mix)];
@@ -75,8 +75,8 @@ export function pitchStems(chipType: string, args: Record<string, string>): Pitc
   ];
 }
 
-export function pitchIntervalsPath(chipType: string, args: Record<string, string>): string {
-  const stems = pitchStems(chipType, args);
+export function pitchIntervalsPath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
+  const stems = pitchStems(chipType, args, host);
   if (stems.length === 0) {
     return "M0 40 L100 40";
   }

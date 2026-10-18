@@ -1,5 +1,5 @@
 import { chipSpec } from "../chipSpec";
-import { parseFaceNumber } from "./faceArgs";
+import { parseFaceNumber, type FaceHost } from "./faceArgs";
 
 const VIEW_W = 100;
 const VIEW_H = 40;
@@ -45,28 +45,28 @@ export function modfxMode(chipType: string): ModfxMode {
   return "phaser";
 }
 
-export function modfxFaceModel(chipType: string, args: Record<string, string>): ModfxFaceModel {
+export function modfxFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): ModfxFaceModel {
   const mode = modfxMode(chipType);
   const rateDef = mode === "flanger" ? 0.25 : mode === "chorus" ? 0.6 : 0.4;
   const delayDef = mode === "chorus" ? 18 : 2;
   return {
     mode,
-    rate: parseFaceNumber(args.rate, rateDef, 0, 8),
-    depth: parseFaceNumber(args.depth, mode === "chorus" ? 0.5 : 0.7, 0, mode === "phaser" ? 1.5 : 1),
-    delay: parseFaceNumber(args.delay, delayDef, 0.1, 40),
-    mix: parseFaceNumber(args.mix, 0.5, 0, 1),
-    stages: Math.round(parseFaceNumber(args.stages, 6, 2, 12)),
-    voices: Math.round(parseFaceNumber(args.voices, 3, 2, 4)),
+    rate: parseFaceNumber(args.rate, rateDef, 0, 8, host),
+    depth: parseFaceNumber(args.depth, mode === "chorus" ? 0.5 : 0.7, 0, mode === "phaser" ? 1.5 : 1, host),
+    delay: parseFaceNumber(args.delay, delayDef, 0.1, 40, host),
+    mix: parseFaceNumber(args.mix, 0.5, 0, 1, host),
+    stages: Math.round(parseFaceNumber(args.stages, 6, 2, 12, host)),
+    voices: Math.round(parseFaceNumber(args.voices, 3, 2, 4, host)),
     invert: parseOnOff(args.invert, mode === "flanger"),
-    center: parseFaceNumber(args.center, 800, 80, 4000),
-    feedback: parseFaceNumber(args.feedback, mode === "flanger" ? 0.45 : 0.3, 0, 0.95),
-    width: parseFaceNumber(args.width, 0.7, 0, 1),
+    center: parseFaceNumber(args.center, 800, 80, 4000, host),
+    feedback: parseFaceNumber(args.feedback, mode === "flanger" ? 0.45 : 0.3, 0, 0.95, host),
+    width: parseFaceNumber(args.width, 0.7, 0, 1, host),
   };
 }
 
 /** One cycle of the engine LFO. Phaser/flanger sine; chorus averages voice sines. */
-export function modfxSample(chipType: string, args: Record<string, string>, phase01: number): number {
-  const m = modfxFaceModel(chipType, args);
+export function modfxSample(chipType: string, args: Record<string, string>, phase01: number, host?: FaceHost): number {
+  const m = modfxFaceModel(chipType, args, host);
   if (m.mode === "chorus") {
     let s = 0;
     for (let v = 0; v < m.voices; v += 1) {
@@ -83,11 +83,11 @@ export function modfxSample(chipType: string, args: Record<string, string>, phas
   return 0.5 + 0.5 * depth * s;
 }
 
-export function modfxWaveformPath(chipType: string, args: Record<string, string>): string {
+export function modfxWaveformPath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
   const last = FACE_POINTS - 1;
   const parts: string[] = [];
   for (let i = 0; i < FACE_POINTS; i += 1) {
-    const v = modfxSample(chipType, args, i / last);
+    const v = modfxSample(chipType, args, i / last, host);
     const x = (VIEW_W * i) / last;
     const y = VIEW_H - VIEW_H * Math.min(1, Math.max(0, v));
     parts.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`);

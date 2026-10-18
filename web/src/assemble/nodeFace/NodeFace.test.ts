@@ -91,6 +91,10 @@ describe("reference NodeFaces", () => {
     expect(boardChip).toContain("args={node.args}");
     expect(boardChip).toContain("id={node.id}");
     expect(boardChip).toContain("type={node.type}");
+    expect(boardChip).toContain("host={{ knobs, bpm, sr }}");
+    expect(nodeFace).toContain("host={host}");
+    expect(reverbFace).toContain("data-size");
+    expect(filterFace).toContain("host");
     expect(boardChip).not.toContain("nk-lfo-face");
   });
 });

@@ -1,4 +1,4 @@
-import { parseFaceNumber } from "./faceArgs";
+import { parseFaceNumber, type FaceHost } from "./faceArgs";
 
 const VIEW_H = 40;
 
@@ -7,10 +7,10 @@ export type CabFaceModel = {
   gain: number;
 };
 
-export function cabFaceModel(args: Record<string, string>): CabFaceModel {
+export function cabFaceModel(args: Record<string, string>, host?: FaceHost): CabFaceModel {
   return {
-    mix: parseFaceNumber(args.mix, 0.3, 0, 1),
-    gain: parseFaceNumber(args.gain, 0, -24, 24),
+    mix: parseFaceNumber(args.mix, 0.3, 0, 1, host),
+    gain: parseFaceNumber(args.gain, 0, -24, 24, host),
   };
 }
 
@@ -21,12 +21,12 @@ function stem(x: number, amp: number): CabStem {
 }
 
 /** Dry / wet mix. IR slot name lives on the host, not in ChipSpec. */
-export function cabStems(args: Record<string, string>): CabStem[] {
-  const m = cabFaceModel(args);
+export function cabStems(args: Record<string, string>, host?: FaceHost): CabStem[] {
+  const m = cabFaceModel(args, host);
   return [stem(28, 1 - m.mix), stem(72, m.mix)];
 }
 
-export function cabMixPath(args: Record<string, string>): string {
-  const stems = cabStems(args);
+export function cabMixPath(args: Record<string, string>, host?: FaceHost): string {
+  const stems = cabStems(args, host);
   return stems.map((s, i) => `${i === 0 ? "M" : "L"}${s.x.toFixed(2)} ${s.y1.toFixed(2)}`).join(" ");
 }

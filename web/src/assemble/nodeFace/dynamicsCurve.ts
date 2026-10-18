@@ -1,4 +1,4 @@
-import { parseFaceNumber, parseFaceToken } from "./faceArgs";
+import { parseFaceNumber, parseFaceToken, type FaceHost } from "./faceArgs";
 
 const VIEW_W = 100;
 const VIEW_H = 40;
@@ -71,26 +71,26 @@ function dynamicsMode(chipType: string): DynamicsMode {
   return "comp";
 }
 
-export function dynamicsFaceModel(chipType: string, args: Record<string, string>): DynamicsFaceModel {
+export function dynamicsFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): DynamicsFaceModel {
   const mode = dynamicsMode(chipType);
   return {
     mode,
-    threshold: parseFaceNumber(args.threshold ?? args.thresh, mode === "deesser" ? -8 : -18, -80, 6),
-    ratio: parseFaceNumber(args.ratio, 4, 1, 20),
-    knee: parseFaceNumber(args.knee, 0, 0, 24),
-    makeup: parseFaceNumber(args.makeup ?? args.gain, 0, -24, 24),
-    mix: parseFaceNumber(args.mix, 1, 0, 1),
-    ceiling: parseFaceNumber(args.ceiling ?? args.ceil, mode === "limit" ? -0.3 : 0, -24, 0),
-    range: parseFaceNumber(args.range, -80, -90, 0),
-    amount: parseFaceNumber(args.amount, 0.7, 0, 1),
-    attack: parseFaceNumber(args.attack, 0.5, -1, 1),
-    sustain: parseFaceNumber(args.sustain, 0, -1, 1),
-    depth: parseFaceNumber(args.depth, 1, 0, 1),
+    threshold: parseFaceNumber(args.threshold ?? args.thresh, mode === "deesser" ? -8 : -18, -80, 6, host),
+    ratio: parseFaceNumber(args.ratio, 4, 1, 20, host),
+    knee: parseFaceNumber(args.knee, 0, 0, 24, host),
+    makeup: parseFaceNumber(args.makeup ?? args.gain, 0, -24, 24, host),
+    mix: parseFaceNumber(args.mix, 1, 0, 1, host),
+    ceiling: parseFaceNumber(args.ceiling ?? args.ceil, mode === "limit" ? -0.3 : 0, -24, 0, host),
+    range: parseFaceNumber(args.range, -80, -90, 0, host),
+    amount: parseFaceNumber(args.amount, 0.7, 0, 1, host),
+    attack: parseFaceNumber(args.attack, 0.5, -1, 1, host),
+    sustain: parseFaceNumber(args.sustain, 0, -1, 1, host),
+    depth: parseFaceNumber(args.depth, 1, 0, 1, host),
   };
 }
 
-export function dynamicsOutDb(chipType: string, args: Record<string, string>, inDb: number): number {
-  const m = dynamicsFaceModel(chipType, args);
+export function dynamicsOutDb(chipType: string, args: Record<string, string>, inDb: number, host?: FaceHost): number {
+  const m = dynamicsFaceModel(chipType, args, host);
   if (m.mode === "transient") {
     const t = (inDb - IN_MIN) / (IN_MAX - IN_MIN);
     const shape = m.attack * (1 - t) + m.sustain * t;
@@ -124,12 +124,12 @@ export function dynamicsOutDb(chipType: string, args: Record<string, string>, in
   return linToDb(dry * (1 - mix) + wet * mix);
 }
 
-export function dynamicsCurvePath(chipType: string, args: Record<string, string>): string {
+export function dynamicsCurvePath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
   const last = FACE_POINTS - 1;
   const parts: string[] = [];
   for (let i = 0; i < FACE_POINTS; i += 1) {
     const inDb = IN_MIN + (IN_MAX - IN_MIN) * (i / last);
-    const outDb = dynamicsOutDb(chipType, args, inDb);
+    const outDb = dynamicsOutDb(chipType, args, inDb, host);
     const x = (VIEW_W * i) / last;
     const t = (outDb - OUT_MIN) / (OUT_MAX - OUT_MIN);
     const y = VIEW_H - VIEW_H * Math.min(1, Math.max(0, t));

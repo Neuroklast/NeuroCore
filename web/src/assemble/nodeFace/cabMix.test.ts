@@ -11,6 +11,7 @@ describe("calculated cabinet mix", () => {
     expect(mesa[1]!.y1).toBeCloseTo(40 - 40 * 0.45, 5);
     expect(cabMixPath({ mix: "0.2" })).not.toBe(cabMixPath({ mix: "0.8" }));
     expect(cabFaceModel({ mix: "c" }).mix).toBe(0.3);
+    expect(cabFaceModel({ mix: "c" }, { knobs: [{ id: "c", value: 1, min: 0, max: 1 }] }).mix).toBe(1);
     expect(cabFaceModel({ gain: "b" }).gain).toBe(0);
     expect(cabFaceModel({ mix: "0.45", gain: "0" }).mix).toBe(0.45);
   });

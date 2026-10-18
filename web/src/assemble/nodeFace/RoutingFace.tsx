@@ -1,8 +1,8 @@
 import type { FaceProps } from "./faceKind";
 import { routingFaceModel, routingMapPath, routingStems } from "./routingMap";
 
-export function RoutingFace({ type, args }: FaceProps) {
-  const model = routingFaceModel(type, args);
+export function RoutingFace({ type, args, host }: FaceProps) {
+  const model = routingFaceModel(type, args, host);
   return (
     <div
       className="nk-node-face"
@@ -17,7 +17,7 @@ export function RoutingFace({ type, args }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="map">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          {routingStems(type, args).map((stem, i) => (
+          {routingStems(type, args, host).map((stem, i) => (
             <line
               key={`${stem.y1.toFixed(2)}-${i}`}
               data-tap="route"
@@ -28,7 +28,7 @@ export function RoutingFace({ type, args }: FaceProps) {
               opacity={Math.max(0.25, stem.amp)}
             />
           ))}
-          <path data-curve="map" d={routingMapPath(type, args)} />
+          <path data-curve="map" d={routingMapPath(type, args, host)} />
         </svg>
       </div>
     </div>

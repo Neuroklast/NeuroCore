@@ -30,6 +30,15 @@ describe("calculated reverb decay", () => {
     expect(factory).toMatch(/# Drone Low Bed[\s\S]*decay = 2\.6/);
   });
 
+  it("binds size from FaceHost knobs and leaves mixed formulas on the ChipSpec default", () => {
+    const host = { knobs: [{ id: "c", value: (0.62 - 0.4) / (0.85 - 0.4), min: 0.4, max: 0.85 }] };
+    expect(reverbFaceModel({ size: "c", decay: "2.6" }).size).toBe(0.45);
+    expect(reverbFaceModel({ size: "c", decay: "2.6" }, host).size).toBeCloseTo(0.62, 5);
+    expect(reverbFaceModel({ size: "c", decay: "2.6" }, host).decay).toBe(0.95);
+    expect(reverbDecayPath({ size: "c", decay: "2.6" }, host))
+      .not.toBe(reverbDecayPath({ size: "0.45", decay: "2.6" }));
+  });
+
   it("scales the envelope by mix, not by a fake IR", () => {
     expect(reverbEnvelope({ decay: "0.5", size: "0.45", mix: "0.8" }, 0)).toBeCloseTo(0.8, 5);
     expect(reverbEnvelope({ decay: "0.5", size: "0.45", mix: "0.2" }, 0)).toBeCloseTo(0.2, 5);

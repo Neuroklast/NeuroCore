@@ -1,8 +1,8 @@
 import type { FaceProps } from "./faceKind";
 import { pitchFaceModel, pitchIntervalsPath, pitchStems } from "./pitchIntervals";
 
-export function PitchFace({ type, args }: FaceProps) {
-  const model = pitchFaceModel(type, args);
+export function PitchFace({ type, args, host }: FaceProps) {
+  const model = pitchFaceModel(type, args, host);
   return (
     <div
       className="nk-node-face"
@@ -16,10 +16,10 @@ export function PitchFace({ type, args }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="interval">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          {pitchStems(type, args).map((stem, i) => (
+          {pitchStems(type, args, host).map((stem, i) => (
             <line key={`${stem.x.toFixed(2)}-${i}`} data-tap="interval" x1={stem.x} y1={40} x2={stem.x} y2={stem.y1} />
           ))}
-          <path data-curve="intervals" d={pitchIntervalsPath(type, args)} />
+          <path data-curve="intervals" d={pitchIntervalsPath(type, args, host)} />
         </svg>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import type { FaceProps } from "./faceKind";
 import { modfxFaceModel, modfxWaveformPath } from "./modfxWaveform";
 
-export function ModfxFace({ type, args }: FaceProps) {
-  const model = modfxFaceModel(type, args);
+export function ModfxFace({ type, args, host }: FaceProps) {
+  const model = modfxFaceModel(type, args, host);
   return (
     <div
       className="nk-node-face"
@@ -17,7 +17,7 @@ export function ModfxFace({ type, args }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="phase">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          <path data-curve="waveform" d={modfxWaveformPath(type, args)} />
+          <path data-curve="waveform" d={modfxWaveformPath(type, args, host)} />
         </svg>
       </div>
     </div>

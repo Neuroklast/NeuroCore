@@ -21,10 +21,10 @@ Tokens: `SIGNAL_LAB` in `web/src/theme/signalLab.ts`. Colours stay `themeOf()` /
 
 | Family | Closed glyph (target) | Data |
 |---|---|---|
-| filter (filter, eq) | frequency response | ChipSpec type/cutoff/Q. Label as a **calculated** curve until a native tap exists. |
-| reverb | decay envelope | size, decay, damp, mix. Not a measured IR. |
-| delay | echo taps | time, sync, feedback. Host-sync when `sync` is on. |
-| lfo | waveform | existing `lfoLamp` / native shape + Hz. |
+| filter (filter, eq) | frequency response | ChipSpec type/cutoff/Q plus FaceHost knobs. EQ uses host sample rate. Label as a **calculated** curve until a native tap exists. |
+| reverb | decay envelope | size, decay, damp, mix from FaceHost. Not a measured IR. |
+| delay | echo taps | time, sync, feedback. Sync notes use host BPM (120 when missing). |
+| lfo | waveform | existing `lfoLamp` / native shape + Hz. Sync notes use host BPM. |
 | env | envelope | attack, hold, release. Parameter curve vs live activity are separate. |
 | pitch (octaver, pitch, vocoder) | interval mix | sub / up / mix. No fake spectrum. |
 | dynamics | transfer curve | threshold, ratio, knee, ceiling from ChipSpec. GR meter only with a real tap. |

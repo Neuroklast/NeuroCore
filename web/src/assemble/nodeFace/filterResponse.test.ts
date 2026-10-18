@@ -42,7 +42,17 @@ describe("calculated filter response", () => {
     expect(filterFaceModel("eq", { type: "highshelf", freq: "4800", q: "0.65", gain: "3" }).mode).toBe("highshelf");
   });
 
-  it("does not eval formulas; a knob alias uses the ChipSpec default", () => {
+  it("binds a knob letter from FaceHost and leaves mixed formulas on the ChipSpec default", () => {
+    const host = { knobs: [{ id: "b", value: 0, min: 400, max: 1600 }] };
     expect(filterFaceModel("filter", { type: "lowpass", cutoff: "b", resonance: "0.3" }).fc).toBe(1000);
+    expect(filterFaceModel("filter", { type: "lowpass", cutoff: "b", resonance: "0.3" }, host).fc).toBe(400);
+    expect(filterFaceModel("filter", { type: "lowpass", cutoff: "180 + osc1", resonance: "0.3" }, host).fc).toBe(1000);
+  });
+
+  it("uses FaceHost sample rate for EQ biquads", () => {
+    const args = { type: "peak", freq: "1000", q: "0.7", gain: "6" };
+    expect(filterCurvePath("eq", args, { sr: 44100 })).not.toBe(filterCurvePath("eq", args, { sr: 48000 }));
+    expect(filterMags("eq", args, [8000], { sr: 44100 })[0])
+      .not.toBeCloseTo(filterMags("eq", args, [8000], { sr: 48000 })[0]!, 8);
   });
 });

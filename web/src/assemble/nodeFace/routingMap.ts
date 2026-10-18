@@ -1,5 +1,5 @@
 import { chipSpec } from "../chipSpec";
-import { parseFaceNumber, parseFaceToken } from "./faceArgs";
+import { parseFaceNumber, parseFaceToken, type FaceHost } from "./faceArgs";
 
 const VIEW_H = 40;
 const WEST = 12;
@@ -15,13 +15,13 @@ export type RoutingFaceModel = {
   kanal: string;
 };
 
-export function routingFaceModel(chipType: string, args: Record<string, string>): RoutingFaceModel {
+export function routingFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): RoutingFaceModel {
   return {
     mode: chipSpec(chipType, args).id,
-    mix: parseFaceNumber(args.mix, 0.5, 0, 1),
-    width: parseFaceNumber(args.width, 1, 0, 1.4),
-    f1: parseFaceNumber(args.f1, 200, 40, 800),
-    f2: parseFaceNumber(args.f2, 2000, 200, 8000),
+    mix: parseFaceNumber(args.mix, 0.5, 0, 1, host),
+    width: parseFaceNumber(args.width, 1, 0, 1.4, host),
+    f1: parseFaceNumber(args.f1, 200, 40, 800, host),
+    f2: parseFaceNumber(args.f2, 2000, 200, 8000, host),
     name: parseFaceToken(args.name, "dirt"),
     kanal: parseFaceToken(args.kanal, "both"),
   };
@@ -37,9 +37,9 @@ function spread(count: number, index: number): number {
 }
 
 /** Split / join / bus map from ChipSpec ports. No decorative waveform. */
-export function routingStems(chipType: string, args: Record<string, string>): RouteStem[] {
+export function routingStems(chipType: string, args: Record<string, string>, host?: FaceHost): RouteStem[] {
   const spec = chipSpec(chipType, args);
-  const m = routingFaceModel(chipType, args);
+  const m = routingFaceModel(chipType, args, host);
   if (m.mode === "width") {
     return [
       { x1: WEST, y1: 14, x2: EAST, y2: 14, amp: 1 },
@@ -91,8 +91,8 @@ export function routingStems(chipType: string, args: Record<string, string>): Ro
   return stems;
 }
 
-export function routingMapPath(chipType: string, args: Record<string, string>): string {
-  return routingStems(chipType, args)
+export function routingMapPath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
+  return routingStems(chipType, args, host)
     .map((s) => `M${s.x1.toFixed(2)} ${s.y1.toFixed(2)} L${s.x2.toFixed(2)} ${s.y2.toFixed(2)}`)
     .join(" ");
 }

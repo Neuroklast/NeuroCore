@@ -1,28 +1,26 @@
 import { lfoWave, parseLfoShape, resolveLfoHz, type LfoShape } from "../lfoLamp";
-import { FACE_BPM, parseFaceNumber } from "./faceArgs";
+import { faceBpm, parseFaceNumber, type FaceHost } from "./faceArgs";
 
 const VIEW_W = 100;
 const VIEW_H = 40;
 const FACE_POINTS = 48;
-const NO_KNOBS: Array<{ id: string; value: number; min: number; max: number; isNote?: boolean }> = [];
-
 export type LfoFaceModel = {
   shape: LfoShape;
   depth: number;
   hz: number;
 };
 
-export function lfoFaceModel(args: Record<string, string>): LfoFaceModel {
+export function lfoFaceModel(args: Record<string, string>, host?: FaceHost): LfoFaceModel {
   return {
     shape: parseLfoShape(args.shape ?? "sine"),
-    depth: parseFaceNumber(args.depth, 1, 0, 1),
-    hz: resolveLfoHz({ freq: args.freq, sync: args.sync }, NO_KNOBS, FACE_BPM),
+    depth: parseFaceNumber(args.depth, 1, 0, 1, host),
+    hz: resolveLfoHz({ freq: args.freq, sync: args.sync }, host?.knobs ?? [], faceBpm(host)),
   };
 }
 
-/** One cycle. Depth scales around 0.5. Formulas for freq/sync use ChipSpec defaults, not the knobs store. */
-export function lfoWaveformPath(args: Record<string, string>): string {
-  const m = lfoFaceModel(args);
+/** One cycle. Depth scales around 0.5. Freq/sync follow FaceHost knobs and bpm. */
+export function lfoWaveformPath(args: Record<string, string>, host?: FaceHost): string {
+  const m = lfoFaceModel(args, host);
   const last = FACE_POINTS;
   const parts: string[] = [];
   for (let i = 0; i <= last; i += 1) {

@@ -1,8 +1,8 @@
 import type { FaceProps } from "./faceKind";
 import { lfoFaceModel, lfoWaveformPath } from "./lfoWaveform";
 
-export function LfoFace({ args }: FaceProps) {
-  const model = lfoFaceModel(args);
+export function LfoFace({ args, host }: FaceProps) {
+  const model = lfoFaceModel(args, host);
   return (
     <div
       className="nk-node-face"
@@ -15,7 +15,7 @@ export function LfoFace({ args }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="phase">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          <path data-curve="waveform" d={lfoWaveformPath(args)} />
+          <path data-curve="waveform" d={lfoWaveformPath(args, host)} />
         </svg>
       </div>
     </div>

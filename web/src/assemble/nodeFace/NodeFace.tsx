@@ -32,7 +32,7 @@ const FACES: Partial<Record<FaceKind, ComponentType<FaceProps>>> = {
 };
 
 /** Family renderer. Add faces here; do not switch on type names in BoardChip. */
-export function NodeFace({ kind, type, args, id }: FaceProps) {
+export function NodeFace({ kind, type, args, id, host }: FaceProps) {
   const Face = FACES[kind] ?? EmptyFace;
-  return <Face kind={kind} type={type} args={args} id={id} />;
+  return <Face kind={kind} type={type} args={args} id={id} host={host} />;
 }

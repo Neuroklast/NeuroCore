@@ -2,8 +2,8 @@ import { useHostStore } from "../../store/hostStore";
 import type { FaceProps } from "./faceKind";
 import { cabFaceModel, cabMixPath, cabStems } from "./cabMix";
 
-export function CabFace({ args, id }: FaceProps) {
-  const model = cabFaceModel(args);
+export function CabFace({ args, id, host }: FaceProps) {
+  const model = cabFaceModel(args, host);
   const slot = (id ?? "").trim().toLowerCase();
   const ir = useHostStore((s) => s.irSlots.find((row) => row.slot.trim().toLowerCase() === slot));
   return (
@@ -20,10 +20,10 @@ export function CabFace({ args, id }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="mix">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          {cabStems(args).map((stem) => (
+          {cabStems(args, host).map((stem) => (
             <line key={stem.x.toFixed(2)} data-tap="mix" x1={stem.x} y1={40} x2={stem.x} y2={stem.y1} />
           ))}
-          <path data-curve="mix" d={cabMixPath(args)} />
+          <path data-curve="mix" d={cabMixPath(args, host)} />
         </svg>
       </div>
     </div>

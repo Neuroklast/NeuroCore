@@ -1,8 +1,8 @@
 import type { FaceProps } from "./faceKind";
 import { envEnvelopePath, envFaceModel } from "./envEnvelope";
 
-export function EnvFace({ args }: FaceProps) {
-  const model = envFaceModel(args);
+export function EnvFace({ args, host }: FaceProps) {
+  const model = envFaceModel(args, host);
   return (
     <div
       className="nk-node-face"
@@ -18,7 +18,7 @@ export function EnvFace({ args }: FaceProps) {
     >
       <div className="nk-face-plot" data-axis="time">
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-          <path data-curve="envelope" d={envEnvelopePath(args)} />
+          <path data-curve="envelope" d={envEnvelopePath(args, host)} />
         </svg>
       </div>
     </div>

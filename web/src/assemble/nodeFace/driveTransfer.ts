@@ -1,4 +1,4 @@
-import { parseFaceNumber, parseFaceToken } from "./faceArgs";
+import { parseFaceNumber, parseFaceToken, type FaceHost } from "./faceArgs";
 
 const VIEW_W = 100;
 const VIEW_H = 40;
@@ -19,10 +19,6 @@ export type DriveFaceModel = {
   bits: number;
   mix: number;
 };
-
-function finiteOr(n: number, fallback: number): number {
-  return Number.isFinite(n) ? n : fallback;
-}
 
 function splitArgs(inner: string): string[] {
   const out: string[] = [];
@@ -64,15 +60,15 @@ function leadingCall(src: string): { name: string; args: string[] } | null {
   return null;
 }
 
-function numericArg(raw: string | undefined, fallback: number): number {
+function numericArg(raw: string | undefined, fallback: number, host?: FaceHost): number {
   if (raw == null) {
     return fallback;
   }
-  return finiteOr(Number(raw.trim()), fallback);
+  return parseFaceNumber(raw, fallback, -1e9, 1e9, host);
 }
 
 /** Named engine shapers only. Unknown or composite formulas stay identity — no eval. */
-export function driveFaceModel(chipType: string, args: Record<string, string>): DriveFaceModel {
+export function driveFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): DriveFaceModel {
   if (chipType === "bitcrush") {
     return {
       shaper: "bitcrush",
@@ -80,8 +76,8 @@ export function driveFaceModel(chipType: string, args: Record<string, string>): 
       limit: 1,
       lo: -1,
       hi: 1,
-      bits: parseFaceNumber(args.bits, 8, 1, 16),
-      mix: parseFaceNumber(args.mix, 1, 0, 1),
+      bits: parseFaceNumber(args.bits, 8, 1, 16, host),
+      mix: parseFaceNumber(args.mix, 1, 0, 1, host),
     };
   }
   const call = leadingCall(args.y ?? "x");
@@ -91,12 +87,12 @@ export function driveFaceModel(chipType: string, args: Record<string, string>): 
   const shaper = call.name as DriveShaper;
   return {
     shaper,
-    drive: numericArg(call.args[1], shaper === "softclip" ? (call.args.length < 2 ? 1 : 2) : 2),
-    limit: numericArg(call.args[1], 0.7),
-    lo: numericArg(call.args[1], -0.5),
-    hi: numericArg(call.args[2], 0.5),
-    bits: numericArg(call.args[1], 8),
-    mix: 1,
+    drive: numericArg(call.args[1], shaper === "softclip" ? (call.args.length < 2 ? 1 : 2) : 2, host),
+    limit: numericArg(call.args[1], 0.7, host),
+    lo: numericArg(call.args[1], -0.5, host),
+    hi: numericArg(call.args[2], 0.5, host),
+    bits: numericArg(call.args[1], 8, host),
+    mix: parseFaceNumber(args.mix, 1, 0, 1, host),
   };
 }
 
@@ -158,8 +154,8 @@ function bitcrushTransfer(x: number, bits: number): number {
   return Math.round(xn * levels) / levels;
 }
 
-export function driveSample(chipType: string, args: Record<string, string>, x: number): number {
-  const m = driveFaceModel(chipType, args);
+export function driveSample(chipType: string, args: Record<string, string>, x: number, host?: FaceHost): number {
+  const m = driveFaceModel(chipType, args, host);
   let y = x;
   if (m.shaper === "softclip") {
     const d = Math.min(8, Math.max(0.25, m.drive));
@@ -178,12 +174,12 @@ export function driveSample(chipType: string, args: Record<string, string>, x: n
   return x * (1 - m.mix) + y * m.mix;
 }
 
-export function driveTransferPath(chipType: string, args: Record<string, string>): string {
+export function driveTransferPath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
   const last = FACE_POINTS - 1;
   const parts: string[] = [];
   for (let i = 0; i < FACE_POINTS; i += 1) {
     const x = X_MIN + (X_MAX - X_MIN) * (i / last);
-    const yv = driveSample(chipType, args, x);
+    const yv = driveSample(chipType, args, x, host);
     const px = (VIEW_W * i) / last;
     const t = (yv - Y_MIN) / (Y_MAX - Y_MIN);
     const py = VIEW_H - VIEW_H * Math.min(1, Math.max(0, t));
@@ -192,8 +188,8 @@ export function driveTransferPath(chipType: string, args: Record<string, string>
   return parts.join(" ");
 }
 
-export function driveToneHz(args: Record<string, string>): number {
-  return parseFaceNumber(args.tone, 8000, 800, 16000);
+export function driveToneHz(args: Record<string, string>, host?: FaceHost): number {
+  return parseFaceNumber(args.tone, 8000, 800, 16000, host);
 }
 
 export function driveChannel(args: Record<string, string>): string {

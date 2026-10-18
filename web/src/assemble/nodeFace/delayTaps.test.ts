@@ -23,4 +23,12 @@ describe("calculated delay taps", () => {
     expect(delayFaceModel({ time: "b", feedback: "0.2" }).timeMs).toBe(250);
     expect(delayTaps({ time: "250", mix: "0.3" })[0]!.amp).toBeCloseTo(0.7, 5);
   });
+
+  it("uses FaceHost bpm for sync notes", () => {
+    expect(delayFaceModel({ sync: "1/4" }, { bpm: 80 }).timeMs).toBeCloseTo(wholeToMs(0.25, 80), 5);
+    expect(delayFaceModel({ sync: "1/4" }, { bpm: 80 }).timeMs)
+      .not.toBeCloseTo(wholeToMs(0.25, FACE_BPM), 5);
+    expect(delayTaps({ sync: "1/4", mix: "0.4" }, { bpm: 80 })[1]!.t)
+      .toBeCloseTo(wholeToMs(0.25, 80), 5);
+  });
 });
