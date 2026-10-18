@@ -1,5 +1,6 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
 import { chipSpec } from "../assemble/chipSpec";
+import { nodeProbe, probeLabel } from "../assemble/nodeProbe";
 import {
   labelForWhole,
   NOTE_GRID,
@@ -245,6 +246,7 @@ export function inspectRows(node: AstNode | undefined, doc: AstDocument | null):
     { group: "meta", key: "id", value: node.id },
     { group: "meta", key: "type", value: node.type },
     { group: "meta", key: "bus", value: node.busName || "main" },
+    { group: "meta", key: "tap", value: probeLabel(nodeProbe(node.id, undefined, node.type)) },
   ];
   if (node.trailingComment) {
     rows.push({ group: "meta", key: "comment", value: node.trailingComment });

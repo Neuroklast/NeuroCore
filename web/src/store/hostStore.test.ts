@@ -8,8 +8,22 @@ describe("hostStore", () => {
       mode: "STUDIO",
       knobs: [],
       overlay: null,
+      inspectId: null,
+      focusNodeId: null,
       knobGestures: {},
     });
+  });
+
+  it("focusNodeId is independent of overlay inspect", () => {
+    const s = useHostStore.getState();
+    s.setFocusNodeId("stage1");
+    expect(useHostStore.getState().focusNodeId).toBe("stage1");
+    expect(useHostStore.getState().overlay).toBeNull();
+    s.setOverlay("inspect", "filter1");
+    expect(useHostStore.getState().inspectId).toBe("filter1");
+    expect(useHostStore.getState().focusNodeId).toBe("filter1");
+    s.setOverlay(null);
+    expect(useHostStore.getState().focusNodeId).toBe("filter1");
   });
 
   it("shared prefs default from native UiSettings, not WebView2 localStorage", () => {

@@ -24,5 +24,13 @@ it('sub attack lifts even without a broadband/native transient and does not pump
 it('offline frames discard stale native hits and detector state', () => {
   const hit = particleAudio(PARTICLE_AUDIO_IDLE, { tick: 3, bass: 1, onsetCount: 1, onsetAmp: 1, live: false }, 1/60);
   expect(hit.impulse).toBe(0);
+  expect(hit.spawn).toBeNull();
   expect(hit.state).toEqual(PARTICLE_AUDIO_IDLE);
+});
+
+it('a native seq is consumed once even when the display tick advances', () => {
+  const frame = { tick: 1, seq: 9, bass: 0, onsetCount: 1, onsetAmp: 0.6, live: true };
+  const first = particleAudio(PARTICLE_AUDIO_IDLE, frame, 1 / 60);
+  expect(first.spawn?.amp).toBeCloseTo(0.6);
+  expect(particleAudio(first.state, { ...frame, tick: 2 }, 1 / 60).spawn).toBeNull();
 });

@@ -17,6 +17,8 @@ void TelemetryPump::reset() noexcept
     onsetHold = 0;
     onsetCount = 0;
     onsetAmp = 0.f;
+    seq = 0;
+    samplePos = 0;
 }
 
 void TelemetryPump::captureScope (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept
@@ -160,6 +162,10 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
     d.onsetAmp = onsetAmp > 1.f ? 1.f : onsetAmp;
     onsetCount = 0;
     onsetAmp = 0.f;
+    seq += 1;
+    d.seq = seq;
+    d.samplePos = samplePos;
+    samplePos += (std::uint32_t) juce::jmax (0, n);
 
     const int w = 1 - published.load (std::memory_order_relaxed);
     const auto wrote = writeTelemetryFrame (slots[w].bytes, kMaxBytes, d,

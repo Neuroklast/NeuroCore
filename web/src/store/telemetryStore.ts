@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { GONIO_N, SCOPE_N, type TelemetryViews } from "../bridge/telemetry";
 
+const EMPTY_WAVE = new Float32Array(0);
+
 interface TelemetryState {
   tick: number;
   available: boolean;
@@ -14,6 +16,8 @@ interface TelemetryState {
   gonioR: Float32Array;
   onsetCount: number;
   onsetAmp: number;
+  seq: number;
+  samplePos: number;
   applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
 }
@@ -31,8 +35,13 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   gonioR: new Float32Array(GONIO_N),
   onsetCount: 0,
   onsetAmp: 0,
+  seq: 0,
+  samplePos: 0,
   applyViews: (v, available = true) => {
     const s = get();
+    if (v.seq > 0 && v.seq === s.seq) {
+      return;
+    }
     s.scopeIn.set(v.scopeIn.subarray(0, s.scopeIn.length));
     s.scopeOut.set(v.scopeOut.subarray(0, s.scopeOut.length));
     s.gonioL.set(v.gonioX.subarray(0, s.gonioL.length));
@@ -46,14 +55,20 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
       outRms: v.outRms,
       onsetCount: v.onsetCount,
       onsetAmp: v.onsetAmp,
+      seq: v.seq,
+      samplePos: v.samplePos,
     });
   },
   waveFor: (nodeId) => {
     const s = get();
-    if (nodeId === "IN") {
+    const id = nodeId.toUpperCase();
+    if (id === "IN") {
       return s.scopeIn;
     }
-    return s.scopeOut;
+    if (id === "OUT") {
+      return s.scopeOut;
+    }
+    return EMPTY_WAVE;
   },
 }));
 

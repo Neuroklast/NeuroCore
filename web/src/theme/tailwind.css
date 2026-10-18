@@ -1205,7 +1205,8 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   letter-spacing: 0.16em;
   text-align: center;
 }
-.nk-face-mod-state[data-mode="ACTIVE"] {
+.nk-face-mod-state[data-mode="ACTIVE"],
+.nk-face-mod-state[data-mode="LIVE"] {
   border-color: var(--nk-accent);
   color: var(--nk-accent);
 }
@@ -1570,6 +1571,10 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
     radial-gradient(ellipse at center, transparent 55%, rgba(var(--nk-accent-rgb), 0.08) 100%);
   opacity: 0.38;
   mix-blend-mode: multiply;
+}
+
+.monaco-editor .nk-term-focus {
+  background: rgba(var(--nk-cyan-rgb), 0.14);
 }
 
 .nk-term-glow {

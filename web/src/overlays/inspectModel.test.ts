@@ -46,6 +46,23 @@ describe("inspect rows", () => {
     expect(rows.some((r) => r.group === "param" && r.key === "b")).toBe(true);
     expect(rows.some((r) => r.group === "var" && r.key === "lfo1")).toBe(true);
     expect(rows.some((r) => r.group === "meta" && r.key === "comment")).toBe(true);
+    expect(rows.some((r) => r.group === "meta" && r.key === "tap" && r.value === "No tap")).toBe(true);
+  });
+
+  it("IN and OUT report plugin taps; a DSP chip reports No tap", () => {
+    const doc: AstDocument = {
+      version: 1,
+      leadingComments: [],
+      params: [],
+      nodes: [
+        { id: "IN", type: "in", busName: "main", args: {}, trailingComment: "" },
+        { id: "sat1", type: "sat", busName: "main", args: {}, trailingComment: "" },
+        { id: "OUT", type: "out", busName: "main", args: {}, trailingComment: "" },
+      ],
+    };
+    expect(inspectRows(doc.nodes[0], doc).some((r) => r.key === "tap" && r.value === "Plugin input")).toBe(true);
+    expect(inspectRows(doc.nodes[1], doc).some((r) => r.key === "tap" && r.value === "No tap")).toBe(true);
+    expect(inspectRows(doc.nodes[2], doc).some((r) => r.key === "tap" && r.value === "Plugin output")).toBe(true);
   });
 });
 

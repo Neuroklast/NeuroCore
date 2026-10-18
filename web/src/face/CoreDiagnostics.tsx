@@ -1,8 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { hasJuceBridge } from "../bridge/juce";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { subscribeVizClock } from "../theme/vizClock";
-import { formatHudFixed, stereoMetrics } from "./faceModel";
+import { formatHudFixed } from "./faceModel";
+import { peakToDb } from "../bridge/telemetry";
+import { measureFeatures } from "../viz/audioFeatures";
 import {
   coreCallouts,
   coreWave,
@@ -15,6 +18,7 @@ import {
   specLogPath,
   specLogX,
   specTickHz,
+  coreHud,
   coreViz,
   type CalloutGeom,
   type CoreViz,
@@ -114,12 +118,17 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         return;
       }
       numAt.current = now;
+      const features = measureFeatures(tel.scopeOut, tel.gonioL, tel.gonioR, rate, {
+        validity: live ? (hasJuceBridge() ? "live" : "preview") : "unavailable",
+        transient: tel.onsetAmp,
+        source: "plugin.out",
+      });
       frameRef.current = {
-        viz: coreViz(snap.drive, snap.pose),
+        viz: coreHud(features),
         spec: packed.spec,
         wave,
         waveIn,
-        corr: live ? stereoMetrics(tel.gonioL, tel.gonioR).corr : 0,
+        corr: features.corr,
         gonio: gonioDots(tel.gonioL, tel.gonioR, live, 48),
         shards: orbitShards(cage, snap.pose.orbitPhase),
         cage,
@@ -150,12 +159,12 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
     <>
       <div ref={probeRef} className="nk-face-probe" aria-hidden />
       <aside ref={diagLRef} className="nk-face-diag nk-face-diag-l" aria-label="core visualization">
-        <Mod title="CORE STATUS" sub="VIZ">
+        <Mod title="DYNAMICS" sub="dB">
           <div className="nk-face-mod-gridrow">
-            <Row k="ACTIVITY" v={formatViz(f.viz.activity)} />
-            <Row k="STABILITY" v={formatViz(f.viz.stability)} />
-            <Row k="EXCITATION" v={formatViz(f.viz.excitation)} />
-            <Row k="SYNC" v={formatViz(f.viz.sync)} />
+            <Row k="PEAK" v={live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"} />
+            <Row k="RMS" v={live ? formatHudFixed(peakToDb(f.viz.rms), 1, 3) : "—"} />
+            <Row k="CREST" v={live && f.viz.crestDb != null ? formatHudFixed(f.viz.crestDb, 1, 2) : "—"} />
+            <Row k="HIT" v={live ? formatViz(f.viz.transient) : "—"} />
           </div>
           <div className="nk-face-mod-state" data-mode={f.viz.mode}>{f.viz.mode}</div>
         </Mod>
@@ -178,17 +187,17 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         <Mod title="PARTICLE ORBITS">
           <OrbitMini cage={f.cage} shards={f.shards} />
           <div className="nk-face-orbit-leg">
-            <span><i />ORBIT 1 {formatViz(f.viz.activity)}</span>
-            <span><i className="b" />ORBIT 2 {formatViz(f.viz.sync)}</span>
-            <span><i className="c" />ORBIT 3 {formatViz(f.viz.excitation)}</span>
+            <span><i />LOW {formatViz(f.viz.low)}</span>
+            <span><i className="b" />MID {formatViz(f.viz.mid)}</span>
+            <span><i className="c" />HIGH {formatViz(f.viz.high)}</span>
           </div>
         </Mod>
       </aside>
       <aside ref={diagRRef} className="nk-face-diag nk-face-diag-r" aria-label="field visualization">
-        <Mod title="FIELD ACTIVITY" sub="VIZ">
+        <Mod title="BAND ENERGY" sub="FFT">
           <div className="nk-face-field-bars">
             {stacks.map((s) => (
-              <SegStack key={s.id} v={s.v} kind={s.id === "FIELD" ? "accent" : "cyan"} label={s.id} />
+              <SegStack key={s.id} v={s.v} kind={s.id === "LOW" ? "accent" : "cyan"} label={s.id} />
             ))}
             <div className="nk-face-seg-scale" aria-hidden>
               <span>1.0</span><span>0.5</span><span>0.0</span>
@@ -241,7 +250,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         <div className="nk-face-callout-box">
           <b>CORE</b>
           <span>{f.viz.mode}</span>
-          <span><em>VIZ</em> {formatViz(f.viz.activity)}</span>
+          <span><em>PEAK</em> {live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"}</span>
         </div>
       </div>
       <div
@@ -251,8 +260,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       >
         <div className="nk-face-callout-box">
           <b>RING</b>
-          <span>SYNC {formatViz(f.viz.sync)}</span>
-          <span><em>VIZ</em> {formatViz(f.viz.stability)}</span>
+          <span>CORR {live ? formatHudFixed(f.viz.corr, 2, 1) : "—"}</span>
+          <span><em>BAL</em> {live ? formatHudFixed(f.viz.balance, 2, 1) : "—"}</span>
         </div>
       </div>
     </>

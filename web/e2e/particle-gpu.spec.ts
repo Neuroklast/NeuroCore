@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { STIR_FS } from '../src/viz/particleShader';
 
-test('the production physics shader compiles and kicks the bowl up with a stereo fan', async ({ page }) => {
+test('the production physics shader compiles and applies a local force more to nearby particles', async ({ page }) => {
   await page.setContent('<!doctype html><html><body></body></html>');
   const result = await page.evaluate((fragment) => {
     const gl = document.createElement('canvas').getContext('webgl2');
@@ -29,8 +29,10 @@ test('the production physics shader compiles and kicks the bowl up with a stereo
     texture(1,[1,0,4,0, 1,0,4,0, 1,0,4,0]);
     texture(2,new Array(12).fill(0));texture(3,new Array(12).fill(0));
     for(const [name,unit] of [['tHome',0],['tSeed',1],['tOffset',2],['tVelocity',3]] as const) gl.uniform1i(gl.getUniformLocation(program,name),unit);
-    for(const [name,value] of Object.entries({uDt:1/60,uReset:0,uLiftForce:0,uImpulse:1,uSwirl:0,uDustTime:0,uMotion:0,uFill:.5})) gl.uniform1f(gl.getUniformLocation(program,name),value);
+    for(const [name,value] of Object.entries({uDt:1/60,uReset:0,uLiftForce:0,uSwirl:0,uDustTime:0,uMotion:0,uFill:.5})) gl.uniform1f(gl.getUniformLocation(program,name),value);
     gl.uniform2f(gl.getUniformLocation(program,'uTurn'),0,0);
+    gl.uniform4fv(gl.getUniformLocation(program,'uForcePos[0]'), new Float32Array([-.45,-.6,0,.22, 0,0,0,0, 0,0,0,0, 0,0,0,0]));
+    gl.uniform4fv(gl.getUniformLocation(program,'uForceKick[0]'), new Float32Array([0,18,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]));
     const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
     const output0=texture(4,new Array(12).fill(0));
     const output1=texture(5,new Array(12).fill(0));
@@ -46,18 +48,14 @@ test('the production physics shader compiles and kicks the bowl up with a stereo
       if(gl.getError()!==gl.NO_ERROR) throw new Error('GPU readback failed');
       return [...pixels];
     };
-    const mono=run(0), wide=run(1);
+    const local=run(0);
     texture(0,[-.0001,-.55,0,0, 0,-.55,0,0, .0001,-.55,0,0]);
+    gl.uniform4fv(gl.getUniformLocation(program,'uForcePos[0]'), new Float32Array([0,-.55,0,.4, 0,0,0,0, 0,0,0,0, 0,0,0,0]));
     const centre=run(1);
     gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return {mono,wide,centre};
+    return {local,centre};
   }, STIR_FS);
-  for(const at of [0,4,8]) {
-    expect(result.mono[at+1]).toBeGreaterThan(.8);
-    expect(Math.abs(result.mono[at]!)).toBeLessThan(.01);
-    expect(result.wide[at+1]).toBeGreaterThan(.8);
-  }
-  expect(result.wide[0]).toBeLessThan(-.15);
-  expect(result.wide[8]).toBeGreaterThan(.15);
-  expect(Math.max(...[0,4,8].map(at=>Math.abs(result.centre[at]!)))).toBeLessThan(.001);
+  expect(result.local[1]).toBeGreaterThan(result.local[9]! * 3);
+  expect(Number.isFinite(result.local[1])).toBe(true);
+  expect(Math.max(...[0,4,8].map(at=>Math.abs(result.centre[at]!)))).toBeLessThan(.05);
 });

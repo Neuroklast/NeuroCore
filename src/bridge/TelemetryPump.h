@@ -46,6 +46,8 @@ private:
     float lastInPeak { 0.f };
     float lastInRms { 0.f };
     double hostSr { 48000.0 };
+    std::uint32_t seq { 0 };
+    std::uint32_t samplePos { 0 };
     float envFast { 0.f };
     float envSlow { 0.f };
     int onsetHold { 0 };

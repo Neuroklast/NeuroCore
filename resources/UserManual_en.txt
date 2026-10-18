@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.8-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.6.9-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -15,7 +15,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.6.8-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.6.9-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json`. There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
@@ -75,7 +75,8 @@ Unit meters
 - Frequency is logarithmic from 20 Hz to Nyquist. The 20 / 50 / 100 / 1k / 10k ticks sit on that map. Height on Frequency is dB (−72 to 0).
 - The stacked bars next to the goniometer are peak and RMS in dB (−60 to 0 dBFS), not LUFS. The HUD RMS line is the same: dBFS.
 - The centre of Unit shows a glass ball in the theme accent colour, inside a metal containment cage. Stereo width pushes the dust outward. Bass and transients whirl it up. Loudness only glows the rim. The pointer does nothing. Motion Off freezes it as a still frame; Reduced calms it. While the ball is shown the floor plot, the goniometer, the peak/RMS bars and the plot right-click menu are replaced. Without WebGL2 the wordmark and the full analyzer panel come back exactly as before.
-- Side panels (CORE STATUS, SPECTRUM, PARTICLE ORBITS, FIELD ACTIVITY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts are visualization of the same meters as the ball. They sit idle with empty segments when there is no audio. They do not invent temperature or other fake telemetry. Spectrum is logarithmic 20 Hz to Nyquist with a −60 dBFS height. Each meter row is label, number, unit on one line. The Unit HUD is a three-column grid; telemetry sits above the diagnostic stacks. The preset name in the header shrinks to 144 px and grows to 240 px — long names ellipsize, the arrows do not move.
+- Side panels (DYNAMICS, SPECTRUM, PARTICLE ORBITS, BAND ENERGY, SIGNAL FIELD, STEREO FIELD) and the CORE / RING callouts report the same measured audio features as the ball: peak, RMS, crest, band energy, correlation. They sit idle with empty segments when there is no audio. Unavailable readings show an em dash, not a fake zero. Spectrum is logarithmic 20 Hz to Nyquist with a −60 dBFS height. Each meter row is label, number, unit on one line. The Unit HUD is a three-column grid; telemetry sits above the diagnostic stacks. The preset name in the header shrinks to 144 px and grows to 240 px — long names ellipsize, the arrows do not move.
+- Unit particles keep an ambient swirl at rest. Transients push a local pressure front through the cloud; they do not lift the whole bowl.
 
 ---
 
@@ -99,7 +100,7 @@ Cables
 - Drag a chip by its body. Contacts sit on the left and right frame, equally spaced. Drag from an output (right) to an input (left).
 - While you drag, the cable is a free curve and snaps to a contact from 30 px away. After you drop, the board etches a PCB path (right angles, 45° corners). A wrap to the next row rides the gap between rows, not around the whole board. Packets travel source → dest along that path. Alt+click a contact to cut. Dropping on a busy input replaces the old cable.
 - A stereo run is two parallel packet lanes (left cyan, right red) until a split block. After Mid/Side split the mid lane stays the main stroke and the side lane peels off at 45°. Beads sit on that channel’s real signal peaks. Speed follows RMS; brightness follows the peak. Speed is in real time (30 or 60 fps is the same travel). Below −60 dB the stream freezes. Pan the board and the tubes move with it, glow included. The tubes start when you open Circuit, not only after you resize the window. A clip (above 0 dBFS) flashes the tube and splits it red/cyan. The peak lamp in the title stays dark until that chip clips, then it glows red. A yellow outlined warning triangle (with a bang) and a dB reading sit just outside the output that actually clips. Send and bus tubes follow the input, because those chips are taps — they have no own meter.
-- Click an audio cable to insert a module on that exact connection when the resulting source → new block → destination routing can be verified. An unsupported branch shows an explanation and leaves the graph unchanged. Right-click empty board to add an unconnected parked module. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face — they do not remove chips or reroute cables. Packets run source → dest (IN toward OUT) and never out the back of OUT. Click selects a chip and drag moves it. Double-click or use its chevron to open the animated Inspect overlay without resizing the board. Middle mouse or Space + left-drag pans; the wheel zooms. Drag a knob’s bind jack onto a highlighted chip parameter to connect it. Time, delay, and LFO fields switch VALUE and NOTE (bars from 8/1 down to 1/16, only lengths that fit that field). OUT is the last chip, right of the hull.
+- Click an audio cable to insert a module on that exact connection when the resulting source → new block → destination routing can be verified. An unsupported branch shows an explanation and leaves the graph unchanged. Right-click empty board to add an unconnected parked module. Right-click a chip for Insert after / Inspect / Delete. Delete or Backspace removes the selected chip. Mute and solo stay on the chip face — they do not remove chips or reroute cables. Packets run source → dest (IN toward OUT) and never out the back of OUT. Click selects a chip and drag moves it. Double-click or use its chevron to open the animated Inspect overlay without resizing the board. Inspect TAP is Plugin input, Plugin output, or No tap — a drive chip has no invented waveform. A Circuit selection highlights the same block in Terminal; a Terminal caret on a block line selects that chip. The board does not pan for that. Middle mouse or Space + left-drag pans; the wheel zooms. Drag a knob’s bind jack onto a highlighted chip parameter to connect it. Time, delay, and LFO fields switch VALUE and NOTE (bars from 8/1 down to 1/16, only lengths that fit that field). OUT is the last chip, right of the hull.
 - Circuit titles are not selectable text. Search and inspect fields still are.
 - Drag empty board to select blocks; Shift+click extends the selection, Ctrl/Cmd+A selects all. Middle mouse or space+drag pans the board. Wheel zooms under the cursor. Hover a block to blur the rest of the board: that block, its neighbours and their cables stay sharp. Move the pointer off the board and every block is sharp again. Drag a chip — it follows the pointer; cables meet it. The board stores the new place when you drop, then etches the PCB. The camera is not a React re-render.
 - OUT grows when several buses mix in (low/mid/high, send returns). One input stays a compact tile.
@@ -125,7 +126,7 @@ Expand a chip for hidden parameters. The chip size does not jump.
 
 The text is the sound.
 
-- Live view follows the knobs.
+- Live view follows the knobs. Click a block line to select that chip on Circuit. Circuit selection highlights the matching lines here. That does not enter Edit or change the text.
 - **Edit** opens the editor. View hides line numbers. Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac). The pane has a light CRT scan and glow.
 - **Save** applies the text. If it does not parse, you stay on the last good sound.
 - **Validate** lists checks without applying.

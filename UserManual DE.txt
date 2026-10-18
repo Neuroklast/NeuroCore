@@ -2,7 +2,7 @@
 
 NEUROKORE ist ein Insert- oder Send-Effekt von Neuroklast. Lade einen Factory-Sound, drehe die Regler a–f, oder schreibe eine kurze Formel (Drive, Filter, Delay, Reverb, Kompressor, Gate, Limiter, IR-Cab, Pitch, Crossover, Envelope, Oszillator).
 
-Version 0.6.8-beta. Formate: Standalone, VST3, AU.
+Version 0.6.9-beta. Formate: Standalone, VST3, AU.
 
 Die Demo läuft 14 Tage ab dem ersten Start auf diesem Rechner. Statuszeile und Settings → License zeigen das Enddatum. Danach bleibt Mix trocken, bis eine Lizenz liegt.
 
@@ -131,7 +131,7 @@ Board
 - IN links. OUT rechts vom letzten Main-Chip.
 - Röhren und Buchsen auf Zellmitten. Jede Buchse beschriftet.
 - Chip am Körper ziehen. Name oder 26-px-Details-Platte zum Editieren. Kein Akkordeon.
-- Doppelklick: Inspect aller Felder. Enums als Liste. Zahlen clampen auf den Katalog.
+- Doppelklick: Inspect aller Felder. Enums als Liste. Zahlen clampen auf den Katalog. TAP ist Plugin-Eingang, Plugin-Ausgang oder Kein Tap — ein Drive-Chip hat keine erfundene Wellenform. Markierung auf Circuit hebt dieselbe Zeile im Terminal; Cursor auf einer Blockzeile im Terminal markiert den Chip. Die Kamera fährt nicht mit.
 
 Hinzufügen und löschen
 - Rechtsklick auf leeres Papier: Add, Ordner Dynamics, Tone (inkl. Pitch), Time, Mod, Routing, Custom.
@@ -168,7 +168,7 @@ IR
 Terminal ist dasselbe Konstrukt als Text.
 
 Live-Ansicht
-- Gedämpfter Rahmen, farbige Regler, aktuelle Werte (`a[3.20]`), Kopf `# name` / Sound-Zeile.
+- Gedämpfter Rahmen, farbige Regler, aktuelle Werte (`a[3.20]`), Kopf `# name` / Sound-Zeile. Klick auf eine Blockzeile markiert den Chip auf Circuit. Circuit-Auswahl hebt die Zeilen hier. Das öffnet nicht Edit und ändert den Text nicht.
 - IR-Slots haben einen Button in der Zeile. Klick öffnet Impulse (Load / Play / Clear).
 
 Edit

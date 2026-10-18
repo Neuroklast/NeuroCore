@@ -1,5 +1,6 @@
 import { STATE_WIDTH } from "./ballModel";
-import { STIR_DAMP, STIR_IMPULSE, STIR_LIFT_BIAS, STIR_SPREAD_BIAS, STIR_SHELL, STIR_VMAX, STIR_FAN, STIR_BOTTOM_BOOST } from "./stirModel";
+import { STIR_DAMP, STIR_LIFT_BIAS, STIR_SPREAD_BIAS, STIR_SHELL, STIR_VMAX } from "./stirModel";
+import { FORCE_AMBIENT, FORCE_SLOTS } from "./forceField";
 
 // Shared verbatim by the live renderer and browser GPU contracts.
 export const HASH = `
@@ -73,8 +74,9 @@ uniform float uDt;
 uniform float uReset;
 uniform float uSpread;
 uniform float uLiftForce;
-uniform float uImpulse;
 uniform float uSwirl;
+uniform vec4 uForcePos[${FORCE_SLOTS}];
+uniform vec4 uForceKick[${FORCE_SLOTS}];
 layout(location = 0) out vec4 outOffset;
 layout(location = 1) out vec4 outVelocity;
 ${HASH}
@@ -113,12 +115,16 @@ void main() {
   vec3 heading = pace > 1e-4 ? v / pace : vec3(-radial.y, radial.x, 0.0);
   if (dot(heading, heading) < 1e-8) heading = vec3(1.0, 0.0, 0.0);
   vec3 curl = swirl(p * 1.6);
+  acc += curl * ${FORCE_AMBIENT};
   acc += (curl - heading * dot(curl, heading)) * max(min(pace, 2.0), 0.55) * (0.55 * uSwirl);
-
-  if (uImpulse > 0.0) {
-    float fan = base.x * uSpread * ${STIR_FAN};
-    float up = 1.0 + ${STIR_BOTTOM_BOOST} * max(0.0, -p.y);
-    v += vec3(fan, up, 0.0) * uImpulse * ${STIR_IMPULSE};
+  for (int i = 0; i < ${FORCE_SLOTS}; i++) {
+    vec4 fp = uForcePos[i];
+    vec4 fk = uForceKick[i];
+    if (fp.w > 1e-6 && dot(fk.xyz, fk.xyz) > 1e-10) {
+      vec3 d = p - fp.xyz;
+      float inf = exp(-dot(d, d) / (2.0 * fp.w * fp.w));
+      acc += fk.xyz * inf;
+    }
   }
 
   v += acc * uDt;

@@ -26,6 +26,7 @@ import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
 import { circuitPaintActive } from "../app/workspace";
 import { nodesInSelection, routeMidpoint, type SelectionRect } from "./boardSelection";
+import { boardIdForSource } from "../hack/dslSourceMap";
 
 type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
@@ -58,10 +59,17 @@ export function BoardView({ active = true }: { active?: boolean }) {
   selectedRef.current = selected;
   const selectionRef = useRef<string[]>([]);
   selectionRef.current = selection;
+  const focusNodeId = useHostStore((s) => s.focusNodeId);
   const inspectChip = (id: string, type: string) => {
     setSelection([id]);
     const o = chipOverlay(id, type);
     useHostStore.getState().setOverlay(o.overlay, o.inspectId);
+  };
+  const clearBoardFocus = () => {
+    setSelection([]);
+    if (useHostStore.getState().focusNodeId != null) {
+      useHostStore.getState().setFocusNodeId(null);
+    }
   };
   const [menu, setMenu] = useState<BoardMenu | null>(null);
   const [insertError, setInsertError] = useState("");
@@ -247,6 +255,24 @@ export function BoardView({ active = true }: { active?: boolean }) {
   }, [nodes]);
 
   useEffect(() => {
+    const last = selection.length ? selection[selection.length - 1]! : null;
+    if (useHostStore.getState().focusNodeId !== last) {
+      useHostStore.getState().setFocusNodeId(last);
+    }
+  }, [selection]);
+
+  useEffect(() => {
+    if (! focusNodeId) {
+      return;
+    }
+    const hit = boardIdForSource(focusNodeId, Object.keys(nodes));
+    if (! hit) {
+      return;
+    }
+    setSelection((old) => (old.includes(hit) ? old : [hit]));
+  }, [focusNodeId, nodes]);
+
+  useEffect(() => {
     if (userMoved || Object.keys(nodes).length === 0) {
       return;
     }
@@ -326,7 +352,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       }
       lassoRef.current = { x0: world.x, y0: world.y, x1: world.x, y1: world.y };
       setLasso(lassoRef.current);
-      if (!e.shiftKey) setSelection([]);
+      if (!e.shiftKey) clearBoardFocus();
       pane.setPointerCapture(e.pointerId);
       return;
     }
@@ -501,7 +527,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       const chord = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
       if (chord && key === "a") { e.preventDefault(); setSelection(Object.keys(useBoardStore.getState().nodes)); return; }
-      if (key === "escape") { setMenu(null); setSelection([]); return; }
+      if (key === "escape") { setMenu(null); clearBoardFocus(); return; }
       const id = selectedRef.current;
       const n = id ? useBoardStore.getState().nodes[id] : undefined;
       if (chord && id && key === "c" && canDeleteChip(n)) { e.preventDefault(); copyCircuitBlock(id); return; }
@@ -515,7 +541,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         if (id && canDeleteChip(n)) {
           e.preventDefault();
           removeCircuitBlock(id);
-          setSelection([]);
+          clearBoardFocus();
         }
       }
     };
@@ -632,7 +658,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         if (shouldCollapseChipDetail(e.target, useBindStore.getState().letter)) {
           if (!(e.target as HTMLElement).closest("[data-node-id], [data-board-control], .nk-ctx")) {
             useChipViewStore.getState().collapseAll();
-            setSelection([]);
+            clearBoardFocus();
           }
         }
       }}
@@ -714,7 +740,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
           {canDeleteChip(nodes[menu.id]) ? (
             <OsMenuItem danger onClick={() => {
               removeCircuitBlock(menu.id);
-              setSelection([]);
+              clearBoardFocus();
               setMenu(null);
             }}>Delete</OsMenuItem>
           ) : null}

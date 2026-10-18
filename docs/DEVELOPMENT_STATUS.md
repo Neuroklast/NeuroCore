@@ -1,8 +1,20 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (continuous particle spread)  
-**Version:** 0.6.8-beta  
-**Branch:** `fix/continuous-particle-spread`
+**Stand:** 2026-10-18 (0.6.9-beta)  
+**Version:** 0.6.9-beta  
+**Branch:** `viz/local-force-fields`
+
+## 0.6.9-beta (2026-10-18)
+
+Local particle force fields, measured Unit meters, NKTM v2, Terminal↔Circuit identity, honest Inspect taps. Live gonio is raw L/R. Version lock is 0.6.9-beta.
+
+## Circuit / Terminal node identity (2026-10-18)
+
+Terminal caret and Circuit selection share `focusNodeId`. Node ranges come from `tokenizeLine` (`id :` heads, not a regex). Circuit inspect does not rewrite the Terminal draft or pan the camera. Inspect TAP is Plugin input / Plugin output / No tap. `waveFor` is IN/OUT only.
+
+## Local particle fields and measured HUD (2026-10-18)
+
+Global +Y bowl kicks are gone. Transients spawn at most four local travelling force fields (Gaussian spatial weight, time envelope whose integral is 1). Nearby particles move more than distant ones; stereo balance places the origin; centre density stays continuous. Ambient curl runs at rest. Unit DYNAMICS / BAND ENERGY / STEREO report peak, RMS, crest, bands and correlation from the same feature functions as the ball. Unavailable values show —. NKTM v2 appends seq + samplePos so a snapshot is consumed once. DSP sound is unchanged. Native binary not rebuilt.
 
 ## Continuous stereo plume (2026-10-18)
 
