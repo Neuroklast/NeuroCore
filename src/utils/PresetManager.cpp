@@ -57,6 +57,15 @@ std::vector<uint8_t> PresetManager::encrypt(const juce::MemoryBlock& data) const
     return result;
 }
 
+bool PresetManager::cipherBoundsOk (uint32_t originalSize, size_t cipherSize) noexcept
+{
+    if (originalSize == 0 || originalSize > kMaxPlainBytes)
+        return false;
+    if (cipherSize < 8 || (cipherSize % 8) != 0)
+        return false;
+    return originalSize <= cipherSize;
+}
+
 bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock& dest) const
 {
     if (data.size() < 4)
@@ -66,7 +75,7 @@ bool PresetManager::decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock&
     std::memcpy(&originalSize, data.data(), 4);
     const size_t cipherSize = data.size() - 4;
 
-    if ((cipherSize % 8) != 0)
+    if (! cipherBoundsOk (originalSize, cipherSize))
         return false;
 
     juce::MemoryBlock block(data.data() + 4, cipherSize);
