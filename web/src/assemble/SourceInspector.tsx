@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useRef } from "react";
 import { sourceForNode } from "../hack/dslSourceMap";
 import { applyPatchDraft, discardPatchDraft } from "../hack/terminalCompile";
 import { useAstStore } from "../store/astStore";
@@ -10,7 +10,7 @@ import { useTelemetryStore } from "../store/telemetryStore";
 import { chipFootPeak } from "./chipFace";
 import { nodeMeter } from "./nodeMeter";
 import type { InspectorDock } from "./sourceInspectorLayout";
-import { inspectorBox } from "./sourceInspectorLayout";
+import { inspectorBox, inspectorHeightAt, inspectorWidthAt } from "./sourceInspectorLayout";
 
 const PatchEditor = lazy(() => import("../hack/PatchEditor"));
 
@@ -28,6 +28,9 @@ export function SourceInspector({
   active?: boolean;
 }) {
   const width = useSourceInspectorStore((s) => s.width);
+  const height = useSourceInspectorStore((s) => s.height);
+  const setWidth = useSourceInspectorStore((s) => s.setWidth);
+  const setHeight = useSourceInspectorStore((s) => s.setHeight);
   const setOpen = useSourceInspectorStore((s) => s.setOpen);
   const primaryId = usePatchSelectionStore((s) => s.primaryId);
   const clips = useHostStore((s) => s.clips);
@@ -42,7 +45,8 @@ export function SourceInspector({
   const editing = useAstStore((s) => s.draftEditing);
   const setDraftEditing = useAstStore((s) => s.setDraftEditing);
   const setDraftScript = useAstStore((s) => s.setDraftScript);
-  const box = inspectorBox(dock, paneW, paneH, width);
+  const box = inspectorBox(dock, paneW, paneH, width, height);
+  const paneOrigin = useRef({ left: 0, top: 0 });
   const node = ast?.nodes.find((n) => n.id === primaryId) ?? null;
   const shownScript = editing ? script : (lastValid || script);
   const source = useMemo(
@@ -72,8 +76,39 @@ export function SourceInspector({
       }`}
       data-dock={dock}
       data-chip-id={primaryId ?? ""}
-      style={style}
+      style={{ ...style, position: "relative" }}
     >
+      <div
+        className="nk-source-resize"
+        data-source-resize=""
+        data-board-control=""
+        role="separator"
+        aria-orientation={dock === "bottom" ? "horizontal" : "vertical"}
+        aria-label="Resize source panel"
+        onPointerDown={(e) => {
+          const pane = (e.currentTarget as HTMLElement).closest(".nk-circuit-workspace");
+          const r = pane?.getBoundingClientRect();
+          if (! r) {
+            return;
+          }
+          paneOrigin.current = { left: r.left, top: r.top };
+          e.currentTarget.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onPointerMove={(e) => {
+          if (! e.currentTarget.hasPointerCapture(e.pointerId)) {
+            return;
+          }
+          const x = e.clientX - paneOrigin.current.left;
+          const y = e.clientY - paneOrigin.current.top;
+          if (dock === "bottom") {
+            setHeight(inspectorHeightAt(paneH, y));
+            return;
+          }
+          setWidth(inspectorWidthAt(paneW, x));
+        }}
+      />
       <div className="flex shrink-0 items-center gap-2 border-b border-panel px-2 py-1">
         <span className="min-w-0 flex-1 truncate text-[11px] tracking-widest text-ink">{title}</span>
         {banner ? <span className="nk-clip nk-term-tool" data-draft-banner="">{banner}</span> : null}

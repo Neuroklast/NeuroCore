@@ -387,6 +387,27 @@ html[data-motion="off"] .nk-boot {
 .nk-source-inspector {
   --nk-source-inspector-width: 384px;
 }
+.nk-source-resize {
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+  background: transparent;
+}
+.nk-source-inspector[data-dock="side"] .nk-source-resize {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 26px;
+  cursor: ew-resize;
+}
+.nk-source-inspector[data-dock="bottom"] .nk-source-resize {
+  top: 0;
+  left: 50%;
+  width: 48px;
+  height: 26px;
+  margin-left: -24px;
+  cursor: ns-resize;
+}
 .nk-source-inspector-edit,
 .nk-source-inspector-view {
   font-family: "JetBrains Mono", ui-monospace, monospace;

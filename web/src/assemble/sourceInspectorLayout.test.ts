@@ -5,9 +5,12 @@ import { useSourceInspectorStore } from "../store/sourceInspectorStore";
 import { publishSelection } from "../store/patchWorkspace";
 import { shouldFitCameraOnPaneSize } from "./boardCamera";
 import {
+  clampInspectorHeight,
   clampInspectorWidth,
   inspectorBox,
   inspectorDock,
+  inspectorHeightAt,
+  inspectorWidthAt,
   SOURCE_INSPECTOR,
 } from "./sourceInspectorLayout";
 
@@ -33,6 +36,23 @@ describe("source inspector geometry on the 1280×860 stage", () => {
     expect(inspectorBox("side", 1280, 640).w).toBe(384);
     expect(inspectorBox("bottom", 800, 640).w).toBe(800);
     expect(inspectorBox("bottom", 800, 640).h).toBeGreaterThanOrEqual(160);
+  });
+
+  it("a seam handle resizes within 360–420 / 160–220 and does not refit the camera", () => {
+    expect(SOURCE_INSPECTOR.handle).toBeGreaterThanOrEqual(26);
+    expect(inspectorWidthAt(1280, 1280 - 400)).toBe(400);
+    expect(inspectorWidthAt(1280, 1280 - 200)).toBe(360);
+    expect(inspectorWidthAt(1280, 1280 - 900)).toBe(420);
+    expect(clampInspectorHeight(100, 640)).toBe(160);
+    expect(clampInspectorHeight(400, 640)).toBe(220);
+    expect(inspectorHeightAt(640, 640 - 180)).toBe(180);
+    expect(inspectorBox("side", 1280, 640, 400).w).toBe(400);
+    expect(inspectorBox("bottom", 800, 640, 384, 180).h).toBe(180);
+    expect(inspector).toContain("nk-source-resize");
+    expect(inspector).toContain("setWidth");
+    expect(inspector).toContain("setHeight");
+    expect(assemble).toContain("s.width");
+    expect(shouldFitCameraOnPaneSize(960, 420, 576, 420, false)).toBe(false);
   });
 
   it("does not refit the camera when an already-valid pane only changes size", () => {

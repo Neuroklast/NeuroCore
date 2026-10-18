@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BoardView } from "./BoardView";
 import { SourceInspector } from "./SourceInspector";
-import { inspectorDock, SOURCE_INSPECTOR } from "./sourceInspectorLayout";
+import { clampInspectorWidth, inspectorDock } from "./sourceInspectorLayout";
 import { useSourceInspectorStore } from "../store/sourceInspectorStore";
 
 export function AssembleView({
@@ -13,6 +13,7 @@ export function AssembleView({
 }) {
   const open = useSourceInspectorStore((s) => s.open);
   const toggle = useSourceInspectorStore((s) => s.toggle);
+  const width = useSourceInspectorStore((s) => s.width);
   const hostRef = useRef<HTMLDivElement>(null);
   const [pane, setPane] = useState({ w: 960, h: 420 });
   useEffect(() => {
@@ -34,7 +35,7 @@ export function AssembleView({
       ref={hostRef}
       className={`nk-circuit-workspace relative flex h-full min-h-0 w-full ${side ? "flex-row" : "flex-col"}`}
       data-source-dock={dock}
-      style={{ ["--nk-source-inspector-width" as string]: `${SOURCE_INSPECTOR.width}px` }}
+      style={{ ["--nk-source-inspector-width" as string]: `${clampInspectorWidth(width, pane.w)}px` }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
         <BoardView active={active} />

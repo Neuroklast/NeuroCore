@@ -94,7 +94,7 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 ## Circuit
 
-The board is the same sound as Unit and Terminal. **Source** opens a side panel with that chip’s definition (same chip id as the selection) and its real meters: peak and RMS from that chip’s own tap, with the signal source named. A drive chip has no waveform tap — the panel says so instead of drawing the plugin output. Clicking a chip does not start Edit. **Edit Source** opens the same editor as Terminal (caret and scroll survive **Open Full Terminal**); **Apply** compiles it; **Discard** restores the last saved graph. Opening Source does not pan the board or rewrite cables.
+The board is the same sound as Unit and Terminal. **Source** opens a side panel with that chip’s definition (same chip id as the selection) and its real meters: peak and RMS from that chip’s own tap, with the signal source named. A drive chip has no waveform tap — the panel says so instead of drawing the plugin output. Clicking a chip does not start Edit. **Edit Source** opens the same editor as Terminal (caret and scroll survive **Open Full Terminal**); **Apply** compiles it; **Discard** restores the last saved graph. Drag the seam to resize Source (360–420 px beside the board, or 160–220 px when it sits under the board). Opening Source does not pan the board or rewrite cables.
 
 Cables
 - Drag a chip by its body. Contacts sit on the left and right frame, equally spaced. Drag from an output (right) to an input (left).

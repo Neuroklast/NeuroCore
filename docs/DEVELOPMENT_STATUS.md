@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace P1 monaco)  
+**Stand:** 2026-10-18 (patch workspace P1 resize)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-p1-monaco`
+**Branch:** `feat/patch-workspace-p1-resize`
+
+## Patch workspace Source resize (2026-10-18)
+
+The Source seam is a ≥26 px handle. Side dock writes width through `inspectorWidthAt` (360–420, board ≥520). Bottom dock writes height through `inspectorHeightAt` (160–220). Camera does not refit. CSS `--nk-source-inspector-width` follows the store.
 
 ## Patch workspace shared editor (2026-10-18)
 
