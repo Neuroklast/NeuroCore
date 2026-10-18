@@ -132,6 +132,43 @@ test.describe("signal lab shared module chrome", () => {
     await page.screenshot({ path: path.join(shotDir, "circuit-vocal-comp.png"), fullPage: true });
   });
 
+  test("env pitch and drive faces paint calculated glyphs", async ({ page }, info) => {
+    test.skip(info.project.name !== "chromium-1x");
+    test.setTimeout(180000);
+    await page.getByRole("button", { name: "Circuit" }).click();
+    await page.locator(".nk-board").waitFor();
+
+    await loadPreset(page, "Drone Low Bed");
+    await page.locator("[data-node-id='octaver1']").waitFor();
+    await waitLayoutIdle(page);
+    const octaver = page.locator("[data-node-id='octaver1']");
+    await expect(octaver).toHaveAttribute("data-face", "pitch");
+    await expect(octaver.locator("path[data-curve='intervals']")).toBeVisible();
+    await expect(octaver.locator("[data-glyph='intervals']")).toHaveAttribute("data-mode", "octaver");
+    await expect(octaver.locator("[data-glyph='intervals']")).toHaveAttribute("aria-label", "calculated pitch intervals");
+
+    await loadPreset(page, "Vocal Comp");
+    await page.locator("[data-node-id='stage1']").waitFor();
+    await waitLayoutIdle(page);
+    const drive = page.locator("[data-node-id='stage1']");
+    await expect(drive).toHaveAttribute("data-face", "drive");
+    await expect(drive.locator("path[data-curve='transfer']")).toBeVisible();
+    await expect(drive.locator("[data-glyph='transfer']")).toHaveAttribute("data-shaper", "diode");
+    await expect(drive.locator("[data-glyph='transfer']")).toHaveAttribute("aria-label", "calculated drive transfer");
+
+    await loadPreset(page, "Warehouse Rumble");
+    await page.locator("[data-node-id='env1']").waitFor();
+    await waitLayoutIdle(page);
+    const env = page.locator("[data-node-id='env1']");
+    await expect(env).toHaveAttribute("data-face", "env");
+    await expect(env.locator("path[data-curve='envelope']")).toBeVisible();
+    await expect(env.locator("[data-glyph='envelope']")).toHaveAttribute("data-source", "in");
+    await expect(env.locator("[data-glyph='envelope']")).toHaveAttribute("aria-label", "calculated envelope curve");
+    const envD = await env.locator("path[data-curve='envelope']").getAttribute("d");
+    expect(envD && envD.length > 8).toBe(true);
+    await page.screenshot({ path: path.join(shotDir, "circuit-warehouse-rumble.png"), fullPage: true });
+  });
+
   test("hides unreadably small typecode at overview zoom except on the selected chip", async ({ page }, info) => {
     test.skip(info.project.name !== "chromium-1x");
     test.setTimeout(180000);

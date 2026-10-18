@@ -38,7 +38,10 @@ export type ClosedFaceGlyph =
   | "decay"
   | "taps"
   | "waveform"
-  | "curve";
+  | "curve"
+  | "envelope"
+  | "intervals"
+  | "transfer";
 
 /** What the closed plate must paint after the face migration. */
 export type TargetFaceGlyph =
@@ -131,7 +134,13 @@ export function closedFaceGlyph(kind: FaceKind): ClosedFaceGlyph {
     return "curve";
   }
   if (kind === "env") {
-    return "lamp";
+    return "envelope";
+  }
+  if (kind === "pitch") {
+    return "intervals";
+  }
+  if (kind === "drive") {
+    return "transfer";
   }
   if (kind === "io") {
     return "io";

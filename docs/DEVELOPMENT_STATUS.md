@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR C2)  
+**Stand:** 2026-10-18 (signal lab PR C3)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/signal-lab-pr-c2`
+**Branch:** `feat/signal-lab-pr-c3`
+
+## Circuit env / pitch / drive faces (2026-10-18)
+
+PR C3 registers Env, Pitch, and Drive on the NodeFace registry. Env paints a linear-attack / hold / exponential-release parameter curve; the header lamp is still the live follower. Octaver paints sub/dry/up stems; pitch a semitone marker; vocoder a band-count stem field — no spectrum. Drive paints named engine shapers (softclip/tube/diode/hardclip/fold/bitcrush) from the leading call; unknown formulas stay identity (no eval). Formulas fall back to ChipSpec defaults. Routing, modfx, cab, io, utility stay empty pads. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
 
 ## Circuit delay / LFO / dynamics faces (2026-10-18)
 
