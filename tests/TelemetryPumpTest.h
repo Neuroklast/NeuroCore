@@ -4,6 +4,8 @@
 #include "../src/bridge/TelemetryPump.h"
 #include "../src/core/PluginProcessor.h"
 #include "TestHelpers.h"
+#include <atomic>
+#include <thread>
 
 class TelemetryPumpTest : public juce::UnitTest
 {
@@ -126,6 +128,63 @@ public:
             expectEquals ((int) d.onsetN, 2);
             expect (d.onsets[0].balance < -0.5f, "first hit was left");
             expect (d.onsets[1].balance > 0.5f, "second hit was right");
+        }
+
+        beginTest ("a claimed read slot survives two publishes");
+        {
+            const int w0 = bridge::TelemetryPump::writeIndex (0, -1);
+            expect (w0 != 0, "first write leaves the last published slot");
+            const int w1 = bridge::TelemetryPump::writeIndex (w0, 0);
+            expect (w1 != 0, "must not overwrite the slot being copied");
+            expect (w1 != w0, "must not overwrite the newly published slot");
+        }
+
+        beginTest ("copyLatest stays a valid NKTM frame under concurrent publish");
+        {
+            bridge::TelemetryPump pump;
+            {
+                juce::AudioBuffer<float> in (2, 64), out (2, 64);
+                out.setSample (0, 0, 0.3f);
+                pump.noteInput (in);
+                pump.publish (out, 0.2f);
+            }
+            std::atomic<bool> go { true };
+            std::thread audio ([&]
+            {
+                juce::AudioBuffer<float> in (2, 64), out (2, 64);
+                float v = 0.1f;
+                while (go.load (std::memory_order_relaxed))
+                {
+                    v = v > 0.8f ? 0.1f : v + 0.05f;
+                    for (int i = 0; i < 64; ++i)
+                    {
+                        in.setSample (0, i, v);
+                        in.setSample (1, i, v);
+                        out.setSample (0, i, v);
+                        out.setSample (1, i, -v);
+                    }
+                    pump.noteInput (in);
+                    pump.publish (out, v);
+                }
+            });
+            int copies = 0, bad = 0;
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
+            for (int i = 0; i < 4000; ++i)
+            {
+                const auto n = pump.copyLatest (buf, sizeof (buf));
+                if (n == 0)
+                    continue;
+                ++copies;
+                bridge::TelemetryDesc d;
+                if (! bridge::readTelemetryHeader (buf, n, d)
+                    || n != bridge::telemetryByteSize (d)
+                    || d.seq == 0)
+                    ++bad;
+            }
+            go.store (false, std::memory_order_relaxed);
+            audio.join();
+            expect (copies > 0, "reader must see published frames");
+            expectEquals (bad, 0, "torn NKTM frame under concurrent publish");
         }
 
         beginTest ("empty pump copies nothing");
