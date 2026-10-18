@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { chipOverlay } from "../presets/irSlots";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { publishSelection } from "../store/patchWorkspace";
 import { stageCards, stageKnobLive, stageParamLine, stageSelAfterKey } from "./stagesModel";
 
 export function StagesPanel() {
@@ -22,6 +23,7 @@ export function StagesPanel() {
       }
       if (e.key === "Enter" && card) {
         e.preventDefault();
+        publishSelection({ nodeIds: [card.id], primaryId: card.id, origin: "inspect", intent: "mark" });
         setOverlay("inspect", card.id);
       }
     };
@@ -117,7 +119,10 @@ export function StagesPanel() {
               <button
                 type="button"
                 className="nk-clip"
-                onClick={() => setOverlay("inspect", card.id)}
+                onClick={() => {
+                  publishSelection({ nodeIds: [card.id], primaryId: card.id, origin: "inspect", intent: "mark" });
+                  setOverlay("inspect", card.id);
+                }}
               >
                 Inspect
               </button>

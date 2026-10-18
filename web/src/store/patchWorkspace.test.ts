@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { terminalMounted } from "../app/workspace";
 import { useAstStore } from "./astStore";
 import { useHostStore } from "./hostStore";
-import { draftBanner, readPatchDocument, readPatchSelection } from "./patchWorkspace";
+import { EMPTY_SELECTION, usePatchSelectionStore } from "./patchSelectionStore";
+import { draftBanner, pruneSelection, publishSelection, readPatchDocument, readPatchSelection } from "./patchWorkspace";
 
 const root = new URL("../../../", import.meta.url);
 const hack = readFileSync(new URL("../hack/HackView.tsx", import.meta.url), "utf8");
@@ -34,6 +35,7 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
       draftEditing: false,
     });
     useHostStore.setState({ focusNodeId: null, overlay: null, inspectId: null });
+    usePatchSelectionStore.setState({ ...EMPTY_SELECTION });
   });
 
   it("Circuit stays mounted hidden; Terminal unmounts off the hack tab", () => {
@@ -51,11 +53,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
   });
 
   it("Circuit selection is BoardView useState, separate from focusNodeId", () => {
-    expect(board).toMatch(/const \[selection, setSelection\] = useState<string\[\]>\(\[\]\)/);
-    expect(board).toContain("setFocusNodeId");
+    expect(board).toContain("publishSelection");
+    expect(board).not.toMatch(/focusNodeId[^\n]*fitCamera/);
     const sel = readPatchSelection();
-    expect(sel.param).toBeNull();
-    expect(sel.origin).toBeNull();
     expect(sel.nodeIds).toEqual([]);
   });
 
@@ -79,8 +79,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     expect(astSrc).not.toMatch(/pendingTransaction|transactionId/);
   });
 
-  it("boardIdForSource still guesses a prefixed board id", () => {
-    expect(sourceMap).toContain("startsWith(`${want}_`)");
+  it("boardIdForSource maps send uniquely and does not prefix-guess", () => {
+    expect(sourceMap).toContain('want === "send"');
+    expect(sourceMap).not.toContain("startsWith(`${want}_`)");
   });
 
   it("Inspect graphOp setArg is a separate path from Terminal publishScript", () => {
@@ -102,6 +103,8 @@ describe("PR1 target contracts (must fail until later PRs)", () => {
       draftRevision: 0,
       draftEditing: false,
     });
+    usePatchSelectionStore.setState({ ...EMPTY_SELECTION });
+    useHostStore.setState({ focusNodeId: null });
   });
 
   it("draftRevision increments when the draft text changes", () => {
@@ -176,11 +179,43 @@ describe("PR1 target contracts (must fail until later PRs)", () => {
     expect(useAstStore.getState().draftEditing).toBe(true);
   });
 
-  it.fails("selection records origin and param, not only a node id", () => {
-    useHostStore.getState().setFocusNodeId("reverb1");
+  it("publishSelection records origin and param, not only a node id", () => {
+    publishSelection({
+      nodeIds: ["reverb1"],
+      primaryId: "reverb1",
+      param: "mix",
+      origin: "circuit",
+      intent: "mark",
+    });
     const sel = readPatchSelection();
     expect(sel.primaryId).toBe("reverb1");
     expect(sel.origin).toBe("circuit");
     expect(sel.param).toBe("mix");
+    expect(useHostStore.getState().focusNodeId).toBe("reverb1");
+  });
+
+  it("an unchanged selection is not published again", () => {
+    const first = publishSelection({
+      nodeIds: ["delay1"],
+      primaryId: "delay1",
+      origin: "terminal",
+      intent: "mark",
+    });
+    const again = publishSelection({
+      nodeIds: ["delay1"],
+      primaryId: "delay1",
+      origin: "terminal",
+      intent: "mark",
+    });
+    expect(first).toBe(true);
+    expect(again).toBe(false);
+  });
+
+  it("prune drops ids that left the graph", () => {
+    publishSelection({ nodeIds: ["reverb1", "delay1"], primaryId: "delay1", origin: "circuit" });
+    pruneSelection(["reverb1", "IN"]);
+    const sel = readPatchSelection();
+    expect(sel.nodeIds).toEqual(["reverb1"]);
+    expect(sel.primaryId).toBe("reverb1");
   });
 });

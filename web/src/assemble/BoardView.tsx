@@ -27,6 +27,8 @@ import { serialIds, wrapFits } from "./layout/compactPack";
 import { circuitPaintActive } from "../app/workspace";
 import { nodesInSelection, routeMidpoint, type SelectionRect } from "./boardSelection";
 import { boardIdForSource } from "../hack/dslSourceMap";
+import { pruneSelection, publishSelection } from "../store/patchWorkspace";
+import { usePatchSelectionStore } from "../store/patchSelectionStore";
 
 type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
@@ -53,23 +55,40 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const lassoCompletedRef = useRef(false);
   const [lasso, setLasso] = useState<SelectionRect | null>(null);
   const spaceRef = useRef(false);
-  const [selection, setSelection] = useState<string[]>([]);
+  const rawSelection = usePatchSelectionStore((s) => s.nodeIds);
+  const boardIds = Object.keys(nodes);
+  const selection = rawSelection
+    .map((id) => boardIdForSource(id, boardIds) ?? id)
+    .filter((id) => Boolean(nodes[id]));
   const selected = selection.length ? selection[selection.length - 1]! : null;
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selected;
   const selectionRef = useRef<string[]>([]);
   selectionRef.current = selection;
-  const focusNodeId = useHostStore((s) => s.focusNodeId);
+  const selectNodes = (ids: string[] | ((old: string[]) => string[])) => {
+    const old = usePatchSelectionStore.getState().nodeIds;
+    const next = typeof ids === "function" ? ids(old) : ids;
+    publishSelection({
+      nodeIds: next,
+      primaryId: next.length ? next[next.length - 1]! : null,
+      param: null,
+      origin: "circuit",
+      intent: "mark",
+    });
+  };
   const inspectChip = (id: string, type: string) => {
-    setSelection([id]);
+    publishSelection({
+      nodeIds: [id],
+      primaryId: id,
+      param: null,
+      origin: "inspect",
+      intent: "mark",
+    });
     const o = chipOverlay(id, type);
     useHostStore.getState().setOverlay(o.overlay, o.inspectId);
   };
   const clearBoardFocus = () => {
-    setSelection([]);
-    if (useHostStore.getState().focusNodeId != null) {
-      useHostStore.getState().setFocusNodeId(null);
-    }
+    selectNodes([]);
   };
   const [menu, setMenu] = useState<BoardMenu | null>(null);
   const [insertError, setInsertError] = useState("");
@@ -251,26 +270,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
   }, [selection, nodes, paintFocus]);
 
   useEffect(() => {
-    setSelection((old) => old.filter((id) => Boolean(nodes[id])));
+    pruneSelection(Object.keys(nodes));
   }, [nodes]);
-
-  useEffect(() => {
-    const last = selection.length ? selection[selection.length - 1]! : null;
-    if (useHostStore.getState().focusNodeId !== last) {
-      useHostStore.getState().setFocusNodeId(last);
-    }
-  }, [selection]);
-
-  useEffect(() => {
-    if (! focusNodeId) {
-      return;
-    }
-    const hit = boardIdForSource(focusNodeId, Object.keys(nodes));
-    if (! hit) {
-      return;
-    }
-    setSelection((old) => (old.includes(hit) ? old : [hit]));
-  }, [focusNodeId, nodes]);
 
   useEffect(() => {
     if (userMoved || Object.keys(nodes).length === 0) {
@@ -366,11 +367,11 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     const n = useBoardStore.getState().nodes[id];
     if (e.shiftKey) {
-      setSelection((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
+      selectNodes((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
       return;
     }
     const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
-    setSelection(group);
+    selectNodes(group);
     if (! n || n.locked) {
       return;
     }
@@ -476,7 +477,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     panRef.current = null;
     if (lassoRef.current) {
       const ids = nodesInSelection(Object.values(useBoardStore.getState().nodes), lassoRef.current);
-      setSelection((old) => [...new Set([...old, ...ids])]);
+      selectNodes((old) => [...new Set([...old, ...ids])]);
       lassoCompletedRef.current = true;
       lassoRef.current = null;
       setLasso(null);
@@ -526,14 +527,14 @@ export function BoardView({ active = true }: { active?: boolean }) {
       }
       const chord = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
-      if (chord && key === "a") { e.preventDefault(); setSelection(Object.keys(useBoardStore.getState().nodes)); return; }
+      if (chord && key === "a") { e.preventDefault(); selectNodes(Object.keys(useBoardStore.getState().nodes)); return; }
       if (key === "escape") { setMenu(null); clearBoardFocus(); return; }
       const id = selectedRef.current;
       const n = id ? useBoardStore.getState().nodes[id] : undefined;
       if (chord && id && key === "c" && canDeleteChip(n)) { e.preventDefault(); copyCircuitBlock(id); return; }
-      if (chord && id && key === "x" && canDeleteChip(n)) { e.preventDefault(); cutCircuitBlock(id); setSelection(["IN"]); return; }
-      if (chord && key === "v") { e.preventDefault(); const fresh = pasteCircuitBlockAfter(id || "IN"); if (fresh) setSelection([fresh]); return; }
-      if (chord && id && key === "d" && canDeleteChip(n)) { e.preventDefault(); const fresh = duplicateCircuitBlock(id); if (fresh) setSelection([fresh]); return; }
+      if (chord && id && key === "x" && canDeleteChip(n)) { e.preventDefault(); cutCircuitBlock(id); selectNodes(["IN"]); return; }
+      if (chord && key === "v") { e.preventDefault(); const fresh = pasteCircuitBlockAfter(id || "IN"); if (fresh) selectNodes([fresh]); return; }
+      if (chord && id && key === "d" && canDeleteChip(n)) { e.preventDefault(); const fresh = duplicateCircuitBlock(id); if (fresh) selectNodes([fresh]); return; }
       if (chord && id && key === "p" && canDeleteChip(n)) { e.preventDefault(); parkCircuitBlock(id); return; }
       if (e.key === "Delete" || e.key === "Backspace") {
         const id = selectedRef.current;
@@ -643,7 +644,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         const hit = boardContextHit(chipId, world, useBoardStore.getState());
         const at = { left: e.clientX - box.left, top: e.clientY - box.top };
         if (hit.kind === "chip") {
-          setSelection([hit.id]);
+          selectNodes([hit.id]);
           setMenu({ kind: "chip", ...at, id: hit.id });
           return;
         }
@@ -711,7 +712,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
           <OsAddPicker onPick={(type, args) => {
             placeRef.current = menu.world;
             const id = addCircuitBlock(type, args);
-            if (id) setSelection([id]);
+            if (id) selectNodes([id]);
             setMenu(null);
           }} />
           <OsMenuItem onClick={() => { setMenu(null); void layoutBoard("ARRANGE", size, { force: true }); }}>Arrange</OsMenuItem>
@@ -725,11 +726,11 @@ export function BoardView({ active = true }: { active?: boolean }) {
           }}>Insert after</OsMenuItem>
           {canDeleteChip(nodes[menu.id]) ? <>
             <OsMenuItem onClick={() => { copyCircuitBlock(menu.id); setMenu(null); }}>Copy</OsMenuItem>
-            <OsMenuItem onClick={() => { cutCircuitBlock(menu.id); setSelection(["IN"]); setMenu(null); }}>Cut</OsMenuItem>
-            <OsMenuItem onClick={() => { const id = duplicateCircuitBlock(menu.id); if (id) setSelection([id]); setMenu(null); }}>Duplicate</OsMenuItem>
+            <OsMenuItem onClick={() => { cutCircuitBlock(menu.id); selectNodes(["IN"]); setMenu(null); }}>Cut</OsMenuItem>
+            <OsMenuItem onClick={() => { const id = duplicateCircuitBlock(menu.id); if (id) selectNodes([id]); setMenu(null); }}>Duplicate</OsMenuItem>
             <OsMenuItem onClick={() => { parkCircuitBlock(menu.id); setMenu(null); }}>Park</OsMenuItem>
           </> : null}
-          <OsMenuItem onClick={() => { const id = pasteCircuitBlockAfter(menu.id); if (id) setSelection([id]); setMenu(null); }}>Paste after</OsMenuItem>
+          <OsMenuItem onClick={() => { const id = pasteCircuitBlockAfter(menu.id); if (id) selectNodes([id]); setMenu(null); }}>Paste after</OsMenuItem>
           <OsMenuItem onClick={() => {
             const n = useBoardStore.getState().nodes[menu.id];
             if (n) {
@@ -757,7 +758,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
               ? await insertCircuitBlockOnEdge(menu.afterId, menu.targetId, type, args)
               : insertCircuitBlockAfter(menu.afterId, type, args);
             if (!id) { placeRef.current = null; setInsertError("This module cannot be inserted on this connection. Choose an audio block or another connection."); return; }
-            if (id) setSelection([id]);
+            if (id) selectNodes([id]);
             setInsertError("");
             setMenu(null);
           }} />

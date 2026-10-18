@@ -4,7 +4,9 @@ import {
   canonicalNodeId,
   mapNodeRanges,
   nodeAtPosition,
+  paramAtPosition,
   rangeForNode,
+  rangeForParam,
 } from "./dslSourceMap";
 
 const SCRIPT = [
@@ -58,5 +60,28 @@ describe("dsl source map uses the tokenizer", () => {
     expect(boardIdForSource("send", ["IN", "send_main", "OUT"])).toBe("send_main");
     expect(boardIdForSource("IN", ["IN", "stage1"])).toBe("IN");
     expect(boardIdForSource("missing", ["IN", "stage1"])).toBeNull();
+  });
+
+  it("maps LFO, bus, and OUT without inventing IN", () => {
+    const s = ["osc1: freq = 1", "bus dirt:", "delay1: time = 250", "out: mix = 1"].join("\n");
+    expect(nodeAtPosition(s, 1, 1)).toBe("osc1");
+    expect(nodeAtPosition(s, 2, 5)).toBe("dirt");
+    expect(nodeAtPosition(s, 4, 1)).toBe("OUT");
+    expect(paramAtPosition(s, 1, 10)?.param).toBe("freq");
+    expect(rangeForNode(s, "IN")).toBeNull();
+  });
+
+  it("does not prefix-guess a DSL id onto an unrelated board chip", () => {
+    expect(boardIdForSource("drive", ["IN", "drive_main", "OUT"])).toBeNull();
+    expect(boardIdForSource("in", ["in_left", "stage1"])).toBeNull();
+  });
+
+  it("names the param under the caret and skips comments", () => {
+    expect(paramAtPosition(SCRIPT, 5, 12)).toEqual({ nodeId: "filter1", param: "cutoff" });
+    expect(paramAtPosition(SCRIPT, 6, 8)).toEqual({ nodeId: "filter1", param: "q" });
+    expect(paramAtPosition(SCRIPT, 1, 1)).toBeNull();
+    expect(paramAtPosition(SCRIPT, 4, 3)).toBeNull();
+    expect(rangeForParam(SCRIPT, "filter1", "cutoff")?.startLine).toBe(5);
+    expect(rangeForParam(SCRIPT, "filter1", "q")?.startLine).toBe(6);
   });
 });
