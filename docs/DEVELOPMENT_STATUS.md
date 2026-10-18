@@ -6,7 +6,7 @@
 
 ## 0.7.0-beta (2026-10-19)
 
-Product version is 0.7.0-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Signal-lab C4 (all twelve NodeFace families + FaceHost knobs/BPM/SR) is on this label. Compact serial chains use 128 px DSP plates, 96 px IN/OUT, and 64 px air so Drone Low Bed sits on one L→R row with IN unique leftmost. Terminal navigator stays later work.
+Product version is 0.7.0-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Signal-lab C4 (all twelve NodeFace families + FaceHost knobs/BPM/SR) is on this label. Compact serial chains use 128 px DSP plates, 96 px IN/OUT, and 64 px air so Drone Low Bed sits on one L→R row with IN unique leftmost. Terminal shows a `patchStructure` navigator beside the source and labels VALIDATING / APPLYING on the draft banner.
 
 ## Circuit FaceHost knobs / tempo / sample rate (2026-10-18)
 

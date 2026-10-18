@@ -26,8 +26,6 @@ describe("Terminal workspace baseline", () => {
     expect(draftBanner("invalid")).toBe("INVALID");
     expect(draftBanner("conflict")).toBe("CONFLICT");
     expect(draftBanner("clean")).toBeNull();
-    expect(draftBanner("validating")).toBeNull();
-    expect(draftBanner("applying")).toBeNull();
   });
 
   it("does not mount a second Circuit canvas in Terminal", () => {
@@ -35,16 +33,18 @@ describe("Terminal workspace baseline", () => {
     expect(hack).not.toContain("CableCanvas");
   });
 
-  it.fails("shows VALIDATING and APPLYING on the Terminal banner", () => {
+  it("shows VALIDATING and APPLYING on the Terminal banner", () => {
     expect(draftBanner("validating")).toBe("VALIDATING");
     expect(draftBanner("applying")).toBe("APPLYING");
   });
 
-  it.fails("renders a structure navigator next to the source", () => {
+  it("renders a structure navigator next to the source", () => {
     expect(hack).toMatch(/data-patch-structure|nk-term-structure|PatchStructure/);
     const row = findFactory("Drone Low Bed");
     const { doc } = parseDslSketch(row!.script);
     expect(patchStructure(doc).some((n) => n.id === "filter1")).toBe(true);
     expect(hack).toContain("patchStructure(");
+    expect(hack).toContain("publishSelection");
+    expect(hack).toContain("origin: \"nav\"");
   });
 });

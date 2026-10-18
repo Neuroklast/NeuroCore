@@ -61,7 +61,7 @@ A short serial chain (factory Drone Low Bed) sits on one L→R row in the Circui
 
 Monaco remains the source of truth. Optional structure list comes from `patchStructure(ast)` (same hydrate as Circuit). Context / diagnostics fill leftover space and collapse on a narrow pane. No second graph store. Macro knobs stay on the south rail.
 
-Draft labels: quiet when clean; `UNAPPLIED`, `VALIDATING`, `APPLYING`, `INVALID`, `CONFLICT` when those states are live. Apply only after native confirm.
+Draft labels: quiet when clean; `UNAPPLIED`, `VALIDATING`, `APPLYING`, `INVALID`, `CONFLICT` when those states are live. Apply only after native confirm. Terminal renders `patchStructure(ast)` beside the source (`data-patch-structure`). The list collapses on a narrow pane. Clicking a row publishes selection origin `nav`.
 
 ## Honest data
 
