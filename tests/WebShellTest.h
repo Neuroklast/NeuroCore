@@ -173,6 +173,16 @@ public:
             expect (bridge::keepWebViewVisibleForHostEvents());
         }
 
+        beginTest ("missing WebView2 surface tells the user how to repair");
+        {
+            const auto msg = bridge::webViewUnavailableMessage();
+            expect (msg.containsIgnoreCase ("WebView2"), msg);
+            expect (msg.contains ("https://go.microsoft.com/fwlink/p/?LinkId=2124703"), msg);
+            auto surface = bridge::makeWebViewUnavailableSurface();
+            expect (surface != nullptr);
+            expect (surface->getNumChildComponents() >= 1);
+        }
+
         beginTest ("VST3 moduleinfo lists every factory class with frozen JUCE CIDs");
         {
             using Type = juce::VST3ClientExtensions::InterfaceType;

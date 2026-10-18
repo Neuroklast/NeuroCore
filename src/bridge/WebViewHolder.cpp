@@ -353,7 +353,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         auto options = makeOptions();
         if (! juce::WebBrowserComponent::areOptionsSupported (options))
         {
-            surface = std::make_unique<juce::Component>();
+            surface = makeWebViewUnavailableSurface();
             return;
         }
 
@@ -381,7 +381,7 @@ struct WebViewHolder::Impl : private juce::Timer,
             browser->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
         didNavigate = true;
 #else
-        surface = std::make_unique<juce::Component>();
+        surface = makeWebViewUnavailableSurface();
 #endif
     }
 
