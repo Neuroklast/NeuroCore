@@ -94,6 +94,9 @@ std::size_t writeTelemetryFrame (void* dest, std::size_t destBytes, const Teleme
     copyFloats (body, scopeOut, desc.scopeN);
     copyFloats (body, gonioX, desc.gonioN);
     copyFloats (body, gonioY, desc.gonioN);
+    writeU32 (body, desc.seq);
+    body += 4;
+    writeU32 (body, desc.samplePos);
     return need;
 }
 
@@ -105,7 +108,8 @@ bool readTelemetryHeader (const void* src, std::size_t srcBytes, TelemetryDesc& 
     const auto* p = static_cast<const std::uint8_t*> (src);
     if (readU32 (p) != kTelemetryMagic)
         return false;
-    if (readU16 (p + 4) != kTelemetryVersion)
+    const auto ver = readU16 (p + 4);
+    if (ver < kTelemetryVersionMin || ver > kTelemetryVersion)
         return false;
 
     dest.inPeak = readF32 (p + 8);
@@ -115,7 +119,20 @@ bool readTelemetryHeader (const void* src, std::size_t srcBytes, TelemetryDesc& 
     dest.cpu01 = readF32 (p + 24);
     dest.scopeN = readU16 (p + 28);
     dest.gonioN = readU16 (p + 30);
-    return telemetryByteSize (dest) <= srcBytes;
+    dest.seq = 0;
+    dest.samplePos = 0;
+    const auto body = kTelemetryHeaderBytes
+        + (std::size_t) dest.scopeN * sizeof (float) * 2
+        + (std::size_t) dest.gonioN * sizeof (float) * 2;
+    if (ver >= 2)
+    {
+        if (srcBytes < body + kTelemetryTailBytes)
+            return false;
+        const auto* tail = p + body;
+        dest.seq = readU32 (tail);
+        dest.samplePos = readU32 (tail + 4);
+    }
+    return body <= srcBytes;
 }
 
 } // namespace bridge

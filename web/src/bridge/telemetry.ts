@@ -1,4 +1,7 @@
 export const TELEMETRY_MAGIC = 0x4E4B544D;
+export const TELEMETRY_VERSION_MIN = 1;
+export const TELEMETRY_VERSION_MAX = 2;
+export const TELEMETRY_TAIL = 8;
 export const SCOPE_N = 2048;
 export const GONIO_N = 128;
 export const DISPLAY_DB_FLOOR = -60;
@@ -18,6 +21,8 @@ export interface TelemetryViews {
   gonioY: Float32Array;
   onsetCount: number;
   onsetAmp: number;
+  seq: number;
+  samplePos: number;
 }
 
 export function createTelemetryViews(): TelemetryViews {
@@ -35,6 +40,8 @@ export function createTelemetryViews(): TelemetryViews {
     gonioY: new Float32Array(GONIO_N),
     onsetCount: 0,
     onsetAmp: 0,
+    seq: 0,
+    samplePos: 0,
   };
 }
 
@@ -46,16 +53,24 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   if (view.getUint32(0, true) !== TELEMETRY_MAGIC) {
     return false;
   }
+  const version = view.getUint16(4, true);
   const scopeN = view.getUint16(28, true);
   const gonioN = view.getUint16(30, true);
-  const requiredBytes = 32 + (scopeN * 2 + gonioN * 2) * 4;
-  if (view.getUint16(4, true) !== 1 || ab.byteLength < requiredBytes) return false;
+  const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
+  const requiredBytes = version >= 2 ? body + TELEMETRY_TAIL : body;
+  if (version < TELEMETRY_VERSION_MIN || version > TELEMETRY_VERSION_MAX || ab.byteLength < requiredBytes) return false;
   const readings = [8, 12, 16, 20, 24].map((offset) => view.getFloat32(offset, true));
   if (readings.some((value) => !Number.isFinite(value) || value < 0)) return false;
   [dest.inPeak, dest.outPeak, dest.inRms, dest.outRms, dest.cpu01] = readings as [number, number, number, number, number];
   const packed = view.getUint16(6, true);
   dest.onsetCount = (packed >> 8) & 0xff;
   dest.onsetAmp = (packed & 0xff) / 255;
+  dest.seq = 0;
+  dest.samplePos = 0;
+  if (version >= 2) {
+    dest.seq = view.getUint32(body, true);
+    dest.samplePos = view.getUint32(body + 4, true);
+  }
   dest.scopeN = Math.min(scopeN, dest.scopeIn.length);
   dest.gonioN = Math.min(gonioN, dest.gonioX.length);
   const f32 = new Float32Array(ab, 32, scopeN * 2 + gonioN * 2);

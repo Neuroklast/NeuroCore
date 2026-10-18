@@ -36,6 +36,30 @@ describe("decodeTelemetry", () => {
     expect(dest.scopeIn[0]).toBeCloseTo(0.1);
     expect(dest.scopeOut[1]).toBeCloseTo(0.4);
     expect(dest.gonioY[0]).toBeCloseTo(-0.5);
+    expect(dest.seq).toBe(0);
+  });
+
+  it("reads v2 seq and sample position after the payload", () => {
+    const scopeN = 1;
+    const gonioN = 1;
+    const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
+    const ab = new ArrayBuffer(body + 8);
+    const v = new DataView(ab);
+    v.setUint32(0, TELEMETRY_MAGIC, true);
+    v.setUint16(4, 2, true);
+    writeF32(v, 8, 0.2);
+    writeF32(v, 12, 0.1);
+    writeF32(v, 16, 0.05);
+    writeF32(v, 20, 0.04);
+    writeF32(v, 24, 0.1);
+    v.setUint16(28, scopeN, true);
+    v.setUint16(30, gonioN, true);
+    v.setUint32(body, 17, true);
+    v.setUint32(body + 4, 4096, true);
+    const dest = createTelemetryViews();
+    expect(decodeTelemetry(ab, dest)).toBe(true);
+    expect(dest.seq).toBe(17);
+    expect(dest.samplePos).toBe(4096);
   });
 
   it("rejects bad magic", () => {
