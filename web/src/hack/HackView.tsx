@@ -17,8 +17,9 @@ import {
   termFrame,
   withHeaderComments,
 } from "./dslLanguage";
-import { nodeAtPosition, rangeForNode } from "./dslSourceMap";
-import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
+import { nodeAtPosition, paramAtPosition, rangeForNode, rangeForParam } from "./dslSourceMap";
+import { draftBanner, publishSelection, readPatchDocument } from "../store/patchWorkspace";
+import { usePatchSelectionStore } from "../store/patchSelectionStore";
 import {
   defineDslTheme,
   DSL_LANGUAGE_ID,
@@ -39,7 +40,8 @@ export function HackView() {
   const knobs = useHostStore((s) => s.knobs);
   const presetName = useHostStore((s) => s.presetName);
   const presets = useHostStore((s) => s.presets);
-  const focusNodeId = useHostStore((s) => s.focusNodeId);
+  const focusNodeId = usePatchSelectionStore((s) => s.primaryId);
+  const focusParam = usePatchSelectionStore((s) => s.param);
   const modelRef = useRef<editor.ITextModel | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -103,9 +105,14 @@ export function HackView() {
       if (! id) {
         return;
       }
-      if (useHostStore.getState().focusNodeId !== id) {
-        useHostStore.getState().setFocusNodeId(id);
-      }
+      const param = paramAtPosition(text, e.position.lineNumber, e.position.column)?.param ?? null;
+      publishSelection({
+        nodeIds: [id],
+        primaryId: id,
+        param,
+        origin: "terminal",
+        intent: "mark",
+      });
     });
   };
 
@@ -130,7 +137,11 @@ export function HackView() {
       return;
     }
     const text = ed.getModel()?.getValue() ?? shown;
-    const range = focusNodeId ? rangeForNode(text, focusNodeId) : null;
+    const range = focusNodeId && focusParam
+      ? rangeForParam(text, focusNodeId, focusParam)
+      : focusNodeId
+        ? rangeForNode(text, focusNodeId)
+        : null;
     decoRef.current = ed.deltaDecorations(
       decoRef.current,
       range
@@ -144,7 +155,7 @@ export function HackView() {
           }]
         : [],
     );
-  }, [focusNodeId, shown, editorReady]);
+  }, [focusNodeId, focusParam, shown, editorReady]);
 
   const save = async () => {
     const report = validateOnSave(script, diagnostics);

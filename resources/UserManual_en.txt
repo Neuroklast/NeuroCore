@@ -126,7 +126,7 @@ Expand a chip for hidden parameters. The chip size does not jump.
 
 The text is the sound.
 
-- Live view follows the knobs. Click a block line to select that chip on Circuit. Circuit selection highlights the matching lines here. That does not enter Edit or change the text.
+- Live view follows the knobs. Click a block line to select that chip on Circuit. Click a parameter to mark that value. Circuit selection highlights the matching lines here. That does not enter Edit, change the text, or pan the board.
 - **Edit** opens the editor. View hides line numbers. Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac). The pane has a light CRT scan and glow. An unapplied draft is marked **UNAPPLIED**. Switching to Circuit or Unit keeps that draft; Circuit still plays the last saved graph.
 - **Save** applies the text. If it does not parse, you stay on the last good sound. **Cancel** discards the draft.
 - **Validate** lists checks without applying.

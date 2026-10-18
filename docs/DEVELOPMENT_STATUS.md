@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR2)  
+**Stand:** 2026-10-18 (patch workspace PR3)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr2`
+**Branch:** `feat/patch-workspace-pr3`
+
+## Patch workspace selection (2026-10-18)
+
+Circuit and Terminal share `publishSelection` (node ids, primary, param, origin, intent). Unchanged payloads are not republished. A Terminal caret on a param marks that value range; comments invent no node. Circuit does not pan. Stale ids prune when chips leave the graph. `boardIdForSource` maps a unique `send_` alias and does not prefix-guess.
 
 ## Patch workspace draft persistence (2026-10-18)
 

@@ -11,7 +11,7 @@ describe("Terminal and Circuit share one node identity", () => {
   it("Terminal cursor writes focusNodeId from the tokenizer map and never edits the draft", () => {
     expect(hack).toContain("nodeAtPosition");
     expect(hack).toContain("rangeForNode");
-    expect(hack).toContain("setFocusNodeId");
+    expect(hack).toContain("publishSelection");
     expect(hack).toContain("deltaDecorations");
     expect(hack).toContain("onDidChangeCursorPosition");
     expect(hack).not.toMatch(/setDraftScript\(.*focus/i);
@@ -21,8 +21,7 @@ describe("Terminal and Circuit share one node identity", () => {
   });
 
   it("Circuit selection follows focusNodeId without fitting the camera", () => {
-    expect(board).toContain("setFocusNodeId");
-    expect(board).toContain("focusNodeId");
+    expect(board).toContain("publishSelection");
     expect(board).toContain("boardIdForSource");
     expect(board).not.toMatch(/focusNodeId[^\n]*fitCamera/);
     expect(board).not.toMatch(/fitCamera[^\n]*focusNodeId/);

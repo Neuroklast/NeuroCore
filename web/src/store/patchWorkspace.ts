@@ -1,6 +1,13 @@
 import type { AstDocument, Diagnostic } from "../bridge/ast";
+import { boardIdForSource, canonicalNodeId } from "../hack/dslSourceMap";
 import { useAstStore } from "./astStore";
 import { useHostStore } from "./hostStore";
+import {
+  EMPTY_SELECTION,
+  normalizeSelection,
+  selectionSnapshot,
+  usePatchSelectionStore,
+} from "./patchSelectionStore";
 
 /** Draft vs the last DSP-confirmed script. */
 export type DraftStatus =
@@ -65,7 +72,6 @@ export function readPatchDocument(): PatchDocument {
   };
 }
 
-/** Adapter over today's focusNodeId. Circuit's local selection is not included. */
 export function draftBanner(status: DraftStatus): string | null {
   if (status === "modified" || status === "conflict") {
     return "UNAPPLIED";
@@ -77,13 +83,56 @@ export function draftBanner(status: DraftStatus): string | null {
 }
 
 export function readPatchSelection(): PatchSelection {
-  const id = useHostStore.getState().focusNodeId;
-  return {
-    nodeIds: id ? [id] : [],
-    primaryId: id,
-    param: null,
-    edgeId: null,
-    origin: null,
-    intent: "mark",
-  };
+  return selectionSnapshot(usePatchSelectionStore.getState());
 }
+
+/** Returns false when the payload matches the live selection. */
+export function publishSelection(next: Partial<PatchSelection>): boolean {
+  const cur = readPatchSelection();
+  const merged = normalizeSelection({
+    ...cur,
+    ...next,
+    nodeIds: next.nodeIds ?? cur.nodeIds,
+    param: next.param === undefined ? cur.param : next.param,
+    edgeId: next.edgeId === undefined ? cur.edgeId : next.edgeId,
+    origin: next.origin === undefined ? cur.origin : next.origin,
+    intent: next.intent === undefined ? cur.intent : next.intent,
+    primaryId: next.primaryId === undefined ? cur.primaryId : next.primaryId,
+  });
+  const changed = usePatchSelectionStore.getState().replace(merged);
+  if (changed) {
+    const id = merged.primaryId;
+    if (useHostStore.getState().focusNodeId !== id) {
+      useHostStore.getState().setFocusNodeId(id);
+    }
+  }
+  return changed;
+}
+
+export function pruneSelection(validIds: Iterable<string>): void {
+  const valid = [...validIds];
+  const cur = readPatchSelection();
+  if (cur.nodeIds.length === 0) {
+    return;
+  }
+  const kept = cur.nodeIds.filter((id) => boardIdForSource(id, valid) != null
+    || valid.some((v) => canonicalNodeId(v).toLowerCase() === canonicalNodeId(id).toLowerCase()));
+  if (kept.length === cur.nodeIds.length
+    && cur.primaryId != null
+    && kept.includes(cur.primaryId)) {
+    return;
+  }
+  const primaryId = cur.primaryId && kept.includes(cur.primaryId)
+    ? cur.primaryId
+    : (kept[kept.length - 1] ?? null);
+  publishSelection({
+    nodeIds: kept,
+    primaryId,
+    param: kept.length ? cur.param : null,
+    edgeId: kept.length ? cur.edgeId : null,
+    origin: cur.origin,
+    intent: "mark",
+  });
+}
+
+export { EMPTY_SELECTION };

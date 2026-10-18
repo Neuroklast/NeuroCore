@@ -29,16 +29,19 @@ export function idsMatch(a: string, b: string): boolean {
 
 export function boardIdForSource(sourceId: string, nodeIds: Iterable<string>): string | null {
   const want = canonicalNodeId(sourceId).toLowerCase();
-  let prefixed: string | null = null;
-  for (const id of nodeIds) {
+  const ids = [...nodeIds];
+  for (const id of ids) {
     if (canonicalNodeId(id).toLowerCase() === want) {
       return id;
     }
-    if (prefixed == null && id.toLowerCase().startsWith(`${want}_`)) {
-      prefixed = id;
+  }
+  if (want === "send") {
+    const sends = ids.filter((id) => id.toLowerCase().startsWith("send_"));
+    if (sends.length === 1) {
+      return sends[0]!;
     }
   }
-  return prefixed;
+  return null;
 }
 
 function tokensWithCols(line: string): ColTok[] {
@@ -141,6 +144,67 @@ export function nodeAtPosition(script: string, line: number, column: number): st
       continue;
     }
     return r.nodeId;
+  }
+  return null;
+}
+
+export type ParamSourceRange = NodeSourceRange & { param: string };
+
+function mapParamRanges(script: string): ParamSourceRange[] {
+  const lines = script.replace(/\r\n/g, "\n").split("\n");
+  const out: ParamSourceRange[] = [];
+  for (const node of mapNodeRanges(script)) {
+    for (let lineNo = node.startLine; lineNo <= node.endLine; lineNo += 1) {
+      const line = lines[lineNo - 1] ?? "";
+      const toks = tokensWithCols(line);
+      for (let i = 0; i < toks.length - 1; i += 1) {
+        const tok = toks[i]!;
+        const next = toks[i + 1]!;
+        if (tok.kind === "comment" || next.text !== "=") {
+          continue;
+        }
+        if (! (tok.kind === "identifier" || tok.kind === "keyword")) {
+          continue;
+        }
+        if (i === 0 && next.text === ":") {
+          continue;
+        }
+        if (toks[1]?.text === ":" && i === 0) {
+          continue;
+        }
+        const last = toks[toks.length - 1]!;
+        out.push({
+          nodeId: node.nodeId,
+          param: tok.text,
+          startLine: lineNo,
+          startColumn: tok.start + 1,
+          endLine: lineNo,
+          endColumn: last.start + last.text.length + 1,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+export function rangeForParam(script: string, nodeId: string, param: string): ParamSourceRange | null {
+  const want = param.trim().toLowerCase();
+  return mapParamRanges(script).find((r) => idsMatch(r.nodeId, nodeId) && r.param.toLowerCase() === want) ?? null;
+}
+
+export function paramAtPosition(
+  script: string,
+  line: number,
+  column: number,
+): { nodeId: string; param: string } | null {
+  for (const r of mapParamRanges(script)) {
+    if (line !== r.startLine) {
+      continue;
+    }
+    if (column < r.startColumn || column > r.endColumn) {
+      continue;
+    }
+    return { nodeId: r.nodeId, param: r.param };
   }
   return null;
 }
