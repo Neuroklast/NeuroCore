@@ -174,11 +174,10 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
 bool NeuroKoreAudioProcessor::isDemoMixLocked() const noexcept
 {
 #if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
-    return false;
+    return demoLockForTest.load (std::memory_order_relaxed);
 #else
-    if (! Config::kEnableLicensing || isLicensed.load())
-        return false;
-    return demoSecondsRemaining() <= 0;
+    return Config::demoMixLocked (Config::kEnableLicensing, isLicensed.load(),
+                                  demoSecondsRemaining());
 #endif
 }
 
@@ -449,10 +448,9 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float mix = 1.f;
     if (auto* p = apvts.getRawParameterValue (EffectParameters::dryWet))
         mix = p->load();
-#if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
-    if (Config::kEnableLicensing && isDemoMixLocked())
-        mix = 0.f;
-#endif
+    const bool demoLocked = isDemoMixLocked();
+    mix = Config::effectiveDryWet (mix, demoLocked);
+    dspEngine.setWetMixCap (demoLocked ? 0.f : 1.f);
 
     // CPU trip: replay last wet (decay). Never splice raw input through the
     // output — that click is the "buffer overflow" live-only glitch.
