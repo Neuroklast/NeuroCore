@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getNativeFunction } from "../bridge/juce";
 import { useHostStore } from "../store/hostStore";
 import { footerLicenseLabel } from "../chrome/footerLicense";
-import { LICENSE_ACTIVATE_URL, licenseBuyerVisible, licenseStatusLine } from "./licenseModel";
+import { completeOnlineActivate, LICENSE_ACTIVATE_URL, licenseBuyerVisible, licenseStatusLine } from "./licenseModel";
 
 export function LicensePanel() {
   const licensed = useHostStore((s) => s.licensed);
@@ -33,11 +33,15 @@ export function LicensePanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: key.trim(), email: mail.trim(), systemId }),
       });
-      if (! res.ok) {
-        setMsg("Online activate failed — use INSTALL .LIC");
-        return;
-      }
-      setMsg("License stored. Restart the editor if the status stays demo.");
+      const body = await res.text();
+      const out = await completeOnlineActivate(res.status, body, async (text) => {
+        try {
+          return (await getNativeFunction("importLicense")({ text })) === true;
+        } catch {
+          return false;
+        }
+      });
+      setMsg(out.message);
     } catch {
       setMsg("No network — drop a .lic file or INSTALL .LIC");
     }
