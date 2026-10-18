@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { terminalMounted } from "../app/workspace";
 import { useAstStore } from "./astStore";
 import { useHostStore } from "./hostStore";
-import { readPatchDocument, readPatchSelection } from "./patchWorkspace";
+import { draftBanner, readPatchDocument, readPatchSelection } from "./patchWorkspace";
 
 const root = new URL("../../../", import.meta.url);
 const hack = readFileSync(new URL("../hack/HackView.tsx", import.meta.url), "utf8");
@@ -29,6 +29,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
       lastValidScript: "",
       script: "",
       diagnostics: [],
+      activeRevision: 0,
+      draftRevision: 0,
+      draftEditing: false,
     });
     useHostStore.setState({ focusNodeId: null, overlay: null, inspectId: null });
   });
@@ -40,9 +43,11 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     expect(terminalMounted("hack")).toBe(true);
   });
 
-  it("HackView owns editing in local useState so a tab change drops the mode", () => {
-    expect(hack).toMatch(/const \[editing, setEditing\] = useState\(false\)/);
-    expect(astSrc).not.toMatch(/draftStatus|activeRevision|draftRevision/);
+  it("HackView reads draftEditing from astStore so a tab change keeps the mode", () => {
+    expect(hack).toContain("s.draftEditing");
+    expect(hack).toContain("s.setDraftEditing");
+    expect(hack).not.toMatch(/const \[editing, setEditing\] = useState\(false\)/);
+    expect(astSrc).toMatch(/activeRevision|draftRevision/);
   });
 
   it("Circuit selection is BoardView useState, separate from focusNodeId", () => {
@@ -66,14 +71,12 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     expect(doc.activeScript).toContain("0.3");
     expect(doc.draftScript).toContain("0.5");
     expect(doc.draftStatus).toBe("modified");
-    expect(doc.activeRevision).toBe(0);
-    expect(doc.draftRevision).toBe(0);
     expect(doc.pendingTransaction).toBeNull();
   });
 
   it("applyCompileResult stale-guards by comparing the script string", () => {
     expect(astSrc).toContain("payload.script !== useAstStore.getState().script");
-    expect(astSrc).not.toMatch(/pendingTransaction|transactionId|draftRevision/);
+    expect(astSrc).not.toMatch(/pendingTransaction|transactionId/);
   });
 
   it("boardIdForSource still guesses a prefixed board id", () => {
@@ -92,25 +95,85 @@ describe("PR1 target contracts (must fail until later PRs)", () => {
       origin: "bridge",
       ast: null,
       lastValidAst: null,
-      lastValidScript: "reverb1: mix = 0.3\n",
-      script: "reverb1: mix = 0.3\n",
+      lastValidScript: "",
+      script: "",
       diagnostics: [],
+      activeRevision: 0,
+      draftRevision: 0,
+      draftEditing: false,
     });
   });
 
-  it.fails("draftRevision increments when the draft text changes", () => {
+  it("draftRevision increments when the draft text changes", () => {
+    useAstStore.getState().applyAstEvent({
+      origin: "host",
+      script: "reverb1: mix = 0.3\n",
+      astJson: JSON.stringify(validAst),
+      diagnostics: [],
+    });
     const before = readPatchDocument().draftRevision;
     useAstStore.getState().setDraftScript("reverb1: mix = 0.5\n");
     expect(readPatchDocument().draftRevision).toBeGreaterThan(before);
   });
 
-  it.fails("activeRevision stays put while the draft is unapplied", () => {
+  it("activeRevision stays put while the draft is unapplied", () => {
+    useAstStore.getState().applyAstEvent({
+      origin: "host",
+      script: "reverb1: mix = 0.3\n",
+      astJson: JSON.stringify(validAst),
+      diagnostics: [],
+    });
     const active = readPatchDocument().activeRevision;
     useAstStore.getState().setDraftScript("reverb1: mix = 0.5\n");
     const doc = readPatchDocument();
     expect(doc.activeRevision).toBe(active);
     expect(doc.activeRevision).toBeGreaterThan(0);
     expect(doc.draftStatus).toBe("modified");
+  });
+
+  it("draft text and edit mode survive leaving Terminal because they live in astStore", () => {
+    useAstStore.getState().applyAstEvent({
+      origin: "host",
+      script: "reverb1: mix = 0.3\n",
+      astJson: JSON.stringify(validAst),
+      diagnostics: [],
+    });
+    useAstStore.getState().setDraftEditing(true);
+    useAstStore.getState().setDraftScript("reverb1: mix = 0.5\n");
+    expect(terminalMounted("assemble")).toBe(false);
+    const doc = readPatchDocument();
+    expect(useAstStore.getState().draftEditing).toBe(true);
+    expect(doc.draftScript).toContain("0.5");
+    expect(doc.activeScript).toContain("0.3");
+    expect(doc.draftStatus).toBe("modified");
+    expect(draftBanner(doc.draftStatus)).toBe("UNAPPLIED");
+    expect(hack).toContain("draftBanner");
+    expect(hack).toContain("data-draft-banner");
+  });
+
+  it("a preset event does not silently replace an unapplied draft", () => {
+    useAstStore.getState().applyAstEvent({
+      origin: "host",
+      script: "reverb1: mix = 0.3\n",
+      astJson: JSON.stringify(validAst),
+      diagnostics: [],
+    });
+    useAstStore.getState().setDraftEditing(true);
+    useAstStore.getState().setDraftScript("reverb1: mix = 0.5\n");
+    useAstStore.getState().applyAstEvent({
+      origin: "preset",
+      script: "delay1: time = 250\n",
+      astJson: JSON.stringify({
+        ...validAst,
+        nodes: [{ id: "delay1", type: "delay", busName: "main", args: { time: "250" }, trailingComment: "" }],
+      }),
+      diagnostics: [],
+    });
+    const doc = readPatchDocument();
+    expect(doc.draftScript).toContain("0.5");
+    expect(doc.activeScript).toContain("delay1");
+    expect(doc.draftStatus).toBe("modified");
+    expect(useAstStore.getState().draftEditing).toBe(true);
   });
 
   it.fails("selection records origin and param, not only a node id", () => {

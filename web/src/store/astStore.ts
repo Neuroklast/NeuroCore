@@ -17,9 +17,13 @@ export interface AstState {
   lastValidScript: string;
   script: string;
   diagnostics: Diagnostic[];
+  activeRevision: number;
+  draftRevision: number;
+  draftEditing: boolean;
   applyAstEvent: (payload: AstEventPayload, opts?: { updateScript?: boolean }) => void;
   applyCompileResult: (payload: CompileResultPayload) => void;
   setDraftScript: (script: string) => void;
+  setDraftEditing: (on: boolean) => void;
 }
 
 export const useAstStore = create<AstState>((set) => ({
@@ -29,6 +33,9 @@ export const useAstStore = create<AstState>((set) => ({
   lastValidScript: "",
   script: "",
   diagnostics: [],
+  activeRevision: 0,
+  draftRevision: 0,
+  draftEditing: false,
 
   applyAstEvent: (payload, opts) => {
     const parsed = parseAstJson(payload.astJson);
@@ -50,13 +57,22 @@ export const useAstStore = create<AstState>((set) => ({
           diagnostics: payload.diagnostics,
         };
       }
+      const dirtyDraft = state.draftEditing
+        && state.script.length > 0
+        && state.script !== state.lastValidScript;
+      const keepDraft = opts?.updateScript === false
+        || (dirtyDraft && (payload.origin === "preset" || payload.origin === "host"));
+      const nextActive = state.activeRevision + 1;
       return {
         origin: payload.origin,
         ast: parsed,
         lastValidAst: parsed,
         lastValidScript: payload.script,
-        script: opts?.updateScript === false ? state.script : payload.script,
-        diagnostics: payload.diagnostics,
+        script: keepDraft ? state.script : payload.script,
+        diagnostics: keepDraft ? state.diagnostics : payload.diagnostics,
+        activeRevision: nextActive,
+        draftRevision: keepDraft ? state.draftRevision : nextActive,
+        draftEditing: keepDraft ? state.draftEditing : false,
       };
     });
     if (payload.origin === "canvas" || payload.origin === "editor" || payload.origin === "undo") {
@@ -83,5 +99,10 @@ export const useAstStore = create<AstState>((set) => ({
     });
   },
 
-  setDraftScript: (script) => set({ script, diagnostics: [] }),
+  setDraftScript: (script) => set((s) => ({
+    script,
+    diagnostics: [],
+    draftRevision: script === s.script ? s.draftRevision : s.draftRevision + 1,
+  })),
+  setDraftEditing: (draftEditing) => set({ draftEditing }),
 }));

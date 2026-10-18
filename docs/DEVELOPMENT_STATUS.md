@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR1)  
+**Stand:** 2026-10-18 (patch workspace PR2)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr1`
+**Branch:** `feat/patch-workspace-pr2`
+
+## Patch workspace draft persistence (2026-10-18)
+
+Terminal Edit/draft live in `astStore` (`draftEditing`, `draftRevision`, `activeRevision`). Leaving Terminal unmounts Monaco but keeps the unapplied text. Circuit still shows the last confirmed AST. An unapplied draft is **UNAPPLIED**. A preset/host echo does not replace that draft. Selection origin/param stays a later PR (`it.fails`).
 
 ## Patch workspace baseline (2026-10-18)
 
