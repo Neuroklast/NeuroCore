@@ -1,8 +1,8 @@
-import { stereoMetrics } from "./faceModel";
 import { analyzeFrame, FMIN } from "../viz/audioAnalyze";
+import { DISPLAY_AMP_FLOOR } from "../bridge/telemetry";
+import { type AudioFeatures, type FeatureValidity, FEATURES_UNAVAILABLE, measureFeatures } from "../viz/audioFeatures";
 import {
   CONTAINMENT_STATIC,
-  PULSE_MAX,
   containmentPose,
   type ContainmentLayout,
   type ContainmentPose,
@@ -19,12 +19,17 @@ function clamp01(n: number): number {
 }
 
 export type CoreViz = {
-  activity: number;
-  stability: number;
-  excitation: number;
-  sync: number;
-  field: number;
-  mode: "IDLE" | "STABLE" | "ACTIVE";
+  peak: number;
+  rms: number;
+  crestDb: number | null;
+  transient: number;
+  low: number;
+  mid: number;
+  high: number;
+  corr: number;
+  balance: number;
+  validity: FeatureValidity;
+  mode: "IDLE" | "LIVE";
 };
 
 export function coreSpectrum(samples: ArrayLike<number>, live: boolean, bins = 32, sr = 48000): number[] {
@@ -77,10 +82,10 @@ export function hudBoxes(paneW: number, paneH: number, measured?: TeleBox[]): Te
   ];
 }
 
-export function fieldStacks(viz: CoreViz): Array<{ id: "FIELD" | "ACT"; v: number; lit: number; n: number }> {
+export function fieldStacks(viz: CoreViz): Array<{ id: "LOW" | "HIGH"; v: number; lit: number; n: number }> {
   return [
-    { id: "FIELD", v: viz.field, lit: segsLit(viz.field, FIELD_SEGS), n: FIELD_SEGS },
-    { id: "ACT", v: viz.activity, lit: segsLit(viz.activity, FIELD_SEGS), n: FIELD_SEGS },
+    { id: "LOW", v: viz.low, lit: segsLit(viz.low, FIELD_SEGS), n: FIELD_SEGS },
+    { id: "HIGH", v: viz.high, lit: segsLit(viz.high, FIELD_SEGS), n: FIELD_SEGS },
   ];
 }
 
@@ -132,17 +137,27 @@ export function coreCallouts(
   return { core: { box: core, tip: tipCore }, ring: { box: ring, tip: tipRing } };
 }
 
-export function coreViz(drive: BallDrive, pose: ContainmentPose): CoreViz {
-  if (drive.still || pose.still) {
-    return { activity: 0, stability: 1, excitation: 0, sync: 1, field: 0, mode: "IDLE" };
-  }
-  const activity = clamp01(pose.glow);
-  const stability = clamp01(1 - pose.pulse / Math.max(PULSE_MAX, 1e-6));
-  const excitation = clamp01(drive.twinkle);
-  const sync = clamp01(1 - Math.abs(drive.swirl - 0.2));
-  const field = clamp01(0.5 * drive.lift + 0.5 * drive.kick + 0.35 * pose.clampSurge);
-  const mode: CoreViz["mode"] = activity > 0.28 || field > 0.2 ? "ACTIVE" : "STABLE";
-  return { activity, stability, excitation, sync, field, mode };
+export function coreHud(features: AudioFeatures): CoreViz {
+  const live = features.validity === "live" || features.validity === "preview";
+  const silent = ! live || ! (features.peak > DISPLAY_AMP_FLOOR);
+  return {
+    peak: features.peak,
+    rms: features.rms,
+    crestDb: features.crestDb,
+    transient: features.transient,
+    low: features.bands.low,
+    mid: features.bands.mid,
+    high: features.bands.high,
+    corr: features.corr,
+    balance: features.balance,
+    validity: features.validity,
+    mode: silent ? "IDLE" : "LIVE",
+  };
+}
+
+/** @deprecated visualization envelopes are not audio meters. Use coreHud. */
+export function coreViz(_drive?: BallDrive, _pose?: ContainmentPose): CoreViz {
+  return coreHud(FEATURES_UNAVAILABLE);
 }
 
 export function coreDrivePose(
@@ -161,22 +176,22 @@ export function coreDrivePose(
   const idle = {
     drive: BALL_STATIC,
     pose: CONTAINMENT_STATIC,
-    viz: coreViz(BALL_STATIC, CONTAINMENT_STATIC),
+    viz: coreHud({ ...FEATURES_UNAVAILABLE, validity: live ? "live" : "unavailable" }),
     spec: coreSpectrum(samples, false, 32, sr),
     wave: coreWave(samples, false, 48),
   };
   if (! live || motion === "off") {
     return idle;
   }
-  const packed = analyzeFrame(samples, sr, 32);
-  const width = stereoMetrics(gonioX, gonioY);
-  const side = Math.max(0, 1 - Math.abs(width.corr));
+  const features = measureFeatures(samples, gonioX, gonioY, sr, { validity: "live" });
+  const packed = { spec: features.spec, bands: features.bands };
+  const side = Math.max(0, 1 - Math.abs(features.corr));
   const drive = ballDrive(prevDrive, packed.bands, rms, side, dt, { motion });
   const pose = containmentPose(prevPose, drive, dt, t, motion);
   return {
     drive,
     pose,
-    viz: coreViz(drive, pose),
+    viz: coreHud(features),
     spec: packed.spec,
     wave: coreWave(samples, true, 48),
   };

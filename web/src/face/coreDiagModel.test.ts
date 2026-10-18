@@ -47,23 +47,19 @@ describe("core diagnostics mapping", () => {
     expect(Math.max(...wave.map(Math.abs))).toBeGreaterThan(0.2);
   });
 
-  it("viz state is derived from the drive/pose and idle when still", () => {
-    const idle = coreViz(BALL_STATIC, CONTAINMENT_STATIC);
+  it("hud meters come from audio features, not visualization envelopes", () => {
+    const idle = coreViz();
     expect(idle.mode).toBe("IDLE");
-    expect(idle.activity).toBe(0);
-    expect(idle.field).toBe(0);
-    expect(idle.excitation).toBe(0);
-    expect(idle.stability).toBe(1);
+    expect(idle.peak).toBe(0);
+    expect(idle.crestDb).toBeNull();
     const stacks = fieldStacks(idle);
     expect(stacks).toHaveLength(2);
+    expect(stacks.map((s) => s.id)).toEqual(["LOW", "HIGH"]);
     expect(stacks.every((s) => s.n === FIELD_SEGS && s.lit === 0)).toBe(true);
-    const hot = coreViz(
-      { ...BALL_STATIC, still: false, twinkle: 0.8, lift: 1, kick: 0.6, swirl: 0.6, glow: 0.5 },
-      { ...CONTAINMENT_STATIC, still: false, glow: 0.6, pulse: 0.01, clampSurge: 0.4 },
-    );
-    expect(hot.mode).toBe("ACTIVE");
-    expect(hot.excitation).toBeGreaterThan(idle.excitation);
-    expect(hot.field).toBeGreaterThan(idle.field);
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "coreDiagModel.ts"), "utf8");
+    expect(src).toContain("coreHud");
+    expect(src).not.toMatch(/pose\.glow/);
   });
 
   it("motion off returns the static pose even with loud samples", () => {
