@@ -249,3 +249,72 @@ Es gibt umfangreiche Parser-, Graph-, DSP-Block-, Preset-, Spektral-, Latency-, 
 - Microsoft WebView2-Distribution und Runtime-Erkennung: https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution
 - Apple Developer ID/Notarisierung: https://developer.apple.com/developer-id/
 - JUCE-8-Lizenzbedingungen: https://juce.com/legal/juce-8-licence/
+
+## In dieser Prüfung tatsächlich ausgeführt
+
+| Prüfung | Ergebnis | Aussage |
+|---|---|---|
+| `git fetch origin main` | Stand `9778e0a` | Bericht basiert auf dem aktuellen zusammengeführten Code |
+| `npm run build` | bestanden | TypeScript und Produktions-Webbundle bauen |
+| `npm test` | 717 bestanden, 4 fehlgeschlagen, 118 Dateien | Kein vollständig grüner Web-Stand |
+| `python tests/test_realtime_source.py` | 2 bestanden | Eng begrenzte Source-Regeln, kein vollständiger Audiothread-Nachweis |
+| `python tests/test_release_layout.py` | bestanden | Assetpfade/Embedding und Pinning-Regeln, kein Installationsnachweis |
+| `python tests/test_factory_curation.py` | 1 fehlgeschlagener Subtest | „Sub Zero Pummel“ widerspricht der bestehenden Kuration-Regel |
+| `npm audit --omit=dev` | 0 gemeldete Produktions-Advisories | Abrufabhängige Advisory-Prüfung, keine allgemeine Sicherheitszertifizierung |
+| 2 temporäre Bridge-Negativtests | beide reproduzieren den Fehler | Native Save-/Load-Antwort `ok:false` wird vom echten `presetAction` nicht als Fehler weitergegeben |
+| Schlüsselvergleich und neutrale lokale Signaturprobe | passend | Getrackter privater Schlüssel gehört zum öffentlichen Produktschlüssel; kein Schlüssel ausgegeben |
+| JUCE-8.0.6-Quellvergleich | durchgeführt | Copy-/Factory-Verhalten gegen tatsächlich gepinnte Version geprüft |
+| GitHub-Layoutlauf #15, zu PR #250 | 17 bestanden, 11 fehlgeschlagen | Logs gelesen, Timeouts unter anderem bei Boot und RAF |
+| GitHub-Layoutlauf #16, zu PR #251 | beim letzten Abruf noch laufend | Nicht als bestanden gewertet |
+| Native Builds, pluginval, DAW, Installation | hier nicht ausgeführt | Keine Aussage, dass aktuelle Binaries diese Prüfungen bestanden hätten |
+
+Die vier Vitest-Fehler betreffen `chipSpec.test.ts` (Katalogparameter), `runLayout.test.ts` (fehlender Crossover im Fixture), `chromeSpec.test.ts` (roher Polygonwert) und `crtFx.test.ts` (CSS-Source-Regel). Der Bericht setzt diese nicht mit vier bewiesenen hörbaren DSP-Fehlern gleich. Veraltete Fixtures und Source-Regeln brauchen ebenso eine nachvollziehbare Korrektur wie echte Regressionen.
+
+Die temporären Negativtests wurden nach dem Lauf entfernt. Produktcode und bestehende Tests wurden für dieses Audit nicht geändert. Buildwarnungen betreffen unter anderem große Web-Chunks. Die bloße Chunkgröße ist kein Beleg für eine hörbare Echtzeitstörung.
+
+## Noch fehlende Abnahme der Audioqualität und Leistung
+
+Die Existenz vieler DSP-Tests ist keine Hörabnahme. Es wurde auch nicht festgestellt, dass alle Effekte klanglich unbrauchbar wären. Für einen beworbenen hochwertigen Verzerrer fehlen in diesem Audit belastbare Messergebnisse und Hörfreigaben für den tatsächlichen Release-Build.
+
+| Bereich | Konkrete Prüfung | Freigabekriterium |
+|---|---|---|
+| Neutraler Signalweg | Unity-Chain, Mix 0/1, Host-Bypass, mono/stereo, Hard-Pan | Gemessene Verstärkung, Kanalzuordnung und Verzögerung entsprechen der dokumentierten Funktion |
+| Sample-Raten | Vorgeschlagene Matrix 44,1/48/88,2/96/176,4/192 kHz; tatsächlichen Support verbindlich festlegen | Keine ungültigen Koeffizienten, NaN/Inf, falschen Zeitkonstanten oder Rate-bedingten Abstürze |
+| Blockgrößen | 16–2048 sowie 0/1/7/31/511 und ein Block oberhalb des Prepare-Maximums | Kein Out-of-Bounds, keine Callback-Allokation, keine unvorhergesehene Blockabhängigkeit |
+| Automation/MIDI | Schnelle Makrofahrten, MIDI-Learn, Parameter-Touch, Projekt-Restore | Keine verlorenen Gesten, relevanten Klicks oder falsch zeitlich zugeordneten Noten |
+| Latenz/PDC | Impulse bei jeder OS-/Live-/Studio-/IR-Kombination, Bypass und Mix 0 | Gemeldete und tatsächliche Verzögerung passen; keine Phasensprünge beim vorgesehenen Umschalten |
+| Oversampling/Nichtlinearität | Sinus-/Multiton-Sweeps und Musik bei dokumentierten Pegeln | Alias-/DC-/Peakverhalten messen; Qualitätsaussagen mit festgelegten Messbedingungen belegen |
+| Offline-Render | Echtzeit, schneller Bounce, Freeze, wiederholte Exporte | Entsprechend der jeweiligen Effekte reproduzierbares Ergebnis; CPU-Protection verändert keinen Export |
+| Alle 340 Factory-Presets | Render-Smoke sowie gehörte Auswahl pro Kategorie und Grenzstellungen der Makros | Kein versehentlich stummer/instabiler Sound, keine unkontrollierten Peaks, nachvollziehbare Makros und Pegelsprünge |
+| CPU/RAM | Deklarierte Mindesthardware; 1/8/16 Instanzen zur Kapazitätsmessung, Editor offen/geschlossen, mehrere UI-Fenster | Belastbare Grenzen und P50/P95/P99/Max-Callbackzeiten dokumentieren; keine Kapazität für alle Settings versprechen |
+| Dauerbetrieb | Mehrstündige Session mit Audio, Presetwechseln, Editor-Reopen und Projekt-Saves | Kein stetiger RAM-/Handle-Anstieg, kein hängenbleibender MIDI-/DSP-Zustand, kein Datenverlust |
+
+Bei 48 kHz und 64 Samples beträgt das gesamte Blockzeitfenster nur rund 1,33 ms. Eine hübsche FPS-Anzeige oder durchschnittliche CPU-Prozentzahl allein belegt nicht, dass die Audiocallbacks rechtzeitig fertig werden. Native WebView2-/WKWebView-Kosten sind laut `docs/performance/RESULTS.md` bislang nicht gemessen. Das ist eine offene Messaufgabe, kein aus dem Browser-Screenshot abgeleiteter Performance-Bug.
+
+## Plattform- und Hostmatrix vor Verkauf
+
+Supportumfang zuerst festlegen. Für einen ersten kommerziellen Release kann ein enger, sauber abgenommener Windows-VST3-Support sinnvoller sein als eine gleichzeitige Freigabe aller vorhandenen Buildtargets. Das ist eine Scope-Empfehlung, keine Behauptung, dass Mac oder Linux bereits defekt sind.
+
+| Ziel | Erforderlicher Nachweis |
+|---|---|
+| Windows VST3 | Saubere Windows-VM, Installer, WebView2, tatsächliches Factory-Manifest, pluginval plus Steinberg-Validator, DAW-Rescan, Upgrade einer alten Session |
+| Windows DAWs | Vorgeschlagene Startmatrix Cubase, FL Studio, Ableton Live und REAPER mit konkret erfassten Versionen; Audio, Automation, PDC, Sidechain, Save/Reload, Render und Fenster-Lebenszyklus |
+| macOS AU/VST3 | Universalarchitekturen tatsächlich prüfen, arm64 und x86_64/Rosetta soweit beworben; Logic für AU sowie ein VST3-Host; `auval`, pluginval, Codesign und Notarisierung |
+| Linux VST3 | Nur ausdrücklich unterstützte Distributionen/Desktops nennen; Runtime-Abhängigkeiten, WebKitGTK, Display-Backend, Installeranleitung und echter Hosttest |
+| Editor-Lebenszyklus | Wiederholtes Öffnen/Schließen, zwei Monitore, DPI-Wechsel, manuelles Ziehen jeder Kante, Verkleinern, Restore, mehrere Instanzen, GUI während laufendem Render schließen |
+
+Eine Buildmatrix ist keine Hostkompatibilitätsmatrix. Das Handbuch sollte „VST3-kompatible Hosts“ mit konkreter getesteter Liste statt pauschal „every 64-bit DAW“ nennen. AAX/VST2 sind nicht vorhandene Formate und dürfen nicht durch eine pauschale DAW-Aussage impliziert werden.
+
+Für die Bedienung fehlen außerdem praktische Aufgabenprüfungen außerhalb der Unit: Erstnutzer lädt und verändert Sound, speichert ihn, findet ihn wieder, importiert IR/Pack, baut eine Parallelroute, behebt einen Compilefehler und aktiviert eine Lizenz. Dabei Tastatur/Fokus, Undo/Redo, fehlgeschlagene Dateizugriffe, Lesbarkeit an der kleinsten Größe und klare Fehlertexte prüfen. Aus den vorhandenen Geometrie-Tests wird keine bereits erreichte vollständige Accessibility abgeleitet.
+
+## Reihenfolge der Behebung
+
+1. **Auslieferungsrisiken schließen:** R01 Schlüsselrotation vorbereiten und umsetzen. R02/R04 durch validierte Importgrenzen und atomare Zustandsübernahme beheben. Import-Negativtests vor neue Features setzen.
+2. **Anwenderdaten schützen:** R03 Speichern/Überschreiben und R09 Fehlerweitergabe reparieren. R14 sechs Makros vollständig zurückladen. Prozessübergreifende Save-/Load-Rundläufe statt ausschließlich In-Memory-Preview testen.
+3. **Audio und Lizenzstatus korrekt machen:** R05/R06/R10/R11 mit gezielten nativen Repros beheben. R07 ohne Test-Ausnahmemakro prüfen. Keine UI-Sperre als schnelle Audio-Race-Reparatur einbauen.
+4. **Kauf- und Installationsweg schließen:** R08 Aktivierungsvertrag, R12 Factory-Metadaten, R13 Paketversion, R15 Größen-Restore, R16 Runtime/Migration und R18 Signierung abnehmen. R19 Rechte und Notices dokumentieren.
+5. **Release-Kandidat freigeben:** R17 grüne Gates, beschlossene Recall-Regel, tatsächliche Audio-/Host-/Dauertests und identischer geprüfter Paket-Commit. Erst danach Produktversion und Vermarktung auf Release setzen.
+
+Jeder Fix erhält einen kleinen Commit/PR mit zuvor fehlschlagendem passenden Vertrag und anschließendem Nachweis. Keine Behauptung „marktreif“, solange ein P0 offen ist oder die freigegebenen Plattformen nur aus erfolgreichen Webbuilds abgeleitet werden.
+
+Für den Release außerdem eine kurze Liste bekannter Einschränkungen, geprüfte Mindestanforderungen, Installations-/Reparaturanleitung und einen Supportweg mit Buildkennung bereitstellen. Bei einem Diagnoseexport Lizenzdaten, E-Mail und Gerätekennungen nicht ungeprüft mitsenden. Für diese organisatorischen Punkte wurde hier kein bestehender externer Shop-/Supportprozess unterstellt oder verändert.
