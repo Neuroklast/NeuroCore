@@ -48,7 +48,7 @@ describe("decodeTelemetry", () => {
     const gonioN = 1;
     const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
     const list = body + 8;
-    const ab = new ArrayBuffer(list + 4 + 16);
+    const ab = new ArrayBuffer(list + 4 + 24);
     const v = new DataView(ab);
     v.setUint32(0, TELEMETRY_MAGIC, true);
     v.setUint16(4, 3, true);
@@ -64,15 +64,19 @@ describe("decodeTelemetry", () => {
     v.setUint16(list, 2, true);
     v.setUint32(list + 4, 40, true);
     writeF32(v, list + 8, 0.7);
-    v.setUint32(list + 12, 4000, true);
-    writeF32(v, list + 16, 0.4);
+    writeF32(v, list + 12, -1);
+    v.setUint32(list + 16, 4000, true);
+    writeF32(v, list + 20, 0.4);
+    writeF32(v, list + 24, 1);
     const dest = createTelemetryViews();
     expect(decodeTelemetry(ab, dest)).toBe(true);
     expect(dest.seq).toBe(9);
     expect(dest.onsets).toHaveLength(2);
     expect(dest.onsets[0]?.samplePos).toBe(40);
     expect(dest.onsets[0]?.amp).toBeCloseTo(0.7);
+    expect(dest.onsets[0]?.balance).toBeCloseTo(-1);
     expect(dest.onsets[1]?.samplePos).toBe(4000);
+    expect(dest.onsets[1]?.balance).toBeCloseTo(1);
   });
 
   it("reads v2 seq and sample position after the payload", () => {

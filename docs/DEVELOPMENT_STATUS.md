@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (NKTM onset ring)  
+**Stand:** 2026-10-18 (onset stereo at the hit)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/nktm-onset-ring`
+**Branch:** `fix/onset-stereo-balance`
+
+## Onset stereo at the hit (2026-10-18)
+
+Each queued transient stores L/R balance at the click. A late UI poll still spawns the left hit on the left, not at the current gonio.
 
 ## NKTM onset ring (2026-10-18)
 

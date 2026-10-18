@@ -4,7 +4,7 @@ export const TELEMETRY_VERSION_MAX = 3;
 export const TELEMETRY_TAIL = 8;
 export const TELEMETRY_ONSET_MAX = 16;
 export const TELEMETRY_ONSET_HEADER = 4;
-export const TELEMETRY_ONSET_BYTES = 8;
+export const TELEMETRY_ONSET_BYTES = 12;
 export const SCOPE_N = 2048;
 export const GONIO_N = 128;
 export const DISPLAY_DB_FLOOR = -60;
@@ -26,7 +26,7 @@ export interface TelemetryViews {
   onsetAmp: number;
   seq: number;
   samplePos: number;
-  onsets: { samplePos: number; amp: number }[];
+  onsets: { samplePos: number; amp: number; balance: number }[];
 }
 
 export function createTelemetryViews(): TelemetryViews {
@@ -107,9 +107,11 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
     for (let i = 0; i < nOn; i += 1) {
       const at = list + TELEMETRY_ONSET_HEADER + i * TELEMETRY_ONSET_BYTES;
       const amp = view.getFloat32(at + 4, true);
+      const bal = view.getFloat32(at + 8, true);
       dest.onsets.push({
         samplePos: view.getUint32(at, true),
         amp: Number.isFinite(amp) ? Math.max(0, Math.min(1, amp)) : 0,
+        balance: Number.isFinite(bal) ? Math.max(-1, Math.min(1, bal)) : 0,
       });
     }
   }

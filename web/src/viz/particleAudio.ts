@@ -11,7 +11,7 @@ export const PARTICLE_AUDIO_IDLE: ParticleAudioState = {
   tick: -1, seq: 0, bass: 0, bassHold: 0, lastOnsetPos: -1,
 };
 
-export type ParticleSpawn = { amp: number; band: "low" | "mid" | "high" };
+export type ParticleSpawn = { amp: number; band: "low" | "mid" | "high"; balance: number };
 
 export function particleAudio(
   previous: ParticleAudioState,
@@ -23,7 +23,7 @@ export function particleAudio(
     high?: number;
     onsetCount: number;
     onsetAmp: number;
-    onsets?: { samplePos: number; amp: number }[];
+    onsets?: { samplePos: number; amp: number; balance?: number }[];
     live: boolean;
   },
   dt: number,
@@ -52,18 +52,19 @@ export function particleAudio(
       }
       const amp = clamp(e.amp);
       if (amp > 0) {
-        spawns.push({ amp, band: energyBand() });
+        const b = Number.isFinite(e.balance) ? Math.max(-1, Math.min(1, e.balance as number)) : 0;
+        spawns.push({ amp, band: energyBand(), balance: b });
       }
       lastOnsetPos = e.samplePos;
     }
   } else if (frame.onsetCount > 0) {
     const amp = clamp(frame.onsetAmp);
     if (amp > 0) {
-      spawns.push({ amp, band: energyBand() });
+      spawns.push({ amp, band: energyBand(), balance: 0 });
     }
   }
   if (bassHit > 0) {
-    spawns.push({ amp: bassHit, band: "low" });
+    spawns.push({ amp: bassHit, band: "low", balance: 0 });
   }
   const impulse = spawns.reduce((m, s) => Math.max(m, s.amp), 0);
   return {

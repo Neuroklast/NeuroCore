@@ -94,6 +94,40 @@ public:
             expect (d.onsets[1].amp > 0.05f);
         }
 
+        beginTest ("left then right clicks keep their stereo at the hit");
+        {
+            bridge::TelemetryPump pump;
+            pump.setSampleRate (48000.0);
+            juce::AudioBuffer<float> in (2, 64), out (2, 64);
+            auto click = [&] (float l, float r)
+            {
+                in.clear();
+                out.clear();
+                out.setSample (0, 8, l);
+                out.setSample (1, 8, r);
+                pump.noteInput (in);
+                pump.publish (out, 0.1f);
+            };
+            auto silence = [&]
+            {
+                in.clear();
+                out.clear();
+                pump.noteInput (in);
+                pump.publish (out, 0.1f);
+            };
+            click (1.0f, 0.0f);
+            for (int i = 0; i < 48; ++i)
+                silence();
+            click (0.0f, 1.0f);
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
+            const auto n = pump.copyLatest (buf, sizeof (buf));
+            bridge::TelemetryDesc d;
+            expect (bridge::readTelemetryHeader (buf, n, d));
+            expectEquals ((int) d.onsetN, 2);
+            expect (d.onsets[0].balance < -0.5f, "first hit was left");
+            expect (d.onsets[1].balance > 0.5f, "second hit was right");
+        }
+
         beginTest ("empty pump copies nothing");
         {
             bridge::TelemetryPump pump;
