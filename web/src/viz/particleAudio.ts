@@ -1,5 +1,6 @@
 /** Consume each telemetry snapshot once. Scope windows overlap and must not be
- * rescanned as consecutive audio, otherwise a held sub tone retriggers itself. */
+ * rescanned as consecutive audio, otherwise a held sub tone retriggers itself.
+ * A native onset is the hit; bass rise is the fallback when the ring is silent. */
 export type ParticleAudioState = {
   tick: number;
   seq: number;
@@ -63,7 +64,7 @@ export function particleAudio(
       spawns.push({ amp, band: energyBand(), balance: 0 });
     }
   }
-  if (bassHit > 0) {
+  if (bassHit > 0 && spawns.length === 0) {
     spawns.push({ amp: bassHit, band: "low", balance: 0 });
   }
   const impulse = spawns.reduce((m, s) => Math.max(m, s.amp), 0);
@@ -72,7 +73,7 @@ export function particleAudio(
       tick: frame.tick,
       seq,
       bass,
-      bassHold: bassHit > 0 ? 0.08 : hold,
+      bassHold: spawns.length > 0 ? 0.08 : hold,
       lastOnsetPos,
     },
     impulse,

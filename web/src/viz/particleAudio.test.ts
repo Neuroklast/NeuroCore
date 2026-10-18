@@ -62,3 +62,29 @@ it('drains two queued onsets and ignores them on the next snapshot', () => {
   }, 1 / 60);
   expect(again.spawns).toHaveLength(0);
 });
+
+it('a native transient and a simultaneous bass rise spawn one force field', () => {
+  const hit = particleAudio(PARTICLE_AUDIO_IDLE, {
+    tick: 1, seq: 1, bass: 0.9, onsetCount: 1, onsetAmp: 0.8,
+    onsets: [{ samplePos: 10, amp: 0.8, balance: -1 }],
+    live: true,
+  }, 1 / 60);
+  expect(hit.spawns).toHaveLength(1);
+  expect(hit.spawns[0]?.amp).toBeCloseTo(0.8);
+  expect(hit.spawns[0]?.balance).toBeCloseTo(-1);
+});
+
+it('a delayed bass rise after a native hit does not spawn a second field', () => {
+  const native = particleAudio(PARTICLE_AUDIO_IDLE, {
+    tick: 1, seq: 1, bass: 0, onsetCount: 1, onsetAmp: 0.7,
+    onsets: [{ samplePos: 20, amp: 0.7, balance: 1 }],
+    live: true,
+  }, 1 / 60);
+  expect(native.spawns).toHaveLength(1);
+  const later = particleAudio(native.state, {
+    tick: 2, seq: 2, bass: 0.9, onsetCount: 0, onsetAmp: 0,
+    onsets: [{ samplePos: 20, amp: 0.7, balance: 1 }],
+    live: true,
+  }, 1 / 60);
+  expect(later.spawns).toHaveLength(0);
+});
