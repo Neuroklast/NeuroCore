@@ -135,20 +135,29 @@ export function measureFeatures(
   gonioX: ArrayLike<number>,
   gonioY: ArrayLike<number>,
   sr: number,
-  opts: { source?: SignalSourceId; validity?: FeatureValidity; transient?: number } = {},
+  opts: {
+    source?: SignalSourceId;
+    validity?: FeatureValidity;
+    transient?: number;
+    peak?: number;
+    rms?: number;
+  } = {},
 ): AudioFeatures {
   const validity = opts.validity ?? "live";
   if (validity === "unavailable" || validity === "stale") {
     return { ...FEATURES_UNAVAILABLE, source: opts.source ?? "plugin.out", validity };
   }
-  const peak = peakAbs(samples);
-  const rms = rmsAbs(samples);
+  const ms = midSideEnergy(gonioX, gonioY);
+  const gonioN = Math.min(gonioX.length, gonioY.length);
+  const channelPeak = Math.max(ms.peakL, ms.peakR);
+  const channelRms = gonioN > 0 ? Math.sqrt((ms.mid + ms.side) / gonioN) : 0;
+  const peak = opts.peak ?? (gonioN > 0 ? channelPeak : peakAbs(samples));
+  const rms = opts.rms ?? (gonioN > 0 ? channelRms : rmsAbs(samples));
   const packed = samples.length >= 16 ? analyzeFrame(samples, sr) : {
     spec: new Array(32).fill(0),
     bands: { low: 0, mid: 0, high: 0 },
     rms,
   };
-  const ms = midSideEnergy(gonioX, gonioY);
   return {
     source: opts.source ?? "plugin.out",
     validity,

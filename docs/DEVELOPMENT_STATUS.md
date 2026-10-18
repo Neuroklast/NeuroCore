@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (Unit stereo width L/R)  
+**Stand:** 2026-10-18 (DYNAMICS channel levels)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/viz-stereo-width-lr`
+**Branch:** `fix/viz-dynamics-channel-levels`
+
+## DYNAMICS channel levels (2026-10-18)
+
+DYNAMICS peak, RMS and crest follow the native OUT meters (and raw L/R gonio when meters are absent). The mid scope no longer reports silence for out-of-phase stereo. Spectrum still uses the mid waveform.
 
 ## Unit stereo width L/R (2026-10-18)
 

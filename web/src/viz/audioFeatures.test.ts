@@ -52,6 +52,17 @@ describe("audio feature contracts", () => {
     expect(dead.crestDb).toBeNull();
   });
 
+  it("out-of-phase L/R reports channel peak, not mid-scope silence", () => {
+    const mid = silence(128);
+    const left = new Float32Array(128).fill(0.5);
+    const right = new Float32Array(128).fill(-0.5);
+    const f = measureFeatures(mid, left, right, 48000);
+    expect(peakAbs(mid)).toBe(0);
+    expect(f.peak).toBeCloseTo(0.5, 5);
+    expect(f.rms).toBeCloseTo(0.5, 5);
+    expect(f.crestDb).toBeCloseTo(0, 5);
+  });
+
   it("native gonio buffers are raw L/R, not encoded mid/side", () => {
     const m = tone(400, 48000, 128, 0.5);
     const z = silence(128);
