@@ -144,6 +144,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         validity: live ? (hasJuceBridge() ? "live" : "preview") : "unavailable",
         transient: tel.onsetAmp,
         source: "plugin.out",
+        peak: tel.outPeak,
+        rms: tel.outRms,
       });
       const viz = coreHud(features);
       const shards = orbitShards(cage, snap.pose.orbitPhase);
