@@ -37,15 +37,25 @@ export function focusPlane(input: {
   const edgeSet = new Set<string>();
   const byId = new Map(input.edges.map((e) => [e.id, e]));
 
-  for (const id of input.selectedNodeIds) {
+  const attachIncident = (id: string) => {
     nodes.add(id);
+    for (const e of input.edges) {
+      if (e.source === id || e.target === id) {
+        edgeSet.add(e.id);
+        nodes.add(e.source);
+        nodes.add(e.target);
+      }
+    }
+  };
+  for (const id of input.selectedNodeIds) {
+    attachIncident(id);
   }
   for (const id of input.selectedEdgeIds) {
     edgeSet.add(id);
     const e = byId.get(id);
     if (e) {
-      nodes.add(e.source);
-      nodes.add(e.target);
+      attachIncident(e.source);
+      attachIncident(e.target);
     }
   }
   for (const e of input.edges) {

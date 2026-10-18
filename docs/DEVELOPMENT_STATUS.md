@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR5)  
+**Stand:** 2026-10-18 (patch workspace PR6)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr5`
+**Branch:** `feat/patch-workspace-pr6`
+
+## Patch workspace Circuit readability (2026-10-18)
+
+Selected chips highlight incident cables and neighbor chips the same way hover does. The title stays the type label; the foot stays the node id. Audio, modulator, and I/O families carry a west hatch (`data-kind`), not a title recolor. Source inspector shares `data-chip-id` with the primary chip. Selection does not pan the camera or invent DSP waveforms.
 
 ## Patch workspace transactions (2026-10-18)
 

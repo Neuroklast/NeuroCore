@@ -7,6 +7,7 @@ import { BindDropPad, BindRail } from "./BindRail";
 import { chipExpandAction } from "./boardEdit";
 import {
   bindRailVisible,
+  chipKindMark,
   chipFootLine,
   chipFootPeak,
   clipWarnMark,
@@ -68,6 +69,7 @@ export function BoardChip({
       data-bind-node={node.id}
       data-selected={selected ? "on" : "off"}
       data-focus={bindOpen ? "sharp" : (focus ?? "off")}
+      data-kind={chipKindMark(node.type, node.id, node.role)}
       data-io={node.role === "io" ? node.type : undefined}
       style={{
         position: "absolute",

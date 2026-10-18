@@ -7,6 +7,7 @@ import {
   bindRailVisible,
   chipFootLine,
   clipWarnMark,
+  chipKindMark,
   closedChipChrome,
   overloadLabel,
   overlayHidesBindRail,
@@ -22,6 +23,17 @@ describe("closed chip chrome", () => {
       expect(c.grip, id).toBe(false);
       expect(c.fakeJacks, id).toBe(false);
     }
+  });
+
+  it("marks audio, modulator, and I/O as related families", () => {
+    expect(chipKindMark("stage", "stage1", "chip")).toBe("audio");
+    expect(chipKindMark("osc", "osc1", "chip")).toBe("mod");
+    expect(chipKindMark("env", "env1", "chip")).toBe("mod");
+    expect(chipKindMark("in", "IN", "io")).toBe("io");
+    const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../theme/tailwind.css"), "utf8");
+    expect(css).toMatch(/\[data-kind="audio"\][^{]*\{[^}]*repeating-linear-gradient/s);
+    expect(css).toMatch(/\[data-kind="mod"\][^{]*\{[^}]*repeating-linear-gradient/s);
+    expect(css).toMatch(/\[data-kind="io"\][^{]*\{[^}]*box-shadow/s);
   });
 
   it("picks the lamp from the job", () => {
