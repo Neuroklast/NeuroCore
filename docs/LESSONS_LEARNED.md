@@ -23,6 +23,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - VST3 `Contents/Resources/moduleinfo.json` must be written by a custom target that is always out of date *and* by POST_BUILD after JUCE deletes the file. POST_BUILD alone is skipped when MSBuild considers the DLL up to date. Do not copy Serum’s CID into either product.
 - Windows `.rc` string names in quotes keep the quote characters. FindResource then misses. Use an integer ID (`41001 RCDATA`), not `"NEUROKORE_WEB_DIST"`.
 - Close every `FileOutputStream` on a `TemporaryFile` before `overwriteTargetFileWithTemporary`. Windows keeps the sibling locked while the stream is alive; replace then fails, the destructor deletes the temp, and the target stays empty or stale.
+- File import and host-state restore share one IR geometry check (1–2 channels, finite sr in 1 kHz–384 kHz, n ≤ sr × 2 s, payload = ch × n floats). Decode into a pending bank; replace only when every slot is valid. Do not allocate from untrusted `ch`/`n` first.
 
 ## Circuit
 
