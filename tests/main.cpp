@@ -23,6 +23,7 @@
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
 #include "IrStateBoundsTest.h"
+#include "IrPreviewTest.h"
 #include "FactoryLoudnessTest.h"
 #include "FactoryUseCaseTest.h"
 #include "AstJsonTest.h"
@@ -64,6 +65,7 @@ int main (int argc, char* argv[])
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
   IrStateBoundsTest irStateBoundsTest;
+  IrPreviewTest irPreviewTest;
   FactoryLoudnessTest factoryLoudnessTest;
   FactoryUseCaseTest factoryUseCaseTest;
   TelemetrySamplingTest telemetrySamplingTest;

@@ -204,6 +204,11 @@ NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
     // destroyed processor → access violation after setValueNotifyingHost / OS changes.
     cancelPendingUpdate();
     webViewHolder.reset();
+    {
+        std::unique_ptr<const IrPreviewSnap> live (
+            irPreviewLive.exchange (nullptr, std::memory_order_acq_rel));
+        irPreviewRetired.clear();
+    }
 
     for (int i = 0; i < Config::kNumUserParams; ++i)
         apvts.removeParameterListener (EffectParameters::userParams[i], this);
@@ -962,33 +967,70 @@ void NeuroKoreAudioProcessor::startIrPreview (const juce::String& slot)
         return;
     const int n = juce::jmin (src->getNumSamples(),
                               (int) std::lround (juce::jmax (1.0, getSampleRate()) * 1.8));
-    irPreviewBuf.setSize (2, n, false, true, true);
-    irPreviewBuf.clear();
+    if (n <= 0)
+        return;
+
+    auto next = std::make_unique<IrPreviewSnap>();
+    next->samples.setSize (2, n, false, true, false);
+    next->samples.clear();
     for (int c = 0; c < 2; ++c)
     {
         const int sc = juce::jmin (c, src->getNumChannels() - 1);
-        irPreviewBuf.copyFrom (c, 0, *src, sc, 0, n);
+        next->samples.copyFrom (c, 0, *src, sc, 0, n);
     }
-    irPreviewBuf.applyGain (0.22f);
-    irPreviewPos.store (0, std::memory_order_release);
+    next->samples.applyGain (0.22f);
+    next->pos.store (0, std::memory_order_relaxed);
+
+    const IrPreviewSnap* published = next.release();
+    const IrPreviewSnap* old = irPreviewLive.exchange (published, std::memory_order_acq_rel);
+    retireIrPreviewSnap (old);
 }
 
 void NeuroKoreAudioProcessor::mixIrPreview (juce::AudioBuffer<float>& dest) noexcept
 {
-    int pos = irPreviewPos.load (std::memory_order_acquire);
-    if (pos < 0 || pos >= irPreviewBuf.getNumSamples())
-        return;
-    const int n = dest.getNumSamples();
-    const int avail = irPreviewBuf.getNumSamples() - pos;
-    const int take = juce::jmin (n, avail);
-    for (int c = 0; c < dest.getNumChannels(); ++c)
+    const auto* snap = irPreviewLive.load (std::memory_order_acquire);
+    if (snap != nullptr)
     {
-        const int sc = juce::jmin (c, irPreviewBuf.getNumChannels() - 1);
-        dest.addFrom (c, 0, irPreviewBuf, sc, pos, take);
+        int pos = snap->pos.load (std::memory_order_acquire);
+        const int nSnap = snap->samples.getNumSamples();
+        if (pos >= 0 && pos < nSnap && dest.getNumSamples() > 0)
+        {
+            const int take = juce::jmin (dest.getNumSamples(), nSnap - pos);
+            for (int c = 0; c < dest.getNumChannels(); ++c)
+            {
+                const int sc = juce::jmin (c, snap->samples.getNumChannels() - 1);
+                dest.addFrom (c, 0, snap->samples, sc, pos, take);
+            }
+            pos += take;
+            snap->pos.store (pos >= nSnap ? -1 : pos, std::memory_order_release);
+        }
     }
-    pos += take;
-    irPreviewPos.store (pos >= irPreviewBuf.getNumSamples() ? -1 : pos,
-                        std::memory_order_release);
+    irPreviewMixEpoch.fetch_add (1, std::memory_order_release);
+}
+
+void NeuroKoreAudioProcessor::retireIrPreviewSnap (const IrPreviewSnap* snap)
+{
+    if (snap == nullptr)
+        return;
+    irPreviewRetired.emplace_back (
+        std::unique_ptr<const IrPreviewSnap> (snap),
+        irPreviewMixEpoch.load (std::memory_order_acquire));
+    drainIrPreviewSnaps();
+}
+
+void NeuroKoreAudioProcessor::drainIrPreviewSnaps()
+{
+    const auto epoch = irPreviewMixEpoch.load (std::memory_order_acquire);
+    std::vector<std::pair<std::unique_ptr<const IrPreviewSnap>, uint32_t>> keep;
+    keep.reserve (irPreviewRetired.size());
+    for (auto& item : irPreviewRetired)
+    {
+        if (epoch > item.second)
+            item.first.reset();
+        else
+            keep.push_back (std::move (item));
+    }
+    irPreviewRetired.swap (keep);
 }
 
 void NeuroKoreAudioProcessor::clearAllIrs()
