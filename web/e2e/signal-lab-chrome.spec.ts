@@ -99,6 +99,39 @@ test.describe("signal lab shared module chrome", () => {
     await page.screenshot({ path: path.join(shotDir, "circuit-pad-cloud-hall.png"), fullPage: true });
   });
 
+  test("delay LFO and dynamics faces paint calculated glyphs", async ({ page }, info) => {
+    test.skip(info.project.name !== "chromium-1x");
+    test.setTimeout(180000);
+    await page.getByRole("button", { name: "Circuit" }).click();
+    await page.locator(".nk-board").waitFor();
+
+    await loadPreset(page, "Chorus Delay");
+    await page.locator("[data-node-id='delay1']").waitFor();
+    await waitLayoutIdle(page);
+    const delay = page.locator("[data-node-id='delay1']");
+    const lfo = page.locator("[data-node-id='osc1']");
+    await expect(delay).toHaveAttribute("data-face", "delay");
+    await expect(lfo).toHaveAttribute("data-face", "lfo");
+    await expect(delay.locator("path[data-curve='taps']")).toBeVisible();
+    await expect(lfo.locator("path[data-curve='waveform']")).toBeVisible();
+    const delayD = await delay.locator("path[data-curve='taps']").getAttribute("d");
+    const lfoD = await lfo.locator("path[data-curve='waveform']").getAttribute("d");
+    expect(delayD && delayD.length > 8).toBe(true);
+    expect(lfoD && lfoD.length > 8).toBe(true);
+    expect(delayD).not.toBe(lfoD);
+    await expect(lfo.locator("[data-glyph='waveform']")).toHaveAttribute("data-shape", "sine");
+    await page.screenshot({ path: path.join(shotDir, "circuit-chorus-delay.png"), fullPage: true });
+
+    await loadPreset(page, "Vocal Comp");
+    await page.locator("[data-node-id='comp1']").waitFor();
+    await waitLayoutIdle(page);
+    const comp = page.locator("[data-node-id='comp1']");
+    await expect(comp).toHaveAttribute("data-face", "dynamics");
+    await expect(comp.locator("path[data-curve='curve']")).toBeVisible();
+    await expect(comp.locator("[data-glyph='curve']")).toHaveAttribute("data-mode", "comp");
+    await page.screenshot({ path: path.join(shotDir, "circuit-vocal-comp.png"), fullPage: true });
+  });
+
   test("hides unreadably small typecode at overview zoom except on the selected chip", async ({ page }, info) => {
     test.skip(info.project.name !== "chromium-1x");
     test.setTimeout(180000);

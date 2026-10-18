@@ -29,8 +29,16 @@ export type FaceProps = {
   args: Record<string, string>;
 };
 
-/** What the closed plate paints today. Filter/reverb are the PR B reference faces. */
-export type ClosedFaceGlyph = "empty-pad" | "lfo-shape" | "lamp" | "io" | "response" | "decay";
+/** What the closed plate paints today. */
+export type ClosedFaceGlyph =
+  | "empty-pad"
+  | "lamp"
+  | "io"
+  | "response"
+  | "decay"
+  | "taps"
+  | "waveform"
+  | "curve";
 
 /** What the closed plate must paint after the face migration. */
 export type TargetFaceGlyph =
@@ -105,7 +113,7 @@ export function faceKindForType(type: string): FaceKind {
   return BY_SPEC[chipSpec(type).id] ?? "utility";
 }
 
-/** Closed-plate glyph. Filter/reverb use the NodeFace registry; others stay baseline. */
+/** Closed-plate glyph. Calculated families use the NodeFace registry; others stay baseline. */
 export function closedFaceGlyph(kind: FaceKind): ClosedFaceGlyph {
   if (kind === "filter") {
     return "response";
@@ -113,8 +121,14 @@ export function closedFaceGlyph(kind: FaceKind): ClosedFaceGlyph {
   if (kind === "reverb") {
     return "decay";
   }
+  if (kind === "delay") {
+    return "taps";
+  }
   if (kind === "lfo") {
-    return "lfo-shape";
+    return "waveform";
+  }
+  if (kind === "dynamics") {
+    return "curve";
   }
   if (kind === "env") {
     return "lamp";

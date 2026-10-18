@@ -43,8 +43,9 @@ describe("NodeFace catalog", () => {
     expect(faceParamKeys(allChipSpecs()[0]!)).toEqual([]);
     expect(closedFaceGlyph("filter")).toBe("response");
     expect(closedFaceGlyph("reverb")).toBe("decay");
-    expect(closedFaceGlyph("delay")).toBe("empty-pad");
-    expect(closedFaceGlyph("lfo")).toBe("lfo-shape");
+    expect(closedFaceGlyph("delay")).toBe("taps");
+    expect(closedFaceGlyph("lfo")).toBe("waveform");
+    expect(closedFaceGlyph("dynamics")).toBe("curve");
     expect(closedChipChrome("osc", "osc1").lamp).toBe("lfo");
     expect(closedChipChrome("filter", "filter1").lamp).toBe("clip");
     expect(closedChipChrome("reverb", "reverb1").lamp).toBe("clip");
