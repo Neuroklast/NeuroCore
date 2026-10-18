@@ -5,8 +5,20 @@
  * (manufacturer NRKL, plugin NRKO). Do not load the plugin to generate this —
  * Cubase scan hang is why VST3_AUTO_MANIFEST stays false.
  */
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = resolve (dirname (fileURLToPath (import.meta.url)), "..");
+
+function cmakeVersionLabel() {
+  const cmake = readFileSync (join (repoRoot, "CMakeLists.txt"), "utf8");
+  const match = cmake.match (/set\(NEUROKORE_VERSION_LABEL "([^"]+)"\)/);
+  if (! match) {
+    throw new Error ("NEUROKORE_VERSION_LABEL missing from CMakeLists.txt");
+  }
+  return match[1];
+}
 
 const MFG = 0x4e524b4c; // NRKL
 const PLUG = 0x4e524b4f; // NRKO
@@ -129,7 +141,7 @@ function stripVst3Junk (bundle, version) {
 
 const args = process.argv.slice (2);
 let endian = process.platform === "win32" ? "windows" : "apple";
-let version = "0.6.6-beta";
+let version = cmakeVersionLabel();
 let out = "";
 const also = [];
 let bundle = "";

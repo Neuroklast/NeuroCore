@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (VST3 moduleinfo factory classes)  
+**Stand:** 2026-10-18 (packaging version source)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/vst3-moduleinfo-classes`
+**Branch:** `fix/packaging-version-source`
+
+## Packaging version source (2026-10-18)
+
+Alpha zip name, BUILD.json, local-build banner, and moduleinfo default read `NEUROKORE_VERSION_LABEL` from CMake. Alpha install notes use the same 0.6.9-beta string. Product version is not bumped.
 
 ## VST3 moduleinfo factory classes (2026-10-18)
 

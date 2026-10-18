@@ -14,4 +14,9 @@ fi
 cmake "${cmake_args[@]}"
 cmake --build "$build_dir" --config "$config" --target NeuroKore_All --parallel "$jobs"
 
-printf 'NEUROKORE %s build complete: %s/NeuroKore_artefacts/%s\n' "0.6.5-beta" "$build_dir" "$config"
+label="$(sed -n 's/^set(NEUROKORE_VERSION_LABEL "\(.*\)")/\1/p' "$repo_dir/CMakeLists.txt" | head -n 1)"
+if [[ -z "$label" ]]; then
+  echo "NEUROKORE_VERSION_LABEL missing from CMakeLists.txt" >&2
+  exit 1
+fi
+printf 'NEUROKORE %s build complete: %s/NeuroKore_artefacts/%s\n' "$label" "$build_dir" "$config"

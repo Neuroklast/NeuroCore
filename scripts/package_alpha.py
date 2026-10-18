@@ -2,10 +2,18 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+
+def version_label(root: Path) -> str:
+    cmake = (root / 'CMakeLists.txt').read_text(encoding='utf-8')
+    match = re.search(r'set\(NEUROKORE_VERSION_LABEL "([^"]+)"\)', cmake)
+    if not match:
+        raise SystemExit('NEUROKORE_VERSION_LABEL missing from CMakeLists.txt')
+    return match.group(1)
 
 p = argparse.ArgumentParser()
 p.add_argument('--build', type=Path, required=True)
@@ -18,7 +26,8 @@ if not artifacts.is_dir():
     raise SystemExit(f'Missing native Release artifacts: {artifacts}')
 output = root / 'release'
 output.mkdir(exist_ok=True)
-stem = f'NEUROKORE-0.6.4-beta-{a.platform}'
+label = version_label(root)
+stem = f'NEUROKORE-{label}-{a.platform}'
 with tempfile.TemporaryDirectory() as temp:
     package = Path(temp) / stem
     package.mkdir()
@@ -55,7 +64,7 @@ with tempfile.TemporaryDirectory() as temp:
                 if f.is_file() and f.name.lower().startswith(('license', 'licence', 'copying', 'ofl')):
                     name = base.name + '-' + '-'.join(f.relative_to(base).parts)
                     shutil.copy2(f, third_party / name)
-    (package / 'BUILD.json').write_text(json.dumps({'version':'0.6.4-beta','commit':a.commit,'platform':a.platform,'formats':formats,'signing':'ad-hoc; not notarised' if a.platform == 'macos-universal' else 'unsigned'}, indent=2))
+    (package / 'BUILD.json').write_text(json.dumps({'version':label,'commit':a.commit,'platform':a.platform,'formats':formats,'signing':'ad-hoc; not notarised' if a.platform == 'macos-universal' else 'unsigned'}, indent=2))
     archive = shutil.make_archive(str(output / stem), 'zip' if a.platform == 'windows-x86_64' else 'gztar', temp, stem)
     file = Path(archive)
     (output / (file.name + '.sha256')).write_text(hashlib.sha256(file.read_bytes()).hexdigest() + '  ' + file.name + '\n')
