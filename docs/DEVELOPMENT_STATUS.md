@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace P0 tx)  
+**Stand:** 2026-10-18 (patch workspace P1 monaco)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-p0-tx`
+**Branch:** `feat/patch-workspace-p1-monaco`
+
+## Patch workspace shared editor (2026-10-18)
+
+Circuit Edit Source and Terminal Edit share one Monaco document (`PATCH_MODEL_URI`) and one caret/scroll session. Monaco loads lazily. The inspector does not keep an editor while Circuit is hidden. View mode in Source still shows the node span as text. Chip click does not enter Edit.
 
 ## Patch workspace versioned AST events (2026-10-18)
 
@@ -22,7 +26,7 @@ Compile and graph edits carry a transaction id plus base revision. A late result
 
 ## Patch workspace source inspector (2026-10-18)
 
-Circuit has a Source panel (360–420 logical px, bottom when the board would starve). Chip click does not enter Edit. Edit Source / Apply / Discard / Open Full Terminal share the astStore draft. Opening the panel does not refit the camera or re-run Compact. Monaco stays lazy on the Terminal tab.
+Circuit has a Source panel (360–420 logical px, bottom when the board would starve). Chip click does not enter Edit. Edit Source / Apply / Discard / Open Full Terminal share the astStore draft and one Monaco document. Opening the panel does not refit the camera or re-run Compact. Monaco stays lazy.
 
 ## Patch workspace selection (2026-10-18)
 

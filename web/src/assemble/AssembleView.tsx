@@ -53,6 +53,7 @@ export function AssembleView({
           dock={dock}
           paneW={pane.w}
           paneH={pane.h}
+          active={active}
           onOpenTerminal={() => onOpenTerminal?.()}
         />
       ) : null}

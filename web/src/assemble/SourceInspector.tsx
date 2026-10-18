@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { sourceForNode } from "../hack/dslSourceMap";
 import { applyPatchDraft, discardPatchDraft } from "../hack/terminalCompile";
 import { useAstStore } from "../store/astStore";
@@ -12,16 +12,20 @@ import { nodeMeter } from "./nodeMeter";
 import type { InspectorDock } from "./sourceInspectorLayout";
 import { inspectorBox } from "./sourceInspectorLayout";
 
+const PatchEditor = lazy(() => import("../hack/PatchEditor"));
+
 export function SourceInspector({
   dock,
   paneW,
   paneH,
   onOpenTerminal,
+  active = true,
 }: {
   dock: InspectorDock;
   paneW: number;
   paneH: number;
   onOpenTerminal: () => void;
+  active?: boolean;
 }) {
   const width = useSourceInspectorStore((s) => s.width);
   const setOpen = useSourceInspectorStore((s) => s.setOpen);
@@ -107,16 +111,18 @@ export function SourceInspector({
           <span>{meter.waveLabel}</span>
         </div>
       ) : null}
-      <div className="min-h-0 flex-1 overflow-auto p-2">
-        {editing ? (
-          <textarea
-            className="nk-source-inspector-edit h-full w-full resize-none bg-black text-[12px] text-ink"
-            value={script}
-            onChange={(e) => setDraftScript(e.target.value)}
-            spellCheck={false}
-          />
+      <div className="nk-source-inspector-edit min-h-0 flex-1 overflow-hidden p-2">
+        {editing && active ? (
+          <Suspense fallback={null}>
+            <PatchEditor
+              value={script}
+              shared
+              readOnly={false}
+              onChange={(v) => setDraftScript(v)}
+            />
+          </Suspense>
         ) : (
-          <pre className="nk-source-inspector-view m-0 whitespace-pre-wrap text-[12px] text-ink">
+          <pre className="nk-source-inspector-view m-0 h-full overflow-auto whitespace-pre-wrap text-[12px] text-ink">
             {source || (primaryId ? `No DSL span for ${primaryId}.` : "Select a chip to read its definition.")}
           </pre>
         )}
