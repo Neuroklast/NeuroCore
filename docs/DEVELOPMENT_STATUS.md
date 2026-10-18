@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (onset stereo at the hit)  
+**Stand:** 2026-10-18 (Unit shared plugin.out analysis)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/onset-stereo-balance`
+**Branch:** `fix/unit-shared-out-analysis`
+
+## Unit shared plugin.out analysis (2026-10-18)
+
+The ball and the HUD analyze the same plugin output window (`cachedBands` on `scopeOut`). Motion no longer FFT-scans the dry input on a second cache.
 
 ## Onset stereo at the hit (2026-10-18)
 
