@@ -287,17 +287,19 @@ export function ballStill(motion: MotionPref): boolean {
 }
 
 /**
- * Gonio X is side (L−R), Y is mid (L+R). Width is the side share of energy, 0 = mono.
+ * Native gonio is raw L/R. Width is the side share of energy, 0 when both channels match.
  */
-export function stereoWidth(gonioX: ArrayLike<number>, gonioY: ArrayLike<number>): number {
-  const n = Math.min(gonioX.length, gonioY.length);
+export function stereoWidth(left: ArrayLike<number>, right: ArrayLike<number>): number {
+  const n = Math.min(left.length, right.length);
   let side = 0;
   let mid = 0;
   for (let i = 0; i < n; i += 1) {
-    const x = gonioX[i] ?? 0;
-    const y = gonioY[i] ?? 0;
-    side += x * x;
-    mid += y * y;
+    const l = left[i] ?? 0;
+    const r = right[i] ?? 0;
+    const m = 0.5 * (l + r);
+    const s = 0.5 * (l - r);
+    mid += m * m;
+    side += s * s;
   }
   const t = side + mid;
   return t > 1e-12 ? clamp01(side / t) : 0;
