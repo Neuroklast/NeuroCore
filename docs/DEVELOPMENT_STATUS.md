@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (preset action errors)  
+**Stand:** 2026-10-18 (MIDI note spans)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/preset-action-errors`
+**Branch:** `fix/midi-note-spans`
+
+## MIDI note spans (2026-10-18)
+
+DSL MIDI variables follow last-note priority on a held-key stack. Note-off of one key restores the previous held note. Events apply at `samplePosition` so a same-block on/off is high then low. CC 120/123 panic the stack.
 
 ## Preset action errors (2026-10-18)
 

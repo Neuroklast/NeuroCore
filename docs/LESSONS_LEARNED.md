@@ -29,6 +29,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Demo-expired Mix is an engine cap on the dry/wet smoother (`wetMixCap`). Do not zero a local `mix` the engine never reads, and do not write APVTS `dryWet` to enforce the license.
 - Online license activate is not an HTTP-200 success. Extract a `NEUROKORE LICENSE` document, then native verify-and-store. Report installed only after that import. A JSON `{ok:true}` is not a license.
 - Native `failVar` (`ok:false`) is a failed call. Read it in `presetAction`. Do not close Save As or clear dirty until save returns `ok:true`.
+- DSL MIDI is last-note priority on a fixed held-note stack. Apply events at `samplePosition` and process audio in those spans. A Note Off does not clear gate while another key is held. CC 120/123 panic. Do not fold the whole MidiBuffer into one gate before the block.
 
 ## Circuit
 

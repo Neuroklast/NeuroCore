@@ -26,6 +26,7 @@
 #include "IrStateBoundsTest.h"
 #include "IrPreviewTest.h"
 #include "MidiLearnTest.h"
+#include "MidiMapperTest.h"
 #include "FactoryLoudnessTest.h"
 #include "FactoryUseCaseTest.h"
 #include "AstJsonTest.h"
@@ -70,6 +71,7 @@ int main (int argc, char* argv[])
   IrStateBoundsTest irStateBoundsTest;
   IrPreviewTest irPreviewTest;
   MidiLearnTest midiLearnTest;
+  MidiMapperTest midiMapperTest;
   FactoryLoudnessTest factoryLoudnessTest;
   FactoryUseCaseTest factoryUseCaseTest;
   TelemetrySamplingTest telemetrySamplingTest;
