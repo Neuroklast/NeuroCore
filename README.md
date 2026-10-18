@@ -12,7 +12,7 @@ Operator guide: [docs/manual/NEUROKORE.md](docs/manual/NEUROKORE.md). In-plugin 
 
 Windows
 1. Run `NEUROKORE-0.6.9-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
-2. If Microsoft Edge WebView2 is missing, the setup installs it. Without that runtime the window is empty.
+2. If Microsoft Edge WebView2 is missing, the setup installs it. Without that runtime the window shows how to install it.
 3. Rescan plug-ins. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3`.
 4. Standalone is in the Start menu under Neuroklast. Uninstall keeps your presets and license.
 

@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (preset six macro names)  
+**Stand:** 2026-10-18 (WebView2 repair surface)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/preset-six-macro-names`
+**Branch:** `fix/webview-unavailable-diagnostic`
+
+## WebView2 repair surface (2026-10-18)
+
+If the WebView backend cannot start, the editor shows how to install Microsoft Edge WebView2. It is no longer a blank component.
 
 ## Preset six macro names (2026-10-18)
 

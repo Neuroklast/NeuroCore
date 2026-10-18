@@ -16,7 +16,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 
 Windows
 1. Run `NEUROKORE-0.6.9-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
-2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window is empty.
+2. If Microsoft Edge WebView2 is missing, the setup installs it first. Without that runtime the window shows how to install it.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json` (every factory class: component, controller, compatibility). There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
 5. A SHA-256 file sits next to the Setup.exe so you can check the download.
@@ -30,7 +30,7 @@ Linux is VST3 or Standalone. You need a WebKitGTK web view on the machine.
 
 The first unlicensed launch starts a **14-day demo**. Help → License shows the end date. After that, Mix stays dry until you install a license.
 
-If the window is empty on Windows, install Microsoft Edge WebView2 and reopen the plugin. Cubase hanging while scanning: delete leftover `NEUROKORE-*.vst3` files (not only folders) under Common Files, then install the `NEUROKORE.vst3` bundle. The web view is created with the plug-in, not when Cubase opens a scan window.
+If the window shows a WebView2 message on Windows, install Microsoft Edge WebView2 Runtime from Microsoft and reopen the plugin. Cubase hanging while scanning: delete leftover `NEUROKORE-*.vst3` files (not only folders) under Common Files, then install the `NEUROKORE.vst3` bundle. The web view is created with the plug-in, not when Cubase opens a scan window.
 
 ---
 

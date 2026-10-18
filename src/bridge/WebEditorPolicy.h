@@ -55,6 +55,46 @@ inline bool shouldOpenWebEditor()
     return wantWebEditor() && webEditorCanRun();
 }
 
+inline juce::String webViewUnavailableMessage()
+{
+    return "NEUROKORE needs Microsoft Edge WebView2.\n"
+           "Install it from https://go.microsoft.com/fwlink/p/?LinkId=2124703\n"
+           "then reopen the plug-in.";
+}
+
+class WebViewUnavailableSurface : public juce::Component
+{
+public:
+    WebViewUnavailableSurface()
+    {
+        setOpaque (true);
+        addAndMakeVisible (label);
+        label.setText (webViewUnavailableMessage(), juce::dontSendNotification);
+        label.setJustificationType (juce::Justification::centred);
+        label.setMinimumHorizontalScale (0.7f);
+        label.setColour (juce::Label::textColourId, juce::Colours::white);
+        label.setColour (juce::Label::backgroundColourId, juce::Colour (0xff0a0a0a));
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        g.fillAll (juce::Colour (0xff0a0a0a));
+    }
+
+    void resized() override
+    {
+        label.setBounds (getLocalBounds().reduced (24));
+    }
+
+private:
+    juce::Label label;
+};
+
+inline std::unique_ptr<juce::Component> makeWebViewUnavailableSurface()
+{
+    return std::make_unique<WebViewUnavailableSurface>();
+}
+
 /** Kept as a scan-stack guard. Production births Chromium in the holder ctor
  *  (processor lifetime). Do not CreateWebView from IPlugView attached(). */
 inline bool shouldRealizeChromium (bool stillAttached,
