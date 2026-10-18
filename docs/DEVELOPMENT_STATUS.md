@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (MIDI learn realtime)  
+**Stand:** 2026-10-18 (demo mix cap)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/midi-learn-realtime`
+**Branch:** `fix/demo-mix-cap`
+
+## Demo mix cap (2026-10-18)
+
+Expired demo forces delayed dry inside the engine (`wetMixCap`). The host Mix parameter stays where the user left it. Mix 0 still follows host PDC. NeuroKoreTests skip product license enforcement; `setDemoMixLockedForTest` drives the same cap path.
 
 ## MIDI learn realtime (2026-10-18)
 

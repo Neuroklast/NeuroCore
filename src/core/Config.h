@@ -322,6 +322,20 @@ namespace Config
         return juce::jmax (0, (int) std::ceil (kDemoDurationSeconds - elapsed));
     }
 
+    inline bool demoMixLocked (bool licensingOn, bool licensed, int secondsLeft) noexcept
+    {
+        if (! licensingOn || licensed)
+            return false;
+        return secondsLeft <= 0;
+    }
+
+    inline float effectiveDryWet (float param, bool demoLocked) noexcept
+    {
+        if (demoLocked)
+            return 0.f;
+        return juce::jlimit (0.f, 1.f, param);
+    }
+
 } // namespace Config
 
 //==============================================================================

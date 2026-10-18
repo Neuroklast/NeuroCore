@@ -104,6 +104,9 @@ public:
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable);
 
+    /** 1 = honour APVTS mix. 0 = demo lock: ramp to delayed dry, leave the host mix parameter. */
+    void setWetMixCap (float cap) noexcept;
+
     /** NaN / jump / crackle logger (RT-safe ring + file flush). */
     AudioDiagnostics& getDiagnostics() noexcept { return diagnostics; }
     const AudioDiagnostics& getDiagnostics() const noexcept { return diagnostics; }
@@ -127,6 +130,7 @@ private:
     InputRouter inputRouter;
 
     juce::SmoothedValue<float> wetValue;
+    std::atomic<float> wetMixCap { 1.f };
     DSPUtils::DryWetMixState dryWetMix;
 
     juce::SmoothedValue<float> gainCompValue;

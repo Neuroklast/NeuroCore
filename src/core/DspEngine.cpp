@@ -238,6 +238,11 @@ size_t DspEngine::getOversamplingFactor() const noexcept
     return oversampler ? oversampler->getOversamplingFactor() : 1;
 }
 
+void DspEngine::setWetMixCap (float cap) noexcept
+{
+    wetMixCap.store (juce::jlimit (0.f, 1.f, cap), std::memory_order_relaxed);
+}
+
 void DspEngine::setValidationBypass(bool enable)
 {
     if (apvts)
@@ -353,7 +358,8 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
                                       getParam(EffectParameters::polisherMode));
     sanitation.setSoftClipEnabled (polisherParam >= 0.5f);
 
-    const float dryWet = clamp(EffectParameters::dryWet, getParam(EffectParameters::dryWet));
+    const float dryWet = clamp (EffectParameters::dryWet, getParam (EffectParameters::dryWet))
+                       * wetMixCap.load (std::memory_order_relaxed);
     wetValue.setTargetValue(dryWet);
 
     // Pure dry only when mix target AND smoother are fully at 0.

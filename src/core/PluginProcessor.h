@@ -219,6 +219,12 @@ public:
     bool          isProductLicensed() const noexcept { return isLicensed.load(); }
     bool          isDemoMixLocked() const noexcept;
     int           demoSecondsRemaining() const noexcept;
+#if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
+    void setDemoMixLockedForTest (bool on) noexcept
+    {
+        demoLockForTest.store (on, std::memory_order_relaxed);
+    }
+#endif
     juce::String  licensedEmail() const { return licenseManager.licensedEmail(); }
     juce::String  licensedIssued() const { return licenseManager.licensedIssued(); }
     juce::String  licenseError() const { return licenseManager.lastError(); }
@@ -309,6 +315,9 @@ private:
     LicenseManager     licenseManager;
     std::atomic<bool>  isLicensed { false };
     double             demoStartMs { 0.0 };
+#if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
+    std::atomic<bool>  demoLockForTest { false };
+#endif
 
     std::atomic<float> osOutGain { 1.f };
     std::atomic<float> osOutGainTarget { 1.f };

@@ -26,6 +26,12 @@ public:
                           Config::demoSecondsLeft (t0, t0 + 1000.0));
             expect (Config::demoSecondsLeft (t0, t0 + 1000.0)
                     < Config::demoSecondsLeft (t0, t0));
+            expect (Config::demoMixLocked (true, false, 0));
+            expect (! Config::demoMixLocked (true, true, 0));
+            expect (! Config::demoMixLocked (true, false, 1));
+            expect (! Config::demoMixLocked (false, false, 0));
+            expectEquals (Config::effectiveDryWet (1.f, true), 0.f);
+            expectEquals (Config::effectiveDryWet (0.7f, false), 0.7f);
         }
 
         beginTest ("email normalisation");

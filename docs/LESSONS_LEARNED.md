@@ -26,6 +26,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - File import and host-state restore share one IR geometry check (1–2 channels, finite sr in 1 kHz–384 kHz, n ≤ sr × 2 s, payload = ch × n floats). Decode into a pending bank; replace only when every slot is valid. Do not allocate from untrusted `ch`/`n` first.
 - IR preview is an immutable snapshot published by atomic pointer. `mixIrPreview` loads the pointer once and never frees. Old snaps retire after the mix epoch advances, on the message thread. Do not `setSize` a buffer the audio thread is reading, and do not add a blocking audio lock for preview.
 - MIDI learn on the audio thread is a 128-slot atomic parameter-pointer table plus one pending-CC event. Do not take a SpinLock, copy `juce::String`, or insert maps in `processMidiMessages`. `drainLearnEvents` publishes strings on the message thread.
+- Demo-expired Mix is an engine cap on the dry/wet smoother (`wetMixCap`). Do not zero a local `mix` the engine never reads, and do not write APVTS `dryWet` to enforce the license.
 
 ## Circuit
 
