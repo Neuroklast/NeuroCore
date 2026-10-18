@@ -46,6 +46,7 @@ describe("perf marks", () => {
     expect(cables).toContain('perfBegin("cables")');
     expect(bands).toContain('perfBegin("bands")');
     expect(app).toContain("syncPerfFlag");
+    expect(app).toContain("PerfHud");
   });
 
   it("reads ?nkperf=1 over storage, and storage when the query is absent", () => {
