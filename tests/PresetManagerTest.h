@@ -176,6 +176,18 @@ public:
       work.deleteRecursively();
     }
 
+    beginTest ("cipher payload size is bounded before decrypt copy");
+    {
+      expect (PresetManager::cipherBoundsOk (16, 16));
+      expect (PresetManager::cipherBoundsOk (1, 8));
+      expect (! PresetManager::cipherBoundsOk (0, 16));
+      expect (! PresetManager::cipherBoundsOk (24, 16));
+      expect (! PresetManager::cipherBoundsOk (8, 7));
+      expect (! PresetManager::cipherBoundsOk (8, 9));
+      expect (! PresetManager::cipherBoundsOk (PresetManager::kMaxPlainBytes + 1, PresetManager::kMaxPlainBytes + 8));
+      expect (! PresetManager::cipherBoundsOk (1u << 30, 16));
+    }
+
     beginTest ("sanitize pack names drop path characters");
     {
       expectEquals (PresetLibrary::sanitizePackName ("Zardonic / Metal"),

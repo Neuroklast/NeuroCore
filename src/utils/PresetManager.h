@@ -43,6 +43,9 @@ public:
 
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;
 
+    static constexpr uint32_t kMaxPlainBytes = 16u * 1024u * 1024u;
+    static bool cipherBoundsOk (uint32_t originalSize, size_t cipherSize) noexcept;
+
 private:
     std::vector<uint8_t> encrypt(const juce::MemoryBlock& data) const;
     bool decrypt(const std::vector<uint8_t>& data, juce::MemoryBlock& dest) const;

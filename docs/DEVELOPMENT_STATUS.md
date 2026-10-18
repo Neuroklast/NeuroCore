@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (0.6.9-beta + UI perf)  
+**Stand:** 2026-10-18 (preset decrypt bounds)  
 **Version:** 0.6.9-beta  
-**Branch:** `perf/ui-optimization`
+**Branch:** `fix/preset-decrypt-bounds`
+
+## Preset decrypt bounds (2026-10-18)
+
+STAT cipher `originalSize` must be > 0, ≤ 16 MiB, 8-byte aligned cipher, and ≤ cipher bytes. Oversized or truncated payloads are rejected before allocation/copy.
 
 ## 0.6.9-beta (2026-10-18)
 
