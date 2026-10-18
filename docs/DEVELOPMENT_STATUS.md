@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (web tsc build)  
+**Stand:** 2026-10-18 (signal lab PR C)  
 **Version:** 0.6.10-beta  
-**Branch:** `fix/web-layout-tsc`
+**Branch:** `feat/signal-lab-pr-c`
+
+## Circuit functional faces (2026-10-18)
+
+PR C passes ChipSpec args into `NodeFace`. Filter/EQ paint a calculated frequency response (SVF analog / EQ cookbook). Reverb paints a calculated decay envelope from the engine RT60 proxy (`0.4 + size * 1.2 + decay * 4.5` s). Engine clamps decay to 0.05–0.95, so factory `decay = 2.6` draws like 0.95 and the preset is unchanged. Formulas (`cutoff = b`) use the spec default; they are not eval'd. Delay/LFO/dynamics faces stay empty pads. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
 
 ## Web layout tsc (2026-10-18)
 

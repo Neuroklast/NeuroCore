@@ -69,4 +69,4 @@ Real node ids, parameters, and taps only. DSP chips with no waveform tap stay **
 
 ## PR sequence
 
-A baseline / contracts (this file) → **B shared module chrome** (`ChipShell` + `NodeFace` registry; filter/reverb reference wells; `data-zoom` on `.nk-board`) → C functional faces → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.
+A baseline / contracts (this file) → B shared module chrome → **C functional faces** (`NodeFace` reads ChipSpec args; calculated filter/EQ response and reverb decay; engine decay clamp 0.05–0.95) → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.

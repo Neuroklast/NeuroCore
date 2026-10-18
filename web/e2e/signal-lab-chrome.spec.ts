@@ -62,6 +62,14 @@ test.describe("signal lab shared module chrome", () => {
     await expect(reverb.locator("[data-glyph='decay']")).toHaveAttribute("data-axis", "time");
     await expect(filter.locator("[data-glyph='response']")).toHaveAttribute("aria-label", "calculated filter response");
     await expect(reverb.locator("[data-glyph='decay']")).toHaveAttribute("aria-label", "calculated decay envelope");
+    await expect(filter.locator("path[data-curve='response']")).toBeVisible();
+    await expect(reverb.locator("path[data-curve='decay']")).toBeVisible();
+    const filterD = await filter.locator("path[data-curve='response']").getAttribute("d");
+    const reverbD = await reverb.locator("path[data-curve='decay']").getAttribute("d");
+    expect(filterD && filterD.length > 8).toBe(true);
+    expect(reverbD && reverbD.length > 8).toBe(true);
+    expect(filterD).not.toBe(reverbD);
+    await expect(reverb.locator("[data-glyph='decay']")).toHaveAttribute("data-decay", "0.95");
     await expect(board).toHaveAttribute("data-zoom", /^(overview|normal|focused)$/);
 
     const titleSize = await filter.locator(".nk-chip-title").evaluate((n) => getComputedStyle(n).fontSize);

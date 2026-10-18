@@ -63,6 +63,8 @@ describe("shared chip chrome", () => {
     expect(chipShell).toContain("data-depth={depth}");
     expect(chipShell).toContain("data-face={kind}");
     expect(nodeFace).toContain("FACES");
+    expect(nodeFace).toContain("args");
+    expect(boardChip).toContain("args={node.args}");
     expect(nodeFace).not.toMatch(/switch\s*\(/);
   });
 });

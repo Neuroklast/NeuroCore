@@ -22,6 +22,13 @@ export const FACE_KINDS = [
 
 export type FaceKind = (typeof FACE_KINDS)[number];
 
+/** Closed-plate renderer props. Faces read ChipSpec args; they do not invent taps. */
+export type FaceProps = {
+  kind: FaceKind;
+  type: string;
+  args: Record<string, string>;
+};
+
 /** What the closed plate paints today. Filter/reverb are the PR B reference faces. */
 export type ClosedFaceGlyph = "empty-pad" | "lfo-shape" | "lamp" | "io" | "response" | "decay";
 

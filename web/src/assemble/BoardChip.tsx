@@ -125,7 +125,7 @@ export function BoardChip({
           : {}),
       }}
     >
-      {node.role === "chip" ? <NodeFace kind={kind} /> : null}
+      {node.role === "chip" ? <NodeFace kind={kind} type={node.type} args={node.args} /> : null}
       {bindRailVisible(bindOpen, binds) ? (
         <BindRail
           nodeId={node.id}
