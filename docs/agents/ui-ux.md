@@ -1,6 +1,6 @@
 # UI / UX contracts
 
-Source of truth for Circuit is the **script**. The board is a headless graph (`boardStore`: nodes, ports, edges) plus a dumb renderer (DOM chips, one canvas for cables). Ports store local centres only. `globalPort = node.xy + local`. Never `getBoundingClientRect` for routing.
+Source of truth for Circuit is the **script**. The board is a headless graph (`boardStore`: nodes, ports, edges) plus a dumb renderer (DOM chips, one canvas for cables). Ports store local centres only. `globalPort = node.xy + local`. Never `getBoundingClientRect` for routing. Circuit / Terminal Signal Laboratory contracts: [signal-lab.md](signal-lab.md).
 
 ## Headless board
 
