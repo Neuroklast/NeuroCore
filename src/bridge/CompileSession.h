@@ -20,6 +20,8 @@ struct CompileOutcome
     juce::String origin;
     juce::String script;
     juce::String astJson;
+    juce::String txId;
+    int baseRevision { 0 };
     std::vector<Diagnostic> diagnostics;
 };
 

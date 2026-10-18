@@ -178,7 +178,8 @@ describe("PR1 target contracts (must fail until later PRs)", () => {
     const doc = readPatchDocument();
     expect(doc.draftScript).toContain("0.5");
     expect(doc.activeScript).toContain("delay1");
-    expect(doc.draftStatus).toBe("modified");
+    expect(doc.draftStatus).toBe("conflict");
+    expect(draftBanner(doc.draftStatus)).toBe("CONFLICT");
     expect(useAstStore.getState().draftEditing).toBe(true);
   });
 

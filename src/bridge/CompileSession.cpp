@@ -120,6 +120,10 @@ juce::var CompileSession::toCompileResultVar (const CompileOutcome& out) const
         diags.add (juce::var (o));
     }
     root->setProperty ("diagnostics", diags);
+    if (out.txId.isNotEmpty())
+        root->setProperty ("txId", out.txId);
+    if (out.txId.isNotEmpty() || out.baseRevision != 0)
+        root->setProperty ("baseRevision", out.baseRevision);
     return juce::var (root);
 }
 
@@ -139,6 +143,10 @@ juce::var CompileSession::toAstVar (const CompileOutcome& out) const
         diags.add (juce::var (o));
     }
     root->setProperty ("diagnostics", diags);
+    if (out.txId.isNotEmpty())
+        root->setProperty ("txId", out.txId);
+    if (out.txId.isNotEmpty() || out.baseRevision != 0)
+        root->setProperty ("baseRevision", out.baseRevision);
     return juce::var (root);
 }
 

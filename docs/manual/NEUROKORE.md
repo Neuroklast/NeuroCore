@@ -127,7 +127,7 @@ Expand a chip for hidden parameters. The chip size does not jump.
 The text is the sound.
 
 - Live view follows the knobs. Click a block line to select that chip on Circuit. Click a parameter to mark that value. Circuit selection highlights the matching lines here. That does not enter Edit, change the text, or pan the board.
-- **Edit** opens the editor. View hides line numbers. Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac). The pane has a light CRT scan and glow. An unapplied draft is marked **UNAPPLIED**. Switching to Circuit or Unit keeps that draft; Circuit still plays the last saved graph.
+- **Edit** opens the editor. View hides line numbers. Suggestions stay closed until Ctrl+Space (Cmd+Space on Mac). The pane has a light CRT scan and glow. An unapplied draft is marked **UNAPPLIED**. Loading another sound while that draft is open is **CONFLICT** — Apply will not overwrite the new graph; Discard keeps the loaded sound. Switching to Circuit or Unit keeps that draft; Circuit still plays the last saved graph.
 - **Save** applies the text. If it does not parse, you stay on the last good sound. A late reply from an older Save does not overwrite a newer draft. **Cancel** discards the draft.
 - **Validate** lists checks without applying.
 - **Optimize** only drops redundant identities (like `x * 1`). It never changes the sound: a hard clipper stays hard (`clamp`, `hardclip`), a soft clipper stays soft (`softclip`, `tube`, `diode`), and no filters or stages are added.

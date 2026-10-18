@@ -1,5 +1,6 @@
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
+import { beginPatchTx } from "../store/patchWorkspace";
 import type { AstEdge } from "../bridge/ast";
 import { publishScript } from "./addBlock";
 import { fitCamera } from "./boardCamera";
@@ -109,7 +110,13 @@ export function rerouteBoard(): void {
 /** Native emits the new AST and script only after a successful graph compile. */
 async function nativeGraphOp(payload: Record<string, string>): Promise<boolean> {
   try {
-    const result = await getNativeFunction("graphOp")({ origin: "canvas", ...payload }) as
+    const tx = beginPatchTx("graphOp", "canvas");
+    const result = await getNativeFunction("graphOp")({
+      origin: "canvas",
+      txId: tx.id,
+      baseRevision: tx.baseRevision,
+      ...payload,
+    }) as
       { ok?: boolean; error?: string; diagnostics?: Array<{line:number;column:number;message:string}> };
     if (result?.ok !== true) {
       useAstStore.setState({ diagnostics: result?.diagnostics?.length ? result.diagnostics :

@@ -2,7 +2,7 @@ import type { CompileResultPayload, Diagnostic } from "../bridge/ast";
 import { publishScript } from "../assemble/addBlock";
 import { validateOnSave } from "../overlays/validateModel";
 import { useAstStore } from "../store/astStore";
-import { beginPatchTx } from "../store/patchWorkspace";
+import { beginPatchTx, readPatchDocument } from "../store/patchWorkspace";
 
 type CompileLike = (script: string) => void | unknown | Promise<unknown>;
 
@@ -29,6 +29,9 @@ export async function commitTerminalDraft(
 }
 
 export async function applyPatchDraft(): Promise<boolean> {
+  if (readPatchDocument().draftStatus === "conflict") {
+    return false;
+  }
   const { script, diagnostics, setDraftEditing } = useAstStore.getState();
   const report = validateOnSave(script, diagnostics);
   const preflight = report.ok ? diagnostics : [
