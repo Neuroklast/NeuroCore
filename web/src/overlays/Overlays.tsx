@@ -6,13 +6,15 @@ import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
+import { useTelemetryStore } from "../store/telemetryStore";
 import { isThemeId, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { LicensePanel } from "./LicensePanel";
 import { settingsAboutTarget } from "./aboutModel";
 import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
 import { isIrSlotId } from "../presets/irSlots";
-import { peakToDb } from "../bridge/telemetry";
+import { chipFootPeak } from "../assemble/chipFace";
+import { nodeMeter } from "../assemble/nodeMeter";
 import {
   clampInspectArg,
   inspectArgFields,
@@ -166,12 +168,27 @@ function InspectArgControl({
 
 export function InspectBody({ nodeId }: { nodeId: string | null }) {
   const ast = useAstStore((s) => s.ast);
-  const peak = useHostStore((s) => (nodeId ? s.clips[nodeId] : undefined));
+  const clips = useHostStore((s) => s.clips);
+  const clipsRms = useHostStore((s) => s.clipsRms);
+  const inPeak = useTelemetryStore((s) => s.inPeak);
+  const outPeak = useTelemetryStore((s) => s.outPeak);
+  const inRms = useTelemetryStore((s) => s.inRms);
+  const outRms = useTelemetryStore((s) => s.outRms);
   const node = ast?.nodes.find((n) => n.id === nodeId);
   const rows = inspectRows(node, ast);
   if (! node) {
     return <p>No node selected.</p>;
   }
+  const meter = nodeMeter({
+    id: node.id,
+    type: node.type,
+    clips,
+    clipsRms,
+    pluginInPeak: inPeak,
+    pluginOutPeak: outPeak,
+    pluginInRms: inRms,
+    pluginOutRms: outRms,
+  });
   const argFields = inspectArgFields(node);
   const groups = ["meta", "arg", "jack", "param", "var"] as const;
   const label: Record<(typeof groups)[number], string> = {
@@ -182,7 +199,6 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     var: "VARIABLES",
   };
   const blurb = inspectBlurb(node.type);
-  const peakDb = peak != null && Number.isFinite(peak) ? peakToDb(peak) : null;
   return (
     <div className="flex flex-col gap-3 text-[12px]">
       {groups.map((g) => {
@@ -224,12 +240,12 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           </section>
         );
       })}
-      {peakDb != null ? (
-        <section>
-          <div className="mb-1 text-[11px] tracking-widest text-muted">LEVEL</div>
-          <p className="text-ink tabular-nums">{peakDb.toFixed(1)} dB</p>
-        </section>
-      ) : null}
+      <section data-meter-source={meter.source} data-wave={meter.wave}>
+        <div className="mb-1 text-[11px] tracking-widest text-muted">LEVEL</div>
+        <p className="text-ink tabular-nums">
+          {meter.sourceLabel} · PEAK {meter.peak == null ? "—" : chipFootPeak(meter.peak)} · RMS {meter.rms == null ? "—" : chipFootPeak(meter.rms)} · {meter.waveLabel}
+        </p>
+      </section>
       {blurb ? (
         <section>
           <div className="mb-1 text-[11px] tracking-widest text-muted">ABOUT</div>

@@ -391,6 +391,21 @@ html[data-motion="off"] .nk-boot {
 .nk-source-inspector-view {
   font-family: "JetBrains Mono", ui-monospace, monospace;
 }
+.nk-source-meter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--nk-line);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--nk-ink-soft);
+}
+.nk-source-meter [data-meter] {
+  color: var(--nk-ink);
+}
 .nk-board-insert-error { max-width: 285px; padding: 9px; color: var(--nk-accent); font: 11px/1.4 "Segoe UI", sans-serif; }
 .nk-board-lasso { position: absolute; z-index: 9; pointer-events: none; border: 1px solid var(--nk-cyan); background: color-mix(in srgb, var(--nk-cyan) 10%, transparent); }
 .nk-inspect-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
