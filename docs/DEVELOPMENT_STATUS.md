@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (preset save replace)  
+**Stand:** 2026-10-18 (IR state bounds)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/preset-save-replace`
+**Branch:** `fix/ir-state-bounds`
+
+## IR state bounds (2026-10-18)
+
+Host-state IR slots use the same geometry as file import: 1–2 channels, finite sample rate in 1 kHz–384 kHz, length ≤ 2 s, payload exactly `ch * n` floats. Invalid slots abort restore and keep the previous IR and script. File import still truncates longer WAVs to 2 s.
 
 ## Preset save replace (2026-10-18)
 

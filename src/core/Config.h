@@ -180,6 +180,11 @@ namespace Config
     inline constexpr int kMaxNamedBuses = 12;
     /// Max IR length stored in plugin state (seconds). Longer files are truncated.
     inline constexpr float kIrMaxSeconds = 2.0f;
+    /// File import and state restore accept 1–2 channels only.
+    inline constexpr int kIrMaxChannels = 2;
+    /// Plausible IR sample-rate window. Outside this, restore is rejected.
+    inline constexpr double kIrMinSampleRate = 1000.0;
+    inline constexpr double kIrMaxSampleRate = 384000.0;
     /// Default variable names mapped to the parameter knobs.
     inline constexpr const char* kDefaultVariableNames[6] = {
         "a", "b", "c", "d", "e", "f"

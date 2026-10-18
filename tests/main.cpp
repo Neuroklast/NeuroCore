@@ -22,6 +22,7 @@
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
+#include "IrStateBoundsTest.h"
 #include "FactoryLoudnessTest.h"
 #include "FactoryUseCaseTest.h"
 #include "AstJsonTest.h"
@@ -62,6 +63,7 @@ int main (int argc, char* argv[])
   EqSidechainTest eqSidechainTest;
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
+  IrStateBoundsTest irStateBoundsTest;
   FactoryLoudnessTest factoryLoudnessTest;
   FactoryUseCaseTest factoryUseCaseTest;
   TelemetrySamplingTest telemetrySamplingTest;

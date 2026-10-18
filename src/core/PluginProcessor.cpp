@@ -41,6 +41,25 @@ constexpr const char* kDslScriptStateKey = "DSLScript";
 constexpr const char* kLanguageStateKey   = "language";
 constexpr const char* kPresetNameStateKey = "CurrentPresetName";
 
+bool irGeometryOk (double sr, int ch, int n) noexcept
+{
+    if (ch < 1 || ch > Config::kIrMaxChannels)
+        return false;
+    if (! std::isfinite (sr) || sr < Config::kIrMinSampleRate || sr > Config::kIrMaxSampleRate)
+        return false;
+    if (n <= 0)
+        return false;
+    const double maxN = sr * (double) Config::kIrMaxSeconds;
+    if (! std::isfinite (maxN) || (double) n > maxN + 0.5)
+        return false;
+    return true;
+}
+
+int irMaxSamplesForRate (double sr) noexcept
+{
+    return juce::jmax (1, (int) std::lround (sr * (double) Config::kIrMaxSeconds));
+}
+
 juce::String stripDslComments (const juce::String& script)
 {
     juce::StringArray lines;
@@ -631,20 +650,55 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
         {
             auto tree = juce::ValueTree::fromXml (*xmlState);
             auto scriptFromState = tree.getProperty(kDslScriptStateKey).toString();
+            juce::String pendingPresetName;
             if (tree.hasProperty (kPresetNameStateKey))
-                currentPresetName = tree.getProperty (kPresetNameStateKey).toString();
+                pendingPresetName = tree.getProperty (kPresetNameStateKey).toString();
 
-            if (currentPresetName.isNotEmpty())
+            if (pendingPresetName.isNotEmpty())
             {
                 const auto& fac = FactoryPresetLibrary::getInstance();
                 for (const auto& e : fac.getEntries())
                 {
-                    if (e.name != currentPresetName)
+                    if (e.name != pendingPresetName)
                         continue;
                     if (stripDslComments (e.script) == stripDslComments (scriptFromState))
                         scriptFromState = e.script;
                     break;
                 }
+            }
+
+            std::map<juce::String, IrAsset> pendingIrs;
+            for (int i = 0; i < tree.getNumChildren(); ++i)
+            {
+                auto irState = tree.getChild (i);
+                if (irState.getType() != juce::Identifier ("IrSlot"))
+                    continue;
+                const auto id = irState.getProperty ("id", "ir1").toString().toLowerCase();
+                const double sr = (double) irState.getProperty ("sr", 44100.0);
+                const int ch = (int) irState.getProperty ("ch", 1);
+                const int n  = (int) irState.getProperty ("n", 0);
+                const float* src = nullptr;
+                size_t bytes = 0;
+                if (auto* mb = irState.getProperty ("data").getBinaryData())
+                {
+                    src = static_cast<const float*> (mb->getData());
+                    bytes = (size_t) mb->getSize();
+                }
+                if (! irGeometryOk (sr, ch, n))
+                    return;
+                const size_t need = (size_t) ch * (size_t) n * sizeof (float);
+                if (src == nullptr || bytes != need)
+                    return;
+
+                IrAsset asset;
+                asset.fileName = irState.getProperty ("name").toString();
+                asset.sr = sr;
+                asset.samples.setSize (ch, n, false, false, false);
+                int w = 0;
+                for (int c = 0; c < ch; ++c)
+                    for (int s = 0; s < n; ++s)
+                        asset.samples.setSample (c, s, src[w++]);
+                pendingIrs[id] = std::move (asset);
             }
 
             auto midiState = tree.getChildWithName("MidiLearnMappings");
@@ -653,32 +707,12 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                 midiLearnManager.setState(midiState);
                 tree.removeChild(midiState, nullptr);
             }
-            irBank.clear();
             for (int i = tree.getNumChildren(); --i >= 0;)
-            {
-                auto irState = tree.getChild (i);
-                if (irState.getType() != juce::Identifier ("IrSlot"))
-                    continue;
-                const auto id = irState.getProperty ("id", "ir1").toString().toLowerCase();
-                IrAsset asset;
-                asset.fileName = irState.getProperty ("name").toString();
-                asset.sr = (double) irState.getProperty ("sr", 44100.0);
-                const int ch = juce::jmax (1, (int) irState.getProperty ("ch", 1));
-                const int n  = juce::jmax (0, (int) irState.getProperty ("n", 0));
-                asset.samples.setSize (ch, n, false, true, false);
-                if (auto* mb = irState.getProperty ("data").getBinaryData())
-                {
-                    const auto* src = static_cast<const float*> (mb->getData());
-                    const int count = (int) (mb->getSize() / sizeof (float));
-                    int w = 0;
-                    for (int c = 0; c < ch && w < count; ++c)
-                        for (int s = 0; s < n && w < count; ++s)
-                            asset.samples.setSample (c, s, src[w++]);
-                }
-                irBank[id] = std::move (asset);
-                tree.removeChild (i, nullptr);
-            }
+                if (tree.getChild (i).getType() == juce::Identifier ("IrSlot"))
+                    tree.removeChild (i, nullptr);
 
+            if (tree.hasProperty (kPresetNameStateKey))
+                currentPresetName = pendingPresetName;
             restoringHostState = true;
             apvts.replaceState (tree);
             restoringHostState = false;
@@ -691,7 +725,13 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
                     logError("Failed to restore DSL script from state: " + err);
             }
             {
+                juce::StringArray oldKeys;
+                for (const auto& kv : irBank)
+                    oldKeys.add (kv.first);
+                irBank = std::move (pendingIrs);
                 const juce::ScopedLock pl (scriptManager.getProcessLock());
+                for (const auto& key : oldKeys)
+                    scriptManager.signalChain.clearImpulseResponse (key);
                 for (const auto& kv : irBank)
                     if (kv.second.samples.getNumSamples() > 0)
                         scriptManager.signalChain.loadImpulseResponse (kv.first, kv.second.samples, kv.second.sr);
@@ -836,10 +876,15 @@ const juce::AudioBuffer<float>* NeuroKoreAudioProcessor::getIrBuffer (const juce
 bool NeuroKoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFormatReader& reader,
                                          const juce::String& displayName, juce::String& error)
 {
+    const double sr = reader.sampleRate;
+    if (! std::isfinite (sr) || sr < Config::kIrMinSampleRate || sr > Config::kIrMaxSampleRate)
+    {
+        error = "IR sample rate is invalid.";
+        return false;
+    }
     const int srcN = (int) reader.lengthInSamples;
-    const int ch = juce::jlimit (1, 2, (int) reader.numChannels);
-    const int maxN = juce::jmax (1, (int) std::lround (reader.sampleRate * (double) Config::kIrMaxSeconds));
-    const int n = juce::jmin (srcN, maxN);
+    const int ch = juce::jlimit (1, Config::kIrMaxChannels, (int) reader.numChannels);
+    const int n = juce::jmin (srcN, irMaxSamplesForRate (sr));
     if (n <= 0)
     {
         error = "IR is empty.";
@@ -850,7 +895,7 @@ bool NeuroKoreAudioProcessor::installIr (const juce::String& slot, juce::AudioFo
     reader.read (&buf, 0, n, 0, true, ch > 1);
     IrAsset asset;
     asset.fileName = displayName;
-    asset.sr = reader.sampleRate;
+    asset.sr = sr;
     asset.samples = std::move (buf);
     const auto key = slot.trim().toLowerCase();
     irBank[key] = std::move (asset);
