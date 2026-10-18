@@ -48,21 +48,17 @@ export function formatHudFixed(n: number, digits: number, intWidth: number): str
   return sign + i.padStart(intWidth, FIG) + f;
 }
 
-/** Reconstruct L/R from gonio mid/side (x = 0.5(L−R), y = −0.5(L+R)). */
+/** Native gonio is raw L/R. */
 export function stereoMetrics(
-  gonioX: ArrayLike<number>,
-  gonioY: ArrayLike<number>,
+  left: ArrayLike<number>,
+  right: ArrayLike<number>,
 ): { peakL: number; peakR: number; corr: number } {
-  const n = Math.min(gonioX.length, gonioY.length);
+  const n = Math.min(left.length, right.length);
   let peakL = 0;
   let peakR = 0;
   for (let i = 0; i < n; i += 1) {
-    const x = gonioX[i] ?? 0;
-    const y = gonioY[i] ?? 0;
-    const l = x - y;
-    const r = -x - y;
-    const al = Math.abs(l);
-    const ar = Math.abs(r);
+    const al = Math.abs(left[i] ?? 0);
+    const ar = Math.abs(right[i] ?? 0);
     if (al > peakL) {
       peakL = al;
     }
@@ -73,7 +69,7 @@ export function stereoMetrics(
   return {
     peakL,
     peakR,
-    corr: gonioCorr(gonioX, gonioY),
+    corr: gonioCorr(left, right),
   };
 }
 

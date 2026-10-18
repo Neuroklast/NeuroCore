@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (WebView2 repair surface)  
+**Stand:** 2026-10-18 (Unit stereo width L/R)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/webview-unavailable-diagnostic`
+**Branch:** `fix/viz-stereo-width-lr`
+
+## Unit stereo width L/R (2026-10-18)
+
+Ball spread uses raw gonio L/R. Width is the side share of energy. Identical channels are 0.
 
 ## WebView2 repair surface (2026-10-18)
 

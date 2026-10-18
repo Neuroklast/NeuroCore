@@ -78,9 +78,10 @@ describe("ball drive (particles)", () => {
 });
 
 describe("stereo width from gonio", () => {
-  it("is 0 for mid-only and 1 for side-only", () => {
-    expect(stereoWidth([0, 0, 0], [1, 1, 1])).toBe(0);
-    expect(stereoWidth([1, 1, 1], [0, 0, 0])).toBe(1);
+  it("is 0 when L and R match, high when they are opposite", () => {
+    expect(stereoWidth([0.4, 0.4, 0.4], [0.4, 0.4, 0.4])).toBe(0);
+    expect(stereoWidth([0.5, 0.5, 0.5], [-0.5, -0.5, -0.5])).toBe(1);
+    expect(stereoWidth([0, 0, 0], [0, 0, 0])).toBe(0);
   });
 });
 

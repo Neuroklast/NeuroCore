@@ -104,7 +104,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 ## DSP / CPU
 
 - Footer CPU is 0–100. Host-callback ratio > 1 is not a percent of the machine.
-- NKTM (`TelemetryPump`) scans only while an editor is attached. Headless inserts skip `noteInput`/`publish`. Chip taps stay; they are the Circuit glow, not the Unit scope.
+- NKTM (`TelemetryPump`) scans only while an editor is attached. Headless inserts skip `noteInput`/`publish`. Chip taps stay; they are the Circuit glow, not the Unit scope. Live gonio is raw L/R. `stereoWidth` is the side share of those channels; do not treat the buffers as mid/side.
 - Cubase ASIO Guard can deliver host `n` > `prepareToPlay` `samplesPerBlock`. Never `setSize` / `new` / `juce::String` copy on the audio thread; slice at the prepared host ceiling before OS.
 - After a trip, do not decay the wet EMA to 0 (fake recovery). Do not leave 1.73 on the meter during SAFE-hold (`noteHoldDisplay`).
 - LFO Hz is not audio rate. Filter coeffs: stride + smoother, not `setCutoff` every sample at 8×.

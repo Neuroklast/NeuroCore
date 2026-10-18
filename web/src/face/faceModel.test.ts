@@ -78,27 +78,23 @@ describe("unit face spectrum and bands", () => {
 });
 
 describe("unit face stereo metrics from gonio", () => {
-  it("reports L/R peaks and correlation from mid/side gonio buffers", () => {
+  it("reports L/R peaks and correlation from raw gonio buffers", () => {
     const n = 32;
-    const mid = new Float32Array(n);
-    const side = new Float32Array(n);
-    const antiX = new Float32Array(n);
-    const antiY = new Float32Array(n);
+    const left = new Float32Array(n);
+    const right = new Float32Array(n);
+    const antiR = new Float32Array(n);
     for (let i = 0; i < n; i += 1) {
       const l = 0.8 * Math.sin((i / n) * Math.PI * 2);
-      const r = l;
-      mid[i] = 0.5 * (l - r);
-      side[i] = -0.5 * (l + r);
-      const ar = -l;
-      antiX[i] = 0.5 * (l - ar);
-      antiY[i] = -0.5 * (l + ar);
+      left[i] = l;
+      right[i] = l;
+      antiR[i] = -l;
     }
-    const mono = stereoMetrics(mid, side);
+    const mono = stereoMetrics(left, right);
     expect(mono.corr).toBeGreaterThan(0.9);
     expect(mono.peakL).toBeGreaterThan(0.7);
     expect(Math.abs(mono.peakL - mono.peakR)).toBeLessThan(0.05);
 
-    const anti = stereoMetrics(antiX, antiY);
+    const anti = stereoMetrics(left, antiR);
     expect(anti.corr).toBeLessThan(-0.9);
 
     expect(formatDbfs(0.781)).toBe(peakToDb(0.781).toFixed(2));
