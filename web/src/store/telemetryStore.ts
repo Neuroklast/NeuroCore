@@ -61,10 +61,11 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   },
   waveFor: (nodeId) => {
     const s = get();
-    if (nodeId === "IN") {
+    const id = nodeId.toUpperCase();
+    if (id === "IN") {
       return s.scopeIn;
     }
-    if (nodeId === "OUT") {
+    if (id === "OUT") {
       return s.scopeOut;
     }
     return EMPTY_WAVE;

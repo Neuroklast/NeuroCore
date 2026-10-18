@@ -55,6 +55,8 @@ export interface HostState {
   overlay: string | null;
   overlayReturn: string | null;
   inspectId: string | null;
+  /** Shared Circuit/Terminal caret. Does not open Inspect. */
+  focusNodeId: string | null;
   telemetryPath: string;
   bypass: boolean;
   mixHeld: number;
@@ -92,6 +94,7 @@ export interface HostState {
   applyLicense: (p: Record<string, unknown>) => void;
   applyIr: (p: Record<string, unknown>) => void;
   setOverlay: (name: string | null, inspectId?: string | null) => void;
+  setFocusNodeId: (id: string | null) => void;
   setTelemetryPath: (path: string) => void;
   setKnob: (id: string, value: number) => void;
   beginKnobGesture: (id: string) => void;
@@ -280,6 +283,7 @@ export const useHostStore = create<HostState>((set) => ({
   overlay: null,
   overlayReturn: null,
   inspectId: null,
+  focusNodeId: null,
   telemetryPath: "",
   bypass: false,
   mixHeld: 1,
@@ -410,7 +414,13 @@ export const useHostStore = create<HostState>((set) => ({
         }))
       : [],
   }),
-  setOverlay: (name, inspectId) => set({ overlay: name, overlayReturn: null, inspectId: inspectId ?? null }),
+  setOverlay: (name, inspectId) => set({
+    overlay: name,
+    overlayReturn: null,
+    inspectId: inspectId ?? null,
+    ...(inspectId ? { focusNodeId: inspectId } : {}),
+  }),
+  setFocusNodeId: (focusNodeId) => set({ focusNodeId }),
   setTelemetryPath: (telemetryPath: string) => set({ telemetryPath }),
   setKnob: (id, value) => set((s) => ({
     knobs: s.knobs.map((k) => (k.id === id ? { ...k, value: Math.max(0, Math.min(1, value)) } : k)),

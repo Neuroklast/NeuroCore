@@ -17,6 +17,7 @@ import {
   termFrame,
   withHeaderComments,
 } from "./dslLanguage";
+import { nodeAtPosition, rangeForNode } from "./dslSourceMap";
 import {
   defineDslTheme,
   DSL_LANGUAGE_ID,
@@ -36,8 +37,12 @@ export function HackView() {
   const knobs = useHostStore((s) => s.knobs);
   const presetName = useHostStore((s) => s.presetName);
   const presets = useHostStore((s) => s.presets);
+  const focusNodeId = useHostStore((s) => s.focusNodeId);
   const modelRef = useRef<editor.ITextModel | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const decoRef = useRef<string[]>([]);
+  const [editorReady, setEditorReady] = useState(0);
   const frame = termFrame(editing);
   const theme = useTheme();
 
@@ -86,6 +91,19 @@ export function HackView() {
     monaco.editor.setTheme(DSL_THEME);
     modelRef.current = ed.getModel();
     monacoRef.current = monaco;
+    editorRef.current = ed;
+    decoRef.current = [];
+    setEditorReady((n) => n + 1);
+    ed.onDidChangeCursorPosition((e) => {
+      const text = ed.getModel()?.getValue() ?? "";
+      const id = nodeAtPosition(text, e.position.lineNumber, e.position.column);
+      if (! id) {
+        return;
+      }
+      if (useHostStore.getState().focusNodeId !== id) {
+        useHostStore.getState().setFocusNodeId(id);
+      }
+    });
   };
 
   const howItSounds = useMemo(() => {
@@ -101,6 +119,29 @@ export function HackView() {
     const headed = withHeaderComments(baseScript, presetName || "Untitled", howItSounds);
     return annotateKnobInlays(headed, knobs);
   }, [editing, baseScript, presetName, howItSounds, knobs]);
+
+  useEffect(() => {
+    const ed = editorRef.current;
+    const monaco = monacoRef.current;
+    if (! ed || ! monaco) {
+      return;
+    }
+    const text = ed.getModel()?.getValue() ?? shown;
+    const range = focusNodeId ? rangeForNode(text, focusNodeId) : null;
+    decoRef.current = ed.deltaDecorations(
+      decoRef.current,
+      range
+        ? [{
+            range: new monaco.Range(range.startLine, 1, range.endLine, range.endColumn),
+            options: {
+              className: "nk-term-focus",
+              isWholeLine: true,
+              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            },
+          }]
+        : [],
+    );
+  }, [focusNodeId, shown, editorReady]);
 
   const save = async () => {
     const report = validateOnSave(script, diagnostics);

@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (local particle force fields)  
+**Stand:** 2026-10-18 (Circuit/Terminal identity)  
 **Version:** 0.6.8-beta  
 **Branch:** `viz/local-force-fields`
+
+## Circuit / Terminal node identity (2026-10-18)
+
+Terminal caret and Circuit selection share `focusNodeId`. Node ranges come from `tokenizeLine` (`id :` heads, not a regex). Circuit inspect does not rewrite the Terminal draft or pan the camera. Inspect TAP is Plugin input / Plugin output / No tap. `waveFor` is IN/OUT only. Native binary not rebuilt.
 
 ## Local particle fields and measured HUD (2026-10-18)
 
