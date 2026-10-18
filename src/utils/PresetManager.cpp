@@ -249,15 +249,10 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (!decrypt(stateData, plain))
         return false;
 
-    // Capture custom knob labels before DSCR re-apply overwrites them
-    std::array<juce::String, 4> namesBefore;
-    for (int i = 0; i < 4; ++i)
-        namesBefore[(size_t) i] = processor.getVariableName(i);
-
     processor.setStateInformation(plain.getData(), (int)plain.getSize());
 
-    std::array<juce::String, 4> namesFromState;
-    for (int i = 0; i < 4; ++i)
+    std::array<juce::String, Config::kNumUserParams> namesFromState;
+    for (int i = 0; i < Config::kNumUserParams; ++i)
         namesFromState[(size_t) i] = processor.getVariableName(i);
 
     if (dscrScript.isNotEmpty())
@@ -269,14 +264,13 @@ bool PresetManager::loadPreset(const juce::File& file)
             return false;
         }
 
-        // Prefer names restored from STAT state over defaults from applyFormula
-        for (int i = 0; i < 4; ++i)
+        // STAT names win over applyFormula defaults. Do not copy names from the
+        // processor that was loaded before this preset.
+        for (int i = 0; i < Config::kNumUserParams; ++i)
         {
             const auto& n = namesFromState[(size_t) i];
-            if (n.isNotEmpty() && n != juce::String::charToString(static_cast<juce_wchar>('a' + i)))
+            if (n.isNotEmpty() && n != juce::String (Config::kDefaultVariableNames[i]))
                 processor.setVariableName(i, n);
-            else if (namesBefore[(size_t) i].isNotEmpty())
-                processor.setVariableName(i, namesBefore[(size_t) i]);
         }
         processor.sendChangeMessage();
     }
