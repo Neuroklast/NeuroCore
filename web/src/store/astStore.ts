@@ -20,6 +20,7 @@ export interface AstState {
   activeRevision: number;
   draftRevision: number;
   draftEditing: boolean;
+  pendingTransaction: { id: string; baseRevision: number } | null;
   applyAstEvent: (payload: AstEventPayload, opts?: { updateScript?: boolean }) => void;
   applyCompileResult: (payload: CompileResultPayload) => void;
   setDraftScript: (script: string) => void;
@@ -36,6 +37,7 @@ export const useAstStore = create<AstState>((set) => ({
   activeRevision: 0,
   draftRevision: 0,
   draftEditing: false,
+  pendingTransaction: null,
 
   applyAstEvent: (payload, opts) => {
     const parsed = parseAstJson(payload.astJson);
@@ -84,18 +86,28 @@ export const useAstStore = create<AstState>((set) => ({
   },
 
   applyCompileResult: (payload) => {
+    const live = useAstStore.getState();
+    if (payload.txId && live.pendingTransaction && payload.txId !== live.pendingTransaction.id) {
+      return;
+    }
     if (payload.origin === "editor" && payload.script != null
-        && payload.script !== useAstStore.getState().script) return;
+        && payload.script !== live.script && ! payload.txId) {
+      return;
+    }
     if (! payload.ok) {
       set({
         origin: payload.origin,
         diagnostics: payload.diagnostics,
+        pendingTransaction: payload.txId && live.pendingTransaction?.id === payload.txId
+          ? null
+          : live.pendingTransaction,
       });
       return;
     }
     set({
       origin: payload.origin,
       diagnostics: [],
+      pendingTransaction: null,
     });
   },
 

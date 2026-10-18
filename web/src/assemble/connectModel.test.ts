@@ -10,6 +10,7 @@ import {
   parkNodeInScript,
   primaryJackId,
   proximityPairFromJacks,
+  scriptAfterConnect,
   scriptAfterDisconnect,
   shouldPulse,
   zoomTier,
@@ -123,5 +124,7 @@ describe("circuit connect model", () => {
     expect(mid).toContain("bus __park:");
     expect(mid).toMatch(/stage1:\s*y = x/);
     expect(mid.indexOf("bus __park:")).toBeLessThan(mid.indexOf("filter1:"));
+    const relinked = scriptAfterConnect(mid, "stage1", "filter1");
+    expect(relinked.indexOf("stage1:")).toBeLessThan(relinked.indexOf("filter1:"));
   });
 });

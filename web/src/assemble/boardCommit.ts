@@ -6,7 +6,7 @@ import { fitCamera } from "./boardCamera";
 import { graphToLayout, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { edgesAfterConnect, edgesAfterCutPort } from "./boardConnect";
-import { scriptAfterDisconnect } from "./connectModel";
+import { scriptAfterConnect, scriptAfterDisconnect } from "./connectModel";
 import { useBoardStore } from "./boardStore";
 import { requestGraphLayout } from "./layout/layoutClient";
 
@@ -129,10 +129,9 @@ export async function commitBoardConnect(src: BoardPort, dst: BoardPort): Promis
     await nativeGraphOp({ op: "connect", from: src.nodeId, fromJack: src.jackId, to: dst.nodeId, toJack: dst.jackId });
     return;
   }
-  const g = useBoardStore.getState();
-  useBoardStore.getState().setEdges(edgesAfterConnect(g, src, dst));
-  const ast = useAstStore.getState().ast;
-  if (ast) pushAst(astEdgesAfterConnect(ast.edges ?? [], src, dst));
+  const cur = useAstStore.getState();
+  const next = scriptAfterConnect(cur.lastValidScript || cur.script, src.nodeId, dst.nodeId);
+  await publishScript(next, "canvas");
   rerouteBoard();
 }
 

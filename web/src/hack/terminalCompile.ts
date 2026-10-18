@@ -2,6 +2,7 @@ import type { CompileResultPayload, Diagnostic } from "../bridge/ast";
 import { publishScript } from "../assemble/addBlock";
 import { validateOnSave } from "../overlays/validateModel";
 import { useAstStore } from "../store/astStore";
+import { beginPatchTx } from "../store/patchWorkspace";
 
 type CompileLike = (script: string) => void | unknown | Promise<unknown>;
 
@@ -34,9 +35,21 @@ export async function applyPatchDraft(): Promise<boolean> {
     ...diagnostics,
     ...report.issues.filter((i) => i.severity === "error").map((i) => ({ line: 1, column: 1, message: i.message })),
   ];
-  const result = await commitTerminalDraft(script, preflight, (draft) => publishScript(draft, "editor"));
-  useAstStore.getState().applyCompileResult(result);
-  if (result.ok && useAstStore.getState().script === script) {
+  if (preflight.length > 0) {
+    const tx = beginPatchTx("compile", "editor");
+    useAstStore.getState().applyCompileResult({
+      origin: "editor",
+      ok: false,
+      script,
+      diagnostics: preflight,
+      txId: tx.id,
+      baseRevision: tx.baseRevision,
+    });
+    return false;
+  }
+  const result = await publishScript(script, "editor");
+  const ok = Boolean(result && typeof result === "object" && "ok" in result && result.ok);
+  if (ok && useAstStore.getState().script === script) {
     setDraftEditing(false);
     return true;
   }

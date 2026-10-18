@@ -20,6 +20,7 @@ describe("astStore", () => {
       activeRevision: 0,
       draftRevision: 0,
       draftEditing: false,
+      pendingTransaction: null,
     });
   });
 

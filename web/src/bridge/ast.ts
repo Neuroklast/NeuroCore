@@ -56,6 +56,8 @@ export interface CompileResultPayload {
   ok: boolean;
   origin: Origin;
   diagnostics: Diagnostic[];
+  txId?: string;
+  baseRevision?: number;
 }
 
 export interface AstEventPayload {

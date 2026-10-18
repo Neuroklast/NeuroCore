@@ -3,19 +3,29 @@
 let past: string[] = [];
 let future: string[] = [];
 let muted = false;
+let lastKey = "";
+let lastAt = 0;
+const COALESCE_MS = 500;
 
 export function resetScriptHistory(): void {
   past = [];
   future = [];
   muted = false;
+  lastKey = "";
+  lastAt = 0;
 }
 
 export function muteScriptHistory(on: boolean): void {
   muted = on;
 }
 
-export function pushScriptHistory(script: string): void {
+export function pushScriptHistory(script: string, key = ""): void {
   if (muted) {
+    return;
+  }
+  const now = Date.now();
+  if (key && key === lastKey && now - lastAt < COALESCE_MS && past.length > 0) {
+    lastAt = now;
     return;
   }
   if (past.length > 0 && past[past.length - 1] === script) {
@@ -23,6 +33,8 @@ export function pushScriptHistory(script: string): void {
   }
   past.push(script);
   future = [];
+  lastKey = key;
+  lastAt = now;
 }
 
 export function canUndoScript(): boolean {

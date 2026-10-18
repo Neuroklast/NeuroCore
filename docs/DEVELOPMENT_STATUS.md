@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR4)  
+**Stand:** 2026-10-18 (patch workspace PR5)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr4`
+**Branch:** `feat/patch-workspace-pr5`
+
+## Patch workspace transactions (2026-10-18)
+
+Compile and graph edits carry a transaction id plus base revision. A late result for an older tx does not land on a newer pending tx. Failed compile keeps lastValidAst and activeRevision. setArg coalesces one undo step. Demo connect writes the script (`scriptAfterConnect`) instead of a phantom AST-only edge.
 
 ## Patch workspace source inspector (2026-10-18)
 

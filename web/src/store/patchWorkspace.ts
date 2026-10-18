@@ -21,7 +21,24 @@ export type DraftStatus =
 export type PatchTransaction = {
   id: string;
   baseRevision: number;
+  origin?: string;
+  op?: string;
 };
+
+let txSeq = 0;
+
+export function beginPatchTx(op: string, origin: string): PatchTransaction {
+  const s = useAstStore.getState();
+  txSeq += 1;
+  const tx: PatchTransaction = {
+    id: `tx${txSeq}`,
+    baseRevision: s.activeRevision,
+    origin,
+    op,
+  };
+  useAstStore.setState({ pendingTransaction: { id: tx.id, baseRevision: tx.baseRevision } });
+  return tx;
+}
 
 /** One patch document. Active fields are DSP truth after native confirm. */
 export type PatchDocument = {
@@ -68,7 +85,7 @@ export function readPatchDocument(): PatchDocument {
         ? "modified"
         : "clean",
     diagnostics: s.diagnostics,
-    pendingTransaction: null,
+    pendingTransaction: s.pendingTransaction,
   };
 }
 
