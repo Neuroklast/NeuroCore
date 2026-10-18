@@ -1,7 +1,8 @@
-import Editor, { type OnMount } from "@monaco-editor/react";
+import { type OnMount } from "@monaco-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { editor } from "monaco-editor";
-import "./monacoEnv";
+import { PATCH_MODEL_URI } from "./patchEditorSession";
+import { PatchEditor } from "./PatchEditor";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { terminalActions } from "../app/workspace";
 import { irSlotsFromScript, mergeIrSlots } from "../presets/irSlots";
@@ -15,12 +16,11 @@ import {
   termFrame,
   withHeaderComments,
 } from "./dslLanguage";
-import { nodeAtPosition, paramAtPosition, rangeForNode, rangeForParam } from "./dslSourceMap";
-import { draftBanner, publishSelection, readPatchDocument } from "../store/patchWorkspace";
+import { rangeForNode, rangeForParam } from "./dslSourceMap";
+import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
 import {
   defineDslTheme,
-  DSL_LANGUAGE_ID,
   DSL_THEME,
   registerNeurokoreDsl,
 } from "./registerDsl";
@@ -97,21 +97,6 @@ export function HackView() {
     editorRef.current = ed;
     decoRef.current = [];
     setEditorReady((n) => n + 1);
-    ed.onDidChangeCursorPosition((e) => {
-      const text = ed.getModel()?.getValue() ?? "";
-      const id = nodeAtPosition(text, e.position.lineNumber, e.position.column);
-      if (! id) {
-        return;
-      }
-      const param = paramAtPosition(text, e.position.lineNumber, e.position.column)?.param ?? null;
-      publishSelection({
-        nodeIds: [id],
-        primaryId: id,
-        param,
-        origin: "terminal",
-        intent: "mark",
-      });
-    });
   };
 
   const howItSounds = useMemo(() => {
@@ -159,7 +144,6 @@ export function HackView() {
     await applyPatchDraft();
   };
 
-  const formulaPt = useHostStore((s) => s.formulaPt);
   const hostIr = useHostStore((s) => s.irSlots);
   const cabRows = useMemo(
     () => mergeIrSlots(irSlotsFromScript(baseScript), hostIr),
@@ -167,7 +151,10 @@ export function HackView() {
   );
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col bg-black">
+    <section
+      className="flex h-full min-h-0 flex-1 flex-col bg-black"
+      data-patch-model={editing ? PATCH_MODEL_URI : ""}
+    >
       <div className="nk-term-bar flex shrink-0 items-center gap-2 border-b border-panel">
         {terminalActions().map((action) => {
           if (action === "edit") {
@@ -227,41 +214,18 @@ export function HackView() {
       >
         <div className="nk-term-glow pointer-events-none" aria-hidden />
         <div className="nk-term-scan pointer-events-none" aria-hidden />
-        <Editor
-          height="100%"
-          language={DSL_LANGUAGE_ID}
-          theme={DSL_THEME}
-          loading={null}
+        <PatchEditor
           value={shown}
+          shared={editing}
+          readOnly={frame.readOnly}
+          lineNumbers={frame.lineNumbers}
+          caret={frame.caret}
           onChange={(v) => {
             if (editing) {
-              setDraftScript(v ?? "");
+              setDraftScript(v);
             }
           }}
-          onMount={onMount}
-          options={{
-            readOnly: frame.readOnly,
-            minimap: { enabled: false },
-            fontFamily: "JetBrains Mono, ui-monospace, Consolas, monospace",
-            fontSize: formulaPt,
-            lineNumbers: frame.lineNumbers,
-            glyphMargin: false,
-            folding: false,
-            lineDecorationsWidth: frame.mode === "edit" ? 10 : 0,
-            lineNumbersMinChars: frame.mode === "edit" ? 3 : 2,
-            padding: { top: 10, bottom: 10 },
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            tabSize: 2,
-            automaticLayout: true,
-            snippetSuggestions: "top",
-            tabCompletion: "on",
-            suggest: { snippetsPreventQuickSuggestions: false, showSnippets: true },
-            cursorStyle: "line",
-            cursorWidth: frame.caret ? 2 : 0,
-            renderLineHighlight: frame.caret ? "line" : "none",
-            overviewRulerLanes: 0,
-          }}
+          onReady={onMount}
         />
       </div>
     </section>

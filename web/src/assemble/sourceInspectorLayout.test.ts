@@ -48,6 +48,8 @@ describe("source inspector geometry on the 1280×860 stage", () => {
     expect(board).not.toContain("nk-source-inspector");
     expect(app).toMatch(/lazy\(\s*\(\)\s*=>\s*import\(\s*["']\.\.\/hack\/HackView["']\s*\)/);
     expect(assemble).not.toMatch(/from ["'].*monacoEnv["']/);
+    expect(inspector).not.toMatch(/from ["'].*monacoEnv["']/);
+    expect(inspector).toContain("PatchEditor");
   });
 
   it("selecting a chip does not open Source or enter Edit", () => {

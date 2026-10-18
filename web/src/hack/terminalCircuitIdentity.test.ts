@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const hack = readFileSync(new URL("./HackView.tsx", import.meta.url), "utf8");
+const patchEditor = readFileSync(new URL("./PatchEditor.tsx", import.meta.url), "utf8");
 const board = readFileSync(new URL("../assemble/BoardView.tsx", import.meta.url), "utf8");
 const inspect = readFileSync(new URL("../overlays/Overlays.tsx", import.meta.url), "utf8");
 const inspectModel = readFileSync(new URL("../overlays/inspectModel.ts", import.meta.url), "utf8");
@@ -9,11 +10,11 @@ const tel = readFileSync(new URL("../store/telemetryStore.ts", import.meta.url),
 
 describe("Terminal and Circuit share one node identity", () => {
   it("Terminal cursor writes focusNodeId from the tokenizer map and never edits the draft", () => {
-    expect(hack).toContain("nodeAtPosition");
+    expect(patchEditor).toContain("nodeAtPosition");
+    expect(patchEditor).toContain("publishSelection");
+    expect(patchEditor).toContain("onDidChangeCursorPosition");
     expect(hack).toContain("rangeForNode");
-    expect(hack).toContain("publishSelection");
     expect(hack).toContain("deltaDecorations");
-    expect(hack).toContain("onDidChangeCursorPosition");
     expect(hack).not.toMatch(/setDraftScript\(.*focus/i);
     expect(hack).not.toMatch(/setEditing\(true\).*focusNodeId/);
     expect(hack).not.toMatch(/model\.setValue\(/);
