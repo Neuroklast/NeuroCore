@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { particleAudio, PARTICLE_AUDIO_IDLE } from './particleAudio';
+import { onsetIsNew, particleAudio, PARTICLE_AUDIO_IDLE } from './particleAudio';
 
 it('consumes a native transient only once even if it spans several display frames', () => {
   const frame = { tick: 4, bass: 0, onsetCount: 1, onsetAmp: .8, live: true };
@@ -87,4 +87,31 @@ it('a delayed bass rise after a native hit does not spawn a second field', () =>
     live: true,
   }, 1 / 60);
   expect(later.spawns).toHaveLength(0);
+});
+
+it('unsigned 32-bit onset distance treats wrap as newer and a rewind as old', () => {
+  expect(onsetIsNew(40, -1)).toBe(true);
+  expect(onsetIsNew(40, 40)).toBe(false);
+  expect(onsetIsNew(40, 0xffffff00)).toBe(true);
+  expect(onsetIsNew(0xffffff00, 40)).toBe(false);
+});
+
+it('a click after 32-bit samplePos wrap is still a new hit', () => {
+  const first = particleAudio(PARTICLE_AUDIO_IDLE, {
+    tick: 1, seq: 1, bass: 0, onsetCount: 1, onsetAmp: 0.6,
+    onsets: [{ samplePos: 0xffffff00, amp: 0.6, balance: 0 }],
+    live: true,
+  }, 1 / 60);
+  expect(first.spawns).toHaveLength(1);
+  const wrapped = particleAudio(first.state, {
+    tick: 2, seq: 2, bass: 0, onsetCount: 1, onsetAmp: 0.7,
+    onsets: [
+      { samplePos: 0xffffff00, amp: 0.6, balance: 0 },
+      { samplePos: 40, amp: 0.7, balance: 1 },
+    ],
+    live: true,
+  }, 1 / 60);
+  expect(wrapped.spawns).toHaveLength(1);
+  expect(wrapped.spawns[0]?.amp).toBeCloseTo(0.7);
+  expect(wrapped.spawns[0]?.balance).toBeCloseTo(1);
 });
