@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (ORBITS panel title)  
+**Stand:** 2026-10-18 (WebView2 installer pv)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/orbits-panel-title`
+**Branch:** `fix/installer-webview2-pv`
+
+## WebView2 installer pv (2026-10-18)
+
+Setup treats WebView2 as present only when EdgeUpdate `pv` is a non-empty version other than `0.0.0.0`. A leftover empty registry key is not installed.
 
 ## ORBITS panel title (2026-10-18)
 

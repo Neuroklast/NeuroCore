@@ -63,6 +63,7 @@ jobs:
         run: |
           python tests/test_realtime_source.py
           python tests/test_release_layout.py
+          python tests/test_webview2_runtime.py
       - name: Build plug-ins and full native test suite
         run: |
           cmake --build build --config Release --target NeuroKoreWebEmbed --parallel 3
