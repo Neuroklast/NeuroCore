@@ -21,6 +21,7 @@ import {
   peakForLane,
   pointAlong,
   rmsForLane,
+  shouldCoalescePaint,
   shouldSkipClockPaint,
   streamAlpha,
   streamBlur,
@@ -200,13 +201,15 @@ export function CableCanvas({
     const offsets = new Map<string, number>();
     let lastNow = 0;
     let gesturePaintAt = 0;
+    let paintPending = false;
+    let paintRaf = 0;
     let paletteTheme = "";
     const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
     let core = fallbackColor("accent");
     const draw = (now = 0) => {
       const fromClock = now > 0;
       const t = fromClock ? now : (typeof performance !== "undefined" ? performance.now() : 0);
-      if (fromClock && shouldSkipClockPaint(t, gesturePaintAt)) {
+      if (fromClock && shouldSkipClockPaint(t, gesturePaintAt, 8, paintPending)) {
         return;
       }
       perfBegin("cables");
@@ -331,11 +334,26 @@ export function CableCanvas({
       ctx.restore();
       perfEnd("cables");
     };
-    drawNow = draw;
+    drawNow = () => {
+      if (shouldCoalescePaint(paintPending)) {
+        return;
+      }
+      paintPending = true;
+      paintRaf = window.requestAnimationFrame(() => {
+        paintPending = false;
+        paintRaf = 0;
+        draw(0);
+      });
+    };
     const off = subscribeVizClock(draw);
     draw();
     return () => {
-      if (drawNow === draw) {
+      if (paintRaf) {
+        window.cancelAnimationFrame(paintRaf);
+        paintRaf = 0;
+      }
+      paintPending = false;
+      if (drawNow) {
         drawNow = null;
       }
       off();
