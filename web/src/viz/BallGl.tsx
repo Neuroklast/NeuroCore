@@ -2,6 +2,15 @@ import { hasJuceBridge } from "../bridge/juce";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { particleAudio, PARTICLE_AUDIO_IDLE } from "./particleAudio";
 import { STIR_STEP } from "./stirModel";
+import {
+  bandIndex,
+  emptyForces,
+  packForceUniforms,
+  pushForce,
+  spawnForce,
+  stepForces,
+} from "./forceField";
+import { midSideEnergy, stereoBalance } from "./audioFeatures";
 import { HASH, DUST_COMMON, STIR_FS } from "./particleShader";
 import { cachedInputBands, publishViz } from "./vizSnap";
 import { perfBegin, perfEnd } from "../perf/marks";
@@ -420,6 +429,8 @@ type Arc = { start: number; span: number; curl: number; life: number; duration: 
 export function BallGl({ fallback }: { fallback: ReactNode }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
+  const brushOn = typeof window !== "undefined"
+    && /(?:^|[?&])nkbrush=1(?:&|$)/.test(window.location.search);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -469,7 +480,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       "uDustTime", "uTurn", "uMotion", "uFill",
     ]);
     const stirU = stir
-      ? locations(stir, ["tHome", "tSeed", "tOffset", "tVelocity", "uDt", "uReset", "uSpread", "uLiftForce", "uImpulse", "uSwirl", "uDustTime", "uTurn", "uMotion", "uFill"])
+      ? locations(stir, ["tHome", "tSeed", "tOffset", "tVelocity", "uDt", "uReset", "uSpread", "uLiftForce", "uSwirl", "uDustTime", "uTurn", "uMotion", "uFill", "uForcePos[0]", "uForceKick[0]"])
       : {};
     const compositeU = locations(composite, ["tScene", "uLight", "uDecode"]);
 
@@ -615,6 +626,10 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     let swayClock = 0;
     let introClock = 0;
     let audioState = PARTICLE_AUDIO_IDLE;
+    let forces = emptyForces();
+    let forceId = 1;
+    const brush = typeof window !== "undefined"
+      && /(?:^|[?&])nkbrush=1(?:&|$)/.test(window.location.search);
     let last = 0;
     let lastScreenW = 0;
     let lastPixelRatio = 0;
@@ -694,10 +709,22 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       const live = telemetry.available || !hasJuceBridge();
       const bands = cachedInputBands(telemetry.tick, telemetry.scopeIn, rate, live);
       const hit = particleAudio(audioState, {
-        tick: telemetry.tick, bass: bands.low, live,
+        tick: telemetry.tick,
+        seq: telemetry.seq,
+        bass: bands.low,
+        mid: bands.mid,
+        high: bands.high,
+        live,
         onsetCount: telemetry.onsetCount, onsetAmp: telemetry.onsetAmp,
       }, dt);
       audioState = hit.state;
+      if (hit.spawn) {
+        const ms = midSideEnergy(telemetry.gonioL, telemetry.gonioR);
+        const balance = stereoBalance(ms.peakL, ms.peakR);
+        forces = pushForce(forces, spawnForce(forceId, bandIndex(hit.spawn.band), balance, hit.spawn.amp));
+        forceId += 1;
+      }
+      forces = stepForces(forces, dt);
       const width01 = stereoWidth(telemetry.gonioL, telemetry.gonioR);
       drive = ballDrive(drive, bands, telemetry.outRms, width01, dt, {
         motion: host.motion,
@@ -869,6 +896,9 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.uniform1f(stirU.uMotion, MOTIONS[BALL_CONFIG.motion] ?? 0);
         gl.uniform1f(stirU.uFill, BALL_CONFIG.fill);
         gl.uniform2f(stirU.uTurn, turnX, turnY);
+        const packed = packForceUniforms(forces);
+        gl.uniform4fv(stirU["uForcePos[0]"] as WebGLUniformLocation, packed.pos);
+        gl.uniform4fv(stirU["uForceKick[0]"] as WebGLUniformLocation, packed.kick);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, homeTex);
         gl.activeTexture(gl.TEXTURE1);
@@ -876,7 +906,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         gl.disable(gl.BLEND);
         gl.bindVertexArray(quadVao);
         for (let s = 0; s < steps; s += 1) {
-          gl.uniform1f(stirU.uImpulse, s === 0 ? d.impulse : 0);
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, read.textures[0]!);
           gl.activeTexture(gl.TEXTURE3);
@@ -978,6 +1007,33 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
 
     const onLost = () => setFailed(true);
     canvas.addEventListener("webglcontextlost", onLost, false);
+    const onBrush = (ev: PointerEvent) => {
+      if (! brush || width < 2 || height < 2) {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const nx = ((ev.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ny = -(((ev.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1);
+      const slot = spawnForce(forceId, 1, nx, Math.min(1, Math.hypot(ev.movementX, ev.movementY) / 24));
+      slot.ox = nx * 0.7;
+      slot.oy = ny * 0.7;
+      slot.oz = 0;
+      slot.dx = ev.movementX;
+      slot.dy = -ev.movementY;
+      slot.dz = 0;
+      const len = Math.hypot(slot.dx, slot.dy) || 1;
+      slot.dx /= len;
+      slot.dy /= len;
+      slot.radius = 0.22;
+      slot.life = 0.16;
+      slot.speed = 0.4;
+      forces = pushForce(forces, slot);
+      forceId += 1;
+    };
+    if (brush) {
+      canvas.style.pointerEvents = "auto";
+      canvas.addEventListener("pointermove", onBrush);
+    }
 
     const unsubscribe = subscribeVizClock(frame);
 
@@ -985,6 +1041,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       alive = false;
       unsubscribe();
       canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("pointermove", onBrush);
       disposeDust();
       disposeTarget(scene);
       gl.deleteTexture(blank);
@@ -1007,7 +1064,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     return <>{fallback}</>;
   }
   return (
-    <div className="nk-face-ball absolute inset-0 z-0 pointer-events-none" aria-hidden>
+    <div className={`nk-face-ball absolute inset-0 z-0 ${brushOn ? "" : "pointer-events-none"}`} aria-hidden>
       <canvas ref={ref} className="block h-full w-full" />
     </div>
   );
