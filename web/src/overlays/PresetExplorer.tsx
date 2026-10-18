@@ -25,6 +25,7 @@ export function PresetExplorer() {
   const [saveAuthor, setSaveAuthor] = useState("");
   const [saveCat, setSaveCat] = useState("User");
   const [saveErr, setSaveErr] = useState("");
+  const [saveBusy, setSaveBusy] = useState(false);
   const [q, setQ] = useState(explorerSession.q);
   const [scope, setScope] = useState<ExplorerScope>(explorerSession.scope);
   const [cat, setCat] = useState(explorerSession.cat);
@@ -111,20 +112,29 @@ export function PresetExplorer() {
     setSaveOpen(true);
   };
 
-  const commitSave = () => {
+  const commitSave = async () => {
     const name = saveName.trim();
     const err = saveAsError(name, findFactory(name) != null);
     setSaveErr(err);
-    if (err) {
+    if (err || saveBusy) {
       return;
     }
-    void presetAction({
-      action: "save",
-      name,
-      author: saveAuthor.trim(),
-      category: saveCat.trim() || "User",
-    });
-    setSaveOpen(false);
+    setSaveBusy(true);
+    try {
+      const result = await presetAction({
+        action: "save",
+        name,
+        author: saveAuthor.trim(),
+        category: saveCat.trim() || "User",
+      });
+      if (! result.ok) {
+        setSaveErr(result.error);
+        return;
+      }
+      setSaveOpen(false);
+    } finally {
+      setSaveBusy(false);
+    }
   };
 
   const pickFolder = (name: string) => {
@@ -286,7 +296,9 @@ export function PresetExplorer() {
             value={saveCat}
             onChange={(e) => setSaveCat(e.target.value)}
           />
-          <button type="button" className="nk-clip" disabled={! saveName.trim()} onClick={commitSave}>Save</button>
+          <button type="button" className="nk-clip" disabled={! saveName.trim() || saveBusy} onClick={() => void commitSave()}>
+            {saveBusy ? "Saving…" : "Save"}
+          </button>
           <button type="button" className="nk-clip" onClick={() => setSaveOpen(false)}>Cancel</button>
           {saveErr ? <span className="w-full text-[12px] text-accent">{saveErr}</span> : null}
         </div>
