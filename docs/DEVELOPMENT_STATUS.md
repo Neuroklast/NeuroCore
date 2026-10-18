@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (preset decrypt bounds)  
+**Stand:** 2026-10-18 (preset save replace)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/preset-decrypt-bounds`
+**Branch:** `fix/preset-save-replace`
+
+## Preset save replace (2026-10-18)
+
+Saving over an existing `.nrk` writes a sibling temp, checks every write/flush, then replaces the target. A second save is one NRK magic and the latest script, not an append.
 
 ## Preset decrypt bounds (2026-10-18)
 

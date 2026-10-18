@@ -22,6 +22,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Testers get a single `.vst3` and `.exe`. The editor must live inside those files (`NEUROKORE_WEB_DIST` zip resource), not in a sibling `web/` folder. Copying `web/dist` next to the artefact is dev-only.
 - VST3 `Contents/Resources/moduleinfo.json` must be written by a custom target that is always out of date *and* by POST_BUILD after JUCE deletes the file. POST_BUILD alone is skipped when MSBuild considers the DLL up to date. Do not copy Serum’s CID into either product.
 - Windows `.rc` string names in quotes keep the quote characters. FindResource then misses. Use an integer ID (`41001 RCDATA`), not `"NEUROKORE_WEB_DIST"`.
+- Close every `FileOutputStream` on a `TemporaryFile` before `overwriteTargetFileWithTemporary`. Windows keeps the sibling locked while the stream is alive; replace then fails, the destructor deletes the temp, and the target stays empty or stale.
 
 ## Circuit
 
