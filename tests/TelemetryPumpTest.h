@@ -60,6 +60,40 @@ public:
             expect ((packed & 0xff) > 20);
         }
 
+        beginTest ("copyLatest after later blocks still carries earlier onsets");
+        {
+            bridge::TelemetryPump pump;
+            pump.setSampleRate (48000.0);
+            juce::AudioBuffer<float> in (1, 64), out (1, 64);
+            auto click = [&] (int at)
+            {
+                in.clear();
+                out.clear();
+                out.setSample (0, at, 1.0f);
+                pump.noteInput (in);
+                pump.publish (out, 0.1f);
+            };
+            auto silence = [&]
+            {
+                in.clear();
+                out.clear();
+                pump.noteInput (in);
+                pump.publish (out, 0.1f);
+            };
+            click (8);
+            for (int i = 0; i < 48; ++i)
+                silence();
+            click (8);
+            std::uint8_t buf[bridge::TelemetryPump::kMaxBytes];
+            const auto n = pump.copyLatest (buf, sizeof (buf));
+            bridge::TelemetryDesc d;
+            expect (bridge::readTelemetryHeader (buf, n, d));
+            expectEquals ((int) d.onsetN, 2, "missed-callback onsets must stay in the ring");
+            expect (d.onsets[0].samplePos != d.onsets[1].samplePos);
+            expect (d.onsets[0].amp > 0.05f);
+            expect (d.onsets[1].amp > 0.05f);
+        }
+
         beginTest ("empty pump copies nothing");
         {
             bridge::TelemetryPump pump;

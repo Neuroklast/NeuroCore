@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (DYNAMICS channel levels)  
+**Stand:** 2026-10-18 (NKTM onset ring)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/viz-dynamics-channel-levels`
+**Branch:** `fix/nktm-onset-ring`
+
+## NKTM onset ring (2026-10-18)
+
+Onsets live in a 16-slot ring on the audio thread. Each NKTM v3 frame snapshots that ring with sample positions. A slow UI poll still sees earlier transients. Duplicate seq still skips. Oldest events drop when the ring wraps.
 
 ## DYNAMICS channel levels (2026-10-18)
 

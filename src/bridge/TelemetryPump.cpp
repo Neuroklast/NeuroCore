@@ -17,6 +17,9 @@ void TelemetryPump::reset() noexcept
     onsetHold = 0;
     onsetCount = 0;
     onsetAmp = 0.f;
+    onsetWrite = 0;
+    for (auto& e : onsetRing)
+        e = {};
     seq = 0;
     samplePos = 0;
 }
@@ -115,10 +118,15 @@ void TelemetryPump::scanOnset (const juce::AudioBuffer<float>& src) noexcept
         const float gate = 0.055f + 0.42f * envSlow;
         if (flux > gate && a > 0.12f)
         {
+            float ev = flux > 1.f ? 1.f : flux;
             if (onsetCount < 255)
                 ++onsetCount;
-            if (flux > onsetAmp)
-                onsetAmp = flux > 1.f ? 1.f : flux;
+            if (ev > onsetAmp)
+                onsetAmp = ev;
+            const int slot = (int) (onsetWrite % (std::uint32_t) kTelemetryMaxOnsets);
+            onsetRing[slot].samplePos = samplePos + (std::uint32_t) i;
+            onsetRing[slot].amp = ev;
+            ++onsetWrite;
             onsetHold = holdN;
         }
     }
@@ -160,6 +168,14 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
     d.gonioN = (std::uint16_t) kGonioN;
     d.onsetCount = onsetCount;
     d.onsetAmp = onsetAmp > 1.f ? 1.f : onsetAmp;
+    {
+        const std::uint32_t total = onsetWrite;
+        const int nOn = (int) juce::jmin ((std::uint32_t) kTelemetryMaxOnsets, total);
+        d.onsetN = (std::uint8_t) nOn;
+        const std::uint32_t start = total - (std::uint32_t) nOn;
+        for (int i = 0; i < nOn; ++i)
+            d.onsets[i] = onsetRing[(start + (std::uint32_t) i) % (std::uint32_t) kTelemetryMaxOnsets];
+    }
     onsetCount = 0;
     onsetAmp = 0.f;
     seq += 1;

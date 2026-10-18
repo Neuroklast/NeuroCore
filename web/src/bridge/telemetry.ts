@@ -1,7 +1,10 @@
 export const TELEMETRY_MAGIC = 0x4E4B544D;
 export const TELEMETRY_VERSION_MIN = 1;
-export const TELEMETRY_VERSION_MAX = 2;
+export const TELEMETRY_VERSION_MAX = 3;
 export const TELEMETRY_TAIL = 8;
+export const TELEMETRY_ONSET_MAX = 16;
+export const TELEMETRY_ONSET_HEADER = 4;
+export const TELEMETRY_ONSET_BYTES = 8;
 export const SCOPE_N = 2048;
 export const GONIO_N = 128;
 export const DISPLAY_DB_FLOOR = -60;
@@ -23,6 +26,7 @@ export interface TelemetryViews {
   onsetAmp: number;
   seq: number;
   samplePos: number;
+  onsets: { samplePos: number; amp: number }[];
 }
 
 export function createTelemetryViews(): TelemetryViews {
@@ -42,6 +46,7 @@ export function createTelemetryViews(): TelemetryViews {
     onsetAmp: 0,
     seq: 0,
     samplePos: 0,
+    onsets: [],
   };
 }
 
@@ -57,7 +62,10 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   const scopeN = view.getUint16(28, true);
   const gonioN = view.getUint16(30, true);
   const body = 32 + (scopeN * 2 + gonioN * 2) * 4;
-  const requiredBytes = version >= 2 ? body + TELEMETRY_TAIL : body;
+  let requiredBytes = version >= 2 ? body + TELEMETRY_TAIL : body;
+  if (version >= 3) {
+    requiredBytes += TELEMETRY_ONSET_HEADER;
+  }
   if (version < TELEMETRY_VERSION_MIN || version > TELEMETRY_VERSION_MAX || ab.byteLength < requiredBytes) {
     return false;
   }
@@ -85,9 +93,25 @@ export function decodeTelemetry(ab: ArrayBuffer, dest: TelemetryViews): boolean 
   dest.onsetAmp = (packed & 0xff) / 255;
   dest.seq = 0;
   dest.samplePos = 0;
+  dest.onsets = [];
   if (version >= 2) {
     dest.seq = view.getUint32(body, true);
     dest.samplePos = view.getUint32(body + 4, true);
+  }
+  if (version >= 3) {
+    const list = body + TELEMETRY_TAIL;
+    const nOn = view.getUint16(list, true);
+    if (nOn > TELEMETRY_ONSET_MAX || ab.byteLength < list + TELEMETRY_ONSET_HEADER + nOn * TELEMETRY_ONSET_BYTES) {
+      return false;
+    }
+    for (let i = 0; i < nOn; i += 1) {
+      const at = list + TELEMETRY_ONSET_HEADER + i * TELEMETRY_ONSET_BYTES;
+      const amp = view.getFloat32(at + 4, true);
+      dest.onsets.push({
+        samplePos: view.getUint32(at, true),
+        amp: Number.isFinite(amp) ? Math.max(0, Math.min(1, amp)) : 0,
+      });
+    }
   }
   dest.scopeN = Math.min(scopeN, dest.scopeIn.length);
   dest.gonioN = Math.min(gonioN, dest.gonioX.length);

@@ -738,13 +738,16 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
         high: bands.high,
         live,
         onsetCount: telemetry.onsetCount, onsetAmp: telemetry.onsetAmp,
+        onsets: telemetry.onsets,
       }, dt);
       audioState = hit.state;
-      if (hit.spawn) {
+      if (hit.spawns.length > 0) {
         const ms = midSideEnergy(telemetry.gonioL, telemetry.gonioR);
         const balance = stereoBalance(ms.peakL, ms.peakR);
-        forces = pushForce(forces, spawnForce(forceId, bandIndex(hit.spawn.band), balance, hit.spawn.amp));
-        forceId += 1;
+        for (const spawn of hit.spawns) {
+          forces = pushForce(forces, spawnForce(forceId, bandIndex(spawn.band), balance, spawn.amp));
+          forceId += 1;
+        }
       }
       const width01 = stereoWidth(telemetry.gonioL, telemetry.gonioR);
       drive = ballDrive(drive, bands, telemetry.outRms, width01, dt, {
