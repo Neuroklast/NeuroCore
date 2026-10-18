@@ -33,4 +33,27 @@ describe("product version is one string", () => {
     expect(modinfo).toContain('name.toLowerCase() === "neurokore.vst3"');
     expect(modinfo).not.toContain("name.toLowerCase().includes (version.toLowerCase())");
   });
+
+  it("alpha pack and local build banner take NEUROKORE_VERSION_LABEL", () => {
+    const cmake = readFileSync(join(root, "CMakeLists.txt"), "utf8");
+    const label = cmake.match(/set\(NEUROKORE_VERSION_LABEL "([^"]+)"\)/)?.[1];
+    expect(label).toBe(nk.version);
+
+    const alpha = readFileSync(join(root, "scripts/package_alpha.py"), "utf8");
+    expect(alpha).toContain("NEUROKORE_VERSION_LABEL");
+    expect(alpha).not.toMatch(/0\.\d+\.\d+-beta/);
+
+    const buildLocal = readFileSync(join(root, "scripts/build_local.sh"), "utf8");
+    expect(buildLocal).toContain("NEUROKORE_VERSION_LABEL");
+    expect(buildLocal).not.toMatch(/0\.\d+\.\d+-beta/);
+
+    const modinfo = readFileSync(join(root, "scripts/write_vst3_moduleinfo.mjs"), "utf8");
+    expect(modinfo).not.toMatch(/let version = "0\.\d+\.\d+-beta"/);
+
+    const install = readFileSync(join(root, "docs/ALPHA_INSTALL.txt"), "utf8");
+    expect(install).toContain(`NEUROKORE ${nk.version}`);
+
+    const notes = readFileSync(join(root, "docs/ALPHA_RELEASE_NOTES.md"), "utf8");
+    expect(notes).toContain(`NEUROKORE ${nk.version}`);
+  });
 });
