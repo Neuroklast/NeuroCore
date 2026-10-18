@@ -108,6 +108,8 @@ std::size_t writeTelemetryFrame (void* dest, std::size_t destBytes, const Teleme
         body += 4;
         writeF32 (body, desc.onsets[i].amp);
         body += 4;
+        writeF32 (body, desc.onsets[i].balance);
+        body += 4;
     }
     return need;
 }
@@ -162,7 +164,8 @@ bool readTelemetryHeader (const void* src, std::size_t srcBytes, TelemetryDesc& 
         {
             dest.onsets[i].samplePos = readU32 (q);
             dest.onsets[i].amp = readF32 (q + 4);
-            q += 8;
+            dest.onsets[i].balance = readF32 (q + 8);
+            q += 12;
         }
     }
     return body <= srcBytes;

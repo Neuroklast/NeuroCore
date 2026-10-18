@@ -95,15 +95,13 @@ void TelemetryPump::scanOnset (const juce::AudioBuffer<float>& src) noexcept
     const float sa = 1.f - std::exp (-dt / 0.025f);
     const float sl = 1.f - std::exp (-dt / 0.22f);
     const int holdN = juce::jmax (1, (int) std::round (0.045 * (double) sr));
+    const float* L = src.getReadPointer (0);
+    const float* R = ch > 1 ? src.getReadPointer (1) : L;
     for (int i = 0; i < n; ++i)
     {
-        float a = 0.f;
-        for (int c = 0; c < ch; ++c)
-        {
-            const float s = std::abs (src.getReadPointer (c)[i]);
-            if (s > a)
-                a = s;
-        }
+        const float lv = std::abs (L[i]);
+        const float rv = std::abs (R[i]);
+        const float a = lv > rv ? lv : rv;
         if (a > envFast)
             envFast = a;
         else
@@ -126,6 +124,8 @@ void TelemetryPump::scanOnset (const juce::AudioBuffer<float>& src) noexcept
             const int slot = (int) (onsetWrite % (std::uint32_t) kTelemetryMaxOnsets);
             onsetRing[slot].samplePos = samplePos + (std::uint32_t) i;
             onsetRing[slot].amp = ev;
+            const float sum = lv + rv;
+            onsetRing[slot].balance = sum > 1.0e-6f ? (rv - lv) / sum : 0.f;
             ++onsetWrite;
             onsetHold = holdN;
         }

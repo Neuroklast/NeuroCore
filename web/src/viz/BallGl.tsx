@@ -10,7 +10,6 @@ import {
   spawnForce,
   stepForces,
 } from "./forceField";
-import { midSideEnergy, stereoBalance } from "./audioFeatures";
 import { HASH, DUST_COMMON, STIR_FS } from "./particleShader";
 import { cachedInputBands, publishViz } from "./vizSnap";
 import { perfBegin, perfEnd, perfEnabled } from "../perf/marks";
@@ -742,10 +741,8 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       }, dt);
       audioState = hit.state;
       if (hit.spawns.length > 0) {
-        const ms = midSideEnergy(telemetry.gonioL, telemetry.gonioR);
-        const balance = stereoBalance(ms.peakL, ms.peakR);
         for (const spawn of hit.spawns) {
-          forces = pushForce(forces, spawnForce(forceId, bandIndex(spawn.band), balance, spawn.amp));
+          forces = pushForce(forces, spawnForce(forceId, bandIndex(spawn.band), spawn.balance, spawn.amp));
           forceId += 1;
         }
       }

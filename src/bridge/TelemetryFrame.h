@@ -12,13 +12,14 @@ inline constexpr std::uint16_t kTelemetryVersionMin = 1;
 inline constexpr std::size_t kTelemetryHeaderBytes = 32;
 inline constexpr std::size_t kTelemetryTailBytes = 8;
 inline constexpr int kTelemetryMaxOnsets = 16;
-inline constexpr std::size_t kTelemetryOnsetBytes = 8;
+inline constexpr std::size_t kTelemetryOnsetBytes = 12;
 inline constexpr std::size_t kTelemetryOnsetListHeader = 4;
 
 struct OnsetEvent
 {
     std::uint32_t samplePos { 0 };
     float amp { 0.f };
+    float balance { 0.f };
 };
 
 struct TelemetryDesc

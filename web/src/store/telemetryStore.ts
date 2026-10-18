@@ -18,7 +18,7 @@ interface TelemetryState {
   onsetAmp: number;
   seq: number;
   samplePos: number;
-  onsets: { samplePos: number; amp: number }[];
+  onsets: { samplePos: number; amp: number; balance: number }[];
   corr: number;
   applyViews: (v: TelemetryViews, available?: boolean) => void;
   waveFor: (nodeId: string) => Float32Array;
