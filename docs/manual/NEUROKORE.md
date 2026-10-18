@@ -61,7 +61,7 @@ Top bar
 
 Knobs
 - Six knobs a–f, automatable from the host. On Circuit they sit under the board. On Terminal they sit on the left.
-- Click the name to rename it. Scroll the wheel to turn. Type a number or a note length (`1/4`) into the value.
+- Click the name to rename it. Scroll the wheel to turn. Type a number or a note length (`1/4`) into the value. Load a sound and all six names come from that sound.
 - Right-click a knob: Name / Min / Max / Unit / Note / MIDI Learn. Not the browser menu. Formula `midi_gate` / `midi_note` follow last-note priority inside the audio block; All Notes Off clears the gate.
 - If a knob does nothing, that letter is not used in the current sound.
 - On Circuit, drag the jack on top of a knob onto a chip. The chip fills with drop boxes for every bindable key. The crosshair is the drop point; the box under it glows. That is not an audio cable.

@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (packaging version source)  
+**Stand:** 2026-10-18 (preset six macro names)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/packaging-version-source`
+**Branch:** `fix/preset-six-macro-names`
+
+## Preset six macro names (2026-10-18)
+
+Load restores custom names for all six knobs a–f from STAT. Formula re-apply no longer copies names from the previously open sound.
 
 ## Packaging version source (2026-10-18)
 

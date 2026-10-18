@@ -40,6 +40,53 @@ public:
     if (auto *p2 = proc2.apvts.getParameter(EffectParameters::paramA))
       expectWithinAbsoluteError(p2->getValue(), 0.5f, 0.0001f);
 
+    beginTest("load restores all six knob names and does not leak the previous preset");
+    {
+      TestProcessor src;
+      PresetManager srcMgr (src);
+      juce::String sixErr;
+      expect (src.setFormula ("stage1: y = x * a * b * c * d * e * f", sixErr));
+      const juce::String names[] = { "Drive", "Tone", "Mix", "Air", "Body", "Bite" };
+      const float values[] = { 0.11f, 0.22f, 0.33f, 0.44f, 0.55f, 0.66f };
+      expectEquals (Config::kNumUserParams, 6);
+      for (int i = 0; i < Config::kNumUserParams; ++i)
+      {
+        src.setVariableName (i, names[i]);
+        if (auto* p = src.apvts.getParameter (EffectParameters::userParams[i]))
+          p->setValueNotifyingHost (values[i]);
+      }
+      juce::TemporaryFile tmpSix (".nrk");
+      expect (srcMgr.savePreset (tmpSix.getFile(), "six"));
+
+      TestProcessor dirty;
+      PresetManager dirtyMgr (dirty);
+      expect (dirty.setFormula ("stage1: y = x", sixErr));
+      for (int i = 0; i < Config::kNumUserParams; ++i)
+        dirty.setVariableName (i, "LEAK" + juce::String (i));
+      expect (dirtyMgr.loadPreset (tmpSix.getFile()));
+      for (int i = 0; i < Config::kNumUserParams; ++i)
+      {
+        expectEquals (dirty.getVariableName (i), names[i]);
+        if (auto* p = dirty.apvts.getParameter (EffectParameters::userParams[i]))
+          expectWithinAbsoluteError (p->getValue(), values[i], 0.0001f);
+      }
+
+      TestProcessor plain;
+      PresetManager plainMgr (plain);
+      expect (plain.setFormula ("stage1: y = x * a", sixErr));
+      juce::TemporaryFile tmpPlain (".nrk");
+      expect (plainMgr.savePreset (tmpPlain.getFile(), "plain"));
+
+      TestProcessor leftover;
+      PresetManager leftoverMgr (leftover);
+      for (int i = 0; i < Config::kNumUserParams; ++i)
+        leftover.setVariableName (i, "LEAK" + juce::String (i));
+      expect (leftoverMgr.loadPreset (tmpPlain.getFile()));
+      for (int i = 0; i < Config::kNumUserParams; ++i)
+        expectEquals (leftover.getVariableName (i),
+                      juce::String (Config::kDefaultVariableNames[i]));
+    }
+
     beginTest("saving over an existing preset replaces the file");
     {
       TestProcessor procA;
