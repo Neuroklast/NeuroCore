@@ -13,6 +13,7 @@ const astSrc = readFileSync(new URL("./astStore.ts", import.meta.url), "utf8");
 const app = readFileSync(new URL("../app/App.tsx", import.meta.url), "utf8");
 const sourceMap = readFileSync(new URL("../hack/dslSourceMap.ts", import.meta.url), "utf8");
 const overlays = readFileSync(new URL("../overlays/Overlays.tsx", import.meta.url), "utf8");
+const compile = readFileSync(new URL("../hack/terminalCompile.ts", import.meta.url), "utf8");
 
 const validAst = {
   version: 1 as const,
@@ -86,7 +87,7 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
 
   it("Inspect graphOp setArg is a separate path from Terminal publishScript", () => {
     expect(overlays).toContain('op: "setArg"');
-    expect(hack).toContain('publishScript(draft, "editor")');
+    expect(compile).toContain('publishScript(draft, "editor")');
   });
 });
 

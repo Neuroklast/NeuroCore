@@ -132,6 +132,15 @@ export function rangeForNode(script: string, nodeId: string): NodeSourceRange | 
   return mapNodeRanges(script).find((r) => idsMatch(r.nodeId, nodeId)) ?? null;
 }
 
+export function sourceForNode(script: string, nodeId: string): string {
+  const range = rangeForNode(script, nodeId);
+  if (! range) {
+    return "";
+  }
+  const lines = script.replace(/\r\n/g, "\n").split("\n");
+  return lines.slice(range.startLine - 1, range.endLine).join("\n");
+}
+
 export function nodeAtPosition(script: string, line: number, column: number): string | null {
   for (const r of mapNodeRanges(script)) {
     if (line < r.startLine || line > r.endLine) {

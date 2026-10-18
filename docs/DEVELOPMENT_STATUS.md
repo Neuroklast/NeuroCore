@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR3)  
+**Stand:** 2026-10-18 (patch workspace PR4)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr3`
+**Branch:** `feat/patch-workspace-pr4`
+
+## Patch workspace source inspector (2026-10-18)
+
+Circuit has a Source panel (360–420 logical px, bottom when the board would starve). Chip click does not enter Edit. Edit Source / Apply / Discard / Open Full Terminal share the astStore draft. Opening the panel does not refit the camera or re-run Compact. Monaco stays lazy on the Terminal tab.
 
 ## Patch workspace selection (2026-10-18)
 

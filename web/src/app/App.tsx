@@ -188,7 +188,7 @@ export function App() {
             </div>
           ) : null}
           <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
-            <AssembleView active={workspace === "assemble"} />
+            <AssembleView active={workspace === "assemble"} onOpenTerminal={() => setWorkspace("hack")} />
           </div>
           {terminalMounted(workspace) ? (
             <div className="h-full min-h-0">

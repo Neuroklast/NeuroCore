@@ -344,6 +344,21 @@ html[data-motion="off"] .nk-boot {
   user-select: none;
   -webkit-user-select: none;
 }
+.nk-source-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 12;
+  min-width: 26px;
+  min-height: 26px;
+}
+.nk-source-inspector {
+  --nk-source-inspector-width: 384px;
+}
+.nk-source-inspector-edit,
+.nk-source-inspector-view {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
 .nk-board-insert-error { max-width: 285px; padding: 9px; color: var(--nk-accent); font: 11px/1.4 "Segoe UI", sans-serif; }
 .nk-board-lasso { position: absolute; z-index: 9; pointer-events: none; border: 1px solid var(--nk-cyan); background: color-mix(in srgb, var(--nk-cyan) 10%, transparent); }
 .nk-inspect-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
