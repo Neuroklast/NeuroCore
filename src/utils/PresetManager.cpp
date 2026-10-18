@@ -150,24 +150,27 @@ bool PresetManager::savePreset(const juce::File& file,
     entries[2].offset = dscrOffset;
     entries[2].length = (int64_t)scriptBlock.getSize();
 
-    juce::FileOutputStream out(file);
-    if (!out.openedOk())
-        return false;
-    out.write(&header, sizeof(header));
-    out.write(metaBlock.getData(), metaBlock.getSize());
-    out.write(encrypted.data(), encrypted.size());
-    out.write(scriptBlock.getData(), scriptBlock.getSize());
-    out.write(kMetaId, 4); // "List" header
-    const int32_t numEntries = kNumChunksV2;
-    out.writeIntBigEndian(numEntries); // using big endian for portability
-    for (auto& e : entries)
+    juce::TemporaryFile staging (file);
     {
-        out.write(e.id, 4);
-        out.writeInt64(e.offset);
-        out.writeInt64(e.length);
+        juce::FileOutputStream out (staging.getFile());
+        if (! out.openedOk())
+            return false;
+
+        const int32_t numEntries = kNumChunksV2;
+        bool ok = out.write (&header, sizeof (header))
+            && (metaBlock.getSize() == 0 || out.write (metaBlock.getData(), metaBlock.getSize()))
+            && (encrypted.empty() || out.write (encrypted.data(), encrypted.size()))
+            && (scriptBlock.getSize() == 0 || out.write (scriptBlock.getData(), scriptBlock.getSize()))
+            && out.write (kMetaId, 4)
+            && out.writeIntBigEndian (numEntries);
+        for (auto& e : entries)
+            ok = ok && out.write (e.id, 4) && out.writeInt64 (e.offset) && out.writeInt64 (e.length);
+        out.flush();
+        if (! ok || out.getStatus().failed())
+            return false;
+        // Windows keeps the sibling locked until this stream closes.
     }
-    out.flush();
-    return true;
+    return staging.overwriteTargetFileWithTemporary();
 }
 
 bool PresetManager::loadPreset(const juce::File& file)

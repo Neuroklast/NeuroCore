@@ -40,6 +40,37 @@ public:
     if (auto *p2 = proc2.apvts.getParameter(EffectParameters::paramA))
       expectWithinAbsoluteError(p2->getValue(), 0.5f, 0.0001f);
 
+    beginTest("saving over an existing preset replaces the file");
+    {
+      TestProcessor procA;
+      PresetManager mgrA (procA);
+      juce::String errA;
+      expect (procA.setFormula ("stage1: y = x * a", errA));
+      juce::TemporaryFile tmpA (".nrk");
+      const auto dest = tmpA.getFile();
+      expect (mgrA.savePreset (dest, "once"));
+      const auto firstBytes = dest.getSize();
+      expect (firstBytes > 0);
+
+      expect (procA.setFormula ("filter1: cutoff = 800", errA));
+      expect (mgrA.savePreset (dest, "once"));
+
+      juce::MemoryBlock raw;
+      expect (dest.loadFileAsData (raw));
+      int magics = 0;
+      const auto* bytes = static_cast<const char*> (raw.getData());
+      for (size_t i = 0; i + 4 <= raw.getSize(); ++i)
+        if (std::memcmp (bytes + i, "NRK", 3) == 0 && bytes[i + 3] == 0)
+          ++magics;
+      expectEquals (magics, 1);
+      expect (raw.getSize() < firstBytes * 2);
+
+      TestProcessor procB;
+      PresetManager mgrB (procB);
+      expect (mgrB.loadPreset (dest));
+      expectEquals (procB.getScript(), juce::String ("filter1: cutoff = 800"));
+    }
+
     beginTest("File format");
     juce::FileInputStream in(tmp.getFile());
     char magic[4]{};
