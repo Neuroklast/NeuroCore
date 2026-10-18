@@ -266,7 +266,7 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
             })}
           </svg>
         </Mod>
-        <Mod title="PARTICLE ORBITS">
+        <Mod title="ORBITS">
           <OrbitMini cage={f.cage} shards={f.shards} />
           <div className="nk-face-orbit-leg">
             <span><i /><span data-nk-live="orbit-low">LOW {formatViz(f.viz.low)}</span></span>
