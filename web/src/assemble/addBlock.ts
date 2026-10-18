@@ -2,6 +2,7 @@ import { sourceBlock, replaceSourceArg, renameSourceToken } from "./dslSource";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
+import { beginPatchTx } from "../store/patchWorkspace";
 import { muteScriptHistory, pushScriptHistory, redoScript, undoScript } from "../store/scriptHistory";
 import { parkNodeInScript } from "./connectModel";
 import { stripMuteComments } from "./muteSolo";
@@ -199,25 +200,49 @@ export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "c
   });
 }
 
-export function publishScript(script: string, origin: "canvas" | "editor"): void | Promise<unknown> {
+export function publishScript(
+  script: string,
+  origin: "canvas" | "editor",
+  opts: { historyKey?: string } = {},
+): void | Promise<unknown> {
   const cur = useAstStore.getState();
   const prev = cur.lastValidScript || cur.script;
+  const tx = beginPatchTx("compile", origin);
   const remember = () => {
-    if (prev && prev !== script) pushScriptHistory(prev);
+    if (prev && prev !== script) pushScriptHistory(prev, opts.historyKey ?? "");
   };
+  const tag = (result: { ok?: boolean; script?: string; diagnostics?: typeof cur.diagnostics }) => ({
+    origin,
+    ok: result.ok === true,
+    script: result.script ?? script,
+    diagnostics: result.diagnostics ?? [],
+    txId: tx.id,
+    baseRevision: tx.baseRevision,
+  });
   if (hasJuceBridge()) {
-    return getNativeFunction("compile")({ origin, script }).then((result) => {
+    return getNativeFunction("compile")({
+      origin,
+      script,
+      txId: tx.id,
+      baseRevision: tx.baseRevision,
+    }).then((result) => {
       if (!result || typeof result !== "object" || !("ok" in result)) throw new Error("No compile acknowledgement received.");
-      if (result.ok === true) remember();
-      return result;
+      const rec = tag(result as { ok?: boolean; script?: string; diagnostics?: typeof cur.diagnostics });
+      useAstStore.getState().applyCompileResult(rec);
+      if (rec.ok) remember();
+      return rec;
     }).catch((error) => {
       const diagnostics = [{ line: 1, column: 1, message: error instanceof Error ? error.message : String(error) }];
-      useAstStore.setState({ diagnostics });
-      return { ok: false, origin, diagnostics };
+      const rec = tag({ ok: false, diagnostics });
+      useAstStore.getState().applyCompileResult(rec);
+      return rec;
     });
   }
   remember();
   applyCanvasScript(script);
+  const rec = tag({ ok: true });
+  useAstStore.getState().applyCompileResult(rec);
+  return rec;
 }
 
 export async function undoCircuit(): Promise<boolean> {
@@ -311,7 +336,11 @@ export function removeCircuitBlock(id: string): void {
 
 export function setCircuitArg(id: string, key: string, value: string): void {
   const cur = useAstStore.getState();
-  publishScript(scriptAfterSetArg(cur.lastValidScript || cur.script, id, key, value), "canvas");
+  publishScript(
+    scriptAfterSetArg(cur.lastValidScript || cur.script, id, key, value),
+    "canvas",
+    { historyKey: `setArg:${id}:${key}` },
+  );
 }
 
 export function renameCircuitBlock(oldId: string, newId: string): void {

@@ -205,6 +205,28 @@ export function parkNodeInScript(script: string, nodeId: string): string {
  * Delete cable A→B in the serial DSL by parking the unplugged chip.
  * OUT destination → park source; otherwise park target.
  */
+/** Place `nodeId` immediately after `afterId` (unpark / serial reconnect). */
+export function scriptAfterConnect(script: string, from: string, to: string): string {
+  const moveId = isOutId(to) ? from : to;
+  const afterId = moveId === from ? (isOutId(to) ? "" : from) : from;
+  if (! moveId || isIoTerminal(moveId)) {
+    return script.endsWith("\n") ? script : `${script}\n`;
+  }
+  const block = sourceBlock(script, moveId);
+  if (! block) {
+    return script.endsWith("\n") ? script : `${script}\n`;
+  }
+  const moved = script.slice(block.start, block.end);
+  let remainder = script.slice(0, block.start) + script.slice(block.end);
+  const after = afterId ? sourceBlock(remainder, afterId) : undefined;
+  const at = after ? after.end : remainder.length;
+  if (at === block.start) {
+    return script.endsWith("\n") ? script : `${script}\n`;
+  }
+  remainder = remainder.slice(0, at) + moved + remainder.slice(at);
+  return remainder.endsWith("\n") ? remainder : `${remainder}\n`;
+}
+
 export function scriptAfterDisconnect(script: string, from: string, to: string): string {
   const parkId = isOutId(to) ? from : to;
   if (isIoTerminal(parkId)) {

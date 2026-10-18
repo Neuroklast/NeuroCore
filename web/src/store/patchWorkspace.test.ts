@@ -34,6 +34,7 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
       activeRevision: 0,
       draftRevision: 0,
       draftEditing: false,
+      pendingTransaction: null,
     });
     useHostStore.setState({ focusNodeId: null, overlay: null, inspectId: null });
     usePatchSelectionStore.setState({ ...EMPTY_SELECTION });
@@ -75,9 +76,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     expect(doc.pendingTransaction).toBeNull();
   });
 
-  it("applyCompileResult stale-guards by comparing the script string", () => {
-    expect(astSrc).toContain("payload.script !== useAstStore.getState().script");
-    expect(astSrc).not.toMatch(/pendingTransaction|transactionId/);
+  it("applyCompileResult stale-guards by transaction id then script", () => {
+    expect(astSrc).toContain("payload.txId");
+    expect(astSrc).toContain("pendingTransaction");
   });
 
   it("boardIdForSource maps send uniquely and does not prefix-guess", () => {
@@ -87,7 +88,7 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
 
   it("Inspect graphOp setArg is a separate path from Terminal publishScript", () => {
     expect(overlays).toContain('op: "setArg"');
-    expect(compile).toContain('publishScript(draft, "editor")');
+    expect(compile).toContain('publishScript(script, "editor")');
   });
 });
 
@@ -103,6 +104,7 @@ describe("PR1 target contracts (must fail until later PRs)", () => {
       activeRevision: 0,
       draftRevision: 0,
       draftEditing: false,
+      pendingTransaction: null,
     });
     usePatchSelectionStore.setState({ ...EMPTY_SELECTION });
     useHostStore.setState({ focusNodeId: null });
