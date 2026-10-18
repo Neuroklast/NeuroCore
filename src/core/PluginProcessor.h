@@ -19,6 +19,8 @@
 #include <atomic>
 #include <memory>
 #include <map>
+#include <utility>
+#include <vector>
 #include "../utils/PresetManager.h"
 #include "../core/Config.h"
 #include "../core/CpuProtect.h"
@@ -319,9 +321,17 @@ private:
     int continuityCh { 0 };
     float continuityDecay { 0.f };
     int fadeInRemain { 0 };
-    juce::AudioBuffer<float> irPreviewBuf;
-    std::atomic<int> irPreviewPos { -1 };
+    struct IrPreviewSnap
+    {
+        juce::AudioBuffer<float> samples;
+        mutable std::atomic<int> pos { 0 };
+    };
+    std::atomic<const IrPreviewSnap*> irPreviewLive { nullptr };
+    std::atomic<uint32_t> irPreviewMixEpoch { 0 };
+    std::vector<std::pair<std::unique_ptr<const IrPreviewSnap>, uint32_t>> irPreviewRetired;
     void mixIrPreview (juce::AudioBuffer<float>& dest) noexcept;
+    void retireIrPreviewSnap (const IrPreviewSnap* snap);
+    void drainIrPreviewSnaps();
     void storeContinuity (const juce::AudioBuffer<float>& src);
     void replayContinuity (juce::AudioBuffer<float>& dest) noexcept;
     void fadeInAfterGap (juce::AudioBuffer<float>& dest) noexcept;

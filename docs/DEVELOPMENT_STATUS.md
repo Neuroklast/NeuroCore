@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (IR state bounds)  
+**Stand:** 2026-10-18 (IR preview snapshot)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/ir-state-bounds`
+**Branch:** `fix/ir-preview-snapshot`
+
+## IR preview snapshot (2026-10-18)
+
+Cabinet preview publishes an immutable snapshot through an atomic pointer. The audio callback loads that pointer once and never frees it. Old snaps retire after the mix epoch advances and are deleted on the message thread. Restarting preview while audio runs does not `setSize` a buffer the callback is reading.
 
 ## IR state bounds (2026-10-18)
 
