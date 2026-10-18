@@ -11,7 +11,7 @@ import {
   stepForces,
 } from "./forceField";
 import { HASH, DUST_COMMON, STIR_FS } from "./particleShader";
-import { cachedInputBands, publishViz } from "./vizSnap";
+import { cachedBands, publishViz } from "./vizSnap";
 import { perfBegin, perfEnd, perfEnabled } from "../perf/marks";
 import { noteDraw, noteProgram, noteResize, noteTexAlloc } from "../perf/counters";
 import { createGpuTimer } from "../perf/gpuTimer";
@@ -728,7 +728,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       const telemetry = useTelemetryStore.getState();
       const rate = host.sr > 0 ? host.sr : 48000;
       const live = telemetry.available || !hasJuceBridge();
-      const bands = cachedInputBands(telemetry.tick, telemetry.scopeIn, rate, live);
+      const bands = cachedBands(telemetry.tick, telemetry.scopeOut, rate, live).bands;
       const hit = particleAudio(audioState, {
         tick: telemetry.tick,
         seq: telemetry.seq,

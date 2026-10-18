@@ -31,10 +31,22 @@ describe("cachedBands", () => {
   it("one analyze hop per new tick, not a second spectrumBins pass", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(path.join(here, "vizSnap.ts"), "utf8");
-    const body = src.slice(src.indexOf("export function cachedBands"), src.indexOf("let inputCache"));
+    const body = src.slice(src.indexOf("export function cachedBands"));
     expect(body).toContain("feedAnalyze");
     expect(body).not.toContain("spectrumBins");
     expect(body).not.toContain("bandRms");
     expect(body).toContain("sr");
+  });
+
+  it("Unit ball and HUD share plugin.out, not a second input FFT", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const snap = readFileSync(path.join(here, "vizSnap.ts"), "utf8");
+    const ball = readFileSync(path.join(here, "BallGl.tsx"), "utf8");
+    const hud = readFileSync(path.join(here, "..", "face", "CoreDiagnostics.tsx"), "utf8");
+    expect(snap).not.toContain("cachedInputBands");
+    expect(ball).not.toContain("cachedInputBands");
+    expect(ball).toContain("cachedBands");
+    expect(ball).toContain("telemetry.scopeOut");
+    expect(hud).toContain("cachedBands(tel.tick, tel.scopeOut");
   });
 });
