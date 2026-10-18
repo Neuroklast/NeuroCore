@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (onset samplePos wrap)  
-**Version:** 0.6.9-beta  
-**Branch:** `fix/onset-samplepos-wrap`
+**Stand:** 2026-10-18 (0.6.10-beta)  
+**Version:** 0.6.10-beta  
+**Branch:** `bump/0.6.10-beta`
+
+## 0.6.10-beta (2026-10-18)
+
+Product version is 0.6.10-beta. Native Release ships NKTM v3 (onset ring + hit-time stereo), three-slot `copyLatest` claim, one-hit-one-field, unsigned samplePos drain, Unit shared plugin.out, ORBITS title. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`.
 
 ## Onset samplePos wrap (2026-10-18)
 
