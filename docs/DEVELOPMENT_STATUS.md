@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR8)  
+**Stand:** 2026-10-18 (signal lab PR A)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr8`
+**Branch:** `feat/signal-lab-pr-a`
+
+## Circuit / Terminal Signal Laboratory (2026-10-18)
+
+PR A is baseline only: face-kind catalog, semantic-zoom constants, structure model, CSS inventory, factory layout dumps, and target `it.fails` contracts. No chrome restyle. Latest `main` is #290 (`bb13ffd`). Known existing issues (not new in this PR): identical closed DSP plates except LFO shape; 8 px chip feet; leftover `.react-flow` CSS; Drone Low Bed factory `decay = 2.6` vs engine 0–1; compact serial chains wrap on the 896 px Circuit pane because DSP plates are 256×224 with 128 px air. Native DAW not in this PR.
 
 ## Patch workspace Pad Cloud Hall (2026-10-18)
 
