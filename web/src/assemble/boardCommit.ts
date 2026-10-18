@@ -6,18 +6,10 @@ import { publishScript } from "./addBlock";
 import { fitCamera } from "./boardCamera";
 import { graphToLayout, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
-import { edgesAfterConnect, edgesAfterCutPort } from "./boardConnect";
+import { edgesAfterCutPort } from "./boardConnect";
 import { scriptAfterConnect, scriptAfterDisconnect } from "./connectModel";
 import { useBoardStore } from "./boardStore";
 import { requestGraphLayout } from "./layout/layoutClient";
-
-function astEdgesAfterConnect(edges: AstEdge[], src: BoardPort, dst: BoardPort): AstEdge[] {
-  const kind = src.kind === "mod" ? "mod" : "audio";
-  return [
-    ...edges.filter((e) => ! (e.to === dst.nodeId && (e.toJack || "in") === dst.jackId)),
-    { from: src.nodeId, to: dst.nodeId, kind, fromJack: src.jackId, toJack: dst.jackId },
-  ];
-}
 
 function astEdgesAfterCut(edges: AstEdge[], port: BoardPort): AstEdge[] {
   return edges.filter((e) => {

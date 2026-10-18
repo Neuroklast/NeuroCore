@@ -1,5 +1,6 @@
 import { sourceBlock, replaceSourceArg, renameSourceToken } from "./dslSource";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
+import type { CompileResultPayload } from "../bridge/ast";
 import { parseDslSketch } from "../presets/parseDslSketch";
 import { useAstStore } from "../store/astStore";
 import { beginPatchTx } from "../store/patchWorkspace";
@@ -210,7 +211,7 @@ export function publishScript(
   script: string,
   origin: "canvas" | "editor",
   opts: { historyKey?: string } = {},
-): void | Promise<unknown> {
+): CompileResultPayload | Promise<CompileResultPayload> {
   const cur = useAstStore.getState();
   const prev = cur.lastValidScript || cur.script;
   const tx = beginPatchTx("compile", origin);
