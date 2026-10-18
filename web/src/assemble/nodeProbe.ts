@@ -20,5 +20,5 @@ export function probeLabel(probe: NodeProbe): string {
   if (probe === "plugin.out") {
     return "Plugin output";
   }
-  return "No tap";
+  return "No waveform tap";
 }

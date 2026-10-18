@@ -59,6 +59,7 @@ describe("source inspector geometry on the 1280×860 stage", () => {
     expect(inspector).toContain("Edit Source");
     expect(inspector).toContain("Open Full Terminal");
     expect(inspector).toContain("data-chip-id");
+    expect(inspector).toContain("nk-source-meter");
     expect(readFileSync(new URL("./BoardChip.tsx", import.meta.url), "utf8")).toContain("data-kind");
   });
 });

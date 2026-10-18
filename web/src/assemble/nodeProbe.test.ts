@@ -6,6 +6,6 @@ describe("node signal probes", () => {
     expect(nodeProbe("IN")).toBe("plugin.in");
     expect(nodeProbe("OUT")).toBe("plugin.out");
     expect(nodeProbe("sat1", "chip", "sat")).toBe("none");
-    expect(probeLabel("none")).toBe("No tap");
+    expect(probeLabel("none")).toBe("No waveform tap");
   });
 });

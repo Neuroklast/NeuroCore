@@ -2,9 +2,13 @@ import { useMemo } from "react";
 import { sourceForNode } from "../hack/dslSourceMap";
 import { applyPatchDraft, discardPatchDraft } from "../hack/terminalCompile";
 import { useAstStore } from "../store/astStore";
+import { useHostStore } from "../store/hostStore";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
 import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
 import { useSourceInspectorStore } from "../store/sourceInspectorStore";
+import { useTelemetryStore } from "../store/telemetryStore";
+import { chipFootPeak } from "./chipFace";
+import { nodeMeter } from "./nodeMeter";
 import type { InspectorDock } from "./sourceInspectorLayout";
 import { inspectorBox } from "./sourceInspectorLayout";
 
@@ -22,6 +26,12 @@ export function SourceInspector({
   const width = useSourceInspectorStore((s) => s.width);
   const setOpen = useSourceInspectorStore((s) => s.setOpen);
   const primaryId = usePatchSelectionStore((s) => s.primaryId);
+  const clips = useHostStore((s) => s.clips);
+  const clipsRms = useHostStore((s) => s.clipsRms);
+  const inPeak = useTelemetryStore((s) => s.inPeak);
+  const outPeak = useTelemetryStore((s) => s.outPeak);
+  const inRms = useTelemetryStore((s) => s.inRms);
+  const outRms = useTelemetryStore((s) => s.outRms);
   const ast = useAstStore((s) => s.lastValidAst);
   const script = useAstStore((s) => s.script);
   const lastValid = useAstStore((s) => s.lastValidScript);
@@ -36,6 +46,16 @@ export function SourceInspector({
     [shownScript, primaryId],
   );
   const banner = draftBanner(readPatchDocument().draftStatus);
+  const meter = nodeMeter({
+    id: primaryId ?? "",
+    type: node?.type,
+    clips,
+    clipsRms,
+    pluginInPeak: inPeak,
+    pluginOutPeak: outPeak,
+    pluginInRms: inRms,
+    pluginOutRms: outRms,
+  });
   const title = node ? `${node.id}  ${node.type}` : "SOURCE";
   const style = dock === "bottom"
     ? { width: "100%", height: box.h }
@@ -75,6 +95,18 @@ export function SourceInspector({
           Open Full Terminal
         </button>
       </div>
+      {primaryId ? (
+        <div
+          className="nk-source-meter"
+          data-meter-source={meter.source}
+          data-wave={meter.wave}
+        >
+          <span>{meter.sourceLabel}</span>
+          <span data-meter="peak">PEAK {meter.peak == null ? "—" : chipFootPeak(meter.peak)}</span>
+          <span data-meter="rms">RMS {meter.rms == null ? "—" : chipFootPeak(meter.rms)}</span>
+          <span>{meter.waveLabel}</span>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {editing ? (
           <textarea

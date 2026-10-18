@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR6)  
+**Stand:** 2026-10-18 (patch workspace PR7)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr6`
+**Branch:** `feat/patch-workspace-pr7`
+
+## Patch workspace honest node meters (2026-10-18)
+
+A selected chip’s Source inspector and Inspect LEVEL show peak/RMS from that node’s own tap, with the source named. IN/OUT keep plugin waveform taps. A DSP chip with no waveform tap reads **No waveform tap**. Plugin output is never shown under a drive-chip name. Cables keep using the same clip keys.
 
 ## Patch workspace Circuit readability (2026-10-18)
 
@@ -140,7 +144,7 @@ Same look. Less work on the Unit ball, telemetry hops and Circuit paints. Opt-in
 
 ## Circuit / Terminal node identity (2026-10-18)
 
-Terminal caret and Circuit selection share `focusNodeId`. Node ranges come from `tokenizeLine` (`id :` heads, not a regex). Circuit inspect does not rewrite the Terminal draft or pan the camera. Inspect TAP is Plugin input / Plugin output / No tap. `waveFor` is IN/OUT only.
+Terminal caret and Circuit selection share `focusNodeId`. Node ranges come from `tokenizeLine` (`id :` heads, not a regex). Circuit inspect does not rewrite the Terminal draft or pan the camera. Inspect TAP is Plugin input / Plugin output / No waveform tap. `waveFor` is IN/OUT only.
 
 ## Local particle fields and measured HUD (2026-10-18)
 
