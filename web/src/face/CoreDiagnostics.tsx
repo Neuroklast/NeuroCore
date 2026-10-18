@@ -59,6 +59,26 @@ const IDLE: Frame = {
 };
 
 const PANE0 = { w: 1256, h: 500 };
+const GONIO_DOTS = 48;
+const ORBIT_DOTS = 10;
+
+function writeLive(root: ParentNode | null, key: string, value: string): void {
+  const el = root?.querySelector(`[data-nk-live="${key}"]`);
+  if (el && el.textContent !== value) {
+    el.textContent = value;
+  }
+}
+
+function writeMode(root: ParentNode | null, mode: string): void {
+  root?.querySelectorAll("[data-nk-mode]").forEach((el) => {
+    if (el.getAttribute("data-mode") !== mode) {
+      el.setAttribute("data-mode", mode);
+    }
+    if (el.textContent !== mode) {
+      el.textContent = mode;
+    }
+  });
+}
 
 export function CoreDiagnostics({ live }: { live: boolean }) {
   const motion = useHostStore((s) => s.motion);
@@ -85,7 +105,6 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
     }
     const measure = () => {
       if (host.clientWidth < 1 || host.clientHeight < 1) return;
-      // Offsets belong to the logical HUD grid. DOMRects belong to the scaled host.
       paneRef.current = { w: host.clientWidth, h: host.clientHeight };
       const box = (el: HTMLElement): TeleBox => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
       colsRef.current = [box(left), box(right), ...Array.from(host.querySelectorAll<HTMLElement>(".nk-face-tele"), box)];
@@ -106,7 +125,10 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       const rate = sr > 0 ? sr : 48000;
       const snap = readViz();
       const pane = paneRef.current;
-      const cage = containmentLayout(pane.w, pane.h);
+      let cage = frameRef.current.cage;
+      if (cage.paneW !== pane.w || cage.paneH !== pane.h) {
+        cage = containmentLayout(pane.w, pane.h);
+      }
       const packed = cachedBands(tel.tick, tel.scopeOut, rate, live);
       const wave = coreWave(tel.scopeOut, live, 48);
       const waveIn = coreWave(tel.scopeIn, live, 48);
@@ -123,21 +145,79 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         transient: tel.onsetAmp,
         source: "plugin.out",
       });
+      const viz = coreHud(features);
+      const shards = orbitShards(cage, snap.pose.orbitPhase);
+      const gonio = gonioDots(tel.gonioL, tel.gonioR, live, GONIO_DOTS);
       frameRef.current = {
-        viz: coreHud(features),
+        viz,
         spec: packed.spec,
         wave,
         waveIn,
         corr: features.corr,
-        gonio: gonioDots(tel.gonioL, tel.gonioR, live, 48),
-        shards: orbitShards(cage, snap.pose.orbitPhase),
+        gonio,
+        shards,
         cage,
         sr: rate,
       };
-      setTick((n) => n + 1);
+      const host = probeRef.current?.parentElement ?? null;
+      const peak = live ? formatHudFixed(peakToDb(viz.peak), 1, 3) : "—";
+      const rms = live ? formatHudFixed(peakToDb(viz.rms), 1, 3) : "—";
+      const crest = live && viz.crestDb != null ? formatHudFixed(viz.crestDb, 1, 2) : "—";
+      const hit = live ? formatViz(viz.transient) : "—";
+      writeLive(host, "peak", peak);
+      writeLive(host, "rms", rms);
+      writeLive(host, "crest", crest);
+      writeLive(host, "hit", hit);
+      writeLive(host, "orbit-low", `LOW ${formatViz(viz.low)}`);
+      writeLive(host, "orbit-mid", `MID ${formatViz(viz.mid)}`);
+      writeLive(host, "orbit-high", `HIGH ${formatViz(viz.high)}`);
+      writeLive(host, "corr", live ? formatHudFixed(viz.corr, 2, 1) : "—");
+      writeLive(host, "balance", live ? formatHudFixed(viz.balance, 2, 1) : "—");
+      writeLive(host, "call-core", viz.mode);
+      writeLive(host, "call-core-peak", peak);
+      writeLive(host, "call-ring", live ? `CORR ${formatHudFixed(viz.corr, 2, 1)}` : "CORR —");
+      writeLive(host, "call-ring-bal", live ? formatHudFixed(viz.balance, 2, 1) : "—");
+      writeMode(host, viz.mode);
+      const stacks = fieldStacks(viz);
+      for (const s of stacks) {
+        writeLive(host, `stack-${s.id}`, formatViz(s.v));
+        const lit = segsLit(s.v, 12);
+        host?.querySelectorAll(`[data-nk-seg="${s.id}"] i`).forEach((el, i) => {
+          const on = i < lit ? "1" : "0";
+          if (el.getAttribute("data-on") !== on) {
+            el.setAttribute("data-on", on);
+          }
+        });
+      }
+      const maxR = Math.max(1, cage.orbits[0]?.rx ?? 1);
+      const k = 76 / maxR;
+      host?.querySelectorAll("[data-nk-shard]").forEach((el, i) => {
+        const s = shards[i];
+        if (! s) {
+          el.setAttribute("visibility", "hidden");
+          return;
+        }
+        el.setAttribute("visibility", "visible");
+        el.setAttribute("cx", String(90 + (s.x - cage.cx) * k));
+        el.setAttribute("cy", String(36 + (s.y - cage.cy) * k));
+        el.setAttribute("r", s.z < 0 ? "1" : "1.8");
+        el.setAttribute("class", s.z < 0 ? "nk-face-mod-dot-dim" : "nk-face-mod-dot");
+      });
+      host?.querySelectorAll("[data-nk-gonio]").forEach((el, i) => {
+        const p = gonio[i];
+        if (! p) {
+          el.setAttribute("visibility", "hidden");
+          return;
+        }
+        el.setAttribute("visibility", "visible");
+        el.setAttribute("cx", String(36 + p.x * 28));
+        el.setAttribute("cy", String(36 - p.y * 28));
+      });
     };
     if (motion === "off") {
-      const cage = containmentLayout(paneRef.current.w, paneRef.current.h);
+      const cage = frameRef.current.cage.paneW === paneRef.current.w
+        ? frameRef.current.cage
+        : containmentLayout(paneRef.current.w, paneRef.current.h);
       frameRef.current = {
         ...IDLE,
         shards: orbitShards(cage, CONTAINMENT_STATIC.orbitPhase),
@@ -161,12 +241,12 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       <aside ref={diagLRef} className="nk-face-diag nk-face-diag-l" aria-label="core visualization">
         <Mod title="DYNAMICS" sub="dB">
           <div className="nk-face-mod-gridrow">
-            <Row k="PEAK" v={live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"} />
-            <Row k="RMS" v={live ? formatHudFixed(peakToDb(f.viz.rms), 1, 3) : "—"} />
-            <Row k="CREST" v={live && f.viz.crestDb != null ? formatHudFixed(f.viz.crestDb, 1, 2) : "—"} />
-            <Row k="HIT" v={live ? formatViz(f.viz.transient) : "—"} />
+            <Row k="PEAK" live="peak" v={live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"} />
+            <Row k="RMS" live="rms" v={live ? formatHudFixed(peakToDb(f.viz.rms), 1, 3) : "—"} />
+            <Row k="CREST" live="crest" v={live && f.viz.crestDb != null ? formatHudFixed(f.viz.crestDb, 1, 2) : "—"} />
+            <Row k="HIT" live="hit" v={live ? formatViz(f.viz.transient) : "—"} />
           </div>
-          <div className="nk-face-mod-state" data-mode={f.viz.mode}>{f.viz.mode}</div>
+          <div className="nk-face-mod-state" data-nk-mode="" data-mode={f.viz.mode}>{f.viz.mode}</div>
         </Mod>
         <Mod title="SPECTRUM">
           <svg className="nk-face-mod-svg nk-face-mod-svg-lg" viewBox="0 0 200 88" aria-hidden>
@@ -187,9 +267,9 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         <Mod title="PARTICLE ORBITS">
           <OrbitMini cage={f.cage} shards={f.shards} />
           <div className="nk-face-orbit-leg">
-            <span><i />LOW {formatViz(f.viz.low)}</span>
-            <span><i className="b" />MID {formatViz(f.viz.mid)}</span>
-            <span><i className="c" />HIGH {formatViz(f.viz.high)}</span>
+            <span><i /><span data-nk-live="orbit-low">LOW {formatViz(f.viz.low)}</span></span>
+            <span><i className="b" /><span data-nk-live="orbit-mid">MID {formatViz(f.viz.mid)}</span></span>
+            <span><i className="c" /><span data-nk-live="orbit-high">HIGH {formatViz(f.viz.high)}</span></span>
           </div>
         </Mod>
       </aside>
@@ -197,16 +277,16 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
         <Mod title="BAND ENERGY" sub="FFT">
           <div className="nk-face-field-bars">
             {stacks.map((s) => (
-              <SegStack key={s.id} v={s.v} kind={s.id === "LOW" ? "accent" : "cyan"} label={s.id} />
+              <SegStack key={s.id} id={s.id} v={s.v} kind={s.id === "LOW" ? "accent" : "cyan"} label={s.id} />
             ))}
             <div className="nk-face-seg-scale" aria-hidden>
               <span>1.0</span><span>0.5</span><span>0.0</span>
             </div>
             <div className="nk-face-bars-n">
               {stacks.map((s) => (
-                <div key={s.id}><em>{s.id}</em><strong>{formatViz(s.v)}</strong></div>
+                <div key={s.id}><em>{s.id}</em><strong data-nk-live={`stack-${s.id}`}>{formatViz(s.v)}</strong></div>
               ))}
-              <div className="nk-face-mod-state" data-mode={f.viz.mode}>{f.viz.mode}</div>
+              <div className="nk-face-mod-state" data-nk-mode="" data-mode={f.viz.mode}>{f.viz.mode}</div>
             </div>
           </div>
         </Mod>
@@ -223,13 +303,24 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
             <svg className="nk-face-mod-svg nk-face-mod-round" viewBox="0 0 72 72" aria-hidden>
               <path d="M36 6 V66 M6 36 H66" className="nk-face-mod-grid" />
               <path d="M10 10 L62 62 M62 10 L10 62" className="nk-face-mod-grid" />
-              {f.gonio.map((p, i) => (
-                <circle key={i} cx={36 + p.x * 28} cy={36 - p.y * 28} r="1" className="nk-face-mod-dot" />
-              ))}
+              {Array.from({ length: GONIO_DOTS }, (_, i) => {
+                const p = f.gonio[i];
+                return (
+                  <circle
+                    key={i}
+                    data-nk-gonio={i}
+                    cx={p ? 36 + p.x * 28 : 36}
+                    cy={p ? 36 - p.y * 28 : 36}
+                    r="1"
+                    className="nk-face-mod-dot"
+                    visibility={p ? "visible" : "hidden"}
+                  />
+                );
+              })}
               <text x="36" y="10" className="nk-face-mod-axis" textAnchor="middle">MID</text>
               <text x="70" y="38" className="nk-face-mod-axis" textAnchor="end">SIDE</text>
             </svg>
-            <Row k="CORR" v={live ? formatHudFixed(f.corr, 2, 1) : "—"} />
+            <Row k="CORR" live="corr" v={live ? formatHudFixed(f.corr, 2, 1) : "—"} />
           </div>
         </Mod>
       </aside>
@@ -249,8 +340,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       >
         <div className="nk-face-callout-box">
           <b>CORE</b>
-          <span>{f.viz.mode}</span>
-          <span><em>PEAK</em> {live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"}</span>
+          <span data-nk-live="call-core">{f.viz.mode}</span>
+          <span><em>PEAK</em> <span data-nk-live="call-core-peak">{live ? formatHudFixed(peakToDb(f.viz.peak), 1, 3) : "—"}</span></span>
         </div>
       </div>
       <div
@@ -260,8 +351,8 @@ export function CoreDiagnostics({ live }: { live: boolean }) {
       >
         <div className="nk-face-callout-box">
           <b>RING</b>
-          <span>CORR {live ? formatHudFixed(f.viz.corr, 2, 1) : "—"}</span>
-          <span><em>BAL</em> {live ? formatHudFixed(f.viz.balance, 2, 1) : "—"}</span>
+          <span data-nk-live="call-ring">{live ? `CORR ${formatHudFixed(f.viz.corr, 2, 1)}` : "CORR —"}</span>
+          <span><em>BAL</em> <span data-nk-live="call-ring-bal">{live ? formatHudFixed(f.viz.balance, 2, 1) : "—"}</span></span>
         </div>
       </div>
     </>
@@ -295,15 +386,20 @@ function OrbitMini({ cage, shards }: { cage: ContainmentLayout; shards: OrbitSha
           className={i === 0 ? "nk-face-mod-orbit" : "nk-face-mod-orbit nk-face-mod-orbit-b"}
         />
       ))}
-      {shards.slice(0, 10).map((s, i) => (
-        <circle
-          key={i}
-          cx={90 + (s.x - cage.cx) * k}
-          cy={36 + (s.y - cage.cy) * k}
-          r={s.z < 0 ? 1 : 1.8}
-          className={s.z < 0 ? "nk-face-mod-dot-dim" : "nk-face-mod-dot"}
-        />
-      ))}
+      {Array.from({ length: ORBIT_DOTS }, (_, i) => {
+        const s = shards[i];
+        return (
+          <circle
+            key={i}
+            data-nk-shard={i}
+            cx={s ? 90 + (s.x - cage.cx) * k : 90}
+            cy={s ? 36 + (s.y - cage.cy) * k : 36}
+            r={s && s.z < 0 ? 1 : 1.8}
+            className={s && s.z < 0 ? "nk-face-mod-dot-dim" : "nk-face-mod-dot"}
+            visibility={s ? "visible" : "hidden"}
+          />
+        );
+      })}
     </svg>
   );
 }
@@ -320,20 +416,20 @@ function Mod({ title, sub, children }: { title: string; sub?: string; children: 
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v, live }: { k: string; v: string; live?: string }) {
   return (
     <div className="nk-face-mod-row">
       <span>{k}</span>
-      <span>{v}</span>
+      <span data-nk-live={live}>{v}</span>
     </div>
   );
 }
 
-function SegStack({ v, kind, label }: { v: number; kind: "accent" | "cyan"; label: string }) {
+function SegStack({ id, v, kind, label }: { id: string; v: number; kind: "accent" | "cyan"; label: string }) {
   const n = 12;
   const lit = segsLit(v, n);
   return (
-    <span className="nk-face-seg-col">
+    <span className="nk-face-seg-col" data-nk-seg={id}>
       <span className={`nk-face-seg nk-face-seg-${kind}`}>
         {Array.from({ length: n }, (_, i) => (
           <i key={i} data-on={i < lit ? "1" : "0"} />

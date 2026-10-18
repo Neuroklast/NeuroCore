@@ -43,13 +43,6 @@ export function BoardChip({
   const isMuted = useChipViewStore((s) => s.isMuted(node.id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(node.id));
   const isAudible = useChipViewStore((s) => s.isAudible(node.id));
-  const peak = useHostStore((s) => s.clips[node.id] ?? 0);
-  const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
-  const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
-  const envLevel = useHostStore((s) => {
-    const v = s.mods[node.id];
-    return Number.isFinite(v) ? Math.max(0, Math.min(1, v as number)) : 0;
-  });
   const knobs = useHostStore((s) => (node.type === "osc" ? s.knobs : NO_KNOBS));
   const bpm = useHostStore((s) => s.bpm);
   const theme = useHostStore((s) => s.theme);
@@ -107,13 +100,9 @@ export function BoardChip({
       >
         {node.role === "chip" ? (
           chrome.lamp === "clip" ? (
-            <span className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`} aria-hidden />
+            <ChipClipLamp nodeId={node.id} />
           ) : chrome.lamp === "env" ? (
-            <span
-              className="nk-env-lamp"
-              aria-hidden
-              style={{ "--nk-env": String(envLevel) } as CSSProperties}
-            />
+            <ChipEnvLamp nodeId={node.id} />
           ) : (
             <>
               <span
@@ -151,10 +140,7 @@ export function BoardChip({
           </div>
         ) : null}
       </div>
-      <div className="nk-chip-foot" title={chipFootLine(node.id, peak)} style={{ visibility: bindOpen ? "hidden" : "visible" }}>
-        <span>{node.id}</span>
-        <span>{chipFootPeak(peak)}</span>
-      </div>
+      <ChipFoot nodeId={node.id} bindOpen={bindOpen} />
       {showExpand && ! bindOpen ? (
         <button
           type="button"
@@ -204,6 +190,49 @@ export function BoardChip({
           </button>
         );
       })}
+      <ChipOverloadMarks node={node} ports={ports} />
+      {bindOpen ? (
+        <BindDropPad nodeId={node.id} keys={binds} args={node.args} w={node.w} h={node.h} local={bindLocal} />
+      ) : null}
+    </div>
+  );
+}
+
+function ChipClipLamp({ nodeId }: { nodeId: string }) {
+  const peak = useHostStore((s) => s.clips[nodeId] ?? 0);
+  return <span className={`nk-clip-lamp${peak >= 1 ? " is-clip" : ""}`} aria-hidden />;
+}
+
+function ChipEnvLamp({ nodeId }: { nodeId: string }) {
+  const envLevel = useHostStore((s) => {
+    const v = s.mods[nodeId];
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v as number)) : 0;
+  });
+  return (
+    <span
+      className="nk-env-lamp"
+      aria-hidden
+      style={{ "--nk-env": String(envLevel) } as CSSProperties}
+    />
+  );
+}
+
+function ChipFoot({ nodeId, bindOpen }: { nodeId: string; bindOpen: boolean }) {
+  const peak = useHostStore((s) => s.clips[nodeId] ?? 0);
+  return (
+    <div className="nk-chip-foot" title={chipFootLine(nodeId, peak)} style={{ visibility: bindOpen ? "hidden" : "visible" }}>
+      <span>{nodeId}</span>
+      <span>{chipFootPeak(peak)}</span>
+    </div>
+  );
+}
+
+function ChipOverloadMarks({ node, ports }: { node: BoardNode; ports: BoardPort[] }) {
+  const peak = useHostStore((s) => s.clips[node.id] ?? 0);
+  const peakL = useHostStore((s) => s.clipsL[node.id] ?? peak);
+  const peakR = useHostStore((s) => s.clipsR[node.id] ?? peak);
+  return (
+    <>
       {ports.map((p) => {
         if (! p.east || p.kind !== "audio") {
           return null;
@@ -231,10 +260,7 @@ export function BoardChip({
           </span>
         );
       })}
-      {bindOpen ? (
-        <BindDropPad nodeId={node.id} keys={binds} args={node.args} w={node.w} h={node.h} local={bindLocal} />
-      ) : null}
-    </div>
+    </>
   );
 }
 
