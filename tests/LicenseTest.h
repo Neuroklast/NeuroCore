@@ -88,5 +88,12 @@ public:
             expect (! manager.importLicenseFile (tmp));
             tmp.deleteFile();
         }
+
+        beginTest ("license text is verified before store");
+        {
+            LicenseManager manager;
+            expect (! manager.importLicenseData ("{ \"ok\": true }"));
+            expect (! manager.importLicenseData ("NEUROKORE LICENSE\nemail=x@y.com\nsig=1"));
+        }
     }
 };

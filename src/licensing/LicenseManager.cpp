@@ -33,15 +33,8 @@ bool LicenseManager::saveLicense (const juce::String& data)
     return getLicenseFile().replaceWithText (data);
 }
 
-bool LicenseManager::importLicenseFile (const juce::File& file)
+bool LicenseManager::importLicenseData (const juce::String& data)
 {
-    if (! file.existsAsFile())
-    {
-        lastErrorText = "License file not found";
-        return false;
-    }
-
-    const auto data = file.loadFileAsString();
     LicensePayload payload;
     if (! LicenseCrypto::parseAndVerify (data, LicenseCrypto::productPublicKey(),
                                          payload, lastErrorText))
@@ -56,6 +49,16 @@ bool LicenseManager::importLicenseFile (const juce::File& file)
     licenseText = data;
     lastErrorText.clear();
     return true;
+}
+
+bool LicenseManager::importLicenseFile (const juce::File& file)
+{
+    if (! file.existsAsFile())
+    {
+        lastErrorText = "License file not found";
+        return false;
+    }
+    return importLicenseData (file.loadFileAsString());
 }
 
 bool LicenseManager::verifyLicense() const

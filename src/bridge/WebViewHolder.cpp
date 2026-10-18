@@ -676,6 +676,26 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 proc.midiLearnManager.startLearning (id);
                                 complete (juce::var (true));
                             })
+                        .withNativeFunction ("importLicense",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                juce::String text;
+                                if (args.size() > 0 && args[0].isObject())
+                                    text = args[0].getProperty ("text", "").toString();
+                                else if (args.size() > 0)
+                                    text = args[0].toString();
+                                if (proc.importProductLicenseText (text))
+                                {
+                                    pushHost();
+                                    complete (juce::var (true));
+                                }
+                                else
+                                {
+                                    const auto err = proc.licenseError();
+                                    complete (failVar (err.isNotEmpty() ? err
+                                                                        : juce::String ("License rejected")));
+                                }
+                            })
                         .withNativeFunction ("pickFile",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {

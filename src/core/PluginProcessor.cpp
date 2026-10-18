@@ -196,6 +196,14 @@ bool NeuroKoreAudioProcessor::importProductLicense (const juce::File& file)
     return true;
 }
 
+bool NeuroKoreAudioProcessor::importProductLicenseText (const juce::String& text)
+{
+    if (! licenseManager.importLicenseData (text))
+        return false;
+    isLicensed.store (true);
+    return true;
+}
+
 NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
 {
     UiSettings::get().removeListener (this);

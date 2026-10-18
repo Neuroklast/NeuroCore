@@ -27,6 +27,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - IR preview is an immutable snapshot published by atomic pointer. `mixIrPreview` loads the pointer once and never frees. Old snaps retire after the mix epoch advances, on the message thread. Do not `setSize` a buffer the audio thread is reading, and do not add a blocking audio lock for preview.
 - MIDI learn on the audio thread is a 128-slot atomic parameter-pointer table plus one pending-CC event. Do not take a SpinLock, copy `juce::String`, or insert maps in `processMidiMessages`. `drainLearnEvents` publishes strings on the message thread.
 - Demo-expired Mix is an engine cap on the dry/wet smoother (`wetMixCap`). Do not zero a local `mix` the engine never reads, and do not write APVTS `dryWet` to enforce the license.
+- Online license activate is not an HTTP-200 success. Extract a `NEUROKORE LICENSE` document, then native verify-and-store. Report installed only after that import. A JSON `{ok:true}` is not a license.
 
 ## Circuit
 

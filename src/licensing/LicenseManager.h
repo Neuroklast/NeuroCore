@@ -10,6 +10,7 @@ public:
     LicenseManager();
 
     bool importLicenseFile (const juce::File& file);
+    bool importLicenseData (const juce::String& data);
     bool verifyLicense() const;
     juce::String licensedEmail() const;
     juce::String licensedIssued() const;

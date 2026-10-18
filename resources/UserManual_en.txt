@@ -155,7 +155,7 @@ Cabinets (IR)
 
 Unlicensed: **14-day demo** from the first launch on this machine. The status bar and Settings → License show remaining days and the end date (for example `DEMO 12d · 3 Sep 2026`).
 
-When the demo ends, Mix is forced dry. Load a `.lic` via Settings → License (Install .lic, or paste a key if you bought online). Licensed machines show **LIC** and your buyer email.
+When the demo ends, Mix is forced dry. Load a signed `.lic` via Settings → License (Install .lic). Online Activate installs a license only after the plugin verifies the document and stores it. Licensed machines show **LIC** and your buyer email.
 
 The Software is licensed, not sold. Third-party pieces (including the audio engine toolkit and VST3) stay with their owners.
 

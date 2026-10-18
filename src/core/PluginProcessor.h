@@ -229,6 +229,7 @@ public:
     juce::String  licensedIssued() const { return licenseManager.licensedIssued(); }
     juce::String  licenseError() const { return licenseManager.lastError(); }
     bool          importProductLicense (const juce::File& file);
+    bool          importProductLicenseText (const juce::String& text);
 
     /** NaN/jump/crackle diagnostics (log file under AppData/NEUROKLAST/NeuroKore). */
     AudioDiagnostics& getAudioDiagnostics() noexcept { return dspEngine.getDiagnostics(); }

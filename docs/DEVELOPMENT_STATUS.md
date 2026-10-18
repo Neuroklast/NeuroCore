@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (demo mix cap)  
+**Stand:** 2026-10-18 (license activate import)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/demo-mix-cap`
+**Branch:** `fix/license-activate-import`
+
+## License activate import (2026-10-18)
+
+Online Activate succeeds only after the reply contains a `NEUROKORE LICENSE` document and native `importLicense` verifies and stores it. HTTP 200 without a document is not “License stored”. Install .lic remains the offline path.
 
 ## Demo mix cap (2026-10-18)
 
