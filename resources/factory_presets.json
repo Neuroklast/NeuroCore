@@ -9566,7 +9566,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Pad Cloud Hall\n# Long hall + slow chorus. Pads.\n\nparam a = Size [0.45, 0.88]\nparam b = Rate [0.05, 0.4]\nparam c = Mix [0.2, 0.6]\nreverb1: size = a; decay = 2.4; damp = 0.4; mix = c; width = 0.85\nosc1: shape = sine; freq = b; depth = 1\ndelay1: time = 16 + osc1 * 8; feedback = 0.08; mix = 0.2; damp = 6000\n",
+    "script": "# Pad Cloud Hall\n# Long hall + slow chorus. Pads.\n\nparam a = Size [0.45, 0.88]\nparam b = Rate [0.05, 0.4]\nparam c = Mix [0.2, 0.6]\nreverb1: size = a; decay = 0.88; damp = 0.4; mix = c; width = 0.85\nosc1: shape = sine; freq = b; depth = 1\ndelay1: time = 16 + osc1 * 8; feedback = 0.08; mix = 0.2; damp = 6000\n",
     "tags": [
       "ambient",
       "chorus",

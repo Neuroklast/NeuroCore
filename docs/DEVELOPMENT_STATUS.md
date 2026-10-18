@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace P1 resize)  
+**Stand:** 2026-10-18 (patch workspace PR8)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-p1-resize`
+**Branch:** `feat/patch-workspace-pr8`
+
+## Patch workspace Pad Cloud Hall (2026-10-18)
+
+Pad Cloud Hall walks select → Source → edit → Apply → Undo → tab → invalid DSL → CONFLICT on the real stores. Reverb `decay` is 0–1 like the engine (factory was 2.4 and Apply refused). Camera does not pan on Terminal select. Native WebView2 / DAW not certified this turn.
 
 ## Patch workspace Source resize (2026-10-18)
 
