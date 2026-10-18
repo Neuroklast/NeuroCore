@@ -1,4 +1,4 @@
-import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
+import { getNativeFunction, hasJuceBridge, nativeCallResult, type NativeResult } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryExplorerRows, factoryRows, findFactory } from "./factoryCatalog";
@@ -74,15 +74,18 @@ export async function requestPresetAction(cmd: {
     useHostStore.setState({ pendingPreset: cmd, overlay: "discard", overlayReturn: ret });
     return false;
   }
-  await presetAction(cmd);
-  return true;
+  const result = await presetAction(cmd);
+  return result.ok;
 }
 
 export async function confirmDiscard(): Promise<void> {
   const pending = useHostStore.getState().pendingPreset;
-  useHostStore.setState({ overlay: null, overlayReturn: null, pendingPreset: null, presetDirty: false });
+  useHostStore.setState({ overlay: null, overlayReturn: null, pendingPreset: null });
   if (pending) {
-    await presetAction(pending);
+    const result = await presetAction(pending);
+    if (result.ok) {
+      useHostStore.setState({ presetDirty: false });
+    }
   }
 }
 
@@ -91,34 +94,49 @@ export function cancelDiscard(): void {
   useHostStore.setState({ overlay: ret, overlayReturn: null, pendingPreset: null });
 }
 
+async function invokePreset(cmd: {
+  action: string;
+  name?: string;
+  author?: string;
+  category?: string;
+  tags?: string;
+}): Promise<NativeResult> {
+  try {
+    return nativeCallResult(await getNativeFunction("preset")(cmd));
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Native call failed" };
+  }
+}
+
 export async function presetAction(cmd: {
   action: string;
   name?: string;
   author?: string;
   category?: string;
   tags?: string;
-}): Promise<void> {
+}): Promise<NativeResult> {
   if (hasJuceBridge()) {
+    let result: NativeResult = { ok: false, error: "Native call failed" };
     if (cmd.action === "save" || cmd.action === "saveas") {
       await withCleanScriptForSave(async () => {
-        await getNativeFunction("preset")(cmd);
+        result = await invokePreset(cmd);
       });
-      return;
+      return result;
     }
-    await getNativeFunction("preset")(cmd);
-    if (cmd.action === "load" || cmd.action === "prev" || cmd.action === "next" || cmd.action === "new") {
+    result = await invokePreset(cmd);
+    if (result.ok && (cmd.action === "load" || cmd.action === "prev" || cmd.action === "next" || cmd.action === "new")) {
       resetMuteSolo();
     }
-    return;
+    return result;
   }
   const names = factoryRows().map((p) => p.name);
   if (cmd.action === "save" || cmd.action === "saveas") {
     const name = (cmd.name ?? "").trim();
     if (! name) {
-      return;
+      return { ok: false, error: "save needs name" };
     }
     if (findFactory(name) != null) {
-      return;
+      return { ok: false, error: "Factory presets cannot be overwritten" };
     }
     const script = stripMuteComments(useAstStore.getState().lastValidScript || useAstStore.getState().script);
     const snap: UserSnap = {
@@ -139,7 +157,8 @@ export async function presetAction(cmd: {
       tags: [],
     });
     useHostStore.getState().applyPresets({ name, list });
-    return;
+    useHostStore.setState({ presetDirty: false });
+    return { ok: true };
   }
   if (cmd.action === "load" && cmd.name) {
     const user = userSnaps.get(cmd.name);
@@ -154,11 +173,11 @@ export async function presetAction(cmd: {
         astJson: JSON.stringify(doc),
         diagnostics: [],
       });
-      return;
+      return { ok: true };
     }
     resetMuteSolo();
     applyLocal(cmd.name);
-    return;
+    return { ok: true };
   }
   if ((cmd.action === "prev" || cmd.action === "next") && names.length > 0) {
     const rows = useHostStore.getState().presets;
@@ -171,7 +190,7 @@ export async function presetAction(cmd: {
       cmd.action === "next" ? 1 : -1,
       explorerSession.cat,
     ));
-    return;
+    return { ok: true };
   }
   if (cmd.action === "new") {
     resetMuteSolo();
@@ -185,5 +204,7 @@ export async function presetAction(cmd: {
       astJson: JSON.stringify(doc),
       diagnostics: [],
     });
+    return { ok: true };
   }
+  return { ok: false, error: "Unknown preset action" };
 }

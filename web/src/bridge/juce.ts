@@ -77,3 +77,34 @@ export function onNativeEvent(id: string, fn: (payload: unknown) => void): () =>
 export function hasJuceBridge(): boolean {
   return typeof window !== "undefined" && window.__JUCE__?.backend != null;
 }
+
+export type NativeResult = { ok: true } | { ok: false; error: string };
+
+export function nativeCallResult(value: unknown): NativeResult {
+  if (value === true) {
+    return { ok: true };
+  }
+  if (value && typeof value === "object") {
+    const rec = value as Record<string, unknown>;
+    if (rec.ok === true) {
+      return { ok: true };
+    }
+    if (rec.ok === false) {
+      const diags = rec.diagnostics;
+      if (Array.isArray(diags) && diags[0] && typeof diags[0] === "object") {
+        const message = (diags[0] as { message?: unknown }).message;
+        if (message != null && String(message).trim()) {
+          return { ok: false, error: String(message) };
+        }
+      }
+      if (typeof rec.error === "string" && rec.error.trim()) {
+        return { ok: false, error: rec.error };
+      }
+      if (typeof rec.message === "string" && rec.message.trim()) {
+        return { ok: false, error: rec.message };
+      }
+      return { ok: false, error: "Native call failed" };
+    }
+  }
+  return { ok: false, error: "Native call failed" };
+}

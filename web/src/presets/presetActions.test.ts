@@ -93,7 +93,11 @@ describe("preset actions without the JUCE bridge", () => {
   it("refuses to save over a factory name", async () => {
     seedFactoryPresets();
     await presetAction({ action: "load", name: "Blues Break OD" });
-    await presetAction({ action: "save", name: "Blues Break OD" });
+    const result = await presetAction({ action: "save", name: "Blues Break OD" });
+    expect(result.ok).toBe(false);
+    if (! result.ok) {
+      expect(result.error).toMatch(/Factory/i);
+    }
     const row = useHostStore.getState().presets.find((p) => p.name === "Blues Break OD");
     expect(row?.factory).not.toBe(false);
   });

@@ -85,7 +85,7 @@ Unit meters
 Click the preset name. Categories stay on the left, names in the middle, details on the right. The last search, category and scroll come back when you reopen; the first open highlights the sound that is loaded. Click a name to read it, then Load Preset, or double-click / Enter to load. Search includes names, tags and descriptions. A star on the detail pane marks a favourite. The title X closes the library.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
-- **Your** sounds live in your user preset folder as `.nrk` files.
+- **Your** sounds live in your user preset folder as `.nrk` files. If save fails, the dialog stays open with the reason and unsaved edits stay marked.
 - A star on the name means unsaved edits. Next / previous / load another will ask to discard, keep editing, or Save As... (turn that prompt off in Settings if you want).
 - Discard restores the last loaded or saved version.
 - Import artist packs (a folder of `.nrk`, or a zip) from the explorer.

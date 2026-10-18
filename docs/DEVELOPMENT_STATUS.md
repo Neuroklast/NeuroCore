@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (license activate import)  
+**Stand:** 2026-10-18 (preset action errors)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/license-activate-import`
+**Branch:** `fix/preset-action-errors`
+
+## Preset action errors (2026-10-18)
+
+Native preset save/load `ok:false` is an error, not success. The explorer save dialog waits, shows the message, stays open, and keeps dirty until a confirmed save.
 
 ## License activate import (2026-10-18)
 
