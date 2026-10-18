@@ -55,7 +55,7 @@ Signal order is the compiled graph, not source-line order.
 - Manual `xy` is user-owned. Selection, hover, Source resize, window resize, and tab change do not Arrange.
 - Compact / Arrange / new preset may pack.
 
-A short serial chain that wraps because DSP plates are 256×224 with 128 px air is a layout bug to fix in the packer or the plate size, not with a per-preset special case.
+A short serial chain (factory Drone Low Bed) sits on one L→R row in the Circuit pane. DSP plates are 128 wide, IN/OUT 96, compact air is `CHIP_AIR_X` (64). Wrap only when that geometry overflows `viewW`. Not a per-preset special case.
 
 ## Terminal panes
 
