@@ -1,5 +1,5 @@
 import type { AstDocument, AstNode } from "../bridge/ast";
-import { peakToDb } from "../bridge/telemetry";
+import { gonioCorr, peakToDb } from "../bridge/telemetry";
 import { lettersInExpr } from "../assemble/bindLinks";
 import { isLfoNode, isModulatorNode } from "../assemble/flowFromAst";
 import { parseLfoShape, resolveLfoHz, lfoWave, type LfoKnob, type LfoShape } from "../assemble/lfoLamp";
@@ -56,9 +56,6 @@ export function stereoMetrics(
   const n = Math.min(gonioX.length, gonioY.length);
   let peakL = 0;
   let peakR = 0;
-  let accLr = 0;
-  let accL2 = 0;
-  let accR2 = 0;
   for (let i = 0; i < n; i += 1) {
     const x = gonioX[i] ?? 0;
     const y = gonioY[i] ?? 0;
@@ -72,16 +69,11 @@ export function stereoMetrics(
     if (ar > peakR) {
       peakR = ar;
     }
-    accLr += l * r;
-    accL2 += l * l;
-    accR2 += r * r;
   }
-  const den = Math.sqrt(accL2 * accR2);
-  const corr = den > 1e-12 ? accLr / den : 0;
   return {
     peakL,
     peakR,
-    corr: Math.max(-1, Math.min(1, corr)),
+    corr: gonioCorr(gonioX, gonioY),
   };
 }
 

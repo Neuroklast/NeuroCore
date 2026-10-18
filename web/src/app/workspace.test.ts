@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
+import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, telemetryWaitMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -24,6 +24,13 @@ describe("workspace modes", () => {
     expect(telemetryIntervalMs("face", 30)).toBe(33);
     expect(telemetryIntervalMs("assemble")).toBe(500);
     expect(telemetryIntervalMs("hack")).toBe(500);
+  });
+
+  it("sleeps only the remainder of the poll interval after a fetch", () => {
+    expect(telemetryWaitMs(16, 4)).toBe(12);
+    expect(telemetryWaitMs(16, 16)).toBe(0);
+    expect(telemetryWaitMs(16, 40)).toBe(0);
+    expect(telemetryWaitMs(0, 4)).toBe(0);
   });
 
   it("mounts Terminal only on that tab so Monaco is not born inside display:none", () => {

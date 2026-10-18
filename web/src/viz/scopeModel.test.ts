@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   deltaSamples,
@@ -79,6 +82,14 @@ describe("scope deck model", () => {
     expect(treble).toBeGreaterThanOrEqual(mark(2000).bin - 2);
     expect(treble).toBeLessThanOrEqual(mark(5000).bin + 2);
     expect(treble).toBeGreaterThan(mark(200).bin + 8);
+  });
+
+  it("does not run a nested trigonometric DFT on the spectrogram hop", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(path.join(here, "scopeModel.ts"), "utf8");
+    expect(src).toContain("rectBinMags");
+    expect(src).not.toContain("Math.cos(w * i)");
+    expect(src).not.toContain("Math.sin(w * i)");
   });
 
   it("dfts the newest 256 samples of a longer buffer", () => {

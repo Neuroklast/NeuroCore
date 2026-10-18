@@ -123,11 +123,32 @@ function magLerp(nHalf: number, k: number): number {
 }
 
 function pow2le(n: number): number {
-  let p = 16;
+  let p = 1;
   while (p * 2 <= n) {
     p *= 2;
   }
   return p;
+}
+
+/** Last `take` samples, rectangular window, |X[k]| / n. Writes magWork[0..n/2]. */
+export function rectBinMags(samples: ArrayLike<number>, take: number): { n: number; mags: Float32Array } {
+  const nRaw = Math.min(samples.length, Math.max(0, take));
+  const n = nRaw >= 2 ? pow2le(nRaw) : 0;
+  if (n < 2) {
+    return { n: nRaw, mags: magWork.subarray(0, 1) };
+  }
+  const off = Math.max(0, samples.length - nRaw) + (nRaw - n);
+  for (let i = 0; i < n; i += 1) {
+    reWork[i] = samples[off + i] ?? 0;
+    imWork[i] = 0;
+  }
+  fft(reWork, imWork, n);
+  const half = n >> 1;
+  const inv = 1 / n;
+  for (let k = 0; k <= half; k += 1) {
+    magWork[k] = Math.hypot(reWork[k] ?? 0, imWork[k] ?? 0) * inv;
+  }
+  return { n, mags: magWork.subarray(0, half + 1) };
 }
 
 /** One-shot Hann FFT. Log-spaced display bins, dB-mapped 0..1. */

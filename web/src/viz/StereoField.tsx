@@ -1,26 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useHostStore } from "../store/hostStore";
+import { useTelemetryStore } from "../store/telemetryStore";
 import { liveTheme, themeRgba } from "../theme/theme";
 import { subscribeVizClock } from "../theme/vizClock";
 import { fitCanvas } from "./canvasFit";
 import { gonioPoint, SCOPE_COLOR } from "./scopeModel";
 
 /** Output L/R as a vector-scope cloud. Never a filled IN scribble. */
-export function StereoField({
-  gonioL,
-  gonioR,
-  count,
-}: {
-  gonioL: Float32Array;
-  gonioR: Float32Array;
-  count: number;
-}) {
+export function StereoField() {
   const ref = useRef<HTMLCanvasElement>(null);
   const theme = useHostStore((s) => s.theme);
-  const lRef = useRef(gonioL);
-  const rRef = useRef(gonioR);
-  lRef.current = gonioL;
-  rRef.current = gonioR;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -61,9 +50,10 @@ export function StereoField({
       ctx.lineTo(x0 + 6, y0 + side - 6);
       ctx.stroke();
 
-      const L = lRef.current;
-      const R = rRef.current;
-      const n = Math.max(0, Math.min(count, L.length, R.length));
+      const tel = useTelemetryStore.getState();
+      const L = tel.gonioL;
+      const R = tel.gonioR;
+      const n = Math.max(0, Math.min(L.length, R.length));
       const ink = SCOPE_COLOR.out;
       ctx.fillStyle = ink;
       ctx.shadowColor = ink;
@@ -77,7 +67,7 @@ export function StereoField({
       ctx.shadowBlur = 0;
     };
     return subscribeVizClock(draw);
-  }, [count, theme]);
+  }, [theme]);
 
   return <canvas ref={ref} className="block h-full w-full" />;
 }

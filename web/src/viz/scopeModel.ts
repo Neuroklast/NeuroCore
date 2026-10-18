@@ -1,5 +1,6 @@
 import { DISPLAY_DB_FLOOR, peakToDb } from "../bridge/telemetry";
 import { liveTheme } from "../theme/theme";
+import { rectBinMags } from "./audioAnalyze";
 
 export type ScopeSource = "in" | "out" | "both";
 export type ScopeXScale = "samples" | "time" | "freq";
@@ -170,29 +171,7 @@ export function waveSampleMarks(nSamples: number, bins = SPEC_BINS): Array<{ bin
   }));
 }
 
-function dftMagnitudes(samples: ArrayLike<number>): { mags: number[]; n: number } {
-  const n = Math.min(samples.length, 256);
-  const off = Math.max(0, samples.length - n);
-  const half = Math.max(0, Math.floor(n / 2));
-  const mags = new Array<number>(half + 1).fill(0);
-  if (n < 2) {
-    return { mags, n };
-  }
-  for (let k = 0; k <= half; k += 1) {
-    let re = 0;
-    let im = 0;
-    const w = (-2 * Math.PI * k) / n;
-    for (let i = 0; i < n; i += 1) {
-      const x = Number(samples[off + i] ?? 0);
-      re += x * Math.cos(w * i);
-      im += x * Math.sin(w * i);
-    }
-    mags[k] = Math.sqrt(re * re + im * im) / n;
-  }
-  return { mags, n };
-}
-
-function magAt(mags: number[], k: number): number {
+function magAt(mags: ArrayLike<number>, k: number): number {
   if (mags.length < 1) {
     return 0;
   }
@@ -207,7 +186,7 @@ function magAt(mags: number[], k: number): number {
 export function logSpectrumBins(samples: ArrayLike<number>, sr: number, bins = SPEC_BINS): number[] {
   const count = Math.max(1, Math.floor(bins));
   const out = new Array<number>(count).fill(0);
-  const { mags, n } = dftMagnitudes(samples);
+  const { mags, n } = rectBinMags(samples, 256);
   if (n < 2 || mags.length < 2) {
     return out;
   }

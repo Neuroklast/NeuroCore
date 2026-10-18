@@ -7,6 +7,7 @@ import {
   analyzeFrame,
   createAnalyze,
   feedAnalyze,
+  rectBinMags,
   resetAnalyze,
   SPEC_BINS,
 } from "./audioAnalyze";
@@ -100,6 +101,25 @@ describe("unit audio analyze", () => {
     const subN = Math.max(2, Math.floor(SPEC_BINS * (Math.log(200 / 20) / span)));
     expect(bass.spec.slice(0, subN).some((v) => v > 0.2)).toBe(true);
     expect(hiss.spec.slice(1, subN).every((v) => v > 0)).toBe(true);
+  });
+
+  it("rectBinMags matches a rectangular DFT peak bin for a 256-sample tone", () => {
+    const sr = 48000;
+    const n = 256;
+    const hz = 187.5;
+    const x = tone(hz, sr, n);
+    const { mags } = rectBinMags(x, n);
+    let peak = 0;
+    let at = 0;
+    for (let k = 0; k < mags.length; k += 1) {
+      const v = mags[k] ?? 0;
+      if (v > peak) {
+        peak = v;
+        at = k;
+      }
+    }
+    expect(at).toBe(Math.round((hz * n) / sr));
+    expect(peak).toBeGreaterThan(0.05);
   });
 
   it("analyzeFrame and feedAnalyze do not allocate Float32Array per hop", () => {
