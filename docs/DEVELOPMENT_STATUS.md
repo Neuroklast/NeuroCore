@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (lock-miss dry delay)  
+**Stand:** 2026-10-18 (VST3 moduleinfo factory classes)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/lock-miss-dry-delay`
+**Branch:** `fix/vst3-moduleinfo-classes`
+
+## VST3 moduleinfo factory classes (2026-10-18)
+
+`moduleinfo.json` lists every class JUCE 8.0.6 `getClassEntries` registers: Audio Module, Component Controller, Plugin Compatibility. CIDs come from `juce::VST3ClientExtensions`. Shipped Windows component/controller CIDs stay frozen. `JUCE_VST3_CAN_REPLACE_VST2` stays 0.
 
 ## Lock-miss dry delay (2026-10-18)
 
