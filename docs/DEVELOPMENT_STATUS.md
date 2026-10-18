@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR C4 FaceHost)  
-**Version:** 0.6.10-beta  
+**Stand:** 2026-10-19 (0.7.0-beta)  
+**Version:** 0.7.0-beta  
 **Branch:** `feat/signal-lab-pr-c4`
+
+## 0.7.0-beta (2026-10-19)
+
+Product version is 0.7.0-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Signal-lab C4 (all twelve NodeFace families + FaceHost knobs/BPM/SR) is on this label. Layout wrap and Terminal navigator stay later work.
 
 ## Circuit FaceHost knobs / tempo / sample rate (2026-10-18)
 

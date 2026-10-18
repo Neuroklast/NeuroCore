@@ -1,6 +1,6 @@
 # Industrial Signal Laboratory
 
-Binding visual contracts for Circuit and Terminal. Product version stays **0.6.10-beta**. Circuit stays a headless graph (`boardStore` + DOM chips + one cable canvas). One Monaco document (`PATCH_MODEL_URI`).
+Binding visual contracts for Circuit and Terminal. Product version stays **0.7.0-beta**. Circuit stays a headless graph (`boardStore` + DOM chips + one cable canvas). One Monaco document (`PATCH_MODEL_URI`).
 
 Read this after `docs/agents/ui-ux.md` when changing chip faces, Terminal panes, or board tokens.
 
