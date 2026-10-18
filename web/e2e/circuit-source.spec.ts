@@ -33,5 +33,17 @@ test.describe("circuit source inspector", () => {
       }
     }
     await expect(panel.getByText("Edit Source")).toBeVisible();
+    const handle = panel.locator("[data-source-resize]");
+    await expect(handle).toBeVisible();
+    const before = p.w;
+    const hb = await box(handle);
+    await page.mouse.move(hb.x + hb.w / 2, hb.y + hb.h / 2);
+    await page.mouse.down();
+    await page.mouse.move(hb.x + hb.w / 2 - 40, hb.y + hb.h / 2);
+    await page.mouse.up();
+    const after = await box(panel);
+    expect(after.w).toBeGreaterThanOrEqual(360);
+    expect(after.w).toBeLessThanOrEqual(420);
+    expect(after.w).not.toBe(before);
   });
 });
