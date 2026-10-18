@@ -2,10 +2,10 @@ import {
   BRACE_ANGLES,
   CLAMP_ANGLES,
   SHARD_COUNT,
+  packOrbitShards,
   type ContainmentLayout,
   type ContainmentPalette,
   type ContainmentPose,
-  type OrbitShard,
 } from "./containmentModel";
 
 const PASS_VS = `#version 300 es
@@ -383,7 +383,6 @@ function linkOrNull(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string): W
 export type ContainmentDraw = {
   layout: ContainmentLayout;
   pose: ContainmentPose;
-  shards: OrbitShard[];
   palette: ContainmentPalette;
   dpr: number;
   encode: number;
@@ -451,59 +450,66 @@ export function createContainment(gl: WebGL2RenderingContext): ContainmentGpu | 
   const clampAng = new Float32Array(CLAMP_ANGLES);
   const braceAng = new Float32Array(BRACE_ANGLES);
   const discharge = new Float32Array(4);
+  let statics = false;
+  let layoutKey = "";
+  let themeKey = "";
 
   return {
     bind(args) {
-      const { layout: L, pose, shards, palette, dpr, encode } = args;
+      const { layout: L, pose, palette, dpr, encode } = args;
       gl.useProgram(prog);
-      gl.uniform2f(u.uCenter, L.cx, L.cy);
-      gl.uniform1f(u.uBallR, L.ballR);
-      gl.uniform1f(u.uDpr, dpr);
-      gl.uniform1f(u.uEncode, encode);
+      if (! statics) {
+        gl.uniform1fv(u.uClampAng, clampAng);
+        gl.uniform1fv(u.uBraceAng, braceAng);
+        statics = true;
+      }
+      const nextLayout = `${L.paneW}|${L.paneH}|${dpr}|${encode}`;
+      if (nextLayout !== layoutKey) {
+        layoutKey = nextLayout;
+        gl.uniform2f(u.uCenter, L.cx, L.cy);
+        gl.uniform1f(u.uBallR, L.ballR);
+        gl.uniform1f(u.uDpr, dpr);
+        gl.uniform1f(u.uEncode, encode);
+        const rings = L.rings;
+        gl.uniform3f(u.uRingR, rings[0]!.r, rings[1]!.r, rings[2]!.r);
+        gl.uniform3f(u.uRingW, rings[0]!.thick, rings[1]!.thick, rings[2]!.thick);
+        gl.uniform3f(u.uRingGap, rings[0]!.gap, rings[1]!.gap, rings[2]!.gap);
+        gl.uniform3f(u.uRingSeg, rings[0]!.segments, rings[1]!.segments, rings[2]!.segments);
+        gl.uniform3f(u.uRingPhase, rings[0]!.phase, rings[1]!.phase, rings[2]!.phase);
+        gl.uniform3f(u.uRingBright, rings[0]!.bright, rings[1]!.bright, rings[2]!.bright);
+        const c = L.clamp;
+        gl.uniform4f(u.uJaw, c.jawX, c.jawHx, c.jawHy, 0);
+        gl.uniform4f(u.uArm, c.armX, c.armHx, c.armHy, 0);
+        gl.uniform4f(u.uYoke, c.yokeX, c.yokeHx, c.yokeHy, 0);
+        gl.uniform3f(u.uHinge, c.hingeX, c.hingeR, 0);
+        gl.uniform3f(u.uPip, c.pipX, c.pipR, 0);
+        gl.uniform1f(u.uSplitX, c.splitX);
+        const o0 = L.orbits[0]!;
+        const o1 = L.orbits[1]!;
+        gl.uniform4f(u.uOrbit0, o0.rx, o0.ry, o0.tilt, 0);
+        gl.uniform4f(u.uOrbit1, o1.rx, o1.ry, o1.tilt, 0);
+        gl.uniform4f(u.uTicks, L.ticks.inner, L.ticks.outer, L.ticks.count, 0);
+        gl.uniform2f(u.uBracket, L.brackets.span, L.brackets.arm);
+      }
+      const nextTheme = `${palette.accent[0]}|${palette.accent[1]}|${palette.cyan[0]}|${palette.metal[0]}`;
+      if (nextTheme !== themeKey) {
+        themeKey = nextTheme;
+        gl.uniform3fv(u.uMetalLo, palette.metalLo);
+        gl.uniform3fv(u.uMetal, palette.metal);
+        gl.uniform3fv(u.uMetalHi, palette.metalHi);
+        gl.uniform3fv(u.uAccent, palette.accent);
+        gl.uniform3fv(u.uCyan, palette.cyan);
+      }
       gl.uniform1f(u.uPulse, pose.pulse);
       gl.uniform1f(u.uSurge, pose.clampSurge);
       gl.uniform1f(u.uGlow, pose.glow);
-      gl.uniform3fv(u.uMetalLo, palette.metalLo);
-      gl.uniform3fv(u.uMetal, palette.metal);
-      gl.uniform3fv(u.uMetalHi, palette.metalHi);
-      gl.uniform3fv(u.uAccent, palette.accent);
-      gl.uniform3fv(u.uCyan, palette.cyan);
-      const rings = L.rings;
-      gl.uniform3f(u.uRingR, rings[0]!.r, rings[1]!.r, rings[2]!.r);
-      gl.uniform3f(u.uRingW, rings[0]!.thick, rings[1]!.thick, rings[2]!.thick);
       gl.uniform3f(u.uRingRot, pose.ringRot[0], pose.ringRot[1], pose.ringRot[2]);
-      gl.uniform3f(u.uRingGap, rings[0]!.gap, rings[1]!.gap, rings[2]!.gap);
-      gl.uniform3f(u.uRingSeg, rings[0]!.segments, rings[1]!.segments, rings[2]!.segments);
-      gl.uniform3f(u.uRingPhase, rings[0]!.phase, rings[1]!.phase, rings[2]!.phase);
-      gl.uniform3f(u.uRingBright, rings[0]!.bright, rings[1]!.bright, rings[2]!.bright);
-      const c = L.clamp;
-      gl.uniform4f(u.uJaw, c.jawX, c.jawHx, c.jawHy, 0);
-      gl.uniform4f(u.uArm, c.armX, c.armHx, c.armHy, 0);
-      gl.uniform4f(u.uYoke, c.yokeX, c.yokeHx, c.yokeHy, 0);
-      gl.uniform3f(u.uHinge, c.hingeX, c.hingeR, 0);
-      gl.uniform3f(u.uPip, c.pipX, c.pipR, 0);
-      gl.uniform1f(u.uSplitX, c.splitX);
-      gl.uniform1fv(u.uClampAng, clampAng);
-      gl.uniform1fv(u.uBraceAng, braceAng);
       discharge[0] = pose.discharge[0];
       discharge[1] = pose.discharge[1];
       discharge[2] = pose.discharge[2];
       discharge[3] = pose.discharge[3];
       gl.uniform1fv(u.uDischarge, discharge);
-      const o0 = L.orbits[0]!;
-      const o1 = L.orbits[1]!;
-      gl.uniform4f(u.uOrbit0, o0.rx, o0.ry, o0.tilt, 0);
-      gl.uniform4f(u.uOrbit1, o1.rx, o1.ry, o1.tilt, 0);
-      gl.uniform4f(u.uTicks, L.ticks.inner, L.ticks.outer, L.ticks.count, 0);
-      gl.uniform2f(u.uBracket, L.brackets.span, L.brackets.arm);
-      shardPack.fill(0);
-      for (let i = 0; i < shards.length && i < SHARD_COUNT; i += 1) {
-        const s = shards[i]!;
-        shardPack[i * 4] = s.x;
-        shardPack[i * 4 + 1] = s.y;
-        shardPack[i * 4 + 2] = s.z;
-        shardPack[i * 4 + 3] = s.size;
-      }
+      packOrbitShards(L, pose.orbitPhase, shardPack);
       gl.uniform4fv(u.uShards, shardPack);
     },
     draw(layer, pass) {

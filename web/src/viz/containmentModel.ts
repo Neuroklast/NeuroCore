@@ -222,8 +222,8 @@ export function containmentLayout(paneW: number, paneH: number): ContainmentLayo
   };
 }
 
-export function orbitShards(layout: ContainmentLayout, phase: number): OrbitShard[] {
-  const out: OrbitShard[] = [];
+export function packOrbitShards(layout: ContainmentLayout, phase: number, dest: Float32Array): void {
+  dest.fill(0);
   let n = 0;
   for (const orbit of layout.orbits) {
     for (let i = 0; i < orbit.count && n < SHARD_COUNT; i += 1) {
@@ -232,17 +232,37 @@ export function orbitShards(layout: ContainmentLayout, phase: number): OrbitShar
       const y0 = orbit.ry * Math.sin(a);
       const ct = Math.cos(orbit.tilt);
       const st = Math.sin(orbit.tilt);
-      out.push({
-        x: layout.cx + x0,
-        y: layout.cy + y0 * ct,
-        z: y0 * st,
-        size: (1.5 + (n % 3) * 0.55) * (y0 * st < 0 ? 0.55 : 1),
-      });
+      const z = y0 * st;
+      const o = n * 4;
+      dest[o] = layout.cx + x0;
+      dest[o + 1] = layout.cy + y0 * ct;
+      dest[o + 2] = z;
+      dest[o + 3] = (1.5 + (n % 3) * 0.55) * (z < 0 ? 0.55 : 1);
       n += 1;
     }
   }
+}
+
+export function orbitShards(layout: ContainmentLayout, phase: number): OrbitShard[] {
+  const pack = orbitShardWork;
+  packOrbitShards(layout, phase, pack);
+  const out: OrbitShard[] = [];
+  for (let i = 0; i < SHARD_COUNT; i += 1) {
+    const size = pack[i * 4 + 3] ?? 0;
+    if (size < 0.2) {
+      continue;
+    }
+    out.push({
+      x: pack[i * 4] ?? 0,
+      y: pack[i * 4 + 1] ?? 0,
+      z: pack[i * 4 + 2] ?? 0,
+      size,
+    });
+  }
   return out;
 }
+
+const orbitShardWork = new Float32Array(SHARD_COUNT * 4);
 
 export function containmentPalette(theme: ThemePalette): ContainmentPalette {
   const line = rgbTriplet(theme.lineRgb);
