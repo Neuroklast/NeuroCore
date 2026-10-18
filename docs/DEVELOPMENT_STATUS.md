@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (one hit one field)  
+**Stand:** 2026-10-18 (telemetry copy claim)  
 **Version:** 0.6.9-beta  
-**Branch:** `fix/one-hit-one-field`
+**Branch:** `fix/telemetry-copy-stable`
+
+## Telemetry copy claim (2026-10-18)
+
+NKTM latest-value uses three slots. `copyLatest` claims the published slot; `publish` writes a third. Two audio publishes during a UI memcpy cannot overwrite the bytes being copied. Concurrent copies stay a valid NKTM frame.
 
 ## One hit one field (2026-10-18)
 

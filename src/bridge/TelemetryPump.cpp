@@ -5,11 +5,20 @@
 namespace bridge
 {
 
+int TelemetryPump::writeIndex (int published, int reading) noexcept
+{
+    for (int i = 0; i < kSlotCount; ++i)
+        if (i != published && i != reading)
+            return i;
+    return (published + 1) % kSlotCount;
+}
+
 void TelemetryPump::reset() noexcept
 {
     published.store (0, std::memory_order_relaxed);
-    slots[0].size = 0;
-    slots[1].size = 0;
+    reading.store (-1, std::memory_order_relaxed);
+    for (auto& s : slots)
+        s.size = 0;
     std::fill (std::begin (scopeIn), std::end (scopeIn), 0.f);
     std::fill (std::begin (scopeOut), std::end (scopeOut), 0.f);
     lastInPeak = lastInRms = 0.f;
@@ -183,7 +192,8 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
     d.samplePos = samplePos;
     samplePos += (std::uint32_t) juce::jmax (0, n);
 
-    const int w = 1 - published.load (std::memory_order_relaxed);
+    const int w = writeIndex (published.load (std::memory_order_relaxed),
+                              reading.load (std::memory_order_acquire));
     const auto wrote = writeTelemetryFrame (slots[w].bytes, kMaxBytes, d,
                                             scopeIn, scopeOut, gonioX, gonioY);
     slots[w].size = (std::uint32_t) wrote;
@@ -194,11 +204,29 @@ std::size_t TelemetryPump::copyLatest (void* dest, std::size_t destBytes) const 
 {
     if (dest == nullptr || destBytes == 0)
         return 0;
-    const int r = published.load (std::memory_order_acquire);
+    int r = published.load (std::memory_order_acquire);
+    int spins = 0;
+    for (;;)
+    {
+        if (r < 0 || r >= kSlotCount)
+        {
+            reading.store (-1, std::memory_order_release);
+            return 0;
+        }
+        reading.store (r, std::memory_order_release);
+        const int again = published.load (std::memory_order_acquire);
+        if (again == r || ++spins >= 8)
+            break;
+        r = again;
+    }
     const auto n = (std::size_t) slots[r].size;
     if (n == 0 || n > destBytes)
+    {
+        reading.store (-1, std::memory_order_release);
         return 0;
+    }
     std::memcpy (dest, slots[r].bytes, n);
+    reading.store (-1, std::memory_order_release);
     return n;
 }
 

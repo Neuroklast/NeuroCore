@@ -14,7 +14,10 @@ class TelemetryPump
 public:
     static constexpr int kScopeN = 2048;
     static constexpr int kGonioN = 128;
+    static constexpr int kSlotCount = 3;
     static constexpr std::size_t kMaxBytes = 20480;
+    /** Next write slot. Must not be `published` or a live `reading` claim (−1 = none). */
+    static int writeIndex (int published, int reading) noexcept;
 
     void reset() noexcept;
     void setSampleRate (double sr) noexcept { hostSr = sr > 1.0 ? sr : 48000.0; }
@@ -36,8 +39,9 @@ private:
     static float peakOf (const juce::AudioBuffer<float>& src) noexcept;
     static float rmsOf (const juce::AudioBuffer<float>& src) noexcept;
 
-    Slot slots[2];
+    Slot slots[kSlotCount];
     std::atomic<int> published { 0 };
+    mutable std::atomic<int> reading { -1 };
     std::atomic<bool> wanted { true };
     float scopeIn[kScopeN] {};
     float scopeOut[kScopeN] {};
