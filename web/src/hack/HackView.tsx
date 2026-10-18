@@ -18,6 +18,7 @@ import {
   withHeaderComments,
 } from "./dslLanguage";
 import { nodeAtPosition, rangeForNode } from "./dslSourceMap";
+import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
 import {
   defineDslTheme,
   DSL_LANGUAGE_ID,
@@ -32,7 +33,8 @@ export function HackView() {
   const lastValidScript = useAstStore((s) => s.lastValidScript);
   const diagnostics = useAstStore((s) => s.diagnostics);
   const setDraftScript = useAstStore((s) => s.setDraftScript);
-  const [editing, setEditing] = useState(false);
+  const editing = useAstStore((s) => s.draftEditing);
+  const setEditing = useAstStore((s) => s.setDraftEditing);
   const setOverlay = useHostStore((s) => s.setOverlay);
   const knobs = useHostStore((s) => s.knobs);
   const presetName = useHostStore((s) => s.presetName);
@@ -45,6 +47,7 @@ export function HackView() {
   const [editorReady, setEditorReady] = useState(0);
   const frame = termFrame(editing);
   const theme = useTheme();
+  const banner = draftBanner(readPatchDocument().draftStatus);
 
   useEffect(() => {
     const monaco = monacoRef.current;
@@ -200,6 +203,11 @@ export function HackView() {
             Cancel
           </button>
         )}
+        {banner ? (
+          <span className="nk-clip nk-term-tool" data-draft-banner="">
+            {banner}
+          </span>
+        ) : null}
         {cabRows.map((row) => (
           <button
             key={row.slot}

@@ -52,9 +52,9 @@ export function readPatchDocument(): PatchDocument {
   return {
     activeScript,
     activeAst: s.lastValidAst,
-    activeRevision: 0,
+    activeRevision: s.activeRevision,
     draftScript,
-    draftRevision: 0,
+    draftRevision: s.draftRevision,
     draftStatus: s.diagnostics.length > 0
       ? "invalid"
       : draftLooksModified(draftScript, activeScript)
@@ -66,6 +66,16 @@ export function readPatchDocument(): PatchDocument {
 }
 
 /** Adapter over today's focusNodeId. Circuit's local selection is not included. */
+export function draftBanner(status: DraftStatus): string | null {
+  if (status === "modified" || status === "conflict") {
+    return "UNAPPLIED";
+  }
+  if (status === "invalid") {
+    return "INVALID";
+  }
+  return null;
+}
+
 export function readPatchSelection(): PatchSelection {
   const id = useHostStore.getState().focusNodeId;
   return {
