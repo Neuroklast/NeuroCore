@@ -1,8 +1,14 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (0.6.10-beta)  
+**Stand:** 2026-10-18 (patch workspace PR1)  
 **Version:** 0.6.10-beta  
-**Branch:** `bump/0.6.10-beta`
+**Branch:** `feat/patch-workspace-pr1`
+
+## Patch workspace baseline (2026-10-18)
+
+Circuit and Terminal are still two editors. Terminal `editing` is local `useState` and the tab unmounts Monaco. Circuit `selection` is local `useState`; `focusNodeId` is a single id. `astStore` has `script` / `lastValidScript` with no revision. Inspect `graphOp setArg` and Terminal `publishScript` are separate commit paths. Target contracts for draftRevision, shared selection origin/param, and a live activeRevision are `it.fails` until later PRs.
+
+Parameter chain today: Inspect native `graphOp setArg` → compile/ast event; Inspect browser `setCircuitArg` → `publishScript` canvas; Terminal Edit types into `script`, Save → `commitTerminalDraft` → `publishScript` editor. DSP is unchanged until native confirm.
 
 ## 0.6.10-beta (2026-10-18)
 
