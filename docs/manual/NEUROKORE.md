@@ -94,7 +94,7 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 ## Circuit
 
-The board is the same sound as Unit and Terminal.
+The board is the same sound as Unit and Terminal. **Source** opens a side panel with that chip’s definition. Clicking a chip does not start Edit. **Edit Source** types into the unapplied draft; **Apply** compiles it; **Discard** restores the last saved graph; **Open Full Terminal** is the same document full-screen. Opening Source does not pan the board or rewrite cables.
 
 Cables
 - Drag a chip by its body. Contacts sit on the left and right frame, equally spaced. Drag from an output (right) to an input (left).

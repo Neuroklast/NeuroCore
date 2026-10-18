@@ -11,7 +11,7 @@ import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
-import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute, hitBoardEdge } from "./boardEdit";
@@ -49,6 +49,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const camLive = useRef(useBoardStore.getState().camera);
   const camGesture = useRef(false);
   const [size, setSize] = useState({ w: 960, h: 420 });
+  const paneSizeRef = useRef({ w: 0, h: 0 });
   const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number; startX: number; startY: number; group: Record<string, { x: number; y: number }> } | null>(null);
   const lassoRef = useRef<SelectionRect | null>(null);
@@ -210,7 +211,17 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     const ro = new ResizeObserver(() => {
-      setSize({ w: el.clientWidth, h: el.clientHeight });
+      const next = { w: el.clientWidth, h: el.clientHeight };
+      const prev = paneSizeRef.current;
+      paneSizeRef.current = next;
+      setSize(next);
+      const moved = useBoardStore.getState().userMoved;
+      if (shouldFitCameraOnPaneSize(prev.w, prev.h, next.w, next.h, moved)) {
+        const ns = Object.values(useBoardStore.getState().nodes);
+        if (ns.length > 0) {
+          useBoardStore.getState().setCamera(fitCamera(ns, next));
+        }
+      }
     });
     ro.observe(el);
     setSize({ w: el.clientWidth, h: el.clientHeight });
@@ -236,7 +247,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     useBoardStore.getState().setCamera(fitCamera(ns, size));
-  }, [nodes, userMoved, size.w, size.h]);
+  }, [nodes, userMoved]);
 
   const applyLiveCamera = useCallback((cam: typeof camLive.current, commit = false) => {
     camLive.current = cam;
@@ -298,7 +309,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     return () => {
       cancel = true;
     };
-  }, [ast, origin, userMoved, size.w, size.h, Object.keys(nodes).length]);
+  }, [ast, origin, userMoved, Object.keys(nodes).length]);
 
   const onPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
     const pane = paneRef.current;

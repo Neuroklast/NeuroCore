@@ -19,6 +19,23 @@ export function zoomCamera(
   return { scale, tx: sx - before.x * scale, ty: sy - before.y * scale };
 }
 
+/** First valid pane may fit. Inspector split must not refit. User pan owns the camera. */
+export function shouldFitCameraOnPaneSize(
+  prevW: number,
+  prevH: number,
+  nextW: number,
+  nextH: number,
+  userMoved: boolean,
+): boolean {
+  if (userMoved) {
+    return false;
+  }
+  if (! (nextW >= 40 && nextH >= 40)) {
+    return false;
+  }
+  return ! (prevW >= 40 && prevH >= 40);
+}
+
 export function applyCameraTransform(
   world: { style: { transform: string } },
   cam: BoardCamera,

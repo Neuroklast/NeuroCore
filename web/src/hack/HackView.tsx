@@ -2,16 +2,14 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { editor } from "monaco-editor";
 import "./monacoEnv";
-import { publishScript } from "../assemble/addBlock";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import { terminalActions } from "../app/workspace";
-import { validateOnSave } from "../overlays/validateModel";
 import { irSlotsFromScript, mergeIrSlots } from "../presets/irSlots";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { openImpulse } from "../overlays/ImpulsePanel";
 import { useTheme } from "../theme/themeBind";
-import { commitTerminalDraft } from "./terminalCompile";
+import { applyPatchDraft, discardPatchDraft } from "./terminalCompile";
 import {
   annotateKnobInlays,
   termFrame,
@@ -158,14 +156,7 @@ export function HackView() {
   }, [focusNodeId, focusParam, shown, editorReady]);
 
   const save = async () => {
-    const report = validateOnSave(script, diagnostics);
-    const preflight = report.ok ? diagnostics : [
-      ...diagnostics,
-      ...report.issues.filter((i) => i.severity === "error").map((i) => ({ line: 1, column: 1, message: i.message })),
-    ];
-    const result = await commitTerminalDraft(script, preflight, (draft) => publishScript(draft, "editor"));
-    useAstStore.getState().applyCompileResult(result);
-    if (result.ok && useAstStore.getState().script === script) setEditing(false);
+    await applyPatchDraft();
   };
 
   const formulaPt = useHostStore((s) => s.formulaPt);
@@ -206,10 +197,7 @@ export function HackView() {
           <button
             type="button"
             className="nk-clip nk-term-tool"
-            onClick={() => {
-              setDraftScript(lastValidScript);
-              setEditing(false);
-            }}
+            onClick={() => discardPatchDraft()}
           >
             Cancel
           </button>

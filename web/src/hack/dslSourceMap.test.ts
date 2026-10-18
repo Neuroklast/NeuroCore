@@ -7,6 +7,7 @@ import {
   paramAtPosition,
   rangeForNode,
   rangeForParam,
+  sourceForNode,
 } from "./dslSourceMap";
 
 const SCRIPT = [
@@ -34,6 +35,12 @@ describe("dsl source map uses the tokenizer", () => {
     expect(nodeAtPosition(SCRIPT, 1, 1)).toBeNull();
     expect(nodeAtPosition(SCRIPT, 2, 1)).toBeNull();
     expect(nodeAtPosition(SCRIPT, 4, 3)).toBeNull();
+  });
+
+  it("extracts the source span for a node", () => {
+    expect(sourceForNode(SCRIPT, "filter1")).toContain("cutoff = 1000");
+    expect(sourceForNode(SCRIPT, "filter1")).toContain("; q = 0.7");
+    expect(sourceForNode(SCRIPT, "IN")).toBe("");
   });
 
   it("finds a chip from a caret on its line and canonicalises out → OUT", () => {
