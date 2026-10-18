@@ -49,8 +49,8 @@ export function inspectorBox(
   dock: InspectorDock,
   paneW: number,
   paneH: number,
-  width = SOURCE_INSPECTOR.width,
-  height = SOURCE_INSPECTOR.bottomHeight,
+  width: number = SOURCE_INSPECTOR.width,
+  height: number = SOURCE_INSPECTOR.bottomHeight,
 ): { w: number; h: number } {
   if (dock === "closed") {
     return { w: 0, h: 0 };

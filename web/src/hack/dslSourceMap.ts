@@ -175,9 +175,6 @@ function mapParamRanges(script: string): ParamSourceRange[] {
         if (! (tok.kind === "identifier" || tok.kind === "keyword")) {
           continue;
         }
-        if (i === 0 && next.text === ":") {
-          continue;
-        }
         if (toks[1]?.text === ":" && i === 0) {
           continue;
         }

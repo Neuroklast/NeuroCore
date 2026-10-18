@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR B)  
+**Stand:** 2026-10-18 (web tsc build)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/signal-lab-pr-b`
+**Branch:** `fix/web-layout-tsc`
+
+## Web layout tsc (2026-10-18)
+
+`npm run build` / `tsc --noEmit` now typecheck. Inspector box width/height are `number`. `publishScript` returns `CompileResultPayload`. Dead `edgesAfterConnect` / `astEdgesAfterConnect` and the unreachable `next.text === ":"` compare are gone. Latest `main` is #292 (`42145b6`). Version stays 0.6.10-beta.
 
 ## Circuit shared module chrome (2026-10-18)
 
