@@ -10,11 +10,16 @@ const dynamicsFace = readFileSync(new URL("./DynamicsFace.tsx", import.meta.url)
 const envFace = readFileSync(new URL("./EnvFace.tsx", import.meta.url), "utf8");
 const pitchFace = readFileSync(new URL("./PitchFace.tsx", import.meta.url), "utf8");
 const driveFace = readFileSync(new URL("./DriveFace.tsx", import.meta.url), "utf8");
+const routingFace = readFileSync(new URL("./RoutingFace.tsx", import.meta.url), "utf8");
+const modfxFace = readFileSync(new URL("./ModfxFace.tsx", import.meta.url), "utf8");
+const cabFace = readFileSync(new URL("./CabFace.tsx", import.meta.url), "utf8");
+const ioFace = readFileSync(new URL("./IoFace.tsx", import.meta.url), "utf8");
+const utilityFace = readFileSync(new URL("./UtilityFace.tsx", import.meta.url), "utf8");
 const nodeFace = readFileSync(new URL("./NodeFace.tsx", import.meta.url), "utf8");
 const boardChip = readFileSync(new URL("../BoardChip.tsx", import.meta.url), "utf8");
 
 describe("reference NodeFaces", () => {
-  it("registers calculated family plots including env, pitch and drive", () => {
+  it("registers calculated family plots for every DSP family", () => {
     expect(faceKindForType("filter")).toBe("filter");
     expect(faceKindForType("eq")).toBe("filter");
     expect(faceKindForType("reverb")).toBe("reverb");
@@ -32,6 +37,11 @@ describe("reference NodeFaces", () => {
     expect(closedFaceGlyph("env")).toBe(TARGET_CLOSED_FACE.env);
     expect(closedFaceGlyph("pitch")).toBe(TARGET_CLOSED_FACE.pitch);
     expect(closedFaceGlyph("drive")).toBe(TARGET_CLOSED_FACE.drive);
+    expect(closedFaceGlyph("routing")).toBe(TARGET_CLOSED_FACE.routing);
+    expect(closedFaceGlyph("modfx")).toBe(TARGET_CLOSED_FACE.modfx);
+    expect(closedFaceGlyph("cab")).toBe(TARGET_CLOSED_FACE.cab);
+    expect(closedFaceGlyph("io")).toBe(TARGET_CLOSED_FACE.io);
+    expect(closedFaceGlyph("utility")).toBe(TARGET_CLOSED_FACE.utility);
     expect(closedFaceGlyph("filter")).not.toBe(closedFaceGlyph("reverb"));
     expect(filterFace).toContain('data-glyph="response"');
     expect(filterFace).toContain("calculated filter response");
@@ -49,6 +59,11 @@ describe("reference NodeFaces", () => {
     expect(nodeFace).toContain("EnvFace");
     expect(nodeFace).toContain("PitchFace");
     expect(nodeFace).toContain("DriveFace");
+    expect(nodeFace).toContain("RoutingFace");
+    expect(nodeFace).toContain("ModfxFace");
+    expect(nodeFace).toContain("CabFace");
+    expect(nodeFace).toContain("IoFace");
+    expect(nodeFace).toContain("UtilityFace");
     expect(delayFace).toContain("delayTapsPath");
     expect(delayFace).toContain('data-curve="taps"');
     expect(lfoFace).toContain("lfoWaveformPath");
@@ -61,8 +76,20 @@ describe("reference NodeFaces", () => {
     expect(pitchFace).toContain('data-curve="intervals"');
     expect(driveFace).toContain("driveTransferPath");
     expect(driveFace).toContain('data-curve="transfer"');
+    expect(routingFace).toContain("routingMapPath");
+    expect(routingFace).toContain('data-curve="map"');
+    expect(modfxFace).toContain("modfxWaveformPath");
+    expect(modfxFace).toContain('data-curve="waveform"');
+    expect(cabFace).toContain("cabMixPath");
+    expect(cabFace).toContain('data-curve="mix"');
+    expect(cabFace).toContain("useHostStore");
+    expect(ioFace).toContain("ioJackPath");
+    expect(ioFace).toContain('data-glyph="jack"');
+    expect(utilityFace).toContain("utilityParamsPath");
+    expect(utilityFace).toContain('data-curve="params"');
     expect(nodeFace).toContain("args");
     expect(boardChip).toContain("args={node.args}");
+    expect(boardChip).toContain("id={node.id}");
     expect(boardChip).toContain("type={node.type}");
     expect(boardChip).not.toContain("nk-lfo-face");
   });

@@ -27,13 +27,13 @@ export type FaceProps = {
   kind: FaceKind;
   type: string;
   args: Record<string, string>;
+  id?: string;
 };
 
 /** What the closed plate paints today. */
 export type ClosedFaceGlyph =
   | "empty-pad"
   | "lamp"
-  | "io"
   | "response"
   | "decay"
   | "taps"
@@ -41,7 +41,11 @@ export type ClosedFaceGlyph =
   | "curve"
   | "envelope"
   | "intervals"
-  | "transfer";
+  | "transfer"
+  | "map"
+  | "mix"
+  | "jack"
+  | "params";
 
 /** What the closed plate must paint after the face migration. */
 export type TargetFaceGlyph =
@@ -116,34 +120,7 @@ export function faceKindForType(type: string): FaceKind {
   return BY_SPEC[chipSpec(type).id] ?? "utility";
 }
 
-/** Closed-plate glyph. Calculated families use the NodeFace registry; others stay baseline. */
+/** Closed-plate glyph. Every FACE_KINDS family paints through the NodeFace registry. */
 export function closedFaceGlyph(kind: FaceKind): ClosedFaceGlyph {
-  if (kind === "filter") {
-    return "response";
-  }
-  if (kind === "reverb") {
-    return "decay";
-  }
-  if (kind === "delay") {
-    return "taps";
-  }
-  if (kind === "lfo") {
-    return "waveform";
-  }
-  if (kind === "dynamics") {
-    return "curve";
-  }
-  if (kind === "env") {
-    return "envelope";
-  }
-  if (kind === "pitch") {
-    return "intervals";
-  }
-  if (kind === "drive") {
-    return "transfer";
-  }
-  if (kind === "io") {
-    return "io";
-  }
-  return "empty-pad";
+  return TARGET_CLOSED_FACE[kind];
 }

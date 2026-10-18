@@ -69,4 +69,4 @@ Real node ids, parameters, and taps only. DSP chips with no waveform tap stay **
 
 ## PR sequence
 
-A baseline / contracts (this file) → B shared module chrome → C functional faces (filter/reverb) → C2 delay/LFO/dynamics → **C3 env envelope, pitch intervals, drive transfer** → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.
+A baseline / contracts (this file) → B shared module chrome → C functional faces (filter/reverb) → C2 delay/LFO/dynamics → C3 env envelope, pitch intervals, drive transfer → **C4 routing map, modfx waveform, cab mix, io jack, utility params** → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.

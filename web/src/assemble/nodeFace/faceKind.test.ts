@@ -28,7 +28,11 @@ describe("NodeFace catalog", () => {
     expect(faceKindForType("comp")).toBe("dynamics");
     expect(faceKindForType("stage")).toBe("drive");
     expect(faceKindForType("bus")).toBe("routing");
+    expect(faceKindForType("widen")).toBe("routing");
+    expect(faceKindForType("phaser")).toBe("modfx");
+    expect(faceKindForType("ir")).toBe("cab");
     expect(faceKindForType("in")).toBe("io");
+    expect(faceKindForType("utility")).toBe("utility");
   });
 
   it("keeps the closed plate as title + typecode, with filter/reverb as the reference faces", () => {
@@ -49,13 +53,18 @@ describe("NodeFace catalog", () => {
     expect(closedFaceGlyph("env")).toBe("envelope");
     expect(closedFaceGlyph("pitch")).toBe("intervals");
     expect(closedFaceGlyph("drive")).toBe("transfer");
+    expect(closedFaceGlyph("routing")).toBe("map");
+    expect(closedFaceGlyph("modfx")).toBe("waveform");
+    expect(closedFaceGlyph("cab")).toBe("mix");
+    expect(closedFaceGlyph("io")).toBe("jack");
+    expect(closedFaceGlyph("utility")).toBe("params");
     expect(closedChipChrome("osc", "osc1").lamp).toBe("lfo");
     expect(closedChipChrome("env", "env1").lamp).toBe("env");
     expect(closedChipChrome("filter", "filter1").lamp).toBe("clip");
     expect(closedChipChrome("reverb", "reverb1").lamp).toBe("clip");
   });
 
-  it.fails("gives each DSP family a distinct closed-face glyph", () => {
+  it("gives each DSP family its target closed-face glyph", () => {
     for (const kind of FACE_KINDS) {
       expect(String(closedFaceGlyph(kind)), kind).toBe(TARGET_CLOSED_FACE[kind]);
     }

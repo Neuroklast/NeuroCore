@@ -359,6 +359,18 @@ html[data-motion="off"] .nk-boot {
   vector-effect: non-scaling-stroke;
 }
 
+.nk-face-plot circle {
+  fill: var(--nk-ink);
+  stroke: none;
+}
+
+.nk-face-plot[data-axis="map"],
+.nk-face-plot[data-axis="mix"],
+.nk-face-plot[data-axis="jack"],
+.nk-face-plot[data-axis="params"] {
+  background-image: none;
+}
+
 .nk-face-plot[data-axis="log-freq"] {
   background-image: repeating-linear-gradient(
     90deg,

@@ -12,7 +12,7 @@ Shared chip frame (`ChipShell`) plus a `NodeFace` registry. Filter and reverb ar
 - Semantic zoom writes `data-zoom` on `.nk-board` from `applyLiveCamera`. Chips do not subscribe to the camera.
 - Filter face: `data-glyph=response`, `data-axis=log-freq`, label **calculated filter response**.
 - Reverb face: `data-glyph=decay`, `data-axis=time`, label **calculated decay envelope**.
-- Remaining families keep the empty pad (`closedFaceGlyph` still `it.fails` the family-wide target until PR C).
+- Remaining families keep the empty pad in this PR. PR C–C4 fill every `TARGET_CLOSED_FACE` glyph (`closedFaceGlyph` now matches).
 - Leftover `.react-flow` CSS is gone. Chip foot and Terminal view frame use theme tokens.
 
 ## Type scale (`SIGNAL_LAB`)

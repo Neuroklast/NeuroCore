@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (signal lab PR C3)  
+**Stand:** 2026-10-18 (signal lab PR C4)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/signal-lab-pr-c3`
+**Branch:** `feat/signal-lab-pr-c4`
+
+## Circuit routing / modfx / cab / io / utility faces (2026-10-18)
+
+PR C4 registers the remaining families on the NodeFace registry. Routing paints ChipSpec ports (width is two lanes; join uses mix). Phaser/flanger/chorus paint one engine LFO cycle (chorus averages voices; flanger invert flips the sign). Cab paints dry/wet mix; the IR WAV name is the host slot keyed by node id. IN/OUT/SC paint a jack schematic; real ports stay on the frame. Utility paints gain and pan marks. Formulas fall back to ChipSpec defaults. `TARGET_CLOSED_FACE` now matches `closedFaceGlyph`. Layout wrap and Terminal navigator stay later PRs. Version stays 0.6.10-beta.
 
 ## Circuit env / pitch / drive faces (2026-10-18)
 
