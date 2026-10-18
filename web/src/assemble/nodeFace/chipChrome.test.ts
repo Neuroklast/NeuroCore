@@ -35,6 +35,9 @@ describe("shared chip chrome", () => {
     const face = chipBox("filter", [], false, {});
     expect(chipBox("reverb", [], false, {})).toEqual(face);
     expect(chipBox("delay", [], false, {})).toEqual(face);
+    expect(chipBox("env", [], false, {})).toEqual(face);
+    expect(chipBox("octaver", [], false, {})).toEqual(face);
+    expect(chipBox("stage", [], false, {})).toEqual(face);
     expect(face.w % 32).toBe(0);
     expect(face.h % 32).toBe(0);
   });
@@ -66,6 +69,9 @@ describe("shared chip chrome", () => {
     expect(nodeFace).toContain("DelayFace");
     expect(nodeFace).toContain("LfoFace");
     expect(nodeFace).toContain("DynamicsFace");
+    expect(nodeFace).toContain("EnvFace");
+    expect(nodeFace).toContain("PitchFace");
+    expect(nodeFace).toContain("DriveFace");
     expect(nodeFace).toContain("args");
     expect(boardChip).toContain("args={node.args}");
     expect(nodeFace).not.toMatch(/switch\s*\(/);

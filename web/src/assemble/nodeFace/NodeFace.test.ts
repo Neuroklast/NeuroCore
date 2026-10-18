@@ -7,22 +7,31 @@ const reverbFace = readFileSync(new URL("./ReverbFace.tsx", import.meta.url), "u
 const delayFace = readFileSync(new URL("./DelayFace.tsx", import.meta.url), "utf8");
 const lfoFace = readFileSync(new URL("./LfoFace.tsx", import.meta.url), "utf8");
 const dynamicsFace = readFileSync(new URL("./DynamicsFace.tsx", import.meta.url), "utf8");
+const envFace = readFileSync(new URL("./EnvFace.tsx", import.meta.url), "utf8");
+const pitchFace = readFileSync(new URL("./PitchFace.tsx", import.meta.url), "utf8");
+const driveFace = readFileSync(new URL("./DriveFace.tsx", import.meta.url), "utf8");
 const nodeFace = readFileSync(new URL("./NodeFace.tsx", import.meta.url), "utf8");
 const boardChip = readFileSync(new URL("../BoardChip.tsx", import.meta.url), "utf8");
 
 describe("reference NodeFaces", () => {
-  it("registers filter, reverb, delay, LFO and dynamics as distinct calculated plots", () => {
+  it("registers calculated family plots including env, pitch and drive", () => {
     expect(faceKindForType("filter")).toBe("filter");
     expect(faceKindForType("eq")).toBe("filter");
     expect(faceKindForType("reverb")).toBe("reverb");
     expect(faceKindForType("delay")).toBe("delay");
     expect(faceKindForType("osc")).toBe("lfo");
     expect(faceKindForType("comp")).toBe("dynamics");
+    expect(faceKindForType("env")).toBe("env");
+    expect(faceKindForType("octaver")).toBe("pitch");
+    expect(faceKindForType("stage")).toBe("drive");
     expect(closedFaceGlyph("filter")).toBe(TARGET_CLOSED_FACE.filter);
     expect(closedFaceGlyph("reverb")).toBe(TARGET_CLOSED_FACE.reverb);
     expect(closedFaceGlyph("delay")).toBe(TARGET_CLOSED_FACE.delay);
     expect(closedFaceGlyph("lfo")).toBe(TARGET_CLOSED_FACE.lfo);
     expect(closedFaceGlyph("dynamics")).toBe(TARGET_CLOSED_FACE.dynamics);
+    expect(closedFaceGlyph("env")).toBe(TARGET_CLOSED_FACE.env);
+    expect(closedFaceGlyph("pitch")).toBe(TARGET_CLOSED_FACE.pitch);
+    expect(closedFaceGlyph("drive")).toBe(TARGET_CLOSED_FACE.drive);
     expect(closedFaceGlyph("filter")).not.toBe(closedFaceGlyph("reverb"));
     expect(filterFace).toContain('data-glyph="response"');
     expect(filterFace).toContain("calculated filter response");
@@ -37,12 +46,21 @@ describe("reference NodeFaces", () => {
     expect(nodeFace).toContain("DelayFace");
     expect(nodeFace).toContain("LfoFace");
     expect(nodeFace).toContain("DynamicsFace");
+    expect(nodeFace).toContain("EnvFace");
+    expect(nodeFace).toContain("PitchFace");
+    expect(nodeFace).toContain("DriveFace");
     expect(delayFace).toContain("delayTapsPath");
     expect(delayFace).toContain('data-curve="taps"');
     expect(lfoFace).toContain("lfoWaveformPath");
     expect(lfoFace).toContain('data-curve="waveform"');
     expect(dynamicsFace).toContain("dynamicsCurvePath");
     expect(dynamicsFace).toContain('data-curve="curve"');
+    expect(envFace).toContain("envEnvelopePath");
+    expect(envFace).toContain('data-curve="envelope"');
+    expect(pitchFace).toContain("pitchIntervalsPath");
+    expect(pitchFace).toContain('data-curve="intervals"');
+    expect(driveFace).toContain("driveTransferPath");
+    expect(driveFace).toContain('data-curve="transfer"');
     expect(nodeFace).toContain("args");
     expect(boardChip).toContain("args={node.args}");
     expect(boardChip).toContain("type={node.type}");
