@@ -65,6 +65,8 @@ export interface AstEventPayload {
   script: string;
   astJson: string;
   diagnostics: Diagnostic[];
+  txId?: string;
+  baseRevision?: number;
 }
 
 export function shouldHydrate(viewer: Origin, incoming: Origin): boolean {

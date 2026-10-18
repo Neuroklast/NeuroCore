@@ -68,7 +68,7 @@ function draftLooksModified(draft: string, active: string): boolean {
   return draft.length > 0 && active.length > 0 && draft !== active;
 }
 
-/** Adapter over today's astStore. Revisions and transactions are not tracked yet. */
+/** Adapter over astStore: active vs draft, revisions, and pending tx. */
 export function readPatchDocument(): PatchDocument {
   const s = useAstStore.getState();
   const activeScript = s.lastValidScript;
@@ -81,16 +81,21 @@ export function readPatchDocument(): PatchDocument {
     draftRevision: s.draftRevision,
     draftStatus: s.diagnostics.length > 0
       ? "invalid"
-      : draftLooksModified(draftScript, activeScript)
-        ? "modified"
-        : "clean",
+      : draftLooksModified(draftScript, activeScript) && s.draftBaseRevision !== s.activeRevision
+        ? "conflict"
+        : draftLooksModified(draftScript, activeScript)
+          ? "modified"
+          : "clean",
     diagnostics: s.diagnostics,
     pendingTransaction: s.pendingTransaction,
   };
 }
 
 export function draftBanner(status: DraftStatus): string | null {
-  if (status === "modified" || status === "conflict") {
+  if (status === "conflict") {
+    return "CONFLICT";
+  }
+  if (status === "modified") {
     return "UNAPPLIED";
   }
   if (status === "invalid") {

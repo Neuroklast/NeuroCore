@@ -189,7 +189,11 @@ export function scriptAfterRemove(script: string, id: string): string {
 export const scriptAfterSetArg = replaceSourceArg;
 export const scriptAfterRename = renameSourceToken;
 
-export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "canvas"): void {
+export function applyCanvasScript(
+  script: string,
+  origin: "canvas" | "undo" | "editor" = "canvas",
+  tx?: { txId: string; baseRevision: number },
+): void {
   const shown = stripMuteComments(script);
   const { doc } = parseDslSketch(shown);
   useAstStore.getState().applyAstEvent({
@@ -197,6 +201,8 @@ export function applyCanvasScript(script: string, origin: "canvas" | "undo" = "c
     script,
     astJson: JSON.stringify(doc),
     diagnostics: [],
+    txId: tx?.txId,
+    baseRevision: tx?.baseRevision,
   });
 }
 
@@ -239,7 +245,7 @@ export function publishScript(
     });
   }
   remember();
-  applyCanvasScript(script);
+  applyCanvasScript(script, origin, { txId: tx.id, baseRevision: tx.baseRevision });
   const rec = tag({ ok: true });
   useAstStore.getState().applyCompileResult(rec);
   return rec;

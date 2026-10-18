@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-18 (patch workspace PR7)  
+**Stand:** 2026-10-18 (patch workspace P0 tx)  
 **Version:** 0.6.10-beta  
-**Branch:** `feat/patch-workspace-pr7`
+**Branch:** `feat/patch-workspace-p0-tx`
+
+## Patch workspace versioned AST events (2026-10-18)
+
+Native compile and graphOp echo `txId` and `baseRevision` on both `compileResult` and `ast`. A late ast for an older tx does not replace a newer graph. An unapplied draft records `draftBaseRevision`. A preset/host load that keeps that draft is **CONFLICT**; Apply does not overwrite the new active patch.
 
 ## Patch workspace honest node meters (2026-10-18)
 

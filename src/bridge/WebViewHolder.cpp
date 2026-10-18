@@ -418,21 +418,27 @@ struct WebViewHolder::Impl : private juce::Timer,
                             {
                                 juce::String originName = "editor";
                                 juce::String script;
+                                juce::String txId;
+                                int baseRevision = 0;
                                 if (args.size() > 0 && args[0].isObject())
                                 {
                                     originName = args[0].getProperty ("origin", "editor").toString();
                                     script = args[0].getProperty ("script", "").toString();
+                                    txId = args[0].getProperty ("txId", "").toString();
+                                    baseRevision = (int) args[0].getProperty ("baseRevision", 0);
                                 }
                                 else if (args.size() > 0)
                                 {
                                     script = args[0].toString();
                                 }
 
-                                const auto out = session.compile (script, originName,
+                                auto out = session.compile (script, originName,
                                     [this] (const juce::String& text, juce::String& error)
                                     {
                                         return proc.setFormula (text, error, true);
                                     });
+                                out.txId = txId;
+                                out.baseRevision = baseRevision;
                                 pushOutcome (out);
                                 complete (session.toCompileResultVar (out));
                             })
@@ -455,10 +461,14 @@ struct WebViewHolder::Impl : private juce::Timer,
                             {
                                 juce::String originName = "canvas";
                                 juce::var payload;
+                                juce::String txId;
+                                int baseRevision = 0;
                                 if (args.size() > 0 && args[0].isObject())
                                 {
                                     originName = args[0].getProperty ("origin", "canvas").toString();
                                     payload = args[0];
+                                    txId = args[0].getProperty ("txId", "").toString();
+                                    baseRevision = (int) args[0].getProperty ("baseRevision", 0);
                                 }
                                 juce::String error;
                                 GraphOp op;
@@ -479,11 +489,13 @@ struct WebViewHolder::Impl : private juce::Timer,
                                     return;
                                 }
                                 const auto script = dsl::emit (doc);
-                                const auto out = session.compile (script, originName,
+                                auto out = session.compile (script, originName,
                                     [this] (const juce::String& text, juce::String& err)
                                     {
                                         return proc.setFormula (text, err, true);
                                     });
+                                out.txId = txId;
+                                out.baseRevision = baseRevision;
                                 pushOutcome (out);
                                 complete (session.toCompileResultVar (out));
                             })

@@ -139,6 +139,20 @@ public:
             expectEquals (out.origin, juce::String ("canvas"));
         }
 
+        beginTest ("compile and ast vars echo txId and baseRevision");
+        {
+            bridge::CompileSession session;
+            auto out = session.seed ("stage1: y = x\n");
+            out.txId = "tx9";
+            out.baseRevision = 4;
+            const auto compileVar = session.toCompileResultVar (out);
+            const auto astVar = session.toAstVar (out);
+            expectEquals (compileVar.getProperty ("txId", "").toString(), juce::String ("tx9"));
+            expectEquals ((int) compileVar.getProperty ("baseRevision", 0), 4);
+            expectEquals (astVar.getProperty ("txId", "").toString(), juce::String ("tx9"));
+            expectEquals ((int) astVar.getProperty ("baseRevision", 0), 4);
+        }
+
         beginTest ("lint does not apply and does not replace lastValid");
         {
             bridge::CompileSession session;

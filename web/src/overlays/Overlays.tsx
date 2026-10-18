@@ -5,6 +5,7 @@ import { setCircuitArg } from "../assemble/addBlock";
 import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
+import { beginPatchTx } from "../store/patchWorkspace";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { isThemeId, themeIds, themeOf } from "../theme/theme";
@@ -64,8 +65,11 @@ function setNodeArg(nodeId: string, key: string, value: string): void {
     setCircuitArg(nodeId, key, value);
     return;
   }
+  const tx = beginPatchTx("graphOp", "canvas");
   void getNativeFunction("graphOp")({
     origin: "canvas",
+    txId: tx.id,
+    baseRevision: tx.baseRevision,
     op: "setArg",
     node: nodeId,
     key,
