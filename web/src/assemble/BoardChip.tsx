@@ -82,6 +82,7 @@ export function BoardChip({
   return (
     <ChipShell
       nodeId={node.id}
+      nodeType={node.type}
       role={node.role}
       selected={selected}
       kind={kind}

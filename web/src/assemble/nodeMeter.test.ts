@@ -21,6 +21,15 @@ describe("honest node meters", () => {
     expect(meter.peak).not.toBe(0.9);
   });
 
+  it("a DSP chip with no clip key has a null peak, not a silent zero", () => {
+    const meter = nodeMeter({ id: "filter1", type: "filter", clips: {} });
+    expect(meter.peak).toBeNull();
+    expect(meter.source).toBe("none");
+    const still = nodeMeter({ id: "filter1", type: "filter", clips: { filter1: 0 } });
+    expect(still.peak).toBe(0);
+    expect(still.source).toBe("node");
+  });
+
   it("a native node peak is that chip; cables use the same clip", () => {
     const clips = { sat1: 0.4, OUT: 0.9 };
     const meter = nodeMeter({ id: "sat1", type: "sat", clips, clipsRms: { sat1: 0.2 } });

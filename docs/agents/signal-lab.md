@@ -65,7 +65,7 @@ Draft labels: quiet when clean; `UNAPPLIED`, `VALIDATING`, `APPLYING`, `INVALID`
 
 ## Honest data
 
-Real node ids, parameters, and taps only. DSP chips with no waveform tap stay **No waveform tap**. No TRG codes, barcodes, or invented meters.
+Real node ids, parameters, and taps only. DSP chips with no waveform tap stay **No waveform tap**. Chip foot uses `nodeMeter`: no tap is `—`, a measured floor at or below −60 dBFS is `still`, audible is live dB. No TRG codes, barcodes, or invented meters.
 
 ## PR sequence
 

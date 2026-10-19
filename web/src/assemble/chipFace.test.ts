@@ -3,9 +3,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { peakToDb } from "../bridge/telemetry";
+import { CABLE_STILL_DB } from "./cableMotion";
 import {
   bindRailVisible,
   chipFootLine,
+  chipFootPeak,
   clipWarnMark,
   chipKindMark,
   closedChipChrome,
@@ -54,12 +56,21 @@ describe("closed chip chrome", () => {
   });
 
   it("prints node id and live dB on the foot, never a UUID", () => {
-    expect(chipFootLine("filter1", 0)).toBe("filter1  —");
+    expect(chipFootPeak(null)).toBe("—");
+    expect(chipFootPeak(undefined)).toBe("—");
+    expect(chipFootLine("filter1", 0)).toBe("filter1  still");
+    expect(chipFootPeak(10 ** (CABLE_STILL_DB / 20))).toBe("still");
     expect(chipFootLine("filter1", 10 ** (-12 / 20))).toBe("filter1  -12dB");
     expect(chipFootLine("stage1", 1.2)).toContain("stage1");
     expect(chipFootLine("stage1", 1.2)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/i);
     expect(overloadLabel(0.9)).toBeNull();
     expect(overloadLabel(1.2)).toBe(`${peakToDb(1.2) >= 0 ? "+" : ""}${peakToDb(1.2).toFixed(1)}dB`);
+  });
+
+  it("ChipFoot reads nodeMeter, not a coalesced zero", () => {
+    const shell = readFileSync(new URL("./nodeFace/ChipShell.tsx", import.meta.url), "utf8");
+    expect(shell).toContain("nodeMeter");
+    expect(shell).not.toMatch(/clips\[nodeId\]\s*\?\?\s*0/);
   });
 
   it("paints clip as an outlined hazard triangle with a bang, not a filled header pip", () => {

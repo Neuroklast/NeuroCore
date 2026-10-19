@@ -1,11 +1,13 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../../theme/chromeSpec";
 import { chipFootLine, chipFootPeak } from "../chipFace";
+import { nodeMeter } from "../nodeMeter";
 import { useHostStore } from "../../store/hostStore";
 import type { FaceKind } from "./faceKind";
 
 type ShellProps = {
   nodeId: string;
+  nodeType?: string;
   role: "io" | "chip";
   selected: boolean;
   kind: FaceKind;
@@ -28,6 +30,7 @@ type ShellProps = {
 
 export function ChipShell({
   nodeId,
+  nodeType,
   role,
   selected,
   kind,
@@ -102,7 +105,7 @@ export function ChipShell({
         ) : null}
         {bodyStart}
       </div>
-      <ChipFoot nodeId={nodeId} bindOpen={bindOpen} />
+      <ChipFoot nodeId={nodeId} nodeType={nodeType} bindOpen={bindOpen} />
       {showExpand && ! bindOpen ? (
         <button
           type="button"
@@ -128,8 +131,8 @@ export function ChipShell({
   );
 }
 
-function ChipFoot({ nodeId, bindOpen }: { nodeId: string; bindOpen: boolean }) {
-  const peak = useHostStore((s) => s.clips[nodeId] ?? 0);
+function ChipFoot({ nodeId, nodeType, bindOpen }: { nodeId: string; nodeType?: string; bindOpen: boolean }) {
+  const peak = useHostStore((s) => nodeMeter({ id: nodeId, type: nodeType, clips: s.clips }).peak);
   return (
     <div className="nk-chip-foot" title={chipFootLine(nodeId, peak)} style={bindOpen ? { visibility: "hidden" } : undefined}>
       <span>{nodeId}</span>

@@ -46,7 +46,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Semantic zoom is paint density | Overview still paints unreadably small port captions or a full axis grid. Jack locals or AABB change with `data-zoom` |
 | Stereo bus is L cyan + R accent, ±4 px | One A* then `parallelOffset`. Split mid/side is not L/R. Stored route has no curves. Beads sit on tap peaks + travel source → dest |
 | Port labels are `[ MID ]` / `[ SIDE ]` | Caption is `mid` or a fake UUID / `REV.45-B` |
-| Chip foot is `node.id` + live dB | Invented UGID, barcode, TRG, or grip greeble |
+| Chip foot is `node.id` + live dB, `still`, or `—` | Invented UGID, barcode, TRG, grip greeble, or a dash for a measured floor |
 | Cable beads follow that chip | Beads are **local maxima** of the source tap window, mapped 0…1 along the polyline. **RMS** sets travel speed. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** is the 3-pass chroma glitch. ≤ −60 dBFS RMS = still. Camera pan keeps traces and glow. Do not drive glow from RMS or density from peak |
 | Clip lamp and hazard are uncovered chrome | Peak LED sits **left of the title** with `CHIP_PAD_X` gap, not under the chevron. Hazard stripes clip on a `::before` layer; the band itself is `overflow: visible`. Clip warn is an outlined Δ + bang at the east jack (`left: 100%`), size `TITLE_H` |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
