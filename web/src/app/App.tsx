@@ -6,7 +6,7 @@ import { AssembleView } from "../assemble/AssembleView";
 import { BindCables, BindDragGhost } from "../assemble/BindCables";
 
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
-import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
+import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasOverlay, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { Overlays } from "../overlays/Overlays";
@@ -104,7 +104,7 @@ export function App() {
       const hostCtx = {
         textTarget: undoTargetIsText(e.target),
         circuitHasSelection: circuitHasSelection(),
-        overlayOpen: useHostStore.getState().overlay != null,
+        overlayOpen: useHostStore.getState().overlay != null || circuitHasOverlay(),
       };
       if (shouldForwardToHost(e, hostCtx)) {
         // Only swallow keys native can map — otherwise plugin and Cubase both lose them.

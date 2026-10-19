@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   browserShortcutStopsPropagation,
   canForwardHostKey,
+  circuitHasOverlay,
   isHostTransportKey,
   shouldBlockBrowserShortcut,
   shouldBlockNativeContextMenu,
@@ -106,6 +107,13 @@ describe("non-text keys reach the DAW host", () => {
     expect(shouldForwardToHost({ ...bare, key: "Escape", code: "Escape" }, modal)).toBe(false);
     expect(shouldForwardToHost({ ...bare, key: "ArrowDown", code: "ArrowDown" }, modal)).toBe(false);
     expect(shouldForwardToHost({ ...bare, key: "Escape", code: "Escape" }, none)).toBe(true);
+  });
+
+  it("treats a Circuit context menu as an overlay", () => {
+    const closed = { querySelector: () => null };
+    expect(circuitHasOverlay(closed as unknown as ParentNode)).toBe(false);
+    const open = { querySelector: (sel: string) => (sel.includes("data-overlay") ? {} : null) };
+    expect(circuitHasOverlay(open as unknown as ParentNode)).toBe(true);
   });
 
   it("does not synthesise modifier-only events", () => {

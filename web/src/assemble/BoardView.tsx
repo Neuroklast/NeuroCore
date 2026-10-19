@@ -11,7 +11,7 @@ import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
-import { clientToPane } from "../theme/fit";
+import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
@@ -261,6 +261,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
 
   const applyLiveCamera = useCallback((cam: typeof camLive.current, commit = false) => {
     camLive.current = cam;
+    (window as Window & { __nkBoardCamera?: typeof cam }).__nkBoardCamera = cam;
     if (worldRef.current) {
       applyCameraTransform(worldRef.current, cam);
     }
@@ -269,6 +270,14 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (commit) {
       useBoardStore.getState().setCamera(cam);
     }
+  }, []);
+
+  useEffect(() => {
+    const w = window as Window & { __nkBoardCamera?: typeof camLive.current };
+    w.__nkBoardCamera = camLive.current;
+    return () => {
+      delete w.__nkBoardCamera;
+    };
   }, []);
 
   useEffect(() => {
@@ -366,8 +375,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       if (edge) {
         setMenu({
           kind: "add",
-          left: panePt.x,
-          top: panePt.y,
+          ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX),
           afterId: edge.sourceNodeId,
           targetId: edge.targetNodeId,
         });
@@ -553,6 +561,25 @@ export function BoardView({ active = true }: { active?: boolean }) {
       const key = e.key.toLowerCase();
       if (chord && key === "a") { e.preventDefault(); selectNodes(Object.keys(useBoardStore.getState().nodes)); return; }
       if (key === "escape") { setMenu(null); clearBoardFocus(); return; }
+      if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+        e.preventDefault();
+        const pane = paneRef.current;
+        if (! pane) {
+          return;
+        }
+        const id = selectedRef.current;
+        const n = id ? useBoardStore.getState().nodes[id] : undefined;
+        if (n) {
+          const s = screenFromWorld(camLive.current, n.x, n.y);
+          const at = placeOverlayPane(pane, s.x + 8, s.y + 8, CHIP_MENU_BOX);
+          selectNodes([n.id]);
+          setMenu({ kind: "chip", ...at, id: n.id });
+        } else {
+          const at = placeOverlayPane(pane, 8, 8, ADD_PICKER_BOX);
+          setMenu({ kind: "pane", ...at, world: worldFromScreen(camLive.current, at.left, at.top) });
+        }
+        return;
+      }
       const id = selectedRef.current;
       const n = id ? useBoardStore.getState().nodes[id] : undefined;
       if (chord && id && key === "c" && canDeleteChip(n)) { e.preventDefault(); copyCircuitBlock(id); return; }
@@ -625,6 +652,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     <div
       ref={paneRef}
       className="nk-board nk-circuit relative h-full min-h-0 w-full overflow-hidden bg-black"
+      data-overlay={menu ? "1" : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -664,17 +692,16 @@ export function BoardView({ active = true }: { active?: boolean }) {
         const world = worldFromScreen(camLive.current, panePt.x, panePt.y);
         const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
         const hit = boardContextHit(chipId, world, useBoardStore.getState());
-        const at = { left: panePt.x, top: panePt.y };
         if (hit.kind === "chip") {
           selectNodes([hit.id]);
-          setMenu({ kind: "chip", ...at, id: hit.id });
+          setMenu({ kind: "chip", ...placeOverlay(pane, e.clientX, e.clientY, CHIP_MENU_BOX), id: hit.id });
           return;
         }
         if (hit.kind === "edge") {
-          setMenu({ kind: "add", ...at, afterId: hit.sourceId, targetId: hit.targetId });
+          setMenu({ kind: "add", ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX), afterId: hit.sourceId, targetId: hit.targetId });
           return;
         }
-        setMenu({ kind: "pane", ...at, world });
+        setMenu({ kind: "pane", ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX), world });
       }}
       onClick={(e) => {
         if (lassoCompletedRef.current) { lassoCompletedRef.current = false; return; }

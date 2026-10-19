@@ -53,6 +53,38 @@ export function clientToPane(
   };
 }
 
+export const ADD_PICKER_BOX = { w: 260, h: 280 };
+export const CHIP_MENU_BOX = { w: 188, h: 240 };
+
+export function placeOverlayPane(
+  pane: { clientWidth: number; clientHeight: number },
+  anchorX: number,
+  anchorY: number,
+  box: { w: number; h: number },
+): { left: number; top: number } {
+  let left = anchorX;
+  let top = anchorY;
+  if (left + box.w > pane.clientWidth) {
+    left = Math.max(0, anchorX - box.w);
+  }
+  if (top + box.h > pane.clientHeight) {
+    top = Math.max(0, anchorY - box.h);
+  }
+  left = Math.min(left, Math.max(0, pane.clientWidth - box.w));
+  top = Math.min(top, Math.max(0, pane.clientHeight - box.h));
+  return { left, top };
+}
+
+export function placeOverlay(
+  pane: PaneMetrics,
+  clientX: number,
+  clientY: number,
+  box: { w: number; h: number },
+): { left: number; top: number } {
+  const a = clientToPane(pane, clientX, clientY);
+  return placeOverlayPane(pane, a.x, a.y, box);
+}
+
 export function menuPos(
   clientX: number,
   clientY: number,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DESIGN_H, DESIGN_W, clientToPane, fitForWindow, fitOrigin, menuPos, snapUiFitToGrid } from "./fit";
+import { DESIGN_H, DESIGN_W, clientToPane, fitForWindow, fitOrigin, menuPos, placeOverlay, snapUiFitToGrid } from "./fit";
 
 describe("design scale", () => {
   it("keeps a 1280x860 canvas", () => {
@@ -77,6 +77,21 @@ describe("design scale", () => {
     expect(pos.left + 188).toBeLessThanOrEqual(1280);
     expect(pos.top + 176).toBeLessThanOrEqual(860);
     expect(pos.left).toBeGreaterThanOrEqual(0);
+  });
+
+  it("places an overlay in pane space and flips it inside the pane", () => {
+    const pane = {
+      clientWidth: 896,
+      clientHeight: 520,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 896, height: 520 }),
+    };
+    const mid = placeOverlay(pane, 100, 80, { w: 260, h: 280 });
+    expect(mid).toEqual({ left: 100, top: 80 });
+    const corner = placeOverlay(pane, 880, 500, { w: 260, h: 280 });
+    expect(corner.left + 260).toBeLessThanOrEqual(896);
+    expect(corner.top + 280).toBeLessThanOrEqual(520);
+    expect(corner.left).toBeGreaterThanOrEqual(0);
+    expect(corner.top).toBeGreaterThanOrEqual(0);
   });
 
   it("flips a tall context menu up when it would clip the board", () => {

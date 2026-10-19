@@ -181,3 +181,10 @@ export function circuitHasSelection(root: ParentNode | null = typeof document !=
     return false;
   return pane.querySelector("[data-selected=\"on\"]") != null;
 }
+
+/** Circuit context menu is a plugin overlay; Escape must not go to the host. */
+export function circuitHasOverlay(root: ParentNode | null = typeof document !== "undefined" ? document : null): boolean {
+  if (root == null)
+    return false;
+  return root.querySelector(".nk-board[data-overlay='1']") != null;
+}
