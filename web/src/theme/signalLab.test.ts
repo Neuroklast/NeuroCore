@@ -34,4 +34,13 @@ describe("signal lab tokens", () => {
     expect(css).toMatch(new RegExp(`\\.nk-chip-title\\s*\\{[^}]*font-size:\\s*${SIGNAL_LAB.type.titlePx}px`, "s"));
     expect(css).toMatch(new RegExp(`\\.nk-chip-foot\\s*\\{[^}]*font-size:\\s*${SIGNAL_LAB.type.secondaryMinPx}px`, "s"));
   });
+
+  it("paints Circuit secondary type in ink-soft, not muted", () => {
+    expect(SIGNAL_LAB.ink.secondary).toBe("var(--nk-ink-soft)");
+    expect(css).toMatch(/\.nk-port-cap\s*\{[^}]*color:\s*var\(--nk-ink-soft\)/s);
+    expect(css).toMatch(/\.nk-chip-foot\s*\{[^}]*color:\s*var\(--nk-ink-soft\)/s);
+    expect(css).toMatch(/\.nk-chip-typecode\s*\{[^}]*color:\s*var\(--nk-ink-soft\)/s);
+    expect(css).not.toMatch(/\.nk-port-cap\s*\{[^}]*color:\s*var\(--nk-ink-muted\)/s);
+    expect(css).not.toMatch(/\.nk-chip-foot\s*\{[^}]*color:\s*var\(--nk-ink-muted\)/s);
+  });
 });

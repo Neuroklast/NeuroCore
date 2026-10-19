@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/foot-still`
+**Branch:** `feat/chip-ink`
+
+## Circuit secondary ink (2026-10-19)
+
+Port captions and chip feet use `--nk-ink-soft`, same as typecode. Title stays `--nk-ink`. `--nk-ink-muted` stays for de-emphasized chrome. Version stays 0.7.0-beta.
 
 ## Circuit chip foot honesty (2026-10-19)
 

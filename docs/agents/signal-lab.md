@@ -13,7 +13,7 @@ Read this after `docs/agents/ui-ux.md` when changing chip faces, Terminal panes,
 | 2 focused / selected | Higher surface, stronger type, incident cables and neighbours. |
 | 3 interaction | Drag, bind, connect. Gone when the pointer is up. |
 
-Tokens: `SIGNAL_LAB` in `web/src/theme/signalLab.ts`. Colours stay `themeOf()` / `--nk-*`.
+Tokens: `SIGNAL_LAB` in `web/src/theme/signalLab.ts`. Colours stay `themeOf()` / `--nk-*`. Title ink is `--nk-ink`. Secondary Circuit type (port-cap, foot, typecode) is `--nk-ink-soft`.
 
 ## NodeFace
 
