@@ -101,6 +101,12 @@ export function draftBanner(status: DraftStatus): string | null {
   if (status === "invalid") {
     return "INVALID";
   }
+  if (status === "validating") {
+    return "VALIDATING";
+  }
+  if (status === "applying") {
+    return "APPLYING";
+  }
   return null;
 }
 

@@ -1629,6 +1629,43 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   padding: 6px 12px;
 }
 
+.nk-term-workspace {
+  display: flex;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+.nk-term-structure {
+  flex: 0 0 160px;
+  min-width: 120px;
+  max-width: 200px;
+  overflow: auto;
+  border-right: 1px solid var(--nk-line);
+  padding: 6px 0;
+}
+
+.nk-term-structure-item {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  padding: 4px 12px;
+  text-align: left;
+  color: var(--nk-ink-muted);
+  background: transparent;
+  border: 0;
+}
+
+.nk-term-structure-item[aria-current="true"] {
+  color: var(--nk-ink);
+  background: var(--nk-surface);
+}
+
+@container (max-width: 640px) {
+  .nk-term-structure {
+    display: none;
+  }
+}
+
 .nk-term-tool {
   min-height: 32px;
   padding: 0 14px;

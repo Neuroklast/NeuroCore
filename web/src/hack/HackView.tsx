@@ -17,7 +17,8 @@ import {
   withHeaderComments,
 } from "./dslLanguage";
 import { rangeForNode, rangeForParam } from "./dslSourceMap";
-import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
+import { draftBanner, publishSelection, readPatchDocument } from "../store/patchWorkspace";
+import { patchStructure } from "../store/patchStructure";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
 import {
   defineDslTheme,
@@ -30,6 +31,7 @@ const LINT_MS = 250;
 export function HackView() {
   const script = useAstStore((s) => s.script);
   const lastValidScript = useAstStore((s) => s.lastValidScript);
+  const lastValidAst = useAstStore((s) => s.lastValidAst);
   const diagnostics = useAstStore((s) => s.diagnostics);
   const setDraftScript = useAstStore((s) => s.setDraftScript);
   const editing = useAstStore((s) => s.draftEditing);
@@ -48,6 +50,10 @@ export function HackView() {
   const frame = termFrame(editing);
   const theme = useTheme();
   const banner = draftBanner(readPatchDocument().draftStatus);
+  const structure = useMemo(
+    () => (lastValidAst ? patchStructure(lastValidAst) : []),
+    [lastValidAst],
+  );
 
   useEffect(() => {
     const monaco = monacoRef.current;
@@ -206,27 +212,51 @@ export function HackView() {
           </button>
         ))}
       </div>
-      <div
-        className={`nk-term relative min-h-0 flex-1 overflow-hidden ${
-          frame.frame === "accent" ? "nk-term--edit" : "nk-term--view"
-        }`}
-        data-mode={frame.mode}
-      >
-        <div className="nk-term-glow pointer-events-none" aria-hidden />
-        <div className="nk-term-scan pointer-events-none" aria-hidden />
-        <PatchEditor
-          value={shown}
-          shared={editing}
-          readOnly={frame.readOnly}
-          lineNumbers={frame.lineNumbers}
-          caret={frame.caret}
-          onChange={(v) => {
-            if (editing) {
-              setDraftScript(v);
-            }
-          }}
-          onReady={onMount}
-        />
+      <div className="nk-term-workspace min-h-0 flex-1">
+        {structure.length > 0 ? (
+          <nav className="nk-term-structure" data-patch-structure="" aria-label="Patch structure">
+            {structure.map((node) => (
+              <button
+                key={node.id}
+                type="button"
+                className="nk-term-structure-item"
+                data-group={node.group}
+                data-chip-id={node.id}
+                aria-current={focusNodeId === node.id ? "true" : undefined}
+                onClick={() => publishSelection({
+                  nodeIds: [node.id],
+                  primaryId: node.id,
+                  origin: "nav",
+                  intent: "mark",
+                })}
+              >
+                {node.id}
+              </button>
+            ))}
+          </nav>
+        ) : null}
+        <div
+          className={`nk-term relative min-h-0 flex-1 overflow-hidden ${
+            frame.frame === "accent" ? "nk-term--edit" : "nk-term--view"
+          }`}
+          data-mode={frame.mode}
+        >
+          <div className="nk-term-glow pointer-events-none" aria-hidden />
+          <div className="nk-term-scan pointer-events-none" aria-hidden />
+          <PatchEditor
+            value={shown}
+            shared={editing}
+            readOnly={frame.readOnly}
+            lineNumbers={frame.lineNumbers}
+            caret={frame.caret}
+            onChange={(v) => {
+              if (editing) {
+                setDraftScript(v);
+              }
+            }}
+            onReady={onMount}
+          />
+        </div>
       </div>
     </section>
   );
