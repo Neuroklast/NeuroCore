@@ -1,9 +1,10 @@
 import type { AstJack } from "../bridge/ast";
-import { chipSpec, paintedBindKeys } from "./chipSpec";
+import { chipSpec, paintedBindKeys, typeCode } from "./chipSpec";
 import {
   BIND_JACK_MIN,
   BIND_RAIL,
   CHIP_H,
+  TECHNICAL_H,
   CHIP_PAD_X,
   CHIP_PAD_Y,
   CHIP_W,
@@ -200,12 +201,15 @@ export function chipBox(
   if (isUtilityIo(spec.id)) {
     return {
       w: snapSize(IO_W),
-      h: icStackHeight(Math.max(faces.west, faces.east, 1), IO_H),
+      h: ioFaceSize(Math.max(faces.west, faces.east, 1)).h,
     };
   }
   const south = _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)));
   const macroOnly = paintedBindKeys(type, rec).filter(key => !spec.paramJacks.includes(key) && !south.some(j => j.id === key));
-  const technicalMin = macroOnly.length ? 160 + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * 7 + 12), 0) : 0;
+  const controlWidth = 3 * TECHNICAL_H + 2 * 4;
+  const codeWidth = typeCode(spec, rec).length * 7.5;
+  const technicalMin = 2 * PIN_LEAD + 2 * CHIP_PAD_X + codeWidth + 8 + controlWidth
+    + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * 7 + 12) + 4, 0);
   return {
     w: captionedChipWidth(
       _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)))
@@ -218,7 +222,7 @@ export function chipBox(
 
 /** Centre Y of a side jack. Same numbers as `sidePortLocals`. */
 export function jackTopPx(index: number, count: number, height: number, _type = ""): number {
-  const ports = sidePortLocals(Math.max(1, count), { w: 0, h: height }, false);
+  const ports = sidePortLocals(Math.max(1, count), { w: 0, h: height }, false, isUtilityIo(_type) ? "io" : "chip");
   const i = Math.max(0, Math.min(ports.length - 1, index));
   return ports[i]!.y;
 }
@@ -254,7 +258,7 @@ export function jackAnchor(
   const side = jacks.filter((j) => j.output === output && j.kind !== "knob" && cableFace(j.kind) === "side");
   const count = Math.max(side.length, 1);
   const index = Math.max(0, side.findIndex((j) => j.id === id));
-  const local = sidePortLocals(count, { w: width, h: height }, output)[index]
+  const local = sidePortLocals(count, { w: width, h: height }, output, isUtilityIo(_type) ? "io" : "chip")[index]
     ?? { x: output ? width : 0, y: snapToCellCenter(height * 0.5) };
   return globalPort(pos, local);
 }

@@ -33,8 +33,8 @@ export const FOOT_H = BOARD_TRACE;
 /** Baseline DSP IC. Size grows from jack counts; never shrinks to fit a row. */
 export const CHIP_W = BOARD_GRID * 7;
 export const CHIP_H = BOARD_GRID * 8;
-export const IO_H = CHIP_H;
-/** ui-ux: IN/OUT body ≥ 96. Same height family as DSP so serial jacks share a rail. */
+export const IO_H = BOARD_GRID * 5;
+/** ui-ux: IN/OUT body ≥ 96. Compact connector housing; arrangement aligns the actual jack centres. */
 export const IO_W = BOARD_GRID * 5;
 export const BIND_JACK_MIN = BOARD_GRID * 2;
 export const OVERLAY_MAX_H = BOARD_BLOCK * 2;
@@ -55,9 +55,9 @@ export function icBodyRect(box: { w: number; h: number }): { x: number; y: numbe
 }
 
 /** Signal band: below identification/controls, above captions and status. */
-export function sideJackBand(boxH: number): { top: number; innerH: number; mid: number } {
+export function sideJackBand(boxH: number, role: "io" | "chip" = "chip"): { top: number; innerH: number; mid: number } {
   const top = PIN_LEAD + TITLE_H + TECHNICAL_H;
-  const innerH = Math.max(0, boxH - top - PIN_LEAD - FOOT_H - PARAMETER_H);
+  const innerH = Math.max(0, boxH - top - PIN_LEAD - FOOT_H - (role === "io" ? 0 : PARAMETER_H));
   return { top, innerH, mid: snapToCellCenter(top + innerH * 0.5) };
 }
 
@@ -113,7 +113,8 @@ export function dspFaceSize(): { w: number; h: number } {
 
 export function ioFaceSize(jackCount = 1): { w: number; h: number } {
   const n = Math.max(1, Math.floor(Number(jackCount) || 1));
-  return { w: snapSize(IO_W), h: icStackHeight(n, IO_H) };
+  const chrome = PIN_LEAD * 2 + TITLE_H + TECHNICAL_H + FOOT_H;
+  return { w: snapSize(IO_W), h: snapSize(Math.max(IO_H, chrome + n * JACK_PITCH)) };
 }
 
 export function chipOverlayStackPx(hiddenRows: number): number {
@@ -150,11 +151,10 @@ export function chipPadInset(role: "io" | "chip"): {
   bottom: number;
   left: number;
 } {
-  void role;
   return {
     top: PIN_LEAD + TITLE_H + TECHNICAL_H,
     right: PIN_LEAD,
-    bottom: PIN_LEAD + FOOT_H + PARAMETER_H,
+    bottom: PIN_LEAD + FOOT_H + (role === "io" ? 0 : PARAMETER_H),
     left: PIN_LEAD,
   };
 }

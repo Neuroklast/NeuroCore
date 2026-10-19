@@ -110,3 +110,49 @@ test('a real LFO drag magnetizes parameter pins while audio is rejected', async 
     await page.mouse.up();
   }
 });
+
+test('hardware housing bounds its texture and uses compact connector geometry', async ({ page }, info) => {
+  await loadDrone(page);
+  const dsp = page.locator('[data-node-id="octaver1"]');
+  const io = page.locator('[data-node-id="IN"]');
+  const metrics = await dsp.evaluate(el => {
+    const rect = (s: string) => el.querySelector(s)!.getBoundingClientRect();
+    const dots = rect('.nk-chip-pads');
+    const face = rect('.nk-node-face');
+    return { dotW: dots.width, dotH: dots.height, faceW: face.width, faceH: face.height,
+      codeSize: parseFloat(getComputedStyle(el.querySelector('.nk-chip-typecode')!).fontSize),
+      texture: getComputedStyle(el.querySelector('.nk-chip-pads')!).backgroundImage,
+      material: getComputedStyle(el.querySelector('.nk-chip-fill')!).backgroundImage };
+  });
+  expect(metrics.dotW).toBeLessThan(metrics.faceW * .85);
+  expect(metrics.dotH).toBeLessThan(metrics.faceH * .85);
+  expect(metrics.codeSize).toBeGreaterThanOrEqual(11);
+  expect(metrics.texture).not.toBe('none');
+  expect(metrics.material).not.toBe('none');
+  expect(await io.evaluate(el => (el as HTMLElement).offsetHeight)).toBeLessThanOrEqual(
+    await dsp.evaluate(el => (el as HTMLElement).offsetHeight * .625));
+  await expect(dsp.locator('[data-material="gunmetal"]')).toHaveCount(1);
+  for (const pin of await io.locator('.nk-port').all()) {
+    const p = await pin.boundingBox();
+    const body = await io.boundingBox();
+    expect(p!.y).toBeGreaterThan(body!.y + 26);
+    expect(p!.y + p!.height).toBeLessThan(body!.y + body!.height - 12);
+  }
+  await page.mouse.move(1250,850);
+  await page.screenshot({path:info.outputPath('hardware-board.png'),fullPage:true});
+  await dsp.screenshot({path:info.outputPath('hardware-octaver.png')});
+  const size = await dsp.evaluate(el => ({w:(el as HTMLElement).offsetWidth,h:(el as HTMLElement).offsetHeight}));
+  await dsp.click({position:{x:50,y:20}});
+  await dsp.getByRole('button', {name:'M',exact:true}).click();
+  await expect(dsp).toHaveAttribute('data-audible','off');
+  const muted = await dsp.evaluate(el => ({
+    opacity:getComputedStyle(el).opacity,
+    titleOpacity:getComputedStyle(el.querySelector('.nk-chip-title')!).opacity,
+    faceOpacity:getComputedStyle(el.querySelector('.nk-node-face')!).opacity,
+    w:(el as HTMLElement).offsetWidth,h:(el as HTMLElement).offsetHeight,
+  }));
+  expect(muted.opacity).toBe('1');
+  expect(muted.titleOpacity).toBe('1');
+  expect(Number(muted.faceOpacity)).toBeLessThanOrEqual(.2);
+  expect({w:muted.w,h:muted.h}).toEqual(size);
+});

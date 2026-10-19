@@ -1,5 +1,5 @@
 import type { AstEdge, AstJack, AstNode } from "../bridge/ast";
-import { chipSpec } from "./chipSpec";
+import { bindableJackKeys, chipSpec } from "./chipSpec";
 
 function argOf(node: Pick<AstNode, "args">, key: string): string {
   return (node.args[key] ?? "").trim().toLowerCase();
@@ -248,7 +248,7 @@ export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] 
   ];
   const extra = (node.jacks ?? []).filter((j) => ! fromSpec.some((s) => s.id === j.id && s.output === j.output));
   const sideExtra = extra.filter((j) => ! spec.paramJacks.includes(j.id));
-  const params = spec.paramJacks
+  const params = bindableJackKeys(spec)
     .filter((id) => ! fromSpec.some((s) => s.id === id))
     .map((id) => {
       const hit = extra.find((j) => j.id === id);

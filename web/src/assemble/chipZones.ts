@@ -11,6 +11,7 @@ export function rectsOverlap(a: ChipZone, b: ChipZone): boolean {
 /** Paint, controls and routing consume the same exclusive bands. */
 export function chipZones(role: "io" | "chip", box: { w: number; h: number }): ChipZone[] {
   const pad = chipPadInset(role);
+  const parameterH = role === "io" ? 0 : PARAMETER_H;
   const w = Math.max(0, box.w - pad.left - pad.right);
   const faceH = Math.max(0, box.h - pad.top - pad.bottom);
   return [
@@ -19,7 +20,7 @@ export function chipZones(role: "io" | "chip", box: { w: number; h: number }): C
     { id: "westRail", x: 0, y: pad.top, w: pad.left, h: faceH },
     { id: "eastRail", x: box.w - pad.right, y: pad.top, w: pad.right, h: faceH },
     { id: "face", x: pad.left, y: pad.top, w, h: faceH },
-    { id: "parameters", x: pad.left, y: box.h - PIN_LEAD - FOOT_H - PARAMETER_H, w, h: PARAMETER_H },
+    { id: "parameters", x: pad.left, y: box.h - PIN_LEAD - FOOT_H - parameterH, w, h: parameterH },
     { id: "foot", x: pad.left, y: box.h - PIN_LEAD - FOOT_H, w, h: FOOT_H },
   ];
 }

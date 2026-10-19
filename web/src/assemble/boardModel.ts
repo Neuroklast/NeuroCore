@@ -74,12 +74,12 @@ export function portKindOf(jack: AstJack): PortKind {
   return jack.id === "sc" ? "sc" : "audio";
 }
 
-export function portLocal(node: Pick<BoardNode, "w" | "h">, port: BoardPort): { x: number; y: number } {
+export function portLocal(node: Pick<BoardNode, "w" | "h"> & Partial<Pick<BoardNode, "role">>, port: BoardPort): { x: number; y: number } {
   if (port.south) {
     const locals = southPortLocals(port.count, { w: node.w, h: node.h });
     return locals[port.index] ?? { x: node.w * 0.5, y: node.h };
   }
-  const locals = sidePortLocals(port.count, { w: node.w, h: node.h }, port.east);
+  const locals = sidePortLocals(port.count, { w: node.w, h: node.h }, port.east, node.role);
   return locals[port.index] ?? { x: port.east ? node.w : 0, y: node.h * 0.5 };
 }
 
