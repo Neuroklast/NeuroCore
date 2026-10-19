@@ -1,28 +1,19 @@
 import { BOARD_GRID, BOARD_HALF, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToCellCenter, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
-/** Minimum neighbour air. Fat air (×2) is used when the row still fits viewW. */
+/** Minimum neighbour air. Compact rows always use fat (×2) and wrap rather than squeeze. */
 export const COMPACT_GAP = CHIP_AIR_X;
 
-/** Fat air when the row fits or must wrap anyway. Thin air only for a short serial that would otherwise wrap. */
+/** Fat air for every compact row. Thin 2-cell gutters land a forced-east stub on the next net. */
 export function gapXForView(
-  widths: readonly number[],
-  viewW: number,
-  pad: number,
+  _widths: readonly number[],
+  _viewW: number,
+  _pad: number,
 ): number {
-  const fat = CHIP_AIR_X * 2;
-  const thin = CHIP_AIR_X;
-  const n = widths.length;
-  if (wrapFits(widths, viewW, fat, pad) >= n) {
-    return fat;
-  }
-  if (n <= 5 && wrapFits(widths, viewW, thin, pad) >= n) {
-    return thin;
-  }
-  return fat;
+  return CHIP_AIR_X * 2;
 }
-/** Halo + rail + halo. finishHalo solidifies one cell around each chip, so CHIP_AIR_Y is not a cable. */
-export const WRAP_AIR = BOARD_PAD + BOARD_GRID + BOARD_PAD;
+/** Halo + two-cell wrap rail + halo. Wider IC plates wrap more; the rail stays a free cable. */
+export const WRAP_AIR = BOARD_PAD + BOARD_GRID * 2 + BOARD_PAD;
 export type BoardView = { w: number; h: number };
 
 export function serialIds(

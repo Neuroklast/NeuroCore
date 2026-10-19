@@ -48,7 +48,7 @@ describe("compact packRows", () => {
   it("wraps L→R when the chain is wider than the view, no snake", () => {
     expect(wrapFits([128, 256, 256, 256], 400, 64, 32)).toBe(1);
     expect(wrapFits([128, 256], 2000, 64, 32)).toBe(2);
-    expect(gapXForView([96, 128, 128, 128], 896, 32)).toBe(CHIP_AIR_X);
+    expect(gapXForView([96, 128, 128, 128], 896, 32)).toBe(CHIP_AIR_X * 2);
     expect(gapXForView([96, 128], 1440, 32)).toBe(CHIP_AIR_X * 2);
     const { nodes, edges } = chain(5);
     const packed = packRows(nodes, edges, { w: 700, h: 420 });
