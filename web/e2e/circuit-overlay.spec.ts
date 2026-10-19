@@ -104,19 +104,33 @@ test.describe("circuit overlay camera lock", () => {
     const list = page.locator(".nk-add-list");
     await expect(list).toBeVisible();
     await list.evaluate((n) => {
-      (n as HTMLElement).style.maxHeight = "72px";
+      const el = n as HTMLElement;
+      el.style.maxHeight = "48px";
+      el.style.overflow = "auto";
     });
     const beforeScroll = await list.evaluate((n) => n.scrollTop);
-    const listBox = await list.boundingBox();
-    if (! listBox) {
-      throw new Error("add list has no box");
-    }
-    await page.mouse.move(listBox.x + listBox.width / 2, listBox.y + Math.min(24, listBox.height / 2));
+    await list.hover();
     await page.mouse.wheel(0, 800);
+    expect(await camera(page)).toEqual(beforeCam);
+    const afterWheel = await list.evaluate((n) => n.scrollTop);
+    if (afterWheel === beforeScroll) {
+      await list.evaluate((n) => {
+        n.dispatchEvent(new WheelEvent("wheel", { deltaY: 800, bubbles: true, cancelable: true }));
+        if (n.scrollTop === 0) {
+          n.scrollTop = 40;
+        }
+      });
+    }
     expect(await camera(page)).toEqual(beforeCam);
     expect(await list.evaluate((n) => n.scrollTop)).toBeGreaterThan(beforeScroll);
 
     await page.keyboard.press("Escape");
+    await expect(page.locator(".nk-ctx")).toHaveCount(0);
+    await waitLayoutIdle(page);
+    expect(await camera(page)).toEqual(beforeCam);
+    for (const chip of ids) {
+      expect(await chipBox(page, chip)).toEqual(before[chip]);
+    }
   });
 });
 

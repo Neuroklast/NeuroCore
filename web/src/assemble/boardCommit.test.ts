@@ -203,6 +203,65 @@ describe("rerouteBoard layout generation", () => {
 
     expect(useBoardStore.getState().layoutBusy).toBe(false);
   });
+
+  it("does not fitCamera after the user pans during the layout wait", async () => {
+    let reply: ((data: { nodes: Record<string, { x: number; y: number; w: number; h: number }>; edgePaths: Record<string, string> }) => void) | null = null;
+    const fake = {
+      postMessage(msg: { reqId: number }) {
+        reply = (data) => {
+          (fake as { onmessage?: (ev: { data: unknown }) => void }).onmessage?.({
+            data: { reqId: msg.reqId, ok: true, ...data },
+          });
+        };
+      },
+      terminate() {},
+    };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    useBoardStore.getState().hydrate(chain());
+    const pending = layoutBoard("ARRANGE", { w: 960, h: 420 });
+    const panned = { tx: 99, ty: 88, scale: 1.25 };
+    useBoardStore.getState().setCamera(panned);
+    if (reply == null) {
+      throw new Error("layout worker did not post");
+    }
+    reply({
+      nodes: {
+        IN: { x: 32, y: 32, w: 96, h: 96 },
+        stage1: { x: 240, y: 32, w: 160, h: 96 },
+      },
+      edgePaths: { e0: "M128 80L160 80" },
+    });
+    await pending;
+    expect(useBoardStore.getState().camera).toEqual(panned);
+    expect(useBoardStore.getState().nodes.stage1).toBeDefined();
+  });
+
+  it("does not fitCamera while a circuit overlay is open", async () => {
+    const fake = {
+      postMessage(msg: { reqId: number }) {
+        queueMicrotask(() => {
+          (fake as { onmessage?: (ev: { data: unknown }) => void }).onmessage?.({
+            data: {
+              reqId: msg.reqId,
+              ok: true,
+              nodes: {
+                IN: { x: 32, y: 32, w: 96, h: 96 },
+                stage1: { x: 240, y: 32, w: 160, h: 96 },
+              },
+              edgePaths: { e0: "M128 80L160 80" },
+            },
+          });
+        });
+      },
+      terminate() {},
+    };
+    setLayoutWorkerFactory(() => fake as unknown as Worker);
+    useBoardStore.getState().hydrate(chain());
+    const before = { ...useBoardStore.getState().camera };
+    await layoutBoard("ARRANGE", { w: 960, h: 420 }, { overlayOpen: true });
+    expect(useBoardStore.getState().camera).toEqual(before);
+    expect(useBoardStore.getState().nodes.stage1).toBeDefined();
+  });
 });
 
 describe("host echo is not a user drag", () => {
