@@ -129,6 +129,9 @@ function addSouthPorts(
   const south = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
   south.forEach((j, index) => {
     const id = portId(nodeId, j.id, false);
+    if (ports[id] && ! ports[id]!.south) {
+      return;
+    }
     ports[id] = {
       id,
       nodeId,
@@ -280,15 +283,34 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       }
     }
   }
+  recountRails(nodes, ports);
+  return { nodes, ports, edges };
+}
+
+/** West, east, and south occupancy is counted per face after every port exists. */
+function recountRails(
+  nodes: Record<string, BoardNode>,
+  ports: Record<string, BoardPort>,
+): void {
   for (const node of Object.values(nodes)) {
     for (const east of [false, true]) {
-      const side = Object.values(ports).filter(p => p.nodeId === node.id && p.east === east);
+      const side = Object.values(ports).filter(
+        (p) => p.nodeId === node.id && p.east === east && ! p.south,
+      );
       side.sort((a, b) => a.index - b.index || a.id.localeCompare(b.id));
-      side.forEach((p, index) => { p.index = index; p.count = side.length; });
+      side.forEach((p, index) => {
+        p.index = index;
+        p.count = side.length;
+      });
       node.h = Math.max(node.h, snapSize(sidePortMinHeight(side.length) + BOARD_GRID));
     }
+    const south = Object.values(ports).filter((p) => p.nodeId === node.id && p.south);
+    south.sort((a, b) => a.index - b.index || a.id.localeCompare(b.id));
+    south.forEach((p, index) => {
+      p.index = index;
+      p.count = south.length;
+    });
   }
-  return { nodes, ports, edges };
 }
 
 export function assignRanks(graph: BoardGraph): Record<string, number> {
@@ -320,7 +342,7 @@ export function assignRanks(graph: BoardGraph): Record<string, number> {
 
 export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const nodes: LayoutNode[] = Object.values(graph.nodes).map((n) => {
-    const ins = Object.values(graph.ports).filter((p) => p.nodeId === n.id && ! p.east);
+    const ins = Object.values(graph.ports).filter((p) => p.nodeId === n.id && ! p.east && ! p.south);
     const outs = Object.values(graph.ports).filter((p) => p.nodeId === n.id && p.east);
     return {
       id: n.id,

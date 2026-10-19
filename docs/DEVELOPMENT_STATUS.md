@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/chip-zones`
+**Branch:** `feat/cable-elbows`
+
+## Circuit serial hops (2026-10-19)
+
+West, east, and south occupancy is counted per face after hydrate. `graphToLayout.ins` are west only, so a 1-in-1-out chip shares the vertical midline. Compact already jack-rail-aligns, so Drone Low Bed serial hops (`IN → octaver → filter → reverb → OUT`) are a straight east run (`countCorners === 0`). A catalog param that reuses an audio jack id (OTT detector `in`) does not replace the west socket. Version stays 0.7.0-beta.
 
 ## Circuit chip zones (2026-10-19)
 

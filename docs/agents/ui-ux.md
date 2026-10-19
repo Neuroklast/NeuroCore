@@ -32,7 +32,8 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Knob use is a label | Bound `a`–`f` not printed on the chip that uses them |
 | Expand works | Chevron hit ≠ painted chevron; height does not grow with extra outs |
 | One visual out per destination | Two filters read `osc1` but share one east jack |
-| Manhattan, few corners | Path cost = `cells + 12 * turns`. Long straight beats a 4-corner shortcut |
+| Manhattan, few corners | Path cost = `cells + 12 * turns`. Long straight beats a 4-corner shortcut. A one-row serial hop has extra elbows |
+| Side occupancy is per face | South param ports counted in west `count`, `graphToLayout.ins` including south, or a param jack overwriting a side socket that shares its id. 1-in-1-out side jacks off the box midline |
 | 16 px grid | Jack or chip origin not a multiple of 16 |
 | Chips do not overlap | `nodeRectsClash` after tidy |
 | ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column |

@@ -291,4 +291,24 @@ describe("octaver param jacks stay off the side rails", () => {
     expect(jacks.filter((j) => j.kind === "audio" || j.kind === "mod").map((j) => j.id).sort()).toEqual(["in", "out"]);
     expect(jacks.filter((j) => j.kind === "param").map((j) => j.id)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
   });
+
+  it("keeps OTT audio in on the west rail when the detector param shares that id", () => {
+    const ott = {
+      id: "ott1",
+      type: "ott",
+      busName: "main",
+      args: { depth: "1", time: "0.3", in: "1" },
+      trailingComment: "",
+      jacks: [],
+    } satisfies AstNode;
+    const jacks = visualJacksFor(ott);
+    expect(jacks.filter((j) => j.id === "in").map((j) => j.kind)).toEqual(["audio"]);
+    expect(jacks.filter((j) => j.kind === "param").map((j) => j.id)).toEqual([
+      "depth",
+      "time",
+      "low",
+      "mid",
+      "high",
+    ]);
+  });
 });
