@@ -2,6 +2,7 @@ import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
 import { BOARD_GRID, CHIP_AIR_X } from "../grid";
 import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
 import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
+import { placeSerialChain } from "./serialPlacement";
 import { packRows, parkOutTerminal } from "./compactPack";
 import { placeWithElk } from "./elkPlace";
 import { GridMap, portInCell, portOutCell } from "./gridMap";
@@ -117,7 +118,8 @@ export async function runLayout(
   edges: LayoutEdge[],
   view: LayoutView = { w: 960, h: 420 },
 ): Promise<LayoutResult> {
-  const placed = mode === "REROUTE"
+  const serial = mode === "REROUTE" ? null : placeSerialChain(nodes, edges);
+  const placed = serial ?? (mode === "REROUTE"
     ? Object.fromEntries(nodes.map((n) => [n.id, {
       x: n.x ?? 0,
       y: n.y ?? 0,
@@ -126,7 +128,7 @@ export async function runLayout(
     }]))
     : mode === "COMPACT"
       ? packRows(nodes, edges, view)
-      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X * 2);
+      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X * 2));
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const map = new GridMap();

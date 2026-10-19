@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Edge, Node } from "./flowTypes";
-import { arrangeElk, ARR_CHIP_GAP, ARR_LAYER_GAP, chipChipGap } from "./elkArrange";
+import { arrangeElk, ARR_CHIP_GAP, chipChipGap } from "./elkArrange";
 import { chipBox } from "./chipLayout";
 import { inflate, midHits } from "./tubePath";
 import { requestLayout } from "./layout/layoutClient";
@@ -82,7 +82,7 @@ describe("ELK arrange", () => {
     expect(pos.OUT!.x).toBeGreaterThan(pos.filter2!.x);
     const fb = chipBox("filter", nodes.find((n) => n.id === "filter1")!.data.jacks, false, {});
     const layerGap = pos.stage1!.x - (pos.filter1!.x + fb.w);
-    expect(layerGap).toBeGreaterThanOrEqual(ARR_LAYER_GAP);
+    expect(layerGap).toBeGreaterThanOrEqual(ARR_CHIP_GAP);
     expect(pos.stage1!.x).not.toBe(pos.filter1!.x);
     for (const d of Object.values(laid.edgePaths)) {
       expect(d.startsWith("M")).toBe(true);
@@ -129,7 +129,7 @@ describe("ELK arrange", () => {
     }
   });
 
-  it("compact stacks a long chain into rows instead of one sausage", async () => {
+  it("Compact preserves the directed serial rail used by Arrange", async () => {
     const ids = ["filter1", "stage1", "eq1", "stage2", "filter2"];
     const nodes = [
       chip("IN", "in", { jacks: [jack("out", true)] }),
@@ -147,11 +147,10 @@ describe("ELK arrange", () => {
     const view = { w: 960, h: 420 };
     const wide = await requestLayout("ARRANGE", nodes, edges, view);
     const tight = await requestLayout("COMPACT", nodes, edges, view);
-    const compactYs = new Set(Object.values(tight.nodes).map((n) => n.y));
-    expect(compactYs.size).toBeGreaterThan(1);
     const arrangeW = Math.max(...Object.values(wide.nodes).map((n) => n.x + n.w));
     const compactW = Math.max(...Object.values(tight.nodes).map((n) => n.x + n.w));
-    expect(compactW).toBeLessThan(arrangeW);
+    expect(compactW).toBe(arrangeW);
+    expect(tight).toEqual(wide);
     expect(wide.nodes.IN!.x).toBeLessThan(wide.nodes.filter2!.x);
     expect(wide.nodes.filter2!.x).toBeLessThan(wide.nodes.OUT!.x);
     for (const d of Object.values(tight.edgePaths)) {
@@ -162,7 +161,8 @@ describe("ELK arrange", () => {
       for (let i = 1; i < pts.length; i += 1) {
         len += Math.abs(pts[i]!.x - pts[i - 1]!.x) + Math.abs(pts[i]!.y - pts[i - 1]!.y);
       }
-      expect(len, d).toBeGreaterThanOrEqual(BOARD_GRID);
+      expect(len, d).toBe(ARR_CHIP_GAP);
+      expect(pts.every(p => p.y === pts[0]!.y), d).toBe(true);
     }
   });
 });

@@ -151,7 +151,7 @@ describe("factory signal-flow layout baseline", () => {
     }
   });
 
-  it("keeps Drone Low Bed serial L→R and wraps instead of shrinking chips", async () => {
+  it("keeps Drone Low Bed on a directed rail without shrinking chips", async () => {
     const { result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     expect(result.nodes.filter1!.w, log).toBeGreaterThanOrEqual(224);
     expect(result.nodes.octaver1!.w, log).toBeGreaterThanOrEqual(224);
@@ -167,7 +167,7 @@ describe("factory signal-flow layout baseline", () => {
     expect(fillRatio(result), log).toBeGreaterThan(0);
   });
 
-  it("routes same-row Drone Low Bed hops without extra elbows", async () => {
+  it("routes every Drone Low Bed hop without extra elbows", async () => {
     const { doc, result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     const graph = graphToLayout(hydrateBoard(doc));
     const hops: Array<[string, string]> = [
@@ -179,11 +179,6 @@ describe("factory signal-flow layout baseline", () => {
     for (const [src, dst] of hops) {
       const e = graph.edges.find((x) => x.source === src && x.target === dst);
       expect(e, `${src}→${dst} missing ${log}`).toBeTruthy();
-      const a = result.nodes[src]!;
-      const b = result.nodes[dst]!;
-      if (Math.abs(a.y - b.y) > BOARD_GRID * 2) {
-        continue;
-      }
       const d = result.edgePaths[e!.id];
       const pts = parseRoutePath(d ?? "");
       expect(countCorners(pts), `${src}→${dst} ${d} ${log}`).toBe(0);

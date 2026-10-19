@@ -301,10 +301,10 @@ html[data-motion="off"] .nk-boot {
 }
 
 .nk-node-face {
-  opacity: 0.32;
+  opacity: 0.58;
 }
 .nk-board-chip[data-depth="2"] .nk-node-face {
-  opacity: 0.58;
+  opacity: 0.78;
 }
 .nk-board-chip[data-audible="off"] .nk-node-face,
 .nk-board-chip[data-audible="off"] .nk-chip-pads {
@@ -316,7 +316,7 @@ html[data-motion="off"] .nk-boot {
   bottom: calc(var(--nk-pad-bottom) + 14px);
   left: calc(var(--nk-pad-left) + 36px);
   right: calc(var(--nk-pad-right) + 36px);
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--nk-ink) 32%, transparent) .65px, transparent .85px);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--nk-ink) 40%, transparent) 1.1px, transparent 1.3px);
   background-size: 12px 12px;
   mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--nk-ink) 4%, transparent);
@@ -473,10 +473,22 @@ html[data-motion="off"] .nk-boot {
   border: 0;
   background: transparent;
   pointer-events: auto;
-  font: 11px/var(--nk-parameter-h) "JetBrains Mono", ui-monospace, monospace;
+  font: var(--nk-parameter-font)/var(--nk-parameter-h) "JetBrains Mono", ui-monospace, monospace;
   letter-spacing: 0.02em;
   color: var(--nk-ink-soft);
   white-space: nowrap;
+}
+
+.nk-chip-parameter:not(.is-inline)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 8px;
+  background: currentColor;
+  opacity: .5;
+  pointer-events: none;
 }
 
 .nk-chip-parameter.is-inline {

@@ -1,0 +1,135 @@
+{
+  "commit": "f18103c8cac5c35f7b78e99ab95b12475aaef91c",
+  "width": 960,
+  "nodes": {
+    "IN": {
+      "x": 32,
+      "y": 96,
+      "w": 160,
+      "h": 160
+    },
+    "octaver1": {
+      "x": 320,
+      "y": 32,
+      "w": 352,
+      "h": 256
+    },
+    "filter1": {
+      "x": 32,
+      "y": 416,
+      "w": 224,
+      "h": 256
+    },
+    "reverb1": {
+      "x": 384,
+      "y": 416,
+      "w": 288,
+      "h": 256
+    },
+    "OUT": {
+      "x": 800,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    }
+  },
+  "routes": [
+    {
+      "id": "e-IN-octaver1-out-in-0",
+      "source": "IN",
+      "target": "octaver1",
+      "length": 128,
+      "corners": 0,
+      "westward": 0,
+      "points": [
+        {
+          "x": 192,
+          "y": 176
+        },
+        {
+          "x": 320,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "id": "e-octaver1-filter1-out-in-1",
+      "source": "octaver1",
+      "target": "filter1",
+      "length": 1216,
+      "corners": 6,
+      "westward": 736,
+      "points": [
+        {
+          "x": 672,
+          "y": 176
+        },
+        {
+          "x": 720,
+          "y": 176
+        },
+        {
+          "x": 720,
+          "y": 336
+        },
+        {
+          "x": 688,
+          "y": 368
+        },
+        {
+          "x": 16,
+          "y": 368
+        },
+        {
+          "x": -16,
+          "y": 400
+        },
+        {
+          "x": -16,
+          "y": 560
+        },
+        {
+          "x": 32,
+          "y": 560
+        }
+      ]
+    },
+    {
+      "id": "e-filter1-reverb1-out-in-2",
+      "source": "filter1",
+      "target": "reverb1",
+      "length": 128,
+      "corners": 0,
+      "westward": 0,
+      "points": [
+        {
+          "x": 256,
+          "y": 560
+        },
+        {
+          "x": 384,
+          "y": 560
+        }
+      ]
+    },
+    {
+      "id": "e-reverb1-OUT-out-in-3",
+      "source": "reverb1",
+      "target": "OUT",
+      "length": 128,
+      "corners": 0,
+      "westward": 0,
+      "points": [
+        {
+          "x": 672,
+          "y": 560
+        },
+        {
+          "x": 800,
+          "y": 560
+        }
+      ]
+    }
+  ],
+  "widthRatio": 1.5714285714285714
+}

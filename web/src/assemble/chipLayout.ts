@@ -4,6 +4,7 @@ import {
   BIND_JACK_MIN,
   BIND_RAIL,
   CHIP_H,
+  PARAMETER_CHAR_PX,
   TECHNICAL_H,
   CHIP_PAD_X,
   CHIP_PAD_Y,
@@ -209,7 +210,7 @@ export function chipBox(
   const controlWidth = 3 * TECHNICAL_H + 2 * 4;
   const codeWidth = typeCode(spec, rec).length * 7.5;
   const technicalMin = 2 * PIN_LEAD + 2 * CHIP_PAD_X + codeWidth + 8 + controlWidth
-    + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * 7 + 12) + 4, 0);
+    + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * PARAMETER_CHAR_PX + 12) + 4, 0);
   return {
     w: captionedChipWidth(
       _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)))
@@ -266,7 +267,7 @@ export function jackAnchor(
 /** Grow only until full south captions fit their actual grid-snapped anchors. */
 export function captionedChipWidth(labels: string[], minW = CHIP_W): number {
   let w = icStackWidth(labels.length, minW);
-  const widths = labels.map(label => label.length * 7 + 8);
+  const widths = labels.map(label => label.length * PARAMETER_CHAR_PX + 8);
   for (;;) {
     const ports = southPortLocals(labels.length, { w, h: 0 });
     const fits = ports.every((port, i) => {

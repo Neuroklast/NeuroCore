@@ -231,10 +231,10 @@ describe("chip face, labels, copy", () => {
     const drive = chipBox("stage", [audio("in", false), audio("out", true)], false, { y: "x" });
     expect(env).toEqual(drive);
     expect(env).toEqual(dspFaceSize());
-    const n = 7;
+    const n = Math.ceil(env.w / BOARD_GRID) + 1;
     const wide = chipBox("filter", [
       audio("in", false),
-      ...["a", "b", "c", "d", "e", "f", "g"].map((id) => ({ id, label: id, output: false, kind: "param" as const })),
+      ...Array.from({length:n}, (_,i) => `p${i}`).map((id) => ({ id, label: id, output: false, kind: "param" as const })),
       audio("out", true),
     ], false, { type: "lp" });
     expect(wide.w).toBeGreaterThan(env.w);

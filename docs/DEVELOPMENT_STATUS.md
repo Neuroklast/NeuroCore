@@ -1,12 +1,20 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-19 (0.7.1-beta)  
+**Stand:** 2026-10-20 (0.7.1-beta)
 **Version:** 0.7.1-beta  
 **Branch:** `feat/v0.7.1-beta`
 
 ## 0.7.1-beta (2026-10-19)
 
 Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes restore the dotted, cut-corner IC identity with separate name, control, function and parameter/status bands. Typecode and chip feet use `--nk-ink-soft`.
+
+## Circuit serial composition (2026-10-20)
+
+A verified single IN→OUT path now has a dedicated placement strategy shared by Arrange and Compact. Every node, including OUT, follows its actual predecessor with a 64 px gutter and aligned jack centres. A narrow view changes camera fit rather than inserting a backwards row transition. Branches, modulation, buses, cycles and incomplete paths remain with the general graph strategy; rerouting manual placements never invokes serial placement.
+
+The material design is retained. DSP plates start at 320×256 for a consistent housing family, growing from real caption/control requirements. Parameter captions are 15 px with shared width metrics and guide ticks aligned to their pins. Idle function-plot opacity is 0.58, focused 0.78, without added glow. Dot radius and contrast keep the bounded raster visible after camera scaling. No DSP or version change.
+
+Contracts now measure all Drone Low Bed hops at 960/1440, including cable length, westward travel, turns, overlap, crossings and relative DSP widths. The previous same-row skip has been removed. Browser geometry also checks rendered caption size and caption/pin alignment. Evidence and exact validation results are in `docs/evidence/circuit-serial/README.md`. Native DAW/WebView2 review remains pending.
 
 ## Circuit hardware finish (2026-10-19)
 

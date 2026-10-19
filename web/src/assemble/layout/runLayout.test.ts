@@ -137,7 +137,7 @@ describe("arrange vs compact", () => {
 });
 
 describe("compact wrap rail", () => {
-  it("sends the wrap cable between the two rows, not around the hull", async () => {
+  it("reroutes manually wrapped rows between chips rather than around the hull", async () => {
     const jack = (id: string, y: number) => ({ id, y });
     const nodes: LayoutNode[] = [
       { id: "IN", w: 128, h: 64, ins: [], outs: [jack("out", 48)] },
@@ -161,7 +161,7 @@ describe("compact wrap rail", () => {
     const view = { w: 700, h: 420 };
     const packed = packRows(nodes, edges, view);
     expect(rowCount(packed)).toBeGreaterThan(1);
-    const r = await compact(nodes, edges, view);
+    const r = await reroute(nodes.map(n => ({...n, ...packed[n.id]})), edges);
     const wrap = edges.find((e) => {
       const s = r.nodes[e.source];
       const t = r.nodes[e.target];

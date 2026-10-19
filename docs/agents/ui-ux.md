@@ -12,7 +12,7 @@ Source of truth for Circuit is the **script**. The board is a headless graph (`b
 | Hover focus | Pane carries `data-dof`, chips `data-focus`. Selected or hovered chip + its neighbours + their cables stay sharp, rest is soft. Zoom (scale ≠ 1) must not disable the plane |
 | Drag cable | Cubic bezier, east/west normals. No A* while the pointer is down |
 | After drop | Layout worker runs ELK + A*. Canvas paints cached `edge.route` polylines; rAF only advances the aperiodic packet train. Pause the canvas when Circuit is hidden |
-| Compact | Rank columns, rail rows, wrap to `viewW`, no snake. Only init / Arrange / Compact — never after a user drag |
+| Compact | A verified single IN→OUT chain owns one directed rail with 64 px gaps and its OUT placed from the predecessor. View width controls camera fit. Branches/modulation/buses use ranked rail rows. Only init / Arrange / Compact, never after a user drag |
 | Knob bind | Chrome knobs, not graph cables |
 
 ## Circuit — one board
@@ -36,7 +36,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Side occupancy is per face | South param ports counted in west `count`, `graphToLayout.ins` including south, or a param jack overwriting a side socket that shares its id. 1-in-1-out side jacks off the box midline |
 | 16 px grid | Jack or chip origin not a multiple of 16 |
 | Chips do not overlap | `nodeRectsClash` after tidy |
-| ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column. Compact *packs* at fat air (`CHIP_AIR_X * 2`) and wraps; it does not squeeze a 2-cell gutter to keep a row |
+| ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column. General graph rows pack at fat air (`CHIP_AIR_X * 2`) and wrap. Verified serial chains use `CHIP_AIR_X` (64) with straight 32 px port stubs |
 | Dest stub is 32 px east, never a U-turn | Any audio path point with `x > dest jack x`, or a west-then-east jog at the IN jack |
 | IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or a **single** side jack (OUT in, DSP in/out) not on that chip’s vertical midline. IN `out`/`sc` sit in the **body band** (below `TITLE_H`, above the foot), one-cell pitch around that midline — never in the hazard title or on the footer |
 | Chip paint ⊂ AABB | Handle centres, titles, captions, lamps, or a face widget sit outside `chipBox`. Closed IN/OUT have no range/select. Port names are tooltips, not truncated caps. Closed DSP: no TRG/barcode/grip/fake jacks. Name, technical/control row, pin rails, dotted signal surface, parameter captions and foot are exclusive (`chipZones`); mute/solo and Inspect live in the technical row |
