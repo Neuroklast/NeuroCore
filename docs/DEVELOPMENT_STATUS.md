@@ -8,6 +8,10 @@
 
 Closed nodes are gunmetal ICs, not 128 px compact plates. Shared metrics (`chipMetrics` / `chipBox` / `chipZones` / `portLayout`) size a normal DSP chip at 224×192 and grow from west/east/south jack counts. The body is inset `PIN_LEAD`; jack centres stay on the AABB. Idle pins are metal; hatch and truncated port caps are gone. Compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap; A* may leave north/south when the forced-east stub is a foreign runway. Version stays 0.7.0-beta.
 
+## Circuit secondary ink (2026-10-19)
+
+Typecode and chip feet use `--nk-ink-soft`. Title stays `--nk-ink`. `--nk-ink-muted` stays for de-emphasized chrome. Closed port caps stay hidden. Version stays 0.7.0-beta.
+
 ## Circuit chip foot honesty (2026-10-19)
 
 Chip foot reads `nodeMeter`. No tap prints `—`. A measured peak at or below −60 dBFS prints `still`. Audible prints live dB. Missing clips are no longer coalesced to `0`. Version stays 0.7.0-beta.

@@ -21,6 +21,10 @@ export const SIGNAL_LAB = {
     secondaryMinPx: 10,
     codePx: 12,
   },
+  ink: {
+    title: "var(--nk-ink)",
+    secondary: "var(--nk-ink-soft)",
+  },
   hitPx: TITLE_H,
   zoom: SEMANTIC_ZOOM,
   surfaceVar: {

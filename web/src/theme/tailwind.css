@@ -605,7 +605,7 @@ html[data-motion="off"] .nk-boot {
   font-size: 10px;
   font-style: normal;
   letter-spacing: 0.08em;
-  color: var(--nk-ink-muted);
+  color: var(--nk-ink-soft);
   white-space: nowrap;
   pointer-events: none;
   line-height: 1;
@@ -2541,7 +2541,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--nk-ink-muted);
+  color: var(--nk-ink-soft);
   line-height: 1;
   text-transform: uppercase;
   flex-shrink: 1;
@@ -2598,7 +2598,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: var(--nk-ink-muted);
+  color: var(--nk-ink-soft);
   line-height: 1;
   overflow: hidden;
   white-space: nowrap;
