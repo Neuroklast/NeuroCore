@@ -116,3 +116,37 @@ describe("mute is not a layout", () => {
     expect(useBoardStore.getState().nodes.stage1!.x).toBe(x);
   });
 });
+
+describe("octaver ports", () => {
+  it("keeps param keys off the west audio rail", () => {
+    useBoardStore.getState().hydrate({
+      version: 1,
+      leadingComments: [],
+      params: [],
+      nodes: [{
+        id: "octaver1",
+        type: "octaver",
+        busName: "main",
+        args: { sub: "1", up: "0", mix: "0.3", tone: "120", thresh: "0.05" },
+        trailingComment: "",
+        x: 240,
+        y: 32,
+        jacks: [
+          { id: "in", label: "in", output: false, kind: "audio" },
+          { id: "out", label: "out", output: true, kind: "audio" },
+          { id: "sub", label: "sub", output: false, kind: "audio" },
+          { id: "up", label: "up", output: false, kind: "audio" },
+          { id: "mix", label: "mix", output: false, kind: "audio" },
+          { id: "tone", label: "tone", output: false, kind: "audio" },
+          { id: "thresh", label: "thresh", output: false, kind: "audio" },
+        ],
+      }],
+      edges: [{ from: "IN", to: "octaver1", kind: "audio", fromJack: "out", toJack: "in" }],
+      inJacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
+    });
+    const ports = Object.values(useBoardStore.getState().ports).filter((p) => p.nodeId === "octaver1");
+    const west = ports.filter((p) => ! p.east && ! p.south);
+    expect(west.map((p) => p.jackId)).toEqual(["in"]);
+    expect(ports.filter((p) => p.south).map((p) => p.jackId)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
+  });
+});

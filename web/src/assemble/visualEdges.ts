@@ -247,7 +247,12 @@ export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] 
     ...spec.modIns.map((id) => jack(id, false, "mod")),
   ];
   const extra = (node.jacks ?? []).filter((j) => ! fromSpec.some((s) => s.id === j.id && s.output === j.output));
-  return fromSpec.length ? [...fromSpec, ...extra] : (node.jacks ?? []);
+  const sideExtra = extra.filter((j) => ! spec.paramJacks.includes(j.id));
+  const params = spec.paramJacks.map((id) => {
+    const hit = extra.find((j) => j.id === id);
+    return hit ? { ...hit, kind: "param" } : jack(id, false, "param");
+  });
+  return fromSpec.length ? [...fromSpec, ...sideExtra, ...params] : (node.jacks ?? []);
 }
 
 function keyOf(e: AstEdge): string {

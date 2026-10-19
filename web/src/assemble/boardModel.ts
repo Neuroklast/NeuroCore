@@ -3,7 +3,8 @@ import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
 import { BOARD_GRID, snapToGrid, snapSize } from "./grid";
 import { canonicalIoJacks } from "./ioPaint";
-import { globalPort, sidePortLocals, sidePortMinHeight } from "./portLayout";
+import { globalPort, sidePortLocals, sidePortMinHeight, southPortLocals } from "./portLayout";
+import { cableFace } from "./validateLink";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
 import { inferModLinks, isLfoNode, visibleNodes } from "./flowFromAst";
 import type { LayoutEdge, LayoutNode } from "./layout/types";
@@ -30,6 +31,7 @@ export type BoardPort = {
   nodeId: string;
   jackId: string;
   east: boolean;
+  south?: boolean;
   index: number;
   count: number;
   kind: PortKind;
@@ -73,6 +75,10 @@ export function portKindOf(jack: AstJack): PortKind {
 }
 
 export function portLocal(node: Pick<BoardNode, "w" | "h">, port: BoardPort): { x: number; y: number } {
+  if (port.south) {
+    const locals = southPortLocals(port.count, { w: node.w, h: node.h });
+    return locals[port.index] ?? { x: node.w * 0.5, y: node.h };
+  }
   const locals = sidePortLocals(port.count, { w: node.w, h: node.h }, port.east);
   return locals[port.index] ?? { x: port.east ? node.w : 0, y: node.h * 0.5 };
 }
@@ -94,13 +100,13 @@ function channelOf(node: AstNode): string {
   return bus.toUpperCase();
 }
 
-function addPorts(
+function addSidePorts(
   ports: Record<string, BoardPort>,
   nodeId: string,
   jacks: AstJack[],
   east: boolean,
 ): void {
-  const side = jacks.filter((j) => j.output === east && j.kind !== "knob");
+  const side = jacks.filter((j) => j.output === east && j.kind !== "knob" && cableFace(j.kind) === "side");
   side.forEach((j, index) => {
     const id = portId(nodeId, j.id, east);
     ports[id] = {
@@ -110,6 +116,27 @@ function addPorts(
       east,
       index,
       count: side.length,
+      kind: j.id === "sc" ? "sc" : portKindOf(j),
+    };
+  });
+}
+
+function addSouthPorts(
+  ports: Record<string, BoardPort>,
+  nodeId: string,
+  jacks: AstJack[],
+): void {
+  const south = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
+  south.forEach((j, index) => {
+    const id = portId(nodeId, j.id, false);
+    ports[id] = {
+      id,
+      nodeId,
+      jackId: j.id,
+      east: false,
+      south: true,
+      index,
+      count: south.length,
       kind: j.id === "sc" ? "sc" : portKindOf(j),
     };
   });
@@ -169,7 +196,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
 
   const inJacks = canonicalIoJacks("in");
   nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", false);
-  addPorts(ports, "IN", inJacks, true);
+  addSidePorts(ports, "IN", inJacks, true);
   x += nodes.IN.w + CHIP_GAP;
 
   for (const n of visible) {
@@ -191,15 +218,17 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       isSidechainType(n.type),
     );
     nodes[n.id]!.busName = n.busName;
-    addPorts(ports, n.id, jacks, false);
-    addPorts(ports, n.id, jacks, true);
+    addSidePorts(ports, n.id, jacks, false);
+    addSidePorts(ports, n.id, jacks, true);
+    addSouthPorts(ports, n.id, jacks);
     x = px + nodes[n.id]!.w + CHIP_GAP;
   }
 
   if (! ast.nodes.some((n) => n.type === "out")) {
     const outJacks = canonicalIoJacks("out");
     nodes.OUT = makeNode("OUT", "out", "io", x, rowY, outJacks, {}, "OUT", "MAIN", false);
-    addPorts(ports, "OUT", outJacks, false);
+    addSidePorts(ports, "OUT", outJacks, false);
+    addSouthPorts(ports, "OUT", outJacks);
   }
 
   const explicit = visualAudioEdges(visible, ast.edges ?? []);

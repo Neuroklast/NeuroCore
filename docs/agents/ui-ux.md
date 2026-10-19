@@ -38,7 +38,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | ≥ 2 grids air beside, 1 grid above/below | Two chips closer than `CHIP_AIR_X` (64) when stacked in a row, or `CHIP_AIR_Y` (32) when stacked in a column |
 | Dest stub is 32 px east, never a U-turn | Any audio path point with `x > dest jack x`, or a west-then-east jog at the IN jack |
 | IN/OUT body ≥ 96 so the jack is centered | IO chip shorter than 96, or a **single** side jack (OUT in, DSP in/out) not on that chip’s vertical midline. IN `out`/`sc` sit in the **body band** (below `TITLE_H`, above the foot), one-cell pitch around that midline — never in the hazard title or on the footer |
-| Chip paint ⊂ AABB | Handle centres, titles, captions, lamps, or a face widget sit outside `chipBox`. Closed IN/OUT have no range/select. Text ellipsizes in the label column. Closed DSP: no TRG/barcode/grip/fake jacks |
+| Chip paint ⊂ AABB | Handle centres, titles, captions, lamps, or a face widget sit outside `chipBox`. Closed IN/OUT have no range/select. Text ellipsizes in the label column. Closed DSP: no TRG/barcode/grip/fake jacks. Title, side rails, face well, and south param rail are exclusive (`chipZones`); mute/solo lives in the title band |
 | IN sources east only | Any target jack on IN. `sc` is an east **output** (host sidechain). OUT targets west only; gain is overlay-only |
 | Camera fits the chain | After preset/Arrange the pane still shows the previous graph, or board `minZoom` ≠ `fitView` minZoom |
 | Overlay vs south rail | Open detail still paints south bind captions under the overlay |

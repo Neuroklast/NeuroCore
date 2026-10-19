@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/overlay-camera-lock`
+**Branch:** `feat/chip-zones`
+
+## Circuit chip zones (2026-10-19)
+
+Closed chips own exclusive zones: title (mute/solo), west/east audio rails, NodeFace well, south param rail (`chipZones`). Catalog param keys are `kind: "param"` and sit on the south edge; they do not pack onto the IN rail. Outer AABB stays the compact DSP plate. Version stays 0.7.0-beta.
 
 ## Circuit overlay camera lock (2026-10-19)
 

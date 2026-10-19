@@ -96,7 +96,7 @@ export function BoardChip({
       inspectOpen={inspectOpen}
       onInspect={onInspect}
       headerStart={headerStart}
-      bodyStart={canMs ? (
+      headerEnd={canMs ? (
         <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
           <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
           <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
@@ -136,11 +136,12 @@ export function BoardChip({
           <button
             key={p.id}
             type="button"
-            className={`nk-port ${p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
+            className={`nk-port ${p.south ? "nk-port-south" : p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
             data-port-id={p.id}
             data-tip={portBracket(p.jackId)}
             style={{
               top: loc.y,
+              ...(p.south ? { left: loc.x } : {}),
               width: BOARD_HIT,
               height: BOARD_HIT,
             }}
