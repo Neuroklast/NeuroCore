@@ -20,6 +20,34 @@ export function zoomCamera(
 }
 
 /** First valid pane may fit. Inspector split must not refit. User pan owns the camera. */
+export type LateFitInput = {
+  commanded: boolean;
+  userMoved: boolean;
+  overlayOpen: boolean;
+  cameraChanged: boolean;
+};
+
+/** A popup or a user pan owns the view. Commanded Arrange/Compact may still fit. */
+export function shouldFitCameraOnLateLayout(input: LateFitInput): boolean {
+  if (input.cameraChanged) {
+    return false;
+  }
+  if (input.overlayOpen && ! input.commanded) {
+    return false;
+  }
+  if (input.userMoved && ! input.commanded) {
+    return false;
+  }
+  return true;
+}
+
+export function camerasDiffer(
+  a: { tx: number; ty: number; scale: number },
+  b: { tx: number; ty: number; scale: number },
+): boolean {
+  return a.tx !== b.tx || a.ty !== b.ty || a.scale !== b.scale;
+}
+
 export function shouldFitCameraOnPaneSize(
   prevW: number,
   prevH: number,

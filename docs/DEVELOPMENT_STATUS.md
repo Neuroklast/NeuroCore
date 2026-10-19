@@ -2,19 +2,19 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/overlay-events`
+**Branch:** `feat/overlay-camera-lock`
 
 ## Circuit overlay camera lock (2026-10-19)
 
-Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Wheel over `.nk-ctx` / Add list scrolls the overlay (`wheelOwnsZoom`); Add search focuses with `preventScroll`. Late `fitCamera` lock stays a later PR.
+Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Wheel over `.nk-ctx` / Add list scrolls the overlay (`wheelOwnsZoom`); Add search focuses with `preventScroll`. A late `layoutBoard` reply skips `fitCamera` while an overlay is open or after the camera already moved (`shouldFitCameraOnLateLayout`). Commanded Arrange/Compact may still fit. Version stays 0.7.0-beta.
 
 ## Circuit pane coordinates (2026-10-19)
 
-Pointer, wheel, drag, bind-aim, and context-menu anchors convert `clientX/Y` through `clientToPane` (stage CSS pixels). `menuPos` uses the same converter. Graph camera stays a second matrix on `.nk-board-world`. Overlay flip/shift, Add-list wheel isolation, and late `fitCamera` lock stay later PRs. Version stays 0.7.0-beta.
+Pointer, wheel, drag, bind-aim, and context-menu anchors convert `clientX/Y` through `clientToPane` (stage CSS pixels). `menuPos` uses the same converter. Graph camera stays a second matrix on `.nk-board-world`. Overlay flip/shift and Add-list wheel isolation are in. Version stays 0.7.0-beta.
 
 ## 0.7.0-beta (2026-10-19)
 
-Product version is 0.7.0-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Signal-lab C4–E are on this label (NodeFace families + FaceHost, compact 128/96/64 serial, Terminal `patchStructure` navigator). Overlay camera lock is later.
+Product version is 0.7.0-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Signal-lab C4–E are on this label (NodeFace families + FaceHost, compact 128/96/64 serial, Terminal `patchStructure` navigator). Overlay camera lock is on this branch.
 
 ## Circuit FaceHost knobs / tempo / sample rate (2026-10-18)
 

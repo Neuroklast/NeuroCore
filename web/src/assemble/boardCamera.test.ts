@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, screenFromWorld, shouldFitCameraOnLateLayout, worldFromScreen, zoomCamera } from "./boardCamera";
 import { BOARD_MIN_SCALE, type BoardNode } from "./boardModel";
 
 function node(id: string, x: number, y: number, w: number, h: number): BoardNode {
@@ -46,6 +46,62 @@ describe("board camera", () => {
     expect(s).toEqual({ x: 90, y: 60 });
     expect(Math.abs(w.x - 100)).toBeLessThan(1e-9);
     expect(Math.abs(w.y - 80)).toBeLessThan(1e-9);
+  });
+});
+
+describe("late layout camera lock", () => {
+  it("does not fit while an overlay is open or after the camera already moved", () => {
+    expect(shouldFitCameraOnLateLayout({
+      commanded: false,
+      userMoved: false,
+      overlayOpen: true,
+      cameraChanged: false,
+    })).toBe(false);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: false,
+      userMoved: false,
+      overlayOpen: false,
+      cameraChanged: true,
+    })).toBe(false);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: true,
+      userMoved: false,
+      overlayOpen: false,
+      cameraChanged: true,
+    })).toBe(false);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: false,
+      userMoved: true,
+      overlayOpen: false,
+      cameraChanged: false,
+    })).toBe(false);
+  });
+
+  it("fits a still camera when the overlay is closed", () => {
+    expect(shouldFitCameraOnLateLayout({
+      commanded: false,
+      userMoved: false,
+      overlayOpen: false,
+      cameraChanged: false,
+    })).toBe(true);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: true,
+      userMoved: false,
+      overlayOpen: false,
+      cameraChanged: false,
+    })).toBe(true);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: true,
+      userMoved: true,
+      overlayOpen: false,
+      cameraChanged: false,
+    })).toBe(true);
+    expect(shouldFitCameraOnLateLayout({
+      commanded: true,
+      userMoved: false,
+      overlayOpen: true,
+      cameraChanged: false,
+    })).toBe(true);
   });
 });
 

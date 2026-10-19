@@ -13,7 +13,7 @@ import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlo
 import { BoardChip } from "./BoardChip";
 import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
 import { wheelOwnsZoom } from "./boardWheel";
-import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnLateLayout, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
@@ -103,6 +103,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
     selectNodes([]);
   };
   const [menu, setMenu] = useState<BoardMenu | null>(null);
+  const overlayOpenRef = useRef(false);
+  overlayOpenRef.current = menu != null;
   const [insertError, setInsertError] = useState("");
   useEffect(() => setInsertError(""), [menu]);
   const placeRef = useRef<{ x: number; y: number } | { afterId: string } | null>(null);
@@ -249,16 +251,25 @@ export function BoardView({ active = true }: { active?: boolean }) {
     };
   }, []);
 
+  const nodeIdKey = Object.keys(nodes).sort().join("\0");
   useEffect(() => {
-    if (userMoved || size.w < 40) {
+    if (size.w < 40) {
       return;
     }
-    const ns = Object.values(nodes);
+    if (! shouldFitCameraOnLateLayout({
+      commanded: false,
+      userMoved,
+      overlayOpen: overlayOpenRef.current,
+      cameraChanged: false,
+    })) {
+      return;
+    }
+    const ns = Object.values(useBoardStore.getState().nodes);
     if (ns.length === 0) {
       return;
     }
     useBoardStore.getState().setCamera(fitCamera(ns, size));
-  }, [nodes, userMoved]);
+  }, [nodeIdKey, userMoved]);
 
   const applyLiveCamera = useCallback((cam: typeof camLive.current, commit = false) => {
     camLive.current = cam;

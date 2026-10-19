@@ -3,7 +3,8 @@ import { useAstStore } from "../store/astStore";
 import { beginPatchTx } from "../store/patchWorkspace";
 import type { AstEdge } from "../bridge/ast";
 import { publishScript } from "./addBlock";
-import { fitCamera } from "./boardCamera";
+import { camerasDiffer, fitCamera, shouldFitCameraOnLateLayout } from "./boardCamera";
+import { circuitHasOverlay } from "../chrome/shortcuts";
 import { graphToLayout, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { edgesAfterCutPort } from "./boardConnect";
@@ -37,7 +38,7 @@ let layoutBusyOwner = 0;
 export async function layoutBoard(
   mode: "ARRANGE" | "COMPACT" | "REROUTE",
   view: { w: number; h: number },
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; overlayOpen?: boolean } = {},
 ): Promise<void> {
   const epoch = useBoardStore.getState().layoutEpoch;
   const owns = mode !== "REROUTE";
@@ -48,6 +49,7 @@ export async function layoutBoard(
   const token = layoutBusyOwner;
   try {
     const g = useBoardStore.getState();
+    const cameraAtStart = g.camera;
     const payload = graphToLayout(g);
     const laid = await requestGraphLayout(mode, payload.nodes, payload.edges, view);
     const live = useBoardStore.getState();
@@ -66,15 +68,23 @@ export async function layoutBoard(
       routes[id] = parseRoutePath(d);
     }
     useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
+    const next = useBoardStore.getState();
+    const overlayOpen = opts.overlayOpen ?? circuitHasOverlay();
+    const mayFit = mode !== "REROUTE" && shouldFitCameraOnLateLayout({
+      commanded,
+      userMoved: next.userMoved,
+      overlayOpen,
+      cameraChanged: camerasDiffer(cameraAtStart, next.camera),
+    });
     if (commanded) {
       useBoardStore.setState({
         userMoved: false,
         commandedLayout: mode === "COMPACT" ? "COMPACT" : "ARRANGE",
       });
     }
-    if (mode !== "REROUTE") {
-      const next = useBoardStore.getState();
-      useBoardStore.getState().setCamera(fitCamera(Object.values(next.nodes), view));
+    if (mayFit) {
+      const fitted = useBoardStore.getState();
+      useBoardStore.getState().setCamera(fitCamera(Object.values(fitted.nodes), view));
     }
   } finally {
     if (owns && layoutBusyOwner === token) {
