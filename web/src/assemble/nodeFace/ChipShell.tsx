@@ -1,6 +1,7 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
-import { chipExpandOffset, DETAIL_HIT, frameCorners, framePoints, headbandEndPad } from "../../theme/chromeSpec";
+import { chipExpandOffset, DETAIL_HIT, headbandEndPad } from "../../theme/chromeSpec";
 import { chipFootLine, chipFootPeak } from "../chipFace";
+import { icBodyRect } from "../chipMetrics";
 import { nodeMeter } from "../nodeMeter";
 import { useHostStore } from "../../store/hostStore";
 import type { FaceKind } from "./faceKind";
@@ -38,7 +39,7 @@ export function ChipShell({
   audible,
   title,
   typecode,
-  frameCut,
+  frameCut: _frameCut,
   inAccent,
   bindOpen,
   showExpand,
@@ -53,9 +54,9 @@ export function ChipShell({
 }: ShellProps) {
   const expandAt = chipExpandOffset();
   const stroke = selected ? "var(--nk-accent)" : inAccent ? "var(--nk-cyan)" : "var(--nk-ink-muted)";
-  const corner = selected ? "var(--nk-accent)" : inAccent ? "var(--nk-cyan)" : "var(--nk-ink-soft)";
   const w = typeof style.width === "number" ? style.width : Number.parseFloat(String(style.width));
   const h = typeof style.height === "number" ? style.height : Number.parseFloat(String(style.height));
+  const body = icBodyRect({ w: Number.isFinite(w) ? w : 0, h: Number.isFinite(h) ? h : 0 });
 
   return (
     <div
@@ -69,7 +70,7 @@ export function ChipShell({
         ...style,
         opacity: audible ? 1 : 0.4,
         overflow: "visible",
-        ...({ "--nk-chip-cut": `${frameCut}px` } as CSSProperties),
+        ...({ "--nk-chip-cut": `${_frameCut}px` } as CSSProperties),
       }}
       {...rest}
     >
@@ -86,23 +87,25 @@ export function ChipShell({
         <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
           {title}
         </span>
-        {headerEnd}
-      </div>
-      <svg className="nk-chip-frame" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden>
-        <polygon
-          points={framePoints(w, h, frameCut)}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={selected ? "2.2" : "1.4"}
-        />
-        {frameCorners(w, h, frameCut).map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={corner} strokeWidth="2.7" />
-        ))}
-      </svg>
-      <div className="nk-chip-body" style={{ pointerEvents: "none", ...(bindOpen ? { visibility: "hidden" as const } : {}) }}>
         {role === "chip" && typecode ? (
           <span className="nk-chip-typecode">{typecode}</span>
         ) : null}
+        {headerEnd}
+      </div>
+      <svg className="nk-chip-frame" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden>
+        <rect
+          x={body.x}
+          y={body.y}
+          width={body.w}
+          height={body.h}
+          rx="2"
+          ry="2"
+          fill="none"
+          stroke={stroke}
+          strokeWidth={selected ? "1.6" : "1"}
+        />
+      </svg>
+      <div className="nk-chip-body" style={{ pointerEvents: "none", ...(bindOpen ? { visibility: "hidden" as const } : {}) }}>
         {bodyStart}
       </div>
       <ChipFoot nodeId={nodeId} nodeType={nodeType} bindOpen={bindOpen} />

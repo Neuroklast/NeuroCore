@@ -33,9 +33,11 @@ describe("closed chip chrome", () => {
     expect(chipKindMark("env", "env1", "chip")).toBe("mod");
     expect(chipKindMark("in", "IN", "io")).toBe("io");
     const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../theme/tailwind.css"), "utf8");
-    expect(css).toMatch(/\[data-kind="audio"\][^{]*\{[^}]*repeating-linear-gradient/s);
-    expect(css).toMatch(/\[data-kind="mod"\][^{]*\{[^}]*repeating-linear-gradient/s);
-    expect(css).toMatch(/\[data-kind="io"\][^{]*\{[^}]*box-shadow/s);
+    const board = readFileSync(new URL("./BoardChip.tsx", import.meta.url), "utf8");
+    expect(css).not.toMatch(/\[data-kind="audio"\][^{]*\{[^}]*repeating-linear-gradient/s);
+    expect(css).not.toMatch(/\[data-kind="mod"\][^{]*\{[^}]*repeating-linear-gradient/s);
+    expect(board).toContain("data-kind={chipKindMark");
+    expect(css).toMatch(/\.nk-chip-fill\s*\{[^}]*inset:\s*var\(--nk-pin-lead\)/s);
   });
 
   it("picks the lamp from the job", () => {

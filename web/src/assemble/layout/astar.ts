@@ -117,7 +117,9 @@ export function astarRoute(
       if (cur.c === start.c && cur.r === start.r) {
         const eastC = start.c + DC[startDir]!;
         const eastR = start.r + DR[startDir]!;
-        const eastOpen = ! map.solid.has(map.key(eastC, eastR));
+        const eastKey = map.key(eastC, eastR);
+        const eastOpen = ! map.solid.has(eastKey)
+          && !(edgeId && map.foreignLane(eastC, eastR, edgeId));
         if (eastOpen && nd !== startDir) {
           continue;
         }

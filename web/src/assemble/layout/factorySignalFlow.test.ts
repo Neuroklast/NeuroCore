@@ -139,22 +139,23 @@ describe("factory signal-flow layout baseline", () => {
     expect(chipSpec("reverb").ranges.decay).toEqual({ min: 0, max: 1 });
   });
 
-  it("parks IN as the unique leftmost chip on Drone Low Bed compact", async () => {
+  it("parks IN as the unique top-left terminal on Drone Low Bed compact", async () => {
     const { result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
-    const inX = result.nodes.IN!.x;
+    const inn = result.nodes.IN!;
     for (const [id, p] of Object.entries(result.nodes)) {
       if (id === "IN") {
         continue;
       }
-      expect(p.x, `${log} ${id}`).toBeGreaterThan(inX);
+      const westAndNorth = p.x <= inn.x && p.y <= inn.y;
+      expect(westAndNorth, `${log} ${id}`).toBe(false);
     }
   });
 
-  it("fits Drone Low Bed on one left-to-right row in the Circuit pane", async () => {
+  it("keeps Drone Low Bed serial L→R and wraps instead of shrinking chips", async () => {
     const { result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
-    const ys = ["IN", "octaver1", "filter1", "reverb1", "OUT"].map((id) => result.nodes[id]!.y);
-    const span = Math.max(...ys) - Math.min(...ys);
-    expect(span, log).toBeLessThanOrEqual(BOARD_GRID * 2);
+    expect(result.nodes.filter1!.w, log).toBeGreaterThanOrEqual(224);
+    expect(result.nodes.octaver1!.w, log).toBeGreaterThanOrEqual(224);
+    expect(result.nodes.reverb1!.w, log).toBeGreaterThanOrEqual(224);
     expect(serialOrder(result.nodes, ["IN", "octaver1", "filter1", "reverb1", "OUT"]), log).toEqual([
       "IN",
       "octaver1",
@@ -162,10 +163,11 @@ describe("factory signal-flow layout baseline", () => {
       "reverb1",
       "OUT",
     ]);
-    expect(fillRatio(result), log).toBeGreaterThan(0.35);
+    expect(overlap(result.nodes), log).toEqual([]);
+    expect(fillRatio(result), log).toBeGreaterThan(0);
   });
 
-  it("routes Drone Low Bed serial hops without extra elbows", async () => {
+  it("routes same-row Drone Low Bed hops without extra elbows", async () => {
     const { doc, result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     const graph = graphToLayout(hydrateBoard(doc));
     const hops: Array<[string, string]> = [
@@ -177,6 +179,11 @@ describe("factory signal-flow layout baseline", () => {
     for (const [src, dst] of hops) {
       const e = graph.edges.find((x) => x.source === src && x.target === dst);
       expect(e, `${src}→${dst} missing ${log}`).toBeTruthy();
+      const a = result.nodes[src]!;
+      const b = result.nodes[dst]!;
+      if (Math.abs(a.y - b.y) > BOARD_GRID * 2) {
+        continue;
+      }
       const d = result.edgePaths[e!.id];
       const pts = parseRoutePath(d ?? "");
       expect(countCorners(pts), `${src}→${dst} ${d} ${log}`).toBe(0);

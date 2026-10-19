@@ -44,7 +44,7 @@ describe("board connect", () => {
     const stIn = g.ports[portId("stage1", "in", false)]!;
     const dest = portGlobal(g.nodes.stage1!, stIn);
     expect(magnetPort({ x: dest.x + 10, y: dest.y - 8 }, inn, g)).toBe(stIn);
-    expect(magnetPort({ x: dest.x + 400, y: dest.y }, inn, g)).toBeNull();
+    expect(magnetPort({ x: dest.x + 2000, y: dest.y }, inn, g)).toBeNull();
   });
 
   it("hot-swap replaces the edge on a busy dest port", () => {

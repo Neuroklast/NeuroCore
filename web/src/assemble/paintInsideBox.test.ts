@@ -15,7 +15,7 @@ import {
 import { portBracket } from "./chipFace";
 import { chipSpec, overlayParamKeys } from "./chipSpec";
 import { dspFaceSize } from "./chipMetrics";
-import { BOARD_GRID } from "./grid";
+import { BOARD_GRID, snapToCellCenter } from "./grid";
 import { canonicalIoJacks, captionFitsCol, ioFaceWidgets, ioHasSourceHandles, ioHasTargetHandles } from "./ioPaint";
 import { flowFromAst } from "./flowFromAst";
 import type { AstDocument } from "../bridge/ast";
@@ -79,7 +79,7 @@ describe("paint stays inside the chip box", () => {
     expect(insideBox({ x: b.x, y: b.y }, box, 0)).toBe(true);
     const out = jackAnchor({ x: 0, y: 0 }, "out", canonicalIoJacks("out"), handleId("in", false), false, box.h, box.w);
     expect(out.x).toBe(0);
-    expect(Math.abs(out.y - box.h * 0.5)).toBeLessThan(1);
+    expect(out.y).toBe(snapToCellCenter(box.h * 0.5));
   });
 
   it("jack captions and titles fit the label column", () => {

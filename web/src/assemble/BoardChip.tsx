@@ -142,7 +142,7 @@ export function BoardChip({
             data-tip={portBracket(p.jackId)}
             style={{
               top: loc.y,
-              ...(p.south ? { left: loc.x } : {}),
+              left: loc.x,
               width: BOARD_HIT,
               height: BOARD_HIT,
             }}

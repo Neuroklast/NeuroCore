@@ -8,11 +8,15 @@ import {
   CHIP_PAD_Y,
   CHIP_W,
   CONTENT_MIN,
+  FACE_MIN_H,
+  FACE_MIN_W,
+  FOOT_H,
   IO_H,
   IO_W,
   JACK_PITCH,
   LABEL_COL,
   MS_ROW,
+  PIN_LEAD,
   RULE_H,
   SOCKET_H,
   SOUTH_JACK_GAP,
@@ -25,12 +29,15 @@ import {
   chipFaceStackPx,
   chipOverlayStackPx,
   dspFaceSize,
+  icBodyRect,
+  icStackHeight,
+  icStackWidth,
   ioFaceSize,
   isUtilityIo,
   longestValuePx,
   titleJackY,
 } from "./chipMetrics";
-import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
+import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
 import { parseHandle } from "./handles";
 import { globalPort, sidePortLocals } from "./portLayout";
 import { cableFace } from "./validateLink";
@@ -43,11 +50,15 @@ export {
   CHIP_PAD_Y,
   CHIP_W,
   CONTENT_MIN,
+  FACE_MIN_H,
+  FACE_MIN_W,
+  FOOT_H,
   IO_H,
   IO_W,
   JACK_PITCH,
   LABEL_COL,
   MS_ROW,
+  PIN_LEAD,
   RULE_H,
   SOCKET_H,
   SOUTH_JACK_GAP,
@@ -60,6 +71,9 @@ export {
   chipFaceStackPx,
   chipOverlayStackPx,
   dspFaceSize,
+  icBodyRect,
+  icStackHeight,
+  icStackWidth,
   ioFaceSize,
   isUtilityIo,
   longestValuePx,
@@ -68,22 +82,41 @@ export {
 
 export const CHIP_GAP = BOARD_BLOCK + CHIP_PAD_Y;
 
-export function chipWidthForBindCount(_n: number): number {
-  return dspFaceSize().w;
+export function chipWidthForBindCount(n: number): number {
+  return icStackWidth(n);
 }
 
-export function chipHeight(_inCount: number, _outCount: number, _expanded = false): number {
-  return dspFaceSize().h;
+export function chipHeight(inCount: number, outCount: number, _expanded = false): number {
+  return icStackHeight(Math.max(inCount, outCount, 1));
 }
 
 export function ioHeight(jackCount: number): number {
   return ioFaceSize(jackCount).h;
 }
 
+export function countFaces(jacks: AstJack[]): { west: number; east: number; south: number } {
+  let west = 0;
+  let east = 0;
+  let south = 0;
+  for (const j of jacks) {
+    if (j.kind === "knob") {
+      continue;
+    }
+    const face = cableFace(j.kind);
+    if (face === "bottom" || face === "top") {
+      south += 1;
+    } else if (j.output) {
+      east += 1;
+    } else {
+      west += 1;
+    }
+  }
+  return { west, east, south };
+}
+
 export function countSides(jacks: AstJack[]): { ins: number; outs: number } {
-  const ins = jacks.filter((j) => ! j.output && j.kind !== "knob").length;
-  const outs = jacks.filter((j) => j.output && j.kind !== "knob").length;
-  return { ins, outs };
+  const faces = countFaces(jacks);
+  return { ins: faces.west, outs: faces.east };
 }
 
 export function jackCaption(jack: Pick<AstJack, "id" | "label" | "output">): string {
@@ -107,7 +140,7 @@ export function bindCaptionMaxPx(count: number, width: number): number {
 }
 
 export function contentWidth(chipW: number): number {
-  return chipW - LABEL_COL * 2;
+  return chipW - PIN_LEAD * 2;
 }
 
 export function snapJackFace(
@@ -163,11 +196,17 @@ export function chipBox(
     ? Object.fromEntries(Array.from({ length: args }, (_, i) => [`k${i}`, "1"]))
     : args;
   const spec = chipSpec(type, rec);
+  const faces = countFaces(_jacks);
   if (isUtilityIo(spec.id)) {
-    const side = countSides(_jacks);
-    return ioFaceSize(Math.max(side.ins, side.outs, 1));
+    return {
+      w: snapSize(IO_W),
+      h: icStackHeight(Math.max(faces.west, faces.east, 1), IO_H),
+    };
   }
-  return dspFaceSize();
+  return {
+    w: icStackWidth(faces.south, CHIP_W),
+    h: icStackHeight(Math.max(faces.west, faces.east, 1), CHIP_H),
+  };
 }
 
 /** Centre Y of a side jack. Same numbers as `sidePortLocals`. */

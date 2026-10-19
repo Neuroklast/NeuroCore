@@ -107,6 +107,30 @@ describe("astar grid router", () => {
     expect(portInCell(192, 48)).toEqual({ c: 5, r: 1 });
     expect(BOARD_GRID).toBe(32);
   });
+
+  it("leaves north or south when the forced-east stub is a foreign runway", () => {
+    const map = new GridMap();
+    const a = { id: "a", w: 224, h: 192, ins: [], outs: [] };
+    const b = { id: "b", w: 224, h: 192, ins: [], outs: [] };
+    map.markNode(a, 0, 96);
+    map.markNode(b, 288, 64);
+    const start = portOutCell(0, 224, 208);
+    const goal = portInCell(288, 144);
+    const foreign = portInCell(288, 208);
+    map.markExitStub(start.c, start.r);
+    map.markEntryStub(goal.c, goal.r);
+    map.reserveRunway("audio", start, 1, 1);
+    map.reserveRunway("audio", goal, -1, 1);
+    map.reserveRunway("mod", foreign, -1, 1);
+    map.finishHalo();
+    expect(start).toEqual({ c: 7, r: 6 });
+    expect(goal).toEqual({ c: 8, r: 4 });
+    expect(foreign).toEqual({ c: 8, r: 6 });
+    const cells = astarRoute(map, start, goal, DIR_E, false, "audio");
+    expect(cells, "east stub owned by another net must not trap the hop").toBeTruthy();
+    expect(cells!.some((c) => c.c === foreign.c && c.r === foreign.r)).toBe(false);
+    expect(cells!.some((c) => map.solid.has(map.key(c.c, c.r)))).toBe(false);
+  });
 });
 
 it("keeps an unreachable search inside its prepared board bounds", () => {
