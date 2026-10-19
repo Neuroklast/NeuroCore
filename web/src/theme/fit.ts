@@ -32,6 +32,27 @@ export function hasUsableViewport(width: number, height: number): boolean {
   return width >= 8 && height >= 8;
 }
 
+export type PaneMetrics = {
+  getBoundingClientRect: () => { left: number; top: number; width: number; height: number };
+  clientWidth: number;
+  clientHeight: number;
+};
+
+/** Browser client pixels → CSS pixels inside an axis-aligned scaled pane. */
+export function clientToPane(
+  pane: PaneMetrics,
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } {
+  const r = pane.getBoundingClientRect();
+  const sx = r.width > 0 ? pane.clientWidth / r.width : 1;
+  const sy = r.height > 0 ? pane.clientHeight / r.height : 1;
+  return {
+    x: (clientX - r.left) * sx,
+    y: (clientY - r.top) * sy,
+  };
+}
+
 export function menuPos(
   clientX: number,
   clientY: number,
@@ -39,10 +60,12 @@ export function menuPos(
   boxW = 188,
   boxH = 176,
 ): { left: number; top: number } {
-  const r = el.getBoundingClientRect();
-  const sx = r.width > 0 ? el.offsetWidth / r.width : 1;
-  const sy = r.height > 0 ? el.offsetHeight / r.height : 1;
-  const x = Math.min(Math.max(0, (clientX - r.left) * sx), Math.max(0, el.offsetWidth - boxW));
-  const y = Math.min(Math.max(0, (clientY - r.top) * sy), Math.max(0, el.offsetHeight - boxH));
+  const p = clientToPane(
+    { getBoundingClientRect: () => el.getBoundingClientRect(), clientWidth: el.offsetWidth, clientHeight: el.offsetHeight },
+    clientX,
+    clientY,
+  );
+  const x = Math.min(Math.max(0, p.x), Math.max(0, el.offsetWidth - boxW));
+  const y = Math.min(Math.max(0, p.y), Math.max(0, el.offsetHeight - boxH));
   return { left: x, top: y };
 }
