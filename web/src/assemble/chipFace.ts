@@ -24,10 +24,13 @@ export function portBracket(jackId: string): string {
   return `[ ${label} ]`;
 }
 
-export function chipFootPeak(peak: number): string {
+export function chipFootPeak(peak: number | null | undefined): string {
+  if (peak == null || ! Number.isFinite(peak)) {
+    return "—";
+  }
   const db = peakToDb(peak);
   if (! Number.isFinite(db) || db <= CABLE_STILL_DB) {
-    return "—";
+    return "still";
   }
   const n = Math.round(db);
   const sign = n > 0 ? "+" : "";
@@ -48,7 +51,7 @@ export function chipKindMark(type: string, id: string, role: string): ChipKindMa
 }
 
 /** One foot line from real tape values. Never a UUID. */
-export function chipFootLine(id: string, peak: number): string {
+export function chipFootLine(id: string, peak: number | null | undefined): string {
   return `${id.trim()}  ${chipFootPeak(peak)}`;
 }
 

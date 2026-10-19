@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/semantic-zoom`
+**Branch:** `feat/foot-still`
+
+## Circuit chip foot honesty (2026-10-19)
+
+Chip foot reads `nodeMeter`. No tap prints `—`. A measured peak at or below −60 dBFS prints `still`. Audible prints live dB. Missing clips are no longer coalesced to `0`. Version stays 0.7.0-beta.
 
 ## Circuit semantic zoom (2026-10-19)
 
