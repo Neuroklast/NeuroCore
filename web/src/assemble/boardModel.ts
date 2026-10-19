@@ -68,7 +68,7 @@ export function portKindOf(jack: AstJack): PortKind {
   if (jack.id === "sc" || jack.kind === "mod" && jack.id === "sc") {
     return "sc";
   }
-  if (jack.kind === "mod") {
+  if (jack.kind === "mod" || jack.kind === "param" || jack.kind === "ctrl") {
     return "mod";
   }
   return jack.id === "sc" ? "sc" : "audio";

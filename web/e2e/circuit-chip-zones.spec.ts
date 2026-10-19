@@ -56,7 +56,7 @@ test.describe("circuit chip zones", () => {
 
     const ms = chip.locator(".nk-chip-ms");
     const face = chip.locator(".nk-node-face");
-    const titleBand = chip.locator(".nk-chip-headband");
+    const titleBand = chip.locator(".nk-chip-subheader");
     await expect(ms).toBeVisible();
     await expect(face).toBeVisible();
     const msBox = await boxOf(ms);
@@ -69,7 +69,7 @@ test.describe("circuit chip zones", () => {
     expect(faceSize.w).toBeGreaterThanOrEqual(180);
     expect(faceSize.h).toBeGreaterThanOrEqual(100);
     expect(overlap(msBox, faceBox), "mute/solo vs face").toBe(false);
-    expect(contained(msBox, bandBox), "mute/solo inside title band").toBe(true);
+    expect(contained(msBox, bandBox), "mute/solo inside technical band").toBe(true);
     await page.screenshot({ path: "test-results/circuit-ic-drone-low-bed.png", fullPage: true });
 
     const pins = chip.locator(".nk-port");

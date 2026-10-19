@@ -6,11 +6,15 @@
 
 ## 0.7.1-beta (2026-10-19)
 
-Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes are gunmetal ICs (224×192, grow from jacks, metal pins). Typecode and chip feet use `--nk-ink-soft`.
+Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes restore the dotted, cut-corner IC identity with separate name, control, function and parameter/status bands. Typecode and chip feet use `--nk-ink-soft`.
 
-## Circuit IC chip geometry (2026-10-19)
+## Circuit visual recovery (2026-10-19)
 
-Closed nodes are gunmetal ICs, not 128 px compact plates. Shared metrics (`chipMetrics` / `chipBox` / `chipZones` / `portLayout`) size a normal DSP chip at 224×192 and grow from west/east/south jack counts. The body is inset `PIN_LEAD`; jack centres stay on the AABB. Idle pins are metal; hatch and truncated port caps are gone. Compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap; A* may leave north/south when the forced-east stub is a foreign runway. Version stays 0.7.1-beta.
+The current implementation restores the historical cut-corner IC contour and dotted surface through a shared `ChipChrome`. Effect names use 16 px lettering in their own name row. Typecode, mute/solo, Inspect and any macro-only expression fields occupy a separate technical row. Calculated NodeFaces remain, subdued at rest and clearer on focus/selection; the competing axis grids are removed. Full parameter captions and macro binding endpoints share one reserved band, above the honest node ID/live-level foot. Parameter jacks and captions share actual snapped anchors. The base is 224×256, growing in width from full captions/identity and in height from side-jack demand. Pins stay metal unless connected to a measured source signal. Warning marks still require real overloads.
+
+South parameter/control jacks now normalize to modulation in the headless board. A reproduced contract rejected LFO → cutoff and accepted audio → cutoff before the fix; both directions are now correct. No DSP or version changes.
+
+Evidence and validation: `docs/evidence/circuit-recovery/`. The supplied historical code ref `5b7f856e11d` actually identifies itself as **0.6.6-beta**, so its screenshots are labelled by commit, not presented as an exact 0.6.7 binary. Browser coverage includes Drone Low Bed, Pad Cloud Hall, Bass Fractionator, all four themes, 1×/2× density, repeated resize, zoom, selection, context-menu camera lock and Source inspector. Native DAW/WebView2 validation remains pending. Existing main failures in boardView subscription, chipSpec catalog expectations, chromeSpec raw polygons and CRT bloom are tracked separately; they reproduce unchanged on `40c3e0e`.
 
 ## Circuit secondary ink (2026-10-19)
 

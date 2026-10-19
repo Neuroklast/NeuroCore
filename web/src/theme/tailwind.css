@@ -278,7 +278,7 @@ html[data-motion="off"] .nk-boot {
     inset 0 -2px 6px rgb(0 0 0 / 0.55),
     inset 1px 0 0 rgb(var(--nk-ink-rgb) / 0.04),
     0 0 0 1px rgb(0 0 0 / 0.65);
-  border-radius: 2px;
+  clip-path: polygon(var(--nk-chip-cut) 0, 100% 0, 100% calc(100% - var(--nk-chip-cut)), calc(100% - var(--nk-chip-cut)) 100%, 0 100%, 0 var(--nk-chip-cut));
 }
 
 .nk-board-chip[data-depth="2"] .nk-chip-fill,
@@ -314,6 +314,13 @@ html[data-motion="off"] .nk-boot {
   pointer-events: none;
 }
 
+.nk-node-face {
+  opacity: 0.28;
+}
+.nk-board-chip[data-depth="2"] .nk-node-face {
+  opacity: 0.75;
+}
+
 .nk-chip-pads {
   background-image: radial-gradient(circle, var(--nk-ink-muted) 0.7px, transparent 0.85px);
   background-size: var(--nk-chip-pad-y) var(--nk-chip-pad-y);
@@ -323,8 +330,7 @@ html[data-motion="off"] .nk-boot {
   position: absolute;
   inset: 6px 2px 8px;
   overflow: hidden;
-  border-left: 1px solid var(--nk-ink-faint);
-  border-bottom: 1px solid var(--nk-ink-faint);
+  border: 0;
 }
 
 .nk-face-plot svg {
@@ -358,31 +364,6 @@ html[data-motion="off"] .nk-boot {
   background-image: none;
 }
 
-.nk-face-plot[data-axis="log-freq"] {
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent 0,
-    transparent 16%,
-    rgb(var(--nk-ink-muted-rgb) / 0.35) 16%,
-    rgb(var(--nk-ink-muted-rgb) / 0.35) calc(16% + 1px)
-  );
-}
-
-.nk-face-plot[data-axis="phase"],
-.nk-face-plot[data-axis="io"] {
-  background-image: none;
-}
-
-.nk-face-plot[data-axis="time"] {
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent 0,
-    transparent 28%,
-    rgb(var(--nk-ink-muted-rgb) / 0.35) 28%,
-    rgb(var(--nk-ink-muted-rgb) / 0.35) calc(28% + 1px)
-  );
-}
-
 .nk-chip-headband {
   position: absolute;
   top: var(--nk-pin-lead);
@@ -394,7 +375,6 @@ html[data-motion="off"] .nk-boot {
   align-items: center;
   gap: var(--nk-chip-pad-x);
   padding: 0 var(--nk-chip-pad-x);
-  padding-right: calc(var(--nk-chip-pad-x) + var(--nk-head-end, 0px));
   box-sizing: border-box;
   overflow: visible;
   pointer-events: none;
@@ -425,25 +405,81 @@ html[data-motion="off"] .nk-boot {
   margin-top: var(--nk-sock-gap);
 }
 
-.nk-chip-headband .nk-chip-ms {
-  position: relative;
-  z-index: 1;
-  margin-top: 0;
+.nk-chip-subheader {
+  position: absolute;
+  top: calc(var(--nk-pin-lead) + var(--nk-title-h));
+  left: var(--nk-pin-lead);
+  right: var(--nk-pin-lead);
+  height: var(--nk-technical-h);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 var(--nk-chip-pad-x);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.nk-chip-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 100%;
   pointer-events: auto;
-  align-self: stretch;
+}
+.nk-chip-subheader .nk-chip-ms {
+  margin: 0;
   height: 100%;
 }
-
-.nk-chip-headband .nk-ms {
+.nk-chip-subheader .nk-ms,
+.nk-chip-subheader .nk-chip-expand {
+  position: static;
   box-sizing: border-box;
-  height: 100%;
-  min-height: 0;
-  min-width: 22px;
+  width: var(--nk-technical-h);
+  height: var(--nk-technical-h);
+  min-width: var(--nk-technical-h);
+  min-height: var(--nk-technical-h);
   padding: 0;
-  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+}
+.nk-chip-parameters {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nk-pin-lead) + var(--nk-foot-h));
+  height: var(--nk-parameter-h);
+  z-index: 2;
+  pointer-events: none;
+}
+.nk-chip-parameter.is-bound { color: var(--nk-cyan); }
+.nk-chip-parameter:not(:disabled):hover,
+.nk-chip-parameter:focus-visible { outline: 1px solid var(--nk-cyan); }
+.nk-chip-parameter {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  min-width: 26px;
+  height: var(--nk-parameter-h);
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  font: 11px/var(--nk-parameter-h) "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.02em;
+  color: var(--nk-ink-soft);
+  white-space: nowrap;
+}
+
+.nk-chip-parameter.is-inline {
+  position: relative;
+  top: auto;
+  transform: none;
+  flex-shrink: 0;
 }
 
 .nk-board {
@@ -454,12 +490,14 @@ html[data-motion="off"] .nk-boot {
 
 .nk-board[data-zoom="overview"] .nk-chip-typecode,
 .nk-board[data-zoom="overview"] .nk-chip-foot,
-.nk-board[data-zoom="overview"] .nk-bind-jack-cap {
+.nk-board[data-zoom="overview"] .nk-bind-jack-cap,
+.nk-board[data-zoom="overview"] .nk-chip-parameters {
   visibility: hidden;
 }
 
 .nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-typecode,
-.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot {
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot,
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-parameters {
   visibility: visible;
 }
 
@@ -583,6 +621,7 @@ html[data-motion="off"] .nk-boot {
 .nk-port-sc .nk-port-contact {
   background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
 }
+.nk-port[data-signal="on"] .nk-port-contact,
 .nk-port:hover .nk-port-contact,
 .nk-port:focus .nk-port-contact,
 .nk-port-hot .nk-port-contact {
@@ -590,6 +629,7 @@ html[data-motion="off"] .nk-boot {
   box-shadow: 0 0 8px var(--nk-accent);
   filter: brightness(1.15);
 }
+.nk-port-mod[data-signal="on"] .nk-port-contact,
 .nk-port-mod:hover .nk-port-contact,
 .nk-port-mod:focus .nk-port-contact,
 .nk-port-mod.nk-port-hot .nk-port-contact {
@@ -688,9 +728,9 @@ html[data-motion="off"] .nk-boot {
 
 .nk-chip-body {
   position: absolute;
-  top: calc(var(--nk-pin-lead) + var(--nk-title-h));
+  top: var(--nk-pad-top);
   right: var(--nk-pin-lead);
-  bottom: calc(var(--nk-pin-lead) + var(--nk-foot-h));
+  bottom: var(--nk-pad-bottom);
   left: var(--nk-pin-lead);
   z-index: 2;
   overflow: hidden;
@@ -2520,9 +2560,11 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-chip-title {
   font-family: "Apex", "Segoe UI", sans-serif;
   font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.16em;
+  font-size: 16px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  flex: 1;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2546,7 +2588,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   text-transform: uppercase;
   flex-shrink: 1;
   min-width: 0;
-  max-width: 7.5em;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

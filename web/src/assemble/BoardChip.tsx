@@ -1,23 +1,25 @@
 import type { CSSProperties } from "react";
+import { useBoardStore } from "./boardStore";
+import { nodeMeter } from "./nodeMeter";
 import { themeOf } from "../theme/theme";
 import { useChipViewStore } from "../store/expandStore";
 import { useHostStore } from "../store/hostStore";
-import { BindDropPad, BindRail } from "./BindRail";
+import { BindDropPad } from "./BindRail";
 import { chipExpandAction } from "./boardEdit";
 import {
-  bindRailVisible,
   chipKindMark,
   clipWarnMark,
   closedChipChrome,
   overloadLabel,
   portBracket,
 } from "./chipFace";
-import { bindFace, chipChromeVars, ioBodyInset } from "./chipLayout";
-import { collapsedFace, paintedBindKeys } from "./chipSpec";
+import { chipChromeVars, ioBodyInset } from "./chipLayout";
+import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
+import { ChipParameters, ChipParameterCaption } from "./ChipParameters";
 import { ChipShell } from "./nodeFace/ChipShell";
 import { NodeFace } from "./nodeFace/NodeFace";
 import { chipDepth } from "./nodeFace/chipChrome";
@@ -49,12 +51,14 @@ export function BoardChip({
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
-  const face = collapsedFace(node.type, node.args);
+  const spec = chipSpec(node.type, node.args);
+  const face = collapsedFace(spec, node.args);
   const title = node.role === "io" ? node.label : face.title;
   const canMs = ! isFlowBlockId(node.id) && node.role === "chip";
   const ioInset = node.role === "io" ? ioBodyInset() : null;
   const showExpand = chipExpandAction(node.role, node.type) === "inspect";
   const binds = node.role === "chip" ? paintedBindKeys(node.type, node.args) : [];
+  const macroOnly = binds.filter(key => !spec.paramJacks.includes(key) && !ports.some(p => p.south && p.jackId === key));
   const bindOpen = bindOver && node.role === "chip" && binds.length > 0;
   const lfoShape = parseLfoShape(node.args.shape ?? "sine");
   const lfoHz = node.type === "osc" ? resolveLfoHz(node.args, knobs, bpm) : 0;
@@ -89,7 +93,7 @@ export function BoardChip({
       depth={depth}
       audible={isAudible}
       title={title}
-      typecode={face.code}
+      typecode={node.role === "chip" ? face.code : undefined}
       frameCut={frameCut}
       inAccent={node.type === "in"}
       bindOpen={bindOpen}
@@ -97,12 +101,15 @@ export function BoardChip({
       inspectOpen={inspectOpen}
       onInspect={onInspect}
       headerStart={headerStart}
-      headerEnd={canMs ? (
+      headerEnd={<>
+        {macroOnly.map(key => <ChipParameterCaption key={key} nodeId={node.id}
+          row={{ key, label: key, formula: node.args[key] ?? "", bindable: true }} />)}
+        {canMs ? (
         <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
           <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
           <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
         </div>
-      ) : null}
+      ) : null}</>}
       data-selected={selected ? "on" : "off"}
       data-focus={bindOpen ? "sharp" : (focus ?? "off")}
       data-kind={chipKindMark(node.type, node.id, node.role)}
@@ -123,35 +130,13 @@ export function BoardChip({
       }}
     >
       <NodeFace kind={kind} type={node.type} args={node.args} id={node.id} host={{ knobs, bpm, sr }} />
-      {bindRailVisible(bindOpen, binds) ? (
-        <BindRail
-          nodeId={node.id}
-          face={bindFace()}
-          width={node.w}
-          rows={binds.map((key) => ({ key, formula: node.args[key] ?? "" }))}
-        />
-      ) : null}
-      {ports.map((p) => {
-        const loc = portLocal(node, p);
-        return (
-          <button
-            key={p.id}
-            type="button"
-            className={`nk-port ${p.south ? "nk-port-south" : p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
-            data-port-id={p.id}
-            data-tip={portBracket(p.jackId)}
-            style={{
-              top: loc.y,
-              left: loc.x,
-              width: BOARD_HIT,
-              height: BOARD_HIT,
-            }}
-          >
-            <i className="nk-port-contact" />
-            <span className="nk-port-cap">{portBracket(p.jackId)}</span>
-          </button>
-        );
-      })}
+      {ports.map(p => <ChipPort key={p.id} node={node} port={p} />)}
+      <ChipParameters nodeId={node.id} hidden={bindOpen}
+        rows={ports.filter(p => p.south).map(p => ({
+          key: p.jackId, label: spec.paramJackLabels[p.jackId] || p.jackId,
+          x: portLocal(node, p).x, formula: node.args[p.jackId] ?? "",
+          bindable: binds.includes(p.jackId),
+        }))} />
       <ChipOverloadMarks node={node} ports={ports} />
       {bindOpen ? (
         <BindDropPad nodeId={node.id} keys={binds} args={node.args} w={node.w} h={node.h} local={bindLocal} />
@@ -231,4 +216,28 @@ function ClipWarnSvg() {
       <circle cx={mark.dot.cx} cy={mark.dot.cy} r={mark.dot.r} fill="currentColor" />
     </svg>
   );
+}
+
+/** Connected contacts light only from their source's measured signal. */
+function ChipPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
+  const sourceId = useBoardStore(s => {
+    const edge = Object.values(s.edges).find(e => p.east ? e.sourcePortId === p.id : e.targetPortId === p.id);
+    return edge?.sourceNodeId ?? null;
+  });
+  const sourceType = useBoardStore(s => sourceId ? s.nodes[sourceId]?.type : undefined);
+  const active = useHostStore(s => {
+    if (!sourceId) return false;
+    if (p.kind === "mod") return Math.abs(s.mods[sourceId] ?? 0) > 0.001;
+    const peak = nodeMeter({ id: sourceId, type: sourceType, clips: s.clips }).peak;
+    return peak != null && peak > 0.001;
+  });
+  const loc = portLocal(node, p);
+  return <button type="button"
+    className={`nk-port ${p.south ? "nk-port-south" : p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
+    data-port-id={p.id} data-tip={portBracket(p.jackId)} data-signal={active ? "on" : "off"}
+    aria-label={`${p.east ? "Output" : "Input"} ${p.jackId}`}
+    style={{ top: loc.y, left: loc.x, width: BOARD_HIT, height: BOARD_HIT }}>
+    <i className="nk-port-contact" />
+    <span className="nk-port-cap">{portBracket(p.jackId)}</span>
+  </button>;
 }

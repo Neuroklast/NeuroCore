@@ -25,7 +25,7 @@ import { visualJacksFor } from "./visualEdges";
 
 const css = readFileSync(new URL("../theme/tailwind.css", import.meta.url), "utf8");
 const board = readFileSync(new URL("./BoardChip.tsx", import.meta.url), "utf8");
-const shell = readFileSync(new URL("./nodeFace/ChipShell.tsx", import.meta.url), "utf8");
+const shell = readFileSync(new URL("./nodeFace/ChipChrome.tsx", import.meta.url), "utf8");
 
 const audio = (id: string, output: boolean): AstJack => ({ id, label: id, output, kind: "audio" });
 const param = (id: string): AstJack => ({ id, label: id, output: false, kind: "param" });
@@ -156,7 +156,7 @@ describe("IC chrome contracts", () => {
     expect(css).toMatch(/\.nk-chip-fill\s*\{[^}]*inset:\s*var\(--nk-pin-lead\)/s);
     expect(css).toMatch(/\.nk-port-contact[\s\S]{0,240}var\(--nk-ink-soft\)/);
     expect(shell).toContain("icBodyRect");
-    expect(shell).not.toContain("frameCorners");
+    expect(shell).toContain("frameCorners");
     expect(shell).toMatch(/nk-chip-headband[\s\S]*nk-chip-typecode/);
   });
 
@@ -180,7 +180,7 @@ describe("IC chrome contracts", () => {
 });
 
 describe("catalog chips stay on the IC model", () => {
-  it("keeps a 1-in-1-out filter on the baseline plate after hydrate jacks", () => {
+  it("grows a hydrated filter only for its full parameter captions", () => {
     const jacks = visualJacksFor({
       id: "filter1",
       type: "filter",
@@ -189,6 +189,8 @@ describe("catalog chips stay on the IC model", () => {
       trailingComment: "",
       jacks: [],
     });
-    expect(chipBox("filter", jacks, false, { type: "lowpass", cutoff: "900" })).toEqual(dspFaceSize());
+    const box = chipBox("filter", jacks, false, { type: "lowpass", cutoff: "900" });
+    expect(box.w).toBeGreaterThanOrEqual(dspFaceSize().w);
+    expect(box.h).toBe(dspFaceSize().h);
   });
 });

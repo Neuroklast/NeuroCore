@@ -3,9 +3,12 @@ import { BOARD_BLOCK, BOARD_GRID, BOARD_TRACE, snapSize, snapToCellCenter } from
 /** Catalog max side rails (msplit low/mid/high). Plates grow past this. */
 export const SIDE_JACK_MAX = 3;
 
-/** ui-ux: hit targets ≥ 26 px. Title band is that plate. */
+/** Stable name row. Controls own the separate technical row. */
 export const TITLE_H = 26;
 export const TYPECODE_H = 14;
+/** Identification, controls, signal surface and captions have separate bands. */
+export const TECHNICAL_H = 26;
+export const PARAMETER_H = 26;
 /** One socket is title + typecode stacked (key + value). Overlay rows. */
 export const SOCKET_H = TITLE_H + TYPECODE_H;
 export const CHIP_PAD_Y = TITLE_H - TYPECODE_H;
@@ -29,7 +32,7 @@ export const PIN_LEAD = BOARD_TRACE / 2;
 export const FOOT_H = BOARD_TRACE;
 /** Baseline DSP IC. Size grows from jack counts; never shrinks to fit a row. */
 export const CHIP_W = BOARD_GRID * 7;
-export const CHIP_H = BOARD_GRID * 6;
+export const CHIP_H = BOARD_GRID * 8;
 export const IO_H = CHIP_H;
 /** ui-ux: IN/OUT body ≥ 96. Same height family as DSP so serial jacks share a rail. */
 export const IO_W = BOARD_GRID * 5;
@@ -39,7 +42,7 @@ export const PLUG_LABEL_INSET = BOARD_TRACE;
 export const JACK_PITCH = BOARD_GRID;
 export const FORK_PITCH = BOARD_GRID * 2;
 export const FACE_MIN_W = CHIP_W - PIN_LEAD * 2;
-export const FACE_MIN_H = CHIP_H - PIN_LEAD * 2 - TITLE_H - FOOT_H;
+export const FACE_MIN_H = CHIP_H - PIN_LEAD * 2 - TITLE_H - TECHNICAL_H - PARAMETER_H - FOOT_H;
 
 /** Gunmetal body inside the AABB pin strip. */
 export function icBodyRect(box: { w: number; h: number }): { x: number; y: number; w: number; h: number } {
@@ -51,10 +54,10 @@ export function icBodyRect(box: { w: number; h: number }): { x: number; y: numbe
   };
 }
 
-/** Body band: below the title, above the foot. Side jacks live here. */
+/** Signal band: below identification/controls, above captions and status. */
 export function sideJackBand(boxH: number): { top: number; innerH: number; mid: number } {
-  const top = PIN_LEAD + TITLE_H;
-  const innerH = Math.max(0, boxH - top - PIN_LEAD - FOOT_H);
+  const top = PIN_LEAD + TITLE_H + TECHNICAL_H;
+  const innerH = Math.max(0, boxH - top - PIN_LEAD - FOOT_H - PARAMETER_H);
   return { top, innerH, mid: snapToCellCenter(top + innerH * 0.5) };
 }
 
@@ -87,7 +90,7 @@ export function chipFaceStackPx(): number {
 
 export function icStackHeight(sideCount: number, minH = CHIP_H): number {
   const n = Math.max(1, Math.floor(Number(sideCount) || 1));
-  const chrome = PIN_LEAD + TITLE_H + PIN_LEAD + FOOT_H;
+  const chrome = PIN_LEAD * 2 + TITLE_H + TECHNICAL_H + PARAMETER_H + FOOT_H;
   if (n <= 1) {
     return snapSize(Math.max(minH, chrome + FACE_MIN_H));
   }
@@ -96,12 +99,12 @@ export function icStackHeight(sideCount: number, minH = CHIP_H): number {
   return snapSize(Math.max(minH, chrome + Math.max(FACE_MIN_H, inner)));
 }
 
-export function icStackWidth(southCount: number, minW = CHIP_W): number {
+export function icStackWidth(southCount: number, minW = CHIP_W, pitch = JACK_PITCH): number {
   const n = Math.max(0, Math.floor(Number(southCount) || 0));
   if (n <= 1) {
     return snapSize(minW);
   }
-  return snapSize(Math.max(minW, PIN_LEAD * 2 + n * JACK_PITCH));
+  return snapSize(Math.max(minW, PIN_LEAD * 2 + n * pitch));
 }
 
 export function dspFaceSize(): { w: number; h: number } {
@@ -140,7 +143,7 @@ export function ioBodyInset(): { top: number; right: number; bottom: number; lef
   };
 }
 
-/** Empty plate under the header and above the south rail — the face lives here. */
+/** Dotted signal surface between the control row and parameter/status bands. */
 export function chipPadInset(role: "io" | "chip"): {
   top: number;
   right: number;
@@ -149,9 +152,9 @@ export function chipPadInset(role: "io" | "chip"): {
 } {
   void role;
   return {
-    top: PIN_LEAD + TITLE_H,
+    top: PIN_LEAD + TITLE_H + TECHNICAL_H,
     right: PIN_LEAD,
-    bottom: PIN_LEAD + FOOT_H,
+    bottom: PIN_LEAD + FOOT_H + PARAMETER_H,
     left: PIN_LEAD,
   };
 }
@@ -163,6 +166,8 @@ export function chipChromeVars(role: "io" | "chip" = "chip"): Record<string, str
     "--nk-chip-pad-x": `${CHIP_PAD_X}px`,
     "--nk-chip-pad-y": `${CHIP_PAD_Y}px`,
     "--nk-title-h": `${TITLE_H}px`,
+    "--nk-technical-h": `${TECHNICAL_H}px`,
+    "--nk-parameter-h": `${PARAMETER_H}px`,
     "--nk-char-px": `${CHAR_PX}px`,
     "--nk-socket-h": `${SOCKET_H}px`,
     "--nk-sock-gap": `${SOCK_GAP}px`,

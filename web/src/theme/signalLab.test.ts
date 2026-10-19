@@ -17,7 +17,7 @@ describe("signal lab tokens", () => {
     expect(SIGNAL_LAB.version).toBe(nk.version);
     expect(SIGNAL_LAB.hitPx).toBe(TITLE_H);
     expect(SIGNAL_LAB.type.titlePx).toBeGreaterThanOrEqual(12);
-    expect(SIGNAL_LAB.type.titlePx).toBeLessThanOrEqual(14);
+    expect(SIGNAL_LAB.type.titlePx).toBeLessThanOrEqual(16);
     expect(SIGNAL_LAB.type.paramPx).toBeGreaterThanOrEqual(11);
     expect(SIGNAL_LAB.type.secondaryMinPx).toBeGreaterThanOrEqual(10);
     expect(SIGNAL_LAB.surfaceVar.workspace).toBe("var(--nk-bg)");

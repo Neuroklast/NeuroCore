@@ -16,7 +16,7 @@ export const SIGNAL_LAB = {
     interaction: 3,
   },
   type: {
-    titlePx: 13,
+    titlePx: 16,
     paramPx: 11,
     secondaryMinPx: 10,
     codePx: 12,

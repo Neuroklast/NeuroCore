@@ -10,7 +10,7 @@ const css = readFileSync(new URL("../theme/tailwind.css", import.meta.url), "utf
 describe("closed chip zones", () => {
   it("keeps title, rails, face, and south exclusive on the DSP plate", () => {
     const zones = chipZones("chip", dspFaceSize());
-    expect(zones.map((z) => z.id)).toEqual(["title", "westRail", "eastRail", "face", "southRail"]);
+    expect(zones.map((z) => z.id)).toEqual(["title", "technical", "westRail", "eastRail", "face", "parameters", "foot"]);
     for (let i = 0; i < zones.length; i += 1) {
       for (let j = i + 1; j < zones.length; j += 1) {
         expect(rectsOverlap(zones[i]!, zones[j]!), `${zones[i]!.id} vs ${zones[j]!.id}`).toBe(false);
@@ -30,11 +30,11 @@ describe("closed chip zones", () => {
     expect(face.y).toBeGreaterThanOrEqual(title.h);
   });
 
-  it("parks mute/solo in the title band, not the body", () => {
+  it("parks mute/solo in the technical subheader, not the signal surface", () => {
     expect(shell).toContain("headerEnd");
-    expect(board).toMatch(/headerEnd=\{canMs[\s\S]*nk-chip-ms/);
+    expect(board).toMatch(/headerEnd=[\s\S]*nk-chip-ms/);
     expect(board).not.toMatch(/bodyStart=\{canMs/);
-    expect(css).toMatch(/\.nk-chip-headband \.nk-ms[\s\S]*height:\s*100%/);
+    expect(css).toMatch(/\.nk-chip-subheader \.nk-ms[\s\S]*height:\s*var\(--nk-technical-h\)/);
   });
 
   it("hides closed-chip port captions; full names live on the tooltip", () => {
