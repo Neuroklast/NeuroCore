@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DESIGN_H, DESIGN_W, fitForWindow, fitOrigin, menuPos, snapUiFitToGrid } from "./fit";
+import { DESIGN_H, DESIGN_W, clientToPane, fitForWindow, fitOrigin, menuPos, snapUiFitToGrid } from "./fit";
 
 describe("design scale", () => {
   it("keeps a 1280x860 canvas", () => {
@@ -38,6 +38,33 @@ describe("design scale", () => {
       expect(DESIGN_W * fit).toBeLessThanOrEqual(w + 1e-6);
       expect(DESIGN_H * fit).toBeLessThanOrEqual(h + 1e-6);
     }
+  });
+
+  it("maps browser pixels into stage CSS pixels", () => {
+    const pane = {
+      clientWidth: 1280,
+      clientHeight: 860,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1600, height: 1075 }),
+    };
+    expect(clientToPane(pane, 800, 537.5)).toEqual({ x: 640, y: 430 });
+  });
+
+  it("keeps 1:1 mapping when the stage is unscaled", () => {
+    const pane = {
+      clientWidth: 896,
+      clientHeight: 520,
+      getBoundingClientRect: () => ({ left: 40, top: 80, width: 896, height: 520 }),
+    };
+    expect(clientToPane(pane, 140, 180)).toEqual({ x: 100, y: 100 });
+  });
+
+  it("uses unit scale when the pane rect has no size", () => {
+    const pane = {
+      clientWidth: 896,
+      clientHeight: 520,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, height: 0 }),
+    };
+    expect(clientToPane(pane, 50, 60)).toEqual({ x: 50, y: 60 });
   });
 
   it("clamps a context menu inside the editor", () => {

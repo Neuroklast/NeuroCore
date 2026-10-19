@@ -11,6 +11,7 @@ import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
+import { clientToPane } from "../theme/fit";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
@@ -327,9 +328,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if ((e.target as HTMLElement).closest("[data-board-control]")) return;
-    const rect = pane.getBoundingClientRect();
     const cam = camLive.current;
-    const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
+    const panePt = clientToPane(pane, e.clientX, e.clientY);
+    const world = worldFromScreen(cam, panePt.x, panePt.y);
     const portEl = (e.target as HTMLElement).closest("[data-port-id]");
     const portIdHit = portEl?.getAttribute("data-port-id");
     if (portIdHit && e.button === 0) {
@@ -365,8 +366,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
       if (edge) {
         setMenu({
           kind: "add",
-          left: e.clientX - rect.left,
-          top: e.clientY - rect.top,
+          left: panePt.x,
+          top: panePt.y,
           afterId: edge.sourceNodeId,
           targetId: edge.targetNodeId,
         });
@@ -412,8 +413,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     const cam = camLive.current;
     if (connectDragRef.current) {
-      const rect = pane.getBoundingClientRect();
-      const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
+      const panePt = clientToPane(pane, e.clientX, e.clientY);
+      const world = worldFromScreen(cam, panePt.x, panePt.y);
       const g = useBoardStore.getState();
       const snap = magnetPort(world, connectDragRef.current.fromPort, g);
       const to = snap && g.nodes[snap.nodeId]
@@ -432,16 +433,18 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if (panRef.current) {
+      const from = clientToPane(pane, panRef.current.x, panRef.current.y);
+      const to = clientToPane(pane, e.clientX, e.clientY);
       applyLiveCamera(panCamera(
         { scale: cam.scale, tx: panRef.current.tx, ty: panRef.current.ty },
-        e.clientX - panRef.current.x,
-        e.clientY - panRef.current.y,
+        to.x - from.x,
+        to.y - from.y,
       ));
       return;
     }
     if (lassoRef.current) {
-      const rect = pane.getBoundingClientRect();
-      const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
+      const panePt = clientToPane(pane, e.clientX, e.clientY);
+      const world = worldFromScreen(cam, panePt.x, panePt.y);
       lassoRef.current = { ...lassoRef.current, x1: world.x, y1: world.y };
       setLasso(lassoRef.current);
       return;
@@ -457,8 +460,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 4) return;
-    const rect = pane.getBoundingClientRect();
-    const world = worldFromScreen(cam, e.clientX - rect.left, e.clientY - rect.top);
+    const panePt = clientToPane(pane, e.clientX, e.clientY);
+    const world = worldFromScreen(cam, panePt.x, panePt.y);
     const live: ChipDrag = {
       id: drag.id,
       x: world.x - drag.dx,
@@ -587,10 +590,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (! pane) {
       return;
     }
-    const rect = pane.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    applyLiveCamera(zoomCamera(camLive.current, sx, sy, e.deltaY > 0 ? 0.92 : 1.08), true);
+    const panePt = clientToPane(pane, e.clientX, e.clientY);
+    applyLiveCamera(zoomCamera(camLive.current, panePt.x, panePt.y, e.deltaY > 0 ? 0.92 : 1.08), true);
     paintFocus();
   }, [applyLiveCamera, paintFocus]);
 
@@ -610,8 +611,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (! pane) {
       return null;
     }
-    const box = pane.getBoundingClientRect();
-    const world = worldFromScreen(camLive.current, bindX - box.left, bindY - box.top);
+    const panePt = clientToPane(pane, bindX, bindY);
+    const world = worldFromScreen(camLive.current, panePt.x, panePt.y);
     const id = chipAtWorld(Object.values(nodes), world);
     const n = id ? nodes[id] : undefined;
     if (! n) {
@@ -659,11 +660,11 @@ export function BoardView({ active = true }: { active?: boolean }) {
         if (! pane) {
           return;
         }
-        const box = pane.getBoundingClientRect();
-        const world = worldFromScreen(camLive.current, e.clientX - box.left, e.clientY - box.top);
+        const panePt = clientToPane(pane, e.clientX, e.clientY);
+        const world = worldFromScreen(camLive.current, panePt.x, panePt.y);
         const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
         const hit = boardContextHit(chipId, world, useBoardStore.getState());
-        const at = { left: e.clientX - box.left, top: e.clientY - box.top };
+        const at = { left: panePt.x, top: panePt.y };
         if (hit.kind === "chip") {
           selectNodes([hit.id]);
           setMenu({ kind: "chip", ...at, id: hit.id });
