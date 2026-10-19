@@ -9,7 +9,7 @@ async function loadPreset(page: Page, name: string) {
   await page.locator(".nk-preset-now").click();
   await page.locator(".nk-preset-browser").waitFor();
   await page.getByPlaceholder("Search presets, tags, effects...").fill(name);
-  const row = page.locator(".nk-preset-row", { hasText: name });
+  const row = page.locator(`.nk-preset-row[data-name="${name}"]`);
   await expect(row).toBeVisible();
   await row.dblclick();
   await page.locator(".nk-preset-browser").waitFor({ state: "hidden" }).catch(() => undefined);
@@ -100,6 +100,19 @@ test.describe("signal lab shared module chrome", () => {
     await expect(hallReverb).toHaveAttribute("data-face", "reverb");
     await expect(hallReverb.locator("[data-glyph='decay']")).toBeVisible();
     await page.screenshot({ path: path.join(shotDir, "circuit-pad-cloud-hall.png"), fullPage: true });
+
+    await loadPreset(page, "Split Authority");
+    await page.locator("[data-node-id='xover1']").waitFor();
+    await waitLayoutIdle(page);
+    const xover = page.locator("[data-node-id='xover1']");
+    await expect(xover).toBeVisible();
+    const xoverBox = await xover.evaluate((n) => ({
+      w: (n as HTMLElement).offsetWidth,
+      h: (n as HTMLElement).offsetHeight,
+    }));
+    expect(xoverBox.w).toBeGreaterThanOrEqual(200);
+    expect(xoverBox.h).toBeGreaterThanOrEqual(200);
+    await page.screenshot({ path: path.join(shotDir, "circuit-split-authority.png"), fullPage: true });
   });
 
   test("delay LFO and dynamics faces paint calculated glyphs", async ({ page }, info) => {
@@ -264,7 +277,7 @@ test.describe("signal lab shared module chrome", () => {
     await clickChipHeader(page, filter);
     await expect(filter.locator(".nk-chip-typecode")).toHaveCSS("visibility", "visible");
     await expect(filter.locator(".nk-chip-foot")).toHaveCSS("visibility", "visible");
-    await expect(filter.locator(".nk-port-cap").first()).toHaveCSS("visibility", "visible");
+    await expect(filter.locator(".nk-port-cap").first()).toHaveCSS("visibility", "hidden");
     await expect(reverb.locator(".nk-chip-typecode")).toHaveCSS("visibility", "hidden");
     await expect(reverb.locator(".nk-port-cap").first()).toHaveCSS("visibility", "hidden");
   });

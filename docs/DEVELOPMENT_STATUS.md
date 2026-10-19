@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/foot-still`
+**Branch:** `feat/ic-chip`
+
+## Circuit IC chip geometry (2026-10-19)
+
+Closed nodes are gunmetal ICs, not 128 px compact plates. Shared metrics (`chipMetrics` / `chipBox` / `chipZones` / `portLayout`) size a normal DSP chip at 224×192 and grow from west/east/south jack counts. The body is inset `PIN_LEAD`; jack centres stay on the AABB. Idle pins are metal; hatch and truncated port caps are gone. Compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap; A* may leave north/south when the forced-east stub is a foreign runway. Version stays 0.7.0-beta.
 
 ## Circuit chip foot honesty (2026-10-19)
 

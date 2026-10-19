@@ -55,7 +55,7 @@ Signal order is the compiled graph, not source-line order.
 - Manual `xy` is user-owned. Selection, hover, Source resize, window resize, and tab change do not Arrange.
 - Compact / Arrange / new preset may pack.
 
-A short serial chain (factory Drone Low Bed) sits on one L→R row in the Circuit pane. DSP plates are 128 wide, IN/OUT 96, compact air is `CHIP_AIR_X` (64). Wrap only when that geometry overflows `viewW`. Not a per-preset special case.
+DSP plates are IC bodies (~224×192 baseline, grown from jack counts). IN/OUT are 160×192. Compact neighbour floor is `CHIP_AIR_X` (64); compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap when that overflows `viewW`. Never shrink a chip or a gutter so a chain fits one row.
 
 ## Terminal panes
 
