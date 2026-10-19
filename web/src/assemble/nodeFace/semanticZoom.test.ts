@@ -10,6 +10,7 @@ import {
   semanticZoomLevel,
   zoomMayMovePorts,
   zoomMayResizeChip,
+  zoomPaint,
 } from "./semanticZoom";
 
 describe("semantic zoom", () => {
@@ -57,5 +58,28 @@ describe("semantic zoom", () => {
     applyBoardZoom(null, 1);
     const boardView = readFileSync(new URL("../BoardView.tsx", import.meta.url), "utf8");
     expect(boardView).toContain("applyBoardZoom(paneRef.current, cam.scale)");
+  });
+
+  it("drops unreadably small captions at overview and keeps a reduced face glyph", () => {
+    expect(zoomPaint("overview", false)).toEqual({
+      title: true,
+      typecode: false,
+      foot: false,
+      portCaps: false,
+      bindCaps: false,
+      face: "reduced",
+    });
+    expect(zoomPaint("overview", true)).toEqual({
+      title: true,
+      typecode: true,
+      foot: true,
+      portCaps: true,
+      bindCaps: false,
+      face: "reduced",
+    });
+    expect(zoomPaint("normal", false).face).toBe("full");
+    expect(zoomPaint("normal", false).portCaps).toBe(true);
+    expect(zoomPaint("focused", true).face).toBe("full");
+    expect(zoomMayResizeChip("overview")).toBe(false);
   });
 });

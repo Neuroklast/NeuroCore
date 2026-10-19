@@ -43,9 +43,9 @@ Camera range stays `BOARD_MIN_SCALE` 0.4 … `BOARD_MAX_SCALE` 1.
 
 | Level | Scale | Paint |
 |---|---|---|
-| overview | `< 0.55` | type, id, ports, reduced glyph. No unreadably small param text. |
-| normal | `0.55 … 0.85` | glyph + primary params. |
-| focused | `≥ 0.85` or selected | extra readouts in the chip or Source inspector. Chip AABB unchanged. |
+| overview | `< 0.55` | Title, jack contacts, reduced face glyph (no axis grid, thicker stroke). Typecode, foot, port captions, and south bind labels hide unless the chip is selected. Chip AABB unchanged. |
+| normal | `0.55 … 0.85` | Full glyph + typecode, foot, port captions, south bind labels. |
+| focused | `≥ 0.85` or selected | Same paint as normal; extra readouts stay in Source inspector. Chip AABB unchanged. |
 
 ## Layout
 

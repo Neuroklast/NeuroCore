@@ -43,6 +43,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | IN sources east only | Any target jack on IN. `sc` is an east **output** (host sidechain). OUT targets west only; gain is overlay-only |
 | Camera fits the chain | After preset/Arrange the pane still shows the previous graph, or board `minZoom` ≠ `fitView` minZoom |
 | Overlay vs south rail | Open detail still paints south bind captions under the overlay |
+| Semantic zoom is paint density | Overview still paints unreadably small port captions or a full axis grid. Jack locals or AABB change with `data-zoom` |
 | Stereo bus is L cyan + R accent, ±4 px | One A* then `parallelOffset`. Split mid/side is not L/R. Stored route has no curves. Beads sit on tap peaks + travel source → dest |
 | Port labels are `[ MID ]` / `[ SIDE ]` | Caption is `mid` or a fake UUID / `REV.45-B` |
 | Chip foot is `node.id` + live dB | Invented UGID, barcode, TRG, or grip greeble |

@@ -13,6 +13,37 @@ export const SEMANTIC_ZOOM = {
 
 export type SemanticZoomLevel = "overview" | "normal" | "focused";
 
+/** What a closed chip paints. Jack locals and AABB stay put. */
+export type ZoomPaint = {
+  title: boolean;
+  typecode: boolean;
+  foot: boolean;
+  portCaps: boolean;
+  bindCaps: boolean;
+  face: "reduced" | "full";
+};
+
+export function zoomPaint(level: SemanticZoomLevel, selected: boolean): ZoomPaint {
+  if (level === "overview") {
+    return {
+      title: true,
+      typecode: selected,
+      foot: selected,
+      portCaps: selected,
+      bindCaps: false,
+      face: "reduced",
+    };
+  }
+  return {
+    title: true,
+    typecode: true,
+    foot: true,
+    portCaps: true,
+    bindCaps: true,
+    face: "full",
+  };
+}
+
 export function semanticZoomLevel(scale: number): SemanticZoomLevel {
   if (! Number.isFinite(scale) || scale < SEMANTIC_ZOOM.overviewMax) {
     return "overview";
