@@ -1,5 +1,5 @@
 import { CHIP_PAD_Y, JACK_PITCH, sideJackBand, sideJackPitch, TITLE_H } from "./chipMetrics";
-import { BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
+import { BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
 
 /** Centre of a jack, relative to the node top-left. Never a global. */
 export type PortLocal = { x: number; y: number };
@@ -18,6 +18,25 @@ export function sidePortMinHeight(count: number): number {
  * (below the title, above the foot) so IN out/sc are not in the hazard or footer.
  * Every centre is a cell midline (16, 48, 80, …) so a 32-grid chip can share a rail.
  */
+export function southPortLocals(
+  count: number,
+  box: { w: number; h: number },
+): PortLocal[] {
+  const n = Math.max(0, Math.floor(count));
+  if (n === 0) {
+    return [];
+  }
+  const pad = BOARD_HALF;
+  if (n === 1) {
+    return [{ x: snapToCellCenter(box.w * 0.5), y: box.h }];
+  }
+  const span = Math.max(BOARD_GRID, box.w - pad * 2);
+  return Array.from({ length: n }, (_, i) => ({
+    x: snapToCellCenter(pad + ((i + 0.5) / n) * span),
+    y: box.h,
+  }));
+}
+
 export function sidePortLocals(
   count: number,
   box: { w: number; h: number },

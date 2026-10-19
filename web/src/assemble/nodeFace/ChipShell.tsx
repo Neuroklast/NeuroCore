@@ -20,6 +20,7 @@ type ShellProps = {
   inspectOpen: boolean;
   onInspect?: () => void;
   headerStart?: ReactNode;
+  headerEnd?: ReactNode;
   bodyStart?: ReactNode;
   children?: ReactNode;
   style: CSSProperties;
@@ -41,6 +42,7 @@ export function ChipShell({
   inspectOpen,
   onInspect,
   headerStart,
+  headerEnd,
   bodyStart,
   children,
   style,
@@ -81,6 +83,7 @@ export function ChipShell({
         <span className="nk-chip-title min-w-0 flex-1 truncate text-ink">
           {title}
         </span>
+        {headerEnd}
       </div>
       <svg className="nk-chip-frame" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden>
         <polygon

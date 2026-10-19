@@ -268,3 +268,27 @@ describe("visualAudioEdges", () => {
     expect(vis.some((e) => e.to === out!.id && e.toJack === "hall")).toBe(true);
   });
 });
+
+describe("octaver param jacks stay off the side rails", () => {
+  it("reclassifies catalog param keys as south param ports", () => {
+    const oct = {
+      id: "octaver1",
+      type: "octaver",
+      busName: "main",
+      args: { sub: "1", up: "0", mix: "0.3", tone: "120", thresh: "0.05" },
+      trailingComment: "",
+      jacks: [
+        { id: "in", label: "in", output: false, kind: "audio" },
+        { id: "out", label: "out", output: true, kind: "audio" },
+        { id: "sub", label: "sub", output: false, kind: "audio" },
+        { id: "up", label: "up", output: false, kind: "audio" },
+        { id: "mix", label: "mix", output: false, kind: "audio" },
+        { id: "tone", label: "tone", output: false, kind: "audio" },
+        { id: "thresh", label: "thresh", output: false, kind: "audio" },
+      ],
+    } satisfies AstNode;
+    const jacks = visualJacksFor(oct);
+    expect(jacks.filter((j) => j.kind === "audio" || j.kind === "mod").map((j) => j.id).sort()).toEqual(["in", "out"]);
+    expect(jacks.filter((j) => j.kind === "param").map((j) => j.id)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
+  });
+});

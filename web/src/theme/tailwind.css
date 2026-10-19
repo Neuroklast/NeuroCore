@@ -439,6 +439,9 @@ html[data-motion="off"] .nk-boot {
 .nk-chip-headband .nk-chip-title {
   position: relative;
   z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
   color: var(--nk-ink);
   text-shadow: 0 0 6px var(--nk-accent-deep), 0 1px 0 var(--nk-accent-deep);
 }
@@ -446,6 +449,27 @@ html[data-motion="off"] .nk-boot {
 .nk-chip-ms {
   flex-shrink: 0;
   margin-top: var(--nk-sock-gap);
+}
+
+.nk-chip-headband .nk-chip-ms {
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
+  pointer-events: auto;
+  align-self: stretch;
+  height: 100%;
+}
+
+.nk-chip-headband .nk-ms {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  min-width: 22px;
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nk-board {
@@ -596,8 +620,30 @@ html[data-motion="off"] .nk-boot {
   pointer-events: none;
   line-height: 1;
 }
+.nk-port-west .nk-port-cap,
+.nk-port-east .nk-port-cap {
+  max-width: calc(var(--nk-label-col) - 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .nk-port-west .nk-port-cap { left: 8px; }
 .nk-port-east .nk-port-cap { right: 8px; }
+
+.nk-port-south {
+  left: 0;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.nk-port-south .nk-port-cap {
+  top: auto;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -2px);
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .nk-board-chip:has(.nk-overload) {
   z-index: 20;
