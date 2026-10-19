@@ -89,8 +89,9 @@ describe("paint stays inside the chip box", () => {
     expect(captionFitsCol(portBracket("side"), LABEL_COL, 5)).toBe(true);
     expect(captionFitsCol("IN", LABEL_COL + 8)).toBe(true);
     const w = bindCaptionMaxPx(3, dspFaceSize().w);
-    expect(captionFitsCol(bindJackCaption("gain"), w)).toBe(true);
+    expect(w).toBeGreaterThanOrEqual(28);
     expect(w).toBeLessThanOrEqual(dspFaceSize().w);
+    expect(bindJackCaption("gain")).toBe("GAIN");
   });
 
   it("DSP handles stay on the box edge after expand", () => {

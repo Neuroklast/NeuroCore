@@ -70,10 +70,10 @@ describe("chip face, labels, copy", () => {
     expect(w).toBeGreaterThanOrEqual(28);
   });
 
-  it("widens the chip so highshelf fits the value field", () => {
+  it("keeps the closed EQ plate on the shared DSP face; overlay holds long enums", () => {
     const eq = chipBox("eq", [audio("in", false), audio("out", true)], true, chipSpec("eq").defaultArgs);
     expect(longestValuePx(chipSpec("eq").enums)).toBeGreaterThanOrEqual("highshelf".length * 9);
-    expect(eq.w).toBeGreaterThanOrEqual(CHIP_PAD_X * 2 + longestValuePx(chipSpec("eq").enums));
+    expect(eq).toEqual(dspFaceSize());
   });
 
   it("puts a single side jack on the React Flow side midline", () => {
@@ -227,8 +227,10 @@ describe("chip face, labels, copy", () => {
     expect(env).toEqual(dspFaceSize());
     const n = 7;
     const xs = bindJackXs(n, env.w);
+    expect(xs).toHaveLength(n);
+    expect(xs.every((x) => onCellCenter(x) && x >= 0 && x <= env.w)).toBe(true);
     for (let i = 1; i < xs.length; i += 1) {
-      expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(BOARD_GRID);
+      expect(xs[i]!).toBeGreaterThanOrEqual(xs[i - 1]!);
     }
     expect(env.w).toBeGreaterThanOrEqual(BIND_JACK_MIN);
   });

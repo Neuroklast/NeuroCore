@@ -20,11 +20,13 @@ export const BIND_RAIL = BOARD_GRID;
 export const SOUTH_JACK_GAP = BOARD_GRID + TITLE_H;
 export const CHAR_PX = 9;
 export const VALUE_FIELD_PAD = BOARD_GRID + BOARD_TRACE / 2;
-export const CONTENT_MIN = BOARD_BLOCK + BOARD_TRACE;
+/** Closed-face well. Overlay holds long enum fields. Snaps CHIP_W to 128. */
+export const CONTENT_MIN = BOARD_GRID;
 export const CHIP_W = LABEL_COL * 2 + CONTENT_MIN;
 export const CHIP_H = BOARD_GRID * 2 + BOARD_TRACE;
 export const IO_H = BOARD_GRID * 3;
-export const IO_W = LABEL_COL + CHIP_H;
+/** ui-ux: IN/OUT body ≥ 96. Compact serial chains fit the Circuit pane. */
+export const IO_W = BOARD_GRID * 3;
 export const BIND_JACK_MIN = BOARD_GRID * 2;
 export const OVERLAY_MAX_H = BOARD_BLOCK * 2;
 export const PLUG_LABEL_INSET = BOARD_TRACE;

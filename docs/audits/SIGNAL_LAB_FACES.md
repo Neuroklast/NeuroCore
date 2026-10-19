@@ -36,4 +36,4 @@ Reuse `docs/audits/signal-lab-chrome/` after the curves land (idle Drone, select
 
 ## Out of scope
 
-LFO travel motion (PR G). Serial wrap (PR D). Terminal navigator (PR E). Native DAW. Performance BASELINE.md fill.
+LFO travel motion (PR G). Terminal navigator (PR E). Native DAW. Performance BASELINE.md fill.

@@ -317,7 +317,7 @@ describe("layout lands on jacks", () => {
   });
 
   it("routes a multiband xover to low/mid/high without overlapping rails", async () => {
-    const preset = findFactory("De-Ess Shelf");
+    const preset = findFactory("Air Band Polish");
     expect(preset).toBeTruthy();
     const { doc } = parseDslSketch(preset!.script);
     const { nodes, edges } = flowFromAst(doc);

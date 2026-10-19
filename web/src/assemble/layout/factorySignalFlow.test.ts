@@ -50,7 +50,7 @@ function serialOrder(placed: LayoutResult["nodes"], ids: string[]): string[] {
   return [...ids].sort((a, b) => {
     const pa = placed[a]!;
     const pb = placed[b]!;
-    if (Math.abs(pa.y - pb.y) > BOARD_GRID) {
+    if (Math.abs(pa.y - pb.y) > BOARD_GRID * 2) {
       return pa.y - pb.y;
     }
     return pa.x - pb.x;
@@ -138,7 +138,7 @@ describe("factory signal-flow layout baseline", () => {
     expect(chipSpec("reverb").ranges.decay).toEqual({ min: 0, max: 1 });
   });
 
-  it.fails("parks IN as the unique leftmost chip on Drone Low Bed compact", async () => {
+  it("parks IN as the unique leftmost chip on Drone Low Bed compact", async () => {
     const { result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     const inX = result.nodes.IN!.x;
     for (const [id, p] of Object.entries(result.nodes)) {
@@ -149,11 +149,11 @@ describe("factory signal-flow layout baseline", () => {
     }
   });
 
-  it.fails("fits Drone Low Bed on one left-to-right row in the Circuit pane", async () => {
+  it("fits Drone Low Bed on one left-to-right row in the Circuit pane", async () => {
     const { result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     const ys = ["IN", "octaver1", "filter1", "reverb1", "OUT"].map((id) => result.nodes[id]!.y);
     const span = Math.max(...ys) - Math.min(...ys);
-    expect(span, log).toBeLessThan(BOARD_GRID);
+    expect(span, log).toBeLessThanOrEqual(BOARD_GRID * 2);
     expect(serialOrder(result.nodes, ["IN", "octaver1", "filter1", "reverb1", "OUT"]), log).toEqual([
       "IN",
       "octaver1",

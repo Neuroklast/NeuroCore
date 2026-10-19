@@ -1,7 +1,26 @@
 import { BOARD_GRID, BOARD_HALF, BOARD_PAD, CHIP_AIR_X, CHIP_AIR_Y, snapSize, snapToCellCenter, snapToGrid } from "../grid";
 import type { LayoutEdge, LayoutNode } from "./types";
 
-export const COMPACT_GAP = CHIP_AIR_X * 2;
+/** Minimum neighbour air. Fat air (×2) is used when the row still fits viewW. */
+export const COMPACT_GAP = CHIP_AIR_X;
+
+/** Fat air when the row fits or must wrap anyway. Thin air only for a short serial that would otherwise wrap. */
+export function gapXForView(
+  widths: readonly number[],
+  viewW: number,
+  pad: number,
+): number {
+  const fat = CHIP_AIR_X * 2;
+  const thin = CHIP_AIR_X;
+  const n = widths.length;
+  if (wrapFits(widths, viewW, fat, pad) >= n) {
+    return fat;
+  }
+  if (n <= 5 && wrapFits(widths, viewW, thin, pad) >= n) {
+    return thin;
+  }
+  return fat;
+}
 /** Halo + rail + halo. finishHalo solidifies one cell around each chip, so CHIP_AIR_Y is not a cable. */
 export const WRAP_AIR = BOARD_PAD + BOARD_GRID + BOARD_PAD;
 export type BoardView = { w: number; h: number };
@@ -186,12 +205,12 @@ function placeOrder(
   byId: Map<string, LayoutNode>,
   originY: number,
   pad: number,
-  gapX: number,
   gapY: number,
   viewW: number,
   edges: LayoutEdge[],
 ): Record<string, { x: number; y: number; w: number; h: number }> {
   const widths = order.map((id) => snapSize(byId.get(id)?.w ?? BOARD_GRID));
+  const gapX = gapXForView(widths, viewW, pad);
   const colsN = wrapFits(widths, viewW, gapX, pad);
   const slots: Array<{ id: string; row: number; col: number; w: number; h: number }> = [];
   for (let i = 0; i < order.length; i += 1) {
@@ -292,7 +311,6 @@ export function packRows(
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
-  const gapX = COMPACT_GAP;
   const gapY = WRAP_AIR;
   const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -313,7 +331,7 @@ export function packRows(
         w: snapSize(outNode.w),
         h: snapSize(outNode.h),
       },
-    }, gapX);
+    }, CHIP_AIR_X * 2);
   };
   if (namedRails.length === 0) {
     const start = nodes.find((n) => n.id === "IN")?.id ?? nodes[0]?.id ?? "";
@@ -323,7 +341,6 @@ export function packRows(
       byId,
       pad,
       pad,
-      gapX,
       gapY,
       view.w,
       edges,
@@ -353,7 +370,7 @@ export function packRows(
       ? (members.find((n) => n.id === "IN")?.id ?? members[0]!.id)
       : (members.find((n) => n.id === rail)?.id ?? members[0]!.id);
     const subEdges = edges.filter((e) => members.some((n) => n.id === e.source) && members.some((n) => n.id === e.target));
-    const chunk = placeOrder(serialIds(members, subEdges, start), byId, y, pad, gapX, gapY, view.w, subEdges);
+    const chunk = placeOrder(serialIds(members, subEdges, start), byId, y, pad, gapY, view.w, subEdges);
     for (const [id, p] of Object.entries(chunk)) {
       placed[id] = p;
       maxRight = Math.max(maxRight, p.x + p.w);
