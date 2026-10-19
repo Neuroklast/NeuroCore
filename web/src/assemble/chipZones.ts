@@ -1,4 +1,4 @@
-import { chipPadInset, TITLE_H } from "./chipMetrics";
+import { chipPadInset, PIN_LEAD, TITLE_H } from "./chipMetrics";
 
 export type ChipZoneId = "title" | "westRail" | "eastRail" | "face" | "southRail";
 
@@ -21,18 +21,24 @@ export function rectsOverlap(a: ChipZone, b: ChipZone): boolean {
  */
 export function chipZones(role: "io" | "chip", box: { w: number; h: number }): ChipZone[] {
   const pad = chipPadInset(role);
-  const title: ChipZone = { id: "title", x: 0, y: 0, w: box.w, h: TITLE_H };
+  const title: ChipZone = {
+    id: "title",
+    x: pad.left,
+    y: PIN_LEAD,
+    w: Math.max(0, box.w - pad.left - pad.right),
+    h: TITLE_H,
+  };
   const westRail: ChipZone = {
     id: "westRail",
     x: 0,
-    y: TITLE_H,
+    y: pad.top,
     w: pad.left,
-    h: Math.max(0, box.h - TITLE_H - pad.bottom),
+    h: Math.max(0, box.h - pad.top - pad.bottom),
   };
   const eastRail: ChipZone = {
     id: "eastRail",
     x: box.w - pad.right,
-    y: TITLE_H,
+    y: pad.top,
     w: pad.right,
     h: westRail.h,
   };

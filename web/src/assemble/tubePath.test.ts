@@ -154,10 +154,11 @@ describe("tube path — rounded circuit maze", () => {
     expect(polylinesCross(first.points, second.points)).toBe(false);
   });
 
-  it("keeps every DSP chip on one face even with several jacks", () => {
+  it("keeps 1–2 side jacks on the baseline IC and grows past that", () => {
     const face = dspFaceSize().h;
     expect(chipHeight(1, 1)).toBe(face);
-    expect(chipHeight(3, 1)).toBe(face);
-    expect(chipHeight(2, 4)).toBe(face);
+    expect(chipHeight(2, 1)).toBe(face);
+    expect(chipHeight(3, 1)).toBeGreaterThan(face);
+    expect(chipHeight(2, 4)).toBeGreaterThan(face);
   });
 });

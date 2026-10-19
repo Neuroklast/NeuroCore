@@ -1,42 +1,60 @@
-import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, BOARD_TRACE, snapSize, snapToCellCenter } from "./grid";
+import { BOARD_BLOCK, BOARD_GRID, BOARD_TRACE, snapSize, snapToCellCenter } from "./grid";
 
-/** Catalog max side rails (msplit low/mid/high) so every DSP plate fits the same forks. */
+/** Catalog max side rails (msplit low/mid/high). Plates grow past this. */
 export const SIDE_JACK_MAX = 3;
 
 /** ui-ux: hit targets ≥ 26 px. Title band is that plate. */
 export const TITLE_H = 26;
 export const TYPECODE_H = 14;
-/** One socket is title + typecode stacked (key + value). */
+/** One socket is title + typecode stacked (key + value). Overlay rows. */
 export const SOCKET_H = TITLE_H + TYPECODE_H;
 export const CHIP_PAD_Y = TITLE_H - TYPECODE_H;
 export const CHIP_PAD_X = BOARD_TRACE;
-/** Side gutter: one cell plus pad, so IN/OUT labels never sit on typecode. */
+/** Overlay gutter. Closed IC plates use PIN_LEAD, not this column. */
 export const LABEL_COL = BOARD_GRID + CHIP_PAD_Y;
 export const RULE_H = CHIP_PAD_Y;
 export const MS_ROW = TITLE_H;
 export const SOCK_GAP = CHIP_PAD_Y - BOARD_TRACE / 2;
 export const BIND_RAIL = BOARD_GRID;
-/** South rail: jack cell + caption the size of the title. */
+/** South rail leftover for overlay captions. Closed foot is FOOT_H. */
 export const SOUTH_JACK_GAP = BOARD_GRID + TITLE_H;
 export const CHAR_PX = 9;
 export const VALUE_FIELD_PAD = BOARD_GRID + BOARD_TRACE / 2;
-/** Closed-face well. Overlay holds long enum fields. Snaps CHIP_W to 128. */
+/** Closed-face well floor. Overlay holds long enum fields. */
 export const CONTENT_MIN = BOARD_GRID;
-export const CHIP_W = LABEL_COL * 2 + CONTENT_MIN;
-export const CHIP_H = BOARD_GRID * 2 + BOARD_TRACE;
-export const IO_H = BOARD_GRID * 3;
-/** ui-ux: IN/OUT body ≥ 96. Compact serial chains fit the Circuit pane. */
-export const IO_W = BOARD_GRID * 3;
+
+/** QFP lead from AABB edge to gunmetal body. Jack centres stay on the AABB. */
+export const PIN_LEAD = BOARD_TRACE / 2;
+/** Status foot on the body, above the south pin strip. */
+export const FOOT_H = BOARD_TRACE;
+/** Baseline DSP IC. Size grows from jack counts; never shrinks to fit a row. */
+export const CHIP_W = BOARD_GRID * 7;
+export const CHIP_H = BOARD_GRID * 6;
+export const IO_H = CHIP_H;
+/** ui-ux: IN/OUT body ≥ 96. Same height family as DSP so serial jacks share a rail. */
+export const IO_W = BOARD_GRID * 5;
 export const BIND_JACK_MIN = BOARD_GRID * 2;
 export const OVERLAY_MAX_H = BOARD_BLOCK * 2;
 export const PLUG_LABEL_INSET = BOARD_TRACE;
 export const JACK_PITCH = BOARD_GRID;
 export const FORK_PITCH = BOARD_GRID * 2;
+export const FACE_MIN_W = CHIP_W - PIN_LEAD * 2;
+export const FACE_MIN_H = CHIP_H - PIN_LEAD * 2 - TITLE_H - FOOT_H;
+
+/** Gunmetal body inside the AABB pin strip. */
+export function icBodyRect(box: { w: number; h: number }): { x: number; y: number; w: number; h: number } {
+  return {
+    x: PIN_LEAD,
+    y: PIN_LEAD,
+    w: Math.max(0, box.w - PIN_LEAD * 2),
+    h: Math.max(0, box.h - PIN_LEAD * 2),
+  };
+}
 
 /** Body band: below the title, above the foot. Side jacks live here. */
 export function sideJackBand(boxH: number): { top: number; innerH: number; mid: number } {
-  const top = TITLE_H;
-  const innerH = Math.max(0, boxH - TITLE_H - CHIP_PAD_Y);
+  const top = PIN_LEAD + TITLE_H;
+  const innerH = Math.max(0, boxH - top - PIN_LEAD - FOOT_H);
   return { top, innerH, mid: snapToCellCenter(top + innerH * 0.5) };
 }
 
@@ -60,23 +78,39 @@ export function longestValuePx(enums: Record<string, string[]>): number {
 
 /** Side IN/OUT sit under the title/chevron plate, in the typecode band. */
 export function titleJackY(): number {
-  return snapToCellCenter(CHIP_PAD_Y + TITLE_H);
+  return snapToCellCenter(PIN_LEAD + TITLE_H);
 }
 
 export function chipFaceStackPx(): number {
-  const identity = CHIP_PAD_Y + TITLE_H + TYPECODE_H + RULE_H + MS_ROW + SOUTH_JACK_GAP;
-  const rails = titleJackY() + (SIDE_JACK_MAX - 1) * FORK_PITCH + BOARD_GRID + BOARD_HALF;
-  return Math.max(identity, rails);
+  return CHIP_H;
+}
+
+export function icStackHeight(sideCount: number, minH = CHIP_H): number {
+  const n = Math.max(1, Math.floor(Number(sideCount) || 1));
+  const chrome = PIN_LEAD + TITLE_H + PIN_LEAD + FOOT_H;
+  if (n <= 1) {
+    return snapSize(Math.max(minH, chrome + FACE_MIN_H));
+  }
+  const pitch = sideJackPitch(n);
+  const inner = (n - 1) * pitch + BOARD_GRID;
+  return snapSize(Math.max(minH, chrome + Math.max(FACE_MIN_H, inner)));
+}
+
+export function icStackWidth(southCount: number, minW = CHIP_W): number {
+  const n = Math.max(0, Math.floor(Number(southCount) || 0));
+  if (n <= 1) {
+    return snapSize(minW);
+  }
+  return snapSize(Math.max(minW, PIN_LEAD * 2 + n * JACK_PITCH));
 }
 
 export function dspFaceSize(): { w: number; h: number } {
-  return { w: snapSize(CHIP_W), h: snapSize(chipFaceStackPx()) };
+  return { w: snapSize(CHIP_W), h: snapSize(CHIP_H) };
 }
 
 export function ioFaceSize(jackCount = 1): { w: number; h: number } {
   const n = Math.max(1, Math.floor(Number(jackCount) || 1));
-  const minH = n <= 1 ? IO_H : TITLE_H + CHIP_PAD_Y + (n - 1) * JACK_PITCH;
-  return { w: snapSize(IO_W), h: snapSize(Math.max(IO_H, minH)) };
+  return { w: snapSize(IO_W), h: icStackHeight(n, IO_H) };
 }
 
 export function chipOverlayStackPx(hiddenRows: number): number {
@@ -89,38 +123,36 @@ export function chipOverlayStackPx(hiddenRows: number): number {
 
 export function chipBodyInset(): { top: number; right: number; bottom: number; left: number } {
   return {
-    top: CHIP_PAD_Y,
-    right: LABEL_COL,
-    bottom: SOUTH_JACK_GAP,
-    left: LABEL_COL,
+    top: PIN_LEAD,
+    right: PIN_LEAD,
+    bottom: PIN_LEAD + FOOT_H,
+    left: PIN_LEAD,
   };
 }
 
-/** Utility IN/OUT: pad only. DSP label-column gutters clip "OUT". */
+/** Utility IN/OUT: pin strip only. */
 export function ioBodyInset(): { top: number; right: number; bottom: number; left: number } {
   return {
-    top: CHIP_PAD_Y,
-    right: CHIP_PAD_X,
-    bottom: CHIP_PAD_Y,
-    left: CHIP_PAD_X,
+    top: PIN_LEAD,
+    right: PIN_LEAD,
+    bottom: PIN_LEAD + FOOT_H,
+    left: PIN_LEAD,
   };
 }
 
-/** Empty plate under typecode/M-S and above the south rail — the pad array lives here. */
+/** Empty plate under the header and above the south rail — the face lives here. */
 export function chipPadInset(role: "io" | "chip"): {
   top: number;
   right: number;
   bottom: number;
   left: number;
 } {
-  if (role === "io") {
-    return { top: TITLE_H, right: CHIP_PAD_X, bottom: CHIP_PAD_Y, left: CHIP_PAD_X };
-  }
+  void role;
   return {
-    top: TITLE_H + TYPECODE_H + RULE_H + MS_ROW,
-    right: LABEL_COL,
-    bottom: SOUTH_JACK_GAP + TYPECODE_H,
-    left: LABEL_COL,
+    top: PIN_LEAD + TITLE_H,
+    right: PIN_LEAD,
+    bottom: PIN_LEAD + FOOT_H,
+    left: PIN_LEAD,
   };
 }
 
@@ -135,6 +167,8 @@ export function chipChromeVars(role: "io" | "chip" = "chip"): Record<string, str
     "--nk-socket-h": `${SOCKET_H}px`,
     "--nk-sock-gap": `${SOCK_GAP}px`,
     "--nk-south-gap": `${SOUTH_JACK_GAP}px`,
+    "--nk-pin-lead": `${PIN_LEAD}px`,
+    "--nk-foot-h": `${FOOT_H}px`,
     "--nk-pad-top": `${pad.top}px`,
     "--nk-pad-right": `${pad.right}px`,
     "--nk-pad-bottom": `${pad.bottom}px`,

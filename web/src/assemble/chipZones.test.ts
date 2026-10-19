@@ -37,7 +37,8 @@ describe("closed chip zones", () => {
     expect(css).toMatch(/\.nk-chip-headband \.nk-ms[\s\S]*height:\s*100%/);
   });
 
-  it("keeps side captions inside the label column", () => {
-    expect(css).toMatch(/\.nk-port-west \.nk-port-cap,\s*\.nk-port-east \.nk-port-cap[\s\S]*max-width:\s*calc\(var\(--nk-label-col\)/);
+  it("hides closed-chip port captions; full names live on the tooltip", () => {
+    expect(css).toMatch(/\.nk-port-cap\s*\{[^}]*visibility:\s*hidden/s);
+    expect(board).toContain("data-tip={portBracket");
   });
 });
