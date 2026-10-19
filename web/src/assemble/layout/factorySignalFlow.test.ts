@@ -5,6 +5,7 @@ import { hydrateBoard, graphToLayout } from "../boardModel";
 import { parseRoutePath } from "../boardPath";
 import { chipSpec } from "../chipSpec";
 import { BOARD_GRID } from "../grid";
+import { countCorners } from "../audioStep";
 import { arrange, bboxArea, compact, pathLength } from "./runLayout";
 import type { LayoutResult } from "./types";
 
@@ -162,5 +163,23 @@ describe("factory signal-flow layout baseline", () => {
       "OUT",
     ]);
     expect(fillRatio(result), log).toBeGreaterThan(0.35);
+  });
+
+  it("routes Drone Low Bed serial hops without extra elbows", async () => {
+    const { doc, result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
+    const graph = graphToLayout(hydrateBoard(doc));
+    const hops: Array<[string, string]> = [
+      ["IN", "octaver1"],
+      ["octaver1", "filter1"],
+      ["filter1", "reverb1"],
+      ["reverb1", "OUT"],
+    ];
+    for (const [src, dst] of hops) {
+      const e = graph.edges.find((x) => x.source === src && x.target === dst);
+      expect(e, `${src}→${dst} missing ${log}`).toBeTruthy();
+      const d = result.edgePaths[e!.id];
+      const pts = parseRoutePath(d ?? "");
+      expect(countCorners(pts), `${src}→${dst} ${d} ${log}`).toBe(0);
+    }
   });
 });
