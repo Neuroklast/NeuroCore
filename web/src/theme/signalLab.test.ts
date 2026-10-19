@@ -26,8 +26,8 @@ describe("signal lab tokens", () => {
     expect(SIGNAL_LAB.depth.interaction).toBe(3);
   });
 
-  it("keeps typecode at the param scale", () => {
-    expect(css).toMatch(/\.nk-chip-typecode\s*\{[^}]*font-size:\s*11px/s);
+  it("keeps typecode at the IC headband scale", () => {
+    expect(css).toMatch(/\.nk-chip-typecode\s*\{[^}]*font-size:\s*9px/s);
   });
 
   it("paints chip titles and feet at the lab type scale", () => {
