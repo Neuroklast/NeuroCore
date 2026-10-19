@@ -29,7 +29,7 @@ export function zoomPaint(level: SemanticZoomLevel, selected: boolean): ZoomPain
       title: true,
       typecode: selected,
       foot: selected,
-      portCaps: selected,
+      portCaps: false,
       bindCaps: false,
       face: "reduced",
     };
@@ -38,7 +38,7 @@ export function zoomPaint(level: SemanticZoomLevel, selected: boolean): ZoomPain
     title: true,
     typecode: true,
     foot: true,
-    portCaps: true,
+    portCaps: false,
     bindCaps: true,
     face: "full",
   };

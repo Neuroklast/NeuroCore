@@ -73,12 +73,12 @@ describe("semantic zoom", () => {
       title: true,
       typecode: true,
       foot: true,
-      portCaps: true,
+      portCaps: false,
       bindCaps: false,
       face: "reduced",
     });
     expect(zoomPaint("normal", false).face).toBe("full");
-    expect(zoomPaint("normal", false).portCaps).toBe(true);
+    expect(zoomPaint("normal", false).portCaps).toBe(false);
     expect(zoomPaint("focused", true).face).toBe("full");
     expect(zoomMayResizeChip("overview")).toBe(false);
   });

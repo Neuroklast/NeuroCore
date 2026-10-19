@@ -264,56 +264,43 @@ html[data-motion="off"] .nk-boot {
 
 .nk-chip-fill {
   position: absolute;
-  inset: 0;
+  inset: var(--nk-pin-lead);
   z-index: 0;
-  clip-path: polygon(var(--nk-chip-cut) 0, 100% 0, 100% calc(100% - var(--nk-chip-cut)), calc(100% - var(--nk-chip-cut)) 100%, 0 100%, 0 var(--nk-chip-cut));
-  background: var(--nk-surface);
+  background:
+    linear-gradient(
+      165deg,
+      rgb(var(--nk-ink-rgb) / 0.12) 0%,
+      var(--nk-surface) 42%,
+      var(--nk-bg) 100%
+    );
   box-shadow:
-    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.06),
-    inset 0 -1px 0 rgb(0 0 0 / 0.45);
-  border-radius: var(--nk-panel-radius);
+    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.14),
+    inset 0 -2px 6px rgb(0 0 0 / 0.55),
+    inset 1px 0 0 rgb(var(--nk-ink-rgb) / 0.04),
+    0 0 0 1px rgb(0 0 0 / 0.65);
+  border-radius: 2px;
 }
 
 .nk-board-chip[data-depth="2"] .nk-chip-fill,
 .nk-board-chip[data-selected="on"] .nk-chip-fill,
 .nk-board-chip[data-focus="sharp"] .nk-chip-fill {
-  background: var(--nk-surface-high);
+  background:
+    linear-gradient(
+      165deg,
+      rgb(var(--nk-ink-rgb) / 0.16) 0%,
+      var(--nk-surface-high) 40%,
+      var(--nk-surface) 100%
+    );
 }
 
 .nk-board-chip[data-depth="3"] .nk-chip-fill {
-  background: var(--nk-well-high);
-}
-
-.nk-board-chip[data-kind] .nk-chip-fill::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  pointer-events: none;
-}
-
-.nk-board-chip[data-kind="audio"] .nk-chip-fill::before {
-  background: repeating-linear-gradient(
-    180deg,
-    var(--nk-accent) 0 2px,
-    transparent 2px 6px
-  );
-}
-
-.nk-board-chip[data-kind="mod"] .nk-chip-fill::before {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--nk-cyan) 0 1px,
-    transparent 1px 4px
-  );
-}
-
-.nk-board-chip[data-kind="io"] .nk-chip-fill::before {
-  width: 3px;
-  background: var(--nk-ink);
-  box-shadow: 3px 0 0 var(--nk-cyan);
+  background:
+    linear-gradient(
+      165deg,
+      rgb(var(--nk-ink-rgb) / 0.1) 0%,
+      var(--nk-well-high) 45%,
+      var(--nk-bg) 100%
+    );
 }
 
 .nk-chip-pads,
@@ -398,9 +385,9 @@ html[data-motion="off"] .nk-boot {
 
 .nk-chip-headband {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: var(--nk-pin-lead);
+  left: var(--nk-pin-lead);
+  right: var(--nk-pin-lead);
   z-index: 3;
   height: var(--nk-title-h);
   display: flex;
@@ -419,21 +406,8 @@ html[data-motion="off"] .nk-boot {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  clip-path: polygon(
-    var(--nk-chip-cut) 0,
-    100% 0,
-    100% 100%,
-    0 100%,
-    0 var(--nk-chip-cut)
-  );
-  background-color: var(--nk-well);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 4px,
-    rgb(var(--nk-accent-rgb) / 0.1) 4px,
-    rgb(var(--nk-accent-rgb) / 0.1) 8px
-  );
+  background-color: rgb(0 0 0 / 0.28);
+  border-bottom: 1px solid rgb(var(--nk-ink-rgb) / 0.08);
 }
 
 .nk-chip-headband .nk-chip-title {
@@ -480,14 +454,12 @@ html[data-motion="off"] .nk-boot {
 
 .nk-board[data-zoom="overview"] .nk-chip-typecode,
 .nk-board[data-zoom="overview"] .nk-chip-foot,
-.nk-board[data-zoom="overview"] .nk-bind-jack-cap,
-.nk-board[data-zoom="overview"] .nk-port-cap {
+.nk-board[data-zoom="overview"] .nk-bind-jack-cap {
   visibility: hidden;
 }
 
 .nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-typecode,
-.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot,
-.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-port-cap {
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot {
   visibility: visible;
 }
 
@@ -583,39 +555,46 @@ html[data-motion="off"] .nk-boot {
   background: transparent;
   cursor: crosshair;
 }
-.nk-port-west {
-  left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-}
-.nk-port-east {
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
+.nk-port-west,
+.nk-port-east,
+.nk-port-south {
+  transform: translate(-50%, -50%);
   z-index: 10;
 }
 .nk-port-contact {
   display: block;
+  width: 10px;
+  height: 4px;
+  margin: 10px auto;
+  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.28),
+    0 0 0 1px rgb(0 0 0 / 0.55);
+  border-radius: 1px;
+}
+.nk-port-south .nk-port-contact {
   width: 4px;
-  height: 14px;
-  margin: 5px auto;
-  background: var(--nk-accent);
-  box-shadow: 0 0 8px var(--nk-accent);
+  height: 10px;
+  margin: 7px auto;
 }
 .nk-port-mod .nk-port-contact {
-  background: var(--nk-cyan);
-  box-shadow: 0 0 8px var(--nk-cyan);
+  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
 }
 .nk-port-sc .nk-port-contact {
-  background: var(--nk-warn);
-  box-shadow: 0 0 8px var(--nk-warn);
+  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
 }
 .nk-port:hover .nk-port-contact,
 .nk-port:focus .nk-port-contact,
 .nk-port-hot .nk-port-contact {
-  box-shadow: 0 0 14px currentColor;
-  filter: brightness(1.4);
+  background: var(--nk-accent);
+  box-shadow: 0 0 8px var(--nk-accent);
+  filter: brightness(1.15);
+}
+.nk-port-mod:hover .nk-port-contact,
+.nk-port-mod:focus .nk-port-contact,
+.nk-port-mod.nk-port-hot .nk-port-contact {
+  background: var(--nk-cyan);
+  box-shadow: 0 0 8px var(--nk-cyan);
 }
 
 .nk-port-cap {
@@ -630,6 +609,7 @@ html[data-motion="off"] .nk-boot {
   white-space: nowrap;
   pointer-events: none;
   line-height: 1;
+  visibility: hidden;
 }
 .nk-port-west .nk-port-cap,
 .nk-port-east .nk-port-cap {
@@ -639,12 +619,6 @@ html[data-motion="off"] .nk-boot {
 }
 .nk-port-west .nk-port-cap { left: 8px; }
 .nk-port-east .nk-port-cap { right: 8px; }
-
-.nk-port-south {
-  left: 0;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
 
 .nk-port-south .nk-port-cap {
   top: auto;
@@ -714,10 +688,10 @@ html[data-motion="off"] .nk-boot {
 
 .nk-chip-body {
   position: absolute;
-  top: var(--nk-title-h);
-  right: var(--nk-label-col);
-  bottom: var(--nk-south-gap);
-  left: var(--nk-label-col);
+  top: calc(var(--nk-pin-lead) + var(--nk-title-h));
+  right: var(--nk-pin-lead);
+  bottom: calc(var(--nk-pin-lead) + var(--nk-foot-h));
+  left: var(--nk-pin-lead);
   z-index: 2;
   overflow: hidden;
   box-sizing: border-box;
@@ -2565,11 +2539,22 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-chip-typecode {
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--nk-ink-soft);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--nk-ink-muted);
   line-height: 1;
   text-transform: uppercase;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 7.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nk-chip-headband .nk-chip-typecode {
+  position: relative;
+  z-index: 1;
 }
 
 .nk-chip-headband .nk-env-lamp,
@@ -2597,15 +2582,18 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-chip-foot {
   position: absolute;
-  left: var(--nk-pad-left);
-  right: var(--nk-pad-right);
-  bottom: var(--nk-south-gap);
+  left: var(--nk-pin-lead);
+  right: var(--nk-pin-lead);
+  bottom: var(--nk-pin-lead);
+  height: var(--nk-foot-h);
   z-index: 2;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--nk-sock-gap);
   margin: 0;
+  padding: 0 var(--nk-chip-pad-x) 2px;
+  box-sizing: border-box;
   pointer-events: none;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10px;

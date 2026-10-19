@@ -23,13 +23,12 @@ describe("Circuit / Terminal CSS inventory", () => {
   });
 
   it("keeps live chip chrome on theme variables", () => {
-    expect(css).toMatch(/\.nk-board-chip\[data-kind="audio"\][^{]*\{[^}]*var\(--nk-accent\)/s);
-    expect(css).toMatch(/\.nk-board-chip\[data-kind="mod"\][^{]*\{[^}]*var\(--nk-cyan\)/s);
-    expect(css).toMatch(/\.nk-chip-fill\s*\{[^}]*background:\s*var\(--nk-surface\)/s);
+    expect(css).toMatch(/\.nk-chip-fill\s*\{[^}]*var\(--nk-surface\)/s);
+    expect(css).toMatch(/\.nk-chip-fill\s*\{[^}]*inset:\s*var\(--nk-pin-lead\)/s);
     expect(css).toContain('[data-focus="sharp"]');
     expect(css).toContain("var(--nk-surface-high)");
     expect(css).toContain('.nk-board[data-zoom="overview"] .nk-chip-typecode');
-    expect(css).toContain('.nk-board[data-zoom="overview"] .nk-port-cap');
+    expect(css).toMatch(/\.nk-port-cap\s*\{[^}]*visibility:\s*hidden/s);
     expect(css).toContain('.nk-board[data-zoom="overview"] .nk-face-plot');
   });
 });
