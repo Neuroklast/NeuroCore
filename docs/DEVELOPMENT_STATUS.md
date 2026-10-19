@@ -1,40 +1,44 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-19 (0.7.0-beta)  
-**Version:** 0.7.0-beta  
-**Branch:** `feat/ic-chip`
+**Stand:** 2026-10-19 (0.7.1-beta)  
+**Version:** 0.7.1-beta  
+**Branch:** `feat/v0.7.1-beta`
+
+## 0.7.1-beta (2026-10-19)
+
+Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes are gunmetal ICs (224×192, grow from jacks, metal pins). Typecode and chip feet use `--nk-ink-soft`.
 
 ## Circuit IC chip geometry (2026-10-19)
 
-Closed nodes are gunmetal ICs, not 128 px compact plates. Shared metrics (`chipMetrics` / `chipBox` / `chipZones` / `portLayout`) size a normal DSP chip at 224×192 and grow from west/east/south jack counts. The body is inset `PIN_LEAD`; jack centres stay on the AABB. Idle pins are metal; hatch and truncated port caps are gone. Compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap; A* may leave north/south when the forced-east stub is a foreign runway. Version stays 0.7.0-beta.
+Closed nodes are gunmetal ICs, not 128 px compact plates. Shared metrics (`chipMetrics` / `chipBox` / `chipZones` / `portLayout`) size a normal DSP chip at 224×192 and grow from west/east/south jack counts. The body is inset `PIN_LEAD`; jack centres stay on the AABB. Idle pins are metal; hatch and truncated port caps are gone. Compact rows pack at fat air (`CHIP_AIR_X * 2`) and wrap; A* may leave north/south when the forced-east stub is a foreign runway. Version stays 0.7.1-beta.
 
 ## Circuit secondary ink (2026-10-19)
 
-Typecode and chip feet use `--nk-ink-soft`. Title stays `--nk-ink`. `--nk-ink-muted` stays for de-emphasized chrome. Closed port caps stay hidden. Version stays 0.7.0-beta.
+Typecode and chip feet use `--nk-ink-soft`. Title stays `--nk-ink`. `--nk-ink-muted` stays for de-emphasized chrome. Closed port caps stay hidden. Version stays 0.7.1-beta.
 
 ## Circuit chip foot honesty (2026-10-19)
 
-Chip foot reads `nodeMeter`. No tap prints `—`. A measured peak at or below −60 dBFS prints `still`. Audible prints live dB. Missing clips are no longer coalesced to `0`. Version stays 0.7.0-beta.
+Chip foot reads `nodeMeter`. No tap prints `—`. A measured peak at or below −60 dBFS prints `still`. Audible prints live dB. Missing clips are no longer coalesced to `0`. Version stays 0.7.1-beta.
 
 ## Circuit semantic zoom (2026-10-19)
 
-Overview (`data-zoom`) hides port captions, typecode, foot, and south bind labels on idle chips, and paints a reduced face glyph (no axis grid, thicker stroke). The title and jack contacts stay. Selected chips show typecode, foot, and port captions. AABB and jack locals do not move. Version stays 0.7.0-beta.
+Overview (`data-zoom`) hides port captions, typecode, foot, and south bind labels on idle chips, and paints a reduced face glyph (no axis grid, thicker stroke). The title and jack contacts stay. Selected chips show typecode, foot, and port captions. AABB and jack locals do not move. Version stays 0.7.1-beta.
 
 ## Circuit serial hops (2026-10-19)
 
-West, east, and south occupancy is counted per face after hydrate. `graphToLayout.ins` are west only, so a 1-in-1-out chip shares the vertical midline. Compact already jack-rail-aligns, so Drone Low Bed serial hops (`IN → octaver → filter → reverb → OUT`) are a straight east run (`countCorners === 0`). A catalog param that reuses an audio jack id (OTT detector `in`) does not replace the west socket. Version stays 0.7.0-beta.
+West, east, and south occupancy is counted per face after hydrate. `graphToLayout.ins` are west only, so a 1-in-1-out chip shares the vertical midline. Compact already jack-rail-aligns, so Drone Low Bed serial hops (`IN → octaver → filter → reverb → OUT`) are a straight east run (`countCorners === 0`). A catalog param that reuses an audio jack id (OTT detector `in`) does not replace the west socket. Version stays 0.7.1-beta.
 
 ## Circuit chip zones (2026-10-19)
 
-Closed chips own exclusive zones: title (mute/solo), west/east audio rails, NodeFace well, south param rail (`chipZones`). Catalog param keys are `kind: "param"` and sit on the south edge; they do not pack onto the IN rail. Outer AABB stays the compact DSP plate. Version stays 0.7.0-beta.
+Closed chips own exclusive zones: title (mute/solo), west/east audio rails, NodeFace well, south param rail (`chipZones`). Catalog param keys are `kind: "param"` and sit on the south edge; they do not pack onto the IN rail. Outer AABB stays the compact DSP plate. Version stays 0.7.1-beta.
 
 ## Circuit overlay camera lock (2026-10-19)
 
-Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Wheel over `.nk-ctx` / Add list scrolls the overlay (`wheelOwnsZoom`); Add search focuses with `preventScroll`. A late `layoutBoard` reply skips `fitCamera` while an overlay is open or after the camera already moved (`shouldFitCameraOnLateLayout`). Commanded Arrange/Compact may still fit. Version stays 0.7.0-beta.
+Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Wheel over `.nk-ctx` / Add list scrolls the overlay (`wheelOwnsZoom`); Add search focuses with `preventScroll`. A late `layoutBoard` reply skips `fitCamera` while an overlay is open or after the camera already moved (`shouldFitCameraOnLateLayout`). Commanded Arrange/Compact may still fit. Version stays 0.7.1-beta.
 
 ## Circuit pane coordinates (2026-10-19)
 
-Pointer, wheel, drag, bind-aim, and context-menu anchors convert `clientX/Y` through `clientToPane` (stage CSS pixels). `menuPos` uses the same converter. Graph camera stays a second matrix on `.nk-board-world`. Overlay flip/shift and Add-list wheel isolation are in. Version stays 0.7.0-beta.
+Pointer, wheel, drag, bind-aim, and context-menu anchors convert `clientX/Y` through `clientToPane` (stage CSS pixels). `menuPos` uses the same converter. Graph camera stays a second matrix on `.nk-board-world`. Overlay flip/shift and Add-list wheel isolation are in. Version stays 0.7.1-beta.
 
 ## 0.7.0-beta (2026-10-19)
 
