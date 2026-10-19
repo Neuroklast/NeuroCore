@@ -41,4 +41,4 @@ This environment used Chromium 153 with software rendering through `NK_CHROMIUM`
 
 ## Publication
 
-The implementation is committed locally on `fix/circuit-visual-recovery`. Automatic approval review rejected publication to the public GitHub remote, requiring explicit end-user authorization for that destination and payload. No push or PR was completed.
+The implementation is on `fix/circuit-visual-recovery`. The user explicitly authorized publishing the prepared branch to `Neuroklast/NeuroCore` and merging its PR. Native host validation remains pending; merging this web change is not native release certification.

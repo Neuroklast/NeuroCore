@@ -8,4 +8,4 @@ Screenshots and full provenance: `docs/evidence/circuit-recovery/README.md`.
 
 Validation: production build/TypeScript passed. Browser runs: 12 passed total, 2 existing density variants skipped. Assembly/theme suite: 468 passed and 4 pre-existing failures, independently reproduced on main. DOM collision, clipping, resize, zoom, four themes, three presets, context-menu camera lock, Source Inspector and real-pointer modulation magnet tests are covered. Native WebView2/DAW and native compilation/persistence of the new modulation connection remain pending.
 
-Keep this PR in draft until visual review and native host validation are complete.
+The user requested this PR be published and merged. Native host validation remains pending and is not claimed by this merge.
