@@ -65,7 +65,6 @@ export function ChipShell({
       data-audible={audible ? "on" : "off"}
       style={{
         ...style,
-        opacity: audible ? 1 : 0.4,
         overflow: "visible",
         ...({ "--nk-chip-cut": `${frameCut}px` } as CSSProperties),
       }}

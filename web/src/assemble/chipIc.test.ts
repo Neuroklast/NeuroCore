@@ -123,7 +123,7 @@ describe("IC chip geometry", () => {
     }
   });
 
-  it("parks IN/OUT as smaller IC tiles of the same height family", () => {
+  it("parks IN/OUT as compact connector housings", () => {
     const inn = chipBox("in", [audio("out", true), audio("sc", true)], false, {});
     const out = chipBox("out", [audio("in", false)], false, {});
     const dsp = dspFaceSize();
@@ -131,7 +131,7 @@ describe("IC chip geometry", () => {
     expect(inn.w).toBeGreaterThanOrEqual(160);
     expect(inn.w).toBeLessThan(dsp.w);
     expect(out.h).toBe(IO_H);
-    expect(inn.h).toBeGreaterThanOrEqual(192);
+    expect(inn.h).toBe(160);
     expect(ioFaceSize(1).h).toBe(IO_H);
   });
 });

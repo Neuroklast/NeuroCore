@@ -27,17 +27,17 @@ describe("side port pack", () => {
     }
     const io2 = ioFaceSize(2);
     expect(io2.h).toBeGreaterThanOrEqual(sidePortMinHeight(2));
-    const inn = sidePortLocals(2, io2, true);
+    const inn = sidePortLocals(2, io2, true, "io");
     expect(inn[0]!.y).toBeGreaterThanOrEqual(TITLE_H);
     expect(inn[1]!.y).toBeLessThanOrEqual(io2.h - CHIP_PAD_Y);
-    expect(inn[1]!.y - inn[0]!.y).toBe(FORK_PITCH);
+    expect(inn[1]!.y - inn[0]!.y).toBe(BOARD_GRID);
     expect(onCellCenter(inn[0]!.y), "IN.out on a cell midline").toBe(true);
     expect(onCellCenter(inn[1]!.y), "IN.sc on a cell midline").toBe(true);
     expect(inn[0]!.y).toBeGreaterThanOrEqual(BOARD_TRACE / 2);
     expect(inn[1]!.y + BOARD_TRACE / 2).toBeLessThanOrEqual(io2.h);
     const io3 = ioFaceSize(3);
     expect(io3.h).toBeGreaterThanOrEqual(sidePortMinHeight(3));
-    const out3 = sidePortLocals(3, io3, false);
+    const out3 = sidePortLocals(3, io3, false, "io");
     expect(out3).toHaveLength(3);
     for (const p of out3) {
       expect(p.y).toBeGreaterThanOrEqual(BOARD_HALF);

@@ -44,7 +44,7 @@ describe("chip pad field", () => {
     expect(dsp.right).toBe(PIN_LEAD);
     expect(dsp.top).toBe(PIN_LEAD + TITLE_H + TECHNICAL_H);
     expect(dsp.bottom).toBe(PIN_LEAD + FOOT_H + PARAMETER_H);
-    expect(io).toEqual(dsp);
+    expect(io).toEqual({ ...dsp, bottom: PIN_LEAD + FOOT_H });
   });
 });
 
@@ -197,13 +197,13 @@ describe("chip face, labels, copy", () => {
     expect(col).toBeGreaterThanOrEqual("OUT".length * CHAR_PX + DETAIL_HIT);
   });
 
-  it("parks IN and OUT as smaller IC tiles of the same height family", () => {
+  it("parks IN and OUT as compact connector housings", () => {
     const inn = chipBox("in", [audio("out", true)], false, {});
     const out = chipBox("out", [audio("in", false)], false, {});
     const dsp = dspFaceSize();
     expect(inn).toEqual(ioFaceSize());
     expect(out).toEqual(inn);
-    expect(inn.h).toBe(dsp.h);
+    expect(inn.h).toBeLessThan(dsp.h);
     expect(inn.w).toBeLessThan(dsp.w);
   });
 

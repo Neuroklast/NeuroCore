@@ -41,6 +41,7 @@ export function sidePortLocals(
   count: number,
   box: { w: number; h: number },
   east: boolean,
+  role: "io" | "chip" = "chip",
 ): PortLocal[] {
   const n = Math.max(0, Math.floor(count));
   if (n === 0) {
@@ -50,12 +51,13 @@ export function sidePortLocals(
   if (n === 1) {
     return [{ x, y: snapToCellCenter(box.h * 0.5) }];
   }
-  const band = sideJackBand(box.h);
-  const pitch = sideJackPitch(n, band.innerH);
-  return Array.from({ length: n }, (_, i) => ({
-    x,
-    y: snapToCellCenter(band.mid + (i - (n - 1) / 2) * pitch),
-  }));
+  const band = sideJackBand(box.h, role);
+  const pitch = sideJackPitch(n, band.innerH - 24);
+  const firstMin = Math.ceil((band.top + 12 - BOARD_HALF) / BOARD_GRID) * BOARD_GRID + BOARD_HALF;
+  const lastMax = Math.floor((band.top + band.innerH - 12 - BOARD_HALF) / BOARD_GRID) * BOARD_GRID + BOARD_HALF;
+  const start = Math.max(firstMin, Math.min(lastMax - (n - 1) * pitch,
+    snapToCellCenter(band.mid - (n - 1) * pitch / 2)));
+  return Array.from({ length: n }, (_, i) => ({ x, y: start + i * pitch }));
 }
 
 export function globalPort(

@@ -8,6 +8,12 @@
 
 Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes restore the dotted, cut-corner IC identity with separate name, control, function and parameter/status bands. Typecode and chip feet use `--nk-ink-soft`.
 
+## Circuit hardware finish (2026-10-19)
+
+Shared gunmetal paint now uses directional facets, recessed controls, metal contacts and a bounded central dot field. Typecode is 11 px; minimum width includes its actual string and controls. Muting no longer fades identification. IO housings start at 160×160; role-aware signal bands contain the complete pin hit areas. Numeric bindable parameters occupy the south rail; enum/routing fields stay in Inspect. No DSP or product-version change.
+
+Compact packs each row from its own widths instead of stretching columns across rows. It reserves terminal room when a useful first pair still fits and aligns OUT to its incoming source where possible. Existing manual positions and camera interaction paths are unchanged. Validation and screenshots are recorded in `docs/evidence/circuit-hardware/README.md`; native DAW/WebView2 validation remains pending.
+
 ## Circuit visual recovery (2026-10-19)
 
 The current implementation restores the historical cut-corner IC contour and dotted surface through a shared `ChipChrome`. Effect names use 16 px lettering in their own name row. Typecode, mute/solo, Inspect and any macro-only expression fields occupy a separate technical row. Calculated NodeFaces remain, subdued at rest and clearer on focus/selection; the competing axis grids are removed. Full parameter captions and macro binding endpoints share one reserved band, above the honest node ID/live-level foot. Parameter jacks and captions share actual snapped anchors. The base is 224×256, growing in width from full captions/identity and in height from side-jack demand. Pins stay metal unless connected to a measured source signal. Warning marks still require real overloads.

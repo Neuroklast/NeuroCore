@@ -267,41 +267,27 @@ html[data-motion="off"] .nk-boot {
   inset: var(--nk-pin-lead);
   z-index: 0;
   background:
-    linear-gradient(
-      165deg,
-      rgb(var(--nk-ink-rgb) / 0.12) 0%,
-      var(--nk-surface) 42%,
-      var(--nk-bg) 100%
-    );
+    linear-gradient(118deg, rgb(255 255 255 / .045), transparent 38%),
+    linear-gradient(165deg, #30363b 0%, #171d22 18%, #101519 62%, #080c10 100%);
   box-shadow:
-    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.14),
-    inset 0 -2px 6px rgb(0 0 0 / 0.55),
-    inset 1px 0 0 rgb(var(--nk-ink-rgb) / 0.04),
-    0 0 0 1px rgb(0 0 0 / 0.65);
+    inset 0 2px 1px rgb(255 255 255 / .16),
+    inset 2px 0 1px rgb(255 255 255 / .06),
+    inset 0 -5px 9px rgb(0 0 0 / .65);
   clip-path: polygon(var(--nk-chip-cut) 0, 100% 0, 100% calc(100% - var(--nk-chip-cut)), calc(100% - var(--nk-chip-cut)) 100%, 0 100%, 0 var(--nk-chip-cut));
 }
 
-.nk-board-chip[data-depth="2"] .nk-chip-fill,
-.nk-board-chip[data-selected="on"] .nk-chip-fill,
-.nk-board-chip[data-focus="sharp"] .nk-chip-fill {
-  background:
-    linear-gradient(
-      165deg,
-      rgb(var(--nk-ink-rgb) / 0.16) 0%,
-      var(--nk-surface-high) 40%,
-      var(--nk-surface) 100%
-    );
+.nk-chip-fill::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgb(255 255 255 / .035);
+  clip-path: inherit;
+  pointer-events: none;
 }
-
-.nk-board-chip[data-depth="3"] .nk-chip-fill {
-  background:
-    linear-gradient(
-      165deg,
-      rgb(var(--nk-ink-rgb) / 0.1) 0%,
-      var(--nk-well-high) 45%,
-      var(--nk-bg) 100%
-    );
+.nk-board-chip[data-selected="on"] .nk-chip-fill {
+  box-shadow: inset 0 2px 1px rgb(255 255 255 / .2), inset 0 -5px 9px rgb(0 0 0 / .65);
 }
+.nk-chip-facets { pointer-events: none; }
 
 .nk-chip-pads,
 .nk-node-face {
@@ -315,15 +301,26 @@ html[data-motion="off"] .nk-boot {
 }
 
 .nk-node-face {
-  opacity: 0.28;
+  opacity: 0.32;
 }
 .nk-board-chip[data-depth="2"] .nk-node-face {
-  opacity: 0.75;
+  opacity: 0.58;
+}
+.nk-board-chip[data-audible="off"] .nk-node-face,
+.nk-board-chip[data-audible="off"] .nk-chip-pads {
+  opacity: .18;
 }
 
 .nk-chip-pads {
-  background-image: radial-gradient(circle, var(--nk-ink-muted) 0.7px, transparent 0.85px);
-  background-size: var(--nk-chip-pad-y) var(--nk-chip-pad-y);
+  top: calc(var(--nk-pad-top) + 14px);
+  bottom: calc(var(--nk-pad-bottom) + 14px);
+  left: calc(var(--nk-pad-left) + 36px);
+  right: calc(var(--nk-pad-right) + 36px);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--nk-ink) 32%, transparent) .65px, transparent .85px);
+  background-size: 12px 12px;
+  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--nk-ink) 4%, transparent);
+  border-bottom: 1px solid rgb(0 0 0 / .4);
 }
 
 .nk-face-plot {
@@ -387,7 +384,7 @@ html[data-motion="off"] .nk-boot {
   z-index: 0;
   pointer-events: none;
   background-color: rgb(0 0 0 / 0.28);
-  border-bottom: 1px solid rgb(var(--nk-ink-rgb) / 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--nk-ink) 8%, transparent);
 }
 
 .nk-chip-headband .nk-chip-title {
@@ -397,7 +394,7 @@ html[data-motion="off"] .nk-boot {
   display: flex;
   align-items: center;
   color: var(--nk-ink);
-  text-shadow: 0 0 6px var(--nk-accent-deep), 0 1px 0 var(--nk-accent-deep);
+  text-shadow: 0 1px 1px rgb(0 0 0 / .9);
 }
 
 .nk-chip-ms {
@@ -445,6 +442,13 @@ html[data-motion="off"] .nk-boot {
   align-items: center;
   justify-content: center;
   line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--nk-ink) 12%, transparent);
+  background: linear-gradient(#272e33, #12181c);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 1px 2px rgb(0 0 0 / .65);
+}
+.nk-chip-subheader .nk-ms:hover,
+.nk-chip-subheader .nk-chip-expand:hover {
+  border-color: var(--nk-ink-soft);
 }
 .nk-chip-parameters {
   position: absolute;
@@ -601,25 +605,17 @@ html[data-motion="off"] .nk-boot {
 }
 .nk-port-contact {
   display: block;
-  width: 10px;
-  height: 4px;
-  margin: 10px auto;
-  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
-  box-shadow:
-    inset 0 1px 0 rgb(var(--nk-ink-rgb) / 0.28),
-    0 0 0 1px rgb(0 0 0 / 0.55);
+  width: 16px;
+  height: 6px;
+  margin: 9px auto;
+  background: linear-gradient(180deg, var(--nk-ink-soft) 0%, #657179 28%, #35424b 60%, #737f85 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 2px 2px rgb(0 0 0 / .8);
   border-radius: 1px;
 }
 .nk-port-south .nk-port-contact {
-  width: 4px;
-  height: 10px;
-  margin: 7px auto;
-}
-.nk-port-mod .nk-port-contact {
-  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
-}
-.nk-port-sc .nk-port-contact {
-  background: linear-gradient(180deg, var(--nk-ink-soft), var(--nk-line));
+  width: 6px;
+  height: 16px;
+  margin: 4px auto;
 }
 .nk-port[data-signal="on"] .nk-port-contact,
 .nk-port:hover .nk-port-contact,
@@ -2581,7 +2577,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-chip-typecode {
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--nk-ink-soft);
   line-height: 1;
