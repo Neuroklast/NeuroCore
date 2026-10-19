@@ -15,4 +15,8 @@ describe("calculated LFO waveform", () => {
     expect(lfoFaceModel({ shape: "sine", freq: "1", sync: "1/4" }).hz).toBeCloseTo(2);
     expect(lfoFaceModel({ shape: "sine", freq: "3", sync: "off" }).hz).toBeCloseTo(3);
   });
+
+  it("uses FaceHost bpm for sync notes", () => {
+    expect(lfoFaceModel({ shape: "sine", freq: "1", sync: "1/4" }, { bpm: 80 }).hz).toBeCloseTo(80 / 60);
+  });
 });

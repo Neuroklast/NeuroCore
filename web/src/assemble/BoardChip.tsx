@@ -23,8 +23,6 @@ import { NodeFace } from "./nodeFace/NodeFace";
 import { chipDepth } from "./nodeFace/chipChrome";
 import { faceKindForType } from "./nodeFace/faceKind";
 
-const NO_KNOBS: Array<{ id: string; value: number; min: number; max: number; isNote?: boolean }> = [];
-
 export function BoardChip({
   node,
   ports,
@@ -45,8 +43,9 @@ export function BoardChip({
   const isMuted = useChipViewStore((s) => s.isMuted(node.id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(node.id));
   const isAudible = useChipViewStore((s) => s.isAudible(node.id));
-  const knobs = useHostStore((s) => (node.type === "osc" ? s.knobs : NO_KNOBS));
+  const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
+  const sr = useHostStore((s) => s.sr);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const chrome = closedChipChrome(node.type, node.id);
@@ -122,7 +121,7 @@ export function BoardChip({
           : {}),
       }}
     >
-      {node.role === "chip" ? <NodeFace kind={kind} type={node.type} args={node.args} /> : null}
+      <NodeFace kind={kind} type={node.type} args={node.args} id={node.id} host={{ knobs, bpm, sr }} />
       {bindRailVisible(bindOpen, binds) ? (
         <BindRail
           nodeId={node.id}

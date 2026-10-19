@@ -1,6 +1,6 @@
 # Industrial Signal Laboratory
 
-Binding visual contracts for Circuit and Terminal. Product version stays **0.6.10-beta**. Circuit stays a headless graph (`boardStore` + DOM chips + one cable canvas). One Monaco document (`PATCH_MODEL_URI`).
+Binding visual contracts for Circuit and Terminal. Product version stays **0.7.0-beta**. Circuit stays a headless graph (`boardStore` + DOM chips + one cable canvas). One Monaco document (`PATCH_MODEL_URI`).
 
 Read this after `docs/agents/ui-ux.md` when changing chip faces, Terminal panes, or board tokens.
 
@@ -21,10 +21,10 @@ Tokens: `SIGNAL_LAB` in `web/src/theme/signalLab.ts`. Colours stay `themeOf()` /
 
 | Family | Closed glyph (target) | Data |
 |---|---|---|
-| filter (filter, eq) | frequency response | ChipSpec type/cutoff/Q. Label as a **calculated** curve until a native tap exists. |
-| reverb | decay envelope | size, decay, damp, mix. Not a measured IR. |
-| delay | echo taps | time, sync, feedback. Host-sync when `sync` is on. |
-| lfo | waveform | existing `lfoLamp` / native shape + Hz. |
+| filter (filter, eq) | frequency response | ChipSpec type/cutoff/Q plus FaceHost knobs. EQ uses host sample rate. Label as a **calculated** curve until a native tap exists. |
+| reverb | decay envelope | size, decay, damp, mix from FaceHost. Not a measured IR. |
+| delay | echo taps | time, sync, feedback. Sync notes use host BPM (120 when missing). |
+| lfo | waveform | existing `lfoLamp` / native shape + Hz. Sync notes use host BPM. |
 | env | envelope | attack, hold, release. Parameter curve vs live activity are separate. |
 | pitch (octaver, pitch, vocoder) | interval mix | sub / up / mix. No fake spectrum. |
 | dynamics | transfer curve | threshold, ratio, knee, ceiling from ChipSpec. GR meter only with a real tap. |
@@ -69,4 +69,4 @@ Real node ids, parameters, and taps only. DSP chips with no waveform tap stay **
 
 ## PR sequence
 
-A baseline / contracts (this file) → B shared module chrome → C functional faces (filter/reverb) → C2 delay/LFO/dynamics → **C3 env envelope, pitch intervals, drive transfer** → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.
+A baseline / contracts (this file) → B shared module chrome → C functional faces (filter/reverb) → C2 delay/LFO/dynamics → C3 env envelope, pitch intervals, drive transfer → **C4 routing map, modfx waveform, cab mix, io jack, utility params** → D layout / cables → E Terminal workspace → F Circuit×Terminal UX → G motion → H layout/perf hardening → I native DAW.

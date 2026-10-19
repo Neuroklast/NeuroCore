@@ -1,7 +1,7 @@
 import { parseNoteToken, wholeToMs } from "../../chrome/noteValue";
-import { FACE_BPM, parseFaceNumber, parseFaceToken } from "./faceArgs";
+import { faceBpm, parseFaceNumber, parseFaceToken, resolveFaceScalar, type FaceHost } from "./faceArgs";
 
-/** Engine `Delay::kMaxDelaySec`. Sync uses host default 120 BPM when the chip does not subscribe. */
+/** Engine `Delay::kMaxDelaySec`. Sync notes use FaceHost bpm (else 120). */
 export const DELAY_TIME_MIN = 0.1;
 export const DELAY_TIME_MAX = 2000;
 export const DELAY_FB_MAX = 0.95;
@@ -23,30 +23,30 @@ function isSyncOff(raw: string): boolean {
   return ! t || t === "off" || t === "0" || t === "false" || t === "none";
 }
 
-function msFromToken(raw: string | undefined, fallback: number): number {
+function msFromToken(raw: string | undefined, fallback: number, host?: FaceHost): number {
   const t = (raw ?? "").trim();
   if (! t) {
     return fallback;
   }
-  const n = Number(t);
-  if (Number.isFinite(n)) {
+  const n = resolveFaceScalar(t, host);
+  if (n != null) {
     return Math.min(DELAY_TIME_MAX, Math.max(DELAY_TIME_MIN, n));
   }
   const whole = parseNoteToken(t);
   if (whole != null) {
-    return Math.min(DELAY_TIME_MAX, Math.max(DELAY_TIME_MIN, wholeToMs(whole, FACE_BPM)));
+    return Math.min(DELAY_TIME_MAX, Math.max(DELAY_TIME_MIN, wholeToMs(whole, faceBpm(host))));
   }
   return fallback;
 }
 
-export function delayFaceModel(args: Record<string, string>): DelayFaceModel {
+export function delayFaceModel(args: Record<string, string>, host?: FaceHost): DelayFaceModel {
   const syncRaw = parseFaceToken(args.sync, "off");
   const synced = ! isSyncOff(syncRaw);
-  const timeMs = synced ? msFromToken(args.sync, 250) : msFromToken(args.time ?? args.time_ms, 250);
+  const timeMs = synced ? msFromToken(args.sync, 250, host) : msFromToken(args.time ?? args.time_ms, 250, host);
   return {
     timeMs,
-    feedback: parseFaceNumber(args.feedback, 0.25, 0, DELAY_FB_MAX),
-    mix: parseFaceNumber(args.mix, 0.3, 0, 1),
+    feedback: parseFaceNumber(args.feedback, 0.25, 0, DELAY_FB_MAX, host),
+    mix: parseFaceNumber(args.mix, 0.3, 0, 1, host),
     synced,
     pingpong: parseFaceToken(args.pingpong, "off") === "on" || parseFaceToken(args.pingpong, "off") === "true",
   };
@@ -55,8 +55,8 @@ export function delayFaceModel(args: Record<string, string>): DelayFaceModel {
 export type DelayTap = { t: number; amp: number };
 
 /** Dry at 0, then wet · fb^(n−1) at n · time. Matches Delay::process write/read. */
-export function delayTaps(args: Record<string, string>): DelayTap[] {
-  const m = delayFaceModel(args);
+export function delayTaps(args: Record<string, string>, host?: FaceHost): DelayTap[] {
+  const m = delayFaceModel(args, host);
   const taps: DelayTap[] = [{ t: 0, amp: 1 - m.mix }];
   if (m.mix <= 0 || m.timeMs <= 0) {
     return taps;
@@ -71,8 +71,8 @@ export function delayTaps(args: Record<string, string>): DelayTap[] {
   return taps;
 }
 
-export function delayTapsPath(args: Record<string, string>): string {
-  const taps = delayTaps(args);
+export function delayTapsPath(args: Record<string, string>, host?: FaceHost): string {
+  const taps = delayTaps(args, host);
   return taps.map((tap, i) => {
     const x = (VIEW_W * tap.t) / DELAY_TIME_AXIS;
     const y = VIEW_H - VIEW_H * Math.min(1, Math.max(0, tap.amp));
@@ -80,8 +80,8 @@ export function delayTapsPath(args: Record<string, string>): string {
   }).join(" ");
 }
 
-export function delayStemLines(args: Record<string, string>): Array<{ x: number; y1: number }> {
-  return delayTaps(args).map((tap) => ({
+export function delayStemLines(args: Record<string, string>, host?: FaceHost): Array<{ x: number; y1: number }> {
+  return delayTaps(args, host).map((tap) => ({
     x: (VIEW_W * tap.t) / DELAY_TIME_AXIS,
     y1: VIEW_H - VIEW_H * Math.min(1, Math.max(0, tap.amp)),
   }));

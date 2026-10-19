@@ -38,6 +38,10 @@ describe("shared chip chrome", () => {
     expect(chipBox("env", [], false, {})).toEqual(face);
     expect(chipBox("octaver", [], false, {})).toEqual(face);
     expect(chipBox("stage", [], false, {})).toEqual(face);
+    expect(chipBox("phaser", [], false, {})).toEqual(face);
+    expect(chipBox("ir", [], false, {})).toEqual(face);
+    expect(chipBox("width", [], false, {})).toEqual(face);
+    expect(chipBox("utility", [], false, {})).toEqual(face);
     expect(face.w % 32).toBe(0);
     expect(face.h % 32).toBe(0);
   });
@@ -72,8 +76,15 @@ describe("shared chip chrome", () => {
     expect(nodeFace).toContain("EnvFace");
     expect(nodeFace).toContain("PitchFace");
     expect(nodeFace).toContain("DriveFace");
+    expect(nodeFace).toContain("RoutingFace");
+    expect(nodeFace).toContain("ModfxFace");
+    expect(nodeFace).toContain("CabFace");
+    expect(nodeFace).toContain("IoFace");
+    expect(nodeFace).toContain("UtilityFace");
     expect(nodeFace).toContain("args");
     expect(boardChip).toContain("args={node.args}");
+    expect(boardChip).toContain("id={node.id}");
+    expect(boardChip).not.toMatch(/role === "chip" \? <NodeFace/);
     expect(nodeFace).not.toMatch(/switch\s*\(/);
   });
 });

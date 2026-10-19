@@ -70,6 +70,9 @@ test.describe("signal lab shared module chrome", () => {
     expect(reverbD && reverbD.length > 8).toBe(true);
     expect(filterD).not.toBe(reverbD);
     await expect(reverb.locator("[data-glyph='decay']")).toHaveAttribute("data-decay", "0.95");
+    const size = Number(await reverb.locator("[data-glyph='decay']").getAttribute("data-size"));
+    expect(size).toBeGreaterThan(0.5);
+    expect(size).toBeLessThan(0.7);
     await expect(board).toHaveAttribute("data-zoom", /^(overview|normal|focused)$/);
 
     const titleSize = await filter.locator(".nk-chip-title").evaluate((n) => getComputedStyle(n).fontSize);
@@ -167,6 +170,63 @@ test.describe("signal lab shared module chrome", () => {
     const envD = await env.locator("path[data-curve='envelope']").getAttribute("d");
     expect(envD && envD.length > 8).toBe(true);
     await page.screenshot({ path: path.join(shotDir, "circuit-warehouse-rumble.png"), fullPage: true });
+  });
+
+  test("routing modfx cab and io faces paint calculated glyphs", async ({ page }, info) => {
+    test.skip(info.project.name !== "chromium-1x");
+    test.setTimeout(180000);
+    await page.getByRole("button", { name: "Circuit" }).click();
+    await page.locator(".nk-board").waitFor();
+
+    await loadPreset(page, "Phaser Lab");
+    await page.locator("[data-node-id='phaser1']").waitFor();
+    await waitLayoutIdle(page);
+    const phaser = page.locator("[data-node-id='phaser1']");
+    await expect(phaser).toHaveAttribute("data-face", "modfx");
+    await expect(phaser.locator("path[data-curve='waveform']")).toBeVisible();
+    await expect(phaser.locator("[data-glyph='waveform']")).toHaveAttribute("data-mode", "phaser");
+    await expect(phaser.locator("[data-glyph='waveform']")).toHaveAttribute("aria-label", "calculated modfx waveform");
+    const phaserD = await phaser.locator("path[data-curve='waveform']").getAttribute("d");
+    expect(phaserD && phaserD.length > 8).toBe(true);
+    await page.screenshot({ path: path.join(shotDir, "circuit-phaser-lab.png"), fullPage: true });
+
+    await loadPreset(page, "Mesa High Gain");
+    await page.locator("[data-node-id='ir1']").waitFor();
+    await waitLayoutIdle(page);
+    const cab = page.locator("[data-node-id='ir1']");
+    await expect(cab).toHaveAttribute("data-face", "cab");
+    await expect(cab.locator("path[data-curve='mix']")).toBeVisible();
+    await expect(cab.locator("[data-glyph='mix']")).toHaveAttribute("data-mix", "0.45");
+    await expect(cab.locator("[data-glyph='mix']")).toHaveAttribute("data-slot", "ir1");
+    await expect(cab.locator("[data-glyph='mix']")).toHaveAttribute("aria-label", "calculated cabinet mix");
+
+    await loadPreset(page, "Metal Gate");
+    await page.locator("[data-node-id='widen1']").waitFor();
+    await waitLayoutIdle(page);
+    const width = page.locator("[data-node-id='widen1']");
+    await expect(width).toHaveAttribute("data-face", "routing");
+    await expect(width.locator("path[data-curve='map']")).toBeVisible();
+    await expect(width.locator("[data-glyph='map']")).toHaveAttribute("data-mode", "width");
+    await expect(width.locator("[data-glyph='map']")).toHaveAttribute("aria-label", "calculated routing map");
+    await page.screenshot({ path: path.join(shotDir, "circuit-metal-gate.png"), fullPage: true });
+
+    await loadPreset(page, "Drone Low Bed");
+    await page.locator("[data-node-id='IN']").waitFor();
+    await waitLayoutIdle(page);
+    const inn = page.locator("[data-node-id='IN']");
+    const out = page.locator("[data-node-id='OUT']");
+    await expect(inn).toHaveAttribute("data-face", "io");
+    await expect(out).toHaveAttribute("data-face", "io");
+    await expect(inn.locator("[data-glyph='jack']")).toHaveAttribute("data-outs", "out,sc");
+    await expect(inn.locator("path[data-curve='jack']")).toBeVisible();
+    await expect(out.locator("[data-glyph='jack']")).toHaveAttribute("aria-label", "calculated io jacks");
+    const innJack = inn.locator(".nk-port").first();
+    const jackIdle = await boxOf(innJack);
+    const innBox = await boxOf(inn);
+    await clickChipHeader(page, inn);
+    await expect(inn).toHaveAttribute("data-selected", "on");
+    assertStableHitbox(innBox, await boxOf(inn), "IN AABB on select");
+    assertStableHitbox(jackIdle, await boxOf(innJack), "IN jack on select");
   });
 
   test("hides unreadably small typecode at overview zoom except on the selected chip", async ({ page }, info) => {

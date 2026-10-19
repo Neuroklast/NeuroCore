@@ -1,7 +1,6 @@
-import { parseFaceNumber, parseFaceToken } from "./faceArgs";
+import { FACE_FS, faceSr, parseFaceNumber, parseFaceToken, type FaceHost } from "./faceArgs";
 
-/** Host-rate used for calculated EQ biquads. Not a live tap. */
-export const FACE_FS = 48000;
+export { FACE_FS };
 export const FACE_FMIN = 20;
 export const FACE_FMAX = 20000;
 export const FACE_POINTS = 48;
@@ -166,7 +165,7 @@ function filterMode(chipType: string, args: Record<string, string>): FilterMode 
   return "lowpass";
 }
 
-export function filterFaceModel(chipType: string, args: Record<string, string>): FilterFaceModel {
+export function filterFaceModel(chipType: string, args: Record<string, string>, host?: FaceHost): FilterFaceModel {
   const family = chipType === "eq" ? "eq" : "filter";
   const mode = filterMode(chipType, args);
   const fcKey = family === "eq" ? (args.freq ?? args.cutoff) : (args.cutoff ?? args.center);
@@ -174,17 +173,18 @@ export function filterFaceModel(chipType: string, args: Record<string, string>):
   return {
     family,
     mode,
-    fc: parseFaceNumber(fcKey, 1000, 20, 20000),
-    q: parseFaceNumber(qKey, family === "eq" ? 0.7 : 0.4, 0.1, family === "eq" ? 12 : 4),
-    gainDb: parseFaceNumber(args.gain, 0, -24, 24),
+    fc: parseFaceNumber(fcKey, 1000, 20, 20000, host),
+    q: parseFaceNumber(qKey, family === "eq" ? 0.7 : 0.4, 0.1, family === "eq" ? 12 : 4, host),
+    gainDb: parseFaceNumber(args.gain, 0, -24, 24, host),
   };
 }
 
-export function filterMags(chipType: string, args: Record<string, string>, freqs = logFreqs()): number[] {
-  const m = filterFaceModel(chipType, args);
+export function filterMags(chipType: string, args: Record<string, string>, freqs = logFreqs(), host?: FaceHost): number[] {
+  const m = filterFaceModel(chipType, args, host);
+  const fs = faceSr(host);
   return freqs.map((f) => (
     m.family === "eq"
-      ? eqMag(m.mode, f, m.fc, m.q, m.gainDb)
+      ? eqMag(m.mode, f, m.fc, m.q, m.gainDb, fs)
       : svfMag(m.mode, f, m.fc, m.q)
   ));
 }
@@ -199,6 +199,6 @@ export function pathFromDb(dbs: number[], yMin = DB_MIN, yMax = DB_MAX): string 
   }).join(" ");
 }
 
-export function filterCurvePath(chipType: string, args: Record<string, string>): string {
-  return pathFromDb(filterMags(chipType, args).map(magToDb));
+export function filterCurvePath(chipType: string, args: Record<string, string>, host?: FaceHost): string {
+  return pathFromDb(filterMags(chipType, args, logFreqs(), host).map(magToDb));
 }

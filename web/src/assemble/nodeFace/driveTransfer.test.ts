@@ -27,4 +27,11 @@ describe("calculated drive transfer", () => {
       .toBeLessThan(0.5);
     expect(driveSample("stage", { y: "x" }, 0)).toBe(0);
   });
+
+  it("binds a named-shaper numeric arg from FaceHost and still refuses eval", () => {
+    const host = { knobs: [{ id: "c", value: 1, min: 1, max: 8 }] };
+    expect(driveFaceModel("stage", { y: "diode(x, c)" }).drive).toBe(2);
+    expect(driveFaceModel("stage", { y: "diode(x, c)" }, host).drive).toBe(8);
+    expect(driveFaceModel("stage", { y: "x * (c + 1)" }, host).shaper).toBe("identity");
+  });
 });
