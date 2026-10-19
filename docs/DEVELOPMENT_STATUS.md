@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/cable-elbows`
+**Branch:** `feat/semantic-zoom`
+
+## Circuit semantic zoom (2026-10-19)
+
+Overview (`data-zoom`) hides port captions, typecode, foot, and south bind labels on idle chips, and paints a reduced face glyph (no axis grid, thicker stroke). The title and jack contacts stay. Selected chips show typecode, foot, and port captions. AABB and jack locals do not move. Version stays 0.7.0-beta.
 
 ## Circuit serial hops (2026-10-19)
 

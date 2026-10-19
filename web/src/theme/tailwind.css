@@ -480,13 +480,24 @@ html[data-motion="off"] .nk-boot {
 
 .nk-board[data-zoom="overview"] .nk-chip-typecode,
 .nk-board[data-zoom="overview"] .nk-chip-foot,
-.nk-board[data-zoom="overview"] .nk-bind-jack-cap {
+.nk-board[data-zoom="overview"] .nk-bind-jack-cap,
+.nk-board[data-zoom="overview"] .nk-port-cap {
   visibility: hidden;
 }
 
 .nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-typecode,
-.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot {
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-chip-foot,
+.nk-board[data-zoom="overview"] .nk-board-chip[data-selected="on"] .nk-port-cap {
   visibility: visible;
+}
+
+.nk-board[data-zoom="overview"] .nk-face-plot {
+  border: none;
+  background-image: none;
+}
+
+.nk-board[data-zoom="overview"] .nk-face-plot path {
+  stroke-width: 2.5;
 }
 .nk-source-toggle {
   position: absolute;

@@ -29,5 +29,7 @@ describe("Circuit / Terminal CSS inventory", () => {
     expect(css).toContain('[data-focus="sharp"]');
     expect(css).toContain("var(--nk-surface-high)");
     expect(css).toContain('.nk-board[data-zoom="overview"] .nk-chip-typecode');
+    expect(css).toContain('.nk-board[data-zoom="overview"] .nk-port-cap');
+    expect(css).toContain('.nk-board[data-zoom="overview"] .nk-face-plot');
   });
 });

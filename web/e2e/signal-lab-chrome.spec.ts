@@ -254,11 +254,18 @@ test.describe("signal lab shared module chrome", () => {
 
     const filter = page.locator("[data-node-id='filter1']");
     const reverb = page.locator("[data-node-id='reverb1']");
+    await expect(filter.locator(".nk-chip-title")).toHaveCSS("visibility", "visible");
     await expect(filter.locator(".nk-chip-typecode")).toHaveCSS("visibility", "hidden");
     await expect(reverb.locator(".nk-chip-foot")).toHaveCSS("visibility", "hidden");
+    await expect(filter.locator(".nk-port-cap").first()).toHaveCSS("visibility", "hidden");
+    await expect(filter.locator("path[data-curve='response']")).toBeVisible();
+    const plot = filter.locator(".nk-face-plot");
+    await expect(plot).toHaveCSS("background-image", "none");
     await clickChipHeader(page, filter);
     await expect(filter.locator(".nk-chip-typecode")).toHaveCSS("visibility", "visible");
     await expect(filter.locator(".nk-chip-foot")).toHaveCSS("visibility", "visible");
+    await expect(filter.locator(".nk-port-cap").first()).toHaveCSS("visibility", "visible");
     await expect(reverb.locator(".nk-chip-typecode")).toHaveCSS("visibility", "hidden");
+    await expect(reverb.locator(".nk-port-cap").first()).toHaveCSS("visibility", "hidden");
   });
 });
