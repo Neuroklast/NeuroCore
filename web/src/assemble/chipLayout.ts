@@ -1,5 +1,5 @@
 import type { AstJack } from "../bridge/ast";
-import { chipSpec } from "./chipSpec";
+import { chipSpec, paintedBindKeys } from "./chipSpec";
 import {
   BIND_JACK_MIN,
   BIND_RAIL,
@@ -39,7 +39,7 @@ import {
 } from "./chipMetrics";
 import { BOARD_BLOCK, BOARD_GRID, BOARD_HALF, snapSize, snapToCellCenter, snapToGrid } from "./grid";
 import { parseHandle } from "./handles";
-import { globalPort, sidePortLocals } from "./portLayout";
+import { globalPort, sidePortLocals, southPortLocals } from "./portLayout";
 import { cableFace } from "./validateLink";
 
 export {
@@ -203,8 +203,15 @@ export function chipBox(
       h: icStackHeight(Math.max(faces.west, faces.east, 1), IO_H),
     };
   }
+  const south = _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)));
+  const macroOnly = paintedBindKeys(type, rec).filter(key => !spec.paramJacks.includes(key) && !south.some(j => j.id === key));
+  const technicalMin = macroOnly.length ? 160 + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * 7 + 12), 0) : 0;
   return {
-    w: icStackWidth(faces.south, CHIP_W),
+    w: captionedChipWidth(
+      _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)))
+        .map(j => spec.paramJackLabels[j.id] || j.id),
+      Math.max(CHIP_W, snapSize(technicalMin), snapSize(spec.label.length * 12 + CHIP_PAD_X * 4 + PIN_LEAD * 2)),
+    ),
     h: icStackHeight(Math.max(faces.west, faces.east, 1), CHIP_H),
   };
 }
@@ -250,4 +257,20 @@ export function jackAnchor(
   const local = sidePortLocals(count, { w: width, h: height }, output)[index]
     ?? { x: output ? width : 0, y: snapToCellCenter(height * 0.5) };
   return globalPort(pos, local);
+}
+
+/** Grow only until full south captions fit their actual grid-snapped anchors. */
+export function captionedChipWidth(labels: string[], minW = CHIP_W): number {
+  let w = icStackWidth(labels.length, minW);
+  const widths = labels.map(label => label.length * 7 + 8);
+  for (;;) {
+    const ports = southPortLocals(labels.length, { w, h: 0 });
+    const fits = ports.every((port, i) => {
+      const half = widths[i]! / 2;
+      return port.x - half >= PIN_LEAD && port.x + half <= w - PIN_LEAD
+        && (i === 0 || port.x - half >= ports[i - 1]!.x + widths[i - 1]! / 2 + 4);
+    });
+    if (fits) return w;
+    w += BOARD_GRID;
+  }
 }

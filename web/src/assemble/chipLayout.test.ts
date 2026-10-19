@@ -28,7 +28,7 @@ import {
 
 } from "./chipLayout";
 import { chipSpec, overlayParamKeys } from "./chipSpec";
-import { CHAR_PX } from "./chipMetrics";
+import { CHAR_PX, PARAMETER_H, TECHNICAL_H } from "./chipMetrics";
 import { DETAIL_HIT } from "../theme/chromeSpec";
 import { BOARD_GRID, BOARD_HALF, onCellCenter, onGrid, snapSize, snapToCellCenter } from "./grid";
 import { handleId } from "./handles";
@@ -42,8 +42,8 @@ describe("chip pad field", () => {
     const io = chipPadInset("io");
     expect(dsp.left).toBe(PIN_LEAD);
     expect(dsp.right).toBe(PIN_LEAD);
-    expect(dsp.top).toBe(PIN_LEAD + TITLE_H);
-    expect(dsp.bottom).toBe(PIN_LEAD + FOOT_H);
+    expect(dsp.top).toBe(PIN_LEAD + TITLE_H + TECHNICAL_H);
+    expect(dsp.bottom).toBe(PIN_LEAD + FOOT_H + PARAMETER_H);
     expect(io).toEqual(dsp);
   });
 });
@@ -140,7 +140,8 @@ describe("chip face, labels, copy", () => {
         jacks.filter((j) => ! j.output).length,
       );
       if (sideN <= 2) {
-        expect(box, id).toEqual(dspFaceSize());
+        expect(box.w, id).toBeGreaterThanOrEqual(dspFaceSize().w);
+        expect(box.h, id).toBe(dspFaceSize().h);
       } else {
         expect(box.h, id).toBeGreaterThan(dspFaceSize().h);
       }
