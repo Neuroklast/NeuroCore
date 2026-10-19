@@ -2,11 +2,11 @@
 
 **Stand:** 2026-10-19 (0.7.0-beta)  
 **Version:** 0.7.0-beta  
-**Branch:** `feat/overlay-menu`
+**Branch:** `feat/overlay-events`
 
 ## Circuit overlay camera lock (2026-10-19)
 
-Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Add-list wheel isolation and late `fitCamera` lock stay later PRs.
+Context menus sit on the Circuit pane (sibling of `.nk-board-world`) and `placeOverlay` flips them inside the pane AABB. Open/close does not write `camera`. `data-overlay` marks the pane while a menu is open. Shift+F10 / ContextMenu open the same menu. Wheel over `.nk-ctx` / Add list scrolls the overlay (`wheelOwnsZoom`); Add search focuses with `preventScroll`. Late `fitCamera` lock stays a later PR.
 
 ## Circuit pane coordinates (2026-10-19)
 

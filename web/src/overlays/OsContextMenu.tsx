@@ -123,14 +123,18 @@ export function OsAddPicker({
 }) {
   const [cat, setCat] = useState<string>(ADD_CATEGORIES[0]);
   const [q, setQ] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const blocks = addPickerSearch(q, q.trim() ? undefined : cat);
+  useEffect(() => {
+    searchRef.current?.focus({ preventScroll: true });
+  }, []);
   return (
     <div className="nk-add-pick" data-add-picker="1">
       <input
+        ref={searchRef}
         className="nk-add-search"
         value={q}
         placeholder="Search modules"
-        autoFocus
         onChange={(e) => setQ(e.target.value)}
         onPointerDown={(e) => e.stopPropagation()}
       />
