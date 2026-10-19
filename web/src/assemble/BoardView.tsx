@@ -12,6 +12,7 @@ import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardChip } from "./BoardChip";
 import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
+import { wheelOwnsZoom } from "./boardWheel";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
@@ -612,6 +613,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
   }, [active]);
 
   const onWheel = useCallback((e: WheelEvent<HTMLDivElement>) => {
+    if (! wheelOwnsZoom(e.target)) {
+      return;
+    }
     e.preventDefault();
     const pane = paneRef.current;
     if (! pane) {

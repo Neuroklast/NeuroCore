@@ -100,6 +100,23 @@ test.describe("circuit overlay camera lock", () => {
     await page.mouse.click(box.x + 24, box.y + 24, { button: "right" });
     await menuInsideBoard(page);
     expect(await camera(page)).toEqual(beforeCam);
+
+    const list = page.locator(".nk-add-list");
+    await expect(list).toBeVisible();
+    await list.evaluate((n) => {
+      (n as HTMLElement).style.maxHeight = "72px";
+    });
+    const beforeScroll = await list.evaluate((n) => n.scrollTop);
+    const listBox = await list.boundingBox();
+    if (! listBox) {
+      throw new Error("add list has no box");
+    }
+    await page.mouse.move(listBox.x + listBox.width / 2, listBox.y + Math.min(24, listBox.height / 2));
+    await page.mouse.wheel(0, 800);
+    expect(await camera(page)).toEqual(beforeCam);
+    expect(await list.evaluate((n) => n.scrollTop)).toBeGreaterThan(beforeScroll);
+
     await page.keyboard.press("Escape");
   });
 });
+
