@@ -1,6 +1,6 @@
 # NEUROKORE
 
-NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.7.0-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
+NEUROKORE is a modular distortion and sound design effect by Neuroklast for insert and send use. Load a factory sound, turn six knobs, or build your own chain on the board. Version **0.7.1-beta**. Formats: Standalone, VST3, and on Mac an Audio Unit.
 
 Put NEUROKORE on a track, or on a send return. Three views share one sound:
 
@@ -15,7 +15,7 @@ Click the wordmark to open neuroklast.net in your browser. There is no address b
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.7.0-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
+1. Run `NEUROKORE-0.7.1-beta-Setup.exe` as administrator. Choose English or German. Pick **VST3** (every 64-bit DAW) and/or **Standalone**.
 2. If Microsoft Edge WebView2 is missing, the setup installs it first. Setup reads the runtime version; an empty leftover registry key is not enough. Without that runtime the window shows how to install it.
 3. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3` (same folder on every version — not a new plug-in each time). Inside it: the module binary plus `Contents/Resources/moduleinfo.json` (every factory class: component, controller, compatibility). There is no extra `resources` folder next to the DLL. Rescan in the DAW. Older `NEUROKORE-<version>.vst3` folders are removed.
 4. Standalone is in the Start menu under Neuroklast. Your presets and license stay in AppData if you uninstall.
