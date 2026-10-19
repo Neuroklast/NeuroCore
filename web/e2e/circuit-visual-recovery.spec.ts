@@ -91,3 +91,22 @@ test('Pad Cloud Hall and a many-port dynamics patch keep independent chip zones'
     await page.screenshot({ path: info.outputPath(`${preset.replaceAll(' ', '-').toLowerCase()}.png`), fullPage: true });
   }
 });
+
+test('a real LFO drag magnetizes parameter pins while audio is rejected', async ({ page }) => {
+  await loadDrone(page, 'Low Pass Sweep');
+  const target = page.locator('[data-port-id="filter1::cutoff::dst"]');
+  const rect = await target.boundingBox();
+  expect(rect).not.toBeNull();
+  for (const [id, accepted] of [['osc1::mod::src', true], ['IN::out::src', false]] as const) {
+    const source = await page.locator(`[data-port-id="${id}"]`).boundingBox();
+    expect(source).not.toBeNull();
+    await page.mouse.move(source!.x + source!.width/2, source!.y + source!.height/2);
+    await page.mouse.down();
+    await page.mouse.move(rect!.x + rect!.width/2, rect!.y + rect!.height/2, { steps: 8 });
+    if (accepted) await expect(target).toHaveClass(/nk-port-hot/);
+    else await expect(target).not.toHaveClass(/nk-port-hot/);
+    // Cancel over empty board. Native graph compilation is a separate host test.
+    await page.mouse.move(30, 620);
+    await page.mouse.up();
+  }
+});
