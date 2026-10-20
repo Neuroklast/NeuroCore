@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  annotateKnobInlays,
+  findKnobTokens,
   headerComments,
   isKeyword,
   termFrame,
@@ -62,28 +62,6 @@ describe("terminal header comments", () => {
     const out = withHeaderComments(script, "Mute Lab", "quiet");
     expect(out).toContain("# nk-ms osc1: shape = sine; freq = 1");
     expect(out).toContain("filter1: type = highpass; cutoff = 80");
-  });
-});
-
-describe("knob inlays", () => {
-  it("appends a[0.34] after each knob token, live, 2 decimals", () => {
-    const knobs = [
-      { id: "a", value: 0.34, min: 0, max: 1 },
-      { id: "b", value: 0.5, min: 200, max: 2500 },
-    ];
-    const annotated = annotateKnobInlays("stage1: y = softclip(x, a) * b", knobs);
-    expect(annotated).toContain("a[0.34]");
-    expect(annotated).toContain("b[1350.00]");
-    expect(annotated).not.toMatch(/a\[0\.340\]/);
-  });
-
-  it("does not annotate letters inside comments", () => {
-    const annotated = annotateKnobInlays(
-      "stage1: y = x  # keep a dry",
-      [{ id: "a", value: 0.5, min: 0, max: 1 }],
-    );
-    expect(annotated).toContain("# keep a dry");
-    expect(annotated).not.toContain("a[");
   });
 });
 
@@ -182,4 +160,24 @@ it('replaces the typed block head including a trailing space', () => {
  const text='stage1: y = x\n  stage ';
  const item=complete(text,text.length).find(i=>i.kind==='snippet');
  expect(item?.replaceStart).toBe(text.lastIndexOf('stage'));
+});
+
+describe("findKnobTokens", () => {
+  it("findet alle Makro-Knob-Tokens (a-f) mit Position, ignoriert Kommentare", () => {
+    const script = [
+      "param a = Drive [0.5, 4]",
+      "# das hier ist ein Kommentar mit einem f",
+      "stage1: y = x * (1 + env1 * a * 0.1)",
+      "ott1: depth = e",
+    ].join("\n");
+    const toks = findKnobTokens(script);
+    expect(toks.map((t) => t.letter)).toEqual(["a", "a", "e"]);
+    expect(toks[0]).toEqual({ letter: "a", line: 1, startColumn: 7, endColumn: 8 });
+    expect(toks[1]).toEqual({ letter: "a", line: 3, startColumn: 29, endColumn: 30 });
+    expect(toks[2]).toEqual({ letter: "e", line: 4, startColumn: 15, endColumn: 16 });
+  });
+
+  it("liefert [] ohne Makro-Referenzen", () => {
+    expect(findKnobTokens("stage1: y = x\nout: mix = 1\n")).toEqual([]);
+  });
 });

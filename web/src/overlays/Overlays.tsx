@@ -1,31 +1,23 @@
 import { useEffect, useState } from "react";
 import { getNativeFunction } from "../bridge/juce";
-import { hasJuceBridge } from "../bridge/juce";
 import { setCircuitArg } from "../assemble/addBlock";
 import { FunctionsPanel } from "../functions/FunctionsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { useAstStore } from "../store/astStore";
-import { beginPatchTx } from "../store/patchWorkspace";
+import { publishSelection } from "../store/patchWorkspace";
 import { useHostStore } from "../store/hostStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { isThemeId, themeIds, themeOf } from "../theme/theme";
 import { AboutPanel } from "./AboutPanel";
 import { LicensePanel } from "./LicensePanel";
 import { settingsAboutTarget } from "./aboutModel";
-import { ImpulsePanel, irSlotAction, loadIrFile } from "./ImpulsePanel";
-import { isIrSlotId } from "../presets/irSlots";
+import { ImpulsePanel } from "./ImpulsePanel";
 import { chipFootPeak } from "../assemble/chipFace";
+import { chipSpec } from "../assemble/chipSpec";
 import { nodeMeter } from "../assemble/nodeMeter";
-import {
-  clampInspectArg,
-  inspectArgFields,
-  inspectBlurb,
-  inspectRows,
-  inspectNoteChoices,
-  inspectSnapNote,
-  inspectValueFromNote,
-  type InspectArgField,
-} from "./inspectModel";
+import { envEnvelopePath } from "../assemble/nodeFace/envEnvelope";
+import { inspectArgFields, inspectBlurb, inspectRows } from "./inspectModel";
+import { InspectKnob, isLiteralNumber, isMacroOrExpression } from "./InspectKnob";
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose, overlaySizesToContent } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
@@ -60,217 +52,151 @@ function Seg({
   );
 }
 
-function setNodeArg(nodeId: string, key: string, value: string): void {
-  if (!hasJuceBridge()) {
-    setCircuitArg(nodeId, key, value);
-    return;
-  }
-  const tx = beginPatchTx("graphOp", "canvas");
-  void getNativeFunction("graphOp")({
-    origin: "canvas",
-    txId: tx.id,
-    baseRevision: tx.baseRevision,
-    op: "setArg",
-    node: nodeId,
-    key,
-    value,
-  });
-}
+export function InspectBody({ nodeId }: { nodeId: string | null }) {
+    const ast = useAstStore((s) => s.ast);
+    const clips = useHostStore((s) => s.clips);
+    const clipsRms = useHostStore((s) => s.clipsRms);
+    const inPeak = useTelemetryStore((s) => s.inPeak);
+    const outPeak = useTelemetryStore((s) => s.outPeak);
+    const inRms = useTelemetryStore((s) => s.inRms);
+    const outRms = useTelemetryStore((s) => s.outRms);
+    const [technicalOpen, setTechnicalOpen] = useState(false);
+    const node = ast?.nodes.find((n) => n.id === nodeId);
+    if (! node) {
+      return <p>No node selected.</p>;
+    }
+    const spec = chipSpec(node.type, node.args);
+    const argFields = inspectArgFields(node);
+    const rows = inspectRows(node, ast);
+    const meter = nodeMeter({
+      id: node.id,
+      type: node.type,
+      clips,
+      clipsRms,
+      pluginInPeak: inPeak,
+      pluginOutPeak: outPeak,
+      pluginInRms: inRms,
+      pluginOutRms: outRms,
+    });
+    const blurb = inspectBlurb(node.type);
+    const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
+    const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
+    const formula = argFields.filter((f) => {
+      const v = node.args[f.key] ?? "";
+      return ! isLiteralNumber(v) && ! isMacroOrExpression(v) && f.options.length === 0;
+    });
+    const detector = argFields.find((f) => f.key === "type" || f.key === "detector");
+    const detectorLabel = detector ? ` · ${(node.args[detector.key] ?? "").toUpperCase()}` : "";
 
-function InspectArgControl({
-  nodeId,
-  type,
-  field,
-}: {
-  nodeId: string;
-  type: string;
-  field: InspectArgField;
-}) {
-  const bpm = useHostStore((s) => s.bpm);
-  const notes = field.timing ? inspectNoteChoices(field.unit, field.min, field.max, bpm) : [];
-  const [mode, setMode] = useState<"value" | "note">("value");
-  const fieldClass = "h-7 w-full border border-[var(--nk-line)] bg-black px-1 text-ink";
-  if (field.kind === "enum") {
+    const onCommit = (id: string, key: string, value: string) => {
+      setCircuitArg(id, key, value);
+    };
+    const onReveal = (key: string) => {
+      publishSelection({ nodeIds: [node.id], primaryId: node.id, param: key, origin: "inspect", intent: "reveal" });
+    };
+
     return (
-      <select
-        className={fieldClass}
-        value={field.options.includes(field.value) ? field.value : field.options[0]}
-        onChange={(e) => setNodeArg(nodeId, field.key, e.target.value)}
-      >
-        {field.options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-col gap-2 w-[420px] max-w-xs min-w-[320px]">
+        {/* Header: wie ein Hardware-Modul bedient */}
+        <div className="border-b border-accent pb-1">
+          <div className="text-[12px] font-mono text-ink">{spec.label.toUpperCase()}</div>
+          <div className="text-[10px] text-muted">{node.id} · {node.busName || "main"}{detectorLabel}</div>
+        </div>
+
+        {/* Primäre Bedienelemente: kompakte Regler + Werte */}
+        {editable.length > 0 ? (
+          <div className="nk-inspect-controls grid grid-cols-2 gap-2">
+            {editable.map((f) => (
+              <div key={f.key} className="flex flex-col gap-1">
+                <InspectKnob
+                  nodeId={node.id}
+                  nodeType={node.type}
+                  key={f.key}
+                  field={f}
+                  current={node.args[f.key]}
+                  onCommit={onCommit}
+                  onReveal={() => onReveal(f.key)}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Envelope-Kurve für ENV (anderer NodeFaces liefern eigene Kurven im Chip) */}
+        {node.type === "env" && (
+          <div className="border border-[var(--nk-line)] bg-black/60">
+            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">Envelope</div>
+            <div className="w-full h-28 flex items-end px-2 pb-1">
+              <svg viewBox="0 0 100 40" preserveAspectRatio="none" width="100%" height="40" className="nk-inspect-curve">
+                <path d={envEnvelopePath(node.args)} stroke="var(--nk-cyan)" fill="none" strokeWidth="1.5" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Statuszeile */}
+        <div className="flex items-center justify-between text-[10px] text-muted border-t border-accent/20 pt-1">
+          <span>{meter.sourceLabel} · PEAK {meter.peak == null ? "—" : chipFootPeak(meter.peak)} · RMS {meter.rms == null ? "—" : chipFootPeak(meter.rms)} · {meter.waveLabel}</span>
+          {blurb ? <span className="truncate max-w-[200px]">{blurb}</span> : null}
+        </div>
+
+        {/* Makro-/Ausdruck-Bindungen (schreibgeschützt, mit Navigationshinweis) */}
+        {bound.length > 0 ? (
+          <section className="border border-[var(--nk-line)] bg-black/40">
+            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">Macro / Expression</div>
+            <div className="p-1 space-y-1">
+              {bound.map((f) => (
+                <div key={f.key} className="flex items-center gap-2 px-2 py-1 text-[10px]">
+                  <span className="w-16 font-mono text-cyan">{f.key}</span>
+                  <span className="flex-1 font-mono text-ink truncate">{node.args[f.key]}</span>
+                  <button type="button" className="nk-inspect-bind text-[9px] text-muted" onClick={() => onReveal(f.key)}>
+                    zeigen
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Formel-Parameter (schreibgeschützt, kein Makro, kein Literal) */}
+        {formula.length > 0 ? (
+          <section className="border border-[var(--nk-line)] bg-black/40">
+            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">Formula</div>
+            <div className="p-1 space-y-1">
+              {formula.map((f) => (
+                <div key={f.key} className="flex items-center gap-2 px-2 py-1 text-[10px]">
+                  <span className="w-16 font-mono text-cyan">{f.key}</span>
+                  <span className="flex-1 font-mono text-ink truncate">{node.args[f.key]}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Technische Details: eingeklappt, kein dominierender Tisch */}
+        <details
+          className="border border-[var(--nk-line)] bg-black/40"
+          open={technicalOpen}
+          onChange={() => setTechnicalOpen(!technicalOpen)}
+        >
+          <summary className="cursor-pointer select-none text-[10px] tracking-widest text-muted uppercase px-2 py-1">
+            Technical Details
+          </summary>
+          <div className="p-2 space-y-1 text-[9px]">
+            {rows.slice(0, 14).map((r) => (
+              <div key={`${r.group}-${r.key}`} className="flex justify-between">
+                <span className="text-muted">{r.key}</span>
+                <span className="font-mono text-ink truncate max-w-[220px]">{r.value}</span>
+              </div>
+            ))}
+            {rows.length > 14 && <div className="text-muted">… weitere Einträge</div>}
+          </div>
+        </details>
+      </div>
     );
   }
-  const commit = (raw: string) => {
-    const next = clampInspectArg(type, field.key, raw);
-    setNodeArg(nodeId, field.key, next);
-    return next;
-  };
-  const pickNote = (label: string) => {
-    const mapped = inspectValueFromNote(label, field.unit, bpm);
-    if (mapped != null) {
-      commit(mapped);
-    }
-  };
-  return (
-    <div className="flex flex-col gap-1">
-      {notes.length > 0 ? (
-        <div className="flex gap-1">
-          <button
-            type="button"
-            className={`nk-clip h-7 min-w-[52px] px-2 ${mode === "value" ? "on" : ""}`}
-            onClick={() => setMode("value")}
-          >
-            VALUE
-          </button>
-          <button
-            type="button"
-            className={`nk-clip h-7 min-w-[52px] px-2 ${mode === "note" ? "on" : ""}`}
-            onClick={() => setMode("note")}
-          >
-            NOTE
-          </button>
-        </div>
-      ) : null}
-      {mode === "note" && notes.length > 0 ? (
-        <select
-          className={fieldClass}
-          value={inspectSnapNote(field.value, field.unit, field.min, field.max, bpm) ?? notes[0]}
-          onChange={(e) => pickNote(e.target.value)}
-        >
-          {notes.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <div className="flex items-center gap-2">
-          <input
-            className={fieldClass}
-            defaultValue={field.value}
-            key={`${field.key}:${field.value}`}
-            aria-label={field.key}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") { e.currentTarget.value = field.value; e.currentTarget.blur(); }
-            }}
-            onBlur={(e) => {
-              if (e.target.value !== field.value) e.target.value = commit(e.target.value);
-            }}
-          />
-          {field.unit ? <span className="shrink-0 text-[11px] text-muted">{field.unit}</span> : null}
-        </div>
-      )}
-    </div>
-  );
-}
 
-export function InspectBody({ nodeId }: { nodeId: string | null }) {
-  const ast = useAstStore((s) => s.ast);
-  const clips = useHostStore((s) => s.clips);
-  const clipsRms = useHostStore((s) => s.clipsRms);
-  const inPeak = useTelemetryStore((s) => s.inPeak);
-  const outPeak = useTelemetryStore((s) => s.outPeak);
-  const inRms = useTelemetryStore((s) => s.inRms);
-  const outRms = useTelemetryStore((s) => s.outRms);
-  const node = ast?.nodes.find((n) => n.id === nodeId);
-  const rows = inspectRows(node, ast);
-  if (! node) {
-    return <p>No node selected.</p>;
-  }
-  const meter = nodeMeter({
-    id: node.id,
-    type: node.type,
-    clips,
-    clipsRms,
-    pluginInPeak: inPeak,
-    pluginOutPeak: outPeak,
-    pluginInRms: inRms,
-    pluginOutRms: outRms,
-  });
-  const argFields = inspectArgFields(node);
-  const groups = ["meta", "arg", "jack", "param", "var"] as const;
-  const label: Record<(typeof groups)[number], string> = {
-    meta: "NODE",
-    arg: "PARAMETERS",
-    jack: "JACKS",
-    param: "BOUND KNOBS",
-    var: "VARIABLES",
-  };
-  const blurb = inspectBlurb(node.type);
-  return (
-    <div className="flex flex-col gap-3 text-[12px]">
-      {groups.map((g) => {
-        if (g === "arg") {
-          if (argFields.length === 0) {
-            return null;
-          }
-          return (
-            <section key={g}>
-              <div className="mb-1 text-[11px] tracking-widest text-muted">{label.arg}</div>
-              <div className="nk-inspect-fields">
-                {argFields.map((f) => (
-                  <label key={`arg-${f.key}`} className="nk-inspect-field">
-                    <span>{f.key.replace(/[_-]/g, " ")}</span>
-                    <InspectArgControl nodeId={node.id} type={node.type} field={f} />
-                  </label>
-                ))}
-              </div>
-            </section>
-          );
-        }
-        const slice = rows.filter((r) => r.group === g);
-        if (slice.length === 0) {
-          return null;
-        }
-        return (
-          <section key={g}>
-            <div className="mb-1 text-[11px] tracking-widest text-muted">{label[g]}</div>
-            <table className="w-full border-collapse">
-              <tbody>
-                {slice.map((r) => (
-                  <tr key={`${g}-${r.key}`} className="border-b border-accent/20">
-                    <td className="w-28 py-1 pr-2 text-muted">{r.key}</td>
-                    <td className="py-1 text-ink">{r.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        );
-      })}
-      <section data-meter-source={meter.source} data-wave={meter.wave}>
-        <div className="mb-1 text-[11px] tracking-widest text-muted">LEVEL</div>
-        <p className="text-ink tabular-nums">
-          {meter.sourceLabel} · PEAK {meter.peak == null ? "—" : chipFootPeak(meter.peak)} · RMS {meter.rms == null ? "—" : chipFootPeak(meter.rms)} · {meter.waveLabel}
-        </p>
-      </section>
-      {blurb ? (
-        <section>
-          <div className="mb-1 text-[11px] tracking-widest text-muted">ABOUT</div>
-          <p className="text-ink">{blurb}</p>
-        </section>
-      ) : null}
-      {isIrSlotId(node.id) || isIrSlotId(node.type) ? (
-        <section>
-          <div className="mb-1 text-[11px] tracking-widest text-muted">CABINET</div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="nk-clip" onClick={() => loadIrFile(node.id)}>Load</button>
-            <button type="button" className="nk-clip" onClick={() => irSlotAction("preview", node.id)}>Play</button>
-            <button type="button" className="nk-clip" onClick={() => irSlotAction("clear", node.id)}>Clear</button>
-          </div>
-        </section>
-      ) : null}
-    </div>
-  );
-}
-
-function SettingsBody() {
+  function SettingsBody() {
   const tempo = useHostStore((s) => s.tempoSource);
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);

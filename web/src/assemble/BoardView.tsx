@@ -18,7 +18,7 @@ import { applyCameraTransform, cameraMatrix, fitCamera, fitBoardCamera, panCamer
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
-import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute, hitBoardEdge } from "./boardEdit";
+import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute } from "./boardEdit";
 import { graphToLayout, portGlobal, previewBoardIds, type BoardPort } from "./boardModel";
 import { applyChipDragStyle, chipDragGroupRef, chipDragRef, type ChipDrag } from "./boardDrag";
 import { useBoardStore } from "./boardStore";
@@ -29,10 +29,13 @@ import { applyBoardFocus, applyDofGate, boardFocusEdgesRef, boardHoverRef, circu
 import { CHIP_AIR_X, CHIP_AIR_Y, snapToGrid } from "./grid";
 import { serialIds, wrapFits } from "./layout/compactPack";
 import { circuitPaintActive } from "../app/workspace";
+import { shortestPath } from "./boardPath";
 import { nodesInSelection, routeMidpoint, type SelectionRect } from "./boardSelection";
 import { boardIdForSource } from "../hack/dslSourceMap";
 import { pruneSelection, publishSelection } from "../store/patchWorkspace";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
+import { setGroupMute, setGroupSolo } from "./muteSoloApply";
+import { isFlowBlockId } from "./muteSolo";
 
 type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
@@ -62,9 +65,9 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const camGesture = useRef(false);
   const [size, setSize] = useState({ w: 960, h: 420 });
   const paneSizeRef = useRef({ w: 0, h: 0 });
-  const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
-  const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number; startX: number; startY: number; group: Record<string, { x: number; y: number }> } | null>(null);
-  const lassoRef = useRef<SelectionRect | null>(null);
+const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
+const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number; startX: number; startY: number; group: Record<string, { x: number; y: number }> } | null>(null);
+const lassoRef = useRef<SelectionRect | null>(null);
   const lassoCompletedRef = useRef(false);
   const [lasso, setLasso] = useState<SelectionRect | null>(null);
   const spaceRef = useRef(false);
@@ -345,18 +348,57 @@ export function BoardView({ active = true }: { active?: boolean }) {
     };
   }, [ast, origin, userMoved, Object.keys(nodes).length]);
 
+  const handleContextMenu = (e: PointerEvent<HTMLDivElement>, pane: HTMLElement, world: { x: number; y: number }) => {
+    const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
+    const hit = boardContextHit(chipId, world, useBoardStore.getState());
+    if (hit.kind === "chip") {
+      // Bereits selektierte Chips behalten die Mehrfachauswahl; nur primary setzen.
+      const cur = usePatchSelectionStore.getState();
+      if (cur.nodeIds.includes(hit.id)) {
+        publishSelection({ nodeIds: cur.nodeIds, primaryId: hit.id, origin: "circuit", intent: "mark" });
+      } else {
+        selectNodes([hit.id]);
+      }
+      setMenu({ kind: "chip", ...placeOverlay(pane, e.clientX, e.clientY, CHIP_MENU_BOX), id: hit.id });
+      return;
+    }
+    if (hit.kind === "edge") {
+      setMenu({ kind: "add", ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX), afterId: hit.sourceId, targetId: hit.targetId });
+      return;
+    }
+    setMenu({ kind: "pane", ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX), world });
+  };
+
   const onPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
     const pane = paneRef.current;
     if (! pane) {
       return;
     }
-    if ((e.target as HTMLElement).closest("[data-board-control]")) return;
+    const target = e.target as HTMLElement;
+
+    // 1. Aktive native Controls und Eingabefelder starten nie eine Gesture.
+    if (target.closest("[data-board-control], input, textarea, select, [contenteditable]")) {
+      return;
+    }
+
     const cam = camLive.current;
     const panePt = clientToPane(pane, e.clientX, e.clientY);
     const world = worldFromScreen(cam, panePt.x, panePt.y);
-    const portEl = (e.target as HTMLElement).closest("[data-port-id]");
+
+    // Rechtsklick → Kontextmenü, niemals eine Kamera- oder Chip-Verschiebung.
+    if (e.button === 2) {
+      e.preventDefault();
+            handleContextMenu(e, pane, world);
+      return;
+    }
+    if (e.button !== 0) {
+      return;
+    }
+
+    // 2. Port- und Binding-Verbindungen.
+    const portEl = target.closest("[data-port-id]");
     const portIdHit = portEl?.getAttribute("data-port-id");
-    if (portIdHit && e.button === 0) {
+    if (portIdHit) {
       const g = useBoardStore.getState();
       const port = g.ports[portIdHit] as BoardPort | undefined;
       const node = port ? g.nodes[port.nodeId] : undefined;
@@ -364,7 +406,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         e.stopPropagation();
         if (e.altKey) {
           commitBoardCut(port);
-          return;
+                    return;
         }
         const from = portGlobal(node, port);
         connectDragRef.current = {
@@ -375,58 +417,66 @@ export function BoardView({ active = true }: { active?: boolean }) {
           kind: port.kind,
         };
         capturePanePointer(pane, e.pointerId);
-        return;
+                return;
       }
     }
-    if (e.button === 1 || (e.button === 0 && spaceRef.current)) {
-      panRef.current = { x: e.clientX, y: e.clientY, tx: cam.tx, ty: cam.ty };
-      camGesture.current = true;
-      capturePanePointer(pane, e.pointerId);
-      return;
-    }
-    if (e.button === 0 && !(e.target as HTMLElement).closest("[data-node-id], [data-port-id]")) {
-      const edge = hitBoardEdge(world, useBoardStore.getState());
-      if (edge) {
-        setMenu({
-          kind: "add",
-          ...placeOverlay(pane, e.clientX, e.clientY, ADD_PICKER_BOX),
-          afterId: edge.sourceNodeId,
-          targetId: edge.targetNodeId,
-        });
-        return;
+
+    // 3. Chip: Selektion und (nach Schwelle) gemeinsamer Chip-Drag.
+    // Ein Klick auf eine Chip-Kontrolle (M/S, Chevron, Bind-Jack, Overlay) startet
+    // weder eine Kamera- noch eine Chip-Geste; der Control behält sein eigenes onClick.
+    const chip = target.closest("[data-node-id]");
+    const id = chip?.getAttribute("data-node-id");
+    if (id) {
+      if (! target.closest(".nk-port, .nk-chip-expand, .nk-ms, .nk-chip-overlay, .nk-bind-jack, .nk-bind-cell")) {
+        const n = useBoardStore.getState().nodes[id];
+        if (e.ctrlKey || e.metaKey) {
+          selectNodes((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
+                    return;
+        }
+        if (e.shiftKey) {
+          const anchor = selectedRef.current;
+          if (anchor && anchor !== id) {
+            const g = useBoardStore.getState();
+            const path = shortestPath({ nodes: g.nodes, edges: g.edges }, anchor, id);
+            if (path.length > 0) {
+              selectNodes(path);
+            } else {
+              selectNodes([id]);
+            }
+          } else {
+            selectNodes([id]);
+          }
+                    return;
+        }
+        const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
+        selectNodes(group);
+        if (! n || n.locked) {
+                    return;
+        }
+        const origins = Object.fromEntries(group.filter((v) => !useBoardStore.getState().nodes[v]?.locked).map((v) => {
+          const node = useBoardStore.getState().nodes[v]!;
+          return [v, { x: node.x, y: node.y }];
+        }));
+        dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y,
+          startX: e.clientX, startY: e.clientY, group: origins };
+        capturePanePointer(pane, e.pointerId);
+                return;
       }
+      // Control auf einem Chip: keine Kamera-Geste, keine Selektions-Aenderung.
+            return;
+    }
+
+    // 4. Freier Hintergrund: Alt + Drag = Rechteckauswahl, sonst Kamera-Pan.
+    if (e.altKey) {
       lassoRef.current = { x0: world.x, y0: world.y, x1: world.x, y1: world.y };
       setLasso(lassoRef.current);
-      if (!e.shiftKey) clearBoardFocus();
-      capturePanePointer(pane, e.pointerId);
+            capturePanePointer(pane, e.pointerId);
       return;
     }
-    if (e.button !== 0) {
-      return;
-    }
-    const chip = (e.target as HTMLElement).closest("[data-node-id]");
-    const id = chip?.getAttribute("data-node-id");
-    if (! id || (e.target as HTMLElement).closest(".nk-port, .nk-chip-expand, .nk-ms, .nk-chip-overlay, .nk-bind-jack, .nk-bind-cell")) {
-      return;
-    }
-    const n = useBoardStore.getState().nodes[id];
-    if (e.shiftKey) {
-      selectNodes((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
-      return;
-    }
-    const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
-    selectNodes(group);
-    if (! n || n.locked) {
-      return;
-    }
-    const origins = Object.fromEntries(group.filter((v) => !useBoardStore.getState().nodes[v]?.locked).map((v) => {
-      const node = useBoardStore.getState().nodes[v]!;
-      return [v, { x: node.x, y: node.y }];
-    }));
-    dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y,
-      startX: e.clientX, startY: e.clientY, group: origins };
+    panRef.current = { startX: e.clientX, startY: e.clientY, tx: cam.tx, ty: cam.ty };
+    camGesture.current = true;
     capturePanePointer(pane, e.pointerId);
-  }, []);
+      }, []);
 
   const onPointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
     const pane = paneRef.current;
@@ -434,6 +484,8 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     const cam = camLive.current;
+    const target = e.target as HTMLElement;
+
     if (connectDragRef.current) {
       const panePt = clientToPane(pane, e.clientX, e.clientY);
       const world = worldFromScreen(cam, panePt.x, panePt.y);
@@ -455,12 +507,12 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if (panRef.current) {
-      const from = clientToPane(pane, panRef.current.x, panRef.current.y);
-      const to = clientToPane(pane, e.clientX, e.clientY);
+      const dx = e.clientX - panRef.current.startX;
+      const dy = e.clientY - panRef.current.startY;
       applyLiveCamera(panCamera(
         { scale: cam.scale, tx: panRef.current.tx, ty: panRef.current.ty },
-        to.x - from.x,
-        to.y - from.y,
+        dx,
+        dy,
       ));
       return;
     }
@@ -471,7 +523,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       setLasso(lassoRef.current);
       return;
     }
-    const over = (e.target as HTMLElement).closest("[data-node-id]");
+    const over = target.closest("[data-node-id]");
     const hid = over?.getAttribute("data-node-id") ?? null;
     if (boardHoverRef.current !== hid) {
       boardHoverRef.current = hid;
@@ -505,7 +557,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     paintCablesNow();
   }, [applyLiveCamera, paintFocus]);
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((e: PointerEvent<HTMLDivElement>) => {
     const drag = connectDragRef.current;
     if (drag?.snapPortId) {
       const dst = useBoardStore.getState().ports[drag.snapPortId];
@@ -515,18 +567,26 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     connectDragRef.current = null;
     paneRef.current?.querySelectorAll(".nk-port-hot").forEach((el) => el.classList.remove("nk-port-hot"));
+    
     if (panRef.current) {
       camGesture.current = false;
       useBoardStore.getState().setCamera(camLive.current);
       paintCablesNow();
+      // Ein reiner Klick (ohne nennenswerte Bewegung) auf dem Hintergrund deselektiert.
+      const moved = Math.hypot(e.clientX - panRef.current.startX, e.clientY - panRef.current.startY);
+      panRef.current = null;
+      if (moved < 4) {
+        clearBoardFocus();
+      }
+      return;
     }
-    panRef.current = null;
     if (lassoRef.current) {
       const ids = nodesInSelection(Object.values(useBoardStore.getState().nodes), lassoRef.current);
       selectNodes((old) => [...new Set([...old, ...ids])]);
       lassoCompletedRef.current = true;
       lassoRef.current = null;
       setLasso(null);
+      return;
     }
     const chipDrag = dragRef.current;
     const live = chipDragRef.current;
@@ -681,7 +741,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         lassoRef.current = null;
         setLasso(null);
         panRef.current = null;
-        camGesture.current = false;
+                camGesture.current = false;
         paneRef.current?.querySelectorAll<HTMLElement>("[data-node-id]").forEach((el) => { el.style.transform = ""; });
         paintCablesNow();
       }}
@@ -710,7 +770,12 @@ export function BoardView({ active = true }: { active?: boolean }) {
         const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
         const hit = boardContextHit(chipId, world, useBoardStore.getState());
         if (hit.kind === "chip") {
-          selectNodes([hit.id]);
+          const cur = usePatchSelectionStore.getState();
+          if (cur.nodeIds.includes(hit.id)) {
+            publishSelection({ nodeIds: cur.nodeIds, primaryId: hit.id, origin: "circuit", intent: "mark" });
+          } else {
+            selectNodes([hit.id]);
+          }
           setMenu({ kind: "chip", ...placeOverlay(pane, e.clientX, e.clientY, CHIP_MENU_BOX), id: hit.id });
           return;
         }
@@ -813,6 +878,20 @@ export function BoardView({ active = true }: { active?: boolean }) {
             }
             setMenu(null);
           }}>Inspect</OsMenuItem>
+          {menu != null && selection.length > 1 && selection.includes(menu.id) ? <>
+            {() => {
+              const flowExcluded = selection.filter((id) => isFlowBlockId(id)).length;
+              const suffix = flowExcluded > 0 ? ` (${flowExcluded} blockiert)` : "";
+              return (
+                <>
+                  <OsMenuItem onClick={() => { void setGroupMute(selection, true); setMenu(null); }}>Mute Gruppe{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupMute(selection, false); setMenu(null); }}>Gruppe entstummen{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupSolo(selection, true); setMenu(null); }}>Solo Gruppe{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupSolo(selection, false); setMenu(null); }}>Solo aufheben{suffix}</OsMenuItem>
+                </>
+              );
+            }}()
+          </> : null}
           {canDeleteChip(nodes[menu.id]) ? (
             <OsMenuItem danger onClick={() => {
               removeCircuitBlock(menu.id);

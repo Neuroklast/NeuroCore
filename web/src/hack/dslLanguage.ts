@@ -36,6 +36,32 @@ export function isKnobWord(word: string): boolean {
   return word.length === 1 && word >= "a" && word <= "f";
 }
 
+/**
+ * Positionen aller Makro-Knob-Tokens (a–f) im sauberen Skript.
+ * Wird fuer Live-Wert-Decorations und Hover-Highlights verwendet,
+ * ohne das Monaco-Modell zu mutieren.
+ */
+export function findKnobTokens(script: string): Array<{ letter: string; line: number; startColumn: number; endColumn: number }> {
+  const lines = script.replace(/\r\n/g, "\n").split("\n");
+  const out: Array<{ letter: string; line: number; startColumn: number; endColumn: number }> = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const toks = tokenizeLine(line);
+    let cursor = 0;
+    for (const tok of toks) {
+      const at = line.indexOf(tok.text, cursor);
+      if (at < 0) {
+        continue;
+      }
+      cursor = at + tok.text.length;
+      if (tok.kind === "knob") {
+        out.push({ letter: tok.text.toLowerCase(), line: i + 1, startColumn: at + 1, endColumn: at + tok.text.length + 1 });
+      }
+    }
+  }
+  return out;
+}
+
 export function tokenizeLine(line: string): DslToken[] {
   const tokens: DslToken[] = [];
   let i = 0;
@@ -95,8 +121,6 @@ export function tokenizeLine(line: string): DslToken[] {
   return tokens;
 }
 
-export type InlayKnob = { id: string; value: number; min: number; max: number };
-
 /** Terminal header: preset name + sound line. No "How it sounds:" label. */
 export function headerComments(name: string, howItSounds: string): string {
   const n = name.trim() || "Untitled";
@@ -132,49 +156,6 @@ export function withHeaderComments(script: string, name: string, howItSounds: st
   const body = lines.slice(i).join("\n").replace(/^\n+/, "");
   const head = headerComments(name, howItSounds);
   return body ? `${head}\n\n${body}` : head;
-}
-
-function mappedKnob(k: InlayKnob): number {
-  return k.min + k.value * (k.max - k.min);
-}
-
-function formatInlay(v: number): string {
-  if (! Number.isFinite(v)) {
-    return "0.00";
-  }
-  return (Math.round(v * 100) / 100).toFixed(2);
-}
-
-/** Live view only: append `a[0.34]` after each knob token (2 decimals). */
-export function annotateKnobInlays(script: string, knobs: InlayKnob[]): string {
-  const byId = new Map(
-    knobs.filter((k) => /^[a-f]$/i.test(k.id)).map((k) => [k.id.toLowerCase(), k]),
-  );
-  return script.replace(/\r\n/g, "\n").split("\n").map((line) => {
-    const toks = tokenizeLine(line);
-    if (toks.length === 0) {
-      return line;
-    }
-    let out = "";
-    let cursor = 0;
-    for (const tok of toks) {
-      const at = line.indexOf(tok.text, cursor);
-      if (at < 0) {
-        continue;
-      }
-      out += line.slice(cursor, at);
-      out += tok.text;
-      cursor = at + tok.text.length;
-      if (tok.kind === "knob") {
-        const k = byId.get(tok.text.toLowerCase());
-        if (k) {
-          out += `[${formatInlay(mappedKnob(k))}]`;
-        }
-      }
-    }
-    out += line.slice(cursor);
-    return out;
-  }).join("\n");
 }
 
 export type TermFrame = {

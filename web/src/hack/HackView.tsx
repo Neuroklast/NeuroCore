@@ -12,7 +12,7 @@ import { openImpulse } from "../overlays/ImpulsePanel";
 import { useTheme } from "../theme/themeBind";
 import { applyPatchDraft, discardPatchDraft } from "./terminalCompile";
 import {
-  annotateKnobInlays,
+  findKnobTokens,
   termFrame,
   withHeaderComments,
 } from "./dslLanguage";
@@ -20,6 +20,8 @@ import { rangeForNode, rangeForParam } from "./dslSourceMap";
 import { draftBanner, publishSelection, readPatchDocument } from "../store/patchWorkspace";
 import { patchStructure } from "../store/patchStructure";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
+import { useBindStore } from "../store/telemetryStore";
+import { formatKnobDisplay } from "../chrome/noteValue";
 import {
   defineDslTheme,
   DSL_THEME,
@@ -115,9 +117,12 @@ export function HackView() {
     if (editing) {
       return baseScript;
     }
-    const headed = withHeaderComments(baseScript, presetName || "Untitled", howItSounds);
-    return annotateKnobInlays(headed, knobs);
-  }, [editing, baseScript, presetName, howItSounds, knobs]);
+    return withHeaderComments(baseScript, presetName || "Untitled", howItSounds);
+  }, [editing, baseScript, presetName, howItSounds]);
+  const knobTokens = useMemo(() => findKnobTokens(shown), [shown]);
+  const hover = useBindStore((s) => s.hover);
+  const liveDecoRef = useRef<string[]>([]);
+  const hoverDecoRef = useRef<string[]>([]);
 
   useEffect(() => {
     const ed = editorRef.current;
@@ -145,6 +150,68 @@ export function HackView() {
         : [],
     );
   }, [focusNodeId, focusParam, shown, editorReady]);
+
+  // Live Makro-Werte als stabile Inline-Decorations (keine Modellmutation,
+  // kein Cursor-/Scrollsprung, kein Undo, kein Neu-Compile pro Tick).
+  useEffect(() => {
+    const ed = editorRef.current;
+    const monaco = monacoRef.current;
+    if (! ed || ! monaco) {
+      return;
+    }
+    const model = ed.getModel();
+    if (! model) {
+      return;
+    }
+    const byLetter = new Map(knobs.map((k) => [k.id, k]));
+    const liveDecos: editor.IModelDeltaDecoration[] = [];
+
+    // Dynamisches CSS für die Inline-Werte pro Buchstabe (alles "a" zeigt den
+    // aktuellen A-Wert, ohne das Modell zu berühren).
+    const styleEl = document.getElementById("nk-term-live-values");
+    const el = styleEl ?? (() => {
+      const e = document.createElement("style");
+      e.id = "nk-term-live-values";
+      document.head.appendChild(e);
+      return e;
+    })();
+    let css = "";
+    for (const tok of knobTokens) {
+      const k = byLetter.get(tok.letter);
+      if (! k) {
+        continue;
+      }
+      const mapped = k.min + k.value * (k.max - k.min);
+      css += `.nk-term-val-${tok.letter}::after { content: "[${formatKnobDisplay(mapped, k.unit)}]"; }\n`;
+      liveDecos.push({
+        range: new monaco.Range(tok.line, tok.startColumn, tok.line, tok.endColumn),
+        options: {
+          afterContentClassName: `nk-term-val-${tok.letter}`,
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+        },
+      });
+    }
+    el.textContent = css;
+    liveDecoRef.current = ed.deltaDecorations(liveDecoRef.current, liveDecos);
+
+    // Knob-Hover: alle Stellen des hovered Makros im Terminal hervorheben.
+    const hoverDecos = hover
+      ? knobTokens
+          .filter((t) => t.letter === hover)
+          .map((t) => ({
+            range: new monaco.Range(t.line, t.startColumn, t.line, t.endColumn),
+            options: {
+              inlineClassName: "nk-term-knob-hover",
+              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            },
+          }))
+      : [];
+    hoverDecoRef.current = ed.deltaDecorations(hoverDecoRef.current, hoverDecos);
+
+    return () => {
+      el.remove();
+    };
+  }, [knobs, hover, knobTokens, shown, editorReady]);
 
   const save = async () => {
     await applyPatchDraft();

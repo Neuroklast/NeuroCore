@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-20 (0.7.1-beta)
 **Version:** 0.7.1-beta  
-**Branch:** `main`
+**Branch:** `feat/circuit-inspect-terminal-overhaul`
+
+## Circuit / Inspect / Terminal overhaul (2026-10-20)
+
+PR #318. Empty left-drag pans; Alt+left-drag is rectangle select; Ctrl/Cmd+click toggles; Shift+click takes `shortestPath()`. Chip M/S, chevron and bind never start a pan. Multi-select mute/solo skips flow blocks and reverts the UI if compile fails. Inspect shows knobs for numbers, lists for enums, read-only text for formulas. Terminal folds buses and paints live knob values. Local Release 2026-10-20: Setup SHA256 `5da8437130f13f184fbef0a8f9da4525a44fba309cd9d0c7419aa4ae1a336114`. Native DAW/Playwright not re-run.
 
 ## Web layout CI (2026-10-20)
 

@@ -97,6 +97,7 @@ function strokePackets(
   dim: boolean,
   clipColor: string,
   clipAllowed: boolean,
+  dash: number[] = [],
 ): void {
   if (pts.length < 2) return;
   const envelope = cableEnvelope(rms, peak);
@@ -104,7 +105,7 @@ function strokePackets(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = width;
-  ctx.setLineDash([]);
+  ctx.setLineDash(dash);
   ctx.shadowBlur = 0;
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = dim ? 0.24 : 0.48;
@@ -271,6 +272,10 @@ export function CableCanvas({
         substrate = resolveColor("var(--nk-surface)", "rgb(20,24,26)");
       }
       const pass = cablePaintPass(gestureRef.current, host.motion);
+      // `wave` = fliessende Signalimpulse, `dots` = statische Punktestrecke.
+      const isDots = host.cables === "dots";
+      const dotDash = isDots ? [2, 8] : [];
+      const cableAnimate = pass.animate && !isDots;
 
       {
         drawBoardSubstrate(ctx,Object.values(g.nodes),core,substrate,boardRoutePoints(g));
@@ -390,7 +395,7 @@ export function CableCanvas({
             dt,
             pass.animate,
           );
-          const beads = pass.animate ? state.packets : [];
+          const beads = cableAnimate ? state.packets : [];
           strokePackets(
             ctx,
             painted,
@@ -401,10 +406,11 @@ export function CableCanvas({
             measuredPeak * state.freshness,
             measuredEnergy * state.freshness,
             pass.glow,
-            pass.animate,
+            cableAnimate,
             Boolean(dim),
             palette.warn,
             e.kind !== "mod",
+            dotDash,
           );
         });
       }

@@ -16,7 +16,7 @@ import {
 import { chipChromeVars, ioBodyInset } from "./chipLayout";
 import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
 import { isFlowBlockId } from "./muteSolo";
-import { toggleChipMute, toggleChipSolo } from "./muteSoloApply";
+import { toggleChipMute, toggleChipSolo, toggleGroupMute, toggleGroupSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { ChipParameters, ChipParameterCaption } from "./ChipParameters";
@@ -24,6 +24,7 @@ import { ChipShell } from "./nodeFace/ChipShell";
 import { NodeFace } from "./nodeFace/NodeFace";
 import { chipDepth } from "./nodeFace/chipDepth";
 import { faceKindForType } from "./nodeFace/faceKind";
+import { usePatchSelectionStore } from "../store/patchSelectionStore";
 
 export function BoardChip({
   node,
@@ -50,6 +51,13 @@ export function BoardChip({
   const sr = useHostStore((s) => s.sr);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
+  const selection = usePatchSelectionStore((s) => s.nodeIds);
+  const chipStore = useChipViewStore((s) => s);
+  const multi = selection.length > 1 && selection.includes(node.id);
+  const groupMuted = multi && selection.every((id) => chipStore.isMuted(id));
+  const groupSoloed = multi && selection.every((id) => chipStore.isSoloed(id));
+  const someMuted = multi && selection.some((id) => chipStore.isMuted(id));
+  const someSoloed = multi && selection.some((id) => chipStore.isSoloed(id));
   const chrome = closedChipChrome(node.type, node.id);
   const spec = chipSpec(node.type, node.args);
   const face = collapsedFace(spec, node.args);
@@ -106,8 +114,8 @@ export function BoardChip({
           row={{ key, label: key, formula: node.args[key] ?? "", bindable: true }} />)}
         {canMs ? (
         <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
-          <button type="button" className={`nk-ms nodrag nopan ${isMuted ? "is-on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipMute(node.id); }}>M</button>
-          <button type="button" className={`nk-ms nodrag nopan ${isSoloed ? "is-solo" : ""}`} onClick={(e) => { e.stopPropagation(); toggleChipSolo(node.id); }}>S</button>
+          <button type="button" className={`nk-ms ${(multi ? groupMuted : isMuted) ? "is-on" : ""} ${someMuted && !groupMuted ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupMute(selection); } else { toggleChipMute(node.id); } }}>M</button>
+          <button type="button" className={`nk-ms ${(multi ? groupSoloed : isSoloed) ? "is-solo" : ""} ${someSoloed && !groupSoloed ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupSolo(selection); } else { toggleChipSolo(node.id); } }}>S</button>
         </div>
       ) : null}</>}
       data-selected={selected ? "on" : "off"}

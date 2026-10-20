@@ -214,3 +214,62 @@ export function paramAtPosition(
   }
   return null;
 }
+
+/**
+ * Faltbereiche fuer Bus-Bloecke. Eine Bus-Zeile `bus <name>:` oeffnet einen
+ * Bereich, der bis zur naechsten Bus- oder OUT-Zeile (oder Dateiende) reicht.
+ * Gestützt auf Zeilenanfänge und den Tokenizer – keine brüchigen Format-Regeln.
+ * Kommentare (`# bus x:`) lösen keinen Faltbereich aus.
+ */
+export function busFoldRanges(script: string): NodeSourceRange[] {
+  const lines = script.replace(/\r\n/g, "\n").split("\n");
+  const ranges: NodeSourceRange[] = [];
+  let busStart: { line: number; col: number } | null = null;
+  const close = (i: number) => {
+    if (! busStart) {
+      return;
+    }
+    ranges.push({
+      nodeId: `bus-fold`,
+      startLine: busStart.line,
+      startColumn: busStart.col,
+      endLine: i,
+      endColumn: lines[i - 1]!.length + 1,
+    });
+    busStart = null;
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const trimmed = line.trimStart();
+    if (! /^(bus|out)\b/i.test(trimmed)) {
+      continue;
+    }
+    const toks = tokensWithCols(line);
+    const head = headOf(toks);
+    if (! head) {
+      continue;
+    }
+    const first = toks[0]!.text.toLowerCase();
+    if (first === "out") {
+      close(i);
+      continue;
+    }
+    if (first !== "bus") {
+      continue;
+    }
+    const col = toks[0]!.start + 1;
+    close(i);
+    busStart = { line: i + 1, col };
+  }
+  if (busStart) {
+    const last = lines[lines.length - 1]!;
+    ranges.push({
+      nodeId: `bus-fold`,
+      startLine: busStart.line,
+      startColumn: busStart.col,
+      endLine: lines.length,
+      endColumn: last.length + 1,
+    });
+  }
+  return ranges;
+}
