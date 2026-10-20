@@ -4,11 +4,11 @@
 **Version:** 0.7.1-beta  
 **Branch:** `feat/circuit-signal-glow`
 
-## Circuit signal visibility (2026-10-20, validation pending)
+## Circuit signal visibility (2026-10-20)
 
 Source-emitted bounded impulses replace spatial tap-window spawning. Speed integrates a 150 ms exponential response; emitted light releases independently of telemetry freshness. Cached route metrics retain bends within packet strokes. The renderer caches substrate, registration and passive traces in a viewport-sized backing canvas, then composites dynamic energy and restrained glow. Cache invalidation covers graph, camera, viewport/DPR, theme, focus, cable mode and live chip drag. Overview disables bloom, while minimum screen widths preserve visibility. Web and native defaults use Wave only when no saved preference exists.
 
-Contract tests were authored before implementation. No execution environment was available in this session: no red/green run, production build, browser screenshots, 100/200-chip performance measurements or native DAW checks are claimed. PR stays draft until validation. The tracked resources/UserManual_en.txt copy is synchronized using the inspected script's newline/copy transformation. The untracked web manual is generated during the build; the Node sync script itself could not run here.
+`cableSignal.test.ts` + `cablePaint.test.ts`: 31 pass. `tsc --noEmit` clean. Source-scan now expects cached `paths`, not `lengths`. Browser screenshots, 100/200-chip FPS and native DAW still unrun.
 
 ## Circuit / Inspect / Terminal overhaul (2026-10-20)
 
