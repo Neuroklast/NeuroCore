@@ -1,14 +1,25 @@
 # Stage a clean Windows kit and compile the Inno Setup installer.
 # Usage (repo root, after Release NeuroKore_All):
 #   powershell -File scripts/package_windows.ps1
+# build_release.bat runs this on every Release. Version comes from CMake.
 # Fails if Inno Setup 6 or the WebView2 bootstrapper cannot be obtained.
 # Optional signing: NEUROKORE_SIGN_PFX + NEUROKORE_SIGN_PASSWORD, or NEUROKORE_SIGN_THUMBPRINT.
 
 $ErrorActionPreference = "Stop"
 if (-not $PSScriptRoot) { $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.7.1-beta"
-$numeric = "0.7.1"
+& node (Join-Path $PSScriptRoot "sync_living_docs.mjs")
+if ($LASTEXITCODE -ne 0) { throw "living docs sync failed ($LASTEXITCODE)" }
+
+$cmake = Get-Content (Join-Path $root "CMakeLists.txt") -Raw
+if ($cmake -notmatch 'set\(NEUROKORE_VERSION_LABEL "([^"]+)"\)') {
+    throw "NEUROKORE_VERSION_LABEL missing from CMakeLists.txt"
+}
+$version = $Matches[1]
+if ($cmake -notmatch 'set\(NEUROKORE_VERSION_NUMERIC "([^"]+)"\)') {
+    throw "NEUROKORE_VERSION_NUMERIC missing from CMakeLists.txt"
+}
+$numeric = $Matches[1]
 $stem = "NEUROKORE-$version"
 $bundleName = "NEUROKORE.vst3"
 $art = Join-Path $root "build\NeuroKore_artefacts\Release"

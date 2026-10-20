@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-20 (0.7.1-beta)
 **Version:** 0.7.1-beta  
-**Branch:** `feat/v0.7.1-beta`
+**Branch:** `main`
+
+## Release kit and living docs (2026-10-20)
+
+`build_release.bat` syncs `docs/manual/NEUROKORE.md` into `resources/UserManual_en.txt`, builds Release `NeuroKore_All`, then runs `scripts/package_windows.ps1` every time. The pack reads `NEUROKORE_VERSION_LABEL` and `NEUROKORE_VERSION_NUMERIC` from CMake. It writes `build/package/NEUROKORE-<label>-Setup.exe`, the SHA-256, and `NEUROKORE-<label>-win64.zip`. Portable `NEUROKORE-<label>/` extracts stay gitignored. The depth helper is `chipDepth.ts`, so Windows can tell it from `ChipChrome.tsx`. Version stays 0.7.1-beta. A local Release on 2026-10-20 wrote Setup SHA256 `52d556dad5112bed1f2d6a79556548f045baf4a53cfdad91894454a470c841e4`.
 
 ## 0.7.1-beta (2026-10-19)
 
@@ -461,7 +465,7 @@ cmake --build build --config Release --target NeuroKore_All
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Windows: `build_release.bat` / `build_debug.bat` — same `build/` tree and `NeuroKore_All`. Version string in the `.bat` files must match `NEUROKORE_VERSION_LABEL`.
+Windows: `build_release.bat` syncs living docs, builds Release `NeuroKore_All`, and packages Setup.exe plus zip. `build_debug.bat` syncs docs and builds Debug in the same `build/` tree, without a package. Both bats read `NEUROKORE_VERSION_LABEL` from CMake.
 
 `NeuroKore_All` / VST3 / Standalone **always** run `npm run build` first (`NeuroKoreWeb` is a hard dependency). Missing `npm` fails configure. `web/dist` is packed into the binary (Windows RCDATA id `41001`; macOS `Contents/Resources/web` + `neurokore_web_dist.zip`). Testers need only the `.vst3` / `.exe` / `.component`. Windows VST3 is the module binary + `Contents/Resources/moduleinfo.json` — no sibling `resources/` or `web/` next to the DLL (NEUROMETER layout). Standalone may keep a sibling `web/` for local disk UI. `NEUROKORE_WEB_DISK=0` ignores disk and serves the embed (local tester-mode). Quoted RC names do not FindResource — integer ID only. `factory_presets.json` is a configure depend of BinaryData.
 

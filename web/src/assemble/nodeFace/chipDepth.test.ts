@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { chipBox, jackAnchor } from "../chipLayout";
 import { handleId } from "../handles";
 import { visualJacksFor } from "../visualEdges";
-import { chipDepth } from "./chipChrome";
+import { chipDepth } from "./chipDepth";
 import { faceKindForType } from "./faceKind";
 import { zoomMayMovePorts, zoomMayResizeChip } from "./semanticZoom";
 
@@ -24,6 +24,14 @@ function filterBox() {
 }
 
 describe("shared chip chrome", () => {
+  it("keeps chipDepth and ChipChrome as distinct names on a case-insensitive volume", () => {
+    const files = readdirSync(new URL(".", import.meta.url)).filter((f) => /\.(ts|tsx)$/.test(f));
+    const stems = files.map((f) => f.replace(/\.(ts|tsx)$/, "").toLowerCase());
+    expect(new Set(stems).size).toBe(stems.length);
+    expect(files).toContain("chipDepth.ts");
+    expect(files).toContain("ChipChrome.tsx");
+  });
+
   it("maps interaction to depth 1–3 without a fourth standing glow", () => {
     expect(chipDepth({ selected: false, focus: "off", bindOpen: false })).toBe(1);
     expect(chipDepth({ selected: true, focus: "off", bindOpen: false })).toBe(2);

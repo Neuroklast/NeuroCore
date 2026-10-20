@@ -2,29 +2,49 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-REM One-click Windows Release. Must match AGENTS.md:
-REM   cmake -B build -S .
-REM   cmake --build build --config Release --target NeuroKore_All
-REM When the version label or artefact names change, update the echo paths below
-REM AND CMakeLists.txt NEUROKORE_VERSION_LABEL.
+REM One-click Windows Release:
+REM   sync living docs, cmake -B build -S ., NeuroKore_All, then the Windows package.
+REM Version label is read from CMakeLists.txt. Do not copy it into this file.
 
-set "VERSION_LABEL=0.7.1-beta"
-set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 set "BUILD_DIR=build"
 set "CONFIG=Release"
 set "TARGET=NeuroKore_All"
 if /i "%~1"=="/nopause" set "NOPAUSE=1"
+
+for /f tokens^=2^ delims^=^" %%L in ('findstr /C:"set(NEUROKORE_VERSION_LABEL" CMakeLists.txt') do set "VERSION_LABEL=%%L"
+if not defined VERSION_LABEL (
+    echo FEHLER: NEUROKORE_VERSION_LABEL fehlt in CMakeLists.txt.
+    call :maybe_pause
+    exit /b 1
+)
+set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 
 echo ===========================================
 echo  NEUROKORE RELEASE
 echo  %VERSION_LABEL%  target %TARGET%
 echo ===========================================
 
+where node >nul 2>&1
+if errorlevel 1 (
+    echo FEHLER: node fehlt. Living docs und der Web-Build brauchen Node.
+    call :maybe_pause
+    exit /b 1
+)
+
+echo.
+echo [1/4] node scripts\sync_living_docs.mjs
+node scripts\sync_living_docs.mjs
+if errorlevel 1 (
+    echo FEHLER: Living docs nicht synchron.
+    call :maybe_pause
+    exit /b 1
+)
+
 call :find_cmake
 if errorlevel 1 exit /b 1
 
 echo.
-echo [1/2] cmake -B %BUILD_DIR% -S .
+echo [2/4] cmake -B %BUILD_DIR% -S .
 "%CMAKE%" -B "%BUILD_DIR%" -S .
 if errorlevel 1 (
     echo FEHLER: CMake configure fehlgeschlagen.
@@ -33,10 +53,19 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/2] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
+echo [3/4] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
 "%CMAKE%" --build "%BUILD_DIR%" --config %CONFIG% --target %TARGET% --parallel
 if errorlevel 1 (
     echo FEHLER: Release-Build fehlgeschlagen.
+    call :maybe_pause
+    exit /b 1
+)
+
+echo.
+echo [4/4] powershell -File scripts\package_windows.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_windows.ps1
+if errorlevel 1 (
+    echo FEHLER: Windows-Paket fehlgeschlagen.
     call :maybe_pause
     exit /b 1
 )
@@ -51,7 +80,8 @@ echo  Release OK
 if exist "%VST3%" echo  VST3: %VST3%
 if exist "%VST3_BUNDLE%" echo  VST3: %VST3_BUNDLE%
 if exist "%EXE%" echo  EXE:  %EXE%
-echo  Zip/Installer: powershell -File scripts\package_windows.ps1
+echo  Setup: %BUILD_DIR%\package\%FILE_STEM%-Setup.exe
+echo  Zip:   %BUILD_DIR%\package\%FILE_STEM%-win64.zip
 echo ===========================================
 call :maybe_pause
 exit /b 0

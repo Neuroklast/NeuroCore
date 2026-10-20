@@ -22,7 +22,7 @@ import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLam
 import { ChipParameters, ChipParameterCaption } from "./ChipParameters";
 import { ChipShell } from "./nodeFace/ChipShell";
 import { NodeFace } from "./nodeFace/NodeFace";
-import { chipDepth } from "./nodeFace/chipChrome";
+import { chipDepth } from "./nodeFace/chipDepth";
 import { faceKindForType } from "./nodeFace/faceKind";
 
 export function BoardChip({

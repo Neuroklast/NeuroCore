@@ -20,7 +20,7 @@ No code before that.
 
 1. Run the **contract tests for the files you touched**, not the 28k-expect factory slog, unless you changed factory scripts.
 2. Update only `docs/DEVELOPMENT_STATUS.md` (current truth). Add one rule to `docs/LESSONS_LEARNED.md` only if it is a **new** rule, not a session diary.
-3. If a user can see the change (Circuit, Help, footer, install, license, knobs), update `docs/manual/NEUROKORE.md` and `resources/UserManual_en.txt` in the **same** run. A coding run does not end with “docs later”.
+3. If a user can see the change (Circuit, Help, footer, install, license, knobs), update `docs/manual/NEUROKORE.md` and run `node scripts/sync_living_docs.mjs` in the **same** run. That writes `resources/UserManual_en.txt`. A coding run does not end with “docs later”.
 4. Rebuild Standalone/VST3 only when the user asked for a binary.
 
 ## Forbidden

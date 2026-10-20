@@ -403,3 +403,6 @@ build-dsp*/
 # Browser contract evidence
 web/test-results/
 web/playwright-report/
+
+# Portable kits from scripts/package_windows.ps1. Rebuild them; do not commit them.
+/NEUROKORE-*/
