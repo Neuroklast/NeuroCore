@@ -29,3 +29,21 @@ it("bounds packet work during dense fresh telemetry", () => {
     );
   expect(s.packets.length).toBeLessThanOrEqual(12);
 });
+
+it("emits one impulse at the source regardless of tap peak positions", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0.3, 0.8], 0.2, 0.8, 1000, 0);
+  expect(s.packets).toEqual([0]);
+});
+it("lets emitted impulses travel and fade after silence", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0.5], 0.2, 0.8, 1000, 0);
+  advanceCableSignal(s, {}, [], 0, 0, 1000, 0.05);
+  expect(s.packets.length).toBe(1);
+  expect(s.packets[0]).toBeGreaterThan(0);
+});
+it("does not create packets while animation is disabled", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0.5], 0.2, 0.8, 1000, 0.016, false);
+  expect(s.packets).toEqual([]);
+});
