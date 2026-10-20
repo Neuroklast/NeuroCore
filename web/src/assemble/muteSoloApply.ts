@@ -9,20 +9,31 @@ export function resetMuteSolo(): void {
   useChipViewStore.setState({ muted: new Set(), soloed: new Set() });
 }
 
-export function syncMuteSoloToScript(): void {
+/** Publishes the current mute/solo overlay to the script and reverts on failure.
+ * Returns true when the publish succeeded (or was a no-op). */
+export async function syncMuteSoloToScript(): Promise<boolean> {
   const cur = useAstStore.getState();
   const live = cur.lastValidScript || cur.script;
   if (! live) {
-    return;
+    return true;
   }
   const { muted, soloed } = useChipViewStore.getState();
   const next = applyMuteSolo(live, muted, soloed);
   if (next === live) {
-    return;
+    return true;
   }
   muteScriptHistory(true);
-  publishScript(next, "canvas");
-  muteScriptHistory(false);
+  try {
+    const result = await publishScript(next, "canvas");
+    muteScriptHistory(false);
+    if (typeof result === "object" && result !== null && "ok" in result) {
+      return result.ok === true;
+    }
+    return true;
+  } catch {
+    muteScriptHistory(false);
+    return false;
+  }
 }
 
 export function toggleChipMute(id: string): void {
@@ -30,7 +41,7 @@ export function toggleChipMute(id: string): void {
     return;
   }
   useChipViewStore.getState().toggleMute(id);
-  syncMuteSoloToScript();
+  void syncMuteSoloToScript();
 }
 
 export function toggleChipSolo(id: string): void {
@@ -38,52 +49,72 @@ export function toggleChipSolo(id: string): void {
     return;
   }
   useChipViewStore.getState().toggleSolo(id);
-  syncMuteSoloToScript();
+  void syncMuteSoloToScript();
 }
 
-export function setGroupMute(ids: string[], enabled: boolean): void {
+export async function setGroupMute(ids: string[], enabled: boolean): Promise<boolean> {
   const chipStore = useChipViewStore.getState();
   const mutedIds = ids.filter((id) => ! isFlowBlockId(id));
   if (mutedIds.length === 0) {
-    return;
+    return true;
   }
+  const prevMuted = new Set(chipStore.muted);
   chipStore.setGroupMute(mutedIds, enabled);
-  syncMuteSoloToScript();
+  const ok = await syncMuteSoloToScript();
+  if (! ok) {
+    useChipViewStore.setState({ muted: prevMuted });
+  }
+  return ok;
 }
 
-export function setGroupSolo(ids: string[], enabled: boolean): void {
+export async function setGroupSolo(ids: string[], enabled: boolean): Promise<boolean> {
   const chipStore = useChipViewStore.getState();
   const soloIds = ids.filter((id) => ! isFlowBlockId(id));
   if (soloIds.length === 0) {
-    return;
+    return true;
   }
+  const prevSoloed = new Set(chipStore.soloed);
   chipStore.setGroupSolo(soloIds, enabled);
-  syncMuteSoloToScript();
+  const ok = await syncMuteSoloToScript();
+  if (! ok) {
+    useChipViewStore.setState({ soloed: prevSoloed });
+  }
+  return ok;
 }
 
-export function toggleGroupMute(ids: string[]): void {
+export async function toggleGroupMute(ids: string[]): Promise<boolean> {
   const chipStore = useChipViewStore.getState();
   const mutedIds = ids.filter((id) => ! isFlowBlockId(id));
   if (mutedIds.length === 0) {
-    return;
+    return true;
   }
+  const prevMuted = new Set(chipStore.muted);
   chipStore.toggleGroupMute(mutedIds);
-  syncMuteSoloToScript();
+  const ok = await syncMuteSoloToScript();
+  if (! ok) {
+    useChipViewStore.setState({ muted: prevMuted });
+  }
+  return ok;
 }
 
-export function toggleGroupSolo(ids: string[]): void {
+export async function toggleGroupSolo(ids: string[]): Promise<boolean> {
   const chipStore = useChipViewStore.getState();
   const soloIds = ids.filter((id) => ! isFlowBlockId(id));
   if (soloIds.length === 0) {
-    return;
+    return true;
   }
+  const prevSoloed = new Set(chipStore.soloed);
   chipStore.toggleGroupSolo(soloIds);
-  syncMuteSoloToScript();
+  const ok = await syncMuteSoloToScript();
+  if (! ok) {
+    useChipViewStore.setState({ soloed: prevSoloed });
+  }
+  return ok;
 }
 
 export function clearChipSolo(): void {
   useChipViewStore.getState().clearSolo();
-  syncMuteSoloToScript();
+  void syncMuteSoloToScript();
 }
 
 export async function withCleanScriptForSave(run: () => Promise<void>): Promise<void> {
@@ -99,5 +130,5 @@ export async function withCleanScriptForSave(run: () => Promise<void>): Promise<
     muteScriptHistory(false);
   }
   await run();
-  syncMuteSoloToScript();
+  void syncMuteSoloToScript();
 }

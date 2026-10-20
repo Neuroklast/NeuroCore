@@ -81,6 +81,10 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     const blurb = inspectBlurb(node.type);
     const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
     const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
+    const formula = argFields.filter((f) => {
+      const v = node.args[f.key] ?? "";
+      return ! isLiteralNumber(v) && ! isMacroOrExpression(v) && f.options.length === 0;
+    });
     const detector = argFields.find((f) => f.key === "type" || f.key === "detector");
     const detectorLabel = detector ? ` · ${(node.args[detector.key] ?? "").toUpperCase()}` : "";
 
@@ -148,6 +152,21 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
                   <button type="button" className="nk-inspect-bind text-[9px] text-muted" onClick={() => onReveal(f.key)}>
                     zeigen
                   </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Formel-Parameter (schreibgeschützt, kein Makro, kein Literal) */}
+        {formula.length > 0 ? (
+          <section className="border border-[var(--nk-line)] bg-black/40">
+            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">Formula</div>
+            <div className="p-1 space-y-1">
+              {formula.map((f) => (
+                <div key={f.key} className="flex items-center gap-2 px-2 py-1 text-[10px]">
+                  <span className="w-16 font-mono text-cyan">{f.key}</span>
+                  <span className="flex-1 font-mono text-ink truncate">{node.args[f.key]}</span>
                 </div>
               ))}
             </div>

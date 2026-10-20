@@ -35,6 +35,7 @@ import { boardIdForSource } from "../hack/dslSourceMap";
 import { pruneSelection, publishSelection } from "../store/patchWorkspace";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
 import { setGroupMute, setGroupSolo } from "./muteSoloApply";
+import { isFlowBlockId } from "./muteSolo";
 
 type BoardMenu =
   | { kind: "pane"; left: number; top: number; world: { x: number; y: number } }
@@ -878,10 +879,18 @@ const lassoRef = useRef<SelectionRect | null>(null);
             setMenu(null);
           }}>Inspect</OsMenuItem>
           {menu != null && selection.length > 1 && selection.includes(menu.id) ? <>
-            <OsMenuItem onClick={() => { setGroupMute(selection, true); setMenu(null); }}>Mute Gruppe</OsMenuItem>
-            <OsMenuItem onClick={() => { setGroupMute(selection, false); setMenu(null); }}>Gruppe entstummen</OsMenuItem>
-            <OsMenuItem onClick={() => { setGroupSolo(selection, true); setMenu(null); }}>Solo Gruppe</OsMenuItem>
-            <OsMenuItem onClick={() => { setGroupSolo(selection, false); setMenu(null); }}>Solo aufheben</OsMenuItem>
+            {() => {
+              const flowExcluded = selection.filter((id) => isFlowBlockId(id)).length;
+              const suffix = flowExcluded > 0 ? ` (${flowExcluded} blockiert)` : "";
+              return (
+                <>
+                  <OsMenuItem onClick={() => { void setGroupMute(selection, true); setMenu(null); }}>Mute Gruppe{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupMute(selection, false); setMenu(null); }}>Gruppe entstummen{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupSolo(selection, true); setMenu(null); }}>Solo Gruppe{suffix}</OsMenuItem>
+                  <OsMenuItem onClick={() => { void setGroupSolo(selection, false); setMenu(null); }}>Solo aufheben{suffix}</OsMenuItem>
+                </>
+              );
+            }}()
           </> : null}
           {canDeleteChip(nodes[menu.id]) ? (
             <OsMenuItem danger onClick={() => {

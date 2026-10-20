@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { chipSpec } from "../assemble/chipSpec";
 import {
   KNOB_CX, KNOB_CY, knobArcLen, knobArcOffset,
@@ -43,6 +43,8 @@ export function InspectKnob({
   const [edit, setEdit] = useState<string | null>(null);
   const gesture = useRef(false);
   const live = useRef(0);
+  const moveRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
+  const upRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
   const label = key.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const value = draft ?? current;
 
@@ -63,6 +65,21 @@ export function InspectKnob({
       commit(def);
     }
   }, [nodeType, key, commit]);
+
+  // Clean up window listeners on unmount so a drag that outlives the component
+  // cannot leave stale listeners attached to window.
+  useEffect(() => {
+    return () => {
+      if (moveRef.current) {
+        window.removeEventListener("pointermove", moveRef.current);
+        moveRef.current = null;
+      }
+      if (upRef.current) {
+        window.removeEventListener("pointerup", upRef.current);
+        upRef.current = null;
+      }
+    };
+  }, []);
 
   // ---------- numerischer Drehregler ----------
   if (isNum) {
@@ -91,6 +108,8 @@ export function InspectKnob({
         gesture.current = false;
         commit(String(field.min + live.current * (field.max - field.min)));
       };
+      moveRef.current = move;
+      upRef.current = up;
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);
     }, [norm01, value, field.min, field.max, commit]);
@@ -113,7 +132,8 @@ export function InspectKnob({
       if (Number.isFinite(n)) {
         commit(String(Math.min(field.max, Math.max(field.min, n))));
       } else {
-        setEdit(null);
+        // Restore the last committed value instead of clearing the field.
+        setEdit(current);
       }
     };
 
