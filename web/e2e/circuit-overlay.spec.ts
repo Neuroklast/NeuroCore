@@ -97,7 +97,7 @@ test.describe("circuit overlay camera lock", () => {
     if (! box) {
       throw new Error("board has no box");
     }
-    await page.mouse.click(box.x + 24, box.y + 24, { button: "right" });
+    await page.mouse.click(box.x + 24, box.y + 72, { button: "right" });
     await menuInsideBoard(page);
     expect(await camera(page)).toEqual(beforeCam);
 

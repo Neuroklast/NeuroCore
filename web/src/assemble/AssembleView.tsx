@@ -12,7 +12,6 @@ export function AssembleView({
   onOpenTerminal?: () => void;
 }) {
   const open = useSourceInspectorStore((s) => s.open);
-  const toggle = useSourceInspectorStore((s) => s.toggle);
   const width = useSourceInspectorStore((s) => s.width);
   const hostRef = useRef<HTMLDivElement>(null);
   const [pane, setPane] = useState({ w: 960, h: 420 });
@@ -39,15 +38,7 @@ export function AssembleView({
     >
       <div className="relative min-h-0 min-w-0 flex-1">
         <BoardView active={active} />
-        <button
-          type="button"
-          className="nk-source-toggle nk-clip"
-          data-board-control=""
-          aria-pressed={open}
-          onClick={() => toggle()}
-        >
-          Source
-        </button>
+
       </div>
       {dock !== "closed" ? (
         <SourceInspector

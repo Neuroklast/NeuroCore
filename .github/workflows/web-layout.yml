@@ -32,6 +32,9 @@ jobs:
         env:
           NK_LAYOUT_EVIDENCE: ../artifacts/circuit-metrics
         run: npx vitest run src/assemble/layout/serialComposition.test.ts src/assemble/layout/factorySignalFlow.test.ts
+      - name: Circuit navigation and signal contracts
+        working-directory: web
+        run: npx vitest run src/assemble/boardNavigation.test.ts src/assemble/cableSignal.test.ts src/assemble/cablePaint.test.ts
       - name: Layout contracts
         working-directory: web
         run: npm run test:layout

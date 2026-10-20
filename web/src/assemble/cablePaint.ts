@@ -1,3 +1,4 @@
+import { boardGridStep } from "./boardNavigation";
 import { motionAllows } from "../theme/motionPolicy";
 import { DISPLAY_AMP_FLOOR, peakToDb } from "../bridge/telemetry";
 import type { PortKind } from "./boardModel";
@@ -594,59 +595,21 @@ export function visibleBlockRange(
   };
 }
 
-/**
- * Viewport-culled unused copper on BOARD_BLOCK. Hash-gated, persistent under pan.
- * 45° stubs + via pads. No A*, no CSS pattern.
- */
-export function drawBackgroundTraces(
-  ctx: CanvasRenderingContext2D,
-  transform: CameraTransform,
-): void {
-  const block = BOARD_BLOCK;
-  const { i0, i1, j0, j1 } = visibleBlockRange(transform, block);
+/** World-anchored, zoom-decimated board registration. No decorative signal paths. */
+export function drawBackgroundTraces(ctx:CanvasRenderingContext2D, transform:CameraTransform):void {
+  const step=boardGridStep(transform.scale);
+  const {i0,i1,j0,j1}=visibleBlockRange(transform,step);
   ctx.save();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-  ctx.lineWidth = 1;
-  ctx.lineCap = "butt";
-  ctx.lineJoin = "miter";
-  ctx.setLineDash([]);
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1;
-  for (let ix = i0; ix < i1; ix += 1) {
-    for (let iy = j0; iy < j1; iy += 1) {
-      const h = gridHash(ix, iy);
-      if (h % 3 !== 0) {
-        continue;
-      }
-      const x = ix * block;
-      const y = iy * block;
-      const horiz = (h >>> 3) % 2 === 0;
-      ctx.beginPath();
-      if (horiz) {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + block, y);
-      } else {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + block);
-      }
-      ctx.stroke();
-      if ((h >>> 5) % 2 !== 0) {
-        continue;
-      }
-      const stub = 16 + (h >>> 7) % 9;
-      const dir = (h >>> 11) % 4;
-      const sx = dir === 0 || dir === 1 ? stub : -stub;
-      const sy = dir === 0 || dir === 3 ? stub : -stub;
-      const ex = x + (horiz ? block * 0.5 : 0) + sx;
-      const ey = y + (horiz ? 0 : block * 0.5) + sy;
-      ctx.beginPath();
-      ctx.moveTo(horiz ? x + block * 0.5 : x, horiz ? y : y + block * 0.5);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(ex, ey, 1.5, 0, Math.PI * 2);
-      ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,0.075)";
+  ctx.strokeStyle="rgba(255,255,255,0.045)";
+  ctx.lineWidth=1/transform.scale;
+  ctx.setLineDash([]);ctx.shadowBlur=0;ctx.globalAlpha=1;
+  for(let ix=i0;ix<i1;ix++)for(let iy=j0;iy<j1;iy++){
+    const x=ix*step,y=iy*step;
+    ctx.beginPath();ctx.arc(x,y,.65/transform.scale,0,Math.PI*2);ctx.fill();
+    if(ix%8===0&&iy%8===0){
+      const arm=4/transform.scale;
+      ctx.beginPath();ctx.moveTo(x-arm,y);ctx.lineTo(x+arm,y);ctx.moveTo(x,y-arm);ctx.lineTo(x,y+arm);ctx.stroke();
     }
   }
   ctx.restore();

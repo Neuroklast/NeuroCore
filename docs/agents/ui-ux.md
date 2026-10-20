@@ -48,7 +48,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 | Port labels are `[ MID ]` / `[ SIDE ]` | Caption is `mid` or a fake UUID / `REV.45-B` |
 | Chip foot is `node.id` + live dB, `still`, or `—` | Invented UGID, barcode, TRG, grip greeble, or a dash for a measured floor |
 | Circuit secondary type is `--nk-ink-soft` | Port-cap or chip foot still uses `--nk-ink-muted` on the plate |
-| Cable beads follow that chip | Beads are **local maxima** of the source tap window, mapped 0…1 along the polyline. **RMS** sets travel speed. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** is the 3-pass chroma glitch. ≤ −60 dBFS RMS = still. Camera pan keeps traces and glow. Do not drive glow from RMS or density from peak |
+| Cable beads follow that chip | Beads are **local maxima** of the source tap window, mapped 0…1 along the polyline. **RMS** sets travel speed. **Peak** sets alpha (0.4→1) and blur (2→15). Peak **> 1.0** adds a local source-contact warning ring. ≤ −60 dBFS RMS = no packets. Consume source snapshots once; expire packets and stale energy, never wrap them. Sustained RMS paints a thin core. Camera pan keeps traces and glow. Do not drive glow from RMS or density from peak |
 | Clip lamp and hazard are uncovered chrome | Peak LED sits **left of the title** with `CHIP_PAD_X` gap, not under the chevron. Hazard stripes clip on a `::before` layer; the band itself is `overflow: visible`. Clip warn is an outlined Δ + bang at the east jack (`left: 100%`), size `TITLE_H` |
 | Param cables never cross knobs | Bind preview has a horizontal run inside the knob-card band |
 | Param cables follow the board router | Bind path through a chip, no 32 px stubs, lightning, or dest jack above the knob with an empty path |
