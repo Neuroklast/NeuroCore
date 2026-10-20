@@ -114,8 +114,8 @@ export function BoardChip({
           row={{ key, label: key, formula: node.args[key] ?? "", bindable: true }} />)}
         {canMs ? (
         <div className="nk-chip-ms flex items-center gap-1" style={{ pointerEvents: "auto" }}>
-          <button type="button" className={`nk-ms nodrag nopan ${(multi ? groupMuted : isMuted) ? "is-on" : ""} ${someMuted && !groupMuted ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupMute(selection); } else { toggleChipMute(node.id); } }}>M</button>
-          <button type="button" className={`nk-ms nodrag nopan ${(multi ? groupSoloed : isSoloed) ? "is-solo" : ""} ${someSoloed && !groupSoloed ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupSolo(selection); } else { toggleChipSolo(node.id); } }}>S</button>
+          <button type="button" className={`nk-ms ${(multi ? groupMuted : isMuted) ? "is-on" : ""} ${someMuted && !groupMuted ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupMute(selection); } else { toggleChipMute(node.id); } }}>M</button>
+          <button type="button" className={`nk-ms ${(multi ? groupSoloed : isSoloed) ? "is-solo" : ""} ${someSoloed && !groupSoloed ? "is-mixed" : ""}`} onClick={(e) => { e.stopPropagation(); if (multi) { toggleGroupSolo(selection); } else { toggleChipSolo(node.id); } }}>S</button>
         </div>
       ) : null}</>}
       data-selected={selected ? "on" : "off"}

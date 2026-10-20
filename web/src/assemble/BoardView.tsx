@@ -67,8 +67,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
 const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
 const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number; startX: number; startY: number; group: Record<string, { x: number; y: number }> } | null>(null);
 const lassoRef = useRef<SelectionRect | null>(null);
-/** Exakt eine aktive Gesture gleichzeitig: "pan" | "drag" | "lasso" | "connect" | null. */
-const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
   const lassoCompletedRef = useRef(false);
   const [lasso, setLasso] = useState<SelectionRect | null>(null);
   const spaceRef = useRef(false);
@@ -389,8 +387,7 @@ const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
     // Rechtsklick → Kontextmenü, niemals eine Kamera- oder Chip-Verschiebung.
     if (e.button === 2) {
       e.preventDefault();
-      gesture.current = null;
-      handleContextMenu(e, pane, world);
+            handleContextMenu(e, pane, world);
       return;
     }
     if (e.button !== 0) {
@@ -408,8 +405,7 @@ const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
         e.stopPropagation();
         if (e.altKey) {
           commitBoardCut(port);
-          gesture.current = null;
-          return;
+                    return;
         }
         const from = portGlobal(node, port);
         connectDragRef.current = {
@@ -420,67 +416,66 @@ const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
           kind: port.kind,
         };
         capturePanePointer(pane, e.pointerId);
-        gesture.current = "connect";
-        return;
+                return;
       }
     }
 
     // 3. Chip: Selektion und (nach Schwelle) gemeinsamer Chip-Drag.
+    // Ein Klick auf eine Chip-Kontrolle (M/S, Chevron, Bind-Jack, Overlay) startet
+    // weder eine Kamera- noch eine Chip-Geste; der Control behält sein eigenes onClick.
     const chip = target.closest("[data-node-id]");
     const id = chip?.getAttribute("data-node-id");
-    if (id && ! target.closest(".nk-port, .nk-chip-expand, .nk-ms, .nk-chip-overlay, .nk-bind-jack, .nk-bind-cell")) {
-      const n = useBoardStore.getState().nodes[id];
-      if (e.ctrlKey || e.metaKey) {
-        selectNodes((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
-        gesture.current = null;
-        return;
-      }
-      if (e.shiftKey) {
-        const anchor = selectedRef.current;
-        if (anchor && anchor !== id) {
-          const g = useBoardStore.getState();
-          const path = shortestPath({ nodes: g.nodes, edges: g.edges }, anchor, id);
-          if (path.length > 0) {
-            selectNodes(path);
+    if (id) {
+      if (! target.closest(".nk-port, .nk-chip-expand, .nk-ms, .nk-chip-overlay, .nk-bind-jack, .nk-bind-cell")) {
+        const n = useBoardStore.getState().nodes[id];
+        if (e.ctrlKey || e.metaKey) {
+          selectNodes((old) => old.includes(id) ? old.filter((v) => v !== id) : [...old, id]);
+                    return;
+        }
+        if (e.shiftKey) {
+          const anchor = selectedRef.current;
+          if (anchor && anchor !== id) {
+            const g = useBoardStore.getState();
+            const path = shortestPath({ nodes: g.nodes, edges: g.edges }, anchor, id);
+            if (path.length > 0) {
+              selectNodes(path);
+            } else {
+              selectNodes([id]);
+            }
           } else {
             selectNodes([id]);
           }
-        } else {
-          selectNodes([id]);
+                    return;
         }
-        gesture.current = null;
-        return;
+        const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
+        selectNodes(group);
+        if (! n || n.locked) {
+                    return;
+        }
+        const origins = Object.fromEntries(group.filter((v) => !useBoardStore.getState().nodes[v]?.locked).map((v) => {
+          const node = useBoardStore.getState().nodes[v]!;
+          return [v, { x: node.x, y: node.y }];
+        }));
+        dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y,
+          startX: e.clientX, startY: e.clientY, group: origins };
+        capturePanePointer(pane, e.pointerId);
+                return;
       }
-      const group = selectionRef.current.includes(id) ? selectionRef.current : [id];
-      selectNodes(group);
-      if (! n || n.locked) {
-        gesture.current = null;
-        return;
-      }
-      const origins = Object.fromEntries(group.filter((v) => !useBoardStore.getState().nodes[v]?.locked).map((v) => {
-        const node = useBoardStore.getState().nodes[v]!;
-        return [v, { x: node.x, y: node.y }];
-      }));
-      dragRef.current = { id, dx: world.x - n.x, dy: world.y - n.y, originX: n.x, originY: n.y,
-        startX: e.clientX, startY: e.clientY, group: origins };
-      capturePanePointer(pane, e.pointerId);
-      gesture.current = "drag";
-      return;
+      // Control auf einem Chip: keine Kamera-Geste, keine Selektions-Aenderung.
+            return;
     }
 
     // 4. Freier Hintergrund: Alt + Drag = Rechteckauswahl, sonst Kamera-Pan.
     if (e.altKey) {
       lassoRef.current = { x0: world.x, y0: world.y, x1: world.x, y1: world.y };
       setLasso(lassoRef.current);
-      gesture.current = "lasso";
-      capturePanePointer(pane, e.pointerId);
+            capturePanePointer(pane, e.pointerId);
       return;
     }
     panRef.current = { startX: e.clientX, startY: e.clientY, tx: cam.tx, ty: cam.ty };
     camGesture.current = true;
     capturePanePointer(pane, e.pointerId);
-    gesture.current = "pan";
-  }, []);
+      }, []);
 
   const onPointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
     const pane = paneRef.current;
@@ -571,8 +566,7 @@ const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
     }
     connectDragRef.current = null;
     paneRef.current?.querySelectorAll(".nk-port-hot").forEach((el) => el.classList.remove("nk-port-hot"));
-    gesture.current = null;
-
+    
     if (panRef.current) {
       camGesture.current = false;
       useBoardStore.getState().setCamera(camLive.current);
@@ -746,8 +740,7 @@ const gesture = useRef<"pan" | "drag" | "lasso" | "connect" | null>(null);
         lassoRef.current = null;
         setLasso(null);
         panRef.current = null;
-        gesture.current = null;
-        camGesture.current = false;
+                camGesture.current = false;
         paneRef.current?.querySelectorAll<HTMLElement>("[data-node-id]").forEach((el) => { el.style.transform = ""; });
         paintCablesNow();
       }}

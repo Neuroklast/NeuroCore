@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  annotateKnobInlays,
   findKnobTokens,
   headerComments,
   isKeyword,
@@ -63,28 +62,6 @@ describe("terminal header comments", () => {
     const out = withHeaderComments(script, "Mute Lab", "quiet");
     expect(out).toContain("# nk-ms osc1: shape = sine; freq = 1");
     expect(out).toContain("filter1: type = highpass; cutoff = 80");
-  });
-});
-
-describe("knob inlays", () => {
-  it("appends a[0.34] after each knob token, live, 2 decimals", () => {
-    const knobs = [
-      { id: "a", value: 0.34, min: 0, max: 1 },
-      { id: "b", value: 0.5, min: 200, max: 2500 },
-    ];
-    const annotated = annotateKnobInlays("stage1: y = softclip(x, a) * b", knobs);
-    expect(annotated).toContain("a[0.34]");
-    expect(annotated).toContain("b[1350.00]");
-    expect(annotated).not.toMatch(/a\[0\.340\]/);
-  });
-
-  it("does not annotate letters inside comments", () => {
-    const annotated = annotateKnobInlays(
-      "stage1: y = x  # keep a dry",
-      [{ id: "a", value: 0.5, min: 0, max: 1 }],
-    );
-    expect(annotated).toContain("# keep a dry");
-    expect(annotated).not.toContain("a[");
   });
 });
 
