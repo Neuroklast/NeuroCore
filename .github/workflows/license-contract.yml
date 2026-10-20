@@ -32,4 +32,4 @@ jobs:
       - name: Sync operator docs
         run: |
           node scripts/sync_living_docs.mjs
-          git diff --exit-code -- resources/UserManual_en.txt web/src/overlays/userManual.gen.txt
+          git diff --exit-code -- resources/UserManual_en.txt

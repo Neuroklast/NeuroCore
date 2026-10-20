@@ -2,11 +2,11 @@
 
 **Stand:** 2026-10-20 (0.7.1-beta)
 **Version:** 0.7.1-beta  
-**Branch:** `feat/circuit-inspect-terminal-overhaul`
+**Branch:** `codex/neurokore-licensing`
 
 ## Website licensing integration (implementation branch)
 
-Ed25519 v2 device-bound activation against neuroklast.net; alpha/full entitlements, two server-managed seats, maximum 30-day offline activation files. Build with `NEUROKORE_LICENSE_PUBLIC_KEY_HEX`; empty means activation stays disabled. Stable builds must disable `NEUROKORE_ALLOW_ALPHA_LICENSES`. Legacy RSA licenses are rejected. Website migration, secrets, Stripe and release downloads still need deployment configuration. Focused native contracts and Node interoperability checks are included; no tested production binary or live checkout has been delivered by this change.
+Ed25519 v2 device-bound activation against neuroklast.net; alpha/full entitlements, two server-managed seats, maximum 30-day offline activation files. Build with `NEUROKORE_LICENSE_PUBLIC_KEY_HEX`; empty means activation stays disabled. Stable builds must disable `NEUROKORE_ALLOW_ALPHA_LICENSES`. Legacy RSA licenses are rejected. `userManual.gen.txt` stays gitignored. Website migration, secrets, Stripe and release downloads still need deployment configuration. `licenseModel.test.ts` 7/7 pass. Native License contract is CI. No production public key in this tree — activation stays fail-closed until that CMake cache is set.
 
 ## Circuit / Inspect / Terminal overhaul (2026-10-20)
 
