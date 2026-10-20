@@ -8,6 +8,14 @@
 
 Product version is 0.7.1-beta. VST3 class IDs stay frozen. Module binary stays `NEUROKORE.vst3`. Circuit closed nodes restore the dotted, cut-corner IC identity with separate name, control, function and parameter/status bands. Typecode and chip feet use `--nk-ink-soft`.
 
+## Circuit regions and signal paint (2026-10-20)
+
+PR #313 is merged at `dd39850`. Large boards (>8 components) now open a view hierarchy with at most six regions per level and three real chips per leaf. Search, parent navigation, an actual-placement region map, fit-selection and named regions share one fixed control band with Source. Region boundaries expose real neighbouring edges. The graph, manual positions, DSP, version and chip housing remain unchanged. Only the open scope is mounted/painted; offscreen cables are skipped and canvas backing stores have a 4M-pixel budget. View metadata is editor-session-only, bounded to 16 topology signatures; it is not preset persistence.
+
+The background is a world-anchored decimated dot grid with sparse registration crosses and a faint plate around the open region. Sustained RMS paints a thin cable core; measured source maxima make bounded, one-pass impulses with tails. Reused snapshots never re-emit packets, stale telemetry fades after 0.5 s, silence makes no energy, and clipping adds a local source-contact ring. Modulation uses sampled signed host values rather than a fabricated phase. Motion reduced/off keeps static energy without travelling packets or bloom.
+
+Validation: production build and TypeScript pass; 63 focused contracts pass. The broad Circuit run has 439 passing tests and the same two pre-existing failures (`chipSpec` compressor catalogue and `boardView.regression` knob-array subscription), already recorded by the serial-composition work. Browser suite: 17 pass / 1 existing duplicate-density skip across navigation, serial composition, context menus and Source. The corrected native-bridge large-patch fixture additionally passes all six 20/100/200 cases at 1×/2×, and both signal-pixel cases pass. Screenshots and metrics: `docs/evidence/circuit-navigation/`. Native GraphModel/AstJson and DAW/WebView2 tests were not run: no configured native/JUCE build is present here. No binary was rebuilt.
+
 ## Circuit serial composition (2026-10-20)
 
 A verified single IN→OUT path now has a dedicated placement strategy shared by Arrange and Compact. Every node, including OUT, follows its actual predecessor with a 64 px gutter and aligned jack centres. A narrow view changes camera fit rather than inserting a backwards row transition. Branches, modulation, buses, cycles and incomplete paths remain with the general graph strategy; rerouting manual placements never invokes serial placement.
