@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { advanceCableSignal, emptyCableSignal } from "./cableSignal";
+import { advanceCableSignal, emptyCableSignal, cablePacketAlpha } from "./cableSignal";
 it("consumes a tap snapshot once and expires packets rather than wrapping", () => {
   const token = {},
     s = emptyCableSignal();
@@ -46,4 +46,17 @@ it("does not create packets while animation is disabled", () => {
   const s = emptyCableSignal();
   advanceCableSignal(s, {}, [0.5], 0.2, 0.8, 1000, 0.016, false);
   expect(s.packets).toEqual([]);
+});
+
+it("smooths a sudden speed change instead of jumping to the target", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0], 0.01, 0.02, 1000, 0);
+  const before = s.speed;
+  advanceCableSignal(s, {}, [0], 1, 1, 1000, 0.016);
+  expect(s.speed).toBeGreaterThan(before);
+  expect(s.speed).toBeLessThan(144);
+});
+it("fades a packet continuously before its lifetime ends", () => {
+  expect(cablePacketAlpha({ distance: 10, age: 1.7, strength: 1 })).toBeCloseTo(0.5);
+  expect(cablePacketAlpha({ distance: 10, age: 2, strength: 1 })).toBe(0);
 });
