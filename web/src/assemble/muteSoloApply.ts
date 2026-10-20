@@ -41,6 +41,46 @@ export function toggleChipSolo(id: string): void {
   syncMuteSoloToScript();
 }
 
+export function setGroupMute(ids: string[], enabled: boolean): void {
+  const chipStore = useChipViewStore.getState();
+  const mutedIds = ids.filter((id) => ! isFlowBlockId(id));
+  if (mutedIds.length === 0) {
+    return;
+  }
+  chipStore.setGroupMute(mutedIds, enabled);
+  syncMuteSoloToScript();
+}
+
+export function setGroupSolo(ids: string[], enabled: boolean): void {
+  const chipStore = useChipViewStore.getState();
+  const soloIds = ids.filter((id) => ! isFlowBlockId(id));
+  if (soloIds.length === 0) {
+    return;
+  }
+  chipStore.setGroupSolo(soloIds, enabled);
+  syncMuteSoloToScript();
+}
+
+export function toggleGroupMute(ids: string[]): void {
+  const chipStore = useChipViewStore.getState();
+  const mutedIds = ids.filter((id) => ! isFlowBlockId(id));
+  if (mutedIds.length === 0) {
+    return;
+  }
+  chipStore.toggleGroupMute(mutedIds);
+  syncMuteSoloToScript();
+}
+
+export function toggleGroupSolo(ids: string[]): void {
+  const chipStore = useChipViewStore.getState();
+  const soloIds = ids.filter((id) => ! isFlowBlockId(id));
+  if (soloIds.length === 0) {
+    return;
+  }
+  chipStore.toggleGroupSolo(soloIds);
+  syncMuteSoloToScript();
+}
+
 export function clearChipSolo(): void {
   useChipViewStore.getState().clearSolo();
   syncMuteSoloToScript();

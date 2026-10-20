@@ -110,4 +110,52 @@ describe("expandStore mute/solo", () => {
     expect(shouldCollapseChipDetail(knob, null)).toBe(false);
     expect(shouldCollapseChipDetail(pane, "a")).toBe(false);
   });
+
+  it("setGroupMute setzt alle uebergebenen Bloecke atomar", () => {
+    const store = useChipViewStore.getState();
+    store.setGroupMute(["block1", "block2", "block3"], true);
+    expect(store.isMuted("block1")).toBe(true);
+    expect(store.isMuted("block2")).toBe(true);
+    expect(store.isMuted("block3")).toBe(true);
+    expect(store.isAudible("block1")).toBe(false);
+    expect(store.isAudible("block2")).toBe(false);
+    expect(store.isAudible("block3")).toBe(false);
+  });
+
+  it("setGroupMute hebt bei false alle erneut auf", () => {
+    const store = useChipViewStore.getState();
+    store.setGroupMute(["block1", "block2"], true);
+    store.setGroupMute(["block1", "block2"], false);
+    expect(store.isMuted("block1")).toBe(false);
+    expect(store.isMuted("block2")).toBe(false);
+  });
+
+  it("toggleGroupMute: gemischte Gruppe wird alle gemutet, zweite Klick entstummt alle", () => {
+    const store = useChipViewStore.getState();
+    store.toggleMute("block1");
+    // block1 muted, block2 nicht -> toggleGroupMute muted beide
+    store.toggleGroupMute(["block1", "block2"]);
+    expect(store.isMuted("block1")).toBe(true);
+    expect(store.isMuted("block2")).toBe(true);
+    // Alle muted -> zweiter Klick entstummt beide
+    store.toggleGroupMute(["block1", "block2"]);
+    expect(store.isMuted("block1")).toBe(false);
+    expect(store.isMuted("block2")).toBe(false);
+  });
+
+  it("setGroupSolo setzt alle uebergebenen Bloecke atomar", () => {
+    const store = useChipViewStore.getState();
+    store.setGroupSolo(["block1", "block2"], true);
+    expect(store.isSoloed("block1")).toBe(true);
+    expect(store.isSoloed("block2")).toBe(true);
+    expect(store.isAudible("block3")).toBe(false);
+  });
+
+  it("toggleGroupSolo hebt bei bereits solierten bloecken alle auf", () => {
+    const store = useChipViewStore.getState();
+    store.setGroupSolo(["block1", "block2"], true);
+    store.toggleGroupSolo(["block1", "block2"]);
+    expect(store.isSoloed("block1")).toBe(false);
+    expect(store.isSoloed("block2")).toBe(false);
+  });
 });

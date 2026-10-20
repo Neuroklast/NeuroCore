@@ -24,6 +24,11 @@ export const useChipViewStore = create<{
   soloed: Set<string>;
   toggleMute: (id: string) => void;
   toggleSolo: (id: string) => void;
+  /** Atomare Gruppen-Operationen. */
+  setGroupMute: (ids: string[], enabled: boolean) => void;
+  setGroupSolo: (ids: string[], enabled: boolean) => void;
+  toggleGroupMute: (ids: string[]) => void;
+  toggleGroupSolo: (ids: string[]) => void;
   clearSolo: () => void;
   isMuted: (id: string) => boolean;
   isSoloed: (id: string) => boolean;
@@ -51,6 +56,39 @@ export const useChipViewStore = create<{
       next.delete(id);
     } else {
       next.add(id);
+    }
+    return { soloed: next };
+  }),
+  /** Atomare Gruppen-Operation: alle übergebenen IDs auf einen Schlag setzen. */
+  setGroupMute: (ids, enabled) => set((s) => {
+    const next = new Set(s.muted);
+    for (const id of ids) {
+      if (enabled) next.add(id); else next.delete(id);
+    }
+    return { muted: next };
+  }),
+  setGroupSolo: (ids, enabled) => set((s) => {
+    const next = new Set(s.soloed);
+    for (const id of ids) {
+      if (enabled) next.add(id); else next.delete(id);
+    }
+    return { soloed: next };
+  }),
+  toggleGroupMute: (ids) => set((s) => {
+    const cur = s.muted;
+    const allMuted = ids.every((id) => cur.has(id));
+    const next = new Set(cur);
+    for (const id of ids) {
+      if (allMuted) next.delete(id); else next.add(id);
+    }
+    return { muted: next };
+  }),
+  toggleGroupSolo: (ids) => set((s) => {
+    const cur = s.soloed;
+    const allSoloed = ids.every((id) => cur.has(id));
+    const next = new Set(cur);
+    for (const id of ids) {
+      if (allSoloed) next.delete(id); else next.add(id);
     }
     return { soloed: next };
   }),
