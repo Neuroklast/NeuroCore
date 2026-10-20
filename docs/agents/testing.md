@@ -15,7 +15,7 @@ Hard contracts (must stay green):
 
 ## Visual tests
 
-No golden PNG in CI (host scale, fonts, GPU). Circuit geometry is asserted in web Vitest. Unit HUD and header preset geometry are Playwright `getBoundingClientRect` contracts in `web/e2e/` (`npm run test:layout`).
+No golden PNG in CI (host scale, fonts, GPU). Circuit geometry is asserted in web Vitest. The web-layout workflow runs the production build and those Vitest contracts. It does not install or run Playwright. `npm run test:layout` stays a local browser check.
 
 ## What to run
 

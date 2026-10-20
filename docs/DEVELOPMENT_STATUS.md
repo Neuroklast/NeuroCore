@@ -4,6 +4,10 @@
 **Version:** 0.7.1-beta  
 **Branch:** `main`
 
+## Web layout CI (2026-10-20)
+
+The web-layout workflow does not run Playwright. The full `e2e` suite was cancelled at the 20-minute job cap on every recent pull request. CI still runs `npm run build` and the Vitest layout contracts. `npm run test:layout` remains available locally.
+
 ## Release kit and living docs (2026-10-20)
 
 `build_release.bat` syncs `docs/manual/NEUROKORE.md` into `resources/UserManual_en.txt`, builds Release `NeuroKore_All`, then runs `scripts/package_windows.ps1` every time. The pack reads `NEUROKORE_VERSION_LABEL` and `NEUROKORE_VERSION_NUMERIC` from CMake. It writes `build/package/NEUROKORE-<label>-Setup.exe`, the SHA-256, and `NEUROKORE-<label>-win64.zip`. Portable `NEUROKORE-<label>/` extracts stay gitignored. The depth helper is `chipDepth.ts`, so Windows can tell it from `ChipChrome.tsx`. Version stays 0.7.1-beta. A local Release on 2026-10-20 wrote Setup SHA256 `52d556dad5112bed1f2d6a79556548f045baf4a53cfdad91894454a470c841e4`.
