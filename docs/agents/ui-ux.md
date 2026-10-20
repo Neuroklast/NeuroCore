@@ -55,6 +55,20 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 
 **Do not** “fix” a bad tidy with a special case for Phaser Lab. Fix `tidyLayout` ranks/rails so every factory preset obeys the table.
 
+## Interaction — Gesture Arbitration (stable contract)
+
+The Circuit view processes exactly one pointer gesture at a time. Priority (high to low):
+
+1. Active native controls and input fields (`input`, `textarea`, `select`, `[contenteditable]`, `[data-board-control]`) — never start a camera or chip gesture.
+2. Port and binding connections (`[data-port-id]`).
+3. Chip selection and drag (`[data-node-id]`; Mute/Solo, chevron, and bind jacks are excluded).
+4. Modifier multi-selection: Ctrl/Cmd+click toggles a chip; Shift+click selects the directed graph path (edges `sourceNodeId → targetNodeId`, never screen position or ID order).
+5. Camera pan: left-click on empty background + drag.
+6. Rectangle selection: Alt + left-drag on empty background.
+7. Context menu: right-click on background / chip / cable (never writes `camera`).
+
+A pointer action never starts two gestures at once. Pointer capture with an explicit gesture state; pointer cancel, Escape, focus loss, and release outside the plugin clear the state without a hanging gesture. A plain left-click on empty background pans the camera (no selection); a single click on a cable no longer opens the insert dialog (insert only via the context menu).
+
 ## Chrome
 
 - Footer slots are fixed: MODE / CPU / LAT / SR / BUF / BPM / HOST\|USER / OS / license. No product banner slot. Hover does not rewrite the bar.
@@ -63,7 +77,7 @@ LFO / env live on a row *below* IN, never on IN’s cell.
 - Hit targets ≥ 26 px. Settings License / Help must not collapse to a 2 px bar (`231939`).
 - Overlays size to their content (`height: auto`). Wide explorers fill the host (`height: 100%`, `min-height: 0`) and never paint outside the window. The list pane scrolls. Inspect time fields (s / ms / Hz) switch VALUE and NOTE (8/1…1/16 in range).
 - One overlay at a time. Double-click a node → inspect **all** editable keys.
-- Circuit click selects and left-drag moves a chip without opening Inspect. The chevron, double-click, or Inspect context action opens the animated overlay without changing the board width. Ctrl/Cmd+A selects all, Ctrl/Cmd+Shift+A arranges. Empty-pane left-drag selects; middle mouse or Space+left-drag pans; the wheel zooms. Right-click opens context actions and never initiates a knob or port drag. A context menu is pane-local overlay: it never writes `camera`. A late layout reply does not `fitCamera` while that overlay is open or after the user has panned or zoomed. Drag a knob bind jack onto a highlighted chip parameter to connect it.
+- Circuit click selects and left-drag moves a chip (multiple selected chips move together) without opening Inspect. Double-click or the Inspect context action opens the animated overlay without changing the board width. Ctrl/Cmd+click toggles a chip in the selection; Shift+click selects the computed graph path between anchor and target. Empty-pane left-drag pans the camera; Alt+left-drag selects in a rectangle. The wheel zooms at the cursor position. Right-click opens the target-appropriate context menu and never pans the camera. Ctrl/Cmd+A selects all, Ctrl/Cmd+Shift+A arranges. Right-click on an already-selected chip must not drop the multi-selection. A click on M/S, dropdowns, jacks, or bind controls starts neither a pan nor a chip drag. The former empty-pane rectangle selection is replaced by Alt+left-drag; a single click on a cable no longer opens the insert dialog.
 - Circuit and Terminal share `publishSelection`. A Terminal caret on an `id :` head (tokenizer map) selects that chip; a Circuit selection highlights the matching Terminal lines. Do not enter Edit, rewrite the draft, or pan the camera for that highlight. Circuit Source is an optional 360–420 px inspector with a ≥26 px seam handle (`setWidth` / `setHeight` via `inspectorWidthAt` / `inspectorHeightAt`); chip click does not open Edit. Edit Source lazy-loads the same Monaco document as Terminal (`PATCH_MODEL_URI` + caret/scroll session) and unmounts it while Circuit is hidden. Inspector `data-chip-id` is the primary chip. Closed chips keep `data-kind` (audio / mod / io) as identity; idle plates stay dark gunmetal with no decorative hatch. Inspect TAP is Plugin input / Plugin output / No waveform tap. Selected Source meters are `nodeMeter` (that chip’s clips, never plugin.out under a DSP name). DSP chips have no invented scope waveform. Compile and ast events share `txId`/`baseRevision`. A dirty draft whose `draftBaseRevision` is behind the active patch is CONFLICT; Apply does not publish it.
 - Clicking an audio cable inserts only when the script sketch confirms the exact source → new → destination audio path; unsupported branches keep the script unchanged and explain why. Empty-pane Add explicitly parks the new module.
 - Help is the operator manual minus Install and Troubleshooting. Talk to the operator, not about the documentation. No “this file”, no “except Install because the plugin is already running”. Apex 400 titles, JetBrains body. Not a `<pre>` dump.
