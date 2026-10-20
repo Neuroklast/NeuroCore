@@ -108,10 +108,12 @@ export function fitCamera(
   const y1 = Math.max(...list.map((n) => n.y + n.h)) + pad;
   const bw = Math.max(1, x1 - x0);
   const bh = Math.max(1, y1 - y0);
-  const scale = Math.min(BOARD_MAX_SCALE, view.w / bw, view.h / bh);
+  const top = 56; // Fixed Circuit controls never cover the PCB.
+  const height = Math.max(1, view.h - top);
+  const scale = Math.min(BOARD_MAX_SCALE, view.w / bw, height / bh);
   return {
     scale,
     tx: Math.round((view.w - bw * scale) * 0.5 - x0 * scale),
-    ty: Math.round((view.h - bh * scale) * 0.5 - y0 * scale),
+    ty: Math.round(top + (height - bh * scale) * 0.5 - y0 * scale),
   };
 }

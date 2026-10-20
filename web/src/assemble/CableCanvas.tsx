@@ -1,3 +1,4 @@
+import { drawBoardSubstrate } from "./boardSubstrate";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
 import { liveTheme } from "../theme/theme";
@@ -105,7 +106,7 @@ function strokePackets(
   ctx.setLineDash([]);
   ctx.shadowBlur = 0;
   ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = dim ? 0.18 : 0.32;
+  ctx.globalAlpha = dim ? 0.24 : 0.48;
   ctx.strokeStyle = glow;
   tracePath(ctx, pts);
   ctx.stroke();
@@ -269,6 +270,7 @@ export function CableCanvas({
       const pass = cablePaintPass(gestureRef.current, host.motion);
 
       {
+        drawBoardSubstrate(ctx,Object.values(g.nodes),core,resolveColor("--nk-surface", "rgb(20,24,26)"));
         drawBackgroundTraces(ctx, {
           tx: cam.tx,
           ty: cam.ty,

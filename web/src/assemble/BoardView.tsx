@@ -11,9 +11,8 @@ import { isArrangeChord } from "../chrome/shortcuts";
 import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardNavigator } from "./BoardNavigator";
-import { boardSession, fitReadableRegion, findRegion, navigationTree, scopeGraph } from "./boardNavigation";
 import { BoardChip } from "./BoardChip";
-import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, fitForWindow, placeOverlay, placeOverlayPane } from "../theme/fit";
+import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
 import { wheelOwnsZoom } from "./boardWheel";
 import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnLateLayout, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
@@ -62,18 +61,6 @@ export function BoardView({ active = true }: { active?: boolean }) {
   const camLive = useRef(useBoardStore.getState().camera);
   const camGesture = useRef(false);
   const [size, setSize] = useState({ w: 960, h: 420 });
-  const wholeGraph = useMemo(() => ({nodes,ports,edges}), [nodes,ports,edges]);
-  const tree = useMemo(() => navigationTree(wholeGraph), [wholeGraph]);
-  const signature = useMemo(() => JSON.stringify([Object.values(nodes).map(n=>[n.id,n.type]),Object.values(edges).map(e=>[e.sourcePortId,e.targetPortId])]), [nodes,edges]);
-  const session = useMemo(() => boardSession(signature), [signature]);
-  const [, refreshNavigation] = useState(0);
-  const region = session.key === 'selection' ? {key:'selection',label:'Selection',ids:session.selectionIds.filter(id=>nodes[id]),children:[]} : findRegion(tree, session.key) ?? tree;
-  const overview = region.children.length > 0 && (region.key !== 'board' || tree.ids.length > 8);
-  const scoped = useMemo(() => region.key === 'board' ? wholeGraph : scopeGraph(wholeGraph,region.ids), [wholeGraph,region]);
-  const visibleGraphRef = useRef(scoped);
-  visibleGraphRef.current = scoped;
-  const navigationRef = useRef({session,region,overview});
-  navigationRef.current = {session,region,overview};
   const paneSizeRef = useRef({ w: 0, h: 0 });
   const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number; originX: number; originY: number; startX: number; startY: number; group: Record<string, { x: number; y: number }> } | null>(null);
@@ -239,11 +226,12 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     const ro = new ResizeObserver(() => {
       const next = { w: el.clientWidth, h: el.clientHeight };
+      if (next.w < 40 || next.h < 40) return;
       const prev = paneSizeRef.current;
       paneSizeRef.current = next;
       setSize(next);
       const moved = useBoardStore.getState().userMoved;
-      if (navigationRef.current.region.key === "board" && shouldFitCameraOnPaneSize(prev.w, prev.h, next.w, next.h, moved)) {
+      if (shouldFitCameraOnPaneSize(prev.w, prev.h, next.w, next.h, moved)) {
         const ns = Object.values(useBoardStore.getState().nodes);
         if (ns.length > 0) {
           useBoardStore.getState().setCamera(fitCamera(ns, next));
@@ -397,7 +385,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     if (e.button === 0 && !(e.target as HTMLElement).closest("[data-node-id], [data-port-id]")) {
-      const edge = hitBoardEdge(world, visibleGraphRef.current);
+      const edge = hitBoardEdge(world, useBoardStore.getState());
       if (edge) {
         setMenu({
           kind: "add",
@@ -450,7 +438,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
       const panePt = clientToPane(pane, e.clientX, e.clientY);
       const world = worldFromScreen(cam, panePt.x, panePt.y);
       const g = useBoardStore.getState();
-      const snap = magnetPort(world, connectDragRef.current.fromPort, visibleGraphRef.current);
+      const snap = magnetPort(world, connectDragRef.current.fromPort, g);
       const to = snap && g.nodes[snap.nodeId]
         ? portGlobal(g.nodes[snap.nodeId]!, snap)
         : world;
@@ -534,7 +522,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     panRef.current = null;
     if (lassoRef.current) {
-      const ids = nodesInSelection(Object.values(visibleGraphRef.current.nodes), lassoRef.current);
+      const ids = nodesInSelection(Object.values(useBoardStore.getState().nodes), lassoRef.current);
       selectNodes((old) => [...new Set([...old, ...ids])]);
       lassoCompletedRef.current = true;
       lassoRef.current = null;
@@ -647,37 +635,11 @@ export function BoardView({ active = true }: { active?: boolean }) {
       return;
     }
     const panePt = clientToPane(pane, e.clientX, e.clientY);
-    const factor=e.deltaY>0?.92:1.08;
-    const minimum=visibleGraphRef.current===wholeGraph ? 0 : .55/fitForWindow(window.innerWidth,window.innerHeight);
-    applyLiveCamera(zoomCamera(camLive.current,panePt.x,panePt.y,Math.max(factor,minimum/camLive.current.scale)),true);
+    applyLiveCamera(zoomCamera(camLive.current, panePt.x, panePt.y, e.deltaY > 0 ? 0.92 : 1.08), true);
     paintFocus();
-  }, [applyLiveCamera, paintFocus, wholeGraph]);
+  }, [applyLiveCamera, paintFocus]);
 
-  const graph = scoped;
-  const fitRegion = () => {
-    const chosen = Object.values(visibleGraphRef.current.nodes);
-    applyLiveCamera(fitReadableRegion(chosen,size,fitForWindow(window.innerWidth,window.innerHeight)),true);
-  };
-  const openRegion = (next: typeof region) => {
-    if (!overview) session.cameras.set(region.key,{...camLive.current});
-    session.key=next.key;
-    refreshNavigation(n=>n+1);
-    if(!next.children.length || next.key==='board' && tree.ids.length<=8) {
-      const saved=session.cameras.get(next.key);
-      applyLiveCamera(saved??fitReadableRegion(next.ids.map(id=>nodes[id]!).filter(Boolean),size,fitForWindow(window.innerWidth,window.innerHeight)),true);
-    }
-  };
-  useEffect(() => {
-    if (!layoutBusy && region.key !== 'board' && !region.children.length) {
-      applyLiveCamera(session.cameras.get(region.key)??fitReadableRegion(region.ids.map(id=>nodes[id]!).filter(Boolean),size,fitForWindow(window.innerWidth,window.innerHeight)),true);
-    }
-  }, [signature,layoutBusy]);
-  useEffect(() => {
-    if(overview)return;
-    return useBoardStore.subscribe((state,previous)=>{
-      if(session.key===region.key && state.camera!==previous.camera)session.cameras.set(region.key,{...state.camera});
-    });
-  },[session,region.key,overview]);
+  const graph = { nodes, ports, edges };
   const portsByNode = useMemo(() => {
     const m: Record<string, BoardPort[]> = {};
     for (const p of Object.values(ports)) {
@@ -695,13 +657,13 @@ export function BoardView({ active = true }: { active?: boolean }) {
     }
     const panePt = clientToPane(pane, bindX, bindY);
     const world = worldFromScreen(camLive.current, panePt.x, panePt.y);
-    const id = chipAtWorld(Object.values(scoped.nodes), world);
+    const id = chipAtWorld(Object.values(nodes), world);
     const n = id ? nodes[id] : undefined;
     if (! n) {
       return null;
     }
     return { id, local: { x: world.x - n.x, y: world.y - n.y } };
-  }, [bindLetter, bindX, bindY, nodes, scoped]);
+  }, [bindLetter, bindX, bindY, nodes]);
 
   return (
     <div
@@ -746,7 +708,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         const panePt = clientToPane(pane, e.clientX, e.clientY);
         const world = worldFromScreen(camLive.current, panePt.x, panePt.y);
         const chipId = (e.target as HTMLElement).closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
-        const hit = boardContextHit(chipId, world, visibleGraphRef.current);
+        const hit = boardContextHit(chipId, world, useBoardStore.getState());
         if (hit.kind === "chip") {
           selectNodes([hit.id]);
           setMenu({ kind: "chip", ...placeOverlay(pane, e.clientX, e.clientY, CHIP_MENU_BOX), id: hit.id });
@@ -776,17 +738,15 @@ export function BoardView({ active = true }: { active?: boolean }) {
         gestureRef={camGesture}
         width={size.w}
         height={size.h}
-        active={active && !overview && circuitPaintActive("assemble", size.w, size.h)}
+        active={active && circuitPaintActive("assemble", size.w, size.h)}
       />
-      <BoardNavigator graph={wholeGraph} root={tree} region={region} overview={overview} names={session.names}
-        onRename={(key,name)=>{session.names.set(key,name);refreshNavigation(n=>n+1);}}
-        onOpen={openRegion} onFit={fitRegion} onSelection={()=>{
-          const list=selection.map(id=>nodes[id]).filter(Boolean);
-          if(!list.length)return;
-          // An explicit selection opens its own view without moving the graph.
-          session.selectionIds=list.map(n=>n.id);
-          openRegion({key:'selection',label:'Selection',ids:session.selectionIds,children:[]});
-        }}/>
+      <BoardNavigator graph={graph} onFit={() => applyLiveCamera(fitCamera(Object.values(nodes), size), true)}
+        onArrange={() => { void layoutBoard("COMPACT", size, {force:true}); }}
+        onFind={(id) => {
+          const n=nodes[id]; if(!n)return;
+          selectNodes([id]);
+          applyLiveCamera(fitCamera([n],size),true);
+        }} />
       {layoutBusy ? (
         <div
           className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/85"
@@ -805,11 +765,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         className="nk-board-world"
         style={{ transform: cameraMatrix(camLive.current) }}
       >
-        {!overview && region.key!=='board' && Object.keys(scoped.nodes).length>0 && (()=>{
-          const ns=Object.values(scoped.nodes),x=Math.min(...ns.map(n=>n.x))-32,y=Math.min(...ns.map(n=>n.y))-32;
-          return <div className="nk-board-region-plate" aria-hidden style={{position:'absolute',left:x,top:y,width:Math.max(...ns.map(n=>n.x+n.w))-x+32,height:Math.max(...ns.map(n=>n.y+n.h))-y+32,pointerEvents:'none'}}/>;
-        })()}
-        {!overview && Object.values(scoped.nodes).map((n) => (
+        {Object.values(nodes).map((n) => (
           <BoardChip
             key={n.id}
             node={n}

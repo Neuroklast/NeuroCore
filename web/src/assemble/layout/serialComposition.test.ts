@@ -9,7 +9,7 @@ import { placeSerialChain } from "./serialPlacement";
 import { compact, arrange, pathLength } from "./runLayout";
 
 for (const width of [960, 1440]) {
-  it(`composes every Drone Low Bed hop without westward travel at ${width}px`, async () => {
+  it(`composes every Drone Low Bed hop within reserved PCB row channels at ${width}px`, async () => {
     const { doc } = parseDslSketch(findFactory("Drone Low Bed")!.script);
     const graph = graphToLayout(hydrateBoard(doc));
     const result = await compact(graph.nodes, graph.edges, { w: width, h: 520 });
@@ -21,10 +21,11 @@ for (const width of [960, 1440]) {
       const length = pathLength(points);
       const westward = points.slice(1).reduce((sum, p, i) => sum + Math.max(0, points[i]!.x - p.x), 0);
       const direct = Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
-      expect(westward, edge.id).toBe(0);
-      expect(countCorners(points), edge.id).toBe(0);
-      expect(length, edge.id).toBeLessThanOrEqual(64);
-      expect(length / direct, edge.id).toBe(1);
+      const rowChange=end.y>start.y+128;
+      expect(westward,edge.id).toBeLessThanOrEqual(rowChange?960:0);
+      expect(countCorners(points),edge.id).toBeLessThanOrEqual(rowChange?8:0);
+      expect(length,edge.id).toBeLessThanOrEqual(direct+(rowChange?128:0));
+      expect(length,edge.id).toBeLessThanOrEqual(1200);
       return { id: edge.id, source: edge.source, target: edge.target, length, westward, corners: countCorners(points), points };
     });
     expect(Math.max(...widths) / Math.min(...widths)).toBeLessThanOrEqual(1.25);
@@ -61,10 +62,10 @@ for (const width of [960, 1440]) {
 }
 
 
-it("uses the same directed composition for Arrange and Compact, independent of input order", async () => {
+it("uses the same PCB composition for Arrange and Compact, independent of input order", async () => {
   const { doc } = parseDslSketch(findFactory("Drone Low Bed")!.script);
   const graph = graphToLayout(hydrateBoard(doc));
-  const a = await arrange([...graph.nodes].reverse(), [...graph.edges].reverse());
+  const a = await arrange([...graph.nodes].reverse(), [...graph.edges].reverse(), {w:960,h:520});
   const b = await compact(graph.nodes, graph.edges, {w:960,h:520});
   expect(a).toEqual(b);
 });

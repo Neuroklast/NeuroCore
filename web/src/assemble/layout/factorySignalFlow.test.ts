@@ -167,7 +167,7 @@ describe("factory signal-flow layout baseline", () => {
     expect(fillRatio(result), log).toBeGreaterThan(0);
   });
 
-  it("routes every Drone Low Bed hop without extra elbows", async () => {
+  it("bounds every Drone Low Bed route including row transitions", async () => {
     const { doc, result, log } = await layoutFactory("Drone Low Bed", "compact", BOARD);
     const graph = graphToLayout(hydrateBoard(doc));
     const hops: Array<[string, string]> = [
@@ -181,7 +181,11 @@ describe("factory signal-flow layout baseline", () => {
       expect(e, `${src}→${dst} missing ${log}`).toBeTruthy();
       const d = result.edgePaths[e!.id];
       const pts = parseRoutePath(d ?? "");
-      expect(countCorners(pts), `${src}→${dst} ${d} ${log}`).toBe(0);
+      const start=pts[0]!,end=pts.at(-1)!;
+      const changesRow=end.y>start.y+128;
+      const length=pts.slice(1).reduce((n,p,i)=>n+Math.abs(p.x-pts[i]!.x)+Math.abs(p.y-pts[i]!.y),0);
+      expect(countCorners(pts), `${src}→${dst} ${d} ${log}`).toBeLessThanOrEqual(changesRow?8:0);
+      expect(length,log).toBeLessThanOrEqual(Math.abs(end.x-start.x)+Math.abs(end.y-start.y)+(changesRow?128:0));
     }
   });
 });

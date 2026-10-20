@@ -1,10 +1,10 @@
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
-import { BOARD_GRID, CHIP_AIR_X } from "../grid";
+import { BOARD_GRID } from "../grid";
 import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
 import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
 import { placeSerialChain } from "./serialPlacement";
-import { packRows, parkOutTerminal } from "./compactPack";
-import { placeWithElk } from "./elkPlace";
+import { packRows } from "./compactPack";
+
 import { GridMap, portInCell, portOutCell } from "./gridMap";
 import { DIR_E, type LayoutEdge, type LayoutMode, type LayoutNode, type LayoutResult, type LayoutView, type Pt } from "./types";
 
@@ -118,7 +118,7 @@ export async function runLayout(
   edges: LayoutEdge[],
   view: LayoutView = { w: 960, h: 420 },
 ): Promise<LayoutResult> {
-  const serial = mode === "REROUTE" ? null : placeSerialChain(nodes, edges);
+  const serial = mode === "REROUTE" ? null : placeSerialChain(nodes, edges, view);
   const placed = serial ?? (mode === "REROUTE"
     ? Object.fromEntries(nodes.map((n) => [n.id, {
       x: n.x ?? 0,
@@ -126,11 +126,23 @@ export async function runLayout(
       w: n.w,
       h: n.h,
     }]))
-    : mode === "COMPACT"
-      ? packRows(nodes, edges, view)
-      : parkOutTerminal(await placeWithElk(nodes, edges, mode), CHIP_AIR_X * 2));
+    : packRows(nodes, edges, view));
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
+  if (serial) {
+    const edgePaths: Record<string,string>={};
+    for(const edge of edges) {
+      const s=placed[edge.source]!,t=placed[edge.target]!;
+      const a={x:s.x+s.w,y:s.y+byId.get(edge.source)!.outs.find(p=>p.id===edge.fromJack)!.y};
+      const b={x:t.x,y:t.y+byId.get(edge.target)!.ins.find(p=>p.id===edge.toJack)!.y};
+      const sameRow=Math.abs(a.y-b.y)<1;
+      const channel=s.y+s.h+64;
+      const pts=sameRow?[a,b]:[a,{x:a.x+32,y:a.y},{x:a.x+32,y:channel},{x:b.x-32,y:channel},{x:b.x-32,y:b.y},b];
+      edgePaths[edge.id]=waypointToSvgPath(chamferWaypoints(pts));
+    }
+    return {nodes:placed,edgePaths};
+  }
+
   const map = new GridMap();
   for (const n of nodes) {
     const p = placed[n.id];
