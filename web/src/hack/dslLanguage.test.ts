@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   annotateKnobInlays,
+  findKnobTokens,
   headerComments,
   isKeyword,
   termFrame,
@@ -182,4 +183,24 @@ it('replaces the typed block head including a trailing space', () => {
  const text='stage1: y = x\n  stage ';
  const item=complete(text,text.length).find(i=>i.kind==='snippet');
  expect(item?.replaceStart).toBe(text.lastIndexOf('stage'));
+});
+
+describe("findKnobTokens", () => {
+  it("findet alle Makro-Knob-Tokens (a-f) mit Position, ignoriert Kommentare", () => {
+    const script = [
+      "param a = Drive [0.5, 4]",
+      "# das hier ist ein Kommentar mit einem f",
+      "stage1: y = x * (1 + env1 * a * 0.1)",
+      "ott1: depth = e",
+    ].join("\n");
+    const toks = findKnobTokens(script);
+    expect(toks.map((t) => t.letter)).toEqual(["a", "a", "e"]);
+    expect(toks[0]).toEqual({ letter: "a", line: 1, startColumn: 7, endColumn: 8 });
+    expect(toks[1]).toEqual({ letter: "a", line: 3, startColumn: 29, endColumn: 30 });
+    expect(toks[2]).toEqual({ letter: "e", line: 4, startColumn: 15, endColumn: 16 });
+  });
+
+  it("liefert [] ohne Makro-Referenzen", () => {
+    expect(findKnobTokens("stage1: y = x\nout: mix = 1\n")).toEqual([]);
+  });
 });

@@ -4,7 +4,7 @@ import "./monacoEnv";
 import { useHostStore } from "../store/hostStore";
 import { publishSelection } from "../store/patchWorkspace";
 import { useTheme } from "../theme/themeBind";
-import { nodeAtPosition, paramAtPosition } from "./dslSourceMap";
+import { nodeAtPosition, paramAtPosition, busFoldRanges } from "./dslSourceMap";
 import {
   capturePatchEditorView,
   PATCH_MODEL_URI,
@@ -52,6 +52,15 @@ export function PatchEditor({
     registerNeurokoreDsl(monaco);
     defineDslTheme(monaco, theme);
     monaco.editor.setTheme(DSL_THEME);
+    monaco.languages.registerFoldingRangeProvider(DSL_LANGUAGE_ID, {
+      provideFoldingRanges: (model) => {
+        const ranges = busFoldRanges(model.getValue());
+        return ranges.map((r) => ({
+          start: r.startLine,
+          end: r.endLine,
+        }));
+      },
+    });
     if (shared) {
       const v = readPatchEditorView();
       ed.setPosition({ lineNumber: v.cursorLine, column: v.cursorColumn });
@@ -102,8 +111,8 @@ export function PatchEditor({
         fontFamily: "JetBrains Mono, ui-monospace, Consolas, monospace",
         fontSize,
         lineNumbers,
-        glyphMargin: false,
-        folding: false,
+        glyphMargin: true,
+        folding: true,
         lineDecorationsWidth: readOnly ? 0 : 10,
         lineNumbersMinChars: readOnly ? 2 : 3,
         padding: { top: 10, bottom: 10 },

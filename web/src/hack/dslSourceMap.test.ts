@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   boardIdForSource,
+  busFoldRanges,
   canonicalNodeId,
   mapNodeRanges,
   nodeAtPosition,
@@ -90,5 +91,52 @@ describe("dsl source map uses the tokenizer", () => {
     expect(paramAtPosition(SCRIPT, 4, 3)).toBeNull();
     expect(rangeForParam(SCRIPT, "filter1", "cutoff")?.startLine).toBe(5);
     expect(rangeForParam(SCRIPT, "filter1", "q")?.startLine).toBe(6);
+  });
+});
+
+describe("busFoldRanges", () => {
+  const BUS_SCRIPT = [
+    "param a = Drive [0.5, 2.8]",
+    "bus low:",
+    "  env1: type = peak; attack = 0.005",
+    "  stage1: y = x * (1 + env1 * a * 0.1)",
+    "bus mid:",
+    "  env2: type = peak; attack = 0.003",
+    "  stage2: y = x * (1 + env2 * b * 0.12)",
+    "out: low = 1; mid = 1",
+  ].join("\n");
+
+  it("faltet jeden Bus-Block bis zum naechsten Bus oder OUT", () => {
+    const ranges = busFoldRanges(BUS_SCRIPT);
+    expect(ranges).toHaveLength(2);
+    expect(ranges[0]).toEqual({
+      nodeId: "bus-fold",
+      startLine: 2,
+      startColumn: 1,
+      endLine: 4,
+      endColumn: 39,
+    });
+    expect(ranges[1]).toEqual({
+      nodeId: "bus-fold",
+      startLine: 5,
+      startColumn: 1,
+      endLine: 7,
+      endColumn: 40,
+    });
+  });
+
+  it("ignoriert Kommentarzeilen, die wie Bus koennen", () => {
+    const script = [
+      "# bus low:",
+      "bus real:",
+      "  stage1: y = x",
+    ].join("\n");
+    const ranges = busFoldRanges(script);
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0].startLine).toBe(2);
+  });
+
+  it("liefert [] ohne Bus", () => {
+    expect(busFoldRanges("stage1: y = x\nout: mix = 1\n")).toEqual([]);
   });
 });

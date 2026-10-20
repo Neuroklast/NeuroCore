@@ -36,6 +36,32 @@ export function isKnobWord(word: string): boolean {
   return word.length === 1 && word >= "a" && word <= "f";
 }
 
+/**
+ * Positionen aller Makro-Knob-Tokens (a–f) im sauberen Skript.
+ * Wird fuer Live-Wert-Decorations und Hover-Highlights verwendet,
+ * ohne das Monaco-Modell zu mutieren.
+ */
+export function findKnobTokens(script: string): Array<{ letter: string; line: number; startColumn: number; endColumn: number }> {
+  const lines = script.replace(/\r\n/g, "\n").split("\n");
+  const out: Array<{ letter: string; line: number; startColumn: number; endColumn: number }> = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const toks = tokenizeLine(line);
+    let cursor = 0;
+    for (const tok of toks) {
+      const at = line.indexOf(tok.text, cursor);
+      if (at < 0) {
+        continue;
+      }
+      cursor = at + tok.text.length;
+      if (tok.kind === "knob") {
+        out.push({ letter: tok.text.toLowerCase(), line: i + 1, startColumn: at + 1, endColumn: at + tok.text.length + 1 });
+      }
+    }
+  }
+  return out;
+}
+
 export function tokenizeLine(line: string): DslToken[] {
   const tokens: DslToken[] = [];
   let i = 0;
