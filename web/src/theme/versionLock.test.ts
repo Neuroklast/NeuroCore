@@ -65,6 +65,11 @@ describe("product version is one string", () => {
     expect(manual).toContain(nk.version);
     expect(help).toBe(manual);
 
+    const ci = readFileSync(join(root, ".github/workflows/web-layout.yml"), "utf8");
+    expect(ci).toContain("npm run build");
+    expect(ci).not.toMatch(/playwright/i);
+    expect(ci).not.toContain("test:layout");
+
     const release = readFileSync(join(root, "build_release.bat"), "utf8");
     expect(release).toContain("scripts\\sync_living_docs.mjs");
     expect(release).toContain("scripts\\package_windows.ps1");

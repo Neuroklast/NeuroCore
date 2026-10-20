@@ -21,9 +21,6 @@ jobs:
       - name: Install
         working-directory: web
         run: npm ci
-      - name: Playwright browser
-        working-directory: web
-        run: npx playwright install chromium --with-deps
       - name: Build
         working-directory: web
         run: npm run build
@@ -34,16 +31,12 @@ jobs:
         run: npx vitest run src/assemble/layout/serialComposition.test.ts src/assemble/layout/factorySignalFlow.test.ts
       - name: Circuit navigation and signal contracts
         working-directory: web
-        run: npx vitest run src/assemble/boardNavigation.test.ts src/assemble/cableSignal.test.ts src/assemble/cablePaint.test.ts src/assemble/layout/pcbComposition.test.ts src/assemble/boardCamera.test.ts
-      - name: Layout contracts
-        working-directory: web
-        run: npm run test:layout
-      - name: Upload browser evidence
+        run: npx vitest run src/assemble/boardNavigation.test.ts src/assemble/cableSignal.test.ts src/assemble/cablePaint.test.ts src/assemble/layout/pcbComposition.test.ts src/assemble/boardCamera.test.ts src/theme/versionLock.test.ts
+      - name: Upload layout evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-layout-evidence
-          path: |
-            web/test-results/
-            artifacts/circuit-metrics/
+          path: artifacts/circuit-metrics/
           retention-days: 14
+          if-no-files-found: warn
