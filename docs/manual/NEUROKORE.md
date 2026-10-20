@@ -290,3 +290,7 @@ MATCH enables the existing RMS-based wet/dry level compensation and remains cons
 Unit particle motion: input transients and sub attacks push the particles upward from the bowl. Stereo width smoothly broadens the rising plume. Lateral force fades continuously to zero at the centre so the cloud stays connected during repeated kicks. Sustained bass raises the cloud within its spring constraint, and particles settle when energy drops. The mechanical rings retain their radius and move at a steady rate. Audio changes the field lights rather than shaking the frame. Motion Reduced lowers the forces; Off freezes the scene.
 
 Unit resizing keeps the HUD, core readouts and diagnostic panels on a fixed design canvas. Field meters remain visible at rest. Window scaling changes the rendered resolution without reflowing the HUD. Pointer indicators and context menus follow the scaled controls. If WebGL is unavailable, the fallback visual stays inside the central lane.
+
+Circuit signal traces
+Connections remain visible during silence and retain a minimum screen width while zooming out. Wave mode sends measured impulses from each source contact along the routed trace. Motion speed eases over 150 ms. Emitted impulses fade independently when fresh measurements stop. The restrained glow is reduced in the overview. Motion Reduced/Off and Dots retain their existing stationary presentation.
+New installations default to Wave. An existing saved Dots preference is preserved. Change Cables to Wave in Settings to enable travelling impulses.
