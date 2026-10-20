@@ -12,6 +12,29 @@ set(NEUROKORE_VERSION_LABEL "0.7.1-beta")
 set(NEUROKORE_FILE_STEM "NEUROKORE-${NEUROKORE_VERSION_LABEL}")
 project(NeuroKore VERSION ${NEUROKORE_VERSION_NUMERIC} LANGUAGES C CXX)
 
+
+# Ed25519 verifier, pinned to Monocypher 4.0.2.
+FetchContent_Declare(nk_monocypher
+    GIT_REPOSITORY https://github.com/LoupVaillant/Monocypher.git
+    GIT_TAG 0d85f98c9d9b0227e42cf795cb527dff372b40a4
+)
+FetchContent_MakeAvailable(nk_monocypher)
+add_library(nk_license_crypto STATIC
+    "${nk_monocypher_SOURCE_DIR}/src/monocypher.c"
+    "${nk_monocypher_SOURCE_DIR}/src/optional/monocypher-ed25519.c"
+)
+set_target_properties(nk_license_crypto PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(nk_license_crypto PUBLIC
+    "${nk_monocypher_SOURCE_DIR}/src" "${nk_monocypher_SOURCE_DIR}/src/optional")
+set(NEUROKORE_LICENSE_PUBLIC_KEY_HEX "" CACHE STRING "32-byte Ed25519 public key, hex; empty disables activation")
+option(NEUROKORE_ALLOW_ALPHA_LICENSES "Allow alpha licenses in this pre-release build" ON)
+if (NOT NEUROKORE_LICENSE_PUBLIC_KEY_HEX STREQUAL "")
+    string(LENGTH "${NEUROKORE_LICENSE_PUBLIC_KEY_HEX}" _nk_key_length)
+    if (NOT _nk_key_length EQUAL 64 OR NOT NEUROKORE_LICENSE_PUBLIC_KEY_HEX MATCHES "^[0-9a-fA-F]+$")
+        message(FATAL_ERROR "NEUROKORE_LICENSE_PUBLIC_KEY_HEX must contain exactly 64 hex characters")
+    endif()
+endif()
+
 # MSVC defaults to the system code page for string literals. Our sources are
 # UTF-8 (em dash, ·, ✕, German comments). Without /utf-8 the UI shows mojibake
 # like "â" instead of "—". Force UTF-8 source + execution charset.
@@ -143,6 +166,7 @@ set(SOURCE_FILES
     src/licensing/HardwareFingerprint.cpp
     src/licensing/LicenseCrypto.cpp
     src/licensing/LicenseManager.cpp
+    src/licensing/LicenseV2.cpp
     src/utils/FormulaHelper.cpp
     src/dsp/LookupTables.cpp
     src/dsp/LookupTableSmoother.cpp
@@ -258,6 +282,7 @@ juce_add_binary_data(resourcesBinary
 )
 
 target_link_libraries(NeuroKore PRIVATE
+    nk_license_crypto
     resourcesBinary
     juce::juce_audio_utils
     juce::juce_audio_formats
@@ -382,6 +407,7 @@ target_compile_definitions(NeuroKoreTests PRIVATE
 )
 
 target_link_libraries(NeuroKoreTests PRIVATE
+    nk_license_crypto
     juce::juce_audio_basics
     juce::juce_dsp
     juce::juce_data_structures
@@ -658,3 +684,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_compile_definitions(NeuroKoreTests PRIVATE NK_ALLOCATION_PROBE=1)
     target_link_options(NeuroKoreTests PRIVATE -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc)
 endif()
+
+# Public verification material only. Private keys stay on the licensing server.
+foreach(_nk_license_target NeuroKore NeuroKoreTests)
+    target_compile_definitions(${_nk_license_target} PRIVATE
+        NEUROKORE_LICENSE_PUBLIC_KEY_HEX="${NEUROKORE_LICENSE_PUBLIC_KEY_HEX}"
+        NEUROKORE_ALLOW_ALPHA_LICENSES=$<BOOL:${NEUROKORE_ALLOW_ALPHA_LICENSES}>)
+endforeach()
+
+# Focused native licensing contracts; no DSP factory suite required.
+juce_add_console_app(NeuroKoreLicenseTests PRODUCT_NAME "NeuroKoreLicenseTests")
+juce_generate_juce_header(NeuroKoreLicenseTests)
+target_sources(NeuroKoreLicenseTests PRIVATE
+    tests/license_main.cpp src/licensing/LicenseV2.cpp src/licensing/HardwareFingerprint.cpp)
+target_compile_features(NeuroKoreLicenseTests PRIVATE cxx_std_17)
+target_compile_definitions(NeuroKoreLicenseTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(NeuroKoreLicenseTests PRIVATE nk_license_crypto juce::juce_core juce::juce_cryptography)

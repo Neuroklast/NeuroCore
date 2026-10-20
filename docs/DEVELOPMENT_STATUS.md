@@ -4,6 +4,10 @@
 **Version:** 0.7.1-beta  
 **Branch:** `feat/circuit-inspect-terminal-overhaul`
 
+## Website licensing integration (implementation branch)
+
+Ed25519 v2 device-bound activation against neuroklast.net; alpha/full entitlements, two server-managed seats, maximum 30-day offline activation files. Build with `NEUROKORE_LICENSE_PUBLIC_KEY_HEX`; empty means activation stays disabled. Stable builds must disable `NEUROKORE_ALLOW_ALPHA_LICENSES`. Legacy RSA licenses are rejected. Website migration, secrets, Stripe and release downloads still need deployment configuration. Focused native contracts and Node interoperability checks are included; no tested production binary or live checkout has been delivered by this change.
+
 ## Circuit / Inspect / Terminal overhaul (2026-10-20)
 
 PR #318. Empty left-drag pans; Alt+left-drag is rectangle select; Ctrl/Cmd+click toggles; Shift+click takes `shortestPath()`. Chip M/S, chevron and bind never start a pan. Multi-select mute/solo skips flow blocks and reverts the UI if compile fails. Inspect shows knobs for numbers, lists for enums, read-only text for formulas. Terminal folds buses and paints live knob values. Local Release 2026-10-20: Setup SHA256 `5da8437130f13f184fbef0a8f9da4525a44fba309cd9d0c7419aa4ae1a336114`. Native DAW/Playwright not re-run.

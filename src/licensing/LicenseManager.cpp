@@ -1,4 +1,5 @@
 #include "LicenseManager.h"
+#include "LicenseV2.h"
 #include "../core/Config.h"
 
 LicenseManager::LicenseManager()
@@ -35,9 +36,8 @@ bool LicenseManager::saveLicense (const juce::String& data)
 
 bool LicenseManager::importLicenseData (const juce::String& data)
 {
-    LicensePayload payload;
-    if (! LicenseCrypto::parseAndVerify (data, LicenseCrypto::productPublicKey(),
-                                         payload, lastErrorText))
+    LicenseV2::Payload payload;
+    if (! LicenseV2::verifyForThisDevice (data, payload, lastErrorText))
         return false;
 
     if (! saveLicense (data))
@@ -63,26 +63,25 @@ bool LicenseManager::importLicenseFile (const juce::File& file)
 
 bool LicenseManager::verifyLicense() const
 {
-    LicensePayload payload;
+    LicenseV2::Payload payload;
     juce::String error;
-    return LicenseCrypto::parseAndVerify (licenseText, LicenseCrypto::productPublicKey(),
-                                          payload, error);
+    return LicenseV2::verifyForThisDevice (licenseText, payload, error);
 }
 
 juce::String LicenseManager::licensedEmail() const
 {
-    LicensePayload payload;
-    juce::String sig, error;
-    if (! LicenseCrypto::parse (licenseText, payload, sig, error))
+    LicenseV2::Payload payload;
+    juce::String error;
+    if (! LicenseV2::verifyForThisDevice (licenseText, payload, error))
         return {};
     return payload.email;
 }
 
 juce::String LicenseManager::licensedIssued() const
 {
-    LicensePayload payload;
-    juce::String sig, error;
-    if (! LicenseCrypto::parse (licenseText, payload, sig, error))
+    LicenseV2::Payload payload;
+    juce::String error;
+    if (! LicenseV2::verifyForThisDevice (licenseText, payload, error))
         return {};
     return payload.issued;
 }

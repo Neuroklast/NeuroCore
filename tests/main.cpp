@@ -19,6 +19,7 @@
 #include "SanitationChainTest.h"
 #include "BusGraphTest.h"
 #include "LicenseTest.h"
+#include "LicenseV2Test.h"
 #include "DemoMixTest.h"
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
@@ -64,6 +65,7 @@ int main (int argc, char* argv[])
   ArchitectureHardeningTest architectureHardeningTest;
   BusGraphTest busGraphTest;
   LicenseTest licenseTest;
+  LicenseV2Test licenseV2Test;
   DemoMixTest demoMixTest;
   EqSidechainTest eqSidechainTest;
   DynamicsBlocksTest dynamicsBlocksTest;
