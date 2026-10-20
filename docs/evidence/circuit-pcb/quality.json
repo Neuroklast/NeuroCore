@@ -1,0 +1,46 @@
+[
+  {
+    "preset": "Wide Motion",
+    "chips": 6,
+    "edges": 7,
+    "totalCableLength": 4832,
+    "maxDetour": 1.562,
+    "crossings": 0,
+    "maxCorners": 7,
+    "chipCollisions": 0,
+    "foreignChipRouteCollisions": 0
+  },
+  {
+    "preset": "Bass Regen Growl",
+    "chips": 6,
+    "edges": 5,
+    "totalCableLength": 1760,
+    "maxDetour": 1.093,
+    "crossings": 0,
+    "maxCorners": 6,
+    "chipCollisions": 0,
+    "foreignChipRouteCollisions": 0
+  },
+  {
+    "preset": "Multiband Punch Enhancer",
+    "chips": 24,
+    "edges": 29,
+    "totalCableLength": 43648,
+    "maxDetour": 2.0,
+    "crossings": 6,
+    "maxCorners": 11,
+    "chipCollisions": 0,
+    "foreignChipRouteCollisions": 0
+  },
+  {
+    "preset": "Drone Low Bed",
+    "chips": 5,
+    "edges": 4,
+    "totalCableLength": 1280,
+    "maxDetour": 1.133,
+    "crossings": 0,
+    "maxCorners": 6,
+    "chipCollisions": 0,
+    "foreignChipRouteCollisions": 0
+  }
+]

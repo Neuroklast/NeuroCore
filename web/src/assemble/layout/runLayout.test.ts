@@ -233,7 +233,7 @@ describe("layout lands on jacks", () => {
       expect(hasLightning(pts), d).toBe(false);
       expect(firstLastHorizontal(pts), d).toBe(true);
       expect(hasWestThenEastHook(pts), d).toBe(false);
-      expect(Math.max(...pts.map((p) => p.x)), d).toBeLessThanOrEqual(pts[pts.length - 1]!.x + 0.6);
+      expect(Math.max(...pts.map((p) => p.x)), d).toBeLessThanOrEqual(Math.max(pts[0]!.x + BOARD_GRID, pts[pts.length - 1]!.x) + 0.6);
       const src = nodes.find((n) => n.id === e.source)!;
       const dst = nodes.find((n) => n.id === e.target)!;
       const sp = laid.nodes[src.id]!;

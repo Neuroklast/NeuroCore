@@ -3,7 +3,7 @@ import { useAstStore } from "../store/astStore";
 import { beginPatchTx } from "../store/patchWorkspace";
 import type { AstEdge } from "../bridge/ast";
 import { publishScript } from "./addBlock";
-import { camerasDiffer, fitCamera, shouldFitCameraOnLateLayout } from "./boardCamera";
+import { camerasDiffer, fitBoardCamera, shouldFitCameraOnLateLayout } from "./boardCamera";
 import { circuitHasOverlay } from "../chrome/shortcuts";
 import { graphToLayout, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
@@ -84,7 +84,7 @@ export async function layoutBoard(
     }
     if (mayFit) {
       const fitted = useBoardStore.getState();
-      useBoardStore.getState().setCamera(fitCamera(Object.values(fitted.nodes), view));
+      useBoardStore.getState().setCamera(fitBoardCamera(fitted, view));
     }
   } finally {
     if (owns && layoutBusyOwner === token) {

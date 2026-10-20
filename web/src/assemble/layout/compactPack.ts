@@ -274,6 +274,10 @@ export function packRows(
   edges: LayoutEdge[],
   view: BoardView = { w: 960, h: 420 },
 ): Record<string, { x: number; y: number; w: number; h: number }> {
+  // Large graphs grow in both dimensions, keeping the same continuous PCB.
+  const area=nodes.reduce((sum,n)=>sum+(n.w+CHIP_AIR_X*2)*(n.h+WRAP_AIR),0);
+  const aspect=Math.max(1.3,Math.min(2.2,view.w/Math.max(200,view.h-56)));
+  view={...view,w:Math.max(view.w,snapToGrid(Math.sqrt(area*aspect)))};
   const gapY = WRAP_AIR;
   const pad = CHIP_AIR_Y;
   const byId = new Map(nodes.map((n) => [n.id, n]));

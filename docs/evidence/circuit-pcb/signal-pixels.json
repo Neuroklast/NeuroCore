@@ -1,0 +1,14 @@
+{
+  "circuit-pcb-PCB-keeps-all-20-effects-on-one-surface-chromium-1x": {
+    "silent": 23814819.078431666,
+    "held": 23818513.25098072,
+    "stale": 23814819.078431666,
+    "released": 23814819.078431666
+  },
+  "circuit-pcb-PCB-keeps-all-20-effects-on-one-surface-chromium-2x": {
+    "silent": 95379458.25881983,
+    "held": 95393742.59999622,
+    "stale": 95379458.25881983,
+    "released": 95379458.25881983
+  }
+}

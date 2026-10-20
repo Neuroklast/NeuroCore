@@ -1,0 +1,15 @@
+{
+  "total": 447,
+  "passed": 445,
+  "failed": 2,
+  "failures": [
+    {
+      "file": "src/assemble/boardView.regression.test.ts",
+      "test": "Circuit interaction surface BoardChip does not subscribe every chip to the knobs array"
+    },
+    {
+      "file": "src/assemble/chipSpec.test.ts",
+      "test": "ChipSpec registry has a catalog row for every chip type"
+    }
+  ]
+}

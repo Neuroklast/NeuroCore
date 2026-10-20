@@ -1,0 +1,46 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[WebServer] (node:31) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[WebServer] (node:44) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 26 tests using 2 workers
+
+(node:63) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium-1x] › e2e/circuit-navigation.spec.ts:4:3 › Circuit navigation owns a stable control band at 960px (1.8s)
+  ✓   3 [chromium-1x] › e2e/circuit-navigation.spec.ts:4:3 › Circuit navigation owns a stable control band at 1440px (1.7s)
+  ✓   4 [chromium-1x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 6 effects on one surface (1.8s)
+  ✓   5 [chromium-1x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 20 effects on one surface (3.8s)
+  ✓   2 [chromium-1x] › e2e/circuit-overlay.spec.ts:70:3 › circuit overlay camera lock › right-click does not move the camera or chips (14.6s)
+  ✓   6 [chromium-1x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 100 effects on one surface (7.2s)
+  ✓   7 [chromium-1x] › e2e/circuit-serial-composition.spec.ts:5:3 › Drone Low Bed has a compact PCB composition at 960px (2.6s)
+  ✓   9 [chromium-1x] › e2e/circuit-serial-composition.spec.ts:5:3 › Drone Low Bed has a compact PCB composition at 1440px (3.4s)
+  ✓  10 [chromium-1x] › e2e/circuit-source.spec.ts:21:3 › circuit source inspector › Source panel is 360–420 px and does not overlap knobs (841ms)
+(node:366) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  11 [chromium-2x] › e2e/circuit-navigation.spec.ts:4:3 › Circuit navigation owns a stable control band at 960px (3.2s)
+  ✓  12 [chromium-2x] › e2e/circuit-navigation.spec.ts:4:3 › Circuit navigation owns a stable control band at 1440px (3.5s)
+  -  13 [chromium-2x] › e2e/circuit-overlay.spec.ts:70:3 › circuit overlay camera lock › right-click does not move the camera or chips
+  ✓  14 [chromium-2x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 6 effects on one surface (3.6s)
+  ✓  15 [chromium-2x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 20 effects on one surface (7.2s)
+  ✓   8 [chromium-1x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 200 effects on one surface (27.4s)
+  ✓  17 [chromium-1x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Wide Motion (2.5s)
+  ✓  18 [chromium-1x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Bass Regen Growl (2.8s)
+  ✓  16 [chromium-2x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 100 effects on one surface (9.4s)
+  ✓  19 [chromium-1x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Multiband Punch (3.1s)
+(node:591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  21 [chromium-2x] › e2e/circuit-serial-composition.spec.ts:5:3 › Drone Low Bed has a compact PCB composition at 960px (3.4s)
+  ✓  22 [chromium-2x] › e2e/circuit-serial-composition.spec.ts:5:3 › Drone Low Bed has a compact PCB composition at 1440px (4.4s)
+  ✓  23 [chromium-2x] › e2e/circuit-source.spec.ts:21:3 › circuit source inspector › Source panel is 360–420 px and does not overlap knobs (862ms)
+  ✓  20 [chromium-2x] › e2e/circuit-pcb.spec.ts:4:3 › PCB keeps all 200 effects on one surface (52.0s)
+  ✓  24 [chromium-2x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Wide Motion (4.0s)
+  ✓  25 [chromium-2x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Bass Regen Growl (4.5s)
+  ✓  26 [chromium-2x] › e2e/circuit-pcb.spec.ts:236:3 › factory PCB Multiband Punch (4.4s)
+
+  1 skipped
+  25 passed (2.0m)

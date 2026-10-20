@@ -59,7 +59,7 @@ describe("ELK arrange", () => {
     expect(Math.abs(pos.stage1.y - pos.OUT.y)).toBeLessThanOrEqual(128);
   });
 
-  it("lays a long serial chain left to right, not a column wrap", async () => {
+  it("lays a long serial chain in compact reading-order PCB rows", async () => {
     const ids = ["filter1", "stage1", "eq1", "stage2", "filter2"];
     const nodes = [
       chip("IN", "in", { jacks: [jack("out", true)] }),
@@ -76,8 +76,11 @@ describe("ELK arrange", () => {
     }));
     const laid = await requestLayout("ARRANGE", nodes, edges);
     const pos = laid.nodes;
-    expect(pos.filter1!.x).toBeLessThan(pos.eq1!.x);
-    expect(pos.eq1!.x).toBeLessThan(pos.filter2!.x);
+    for(let i=1;i<chain.length;i++) {
+      const a=pos[chain[i-1]!]!,b=pos[chain[i]!]!;
+      expect(b.x>=a.x+a.w+ARR_CHIP_GAP || b.y>=a.y+a.h+ARR_CHIP_GAP).toBe(true);
+    }
+    expect(pos.OUT!.y).toBeGreaterThan(pos.IN!.y);
     expect(pos.IN!.x).toBeLessThan(pos.filter1!.x);
     expect(pos.OUT!.x).toBeGreaterThan(pos.filter2!.x);
     const fb = chipBox("filter", nodes.find((n) => n.id === "filter1")!.data.jacks, false, {});
@@ -129,7 +132,7 @@ describe("ELK arrange", () => {
     }
   });
 
-  it("Compact preserves the directed serial rail used by Arrange", async () => {
+  it("Compact preserves the PCB rows and channel routes used by Arrange", async () => {
     const ids = ["filter1", "stage1", "eq1", "stage2", "filter2"];
     const nodes = [
       chip("IN", "in", { jacks: [jack("out", true)] }),
@@ -161,8 +164,10 @@ describe("ELK arrange", () => {
       for (let i = 1; i < pts.length; i += 1) {
         len += Math.abs(pts[i]!.x - pts[i - 1]!.x) + Math.abs(pts[i]!.y - pts[i - 1]!.y);
       }
-      expect(len, d).toBe(ARR_CHIP_GAP);
-      expect(pts.every(p => p.y === pts[0]!.y), d).toBe(true);
+      const a=pts[0]!,b=pts.at(-1)!;
+      const direct=Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+      expect(len,d).toBeLessThanOrEqual(direct+128);
+      if(a.y===b.y)expect(len,d).toBe(ARR_CHIP_GAP);
     }
   });
 });

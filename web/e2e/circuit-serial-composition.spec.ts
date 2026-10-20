@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 
 for (const width of [960,1440]) {
-  test(`Drone Low Bed has one directed serial rail at ${width}px`, async ({page},info) => {
+  test(`Drone Low Bed has a compact PCB composition at ${width}px`, async ({page},info) => {
     await page.setViewportSize({width,height:860});
     await page.goto('/');
     await page.locator("html[data-nk-ready='1']").waitFor();
@@ -26,10 +26,10 @@ for (const width of [960,1440]) {
           ? getComputedStyle(el.querySelector('.nk-chip-pads')!).backgroundImage.match(/\)\s+([\d.]+)px/)?.[1] ?? '0' : '0'),
       };
     }),ids);
-    for (let i=1;i<dump.length;i++) {
-      const a=dump[i-1]!,b=dump[i]!;
-      expect(b.box.x,JSON.stringify(dump)).toBeGreaterThan(a.box.x+a.box.w);
-      expect(Math.abs(a.east!.y+a.east!.h/2-b.west!.y-b.west!.h/2)).toBeLessThan(1);
+    expect(dump.at(-1)!.box.y).toBeGreaterThan(dump[0]!.box.y+dump[0]!.box.h);
+    for (let i=0;i<dump.length;i++)for(let j=i+1;j<dump.length;j++) {
+      const a=dump[i]!.box,b=dump[j]!.box;
+      expect(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y).toBe(true);
     }
     const dsp=dump.slice(1,4), widths=dsp.map(n=>n.logicalW);
     expect(Math.max(...widths)/Math.min(...widths)).toBeLessThanOrEqual(1.25);
