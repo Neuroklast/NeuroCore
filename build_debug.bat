@@ -2,25 +2,48 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-REM Windows Debug. Same tree as AGENTS.md (`build/`), Debug config.
+REM Windows Debug. Same tree as Release (`build/`). No installer.
+REM Version label is read from CMakeLists.txt. Living docs sync first.
 
-set "VERSION_LABEL=0.7.1-beta"
-set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 set "BUILD_DIR=build"
 set "CONFIG=Debug"
 set "TARGET=NeuroKore_All"
 if /i "%~1"=="/nopause" set "NOPAUSE=1"
+
+for /f tokens^=2^ delims^=^" %%L in ('findstr /C:"set(NEUROKORE_VERSION_LABEL" CMakeLists.txt') do set "VERSION_LABEL=%%L"
+if not defined VERSION_LABEL (
+    echo FEHLER: NEUROKORE_VERSION_LABEL fehlt in CMakeLists.txt.
+    call :maybe_pause
+    exit /b 1
+)
+set "FILE_STEM=NEUROKORE-%VERSION_LABEL%"
 
 echo ===========================================
 echo  NEUROKORE DEBUG
 echo  %VERSION_LABEL%  target %TARGET%
 echo ===========================================
 
+where node >nul 2>&1
+if errorlevel 1 (
+    echo FEHLER: node fehlt. Living docs und der Web-Build brauchen Node.
+    call :maybe_pause
+    exit /b 1
+)
+
+echo.
+echo [1/3] node scripts\sync_living_docs.mjs
+node scripts\sync_living_docs.mjs
+if errorlevel 1 (
+    echo FEHLER: Living docs nicht synchron.
+    call :maybe_pause
+    exit /b 1
+)
+
 call :find_cmake
 if errorlevel 1 exit /b 1
 
 echo.
-echo [1/2] cmake -B %BUILD_DIR% -S .
+echo [2/3] cmake -B %BUILD_DIR% -S .
 "%CMAKE%" -B "%BUILD_DIR%" -S .
 if errorlevel 1 (
     echo FEHLER: CMake configure fehlgeschlagen.
@@ -29,7 +52,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/2] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
+echo [3/3] cmake --build %BUILD_DIR% --config %CONFIG% --target %TARGET%
 "%CMAKE%" --build "%BUILD_DIR%" --config %CONFIG% --target %TARGET% --parallel
 if errorlevel 1 (
     echo FEHLER: Debug-Build fehlgeschlagen.

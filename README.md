@@ -42,14 +42,8 @@ Needs JUCE 8.0.6+ (`JUCE_DIR` or CMake fetches it) and a VST3 SDK.
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Linux first needs `./scripts/install_linux_deps.sh`. Windows uses `build_release.bat` and macOS/Linux use `scripts/build_local.sh`. Both entry points reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.7.1-beta.exe` / `.vst3` / `.component`).
+Linux first needs `./scripts/install_linux_deps.sh`. Windows release is `build_release.bat`. macOS/Linux use `scripts/build_local.sh`. Both entry points sync the operator manual into plugin Help, then reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.7.1-beta.exe` / `.vst3` / `.component`).
 
-Package Windows zip + installer (after Release). Needs [Inno Setup 6](https://jrsoftware.org/isinfo.php):
-
-```powershell
-powershell -File scripts/package_windows.ps1
-```
-
-That writes a clean `NEUROKORE.vst3` bundle, downloads the WebView2 bootstrapper, compiles Setup.exe, and writes a SHA-256 next to it. If `NEUROKORE_SIGN_PFX` (or `NEUROKORE_SIGN_THUMBPRINT`) is set, the VST3, Standalone, and Setup.exe are Authenticode-signed.
+`build_release.bat` then runs `scripts/package_windows.ps1`. That needs [Inno Setup 6](https://jrsoftware.org/isinfo.php). It writes a clean `NEUROKORE.vst3` bundle, downloads the WebView2 bootstrapper, compiles `build/package/NEUROKORE-0.7.1-beta-Setup.exe`, and writes the win64 zip plus a SHA-256. The version strings come from `NEUROKORE_VERSION_LABEL` in CMake. If `NEUROKORE_SIGN_PFX` (or `NEUROKORE_SIGN_THUMBPRINT`) is set, the VST3, Standalone, and Setup.exe are Authenticode-signed. A portable `NEUROKORE-0.7.1-beta/` folder is a local extract and is not part of the git tree.
 
 Formula language: [docs/DSL_REFERENCE.md](docs/DSL_REFERENCE.md). Agent rules: [AGENTS.md](AGENTS.md).

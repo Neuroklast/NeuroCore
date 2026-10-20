@@ -20,8 +20,9 @@ describe("product version is one string", () => {
     expect(iss).toContain(`#define MyAppNumeric "${numeric}"`);
 
     const pack = readFileSync(join(root, "scripts/package_windows.ps1"), "utf8");
-    expect(pack).toContain(`$version = "${nk.version}"`);
-    expect(pack).toContain(`$numeric = "${numeric}"`);
+    expect(pack).toContain("NEUROKORE_VERSION_LABEL");
+    expect(pack).toContain("NEUROKORE_VERSION_NUMERIC");
+    expect(pack).not.toMatch(/\$version = "0\.\d+\.\d+-beta"/);
     expect(pack).toContain('Filter "NEUROKORE.vst3"');
     expect(pack).not.toContain('Filter "$stem.vst3"');
 
@@ -55,5 +56,23 @@ describe("product version is one string", () => {
 
     const notes = readFileSync(join(root, "docs/ALPHA_RELEASE_NOTES.md"), "utf8");
     expect(notes).toContain(`NEUROKORE ${nk.version}`);
+  });
+
+  it("Windows release syncs the living manual and packages every time", () => {
+    const norm = (text: string) => text.replace(/\r\n/g, "\n");
+    const manual = norm(readFileSync(join(root, "docs/manual/NEUROKORE.md"), "utf8"));
+    const help = norm(readFileSync(join(root, "resources/UserManual_en.txt"), "utf8"));
+    expect(manual).toContain(nk.version);
+    expect(help).toBe(manual);
+
+    const release = readFileSync(join(root, "build_release.bat"), "utf8");
+    expect(release).toContain("scripts\\sync_living_docs.mjs");
+    expect(release).toContain("scripts\\package_windows.ps1");
+    expect(release).not.toMatch(/set "VERSION_LABEL=0\.\d/);
+
+    const pack = readFileSync(join(root, "scripts/package_windows.ps1"), "utf8");
+    expect(pack).toContain("NEUROKORE_VERSION_LABEL");
+    expect(pack).toContain("sync_living_docs.mjs");
+    expect(pack).not.toMatch(/\$version = "0\.\d+\.\d+-beta"/);
   });
 });

@@ -30,4 +30,4 @@
 
 ## Version
 
-`PLUGIN_VERSION`, CMake `NEUROKORE_VERSION_LABEL`, Inno, pack script: one string. Do not “also bump” during a UI session.
+`PLUGIN_VERSION`, CMake `NEUROKORE_VERSION_LABEL`, Inno: one string. `scripts/package_windows.ps1` reads the CMake label. Do not “also bump” during a UI session.
