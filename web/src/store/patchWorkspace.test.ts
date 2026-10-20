@@ -86,8 +86,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     expect(sourceMap).not.toContain("startsWith(`${want}_`)");
   });
 
-  it("Inspect graphOp setArg is a separate path from Terminal publishScript", () => {
-    expect(overlays).toContain('op: "setArg"');
+  it("Inspect und Terminal teilen den publishScript-Pfad (gemeinsame Parametertreue)", () => {
+    expect(overlays).toContain("setCircuitArg");
+    expect(overlays).not.toContain('op: "setArg"');
     expect(compile).toContain('publishScript(script, "editor")');
   });
 });
