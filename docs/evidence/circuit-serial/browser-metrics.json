@@ -1,0 +1,30 @@
+[
+  {
+    "viewportWidth": 960,
+    "pixelDensity": "1x",
+    "widthRatio": 1.1,
+    "minCaptionScreenPx": 8.478063583374023,
+    "minDotScreenDiameterPx": 1.2434493255615235
+  },
+  {
+    "viewportWidth": 960,
+    "pixelDensity": "2x",
+    "widthRatio": 1.1,
+    "minCaptionScreenPx": 8.478063583374023,
+    "minDotScreenDiameterPx": 1.2434493255615235
+  },
+  {
+    "viewportWidth": 1440,
+    "pixelDensity": "1x",
+    "widthRatio": 1.1,
+    "minCaptionScreenPx": 11.304084777832031,
+    "minDotScreenDiameterPx": 1.6579324340820314
+  },
+  {
+    "viewportWidth": 1440,
+    "pixelDensity": "2x",
+    "widthRatio": 1.1,
+    "minCaptionScreenPx": 11.304084777832031,
+    "minDotScreenDiameterPx": 1.6579324340820314
+  }
+]

@@ -27,6 +27,11 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+      - name: Serial signal-flow contracts
+        working-directory: web
+        env:
+          NK_LAYOUT_EVIDENCE: ../artifacts/circuit-metrics
+        run: npx vitest run src/assemble/layout/serialComposition.test.ts src/assemble/layout/factorySignalFlow.test.ts
       - name: Layout contracts
         working-directory: web
         run: npm run test:layout
@@ -35,5 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-layout-evidence
-          path: web/test-results/
+          path: |
+            web/test-results/
+            artifacts/circuit-metrics/
           retention-days: 14

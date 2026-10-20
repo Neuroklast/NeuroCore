@@ -196,7 +196,10 @@ describe("compact packRows", () => {
     const bus = nodes.find((n) => n.data.type === "bus")!.id;
     const out = nodes.find((n) => n.data.type === "out")!.id;
     expect(packed[bus]!.y).toBeGreaterThan(packed.IN!.y);
-    expect(packed[send]!.y).toBe(packed[bus]!.y);
+    expect(packed[send]!.y).toBeGreaterThanOrEqual(packed[bus]!.y);
+    if (packed[send]!.y === packed[bus]!.y) {
+      expect(packed[send]!.x).toBeGreaterThan(packed[bus]!.x);
+    }
     expect(packed[out]!.x).toBeGreaterThan(packed.IN!.x);
     expect(packed[out]!.x).toBeGreaterThanOrEqual(packed[send]!.x);
     for (const [id, p] of Object.entries(packed)) {

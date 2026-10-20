@@ -1,0 +1,113 @@
+{
+  "width": 960,
+  "nodes": {
+    "IN": {
+      "x": 32,
+      "y": 96,
+      "w": 160,
+      "h": 160
+    },
+    "octaver1": {
+      "x": 256,
+      "y": 32,
+      "w": 352,
+      "h": 256
+    },
+    "filter1": {
+      "x": 672,
+      "y": 32,
+      "w": 320,
+      "h": 256
+    },
+    "reverb1": {
+      "x": 1056,
+      "y": 32,
+      "w": 320,
+      "h": 256
+    },
+    "OUT": {
+      "x": 1440,
+      "y": 96,
+      "w": 160,
+      "h": 160
+    }
+  },
+  "routes": [
+    {
+      "id": "e-IN-octaver1-out-in-0",
+      "source": "IN",
+      "target": "octaver1",
+      "length": 64,
+      "westward": 0,
+      "corners": 0,
+      "points": [
+        {
+          "x": 192,
+          "y": 176
+        },
+        {
+          "x": 256,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "id": "e-octaver1-filter1-out-in-1",
+      "source": "octaver1",
+      "target": "filter1",
+      "length": 64,
+      "westward": 0,
+      "corners": 0,
+      "points": [
+        {
+          "x": 608,
+          "y": 176
+        },
+        {
+          "x": 672,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "id": "e-filter1-reverb1-out-in-2",
+      "source": "filter1",
+      "target": "reverb1",
+      "length": 64,
+      "westward": 0,
+      "corners": 0,
+      "points": [
+        {
+          "x": 992,
+          "y": 176
+        },
+        {
+          "x": 1056,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "id": "e-reverb1-OUT-out-in-3",
+      "source": "reverb1",
+      "target": "OUT",
+      "length": 64,
+      "westward": 0,
+      "corners": 0,
+      "points": [
+        {
+          "x": 1376,
+          "y": 176
+        },
+        {
+          "x": 1440,
+          "y": 176
+        }
+      ]
+    }
+  ],
+  "collisions": 0,
+  "cableCollisions": 0,
+  "crossings": 0,
+  "widthRatio": 1.1
+}

@@ -9,6 +9,9 @@ export const TYPECODE_H = 14;
 /** Identification, controls, signal surface and captions have separate bands. */
 export const TECHNICAL_H = 26;
 export const PARAMETER_H = 26;
+export const PARAMETER_FONT_PX = 15;
+/** Conservative mono glyph plus tracking, shared by caption and inline bind sizing. */
+export const PARAMETER_CHAR_PX = 9.5;
 /** One socket is title + typecode stacked (key + value). Overlay rows. */
 export const SOCKET_H = TITLE_H + TYPECODE_H;
 export const CHIP_PAD_Y = TITLE_H - TYPECODE_H;
@@ -31,7 +34,7 @@ export const PIN_LEAD = BOARD_TRACE / 2;
 /** Status foot on the body, above the south pin strip. */
 export const FOOT_H = BOARD_TRACE;
 /** Baseline DSP IC. Size grows from jack counts; never shrinks to fit a row. */
-export const CHIP_W = BOARD_GRID * 7;
+export const CHIP_W = BOARD_GRID * 10;
 export const CHIP_H = BOARD_GRID * 8;
 export const IO_H = BOARD_GRID * 5;
 /** ui-ux: IN/OUT body ≥ 96. Compact connector housing; arrangement aligns the actual jack centres. */
@@ -168,6 +171,7 @@ export function chipChromeVars(role: "io" | "chip" = "chip"): Record<string, str
     "--nk-title-h": `${TITLE_H}px`,
     "--nk-technical-h": `${TECHNICAL_H}px`,
     "--nk-parameter-h": `${PARAMETER_H}px`,
+    "--nk-parameter-font": `${PARAMETER_FONT_PX}px`,
     "--nk-char-px": `${CHAR_PX}px`,
     "--nk-socket-h": `${SOCKET_H}px`,
     "--nk-sock-gap": `${SOCK_GAP}px`,
