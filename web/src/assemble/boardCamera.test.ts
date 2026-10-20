@@ -116,3 +116,11 @@ it("fits the entire tall circuit without clipping the first and last row", () =>
   const zoomed=zoomCamera(camera,600,280,1.05);
   expect(zoomed.scale/camera.scale).toBeCloseTo(1.05);
 });
+
+it('fits the etched routes as well as chips below the fixed controls',()=>{
+ const nodes=[node('IN',32,32,160,160),node('OUT',800,600,160,160)];
+ const routes=[{x:-256,y:-320},{x:1200,y:900}];
+ const view={w:1200,h:560};
+ const cam=fitCamera(nodes,view,routes);
+ for(const p of routes){const s=screenFromWorld(cam,p.x,p.y);expect(s.x).toBeGreaterThanOrEqual(0);expect(s.y).toBeGreaterThanOrEqual(56);expect(s.x).toBeLessThanOrEqual(view.w);expect(s.y).toBeLessThanOrEqual(view.h);}
+});

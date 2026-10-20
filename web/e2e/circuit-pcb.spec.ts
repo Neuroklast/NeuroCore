@@ -97,6 +97,9 @@ for (const count of [6, 20, 100, 200])
       }),
     );
     const board = await page.locator(".nk-board").boundingBox();
+    const occupiedW=Math.max(...bounds.map(r=>r.x+r.w))-Math.min(...bounds.map(r=>r.x));
+    const occupiedH=Math.max(...bounds.map(r=>r.y+r.h))-Math.min(...bounds.map(r=>r.y));
+    expect(Math.max(occupiedW/board!.width,occupiedH/(board!.height-36)), 'Fit must use the pane, not a stale pre-layout camera').toBeGreaterThan(.75);
     for (const r of bounds) {
       expect(r.x).toBeGreaterThanOrEqual(board!.x);
       expect(r.y).toBeGreaterThanOrEqual(board!.y + 36);
@@ -229,23 +232,63 @@ for (const count of [6, 20, 100, 200])
     );
   });
 
-for(const name of ['Wide Motion','Bass Regen Growl','Multiband Punch']) test(`factory PCB ${name}`,async({page},info)=>{
- test.setTimeout(120000);
- await page.setViewportSize({width:info.project.name.endsWith('2x')?1440:960,height:860});
- await page.goto('/');await page.locator("html[data-nk-ready='1']").waitFor();
- await page.getByRole('button',{name:'Circuit',exact:true}).click();
- await page.locator('.nk-preset-now').click();await page.getByPlaceholder('Search presets, tags, effects...').fill(name);
- await page.locator('.nk-preset-row',{hasText:name}).first().dblclick();
- await expect(page.locator('.nk-preset-browser')).toHaveCount(0);
- await expect(page.locator('[aria-label="Layout"]')).toHaveCount(0,{timeout:90000});
- await expect(page.locator('.nk-board-regions')).toHaveCount(0);
- const chips=page.locator('.nk-board-world [data-node-id]');
- expect(await chips.count()).toBeGreaterThan(3);
- const boxes=await chips.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{id:el.getAttribute('data-node-id'),x:r.x,y:r.y,w:r.width,h:r.height}}));
- const board=(await page.locator('.nk-board').boundingBox())!;
- for(const r of boxes){expect(r.x).toBeGreaterThanOrEqual(board.x);expect(r.y).toBeGreaterThanOrEqual(board.y+36);expect(r.x+r.w).toBeLessThanOrEqual(board.x+board.width+1);expect(r.y+r.h).toBeLessThanOrEqual(board.y+board.height+1);}
- for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){const a=boxes[i]!,b=boxes[j]!;expect(a.x+a.w<=b.x+1||b.x+b.w<=a.x+1||a.y+a.h<=b.y+1||b.y+b.h<=a.y+1).toBe(true);}
- await page.mouse.move(0,0);
- await page.screenshot({path:info.outputPath('factory-pcb.png'),fullPage:true});
- writeFileSync(info.outputPath('factory-geometry.json'),JSON.stringify({name,boxes},null,2));
-});
+for (const name of ["Wide Motion", "Bass Regen Growl", "Multiband Punch"])
+  test(`factory PCB ${name}`, async ({ page }, info) => {
+    test.setTimeout(120000);
+    await page.setViewportSize({
+      width: info.project.name.endsWith("2x") ? 1440 : 960,
+      height: 860,
+    });
+    await page.goto("/");
+    await page.locator("html[data-nk-ready='1']").waitFor();
+    await page.getByRole("button", { name: "Circuit", exact: true }).click();
+    await page.locator(".nk-preset-now").click();
+    await page.getByPlaceholder("Search presets, tags, effects...").fill(name);
+    await page.locator(".nk-preset-row", { hasText: name }).first().dblclick();
+    await expect(page.locator(".nk-preset-browser")).toHaveCount(0);
+    await expect(page.locator('[aria-label="Layout"]')).toHaveCount(0, {
+      timeout: 90000,
+    });
+    await expect(page.locator(".nk-board-regions")).toHaveCount(0);
+    const chips = page.locator(".nk-board-world [data-node-id]");
+    expect(await chips.count()).toBeGreaterThan(3);
+    const boxes = await chips.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          id: el.getAttribute("data-node-id"),
+          x: r.x,
+          y: r.y,
+          w: r.width,
+          h: r.height,
+        };
+      }),
+    );
+    const board = (await page.locator(".nk-board").boundingBox())!;
+    for (const r of boxes) {
+      expect(r.x).toBeGreaterThanOrEqual(board.x);
+      expect(r.y).toBeGreaterThanOrEqual(board.y + 36);
+      expect(r.x + r.w).toBeLessThanOrEqual(board.x + board.width + 1);
+      expect(r.y + r.h).toBeLessThanOrEqual(board.y + board.height + 1);
+    }
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i]!,
+          b = boxes[j]!;
+        expect(
+          a.x + a.w <= b.x + 1 ||
+            b.x + b.w <= a.x + 1 ||
+            a.y + a.h <= b.y + 1 ||
+            b.y + b.h <= a.y + 1,
+        ).toBe(true);
+      }
+    await page.mouse.move(0, 0);
+    await page.screenshot({
+      path: info.outputPath("factory-pcb.png"),
+      fullPage: true,
+    });
+    writeFileSync(
+      info.outputPath("factory-geometry.json"),
+      JSON.stringify({ name, boxes }, null, 2),
+    );
+  });

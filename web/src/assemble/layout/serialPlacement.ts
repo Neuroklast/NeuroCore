@@ -67,13 +67,15 @@ export function placeSerialChain(
       let x =
         CHIP_AIR_Y +
         (index === rows.length - 1 ? width - rowWidths[index]! : 0);
-      const rail = Math.max(
-        ...row.map((n) => n.ins[0]?.y ?? n.outs[0]?.y ?? n.h / 2),
-      );
+      const offsets=[0];
+      for(let i=1;i<row.length;i++) {
+        const previous=row[i-1]!,current=row[i]!,edge=next.get(previous.id)!;
+        offsets.push(offsets[i-1]!+previous.outs.find(p=>p.id===edge.fromJack)!.y-current.ins.find(p=>p.id===edge.toJack)!.y);
+      }
+      const lift=-Math.min(...offsets);
       let bottom = y;
-      for (const n of row) {
-        const local = n.ins[0]?.y ?? n.outs[0]?.y ?? n.h / 2;
-        const ny = snapToGrid(y + rail - local);
+      for (const [i,n] of row.entries()) {
+        const ny = snapToGrid(y+offsets[i]!+lift);
         placed[n.id] = { x, y: ny, w: snapSize(n.w), h: snapSize(n.h) };
         bottom = Math.max(bottom, ny + snapSize(n.h));
         x += snapSize(n.w) + CHIP_AIR_X;

@@ -1,3 +1,4 @@
+import { boardRoutePoints } from "./boardBounds";
 import { drawBoardSubstrate } from "./boardSubstrate";
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { useHostStore } from "../store/hostStore";
@@ -211,6 +212,7 @@ export function CableCanvas({
     let paletteTheme = "";
     const coreInk = () => resolveColor(PACKET_CORE, liveTheme().white);
     let core = fallbackColor("accent");
+    let substrate = "rgb(20,24,26)";
     const draw = (now = 0) => {
       const fromClock = now > 0;
       const t = fromClock
@@ -266,11 +268,12 @@ export function CableCanvas({
           palette[k] = resolveColor(COLOR_VAR[k], fallbackColor(k));
         });
         core = coreInk();
+        substrate = resolveColor("var(--nk-surface)", "rgb(20,24,26)");
       }
       const pass = cablePaintPass(gestureRef.current, host.motion);
 
       {
-        drawBoardSubstrate(ctx,Object.values(g.nodes),core,resolveColor("--nk-surface", "rgb(20,24,26)"));
+        drawBoardSubstrate(ctx,Object.values(g.nodes),core,substrate,boardRoutePoints(g));
         drawBackgroundTraces(ctx, {
           tx: cam.tx,
           ty: cam.ty,

@@ -136,7 +136,7 @@ export async function runLayout(
       const a={x:s.x+s.w,y:s.y+byId.get(edge.source)!.outs.find(p=>p.id===edge.fromJack)!.y};
       const b={x:t.x,y:t.y+byId.get(edge.target)!.ins.find(p=>p.id===edge.toJack)!.y};
       const sameRow=Math.abs(a.y-b.y)<1;
-      const channel=s.y+s.h+64;
+      const channel=Math.max(...Object.values(placed).filter(p=>p.y<=a.y && p.y+p.h>=a.y).map(p=>p.y+p.h))+64;
       const pts=sameRow?[a,b]:[a,{x:a.x+32,y:a.y},{x:a.x+32,y:channel},{x:b.x-32,y:channel},{x:b.x-32,y:b.y},b];
       edgePaths[edge.id]=waypointToSvgPath(chamferWaypoints(pts));
     }

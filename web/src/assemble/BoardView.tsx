@@ -14,7 +14,7 @@ import { BoardNavigator } from "./BoardNavigator";
 import { BoardChip } from "./BoardChip";
 import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
 import { wheelOwnsZoom } from "./boardWheel";
-import { applyCameraTransform, cameraMatrix, fitCamera, panCamera, shouldFitCameraOnLateLayout, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
+import { applyCameraTransform, cameraMatrix, fitCamera, fitBoardCamera, panCamera, shouldFitCameraOnLateLayout, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
 import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
@@ -231,10 +231,10 @@ export function BoardView({ active = true }: { active?: boolean }) {
       paneSizeRef.current = next;
       setSize(next);
       const moved = useBoardStore.getState().userMoved;
-      if (shouldFitCameraOnPaneSize(prev.w, prev.h, next.w, next.h, moved)) {
+      if (!useBoardStore.getState().layoutBusy && shouldFitCameraOnPaneSize(prev.w, prev.h, next.w, next.h, moved)) {
         const ns = Object.values(useBoardStore.getState().nodes);
         if (ns.length > 0) {
-          useBoardStore.getState().setCamera(fitCamera(ns, next));
+          useBoardStore.getState().setCamera(fitBoardCamera(useBoardStore.getState(), next));
         }
       }
     });
@@ -255,7 +255,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
 
   const nodeIdKey = Object.keys(nodes).sort().join("\0");
   useEffect(() => {
-    if (size.w < 40) {
+    if (size.w < 40 || useBoardStore.getState().layoutBusy) {
       return;
     }
     if (! shouldFitCameraOnLateLayout({
@@ -270,7 +270,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     if (ns.length === 0) {
       return;
     }
-    useBoardStore.getState().setCamera(fitCamera(ns, size));
+    useBoardStore.getState().setCamera(fitBoardCamera(useBoardStore.getState(), size));
   }, [nodeIdKey, userMoved]);
 
   const applyLiveCamera = useCallback((cam: typeof camLive.current, commit = false) => {
@@ -331,7 +331,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
     let cancel = false;
     const g = useBoardStore.getState();
     const payload = graphToLayout(g);
-    const view = { w: size.w || 960, h: size.h || 420 };
+    const view = { w: paneRef.current?.clientWidth || size.w || 960, h: paneRef.current?.clientHeight || size.h || 420 };
     const order = serialIds(payload.nodes, payload.edges, "IN");
     const per = wrapFits(order.map((id) => g.nodes[id]?.w ?? 32), view.w, CHIP_AIR_X, CHIP_AIR_Y);
     const mode = per < order.length ? "COMPACT" : "ARRANGE";
@@ -740,7 +740,7 @@ export function BoardView({ active = true }: { active?: boolean }) {
         height={size.h}
         active={active && circuitPaintActive("assemble", size.w, size.h)}
       />
-      <BoardNavigator graph={graph} onFit={() => applyLiveCamera(fitCamera(Object.values(nodes), size), true)}
+      <BoardNavigator graph={graph} onFit={() => applyLiveCamera(fitBoardCamera(graph, size), true)}
         onArrange={() => { void layoutBoard("COMPACT", size, {force:true}); }}
         onFind={(id) => {
           const n=nodes[id]; if(!n)return;

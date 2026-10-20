@@ -1,3 +1,4 @@
+import { boardBounds } from "./boardBounds";
 import type { BoardNode } from "./boardModel";
 /** The board is a single material surface under the actual circuit, not a group. */
 export function drawBoardSubstrate(
@@ -5,12 +6,14 @@ export function drawBoardSubstrate(
   nodes: BoardNode[],
   ink: string,
   surface: string,
+  points: { x: number; y: number }[] = [],
 ) {
   if (!nodes.length) return;
-  const x = Math.min(...nodes.map((n) => n.x)) - 40,
-    y = Math.min(...nodes.map((n) => n.y)) - 40;
-  const right = Math.max(...nodes.map((n) => n.x + n.w)) + 40,
-    bottom = Math.max(...nodes.map((n) => n.y + n.h)) + 40;
+  const bounds = boardBounds(nodes, points);
+  const x = bounds.x - 40,
+    y = bounds.y - 40,
+    right = bounds.right + 40,
+    bottom = bounds.bottom + 40;
   ctx.save();
   ctx.shadowBlur = 0;
   ctx.setLineDash([]);
