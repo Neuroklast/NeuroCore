@@ -26,7 +26,7 @@ add_library(nk_license_crypto STATIC
 set_target_properties(nk_license_crypto PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nk_license_crypto PUBLIC
     "${nk_monocypher_SOURCE_DIR}/src" "${nk_monocypher_SOURCE_DIR}/src/optional")
-set(NEUROKORE_LICENSE_PUBLIC_KEY_HEX "" CACHE STRING "32-byte Ed25519 public key, hex; empty disables activation")
+set(NEUROKORE_LICENSE_PUBLIC_KEY_HEX "6580287084589559834e96cbcbeb846e853eb265612a30ff536f7b06c7756c90" CACHE STRING "32-byte Ed25519 public key, hex; empty disables activation")
 option(NEUROKORE_ALLOW_ALPHA_LICENSES "Allow alpha licenses in this pre-release build" ON)
 if (NOT NEUROKORE_LICENSE_PUBLIC_KEY_HEX STREQUAL "")
     string(LENGTH "${NEUROKORE_LICENSE_PUBLIC_KEY_HEX}" _nk_key_length)
