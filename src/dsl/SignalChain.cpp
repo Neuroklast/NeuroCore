@@ -4523,6 +4523,8 @@ float SignalChain::getMaxTailTime() const noexcept
             return juce::jmax (0.0f, ot->tailSeconds());
         if (const auto* fs = dynamic_cast<const FreqShift*> (block))
             return 2.0f * (float) FreqShift::latencySamples / juce::jmax (1.0f, fs->sampleRate);
+        if (const auto* rd = dynamic_cast<const ReverseDelay*> (block))
+            return juce::jmax (0.0f, rd->tailSeconds());
         return 0.0f;
     };
 

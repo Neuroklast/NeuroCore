@@ -723,7 +723,7 @@ private:
         juce::SmoothedValue<float> stopSm, depthSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        std::vector<float> delayBuf;
+        std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
         float readPos { 0.0f };
         float rate { 1.0f };
@@ -1134,7 +1134,7 @@ private:
         ExpressionEvaluator mixExpr;
 
         float sampleRate { 44100.0f };
-        std::vector<float> delayBuf;
+        std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
 
         juce::SmoothedValue<float> timeSm, feedbackSm, mixSm;
@@ -1145,6 +1145,7 @@ private:
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        float tailSeconds() const noexcept;
     };
 
     /** Schroeder/Freeverb-style multi-comb + allpass reverb (stereo). */

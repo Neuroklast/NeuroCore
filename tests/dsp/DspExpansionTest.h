@@ -177,6 +177,77 @@ public:
                     "symmetric stays a fold alias");
         }
 
+        beginTest ("WaveFold keeps folding beyond one reflection");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String error;
+            expect (chain.loadScript ("wavefold1: drive = 1; fold = 1; mix = 1", error), error);
+            juce::AudioBuffer<float> buffer (1, 128);
+            buffer.clear();
+            buffer.setSample (0, 0, 3.5f);
+            chain.processBlock (buffer);
+            // Triangle fold of 3.5 at fold=1 is -0.5; a single reflection would leave -1.5.
+            expectWithinAbsoluteError (buffer.getSample (0, 0), -0.5f, 1.0e-4f);
+        }
+
+        beginTest ("ReverseDelay reports its feedback tail");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String error;
+            expect (chain.loadScript ("reversedelay1: time = 250; feedback = 0.5; mix = 1", error), error);
+            const float tail = chain.getMaxTailTime();
+            expect (tail > 0.25f, "tail must cover the delay time, got " + juce::String (tail, 4));
+            expect (tail < 12.1f, "tail must stay clamped, got " + juce::String (tail, 4));
+        }
+
+        beginTest ("ReverseDelay keeps stereo channels separate");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 2 });
+            juce::String error;
+            expect (chain.loadScript ("reversedelay1: time = 10; feedback = 0; mix = 1", error), error);
+            juce::AudioBuffer<float> buffer (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                buffer.setSample (0, i, 0.5f);
+                buffer.setSample (1, i, 0.0f);
+            }
+            chain.processBlock (buffer);
+            float peakL = 0.f, peakR = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                peakL = juce::jmax (peakL, std::abs (buffer.getSample (0, i)));
+                peakR = juce::jmax (peakR, std::abs (buffer.getSample (1, i)));
+            }
+            expect (peakL > 0.1f, "left must carry the delay, got " + juce::String (peakL, 4));
+            expect (peakR < 1.0e-6f, "right must stay silent, got " + juce::String (peakR, 4));
+        }
+
+        beginTest ("TapeStop keeps stereo channels separate");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 2 });
+            juce::String error;
+            expect (chain.loadScript ("tapestop1: stop = 1; depth = 0.5; mix = 1", error), error);
+            juce::AudioBuffer<float> buffer (2, 512);
+            for (int i = 0; i < 512; ++i)
+            {
+                buffer.setSample (0, i, 0.5f);
+                buffer.setSample (1, i, 0.0f);
+            }
+            chain.processBlock (buffer);
+            float peakL = 0.f, peakR = 0.f;
+            for (int i = 0; i < 512; ++i)
+            {
+                peakL = juce::jmax (peakL, std::abs (buffer.getSample (0, i)));
+                peakR = juce::jmax (peakR, std::abs (buffer.getSample (1, i)));
+            }
+            expect (peakL > 0.1f, "left must carry the delay, got " + juce::String (peakL, 4));
+            expect (peakR < 1.0e-6f, "right must stay silent, got " + juce::String (peakR, 4));
+        }
+
         beginTest ("TapeStop stays finite under repeated load");
         {
             dsl::SignalChain chain;

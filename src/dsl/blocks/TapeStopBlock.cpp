@@ -16,7 +16,8 @@ namespace
 
 void SignalChain::TapeStop::clearRuntimeState() noexcept
 {
-    delayBuf.assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
+    for (auto& buf : delayBuf)
+        buf.assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
     writePos = 0;
     readPos = 0.0f;
     rate = 1.0f;
@@ -28,7 +29,8 @@ void SignalChain::TapeStop::prepare (const juce::dsp::ProcessSpec& spec)
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
     channels = static_cast<int> (spec.numChannels);
     const size_t maxDelay = static_cast<size_t> (sampleRate * 2.0f);
-    delayBuf.assign (maxDelay, 0.0f);
+    for (auto& buf : delayBuf)
+        buf.assign (maxDelay, 0.0f);
     writePos = 0;
     readPos = 0.0f;
     rate = 1.0f;
@@ -60,12 +62,16 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
 {
     const int nCh = buffer.getNumChannels();
     const int nS  = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0 || delayBuf.empty())
+    const int useCh = juce::jmin (nCh, 2);
+    if (nS <= 0 || useCh <= 0 || delayBuf[0].empty())
         return;
 
     bindings.refresh();
 
-    const size_t bufSize = delayBuf.size();
+    const size_t bufSize = delayBuf[0].size();
+    float* io[2] {};
+    for (int c = 0; c < useCh; ++c)
+        io[c] = buffer.getWritePointer (c);
 
     for (int i = 0; i < nS; ++i)
     {
@@ -73,10 +79,12 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
         const float depth   = juce::jlimit (0.0f, 1.0f, snapEval (depthExpr, 1.0f));
         const float mix     = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
 
-        const float in = buffer.getReadPointer (0)[i];
-
-        // Write input into buffer
-        delayBuf[writePos] = in;
+        float in[2] {};
+        for (int c = 0; c < useCh; ++c)
+        {
+            in[c] = io[c][i];
+            delayBuf[(size_t) c][writePos] = in[c];
+        }
         writePos = (writePos + 1) % bufSize;
 
         // Variable-rate read: slow down over stopSec, pitch down by depth
@@ -98,14 +106,12 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
         const size_t i0 = static_cast<size_t> (readPos) % bufSize;
         const size_t i1 = (i0 + 1) % bufSize;
         const float frac = readPos - static_cast<float> (i0);
-        const float delayed = delayBuf[i0] * (1.0f - frac) + delayBuf[i1] * frac;
 
-        const float out = in * (1.0f - mix) + delayed * mix;
-
-        for (int c = 0; c < nCh; ++c)
+        for (int c = 0; c < useCh; ++c)
         {
-            float* w = buffer.getWritePointer (c);
-            w[i] = out;
+            const float delayed = delayBuf[(size_t) c][i0] * (1.0f - frac)
+                                + delayBuf[(size_t) c][i1] * frac;
+            io[c][i] = in[c] * (1.0f - mix) + delayed * mix;
         }
     }
 }
