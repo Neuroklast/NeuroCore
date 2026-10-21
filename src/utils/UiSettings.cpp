@@ -99,7 +99,7 @@ bool UiSettings::applyLoaded()
     const bool nextHostTempo = props->getBoolValue (kHostTempoKey, true);
     const float nextBpm = juce::jlimit (20.f, 400.f,
                                         (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo));
-    const bool nextCable = props->getBoolValue (kCableWaveKey, false);
+    const bool nextCable = props->getBoolValue (kCableWaveKey, true);
     const int nextFps = clampFrameRate (props->getIntValue (kFpsKey, 60));
     const bool nextPrompt = props->getBoolValue (kDiscardKey, true);
     const juce::String nextTheme = clampTheme (props->getValue (kThemeKey, "signal"));

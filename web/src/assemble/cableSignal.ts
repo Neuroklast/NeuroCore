@@ -1,58 +1,60 @@
 import { streamSpeed } from "./cablePaint";
+
+export type CablePacket = { distance: number; age: number; strength: number };
 export type CableSignal = {
   snapshot: object | null;
   age: number;
   sinceEmission: number;
   peak: number;
   freshness: number;
+  speed: number;
   packets: number[];
+  impulses: CablePacket[];
 };
 export const emptyCableSignal = (): CableSignal => ({
-  snapshot: null,
-  age: 0,
-  sinceEmission: 1,
-  peak: 0,
-  freshness: 0,
-  packets: [],
+  snapshot: null, age: 0, sinceEmission: 1, peak: 0,
+  freshness: 0, speed: 0, packets: [], impulses: [],
 });
-/** One bounded train per new source snapshot. No recycling, no audio-latency claim. */
+
+/** Snapshot peaks trigger source emission, never positions on the cable. */
 export function advanceCableSignal(
-  s: CableSignal,
-  snapshot: object,
-  fractions: number[],
-  rms: number,
-  peak: number,
-  length: number,
-  dt: number,
-  moving = true,
+  s: CableSignal, snapshot: object, fractions: number[], rms: number,
+  peak: number, length: number, dt: number, moving = true,
 ): CableSignal {
-  const step = Math.min(0.1, Math.max(0, dt));
+  const step = Number.isFinite(dt) ? Math.min(0.1, Math.max(0, dt)) : 0;
+  const energy = Number.isFinite(rms) ? Math.max(0, rms) : 0;
+  const level = Number.isFinite(peak) ? Math.max(0, peak) : 0;
   s.age += step;
   s.sinceEmission += step;
   const fresh = s.snapshot !== snapshot;
+  if (fresh) { s.snapshot = snapshot; s.age = 0; }
+  s.freshness = Math.max(0, 1 - Math.max(0, s.age - 0.2) / 0.3);
+  const target = Math.max(48, streamSpeed(energy, level));
+  // Exact exponential speed integration keeps 30/60 Hz travel consistent.
+  const decay = Math.exp(-step / 0.15);
+  const initialSpeed = s.speed || target;
+  const travel = moving ? target * step + (initialSpeed - target) * 0.15 * (1 - decay) : 0;
+  s.speed = target + (initialSpeed - target) * decay;
+  s.impulses = s.impulses.filter((p) => {
+    p.distance += travel;
+    p.age += step;
+    return p.age < 2 && p.distance < length + 24;
+  });
   if (fresh) {
-    s.snapshot = snapshot;
-    s.age = 0;
-    if (
-      rms > 0.001 &&
-      peak > 0.001 &&
-      fractions.length &&
-      (s.sinceEmission >= 0.12 || peak > s.peak + 0.08)
-    ) {
-      const heads = fractions
-        .filter((v) => Number.isFinite(v) && v >= 0 && v <= 1)
-        .slice(0, 6)
-        .map((v) => v * length);
-      s.packets = [...s.packets, ...heads].slice(-12);
+    if (moving && length > 0 && energy > 0.001 && level > 0.001 &&
+        fractions.some((v) => Number.isFinite(v) && v >= 0 && v <= 1) &&
+        (s.sinceEmission >= 0.12 || level > s.peak + 0.08) &&
+        s.impulses.length < 12) {
+      s.impulses.push({ distance: 0, age: 0, strength: Math.min(1, level) });
       s.sinceEmission = 0;
     }
-    s.peak = peak;
+    s.peak = level;
   }
-  s.freshness = Math.max(0, 1 - Math.max(0, s.age - 0.2) / 0.3);
-  const travel = moving ? streamSpeed(rms, peak) * step : 0;
-  s.packets =
-    s.freshness > 0 && rms > 0.001
-      ? s.packets.map((d) => d + travel).filter((d) => d < length + 24)
-      : [];
+  s.packets = s.impulses.map((p) => p.distance);
   return s;
+}
+
+/** Emitted light has its own finite lifetime, independent of subsequent silence. */
+export function cablePacketAlpha(packet: CablePacket): number {
+  return (0.4 + 0.6 * packet.strength) * Math.max(0, Math.min(1, (2 - packet.age) / 0.6));
 }
