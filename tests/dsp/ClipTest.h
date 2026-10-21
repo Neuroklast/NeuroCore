@@ -132,6 +132,71 @@ public:
                 expect(TestHelpers::countNonFinite(buf) == 0);
             }
         }
+
+        beginTest("Asymmetrischer Modus baut keine dauerhafte DC-Komponente auf");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect(chain.loadScript("clip1: mode = asymmetric; drive = 20; threshold = -6; bias = 0.5; mix = 1", err), err);
+            juce::dsp::ProcessSpec spec{ 44100.0, 2560, 1 };
+            chain.prepare(spec);
+
+            // Ein langer, konstanter Puffer: der DC-Blocker muss den
+            // Gleichanteil entfernen, nicht nur pro Block zurücksetzen.
+            juce::AudioBuffer<float> buf(1, 4096);
+            buf.clear();
+            for (int i = 0; i < 4096; ++i)
+                buf.setSample(0, i, 0.5f);
+            chain.processBlock(buf);
+
+            float sum = 0.f;
+            for (int i = 0; i < 4096; ++i)
+                sum += buf.getSample(0, i);
+            const float mean = sum / 4096.f;
+            expect(std::abs(mean) < 0.05f, juce::String("DC mean = ") + juce::String(mean));
+            expect(TestHelpers::countNonFinite(buf) == 0);
+        }
+
+        beginTest("Auto Gain begrenzt die Ausgabe auch bei hohem Drive auf die Threshold");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect(chain.loadScript("clip1: mode = hard; drive = 20; threshold = -6; mix = 1; autoGain = on", err), err);
+            juce::dsp::ProcessSpec spec{ 44100.0, 256, 1 };
+            chain.prepare(spec);
+
+            juce::AudioBuffer<float> buf(1, 256);
+            buf.clear();
+            for (int i = 0; i < 256; ++i)
+                buf.setSample(0, i, 0.9f);
+            chain.processBlock(buf);
+
+            const float thr = juce::Decibels::decibelsToGain(-6.0f);
+            for (int i = 0; i < 256; ++i)
+                expect(std::abs(buf.getSample(0, i)) <= thr + 1e-4f);
+            expect(TestHelpers::countNonFinite(buf) == 0);
+        }
+
+        beginTest("Knee = 1 macht den Soft-Clipper kontinuierlich ohne harte Ecke");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect(chain.loadScript("clip1: mode = soft; drive = 30; threshold = -12; knee = 1; mix = 1", err), err);
+            juce::dsp::ProcessSpec spec{ 44100.0, 128, 1 };
+            chain.prepare(spec);
+
+            const float thr = juce::Decibels::decibelsToGain(-12.0f);
+            juce::AudioBuffer<float> buf(1, 128);
+            // Sweep von null bis weit über die Threshold.
+            for (int i = 0; i < 128; ++i)
+                buf.setSample(0, i, static_cast<float>(i) / 127.f * 2.0f);
+            chain.processBlock(buf);
+
+            // Keine Ausgabe überschreitet die Threshold.
+            for (int i = 0; i < 128; ++i)
+                expect(std::abs(buf.getSample(0, i)) <= thr + 1e-4f, juce::String("Sample ") + juce::String(i));
+            expect(TestHelpers::countNonFinite(buf) == 0);
+        }
     }
 };
 
