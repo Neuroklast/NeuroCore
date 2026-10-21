@@ -614,3 +614,45 @@ export function drawBackgroundTraces(ctx:CanvasRenderingContext2D, transform:Cam
   }
   ctx.restore();
 }
+
+/** Immutable route metrics, rebuilt only when routing changes. */
+export type CablePathMetrics = { points: Pt[]; cumulative: number[]; length: number };
+export function measureCablePath(points: Pt[]): CablePathMetrics {
+  const cumulative = [0];
+  for (let i = 1; i < points.length; i++) {
+    cumulative.push(cumulative[i - 1]! + Math.hypot(
+      points[i]!.x - points[i - 1]!.x, points[i]!.y - points[i - 1]!.y));
+  }
+  return { points, cumulative, length: cumulative[cumulative.length - 1] ?? 0 };
+}
+export function cablePointAt(path: CablePathMetrics, distance: number): Pt | null {
+  if (path.points.length < 2 || !Number.isFinite(distance)) return null;
+  const d = Math.max(0, Math.min(path.length, distance));
+  let lo = 1, hi = path.points.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (path.cumulative[mid]! < d) lo = mid + 1;
+    else hi = mid;
+  }
+  const a = path.points[lo - 1]!, b = path.points[lo]!;
+  const span = path.cumulative[lo]! - path.cumulative[lo - 1]!;
+  const t = span > 0 ? (d - path.cumulative[lo - 1]!) / span : 0;
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+/** Append every intervening vertex so a packet cannot cut across a corner. */
+export function traceCableSpan(ctx: CanvasRenderingContext2D, path: CablePathMetrics, start: number, end: number): void {
+  if (end <= 0 || start >= path.length) return;
+  const a = cablePointAt(path, start), b = cablePointAt(path, end);
+  if (!a || !b) return;
+  ctx.moveTo(a.x, a.y);
+  for (let i = 1; i < path.points.length - 1; i++) {
+    if (path.cumulative[i]! > start && path.cumulative[i]! < end)
+      ctx.lineTo(path.points[i]!.x, path.points[i]!.y);
+  }
+  ctx.lineTo(b.x, b.y);
+}
+export const CABLE_INK = {
+  baseAlpha: 0.72, dimAlpha: 0.36,
+  corePx: 1.8, outlinePx: 4.5, haloAlpha: 0.18,
+  packetPx: 14, speedSmoothingSeconds: 0.15,
+} as const;

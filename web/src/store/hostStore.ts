@@ -288,7 +288,7 @@ export const useHostStore = create<HostState>((set) => ({
   bypass: false,
   mixHeld: 1,
   motion: "full",
-  cables: "dots",
+  cables: "wave",
   formulaPt: 18,
   scopeSource: "both",
   scopeDelta: false,

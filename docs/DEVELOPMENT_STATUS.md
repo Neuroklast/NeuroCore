@@ -8,6 +8,14 @@
 
 Ed25519 v2 device-bound activation against neuroklast.net; alpha/full entitlements, two server-managed seats, maximum 30-day offline activation files. Verify key is `NEUROKORE_LICENSE_PUBLIC_KEY_HEX` in CMakeLists (override with `-D`). Empty still fail-closes. Stable builds must disable `NEUROKORE_ALLOW_ALPHA_LICENSES`. Legacy RSA licenses are rejected. `userManual.gen.txt` stays gitignored. Website/Stripe rollout still separate. `licenseModel.test.ts` 7/7 pass. Native License contract is CI.
 
+**Branch:** `feat/circuit-signal-glow`
+
+## Circuit signal visibility (2026-10-20)
+
+Source-emitted bounded impulses replace spatial tap-window spawning. Speed integrates a 150 ms exponential response; emitted light releases independently of telemetry freshness. Cached route metrics retain bends within packet strokes. The renderer caches substrate, registration and passive traces in a viewport-sized backing canvas, then composites dynamic energy and restrained glow. Cache invalidation covers graph, camera, viewport/DPR, theme, focus, cable mode and live chip drag. Overview disables bloom, while minimum screen widths preserve visibility. Web and native defaults use Wave only when no saved preference exists.
+
+`cableSignal.test.ts` + `cablePaint.test.ts`: 31 pass. `tsc --noEmit` clean. Source-scan now expects cached `paths`, not `lengths`. Browser screenshots, 100/200-chip FPS and native DAW still unrun.
+
 ## Circuit / Inspect / Terminal overhaul (2026-10-20)
 
 PR #318. Empty left-drag pans; Alt+left-drag is rectangle select; Ctrl/Cmd+click toggles; Shift+click takes `shortestPath()`. Chip M/S, chevron and bind never start a pan. Multi-select mute/solo skips flow blocks and reverts the UI if compile fails. Inspect shows knobs for numbers, lists for enums, read-only text for formulas. Terminal folds buses and paints live knob values. Local Release 2026-10-20: Setup SHA256 `5da8437130f13f184fbef0a8f9da4525a44fba309cd9d0c7419aa4ae1a336114`. Native DAW/Playwright not re-run.

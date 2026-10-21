@@ -22,19 +22,21 @@ import {
   edgeLanes,
   edgePaintKind,
   PACKET_CORE,
-  pathLength,
+  measureCablePath,
+  traceCableSpan,
+  CABLE_INK,
+  type CablePathMetrics,
   peakForLane,
-  pointAlong,
   rmsForLane,
   shouldCoalescePaint,
   shouldSkipClockPaint,
-  streamAlpha,
-  streamBlur,
   type LaneColor,
 } from "./cablePaint";
 import { cableEnvelope } from "./boardNavigation";
 import {
   advanceCableSignal,
+  cablePacketAlpha,
+  type CablePacket,
   emptyCableSignal,
   type CableSignal,
 } from "./cableSignal";
@@ -84,80 +86,75 @@ function tracePath(
 }
 
 function strokePackets(
-  ctx: CanvasRenderingContext2D,
-  pts: Pt[],
-  glow: string,
-  core: string,
-  width: number,
-  distances: number[],
-  peak: number,
-  rms: number,
-  bloom: boolean,
-  animate: boolean,
-  dim: boolean,
-  clipColor: string,
-  clipAllowed: boolean,
-  dash: number[] = [],
+  ctx: CanvasRenderingContext2D, path: CablePathMetrics, glow: string,
+  core: string, width: number, impulses: CablePacket[], peak: number,
+  rms: number, bloom: boolean, animate: boolean, dim: boolean,
+  clipColor: string, clipAllowed: boolean, scale: number, dpr: number,
+  surface: string, dash: number[] = [], baseOnly = false,
 ): void {
+  const pts = path.points;
   if (pts.length < 2) return;
   const envelope = cableEnvelope(rms, peak);
-  const length = pathLength(pts);
+  const px = 1 / Math.max(0.01, scale);
+  const inkWidth = Math.max(width, CABLE_INK.corePx * px);
+  const focus = dim ? 0.4 : 1;
+  ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.lineWidth = width;
-  ctx.setLineDash(dash);
   ctx.shadowBlur = 0;
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = dim ? 0.24 : 0.48;
-  ctx.strokeStyle = glow;
-  tracePath(ctx, pts);
-  ctx.stroke();
-  // Sustained source energy is a steady thin core, independent of transient density.
-  ctx.globalAlpha = envelope.body * (dim ? 0.25 : 1);
+  ctx.setLineDash(dash.map((v) => v * px));
+  if (baseOnly) {
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = surface;
+    ctx.lineWidth = Math.max(width + 2, CABLE_INK.outlinePx * px);
+    tracePath(ctx, pts); ctx.stroke();
+    ctx.globalAlpha = dim ? CABLE_INK.dimAlpha : CABLE_INK.baseAlpha;
+    ctx.strokeStyle = glow;
+    ctx.lineWidth = inkWidth;
+    tracePath(ctx, pts); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  ctx.globalAlpha = envelope.body * focus * 0.65;
   ctx.strokeStyle = core;
-  ctx.lineWidth = Math.max(0.8, width * 0.45);
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = bloom ? Math.min(5, streamBlur(peak) * 0.35) : 0;
-  tracePath(ctx, pts);
-  ctx.stroke();
-  if (animate && envelope.body > 0) {
-    for (let tail = 3; tail >= 0; tail--) {
-      ctx.globalAlpha = streamAlpha(peak) * (1 - tail / 4) * (dim ? 0.25 : 1);
-      ctx.strokeStyle = tail === 0 ? core : glow;
-      ctx.lineWidth = width * (tail === 0 ? 1.05 : 0.8);
+  ctx.lineWidth = Math.max(0.8 * px, inkWidth * 0.45);
+  tracePath(ctx, pts); ctx.stroke();
+  ctx.setLineDash([]);
+  if (animate) {
+    for (const packet of impulses) {
+      const alpha = cablePacketAlpha(packet) * focus;
+      const span = (10 + packet.strength * 8) * px;
       ctx.beginPath();
-      for (const head of distances) {
-        const a = pointAlong(pts, Math.max(0, head - tail * 7 - 6)),
-          b = pointAlong(pts, Math.min(length, Math.max(0, head - tail * 7)));
-        if (a && b) {
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
+      traceCableSpan(ctx, path, packet.distance - span, packet.distance);
+      if (bloom) {
+        ctx.globalAlpha = alpha * CABLE_INK.haloAlpha;
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = inkWidth + 2 * px;
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = (3 + packet.strength * 3) * dpr;
+        ctx.stroke();
       }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = core;
+      ctx.lineWidth = Math.max(1.1 * px, inkWidth * 0.7);
       ctx.stroke();
     }
   }
-  // Both contacts refer to this source tap; the far contact is not a destination meter.
-  ctx.globalAlpha = envelope.contact * (dim ? 0.2 : 0.8);
+  ctx.globalAlpha = (0.2 + envelope.contact * 0.6) * focus;
   ctx.fillStyle = glow;
-  ctx.shadowBlur = bloom ? 4 : 0;
   for (const p of [pts[0]!, pts[pts.length - 1]!]) {
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.8 + envelope.contact, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, (1.8 + envelope.contact) * px, 0, Math.PI * 2);
     ctx.fill();
   }
   if (envelope.clip && clipAllowed) {
-    const p = pts[0]!;
     ctx.globalAlpha = 1;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * px;
     ctx.strokeStyle = clipColor;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(pts[0]!.x, pts[0]!.y, 7 * px, 0, Math.PI * 2); ctx.stroke();
   }
-  ctx.globalCompositeOperation = "source-over";
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 let drawNow: (() => void) | null = null;
@@ -203,9 +200,13 @@ export function CableCanvas({
     };
     const geom = new Map<
       string,
-      { stamp: string; lanes: Pt[][]; lengths: number[] }
+      { stamp: string; lanes: Pt[][]; paths: CablePathMetrics[] }
     >();
     const signals = new Map<string, CableSignal>();
+    const baseCanvas = document.createElement("canvas");
+    const baseCtx = baseCanvas.getContext("2d");
+    let baseStamp = "";
+    let baseGraph: BoardGraph | null = null;
     let lastNow = 0;
     let gesturePaintAt = 0;
     let paintPending = false;
@@ -277,16 +278,24 @@ export function CableCanvas({
       const dotDash = isDots ? [2, 8] : [];
       const cableAnimate = pass.animate && !isDots;
 
-      {
-        drawBoardSubstrate(ctx,Object.values(g.nodes),core,substrate,boardRoutePoints(g));
-        drawBackgroundTraces(ctx, {
-          tx: cam.tx,
-          ty: cam.ty,
-          scale: cam.scale,
-          width: w,
-          height: h,
-        });
+      const hot = boardFocusEdgesRef.current;
+      const staticStamp = [w, h, dpr, cam.scale, cam.tx, cam.ty, host.theme,
+        host.cables, ...(hot ? [...hot].sort() : [])].join("|");
+      const dragging = Boolean(chipDragRef.current || chipDragGroupRef.current);
+      const repaintBase = !baseCtx || baseGraph !== g || baseStamp !== staticStamp || dragging;
+      const base = baseCtx ?? ctx;
+      if (repaintBase) {
+        if (baseCtx) {
+          baseCanvas.width = canvas.width;
+          baseCanvas.height = canvas.height;
+          baseCtx.setTransform(dpr * cam.scale, 0, 0, dpr * cam.scale, dpr * cam.tx, dpr * cam.ty);
+        }
+        drawBoardSubstrate(base, Object.values(g.nodes), core, substrate, boardRoutePoints(g));
+        drawBackgroundTraces(base, { tx: cam.tx, ty: cam.ty, scale: cam.scale, width: w, height: h });
+        baseGraph = dragging ? null : g;
+        baseStamp = staticStamp;
       }
+      const dynamicPaint: Array<() => void> = [];
 
       const clips = host.clips;
       const clipsL = host.clipsL;
@@ -296,7 +305,6 @@ export function CableCanvas({
       const rmsR = host.clipsRmsR;
       const tapPeaks = host.clipsPeaks;
       const live = chipDragRef.current;
-      const hot = boardFocusEdgesRef.current;
       for (const id of geom.keys()) if (!g.edges[id]) geom.delete(id);
       for (const key of signals.keys())
         if (!g.edges[key.slice(0, key.lastIndexOf(":"))]) signals.delete(key);
@@ -332,7 +340,7 @@ export function CableCanvas({
           cached = {
             stamp,
             lanes,
-            lengths: lanes.map((lane) => pathLength(lane)),
+            paths: lanes.map(measureCablePath),
           };
           geom.set(e.id, cached);
         }
@@ -349,11 +357,16 @@ export function CableCanvas({
           points.every((p) => p.x > x1) ||
           points.every((p) => p.y < y0) ||
           points.every((p) => p.y > y1)
-        )
+        ) {
+          // Offscreen packets must not reappear frozen when the camera returns.
+          for (const key of signals.keys()) {
+            if (key.startsWith(e.id + ":")) signals.delete(key);
+          }
           continue;
+        }
         const spec = edgeLanes(edgePaintKind(sp, sn), sp.jackId);
         const dim = hot && hot.size > 0 && !hot.has(e.id);
-        cached.lanes.forEach((painted, i) => {
+        cached.lanes.forEach((_painted, i) => {
           const lane = spec[i];
           if (!lane) {
             return;
@@ -391,29 +404,33 @@ export function CableCanvas({
             isMod ? [0] : (tapPeaks[e.sourceNodeId] ?? tapPeaks[sn.id] ?? []),
             measuredEnergy,
             measuredPeak,
-            cached.lengths[i] ?? 0,
+            cached.paths[i]?.length ?? 0,
             dt,
-            pass.animate,
-          );
-          const beads = cableAnimate ? state.packets : [];
-          strokePackets(
-            ctx,
-            painted,
-            isMod && modValue! < 0 ? palette.accent : palette[lane.color],
-            core,
-            lane.width,
-            beads,
-            measuredPeak * state.freshness,
-            measuredEnergy * state.freshness,
-            pass.glow,
             cableAnimate,
-            Boolean(dim),
-            palette.warn,
-            e.kind !== "mod",
-            dotDash,
           );
+          const path = cached.paths[i]!;
+          const color = isMod && modValue! < 0 ? palette.accent : palette[lane.color];
+          if (repaintBase) {
+            strokePackets(base, path, palette[lane.color], core, lane.width, [], 0, 0,
+              false, false, Boolean(dim), palette.warn, false, cam.scale, dpr, substrate, dotDash, true);
+          }
+          dynamicPaint.push(() => strokePackets(
+            ctx, path, color, core, lane.width,
+            cableAnimate ? state.impulses : [],
+            measuredPeak * state.freshness, measuredEnergy * state.freshness,
+            pass.glow && cam.scale >= 0.45, cableAnimate, Boolean(dim),
+            palette.warn, e.kind !== "mod", cam.scale, dpr, substrate, dotDash,
+          ));
+
         });
       }
+      if (baseCtx) {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(baseCanvas, 0, 0);
+        ctx.restore();
+      }
+      for (const paint of dynamicPaint) paint();
       const drag = connectDragRef.current;
       if (drag) {
         const { c1, c2 } = bezierPreview(

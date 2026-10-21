@@ -185,10 +185,10 @@ describe("pcb background traces", () => {
   it("caches lane length with geometry and coalesces gesture paints", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(path.join(here, "CableCanvas.tsx"), "utf8");
-    expect(src).toContain("lengths: lanes.map");
+    expect(src).toContain("paths: lanes.map");
     expect(src).toContain("shouldSkipClockPaint");
     expect(src).toContain("shouldCoalescePaint");
-    expect(src).toContain("cached.lengths[i]");
+    expect(src).toContain("cached.paths[i]");
   });
 
   it("keeps glow only in full motion, and stamps geometry so a frame can reuse polylines", () => {
