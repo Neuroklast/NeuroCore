@@ -248,6 +248,40 @@ public:
             expect (peakR < 1.0e-6f, "right must stay silent, got " + juce::String (peakR, 4));
         }
 
+        beginTest ("NlFilter cutoff follows the one-pole response");
+        {
+            auto renderRms = [&] (float freq)
+            {
+                dsl::SignalChain chain;
+                chain.prepare ({ 48000.0, 256, 1 });
+                juce::String error;
+                expect (chain.loadScript ("nlfilter1: cutoff = 1000; drive = 1; mix = 1", error), error);
+                constexpr int total = 48000;
+                juce::AudioBuffer<float> buffer (1, 256);
+                double sum = 0.0;
+                for (int off = 0; off < total; off += 256)
+                {
+                    for (int i = 0; i < 256; ++i)
+                        buffer.setSample (0, i, 0.01f * std::sin (juce::MathConstants<float>::twoPi
+                                                                  * freq * (float) (off + i) / 48000.0f));
+                    chain.processBlock (buffer);
+                    if (off >= total / 2)
+                        for (int i = 0; i < 256; ++i)
+                        {
+                            const float y = buffer.getSample (0, i);
+                            sum += (double) y * y;
+                        }
+                }
+                return (float) std::sqrt (sum / (total / 2.0));
+            };
+
+            const float low = renderRms (100.0f);
+            const float atCutoff = renderRms (1000.0f);
+            expect (low > 0.005f, "passband must pass the signal, rms=" + juce::String (low, 5));
+            const float ratio = atCutoff / juce::jmax (1.0e-9f, low);
+            expectWithinAbsoluteError (ratio, 0.7071f, 0.12f);
+        }
+
         beginTest ("TapeStop stays finite under repeated load");
         {
             dsl::SignalChain chain;
