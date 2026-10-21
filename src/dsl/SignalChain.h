@@ -421,11 +421,6 @@ private:
         bool autoGain { false };
         float sampleRate { 44100.f };
         int channels { 1 };
-        float cachedDrive { -1.0e9f }, cachedThr { 1.0e9f };
-        float cachedKnee { 1.0e9f }, cachedBias { 1.0e9f };
-        float cachedTrim { 1.0e9f }, cachedMix { 1.0e9f };
-        float driveLin { 1.f }, thrLin { 1.f }, kneeL { 0.f };
-        float biasL { 0.f }, trimL { 1.f }, mixL { 0.f };
         /** Auto Gain: misst den Eingangs-Peak und reduziert den Drive, sobald
             der eingeregelte Pegel die Schwelle überschreitet. Langsame
             Freigabe verhindert Pumping. */

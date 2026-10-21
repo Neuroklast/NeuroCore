@@ -19,14 +19,6 @@ void SignalChain::Clip::clearRuntimeState() noexcept
     autoGainSm = 1.0f;
     dcX[0] = dcX[1] = 0.0f;
     dcY[0] = dcY[1] = 0.0f;
-    cachedDrive = cachedThr = cachedKnee = cachedBias = -1.0e9f;
-    cachedTrim = cachedMix = -1.0e9f;
-    driveLin = 1.0f;
-    thrLin = 1.0f;
-    kneeL = 0.0f;
-    biasL = 0.0f;
-    trimL = 1.0f;
-    mixL = 0.0f;
 }
 
 float SignalChain::Clip::softClipAt (float x, float thr, float knee) noexcept
@@ -78,12 +70,6 @@ void SignalChain::Clip::prepare (const juce::dsp::ProcessSpec& spec)
     trimSm.setCurrentAndTargetValue (snap (outputTrimExpr, 0.0f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 0.0f));
 
-    // Modus ist diskret: String (hard/soft/asymmetric) oder numerisch 0/1/2,
-    // aufgelöst beim Prepare, nicht pro Sample interpoliert.
-    const auto modeStr = varPtr != nullptr ? juce::String() : juce::String();
-    juce::ignoreUnused (modeStr);
-    mode = Mode::Hard;
-
     // Modus ist diskret (0 = hard, 1 = soft, 2 = asymmetric), aufgelöst beim Prepare.
     const int modeIdx = (int) juce::jlimit (0.0f, 2.0f, snap (modeExpr, 0.0f));
     mode = static_cast<Mode> (modeIdx);
@@ -116,6 +102,13 @@ void SignalChain::Clip::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
+    driveSm.setTargetValue (snapEval (driveExpr, 0.0f));
+    thrSm.setTargetValue (snapEval (thresholdExpr, 0.0f));
+    kneeSm.setTargetValue (snapEval (kneeExpr, 0.5f));
+    biasSm.setTargetValue (snapEval (biasExpr, 0.0f));
+    trimSm.setTargetValue (snapEval (outputTrimExpr, 0.0f));
+    mixSm.setTargetValue (snapEval (mixExpr, 0.0f));
+
     const int useCh = juce::jmin (nCh, 2);
     float* out[2] {};
     for (int c = 0; c < useCh; ++c)
@@ -125,12 +118,12 @@ void SignalChain::Clip::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float driveDb = juce::jlimit (-24.0f, 36.0f, snapEval (driveExpr, 0.0f));
-        const float thrDb   = juce::jlimit (-36.0f, 0.0f, snapEval (thresholdExpr, 0.0f));
-        const float knee    = juce::jlimit (0.0f, 1.0f, snapEval (kneeExpr, 0.5f));
-        const float bias    = juce::jlimit (-1.0f, 1.0f, snapEval (biasExpr, 0.0f));
-        const float trimLin = juce::Decibels::decibelsToGain (juce::jlimit (-36.0f, 12.0f, snapEval (outputTrimExpr, 0.0f)));
-        const float mix     = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 0.0f));
+        const float driveDb = juce::jlimit (-24.0f, 36.0f, driveSm.getNextValue());
+        const float thrDb   = juce::jlimit (-36.0f, 0.0f, thrSm.getNextValue());
+        const float knee    = juce::jlimit (0.0f, 1.0f, kneeSm.getNextValue());
+        const float bias    = juce::jlimit (-1.0f, 1.0f, biasSm.getNextValue());
+        const float trimLin = juce::Decibels::decibelsToGain (juce::jlimit (-36.0f, 12.0f, trimSm.getNextValue()));
+        const float mix     = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
         const float driveLin = juce::Decibels::decibelsToGain (driveDb);
         const float thrLin   = juce::Decibels::decibelsToGain (thrDb);
