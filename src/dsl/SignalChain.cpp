@@ -1329,6 +1329,55 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             lim->varPtr = &variables;
             newChain->push_back (std::move (lim));
         }
+        else if (d.type.startsWith ("clip"))
+        {
+            auto cl = std::make_unique<Clip>();
+            cl->kind = NodeKind::Clip;
+            cl->varPtr = &variables;
+
+            // Mode: hard / soft / asymmetric (diskret, wird beim Prepare aufgelöst).
+            {
+                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("hard");
+                const auto m = modeRaw.trim().toLowerCase();
+                int mi = 0;
+                if (m == "soft") mi = 1;
+                else if (m == "asymmetric") mi = 2;
+                cl->modeExpr.parseFormula (juce::String (mi).toStdString());
+                if (auto pn = findParam (modeRaw); pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " mode [hard/soft/asymmetric]");
+            }
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("drive", nullptr, -24.f, 36.f, "0", cl->driveExpr, "drive [dB]");
+            parseAmt ("threshold", "thresh", -36.f, 0.f, "0", cl->thresholdExpr, "threshold [dBFS]");
+            parseAmt ("knee", "softness", 0.f, 1.f, "0", cl->kneeExpr, "knee [0..1]");
+            parseAmt ("bias", nullptr, -1.f, 1.f, "0", cl->biasExpr, "bias [-1..1]");
+            parseAmt ("outputTrim", "trim", -36.f, 12.f, "0", cl->outputTrimExpr, "output trim [dB]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", cl->mixExpr, "mix [0..1]");
+
+            if (d.args.count ("autoGain") || d.args.count ("autogain"))
+            {
+                const auto ag = (d.args.count ("autoGain") ? d.args.at ("autoGain")
+                                                           : d.args.at ("autogain")).trim().toLowerCase();
+                cl->autoGain = (ag == "on" || ag == "true" || ag == "yes" || ag == "1");
+            }
+            else
+                cl->autoGain = false;
+
+            newChain->push_back (std::move (cl));
+        }
         else if (d.type.startsWith ("xover") || d.type.startsWith ("crossover"))
         {
             auto xo = std::make_unique<Xover>();

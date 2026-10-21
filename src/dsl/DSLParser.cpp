@@ -730,6 +730,7 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "bitcrush" && desc.type != "crush" &&
                 desc.type != "gate" && desc.type != "noisegate" &&
                 desc.type != "limit" && desc.type != "limiter" &&
+                desc.type != "clip" &&
                 desc.type != "xover" && desc.type != "crossover" &&
                 desc.type != "ott" &&
                 desc.type != "widen" && desc.type != "stereo" &&

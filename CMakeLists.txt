@@ -159,6 +159,7 @@ set(SOURCE_FILES
     src/dsl/blocks/TransientBlock.cpp
     src/dsl/blocks/UtilityBlock.cpp
     src/dsl/blocks/BitcrushBlock.cpp
+    src/dsl/blocks/ClipBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/ExprTape.cpp
     src/utils/ExprTapeJit.cpp

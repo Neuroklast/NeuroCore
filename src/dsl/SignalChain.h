@@ -71,7 +71,7 @@ public:
 private:
     enum class NodeKind : uint8_t
     {
-        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch, Xover
+        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch, Xover, Clip
     };
 
     // Bind only variables actually read by each parameter expression. Construction
@@ -404,6 +404,44 @@ private:
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+    };
+
+    /** Eigenständiger Clipper: Hard / Soft / Asymmetrisch, Drive, Threshold,
+        Knee (Softness), Bias, Output-Trim, Mix, optionaler Auto Gain.
+        Asymmetrischer Modus wird durch einen Nachgeschalteten DC-Blocker
+        davon abgehalten, eine dauerhafte DC-Komponente aufzubauen. */
+    struct Clip : Block
+    {
+        enum class Mode { Hard = 0, Soft, Asymmetric };
+
+        ExpressionEvaluator driveExpr, thresholdExpr, kneeExpr, biasExpr;
+        ExpressionEvaluator modeExpr, outputTrimExpr, mixExpr;
+        juce::SmoothedValue<float> driveSm, thrSm, kneeSm, biasSm, trimSm, mixSm;
+        Mode mode { Mode::Hard };
+        bool autoGain { false };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float cachedDrive { -1.0e9f }, cachedThr { 1.0e9f };
+        float cachedKnee { 1.0e9f }, cachedBias { 1.0e9f };
+        float cachedTrim { 1.0e9f }, cachedMix { 1.0e9f };
+        float driveLin { 1.f }, thrLin { 1.f }, kneeL { 0.f };
+        float biasL { 0.f }, trimL { 1.f }, mixL { 0.f };
+        /** Auto Gain: misst den Eingangs-Peak und reduziert den Drive, sobald
+            der eingeregelte Pegel die Schwelle überschreitet. Langsame
+            Freigabe verhindert Pumping. */
+        float peakEnv { 0.f };
+        float autoGainSm { 1.f };
+        float agcAtkC { 0.f }, agcRelC { 0.f };
+        /** DC-Blocker (nur asymmetrischer Modus braucht ihn wirklich). */
+        alignas (64) float dcX[Config::kMaxChannels] {};
+        alignas (64) float dcY[Config::kMaxChannels] {};
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        static float softClipAt (float x, float thr, float knee) noexcept;
+        float dcBlock (int ch, float x) noexcept;
     };
 
     /** Linkwitz-Riley 24 dB/oct split. Writes dest buses; does not rewrite main. */

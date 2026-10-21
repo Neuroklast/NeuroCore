@@ -24,6 +24,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "eq", label: "EQ", args: "type = peak; freq = 1000; gain = 0", category: "Tone" },
   { type: "delay", label: "Delay", args: "time = 250; mix = 0.35; feedback = 0.2; wow = 0; flutter = 0", category: "Time" },
   { type: "bitcrush", label: "Bitcrush", args: "bits = 8; mix = 1; tone = 8000", category: "Drive" },
+  { type: "clip", label: "Clipper", args: "mode = hard; drive = 0; threshold = 0; knee = 0; bias = 0; outputTrim = 0; mix = 1; autoGain = off", category: "Drive" },
   { type: "reverb", label: "Reverb", args: "size = 0.5; decay = 1.4; mix = 0.3", category: "Time" },
   { type: "ir", label: "Cabinet IR", args: "mix = 0.3; gain = 0", category: "Time" },
   { type: "osc", label: "LFO", args: "freq = 1; shape = sine", category: "Mod" },

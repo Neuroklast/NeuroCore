@@ -221,6 +221,29 @@ add({
 });
 
 add({
+  id: "clip",
+  label: "Clipper",
+  typeCodePrefix: "CL",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["mode", "drive", "threshold", "knee", "bias", "outputTrim", "mix", "autoGain"],
+  enums: {
+    mode: ["hard", "soft", "asymmetric"],
+    autoGain: ["off", "on"],
+  },
+  ranges: {
+    drive: { min: -24, max: 36, unit: "dB" },
+    threshold: { min: -36, max: 0, unit: "dB" },
+    knee: { min: 0, max: 1 },
+    bias: { min: -1, max: 1 },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { mode: "hard", drive: "0", threshold: "0", knee: "0", bias: "0", outputTrim: "0", mix: "1", autoGain: "off" },
+  blurb: "Standalone Clipper: Hard / Soft / Asymmetrisch mit Drive, Threshold, Knee, Bias, Output-Trim, Mix und optionaler Auto Gain.",
+});
+
+add({
   id: "reverb",
   label: "Reverb",
   typeCodePrefix: "RV",

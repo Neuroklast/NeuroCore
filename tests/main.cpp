@@ -2,6 +2,7 @@
 #include "TelemetrySamplingTest.h"
 #include "FxRuntimeTest.h"
 #include "DSLParserTest.h"
+#include "dsp/ClipTest.h"
 #include "GraphModelTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
@@ -49,6 +50,7 @@ int main (int argc, char* argv[])
 
   FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;
+  ClipTest clipTest;
   GraphModelTest graphModelTest;
   ExpressionEvaluatorTest evaluatorTest;
   WaveShaperTest shaperTest;
