@@ -152,6 +152,31 @@ public:
             expect (TestHelpers::countNonFinite (buf) == 0);
         }
 
+        beginTest ("Shaper mode=clip hard-clips while mode=fold folds");
+        {
+            auto render = [&] (const char* mode, float input)
+            {
+                dsl::SignalChain chain;
+                chain.prepare ({ 48000.0, 128, 1 });
+                juce::String error;
+                expect (chain.loadScript (juce::String ("shaper1: mode = ") + mode
+                                          + "; drive = 12; outputTrim = 0; mix = 1", error), error);
+                juce::AudioBuffer<float> buffer (1, 128);
+                buffer.clear();
+                buffer.setSample (0, 0, input);
+                chain.processBlock (buffer);
+                return buffer.getSample (0, 0);
+            };
+
+            // 0.5 at +12 dB is about 1.99: clip holds 1, fold wraps back to about 0.01.
+            const float clipped = render ("clip", 0.5f);
+            const float folded  = render ("fold", 0.5f);
+            expectWithinAbsoluteError (clipped, 1.0f, 1.0e-3f);
+            expect (std::abs (folded) < 0.1f, "fold must wrap back, got " + juce::String (folded, 5));
+            expect (std::abs (render ("symmetric", 0.5f) - folded) < 1.0e-6f,
+                    "symmetric stays a fold alias");
+        }
+
         beginTest ("TapeStop stays finite under repeated load");
         {
             dsl::SignalChain chain;

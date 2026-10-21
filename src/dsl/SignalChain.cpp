@@ -1478,13 +1478,13 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
             // Mode: symmetric / asymmetric (diskret, wird beim Prepare aufgelöst).
             {
-                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("symmetric");
+                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("fold");
                 const auto m = modeRaw.trim().toLowerCase();
-                int mi = 0; // symmetric default
-                if (m == "asymmetric") mi = 1;
+                int mi = 0; // fold default; `symmetric` stays a legacy alias
+                if (m == "clip") mi = 1;
                 sh->modeExpr.parseFormula (juce::String (mi).toStdString());
                 if (auto pn = findParam (modeRaw); pn.isNotEmpty())
-                    parameterMappings[pn].add (d.name + " mode [symmetric/asymmetric]");
+                    parameterMappings[pn].add (d.name + " mode [fold/clip]");
             }
 
             const auto parseAmt = [&] (const char* key, const char* alt,
@@ -4521,6 +4521,8 @@ float SignalChain::getMaxTailTime() const noexcept
             return juce::jmax (0.0f, rv->tailSeconds());
         if (const auto* ot = dynamic_cast<const Ott*> (block))
             return juce::jmax (0.0f, ot->tailSeconds());
+        if (const auto* fs = dynamic_cast<const FreqShift*> (block))
+            return 2.0f * (float) FreqShift::latencySamples / juce::jmax (1.0f, fs->sampleRate);
         return 0.0f;
     };
 

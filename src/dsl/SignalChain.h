@@ -473,12 +473,12 @@ private:
         Symmetrischer / asymmetrischer Modus, Drive, Output, Mix, optionaler DC-Blocker. */
     struct Shaper : Block
     {
-        enum class Mode { Symmetric = 0, Asymmetric };
+        enum class Mode { Fold = 0, Clip };
 
         ExpressionEvaluator driveExpr, outputExpr, mixExpr;
         ExpressionEvaluator modeExpr;
         juce::SmoothedValue<float> driveSm, outputSm, mixSm;
-        Mode mode { Mode::Symmetric };
+        Mode mode { Mode::Fold };
         float sampleRate { 44100.f };
         int channels { 1 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
@@ -486,7 +486,7 @@ private:
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
-        static float foldCurve (float x, float drive) noexcept;
+        static float foldCurve (float x) noexcept;
     };
 
     /** Eigenständiger Sample-Rate-Reducer (Decimator).

@@ -281,7 +281,7 @@ add({
     mix: { min: 0, max: 1, unit: "%" },
   },
   defaultArgs: { mode: "fold", drive: "0", outputTrim: "0", mix: "0" },
-  blurb: "Waveshaper mit Fold-Back, Drive, Output-Trim und Mix.",
+  blurb: "Waveshaper: Fold-Back oder Hard-Clip mit Drive, Output-Trim und Mix.",
 });
 
 add({
