@@ -169,7 +169,7 @@ add({
   audioOuts: ["out"],
   paramJacks: ["type", "freq", "q", "gain", "channel"],
   enums: {
-    type: ["peak", "notch", "lowshelf", "highshelf", "lowpass", "highpass"],
+    type: ["peak", "notch", "lowcut", "highcut", "lowshelf", "highshelf"],
     channel: [...CHANNEL],
   },
   ranges: {
@@ -178,7 +178,7 @@ add({
     gain: { min: -24, max: 24, unit: "dB" },
   },
   defaultArgs: { type: "peak", freq: "1000", q: "0.7", gain: "0", channel: "both" },
-  blurb: "Parametric EQ band.",
+  blurb: "Parametric EQ band. lowcut/highcut map to HighCut/LowCut on the DSP side.",
 });
 
 add({
@@ -218,6 +218,331 @@ add({
   },
   defaultArgs: { bits: "8", mix: "1", tone: "8000" },
   blurb: "Quantize, then a recovery lowpass. The formula alone aliases.",
+});
+
+add({
+  id: "clip",
+  label: "Clipper",
+  typeCodePrefix: "CL",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["mode", "drive", "threshold", "knee", "bias", "outputTrim", "mix", "autoGain"],
+  enums: {
+    mode: ["hard", "soft", "asymmetric"],
+    autoGain: ["off", "on"],
+  },
+  ranges: {
+    drive: { min: -24, max: 36, unit: "dB" },
+    threshold: { min: -36, max: 0, unit: "dB" },
+    knee: { min: 0, max: 1 },
+    bias: { min: -1, max: 1 },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { mode: "hard", drive: "0", threshold: "0", knee: "0.5", bias: "0", outputTrim: "0", mix: "1", autoGain: "off" },
+  blurb: "Standalone Clipper: Hard / Soft / Asymmetrisch mit Drive, Threshold, Knee, Bias, Output-Trim, Mix und optionaler Auto Gain.",
+});
+
+add({
+  id: "saturate",
+  label: "Saturate",
+  typeCodePrefix: "SA",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["mode", "drive", "bias", "dynamics", "tone", "outputTrim", "mix", "autoGain"],
+  enums: {
+    mode: ["tape", "tube", "transistor", "transformer", "diode"],
+    autoGain: ["off", "on"],
+  },
+  ranges: {
+    drive: { min: -24, max: 36, unit: "dB" },
+    bias: { min: -1, max: 1 },
+    dynamics: { min: 0, max: 1 },
+    tone: { min: 0, max: 1 },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { mode: "tube", drive: "0", bias: "0", dynamics: "0.5", tone: "0.5", outputTrim: "0", mix: "0", autoGain: "off" },
+  blurb: "Sättigung mit Tape/Tube/Transistor/Transformer/Diode, Auto Gain und Tone.",
+});
+
+add({
+  id: "shaper",
+  label: "Shaper",
+  typeCodePrefix: "SH",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["mode", "drive", "outputTrim", "mix"],
+  enums: { mode: ["fold", "clip"] },
+  ranges: {
+    drive: { min: -24, max: 36, unit: "dB" },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { mode: "fold", drive: "0", outputTrim: "0", mix: "0" },
+  blurb: "Waveshaper mit Fold-Back, Drive, Output-Trim und Mix.",
+});
+
+add({
+  id: "decimate",
+  label: "Decimate",
+  typeCodePrefix: "DC",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "bits", "jitter", "hold", "recon", "mix", "outputTrim"],
+  ranges: {
+    rate: { min: 0, max: 1 },
+    bits: { min: 1, max: 16 },
+    jitter: { min: 0, max: 1 },
+    hold: { min: 0, max: 1 },
+    recon: { min: 0, max: 1 },
+    mix: { min: 0, max: 1, unit: "%" },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+  },
+  defaultArgs: { rate: "0.5", bits: "8", jitter: "0", hold: "0", recon: "0.5", mix: "0", outputTrim: "0" },
+  blurb: "Bit- und Sample-Rate-Reduktion mit Jitter, Hold, Rekonstruktions-Filter und Output-Trim.",
+});
+
+add({
+  id: "amp",
+  label: "Amp",
+  typeCodePrefix: "AM",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["gain", "outputTrim", "mix"],
+  ranges: {
+    gain: { min: -24, max: 24, unit: "dB" },
+    outputTrim: { min: -36, max: 12, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { gain: "0", outputTrim: "0", mix: "0" },
+  blurb: "Einfacher Verstärker mit Gain (dB), Output-Trim und Mix.",
+});
+
+add({
+  id: "resonator",
+  label: "Resonator",
+  typeCodePrefix: "RS",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["freq", "res", "gain", "mix"],
+  ranges: {
+    freq: { min: 20, max: 20000, unit: "Hz" },
+    res: { min: 0.1, max: 10 },
+    gain: { min: -24, max: 24, unit: "dB" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { freq: "1000", res: "1", gain: "0", mix: "1" },
+  blurb: "Resonantes Bandpass-Filter mit Frequenz, Q, Gain und Mix.",
+});
+
+add({
+  id: "freqshift",
+  label: "FreqShift",
+  typeCodePrefix: "FS",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["hz", "mix"],
+  ranges: {
+    hz: { min: -20000, max: 20000, unit: "Hz" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { hz: "0", mix: "1" },
+  blurb: "Einseitiger Frequenzverschieber (Single Sideband) mit Hz-Shift und Mix.",
+});
+
+add({
+  id: "wavefold",
+  label: "WaveFold",
+  typeCodePrefix: "WF",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["drive", "fold", "mix"],
+  ranges: {
+    drive: { min: 0, max: 100 },
+    fold: { min: 0.001, max: 4 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { drive: "1", fold: "1", mix: "1" },
+  blurb: "Wavefolder: reflektiert das Signal am +/- Schwellenwert.",
+});
+
+add({
+  id: "nlfilter",
+  label: "NlFilter",
+  typeCodePrefix: "NL",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["cutoff", "drive", "mix"],
+  ranges: {
+    cutoff: { min: 20, max: 20000, unit: "Hz" },
+    drive: { min: 0, max: 10 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { cutoff: "1000", drive: "1", mix: "1" },
+  blurb: "Nichtlinearer Tiefpass: tanh-Sättigung vor dem Filter.",
+});
+
+add({
+  id: "stepseq",
+  label: "StepSeq",
+  typeCodePrefix: "SS",
+  audioIns: [],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "step0", "step1", "step2", "step3", "mix"],
+  ranges: {
+    rate: { min: 0, max: 100 },
+    step0: { min: -1, max: 1 },
+    step1: { min: -1, max: 1 },
+    step2: { min: -1, max: 1 },
+    step3: { min: -1, max: 1 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { rate: "1", step0: "1", step1: "0", step2: "-1", step3: "0", mix: "1" },
+  blurb: "Vier-Schritt-Sequenzer: gibt step0..step3 im Takt von rate Hz aus.",
+});
+
+add({
+  id: "adsr",
+  label: "ADSR",
+  typeCodePrefix: "AD",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["attack", "decay", "sustain", "release"],
+  ranges: {
+    attack: { min: 0.001, max: 10 },
+    decay: { min: 0.001, max: 10 },
+    sustain: { min: 0, max: 1 },
+    release: { min: 0.001, max: 10 },
+  },
+  defaultArgs: { attack: "0.1", decay: "0.1", sustain: "0.7", release: "0.1" },
+  blurb: "ADSR-Hüllkurve, getriggert über Gate-Eingang (Kanal 0 > 0.5).",
+});
+
+add({
+  id: "samplehold",
+  label: "SampleHold",
+  typeCodePrefix: "SH",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "mix"],
+  ranges: {
+    rate: { min: 0, max: 1000 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { rate: "10", mix: "1" },
+  blurb: "Sample & Hold: nimmt Eingang im Takt von rate Hz ab und hält den Wert.",
+});
+
+add({
+  id: "random",
+  label: "Random",
+  typeCodePrefix: "RN",
+  audioIns: [],
+  audioOuts: ["out"],
+  paramJacks: ["rate", "min", "max", "mix"],
+  ranges: {
+    rate: { min: 0, max: 1000 },
+    min: { min: -10, max: 10 },
+    max: { min: -10, max: 10 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { rate: "10", min: "-1", max: "1", mix: "1" },
+  blurb: "Geschneiter Rausch-Source: neuer Zufallswert in [min, max] im Takt von rate Hz.",
+});
+
+add({
+  id: "modmath",
+  label: "ModMath",
+  typeCodePrefix: "MM",
+  audioIns: ["inA", "inB"],
+  audioOuts: ["out"],
+  paramJacks: ["mode", "amount", "mix"],
+  ranges: {
+    amount: { min: 0, max: 4 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { mode: "add", amount: "1", mix: "1" },
+  blurb: "Kombiniert ch0 und ch1 via mode (add/sub/mul/div/min/max), skaliert mit amount, gemixt mit mix.",
+});
+
+add({
+  id: "envtrigger",
+  label: "EnvTrigger",
+  typeCodePrefix: "ET",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["threshold", "hold", "level"],
+  ranges: {
+    threshold: { min: -10, max: 10 },
+    hold: { min: 0, max: 5000, unit: "ms" },
+    level: { min: 0, max: 10 },
+  },
+  defaultArgs: { threshold: "0.5", hold: "100", level: "1" },
+  blurb: "Löst einen Pegel-Puls aus, wenn der Eingang über threshold steigt (für hold ms).",
+});
+
+add({
+  id: "modmix",
+  label: "ModMix",
+  typeCodePrefix: "MX",
+  audioIns: ["inA", "inB"],
+  audioOuts: ["out"],
+  paramJacks: ["levelA", "levelB", "mix"],
+  ranges: {
+    levelA: { min: 0, max: 4 },
+    levelB: { min: 0, max: 4 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { levelA: "1", levelB: "1", mix: "1" },
+  blurb: "Mischt zwei Modulationsquellen mit eigenen Leveln und einem Master-Mix.",
+});
+
+add({
+  id: "tapestop",
+  label: "TapeStop",
+  typeCodePrefix: "TS",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["stop", "depth", "mix"],
+  ranges: {
+    stop: { min: 0.01, max: 30 },
+    depth: { min: 0, max: 1 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { stop: "1", depth: "1", mix: "1" },
+  blurb: "Band-Stopp-Effekt: verlangsamt die Wiedergabe über stop Sekunden und pitcht um depth runter.",
+});
+
+add({
+  id: "reversedelay",
+  label: "ReverseDelay",
+  typeCodePrefix: "RD",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["time", "feedback", "mix"],
+  ranges: {
+    time: { min: 1, max: 2000 },
+    feedback: { min: 0, max: 0.92 },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { time: "250", feedback: "0.35", mix: "0.35" },
+  blurb: "Rückwärts-Delay: schreibt in einen Ringpuffer und liest rückwärts mit time-Versatz.",
+});
+
+add({
+  id: "ringmod",
+  label: "Ringmod",
+  typeCodePrefix: "RM",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["freq", "mix"],
+  ranges: {
+    freq: { min: 20, max: 2000, unit: "Hz" },
+    mix: { min: 0, max: 1, unit: "%" },
+  },
+  defaultArgs: { freq: "440", mix: "1" },
+  blurb: "Ringmodulator: Eingang x Sinus-Trägerfrequenz.",
 });
 
 add({
@@ -344,7 +669,7 @@ add({
   typeCodePrefix: "OT",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["depth", "time", "in", "low", "mid", "high"],
+  paramJacks: ["depth", "time", "in", "low", "mid", "high", "f1", "f2"],
   ranges: {
     depth: { min: 0, max: 1, unit: "%" },
     time: { min: 0, max: 1 },
@@ -352,9 +677,11 @@ add({
     low: { min: 0, max: 1.4, unit: "%" },
     mid: { min: 0, max: 1.4, unit: "%" },
     high: { min: 0, max: 1.4, unit: "%" },
+    f1: { min: 40, max: 20000, unit: "Hz" },
+    f2: { min: 200, max: 20000, unit: "Hz" },
   },
-  defaultArgs: { depth: "1", time: "0.3", in: "1", low: "1", mid: "1", high: "1" },
-  blurb: "Multiband up/down. Band amounts process that band only. In is the level into the detector.",
+  defaultArgs: { depth: "1", time: "0.3", in: "1", low: "1", mid: "1", high: "1", f1: "90", f2: "3200" },
+  blurb: "Multiband up/down. f1/f2 are crossover frequencies. Band amounts process that band only. In is the level into the detector.",
 });
 
 add({
@@ -740,6 +1067,7 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("delay")) return "delay";
   if (t.startsWith("reverb")) return "reverb";
   if (t.startsWith("osc") || t === "lfo") return "osc";
+  if (t.startsWith("envtrigger")) return "envtrigger";
   if (t.startsWith("env")) return "env";
   if (t === "ott") return "ott";
   if (t.startsWith("ir")) return "ir";
@@ -776,6 +1104,23 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t === "join_lr") return "join_lr";
   if (t === "bus") return "bus";
   if (t === "join") return "join";
+  if (t.startsWith("saturat")) return "saturate";
+  if (t.startsWith("shaper") || t === "waveshaper") return "shaper";
+  if (t.startsWith("decim")) return "decimate";
+  if (t.startsWith("amp")) return "amp";
+  if (t.startsWith("resonator")) return "resonator";
+  if (t.startsWith("freqshift")) return "freqshift";
+  if (t.startsWith("wavefold")) return "wavefold";
+  if (t.startsWith("nlfilter")) return "nlfilter";
+  if (t.startsWith("stepseq")) return "stepseq";
+  if (t.startsWith("adsr")) return "adsr";
+  if (t.startsWith("samplehold")) return "samplehold";
+  if (t.startsWith("random")) return "random";
+  if (t.startsWith("modmath")) return "modmath";
+  if (t.startsWith("modmix")) return "modmix";
+  if (t.startsWith("tapestop")) return "tapestop";
+  if (t.startsWith("reversedelay")) return "reversedelay";
+  if (t.startsWith("ringmod")) return "ringmod";
   return t;
 }
 

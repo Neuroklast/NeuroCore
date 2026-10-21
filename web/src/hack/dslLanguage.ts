@@ -2,7 +2,7 @@ export const DSL_KEYWORDS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit", "limiter",
   "delay", "reverb", "ir", "ott", "widen", "osc", "env", "bus", "send",
   "out", "ms", "vocoder", "octaver", "pitch", "phaser", "flanger", "chorus", "deesser", "transient", "utility", "xover", "convolve", "noisge",
-  "split", "custom", "bitcrush", "meter",
+  "split", "custom", "bitcrush", "clip", "meter",
 ] as const;
 
 export type DslTokenKind =
@@ -181,7 +181,7 @@ export const dslMonarch = {
       [/\/\/.*$/, "comment"],
       [/\b[a-f]\b/, "knob"],
       [/\b\d+(\.\d+)?([eE][-+]?\d+)?\b/, "number"],
-      [/\b(?:param|stage|filter|eq|comp|gate|limit|limiter|delay|reverb|ir|ott|widen|osc|env|bus|send|out|ms|vocoder|octaver|pitch|xover|convolve|noisegate|split|custom|bitcrush|meter)\d*\b/, "keyword"],
+      [/\b(?:param|stage|filter|eq|comp|gate|limit|limiter|delay|reversedelay|reverb|ir|ott|widen|osc|env|bus|send|out|ms|vocoder|octaver|pitch|xover|convolve|noisegate|split|custom|bitcrush|meter|clip|tapestop|ringmod|modmix|saturate|shaper|decimate|adsr|samplehold|random|modmath|envtrigger|stepseq|freqshift|wavefold|nlfilter)\d*\b/, "keyword"],
       [/\b[A-Za-z_][A-Za-z0-9_]*\b/, "identifier"],
       [/[=:;,*+\-(){}\[\]]/, "operator"],
     ],

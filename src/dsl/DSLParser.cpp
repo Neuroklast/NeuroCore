@@ -730,6 +730,25 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "bitcrush" && desc.type != "crush" &&
                 desc.type != "gate" && desc.type != "noisegate" &&
                 desc.type != "limit" && desc.type != "limiter" &&
+                desc.type != "clip" &&
+                desc.type != "saturate" && desc.type != "sat" &&
+                desc.type != "shaper" &&
+                desc.type != "decimate" &&
+                desc.type != "amp" &&
+                desc.type != "resonator" &&
+                desc.type != "freqshift" &&
+                desc.type != "wavefold" &&
+                desc.type != "nlfilter" &&
+                desc.type != "stepseq" &&
+                desc.type != "adsr" &&
+                desc.type != "samplehold" &&
+                desc.type != "random" &&
+                desc.type != "modmath" &&
+                desc.type != "envtrigger" &&
+                desc.type != "modmix" &&
+                desc.type != "tapestop" &&
+                desc.type != "reversedelay" &&
+                desc.type != "ringmod" &&
                 desc.type != "xover" && desc.type != "crossover" &&
                 desc.type != "ott" &&
                 desc.type != "widen" && desc.type != "stereo" &&
