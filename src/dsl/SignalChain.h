@@ -439,6 +439,302 @@ private:
         float dcBlock (int ch, float x) noexcept;
     };
 
+    /** Eigenständiger Saturator: Tape / Tube / Transistor / Transformer / Diode.
+        Drive, Bias, Dynamics, Tone, Character, Output, Mix, optionaler Auto Gain. */
+    struct Saturate : Block
+    {
+        enum class Mode { Tape = 0, Tube, Transistor, Transformer, Diode };
+
+        ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr;
+        ExpressionEvaluator modeExpr, outputExpr, mixExpr;
+        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm;
+        juce::SmoothedValue<float> outputSm, mixSm;
+        Mode mode { Mode::Tube };
+        bool autoGain { false };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float peakEnv { 0.f };
+        float autoGainSm { 1.f };
+        float agcAtkC { 0.f }, agcRelC { 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        static float tapeCurve (float x) noexcept;
+        static float tubeCurve (float x) noexcept;
+        static float transistorCurve (float x) noexcept;
+        static float transformerCurve (float x) noexcept;
+        static float diodeCurve (float x) noexcept;
+    };
+
+    /** Eigenständiger Waveshaper: editierbare Transferkurve mit Kontrollpunkten.
+        Symmetrischer / asymmetrischer Modus, Drive, Output, Mix, optionaler DC-Blocker. */
+    struct Shaper : Block
+    {
+        enum class Mode { Symmetric = 0, Asymmetric };
+
+        ExpressionEvaluator driveExpr, outputExpr, mixExpr;
+        ExpressionEvaluator modeExpr;
+        juce::SmoothedValue<float> driveSm, outputSm, mixSm;
+        Mode mode { Mode::Symmetric };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+        static float foldCurve (float x, float drive) noexcept;
+    };
+
+    /** Eigenständiger Sample-Rate-Reducer (Decimator).
+        Rate Reduction, Bit Depth, Jitter, Hold, Reconstruction, Mix, Output. */
+    struct Decimate : Block
+    {
+        ExpressionEvaluator rateExpr, bitsExpr, jitterExpr, holdExpr;
+        ExpressionEvaluator reconExpr, mixExpr, outputExpr;
+        juce::SmoothedValue<float> rateSm, bitsSm, jitterSm, holdSm;
+        juce::SmoothedValue<float> reconSm, mixSm, outputSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float holdL { 0.f }, holdR { 0.f };
+        int holdCounter { 0 };
+        float lastSampleL { 0.f }, lastSampleR { 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Einfacher Verstärker: Gain (dB), Output-Trim, Mix. Kein Pan, keine Polarität. */
+    struct Amp : Block
+    {
+        ExpressionEvaluator gainExpr, outputExpr, mixExpr;
+        juce::SmoothedValue<float> gainSm, trimSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float cachedDb { -1000.f };
+        float lin { 1.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Ring modulator: input x sine carrier at freq. Params: freq [Hz], mix [0..1]. */
+    struct Ringmod : Block
+    {
+        ExpressionEvaluator freqExpr, mixExpr;
+        juce::SmoothedValue<float> freqSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float phase { 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Resonant bandpass filter: freq, resonance, gain (dB), mix. */
+    struct Resonator : Block
+    {
+        juce::dsp::StateVariableTPTFilter<float> filter;
+        ExpressionEvaluator freqExpr, resExpr, gainExpr, mixExpr;
+        juce::SmoothedValue<float> freqSm, resSm, gainSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float cachedF { -1.f }, cachedQ { -1.f }, cachedG { -1000.f }, lin { 1.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Single-sideband frequency shifter: Hz shift, mix. Uses an allpass
+        pair per channel for a ~90 deg Hilbert phase-shift network. */
+    struct FreqShift : Block
+    {
+        ExpressionEvaluator HzExpr, mixExpr;
+        juce::SmoothedValue<float> HzSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float phase { 0.f };
+        struct AP1 { float a { 0.f }, z1 { 0.f }; };
+        AP1 ap0L, ap1L, ap0R, ap1R;
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Wavefolder: reflects signal at +/- fold threshold. Params: drive, fold, mix. */
+    struct WaveFold : Block
+    {
+        ExpressionEvaluator driveExpr, foldExpr, mixExpr;
+        juce::SmoothedValue<float> driveSm, foldSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Nonlinear one-pole lowpass: tanh saturation before the filter. Params: cutoff, drive, mix. */
+    struct NlFilter : Block
+    {
+        ExpressionEvaluator cutoffExpr, driveExpr, mixExpr;
+        juce::SmoothedValue<float> cutoffSm, driveSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float z1[2] { 0.f, 0.f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** 4-step sequencer: cycles through step0..step3 at rate Hz. Params: rate, step0-3, mix. */
+    struct StepSeq : Block
+    {
+        ExpressionEvaluator rateExpr, mixExpr, stepExpr[4];
+        juce::SmoothedValue<float> rateSm, mixSm, stepSm[4];
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float phase { 0.f };
+        int stepIndex { 0 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** ADSR envelope: gate-triggered attack/decay/sustain/release. Params: attack, decay, sustain, release (seconds). */
+    struct Adsr : Block
+    {
+        ExpressionEvaluator attackExpr, decayExpr, sustainExpr, releaseExpr;
+        juce::SmoothedValue<float> attackSm, decaySm, sustainSm, releaseSm;
+        enum class State { Idle, Attack, Decay, Sustain, Release };
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        State state { State::Idle };
+        float env { 0.0f };
+        float gatePrev { 0.0f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Sample & Hold: samples input at rate Hz, holds between samples. Params: rate, mix. */
+    struct SampleHold : Block
+    {
+        ExpressionEvaluator rateExpr, mixExpr;
+        juce::SmoothedValue<float> rateSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float phase { 0.f };
+        float held { 0.0f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** Stepped random noise source: new random value in [min, max] at rate Hz. Params: rate, min, max, mix. */
+    struct Random : Block
+    {
+        ExpressionEvaluator rateExpr, minExpr, maxExpr, mixExpr;
+        juce::SmoothedValue<float> rateSm, minSm, maxSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        float phase { 0.f };
+        float current { 0.0f };
+        uint32_t seed { 12345u };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** ModMath: combines ch0 and ch1 via add/sub/mul/div/min/max, scaled by amount, mixed. Params: mode, amount, mix. */
+    struct ModMath : Block
+    {
+        ExpressionEvaluator amountExpr, mixExpr;
+        enum class Op { Add, Sub, Mul, Div, Min, Max };
+        juce::SmoothedValue<float> amountSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        Op op { Op::Add };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** EnvTrigger: emits level pulse for holdMs when input crosses above threshold. Params: threshold, hold, level. */
+    struct EnvTrigger : Block
+    {
+        ExpressionEvaluator thresholdExpr, holdExpr, levelExpr;
+        juce::SmoothedValue<float> thresholdSm, holdSm, levelSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        bool triggerActive { false };
+        float triggerRemaining { 0.0f };
+        float lastInput { 0.0f };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** ModMix: mixes two mod sources with individual levels and master mix. Params: levelA, levelB, mix. */
+    struct ModMix : Block
+    {
+        ExpressionEvaluator levelAExpr, levelBExpr, mixExpr;
+        juce::SmoothedValue<float> levelASm, levelBSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
+    /** TapeStop: variable-rate delay that slows playback over stopSec, pitching down by depth. Params: stop, depth, mix. */
+    struct TapeStop : Block
+    {
+        ExpressionEvaluator stopExpr, depthExpr, mixExpr;
+        juce::SmoothedValue<float> stopSm, depthSm, mixSm;
+        float sampleRate { 44100.f };
+        int channels { 1 };
+        std::vector<float> delayBuf;
+        size_t writePos { 0 };
+        float readPos { 0.0f };
+        float rate { 1.0f };
+        bool active { false };
+        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
+    };
+
     /** Linkwitz-Riley 24 dB/oct split. Writes dest buses; does not rewrite main. */
     struct Xover : Block
     {
@@ -826,6 +1122,29 @@ private:
         float tailSeconds() const noexcept;
         void syncFromVariables() noexcept;
         void processFrame (float& left, float* right) noexcept;
+    };
+
+    /** Reversed delay: writes into a ring, reads backwards at timeSec offset. Params: time [ms], feedback, mix. */
+    struct ReverseDelay : Block
+    {
+        static constexpr float kMaxDelaySec = 2.0f;
+
+        ExpressionEvaluator timeExpr;
+        ExpressionEvaluator feedbackExpr;
+        ExpressionEvaluator mixExpr;
+
+        float sampleRate { 44100.0f };
+        std::vector<float> delayBuf;
+        size_t writePos { 0 };
+
+        juce::SmoothedValue<float> timeSm, feedbackSm, mixSm;
+
+        std::unordered_map<juce::String, float>* varPtr = nullptr;
+
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        float process (int ch, float x);
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
     };
 
     /** Schroeder/Freeverb-style multi-comb + allpass reverb (stereo). */

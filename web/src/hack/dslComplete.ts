@@ -17,7 +17,7 @@ export interface CompleteItem {
 const BLOCKS = [
   "param", "stage", "filter", "eq", "comp", "gate", "limit",
   "osc", "env", "delay", "reverb", "ms", "octaver", "pitch", "vocoder",
-  "xover", "ott", "widen", "ir", "bitcrush", "clip", "meter", "phaser", "flanger", "chorus", "deesser", "transient", "utility", "bus", "out", "split", "custom",
+  "xover", "ott", "widen", "ir", "bitcrush", "clip", "saturate", "shaper",   "decimate", "amp", "resonator", "freqshift", "wavefold", "nlfilter", "stepseq", "adsr", "samplehold", "random", "modmath", "envtrigger", "modmix", "tapestop", "reversedelay", "ringmod", "meter", "phaser", "flanger", "chorus", "deesser", "transient", "utility", "bus", "out", "split", "custom",
 ] as const;
 
 function properties(kind: string): string[] {

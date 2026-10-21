@@ -3,6 +3,7 @@
 #include "FxRuntimeTest.h"
 #include "DSLParserTest.h"
 #include "dsp/ClipTest.h"
+#include "dsp/DspExpansionTest.h"
 #include "GraphModelTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
@@ -51,6 +52,7 @@ int main (int argc, char* argv[])
   FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;
   ClipTest clipTest;
+  DspExpansionTest dspExpansionTest;
   GraphModelTest graphModelTest;
   ExpressionEvaluatorTest evaluatorTest;
   WaveShaperTest shaperTest;

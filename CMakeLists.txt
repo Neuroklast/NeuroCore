@@ -160,6 +160,24 @@ set(SOURCE_FILES
     src/dsl/blocks/UtilityBlock.cpp
     src/dsl/blocks/BitcrushBlock.cpp
     src/dsl/blocks/ClipBlock.cpp
+    src/dsl/blocks/DecimateBlock.cpp
+    src/dsl/blocks/SaturateBlock.cpp
+    src/dsl/blocks/ShaperBlock.cpp
+    src/dsl/blocks/AmpBlock.cpp
+    src/dsl/blocks/RingmodBlock.cpp
+    src/dsl/blocks/ResonatorBlock.cpp
+    src/dsl/blocks/FreqShiftBlock.cpp
+    src/dsl/blocks/WaveFoldBlock.cpp
+    src/dsl/blocks/NlFilterBlock.cpp
+    src/dsl/blocks/StepSeqBlock.cpp
+    src/dsl/blocks/AdsrBlock.cpp
+    src/dsl/blocks/SampleHoldBlock.cpp
+    src/dsl/blocks/RandomBlock.cpp
+    src/dsl/blocks/ModMathBlock.cpp
+    src/dsl/blocks/EnvTriggerBlock.cpp
+    src/dsl/blocks/ReverseDelayBlock.cpp
+    src/dsl/blocks/ModMixBlock.cpp
+    src/dsl/blocks/TapeStopBlock.cpp
     src/utils/ExpressionEvaluator.cpp
     src/utils/ExprTape.cpp
     src/utils/ExprTapeJit.cpp

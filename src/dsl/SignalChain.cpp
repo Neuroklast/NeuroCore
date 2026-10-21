@@ -675,6 +675,31 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             }
             newChain->push_back (std::move (dl));
         }
+        else if (d.type.startsWith ("reversedelay"))
+        {
+            auto rd = std::make_unique<ReverseDelay>();
+            rd->kind = NodeKind::Generic;
+            rd->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("time", nullptr, 1.0f, 2000.0f, "250", rd->timeExpr, "time [ms]");
+            parseAmt ("feedback", "fb", 0.0f, 0.92f, "0.35", rd->feedbackExpr, "feedback [0..0.92]");
+            parseAmt ("mix", "wet", 0.0f, 1.0f, "0.35", rd->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (rd));
+        }
         else if (d.type.startsWith ("reverb") || d.type.startsWith ("verb"))
         {
             auto rv = std::make_unique<Reverb>();
@@ -1377,6 +1402,487 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 cl->autoGain = false;
 
             newChain->push_back (std::move (cl));
+        }
+        else if (d.type.startsWith ("saturate"))
+        {
+            auto sat = std::make_unique<Saturate>();
+            sat->kind = NodeKind::Clip;  // reuse Clip node kind; distinct type handled by name
+            sat->varPtr = &variables;
+
+            // Mode: tape / tube / transistor / transformer / diode (diskret, wird beim Prepare aufgelöst).
+            {
+                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("tube");
+                const auto m = modeRaw.trim().toLowerCase();
+                int mi = 1; // default tube
+                if (m == "tape") mi = 0;
+                else if (m == "transistor") mi = 2;
+                else if (m == "transformer") mi = 3;
+                else if (m == "diode") mi = 4;
+                sat->modeExpr.parseFormula (juce::String (mi).toStdString());
+                if (auto pn = findParam (modeRaw); pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " mode [tape/tube/transistor/transformer/diode]");
+            }
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("drive", nullptr, -24.f, 36.f, "0", sat->driveExpr, "drive [dB]");
+            parseAmt ("bias", nullptr, -1.f, 1.f, "0", sat->biasExpr, "bias [-1..1]");
+            parseAmt ("dynamics", nullptr, 0.f, 1.f, "0.5", sat->dynamicsExpr, "dynamics [0..1]");
+            parseAmt ("tone", nullptr, 20.f, 16000.f, "2000", sat->toneExpr, "tone [Hz]");
+            parseAmt ("output", "trim", -36.f, 12.f, "0", sat->outputExpr, "output [dB]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", sat->mixExpr, "mix [0..1]");
+
+            if (d.args.count ("autoGain") || d.args.count ("autogain"))
+            {
+                const auto ag = (d.args.count ("autoGain") ? d.args.at ("autoGain")
+                                                           : d.args.at ("autogain")).trim().toLowerCase();
+                sat->autoGain = (ag == "on" || ag == "true" || ag == "yes" || ag == "1");
+            }
+            else
+                sat->autoGain = false;
+
+            newChain->push_back (std::move (sat));
+        }
+        else if (d.type.startsWith ("shaper"))
+        {
+            auto sh = std::make_unique<Shaper>();
+            sh->kind = NodeKind::Clip;
+            sh->varPtr = &variables;
+
+            // Mode: symmetric / asymmetric (diskret, wird beim Prepare aufgelöst).
+            {
+                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("symmetric");
+                const auto m = modeRaw.trim().toLowerCase();
+                int mi = 0; // symmetric default
+                if (m == "asymmetric") mi = 1;
+                sh->modeExpr.parseFormula (juce::String (mi).toStdString());
+                if (auto pn = findParam (modeRaw); pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " mode [symmetric/asymmetric]");
+            }
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("drive", nullptr, -24.f, 36.f, "0", sh->driveExpr, "drive [dB]");
+            parseAmt ("output", "trim", -36.f, 12.f, "0", sh->outputExpr, "output [dB]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", sh->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (sh));
+        }
+        else if (d.type.startsWith ("decimate"))
+        {
+            auto dc = std::make_unique<Decimate>();
+            dc->kind = NodeKind::Clip;
+            dc->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", "rateReduction", 0.f, 1.f, "0.5", dc->rateExpr, "rate [0..1]");
+            parseAmt ("bits", "bitDepth", 1.f, 16.f, "8", dc->bitsExpr, "bits [1..16]");
+            parseAmt ("jitter", nullptr, 0.f, 1.f, "0", dc->jitterExpr, "jitter [0..1]");
+            parseAmt ("hold", nullptr, 0.f, 1.f, "0", dc->holdExpr, "hold [0..1]");
+            parseAmt ("reconstruction", "recon", 0.f, 1.f, "0.5", dc->reconExpr, "reconstruction [0..1]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", dc->mixExpr, "mix [0..1]");
+            parseAmt ("output", "trim", -36.f, 12.f, "0", dc->outputExpr, "output [dB]");
+
+            newChain->push_back (std::move (dc));
+        }
+        else if (d.type.startsWith ("amp"))
+        {
+            auto am = std::make_unique<Amp>();
+            am->kind = NodeKind::Generic;
+            am->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("gain", nullptr, -24.f, 24.f, "0", am->gainExpr, "gain [dB]");
+            parseAmt ("output", "trim", -36.f, 12.f, "0", am->outputExpr, "output [dB]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "0", am->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (am));
+        }
+        else if (d.type.startsWith ("resonator"))
+        {
+            auto rs = std::make_unique<Resonator>();
+            rs->kind = NodeKind::Generic;
+            rs->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("freq", nullptr, 20.f, 20000.f, "1000", rs->freqExpr, "freq [Hz]");
+            parseAmt ("res", "q", 0.1f, 10.f, "1", rs->resExpr, "resonance [Q]");
+            parseAmt ("gain", nullptr, -24.f, 24.f, "0", rs->gainExpr, "gain [dB]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", rs->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (rs));
+        }
+        else if (d.type.startsWith ("freqshift"))
+        {
+            auto fs = std::make_unique<FreqShift>();
+            fs->kind = NodeKind::Generic;
+            fs->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("hz", "freq", -20000.f, 20000.f, "0", fs->HzExpr, "Hz shift");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", fs->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (fs));
+        }
+        else if (d.type.startsWith ("wavefold"))
+        {
+            auto wf = std::make_unique<WaveFold>();
+            wf->kind = NodeKind::Generic;
+            wf->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("drive", nullptr, 0.f, 100.f, "1", wf->driveExpr, "drive");
+            parseAmt ("fold", nullptr, 0.001f, 4.f, "1", wf->foldExpr, "fold threshold");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", wf->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (wf));
+        }
+        else if (d.type.startsWith ("nlfilter"))
+        {
+            auto nf = std::make_unique<NlFilter>();
+            nf->kind = NodeKind::Generic;
+            nf->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("cutoff", nullptr, 20.f, 20000.f, "1000", nf->cutoffExpr, "cutoff [Hz]");
+            parseAmt ("drive", nullptr, 0.f, 10.f, "1", nf->driveExpr, "drive");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", nf->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (nf));
+        }
+        else if (d.type.startsWith ("stepseq"))
+        {
+            auto ss = std::make_unique<StepSeq>();
+            ss->kind = NodeKind::Generic;
+            ss->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", nullptr, 0.f, 100.f, "1", ss->rateExpr, "rate [Hz]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", ss->mixExpr, "mix [0..1]");
+            for (int s = 0; s < 4; ++s)
+            {
+                juce::String key = "step" + juce::String (s);
+                parseAmt (key.toRawUTF8(), nullptr, -1.f, 1.f, (s == 0 ? "1" : "0"),
+                          ss->stepExpr[s], "step" + juce::String (s));
+            }
+
+            newChain->push_back (std::move (ss));
+        }
+        else if (d.type.startsWith ("adsr"))
+        {
+            auto ad = std::make_unique<Adsr>();
+            ad->kind = NodeKind::Generic;
+            ad->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("attack", nullptr, 0.001f, 10.f, "0.1", ad->attackExpr, "attack [s]");
+            parseAmt ("decay", nullptr, 0.001f, 10.f, "0.1", ad->decayExpr, "decay [s]");
+            parseAmt ("sustain", nullptr, 0.f, 1.f, "0.7", ad->sustainExpr, "sustain [0..1]");
+            parseAmt ("release", nullptr, 0.001f, 10.f, "0.1", ad->releaseExpr, "release [s]");
+
+            newChain->push_back (std::move (ad));
+        }
+        else if (d.type.startsWith ("samplehold"))
+        {
+            auto sh = std::make_unique<SampleHold>();
+            sh->kind = NodeKind::Generic;
+            sh->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", nullptr, 0.f, 1000.f, "10", sh->rateExpr, "rate [Hz]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", sh->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (sh));
+        }
+        else if (d.type.startsWith ("random"))
+        {
+            auto rn = std::make_unique<Random>();
+            rn->kind = NodeKind::Generic;
+            rn->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("rate", nullptr, 0.f, 1000.f, "10", rn->rateExpr, "rate [Hz]");
+            parseAmt ("min", nullptr, -10.f, 10.f, "-1", rn->minExpr, "min");
+            parseAmt ("max", nullptr, -10.f, 10.f, "1", rn->maxExpr, "max");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", rn->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (rn));
+        }
+        else if (d.type.startsWith ("modmath"))
+        {
+            auto mm = std::make_unique<ModMath>();
+            mm->kind = NodeKind::Generic;
+            mm->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("amount", nullptr, 0.f, 4.f, "1", mm->amountExpr, "amount");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", mm->mixExpr, "mix [0..1]");
+
+            if (d.args.count ("mode"))
+            {
+                const auto m = d.args.at ("mode").trim().toLowerCase();
+                if (m == "sub") mm->op = ModMath::Op::Sub;
+                else if (m == "mul") mm->op = ModMath::Op::Mul;
+                else if (m == "div") mm->op = ModMath::Op::Div;
+                else if (m == "min") mm->op = ModMath::Op::Min;
+                else if (m == "max") mm->op = ModMath::Op::Max;
+                else mm->op = ModMath::Op::Add;
+            }
+
+            newChain->push_back (std::move (mm));
+        }
+        else if (d.type.startsWith ("envtrigger"))
+        {
+            auto et = std::make_unique<EnvTrigger>();
+            et->kind = NodeKind::Generic;
+            et->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("threshold", nullptr, -10.f, 10.f, "0.5", et->thresholdExpr, "threshold");
+            parseAmt ("hold", nullptr, 0.f, 5000.f, "100", et->holdExpr, "hold [ms]");
+            parseAmt ("level", nullptr, 0.f, 10.f, "1", et->levelExpr, "level");
+
+            newChain->push_back (std::move (et));
+        }
+        else if (d.type.startsWith ("modmix"))
+        {
+            auto mx = std::make_unique<ModMix>();
+            mx->kind = NodeKind::Generic;
+            mx->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("levelA", nullptr, 0.f, 4.f, "1", mx->levelAExpr, "levelA");
+            parseAmt ("levelB", nullptr, 0.f, 4.f, "1", mx->levelBExpr, "levelB");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", mx->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (mx));
+        }
+        else if (d.type.startsWith ("tapestop"))
+        {
+            auto ts = std::make_unique<TapeStop>();
+            ts->kind = NodeKind::Generic;
+            ts->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("stop", nullptr, 0.01f, 30.f, "1", ts->stopExpr, "stop [s]");
+            parseAmt ("depth", nullptr, 0.f, 1.f, "1", ts->depthExpr, "depth [0..1]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", ts->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (ts));
+        }
+        else if (d.type.startsWith ("ringmod"))
+        {
+            auto rm = std::make_unique<Ringmod>();
+            rm->kind = NodeKind::Generic;
+            rm->varPtr = &variables;
+
+            const auto parseAmt = [&] (const char* key, const char* alt,
+                                       float lo, float hi, const char* fallback,
+                                       ExpressionEvaluator& dest, const juce::String& label)
+            {
+                const auto raw = d.args.count (key) ? d.args.at (key)
+                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
+                                                                       : juce::String (fallback));
+                auto expr = addDefaultMap (raw, lo, hi);
+                dest.parseFormula (expr.toStdString());
+                auto pn = findParam (expr);
+                if (pn.isNotEmpty())
+                    parameterMappings[pn].add (d.name + " " + label);
+            };
+            parseAmt ("freq", nullptr, 20.f, 2000.f, "440", rm->freqExpr, "freq [Hz]");
+            parseAmt ("mix", "wet", 0.f, 1.f, "1", rm->mixExpr, "mix [0..1]");
+
+            newChain->push_back (std::move (rm));
         }
         else if (d.type.startsWith ("xover") || d.type.startsWith ("crossover"))
         {
