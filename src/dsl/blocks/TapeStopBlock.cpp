@@ -68,6 +68,10 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
+    stopSm.setTargetValue (snapEval (stopExpr, 1.0f));
+    depthSm.setTargetValue (snapEval (depthExpr, 1.0f));
+    mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
+
     const size_t bufSize = delayBuf[0].size();
     float* io[2] {};
     for (int c = 0; c < useCh; ++c)
@@ -75,9 +79,9 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float stopSec = juce::jlimit (0.01f, 30.0f, snapEval (stopExpr, 1.0f));
-        const float depth   = juce::jlimit (0.0f, 1.0f, snapEval (depthExpr, 1.0f));
-        const float mix     = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
+        const float stopSec = juce::jlimit (0.01f, 30.0f, stopSm.getNextValue());
+        const float depth   = juce::jlimit (0.0f, 1.0f, depthSm.getNextValue());
+        const float mix     = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
         float in[2] {};
         for (int c = 0; c < useCh; ++c)

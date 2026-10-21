@@ -77,6 +77,10 @@ void SignalChain::ReverseDelay::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
+    timeSm.setTargetValue (snapEval (timeExpr, 250.0f));
+    feedbackSm.setTargetValue (snapEval (feedbackExpr, 0.3f));
+    mixSm.setTargetValue (snapEval (mixExpr, 0.5f));
+
     const size_t bufSize = delayBuf[0].size();
     float* io[2] {};
     for (int c = 0; c < useCh; ++c)
@@ -84,10 +88,10 @@ void SignalChain::ReverseDelay::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float timeMs = juce::jlimit (1.0f, 2000.0f, snapEval (timeExpr, 250.0f));
+        const float timeMs = juce::jlimit (1.0f, 2000.0f, timeSm.getNextValue());
         const float timeSec = timeMs * 0.001f;
-        const float feedback = juce::jlimit (0.0f, 0.99f, snapEval (feedbackExpr, 0.3f));
-        const float mix = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 0.5f));
+        const float feedback = juce::jlimit (0.0f, 0.99f, feedbackSm.getNextValue());
+        const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
         float in[2] {};
         for (int c = 0; c < useCh; ++c)
