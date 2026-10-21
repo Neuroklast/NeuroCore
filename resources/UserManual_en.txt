@@ -162,6 +162,10 @@ Cabinets (IR)
 
 ## License
 
+Website keys use device-bound activation. Retrieve your key at https://neuroklast.net/neurokore/account, then paste it into Settings → License and select Activate. Internet access is required for activation; the signed file works offline for up to 30 days. Renew with the same key and device. Each key allows two devices; contact NEUROKLAST for a device reset.
+
+Alpha keys expire and unlock only builds that allow alpha licenses. Full licenses have no entitlement expiry, but their offline activation files still need renewal. Expiry is checked when loading the plugin; an existing session is not interrupted. Legacy RSA license files must be replaced with a website key for this build.
+
 Unlicensed: **14-day demo** from the first launch on this machine. The status bar and Settings → License show remaining days and the end date (for example `DEMO 12d · 3 Sep 2026`).
 
 When the demo ends, Mix is forced dry. Load a signed `.lic` via Settings → License (Install .lic). Online Activate installs a license only after the plugin verifies the document and stores it. Licensed machines show **LIC** and your buyer email.

@@ -1,0 +1,35 @@
+
+name: License contract
+on:
+  push:
+    branches: ['codex/neurokore-licensing']
+  pull_request:
+    paths:
+      - 'src/licensing/**'
+      - 'tests/*license*'
+      - 'tests/License*'
+      - 'CMakeLists.txt'
+      - '.github/workflows/license-contract.yml'
+permissions:
+  contents: read
+jobs:
+  license:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Configure dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libgl1-mesa-dev libgtk-3-dev libwebkit2gtk-4.1-dev libasound2-dev libcurl4-openssl-dev libfreetype-dev libfontconfig1-dev
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --target NeuroKoreLicenseTests --parallel 2
+      - run: node tests/generate_license_fixture.mjs "$RUNNER_TEMP/license-fixture.json"
+      - run: build/NeuroKoreLicenseTests_artefacts/Release/NeuroKoreLicenseTests "$RUNNER_TEMP/license-fixture.json"
+      - name: Sync operator docs
+        run: |
+          node scripts/sync_living_docs.mjs
+          git diff --exit-code -- resources/UserManual_en.txt

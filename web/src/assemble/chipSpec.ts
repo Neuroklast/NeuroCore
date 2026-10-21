@@ -169,7 +169,7 @@ add({
   audioOuts: ["out"],
   paramJacks: ["type", "freq", "q", "gain", "channel"],
   enums: {
-    type: ["peak", "lowshelf", "highshelf", "lowpass", "highpass"],
+    type: ["peak", "notch", "lowshelf", "highshelf", "lowpass", "highpass"],
     channel: [...CHANNEL],
   },
   ranges: {
@@ -293,7 +293,7 @@ add({
   typeCodePrefix: "GT",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "attack", "release", "ceiling"],
+  paramJacks: ["threshold", "attack", "hold", "release", "hyst", "range", "ceiling"],
   ranges: {
     threshold: { min: -80, max: 0, unit: "dB" },
     attack: { min: 0.001, max: 1, unit: "s" },
@@ -303,7 +303,7 @@ add({
     range: { min: -80, max: 0, unit: "dB" },
     ceiling: { min: -12, max: 0, unit: "dB" },
   },
-  defaultArgs: { threshold: "-18", attack: "0.01", release: "0.1", ceiling: "0" },
+  defaultArgs: { threshold: "-18", attack: "0.01", hold: "0", release: "0.1", hyst: "1", range: "-80", ceiling: "0" },
   blurb: "Noise gate.",
 });
 
@@ -321,6 +321,21 @@ add({
   },
   defaultArgs: { ceiling: "-0.3", release: "0.1", lookahead: "0" },
   blurb: "Peak limiter. Lookahead 0 is the fast mode. A lookahead joins host delay compensation.",
+});
+
+add({
+  id: "meter",
+  label: "Meter",
+  typeCodePrefix: "ME",
+  audioIns: ["in"],
+  audioOuts: ["out"],
+  paramJacks: ["mode"],
+  enums: { mode: ["loudness", "peak", "rms"] },
+  ranges: {
+    mode: { min: 0, max: 2 },
+  },
+  defaultArgs: { mode: "peak" },
+  blurb: "Pass-through-Messung (Peak / RMS / Loudness). Verändert das Signal nicht.",
 });
 
 add({

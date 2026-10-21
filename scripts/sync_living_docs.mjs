@@ -25,7 +25,12 @@ const targets = [
   join(root, "web", "src", "overlays", "userManual.gen.txt"),
 ];
 for (const target of targets) {
-  const current = readFileSync(target, "utf8").replace(/\r\n/g, "\n");
+  let current = "";
+  try {
+    current = readFileSync(target, "utf8").replace(/\r\n/g, "\n");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
   if (current === manual) {
     console.log(`living docs current ${target}`);
     continue;

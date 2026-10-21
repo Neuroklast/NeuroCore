@@ -53,6 +53,7 @@ with tempfile.TemporaryDirectory() as temp:
         shutil.copy2(root / src, package / name)
     third_party = package / 'ThirdPartyLicenses'
     third_party.mkdir()
+    shutil.copy2(root / 'resources/Monocypher-LICENSE.txt', third_party / 'Monocypher-LICENSE.txt')
     juce = a.build / '_deps/juce-src'
     if not (juce / 'LICENSE.md').is_file():
         raise SystemExit('JUCE license missing from fetched dependency')

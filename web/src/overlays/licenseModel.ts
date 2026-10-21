@@ -1,6 +1,6 @@
 import { demoEndDateLabel } from "../chrome/footerLicense";
 
-export const LICENSE_ACTIVATE_URL = "https://neuroklast.net/api/license/activate";
+export const LICENSE_ACTIVATE_URL = "https://neuroklast.net/api/license/v1/activate";
 export const LICENSE_DOCUMENT_MARK = "NEUROKORE LICENSE";
 
 export type LicenseDocumentParse =

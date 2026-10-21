@@ -31,7 +31,10 @@ export function LicensePanel() {
       const res = await fetch(LICENSE_ACTIVATE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: key.trim(), email: mail.trim(), systemId }),
+        body: JSON.stringify({ key: key.trim().toUpperCase(), device: systemId }),
+        credentials: "omit",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
       });
       const body = await res.text();
       const out = await completeOnlineActivate(res.status, body, async (text) => {

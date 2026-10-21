@@ -2,6 +2,12 @@
 
 **Stand:** 2026-10-20 (0.7.1-beta)
 **Version:** 0.7.1-beta  
+**Branch:** `codex/neurokore-licensing`
+
+## Website licensing integration (implementation branch)
+
+Ed25519 v2 device-bound activation against neuroklast.net; alpha/full entitlements, two server-managed seats, maximum 30-day offline activation files. Verify key is `NEUROKORE_LICENSE_PUBLIC_KEY_HEX` in CMakeLists (override with `-D`). Empty still fail-closes. Stable builds must disable `NEUROKORE_ALLOW_ALPHA_LICENSES`. Legacy RSA licenses are rejected. `userManual.gen.txt` stays gitignored. Website/Stripe rollout still separate. `licenseModel.test.ts` 7/7 pass. Native License contract is CI.
+
 **Branch:** `feat/circuit-signal-glow`
 
 ## Circuit signal visibility (2026-10-20)
