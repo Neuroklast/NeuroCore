@@ -137,6 +137,17 @@ namespace DSPUtils
                        + (-y0 + 3.f * y1 - 3.f * y2 + y3) * f3);
     }
 
+    /** Audible tail of a feedback delay: delay * log(0.001) / log(fb), clamped. */
+    NK_FORCEINLINE static float feedbackTailSeconds (float delaySeconds, float feedback) noexcept
+    {
+        const float delay = juce::jlimit (0.001f, 20.0f, delaySeconds);
+        const float fb = juce::jlimit (0.f, 0.95f, feedback);
+        if (fb < 0.05f)
+            return delay * 1.5f;
+        const float n = std::log (0.001f) / std::log (juce::jmax (0.05f, fb));
+        return juce::jlimit (0.05f, 12.0f, delay * n);
+    }
+
     /** Feedback limiter. Transparent below 1.5 — same threshold as Delay. */
     NK_FORCEINLINE static float satFb (float x) noexcept
     {

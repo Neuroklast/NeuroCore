@@ -16,25 +16,23 @@ namespace
 
 void SignalChain::TapeStop::clearRuntimeState() noexcept
 {
-    for (auto& buf : delayBuf)
-        buf.assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
+    for (int c = 0; c < channels; ++c)
+        delayBuf[(size_t) c].assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
     writePos = 0;
-    readPos = 0.0f;
+    readPos = -1.0f;
     rate = 1.0f;
-    active = false;
 }
 
 void SignalChain::TapeStop::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
-    channels = static_cast<int> (spec.numChannels);
+    channels = juce::jlimit (1, 2, static_cast<int> (spec.numChannels));
     const size_t maxDelay = static_cast<size_t> (sampleRate * 2.0f);
-    for (auto& buf : delayBuf)
-        buf.assign (maxDelay, 0.0f);
+    for (int c = 0; c < channels; ++c)
+        delayBuf[(size_t) c].assign (maxDelay, 0.0f);
     writePos = 0;
-    readPos = 0.0f;
+    readPos = -1.0f;
     rate = 1.0f;
-    active = false;
     stopSm.reset (sampleRate, Config::kSmoothingTime);
     depthSm.reset (sampleRate, Config::kSmoothingTime);
     mixSm.reset (sampleRate, Config::kSmoothingTime);
@@ -62,7 +60,7 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
 {
     const int nCh = buffer.getNumChannels();
     const int nS  = buffer.getNumSamples();
-    const int useCh = juce::jmin (nCh, 2);
+    const int useCh = juce::jmin (nCh, channels);
     if (nS <= 0 || useCh <= 0 || delayBuf[0].empty())
         return;
 
@@ -92,12 +90,6 @@ void SignalChain::TapeStop::processBlock (juce::AudioBuffer<float>& buffer)
         writePos = (writePos + 1) % bufSize;
 
         // Variable-rate read: slow down over stopSec, pitch down by depth
-        if (! active)
-        {
-            active = true;
-            rate = 1.0f;
-        }
-
         // Ramp rate down over stopSec
         const float targetRate = 1.0f - depth;
         rate += (targetRate - rate) * (1.0f / (stopSec * sampleRate + 1.0f));

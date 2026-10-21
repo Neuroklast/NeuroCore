@@ -469,8 +469,8 @@ private:
         static float diodeCurve (float x) noexcept;
     };
 
-    /** Eigenständiger Waveshaper: editierbare Transferkurve mit Kontrollpunkten.
-        Symmetrischer / asymmetrischer Modus, Drive, Output, Mix, optionaler DC-Blocker. */
+    /** Eigenständiger Waveshaper: Fold-Back oder Hard-Clip.
+        Drive, Output-Trim und Mix; `symmetric` bleibt ein Fold-Alias. */
     struct Shaper : Block
     {
         enum class Mode { Fold = 0, Clip };
@@ -727,7 +727,6 @@ private:
         size_t writePos { 0 };
         float readPos { 0.0f };
         float rate { 1.0f };
-        bool active { false };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -1134,6 +1133,7 @@ private:
         ExpressionEvaluator mixExpr;
 
         float sampleRate { 44100.0f };
+        int channels { 1 };
         std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
 

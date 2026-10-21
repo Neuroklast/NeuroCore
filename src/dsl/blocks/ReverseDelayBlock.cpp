@@ -1,5 +1,6 @@
 #include "../SignalChain.h"
 #include "../../core/Config.h"
+#include "../../dsp/DSPUtils.h"
 #include <cmath>
 #include <vector>
 
@@ -18,17 +19,18 @@ namespace
 
 void SignalChain::ReverseDelay::clearRuntimeState() noexcept
 {
-    for (auto& buf : delayBuf)
-        buf.assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
+    for (int c = 0; c < channels; ++c)
+        delayBuf[(size_t) c].assign (static_cast<size_t> (sampleRate * 2.0f), 0.0f);
     writePos = 0;
 }
 
 void SignalChain::ReverseDelay::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float> (spec.sampleRate > 0.0 ? spec.sampleRate : 44100.0);
+    channels = juce::jlimit (1, 2, static_cast<int> (spec.numChannels));
     const size_t maxDelay = static_cast<size_t> (sampleRate * 2.0f);
-    for (auto& buf : delayBuf)
-        buf.assign (maxDelay, 0.0f);
+    for (int c = 0; c < channels; ++c)
+        delayBuf[(size_t) c].assign (maxDelay, 0.0f);
     writePos = 0;
     timeSm.reset (sampleRate, Config::kSmoothingTime);
     feedbackSm.reset (sampleRate, Config::kSmoothingTime);
@@ -52,12 +54,8 @@ float SignalChain::ReverseDelay::tailSeconds() const noexcept
     if (! std::isfinite (ms)) ms = 250.f;
     float fb = feedbackExpr.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
-    fb = juce::jlimit (0.f, 0.95f, fb);
     const float delaySec = juce::jlimit (0.001f, kMaxDelaySec, ms * 0.001f);
-    if (fb < 0.05f)
-        return delaySec * 1.5f;
-    const float n = std::log (0.001f) / std::log (juce::jmax (0.05f, fb));
-    return juce::jlimit (0.05f, 12.0f, delaySec * n);
+    return DSPUtils::feedbackTailSeconds (delaySec, fb);
 }
 
 float SignalChain::ReverseDelay::process (int ch, float x)
@@ -71,7 +69,7 @@ void SignalChain::ReverseDelay::processBlock (juce::AudioBuffer<float>& buffer)
 {
     const int nCh = buffer.getNumChannels();
     const int nS  = buffer.getNumSamples();
-    const int useCh = juce::jmin (nCh, 2);
+    const int useCh = juce::jmin (nCh, channels);
     if (nS <= 0 || useCh <= 0 || delayBuf[0].empty())
         return;
 

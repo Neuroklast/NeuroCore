@@ -248,6 +248,27 @@ public:
             expect (peakR < 1.0e-6f, "right must stay silent, got " + juce::String (peakR, 4));
         }
 
+        beginTest ("TapeStop depth=0 keeps the signal");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String error;
+            expect (chain.loadScript ("tapestop1: stop = 1; depth = 0; mix = 1", error), error);
+            juce::AudioBuffer<float> buffer (1, 512);
+            for (int i = 0; i < 512; ++i)
+                buffer.setSample (0, i, 0.5f * std::sin (juce::MathConstants<float>::twoPi
+                                                         * 1000.0f * (float) i / 48000.0f));
+            chain.processBlock (buffer);
+            double sum = 0.0;
+            for (int i = 32; i < 512; ++i)
+            {
+                const float y = buffer.getSample (0, i);
+                sum += (double) y * y;
+            }
+            const float rms = (float) std::sqrt (sum / (512 - 32));
+            expect (rms > 0.3f, "depth=0 must pass the signal, rms=" + juce::String (rms, 4));
+        }
+
         beginTest ("NlFilter cutoff follows the one-pole response");
         {
             auto renderRms = [&] (float freq)

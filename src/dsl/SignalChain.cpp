@@ -1476,7 +1476,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             sh->kind = NodeKind::Clip;
             sh->varPtr = &variables;
 
-            // Mode: symmetric / asymmetric (diskret, wird beim Prepare aufgelöst).
+            // Mode: fold / clip (diskret, wird beim Prepare aufgelöst).
             {
                 const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("fold");
                 const auto m = modeRaw.trim().toLowerCase();
@@ -4700,13 +4700,8 @@ float SignalChain::Delay::tailSeconds() const noexcept
     }
     float fb = feedback.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
-    fb = juce::jlimit (0.f, 0.95f, fb);
-    // Approximate audible tail: delay * log(noise)/log(fb)
     const float delaySec = juce::jlimit (0.001f, kMaxDelaySec, ms * 0.001f);
-    if (fb < 0.05f)
-        return delaySec * 1.5f;
-    const float n = std::log (0.001f) / std::log (juce::jmax (0.05f, fb));
-    return juce::jlimit (0.05f, 12.0f, delaySec * n);
+    return DSPUtils::feedbackTailSeconds (delaySec, fb);
 }
 
 float SignalChain::Delay::process (int ch, float x)
