@@ -46,9 +46,12 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "octaver", label: "Octaver", args: "sub = 1; up = 0; mix = 0.3; tone = 120; thresh = 0.05", category: "Tone" },
   { type: "pitch", label: "Pitch", args: "semitones = 0; mix = 1; formant = 1; ceiling = -0.3", category: "Tone" },
   { type: "custom", label: "Custom", args: "y = x", category: "Custom" },
+  { type: "ott", label: "OTT", args: "depth = 0.52; time = 0.3; in = 1.15; low = 1; mid = 0.92; high = 1.05", category: "Dynamics" },
+  { type: "vocoder", label: "Vocoder", args: "bands = 16; mix = 0.85; q = 2.2; attack = 0.003; release = 0.030", category: "Mod" },
+  { type: "meter", label: "Meter", args: "mode = peak", category: "IO" },
 ];
 
-export const ADD_CATEGORIES = ["Dynamics", "Drive", "Tone", "Time", "Mod", "Routing", "Custom"] as const;
+export const ADD_CATEGORIES = ["Dynamics", "Drive", "Tone", "Time", "Mod", "Routing", "IO", "Custom"] as const;
 
 export function blocksInCategory(category: string): AddableBlock[] {
   return ADDABLE_BLOCKS.filter((b) => b.category === category);
