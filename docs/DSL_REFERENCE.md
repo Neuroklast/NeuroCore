@@ -785,3 +785,8 @@ stage1: y = x + osc1 * 0.1
 - `y_prev` / `x_prev` starten bei 0.0
 - Formeln werden vor Übernahme über die Validierung geprüft (`testFormulaStability`)
 - Factory-Presets in `resources/factory_presets.json` verwenden Zeilen-Syntax (seit 2026-06-29)
+## Saturate and frequency-shifter correction
+
+`saturate` / `sat`: mode `tape|tube|transistor|transformer|diode`; drive −24…36 dB; bias −1…1; dynamics, tone, character 0…1 (each defaults to 0.5); outputTrim/output/trim −36…12 dB; mix/wet 0…1 (default 1); autoGain on/off (default off). Tone is normalized, not Hz. Output aliases prioritize outputTrim, then output, then trim. Invalid enum values, unknown keys and invalid numeric expressions fail compilation. Numeric expressions retain existing macro mapping.
+
+`freqshift`: hz −20000…20000, mix 0…1. Fixed 64-processing-sample latency, reported through the existing bus latency graph. Dry/wet paths are aligned. This is single-sideband frequency translation with finite FIR transition bands, not pitch shifting.

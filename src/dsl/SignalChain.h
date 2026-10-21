@@ -9,6 +9,8 @@
 #include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
 #include "../dsp/DSPUtils.h"
+#include "../dsp/SaturationModels.h"
+#include "../dsp/FrequencyShifterDSP.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
 #include <array>
@@ -446,17 +448,15 @@ private:
     {
         enum class Mode { Tape = 0, Tube, Transistor, Transformer, Diode };
 
-        ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr;
+        ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr, characterExpr;
         ExpressionEvaluator modeExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm;
+        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm, characterSm;
         juce::SmoothedValue<float> outputSm, mixSm;
         Mode mode { Mode::Tube };
         bool autoGain { false };
         float sampleRate { 44100.f };
         int channels { 1 };
-        float peakEnv { 0.f };
-        float autoGainSm { 1.f };
-        float agcAtkC { 0.f }, agcRelC { 0.f };
+        neurokore::saturation::Processor processor;
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -556,17 +556,16 @@ private:
         void clearRuntimeState() noexcept override;
     };
 
-    /** Single-sideband frequency shifter: Hz shift, mix. Uses an allpass
-        pair per channel for a ~90 deg Hilbert phase-shift network. */
+    /** Single-sideband frequency shifter: Hz shift, mix. Uses a 129-tap FIR Hilbert
+        transformer with aligned dry and real paths (64 samples). */
     struct FreqShift : Block
     {
         ExpressionEvaluator HzExpr, mixExpr;
         juce::SmoothedValue<float> HzSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float phase { 0.f };
-        struct AP1 { float a { 0.f }, z1 { 0.f }; };
-        AP1 ap0L, ap1L, ap0R, ap1R;
+        neurokore::FrequencyShifterDSP processor;
+        static constexpr int latencySamples = neurokore::FrequencyShifterDSP::latency;
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);

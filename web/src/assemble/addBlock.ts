@@ -1,3 +1,4 @@
+import { entryById } from "./blockCatalog";
 import { sourceBlock, replaceSourceArg, renameSourceToken } from "./dslSource";
 import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
 import type { CompileResultPayload } from "../bridge/ast";
@@ -25,7 +26,7 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "delay", label: "Delay", args: "time = 250; mix = 0.35; feedback = 0.2; wow = 0; flutter = 0", category: "Time" },
   { type: "bitcrush", label: "Bitcrush", args: "bits = 8; mix = 1; tone = 8000", category: "Drive" },
   { type: "clip", label: "Clipper", args: "mode = hard; drive = 0; threshold = 0; knee = 0.5; bias = 0; outputTrim = 0; mix = 1; autoGain = off", category: "Drive" },
-  { type: "saturate", label: "Saturate", args: "mode = tube; drive = 0; bias = 0; dynamics = 0.5; tone = 0.5; outputTrim = 0; mix = 1; autoGain = off", category: "Drive" },
+  { type: "saturate", label: "Saturate", args: entryById("saturate")!.dslTemplate, category: "Drive" },
   { type: "shaper", label: "Shaper", args: "mode = fold; drive = 0; outputTrim = 0; mix = 1", category: "Drive" },
   { type: "decimate", label: "Decimate", args: "rate = 0.5; bits = 8; jitter = 0; hold = 0; recon = 0.5; mix = 1; outputTrim = 0", category: "Drive" },
   { type: "amp", label: "Amp", args: "gain = 0; outputTrim = 0; mix = 1", category: "Drive" },

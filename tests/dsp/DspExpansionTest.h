@@ -2,7 +2,7 @@
 #define DSPEXPANSIONTEST_H
 
 #include <JuceHeader.h>
-#include "../src/dsl/SignalChain.h"
+#include "../../src/dsl/SignalChain.h"
 #include "../TestHelpers.h"
 
 class DspExpansionTest : public juce::UnitTest
@@ -12,6 +12,56 @@ public:
 
     void runTest() override
     {
+        beginTest ("Saturator tone, dynamics, character and outputTrim reach native DSP");
+        {
+            auto render = [&] (const juce::String& args)
+            {
+                dsl::SignalChain chain;
+                chain.prepare ({ 48000.0, 128, 2 });
+                juce::String error;
+                expect (chain.loadScript ("saturate1: mode = tube; drive = 12; mix = 1; " + args, error), error);
+                std::vector<float> samples;
+                juce::AudioBuffer<float> buffer (2, 128);
+                for (int block = 0; block < 64; ++block)
+                {
+                    for (int i = 0; i < 128; ++i)
+                    {
+                        buffer.setSample (0, i, 0.7f * std::sin (float (block * 128 + i) * 0.4f));
+                        buffer.setSample (1, i, 0.f);
+                    }
+                    chain.processBlock (buffer);
+                    samples.insert (samples.end(), buffer.getReadPointer (0), buffer.getReadPointer (0) + 128);
+                }
+                return samples;
+            };
+            const auto baseline = render ("tone = 0.5; dynamics = 0.5; character = 0.5; outputTrim = 0");
+            for (const auto* changed : { "tone = 1", "dynamics = 0", "character = 1", "outputTrim = -6" })
+            {
+                const auto samples = render (changed);
+                double difference = 0.;
+                for (size_t i = 0; i < samples.size(); ++i) difference += std::abs (samples[i] - baseline[i]);
+                expect (difference / samples.size() > 0.001, juce::String (changed) + " must change wet audio");
+            }
+        }
+
+        beginTest ("Frequency shifter zero shift is a latency-aligned identity");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String error;
+            expect (chain.loadScript ("freqshift1: hz = 0; mix = 0.5", error), error);
+            expectEquals (chain.getIrLatencySamples(), 64);
+            expect (chain.getMaxTailTime() >= 128.f / 48000.f);
+            juce::AudioBuffer<float> buffer (1, 128);
+            buffer.clear();
+            buffer.setSample (0, 0, 1.f);
+            chain.processBlock (buffer);
+            float errorPeak = 0.f;
+            for (int i = 0; i < 128; ++i)
+                errorPeak = juce::jmax (errorPeak, std::abs (buffer.getSample (0, i) - (i == 64 ? 1.f : 0.f)));
+            expect (errorPeak < 1e-6f, "dry and real paths must share the reported latency");
+        }
+
         beginTest ("ReverseDelay time=250 is 250 ms, not 2 s");
         {
             dsl::SignalChain chain;

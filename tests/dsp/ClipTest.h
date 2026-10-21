@@ -2,8 +2,8 @@
 #define CLIPTEST_H
 
 #include <JuceHeader.h>
-#include "../src/dsl/SignalChain.h"
-#include "../src/core/Config.h"
+#include "../../src/dsl/SignalChain.h"
+#include "../../src/core/Config.h"
 #include "../TestHelpers.h"
 
 class ClipTest : public juce::UnitTest

@@ -787,6 +787,35 @@ bool DSLParser::parse(const juce::String& text,
             desc.args[key] = value;
         }
 
+        if (desc.type == "sat") desc.type = "saturate";
+        if (desc.type == "saturate")
+        {
+            const juce::StringArray keys { "mode", "drive", "bias", "dynamics", "tone",
+                "character", "outputtrim", "output", "trim", "mix", "wet", "autogain",
+                "channel", "kanal" };
+            for (const auto& arg : desc.args)
+                if (! keys.contains (arg.first))
+                {
+                    error = "Error on line " + juce::String (i + 1)
+                          + ": unknown saturate parameter '" + arg.first + "'.";
+                    return false;
+                }
+            if (desc.args.count ("mode") && ! juce::StringArray {
+                "tape", "tube", "transistor", "transformer", "diode"
+            }.contains (trimLower (desc.args.at ("mode"))))
+            {
+                error = "Error on line " + juce::String (i + 1) + ": invalid saturate mode.";
+                return false;
+            }
+            if (desc.args.count ("autogain") && ! juce::StringArray {
+                "on", "off", "true", "false", "yes", "no", "1", "0"
+            }.contains (trimLower (desc.args.at ("autogain"))))
+            {
+                error = "Error on line " + juce::String (i + 1) + ": invalid saturate autogain.";
+                return false;
+            }
+        }
+
         if ((desc.type == "stage" || desc.type == "custom") && desc.args.count("y") == 0)
         {
             error = "Error on line " + juce::String(i+1) + ": stage without formula.";
