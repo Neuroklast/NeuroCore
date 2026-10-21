@@ -31,16 +31,17 @@ float SignalChain::Clip::softClipAt (float x, float thr, float knee) noexcept
         return x;
     if (ax >= thr)
         return (x >= 0.0f) ? thr : -thr;
-    // Smoothstep zwischen a und thr: C1-stetig, erreicht thr exakt.
+    // Kubischer Übergang zwischen a und thr: g(t) = t + t^2 - t^3.
+    // g(0)=0, g'(0)=1 (passt zur linearen Rampe), g(1)=1, g'(1)=0 (flach bei thr),
+    // monoton steigend auf [0,1] -> C1-stetig am Knie und am Sättigungsende.
     const float t = juce::jlimit (0.0f, 1.0f, (ax - a) / juce::jmax (1.0e-6f, thr - a));
-    const float smooth = t * t * (3.0f - 2.0f * t);
+    const float smooth = t + t * t - t * t * t;
     return (x >= 0.0f) ? (a + (thr - a) * smooth) : -(a + (thr - a) * smooth);
 }
 
 float SignalChain::Clip::dcBlock (int ch, float x) noexcept
 {
-    constexpr float R = 0.995f;
-    float y = x - dcX[(size_t) ch] + R * dcY[(size_t) ch];
+    float y = x - dcX[(size_t) ch] + dcR * dcY[(size_t) ch];
     if (! std::isfinite (y))
         y = 0.0f;
     dcX[(size_t) ch] = x;
@@ -73,6 +74,10 @@ void SignalChain::Clip::prepare (const juce::dsp::ProcessSpec& spec)
     // Modus ist diskret (0 = hard, 1 = soft, 2 = asymmetric), aufgelöst beim Prepare.
     const int modeIdx = (int) juce::jlimit (0.0f, 2.0f, snap (modeExpr, 0.0f));
     mode = static_cast<Mode> (modeIdx);
+
+    // DC-Blocker-Pol: R = exp(-2*pi*fc / sampleRate) mit fc = 20 Hz,
+    // damit die HP-Grenzfrequenz sample-rate-unabhaengig bleibt.
+    dcR = std::exp (-2.0f * juce::MathConstants<float>::pi * 20.0f / sampleRate);
 
     // Auto Gain: Attack schneller als Release, damit Spitzen erfasst, die
     // Gain-Reduktion aber nicht bei jedem Transienten pumpt.

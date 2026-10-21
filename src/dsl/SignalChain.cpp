@@ -1376,9 +1376,18 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                                        float lo, float hi, const char* fallback,
                                        ExpressionEvaluator& dest, const juce::String& label)
             {
-                const auto raw = d.args.count (key) ? d.args.at (key)
-                               : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
-                                                                       : juce::String (fallback));
+                // Alle Keys im BlockDesc sind vom Parser lowercased (DSLParser.cpp:785),
+                // daher suchen wir case-insensitiv, damit "outputTrim" den Key "outputtrim" findet.
+                auto lookup = [&] (const char* k) -> const juce::String*
+                {
+                    if (k == nullptr) return nullptr;
+                    auto it = d.args.find (juce::String (k).toLowerCase());
+                    return it != d.args.end() ? &it->second : nullptr;
+                };
+                const juce::String* rawPtr = lookup (key);
+                if (rawPtr == nullptr && alt != nullptr)
+                    rawPtr = lookup (alt);
+                const auto raw = rawPtr != nullptr ? *rawPtr : juce::String (fallback);
                 auto expr = addDefaultMap (raw, lo, hi);
                 dest.parseFormula (expr.toStdString());
                 auto pn = findParam (expr);

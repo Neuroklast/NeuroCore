@@ -138,21 +138,22 @@ public:
             dsl::SignalChain chain;
             juce::String err;
             expect(chain.loadScript("clip1: mode = asymmetric; drive = 20; threshold = -6; bias = 0.5; mix = 1", err), err);
-            juce::dsp::ProcessSpec spec{ 44100.0, 2560, 1 };
+            // 150 ms Audio geben dem DC-Blocker genug Zeit zum Einregeln
+            // (Pol R = exp(-2*pi*fc/sr) ist bei hoher Sample-Rate nahe 1).
+            const int nSamples = juce::roundToInt (44100.0 * 0.15);
+            juce::dsp::ProcessSpec spec{ 44100.0, (uint32) nSamples, 1 };
             chain.prepare(spec);
 
-            // Ein langer, konstanter Puffer: der DC-Blocker muss den
-            // Gleichanteil entfernen, nicht nur pro Block zurücksetzen.
-            juce::AudioBuffer<float> buf(1, 4096);
+            juce::AudioBuffer<float> buf(1, nSamples);
             buf.clear();
-            for (int i = 0; i < 4096; ++i)
+            for (int i = 0; i < nSamples; ++i)
                 buf.setSample(0, i, 0.5f);
             chain.processBlock(buf);
 
             float sum = 0.f;
-            for (int i = 0; i < 4096; ++i)
+            for (int i = 0; i < nSamples; ++i)
                 sum += buf.getSample(0, i);
-            const float mean = sum / 4096.f;
+            const float mean = sum / nSamples;
             expect(std::abs(mean) < 0.05f, juce::String("DC mean = ") + juce::String(mean));
             expect(TestHelpers::countNonFinite(buf) == 0);
         }
@@ -196,6 +197,72 @@ public:
             for (int i = 0; i < 128; ++i)
                 expect(std::abs(buf.getSample(0, i)) <= thr + 1e-4f, juce::String("Sample ") + juce::String(i));
             expect(TestHelpers::countNonFinite(buf) == 0);
+        }
+
+        beginTest("Output Trim wird vom Parser übernommen und dämpft den Ausgang");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect(chain.loadScript("clip1: mode = hard; drive = 0; threshold = 0; outputTrim = -6; mix = 1", err), err);
+            juce::dsp::ProcessSpec spec{ 44100.0, 128, 1 };
+            chain.prepare(spec);
+
+            juce::AudioBuffer<float> buf(1, 128);
+            for (int i = 0; i < 128; ++i)
+                buf.setSample(0, i, 0.5f);
+            chain.processBlock(buf);
+
+            const float expected = 0.5f * juce::Decibels::decibelsToGain(-6.0f);
+            for (int i = 0; i < 128; ++i)
+                expect(std::abs(buf.getSample(0, i) - expected) < 1e-3f, juce::String("Sample ") + juce::String(i));
+            expect(TestHelpers::countNonFinite(buf) == 0);
+        }
+
+        beginTest("Soft Knee mit knee = 1 folgt der kubischen Kurve (C1 am Knie)");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect(chain.loadScript("clip1: mode = soft; drive = 0; threshold = -6; knee = 1; mix = 1", err), err);
+            juce::dsp::ProcessSpec spec{ 44100.0, 128, 1 };
+            chain.prepare(spec);
+
+            const float thr = juce::Decibels::decibelsToGain(-6.0f);
+            // a = thr * (1 - 1) = 0 => alles liegt im kubischen Bereich.
+            // x = 0.5 * thr => t = 0.5 => g(0.5) = 0.5 + 0.25 - 0.125 = 0.625
+            juce::AudioBuffer<float> buf(1, 1);
+            buf.setSample(0, 0, 0.5f * thr);
+            chain.processBlock(buf);
+
+            const float expected = 0.625f * thr;
+            expect(std::abs(buf.getSample(0, 0) - expected) < 1e-4f, juce::String("Knie-Ausgang = ") + juce::String(buf.getSample(0, 0)));
+        }
+
+        beginTest("DC-Blocker entfernt Gleichanteil bei verschiedenen Sample-Raten");
+        {
+            for (double sr : { 44100.0, 48000.0, 96000.0, 192000.0 })
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                expect(chain.loadScript("clip1: mode = asymmetric; drive = 20; threshold = -6; bias = 0.5; mix = 1", err), err);
+                // Puffergröße mit Sample-Rate skalieren: 150 ms Audio geben
+                // dem DC-Blocker genug Zeit zum Einregeln bei jeder Rate.
+                const int nSamples = juce::roundToInt (sr * 0.15);
+                juce::dsp::ProcessSpec spec{ sr, (uint32) nSamples, 1 };
+                chain.prepare(spec);
+
+                juce::AudioBuffer<float> buf(1, nSamples);
+                buf.clear();
+                for (int i = 0; i < nSamples; ++i)
+                    buf.setSample(0, i, 0.5f);
+                chain.processBlock(buf);
+
+                float sum = 0.f;
+                for (int i = 0; i < nSamples; ++i)
+                    sum += buf.getSample(0, i);
+                const float mean = sum / nSamples;
+                expect(std::abs(mean) < 0.05f, juce::String("SR=") + juce::String(sr) + " DC mean = " + juce::String(mean));
+                expect(TestHelpers::countNonFinite(buf) == 0);
+            }
         }
     }
 };

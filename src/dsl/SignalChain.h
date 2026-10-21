@@ -427,6 +427,7 @@ private:
         float peakEnv { 0.f };
         float autoGainSm { 1.f };
         float agcAtkC { 0.f }, agcRelC { 0.f };
+        float dcR { 0.995f }; // DC-Blocker-Pol, in prepare aus sampleRate berechnet (fc=20 Hz)
         /** DC-Blocker (nur asymmetrischer Modus braucht ihn wirklich). */
         alignas (64) float dcX[Config::kMaxChannels] {};
         alignas (64) float dcY[Config::kMaxChannels] {};
