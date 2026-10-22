@@ -241,6 +241,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         variables.emplace(kv.second, 0.0f);
 
     auto newChain = std::make_shared<Chain>();
+    std::shared_ptr<BusGraph> pendingBusGraph;
 
     auto isNumeric = [](const juce::String& s)
     {
@@ -2598,8 +2599,10 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             if (b->busIndex < 0)
                 b->busIndex = 0;
         }
-        retiredBusGraph = std::atomic_load (&busGraph);
-        std::atomic_store (&busGraph, std::make_shared<BusGraph> (std::move (newGraph)));
+        // Do not publish a bus topology before control refs/cycles, module
+        // prepare and graph latency have all succeeded. Failed scripts must
+        // leave the existing audio routing intact.
+        pendingBusGraph = std::make_shared<BusGraph> (std::move (newGraph));
     }
 
     // Drop stale modulation vars (osc1, env1, …) from previous script so they
@@ -2828,24 +2831,30 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     bindNodeTaps (*newChain);
 
-    retiredAliases   = std::atomic_load (&aliases);
-    retiredAliasPtrs = std::atomic_load (&aliasPtrs);
-    retiredChain     = std::atomic_load (&chain);
-    std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
-    std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
-    std::atomic_store (&chain, newChain);
-    hot.bind (variables);
     if (currentSpec.sampleRate > 0.0)
     {
         const int busCh = (int) juce::jmax ((juce::uint32) 1, currentSpec.numChannels);
         const int busN  = (int) juce::jmax (currentSpec.maximumBlockSize, (juce::uint32) 64);
         ensureBusBuffers (busCh, busN);
     }
-    if (auto g = std::atomic_load (&busGraph))
+    if (pendingBusGraph)
     {
-        bindXoverDestinations (*newChain, *g);
-        prepareBusLatency (*newChain, *g);
+        bindXoverDestinations (*newChain, *pendingBusGraph);
+        prepareBusLatency (*newChain, *pendingBusGraph);
     }
+
+    // Publish the fully prepared graph last. The plugin's process lock
+    // excludes audio callbacks during this short commit. The independent
+    // atomic fields must NOT be interpreted as a lock-free transaction.
+    retiredAliases   = std::atomic_load (&aliases);
+    retiredAliasPtrs = std::atomic_load (&aliasPtrs);
+    retiredChain     = std::atomic_load (&chain);
+    retiredBusGraph  = std::atomic_load (&busGraph);
+    std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
+    std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
+    std::atomic_store (&busGraph, std::move (pendingBusGraph));
+    std::atomic_store (&chain, newChain);
+    hot.bind (variables);
     return true;
 }
 
