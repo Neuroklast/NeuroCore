@@ -576,8 +576,8 @@ public:
                 juce::String err;
                 expect (chain.loadScript (
                     "stepseq1: steps = 2; sync = 1/8; swing = 0.6; "
-                    "gate = 1; mix = 1; values = 1, 0\\n"
-                    "stage1: y = x * stepseq1\\n", err), err);
+                    "gate = 1; mix = 1; values = 1, 0\n"
+                    "stage1: y = x * stepseq1\n", err), err);
                 chain.prepare ({ 48000.0, 128, 1 });
                 chain.setTempo (120.0, ppq, true);
                 juce::AudioBuffer<float> audio (1, 128);
