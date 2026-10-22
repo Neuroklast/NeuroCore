@@ -221,6 +221,39 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     const juce::SpinLock::ScopedLockType scriptGuard(scriptLock);
 
+    // A rejected patch must not change the active graph's control/parameter
+    // metadata or values. Roll back in-place: replacing the variables map
+    // wholesale would invalidate float* cached by the active audio graph.
+    // This snapshot and all its allocations are on the loader/UI thread.
+    const auto previousMappings = parameterMappings;
+    const auto previousParamInfo = paramInfo;
+    const auto previousNotes = knobNotes;
+    const auto previousIsNote = knobIsNote;
+    const auto previousVariables = variables;
+    bool committed = false;
+    struct Rollback
+    {
+        bool& committed;
+        std::function<void()> undo;
+        ~Rollback() { if (! committed) undo(); }
+    } rollback { committed, [&]
+    {
+        parameterMappings = previousMappings;
+        paramInfo = previousParamInfo;
+        knobNotes = previousNotes;
+        knobIsNote = previousIsNote;
+        for (auto it = variables.begin(); it != variables.end(); )
+        {
+            if (previousVariables.find (it->first) == previousVariables.end())
+                it = variables.erase (it);
+            else
+                ++it;
+        }
+        for (const auto& item : previousVariables)
+            variables[item.first] = item.second;
+        hot.bind (variables);
+    } };
+
     parameterMappings.clear();
     paramInfo = parsedParams;
     knobIsNote.fill (false);
@@ -2871,6 +2904,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     std::atomic_store (&busGraph, std::move (pendingBusGraph));
     std::atomic_store (&chain, newChain);
     hot.bind (variables);
+    committed = true;
     return true;
 }
 
