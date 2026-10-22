@@ -44,6 +44,60 @@ public:
             }
         }
 
+        beginTest ("Pitch circular STFT buffers are independent of host block sizes");
+        {
+            auto render = [&] (const int blockSize)
+            {
+                dsl::SignalChain chain;
+                chain.prepare ({ 48000.0, 512, 2 });
+                juce::String err;
+                expect (chain.loadScript (
+                    "pitch1: semitones = 0; mix = 1; formant = 1; ceiling = 0", err), err);
+                constexpr int total = 8192;
+                std::vector<float> left, right;
+                left.reserve (total);
+                right.reserve (total);
+                juce::AudioBuffer<float> audio (2, 512);
+                for (int off = 0; off < total;)
+                {
+                    const int n = juce::jmin (blockSize, total - off);
+                    juce::AudioBuffer<float> slice (audio.getArrayOfWritePointers(), 2, 0, n);
+                    for (int i = 0; i < n; ++i)
+                    {
+                        const float t = (float) (off + i);
+                        audio.setSample (0, i, 0.15f * std::sin (t * 0.117f));
+                        audio.setSample (1, i, 0.11f * std::cos (t * 0.083f));
+                    }
+                    chain.processBlock (slice);
+                    left.insert (left.end(), slice.getReadPointer (0),
+                                 slice.getReadPointer (0) + n);
+                    right.insert (right.end(), slice.getReadPointer (1),
+                                  slice.getReadPointer (1) + n);
+                    off += n;
+                }
+                return std::pair<std::vector<float>, std::vector<float>> {
+                    std::move (left), std::move (right) };
+            };
+            const auto reference = render (128);
+            for (const int chunk : { 37, 256, 511 })
+            {
+                const auto actual = render (chunk);
+                float maxDeviation = 0.f;
+                for (size_t i = 0; i < reference.first.size(); ++i)
+                {
+                    maxDeviation = juce::jmax (maxDeviation,
+                        std::abs (reference.first[i] - actual.first[i]),
+                        std::abs (reference.second[i] - actual.second[i]));
+                    expect (std::isfinite (actual.first[i])
+                         && std::isfinite (actual.second[i]));
+                }
+                expect (maxDeviation < 1.0e-4f,
+                    "Pitch STFT must preserve continuous processing across "
+                    + juce::String (chunk) + "-sample blocks; deviation="
+                    + juce::String (maxDeviation, 7));
+            }
+        }
+
         beginTest ("Frequency shifter zero shift is a latency-aligned identity");
         {
             dsl::SignalChain chain;
