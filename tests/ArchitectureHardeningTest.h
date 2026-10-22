@@ -227,19 +227,21 @@ public:
 
             float inPk = 0.f;
             expect (chain.copyTapPeak ("__in__", inPk), "IN tap publishes");
-            // storeTapLevels holds then decays 0.88/block. Leftover scratch
-            // stays at 0.9; a real 0.5 callback must drop below that hold.
-            expect (inPk < 0.85f,
-                    "IN tap must not keep the previous block's scratch tail; pk="
+            // Telemetry decays by elapsed audio time (tau = 120 ms), not by
+            // callback count. A short block must move down from 0.9
+            // without jumping to 0.5 or reading stale scratch.
+            expect (inPk >= 0.5f && inPk < 0.9f,
+                    "IN tap must decay after the live 0.5 callback; pk="
                         + juce::String (inPk, 4));
 
             float xoPk = 0.f;
             expect (chain.copyTapPeak ("xover1", xoPk), "xover tap publishes");
-            expect (xoPk < 0.85f,
-                    "xover tap must not scan unused scratch tail; pk="
+            expect (xoPk >= 0.5f && xoPk < 0.9f,
+                    "xover tap must decay after the live callback; pk="
                         + juce::String (xoPk, 4));
 
-            for (int k = 0; k < 12; ++k)
+            // 240 x 64 / 48000 = 320 ms, more than 2.5 release constants.
+            for (int k = 0; k < 240; ++k)
             {
                 for (int i = 0; i < 64; ++i)
                 {
