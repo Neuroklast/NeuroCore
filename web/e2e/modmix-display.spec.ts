@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const script =
-  "modmix1: steps = 4; rate = 1; gate = 1; mix = 1; values = 0.5, -0.5, 0.25, 0";
+const script = "modmix1: ina = random1; inb = random2; levela = 1; levelb = 1";
 
 test.describe("control mixer display", () => {
   test.beforeEach(async ({ page }) => {
@@ -46,7 +45,7 @@ test.describe("control mixer display", () => {
             version: 1,
             leadingComments: [],
             params: [],
-            nodes: [{
+            nodes: [{id:"random1",type:"random",busName:"",args:{min:"0",max:"1"},trailingComment:""},{id:"join1",type:"join",busName:"",args:{mix:"0.5"},trailingComment:""},{
               id: "modmix1",
               type: "modmix",
               busName: "",
@@ -78,4 +77,21 @@ test.describe("control mixer display", () => {
     await chip.locator(".nk-chip-expand").click();
     await expect(page.locator(".nk-overlay").last()).toBeVisible();
   });
+  test("real cable drag distinguishes control A/B from audio Join A/B",async({page})=>{
+    for(const [node,sourceId,accepted] of [
+      ["modmix1","random1::out::src",true],["modmix1","IN::out::src",false],
+      ["join1","IN::out::src",true],["join1","random1::out::src",false],
+    ] as const){
+      for(const input of ["inA","inB"]){
+        const target=page.locator(`[data-port-id="${node}::${input}::dst"]`);
+        const dest=await target.boundingBox(),source=await page.locator(`[data-port-id="${sourceId}"]`).boundingBox();
+        expect(dest).not.toBeNull();expect(source).not.toBeNull();
+        await page.mouse.move(source!.x+source!.width/2,source!.y+source!.height/2);await page.mouse.down();
+        await page.mouse.move(dest!.x+dest!.width/2,dest!.y+dest!.height/2,{steps:6});
+        if(accepted)await expect(target).toHaveClass(/nk-port-hot/);else await expect(target).not.toHaveClass(/nk-port-hot/);
+        await page.mouse.move(30,620);await page.mouse.up();
+      }
+    }
+  });
+
 });

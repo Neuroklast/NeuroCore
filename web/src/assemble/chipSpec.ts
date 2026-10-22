@@ -1,3 +1,4 @@
+import { entryById } from "./blockCatalog";
 import { BOARD_GRID } from "./grid";
 import {
   FORK_PITCH,
@@ -1131,6 +1132,18 @@ add({
   blurb: "Output mix-ins plus output gain.",
 });
 
+// New blocks derive their UI controls from the shared catalog instead of duplicating keys/ranges.
+const mseg = entryById("mseg")!;
+add({
+  id: mseg.id, label: mseg.label, typeCodePrefix: mseg.typeCodePrefix,
+  audioIns: mseg.audioIns, audioOuts: mseg.modOuts, modIns: mseg.modIns,
+  paramJacks: mseg.params.map(p => p.key),
+  ranges: Object.fromEntries(mseg.params.filter(p => !p.enum).map(p => [p.key,{min:p.min,max:p.max,unit:p.unit}])),
+  enums: Object.fromEntries(mseg.params.filter(p => p.enum).map(p => [p.key,p.enum!])),
+  defaultArgs: Object.fromEntries(mseg.params.map(p => [p.key,String(p.def)])),
+  blurb: mseg.description,
+});
+
 export function resolveChipId(type: string, args: Record<string, string> = {}): string {
   const t = type.toLowerCase();
   if (t.startsWith("custom")) return "custom";
@@ -1189,6 +1202,7 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("freqshift")) return "freqshift";
   if (t.startsWith("wavefold")) return "wavefold";
   if (t.startsWith("nlfilter")) return "nlfilter";
+  if (t.startsWith("mseg")) return "mseg";
   if (t.startsWith("stepseq")) return "stepseq";
   if (t.startsWith("adsr")) return "adsr";
   if (t.startsWith("samplehold")) return "samplehold";

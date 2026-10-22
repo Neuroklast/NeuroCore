@@ -14,6 +14,6 @@ export function isEnvNode(node: Pick<AstNode, "type"> & { id?: string }): boolea
 
 export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
   return isLfoNode(node) || isEnvNode(node)
-    || /^(stepseq|adsr|samplehold|random|modmath|modmix)$/.test(node.type.toLowerCase());
+    || /^(mseg|stepseq|adsr|samplehold|random|modmath|modmix)$/.test(node.type.toLowerCase());
 }
 

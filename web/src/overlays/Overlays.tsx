@@ -26,6 +26,7 @@ import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
 import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
+import { MsegEditor } from "./MsegEditor";
 import { StepSeqEditor } from "./StepSeqEditor";
 import { ValidatePanel } from "./ValidatePanel";
 
@@ -85,6 +86,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
     const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
     const formula = argFields.filter((f) => {
+      if (node.type === "mseg" && f.key === "points") return false;
       if (node.type === "stepseq" && (f.key === "values" || f.key === "mutes")) {
         return false;
       }
@@ -128,6 +130,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           </div>
         ) : null}
 
+        {node.type === "mseg" ? <MsegEditor key={node.id} nodeId={node.id} args={node.args} /> : null}
         {node.type === "stepseq" ? <StepSeqEditor nodeId={node.id} args={node.args} /> : null}
 
         {(node.type === "env" || node.type === "adsr") && (

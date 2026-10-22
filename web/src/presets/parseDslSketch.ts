@@ -1,3 +1,4 @@
+import { isModulatorNode } from "../assemble/modulatorKinds";
 import { logicalSourceLines } from "../assemble/dslSource";
 import { wholeToNoteNorm } from "../chrome/noteValue";
 import type { AstDocument, AstEdge, AstJack, AstNode, AstParam } from "../bridge/ast";
@@ -154,7 +155,7 @@ function isLfo(type: string): boolean {
 }
 
 function isMod(type: string): boolean {
-  return isLfo(type) || type.startsWith("env");
+  return isModulatorNode({type});
 }
 
 function jack(id: string, output: boolean, kind: string): AstJack {
@@ -172,14 +173,7 @@ function jacksFor(node: AstNode, nodes: AstNode[]): AstJack[] {
     const ins = Object.keys(node.args).map((k) => jack(k, false, "audio"));
     return [...ins, jack("out", true, "audio")];
   }
-  if (isMod(node.type)) {
-    const jacks: AstJack[] = [];
-    if (node.type.startsWith("env")) {
-      jacks.push(jack("in", false, "audio"));
-    }
-    jacks.push(jack("mod", true, "mod"));
-    return jacks;
-  }
+  if (isMod(node.type)) return visualJacksFor({ ...node, jacks: [] }, nodes);
   const special = visualJacksFor({ ...node, jacks: [] }, nodes);
   if (special.length > 0 && (
     node.type === "ms"
