@@ -1211,6 +1211,28 @@ public:
             expect (doc.nodes[(size_t) oscI].y >= doc.nodes[1].y - 0.5f,
                     "mod row stays at or below the main chain so IN stays top-left");
         }
+
+        beginTest ("audio sources cannot feed inA/inB");
+        {
+            dsl::GraphDocument doc;
+            juce::String err;
+            expect (dsl::parse (
+                "osc1: shape = sine; freq = 1\n"
+                "filter1: type = lowpass; cutoff = 800\n"
+                "modmath1: ina = osc1; mode = add\n",
+                doc, err), err);
+            auto idx = [&doc] (const char* name)
+            {
+                for (int i = 0; i < (int) doc.nodes.size(); ++i)
+                    if (doc.nodes[(size_t) i].name == name) return i;
+                return -1;
+            };
+            expect (! dsl::connectJack (doc, idx ("filter1"), "out",
+                                        idx ("modmath1"), "inA", err));
+            expect (err.containsIgnoreCase ("mod source"), err);
+            expect (dsl::connectJack (doc, idx ("osc1"), "mod",
+                                      idx ("modmath1"), "inA", err), err);
+        }
     }
 };
 

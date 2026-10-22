@@ -1,8 +1,40 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-20 (0.7.1-beta)
-**Version:** 0.7.1-beta  
-**Branch:** `codex/neurokore-licensing`
+**Stand:** 2026-10-22 (0.7.2-beta)
+**Version:** 0.7.2-beta  
+**Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
+
+## 0.7.2-beta (2026-10-22)
+
+Version bump for the modulation expansion (A03, C01-C06). Product behavior and VST3 class IDs otherwise unchanged. Local Windows Release 2026-10-22: `NEUROKORE-0.7.2-beta-Setup.exe` SHA256 `8121c9dc833c91e8931f45cb240bb7def9405ee88d15fc204ff34a42668d1bad` (unsigned), plus win64 zip.
+
+## DSP expansion A03 — control-source contract (2026-10-22)
+
+`osc`/`env` and the new modulator blocks now share one `Modulator` contract: a per-block control lane published into `variables[name]`, optional `inA`/`inB` source references, depth/polarity, cycle rejection, and reset. Pure generators run in topological dependency order before the audio block; audio-dependent detectors stay at their graph position, and forward references to them are rejected at load. ModMath/ModMix consume the complete source lanes per sample, and control lanes are sized in `prepare` so `processBlock` never resizes. `stepseq`, `adsr`, `samplehold`, `random`, `modmath`, `envtrigger` and `modmix` write no audio. Stage/filter/EQ targets inject the published value sample- or block-accurately; `GraphModel` treats these types as modulators and shows `inA`/`inB` mod jacks. Native suite: 33307 passed / 5 pre-existing failures; DSP contracts 0 failures; web build clean. Circuit mod-input cable commits and the module editors remain with C01–C08/G. Version stays 0.7.1-beta.
+
+## DSP expansion C01 — step sequencer (2026-10-22)
+
+StepSeq runs 1–64 steps, free or host-synced (`sync = 1/16 … 1/1`), with swing, gate, glide, probability behind a user seed, mutes, and forward/reverse/ping-pong/random directions. Transport start/seek resets; stop outputs zero. Values persist as `values`/`mutes` in the DSL, with `step0..step3` kept as legacy aliases. The Inspect editor drags 1–64 bars and commits values/mutes on pointerup. `appendClipPeaks` publishes live `step`/`steps`; `hostStore.clipsStep` drives the chip face and editor. Also fixed `InspectKnob`, which read React's reserved `key` prop and crashed the inspector. Native tests: `ModulationBlocksTest` 411/411; full suite 33189 passed / 5 pre-existing failures; DSP contracts 0 failures; web build clean; Playwright editor 2/2 at 1x/2x. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C02 — ADSR (2026-10-22)
+
+ADSR now uses exact linear Attack/Decay/Release ramps, so every phase transition is reachable at the configured time. Gate source is `audio`, `midi`, or `either`; retrigger restarts attack on every rising edge (or only from idle when off); Velocity 0–1 scales the lane by MIDI velocity. The inspector and chip face draw the four-phase curve. Tests cover phase timing, release, retrigger during release, in-buffer gate changes, MIDI gate + velocity and buffer-size independence. Native suite: 33206 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C03 — Sample & Hold (2026-10-22)
+
+Sample & Hold now takes a mono control input (`inA`/`inB`) or audio channel 0, with free rate or host-synced sampling, hold time, slew, quantize (2–64 levels, clamped to ±1), Rate 0 freeze, and reset. No stereo state exists by design. Parameters are in the central catalog and ChipSpec. Tests cover hold intervals, Rate 0/reset, host sync, quantize/slew and buffer-size independence. Native suite: 33224 passed / 5 pre-existing failures; `ModulationBlocksTest` 446/446; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C04 — Random generator (2026-10-22)
+
+Random now has a user seed with deterministic reset, free or host-synced rate, swappable min/max, uniform/triangle/gaussian shapes, 0–1 smoothing (step or smooth random), bipolar scaling, and independent RNG state per instance. Parameters are in the central catalog and ChipSpec. Tests cover seed reproducibility and difference, range/swap/bipolar, host sync, smoothing and reset. Native suite: 33239 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C05 — Envelope trigger (2026-10-22)
+
+Envelope Trigger now uses a dBFS `thresholddb` plus a legacy linear `threshold` for saved states, sensitivity pre-gain, 0–24 dB hysteresis, holdoff, stable pulse length/level, and peak/RMS detector source. A single transient fires exactly once; re-arm requires falling below the release threshold. Live pulse state flows through `appendClipPeaks` → `hostStore.clipsTrigger` into the chip face, which draws threshold and pulse. Parameters are in the central catalog and ChipSpec. Tests cover one-transient/one-trigger, holdoff, hysteresis, threshold edges/silence and peak vs. RMS. Native suite: 33307 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C06 — Modulation math (2026-10-22)
+
+ModMath now combines two real control inputs (`inA`/`inB`) with add, sub, mul, div, min, max, abs, invert, clamp, remap, quantize and sample-accurate slew. Division by zero is defined, quantize has 2–64 levels clamped to ±1, and clamp/remap ranges are parameters. Audio L/R are no longer implicit math inputs; catalog ports are corrected. Tests cover every operation, divide-by-zero, abs/invert, clamp/remap, quantize and slew. Native suite: 33307 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
 
 ## Website licensing integration (implementation branch)
 

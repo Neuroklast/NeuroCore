@@ -4,14 +4,14 @@ Modular distortion and sound design effect by **Neuroklast**, for heavy guitars,
 
 Factory presets include mixing utilities alongside creative effects. NEUROKORE is not advertised as a replacement for a dedicated mastering suite; its level compensation is RMS-based, not LUFS normalization.
 
-English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.7.1-beta**.
+English UI. Formats: **Standalone**, **VST3**, and on Mac an **Audio Unit**. Version **0.7.2-beta**.
 
 Operator guide: [docs/manual/NEUROKORE.md](docs/manual/NEUROKORE.md). In-plugin Help is that guide minus Install.
 
 ## Install
 
 Windows
-1. Run `NEUROKORE-0.7.1-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
+1. Run `NEUROKORE-0.7.2-beta-Setup.exe` as administrator. Pick VST3 and/or Standalone (English or German).
 2. If Microsoft Edge WebView2 is missing, the setup installs it. Setup reads the runtime version; an empty leftover registry key is not enough. Without that runtime the window shows how to install it.
 3. Rescan plug-ins. The VST3 is always `C:\Program Files\Common Files\VST3\NEUROKORE.vst3`.
 4. Standalone is in the Start menu under Neuroklast. Uninstall keeps your presets and license.
@@ -42,8 +42,8 @@ Needs JUCE 8.0.6+ (`JUCE_DIR` or CMake fetches it) and a VST3 SDK.
 cmake --build build --target NeuroKoreTests --config Release
 ```
 
-Linux first needs `./scripts/install_linux_deps.sh`. Windows release is `build_release.bat`. macOS/Linux use `scripts/build_local.sh`. Both entry points sync the operator manual into plugin Help, then reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.7.1-beta.exe` / `.vst3` / `.component`).
+Linux first needs `./scripts/install_linux_deps.sh`. Windows release is `build_release.bat`. macOS/Linux use `scripts/build_local.sh`. Both entry points sync the operator manual into plugin Help, then reconfigure before building so changes to CMake, resources and versions cannot be hidden by a stale cache. Mac also builds the AU. Artefacts: `build/NeuroKore_artefacts/Release/` (`NEUROKORE-0.7.2-beta.exe` / `.vst3` / `.component`).
 
-`build_release.bat` then runs `scripts/package_windows.ps1`. That needs [Inno Setup 6](https://jrsoftware.org/isinfo.php). It writes a clean `NEUROKORE.vst3` bundle, downloads the WebView2 bootstrapper, compiles `build/package/NEUROKORE-0.7.1-beta-Setup.exe`, and writes the win64 zip plus a SHA-256. The version strings come from `NEUROKORE_VERSION_LABEL` in CMake. If `NEUROKORE_SIGN_PFX` (or `NEUROKORE_SIGN_THUMBPRINT`) is set, the VST3, Standalone, and Setup.exe are Authenticode-signed. A portable `NEUROKORE-0.7.1-beta/` folder is a local extract and is not part of the git tree.
+`build_release.bat` then runs `scripts/package_windows.ps1`. That needs [Inno Setup 6](https://jrsoftware.org/isinfo.php). It writes a clean `NEUROKORE.vst3` bundle, downloads the WebView2 bootstrapper, compiles `build/package/NEUROKORE-0.7.2-beta-Setup.exe`, and writes the win64 zip plus a SHA-256. The version strings come from `NEUROKORE_VERSION_LABEL` in CMake. If `NEUROKORE_SIGN_PFX` (or `NEUROKORE_SIGN_THUMBPRINT`) is set, the VST3, Standalone, and Setup.exe are Authenticode-signed. A portable `NEUROKORE-0.7.2-beta/` folder is a local extract and is not part of the git tree.
 
 Formula language: [docs/DSL_REFERENCE.md](docs/DSL_REFERENCE.md). Agent rules: [AGENTS.md](AGENTS.md).

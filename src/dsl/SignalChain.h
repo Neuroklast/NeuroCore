@@ -73,7 +73,8 @@ public:
 private:
     enum class NodeKind : uint8_t
     {
-        Generic = 0, Stage, Osc, Env, Delay, Filter, Vocoder, Gate, Comp, Sidechain, Pitch, Xover, Clip
+        Generic = 0, Stage, Osc, Env, Modulator, Delay, Filter, Vocoder, Gate, Comp,
+        Sidechain, Pitch, Xover, Clip
     };
 
     // Bind only variables actually read by each parameter expression. Construction
@@ -181,16 +182,51 @@ private:
         bool blockEvalReady { false };
     };
 
-    struct Osc : Block
+    /** Common contract for control sources: publish a lane into `variables[name]`. */
+    struct Modulator : Block
     {
-        juce::dsp::Oscillator<float> osc;
-        float depth = 1.0f;
         juce::String name;
-        std::vector<float> last;
-        /** Pre-rendered LFO lane for the current audio block (hybrid path). */
+        /** Pre-rendered control lane for the current audio block. */
         std::vector<float> modLane;
         std::unordered_map<juce::String, float>* varPtr = nullptr;
         float* destSlot { nullptr };
+        /** Control-source references (modmath/modmix inA/inB), resolved off-thread. */
+        std::vector<juce::String> inputNames;
+        std::vector<const float*> inputSlots;
+        std::vector<Modulator*> inputSources;
+        bool startRendered { false };
+        float controlDepth { 1.0f };
+        bool controlInvert { false };
+        /** Audio-position detectors override this; pure generators run at block start. */
+        virtual bool needsAudioInput() const noexcept { return false; }
+        float shapedControl (float v) const noexcept
+        {
+            return controlInvert ? -v * controlDepth : v * controlDepth;
+        }
+        void reserveControlLane (const juce::dsp::ProcessSpec& spec)
+        {
+            const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
+            modLane.assign (laneN, 0.0f);
+        }
+        void publishLast (int samples) noexcept
+        {
+            if (destSlot != nullptr)
+            {
+                const size_t count = (size_t) juce::jlimit (0, (int) modLane.size(), samples);
+                *destSlot = count == 0 ? 0.0f : shapedControl (modLane[count - 1]);
+            }
+        }
+        void clearControlLane() noexcept
+        {
+            std::fill (modLane.begin(), modLane.end(), 0.0f);
+        }
+    };
+
+    struct Osc : Modulator
+    {
+        juce::dsp::Oscillator<float> osc;
+        float depth = 1.0f;
+        std::vector<float> last;
         ExpressionEvaluator freqExpr;
         ExpressionEvaluator syncExpr;   ///< Optional: sync = map(a,0,1,0.0625,1) or 1/a
         bool useFreqExpr{false};    ///< When true, re-evaluate freq from expression
@@ -602,83 +638,141 @@ private:
         void clearRuntimeState() noexcept override;
     };
 
-    /** 4-step sequencer: cycles through step0..step3 at rate Hz. Params: rate, step0-3, mix. */
-    struct StepSeq : Block
+    /** 1-64 step control sequencer. Tempo-synced or free running. */
+    struct StepSeq : Modulator
     {
-        ExpressionEvaluator rateExpr, mixExpr, stepExpr[4];
-        juce::SmoothedValue<float> rateSm, mixSm, stepSm[4];
+        static constexpr int kMaxSteps = 64;
+        enum class Direction { Forward = 0, Reverse, PingPong, Random };
+
+        ExpressionEvaluator rateExpr, mixExpr, gateExpr, glideExpr, swingExpr, probabilityExpr;
+        ExpressionEvaluator stepExpr[4];
+        bool legacyStepsFromArgs { false };
+        juce::SmoothedValue<float> rateSm, mixSm, gateSm, glideSm, swingSm, probabilitySm;
+        std::array<float, kMaxSteps> values {};
+        std::array<bool, kMaxSteps> muted {};
+        int stepCount { 4 };
+        Direction direction { Direction::Forward };
         float sampleRate { 44100.f };
         int channels { 1 };
-        float phase { 0.f };
+        double phase { 0.0 };            ///< 0..1 inside the current free-running step
         int stepIndex { 0 };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        long long absoluteStep { 0 };
+        long long gateStep { -1 };
+        bool gateStepOn { true };
+        float glideValue { 0.f };
+        uint32_t seed { 12345u };
+        bool syncEnabled { false };
+        float syncWhole { 0.0625f };     ///< step length as a whole-note fraction
+        bool resetOnStart { true };
+        double hostBpm { Config::kDefaultTempo };
+        double hostPpq { 0.0 };
+        bool hostPlaying { false };
+        bool pendingReset { false };
+        std::atomic<int> liveStep { -1 };
+        std::atomic<int>* liveStepSlot { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        void setHost (double bpm, double ppq, bool playing, bool reset) noexcept;
+        float stepValue (int index) const noexcept;
+        int mapStep (long long absoluteStep) const noexcept;
+        float probabilityFor (long long absoluteStep) const noexcept;
     };
 
     /** ADSR envelope: gate-triggered attack/decay/sustain/release. Params: attack, decay, sustain, release (seconds). */
-    struct Adsr : Block
+    struct Adsr : Modulator
     {
-        ExpressionEvaluator attackExpr, decayExpr, sustainExpr, releaseExpr;
-        juce::SmoothedValue<float> attackSm, decaySm, sustainSm, releaseSm;
         enum class State { Idle, Attack, Decay, Sustain, Release };
+        enum class GateSource { Audio = 0, Midi, Either };
+
+        ExpressionEvaluator attackExpr, decayExpr, sustainExpr, releaseExpr, velocityExpr;
+        juce::SmoothedValue<float> attackSm, decaySm, sustainSm, releaseSm, velocitySm;
         float sampleRate { 44100.f };
         int channels { 1 };
         State state { State::Idle };
+        GateSource gateSource { GateSource::Audio };
+        bool retrigger { true };
         float env { 0.0f };
         float gatePrev { 0.0f };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        float phase { 0.0f };       ///< 0..1 progress inside Attack/Decay/Release
+        float phaseStart { 0.0f };  ///< env at the start of that phase
+        float* midiGatePtr { nullptr };
+        float* midiVelPtr { nullptr };
+        bool needsAudioInput() const noexcept override { return true; }
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
 
-    /** Sample & Hold: samples input at rate Hz, holds between samples. Params: rate, mix. */
-    struct SampleHold : Block
+    /** Sample & Hold: samples a mono control/audio input at rate or host sync. */
+    struct SampleHold : Modulator
     {
-        ExpressionEvaluator rateExpr, mixExpr;
-        juce::SmoothedValue<float> rateSm, mixSm;
+        ExpressionEvaluator rateExpr, mixExpr, holdExpr, slewExpr, quantizeExpr;
+        juce::SmoothedValue<float> rateSm, mixSm, holdSm, slewSm, quantizeSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float phase { 0.f };
+        double phase { 0.0 };
         float held { 0.0f };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        float slewValue { 0.0f };
+        float holdRemaining { 0.0f };
+        bool syncEnabled { false };
+        float syncWhole { 0.0625f };
+        double hostBpm { Config::kDefaultTempo };
+        bool needsAudioInput() const noexcept override
+        {
+            return inputSlots.empty() || inputSlots.front() == nullptr;
+        }
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        void applyTempo (double bpm) noexcept;
     };
 
     /** Stepped random noise source: new random value in [min, max] at rate Hz. Params: rate, min, max, mix. */
-    struct Random : Block
+    struct Random : Modulator
     {
-        ExpressionEvaluator rateExpr, minExpr, maxExpr, mixExpr;
-        juce::SmoothedValue<float> rateSm, minSm, maxSm, mixSm;
+        enum class Shape { Uniform = 0, Triangle, Gaussian };
+        ExpressionEvaluator rateExpr, minExpr, maxExpr, mixExpr, smoothExpr;
+        juce::SmoothedValue<float> rateSm, minSm, maxSm, mixSm, smoothSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float phase { 0.f };
+        double phase { 0.0 };
         float current { 0.0f };
+        float smoothed { 0.0f };
+        Shape shape { Shape::Uniform };
+        bool bipolar { false };
+        bool syncEnabled { false };
+        float syncWhole { 0.0625f };
+        double hostBpm { Config::kDefaultTempo };
         uint32_t seed { 12345u };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        uint32_t rngState { 12345u };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        void applyTempo (double bpm) noexcept;
     };
 
-    /** ModMath: combines ch0 and ch1 via add/sub/mul/div/min/max, scaled by amount, mixed. Params: mode, amount, mix. */
-    struct ModMath : Block
+    /** ModMath: combines inA and inB via add/sub/mul/div/min/max, scaled by amount. Params: mode, amount, mix. */
+    struct ModMath : Modulator
     {
+        enum class Op
+        {
+            Add = 0, Sub, Mul, Div, Min, Max,
+            Abs, Invert, Clamp, Remap, Quantize, Slew
+        };
         ExpressionEvaluator amountExpr, mixExpr;
-        enum class Op { Add, Sub, Mul, Div, Min, Max };
+        ExpressionEvaluator clampMinExpr, clampMaxExpr;
+        ExpressionEvaluator inMinExpr, inMaxExpr, outMinExpr, outMaxExpr;
+        ExpressionEvaluator quantizeExpr, slewExpr;
         juce::SmoothedValue<float> amountSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
         Op op { Op::Add };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        float slewValue { 0.0f };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -686,30 +780,36 @@ private:
     };
 
     /** EnvTrigger: emits level pulse for holdMs when input crosses above threshold. Params: threshold, hold, level. */
-    struct EnvTrigger : Block
+    struct EnvTrigger : Modulator
     {
         ExpressionEvaluator thresholdExpr, holdExpr, levelExpr;
+        ExpressionEvaluator sensitivityExpr, hysteresisExpr, holdoffExpr;
         juce::SmoothedValue<float> thresholdSm, holdSm, levelSm;
+        juce::SmoothedValue<float> sensitivitySm, hysteresisSm, holdoffSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        bool triggerActive { false };
-        float triggerRemaining { 0.0f };
-        float lastInput { 0.0f };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
+        bool useRms { false };
+        bool thresholdDb { true };
+        bool armed { true };
+        float rmsState { 0.0f };
+        float pulseRemaining { 0.0f };
+        float holdoffRemaining { 0.0f };
+        std::atomic<int> liveTrigger { 0 };
+        std::atomic<int>* liveTriggerSlot { nullptr };
+        bool needsAudioInput() const noexcept override { return true; }
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
     };
 
-    /** ModMix: mixes two mod sources with individual levels and master mix. Params: levelA, levelB, mix. */
-    struct ModMix : Block
+    /** ModMix: mixes inA and inB with individual levels and master mix. Params: levelA, levelB, mix. */
+    struct ModMix : Modulator
     {
         ExpressionEvaluator levelAExpr, levelBExpr, mixExpr;
         juce::SmoothedValue<float> levelASm, levelBSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
@@ -1030,22 +1130,17 @@ private:
         void clearImpulse();
     };
 
-    struct Env : Block
+    struct Env : Modulator
     {
         enum Mode { Peak = 0, Rms };
         Mode mode{ Rms };
         ExpressionEvaluator attack, release, hold, minV, maxV;
-        juce::String name;
         bool invert { false };
         float sampleRate{44100.0f};
         juce::SmoothedValue<float> atkTime, relTime;
         float atkCoeff{0.0f}, relCoeff{0.0f};
         float prevAtk{0.0f}, prevRel{0.0f};
         std::vector<float> value;
-        /** Pre-rendered envelope lane for the current audio block (hybrid path). */
-        std::vector<float> modLane;
-        std::unordered_map<juce::String, float>* varPtr = nullptr;
-        float* destSlot { nullptr };
         float* midiGatePtr { nullptr };  ///< Cached pointer to variables["midi_gate"]
         bool triggerOnMidiGate{false}; ///< Reset attack phase when midi_gate rises from 0 to 1
         bool followSidechain{false};   ///< Follow the extra input bus instead of the main path
@@ -1572,6 +1667,9 @@ private:
         std::atomic<float> peakR { 0.f };
         std::atomic<float> rmsL { 0.f };
         std::atomic<float> rmsR { 0.f };
+        std::atomic<int> step { -1 };
+        std::atomic<int> stepCount { 0 };
+        std::atomic<int> trigger { 0 };
         std::atomic<uint32_t> gen { 0 };
     };
     std::array<NodeTapSlot, kMaxNodeTaps> nodeTaps {};
@@ -1605,7 +1703,6 @@ public:
     bool copyTapPeak (const juce::String& id, float& dest) const noexcept;
     bool copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept;
     void appendClipPeaks (juce::Array<juce::var>& dest) const;
-
     /** Prepare ceiling. processBlock must not grow these (ASIO Guard / multi-bus). */
     int getInSnapshotNumSamples() const noexcept { return inSnapshot.getNumSamples(); }
     int getBusScratchNumSamples() const noexcept { return busScratch[0].getNumSamples(); }

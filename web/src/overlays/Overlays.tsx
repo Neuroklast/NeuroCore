@@ -15,6 +15,7 @@ import { ImpulsePanel } from "./ImpulsePanel";
 import { chipFootPeak } from "../assemble/chipFace";
 import { chipSpec } from "../assemble/chipSpec";
 import { nodeMeter } from "../assemble/nodeMeter";
+import { adsrEnvelopePath } from "../assemble/nodeFace/adsrEnvelope";
 import { envEnvelopePath } from "../assemble/nodeFace/envEnvelope";
 import { inspectArgFields, inspectBlurb, inspectRows } from "./inspectModel";
 import { InspectKnob, isLiteralNumber, isMacroOrExpression } from "./InspectKnob";
@@ -25,6 +26,7 @@ import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
 import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
+import { StepSeqEditor } from "./StepSeqEditor";
 import { ValidatePanel } from "./ValidatePanel";
 
 function Seg({
@@ -82,6 +84,9 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
     const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
     const formula = argFields.filter((f) => {
+      if (node.type === "stepseq" && (f.key === "values" || f.key === "mutes")) {
+        return false;
+      }
       const v = node.args[f.key] ?? "";
       return ! isLiteralNumber(v) && ! isMacroOrExpression(v) && f.options.length === 0;
     });
@@ -111,7 +116,6 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
                 <InspectKnob
                   nodeId={node.id}
                   nodeType={node.type}
-                  key={f.key}
                   field={f}
                   current={node.args[f.key]}
                   onCommit={onCommit}
@@ -122,13 +126,21 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           </div>
         ) : null}
 
-        {/* Envelope-Kurve für ENV (anderer NodeFaces liefern eigene Kurven im Chip) */}
-        {node.type === "env" && (
-          <div className="border border-[var(--nk-line)] bg-black/60">
-            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">Envelope</div>
+        {node.type === "stepseq" ? <StepSeqEditor nodeId={node.id} args={node.args} /> : null}
+
+        {(node.type === "env" || node.type === "adsr") && (
+          <div className="border border-[var(--nk-line)] bg-black/60" data-envelope-editor={node.type}>
+            <div className="text-[10px] tracking-widest text-muted uppercase px-2 py-1">
+              {node.type === "adsr" ? "ADSR Envelope" : "Envelope"}
+            </div>
             <div className="w-full h-28 flex items-end px-2 pb-1">
               <svg viewBox="0 0 100 40" preserveAspectRatio="none" width="100%" height="40" className="nk-inspect-curve">
-                <path d={envEnvelopePath(node.args)} stroke="var(--nk-cyan)" fill="none" strokeWidth="1.5" />
+                <path
+                  d={node.type === "adsr" ? adsrEnvelopePath(node.args) : envEnvelopePath(node.args)}
+                  stroke="var(--nk-cyan)"
+                  fill="none"
+                  strokeWidth="1.5"
+                />
               </svg>
             </div>
           </div>

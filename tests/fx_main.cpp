@@ -7,10 +7,24 @@
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
+#include "DSLParserTest.h"
 #include "FxBench.h"
 #include <iostream>
 #include "dsp/ClipTest.h"
 #include "dsp/DspExpansionTest.h"
+
+namespace
+{
+class LoggingRunner : public juce::UnitTestRunner
+{
+public:
+    void logMessage (const juce::String& message) override
+    {
+        std::cout << message << std::endl;
+    }
+};
+}
+
 int main(int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -22,7 +36,7 @@ int main(int argc, char** argv)
     {
         ClipTest clip;
         DspExpansionTest expansion;
-        juce::UnitTestRunner runner;
+        LoggingRunner runner;
         runner.runTests ({ &clip, &expansion }, 12345);
         int failures = 0;
         for (int i = 0; i < runner.getNumResults(); ++i) failures += runner.getResult(i)->failures;
@@ -33,13 +47,14 @@ int main(int argc, char** argv)
     GlobalPreferencesTest globalPreferences;
     TelemetrySamplingTest telemetrySampling;
     FxRuntimeTest test;
-    juce::UnitTestRunner runner;
+    LoggingRunner runner;
     ModulationBlocksTest modulationBlocksTest;
     DelayReverbTest delayReverbTest;
     EqSidechainTest eqSidechainTest;
     DynamicsBlocksTest dynamicsBlocksTest;
     IrXoverTest irXoverTest;
-    runner.runTests ({ &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest }, 12345);
+    DSLParserTest dslParserTest;
+    runner.runTests ({ &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
     int failures = 0;
     for (int i = 0; i < runner.getNumResults(); ++i)
         failures += runner.getResult(i)->failures;

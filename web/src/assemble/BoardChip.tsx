@@ -15,6 +15,7 @@ import {
 } from "./chipFace";
 import { chipChromeVars, ioBodyInset } from "./chipLayout";
 import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
+import { stepCountFromArgs } from "./stepSeqModel";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo, toggleGroupMute, toggleGroupSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
@@ -49,6 +50,8 @@ export function BoardChip({
   const knobs = useHostStore((s) => s.knobs);
   const bpm = useHostStore((s) => s.bpm);
   const sr = useHostStore((s) => s.sr);
+  const liveStep = useHostStore((s) => s.clipsStep[node.id] ?? -1);
+  const liveTrigger = useHostStore((s) => s.clipsTrigger[node.id] ?? 0);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const selection = usePatchSelectionStore((s) => s.nodeIds);
@@ -137,7 +140,20 @@ export function BoardChip({
           : {}),
       }}
     >
-      <NodeFace kind={kind} type={node.type} args={node.args} id={node.id} host={{ knobs, bpm, sr }} />
+      <NodeFace
+        kind={kind}
+        type={node.type}
+        args={node.args}
+        id={node.id}
+        host={{
+          knobs,
+          bpm,
+          sr,
+          step: liveStep,
+          stepCount: node.type === "stepseq" ? stepCountFromArgs(node.args) : undefined,
+          trigger: liveTrigger,
+        }}
+      />
       {ports.map(p => <ChipPort key={p.id} node={node} port={p} />)}
       <ChipParameters nodeId={node.id} hidden={bindOpen}
         rows={ports.filter(p => p.south).map(p => ({

@@ -390,17 +390,35 @@ add({
   typeCodePrefix: "SS",
   audioIns: [],
   audioOuts: ["out"],
-  paramJacks: ["rate", "step0", "step1", "step2", "step3", "mix"],
+  paramJacks: ["steps", "rate", "sync", "gate", "glide", "swing", "probability", "direction", "seed", "reset", "step0", "step1", "step2", "step3", "mix"],
   ranges: {
+    steps: { min: 1, max: 64 },
     rate: { min: 0, max: 100 },
+    sync: { min: 0, max: NOTES.length - 1 },
+    direction: { min: 0, max: 3 },
+    reset: { min: 0, max: 1 },
+    gate: { min: 0, max: 1, unit: "%" },
+    glide: { min: 0, max: 1, unit: "%" },
+    swing: { min: 0, max: 1, unit: "%" },
+    probability: { min: 0, max: 1, unit: "%" },
+    seed: { min: 0, max: 2147483647 },
     step0: { min: -1, max: 1 },
     step1: { min: -1, max: 1 },
     step2: { min: -1, max: 1 },
     step3: { min: -1, max: 1 },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { rate: "1", step0: "1", step1: "0", step2: "-1", step3: "0", mix: "1" },
-  blurb: "Vier-Schritt-Sequenzer: gibt step0..step3 im Takt von rate Hz aus.",
+  enums: {
+    sync: [...NOTES],
+    direction: ["forward", "reverse", "pingpong", "random"],
+    reset: ["off", "transport"],
+  },
+  defaultArgs: {
+    steps: "4", rate: "1", sync: "off", gate: "1", glide: "0", swing: "0",
+    probability: "1", direction: "forward", seed: "12345", reset: "transport",
+    step0: "1", step1: "0", step2: "-1", step3: "0", mix: "1",
+  },
+  blurb: "1-64-Step-Sequenzer: frei oder tempo-synchron, mit Swing, Gate, Glide, Probability und Richtung.",
 });
 
 add({
@@ -409,15 +427,25 @@ add({
   typeCodePrefix: "AD",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["attack", "decay", "sustain", "release"],
+  paramJacks: ["attack", "decay", "sustain", "release", "velocity", "retrigger", "gate"],
   ranges: {
     attack: { min: 0.001, max: 10 },
     decay: { min: 0.001, max: 10 },
     sustain: { min: 0, max: 1 },
     release: { min: 0.001, max: 10 },
+    velocity: { min: 0, max: 1, unit: "%" },
+    retrigger: { min: 0, max: 1 },
+    gate: { min: 0, max: 2 },
   },
-  defaultArgs: { attack: "0.1", decay: "0.1", sustain: "0.7", release: "0.1" },
-  blurb: "ADSR-Hüllkurve, getriggert über Gate-Eingang (Kanal 0 > 0.5).",
+  enums: {
+    retrigger: ["off", "on"],
+    gate: ["audio", "midi", "either"],
+  },
+  defaultArgs: {
+    attack: "0.1", decay: "0.1", sustain: "0.7", release: "0.1",
+    velocity: "0", retrigger: "on", gate: "audio",
+  },
+  blurb: "ADSR-Hüllkurve mit Audio-/MIDI-Gate, Retrigger, Velocity und linearen Phasen.",
 });
 
 add({
@@ -426,13 +454,20 @@ add({
   typeCodePrefix: "SH",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["rate", "mix"],
+  paramJacks: ["rate", "sync", "hold", "slew", "quantize", "mix"],
   ranges: {
     rate: { min: 0, max: 1000 },
+    sync: { min: 0, max: NOTES.length - 1 },
+    hold: { min: 0, max: 5, unit: "s" },
+    slew: { min: 0, max: 1, unit: "%" },
+    quantize: { min: 0, max: 1, unit: "%" },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { rate: "10", mix: "1" },
-  blurb: "Sample & Hold: nimmt Eingang im Takt von rate Hz ab und hält den Wert.",
+  enums: { sync: [...NOTES] },
+  defaultArgs: {
+    rate: "10", sync: "off", hold: "0", slew: "0", quantize: "0", mix: "1",
+  },
+  blurb: "Sample & Hold: tastet Mono-Kontrolle oder Audio-Kanal 0 ab, mit Sync, Hold, Slew und Quantize.",
 });
 
 add({
@@ -441,30 +476,59 @@ add({
   typeCodePrefix: "RN",
   audioIns: [],
   audioOuts: ["out"],
-  paramJacks: ["rate", "min", "max", "mix"],
+  paramJacks: ["rate", "sync", "min", "max", "shape", "smooth", "bipolar", "seed", "mix"],
   ranges: {
     rate: { min: 0, max: 1000 },
+    sync: { min: 0, max: NOTES.length - 1 },
     min: { min: -10, max: 10 },
     max: { min: -10, max: 10 },
+    shape: { min: 0, max: 2 },
+    smooth: { min: 0, max: 1, unit: "%" },
+    bipolar: { min: 0, max: 1 },
+    seed: { min: 0, max: 2147483647 },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { rate: "10", min: "-1", max: "1", mix: "1" },
-  blurb: "Geschneiter Rausch-Source: neuer Zufallswert in [min, max] im Takt von rate Hz.",
+  enums: {
+    sync: [...NOTES],
+    shape: ["uniform", "triangle", "gaussian"],
+    bipolar: ["off", "on"],
+  },
+  defaultArgs: {
+    rate: "10", sync: "off", min: "-1", max: "1", shape: "uniform",
+    smooth: "0", bipolar: "off", seed: "12345", mix: "1",
+  },
+  blurb: "Reproduzierbare Zufallsquelle mit Seed, Verteilung, Sync, Smoothing und bipolarer Skalierung.",
 });
 
 add({
   id: "modmath",
   label: "ModMath",
   typeCodePrefix: "MM",
-  audioIns: ["inA", "inB"],
-  audioOuts: ["out"],
-  paramJacks: ["mode", "amount", "mix"],
+  audioIns: [],
+  audioOuts: ["mod"],
+  modIns: ["inA", "inB"],
+  paramJacks: ["mode", "amount", "mix", "clampMin", "clampMax", "inMin", "inMax", "outMin", "outMax", "quantize", "slew"],
   ranges: {
+    mode: { min: 0, max: 11 },
     amount: { min: 0, max: 4 },
     mix: { min: 0, max: 1, unit: "%" },
+    clampMin: { min: -10, max: 10 },
+    clampMax: { min: -10, max: 10 },
+    inMin: { min: -10, max: 10 },
+    inMax: { min: -10, max: 10 },
+    outMin: { min: -10, max: 10 },
+    outMax: { min: -10, max: 10 },
+    quantize: { min: 0, max: 1, unit: "%" },
+    slew: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { mode: "add", amount: "1", mix: "1" },
-  blurb: "Kombiniert ch0 und ch1 via mode (add/sub/mul/div/min/max), skaliert mit amount, gemixt mit mix.",
+  enums: {
+    mode: ["add", "sub", "mul", "div", "min", "max", "abs", "invert", "clamp", "remap", "quantize", "slew"],
+  },
+  defaultArgs: {
+    mode: "add", amount: "1", mix: "1", clampMin: "-1", clampMax: "1",
+    inMin: "-1", inMax: "1", outMin: "-1", outMax: "1", quantize: "1", slew: "0",
+  },
+  blurb: "Rechnet zwei echte Modulationsquellen (inA/inB) per mode; ohne Audio-Kanäle.",
 });
 
 add({
@@ -473,14 +537,22 @@ add({
   typeCodePrefix: "ET",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "hold", "level"],
+  paramJacks: ["thresholddb", "sensitivity", "hysteresis", "holdoff", "hold", "level", "source"],
   ranges: {
-    threshold: { min: -10, max: 10 },
+    thresholddb: { min: -60, max: 0, unit: "dB" },
+    sensitivity: { min: 0, max: 1, unit: "%" },
+    hysteresis: { min: 0, max: 24, unit: "dB" },
+    holdoff: { min: 0, max: 1000, unit: "ms" },
     hold: { min: 0, max: 5000, unit: "ms" },
     level: { min: 0, max: 10 },
+    source: { min: 0, max: 1 },
   },
-  defaultArgs: { threshold: "0.5", hold: "100", level: "1" },
-  blurb: "Löst einen Pegel-Puls aus, wenn der Eingang über threshold steigt (für hold ms).",
+  enums: { source: ["peak", "rms"] },
+  defaultArgs: {
+    thresholddb: "-24", sensitivity: "0", hysteresis: "6", holdoff: "0",
+    hold: "100", level: "1", source: "peak",
+  },
+  blurb: "Transienten-Trigger mit Hysterese, Holdoff, Peak/RMS-Detektor und stabilem Puls.",
 });
 
 add({

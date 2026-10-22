@@ -15,9 +15,13 @@ namespace
 
 void SignalChain::EnvTrigger::clearRuntimeState() noexcept
 {
-    triggerActive = false;
-    triggerRemaining = 0.0f;
-    lastInput = 0.0f;
+    armed = true;
+    rmsState = 0.0f;
+    pulseRemaining = 0.0f;
+    holdoffRemaining = 0.0f;
+    liveTrigger.store (0, std::memory_order_relaxed);
+    if (liveTriggerSlot != nullptr)
+        liveTriggerSlot->store (0, std::memory_order_relaxed);
 }
 
 void SignalChain::EnvTrigger::prepare (const juce::dsp::ProcessSpec& spec)
@@ -27,16 +31,24 @@ void SignalChain::EnvTrigger::prepare (const juce::dsp::ProcessSpec& spec)
     thresholdSm.reset (sampleRate, Config::kSmoothingTime);
     holdSm.reset (sampleRate, Config::kSmoothingTime);
     levelSm.reset (sampleRate, Config::kSmoothingTime);
+    sensitivitySm.reset (sampleRate, Config::kSmoothingTime);
+    hysteresisSm.reset (sampleRate, Config::kSmoothingTime);
+    holdoffSm.reset (sampleRate, Config::kSmoothingTime);
 
     auto snap = [] (ExpressionEvaluator& e, float fallback) -> float
     {
         const float v = e.evaluate (0.0f);
         return std::isfinite (v) ? v : fallback;
     };
-    thresholdSm.setCurrentAndTargetValue (snap (thresholdExpr, 0.5f));
-    holdSm.setCurrentAndTargetValue (snap (holdExpr, 0.1f));
+    thresholdSm.setCurrentAndTargetValue (snap (thresholdExpr, -24.0f));
+    holdSm.setCurrentAndTargetValue (snap (holdExpr, 100.0f));
     levelSm.setCurrentAndTargetValue (snap (levelExpr, 1.0f));
-    bindings.prepare (varPtr, { &thresholdExpr, &holdExpr, &levelExpr });
+    sensitivitySm.setCurrentAndTargetValue (snap (sensitivityExpr, 0.0f));
+    hysteresisSm.setCurrentAndTargetValue (snap (hysteresisExpr, 6.0f));
+    holdoffSm.setCurrentAndTargetValue (snap (holdoffExpr, 0.0f));
+    bindings.prepare (varPtr, { &thresholdExpr, &holdExpr, &levelExpr,
+                                &sensitivityExpr, &hysteresisExpr, &holdoffExpr });
+    reserveControlLane (spec);
     clearRuntimeState();
 }
 
@@ -54,43 +66,80 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
+
     bindings.refresh();
 
-    thresholdSm.setTargetValue (snapEval (thresholdExpr, 0.5f));
-    holdSm.setTargetValue (snapEval (holdExpr, 0.1f));
+    thresholdSm.setTargetValue (snapEval (thresholdExpr, -24.0f));
+    holdSm.setTargetValue (snapEval (holdExpr, 100.0f));
     levelSm.setTargetValue (snapEval (levelExpr, 1.0f));
+    sensitivitySm.setTargetValue (snapEval (sensitivityExpr, 0.0f));
+    hysteresisSm.setTargetValue (snapEval (hysteresisExpr, 6.0f));
+    holdoffSm.setTargetValue (snapEval (holdoffExpr, 0.0f));
 
-    const float invSr = 1.0f / sampleRate;
+    const float* input = buffer.getReadPointer (0);
+    const float rmsCoeff = 1.0f - std::exp (-1.0f / (0.01f * sampleRate));
+    int live = 0;
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
-        const float threshold = juce::jlimit (-10.0f, 10.0f, thresholdSm.getNextValue());
-        const float holdMs    = juce::jlimit (0.0f, 5000.0f, holdSm.getNextValue());
-        const float level     = juce::jlimit (0.0f, 10.0f, levelSm.getNextValue());
+        const float threshold = thresholdDb
+                                    ? juce::jlimit (-60.0f, 0.0f, thresholdSm.getNextValue())
+                                    : juce::jlimit (-10.0f, 10.0f, thresholdSm.getNextValue());
+        const float hysteresis = juce::jlimit (0.0f, 24.0f, hysteresisSm.getNextValue());
+        const float sensitivity = juce::jlimit (0.0f, 1.0f, sensitivitySm.getNextValue());
+        const float holdMs = juce::jlimit (0.0f, 5000.0f, holdSm.getNextValue());
+        const float holdoffMs = juce::jlimit (0.0f, 1000.0f, holdoffSm.getNextValue());
+        const float level = juce::jlimit (0.0f, 10.0f, levelSm.getNextValue());
 
-        const float in = buffer.getReadPointer (0)[i];
-
-        if (!triggerActive && in > threshold && lastInput <= threshold)
+        const float x = input[i];
+        float detector;
+        if (useRms)
         {
-            triggerActive = true;
-            triggerRemaining = holdMs * 0.001f / invSr; // samples
+            rmsState += (x * x - rmsState) * rmsCoeff;
+            detector = std::sqrt (juce::jmax (0.0f, rmsState));
+        }
+        else
+        {
+            detector = std::abs (x);
+        }
+        detector *= 1.0f + sensitivity * 4.0f;
+        const float triggerLevel = thresholdDb
+                                       ? std::pow (10.0f, threshold / 20.0f)
+                                       : juce::jlimit (-10.0f, 10.0f, threshold);
+        const float releaseLevel = thresholdDb
+                                       ? triggerLevel * std::pow (10.0f, -hysteresis / 20.0f)
+                                       : juce::jmax (0.0f, triggerLevel
+                                                           * std::pow (10.0f, -hysteresis / 20.0f));
+
+        if (holdoffRemaining > 0.0f)
+            holdoffRemaining = juce::jmax (0.0f, holdoffRemaining - 1.0f);
+
+        if (! armed && detector < releaseLevel)
+            armed = true;
+
+        if (armed && holdoffRemaining <= 0.0f && detector > triggerLevel)
+        {
+            pulseRemaining = juce::jmax (1.0f, holdMs * 0.001f * sampleRate);
+            holdoffRemaining = holdoffMs * 0.001f * sampleRate;
+            armed = false;
         }
 
         float out = 0.0f;
-        if (triggerActive)
+        if (pulseRemaining > 0.0f)
         {
             out = level;
-            triggerRemaining -= 1.0f;
-            if (triggerRemaining <= 0.0f)
-                triggerActive = false;
+            pulseRemaining = juce::jmax (0.0f, pulseRemaining - 1.0f);
         }
 
-        lastInput = in;
-
-        for (int c = 0; c < nCh; ++c)
-        {
-            float* w = buffer.getWritePointer (c);
-            w[i] = out;
-        }
+        if (out > 0.0f)
+            live = 1;
+        modLane[(size_t) i] = out;
     }
+
+    liveTrigger.store (live, std::memory_order_relaxed);
+    if (liveTriggerSlot != nullptr)
+        liveTriggerSlot->store (live, std::memory_order_relaxed);
 }

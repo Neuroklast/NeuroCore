@@ -1317,6 +1317,15 @@ bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJac
     error.clear();
     const int n = (int) doc.nodes.size();
     const auto destJack = toJack.trim();
+    if (destJack == "inA" || destJack == "inB")
+    {
+        if (! juce::isPositiveAndBelow (fromIndex, n)
+            || ! isModulator (doc.nodes[(size_t) fromIndex]))
+        {
+            error = "Use a mod source for inA/inB";
+            return false;
+        }
+    }
     auto forkRailOf = [] (const juce::String& jack) -> juce::String
     {
         const auto j = jack.trim().toLowerCase();
@@ -2114,8 +2123,15 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
 
     if (isModulator (node))
     {
-        if (t.startsWith ("env"))
+        if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("samplehold"))
             addJack (jacks, "in", false, "audio");
+        if (t.startsWith ("modmath") || t.startsWith ("modmix"))
+        {
+            addJack (jacks, "inA", false, "mod");
+            addJack (jacks, "inB", false, "mod");
+        }
+        else if (t.startsWith ("samplehold"))
+            addJack (jacks, "inA", false, "mod");
         int dests = 0;
         if (doc != nullptr)
             for (const auto& other : doc->nodes)

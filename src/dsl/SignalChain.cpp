@@ -402,6 +402,18 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         return {};
     };
 
+    auto applyControlArgs = [] (const dsl::BlockDesc& d, Modulator& mod)
+    {
+        if (d.args.count ("depth"))
+            mod.controlDepth = juce::jlimit (0.0f, 1.0f,
+                                             (float) d.args.at ("depth").getDoubleValue());
+        if (d.args.count ("polarity"))
+        {
+            const auto p = d.args.at ("polarity").trim().toLowerCase();
+            mod.controlInvert = (p == "invert" || p == "negative" || p == "-1");
+        }
+    };
+
     for (const auto& d : desc)
     {
         if (d.type == "bus" || d.type == "send" || d.type == "out" || d.type == "join")
@@ -1663,8 +1675,10 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("stepseq"))
         {
             auto ss = std::make_unique<StepSeq>();
-            ss->kind = NodeKind::Generic;
+            ss->kind = NodeKind::Modulator;
+            ss->name = d.name;
             ss->varPtr = &variables;
+            applyControlArgs (d, *ss);
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1681,11 +1695,87 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             };
             parseAmt ("rate", nullptr, 0.f, 100.f, "1", ss->rateExpr, "rate [Hz]");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", ss->mixExpr, "mix [0..1]");
-            for (int s = 0; s < 4; ++s)
+            parseAmt ("gate", "length", 0.f, 1.f, "1", ss->gateExpr, "gate [0..1]");
+            parseAmt ("glide", nullptr, 0.f, 1.f, "0", ss->glideExpr, "glide [0..1]");
+            parseAmt ("swing", nullptr, 0.f, 1.f, "0", ss->swingExpr, "swing [0..1]");
+            parseAmt ("probability", "prob", 0.f, 1.f, "1",
+                      ss->probabilityExpr, "probability [0..1]");
+
+            ss->stepCount = juce::jlimit (1, StepSeq::kMaxSteps,
+                d.args.count ("steps") ? d.args.at ("steps").getIntValue() : 4);
+            ss->values.fill (0.0f);
+            ss->muted.fill (false);
+
+            bool valuesFromList = false;
+            if (d.args.count ("values"))
             {
-                juce::String key = "step" + juce::String (s);
-                parseAmt (key.toRawUTF8(), nullptr, -1.f, 1.f, (s == 0 ? "1" : "0"),
-                          ss->stepExpr[s], "step" + juce::String (s));
+                juce::StringArray v;
+                v.addTokens (d.args.at ("values"), ",;", {});
+                for (int i = 0; i < juce::jmin (ss->stepCount, v.size()); ++i)
+                {
+                    ss->values[(size_t) i] = juce::jlimit (-1.0f, 1.0f, v[i].getFloatValue());
+                    valuesFromList = true;
+                }
+            }
+            if (! valuesFromList)
+            {
+                ss->legacyStepsFromArgs = true;
+                for (int i = 0; i < ss->stepCount; ++i)
+                {
+                    const auto key = "step" + juce::String (i);
+                    if (i < 4)
+                    {
+                        parseAmt (key.toRawUTF8(), nullptr, -1.0f, 1.0f,
+                                  (i == 0 ? "1" : "0"), ss->stepExpr[i], key);
+                    }
+                    else if (d.args.count (key))
+                    {
+                        ss->values[(size_t) i] =
+                            juce::jlimit (-1.0f, 1.0f, d.args.at (key).getFloatValue());
+                    }
+                }
+            }
+
+            if (d.args.count ("mutes"))
+            {
+                juce::StringArray m;
+                m.addTokens (d.args.at ("mutes"), ",;", {});
+                for (int i = 0; i < juce::jmin (ss->stepCount, m.size()); ++i)
+                    ss->muted[(size_t) i] = m[i].getIntValue() != 0;
+            }
+
+            if (d.args.count ("sync"))
+            {
+                const auto token = d.args.at ("sync").trim().toLowerCase();
+                float whole = 0.0f;
+                if (token != "off" && token != "free" && NoteValues::parseToken (token, whole))
+                {
+                    ss->syncEnabled = true;
+                    ss->syncWhole = juce::jlimit (1.0f / 64.0f, 4.0f, whole);
+                }
+            }
+
+            if (d.args.count ("direction"))
+            {
+                const auto dir = d.args.at ("direction").trim().toLowerCase();
+                if (dir == "reverse" || dir == "backward" || dir == "rev")
+                    ss->direction = StepSeq::Direction::Reverse;
+                else if (dir == "pingpong" || dir == "ping-pong" || dir == "alt")
+                    ss->direction = StepSeq::Direction::PingPong;
+                else if (dir == "random" || dir == "rand")
+                    ss->direction = StepSeq::Direction::Random;
+                else
+                    ss->direction = StepSeq::Direction::Forward;
+            }
+
+            if (d.args.count ("seed"))
+            {
+                ss->seed = (uint32_t) juce::jmax (0, d.args.at ("seed").getIntValue());
+            }
+            if (d.args.count ("reset"))
+            {
+                const auto r = d.args.at ("reset").trim().toLowerCase();
+                ss->resetOnStart = ! (r == "off" || r == "none" || r == "free");
             }
 
             newChain->push_back (std::move (ss));
@@ -1693,8 +1783,10 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("adsr"))
         {
             auto ad = std::make_unique<Adsr>();
-            ad->kind = NodeKind::Generic;
+            ad->kind = NodeKind::Modulator;
+            ad->name = d.name;
             ad->varPtr = &variables;
+            applyControlArgs (d, *ad);
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1713,14 +1805,37 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             parseAmt ("decay", nullptr, 0.001f, 10.f, "0.1", ad->decayExpr, "decay [s]");
             parseAmt ("sustain", nullptr, 0.f, 1.f, "0.7", ad->sustainExpr, "sustain [0..1]");
             parseAmt ("release", nullptr, 0.001f, 10.f, "0.1", ad->releaseExpr, "release [s]");
+            parseAmt ("velocity", "vel", 0.f, 1.f, "0", ad->velocityExpr, "velocity [0..1]");
+
+            if (d.args.count ("gate") || d.args.count ("source"))
+            {
+                const auto src = (d.args.count ("gate") ? d.args.at ("gate")
+                                                        : d.args.at ("source"))
+                                     .trim().toLowerCase();
+                if (src == "midi" || src == "midi_gate")
+                    ad->gateSource = Adsr::GateSource::Midi;
+                else if (src == "either" || src == "both" || src == "audio+midi")
+                    ad->gateSource = Adsr::GateSource::Either;
+                else
+                    ad->gateSource = Adsr::GateSource::Audio;
+            }
+            if (d.args.count ("retrigger"))
+            {
+                const auto r = d.args.at ("retrigger").trim().toLowerCase();
+                ad->retrigger = ! (r == "off" || r == "false" || r == "0" || r == "legato");
+            }
 
             newChain->push_back (std::move (ad));
         }
         else if (d.type.startsWith ("samplehold"))
         {
             auto sh = std::make_unique<SampleHold>();
-            sh->kind = NodeKind::Generic;
+            sh->kind = NodeKind::Modulator;
+            sh->name = d.name;
             sh->varPtr = &variables;
+            applyControlArgs (d, *sh);
+            sh->inputNames = { d.args.count ("ina") ? d.args.at ("ina").trim() : juce::String(),
+                               d.args.count ("inb") ? d.args.at ("inb").trim() : juce::String() };
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1737,14 +1852,31 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             };
             parseAmt ("rate", nullptr, 0.f, 1000.f, "10", sh->rateExpr, "rate [Hz]");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", sh->mixExpr, "mix [0..1]");
+            parseAmt ("hold", nullptr, 0.f, 5.f, "0", sh->holdExpr, "hold [s]");
+            parseAmt ("slew", nullptr, 0.f, 1.f, "0", sh->slewExpr, "slew [0..1]");
+            parseAmt ("quantize", "quantise", 0.f, 1.f, "0",
+                      sh->quantizeExpr, "quantize [0..1]");
+
+            if (d.args.count ("sync"))
+            {
+                const auto token = d.args.at ("sync").trim().toLowerCase();
+                float whole = 0.0f;
+                if (token != "off" && token != "free" && NoteValues::parseToken (token, whole))
+                {
+                    sh->syncEnabled = true;
+                    sh->syncWhole = juce::jlimit (1.0f / 64.0f, 4.0f, whole);
+                }
+            }
 
             newChain->push_back (std::move (sh));
         }
         else if (d.type.startsWith ("random"))
         {
             auto rn = std::make_unique<Random>();
-            rn->kind = NodeKind::Generic;
+            rn->kind = NodeKind::Modulator;
+            rn->name = d.name;
             rn->varPtr = &variables;
+            applyControlArgs (d, *rn);
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1763,14 +1895,50 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             parseAmt ("min", nullptr, -10.f, 10.f, "-1", rn->minExpr, "min");
             parseAmt ("max", nullptr, -10.f, 10.f, "1", rn->maxExpr, "max");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", rn->mixExpr, "mix [0..1]");
+            parseAmt ("smooth", "smoothing", 0.f, 1.f, "0", rn->smoothExpr, "smooth [0..1]");
+
+            if (d.args.count ("shape"))
+            {
+                const auto s = d.args.at ("shape").trim().toLowerCase();
+                if (s == "triangle" || s == "tri")
+                    rn->shape = Random::Shape::Triangle;
+                else if (s == "gaussian" || s == "bell" || s == "normal")
+                    rn->shape = Random::Shape::Gaussian;
+                else
+                    rn->shape = Random::Shape::Uniform;
+            }
+            if (d.args.count ("bipolar"))
+            {
+                const auto b = d.args.at ("bipolar").trim().toLowerCase();
+                rn->bipolar = (b == "on" || b == "true" || b == "1" || b == "yes");
+            }
+            if (d.args.count ("seed"))
+            {
+                rn->seed = (uint32_t) juce::jmax (0, d.args.at ("seed").getIntValue());
+                rn->rngState = rn->seed;
+            }
+            if (d.args.count ("sync"))
+            {
+                const auto token = d.args.at ("sync").trim().toLowerCase();
+                float whole = 0.0f;
+                if (token != "off" && token != "free" && NoteValues::parseToken (token, whole))
+                {
+                    rn->syncEnabled = true;
+                    rn->syncWhole = juce::jlimit (1.0f / 64.0f, 4.0f, whole);
+                }
+            }
 
             newChain->push_back (std::move (rn));
         }
         else if (d.type.startsWith ("modmath"))
         {
             auto mm = std::make_unique<ModMath>();
-            mm->kind = NodeKind::Generic;
+            mm->kind = NodeKind::Modulator;
+            mm->name = d.name;
             mm->varPtr = &variables;
+            applyControlArgs (d, *mm);
+            mm->inputNames = { d.args.count ("ina") ? d.args.at ("ina").trim() : juce::String(),
+                               d.args.count ("inb") ? d.args.at ("inb").trim() : juce::String() };
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1787,6 +1955,22 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             };
             parseAmt ("amount", nullptr, 0.f, 4.f, "1", mm->amountExpr, "amount");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", mm->mixExpr, "mix [0..1]");
+            parseAmt ("clampmin", "clamp_min", -10.f, 10.f, "-1",
+                      mm->clampMinExpr, "clamp min");
+            parseAmt ("clampmax", "clamp_max", -10.f, 10.f, "1",
+                      mm->clampMaxExpr, "clamp max");
+            parseAmt ("inmin", "in_min", -10.f, 10.f, "-1",
+                      mm->inMinExpr, "input min");
+            parseAmt ("inmax", "in_max", -10.f, 10.f, "1",
+                      mm->inMaxExpr, "input max");
+            parseAmt ("outmin", "out_min", -10.f, 10.f, "-1",
+                      mm->outMinExpr, "output min");
+            parseAmt ("outmax", "out_max", -10.f, 10.f, "1",
+                      mm->outMaxExpr, "output max");
+            parseAmt ("quantize", "quantise", 0.f, 1.f, "1",
+                      mm->quantizeExpr, "quantize [0..1]");
+            parseAmt ("slew", nullptr, 0.f, 1.f, "0",
+                      mm->slewExpr, "slew [0..1]");
 
             if (d.args.count ("mode"))
             {
@@ -1796,6 +1980,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 else if (m == "div") mm->op = ModMath::Op::Div;
                 else if (m == "min") mm->op = ModMath::Op::Min;
                 else if (m == "max") mm->op = ModMath::Op::Max;
+                else if (m == "abs" || m == "absolute") mm->op = ModMath::Op::Abs;
+                else if (m == "invert" || m == "inv") mm->op = ModMath::Op::Invert;
+                else if (m == "clamp") mm->op = ModMath::Op::Clamp;
+                else if (m == "remap" || m == "map") mm->op = ModMath::Op::Remap;
+                else if (m == "quantize" || m == "quantise") mm->op = ModMath::Op::Quantize;
+                else if (m == "slew") mm->op = ModMath::Op::Slew;
                 else mm->op = ModMath::Op::Add;
             }
 
@@ -1804,8 +1994,10 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         else if (d.type.startsWith ("envtrigger"))
         {
             auto et = std::make_unique<EnvTrigger>();
-            et->kind = NodeKind::Generic;
+            et->kind = NodeKind::Modulator;
+            et->name = d.name;
             et->varPtr = &variables;
+            applyControlArgs (d, *et);
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1820,17 +2012,47 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("threshold", nullptr, -10.f, 10.f, "0.5", et->thresholdExpr, "threshold");
+            if (d.args.count ("thresholddb"))
+            {
+                et->thresholdDb = true;
+                parseAmt ("thresholddb", nullptr, -60.f, 0.f, "-24",
+                          et->thresholdExpr, "threshold [dB]");
+            }
+            else if (d.args.count ("threshold"))
+            {
+                et->thresholdDb = false;
+                parseAmt ("threshold", nullptr, -10.f, 10.f, "0.5",
+                          et->thresholdExpr, "threshold [linear, legacy]");
+            }
+            else
+            {
+                et->thresholdDb = true;
+                parseAmt ("thresholddb", nullptr, -60.f, 0.f, "-24",
+                          et->thresholdExpr, "threshold [dB]");
+            }
             parseAmt ("hold", nullptr, 0.f, 5000.f, "100", et->holdExpr, "hold [ms]");
             parseAmt ("level", nullptr, 0.f, 10.f, "1", et->levelExpr, "level");
+            parseAmt ("sensitivity", "sens", 0.f, 1.f, "0", et->sensitivityExpr, "sensitivity [0..1]");
+            parseAmt ("hysteresis", "hyst", 0.f, 24.f, "6", et->hysteresisExpr, "hysteresis [dB]");
+            parseAmt ("holdoff", "hold-off", 0.f, 1000.f, "0", et->holdoffExpr, "holdoff [ms]");
+
+            if (d.args.count ("source"))
+            {
+                const auto src = d.args.at ("source").trim().toLowerCase();
+                et->useRms = (src == "rms" || src == "average" || src == "avg");
+            }
 
             newChain->push_back (std::move (et));
         }
         else if (d.type.startsWith ("modmix"))
         {
             auto mx = std::make_unique<ModMix>();
-            mx->kind = NodeKind::Generic;
+            mx->kind = NodeKind::Modulator;
+            mx->name = d.name;
             mx->varPtr = &variables;
+            applyControlArgs (d, *mx);
+            mx->inputNames = { d.args.count ("ina") ? d.args.at ("ina").trim() : juce::String(),
+                               d.args.count ("inb") ? d.args.at ("inb").trim() : juce::String() };
 
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
@@ -1845,8 +2067,8 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("levelA", nullptr, 0.f, 4.f, "1", mx->levelAExpr, "levelA");
-            parseAmt ("levelB", nullptr, 0.f, 4.f, "1", mx->levelBExpr, "levelB");
+            parseAmt ("levela", nullptr, 0.f, 4.f, "1", mx->levelAExpr, "levelA");
+            parseAmt ("levelb", nullptr, 0.f, 4.f, "1", mx->levelBExpr, "levelB");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", mx->mixExpr, "mix [0..1]");
 
             newChain->push_back (std::move (mx));
@@ -2366,19 +2588,125 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 it = variables.erase (it);
         }
-        // Ensure new osc/env names start at 0 until their block runs
+        // Every control source publishes into variables[name], starting at 0.
         for (const auto& b : *newChain)
-        {
-            if (auto* oc = dynamic_cast<Osc*> (b.get()))
-                variables[oc->name] = 0.0f;
-            if (auto* en = dynamic_cast<Env*> (b.get()))
-                variables[en->name] = 0.0f;
-        }
+            if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+                if (mod->name.isNotEmpty())
+                    variables[mod->name] = 0.0f;
         // Param aliases (e.g. a → "gain") must exist before Stage::prepare
         // builds varRefs — otherwise "y = gain * x" never sees the knob value.
         for (const auto& kv : newAliases)
             if (kv.second.isNotEmpty())
                 variables[kv.second] = 0.0f;
+    }
+
+    std::vector<Modulator*> modulators;
+    for (auto& b : *newChain)
+        if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+            if (mod->name.isNotEmpty())
+            {
+                variables[mod->name] = 0.0f;
+                modulators.push_back (mod);
+            }
+
+    // Validate control-source references, reject cycles, and resolve slots
+    // off-thread. The audio thread only follows float* pointers.
+    {
+        std::unordered_map<juce::String, Modulator*> byName;
+        for (auto* mod : modulators)
+            byName[mod->name] = mod;
+
+        for (auto* mod : modulators)
+            for (const auto& input : mod->inputNames)
+                if (input.isNotEmpty() && byName.find (input) == byName.end())
+                {
+                    error = "Unknown modulation source '" + input + "' on '" + mod->name + "'.";
+                    return false;
+                }
+
+        std::unordered_map<juce::String, int> order;
+        for (int i = 0; i < (int) modulators.size(); ++i)
+            order[modulators[(size_t) i]->name] = i;
+        for (int i = 0; i < (int) modulators.size(); ++i)
+        {
+            auto* mod = modulators[(size_t) i];
+            for (const auto& input : mod->inputNames)
+            {
+                if (input.isEmpty())
+                    continue;
+                auto source = byName.find (input);
+                if (source == byName.end())
+                    continue;
+                if ((source->second->kind == NodeKind::Env || source->second->needsAudioInput())
+                    && order[input] > i)
+                {
+                    error = "Audio-position modulator '" + input
+                          + "' must be declared before '" + mod->name + "'.";
+                    return false;
+                }
+            }
+        }
+
+        std::unordered_map<Modulator*, int> state;
+        std::function<bool (Modulator*)> visit = [&] (Modulator* mod) -> bool
+        {
+            auto& s = state[mod];
+            if (s == 1)
+                return false;
+            if (s == 2)
+                return true;
+            s = 1;
+            for (const auto& input : mod->inputNames)
+                if (input.isNotEmpty())
+                    if (! visit (byName[input]))
+                        return false;
+            s = 2;
+            return true;
+        };
+        for (auto* mod : modulators)
+            if (! visit (mod))
+            {
+                error = "Modulation cycle at '" + mod->name + "'.";
+                return false;
+            }
+
+        for (auto* mod : modulators)
+        {
+            mod->inputSlots.clear();
+            mod->inputSources.clear();
+            mod->inputSlots.reserve (mod->inputNames.size());
+            mod->inputSources.reserve (mod->inputNames.size());
+            for (const auto& input : mod->inputNames)
+            {
+                const auto it = variables.find (input);
+                mod->inputSlots.push_back (it != variables.end() ? &it->second : nullptr);
+                const auto src = byName.find (input);
+                mod->inputSources.push_back (src != byName.end() ? src->second : nullptr);
+            }
+        }
+    }
+
+    // A stage or filter that reads any control source must inject it per sample.
+    {
+        auto referencesMod = [&modulators] (const ExpressionEvaluator& e)
+        {
+            for (const auto* mod : modulators)
+                if (mod->name.isNotEmpty()
+                    && e.getVariableIndex (mod->name.toStdString()) != ExpressionEvaluator::invalidIndex)
+                    return true;
+            return false;
+        };
+        for (auto& b : *newChain)
+        {
+            if (auto* st = dynamic_cast<Stage*> (b.get()))
+                st->usesModulation = st->usesModulation || referencesMod (st->eval);
+            else if (auto* fi = dynamic_cast<Filter*> (b.get()))
+                fi->modulated = fi->modulated || referencesMod (fi->cutoff)
+                             || referencesMod (fi->center) || referencesMod (fi->width);
+            else if (auto* eq = dynamic_cast<Eq*> (b.get()))
+                eq->modulated = eq->modulated || referencesMod (eq->freq)
+                             || referencesMod (eq->q) || referencesMod (eq->gainDb);
+        }
     }
 
     // prepare newly created blocks when a valid spec is available
@@ -2401,20 +2729,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
     // Resolve osc/env destSlot pointers once (off the audio thread) so processBlock
     // never needs to hash juce::String keys to find the variable slot.
     for (auto& b : *newChain)
-    {
-        if (b->kind == NodeKind::Osc)
-        {
-            auto* oc = static_cast<Osc*> (b.get());
-            oc->destSlot = (oc->varPtr != nullptr && oc->name.isNotEmpty())
-                               ? &(*oc->varPtr)[oc->name] : nullptr;
-        }
-        else if (b->kind == NodeKind::Env)
-        {
-            auto* en = static_cast<Env*> (b.get());
-            en->destSlot = (en->varPtr != nullptr && en->name.isNotEmpty())
-                               ? &(*en->varPtr)[en->name] : nullptr;
-        }
-    }
+        if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+            mod->destSlot = (mod->varPtr != nullptr && mod->name.isNotEmpty())
+                                ? &(*mod->varPtr)[mod->name] : nullptr;
 
     // Build alias pointer cache (src float* → dst float*) so the audio thread can
     // propagate alias values with pointer writes instead of juce::String map lookups.
@@ -2831,10 +3148,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     };
 
     // ---- Pre-render Osc/Env into mod lanes (O(n), not O(n * chain * ch)) ----
-    constexpr int kMaxMods = 32;
+    constexpr int kMaxMods = 64;
     Osc* oscs[kMaxMods];
     Env* envs[kMaxMods];
-    int nOsc = 0, nEnv = 0;
+    Modulator* mods[kMaxMods];
+    int nOsc = 0, nEnv = 0, nMod = 0;
 
     for (auto& b : *chainPtr)
     {
@@ -2848,6 +3166,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             if (nEnv < kMaxMods)
                 envs[nEnv++] = static_cast<Env*> (b.get());
         }
+        else if (b->kind == NodeKind::Modulator)
+        {
+            if (nMod < kMaxMods)
+                mods[nMod++] = static_cast<Modulator*> (b.get());
+        }
     }
 
     auto writeModsAt = [&] (int i) noexcept
@@ -2858,6 +3181,9 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         for (int e = 0; e < nEnv; ++e)
             if (envs[e]->destSlot != nullptr && (int) envs[e]->modLane.size() > i)
                 *envs[e]->destSlot = envs[e]->modLane[(size_t) i];
+        for (int m = 0; m < nMod; ++m)
+            if (mods[m]->destSlot != nullptr && (int) mods[m]->modLane.size() > i)
+                *mods[m]->destSlot = mods[m]->shapedControl (mods[m]->modLane[(size_t) i]);
     };
 
     for (int i = 0; i < nOsc; ++i)
@@ -2866,6 +3192,60 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         if (! oscs[i]->modLane.empty())
             writeNodeTapLane (oscs[i]->tapSlot, oscs[i]->modLane.data(),
                               (int) oscs[i]->modLane.size());
+    }
+
+    // Pure control generators run once per block in dependency order. Sources that
+    // need audio stay at their graph position and defer their consumers too.
+    bool preRendered[kMaxMods] {};
+    for (int i = 0; i < nMod; ++i)
+        mods[i]->startRendered = false;
+
+    auto modIndex = [&mods, nMod] (const Modulator* m) noexcept
+    {
+        for (int i = 0; i < nMod; ++i)
+            if (mods[i] == m)
+                return i;
+        return -1;
+    };
+
+    bool changed = true;
+    for (int guard = 0; changed && guard < nMod; ++guard)
+    {
+        changed = false;
+        for (int i = 0; i < nMod; ++i)
+        {
+            if (preRendered[i] || mods[i]->needsAudioInput())
+                continue;
+
+            bool blocked = false;
+            for (const auto* input : mods[i]->inputSources)
+            {
+                if (input == nullptr || input->kind == NodeKind::Osc)
+                    continue;
+                if (input->kind == NodeKind::Env || input->needsAudioInput())
+                {
+                    blocked = true;
+                    break;
+                }
+                const int j = modIndex (input);
+                if (j < 0 || ! preRendered[j])
+                {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked)
+                continue;
+
+            mods[i]->processBlock (buffer);
+            if (! mods[i]->modLane.empty())
+                writeNodeTapLane (mods[i]->tapSlot, mods[i]->modLane.data(),
+                                  juce::jmin (numSamples, (int) mods[i]->modLane.size()));
+            mods[i]->publishLast (numSamples);
+            mods[i]->startRendered = true;
+            preRendered[i] = true;
+            changed = true;
+        }
     }
 
     for (auto& b : *chainPtr)
@@ -2943,6 +3323,22 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                         writeNodeTapLane (env->tapSlot, env->modLane.data(), (int) env->modLane.size());
                         if (env->destSlot != nullptr)
                             *env->destSlot = env->modLane.back();
+                    }
+                    continue;
+                }
+
+                case NodeKind::Modulator:
+                {
+                    auto* mod = static_cast<Modulator*> (b.get());
+                    if (mod->startRendered)
+                        continue;
+                    mod->processBlock (slice);
+                    if (! mod->modLane.empty())
+                    {
+                        writeNodeTapLane (mod->tapSlot, mod->modLane.data(),
+                                          juce::jmin (slice.getNumSamples(),
+                                                      (int) mod->modLane.size()));
+                        mod->publishLast (slice.getNumSamples());
                     }
                     continue;
                 }
@@ -3725,6 +4121,14 @@ void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const
             }
         }
         o->setProperty ("peaks", peaks);
+        const int liveStep = t.step.load (std::memory_order_relaxed);
+        const int stepCount = t.stepCount.load (std::memory_order_relaxed);
+        if (liveStep >= 0)
+        {
+            o->setProperty ("step", liveStep);
+            o->setProperty ("steps", stepCount);
+        }
+        o->setProperty ("trigger", t.trigger.load (std::memory_order_relaxed));
         dest.add (juce::var (o));
     }
 }
@@ -4426,6 +4830,12 @@ void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexc
         if (auto* pt = dynamic_cast<Pitch*> (b.get()))
             if (pt->useSync)
                 pt->applyTempo (bpm);
+        if (auto* sq = dynamic_cast<StepSeq*> (b.get()))
+            sq->setHost (bpm, ppqPosition, isPlaying, started || seeked);
+        if (auto* sh = dynamic_cast<SampleHold*> (b.get()))
+            sh->applyTempo (bpm);
+        if (auto* rn = dynamic_cast<Random*> (b.get()))
+            rn->applyTempo (bpm);
     }
 }
 
@@ -4487,6 +4897,13 @@ void SignalChain::clearRuntimeState() noexcept
     for (auto& b : *chainPtr)
         if (b)
             b->clearRuntimeState();
+    for (auto& b : *chainPtr)
+        if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+        {
+            mod->clearControlLane();
+            if (mod->destSlot != nullptr)
+                *mod->destSlot = 0.0f;
+        }
     if (auto graph = std::atomic_load (&busGraph))
     {
         for (auto& bus : graph->buses)
@@ -5697,6 +6114,9 @@ void SignalChain::bindNodeTaps (Chain& c) noexcept
         t.peakR.store (0.f, std::memory_order_relaxed);
         t.rmsL.store (0.f, std::memory_order_relaxed);
         t.rmsR.store (0.f, std::memory_order_relaxed);
+        t.step.store (-1, std::memory_order_relaxed);
+        t.stepCount.store (0, std::memory_order_relaxed);
+        t.trigger.store (0, std::memory_order_relaxed);
         t.gen.store (0, std::memory_order_relaxed);
     }
     setNodeTapId (kTapSlotIn, "__in__");
@@ -5712,6 +6132,15 @@ void SignalChain::bindNodeTaps (Chain& c) noexcept
         }
         setNodeTapId (next, b->tapId);
         b->tapSlot = next;
+        if (auto* sq = dynamic_cast<StepSeq*> (b.get()))
+        {
+            sq->liveStepSlot = &nodeTaps[(size_t) next].step;
+            nodeTaps[(size_t) next].stepCount.store (sq->stepCount, std::memory_order_relaxed);
+        }
+        else if (auto* et = dynamic_cast<EnvTrigger*> (b.get()))
+        {
+            et->liveTriggerSlot = &nodeTaps[(size_t) next].trigger;
+        }
         ++next;
         if (b->kind == NodeKind::Xover)
         {

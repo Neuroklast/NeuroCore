@@ -34,6 +34,7 @@ void SignalChain::ModMix::prepare (const juce::dsp::ProcessSpec& spec)
     levelBSm.setCurrentAndTargetValue (snap (levelBExpr, 1.0f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 1.0f));
     bindings.prepare (varPtr, { &levelAExpr, &levelBExpr, &mixExpr });
+    reserveControlLane (spec);
     clearRuntimeState();
 }
 
@@ -46,9 +47,12 @@ float SignalChain::ModMix::process (int ch, float x)
 
 void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
 {
-    const int nCh = buffer.getNumChannels();
-    const int nS  = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0)
+    const int nS = buffer.getNumSamples();
+    if (nS <= 0)
+        return;
+
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
         return;
 
     bindings.refresh();
@@ -57,24 +61,31 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
     levelBSm.setTargetValue (snapEval (levelBExpr, 1.0f));
     mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
 
-    for (int i = 0; i < nS; ++i)
+    const Modulator* srcA = inputSources.size() > 0 ? inputSources[0] : nullptr;
+    const Modulator* srcB = inputSources.size() > 1 ? inputSources[1] : nullptr;
+    const float* slotA = inputSlots.size() > 0 ? inputSlots[0] : nullptr;
+    const float* slotB = inputSlots.size() > 1 ? inputSlots[1] : nullptr;
+
+    auto laneAt = [] (const Modulator* source, const float* slot, int index) noexcept
+    {
+        if (source != nullptr)
+        {
+            if ((int) source->modLane.size() > index)
+                return source->modLane[(size_t) index];
+            if (source->destSlot != nullptr)
+                return *source->destSlot;
+        }
+        return slot != nullptr ? *slot : 0.0f;
+    };
+
+    for (int i = 0; i < laneN; ++i)
     {
         const float levelA = juce::jlimit (0.0f, 4.0f, levelASm.getNextValue());
         const float levelB = juce::jlimit (0.0f, 4.0f, levelBSm.getNextValue());
         const float mix    = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
-        const float a = (nCh > 0) ? buffer.getReadPointer (0)[i] : 0.0f;
-        const float b = (nCh > 1) ? buffer.getReadPointer (1)[i] : 0.0f;
-
-        const float wet = a * levelA + b * levelB;
-        const float dryG = 1.0f - mix;
-        const float wetG = mix;
-
-        for (int c = 0; c < nCh; ++c)
-        {
-            float* w = buffer.getWritePointer (c);
-            const float dry = w[i];
-            w[i] = dry * dryG + wet * wetG;
-        }
+        const float a = laneAt (srcA, slotA, i);
+        const float b = laneAt (srcB, slotB, i);
+        modLane[(size_t) i] = (a * levelA + b * levelB) * mix;
     }
 }

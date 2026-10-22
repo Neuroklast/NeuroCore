@@ -12,6 +12,11 @@ export type FaceHost = {
   knobs?: FaceKnob[];
   bpm?: number;
   sr?: number;
+  /** Live step-sequencer position, or -1 when the host is stopped. */
+  step?: number;
+  stepCount?: number;
+  /** Live envelope-trigger pulse state (0/1). */
+  trigger?: number;
 };
 
 export function faceBpm(host?: FaceHost): number {

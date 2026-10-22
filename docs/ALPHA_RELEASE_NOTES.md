@@ -1,4 +1,4 @@
-NEUROKORE 0.7.1-beta alpha test build. See the attached platform archives and
+NEUROKORE 0.7.2-beta alpha test build. See the attached platform archives and
 SHA-256 checksums. Each archive contains the native plugin, standalone app,
 license text, EULA, alpha tester agreement, installation notes and build ID.
 
