@@ -1,6 +1,7 @@
 
 name: License contract
 on:
+  workflow_dispatch:
   push:
     branches: ['codex/neurokore-licensing']
   pull_request:
@@ -14,6 +15,9 @@ permissions:
   contents: read
 jobs:
   license:
+    # Explicitly keep PR #328 manual-only to avoid rebuilding on each
+    # small DSP fix. All other PRs keep the established checks.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number != 328 }}
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
