@@ -74,3 +74,18 @@ it("keeps impulse segments on every corner of the cached route", () => {
   traceCableSpan(ctx, path, 5, 15);
   expect(points).toEqual([[5, 0], [10, 0], [10, 5]]);
 });
+
+it("carries a measured impulse to the end of a long route", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0.5], 0.3, 0.7, 1800, 0);
+  const token = {};
+  for (let i = 0; i < 150; i++) advanceCableSignal(s, token, [], 0.3, 0.7, 1800, 0.02);
+  expect(s.impulses.length).toBeGreaterThan(0);
+  expect(s.impulses[0]!.distance).toBeGreaterThan(0);
+});
+
+it("represents sustained measured energy even without a local tap maximum", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [], 0.2, 0.2, 500, 0.016);
+  expect(s.impulses.length).toBe(1);
+});

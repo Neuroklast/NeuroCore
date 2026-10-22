@@ -1,6 +1,6 @@
 import { streamSpeed } from "./cablePaint";
 
-export type CablePacket = { distance: number; age: number; strength: number };
+export type CablePacket = { distance: number; age: number; strength: number; lifetime?: number };
 export type CableSignal = {
   snapshot: object | null;
   age: number;
@@ -19,7 +19,7 @@ export const emptyCableSignal = (): CableSignal => ({
 /** Snapshot peaks trigger source emission, never positions on the cable. */
 export function advanceCableSignal(
   s: CableSignal, snapshot: object, fractions: number[], rms: number,
-  peak: number, length: number, dt: number, moving = true,
+  peak: number, length: number, dt: number, moving = true, worldPerPixel = 1,
 ): CableSignal {
   const step = Number.isFinite(dt) ? Math.min(0.1, Math.max(0, dt)) : 0;
   const energy = Number.isFinite(rms) ? Math.max(0, rms) : 0;
@@ -29,7 +29,7 @@ export function advanceCableSignal(
   const fresh = s.snapshot !== snapshot;
   if (fresh) { s.snapshot = snapshot; s.age = 0; }
   s.freshness = Math.max(0, 1 - Math.max(0, s.age - 0.2) / 0.3);
-  const target = Math.max(48, streamSpeed(energy, level));
+  const target = Math.max(48, streamSpeed(energy, level)) * Math.max(0.25, worldPerPixel);
   // Exact exponential speed integration keeps 30/60 Hz travel consistent.
   const decay = Math.exp(-step / 0.15);
   const initialSpeed = s.speed || target;
@@ -38,14 +38,14 @@ export function advanceCableSignal(
   s.impulses = s.impulses.filter((p) => {
     p.distance += travel;
     p.age += step;
-    return p.age < 2 && p.distance < length + 24;
+    return p.age < (p.lifetime ?? 2) && p.distance < length + 24;
   });
   if (fresh) {
     if (moving && length > 0 && energy > 0.001 && level > 0.001 &&
-        fractions.some((v) => Number.isFinite(v) && v >= 0 && v <= 1) &&
+        (fractions.some((v) => Number.isFinite(v) && v >= 0 && v <= 1) || energy > 0.001) &&
         (s.sinceEmission >= 0.12 || level > s.peak + 0.08) &&
         s.impulses.length < 12) {
-      s.impulses.push({ distance: 0, age: 0, strength: Math.min(1, level) });
+      s.impulses.push({ distance: 0, age: 0, strength: Math.min(1, level), lifetime: Math.max(2, length / target + 0.6) });
       s.sinceEmission = 0;
     }
     s.peak = level;
@@ -56,5 +56,5 @@ export function advanceCableSignal(
 
 /** Emitted light has its own finite lifetime, independent of subsequent silence. */
 export function cablePacketAlpha(packet: CablePacket): number {
-  return (0.4 + 0.6 * packet.strength) * Math.max(0, Math.min(1, (2 - packet.age) / 0.6));
+  return (0.4 + 0.6 * packet.strength) * Math.max(0, Math.min(1, ((packet.lifetime ?? 2) - packet.age) / 0.6));
 }

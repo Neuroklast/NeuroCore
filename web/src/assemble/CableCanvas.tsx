@@ -89,7 +89,7 @@ function strokePackets(
   ctx: CanvasRenderingContext2D, path: CablePathMetrics, glow: string,
   core: string, width: number, impulses: CablePacket[], peak: number,
   rms: number, bloom: boolean, animate: boolean, dim: boolean,
-  clipColor: string, clipAllowed: boolean, scale: number, dpr: number,
+  clipColor: string, clipAllowed: boolean, scale: number, _dpr: number,
   surface: string, dash: number[] = [], baseOnly = false,
 ): void {
   const pts = path.points;
@@ -123,21 +123,31 @@ function strokePackets(
   if (animate) {
     for (const packet of impulses) {
       const alpha = cablePacketAlpha(packet) * focus;
-      const span = (10 + packet.strength * 8) * px;
-      ctx.beginPath();
-      traceCableSpan(ctx, path, packet.distance - span, packet.distance);
+      const span = (28 + packet.strength * 24) * px;
+      // Layered strokes form a soft tail without a per-packet shadow blur.
+      // All geometry follows cached route segments, including chamfered corners.
       if (bloom) {
-        ctx.globalAlpha = alpha * CABLE_INK.haloAlpha;
+        ctx.beginPath();
+        traceCableSpan(ctx, path, packet.distance - span, packet.distance);
+        ctx.globalAlpha = alpha * 0.12;
         ctx.strokeStyle = glow;
-        ctx.lineWidth = inkWidth + 2 * px;
-        ctx.shadowColor = glow;
-        ctx.shadowBlur = (3 + packet.strength * 3) * dpr;
+        ctx.lineWidth = inkWidth + 9 * px;
+        ctx.stroke();
+        ctx.globalAlpha = alpha * 0.28;
+        ctx.lineWidth = inkWidth + 4 * px;
         ctx.stroke();
       }
-      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      traceCableSpan(ctx, path, packet.distance - span, packet.distance);
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.strokeStyle = glow;
+      ctx.lineWidth = Math.max(2 * px, inkWidth);
+      ctx.stroke();
+      ctx.beginPath();
+      traceCableSpan(ctx, path, packet.distance - span * 0.36, packet.distance);
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = core;
-      ctx.lineWidth = Math.max(1.1 * px, inkWidth * 0.7);
+      ctx.lineWidth = Math.max(1.5 * px, inkWidth * 0.8);
       ctx.stroke();
     }
   }
@@ -276,7 +286,7 @@ export function CableCanvas({
       // `wave` = fliessende Signalimpulse, `dots` = statische Punktestrecke.
       const isDots = host.cables === "dots";
       const dotDash = isDots ? [2, 8] : [];
-      const cableAnimate = pass.animate && !isDots;
+      const cableAnimate = pass.animate;
 
       const hot = boardFocusEdgesRef.current;
       const staticStamp = [w, h, dpr, cam.scale, cam.tx, cam.ty, host.theme,
@@ -407,6 +417,7 @@ export function CableCanvas({
             cached.paths[i]?.length ?? 0,
             dt,
             cableAnimate,
+            3 / Math.max(0.1, cam.scale),
           );
           const path = cached.paths[i]!;
           const color = isMod && modValue! < 0 ? palette.accent : palette[lane.color];
