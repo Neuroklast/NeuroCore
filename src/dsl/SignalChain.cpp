@@ -2605,31 +2605,19 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         pendingBusGraph = std::make_shared<BusGraph> (std::move (newGraph));
     }
 
-    // Drop stale modulation vars (osc1, env1, …) from previous script so they
-    // cannot keep feeding stages after switching away from an oscillator preset.
+    // Insert prospective variable keys without erasing or resetting values
+    // still in use by the currently published graph. Invalid references
+    // may reject the new script below; a failed load must not invalidate
+    // the old graph's cached float* pointers.
     {
-        static const juce::StringArray keep {
-            "x", "y", "x_prev", "y_prev", "ch", "t", "a", "b", "c", "d", "e", "f",
-            "pi", "sr", "midi_note", "midi_freq", "midi_vel", "midi_gate",
-            "midi_bend", "midi_mod", "sc", "sc_l", "sc_r", "sidechain"
-        };
-        for (auto it = variables.begin(); it != variables.end(); )
-        {
-            if (keep.contains (it->first))
-                ++it;
-            else
-                it = variables.erase (it);
-        }
-        // Every control source publishes into variables[name], starting at 0.
-        for (const auto& b : *newChain)
-            if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+        for (const auto& node : *newChain)
+            if (auto* mod = dynamic_cast<Modulator*> (node.get()))
                 if (mod->name.isNotEmpty())
-                    variables[mod->name] = 0.0f;
-        // Param aliases (e.g. a → "gain") must exist before Stage::prepare
-        // builds varRefs — otherwise "y = gain * x" never sees the knob value.
+                    variables.try_emplace (mod->name, 0.0f);
+        // Aliases must exist before Stage::prepare creates its pointer cache.
         for (const auto& kv : newAliases)
             if (kv.second.isNotEmpty())
-                variables[kv.second] = 0.0f;
+                variables.try_emplace (kv.second, 0.0f);
     }
 
     std::vector<Modulator*> modulators;
@@ -2637,7 +2625,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (auto* mod = dynamic_cast<Modulator*> (b.get()))
             if (mod->name.isNotEmpty())
             {
-                variables[mod->name] = 0.0f;
+                variables.try_emplace (mod->name, 0.0f);
                 modulators.push_back (mod);
             }
 
@@ -2792,6 +2780,34 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 eq->modulated = eq->modulated || referencesMod (eq->freq)
                              || referencesMod (eq->q) || referencesMod (eq->gainDb);
         }
+    }
+
+    // Validation has succeeded. Only now may the old graph's variable
+    // entries be retired. No old audio callbacks can run during this step
+    // because ScriptManager holds its process lock while applying the patch.
+    {
+        juce::StringArray active {
+            "x", "y", "x_prev", "y_prev", "ch", "t", "a", "b", "c", "d", "e", "f",
+            "pi", "sr", "midi_note", "midi_freq", "midi_vel", "midi_gate",
+            "midi_bend", "midi_mod", "sc", "sc_l", "sc_r", "sidechain"
+        };
+        for (auto* mod : modulators)
+            active.addIfNotAlreadyThere (mod->name);
+        for (const auto& kv : newAliases)
+            if (kv.second.isNotEmpty())
+                active.addIfNotAlreadyThere (kv.second);
+        for (auto it = variables.begin(); it != variables.end(); )
+        {
+            if (active.contains (it->first))
+                ++it;
+            else
+                it = variables.erase (it);
+        }
+        for (auto* mod : modulators)
+            variables[mod->name] = 0.f;
+        for (const auto& kv : newAliases)
+            if (kv.second.isNotEmpty())
+                variables[kv.second] = 0.f;
     }
 
     // prepare newly created blocks when a valid spec is available
