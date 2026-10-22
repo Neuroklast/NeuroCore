@@ -15,8 +15,7 @@ namespace
 
 void SignalChain::Amp::clearRuntimeState() noexcept
 {
-    cachedDb = -1000.f;
-    lin = 1.f;
+    // Parameter smoothers intentionally survive script runtime resets.
 }
 
 void SignalChain::Amp::prepare (const juce::dsp::ProcessSpec& spec)
@@ -31,8 +30,10 @@ void SignalChain::Amp::prepare (const juce::dsp::ProcessSpec& spec)
         const float v = e.evaluate (0.0f);
         return std::isfinite (v) ? v : fallback;
     };
-    gainSm.setCurrentAndTargetValue (snap (gainExpr, 0.0f));
-    trimSm.setCurrentAndTargetValue (snap (outputExpr, 0.0f));
+    gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 24.f, snap (gainExpr, 0.f))));
+    trimSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snap (outputExpr, 0.f))));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 0.0f));
     bindings.prepare (varPtr, { &gainExpr, &outputExpr, &mixExpr });
     clearRuntimeState();
@@ -54,8 +55,10 @@ void SignalChain::Amp::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
-    gainSm.setTargetValue (snapEval (gainExpr, 0.0f));
-    trimSm.setTargetValue (snapEval (outputExpr, 0.0f));
+    gainSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 24.f, snapEval (gainExpr, 0.f))));
+    trimSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snapEval (outputExpr, 0.f))));
     mixSm.setTargetValue (snapEval (mixExpr, 0.0f));
 
     const int useCh = juce::jmin (nCh, 2);
@@ -65,19 +68,10 @@ void SignalChain::Amp::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float db   = juce::jlimit (-24.0f, 24.0f, gainSm.getNextValue());
-        const float trim = juce::Decibels::decibelsToGain (juce::jlimit (-36.0f, 12.0f, trimSm.getNextValue()));
-        const float mix  = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
-
-        if (std::abs (db - cachedDb) > 1.0e-4f)
-        {
-            cachedDb = db;
-            lin = juce::Decibels::decibelsToGain (db);
-            if (! std::isfinite (lin))
-                lin = 1.0f;
-        }
-
-        const float g = lin * trim;
+        const float gain = gainSm.getNextValue();
+        const float trim = trimSm.getNextValue();
+        const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
+        const float g = gain * trim;
 
         for (int c = 0; c < useCh; ++c)
         {

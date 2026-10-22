@@ -564,11 +564,12 @@ private:
     struct Amp : Block
     {
         ExpressionEvaluator gainExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> gainSm, trimSm, mixSm;
+        // dB-linear smoothing has an equivalent multiplicative linear-gain
+        // envelope. The expensive dB conversion only happens on targets.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> gainSm, trimSm;
+        juce::SmoothedValue<float> mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float cachedDb { -1000.f };
-        float lin { 1.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);

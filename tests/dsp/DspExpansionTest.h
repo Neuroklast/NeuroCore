@@ -125,6 +125,32 @@ public:
             expect (TestHelpers::countNonFinite (audio) == 0);
         }
 
+        beginTest ("Amp gain smoothing stays logarithmic and respects host automation");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript ("amp1: gain = a * 18; output = 0; mix = 1", err), err);
+            juce::AudioBuffer<float> buf (1, 128);
+            auto settle = [&] (float v)
+            {
+                chain.setParameter (0, v);
+                for (int k = 0; k < 64; ++k)
+                {
+                    for (int i = 0; i < 128; ++i)
+                        buf.setSample (0, i, 0.08f);
+                    chain.processBlock (buf);
+                }
+                return buf.getSample (0, 127);
+            };
+            const float low = settle (0.f);
+            const float high = settle (1.f);
+            expectWithinAbsoluteError (low, 0.08f, 0.005f);
+            expectWithinAbsoluteError (
+                high, 0.08f * juce::Decibels::decibelsToGain (18.f), 0.02f);
+            expect (TestHelpers::countNonFinite (buf) == 0);
+        }
+
         beginTest ("Decimate stereo hold uses L, not R");
         {
             dsl::SignalChain chain;
