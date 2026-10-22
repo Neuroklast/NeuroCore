@@ -3,6 +3,7 @@
 #include "GlobalPreferencesTest.h"
 #include "TelemetrySamplingTest.h"
 #include "ModulationBlocksTest.h"
+#include "ControlIntegrationTest.h"
 #include "DelayReverbTest.h"
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
@@ -33,6 +34,15 @@ int main(int argc, char** argv)
     if (argc == 4 && std::string(argv[1]) == "--factory") return auditFactory(argv[2], argv[3]);
     if (argc == 5 && std::string(argv[1]) == "--factory-profile") return auditFactory(argv[2], argv[3], false, argv[4]);
     if (argc == 4 && std::string(argv[1]) == "--factory-stress") return auditFactory(argv[2], argv[3], true);
+    if (argc == 2 && std::string(argv[1]) == "--control-integration")
+    {
+        ControlIntegrationTest integration;
+        LoggingRunner runner;
+        runner.runTests ({ &integration }, 12345);
+        int failures=0;
+        for(int i=0;i<runner.getNumResults();++i) failures+=runner.getResult(i)->failures;
+        return failures ? 1 : 0;
+    }
     if (argc == 2 && std::string(argv[1]) == "--expansion")
     {
         ClipTest clip;
@@ -43,6 +53,7 @@ int main(int argc, char** argv)
         for (int i = 0; i < runner.getNumResults(); ++i) failures += runner.getResult(i)->failures;
         return failures ? 1 : 0;
     }
+    ControlIntegrationTest controlIntegration;
     ComparisonBankTest comparisonBank;
     WebCompileTest webCompile;
     GlobalPreferencesTest globalPreferences;
@@ -55,7 +66,7 @@ int main(int argc, char** argv)
     DynamicsBlocksTest dynamicsBlocksTest;
     IrXoverTest irXoverTest;
     DSLParserTest dslParserTest;
-    runner.runTests ({ &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
+    runner.runTests ({ &controlIntegration, &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
     int failures = 0;
     for (int i = 0; i < runner.getNumResults(); ++i)
         failures += runner.getResult(i)->failures;

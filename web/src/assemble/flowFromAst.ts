@@ -1,3 +1,5 @@
+import { isModulatorNode, isLfoNode } from "./modulatorKinds";
+export { isLfoNode, isEnvNode, isModulatorNode } from "./modulatorKinds";
 import { Position, type Edge, type Node } from "./flowTypes";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
@@ -32,22 +34,6 @@ function lettersOn(node: AstNode): string {
 }
 
 export type SignalKind = "audio" | "mod";
-
-export function isLfoNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
-  const t = (node.type || "").toLowerCase();
-  const id = (node.id || "").toLowerCase();
-  return t.startsWith("osc") || t === "lfo" || id.startsWith("osc") || id.startsWith("lfo");
-}
-
-export function isEnvNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
-  const t = (node.type || "").toLowerCase();
-  const id = (node.id || "").toLowerCase();
-  return t.startsWith("env") || id.startsWith("env");
-}
-
-export function isModulatorNode(node: Pick<AstNode, "type"> & { id?: string }): boolean {
-  return isLfoNode(node) || isEnvNode(node);
-}
 
 export function inferModLinks(nodes: AstNode[]): AstEdge[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));

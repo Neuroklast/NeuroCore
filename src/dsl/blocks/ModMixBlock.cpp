@@ -69,12 +69,7 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
     auto laneAt = [] (const Modulator* source, const float* slot, int index) noexcept
     {
         if (source != nullptr)
-        {
-            if ((int) source->modLane.size() > index)
-                return source->modLane[(size_t) index];
-            if (source->destSlot != nullptr)
-                return *source->destSlot;
-        }
+            return source->controlAt (index);
         return slot != nullptr ? *slot : 0.0f;
     };
 

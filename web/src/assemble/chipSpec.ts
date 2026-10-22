@@ -559,7 +559,8 @@ add({
   id: "modmix",
   label: "ModMix",
   typeCodePrefix: "MX",
-  audioIns: ["inA", "inB"],
+  audioIns: [],
+  modIns: ["inA", "inB"],
   audioOuts: ["out"],
   paramJacks: ["levelA", "levelB", "mix"],
   ranges: {

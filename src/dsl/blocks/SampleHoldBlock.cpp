@@ -118,9 +118,7 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
             {
                 float input = audioIn[i];
                 if (controlSource != nullptr)
-                    input = (int) controlSource->modLane.size() > i
-                                ? controlSource->modLane[(size_t) i]
-                                : (controlSource->destSlot != nullptr ? *controlSource->destSlot : 0.0f);
+                    input = controlSource->controlAt (i);
                 else if (controlIn != nullptr)
                     input = *controlIn;
                 held = quantizeValue (input, quantize);

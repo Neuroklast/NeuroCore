@@ -203,6 +203,13 @@ private:
         {
             return controlInvert ? -v * controlDepth : v * controlDepth;
         }
+        /** Raw lane samples need source shaping; the published scalar already has it. */
+        float controlAt (int sample) const noexcept
+        {
+            if (juce::isPositiveAndBelow (sample, (int) modLane.size()))
+                return shapedControl (modLane[(size_t) sample]);
+            return destSlot != nullptr ? *destSlot : 0.0f;
+        }
         void reserveControlLane (const juce::dsp::ProcessSpec& spec)
         {
             const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;

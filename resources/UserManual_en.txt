@@ -331,3 +331,7 @@ The reviewed factory library contains 350 presets. Mesa High Gain keeps its orig
 Chopper now uses editable sequencer accents. Broken Grid Chaos and Glitch Hold Gate use real held control sources. Tape Wobble varies delay time, Vocal Double uses micro-pitch and a delay bus, and Arp Shimmer uses an octave-up return. MIDI Pluck Filter and MIDI Swell Return need MIDI notes routed to the insert. Dark Atmosphere is intentionally a noise generator and can sound with silent input; turn Fog down to remove its generated noise.
 
 The overlapping radio/telephone/clipper variants are consolidated. Complete removed presets and earlier versions of revised presets are preserved in resources/deprecated/factory-2026-10-22.json, with a replacement/reason manifest. They are excluded from factory browsing. The per-preset review is in docs/presets/2026-10-22-review.md.
+
+### Control-chain connections
+
+Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control sources on those contacts. StepSeq, ADSR, Sample & Hold, Random, ModMath and ModMix expose control outputs in Circuit. A source’s Depth and Polarity apply once at every outgoing connection, including connections into another modulator.

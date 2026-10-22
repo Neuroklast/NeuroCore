@@ -4,6 +4,10 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## Control routing integration (2026-10-22)
+
+Failing native contracts reproduced Audio Join rejection on both A/B sockets and lost source depth/polarity in ModMath, ModMix and SampleHold. Join validation now distinguishes audio and control destinations; all lane consumers use one shaped-source accessor. Native GraphOp/AST restore and multi-hop tests pass. Circuit classifies every current control block consistently, including source output pins and audio-rail exclusion; ModMix exposes modIns A/B. Hydrated Circuit port contracts and catalog/layout checks pass. Windows/pluginval remains pending.
+
 ## Factory preset curation (2026-10-22)
 
 Branch `feat/preset-curation-modulation`, based on main d07c0ba1c3dc after #326/#327. All 340 original entries have an inventory, per-entry decision and native render evidence. 307 retained, 21 revised, 12 deprecated, 22 new: 350 active presets. 33 complete old preset objects are preserved under resources/deprecated. Mesa High Gain is byte-equivalent at the preset-object level; its protected baseline hash contract passes.

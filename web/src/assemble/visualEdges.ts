@@ -1,3 +1,4 @@
+import { isModulatorNode, isEnvNode } from "./modulatorKinds";
 import type { AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { bindableJackKeys, chipSpec } from "./chipSpec";
 
@@ -153,8 +154,7 @@ function isForkKid(node: AstNode, family: "ms" | "lr"): boolean {
       || isForkSplit(node) || isForkJoin(node)) {
     return false;
   }
-  const t = node.type.toLowerCase();
-  if (t.startsWith("osc") || t.startsWith("env")) {
+  if (isModulatorNode(node)) {
     return false;
   }
   const ch = channelRail(node);
@@ -243,7 +243,7 @@ export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] 
   const spec = chipSpec(node.type, node.args);
   const fromSpec: AstJack[] = [
     ...spec.audioIns.map((id) => jack(id, false, id === "mod" || spec.modIns.includes(id) ? "mod" : "audio")),
-    ...spec.audioOuts.map((id) => jack(id, true, id === "mod" ? "mod" : "audio")),
+    ...spec.audioOuts.map((id) => jack(id, true, id === "mod" || isModulatorNode(node) ? "mod" : "audio")),
     ...spec.modIns.map((id) => jack(id, false, "mod")),
   ];
   const extra = (node.jacks ?? []).filter((j) => ! fromSpec.some((s) => s.id === j.id && s.output === j.output));
@@ -349,18 +349,11 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     push({ ...e, fromJack: railB });
   }
 
-  const isEnvChip = (n: Pick<AstNode, "type" | "id">) => {
-    const t = n.type.toLowerCase();
-    const id = (n.id || "").toLowerCase();
-    return t.startsWith("env") || id.startsWith("env");
-  };
-
   const isRailAudio = (n: AstNode) => {
     if (n.type === "out" || n.type === "bus" || isJoinSignal(n) || isForkSplit(n) || isForkJoin(n)) {
       return false;
     }
-    const t = n.type.toLowerCase();
-    return ! t.startsWith("osc") && ! isEnvChip(n);
+    return ! isModulatorNode(n);
   };
 
   for (const jn of nodes.filter(isJoinSignal)) {
@@ -431,7 +424,7 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
         push({ from: b.id, to: send.id, kind: "audio", fromJack: "out", toJack: "in" });
       }
     } else {
-      const first = kids.find((n) => ! isEnvChip(n)) ?? kids[0];
+      const first = kids.find((n) => ! isEnvNode(n)) ?? kids[0];
       if (first && ! next.some((e) => e.from === b.id && e.to === first.id)) {
         strip("IN", first.id);
         push({ from: b.id, to: first.id, kind: "audio", fromJack: "out", toJack: "in" });
@@ -442,7 +435,7 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
   // ENV is a tap, not a through node: keep audio into `in`, never out of env.
   for (const e of [...next]) {
     const src = byId.get(e.from);
-    if (! src || ! isEnvChip(src) || e.kind === "mod") {
+    if (! src || ! isEnvNode(src) || e.kind === "mod") {
       continue;
     }
     next = next.filter((x) => keyOf(x) !== keyOf(e));
@@ -460,7 +453,7 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     });
   }
 
-  for (const en of nodes.filter(isEnvChip)) {
+  for (const en of nodes.filter(isEnvNode)) {
     const srcArg = (en.args.source || en.args.input || en.args.sidechain || "").toLowerCase();
     if (srcArg === "sidechain" || srcArg === "sc" || srcArg === "ext") {
       continue;

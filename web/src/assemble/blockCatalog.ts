@@ -391,7 +391,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     id: "modmix", typeCodePrefix: "MX", label: "ModMix", category: "Mod",
     description: "Mischt zwei Modulationsquellen mit eigenen Leveln und einem Master-Mix.",
     dspType: "modmix",
-    audioIns: ["inA", "inB"], audioOuts: ["out"], modIns: [], modOuts: ["out"],
+    audioIns: [], audioOuts: [], modIns: ["inA", "inB"], modOuts: ["out"],
     params: [
       { key: "levelA", min: 0, max: 4, scale: "linear", def: "1", automatable: true, modulatable: false },
       { key: "levelB", min: 0, max: 4, scale: "linear", def: "1", automatable: true, modulatable: false },
