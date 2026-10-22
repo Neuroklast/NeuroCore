@@ -684,6 +684,8 @@ private:
         long long gateStep { -1 };
         bool gateStepOn { true };
         float glideValue { 0.f };
+        float glideCoefficient { 1.f };
+        int glideCoefficientStep { 0 };
         uint32_t seed { 12345u };
         bool syncEnabled { false };
         float syncWhole { 0.0625f };     ///< step length as a whole-note fraction

@@ -37,6 +37,8 @@ void SignalChain::StepSeq::clearRuntimeState() noexcept
     gateStep = -1;
     gateStepOn = true;
     glideValue = 0.0f;
+    glideCoefficient = 1.0f;
+    glideCoefficientStep = 0;
     pendingReset = true;
     liveStep.store (-1, std::memory_order_relaxed);
     if (liveStepSlot != nullptr)
@@ -166,6 +168,8 @@ void SignalChain::StepSeq::processBlock (juce::AudioBuffer<float>& buffer)
         stepIndex = 0;
         gateStep = -1;
         glideValue = 0.0f;
+        glideCoefficient = 1.0f;
+        glideCoefficientStep = 0;
         pendingReset = false;
     }
 
@@ -247,12 +251,22 @@ void SignalChain::StepSeq::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float target = (gateStepOn && stepPhase < gate) ? stepValue (stepIndex) : 0.0f;
         if (glide <= 1.0e-4f)
+        {
             glideValue = target;
+            glideCoefficientStep = 0;
+        }
         else
         {
-            const float tc = juce::jmax (0.001f, glide * 0.5f);
-            const float coeff = 1.0f - std::exp (-1.0f / (tc * sampleRate));
-            glideValue += (target - glideValue) * coeff;
+            // Update the expensive exponential at a 16-sample control
+            // cadence. The envelope state still advances at audio rate.
+            // A step from glide=0 always refreshes immediately.
+            if (glideCoefficientStep == 0)
+            {
+                const float tc = juce::jmax (0.001f, glide * 0.5f);
+                glideCoefficient = -std::expm1 (-1.0f / (tc * sampleRate));
+            }
+            glideCoefficientStep = (glideCoefficientStep + 1) & 15;
+            glideValue += (target - glideValue) * glideCoefficient;
         }
 
         modLane[(size_t) i] = glideValue * mix;
