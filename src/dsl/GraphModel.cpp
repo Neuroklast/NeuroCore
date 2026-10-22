@@ -2116,6 +2116,13 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
     {
         if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("samplehold"))
             addJack (jacks, "in", false, "audio");
+        if (t.startsWith ("modmath") || t.startsWith ("modmix"))
+        {
+            addJack (jacks, "inA", false, "mod");
+            addJack (jacks, "inB", false, "mod");
+        }
+        else if (t.startsWith ("samplehold"))
+            addJack (jacks, "inA", false, "mod");
         int dests = 0;
         if (doc != nullptr)
             for (const auto& other : doc->nodes)

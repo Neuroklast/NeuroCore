@@ -75,8 +75,9 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -93,8 +94,9 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
                               : 0.0;
     const float* audioIn = buffer.getReadPointer (0);
     const float* controlIn = inputSlots.empty() ? nullptr : inputSlots.front();
+    const Modulator* controlSource = inputSources.empty() ? nullptr : inputSources.front();
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
         const float rate = juce::jlimit (0.0f, 1000.0f, rateSm.getNextValue());
         const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
@@ -114,7 +116,13 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
             phase -= 1.0;
             if (holdRemaining <= 0.0f)
             {
-                const float input = controlIn != nullptr ? *controlIn : audioIn[i];
+                float input = audioIn[i];
+                if (controlSource != nullptr)
+                    input = (int) controlSource->modLane.size() > i
+                                ? controlSource->modLane[(size_t) i]
+                                : (controlSource->destSlot != nullptr ? *controlSource->destSlot : 0.0f);
+                else if (controlIn != nullptr)
+                    input = *controlIn;
                 held = quantizeValue (input, quantize);
                 holdRemaining = hold * sampleRate;
             }

@@ -51,8 +51,9 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -60,15 +61,31 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
     levelBSm.setTargetValue (snapEval (levelBExpr, 1.0f));
     mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
 
-    const float a = inputSlots.size() > 0 && inputSlots[0] != nullptr ? *inputSlots[0] : 0.0f;
-    const float b = inputSlots.size() > 1 && inputSlots[1] != nullptr ? *inputSlots[1] : 0.0f;
+    const Modulator* srcA = inputSources.size() > 0 ? inputSources[0] : nullptr;
+    const Modulator* srcB = inputSources.size() > 1 ? inputSources[1] : nullptr;
+    const float* slotA = inputSlots.size() > 0 ? inputSlots[0] : nullptr;
+    const float* slotB = inputSlots.size() > 1 ? inputSlots[1] : nullptr;
 
-    for (int i = 0; i < nS; ++i)
+    auto laneAt = [] (const Modulator* source, const float* slot, int index) noexcept
+    {
+        if (source != nullptr)
+        {
+            if ((int) source->modLane.size() > index)
+                return source->modLane[(size_t) index];
+            if (source->destSlot != nullptr)
+                return *source->destSlot;
+        }
+        return slot != nullptr ? *slot : 0.0f;
+    };
+
+    for (int i = 0; i < laneN; ++i)
     {
         const float levelA = juce::jlimit (0.0f, 4.0f, levelASm.getNextValue());
         const float levelB = juce::jlimit (0.0f, 4.0f, levelBSm.getNextValue());
         const float mix    = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
+        const float a = laneAt (srcA, slotA, i);
+        const float b = laneAt (srcB, slotB, i);
         modLane[(size_t) i] = (a * levelA + b * levelB) * mix;
     }
 }

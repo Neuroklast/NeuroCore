@@ -193,6 +193,8 @@ private:
         /** Control-source references (modmath/modmix inA/inB), resolved off-thread. */
         std::vector<juce::String> inputNames;
         std::vector<const float*> inputSlots;
+        std::vector<Modulator*> inputSources;
+        bool startRendered { false };
         float controlDepth { 1.0f };
         bool controlInvert { false };
         /** Audio-position detectors override this; pure generators run at block start. */
@@ -204,13 +206,15 @@ private:
         void reserveControlLane (const juce::dsp::ProcessSpec& spec)
         {
             const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
-            if (modLane.capacity() < laneN)
-                modLane.reserve (laneN);
+            modLane.assign (laneN, 0.0f);
         }
-        void publishLast() noexcept
+        void publishLast (int samples) noexcept
         {
             if (destSlot != nullptr)
-                *destSlot = modLane.empty() ? 0.0f : shapedControl (modLane.back());
+            {
+                const size_t count = (size_t) juce::jlimit (0, (int) modLane.size(), samples);
+                *destSlot = count == 0 ? 0.0f : shapedControl (modLane[count - 1]);
+            }
         }
         void clearControlLane() noexcept
         {
@@ -755,12 +759,20 @@ private:
     /** ModMath: combines inA and inB via add/sub/mul/div/min/max, scaled by amount. Params: mode, amount, mix. */
     struct ModMath : Modulator
     {
+        enum class Op
+        {
+            Add = 0, Sub, Mul, Div, Min, Max,
+            Abs, Invert, Clamp, Remap, Quantize, Slew
+        };
         ExpressionEvaluator amountExpr, mixExpr;
-        enum class Op { Add, Sub, Mul, Div, Min, Max };
+        ExpressionEvaluator clampMinExpr, clampMaxExpr;
+        ExpressionEvaluator inMinExpr, inMaxExpr, outMinExpr, outMaxExpr;
+        ExpressionEvaluator quantizeExpr, slewExpr;
         juce::SmoothedValue<float> amountSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
         Op op { Op::Add };
+        float slewValue { 0.0f };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;

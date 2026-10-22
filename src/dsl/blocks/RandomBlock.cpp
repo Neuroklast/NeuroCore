@@ -71,8 +71,9 @@ void SignalChain::Random::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -88,7 +89,7 @@ void SignalChain::Random::processBlock (juce::AudioBuffer<float>& buffer)
                               ? bpm / (juce::jmax (1.0 / 64.0, (double) syncWhole) * 240.0)
                               : 0.0;
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
         const float rate = juce::jlimit (0.0f, 1000.0f, rateSm.getNextValue());
         float lo = juce::jlimit (-10.0f, 10.0f, minSm.getNextValue());

@@ -66,8 +66,9 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -82,7 +83,7 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
     const float rmsCoeff = 1.0f - std::exp (-1.0f / (0.01f * sampleRate));
     int live = 0;
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
         const float threshold = juce::jlimit (-60.0f, 0.0f, thresholdSm.getNextValue());
         const float hysteresis = juce::jlimit (0.0f, 24.0f, hysteresisSm.getNextValue());

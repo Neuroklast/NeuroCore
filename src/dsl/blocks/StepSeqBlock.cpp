@@ -142,8 +142,9 @@ void SignalChain::StepSeq::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -174,7 +175,7 @@ void SignalChain::StepSeq::processBlock (juce::AudioBuffer<float>& buffer)
     const double pairBeats = stepBeats * 2.0;
     int lastStep = -1;
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
         const float gate = juce::jlimit (0.0f, 1.0f, gateSm.getNextValue());
         const float glide = juce::jlimit (0.0f, 1.0f, glideSm.getNextValue());

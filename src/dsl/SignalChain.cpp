@@ -1955,6 +1955,22 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             };
             parseAmt ("amount", nullptr, 0.f, 4.f, "1", mm->amountExpr, "amount");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", mm->mixExpr, "mix [0..1]");
+            parseAmt ("clampmin", "clamp_min", -10.f, 10.f, "-1",
+                      mm->clampMinExpr, "clamp min");
+            parseAmt ("clampmax", "clamp_max", -10.f, 10.f, "1",
+                      mm->clampMaxExpr, "clamp max");
+            parseAmt ("inmin", "in_min", -10.f, 10.f, "-1",
+                      mm->inMinExpr, "input min");
+            parseAmt ("inmax", "in_max", -10.f, 10.f, "1",
+                      mm->inMaxExpr, "input max");
+            parseAmt ("outmin", "out_min", -10.f, 10.f, "-1",
+                      mm->outMinExpr, "output min");
+            parseAmt ("outmax", "out_max", -10.f, 10.f, "1",
+                      mm->outMaxExpr, "output max");
+            parseAmt ("quantize", "quantise", 0.f, 1.f, "1",
+                      mm->quantizeExpr, "quantize [0..1]");
+            parseAmt ("slew", nullptr, 0.f, 1.f, "0",
+                      mm->slewExpr, "slew [0..1]");
 
             if (d.args.count ("mode"))
             {
@@ -1964,6 +1980,12 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 else if (m == "div") mm->op = ModMath::Op::Div;
                 else if (m == "min") mm->op = ModMath::Op::Min;
                 else if (m == "max") mm->op = ModMath::Op::Max;
+                else if (m == "abs" || m == "absolute") mm->op = ModMath::Op::Abs;
+                else if (m == "invert" || m == "inv") mm->op = ModMath::Op::Invert;
+                else if (m == "clamp") mm->op = ModMath::Op::Clamp;
+                else if (m == "remap" || m == "map") mm->op = ModMath::Op::Remap;
+                else if (m == "quantize" || m == "quantise") mm->op = ModMath::Op::Quantize;
+                else if (m == "slew") mm->op = ModMath::Op::Slew;
                 else mm->op = ModMath::Op::Add;
             }
 
@@ -2611,11 +2633,15 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         for (auto* mod : modulators)
         {
             mod->inputSlots.clear();
+            mod->inputSources.clear();
             mod->inputSlots.reserve (mod->inputNames.size());
+            mod->inputSources.reserve (mod->inputNames.size());
             for (const auto& input : mod->inputNames)
             {
                 const auto it = variables.find (input);
                 mod->inputSlots.push_back (it != variables.end() ? &it->second : nullptr);
+                const auto src = byName.find (input);
+                mod->inputSources.push_back (src != byName.end() ? src->second : nullptr);
             }
         }
     }
@@ -3128,19 +3154,57 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                               (int) oscs[i]->modLane.size());
     }
 
-    // Pure control generators run once per block, independent of bus position.
-    // shortcut: inA/inB read the source's last published value, so declare a source
-    // before its consumer; topological render order comes with the C-phase editors.
+    // Pure control generators run once per block in dependency order. Sources that
+    // need audio stay at their graph position and defer their consumers too.
+    bool preRendered[kMaxMods] {};
     for (int i = 0; i < nMod; ++i)
+        mods[i]->startRendered = false;
+
+    auto modIndex = [&mods, nMod] (const Modulator* m) noexcept
     {
-        if (mods[i]->needsAudioInput())
-            continue;
-        mods[i]->processBlock (buffer);
-        if (! mods[i]->modLane.empty())
+        for (int i = 0; i < nMod; ++i)
+            if (mods[i] == m)
+                return i;
+        return -1;
+    };
+
+    bool changed = true;
+    for (int guard = 0; changed && guard < nMod; ++guard)
+    {
+        changed = false;
+        for (int i = 0; i < nMod; ++i)
         {
-            writeNodeTapLane (mods[i]->tapSlot, mods[i]->modLane.data(),
-                              (int) mods[i]->modLane.size());
-            mods[i]->publishLast();
+            if (preRendered[i] || mods[i]->needsAudioInput())
+                continue;
+
+            bool blocked = false;
+            for (const auto* input : mods[i]->inputSources)
+            {
+                if (input == nullptr || input->kind == NodeKind::Osc)
+                    continue;
+                if (input->kind == NodeKind::Env || input->needsAudioInput())
+                {
+                    blocked = true;
+                    break;
+                }
+                const int j = modIndex (input);
+                if (j < 0 || ! preRendered[j])
+                {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked)
+                continue;
+
+            mods[i]->processBlock (buffer);
+            if (! mods[i]->modLane.empty())
+                writeNodeTapLane (mods[i]->tapSlot, mods[i]->modLane.data(),
+                                  juce::jmin (numSamples, (int) mods[i]->modLane.size()));
+            mods[i]->publishLast (numSamples);
+            mods[i]->startRendered = true;
+            preRendered[i] = true;
+            changed = true;
         }
     }
 
@@ -3226,14 +3290,15 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 case NodeKind::Modulator:
                 {
                     auto* mod = static_cast<Modulator*> (b.get());
-                    if (! mod->needsAudioInput())
+                    if (mod->startRendered)
                         continue;
                     mod->processBlock (slice);
                     if (! mod->modLane.empty())
                     {
                         writeNodeTapLane (mod->tapSlot, mod->modLane.data(),
-                                          (int) mod->modLane.size());
-                        mod->publishLast();
+                                          juce::jmin (slice.getNumSamples(),
+                                                      (int) mod->modLane.size()));
+                        mod->publishLast (slice.getNumSamples());
                     }
                     continue;
                 }

@@ -16,6 +16,7 @@ namespace
 
 void SignalChain::ModMath::clearRuntimeState() noexcept
 {
+    slewValue = 0.0f;
 }
 
 void SignalChain::ModMath::prepare (const juce::dsp::ProcessSpec& spec)
@@ -32,8 +33,11 @@ void SignalChain::ModMath::prepare (const juce::dsp::ProcessSpec& spec)
     };
     amountSm.setCurrentAndTargetValue (snap (amountExpr, 1.0f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 1.0f));
-    bindings.prepare (varPtr, { &amountExpr, &mixExpr });
+    bindings.prepare (varPtr, { &amountExpr, &mixExpr, &clampMinExpr, &clampMaxExpr,
+                                &inMinExpr, &inMaxExpr, &outMinExpr, &outMaxExpr,
+                                &quantizeExpr, &slewExpr });
     reserveControlLane (spec);
+    clearRuntimeState();
 }
 
 float SignalChain::ModMath::process (int ch, float x)
@@ -49,27 +53,84 @@ void SignalChain::ModMath::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
     const float amount = juce::jlimit (0.0f, 4.0f, snapEval (amountExpr, 1.0f));
-    const float mix    = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
-    const float a = inputSlots.size() > 0 && inputSlots[0] != nullptr ? *inputSlots[0] : 0.0f;
-    const float b = inputSlots.size() > 1 && inputSlots[1] != nullptr ? *inputSlots[1] : 0.0f;
+    const float mix = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
+    const float clampLo = juce::jmin (snapEval (clampMinExpr, -1.0f),
+                                      snapEval (clampMaxExpr, 1.0f));
+    const float clampHi = juce::jmax (snapEval (clampMinExpr, -1.0f),
+                                      snapEval (clampMaxExpr, 1.0f));
+    const float inLo = snapEval (inMinExpr, -1.0f);
+    const float inHi = snapEval (inMaxExpr, 1.0f);
+    const float outLo = snapEval (outMinExpr, -1.0f);
+    const float outHi = snapEval (outMaxExpr, 1.0f);
+    const float quantize = juce::jlimit (0.0f, 1.0f, snapEval (quantizeExpr, 1.0f));
+    const int levels = juce::jmax (2, (int) std::lround (2.0 + (1.0 - quantize) * 62.0));
+    const float quantStep = 2.0f / (float) (levels - 1);
+    const float smooth = juce::jlimit (0.0f, 1.0f, snapEval (slewExpr, 0.0f));
+    const float slewCoeff = smooth <= 1.0e-4f
+                                ? 1.0f
+                                : 1.0f - std::exp (-1.0f / (juce::jmax (0.001f, smooth * 0.5f) * sampleRate));
 
-    float math = a + b;
-    switch (op)
+    const Modulator* srcA = inputSources.size() > 0 ? inputSources[0] : nullptr;
+    const Modulator* srcB = inputSources.size() > 1 ? inputSources[1] : nullptr;
+    const float* slotA = inputSlots.size() > 0 ? inputSlots[0] : nullptr;
+    const float* slotB = inputSlots.size() > 1 ? inputSlots[1] : nullptr;
+    const float span = inHi - inLo;
+
+    auto laneAt = [] (const Modulator* source, const float* slot, int index) noexcept
     {
-    case Op::Sub: math = a - b; break;
-    case Op::Mul: math = a * b; break;
-    case Op::Div: math = (std::fabs (b) > 1e-6f) ? a / b : a; break;
-    case Op::Min: math = juce::jmin (a, b); break;
-    case Op::Max: math = juce::jmax (a, b); break;
-    case Op::Add: break;
-    }
+        if (source != nullptr)
+        {
+            if ((int) source->modLane.size() > index)
+                return source->modLane[(size_t) index];
+            if (source->destSlot != nullptr)
+                return *source->destSlot;
+        }
+        return slot != nullptr ? *slot : 0.0f;
+    };
 
-    const float result = math * amount * mix;
-    std::fill (modLane.begin(), modLane.begin() + nS, result);
+    for (int i = 0; i < laneN; ++i)
+    {
+        const float a = laneAt (srcA, slotA, i);
+        const float b = laneAt (srcB, slotB, i);
+        float result = 0.0f;
+
+        switch (op)
+        {
+        case Op::Add:    result = a + b; break;
+        case Op::Sub:    result = a - b; break;
+        case Op::Mul:    result = a * b; break;
+        case Op::Div:    result = std::fabs (b) > 1.0e-6f ? a / b : 0.0f; break;
+        case Op::Min:    result = juce::jmin (a, b); break;
+        case Op::Max:    result = juce::jmax (a, b); break;
+        case Op::Abs:    result = std::abs (a); break;
+        case Op::Invert: result = -a; break;
+        case Op::Clamp:  result = juce::jlimit (clampLo, clampHi, a); break;
+        case Op::Remap:
+            result = std::abs (span) < 1.0e-6f
+                         ? outLo
+                         : outLo + (a - inLo) * (outHi - outLo) / span;
+            break;
+        case Op::Quantize:
+            result = juce::jlimit (-1.0f, 1.0f, std::round (a / quantStep) * quantStep);
+            break;
+        case Op::Slew:
+            slewValue += (a - slewValue) * slewCoeff;
+            result = slewValue;
+            break;
+        default:
+            break;
+        }
+
+        if (op != Op::Clamp && op != Op::Remap && op != Op::Quantize && op != Op::Slew)
+            result *= amount;
+
+        modLane[(size_t) i] = result * mix;
+    }
 }

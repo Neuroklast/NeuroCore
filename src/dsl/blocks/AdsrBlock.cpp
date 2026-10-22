@@ -67,8 +67,9 @@ void SignalChain::Adsr::processBlock (juce::AudioBuffer<float>& buffer)
     if (nS <= 0 || nCh <= 0)
         return;
 
-    if ((int) modLane.size() < nS)
-        modLane.resize ((size_t) nS);
+    const int laneN = juce::jmin (nS, (int) modLane.size());
+    if (laneN <= 0)
+        return;
 
     bindings.refresh();
 
@@ -81,7 +82,7 @@ void SignalChain::Adsr::processBlock (juce::AudioBuffer<float>& buffer)
     const float invSr = 1.0f / sampleRate;
     const float* gateIn = buffer.getReadPointer (0);
 
-    for (int i = 0; i < nS; ++i)
+    for (int i = 0; i < laneN; ++i)
     {
         const bool audioGate = gateIn[i] > 0.5f;
         const bool midiGate = midiGatePtr != nullptr && *midiGatePtr > 0.5f;

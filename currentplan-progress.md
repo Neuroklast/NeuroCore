@@ -22,7 +22,8 @@ Dieses Dokument ist der laufende Arbeits- und Nachweisstand. Es ersetzt den Plan
 | C03 Sample & Hold | `VALIDATION_PENDING` | Rate/Sync, Hold, Slew, Quantize, Reset, Mono-Kontrolle; DAW/pluginval offen |
 | C04 Random Generator | `VALIDATION_PENDING` | Seed, Sync, Range/Swap, Shape, Smooth, Bipolar; DAW/pluginval offen |
 | C05 Envelope Trigger | `VALIDATION_PENDING` | Hysterese, Holdoff, Peak/RMS, Puls, Live-Trigger; DAW/pluginval offen |
-| B01–B11, C06–C08, D01–D05, E01–E02 | `OPEN` | Noch nicht begonnen |
+| C06 Modulation Math | `VALIDATION_PENDING` | Zwei echte Mod-Eingänge, 12 Operationen, Clamp/Remap/Quantize/Slew; DAW/pluginval offen |
+| B01–B11, C07–C08, D01–D05, E01–E02 | `OPEN` | Noch nicht begonnen |
 | F01–F24 | `OPEN` | Noch nicht begonnen |
 | G–I | `OPEN` | Noch nicht begonnen |
 
@@ -176,20 +177,27 @@ Nächster Schritt nach CI-Bestätigung: A03 (gemeinsame Modulationsarchitektur).
 Umgesetzt:
 
 - Neuer gemeinsamer `Modulator`-Basistyp in `src/dsl/SignalChain.h` mit
-  `name`, `modLane`, `destSlot`, `inputNames`, `inputSlots`, `controlDepth`,
-  `controlInvert`, `publishLast()`, `clearControlLane()` und `shapedControl()`.
+  `name`, `modLane`, `destSlot`, `inputNames`, `inputSlots`, `inputSources`,
+  `controlDepth`, `controlInvert`, `publishLast(samples)`, `clearControlLane()`
+  und `shapedControl()`.
 - `osc` und `env` erben jetzt von diesem Vertrag; ihre vorhandene
   `modLane`/`variables[name]`-Semantik bleibt unverändert.
 - `stepseq`, `adsr`, `samplehold`, `random`, `modmath`, `envtrigger` und `modmix`
   schreiben keine Audiodaten mehr, sondern füllen eine Kontroll-Lane und
   veröffentlichen sie in `variables[name]`.
-- Reine Generatoren (`stepseq`, `random`, `modmath`, `modmix`, `samplehold` mit
-  Kontrolleingang) laufen einmal pro Block; Detektoren (`adsr`, `envtrigger`,
-  `samplehold` ohne Kontrolleingang) laufen an ihrer Graph-Position.
+- Reine Generatoren werden **topologisch** vor dem Audioblock gerendert:
+  Quellen laufen vor ihren Consumern, unabhängig von der Patch-Reihenfolge.
+  Zyklen werden weiterhin beim Laden abgelehnt. Audioabhängige Detektoren
+  bleiben an ihrer Graph-Position und deferieren ihre Consumer.
+- `modmath`/`modmix` lesen die **komplette Kontroll-Lane** der Quellen pro Sample,
+  nicht mehr nur den zuletzt veröffentlichten Block-Endwert.
+- Kontroll-Lanes werden in `prepare` fest dimensioniert; `processBlock` ruft
+  kein `resize` mehr auf und verarbeitet nur die reservierte Länge.
 - Ziele werden über die bestehende Ausdrucksbindung erreicht. `Stage`, `Filter`
   und `Eq` erkennen jetzt auch neue Modulatornamen und injizieren sie
   sample- bzw. blockgenau.
-- `modmath`/`modmix` lesen ihre Quellen über `inA`/`inB` statt über Audio-L/R.
+- `modmath`/`modmix`-Ports sind im Katalog/ChipSpec als Mod-Ports deklariert;
+  `GraphModel` zeigt `inA`/`inB` als Mod-Jacks.
 - Zyklenerkennung und Validierung unbekannter Quellen beim `loadScript`.
 - `clearRuntimeState()` setzt alle veröffentlichten Kontrollwerte auf 0.
 - `GraphModel` behandelt die neuen Typen als Modulatoren (nicht als serielle
@@ -206,22 +214,24 @@ Neue Tests in `tests/ModulationBlocksTest.h`:
 - Kontrollquelle moduliert ein Filter-Cutoff.
 - Depth/Polarity skalieren den veröffentlichten Wert.
 - Reset löscht den veröffentlichten Kontrollwert.
+- ModMath wird trotz später deklarierter Quelle korrekt gerendert
+  (topologische Reihenfolge).
+- ModMath/ModMix verarbeiten die komplette Quell-Lane pro Sample.
 
 Ergebnisse:
 
 | Prüfung | Ergebnis |
 |---|---|
-| `NeuroKoreTests.exe ModulationBlocksTest` | 377 passed, 0 failed |
-| Gesamte native Suite | 33179 passed, 5 failed (dieselben 5 Alttests wie A01) |
+| Gesamte native Suite | 33272 passed, 5 failed (dieselben 5 Alttests wie A01) |
 | `NeuroKoreDspContracts.exe` | `Failures: 0` |
 | `NeuroKoreDspContracts.exe --expansion` | Exit 0 |
 
-Rohprotokolle: `build/a03-native-test4.log`, `build/a03-contracts-test3.log`.
+Rohprotokolle: `build/a03fix-final2-native.log`,
+`build/a03fix-final2-contracts.log`.
 
 Noch nicht Teil von A03 (bewusst den Modulen/Phase G zugeordnet):
 
-- Port-Deklarationen in `blockCatalog.ts`/`chipSpec.ts` und die zugehörigen
-  Circuit-Editoren für `inA`/`inB`, Step-Werte und Hüllkurven.
+- Grafische Mod-Kabel zu `inA`/`inB` (Jacks sind sichtbar, Commit-Pfad noch offen).
 - Host-Sync für StepSeq/Random (C01/C04).
 - Explizite Depth-/Polarity-Regler im Inspect-Panel (C01–C07/G).
 
@@ -464,6 +474,50 @@ Noch `NOT RUN` / offen:
 
 Nächstes Arbeitspaket: **C06 – Modulation Math** (zwei echte Mod-Eingänge,
 alle Operationen, Audio-L/R-Semantik entfernen).
+
+---
+
+## C06 – Modulation Math
+
+**Status: `VALIDATION_PENDING`** (Implementierung und lokale Abnahme fertig;
+DAW/pluginval noch `NOT RUN`)
+
+Umgesetzt in `src/dsl/blocks/ModMathBlock.cpp` und `src/dsl/SignalChain.*`:
+
+- Zwei echte Modulationseingänge `inA`/`inB`; keine Audio-Kanäle mehr.
+- Operationen: add, sub, mul, div, min, max, abs, invert, clamp, remap,
+  quantize, slew.
+- Division durch 0 ist definiert (0); Clamp/Remap haben eigene Min/Max-Parameter;
+  Quantize 2–64 Stufen, auf ±1 begrenzt; Slew läuft samplegenau.
+- `amount` skaliert die arithmetischen Operationen, `mix` den Ausgang.
+- Zyklenerkennung aus A03 greift auch für ModMath.
+- Parameter und Ports in `blockCatalog.ts`/`chipSpec.ts` korrigiert.
+
+Tests in `tests/ModulationBlocksTest.h`:
+
+- Alle binären Operationen, Division durch 0, Abs/Invert, Clamp, Remap,
+  Quantize und Slew mit kontrollierten Quellen.
+
+Ergebnisse:
+
+| Prüfung | Ergebnis |
+|---|---|
+| Gesamte native Suite | 33272 passed, 5 failed (dieselben Alttests) |
+| `NeuroKoreDspContracts.exe` | `Failures: 0` |
+| Web-Build (`tsc` + Vite) | OK |
+| ADSR-/StepSeq-/Katalog-Verträge | 39 passed; 1 alter `cables`-Default-Fehler |
+
+Rohprotokolle: `build/a03fix-final2-native.log`,
+`build/a03fix-final2-contracts.log`.
+
+Noch `NOT RUN` / offen:
+
+1. Host-/DAW-Abnahme (VST3/Standalone).
+2. pluginval und Preset-Restore.
+3. Drei C06-Test-Patches als Factory-Presets.
+4. CPU-Messung bei vielen ModMath-Ketten.
+
+Nächstes Arbeitspaket: **C07 – Modulation Mixer**.
 
 ---
 

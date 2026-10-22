@@ -1051,6 +1051,103 @@ public:
             expectEquals (edgesFor ("source = rms", 1.0f), 1);
         }
 
+        beginTest ("modmath implements the binary operations on control sources");
+        {
+            auto value = [] (const char* mode, float a, float b)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                chain.loadScript (
+                    juce::String ("random1: rate = 1000; min = ") + juce::String (a)
+                    + "; max = " + juce::String (a)
+                    + "\nrandom2: rate = 1000; min = " + juce::String (b)
+                    + "; max = " + juce::String (b)
+                    + "\nmodmath1: ina = random1; inb = random2; mode = " + mode
+                    + "; amount = 1; mix = 1\nstage1: y = modmath1\n", err);
+                chain.prepare ({ 48000.0, 2000, 1 });
+                juce::AudioBuffer<float> buf (1, 2000);
+                buf.clear();
+                chain.processBlock (buf);
+                return buf.getSample (0, 1500);
+            };
+            expectWithinAbsoluteError (value ("add", 0.5f, 0.25f), 0.75f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("sub", 0.5f, 0.25f), 0.25f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("mul", 0.5f, 0.25f), 0.125f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("div", 0.25f, 0.5f), 0.5f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("min", 0.5f, 0.25f), 0.25f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("max", 0.5f, 0.25f), 0.5f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("div", 0.5f, 0.0f), 0.0f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("abs", -0.5f, 0.0f), 0.5f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("invert", 0.5f, 0.0f), -0.5f, 1.0e-4f);
+        }
+
+        beginTest ("modmath clamp, remap, quantize and slew");
+        {
+            auto value = [] (const char* mode, float a, const char* extra)
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                chain.loadScript (
+                    juce::String ("random1: rate = 1000; min = ") + juce::String (a)
+                    + "; max = " + juce::String (a)
+                    + "\nmodmath1: ina = random1; mode = " + mode
+                    + "; amount = 1; mix = 1; " + extra + "\nstage1: y = modmath1\n", err);
+                chain.prepare ({ 48000.0, 2000, 1 });
+                juce::AudioBuffer<float> buf (1, 2000);
+                buf.clear();
+                chain.processBlock (buf);
+                return buf.getSample (0, 1500);
+            };
+            expectWithinAbsoluteError (value ("clamp", 0.5f, "clampmin = 0.2; clampmax = 0.4"), 0.4f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("remap", 0.5f, "inmin = 0; inmax = 1; outmin = -1; outmax = 1"), 0.0f, 1.0e-4f);
+            expectWithinAbsoluteError (value ("quantize", 0.6f, "quantize = 1"), 0.0f, 1.0e-4f);
+            const float slewed = value ("slew", 1.0f, "slew = 0.1");
+            expect (slewed > 0.0f && slewed < 0.9f);
+        }
+
+        beginTest ("modmath renders sources topologically and per sample");
+        {
+            dsl::SignalChain order;
+            juce::String err;
+            expect (order.loadScript (
+                "modmath1: ina = random1; mode = add; amount = 1; mix = 1\n"
+                "random1: rate = 1000; min = 0.5; max = 0.5\n"
+                "stage1: y = modmath1\n", err), err);
+            order.prepare ({ 48000.0, 1000, 1 });
+            juce::AudioBuffer<float> buf (1, 1000);
+            buf.clear();
+            order.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 500), 0.5f, 1.0e-4f);
+
+            dsl::SignalChain lane;
+            expect (lane.loadScript (
+                "stepseq1: steps = 2; rate = 100; values = 0.5, -0.5; gate = 1; mix = 1\n"
+                "modmath1: ina = stepseq1; mode = add; amount = 1; mix = 1\n"
+                "stage1: y = modmath1\n", err), err);
+            lane.prepare ({ 48000.0, 1000, 1 });
+            juce::AudioBuffer<float> ramp (1, 1000);
+            ramp.clear();
+            lane.processBlock (ramp);
+            expectWithinAbsoluteError (ramp.getSample (0, 100), 0.5f, 1.0e-4f);
+            expectWithinAbsoluteError (ramp.getSample (0, 600), -0.5f, 1.0e-4f);
+        }
+
+        beginTest ("modmix keeps the full source lane");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "stepseq1: steps = 2; rate = 100; values = 0.5, -0.5; gate = 1; mix = 1\n"
+                "modmix1: ina = stepseq1; levela = 1; levelb = 0; mix = 1\n"
+                "stage1: y = modmix1\n", err), err);
+            chain.prepare ({ 48000.0, 1000, 1 });
+            juce::AudioBuffer<float> buf (1, 1000);
+            buf.clear();
+            chain.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 100), 0.5f, 1.0e-4f);
+            expectWithinAbsoluteError (buf.getSample (0, 600), -0.5f, 1.0e-4f);
+        }
+
         beginTest ("one stepseq drives two independent targets");
         {
             dsl::SignalChain chain;

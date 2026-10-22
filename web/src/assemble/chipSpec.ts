@@ -504,15 +504,31 @@ add({
   id: "modmath",
   label: "ModMath",
   typeCodePrefix: "MM",
-  audioIns: ["inA", "inB"],
-  audioOuts: ["out"],
-  paramJacks: ["mode", "amount", "mix"],
+  audioIns: [],
+  audioOuts: ["mod"],
+  modIns: ["inA", "inB"],
+  paramJacks: ["mode", "amount", "mix", "clampMin", "clampMax", "inMin", "inMax", "outMin", "outMax", "quantize", "slew"],
   ranges: {
+    mode: { min: 0, max: 11 },
     amount: { min: 0, max: 4 },
     mix: { min: 0, max: 1, unit: "%" },
+    clampMin: { min: -10, max: 10 },
+    clampMax: { min: -10, max: 10 },
+    inMin: { min: -10, max: 10 },
+    inMax: { min: -10, max: 10 },
+    outMin: { min: -10, max: 10 },
+    outMax: { min: -10, max: 10 },
+    quantize: { min: 0, max: 1, unit: "%" },
+    slew: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { mode: "add", amount: "1", mix: "1" },
-  blurb: "Kombiniert ch0 und ch1 via mode (add/sub/mul/div/min/max), skaliert mit amount, gemixt mit mix.",
+  enums: {
+    mode: ["add", "sub", "mul", "div", "min", "max", "abs", "invert", "clamp", "remap", "quantize", "slew"],
+  },
+  defaultArgs: {
+    mode: "add", amount: "1", mix: "1", clampMin: "-1", clampMax: "1",
+    inMin: "-1", inMax: "1", outMin: "-1", outMax: "1", quantize: "1", slew: "0",
+  },
+  blurb: "Rechnet zwei echte Modulationsquellen (inA/inB) per mode; ohne Audio-Kanäle.",
 });
 
 add({

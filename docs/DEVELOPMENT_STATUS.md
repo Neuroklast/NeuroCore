@@ -6,7 +6,7 @@
 
 ## DSP expansion A03 — control-source contract (2026-10-22)
 
-`osc`/`env` and the new modulator blocks now share one `Modulator` contract: a per-block control lane published into `variables[name]`, optional `inA`/`inB` source references, depth/polarity, cycle rejection, and reset. `stepseq`, `adsr`, `samplehold`, `random`, `modmath`, `envtrigger` and `modmix` no longer write audio; pure generators run once per block, detectors at their graph position. Stage/filter/EQ targets inject the published value sample- or block-accurately. `GraphModel` treats these types as modulators. Native suite: 33179 passed / 5 pre-existing failures; `ModulationBlocksTest` 377/377; DSP contracts 0 failures. Circuit port declarations and the module editors remain with C01–C08/G. Version stays 0.7.1-beta.
+`osc`/`env` and the new modulator blocks now share one `Modulator` contract: a per-block control lane published into `variables[name]`, optional `inA`/`inB` source references, depth/polarity, cycle rejection, and reset. Pure generators run in topological dependency order before the audio block; audio-dependent detectors stay at their graph position. ModMath/ModMix consume the complete source lanes per sample, and control lanes are sized in `prepare` so `processBlock` never resizes. `stepseq`, `adsr`, `samplehold`, `random`, `modmath`, `envtrigger` and `modmix` write no audio. Stage/filter/EQ targets inject the published value sample- or block-accurately; `GraphModel` treats these types as modulators and shows `inA`/`inB` mod jacks. Native suite: 33272 passed / 5 pre-existing failures; DSP contracts 0 failures; web build clean. Circuit mod-input cable commits and the module editors remain with C01–C08/G. Version stays 0.7.1-beta.
 
 ## DSP expansion C01 — step sequencer (2026-10-22)
 
@@ -27,6 +27,10 @@ Random now has a user seed with deterministic reset, free or host-synced rate, s
 ## DSP expansion C05 — Envelope trigger (2026-10-22)
 
 Envelope Trigger now uses a dBFS threshold, sensitivity pre-gain, 0–24 dB hysteresis, holdoff, stable pulse length/level, and peak/RMS detector source. A single transient fires exactly once; re-arm requires falling below the release threshold. Live pulse state flows through `appendClipPeaks` → `hostStore.clipsTrigger` into the chip face, which draws threshold and pulse. Parameters are in the central catalog and ChipSpec. Tests cover one-transient/one-trigger, holdoff, hysteresis, threshold edges/silence and peak vs. RMS. Native suite: 33251 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
+
+## DSP expansion C06 — Modulation math (2026-10-22)
+
+ModMath now combines two real control inputs (`inA`/`inB`) with add, sub, mul, div, min, max, abs, invert, clamp, remap, quantize and sample-accurate slew. Division by zero is defined, quantize has 2–64 levels clamped to ±1, and clamp/remap ranges are parameters. Audio L/R are no longer implicit math inputs; catalog ports are corrected. Tests cover every operation, divide-by-zero, abs/invert, clamp/remap, quantize and slew. Native suite: 33272 passed / 5 pre-existing failures; DSP contracts 0; web build clean; 39 web tests pass with the one pre-existing `cables` default failure. DAW/pluginval and factory presets remain NOT RUN. Version stays 0.7.1-beta.
 
 ## Website licensing integration (implementation branch)
 
