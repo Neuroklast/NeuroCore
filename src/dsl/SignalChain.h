@@ -497,8 +497,8 @@ private:
 
         ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr, characterExpr;
         ExpressionEvaluator modeExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm, characterSm;
-        juce::SmoothedValue<float> outputSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, outputSm;
+        juce::SmoothedValue<float> biasSm, dynamicsSm, toneSm, characterSm, mixSm;
         Mode mode { Mode::Tube };
         bool autoGain { false };
         float sampleRate { 44100.f };
