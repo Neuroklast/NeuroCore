@@ -62,32 +62,67 @@ public:
             expect (errorPeak < 1e-6f, "dry and real paths must share the reported latency");
         }
 
-        beginTest ("ReverseDelay time=250 is 250 ms, not 2 s");
+        beginTest ("ReverseDelay records a 250 ms window before reverse playback");
         {
             dsl::SignalChain chain;
             juce::String err;
-            juce::dsp::ProcessSpec spec { 44100.0, 128, 1 };
-            chain.prepare (spec);
+            chain.prepare ({ 44100.0, 128, 1 });
             expect (chain.loadScript ("reversedelay1: time = 250; mix = 1; feedback = 0", err), err);
 
-            constexpr int n = 12800;
-            juce::AudioBuffer<float> buf (1, n);
-            buf.clear();
-            buf.setSample (0, 0, 1.0f);
+            constexpr int n = 25600; // 580 ms, enough for a complete reversal
+            constexpr int window = 11025;
+            juce::AudioBuffer<float> buffer (1, n);
+            buffer.clear();
+            buffer.setSample (0, window / 2, 1.f);
             juce::AudioBuffer<float> slice (1, 128);
             for (int off = 0; off < n; off += 128)
             {
                 for (int i = 0; i < 128; ++i)
-                    slice.setSample (0, i, buf.getSample (0, off + i));
+                    slice.setSample (0, i, buffer.getSample (0, off + i));
                 chain.processBlock (slice);
                 for (int i = 0; i < 128; ++i)
-                    buf.setSample (0, off + i, slice.getSample (0, i));
+                    buffer.setSample (0, off + i, slice.getSample (0, i));
             }
+            float beforeWindow = 0.f, afterWindow = 0.f;
+            for (int i = 0; i < n; ++i)
+            {
+                const float a = std::abs (buffer.getSample (0, i));
+                if (i < window) beforeWindow = juce::jmax (beforeWindow, a);
+                else afterWindow = juce::jmax (afterWindow, a);
+            }
+            expect (beforeWindow < 1.0e-6f, "reverse audio must wait for a complete segment");
+            expect (afterWindow > 0.25f, "recorded center pulse must play backwards");
+            expect (TestHelpers::countNonFinite (buffer) == 0);
+        }
 
-            const float peak = TestHelpers::peakAbs (buf);
-            expect (peak > 0.25f, "250 ms wet should appear inside 290 ms, peak="
-                    + juce::String (peak, 4));
-            expect (TestHelpers::countNonFinite (buf) == 0);
+        beginTest ("ReverseDelay reverses event order within a segment");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            chain.prepare ({ 48000.0, 128, 1 });
+            expect (chain.loadScript ("reversedelay1: time = 20; mix = 1; feedback = 0", err), err);
+            constexpr int total = 3072;
+            juce::AudioBuffer<float> audio (1, total);
+            audio.clear();
+            audio.setSample (0, 200, 0.35f);
+            audio.setSample (0, 600, 0.8f);
+            juce::AudioBuffer<float> slice (1, 128);
+            for (int off = 0; off < total; off += 128)
+            {
+                for (int i = 0; i < 128; ++i)
+                    slice.setSample (0, i, audio.getSample (0, off + i));
+                chain.processBlock (slice);
+                for (int i = 0; i < 128; ++i)
+                    audio.setSample (0, off + i, slice.getSample (0, i));
+            }
+            float first = 0.f, second = 0.f;
+            for (int i = 1250; i < 1400; ++i)
+                first = juce::jmax (first, std::abs (audio.getSample (0, i)));
+            for (int i = 1650; i < 1800; ++i)
+                second = juce::jmax (second, std::abs (audio.getSample (0, i)));
+            expect (first > 0.35f && second > 0.12f && first > second,
+                "late/loud input must play before early/quiet input");
+            expect (TestHelpers::countNonFinite (audio) == 0);
         }
 
         beginTest ("Decimate stereo hold uses L, not R");

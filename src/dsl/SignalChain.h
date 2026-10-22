@@ -1253,7 +1253,7 @@ private:
         void processFrame (float& left, float* right) noexcept;
     };
 
-    /** Reversed delay: writes into a ring, reads backwards at timeSec offset. Params: time [ms], feedback, mix. */
+    /** Reversed delay: records complete segments, then plays each backwards. Params: time [ms], feedback, mix. */
     struct ReverseDelay : Block
     {
         static constexpr float kMaxDelaySec = 2.0f;
@@ -1266,6 +1266,9 @@ private:
         int channels { 1 };
         std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
+        size_t captureStart { 0 }, previousStart { 0 };
+        int capturePos { 0 }, captureSamples { 0 }, previousSamples { 0 };
+        float feedbackWet[2] {};
 
         juce::SmoothedValue<float> timeSm, feedbackSm, mixSm;
 
