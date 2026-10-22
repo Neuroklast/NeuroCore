@@ -1,7 +1,13 @@
+import { MeterFace } from "./MeterFace";
 import type { FaceProps } from "./faceKind";
 import { utilityFaceModel, utilityMarks, utilityParamsPath } from "./utilityParams";
 
-export function UtilityFace({ args, host }: FaceProps) {
+export function UtilityFace(props: FaceProps) {
+  if (props.type === "meter") return <MeterFace {...props} />;
+  return <UtilityParamsFace {...props} />;
+}
+
+function UtilityParamsFace({ args, host }: FaceProps) {
   const model = utilityFaceModel(args, host);
   const marks = utilityMarks(args, host);
   return (

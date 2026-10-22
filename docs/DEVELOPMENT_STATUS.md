@@ -4,6 +4,10 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## Circuit live instruments (2026-10-22)
+
+Branch `feat/circuit-live-instruments`, based on main after #326. StepSeq uses an eight-column theme-accent LED matrix (1–64 steps, host position, mutes). Meter replaces the unrelated gain/pan glyph with its own peak/RMS screen, −60 dBFS floor and missing-tap state. Initial rendering contracts failed on both old faces. Focused contracts and web build pass. Browser geometry/live theme checks are in progress. Native binary unchanged.
+
 ## 0.7.2-beta (2026-10-22)
 
 Version bump for the modulation expansion (A03, C01-C06). Product behavior and VST3 class IDs otherwise unchanged. Local Windows Release 2026-10-22: `NEUROKORE-0.7.2-beta-Setup.exe` SHA256 `8121c9dc833c91e8931f45cb240bb7def9405ee88d15fc204ff34a42668d1bad` (unsigned), plus win64 zip.
