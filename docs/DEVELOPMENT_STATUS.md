@@ -18,6 +18,10 @@ Inspect width is explicitly capped at 640 px, correcting the global CSS max-widt
 
 The cached substrate paints the current preset and actual effect counts in a clipped lower strip outside chip and routed-trace bounds. Preset-name changes invalidate the passive cache. Geometry contract passes. `docs/design/CIRCUIT_CONNECTOR_EVALUATION.md` records measured default widths (StepSeq 1536, Comp 1024, Filter/Meter 352 logical px), alternatives and north/south port-model requirements. Connector geometry remains unchanged as requested.
 
+## Circuit flow completion under silence (2026-10-22)
+
+A follow-up contract reproduced a long-route pulse disappearing after only 374 of 1000 px when later silence slowed travel. Packet lifetime now reserves the remaining route at the current minimum speed, including camera-scale changes. Packets still leave once and never wrap; tail removal allows the entire stroke to leave the destination. Focused final model/render/Inspect checks: 52 pass, TypeScript clean. Browser tests now exercise all four themes, eight LED rows, the actual source meter tap, OUT Inspect, stable controls and moving Dots at 8/100/200 modules and both densities. Final browser run pending.
+
 ## 0.7.2-beta (2026-10-22)
 
 Version bump for the modulation expansion (A03, C01-C06). Product behavior and VST3 class IDs otherwise unchanged. Local Windows Release 2026-10-22: `NEUROKORE-0.7.2-beta-Setup.exe` SHA256 `8121c9dc833c91e8931f45cb240bb7def9405ee88d15fc204ff34a42668d1bad` (unsigned), plus win64 zip.

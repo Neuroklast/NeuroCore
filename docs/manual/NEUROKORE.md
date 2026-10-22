@@ -98,7 +98,7 @@ A restrained silkscreen strip below the routed circuit identifies the current pr
 
 Inspect opens a compact hardware panel with a scrollable control grid, direct value entry and Peak/RMS readings. Use arrow keys on a focused dial to adjust it, Shift for fine changes, Home/End for its limits, or Reset for the default. IN and OUT show the plugin input/output even when they are implicit in the source. The panel’s close button stays in its title bar while content scrolls.
 
-With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop. Reduced/Off motion keeps a stationary level indication.
+With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop, including when the incoming audio falls silent or zoom changes during travel. Reduced/Off motion keeps a stationary level indication.
 
 StepSeq chips show up to 64 host-reported steps as eight LEDs per row, with at most eight rows. The current step lights in the selected theme accent. Muted steps stay dim. Meter chips contain a recessed Peak/RMS display in dBFS from that module’s own tap, with a −60 dBFS floor. Missing measurements show —.
 

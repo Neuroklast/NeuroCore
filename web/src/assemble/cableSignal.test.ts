@@ -89,3 +89,15 @@ it("represents sustained measured energy even without a local tap maximum", () =
   advanceCableSignal(s, {}, [], 0.2, 0.2, 500, 0.016);
   expect(s.impulses.length).toBe(1);
 });
+
+it("finishes a long-route impulse when subsequent silence slows the stream", () => {
+  const s = emptyCableSignal(), token={};
+  advanceCableSignal(s, token, [0.5], 1, 1, 1000, 0);
+  let furthest=0;
+  for (let i=0;i<500;i++) {
+    advanceCableSignal(s, token, [], 0, 0, 1000, .05);
+    for(const p of s.impulses) furthest=Math.max(furthest,p.distance);
+  }
+  expect(furthest).toBeGreaterThanOrEqual(1000);
+  expect(s.impulses).toHaveLength(0);
+});
