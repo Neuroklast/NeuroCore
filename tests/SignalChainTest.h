@@ -534,6 +534,38 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 0), 1.5f, 1.0e-4f);
         }
 
+        beginTest ("rejected control graph preserves the previous bus routing");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "stage1: y = x * 0.5\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.25\n"
+                "out: main = 1; dirt = 1\n", err), err);
+            chain.prepare ({ 48000.0, 128, 2 });
+            juce::AudioBuffer<float> baseline (2, 128);
+            for (int i = 0; i < 128; ++i)
+            {
+                baseline.setSample (0, i, 0.2f);
+                baseline.setSample (1, i, -0.2f);
+            }
+            juce::AudioBuffer<float> after (2, 128);
+            after.makeCopyOf (baseline);
+            chain.processBlock (baseline);
+
+            expect (! chain.loadScript (
+                "modmath1: ina = missing123; mode = add; amount = 1\n"
+                "stage1: y = x\n", err));
+            expect (err.containsIgnoreCase ("unknown modulation source"), err);
+            chain.processBlock (after);
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < 128; ++i)
+                    expectWithinAbsoluteError (
+                        after.getSample (ch, i), baseline.getSample (ch, i), 1.0e-5f);
+        }
+
         beginTest("send from processed main");
         {
             dsl::SignalChain c;
