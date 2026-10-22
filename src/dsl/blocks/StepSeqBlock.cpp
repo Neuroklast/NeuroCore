@@ -194,9 +194,14 @@ void SignalChain::StepSeq::processBlock (juce::AudioBuffer<float>& buffer)
 
             const double ppq = hostPpq + (double) i * (bpm / 60.0) * invSr;
             const double pairIndex = std::floor (ppq / pairBeats);
-            double pairPos = std::fmod (ppq, pairBeats);
+            // The quotient is already known. Recover its fractional beat
+            // position by subtraction instead of calling std::fmod() for
+            // every sample of every sequencer at the OS sample rate.
+            double pairPos = ppq - pairIndex * pairBeats;
             if (pairPos < 0.0)
                 pairPos += pairBeats;
+            else if (pairPos >= pairBeats)
+                pairPos -= pairBeats;
 
             const double first = stepBeats * (1.0 + swing);
             const double second = juce::jmax (1.0e-6, pairBeats - first);
