@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-20 (0.7.1-beta)
-**Version:** 0.7.1-beta  
-**Branch:** `codex/neurokore-licensing`
+**Stand:** 2026-10-22 (0.7.2-beta)
+**Version:** 0.7.2-beta  
+**Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
+
+## 0.7.2-beta (2026-10-22)
+
+Version bump for the modulation expansion (A03, C01-C06). Product behavior and VST3 class IDs otherwise unchanged. Local Windows Release 2026-10-22: `NEUROKORE-0.7.2-beta-Setup.exe` SHA256 `8121c9dc833c91e8931f45cb240bb7def9405ee88d15fc204ff34a42668d1bad` (unsigned), plus win64 zip.
 
 ## DSP expansion A03 — control-source contract (2026-10-22)
 

@@ -8,7 +8,7 @@ import { TITLE_H } from "../assemble/chipMetrics";
  */
 export const SIGNAL_LAB = {
   product: "NEUROKORE",
-  version: "0.7.1-beta",
+  version: "0.7.2-beta",
   depth: {
     workspace: 0,
     idle: 1,
