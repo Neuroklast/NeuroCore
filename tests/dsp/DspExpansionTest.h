@@ -408,6 +408,38 @@ public:
             expectWithinAbsoluteError (buffer.getSample (0, 0), -0.5f, 1.0e-4f);
         }
 
+        beginTest ("Resonator cutoff automation changes bandpass response");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript (
+                "resonator1: freq = 200 + a * 3800; res = 2; gain = 0; mix = 1", err), err);
+            juce::AudioBuffer<float> audio (1, 128);
+            auto energy = [&] (float knob)
+            {
+                chain.setParameter (0, knob);
+                double sum = 0.;
+                for (int block = 0; block < 100; ++block)
+                {
+                    for (int i = 0; i < 128; ++i)
+                        audio.setSample (0, i, 0.2f * std::sin (
+                            juce::MathConstants<float>::twoPi * 4000.f
+                            * (float) (block * 128 + i) / 48000.f));
+                    chain.processBlock (audio);
+                    if (block >= 92)
+                        for (int i = 0; i < 128; ++i)
+                            sum += audio.getSample (0, i) * audio.getSample (0, i);
+                }
+                return sum;
+            };
+            const auto low = energy (0.f);
+            const auto high = energy (1.f);
+            expect (std::isfinite (low) && std::isfinite (high));
+            expect (high > low * 1.5,
+                "resonance peak must track live cutoff parameter");
+        }
+
         beginTest ("Nonlinear filter cutoff automation remains effective");
         {
             dsl::SignalChain chain;

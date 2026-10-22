@@ -601,10 +601,12 @@ private:
     {
         juce::dsp::StateVariableTPTFilter<float> filter;
         ExpressionEvaluator freqExpr, resExpr, gainExpr, mixExpr;
-        juce::SmoothedValue<float> freqSm, resSm, gainSm, mixSm;
+        juce::SmoothedValue<float> freqSm, resSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> gainSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float cachedF { -1.f }, cachedQ { -1.f }, cachedG { -1000.f }, lin { 1.f };
+        float cachedF { -1.f }, cachedQ { -1.f };
+        int coefficientStep { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);

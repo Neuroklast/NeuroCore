@@ -18,8 +18,7 @@ void SignalChain::Resonator::clearRuntimeState() noexcept
     filter.reset();
     cachedF = -1.f;
     cachedQ = -1.f;
-    cachedG = -1000.f;
-    lin = 1.f;
+    coefficientStep = 0;
 }
 
 void SignalChain::Resonator::prepare (const juce::dsp::ProcessSpec& spec)
@@ -38,7 +37,8 @@ void SignalChain::Resonator::prepare (const juce::dsp::ProcessSpec& spec)
     };
     freqSm.setCurrentAndTargetValue (snap (freqExpr, 1000.0f));
     resSm.setCurrentAndTargetValue (snap (resExpr, 1.0f));
-    gainSm.setCurrentAndTargetValue (snap (gainExpr, 0.0f));
+    gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 24.f, snap (gainExpr, 0.f))));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 1.0f));
 
     filter.prepare (spec);
@@ -65,7 +65,8 @@ void SignalChain::Resonator::processBlock (juce::AudioBuffer<float>& buffer)
 
     freqSm.setTargetValue (snapEval (freqExpr, 1000.0f));
     resSm.setTargetValue (snapEval (resExpr, 1.0f));
-    gainSm.setTargetValue (snapEval (gainExpr, 0.0f));
+    gainSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 24.f, snapEval (gainExpr, 0.f))));
     mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
 
     const int useCh = juce::jmin (nCh, 2);
@@ -75,28 +76,26 @@ void SignalChain::Resonator::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float f   = juce::jlimit (20.0f, 20000.0f, freqSm.getNextValue());
-        const float q   = juce::jlimit (0.1f, 10.0f, resSm.getNextValue());
-        const float db  = juce::jlimit (-24.0f, 24.0f, gainSm.getNextValue());
-        const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
+        const float f = juce::jlimit (20.f,
+            juce::jmin (20000.f, sampleRate * 0.45f), freqSm.getNextValue());
+        const float q = juce::jlimit (0.1f, 10.f, resSm.getNextValue());
+        const float gain = gainSm.getNextValue();
+        const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
 
-        if (std::abs (f - cachedF) > 1.0e-3f || std::abs (q - cachedQ) > 1.0e-3f)
+        // The SVF runs at audio rate; only its expensive coefficient
+        // calculations are refreshed every 16 samples. A smoothing value
+        // still advances on each frame and no heap allocations occur here.
+        if (coefficientStep == 0 &&
+            (std::abs (f - cachedF) > 1.0e-3f || std::abs (q - cachedQ) > 1.0e-3f))
         {
             cachedF = f;
             cachedQ = q;
             filter.setCutoffFrequency (f);
             filter.setResonance (q);
         }
+        coefficientStep = (coefficientStep + 1) & 15;
 
-        if (std::abs (db - cachedG) > 1.0e-4f)
-        {
-            cachedG = db;
-            lin = juce::Decibels::decibelsToGain (db);
-            if (! std::isfinite (lin))
-                lin = 1.0f;
-        }
-
-        const float g = lin * mix;
+        const float g = gain * mix;
 
         for (int c = 0; c < useCh; ++c)
         {
