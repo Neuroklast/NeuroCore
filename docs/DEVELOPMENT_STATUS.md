@@ -10,6 +10,10 @@ Branch `feat/circuit-live-instruments`, based on main after #326. StepSeq uses a
 
 Cable flow now runs over Dots as well as Wave. Long-route packet lifetime follows path length and speed; fresh sustained RMS can emit between local maxima. Cached path metrics feed layered, screen-scaled comet strokes without per-packet shadow blur. Existing single canvas, passive-layer cache, viewport culling and bounded packet pool remain. Cable contracts fail before and pass after.
 
+## Circuit Inspect (2026-10-22)
+
+Inspect width is explicitly capped at 640 px, correcting the global CSS max-width override (browser baseline was 1260 px at a 1280 px viewport). Opaque gunmetal panel, compact 60 px dials, direct entries, keyboard sliders, theme accent, separate signal readings and scrollable content. Numeric gesture hooks are unconditional. IN/OUT resolve as graph terminals when absent from effect AST nodes. Output Inspect and telemetry close-button stability pass at 1×/2×; meter and sequencer editor live data/geometry pass at both densities. The terminal regression failed first, then passes alongside all eight existing inspect-model tests. No native binary rebuilt.
+
 ## 0.7.2-beta (2026-10-22)
 
 Version bump for the modulation expansion (A03, C01-C06). Product behavior and VST3 class IDs otherwise unchanged. Local Windows Release 2026-10-22: `NEUROKORE-0.7.2-beta-Setup.exe` SHA256 `8121c9dc833c91e8931f45cb240bb7def9405ee88d15fc204ff34a42668d1bad` (unsigned), plus win64 zip.

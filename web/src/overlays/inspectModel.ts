@@ -283,3 +283,11 @@ export function inspectRows(node: AstNode | undefined, doc: AstDocument | null):
   }
   return rows;
 }
+
+/** IN/OUT belong to the graph even when the parser omits them from effect nodes. */
+export function inspectNode(doc: AstDocument | null, id: string | null): AstNode | undefined {
+  const node = doc?.nodes.find(n => n.id === id);
+  if (node) return node;
+  if (id !== "IN" && id !== "OUT") return undefined;
+  return { id, type: id.toLowerCase(), busName: "", args: {}, trailingComment: "" };
+}

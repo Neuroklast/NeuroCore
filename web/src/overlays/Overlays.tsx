@@ -17,7 +17,7 @@ import { chipSpec } from "../assemble/chipSpec";
 import { nodeMeter } from "../assemble/nodeMeter";
 import { adsrEnvelopePath } from "../assemble/nodeFace/adsrEnvelope";
 import { envEnvelopePath } from "../assemble/nodeFace/envEnvelope";
-import { inspectArgFields, inspectBlurb, inspectRows } from "./inspectModel";
+import { inspectArgFields, inspectBlurb, inspectRows, inspectNode } from "./inspectModel";
 import { InspectKnob, isLiteralNumber, isMacroOrExpression } from "./InspectKnob";
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose, overlaySizesToContent } from "./overlayChrome";
@@ -63,9 +63,9 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     const inRms = useTelemetryStore((s) => s.inRms);
     const outRms = useTelemetryStore((s) => s.outRms);
     const [technicalOpen, setTechnicalOpen] = useState(false);
-    const node = ast?.nodes.find((n) => n.id === nodeId);
+    const node = inspectNode(ast, nodeId);
     if (! node) {
-      return <p>No node selected.</p>;
+      return <div className="nk-inspect-empty"><strong>Select a chip to inspect</strong><p>Double-click a component on the board to open its controls and signal readings.</p></div>;
     }
     const spec = chipSpec(node.type, node.args);
     const argFields = inspectArgFields(node);
@@ -80,7 +80,8 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
       pluginInRms: inRms,
       pluginOutRms: outRms,
     });
-    const blurb = inspectBlurb(node.type);
+    const terminal = node.type === "in" || node.type === "out";
+    const blurb = terminal ? (node.type === "out" ? "Final plugin output sent to the host." : "Audio entering the plugin from the host.") : inspectBlurb(node.type);
     const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
     const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
     const formula = argFields.filter((f) => {
@@ -101,16 +102,17 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     };
 
     return (
-      <div className="flex flex-col gap-2 w-[420px] max-w-xs min-w-[320px]">
+      <div className="nk-inspect" data-inspect-node={node.id}>
         {/* Header: wie ein Hardware-Modul bedient */}
-        <div className="border-b border-accent pb-1">
-          <div className="text-[12px] font-mono text-ink">{spec.label.toUpperCase()}</div>
-          <div className="text-[10px] text-muted">{node.id} · {node.busName || "main"}{detectorLabel}</div>
+        <div className="nk-inspect-heading">
+          <div className="nk-inspect-name">{terminal ? (node.type === "out" ? "OUTPUT" : "INPUT") : spec.label.toUpperCase()}</div>
+          <div className="nk-inspect-identity">{node.id} · {node.busName || "main"}{detectorLabel}</div>
+          {blurb ? <p className="nk-inspect-description">{blurb}</p> : null}
         </div>
 
         {/* Primäre Bedienelemente: kompakte Regler + Werte */}
         {editable.length > 0 ? (
-          <div className="nk-inspect-controls grid grid-cols-2 gap-2">
+          <div className="nk-inspect-controls">
             {editable.map((f) => (
               <div key={f.key} className="flex flex-col gap-1">
                 <InspectKnob
@@ -146,11 +148,14 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           </div>
         )}
 
-        {/* Statuszeile */}
-        <div className="flex items-center justify-between text-[10px] text-muted border-t border-accent/20 pt-1">
-          <span>{meter.sourceLabel} · PEAK {meter.peak == null ? "—" : chipFootPeak(meter.peak)} · RMS {meter.rms == null ? "—" : chipFootPeak(meter.rms)} · {meter.waveLabel}</span>
-          {blurb ? <span className="truncate max-w-[200px]">{blurb}</span> : null}
-        </div>
+        <section className="nk-inspect-signal" aria-label="Signal readings">
+          <div className="nk-inspect-signal-title">{meter.sourceLabel}</div>
+          <div className="nk-inspect-readings">
+            <div><span>PEAK</span><strong>{meter.peak == null ? "—" : chipFootPeak(meter.peak)}</strong></div>
+            <div><span>RMS</span><strong>{meter.rms == null ? "—" : chipFootPeak(meter.rms)}</strong></div>
+          </div>
+          <div className="nk-inspect-tap">{meter.waveLabel}</div>
+        </section>
 
         {/* Makro-/Ausdruck-Bindungen (schreibgeschützt, mit Navigationshinweis) */}
         {bound.length > 0 ? (
@@ -162,7 +167,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
                   <span className="w-16 font-mono text-cyan">{f.key}</span>
                   <span className="flex-1 font-mono text-ink truncate">{node.args[f.key]}</span>
                   <button type="button" className="nk-inspect-bind text-[9px] text-muted" onClick={() => onReveal(f.key)}>
-                    zeigen
+                    Reveal
                   </button>
                 </div>
               ))}
@@ -189,7 +194,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
         <details
           className="border border-[var(--nk-line)] bg-black/40"
           open={technicalOpen}
-          onChange={() => setTechnicalOpen(!technicalOpen)}
+          onToggle={(event) => setTechnicalOpen(event.currentTarget.open)}
         >
           <summary className="cursor-pointer select-none text-[10px] tracking-widest text-muted uppercase px-2 py-1">
             Technical Details
@@ -201,7 +206,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
                 <span className="font-mono text-ink truncate max-w-[220px]">{r.value}</span>
               </div>
             ))}
-            {rows.length > 14 && <div className="text-muted">… weitere Einträge</div>}
+            {rows.length > 14 && <div className="text-muted">… more entries</div>}
           </div>
         </details>
       </div>
@@ -387,7 +392,8 @@ export function Overlays() {
       }}
     >
       <div
-        className={`nk-overlay flex w-full flex-col ${
+        role="dialog" aria-modal="true" aria-label={title}
+        className={`nk-overlay ${name === "inspect" ? "nk-overlay--inspect" : ""} flex w-full flex-col ${
           overlayIsWide(name)
             ? "nk-overlay--stage max-w-[1240px]"
             : "max-w-[760px]"
