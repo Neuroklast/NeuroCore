@@ -521,7 +521,10 @@ private:
 
         ExpressionEvaluator driveExpr, outputExpr, mixExpr;
         ExpressionEvaluator modeExpr;
-        juce::SmoothedValue<float> driveSm, outputSm, mixSm;
+        // Linear smoothing in dB is exactly multiplicative smoothing in gain.
+        // Convert the dB target only once per block, not on every sample.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, outputSm;
+        juce::SmoothedValue<float> mixSm;
         Mode mode { Mode::Fold };
         float sampleRate { 44100.f };
         int channels { 1 };
