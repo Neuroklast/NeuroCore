@@ -568,6 +568,30 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 255), 0.0f, 1.0e-3f);
         }
 
+        beginTest ("host-sync swing respects beat boundaries and negative PPQ");
+        {
+            for (double ppq : { 0.799, -0.201 })
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                expect (chain.loadScript (
+                    "stepseq1: steps = 2; sync = 1/8; swing = 0.6; "
+                    "gate = 1; mix = 1; values = 1, 0\\n"
+                    "stage1: y = x * stepseq1\\n", err), err);
+                chain.prepare ({ 48000.0, 128, 1 });
+                chain.setTempo (120.0, ppq, true);
+                juce::AudioBuffer<float> audio (1, 128);
+                for (int i = 0; i < 128; ++i)
+                    audio.setSample (0, i, 1.0f);
+                chain.processBlock (audio);
+                // At 120 BPM, PPQ advances by 1/24000 per sample. The
+                // swung first step ends at 0.8 PPQ: sample 10 precedes it,
+                // sample 64 follows it, including after a negative-PPQ seek.
+                expectWithinAbsoluteError (audio.getSample (0, 10), 1.f, 1.0e-4f);
+                expectWithinAbsoluteError (audio.getSample (0, 64), 0.f, 1.0e-4f);
+            }
+        }
+
         beginTest ("legacy step0..step3 args still drive the sequencer");
         {
             dsl::SignalChain chain;
