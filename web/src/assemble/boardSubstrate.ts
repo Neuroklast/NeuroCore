@@ -1,3 +1,4 @@
+import { boardLegend } from "./boardLegend";
 import { boardBounds } from "./boardBounds";
 import type { BoardNode } from "./boardModel";
 /** The board is a single material surface under the actual circuit, not a group. */
@@ -7,6 +8,7 @@ export function drawBoardSubstrate(
   ink: string,
   surface: string,
   points: { x: number; y: number }[] = [],
+  preset = "",
 ) {
   if (!nodes.length) return;
   const bounds = boardBounds(nodes, points);
@@ -54,5 +56,19 @@ export function drawBoardSubstrate(
     ctx.arc(cx!, cy!, 3, 0, Math.PI * 2);
     ctx.fill();
   }
+  const legend = boardLegend(nodes, points, preset);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(legend.x, legend.y, legend.w, legend.h);
+  ctx.clip();
+  ctx.fillStyle = ink;
+  ctx.textBaseline = "top";
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.globalAlpha = 0.38;
+  ctx.fillText(legend.title, legend.x, legend.y);
+  ctx.font = '9px "JetBrains Mono", monospace';
+  ctx.globalAlpha = 0.25;
+  ctx.fillText(legend.summary, legend.x, legend.y + 15);
+  ctx.restore();
   ctx.restore();
 }

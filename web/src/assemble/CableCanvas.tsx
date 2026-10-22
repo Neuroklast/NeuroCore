@@ -290,7 +290,7 @@ export function CableCanvas({
 
       const hot = boardFocusEdgesRef.current;
       const staticStamp = [w, h, dpr, cam.scale, cam.tx, cam.ty, host.theme,
-        host.cables, ...(hot ? [...hot].sort() : [])].join("|");
+        host.cables, host.presetName, ...(hot ? [...hot].sort() : [])].join("|");
       const dragging = Boolean(chipDragRef.current || chipDragGroupRef.current);
       const repaintBase = !baseCtx || baseGraph !== g || baseStamp !== staticStamp || dragging;
       const base = baseCtx ?? ctx;
@@ -300,7 +300,7 @@ export function CableCanvas({
           baseCanvas.height = canvas.height;
           baseCtx.setTransform(dpr * cam.scale, 0, 0, dpr * cam.scale, dpr * cam.tx, dpr * cam.ty);
         }
-        drawBoardSubstrate(base, Object.values(g.nodes), core, substrate, boardRoutePoints(g));
+        drawBoardSubstrate(base, Object.values(g.nodes), core, substrate, boardRoutePoints(g), host.presetName);
         drawBackgroundTraces(base, { tx: cam.tx, ty: cam.ty, scale: cam.scale, width: w, height: h });
         baseGraph = dragging ? null : g;
         baseStamp = staticStamp;

@@ -94,6 +94,8 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 ## Circuit
 
+A restrained silkscreen strip below the routed circuit identifies the current preset and the actual effect types on the board. It stays outside components and connection routes and does not change chip positions.
+
 Inspect opens a compact hardware panel with a scrollable control grid, direct value entry and Peak/RMS readings. Use arrow keys on a focused dial to adjust it, Shift for fine changes, Home/End for its limits, or Reset for the default. IN and OUT show the plugin input/output even when they are implicit in the source. The panel’s close button stays in its title bar while content scrolls.
 
 With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop. Reduced/Off motion keeps a stationary level indication.
