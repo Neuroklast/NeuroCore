@@ -17,6 +17,8 @@ void SignalChain::NlFilter::clearRuntimeState() noexcept
 {
     z1[0] = 0.0f;
     z1[1] = 0.0f;
+    coefficientStep = 0;
+    cachedCoefficient = 0.f;
 }
 
 void SignalChain::NlFilter::prepare (const juce::dsp::ProcessSpec& spec)
@@ -63,8 +65,14 @@ void SignalChain::NlFilter::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float fcRaw = juce::jlimit (20.0f, 20000.0f, cutoffSm.getNextValue());
-        const float coeff = 1.0f - std::exp (-twoPi * fcRaw / sampleRate);
+        const float fcRaw = juce::jlimit (20.0f,
+            juce::jmin (20000.0f, sampleRate * 0.45f), cutoffSm.getNextValue());
+        // A smoothed control value advances every sample, but the relatively
+        // expensive exponential is refreshed at a bounded 16-sample stride.
+        if (coefficientStep == 0)
+            cachedCoefficient = -std::expm1 (-twoPi * fcRaw / sampleRate);
+        coefficientStep = (coefficientStep + 1) & 15;
+        const float coeff = cachedCoefficient;
         const float drive = juce::jlimit (0.0f, 10.0f, driveSm.getNextValue());
         const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 

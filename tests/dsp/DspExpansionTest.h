@@ -365,6 +365,37 @@ public:
             expectWithinAbsoluteError (buffer.getSample (0, 0), -0.5f, 1.0e-4f);
         }
 
+        beginTest ("Nonlinear filter cutoff automation remains effective");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript ("nlfilter1: cutoff = a; drive = 1; mix = 1", err), err);
+            juce::AudioBuffer<float> audio (1, 128);
+            auto measure = [&] (float value)
+            {
+                chain.setParameter (0, value);
+                double energy = 0.;
+                for (int block = 0; block < 100; ++block)
+                {
+                    for (int i = 0; i < 128; ++i)
+                        audio.setSample (0, i, 0.3f * std::sin (
+                            juce::MathConstants<float>::twoPi * 3000.f
+                            * (float) (block * 128 + i) / 48000.f));
+                    chain.processBlock (audio);
+                    if (block >= 92)
+                        for (int i = 0; i < 128; ++i)
+                            energy += audio.getSample (0, i) * audio.getSample (0, i);
+                }
+                return energy;
+            };
+            const double low = measure (0.f);
+            const double high = measure (1.f);
+            expect (std::isfinite (low) && std::isfinite (high));
+            expect (high > low * 3.0,
+                "automated high cutoff must pass more energy than low cutoff");
+        }
+
         beginTest ("ReverseDelay reports its feedback tail");
         {
             dsl::SignalChain chain;

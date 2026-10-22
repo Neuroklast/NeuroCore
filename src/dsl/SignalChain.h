@@ -643,6 +643,8 @@ private:
         float sampleRate { 44100.f };
         int channels { 1 };
         float z1[2] { 0.f, 0.f };
+        float cachedCoefficient { 0.f };
+        int coefficientStep { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
