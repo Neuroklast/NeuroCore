@@ -173,6 +173,25 @@ public:
             expect (TestHelpers::countNonFinite (buf) == 0);
         }
 
+        beginTest ("Decimate rate=0.5 actually holds two-sample groups");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript (
+                "decimate1: rate = 0.5; bits = 16; jitter = 0; hold = 0; "
+                "recon = 0; mix = 1; output = 0", err), err);
+            juce::AudioBuffer<float> audio (1, 128);
+            for (int i = 0; i < 128; ++i)
+                audio.setSample (0, i, (i & 1) ? 0.75f : 0.25f);
+            chain.processBlock (audio);
+            // Sample capture occurs at odd indices for an interval of 2.
+            // An interval of 1 would leak the alternating even samples.
+            for (int i = 8; i < 128; ++i)
+                expectWithinAbsoluteError (audio.getSample (0, i),
+                                           0.75f, 0.0001f);
+        }
+
         beginTest ("Decimate all seven exposed parameters affect audio after host automation");
         {
             const char* knobs[] { "rate", "bits", "jitter", "hold", "recon", "mix", "output" };

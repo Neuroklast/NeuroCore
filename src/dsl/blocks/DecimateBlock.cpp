@@ -101,8 +101,11 @@ void SignalChain::Decimate::processBlock (juce::AudioBuffer<float>& buffer)
         // At both zero, the original decimation timing is unchanged.
         if (holdCounter == 0)
         {
-            const int nominal = (int) juce::jlimit (1.f, 100.f,
-                1.f / (1.f - rate + 1.0e-6f));
+            // Truncation collapses rate=0.5 (nominal 1.99999...) to a
+            // one-sample period, removing decimation entirely. Round the
+            // intended rate-reduction factor to its nearest sample count.
+            const int nominal = (int) std::lround (juce::jlimit (1.f, 100.f,
+                1.f / (1.f - rate + 1.0e-6f)));
             const int base = juce::jlimit (1, 200,
                 nominal + (int) std::lround (hold * 99.f));
             int duration = base;
