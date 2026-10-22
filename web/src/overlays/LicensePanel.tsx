@@ -11,7 +11,6 @@ export function LicensePanel() {
   const systemId = useHostStore((s) => s.systemId);
   const err = useHostStore((s) => s.licenseError);
   const [key, setKey] = useState("");
-  const [mail, setMail] = useState("");
   const [msg, setMsg] = useState("");
   const [hot, setHot] = useState(false);
   const buyer = licenseBuyerVisible(email);
@@ -91,18 +90,12 @@ export function LicensePanel() {
 
       <section className="border border-panel p-3">
         <div className="text-[11px] tracking-widest text-muted">ONLINE</div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid gap-2">
           <input
             className="h-9 border border-panel bg-black px-2 text-ink"
             placeholder="License key"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-          />
-          <input
-            className="h-9 border border-panel bg-black px-2 text-ink"
-            placeholder="Buyer email"
-            value={mail}
-            onChange={(e) => setMail(e.target.value)}
           />
         </div>
         <button type="button" className="nk-clip mt-2" onClick={() => void activate()}>Activate</button>

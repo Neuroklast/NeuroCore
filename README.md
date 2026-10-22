@@ -18,7 +18,7 @@ Windows
 
 Mac — copy the VST3 to `/Library/Audio/Plug-Ins/VST3/` and the Audio Unit to `~/Library/Audio/Plug-Ins/Components/`, then rescan.
 
-The first unlicensed launch starts a **14-day demo**. Settings → License shows the end date. After that, Mix stays dry until you install a `.lic`.
+The first unlicensed launch starts a **14-day demo**. Settings → License shows the end date. After that, Mix stays dry until you install a `.lic`. The demo clock never moves backwards and survives a corrupt stamp file.
 
 ## 30-second path
 

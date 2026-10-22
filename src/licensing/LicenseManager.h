@@ -19,6 +19,8 @@ public:
     static juce::File getLicenseFile();
     static juce::File getDataDirectory();
     static juce::File getDemoStampFile();
+    /** Atomic best-effort write; returns false when the data directory is read-only. */
+    static bool saveDemoStamp (double startedMs, double lastSeenMs);
 
 private:
     bool saveLicense (const juce::String& data);
