@@ -29,7 +29,7 @@ float SignalChain::Shaper::foldCurve (float x) noexcept
     // positive values for all input magnitudes above +2.
     const float phase = std::fmod (ax - 1.0f, 4.0f);
     const float folded = phase <= 2.0f ? 1.0f - phase : phase - 3.0f;
-    return std::copysign (folded, x);
+    return x >= 0.0f ? folded : -folded;
 }
 
 void SignalChain::Shaper::prepare (const juce::dsp::ProcessSpec& spec)
