@@ -444,7 +444,9 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     if (getSampleRate() <= 0.0)
     {
-        logError("processBlock: invalid sample rate");
+        // Hosts may invoke processBlock before prepareToPlay or while changing
+        // audio devices. Never invoke logging (I/O, locks, allocations) from
+        // the audio callback, including this otherwise rare error path.
         buffer.clear();
         return;
     }
