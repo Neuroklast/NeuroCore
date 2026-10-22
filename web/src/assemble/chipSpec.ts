@@ -537,9 +537,9 @@ add({
   typeCodePrefix: "ET",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["threshold", "sensitivity", "hysteresis", "holdoff", "hold", "level", "source"],
+  paramJacks: ["thresholddb", "sensitivity", "hysteresis", "holdoff", "hold", "level", "source"],
   ranges: {
-    threshold: { min: -60, max: 0, unit: "dB" },
+    thresholddb: { min: -60, max: 0, unit: "dB" },
     sensitivity: { min: 0, max: 1, unit: "%" },
     hysteresis: { min: 0, max: 24, unit: "dB" },
     holdoff: { min: 0, max: 1000, unit: "ms" },
@@ -549,7 +549,7 @@ add({
   },
   enums: { source: ["peak", "rms"] },
   defaultArgs: {
-    threshold: "-24", sensitivity: "0", hysteresis: "6", holdoff: "0",
+    thresholddb: "-24", sensitivity: "0", hysteresis: "6", holdoff: "0",
     hold: "100", level: "1", source: "peak",
   },
   blurb: "Transienten-Trigger mit Hysterese, Holdoff, Peak/RMS-Detektor und stabilem Puls.",

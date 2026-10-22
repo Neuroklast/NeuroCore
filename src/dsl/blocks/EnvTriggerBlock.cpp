@@ -85,7 +85,9 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < laneN; ++i)
     {
-        const float threshold = juce::jlimit (-60.0f, 0.0f, thresholdSm.getNextValue());
+        const float threshold = thresholdDb
+                                    ? juce::jlimit (-60.0f, 0.0f, thresholdSm.getNextValue())
+                                    : juce::jlimit (-10.0f, 10.0f, thresholdSm.getNextValue());
         const float hysteresis = juce::jlimit (0.0f, 24.0f, hysteresisSm.getNextValue());
         const float sensitivity = juce::jlimit (0.0f, 1.0f, sensitivitySm.getNextValue());
         const float holdMs = juce::jlimit (0.0f, 5000.0f, holdSm.getNextValue());
@@ -104,8 +106,13 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
             detector = std::abs (x);
         }
         detector *= 1.0f + sensitivity * 4.0f;
-        const float triggerLevel = std::pow (10.0f, threshold / 20.0f);
-        const float releaseLevel = triggerLevel * std::pow (10.0f, -hysteresis / 20.0f);
+        const float triggerLevel = thresholdDb
+                                       ? std::pow (10.0f, threshold / 20.0f)
+                                       : juce::jlimit (-10.0f, 10.0f, threshold);
+        const float releaseLevel = thresholdDb
+                                       ? triggerLevel * std::pow (10.0f, -hysteresis / 20.0f)
+                                       : juce::jmax (0.0f, triggerLevel
+                                                           * std::pow (10.0f, -hysteresis / 20.0f));
 
         if (holdoffRemaining > 0.0f)
             holdoffRemaining = juce::jmax (0.0f, holdoffRemaining - 1.0f);

@@ -1317,6 +1317,15 @@ bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJac
     error.clear();
     const int n = (int) doc.nodes.size();
     const auto destJack = toJack.trim();
+    if (destJack == "inA" || destJack == "inB")
+    {
+        if (! juce::isPositiveAndBelow (fromIndex, n)
+            || ! isModulator (doc.nodes[(size_t) fromIndex]))
+        {
+            error = "Use a mod source for inA/inB";
+            return false;
+        }
+    }
     auto forkRailOf = [] (const juce::String& jack) -> juce::String
     {
         const auto j = jack.trim().toLowerCase();

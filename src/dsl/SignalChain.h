@@ -789,6 +789,7 @@ private:
         float sampleRate { 44100.f };
         int channels { 1 };
         bool useRms { false };
+        bool thresholdDb { true };
         bool armed { true };
         float rmsState { 0.0f };
         float pulseRemaining { 0.0f };
@@ -1702,9 +1703,6 @@ public:
     bool copyTapPeak (const juce::String& id, float& dest) const noexcept;
     bool copyTapPeakLR (const juce::String& id, float& destL, float& destR) const noexcept;
     void appendClipPeaks (juce::Array<juce::var>& dest) const;
-    /** Live step index for a StepSeq node, or -1 when unknown/stopped. */
-    int getLiveStep (const juce::String& id) const noexcept;
-
     /** Prepare ceiling. processBlock must not grow these (ASIO Guard / multi-bus). */
     int getInSnapshotNumSamples() const noexcept { return inSnapshot.getNumSamples(); }
     int getBusScratchNumSamples() const noexcept { return busScratch[0].getNumSamples(); }

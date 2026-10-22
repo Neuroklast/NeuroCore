@@ -376,7 +376,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     dspType: "envtrigger",
     audioIns: ["in"], audioOuts: ["out"], modIns: [], modOuts: ["out"],
     params: [
-      { key: "threshold", min: -60, max: 0, scale: "linear", def: "-24", automatable: true, modulatable: false, unit: "dB" },
+      { key: "thresholddb", min: -60, max: 0, scale: "linear", def: "-24", automatable: true, modulatable: false, unit: "dB" },
       { ...percent(0, 1, 0), key: "sensitivity", label: "Sensitivity", automatable: true, modulatable: false },
       { key: "hysteresis", min: 0, max: 24, scale: "linear", def: "6", automatable: true, modulatable: false, unit: "dB" },
       { key: "holdoff", min: 0, max: 1000, scale: "linear", def: "0", automatable: true, modulatable: false, unit: "ms" },
@@ -385,7 +385,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
       { key: "source", min: 0, max: 1, scale: "linear", enum: ["peak", "rms"], def: "peak", automatable: false, modulatable: false },
     ],
     resources: ["dsp"], latencyClass: "none", schemaVersion: SCHEMA_VERSION,
-    uiFamily: "env", dslTemplate: "threshold = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 100; level = 1; source = peak",
+    uiFamily: "env", dslTemplate: "thresholddb = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 100; level = 1; source = peak",
   },
   {
     id: "modmix", typeCodePrefix: "MX", label: "ModMix", category: "Mod",

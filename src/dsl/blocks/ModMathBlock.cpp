@@ -59,8 +59,8 @@ void SignalChain::ModMath::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
-    const float amount = juce::jlimit (0.0f, 4.0f, snapEval (amountExpr, 1.0f));
-    const float mix = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
+    amountSm.setTargetValue (snapEval (amountExpr, 1.0f));
+    mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
     const float clampLo = juce::jmin (snapEval (clampMinExpr, -1.0f),
                                       snapEval (clampMaxExpr, 1.0f));
     const float clampHi = juce::jmax (snapEval (clampMinExpr, -1.0f),
@@ -97,6 +97,8 @@ void SignalChain::ModMath::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < laneN; ++i)
     {
+        const float amount = juce::jlimit (0.0f, 4.0f, amountSm.getNextValue());
+        const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
         const float a = laneAt (srcA, slotA, i);
         const float b = laneAt (srcB, slotB, i);
         float result = 0.0f;

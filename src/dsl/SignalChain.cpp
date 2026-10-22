@@ -2012,7 +2012,24 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("threshold", nullptr, -60.f, 0.f, "-24", et->thresholdExpr, "threshold [dB]");
+            if (d.args.count ("thresholddb"))
+            {
+                et->thresholdDb = true;
+                parseAmt ("thresholddb", nullptr, -60.f, 0.f, "-24",
+                          et->thresholdExpr, "threshold [dB]");
+            }
+            else if (d.args.count ("threshold"))
+            {
+                et->thresholdDb = false;
+                parseAmt ("threshold", nullptr, -10.f, 10.f, "0.5",
+                          et->thresholdExpr, "threshold [linear, legacy]");
+            }
+            else
+            {
+                et->thresholdDb = true;
+                parseAmt ("thresholddb", nullptr, -60.f, 0.f, "-24",
+                          et->thresholdExpr, "threshold [dB]");
+            }
             parseAmt ("hold", nullptr, 0.f, 5000.f, "100", et->holdExpr, "hold [ms]");
             parseAmt ("level", nullptr, 0.f, 10.f, "1", et->levelExpr, "level");
             parseAmt ("sensitivity", "sens", 0.f, 1.f, "0", et->sensitivityExpr, "sensitivity [0..1]");
@@ -2606,6 +2623,29 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                     error = "Unknown modulation source '" + input + "' on '" + mod->name + "'.";
                     return false;
                 }
+
+        std::unordered_map<juce::String, int> order;
+        for (int i = 0; i < (int) modulators.size(); ++i)
+            order[modulators[(size_t) i]->name] = i;
+        for (int i = 0; i < (int) modulators.size(); ++i)
+        {
+            auto* mod = modulators[(size_t) i];
+            for (const auto& input : mod->inputNames)
+            {
+                if (input.isEmpty())
+                    continue;
+                auto source = byName.find (input);
+                if (source == byName.end())
+                    continue;
+                if ((source->second->kind == NodeKind::Env || source->second->needsAudioInput())
+                    && order[input] > i)
+                {
+                    error = "Audio-position modulator '" + input
+                          + "' must be declared before '" + mod->name + "'.";
+                    return false;
+                }
+            }
+        }
 
         std::unordered_map<Modulator*, int> state;
         std::function<bool (Modulator*)> visit = [&] (Modulator* mod) -> bool
@@ -4034,18 +4074,6 @@ bool SignalChain::copyTapPeakLR (const juce::String& id, float& destL, float& de
     destL = t.peakL.load (std::memory_order_relaxed);
     destR = t.peakR.load (std::memory_order_relaxed);
     return true;
-}
-
-int SignalChain::getLiveStep (const juce::String& id) const noexcept
-{
-    if (id.isEmpty())
-        return -1;
-    if (auto chainPtr = std::atomic_load (&chain))
-        for (auto& b : *chainPtr)
-            if (auto* sq = dynamic_cast<const StepSeq*> (b.get()))
-                if (sq->name == id)
-                    return sq->liveStep.load (std::memory_order_relaxed);
-    return -1;
 }
 
 void SignalChain::appendClipPeaks (juce::Array<juce::var>& dest) const

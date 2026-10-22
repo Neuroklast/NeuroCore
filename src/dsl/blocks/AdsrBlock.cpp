@@ -103,12 +103,9 @@ void SignalChain::Adsr::processBlock (juce::AudioBuffer<float>& buffer)
 
         if (gateOn && ! gatePrev)
         {
-            if (retrigger || state == State::Idle)
-            {
-                state = State::Attack;
-                phase = 0.0f;
-                phaseStart = 0.0f;
-            }
+            state = State::Attack;
+            phase = 0.0f;
+            phaseStart = retrigger ? 0.0f : env;
         }
         else if (! gateOn && gatePrev && state != State::Idle)
         {

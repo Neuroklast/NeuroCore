@@ -596,7 +596,6 @@ public:
             for (int i = 0; i < 700; ++i)
                 buf.setSample (0, i, 1.0f);
             chain.processBlock (buf);
-            expectEquals (chain.getLiveStep ("stepseq1"), 1);
             juce::Array<juce::var> rows;
             chain.appendClipPeaks (rows);
             int step = -1;
@@ -657,6 +656,32 @@ public:
             expect (retrig.getSample (0, 600) < 0.1f,
                     "rising gate during release must restart the attack");
             expect (retrig.getSample (0, 700) > 0.1f);
+        }
+
+        beginTest ("adsr retrigger off still starts a new note after release");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "adsr1: attack = 0.01; decay = 0.001; sustain = 1; release = 0.01; retrigger = off; gate = audio\n"
+                "stage1: y = adsr1\n", err), err);
+            chain.prepare ({ 48000.0, 700, 1 });
+            juce::AudioBuffer<float> buf (1, 700);
+            for (int i = 0; i < 600; ++i)
+                buf.setSample (0, i, 1.0f);
+            chain.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 599), 1.0f, 0.01f);
+
+            for (int i = 0; i < 600; ++i)
+                buf.setSample (0, i, 0.0f);
+            chain.processBlock (buf);
+            expectWithinAbsoluteError (buf.getSample (0, 590), 0.0f, 0.01f);
+
+            for (int i = 0; i < 200; ++i)
+                buf.setSample (0, i, 1.0f);
+            chain.processBlock (buf);
+            expect (buf.getSample (0, 120) > 0.1f,
+                    "a rising gate after release must start a new attack");
         }
 
         beginTest ("adsr gate change inside one buffer starts release");
@@ -961,7 +986,7 @@ public:
             dsl::SignalChain chain;
             juce::String err;
             expect (chain.loadScript (
-                "envtrigger1: threshold = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 50; level = 1; source = peak\n"
+                "envtrigger1: thresholddb = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 50; level = 1; source = peak\n"
                 "stage1: y = envtrigger1\n", err), err);
             chain.prepare ({ 48000.0, 10000, 1 });
             juce::AudioBuffer<float> buf (1, 10000);
@@ -984,7 +1009,7 @@ public:
                 dsl::SignalChain chain;
                 juce::String err;
                 chain.loadScript (
-                    "envtrigger1: threshold = -24; sensitivity = 0; hysteresis = 6; holdoff = 100; hold = 10; level = 1; source = peak\n"
+                    "envtrigger1: thresholddb = -24; sensitivity = 0; hysteresis = 6; holdoff = 100; hold = 10; level = 1; source = peak\n"
                     "stage1: y = envtrigger1\n", err);
                 chain.prepare ({ 48000.0, 10000, 1 });
                 juce::AudioBuffer<float> buf (1, 10000);
@@ -1007,7 +1032,7 @@ public:
             dsl::SignalChain chain;
             juce::String err;
             expect (chain.loadScript (
-                "envtrigger1: threshold = -24; sensitivity = 0; hysteresis = 12; holdoff = 0; hold = 10; level = 1; source = peak\n"
+                "envtrigger1: thresholddb = -24; sensitivity = 0; hysteresis = 12; holdoff = 0; hold = 10; level = 1; source = peak\n"
                 "stage1: y = envtrigger1\n", err), err);
             chain.prepare ({ 48000.0, 5000, 1 });
             juce::AudioBuffer<float> buf (1, 5000);
@@ -1032,7 +1057,7 @@ public:
                 dsl::SignalChain chain;
                 juce::String err;
                 chain.loadScript (
-                    juce::String ("envtrigger1: threshold = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 10; level = 1; ")
+                    juce::String ("envtrigger1: thresholddb = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 10; level = 1; ")
                     + extra + "\nstage1: y = envtrigger1\n", err);
                 chain.prepare ({ 48000.0, 2000, 1 });
                 juce::AudioBuffer<float> buf (1, 2000);
@@ -1049,6 +1074,18 @@ public:
             expectEquals (edgesFor ("source = peak", 0.0f), 0);
             expectEquals (edgesFor ("source = peak", 0.1f), 1);
             expectEquals (edgesFor ("source = rms", 1.0f), 1);
+
+            dsl::SignalChain legacy;
+            juce::String e;
+            expect (legacy.loadScript (
+                "envtrigger1: threshold = 0.5; hold = 10; level = 1; source = peak\n"
+                "stage1: y = envtrigger1\n", e), e);
+            legacy.prepare ({ 48000.0, 1000, 1 });
+            juce::AudioBuffer<float> b (1, 1000);
+            for (int i = 0; i < 1000; ++i)
+                b.setSample (0, i, 0.6f);
+            legacy.processBlock (b);
+            expect (b.getSample (0, 100) > 0.0f, "legacy linear threshold must still fire");
         }
 
         beginTest ("modmath implements the binary operations on control sources");
@@ -1146,6 +1183,17 @@ public:
             chain.processBlock (buf);
             expectWithinAbsoluteError (buf.getSample (0, 100), 0.5f, 1.0e-4f);
             expectWithinAbsoluteError (buf.getSample (0, 600), -0.5f, 1.0e-4f);
+        }
+
+        beginTest ("audio-position sources must precede their consumers");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (! chain.loadScript (
+                "modmath1: ina = env1; mode = add; amount = 1; mix = 1\n"
+                "env1: type = peak; attack = 0.01; release = 0.1\n"
+                "stage1: y = modmath1\n", err));
+            expect (err.containsIgnoreCase ("must be declared before"), err);
         }
 
         beginTest ("one stepseq drives two independent targets");

@@ -15,6 +15,7 @@ import {
 } from "./chipFace";
 import { chipChromeVars, ioBodyInset } from "./chipLayout";
 import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
+import { stepCountFromArgs } from "./stepSeqModel";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo, toggleGroupMute, toggleGroupSolo } from "./muteSoloApply";
 import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
@@ -149,9 +150,7 @@ export function BoardChip({
           bpm,
           sr,
           step: liveStep,
-          stepCount: node.type === "stepseq"
-            ? Math.max(1, Math.min(64, Math.round(Number(node.args.steps ?? 4))))
-            : undefined,
+          stepCount: node.type === "stepseq" ? stepCountFromArgs(node.args) : undefined,
           trigger: liveTrigger,
         }}
       />

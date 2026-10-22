@@ -193,6 +193,10 @@ Umgesetzt:
   nicht mehr nur den zuletzt veröffentlichten Block-Endwert.
 - Kontroll-Lanes werden in `prepare` fest dimensioniert; `processBlock` ruft
   kein `resize` mehr auf und verarbeitet nur die reservierte Länge.
+- Vorwärtsreferenzen auf audioabhängige Quellen werden beim Laden mit einer
+  klaren Fehlermeldung abgelehnt; reine Quellen werden topologisch sortiert.
+- `retrigger = off` startet nach einer Release-Phase trotzdem eine neue Attack-
+  Phase; `inA`/`inB` nehmen nur Modulatoren als Quelle an.
 - Ziele werden über die bestehende Ausdrucksbindung erreicht. `Stage`, `Filter`
   und `Eq` erkennen jetzt auch neue Modulatornamen und injizieren sie
   sample- bzw. blockgenau.
@@ -222,7 +226,7 @@ Ergebnisse:
 
 | Prüfung | Ergebnis |
 |---|---|
-| Gesamte native Suite | 33296 passed, 5 failed (dieselben 5 Alttests wie A01) |
+| Gesamte native Suite | 33307 passed, 5 failed (dieselben 5 Alttests wie A01) |
 | `NeuroKoreDspContracts.exe` | `Failures: 0` |
 | `NeuroKoreDspContracts.exe --expansion` | Exit 0 |
 
@@ -441,8 +445,10 @@ DAW/pluginval noch `NOT RUN`)
 
 Umgesetzt in `src/dsl/blocks/EnvTriggerBlock.cpp` und `src/dsl/SignalChain.*`:
 
-- Threshold in dBFS (-60…0), Sensitivity 0–1 als Detektor-Vorverstärkung.
-- Hysterese 0–24 dB: Re-Arm erst unterhalb `threshold - hysteresis`.
+- Neuer dBFS-Threshold `thresholddb` (-60…0), Sensitivity 0–1 als
+  Detektor-Vorverstärkung. Legacy `threshold` bleibt linear (-10…10), damit
+  gespeicherte Presets/Host-States weiter funktionieren.
+- Hysterese 0–24 dB: Re-Arm erst unterhalb der Release-Schwelle.
 - Holdoff 0–1000 ms als Refraktärzeit gegen Doppeltrigger.
 - Stabile Puls-Länge (`hold`), Pegel (`level`), Peak- oder RMS-Detektor.
 - Live-Trigger-Zustand über `appendClipPeaks` → `hostStore.clipsTrigger` →
@@ -502,7 +508,7 @@ Ergebnisse:
 
 | Prüfung | Ergebnis |
 |---|---|
-| Gesamte native Suite | 33296 passed, 5 failed (dieselben Alttests) |
+| Gesamte native Suite | 33307 passed, 5 failed (dieselben Alttests) |
 | `NeuroKoreDspContracts.exe` | `Failures: 0` |
 | Web-Build (`tsc` + Vite) | OK |
 | ADSR-/StepSeq-/Katalog-Verträge | 39 passed; 1 alter `cables`-Default-Fehler |

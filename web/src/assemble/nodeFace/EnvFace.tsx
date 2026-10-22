@@ -1,10 +1,11 @@
 import type { FaceProps } from "./faceKind";
 import { adsrEnvelopePath, adsrFaceModel } from "./adsrEnvelope";
 import { envEnvelopePath, envFaceModel } from "./envEnvelope";
+import { parseFaceNumber } from "./faceArgs";
 
 export function EnvFace({ type, args, host }: FaceProps) {
   if (type === "envtrigger") {
-    const threshold = Math.max(-60, Math.min(0, Number(args.threshold ?? -24)));
+    const threshold = parseFaceNumber(args.thresholddb ?? args.threshold, -24, -60, 0, host);
     const y = 40 * (1 - (threshold + 60) / 60);
     const live = (host?.trigger ?? 0) > 0;
     return (
