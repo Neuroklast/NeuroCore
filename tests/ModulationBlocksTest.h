@@ -471,6 +471,43 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 1450), 0.0f, 1.0e-3f);
         }
 
+        beginTest ("more than 64 simultaneous control generators render");
+        {
+            juce::String script;
+            for (int i = 1; i <= 80; ++i)
+                script += "stepseq" + juce::String (i)
+                    + ": steps = 1; rate = 100; values = 0.5\n";
+            script += "stage1: y = x * stepseq80\n";
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (script, error), error);
+            chain.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> audio (1, 256);
+            for (int sample = 0; sample < 256; ++sample)
+                audio.setSample (0, sample, 1.f);
+            chain.processBlock (audio);
+            expectWithinAbsoluteError (audio.getSample (0, 200), 0.5f, 1.0e-3f);
+        }
+
+        beginTest ("long pure modulation dependency chain has no 64-node cutoff");
+        {
+            juce::String script = "stepseq1: steps = 1; values = 0.5\n";
+            for (int i = 2; i <= 70; ++i)
+                script += "modmath" + juce::String (i)
+                    + ": ina = " + (i == 2 ? juce::String ("stepseq1")
+                                        : juce::String ("modmath") + juce::String (i - 1))
+                    + "; mode = add; amount = 1; mix = 1\n";
+            script += "stage1: y = modmath70\n";
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (script, error), error);
+            chain.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> audio (1, 256);
+            audio.clear();
+            chain.processBlock (audio);
+            expectWithinAbsoluteError (audio.getSample (0, 200), 0.5f, 1.0e-3f);
+        }
+
         beginTest ("stepseq supports 64 steps and wraps");
         {
             dsl::SignalChain chain;
