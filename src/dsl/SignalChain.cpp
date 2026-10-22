@@ -2715,6 +2715,45 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         }
     }
 
+    // Construct the immutable control execution plan before graph publication.
+    // This removes the old 64-generator cap and the repeated O(N^2) per-block
+    // dependency scans. Cycle and source order were validated above.
+    newChain->oscillators.reserve (modulators.size());
+    newChain->envelopes.reserve (modulators.size());
+    newChain->controlMods.reserve (modulators.size());
+    newChain->pureControlOrder.reserve (modulators.size());
+    for (auto& node : *newChain)
+    {
+        if (node->kind == NodeKind::Osc)
+            newChain->oscillators.push_back (static_cast<Osc*> (node.get()));
+        else if (node->kind == NodeKind::Env)
+            newChain->envelopes.push_back (static_cast<Env*> (node.get()));
+        else if (node->kind == NodeKind::Modulator)
+            newChain->controlMods.push_back (static_cast<Modulator*> (node.get()));
+    }
+
+    std::unordered_map<Modulator*, bool> pureStatus;
+    pureStatus.reserve (modulators.size());
+    std::function<bool (Modulator*)> visitPure = [&] (Modulator* mod) -> bool
+    {
+        if (mod == nullptr || mod->kind == NodeKind::Osc)
+            return true;
+        if (mod->kind == NodeKind::Env || mod->needsAudioInput())
+            return false;
+        if (const auto found = pureStatus.find (mod); found != pureStatus.end())
+            return found->second;
+        bool pure = true;
+        for (auto* input : mod->inputSources)
+            if (input != nullptr && ! visitPure (input))
+                pure = false;
+        pureStatus.emplace (mod, pure);
+        if (pure && mod->kind == NodeKind::Modulator)
+            newChain->pureControlOrder.push_back (mod);
+        return pure;
+    };
+    for (auto* mod : newChain->controlMods)
+        visitPure (mod);
+
     // A stage or filter that reads any control source must inject it per sample.
     {
         auto referencesMod = [&modulators] (const ExpressionEvaluator& e)
@@ -3177,104 +3216,44 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     };
 
     // ---- Pre-render Osc/Env into mod lanes (O(n), not O(n * chain * ch)) ----
-    constexpr int kMaxMods = 64;
-    Osc* oscs[kMaxMods];
-    Env* envs[kMaxMods];
-    Modulator* mods[kMaxMods];
-    int nOsc = 0, nEnv = 0, nMod = 0;
-
-    for (auto& b : *chainPtr)
-    {
-        if (b->kind == NodeKind::Osc)
-        {
-            if (nOsc < kMaxMods)
-                oscs[nOsc++] = static_cast<Osc*> (b.get());
-        }
-        else if (b->kind == NodeKind::Env)
-        {
-            if (nEnv < kMaxMods)
-                envs[nEnv++] = static_cast<Env*> (b.get());
-        }
-        else if (b->kind == NodeKind::Modulator)
-        {
-            if (nMod < kMaxMods)
-                mods[nMod++] = static_cast<Modulator*> (b.get());
-        }
-    }
+    // Execution vectors are immutable and co-owned with the active chain.
+    const auto& oscs = chainPtr->oscillators;
+    const auto& envs = chainPtr->envelopes;
+    const auto& mods = chainPtr->controlMods;
 
     auto writeModsAt = [&] (int i) noexcept
     {
-        for (int o = 0; o < nOsc; ++o)
-            if (oscs[o]->destSlot != nullptr && (int) oscs[o]->modLane.size() > i)
-                *oscs[o]->destSlot = oscs[o]->modLane[(size_t) i];
-        for (int e = 0; e < nEnv; ++e)
-            if (envs[e]->destSlot != nullptr && (int) envs[e]->modLane.size() > i)
-                *envs[e]->destSlot = envs[e]->modLane[(size_t) i];
-        for (int m = 0; m < nMod; ++m)
-            if (mods[m]->destSlot != nullptr && (int) mods[m]->modLane.size() > i)
-                *mods[m]->destSlot = mods[m]->shapedControl (mods[m]->modLane[(size_t) i]);
+        for (auto* osc : oscs)
+            if (osc->destSlot != nullptr && (int) osc->modLane.size() > i)
+                *osc->destSlot = osc->modLane[(size_t) i];
+        for (auto* env : envs)
+            if (env->destSlot != nullptr && (int) env->modLane.size() > i)
+                *env->destSlot = env->modLane[(size_t) i];
+        for (auto* mod : mods)
+            if (mod->destSlot != nullptr && (int) mod->modLane.size() > i)
+                *mod->destSlot = mod->shapedControl (mod->modLane[(size_t) i]);
     };
 
-    for (int i = 0; i < nOsc; ++i)
+    for (auto* osc : oscs)
     {
-        oscs[i]->renderModBlock (numSamples);
-        if (! oscs[i]->modLane.empty())
-            writeNodeTapLane (oscs[i]->tapSlot, oscs[i]->modLane.data(),
-                              (int) oscs[i]->modLane.size());
+        osc->renderModBlock (numSamples);
+        if (! osc->modLane.empty())
+            writeNodeTapLane (osc->tapSlot, osc->modLane.data(),
+                              juce::jmin (numSamples, (int) osc->modLane.size()));
     }
 
-    // Pure control generators run once per block in dependency order. Sources that
-    // need audio stay at their graph position and defer their consumers too.
-    bool preRendered[kMaxMods] {};
-    for (int i = 0; i < nMod; ++i)
-        mods[i]->startRendered = false;
-
-    auto modIndex = [&mods, nMod] (const Modulator* m) noexcept
+    // Topological ordering is compiled at loadScript, not recomputed while
+    // audio is processing. Audio-dependent modulators retain their position.
+    for (auto* mod : mods)
+        mod->startRendered = false;
+    for (auto* mod : chainPtr->pureControlOrder)
     {
-        for (int i = 0; i < nMod; ++i)
-            if (mods[i] == m)
-                return i;
-        return -1;
-    };
-
-    bool changed = true;
-    for (int guard = 0; changed && guard < nMod; ++guard)
-    {
-        changed = false;
-        for (int i = 0; i < nMod; ++i)
-        {
-            if (preRendered[i] || mods[i]->needsAudioInput())
-                continue;
-
-            bool blocked = false;
-            for (const auto* input : mods[i]->inputSources)
-            {
-                if (input == nullptr || input->kind == NodeKind::Osc)
-                    continue;
-                if (input->kind == NodeKind::Env || input->needsAudioInput())
-                {
-                    blocked = true;
-                    break;
-                }
-                const int j = modIndex (input);
-                if (j < 0 || ! preRendered[j])
-                {
-                    blocked = true;
-                    break;
-                }
-            }
-            if (blocked)
-                continue;
-
-            mods[i]->processBlock (buffer);
-            if (! mods[i]->modLane.empty())
-                writeNodeTapLane (mods[i]->tapSlot, mods[i]->modLane.data(),
-                                  juce::jmin (numSamples, (int) mods[i]->modLane.size()));
-            mods[i]->publishLast (numSamples);
-            mods[i]->startRendered = true;
-            preRendered[i] = true;
-            changed = true;
-        }
+        mod->processBlock (buffer);
+        if (! mod->modLane.empty())
+            writeNodeTapLane (mod->tapSlot, mod->modLane.data(),
+                              juce::jmin (numSamples, (int) mod->modLane.size()));
+        mod->publishLast (numSamples);
+        mod->startRendered = true;
     }
 
     for (auto& b : *chainPtr)

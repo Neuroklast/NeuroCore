@@ -1622,7 +1622,15 @@ private:
         float processSample (Chan& c, float x, float pitchRatio, float formantRatio) noexcept;
     };
 
-    using Chain   = std::vector<std::unique_ptr<Block>>;
+    // Compiled once during loadScript. The execution plan's node pointers
+    // are owned by the same graph; no separate audio-thread lifetime.
+    struct Chain : std::vector<std::unique_ptr<Block>>
+    {
+        std::vector<Osc*> oscillators;
+        std::vector<Env*> envelopes;
+        std::vector<Modulator*> controlMods;
+        std::vector<Modulator*> pureControlOrder;
+    };
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;
