@@ -44,6 +44,40 @@ public:
             }
         }
 
+        beginTest ("cached per-bus execution matches equivalent serial processing");
+        {
+            dsl::SignalChain serial, multi;
+            serial.prepare ({ 48000.0, 128, 2 });
+            multi.prepare ({ 48000.0, 128, 2 });
+            juce::String err;
+            expect (serial.loadScript ("stage1: y = x * 0.75", err), err);
+            expect (multi.loadScript (
+                "stage1: y = x * 0.5\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.25\n"
+                "out: main = 1; dirt = 1\n", err), err);
+            juce::AudioBuffer<float> first (2, 128), second (2, 128);
+            for (int i = 0; i < 128; ++i)
+            {
+                const float x = 0.25f * std::sin (float (i) * 0.13f);
+                first.setSample (0, i, x);
+                first.setSample (1, i, -x);
+            }
+            second.makeCopyOf (first);
+            serial.processBlock (first);
+            multi.processBlock (second);
+            float maxError = 0.f;
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < 128; ++i)
+                    maxError = juce::jmax (maxError,
+                        std::abs (first.getSample (ch, i)
+                                - second.getSample (ch, i)));
+            expect (maxError < 1.0e-4f,
+                    "per-bus compiled routing must agree with serial sum; err="
+                    + juce::String (maxError, 7));
+        }
+
         beginTest ("Pitch circular STFT buffers are independent of host block sizes");
         {
             auto render = [&] (const int blockSize)
