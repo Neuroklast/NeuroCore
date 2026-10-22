@@ -74,3 +74,39 @@ it("keeps impulse segments on every corner of the cached route", () => {
   traceCableSpan(ctx, path, 5, 15);
   expect(points).toEqual([[5, 0], [10, 0], [10, 5]]);
 });
+
+it("carries a measured impulse to the end of a long route", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [0.5], 0.3, 0.7, 1800, 0);
+  const token = {};
+  for (let i = 0; i < 150; i++) advanceCableSignal(s, token, [], 0.3, 0.7, 1800, 0.02);
+  expect(s.impulses.length).toBeGreaterThan(0);
+  expect(s.impulses[0]!.distance).toBeGreaterThan(0);
+});
+
+it("represents sustained measured energy even without a local tap maximum", () => {
+  const s = emptyCableSignal();
+  advanceCableSignal(s, {}, [], 0.2, 0.2, 500, 0.016);
+  expect(s.impulses.length).toBe(1);
+});
+
+it("finishes a long-route impulse when subsequent silence slows the stream", () => {
+  const s = emptyCableSignal(), token={};
+  advanceCableSignal(s, token, [0.5], 1, 1, 1000, 0);
+  let furthest=0;
+  for (let i=0;i<500;i++) {
+    advanceCableSignal(s, token, [], 0, 0, 1000, .05);
+    for(const p of s.impulses) furthest=Math.max(furthest,p.distance);
+  }
+  expect(furthest).toBeGreaterThanOrEqual(1000);
+  expect(s.impulses).toHaveLength(0);
+});
+
+it("clears travelling light when motion is disabled instead of replaying it later", () => {
+  const s=emptyCableSignal(), token={};
+  advanceCableSignal(s, token, [0.3], .3, .7, 1000, 0);
+  advanceCableSignal(s, token, [], .3, .7, 1000, .05, false);
+  expect(s.impulses).toHaveLength(0);
+  advanceCableSignal(s, token, [], .3, .7, 1000, .05, true);
+  expect(s.impulses).toHaveLength(0);
+});

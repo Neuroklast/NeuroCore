@@ -94,6 +94,14 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 ## Circuit
 
+A restrained silkscreen strip below the routed circuit identifies the current preset and the actual effect types on the board. It stays outside components and connection routes and does not change chip positions.
+
+Inspect opens a compact hardware panel with a scrollable control grid, direct value entry and Peak/RMS readings. Use arrow keys on a focused dial to adjust it, Shift for fine changes, Home/End for its limits, or Reset for the default. IN and OUT show the plugin input/output even when they are implicit in the source. The panel’s close button stays in its title bar while content scrolls.
+
+With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop, including when the incoming audio falls silent or zoom changes during travel. Reduced/Off motion keeps a stationary level indication and discards travelling pulses.
+
+StepSeq chips show up to 64 host-reported steps as eight LEDs per row, with at most eight rows. The current step lights in the selected theme accent. Muted steps stay dim. Meter chips contain a recessed Peak/RMS display in dBFS from that module’s own tap, with a −60 dBFS floor. Missing measurements show —.
+
 Each chip keeps its full effect name above a separate typecode and control row. The gunmetal housing has lit upper facets, recessed controls and metallic contacts. A bounded central dot field carries a calculated function diagram; it is not a measured waveform. The function diagram remains readable at rest. Selecting or focusing a chip makes it clearer without moving its contacts. Numeric modulation parameters use 17 px captions and contact-aligned guide ticks above the node ID and live level. Enum and routing fields such as TYPE and CHANNEL remain in Inspect. Muting subdues the signal surface while keeping identification readable. Cyan parameter captions indicate macro bindings. Drag a macro onto the chip to choose a binding target, or use Inspect for the full parameter list. Connected audio contacts light from their source's measured signal. Unconnected or silent contacts remain metal. Clipping warnings appear only on a real overload.
 
 Circuit always shows one continuous circuit board. Every component and connection stays on that board, including large patches. **Arrange** packs chips into reading-order rows from the input at the upper left toward the output at the lower right. Serial rows reserve a channel for the connection into the next row; branches and modulation remain visible alongside their audio paths. Chips retain their full physical sizes. Manual dragging preserves your placement until you explicitly arrange again.

@@ -82,8 +82,7 @@ export function InspectKnob({
   }, []);
 
   // ---------- numerischer Drehregler ----------
-  if (isNum) {
-    const start = useRef(norm01);
+  const start = useRef(norm01);
     const onPointer = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
       if (e.button !== 0) {
         return;
@@ -114,6 +113,7 @@ export function InspectKnob({
       window.addEventListener("pointerup", up);
     }, [norm01, value, field.min, field.max, commit]);
 
+  if (isNum) {
     const readout = formatKnobDisplay(mapped, field.unit);
     const angle = SWEEP_START + norm01 * (SWEEP_END - SWEEP_START);
     const p1x = KNOB_CX + 16 * Math.sin(angle);
@@ -123,7 +123,7 @@ export function InspectKnob({
     const arc = knobArcLen(20);
     const offset = knobArcOffset(norm01, 20);
 
-    const onDbl = () => setEdit(value);
+    const onDbl = () => setEdit(String(mapped));
     const onEditBlur = () => {
       if (edit == null) {
         return;
@@ -133,48 +133,43 @@ export function InspectKnob({
         commit(String(Math.min(field.max, Math.max(field.min, n))));
       } else {
         // Restore the last committed value instead of clearing the field.
-        setEdit(current);
+        setEdit(null);
       }
     };
 
     return (
-      <div className="flex flex-col items-center gap-1 min-w-[110px]">
-        <div className="text-[10px] tracking-widest text-muted uppercase">{label}</div>
-        <div className="relative w-44 h-44" onDoubleClick={onDbl} onPointerDown={onPointer}>
-          <svg width="44" height="44" viewBox="0 0 44 44" className="nk-inspect-knob">
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="none" stroke="var(--nk-line-soft)" strokeWidth="2" />
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="none" stroke="var(--nk-cyan)" strokeWidth="2.5" strokeDasharray={`${arc} ${arc * 2}`} strokeDashoffset={offset} strokeLinecap="round" />
-            <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="var(--nk-warn)" strokeWidth="1.6" strokeLinecap="round" />
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={3.5} fill="var(--nk-well)" stroke="var(--nk-cyan)" strokeWidth="1" />
+      <div className="nk-inspect-control">
+        <label htmlFor={`${nodeId}-${argKey}`}>{label}</label>
+        <div className="nk-inspect-dial" role="slider" tabIndex={0} aria-label={label}
+          aria-valuemin={field.min} aria-valuemax={field.max} aria-valuenow={mapped}
+          aria-valuetext={readout} onDoubleClick={onDbl} onPointerDown={onPointer}
+          onKeyDown={(e) => {
+            if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+            e.preventDefault();
+            const delta = (field.max - field.min) * (e.shiftKey ? 0.001 : 0.01);
+            const next = e.key === "Home" ? field.min : e.key === "End" ? field.max
+              : mapped + (e.key === "ArrowUp" || e.key === "ArrowRight" ? delta : -delta);
+            commit(String(Math.min(field.max, Math.max(field.min, next))));
+          }}>
+          <svg viewBox="0 0 44 44" className="nk-inspect-knob" aria-hidden>
+            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="var(--nk-well)" stroke="var(--nk-line)" strokeWidth="2" />
+            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="none" stroke="var(--nk-accent)" strokeWidth="2.5" strokeDasharray={`${arc} ${arc * 2}`} strokeDashoffset={offset} strokeLinecap="round" />
+            <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="var(--nk-ink)" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx={KNOB_CX} cy={KNOB_CY} r={3.5} fill="var(--nk-surface)" stroke="var(--nk-line)" strokeWidth="1" />
           </svg>
-          {edit != null ? (
-            <input
-              className="absolute inset-0 flex items-center justify-center w-full h-full bg-transparent border-0 text-center font-mono text-[11px] text-accent outline-none"
-              value={edit}
-              onChange={(e) => setEdit(e.target.value)}
-              onBlur={onEditBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-                if (e.key === "Escape") {
-                  setEdit(null);
-                }
-              }}
-              autoFocus
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
-              <span className="text-accent font-mono tabular-nums">{readout}</span>
-              {field.unit ? <span className="text-[10px] text-muted mt-0.5">{field.unit}</span> : null}
-            </div>
-          )}
         </div>
-        <div className="flex justify-between w-full px-1 text-[10px] text-[var(--nk-ink-soft)]">
+        <input id={`${nodeId}-${argKey}`} className="nk-inspect-value" inputMode="decimal"
+          aria-label={`${label} value`} value={edit ?? readout}
+          onFocus={() => setEdit(String(mapped))} onChange={e => setEdit(e.target.value)}
+          onBlur={onEditBlur} onKeyDown={e => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") { e.preventDefault(); setEdit(null); }
+          }} />
+        <div className="nk-inspect-range">
           <span>{formatKnobDisplay(field.min, field.unit)}</span>
           <span>{formatKnobDisplay(field.max, field.unit)}</span>
         </div>
-        <button type="button" className="nk-inspect-reset text-[10px] text-muted" onClick={reset} title="Reset to default">↺</button>
+        <button type="button" className="nk-inspect-reset" onClick={reset} title="Reset to default">Reset</button>
       </div>
     );
   }
@@ -182,9 +177,9 @@ export function InspectKnob({
   // ---------- Enum / Dropdown ----------
   if (field.options.length > 0) {
     return (
-      <div className="flex flex-col gap-1 min-w-[110px]">
-        <div className="text-[10px] tracking-widest text-muted uppercase">{label}</div>
-        <select className="h-8 w-full border border-[var(--nk-line)] bg-black px-2 text-ink" value={field.options.includes(value) ? value : field.options[0]} onChange={(e) => commit(e.target.value)}>
+      <div className="nk-inspect-control nk-inspect-control--text">
+        <label htmlFor={`${nodeId}-${argKey}`}>{label}</label>
+        <select id={`${nodeId}-${argKey}`} className="h-8 w-full border border-[var(--nk-line)] bg-black px-2 text-ink" value={field.options.includes(value) ? value : field.options[0]} onChange={(e) => commit(e.target.value)}>
           {field.options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
           ))}
@@ -193,19 +188,19 @@ export function InspectKnob({
     );
   }
 
-  // ---------- Makro-Bindung / Ausdruck (schreibgeschützt) ----------
+  // ---------- Makro-Reveal / Ausdruck (schreibgeschützt) ----------
   return (
-    <div className="flex flex-col gap-1 min-w-[110px]">
-      <div className="text-[10px] tracking-widest text-muted uppercase">{label}</div>
+    <div className="nk-inspect-control nk-inspect-control--text">
+      <label htmlFor={`${nodeId}-${argKey}`}>{label}</label>
       <div className="flex items-center gap-2">
         <span className="flex-1 text-[11px] font-mono text-ink truncate">{value}</span>
         {onReveal ? (
           <button type="button" className="nk-inspect-bind text-[10px] text-cyan" onClick={onReveal}>
-            Bindung
+            Reveal
           </button>
         ) : null}
       </div>
-      <div className="text-[9px] text-muted">Makro / Ausdruck – nicht als Literal ersetzbar</div>
+      <div className="text-[9px] text-muted">Macro / expression</div>
     </div>
   );
 }
