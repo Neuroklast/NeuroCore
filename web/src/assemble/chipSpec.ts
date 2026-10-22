@@ -562,13 +562,16 @@ add({
   audioIns: [],
   modIns: ["inA", "inB"],
   audioOuts: ["out"],
-  paramJacks: ["levelA", "levelB", "mix"],
+  paramJacks: ["levela", "levelb", "mix", "offset", "normalize", "clamp", "depth", "polarity"],
   ranges: {
-    levelA: { min: 0, max: 4 },
-    levelB: { min: 0, max: 4 },
+    levela: { min: -4, max: 4 },
+    levelb: { min: -4, max: 4 },
+    offset: { min: -1, max: 1 },
+    depth: { min: 0, max: 1 },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { levelA: "1", levelB: "1", mix: "1" },
+  enums: { normalize: ["off", "on"], clamp: ["off", "bipolar", "unipolar"], polarity: ["normal", "invert"] },
+  defaultArgs: { levela: "1", levelb: "1", mix: "1", offset: "0", normalize: "off", clamp: "off", depth: "1", polarity: "normal" },
   blurb: "Mischt zwei Modulationsquellen mit eigenen Leveln und einem Master-Mix.",
 });
 

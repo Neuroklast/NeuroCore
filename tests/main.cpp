@@ -39,6 +39,7 @@
 #include "HostSnapshotTest.h"
 #include "TelemetryPumpTest.h"
 #include "ModulationBlocksTest.h"
+#include "ControlIntegrationTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -91,6 +92,7 @@ int main (int argc, char* argv[])
   TelemetryPumpTest telemetryPumpTest;
   SanitationChainTest sanitationChainTest;
   ModulationBlocksTest modulationBlocksTest;
+  ControlIntegrationTest controlIntegrationTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

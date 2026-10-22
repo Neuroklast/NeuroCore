@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { FaceProps } from "./faceKind";
 import { readStepMutes, readStepValues, stepCountFromArgs } from "../stepSeqModel";
+import { parseFaceNumber } from "./faceArgs";
 import { lfoFaceModel, lfoWaveformPath } from "./lfoWaveform";
 
 export function LfoFace({ type, args, host }: FaceProps) {
@@ -20,6 +21,23 @@ export function LfoFace({ type, args, host }: FaceProps) {
         </div>
       </div>
     );
+  }
+
+  if (type === "modmix") {
+    const weighted = [
+      host?.controlA == null ? undefined : host.controlA * parseFaceNumber(args.levela ?? args.levelA, 1, -4, 4, host),
+      host?.controlB == null ? undefined : host.controlB * parseFaceNumber(args.levelb ?? args.levelB, 1, -4, 4, host),
+      host?.controlOut,
+    ];
+    return <div className="nk-node-face" data-glyph="control-mix" aria-label="Live weighted A, B and output control">
+      <div className="nk-face-plot"><svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
+        {weighted.map((v, i) => <g key={i} data-mix-output={i === 2 ? v : undefined}>
+          <title>{["A weighted", "B weighted", "Output"][i]}: {v == null ? "no measurement" : v.toFixed(3)}</title>
+          <path d={`M50 ${8 + i * 12} H${50 + Math.max(-1, Math.min(1, v ?? 0)) * 46}`} opacity={v == null ? 0.2 : 1} />
+          <path d={`M50 ${5 + i * 12} V${11 + i * 12}`} opacity="0.35" />
+        </g>)}
+      </svg></div>
+    </div>;
   }
 
   const model = lfoFaceModel(args, host);

@@ -335,3 +335,9 @@ The overlapping radio/telephone/clipper variants are consolidated. Complete remo
 ### Control-chain connections
 
 Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control sources on those contacts. StepSeq, ADSR, Sample & Hold, Random, ModMath and ModMix expose control outputs in Circuit. A source’s Depth and Polarity apply once at every outgoing connection, including connections into another modulator.
+
+### ModMix control mixer
+
+Connect two control sources to `inA`/`inB`. Independent `levela`/`levelb` gains range from −4 to +4; negative gain reverses a contribution. `mix` scales their sum (0–1), then `offset` adds a bias (−1–1). `normalize = on` divides the sum by the absolute weights of connected inputs; missing inputs contribute zero and have no normalization weight. `clamp = bipolar` limits to −1…1; `unipolar` limits to 0…1; `off` preserves the sum. Defaults retain the previous positive-weight behavior. Common `depth` (literal 0–1) and `polarity = normal|invert` shape the published result once.
+
+The chip plots the latest measured weighted A contribution, weighted B contribution, and final published output from top to bottom around a central zero. Contributions are shown before normalization/master/offset; output includes all stages. Unavailable measurements remain dim. Display length saturates at ±1; the DSP value is only limited when Clamp is enabled. Hover each bar for its numeric reading.

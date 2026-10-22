@@ -52,6 +52,9 @@ export function BoardChip({
   const sr = useHostStore((s) => s.sr);
   const liveStep = useHostStore((s) => s.clipsStep[node.id] ?? -1);
   const liveTrigger = useHostStore((s) => s.clipsTrigger[node.id] ?? 0);
+  const controlA = useHostStore((s) => node.type === "modmix" ? s.mods[node.args.ina ?? node.args.inA ?? ""] : undefined);
+  const controlB = useHostStore((s) => node.type === "modmix" ? s.mods[node.args.inb ?? node.args.inB ?? ""] : undefined);
+  const controlOut = useHostStore((s) => node.type === "modmix" ? s.mods[node.id] : undefined);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const selection = usePatchSelectionStore((s) => s.nodeIds);
@@ -146,7 +149,7 @@ export function BoardChip({
         args={node.args}
         id={node.id}
         host={{
-          knobs,
+          knobs, controlA, controlB, controlOut,
           bpm,
           sr,
           step: liveStep,

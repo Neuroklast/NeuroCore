@@ -4,6 +4,10 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## C07 control mixer completion (2026-10-22)
+
+ModMix adds signed weights, offset, optional connected-weight normalization and off/bipolar/unipolar limiting. Defaults preserve existing behavior. AST restore contracts cover A-only/B-only, sum, opposite weights, missing inputs, normalize, offset and both clamp ranges. Native integration and complete headless FX suite pass (zero failures). Catalog/ChipSpec share lowercase DSP keys and expose all controls. The chip displays measured weighted A/B contributions plus published output; browser geometry/live-host checks pass at 1×/2×. React review: hooks unconditional, primitive host selectors, no added animation loop. Web production build and 17 focused contracts pass.
+
 ## Control routing integration (2026-10-22)
 
 Failing native contracts reproduced Audio Join rejection on both A/B sockets and lost source depth/polarity in ModMath, ModMix and SampleHold. Join validation now distinguishes audio and control destinations; all lane consumers use one shaped-source accessor. Native GraphOp/AST restore and multi-hop tests pass. Circuit classifies every current control block consistently, including source output pins and audio-rail exclusion; ModMix exposes modIns A/B. Hydrated Circuit port contracts and catalog/layout checks pass. Windows/pluginval remains pending.

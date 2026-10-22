@@ -810,11 +810,14 @@ private:
         void clearRuntimeState() noexcept override;
     };
 
-    /** ModMix: mixes inA and inB with individual levels and master mix. Params: levelA, levelB, mix. */
+    /** Signed control mixer. Optional connected-weight normalization, offset and final clamp. */
     struct ModMix : Modulator
     {
-        ExpressionEvaluator levelAExpr, levelBExpr, mixExpr;
-        juce::SmoothedValue<float> levelASm, levelBSm, mixSm;
+        ExpressionEvaluator levelAExpr, levelBExpr, mixExpr, offsetExpr;
+        juce::SmoothedValue<float> levelASm, levelBSm, mixSm, offsetSm;
+        enum class Clamp { Off, Bipolar, Unipolar };
+        Clamp clamp { Clamp::Off };
+        bool normalize { false };
         float sampleRate { 44100.f };
         int channels { 1 };
         void prepare (const juce::dsp::ProcessSpec& spec) override;

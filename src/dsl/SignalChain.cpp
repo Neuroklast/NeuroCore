@@ -2067,9 +2067,23 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("levela", nullptr, 0.f, 4.f, "1", mx->levelAExpr, "levelA");
-            parseAmt ("levelb", nullptr, 0.f, 4.f, "1", mx->levelBExpr, "levelB");
+            parseAmt ("levela", nullptr, -4.f, 4.f, "1", mx->levelAExpr, "levelA");
+            parseAmt ("levelb", nullptr, -4.f, 4.f, "1", mx->levelBExpr, "levelB");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", mx->mixExpr, "mix [0..1]");
+
+            parseAmt ("offset", nullptr, -1.f, 1.f, "0", mx->offsetExpr, "offset");
+            if (d.args.count ("normalize"))
+            {
+                const auto value = d.args.at ("normalize").trim().toLowerCase();
+                mx->normalize = value == "on" || value == "true" || value == "1";
+            }
+            if (d.args.count ("clamp"))
+            {
+                const auto value = d.args.at ("clamp").trim().toLowerCase();
+                if (value == "bipolar") mx->clamp = ModMix::Clamp::Bipolar;
+                else if (value == "unipolar") mx->clamp = ModMix::Clamp::Unipolar;
+                else if (value != "off") { error = "ModMix clamp must be off, bipolar or unipolar"; return false; }
+            }
 
             newChain->push_back (std::move (mx));
         }

@@ -48,6 +48,28 @@ public:
             "modmath1: ina = random1; mode = add; depth = 0.4; polarity = invert\n"
             "modmix1: ina = modmath1; levela = 1; levelb = 0\n"
             "stage1: y = x * modmix1\n"), 0.05f, 1.0e-4f);
+        beginTest ("ModMix weights, missing inputs, offset, clamp and normalization survive restore");
+        const juce::String sources = "random1: rate = 1000; min = 0.6; max = 0.6\nrandom2: rate = 1000; min = -0.2; max = -0.2\n";
+        const std::pair<juce::String, float> cases[] = {
+            { "ina = random1; levela = 1; normalize = on", 0.6f },
+            { "inb = random2; levelb = 2; normalize = on", -0.2f },
+            { "ina = random1; inb = random2; levela = 1; levelb = 1", 0.4f },
+            { "ina = random1; inb = random1; levela = 1; levelb = -1", 0.f },
+            { "ina = random1; inb = random2; levela = 2; levelb = 1; normalize = on; offset = 0.1", 1.f / 3.f + 0.1f },
+            { "ina = random1; levela = 4; clamp = bipolar", 1.f },
+            { "inb = random2; clamp = unipolar", 0.f },
+            { "offset = 0.4; mix = 0.5", 0.4f },
+            { "ina = random1; mix = 0.5; offset = -0.1", 0.2f }
+        };
+        for (const auto& test : cases)
+        {
+            dsl::GraphDocument doc, restored;
+            juce::String error;
+            expect (dsl::parse (sources + "modmix1: " + test.first + "\nstage1: y = modmix1\n", doc, error), error);
+            expect (dsl::fromJson (dsl::toJson (doc), restored, error), error);
+            expectWithinAbsoluteError (render (dsl::emit (restored)), test.second, 1.e-4f, test.first);
+        }
+
     }
 private:
     float render (const juce::String& script)

@@ -10,6 +10,9 @@ export type FaceKnob = LiveKnob & { isNote?: boolean };
 
 export type FaceHost = {
   knobs?: FaceKnob[];
+  controlA?: number;
+  controlB?: number;
+  controlOut?: number;
   bpm?: number;
   sr?: number;
   /** Live step-sequencer position, or -1 when the host is stopped. */

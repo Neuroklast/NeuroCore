@@ -24,6 +24,7 @@ void SignalChain::ModMix::prepare (const juce::dsp::ProcessSpec& spec)
     levelASm.reset (sampleRate, Config::kSmoothingTime);
     levelBSm.reset (sampleRate, Config::kSmoothingTime);
     mixSm.reset (sampleRate, Config::kSmoothingTime);
+    offsetSm.reset (sampleRate, Config::kSmoothingTime);
 
     auto snap = [] (ExpressionEvaluator& e, float fallback) -> float
     {
@@ -33,7 +34,8 @@ void SignalChain::ModMix::prepare (const juce::dsp::ProcessSpec& spec)
     levelASm.setCurrentAndTargetValue (snap (levelAExpr, 1.0f));
     levelBSm.setCurrentAndTargetValue (snap (levelBExpr, 1.0f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 1.0f));
-    bindings.prepare (varPtr, { &levelAExpr, &levelBExpr, &mixExpr });
+    offsetSm.setCurrentAndTargetValue (snap (offsetExpr, 0.0f));
+    bindings.prepare (varPtr, { &levelAExpr, &levelBExpr, &mixExpr, &offsetExpr });
     reserveControlLane (spec);
     clearRuntimeState();
 }
@@ -60,6 +62,7 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
     levelASm.setTargetValue (snapEval (levelAExpr, 1.0f));
     levelBSm.setTargetValue (snapEval (levelBExpr, 1.0f));
     mixSm.setTargetValue (snapEval (mixExpr, 1.0f));
+    offsetSm.setTargetValue (snapEval (offsetExpr, 0.0f));
 
     const Modulator* srcA = inputSources.size() > 0 ? inputSources[0] : nullptr;
     const Modulator* srcB = inputSources.size() > 1 ? inputSources[1] : nullptr;
@@ -75,12 +78,19 @@ void SignalChain::ModMix::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < laneN; ++i)
     {
-        const float levelA = juce::jlimit (0.0f, 4.0f, levelASm.getNextValue());
-        const float levelB = juce::jlimit (0.0f, 4.0f, levelBSm.getNextValue());
+        const float levelA = juce::jlimit (-4.0f, 4.0f, levelASm.getNextValue());
+        const float levelB = juce::jlimit (-4.0f, 4.0f, levelBSm.getNextValue());
         const float mix    = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
         const float a = laneAt (srcA, slotA, i);
         const float b = laneAt (srcB, slotB, i);
-        modLane[(size_t) i] = (a * levelA + b * levelB) * mix;
+        const float weight = (srcA != nullptr || slotA != nullptr ? std::abs (levelA) : 0.f)
+                           + (srcB != nullptr || slotB != nullptr ? std::abs (levelB) : 0.f);
+        const float sum = a * levelA + b * levelB;
+        float value = (normalize ? (weight > 1.e-8f ? sum / weight : 0.f) : sum) * mix
+                    + juce::jlimit (-1.f, 1.f, offsetSm.getNextValue());
+        if (clamp == Clamp::Bipolar) value = juce::jlimit (-1.f, 1.f, value);
+        if (clamp == Clamp::Unipolar) value = juce::jlimit (0.f, 1.f, value);
+        modLane[(size_t) i] = value;
     }
 }
