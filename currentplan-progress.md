@@ -222,7 +222,7 @@ Ergebnisse:
 
 | Prüfung | Ergebnis |
 |---|---|
-| Gesamte native Suite | 33272 passed, 5 failed (dieselben 5 Alttests wie A01) |
+| Gesamte native Suite | 33296 passed, 5 failed (dieselben 5 Alttests wie A01) |
 | `NeuroKoreDspContracts.exe` | `Failures: 0` |
 | `NeuroKoreDspContracts.exe --expansion` | Exit 0 |
 
@@ -502,7 +502,7 @@ Ergebnisse:
 
 | Prüfung | Ergebnis |
 |---|---|
-| Gesamte native Suite | 33272 passed, 5 failed (dieselben Alttests) |
+| Gesamte native Suite | 33296 passed, 5 failed (dieselben Alttests) |
 | `NeuroKoreDspContracts.exe` | `Failures: 0` |
 | Web-Build (`tsc` + Vite) | OK |
 | ADSR-/StepSeq-/Katalog-Verträge | 39 passed; 1 alter `cables`-Default-Fehler |
