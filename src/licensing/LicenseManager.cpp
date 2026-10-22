@@ -1,6 +1,23 @@
 #include "LicenseManager.h"
 #include "LicenseV2.h"
 #include "../core/Config.h"
+#include "../core/DemoClock.h"
+
+juce::File LicenseManager::getDemoStampFile()
+{
+    return getDataDirectory().getChildFile ("demo_started.txt");
+}
+
+bool LicenseManager::saveDemoStamp (double startedMs, double lastSeenMs)
+{
+    auto dir = getDataDirectory();
+    if (! dir.createDirectory() && ! dir.isDirectory())
+        return false;
+    juce::TemporaryFile temp (getDemoStampFile());
+    if (! temp.getFile().replaceWithText (DemoClock::serialize (startedMs, lastSeenMs)))
+        return false;
+    return temp.overwriteTargetFileWithTemporary();
+}
 
 LicenseManager::LicenseManager()
 {
@@ -19,11 +36,6 @@ juce::File LicenseManager::getDataDirectory()
 juce::File LicenseManager::getLicenseFile()
 {
     return getDataDirectory().getChildFile ("neurokore.lic");
-}
-
-juce::File LicenseManager::getDemoStampFile()
-{
-    return getDataDirectory().getChildFile ("demo_started.txt");
 }
 
 bool LicenseManager::saveLicense (const juce::String& data)

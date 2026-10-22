@@ -23,6 +23,7 @@
 #include "LicenseTest.h"
 #include "LicenseV2Test.h"
 #include "DemoMixTest.h"
+#include "DemoClockTest.h"
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
 #include "IrXoverTest.h"
@@ -71,6 +72,7 @@ int main (int argc, char* argv[])
   LicenseTest licenseTest;
   LicenseV2Test licenseV2Test;
   DemoMixTest demoMixTest;
+  DemoClockTest demoClockTest;
   EqSidechainTest eqSidechainTest;
   DynamicsBlocksTest dynamicsBlocksTest;
   IrXoverTest irXoverTest;
