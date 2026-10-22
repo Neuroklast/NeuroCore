@@ -1637,6 +1637,10 @@ private:
         std::vector<Env*> envelopes;
         std::vector<Modulator*> controlMods;
         std::vector<Modulator*> pureControlOrder;
+        // Bus-local lists avoid scanning the entire chain once for each bus
+        // on the audio callback; order inside each bus remains unchanged.
+        std::vector<Block*> orderedBlocks;
+        std::array<std::vector<Block*>, Config::kMaxNamedBuses + 1> blocksByBus;
     };
 
     std::shared_ptr<Chain>   chain;

@@ -2715,6 +2715,20 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         }
     }
 
+    // The bus routing DAG is already validated and each node's busIndex is
+    // bound. Group nodes once, instead of scanning every graph node for each
+    // bus on every callback. No allocations during audio processing.
+    newChain->orderedBlocks.reserve (newChain->size());
+    for (auto& bucket : newChain->blocksByBus)
+        bucket.reserve (newChain->size() / (Config::kMaxNamedBuses + 1) + 1);
+    for (auto& node : *newChain)
+    {
+        auto* block = node.get();
+        newChain->orderedBlocks.push_back (block);
+        if (juce::isPositiveAndBelow (block->busIndex, (int) newChain->blocksByBus.size()))
+            newChain->blocksByBus[(size_t) block->busIndex].push_back (block);
+    }
+
     // Construct the immutable control execution plan before graph publication.
     // This removes the old 64-generator cap and the repeated O(N^2) per-block
     // dependency scans. Cycle and source order were validated above.
@@ -3306,7 +3320,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         juce::AudioBuffer<float> slice (work.getArrayOfWritePointers(), workCh, nWork);
         if (onlyBus < 0 || onlyBus == 0)
             writeNodeTap (kTapSlotIn, slice);
-        for (auto& b : *chainPtr)
+        const auto& blocks = juce::isPositiveAndBelow (
+            onlyBus, (int) chainPtr->blocksByBus.size())
+            ? chainPtr->blocksByBus[(size_t) onlyBus]
+            : chainPtr->orderedBlocks;
+        for (auto* b : blocks)
         {
             if (onlyBus >= 0 && b->busIndex != onlyBus)
                 continue;
@@ -3318,7 +3336,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 case NodeKind::Env:
                 {
                     // Detectors observe the signal at their actual graph position.
-                    auto* env = static_cast<Env*> (b.get());
+                    auto* env = static_cast<Env*> (b);
                     const float* l = slice.getReadPointer (0);
                     const float* r = workCh > 1 ? slice.getReadPointer (1) : l;
                     if (env->followSidechain)
@@ -3337,7 +3355,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Modulator:
                 {
-                    auto* mod = static_cast<Modulator*> (b.get());
+                    auto* mod = static_cast<Modulator*> (b);
                     if (mod->startRendered)
                         continue;
                     mod->processBlock (slice);
@@ -3353,7 +3371,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Stage:
                 {
-                    auto* st = static_cast<Stage*> (b.get());
+                    auto* st = static_cast<Stage*> (b);
                     if (st->msEncode && workCh >= 2)
                     {
                         auto* l = work.getWritePointer (0);
@@ -3430,7 +3448,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Delay:
                 {
-                    auto* dl = static_cast<Delay*> (b.get());
+                    auto* dl = static_cast<Delay*> (b);
                     auto* L = work.getWritePointer (0);
                     auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
                     if (dl->useSync)
@@ -3466,7 +3484,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Filter:
                 {
-                    auto* fi = static_cast<Filter*> (b.get());
+                    auto* fi = static_cast<Filter*> (b);
                     if (fi->modulated)
                     {
                         const int stride = juce::jmax (1, Config::kFilterCoeffStride);
@@ -3506,7 +3524,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             b->processBlock (slice);
             if (tapCaptureActive && b->kind == NodeKind::Xover)
             {
-                const auto* xo = static_cast<Xover*> (b.get());
+                const auto* xo = static_cast<Xover*> (b);
                 if (xo->lowOut != nullptr) writeNodeTap (xo->lowTap, *xo->lowOut, nWork);
                 if (xo->midOut != nullptr && xo->threeBand) writeNodeTap (xo->midTap, *xo->midOut, nWork);
                 if (xo->highOut != nullptr) writeNodeTap (xo->highTap, *xo->highOut, nWork);
