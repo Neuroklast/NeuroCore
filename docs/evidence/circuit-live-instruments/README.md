@@ -39,7 +39,7 @@ Production CableCanvas performance marks. 1280×860 viewport, shared clock reque
 | 100 | 2× | 46 | 0.7 ms | 1.4 ms |
 | 200 | 2× | 46 | 1.4 ms | 2.4 ms |
 
-The steady-flow timings precede only the final motion-pause clearing guard, which has its own failing/passing contract. Final production rebuild and a two-density Dots smoke check are run after that guard.
+The steady-flow timings precede only the final motion-pause clearing guard, which has its own failing/passing contract. Final production rebuild passes after that guard. The Dots smoke check also passes at both densities (2/2).
 
 ## Reproduce
 
