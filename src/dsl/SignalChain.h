@@ -545,6 +545,10 @@ private:
         int channels { 1 };
         float holdL { 0.f }, holdR { 0.f };
         int holdCounter { 0 };
+        int nextHoldSamples { 1 };
+        // Stable per-instance jitter sequence, reset with the DSP state.
+        // Draw once per hold interval, never allocate or call random_device in audio.
+        juce::uint32 jitterState { 0x9e3779b9u };
         float lastSampleL { 0.f }, lastSampleR { 0.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;

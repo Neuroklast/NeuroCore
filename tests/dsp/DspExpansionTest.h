@@ -112,6 +112,61 @@ public:
             expect (TestHelpers::countNonFinite (buf) == 0);
         }
 
+        beginTest ("Decimate all seven exposed parameters affect audio after host automation");
+        {
+            const char* knobs[] { "rate", "bits", "jitter", "hold", "recon", "mix", "output" };
+            for (const auto* control : knobs)
+            {
+                auto render = [&] (float value)
+                {
+                    dsl::SignalChain chain;
+                    chain.prepare ({ 48000.0, 256, 2 });
+                    auto param = [&] (const char* id, const char* fallback)
+                    {
+                        return juce::String (id) + " = "
+                             + (juce::String (control) == id ? juce::String ("a")
+                                                          : juce::String (fallback)) + "; ";
+                    };
+                    juce::String err;
+                    const juce::String script = "decimate1: "
+                        + param ("rate", "0.85")
+                        + param ("bits", "6")
+                        + param ("jitter", "0")
+                        + param ("hold", "0")
+                        + param ("recon", "0.2")
+                        + param ("mix", "1")
+                        + param ("output", "0");
+                    expect (chain.loadScript (script, err), err);
+                    chain.setParameter (0, value);
+                    juce::AudioBuffer<float> audio (2, 256);
+                    std::vector<float> result;
+                    for (int block = 0; block < 56; ++block)
+                    {
+                        for (int i = 0; i < 256; ++i)
+                        {
+                            const float x = (float) (block * 256 + i);
+                            audio.setSample (0, i, 0.5f * std::sin (0.11f * x));
+                            audio.setSample (1, i, 0.4f * std::cos (0.14f * x));
+                        }
+                        chain.processBlock (audio);
+                        if (block >= 48)
+                            result.insert (result.end(), audio.getReadPointer (0),
+                                           audio.getReadPointer (0) + 256);
+                    }
+                    return result;
+                };
+                const auto low = render (0.f);
+                const auto high = render (1.f);
+                double difference = 0.;
+                for (size_t i = 0; i < low.size(); ++i)
+                    difference += std::abs (low[i] - high[i]);
+                difference /= (double) juce::jmax ((size_t) 1, low.size());
+                expect (difference > 0.001,
+                    juce::String (control) + " automation has no measurable DSP effect: "
+                    + juce::String (difference, 6));
+            }
+        }
+
         beginTest ("Saturate drive=0 mix=0 passes input unchanged");
         {
             dsl::SignalChain chain;
