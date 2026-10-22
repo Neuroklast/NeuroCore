@@ -8,6 +8,11 @@
 #include "TestHelpers.h"
 #include <cmath>
 
+#if NK_ALLOCATION_PROBE
+extern "C" void nkBeginAllocationProbe();
+extern "C" unsigned nkEndAllocationProbe();
+#endif
+
 class ModulationBlocksTest : public juce::UnitTest
 {
 public:
@@ -487,6 +492,18 @@ public:
                 audio.setSample (0, sample, 1.f);
             chain.processBlock (audio);
             expectWithinAbsoluteError (audio.getSample (0, 200), 0.5f, 1.0e-3f);
+           #if NK_ALLOCATION_PROBE
+            nkBeginAllocationProbe();
+            for (int iteration = 0; iteration < 16; ++iteration)
+            {
+                for (int sample = 0; sample < 256; ++sample)
+                    audio.setSample (0, sample, 1.f);
+                chain.processBlock (audio);
+            }
+            const auto allocations = nkEndAllocationProbe();
+            expectEquals ((int) allocations, 0,
+                          "80 generators must not allocate during processBlock");
+           #endif
         }
 
         beginTest ("long pure modulation dependency chain has no 64-node cutoff");
