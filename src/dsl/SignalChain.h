@@ -1010,6 +1010,7 @@ private:
         juce::SmoothedValue<float> bitsSm, mixSm, toneSm;
         float sampleRate { 44100.f };
         float coeff { 0.f };
+        int toneCoeffStep { 0 };
         float zL { 0.f }, zR { 0.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;

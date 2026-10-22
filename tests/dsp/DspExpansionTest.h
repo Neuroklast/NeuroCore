@@ -222,6 +222,53 @@ public:
             expect (TestHelpers::countNonFinite (buf) == 0);
         }
 
+        beginTest ("Bitcrush dry bypass preserves hot floating-point input");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 2 });
+            juce::String err;
+            expect (chain.loadScript ("bitcrush1: bits = 2; tone = 800; mix = 0", err), err);
+            juce::AudioBuffer<float> audio (2, 128);
+            for (int i = 0; i < 128; ++i)
+            {
+                audio.setSample (0, i, 1.5f);
+                audio.setSample (1, i, -1.4f);
+            }
+            chain.processBlock (audio);
+            expectWithinAbsoluteError (audio.getSample (0, 127), 1.5f, 1.0e-5f);
+            expectWithinAbsoluteError (audio.getSample (1, 127), -1.4f, 1.0e-5f);
+        }
+
+        beginTest ("Bitcrush tone automation changes spectral energy");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript ("bitcrush1: bits = 8; tone = a; mix = 1", err), err);
+            juce::AudioBuffer<float> audio (1, 128);
+            auto energy = [&] (float knob)
+            {
+                chain.setParameter (0, knob);
+                double sum = 0.;
+                for (int block = 0; block < 120; ++block)
+                {
+                    for (int i = 0; i < 128; ++i)
+                        audio.setSample (0, i, 0.6f * std::sin (
+                            (float) (block * 128 + i) * juce::MathConstants<float>::twoPi
+                            * 6000.f / 48000.f));
+                    chain.processBlock (audio);
+                    if (block >= 112)
+                        for (int i = 0; i < 128; ++i)
+                            sum += audio.getSample (0, i) * audio.getSample (0, i);
+                }
+                return sum;
+            };
+            const double low = energy (0.f);
+            const double high = energy (1.f);
+            expect (high > low * 1.5,
+                "higher cutoff must pass substantially more 6 kHz content");
+        }
+
         beginTest ("Shaper drive=0 mix=0 passes input unchanged");
         {
             dsl::SignalChain chain;

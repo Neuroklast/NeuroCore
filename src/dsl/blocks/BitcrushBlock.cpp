@@ -7,6 +7,7 @@ using namespace dsl;
 void SignalChain::Bitcrush::clearRuntimeState() noexcept
 {
     zL = zR = 0.f;
+    toneCoeffStep = 0;
 }
 
 void SignalChain::Bitcrush::prepare (const juce::dsp::ProcessSpec& spec)
@@ -48,25 +49,30 @@ void SignalChain::Bitcrush::processBlock (juce::AudioBuffer<float>& buffer)
     bitsSm.setTargetValue (juce::jlimit (1.f, 16.f, pull (bitsExpr, 8.f)));
     mixSm.setTargetValue (juce::jlimit (0.f, 1.f, pull (mixExpr, 1.f)));
     toneSm.setTargetValue (juce::jlimit (800.f, sampleRate * 0.45f, pull (toneExpr, 8000.f)));
-    const float tone = toneSm.getNextValue();
-    coeff = std::exp (-2.f * juce::MathConstants<float>::pi * tone / sampleRate);
-
     const int nCh = juce::jmin (buffer.getNumChannels(), 2);
     const int nS = buffer.getNumSamples();
     for (int i = 0; i < nS; ++i)
     {
-        const float bits = bitsSm.getNextValue();
+        const int bitDepth = juce::jlimit (1, 16, (int) std::lround (bitsSm.getNextValue()));
         const float mix = mixSm.getNextValue();
-        const float levels = std::pow (2.f, bits - 1.f);
+        // Bit depth is discrete. Do not call pow() for every audio sample.
+        const float levels = (float) (1u << (bitDepth - 1));
         const float dryG = 1.f - mix;
+        // Advance the tone smoother at the *sample* rate; refresh the lowpass
+        // coefficient at a bounded 16-sample control stride.
+        const float tone = toneSm.getNextValue();
+        if (toneCoeffStep == 0)
+            coeff = std::exp (-2.f * juce::MathConstants<float>::pi * tone / sampleRate);
+        toneCoeffStep = (toneCoeffStep + 1) & 15;
         for (int ch = 0; ch < nCh; ++ch)
         {
             const float x = buffer.getSample (ch, i);
-            const float xn = juce::jlimit (-1.f, 1.f, std::isfinite (x) ? x : 0.f);
+            const float dry = std::isfinite (x) ? x : 0.f;
+            const float xn = juce::jlimit (-1.f, 1.f, dry);
             const float q = std::round (xn * levels) / levels;
             float& z = ch == 0 ? zL : zR;
             z = coeff * z + (1.f - coeff) * q;
-            buffer.setSample (ch, i, dryG * xn + mix * z);
+            buffer.setSample (ch, i, dryG * dry + mix * z);
         }
         if (nCh == 1)
             zR = zL;
