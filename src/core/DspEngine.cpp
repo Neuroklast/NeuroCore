@@ -89,7 +89,7 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
                        (int) currentSpec.maximumBlockSize,
                        false, true, true);
     dryBuffer.clear();
-    scriptBuffer.setSize ((int) currentSpec.numChannels, maxOsN, false, true, true);
+    // No second OS-domain audio buffer: the chain processes upBlock in place.
     scOsBuffer.setSize (2, maxOsN, false, false, true);
     drySidechain.prepare ((int) currentSpec.numChannels,
                           (int) currentSpec.maximumBlockSize,
@@ -103,7 +103,7 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     preparedHostMax = juce::jmin (dryBuffer.getNumSamples(), (int) lastOsBankBlock);
     if (preparedHostMax <= 0)
         preparedHostMax = (int) currentSpec.maximumBlockSize;
-    preparedOsN = scriptBuffer.getNumSamples();
+    preparedOsN = maxOsN;
 
     outputGain.prepare(currentSpec);
     outputGain.setGainLinear(1.0f);
@@ -551,7 +551,7 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     // Process DSL in the OS domain on the upBlock view (exact callback length,
     // never the prepare capacity).
     const int osN = (int) upBlock.getNumSamples();
-    const int osCap = juce::jmin (scriptBuffer.getNumSamples(), preparedOsN);
+    const int osCap = preparedOsN;
     const int workN = juce::jmin (osN, osCap);
     jassert (osN <= osCap);
 
