@@ -36,8 +36,6 @@ private:
     };
 
     void captureScope (const juce::AudioBuffer<float>& src, float* dest, int destN) noexcept;
-    static float peakOf (const juce::AudioBuffer<float>& src) noexcept;
-    static float rmsOf (const juce::AudioBuffer<float>& src) noexcept;
 
     Slot slots[kSlotCount];
     std::atomic<int> published { 0 };
