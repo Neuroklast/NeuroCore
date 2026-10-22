@@ -3,6 +3,10 @@
 #include "FxRuntimeTest.h"
 #include "../src/third_party/nlohmann/json.hpp"
 #include <chrono>
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 #include <fstream>
 #include <iostream>
 
@@ -39,6 +43,109 @@ inline int runFxBenchmark()
             std::sort (timings.begin(), timings.end());
             std::cout << fx.name << ",48000," << blockSize << ',' << timings[2] << '\n';
         }
+    return 0;
+}
+
+// Deterministic, manually invoked DSL-only baseline. Does NOT include host,
+// WebView2 or the resampling FIR/IIR. No GitHub CI run is required.
+inline int runDensePerformanceBenchmark()
+{
+    using Clock = std::chrono::steady_clock;
+    constexpr int kHostBlock = 256;
+    std::cout << "scenario,nodes,os_domain_factor,sample_rate,block_samples,"
+                 "p50_us,p95_us,p99_us,max_us,block_budget_percent,nonfinite\n";
+    for (const auto& scenario : {
+             std::pair<const char*, int> { "serial", 10 },
+             { "serial", 50 }, { "serial", 100 }, { "serial", 200 },
+             { "modulators", 128 }, { "multibus", 80 } })
+    {
+        const std::string kind = scenario.first;
+        const int count = scenario.second;
+        juce::String script;
+        if (kind == "serial")
+        {
+            for (int i = 1; i <= count; ++i)
+                script += "stage" + juce::String (i) + ": y = x * 0.999\n";
+        }
+        else if (kind == "modulators")
+        {
+            for (int i = 1; i <= count; ++i)
+                script += "stepseq" + juce::String (i)
+                    + ": steps = 1; values = 0.5\n";
+            script += "stage1: y = stepseq128 * x\n";
+        }
+        else
+        {
+            for (int bus = 0; bus < 4; ++bus)
+            {
+                if (bus > 0)
+                    script += "bus route" + juce::String (bus)
+                        + ":\nsend: in = 1\n";
+                for (int i = 0; i < count / 4; ++i)
+                    script += "stage" + juce::String (bus * (count / 4) + i + 1)
+                        + ": y = x * 0.999\n";
+            }
+            script += "out: main = 0.25; route1 = 0.25; "
+                      "route2 = 0.25; route3 = 0.25\n";
+        }
+
+        for (const int factor : { 1, 2, 4, 8 })
+        {
+            const auto sampleRate = 48000.0 * (double) factor;
+            const int samples = kHostBlock * factor;
+            dsl::SignalChain chain;
+            chain.prepare ({ sampleRate, (juce::uint32) samples, 2 });
+            juce::String err;
+            if (! chain.loadScript (script, err))
+            {
+                std::cerr << "Cannot bench " << kind << "/" << count
+                          << ": " << err << '\n';
+                return 2;
+            }
+            chain.setNodeTapsWanted (false);
+            juce::AudioBuffer<float> input (2, samples), work (2, samples);
+            for (int i = 0; i < samples; ++i)
+            {
+                input.setSample (0, i, 0.2f * std::sin (0.071f * (float) i));
+                input.setSample (1, i, 0.2f * std::cos (0.064f * (float) i));
+            }
+
+            std::vector<double> times;
+            times.reserve (160);
+            int nonfinite = 0;
+            for (int block = -40; block < 160; ++block)
+            {
+                for (int ch = 0; ch < 2; ++ch)
+                    work.copyFrom (ch, 0, input, ch, 0, samples);
+                const auto start = Clock::now();
+                chain.processBlock (work);
+                const double us = std::chrono::duration<double, std::micro> (
+                    Clock::now() - start).count();
+                if (block >= 0)
+                {
+                    times.push_back (us);
+                    for (int ch = 0; ch < 2; ++ch)
+                        for (int i = 0; i < samples; ++i)
+                            nonfinite += ! std::isfinite (work.getSample (ch, i));
+                }
+            }
+            std::sort (times.begin(), times.end());
+            const auto percentile = [&times] (double p)
+            {
+                const auto idx = (size_t) std::floor (p * (double) (times.size() - 1));
+                return times[idx];
+            };
+            const double p50 = percentile (0.50), p95 = percentile (0.95);
+            const double p99 = percentile (0.99);
+            const double budgetUs = (double) kHostBlock / 48000.0 * 1.0e6;
+            std::cout << kind << ',' << count << ',' << factor << ','
+                      << (int) sampleRate << ',' << samples << ','
+                      << p50 << ',' << p95 << ',' << p99 << ','
+                      << times.back() << ',' << 100. * p99 / budgetUs << ','
+                      << nonfinite << '\n';
+            if (nonfinite != 0) return 3;
+        }
+    }
     return 0;
 }
 

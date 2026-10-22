@@ -1,6 +1,7 @@
 #include "GlobalPreferencesTest.h"
 #include "TelemetrySamplingTest.h"
 #include "FxRuntimeTest.h"
+#include "FxBench.h"
 #include "DSLParserTest.h"
 #include "dsp/ClipTest.h"
 #include "dsp/DspExpansionTest.h"
@@ -51,6 +52,8 @@ int main (int argc, char* argv[])
   // AudioProcessor / APVTS / AsyncUpdater need a live MessageManager.
   // Without this, the first NeuroKoreAudioProcessor construction can spin forever.
   juce::ScopedJuceInitialiser_GUI juceInit;
+  if (argc == 2 && std::string (argv[1]) == "--bench-dense")
+      return runDensePerformanceBenchmark();
 
   FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;

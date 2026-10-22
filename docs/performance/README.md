@@ -40,3 +40,20 @@ Record the same window size, DPR, theme, motion, and fps cap for each row.
 **Terminal:** idle editor, typing, autocomplete, tab switch, large DSL.
 
 Browser preview and native WebView2 are separate columns.
+
+## Offline dense-DSP performance baseline
+
+Build `NeuroKoreTests` locally (Release; use the **same** CMake settings and CPU across runs), then run:
+
+```sh
+./build/NeuroKoreTests --bench-dense > dense-baseline.csv
+```
+
+On Windows, replace the executable with the built `NeuroKoreTests.exe` path.
+The benchmark runs *only the SignalChain DSL* without JUCE oversampling/resampler stages,
+WebView2 or a DAW. It uses 10/50/100/200 serial stages, 128 modulation generators,
+80 stages on four buses, at 1x/2x/4x/8x **effective** processing sample rates.
+It reports p50/p95/p99 and an equivalent host callback budget fraction. This is
+**not** a validated VST3 CPU reading. Run old/new commits under identical
+conditions and compare both time and nonfinite counts. Do not publish percentages
+until the target DAW/host and audio buffer size have also been measured.
