@@ -11,6 +11,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   windows-vst3:
+    # Expensive native build is intentionally manual-only. Push events still
+    # create a skipped workflow in the same concurrency group, cancelling
+    # any previous running Windows build without consuming another runner.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: windows-2022
     timeout-minutes: 75
     steps:
