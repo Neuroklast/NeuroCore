@@ -222,7 +222,7 @@ public:
             expect (TestHelpers::countNonFinite (buf) == 0);
         }
 
-        beginTest ("Bitcrush dry bypass preserves hot floating-point input");
+        beginTest ("Bitcrush dry bypass preserves signal before the global chain ceiling");
         {
             dsl::SignalChain chain;
             chain.prepare ({ 48000.0, 128, 2 });
@@ -235,8 +235,13 @@ public:
                 audio.setSample (1, i, -1.4f);
             }
             chain.processBlock (audio);
-            expectWithinAbsoluteError (audio.getSample (0, 127), 1.5f, 1.0e-5f);
-            expectWithinAbsoluteError (audio.getSample (1, 127), -1.4f, 1.0e-5f);
+            // SignalChain's post-bus output protection soft-limits floats
+            // above unity using sign(x) * (2 - 1 / abs(x)). The Bitcrush
+            // bypass must not impose its own additional [-1, 1] clamp.
+            expectWithinAbsoluteError (audio.getSample (0, 127),
+                                       2.f - 1.f / 1.5f, 1.0e-5f);
+            expectWithinAbsoluteError (audio.getSample (1, 127),
+                                      -(2.f - 1.f / 1.4f), 1.0e-5f);
         }
 
         beginTest ("Bitcrush tone automation changes spectral energy");
