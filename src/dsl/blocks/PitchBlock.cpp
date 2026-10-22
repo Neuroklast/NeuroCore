@@ -85,8 +85,13 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     auto& work = c.fftWork;
 
     std::fill (work.begin(), work.end(), 0.f);
-    for (int i = 0; i < fftSize; ++i)
-        work[(size_t) i] = c.inFifo[(size_t) i] * window[(size_t) i];
+    // The newest full FFT frame begins at inputWrite. Two contiguous
+    // spans replace the old hop-by-hop input FIFO memory shift.
+    const int firstInput = fftSize - c.inputWrite;
+    for (int i = 0; i < firstInput; ++i)
+        work[(size_t) i] = c.inFifo[(size_t) (c.inputWrite + i)] * window[(size_t) i];
+    for (int i = firstInput; i < fftSize; ++i)
+        work[(size_t) i] = c.inFifo[(size_t) (i - firstInput)] * window[(size_t) i];
 
     fft->performRealOnlyForwardTransform (work.data(), true);
 
@@ -139,19 +144,26 @@ void SignalChain::Pitch::processFrame (Chan& c, float pitchRatio, float formantR
     // JUCE inverse FFT includes 1/N. Four overlapping Hann-squared
     // windows sum to 3/2, so unity reconstruction needs exactly 2/3.
     const float scale = 2.f / 3.f;
-    for (int i = 0; i < fftSize; ++i)
-        c.outAccum[(size_t) i] += scale * window[(size_t) i] * work[(size_t) i];
+    // Accumulate overlap-add into a rotating 2*N ring. Only the newly
+    // published hop is cleared; no memmove of an entire FFT window.
+    const int ringSize = (int) c.outAccum.size();
+    const int firstOutput = juce::jmin (fftSize, ringSize - c.accumHead);
+    for (int i = 0; i < firstOutput; ++i)
+        c.outAccum[(size_t) (c.accumHead + i)]
+            += scale * window[(size_t) i] * work[(size_t) i];
+    for (int i = firstOutput; i < fftSize; ++i)
+        c.outAccum[(size_t) (i - firstOutput)]
+            += scale * window[(size_t) i] * work[(size_t) i];
 
-    // Publish next hop; shift OLA accumulator and input FIFO (classic smb).
     for (int k = 0; k < hopSz; ++k)
-        c.outFifo[(size_t) k] = c.outAccum[(size_t) k];
-
-    std::move (c.outAccum.begin() + hopSz, c.outAccum.begin() + hopSz + fftSize, c.outAccum.begin());
-    std::fill (c.outAccum.begin() + fftSize, c.outAccum.end(), 0.f);
-
-    const int latency = fftSize - hopSz;
-    for (int k = 0; k < latency; ++k)
-        c.inFifo[(size_t) k] = c.inFifo[(size_t) (k + hopSz)];
+    {
+        int index = c.accumHead + k;
+        if (index >= ringSize) index -= ringSize;
+        c.outFifo[(size_t) k] = c.outAccum[(size_t) index];
+        c.outAccum[(size_t) index] = 0.f;
+    }
+    c.accumHead += hopSz;
+    if (c.accumHead >= ringSize) c.accumHead -= ringSize;
 }
 
 float SignalChain::Pitch::processSample (Chan& c, float x, float pitchRatio, float formantRatio) noexcept
@@ -162,7 +174,8 @@ float SignalChain::Pitch::processSample (Chan& c, float x, float pitchRatio, flo
     if (c.rover < latency)
         c.rover = latency;
 
-    c.inFifo[(size_t) c.rover] = x;
+    c.inFifo[(size_t) c.inputWrite] = x;
+    if (++c.inputWrite >= fftSize) c.inputWrite = 0;
     const float wet = c.outFifo[(size_t) (c.rover - latency)];
     ++c.rover;
 

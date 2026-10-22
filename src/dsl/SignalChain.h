@@ -1574,6 +1574,9 @@ private:
             std::vector<float> fftWork;    // 2 * kFftSize
             std::vector<float> dryDelay;
             int dryIndex { 0 };
+            // Rotating STFT input and OLA accumulation; no hop-sized
+            // FIFO/overlap buffer shift in the audio callback.
+            int inputWrite { 0 }, accumHead { 0 };
             float delayDry (float input) noexcept
             {
                 const float result = dryDelay[(size_t) dryIndex];
@@ -1597,6 +1600,8 @@ private:
                 fftWork.assign ((size_t) (2 * size), 0.f);
                 dryDelay.assign ((size_t) size, 0.f);
                 dryIndex = 0;
+                inputWrite = size - size / kOsamp;
+                accumHead = 0;
                 rover = size - size / kOsamp;
             }
             void clear (int hopSz) noexcept
@@ -1608,7 +1613,9 @@ private:
                 std::fill (sumPhase.begin(), sumPhase.end(), 0.f);
                 std::fill (dryDelay.begin(), dryDelay.end(), 0.f);
                 dryIndex = 0;
-                rover = (int) inFifo.size() - juce::jmax (1, hopSz);
+                inputWrite = (int) inFifo.size() - juce::jmax (1, hopSz);
+                accumHead = 0;
+                rover = inputWrite;
             }
         };
         Chan ch[2];
