@@ -76,7 +76,13 @@ test.describe("control mixer display", () => {
     expect(box!.x+box!.width).toBeLessThanOrEqual(after!.x+after!.width);
     expect(box!.y+box!.height).toBeLessThanOrEqual(after!.y+after!.height);
     await chip.locator(".nk-chip-expand").click();
-    await expect(page.locator(".nk-overlay").last()).toBeVisible();
+    const overlay=page.locator(".nk-overlay").last();
+    await expect(overlay).toBeVisible();
+    const offset=overlay.getByRole("slider",{name:/^offset$/i});
+    await expect(offset).toBeVisible();
+    await expect(offset).toHaveAttribute("aria-valuenow","0");
+    const ob=await overlay.boundingBox(), rb=await offset.boundingBox();
+    expect(rb!.x).toBeGreaterThanOrEqual(ob!.x);expect(rb!.x+rb!.width).toBeLessThanOrEqual(ob!.x+ob!.width);
   });
   test("real cable drag distinguishes control A/B from audio Join A/B",async({page})=>{
     for(const [node,sourceId,accepted] of [

@@ -173,3 +173,12 @@ describe("inspect enums / ranges / blurb / bindings", () => {
     expect(a.value).not.toContain("0.06");
   });
 });
+
+it('exposes implicit ModMix and MSEG controls with native dynamic loop bounds',()=>{
+ const mix=inspectArgFields({id:'modmix1',type:'modmix',args:{levela:'0.5'}});
+ expect(mix.find(f=>f.key==='offset')?.value).toBe('0');
+ expect(mix.find(f=>f.key==='normalize')?.value).toBe('off');
+ const mseg=inspectArgFields({id:'mseg1',type:'mseg',args:{points:'0:0,0.2:1,0.7:0.5,1:0'}});
+ expect(mseg.find(f=>f.key==='loopend')?.value).toBe('3');
+ expect(mseg.find(f=>f.key==='source')?.value).toBe('free');
+});

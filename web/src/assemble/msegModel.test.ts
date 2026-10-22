@@ -17,3 +17,9 @@ it('point edits preserve fixed endpoints, strict time order and the 64 point lim
  for(let i=0;i<70;i++)points=insertMsegPoint(points);
  expect(points).toHaveLength(64);
 });
+
+import {bindableJackKeys,chipSpec} from './chipSpec';
+it('only native runtime expressions are offered as control-block macro targets',()=>{
+ expect(bindableJackKeys(chipSpec('mseg'))).toEqual(['duration']);
+ expect(bindableJackKeys(chipSpec('modmix'))).toEqual(['levela','levelb','mix','offset']);
+});

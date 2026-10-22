@@ -34,6 +34,8 @@ export type ChipSpec = {
   audioIns: string[];
   audioOuts: string[];
   paramJacks: string[];
+  /** Explicit runtime macro targets for catalog-backed controls. */
+  bindKeys?: string[];
   paramJackLabels: Record<string, string>;
   modIns: string[];
   enums: Record<string, string[]>;
@@ -558,6 +560,7 @@ add({
 
 add({
   id: "modmix",
+  bindKeys: entryById("modmix")!.params.filter(p => p.automatable).map(p => p.key),
   label: "ModMix",
   typeCodePrefix: "MX",
   audioIns: [],
@@ -1138,6 +1141,7 @@ add({
   id: mseg.id, label: mseg.label, typeCodePrefix: mseg.typeCodePrefix,
   audioIns: mseg.audioIns, audioOuts: mseg.modOuts, modIns: mseg.modIns,
   paramJacks: mseg.params.map(p => p.key),
+  bindKeys: mseg.params.filter(p => p.automatable).map(p => p.key),
   ranges: Object.fromEntries(mseg.params.filter(p => !p.enum).map(p => [p.key,{min:p.min,max:p.max,unit:p.unit}])),
   enums: Object.fromEntries(mseg.params.filter(p => p.enum).map(p => [p.key,p.enum!])),
   defaultArgs: Object.fromEntries(mseg.params.map(p => [p.key,String(p.def)])),
@@ -1244,6 +1248,7 @@ const NOT_KNOB_CODE = new Set(["y", "channel", "kanal", "name", "mode", "family"
  * Routing/name/formula fields stay off the rail.
  */
 export function bindableJackKeys(spec: ChipSpec): string[] {
+  if (spec.bindKeys) return [...spec.bindKeys];
   return spec.paramJacks.filter((k) => {
     if (NOT_KNOB_CODE.has(k.toLowerCase())) {
       return false;

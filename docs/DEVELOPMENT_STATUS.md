@@ -4,11 +4,15 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## Inspect defaults for expanded controls (2026-10-22)
+
+A failing contract reproduced omitted ModMix/MSEG defaults being absent from Inspect. The inspector now resolves catalog defaults plus explicit arguments for these blocks, including MSEG loop end from its actual point count. Only expressions implemented by the native runtime are offered as macro targets (ModMix gains/mix/offset; MSEG duration), preventing nonfunctional bindings on point lists, loop indices or literal source depth. Model contracts and visible default-Offset/geometry checks pass; 62 focused contracts pass.
+
 ## Final preset/control validation checkpoint (2026-10-22)
 
 353 active factory presets: 307 original entries retained, 21 revised, 12 deprecated, 25 new. All 33 original removed/replaced objects remain archived; Mesa High Gain matches its protected hash. Added Curved Sync Duck, MIDI Bowed Resonator and Bipolar Formant Arc for the new MSEG. All 353 re-rendered with the final engine on default, transient, hot, silence and macro-extreme profiles: zero parse errors/nonfinite samples. Audit maximum sample peak 1.715 (stress); this is not a true-peak/LUFS certification. MIDI audit recognizes MSEG source gates.
 
-5 curator contracts, 52 focused web contracts, production web build, native control/MSEG integration, portable MSEG and complete headless FX regression pass. Full web suite: 1018 pass / 10 fail; pristine main d07c0ba1c3dc reproduces the exact same 10 failures (1001 pass / 10 fail), so no new failing web case. Browser checks cover measured ModMix output, real A/B cable magnetization including audio rejection/Join acceptance, and MSEG add/drag/keyboard/delete/curve editing at 1× and 2×. The drag test awaits completion of automatic layout before measuring pins. Windows VST3 and pluginval run on the branch; acceptance is pending its final result. See docs/evidence/preset-modulation/README.md.
+5 curator contracts, 62 focused web contracts, production web build, native control/MSEG integration, portable MSEG and complete headless FX regression pass. Full web suite: 1020 pass / 10 fail; pristine main d07c0ba1c3dc reproduces the exact same 10 failures (1001 pass / 10 fail), so no new failing web case. Browser checks cover measured ModMix output, real A/B cable magnetization including audio rejection/Join acceptance, and MSEG add/drag/keyboard/delete/curve editing at 1× and 2×. The drag test awaits completion of automatic layout before measuring pins. Windows VST3 and pluginval run on the branch; acceptance is pending its final result. See docs/evidence/preset-modulation/README.md.
 
 ## C08 MSEG initial native source (2026-10-22)
 
