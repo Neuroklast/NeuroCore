@@ -322,3 +322,12 @@ Shaper is a symmetric waveshaper with two modes. `fold` wraps signal beyond ±1 
 Circuit signal traces
 Connections remain visible during silence and retain a minimum screen width while zooming out. Wave mode sends measured impulses from each source contact along the routed trace. Motion speed eases over 150 ms. Emitted impulses fade independently when fresh measurements stop. The restrained glow is reduced in the overview. Motion Reduced/Off and Dots retain their existing stationary presentation.
 New installations default to Wave. An existing saved Dots preference is preserved. Change Cables to Wave in Settings to enable travelling impulses.
+
+
+### Factory library curation
+
+The reviewed factory library contains 350 presets. Mesa High Gain keeps its original script, cabinet and controls. Step sequencer, ADSR, Sample & Hold, Random, EnvTrigger, ModMath and ModMix have purpose-built examples. Other additions cover clipping, saturation, decimation, folding, nonlinear filtering, frequency shift, resonators, reverse delay, ring modulation and gain trim.
+
+Chopper now uses editable sequencer accents. Broken Grid Chaos and Glitch Hold Gate use real held control sources. Tape Wobble varies delay time, Vocal Double uses micro-pitch and a delay bus, and Arp Shimmer uses an octave-up return. MIDI Pluck Filter and MIDI Swell Return need MIDI notes routed to the insert. Dark Atmosphere is intentionally a noise generator and can sound with silent input; turn Fog down to remove its generated noise.
+
+The overlapping radio/telephone/clipper variants are consolidated. Complete removed presets and earlier versions of revised presets are preserved in resources/deprecated/factory-2026-10-22.json, with a replacement/reason manifest. They are excluded from factory browsing. The per-preset review is in docs/presets/2026-10-22-review.md.

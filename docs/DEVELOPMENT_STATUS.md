@@ -4,6 +4,14 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## Factory preset curation (2026-10-22)
+
+Branch `feat/preset-curation-modulation`, based on main d07c0ba1c3dc after #326/#327. All 340 original entries have an inventory, per-entry decision and native render evidence. 307 retained, 21 revised, 12 deprecated, 22 new: 350 active presets. 33 complete old preset objects are preserved under resources/deprecated. Mesa High Gain is byte-equivalent at the preset-object level; its protected baseline hash contract passes.
+
+The original generator would produce 542 entries and reject/drop manually curated names. Generation and the legacy merge command now apply the idempotent reviewed policy to the committed catalog, so removed seed presets cannot reappear. Tests cover protection, exact archived originals and idempotence.
+
+Native offline audit: all 350 parse/render at defaults, transient and hot inputs, silent input and macro extremes without nonfinite samples. The auditor now drives transport, MIDI gates and required sidechain/voice inputs. DC cleanup follows measured default/hot/stress results. Dark Atmosphere's noise generation is intentional and explicitly controlled/documented. These are SignalChain measurements, not human listening or a Windows/DAW sign-off. 5 curation contracts and 13 catalog/signal-flow web checks pass. Per-entry evidence: docs/presets/2026-10-22-review.json and .md. Routing/C07/C08 follow after this checkpoint.
+
 ## Circuit live instruments (2026-10-22)
 
 Branch `feat/circuit-live-instruments`, based on main after #326. StepSeq uses an eight-column theme-accent LED matrix (1–64 steps, host position, mutes). Meter replaces the unrelated gain/pan glyph with its own peak/RMS screen, −60 dBFS floor and missing-tap state. Initial rendering contracts failed on both old faces. Focused contracts and web build pass. Browser geometry/live theme and existing editor checks pass at 1×/2× (4 tests). Native binary unchanged.

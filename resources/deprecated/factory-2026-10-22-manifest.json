@@ -1,0 +1,200 @@
+[
+  {
+    "name": "Chopper",
+    "action": "revised; previous version archived",
+    "replacement": "Chopper",
+    "reason": "Use the sequencer for actual editable accents instead of a fixed square LFO."
+  },
+  {
+    "name": "Radio Voice",
+    "action": "deprecated",
+    "replacement": "Radio Band Vocal",
+    "reason": "Overlapping crushed bandpass voice; the retained version exposes both bit depth and drive."
+  },
+  {
+    "name": "Vocal Comp",
+    "action": "deprecated",
+    "replacement": "Opto Leveler",
+    "reason": "Generic one-compressor preset overlaps the retained controllable vocal leveler."
+  },
+  {
+    "name": "Sidechain Pump",
+    "action": "deprecated",
+    "replacement": "Sidechain Pad EDM",
+    "reason": "The retired script was LFO tremolo with no sidechain input. Use real ducking or the new patterned pump."
+  },
+  {
+    "name": "Dual Path Regen",
+    "action": "deprecated",
+    "replacement": "Drum Bus Regen",
+    "reason": "The retired script contains no parallel paths despite its name, and overlaps the feedback coloration."
+  },
+  {
+    "name": "Optical Leveler Comp",
+    "action": "revised; previous version archived",
+    "replacement": "Optical Leveler Comp",
+    "reason": "Broaden the retained compressor's useful ratio range."
+  },
+  {
+    "name": "Radio Band Vocal",
+    "action": "revised; previous version archived",
+    "replacement": "Radio Band Vocal",
+    "reason": "Consolidate the overlapping crushed-radio presets into one controllable voicing."
+  },
+  {
+    "name": "Telephone Cup",
+    "action": "revised; previous version archived",
+    "replacement": "Telephone Cup",
+    "reason": "Consolidate dialogue/telephone variants with the full useful cutoff and resonance range."
+  },
+  {
+    "name": "Vocal Opto Soft",
+    "action": "deprecated",
+    "replacement": "Optical Leveler Comp",
+    "reason": "Low-ratio leveler overlaps the retained optical-style compressor, whose ratio range now includes 2:1."
+  },
+  {
+    "name": "Drum Clip Bus",
+    "action": "deprecated",
+    "replacement": "Transient Clip Bus",
+    "reason": "Same insert clipping job as Hard Clip Club, consolidated in the typed clipper."
+  },
+  {
+    "name": "Mixbus Satin",
+    "action": "deprecated",
+    "replacement": "Transformer Bus Cushion",
+    "reason": "Near-identical default response to Loudness Clip Master; replaced by a dedicated transformer-style saturation job."
+  },
+  {
+    "name": "Hard Clip Club",
+    "action": "deprecated",
+    "replacement": "Transient Clip Bus",
+    "reason": "Overlaps Drum Clip Bus; replaced by the explicit clipper with threshold/knee/trim."
+  },
+  {
+    "name": "AM Radio Narrow",
+    "action": "deprecated",
+    "replacement": "Radio Band Vocal",
+    "reason": "Same narrow-radio job, consolidated into the retained bandpass/crush controls."
+  },
+  {
+    "name": "Dialogue Phone",
+    "action": "deprecated",
+    "replacement": "Telephone Cup",
+    "reason": "Same highpass/lowpass/diode topology and overlapping cutoff ranges."
+  },
+  {
+    "name": "Glitch Hold Gate",
+    "action": "revised; previous version archived",
+    "replacement": "Glitch Hold Gate",
+    "reason": "Replace freq=1/16 slow oscillator with genuine host-synced held steps."
+  },
+  {
+    "name": "Acoustic Body",
+    "action": "revised; previous version archived",
+    "replacement": "Acoustic Body",
+    "reason": "Replace full-band removal by bandpass with a body EQ that retains acoustic transients."
+  },
+  {
+    "name": "Arp Shimmer",
+    "action": "revised; previous version archived",
+    "replacement": "Arp Shimmer",
+    "reason": "Remove inaudible additive LFO and preserve the dry signal around an actual octave return."
+  },
+  {
+    "name": "Loudness Safe",
+    "action": "deprecated",
+    "replacement": "Streaming Ceiling",
+    "reason": "80 Hz highpass and hard clipping are not a transparent mastering safety tool."
+  },
+  {
+    "name": "Tape Wobble",
+    "action": "revised; previous version archived",
+    "replacement": "Tape Wobble",
+    "reason": "Replace additive sub-audio LFO/feedback with actual time variation and tape saturation."
+  },
+  {
+    "name": "Telephone EQ",
+    "action": "deprecated",
+    "replacement": "Telephone Cup",
+    "reason": "Phone coloration consolidated into one configurable low/high/Q/drive preset."
+  },
+  {
+    "name": "Vocal Double",
+    "action": "revised; previous version archived",
+    "replacement": "Vocal Double",
+    "reason": "Replace DC-injecting formula with real micro-pitch plus a separate delayed bus."
+  },
+  {
+    "name": "Broken Grid Chaos",
+    "action": "revised; previous version archived",
+    "replacement": "Broken Grid Chaos",
+    "reason": "Replace periodic square/triangle approximations with actual seeded Random and SampleHold sources."
+  },
+  {
+    "name": "Germanium Fuzz",
+    "action": "revised; previous version archived",
+    "replacement": "Germanium Fuzz",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Blues Break OD",
+    "action": "revised; previous version archived",
+    "replacement": "Blues Break OD",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Frequency Assassin",
+    "action": "revised; previous version archived",
+    "replacement": "Frequency Assassin",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Preamp Regen Stack",
+    "action": "revised; previous version archived",
+    "replacement": "Preamp Regen Stack",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Cascade Loop Dirt",
+    "action": "revised; previous version archived",
+    "replacement": "Cascade Loop Dirt",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Synth Feedback Lead",
+    "action": "revised; previous version archived",
+    "replacement": "Synth Feedback Lead",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Boom Tail",
+    "action": "revised; previous version archived",
+    "replacement": "Boom Tail",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Tension Bed",
+    "action": "revised; previous version archived",
+    "replacement": "Tension Bed",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  },
+  {
+    "name": "Bitcrush Glitch",
+    "action": "revised; previous version archived",
+    "replacement": "Bitcrush Glitch",
+    "reason": "Remove the audio-rate oscillator injected into silent input; use actual clock reduction and a sequenced gain pattern."
+  },
+  {
+    "name": "Dark Atmosphere",
+    "action": "revised; previous version archived",
+    "replacement": "Dark Atmosphere",
+    "reason": "Make the intentional noise-generator role explicit and controllable; replace uncontrolled feedback with seeded filter drift."
+  },
+  {
+    "name": "Midtempo Pressure Pump",
+    "action": "revised; previous version archived",
+    "replacement": "Midtempo Pressure Pump",
+    "reason": "Remove measured post-shaper DC with a 20 Hz highpass."
+  }
+]

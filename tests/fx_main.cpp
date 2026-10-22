@@ -31,6 +31,7 @@ int main(int argc, char** argv)
     juce::ScopedNoDenormals noDenormals;
     if (argc == 2 && std::string(argv[1]) == "--benchmark") return runFxBenchmark();
     if (argc == 4 && std::string(argv[1]) == "--factory") return auditFactory(argv[2], argv[3]);
+    if (argc == 5 && std::string(argv[1]) == "--factory-profile") return auditFactory(argv[2], argv[3], false, argv[4]);
     if (argc == 4 && std::string(argv[1]) == "--factory-stress") return auditFactory(argv[2], argv[3], true);
     if (argc == 2 && std::string(argv[1]) == "--expansion")
     {

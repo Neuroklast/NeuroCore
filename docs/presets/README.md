@@ -3,3 +3,8 @@
 Base: main after #326 and #327, d07c0ba1c3dc. The initial inventory records every one of the 340 factory presets, including its intended use, actual block topology, exposed macro controls and original content hash. Mesa High Gain is protected.
 
 This first checkpoint is an inventory, not a listening verdict. Native offline rendering and similarity measurements follow. Any removed entry must survive byte-for-byte as a complete deprecated preset object. Existing static mixing/mastering tools will not receive decorative modulation merely to use a new block. New modules are used when they improve the actual job.
+
+
+The completed first pass is in [the individual review](2026-10-22-review.md), with machine-readable source/render decisions in the matching JSON. Measurements use the production SignalChain at 48 kHz, stereo, 256-sample blocks, with correct transport and requested MIDI/sidechain input. Correlation is a candidate detector, not a listening verdict. Similar linear responses on a limited test signal do not justify deleting a compressor, sidechain tool or stereo utility with a different job.
+
+Reproduce native reports with NeuroKoreDspContracts --factory, --factory-profile (transients/hot/silence) and --factory-stress. Pass the JSON outputs to scripts/audit_factory_presets.py. The baseline catalog is main d07c0ba1c3dc. The protected Mesa baseline and all deprecated originals are checked by node --test scripts/factory/curation.test.mjs.
