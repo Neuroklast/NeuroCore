@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cstddef>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -41,7 +42,7 @@ public:
             // This is bit-for-bit equivalent to the original FIR order.
             int realIndex = cursor - latency;
             if (realIndex < 0) realIndex += length;
-            const double real = ring[(size_t) realIndex];
+            const double real = ring[(std::size_t) realIndex];
             int left = cursor - 1;
             if (left < 0) left += length;
             int right = cursor + 2;
@@ -49,8 +50,8 @@ public:
             double quadrature = 0.;
             for (int k = 0; k < latency / 2; ++k)
             {
-                quadrature += coefficients[(size_t) k]
-                    * (ring[(size_t) left] - ring[(size_t) right]);
+                quadrature += coefficients[(std::size_t) k]
+                    * (ring[(std::size_t) left] - ring[(std::size_t) right]);
                 left -= 2;
                 if (left < 0) left += length;
                 right += 2;
@@ -60,8 +61,16 @@ public:
             constexpr double limit = std::numeric_limits<float>::max();
             frame[c] = static_cast<float>(std::clamp(real * (1. - mix) + wet * mix, -limit, limit));
         }
-        cursor = (cursor + 1) % length;
-        phase = std::remainder(phase + tau * hz / sr, tau);
+        if (++cursor == length) cursor = 0;
+        phase += tau * hz / sr;
+        // A normal audio-rate phase increment is much smaller than 2*pi.
+        // Avoid calling libm remainder() for every sample; retain the
+        // general fallback for unusually large frequency increments.
+        constexpr double pi = 3.141592653589793;
+        if (phase > pi)
+            phase = phase <= 3. * pi ? phase - tau : std::remainder(phase, tau);
+        else if (phase < -pi)
+            phase = phase >= -3. * pi ? phase + tau : std::remainder(phase, tau);
     }
 private:
     double sr = 44100., phase = 0.;
