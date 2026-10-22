@@ -94,6 +94,8 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 ## Circuit
 
+With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop. Reduced/Off motion keeps a stationary level indication.
+
 StepSeq chips show up to 64 host-reported steps as eight LEDs per row, with at most eight rows. The current step lights in the selected theme accent. Muted steps stay dim. Meter chips contain a recessed Peak/RMS display in dBFS from that module’s own tap, with a −60 dBFS floor. Missing measurements show —.
 
 Each chip keeps its full effect name above a separate typecode and control row. The gunmetal housing has lit upper facets, recessed controls and metallic contacts. A bounded central dot field carries a calculated function diagram; it is not a measured waveform. The function diagram remains readable at rest. Selecting or focusing a chip makes it clearer without moving its contacts. Numeric modulation parameters use 17 px captions and contact-aligned guide ticks above the node ID and live level. Enum and routing fields such as TYPE and CHANNEL remain in Inspect. Muting subdues the signal surface while keeping identification readable. Cyan parameter captions indicate macro bindings. Drag a macro onto the chip to choose a binding target, or use Inspect for the full parameter list. Connected audio contacts light from their source's measured signal. Unconnected or silent contacts remain metal. Clipping warnings appear only on a real overload.

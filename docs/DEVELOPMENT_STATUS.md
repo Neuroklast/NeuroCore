@@ -6,7 +6,9 @@
 
 ## Circuit live instruments (2026-10-22)
 
-Branch `feat/circuit-live-instruments`, based on main after #326. StepSeq uses an eight-column theme-accent LED matrix (1–64 steps, host position, mutes). Meter replaces the unrelated gain/pan glyph with its own peak/RMS screen, −60 dBFS floor and missing-tap state. Initial rendering contracts failed on both old faces. Focused contracts and web build pass. Browser geometry/live theme checks are in progress. Native binary unchanged.
+Branch `feat/circuit-live-instruments`, based on main after #326. StepSeq uses an eight-column theme-accent LED matrix (1–64 steps, host position, mutes). Meter replaces the unrelated gain/pan glyph with its own peak/RMS screen, −60 dBFS floor and missing-tap state. Initial rendering contracts failed on both old faces. Focused contracts and web build pass. Browser geometry/live theme and existing editor checks pass at 1×/2× (4 tests). Native binary unchanged.
+
+Cable flow now runs over Dots as well as Wave. Long-route packet lifetime follows path length and speed; fresh sustained RMS can emit between local maxima. Cached path metrics feed layered, screen-scaled comet strokes without per-packet shadow blur. Existing single canvas, passive-layer cache, viewport culling and bounded packet pool remain. Cable contracts fail before and pass after.
 
 ## 0.7.2-beta (2026-10-22)
 
