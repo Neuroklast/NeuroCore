@@ -177,6 +177,43 @@ public:
                     "symmetric stays a fold alias");
         }
 
+        beginTest ("Shaper updates drive, output and mix from live automation");
+        {
+            auto renderAutomation = [&] (const juce::String& modulated, float input)
+            {
+                dsl::SignalChain chain;
+                chain.prepare ({ 48000.0, 128, 1 });
+                juce::String err;
+                expect (chain.loadScript ("shaper1: mode = clip; drive = "
+                    + (modulated == "drive" ? juce::String ("a * 24") : juce::String ("18"))
+                    + "; output = " + (modulated == "output" ? juce::String ("a * -18") : juce::String ("0"))
+                    + "; mix = " + (modulated == "mix" ? juce::String ("a") : juce::String ("1")), err), err);
+                juce::AudioBuffer<float> buffer (1, 128);
+                auto settle = [&] (float knob)
+                {
+                    chain.setParameter (0, knob);
+                    for (int k = 0; k < 64; ++k)
+                    {
+                        for (int i = 0; i < 128; ++i)
+                            buffer.setSample (0, i, input);
+                        chain.processBlock (buffer);
+                    }
+                    return buffer.getSample (0, 127);
+                };
+                return std::pair<float, float> { settle (0.f), settle (1.f) };
+            };
+
+            const auto drive = renderAutomation ("drive", 0.4f);
+            expect (drive.first < 0.6f && drive.second > 0.9f,
+                    "automated drive must change clipping level");
+            const auto trim = renderAutomation ("output", 0.4f);
+            expect (trim.first > 0.9f && trim.second < 0.25f,
+                    "automated output trim must change audible gain");
+            const auto wet = renderAutomation ("mix", 0.4f);
+            expectWithinAbsoluteError (wet.first, 0.4f, 0.01f);
+            expect (wet.second > 0.9f, "automated dry/wet mix must engage the shaper");
+        }
+
         beginTest ("WaveFold keeps folding beyond one reflection");
         {
             dsl::SignalChain chain;

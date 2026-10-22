@@ -47,6 +47,7 @@ void SignalChain::Shaper::prepare (const juce::dsp::ProcessSpec& spec)
 
     const int modeIdx = (int) juce::jlimit (0.0f, 1.0f, snap (modeExpr, 0.0f));
     mode = static_cast<Mode> (modeIdx);
+    bindings.prepare (varPtr, { &driveExpr, &outputExpr, &mixExpr });
     clearRuntimeState();
 }
 
@@ -63,6 +64,13 @@ void SignalChain::Shaper::processBlock (juce::AudioBuffer<float>& buffer)
     const int nS  = buffer.getNumSamples();
     if (nS <= 0 || nCh <= 0)
         return;
+
+    // Resolve changes from APVTS/DSL bindings once per callback; the smoother
+    // remains sample-continuous, even for host automation and preset restore.
+    bindings.refresh();
+    driveSm.setTargetValue (juce::jlimit (-24.f, 36.f, snapEval (driveExpr, 0.f)));
+    outputSm.setTargetValue (juce::jlimit (-36.f, 12.f, snapEval (outputExpr, 0.f)));
+    mixSm.setTargetValue (juce::jlimit (0.f, 1.f, snapEval (mixExpr, 1.f)));
 
     const int useCh = juce::jmin (nCh, 2);
     float* out[2] {};
