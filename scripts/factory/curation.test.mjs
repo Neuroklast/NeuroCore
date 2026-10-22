@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const presets=JSON.parse(fs.readFileSync('resources/factory_presets.json','utf8'));
 test('factory includes distinct demonstrations of all shipping control sources',()=>{
- for(const type of ['stepseq','adsr','samplehold','random','envtrigger','modmath','modmix'])
+ for(const type of ['mseg','stepseq','adsr','samplehold','random','envtrigger','modmath','modmix'])
   assert.ok(presets.some(p=>new RegExp('^'+type+'\\d+:','m').test(p.script)), `missing ${type}`);
 });
 test('the old additive-LFO wow and DC doubler are replaced by actual time/pitch processing',()=>{

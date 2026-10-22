@@ -59,6 +59,7 @@ test.describe("control mixer display", () => {
       }));
     }, script);
     await page.locator("[data-node-id='modmix1']").waitFor();
+    await expect(page.locator("[aria-label='Layout']")).toHaveCount(0);
   });
 
   test("shows measured A/B/output inside the chip without moving its pins", async ({page}) => {

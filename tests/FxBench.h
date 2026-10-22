@@ -89,7 +89,7 @@ inline int auditFactory (const char* catalogPath, const char* outputPath, bool s
         juce::AudioBuffer<float> b (2, 256), dry (2, 256), sidechain (2, 256);
         MidiVariableMapper midi;
         const auto scriptText = preset.at ("script").get<std::string>();
-        const bool wantsMidi = scriptText.find ("gate = midi") != std::string::npos;
+        const bool wantsMidi = (scriptText.find ("gate = midi") != std::string::npos || scriptText.find ("source = midi") != std::string::npos);
         const bool wantsSidechain = scriptText.find ("sidechain") != std::string::npos;
         const bool wantsVoice = scriptText.find ("vocoder") != std::string::npos;
         LatencyAlignedSidechain dryAlign;

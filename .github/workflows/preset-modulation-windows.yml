@@ -2,6 +2,7 @@ name: Preset modulation Windows validation
 on:
   push:
     branches: ['feat/preset-curation-modulation']
+    paths: ['src/**', 'web/**', 'resources/**', 'scripts/**', 'tests/**', 'CMakeLists.txt', '.github/workflows/preset-modulation-windows.yml']
   workflow_dispatch:
 permissions:
   contents: read

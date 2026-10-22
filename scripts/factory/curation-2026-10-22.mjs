@@ -125,6 +125,24 @@ filter2: type = lowpass; cutoff = a*4*(1+c*(random1-0.5)); resonance = 0.85`,
 export const dcCleanupNames=["Germanium Fuzz","Blues Break OD","Frequency Assassin","Boom Tail","Tension Bed","Midtempo Pressure Pump","Broken Grid Chaos","Preamp Regen Stack","Cascade Loop Dirt","Synth Feedback Lead"];
 
 export const additions = [
+make("Curved Sync Duck","Modulation","Continuous curved quarter-note ducking from a looping MSEG. No external sidechain; the recovery curve differs from stepped gates.",
+`mseg1: points = 0:0:0,0.08:0.05:-1,0.7:1:1.5,1:1:0; sync = 1/4; mode = loop; source = free
+stage1: y = x*(1-a+a*mseg1)
+filter1: type = highpass; cutoff = 25; resonance = 0.35`,
+{a:k("Duck",.2,.95,.78)}),
+make("MIDI Bowed Resonator","Ambient","MIDI-gated curved bow into a resonant body and room. Hold sustains the second point; release plays the remaining curved tail. Route MIDI notes to the insert.",
+`mseg1: points = 0:0:1.5,0.35:0.8:-0.5,0.65:0.6:1,1:0:0; duration = a; source = midi; sustain = 2; retrigger = on
+stage1: y = x*(0.08+0.92*mseg1)
+resonator1: freq = b; res = 2.8; gain = -5; mix = 0.28
+reverb1: size = 0.65; decay = c; damp = 0.7; mix = 0.3`,
+{a:k("Bow Time",.3,4,1.8),b:k("Body",140,1800,420),c:k("Space",.4,3,1.3)}),
+make("Bipolar Formant Arc","Filter","Asymmetric bipolar MSEG sweeps a bandpass through a repeatable curved arc. Range moves the formant while the dry floor keeps the original body.",
+`mseg1: points = 0:-1:-1,0.2:0.7:2,0.65:-0.3:-2,0.85:1:1,1:-1:0; duration = a; source = free; mode = loop
+bus formant:
+ filter1: type = bandpass; center = 400+(0.5+0.5*mseg1)*b; width = 900; resonance = 1.1
+out: main = 1-c; formant = c`,
+{a:k("Arc Time",.4,8,2.6),b:k("Range",800,7000,3000),c:k("Formant",.2,.9,.55)}),
+
 make("Sixteen Step Filter","Modulation","Sixteen cutoff accents at host-synced sixteenths. Depth opens the filter; Glide rounds the steps.",
 `stepseq1: steps = 16; sync = 1/16; values = 0.1,0.4,0.2,0.8,0.1,0.6,0.3,1,0.2,0.45,0.1,0.7,0.3,0.9,0.2,0.6; gate = 1; glide = c
 filter1: type = lowpass; cutoff = a + stepseq1*b; resonance = 0.8`,

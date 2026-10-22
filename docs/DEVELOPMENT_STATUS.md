@@ -4,6 +4,12 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## Final preset/control validation checkpoint (2026-10-22)
+
+353 active factory presets: 307 original entries retained, 21 revised, 12 deprecated, 25 new. All 33 original removed/replaced objects remain archived; Mesa High Gain matches its protected hash. Added Curved Sync Duck, MIDI Bowed Resonator and Bipolar Formant Arc for the new MSEG. All 353 re-rendered with the final engine on default, transient, hot, silence and macro-extreme profiles: zero parse errors/nonfinite samples. Audit maximum sample peak 1.715 (stress); this is not a true-peak/LUFS certification. MIDI audit recognizes MSEG source gates.
+
+5 curator contracts, 52 focused web contracts, production web build, native control/MSEG integration, portable MSEG and complete headless FX regression pass. Full web suite: 1018 pass / 10 fail; pristine main d07c0ba1c3dc reproduces the exact same 10 failures (1001 pass / 10 fail), so no new failing web case. Browser checks cover measured ModMix output, real A/B cable magnetization including audio rejection/Join acceptance, and MSEG add/drag/keyboard/delete/curve editing at 1× and 2×. The drag test awaits completion of automatic layout before measuring pins. Windows VST3 and pluginval run on the branch; acceptance is pending its final result. See docs/evidence/preset-modulation/README.md.
+
 ## C08 MSEG initial native source (2026-10-22)
 
 Bounded 2–64 immutable points, linear/power curves, point-index loops, gated sustain/release, oneshot/free, retrigger, BPM note division, audio/MIDI/either trigger and normal control output are implemented. Compile validates point grammar/ranges/order and loop/sustain indices; full state persists through DSL/AST. Portable numerical contracts and native timebase/restore/MIDI/BPM/buffer-independence checks pass. Initial sync follows BPM rather than transport/PPQ. Graphical editor is now available in Circuit/Inspect with add, drag, keyboard move/delete and per-segment curve editing. Point/index edits publish atomically, and cancellation restores the prior curve. Browser geometry/editing passes at 1×/2×; metadata/point model/control ports/add/layout contracts pass (46). Offline preset sketches now share the control-source classification, preventing new generators from becoming audio through-nodes. Host acceptance follows; this is an initial C08 implementation, not DAW sign-off.
