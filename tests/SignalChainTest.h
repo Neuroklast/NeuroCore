@@ -566,6 +566,30 @@ public:
                         after.getSample (ch, i), baseline.getSample (ch, i), 1.0e-5f);
         }
 
+        beginTest ("rejected patch restores previous parameter metadata");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (
+                "param a = gain\n"
+                "stage1: y = x * a\n", error), error);
+            chain.prepare ({ 48000.0, 128, 1 });
+            const auto previous = chain.getParamInfo();
+            expect (! previous.empty());
+            expect (! chain.loadScript (
+                "param a = accidental_rename\n"
+                "modmath1: ina = missing123; mode = add\n"
+                "stage1: y = x\n", error));
+            expect (error.containsIgnoreCase ("unknown modulation source"), error);
+            const auto& after = chain.getParamInfo();
+            expectEquals ((int) after.size(), (int) previous.size());
+            if (! previous.empty() && ! after.empty())
+            {
+                expectEquals (after[0].alias, previous[0].alias);
+                expectEquals (after[0].name, previous[0].name);
+            }
+        }
+
         beginTest ("failed replacement keeps old control variable slots valid");
         {
             dsl::SignalChain chain;
