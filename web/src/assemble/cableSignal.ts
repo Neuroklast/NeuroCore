@@ -36,6 +36,7 @@ export function advanceCableSignal(
   const initialSpeed = s.speed || target;
   const travel = moving ? target * step + (initialSpeed - target) * 0.15 * (1 - decay) : 0;
   s.speed = target + (initialSpeed - target) * decay;
+  if (!moving) s.impulses.length = 0;
   s.impulses = s.impulses.filter((p) => {
     p.distance += travel;
     p.age += step;

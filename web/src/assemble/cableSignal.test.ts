@@ -101,3 +101,12 @@ it("finishes a long-route impulse when subsequent silence slows the stream", () 
   expect(furthest).toBeGreaterThanOrEqual(1000);
   expect(s.impulses).toHaveLength(0);
 });
+
+it("clears travelling light when motion is disabled instead of replaying it later", () => {
+  const s=emptyCableSignal(), token={};
+  advanceCableSignal(s, token, [0.3], .3, .7, 1000, 0);
+  advanceCableSignal(s, token, [], .3, .7, 1000, .05, false);
+  expect(s.impulses).toHaveLength(0);
+  advanceCableSignal(s, token, [], .3, .7, 1000, .05, true);
+  expect(s.impulses).toHaveLength(0);
+});

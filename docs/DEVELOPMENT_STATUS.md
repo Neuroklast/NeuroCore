@@ -20,7 +20,7 @@ The cached substrate paints the current preset and actual effect counts in a cli
 
 ## Circuit flow completion under silence (2026-10-22)
 
-A follow-up contract reproduced a long-route pulse disappearing after only 374 of 1000 px when later silence slowed travel. Packet lifetime now reserves the remaining route at the current minimum speed, including camera-scale changes. Packets still leave once and never wrap; tail removal allows the entire stroke to leave the destination. Focused final model/render/Inspect checks: 52 pass, TypeScript clean. Browser tests now exercise all four themes, eight LED rows, the actual source meter tap, OUT Inspect, stable controls and moving Dots at 8/100/200 modules and both densities. Final browser run pending.
+A follow-up contract reproduced a long-route pulse disappearing after only 374 of 1000 px when later silence slowed travel. Packet lifetime now reserves the remaining route at the current minimum speed, including camera-scale changes. Packets still leave once and never wrap; tail removal allows the entire stroke to leave the destination. Reduced/Off motion clears in-flight packets so they cannot replay later. Focused final model/render/Inspect checks: 53 pass, TypeScript clean. Browser tests now exercise all four themes, eight LED rows, the actual source meter tap, OUT Inspect, stable controls and moving Dots at 8/100/200 modules and both densities. Final browser run pending.
 
 ## 0.7.2-beta (2026-10-22)
 
