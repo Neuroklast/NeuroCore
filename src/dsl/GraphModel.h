@@ -194,7 +194,7 @@ inline bool isEnv (const GraphNode& n)
 inline bool isControlSource (const GraphNode& n)
 {
     const auto t = n.type.toLowerCase();
-    return t.startsWith ("stepseq") || t.startsWith ("adsr")
+    return t.startsWith ("mseg") || t.startsWith ("stepseq") || t.startsWith ("adsr")
         || t.startsWith ("samplehold") || t.startsWith ("random")
         || t.startsWith ("modmath") || t.startsWith ("modmix");
 }

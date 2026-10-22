@@ -2125,7 +2125,7 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
 
     if (isModulator (node))
     {
-        if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("samplehold"))
+        if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("mseg") || t.startsWith ("samplehold"))
             addJack (jacks, "in", false, "audio");
         if (t.startsWith ("modmath") || t.startsWith ("modmix"))
         {

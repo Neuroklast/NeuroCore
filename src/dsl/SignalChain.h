@@ -11,6 +11,7 @@
 #include "../dsp/DSPUtils.h"
 #include "../dsp/SaturationModels.h"
 #include "../dsp/FrequencyShifterDSP.h"
+#include "../dsp/MsegDSP.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
 #include <array>
@@ -685,6 +686,26 @@ private:
         float stepValue (int index) const noexcept;
         int mapStep (long long absoluteStep) const noexcept;
         float probabilityFor (long long absoluteStep) const noexcept;
+    };
+
+    /** Initial C08 source: immutable bounded curve and normalized playback phase. */
+    struct Mseg : Modulator
+    {
+        enum class Source { Free, Audio, Midi, Either };
+        Source source { Source::Free };
+        nk::MsegDSP curve;
+        ExpressionEvaluator durationExpr;
+        juce::SmoothedValue<float> durationSm;
+        double sampleRate { 44100. }, hostBpm { Config::kDefaultTempo };
+        float syncWhole { 0.f };
+        float* midiGatePtr { nullptr };
+        int sustain { -1 }, loopStart { 0 }, loopEnd { 2 };
+        bool loop { false }, retrigger { true };
+        bool configure (const BlockDesc& desc, juce::String& error);
+        bool needsAudioInput() const noexcept override { return source == Source::Audio || source == Source::Either; }
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
     };
 
     /** ADSR envelope: gate-triggered attack/decay/sustain/release. Params: attack, decay, sustain, release (seconds). */

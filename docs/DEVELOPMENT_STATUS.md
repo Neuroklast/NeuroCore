@@ -4,6 +4,10 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
 
+## C08 MSEG initial native source (2026-10-22)
+
+Bounded 2–64 immutable points, linear/power curves, point-index loops, gated sustain/release, oneshot/free, retrigger, BPM note division, audio/MIDI/either trigger and normal control output are implemented. Compile validates point grammar/ranges/order and loop/sustain indices; full state persists through DSL/AST. Portable numerical contracts and native timebase/restore/MIDI/BPM/buffer-independence checks pass. Initial sync follows BPM rather than transport/PPQ. Graphical editor and host acceptance follow; this is an initial C08 implementation, not DAW sign-off.
+
 ## C07 control mixer completion (2026-10-22)
 
 ModMix adds signed weights, offset, optional connected-weight normalization and off/bipolar/unipolar limiting. Defaults preserve existing behavior. AST restore contracts cover A-only/B-only, sum, opposite weights, missing inputs, normalize, offset and both clamp ranges. Native integration and complete headless FX suite pass (zero failures). Catalog/ChipSpec share lowercase DSP keys and expose all controls. The chip displays measured weighted A/B contributions plus published output; browser geometry/live-host checks pass at 1×/2×. React review: hooks unconditional, primitive host selectors, no added animation loop. Web production build and 17 focused contracts pass.

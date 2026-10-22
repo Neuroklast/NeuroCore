@@ -1672,6 +1672,21 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
             newChain->push_back (std::move (nf));
         }
+        else if (d.type == "mseg")
+        {
+            auto mg = std::make_unique<Mseg>();
+            mg->kind = NodeKind::Modulator;
+            mg->name = d.name;
+            mg->varPtr = &variables;
+            applyControlArgs (d, *mg);
+            if (! mg->configure (d, error)) return false;
+            const auto raw = d.args.count ("duration") ? d.args.at ("duration") : juce::String ("1");
+            const auto expr = addDefaultMap (raw, 0.001f, 60.f);
+            if (! mg->durationExpr.parseFormula (expr.toStdString())) { error = "Invalid MSEG duration"; return false; }
+            const auto pn = findParam (expr);
+            if (pn.isNotEmpty()) parameterMappings[pn].add (d.name + " duration [s]");
+            newChain->push_back (std::move (mg));
+        }
         else if (d.type.startsWith ("stepseq"))
         {
             auto ss = std::make_unique<StepSeq>();
@@ -4848,6 +4863,8 @@ void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexc
             sq->setHost (bpm, ppqPosition, isPlaying, started || seeked);
         if (auto* sh = dynamic_cast<SampleHold*> (b.get()))
             sh->applyTempo (bpm);
+        if (auto* mg = dynamic_cast<Mseg*> (b.get()))
+            mg->hostBpm = bpm;
         if (auto* rn = dynamic_cast<Random*> (b.get()))
             rn->applyTempo (bpm);
     }

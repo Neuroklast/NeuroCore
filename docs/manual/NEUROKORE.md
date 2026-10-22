@@ -341,3 +341,13 @@ Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control s
 Connect two control sources to `inA`/`inB`. Independent `levela`/`levelb` gains range from −4 to +4; negative gain reverses a contribution. `mix` scales their sum (0–1), then `offset` adds a bias (−1–1). `normalize = on` divides the sum by the absolute weights of connected inputs; missing inputs contribute zero and have no normalization weight. `clamp = bipolar` limits to −1…1; `unipolar` limits to 0…1; `off` preserves the sum. Defaults retain the previous positive-weight behavior. Common `depth` (literal 0–1) and `polarity = normal|invert` shape the published result once.
 
 The chip plots the latest measured weighted A contribution, weighted B contribution, and final published output from top to bottom around a central zero. Contributions are shown before normalization/master/offset; output includes all stages. Unavailable measurements remain dim. Display length saturates at ±1; the DSP value is only limited when Clamp is enabled. Hover each bar for its numeric reading.
+
+### MSEG — initial C08 control source
+
+`mseg1: points = 0:0:0,0.25:1:2,1:0:0; duration = 1; source = free; mode = loop`
+
+Use 2–64 points as `time:value[:curve]`, separated by commas. Time starts at 0 and ends at 1 in strictly increasing order. Level is −1…1. Each point’s curve shapes its outgoing segment: 0 is linear; positive curves delay the transition, negative curves make it early (range −8…8). Invalid data stops compilation with a diagnostic.
+
+`duration` sets a complete cycle in seconds (0.001–60). `sync = 1/4` instead uses a complete quarter-note cycle at the host BPM; `sync = off` uses Duration. This initial sync implementation follows BPM and runs independently of transport position. `source = free` starts on prepare/reset. `audio` starts on channel 0 crossing above 0.5, `midi` uses the host MIDI gate and `either` accepts both. `retrigger = on` restarts on each rising gate; off waits until the curve has finished.
+
+`mode = oneshot` holds the final value. `mode = loop` wraps between zero-based `loopstart`/`loopend` point indices while gated (or continuously in Free). Default bounds span the curve. `sustain` is a zero-based hold point, or −1 to disable. Gated sustain takes precedence over looping. Gate release disables hold/loop and completes the remaining curve. Output is a normal control source and supports common literal Depth/Polarity. Route host MIDI to the plug-in for MIDI triggering.

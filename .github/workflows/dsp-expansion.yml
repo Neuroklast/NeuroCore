@@ -27,6 +27,8 @@ jobs:
           /tmp/saturation-contract
           g++ -std=c++17 -O2 tests/dsp/FrequencyShifterContract.cpp -o /tmp/frequency-contract
           /tmp/frequency-contract
+          g++ -std=c++17 -O2 tests/dsp/MsegContract.cpp -o /tmp/mseg-contract
+          /tmp/mseg-contract
       - uses: actions/checkout@v4
         with:
           repository: juce-framework/JUCE

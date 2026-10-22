@@ -40,6 +40,7 @@
 #include "TelemetryPumpTest.h"
 #include "ModulationBlocksTest.h"
 #include "ControlIntegrationTest.h"
+#include "MsegIntegrationTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -93,6 +94,7 @@ int main (int argc, char* argv[])
   SanitationChainTest sanitationChainTest;
   ModulationBlocksTest modulationBlocksTest;
   ControlIntegrationTest controlIntegrationTest;
+  MsegIntegrationTest msegIntegrationTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

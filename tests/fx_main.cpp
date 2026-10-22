@@ -4,6 +4,7 @@
 #include "TelemetrySamplingTest.h"
 #include "ModulationBlocksTest.h"
 #include "ControlIntegrationTest.h"
+#include "MsegIntegrationTest.h"
 #include "DelayReverbTest.h"
 #include "EqSidechainTest.h"
 #include "DynamicsBlocksTest.h"
@@ -37,8 +38,9 @@ int main(int argc, char** argv)
     if (argc == 2 && std::string(argv[1]) == "--control-integration")
     {
         ControlIntegrationTest integration;
+        MsegIntegrationTest mseg;
         LoggingRunner runner;
-        runner.runTests ({ &integration }, 12345);
+        runner.runTests ({ &integration, &mseg }, 12345);
         int failures=0;
         for(int i=0;i<runner.getNumResults();++i) failures+=runner.getResult(i)->failures;
         return failures ? 1 : 0;
@@ -54,6 +56,7 @@ int main(int argc, char** argv)
         return failures ? 1 : 0;
     }
     ControlIntegrationTest controlIntegration;
+    MsegIntegrationTest msegIntegration;
     ComparisonBankTest comparisonBank;
     WebCompileTest webCompile;
     GlobalPreferencesTest globalPreferences;
@@ -66,7 +69,7 @@ int main(int argc, char** argv)
     DynamicsBlocksTest dynamicsBlocksTest;
     IrXoverTest irXoverTest;
     DSLParserTest dslParserTest;
-    runner.runTests ({ &controlIntegration, &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
+    runner.runTests ({ &msegIntegration, &controlIntegration, &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
     int failures = 0;
     for (int i = 0; i < runner.getNumResults(); ++i)
         failures += runner.getResult(i)->failures;
