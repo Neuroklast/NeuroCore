@@ -462,7 +462,10 @@ private:
 
         ExpressionEvaluator driveExpr, thresholdExpr, kneeExpr, biasExpr;
         ExpressionEvaluator modeExpr, outputTrimExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, thrSm, kneeSm, biasSm, trimSm, mixSm;
+        // Preserve linear-in-dB sweeps with multiplicative linear-gain
+        // smoothing; avoid three decibelsToGain() calls per audio sample.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, thrSm, trimSm;
+        juce::SmoothedValue<float> kneeSm, biasSm, mixSm;
         Mode mode { Mode::Hard };
         bool autoGain { false };
         float sampleRate { 44100.f };
