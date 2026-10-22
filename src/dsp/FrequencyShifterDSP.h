@@ -35,12 +35,27 @@ public:
         {
             auto& ring = history[c];
             ring[cursor] = frame[c];
-            const double real = ring[(cursor + length - latency) % length];
+            // All offsets are bounded by one revolution of the 129-slot
+            // ring. Replace the 64 variable modulo operations per channel
+            // with two wrap-checked cursors walking in opposite directions.
+            // This is bit-for-bit equivalent to the original FIR order.
+            int realIndex = cursor - latency;
+            if (realIndex < 0) realIndex += length;
+            const double real = ring[(size_t) realIndex];
+            int left = cursor - 1;
+            if (left < 0) left += length;
+            int right = cursor + 2;
+            if (right >= length) right -= length;
             double quadrature = 0.;
-            for (int n = 1; n < latency; n += 2)
-                quadrature += coefficients[n / 2]
-                    * (ring[(cursor + length - n) % length]
-                       - ring[(cursor + length - (length - 1 - n)) % length]);
+            for (int k = 0; k < latency / 2; ++k)
+            {
+                quadrature += coefficients[(size_t) k]
+                    * (ring[(size_t) left] - ring[(size_t) right]);
+                left -= 2;
+                if (left < 0) left += length;
+                right += 2;
+                if (right >= length) right -= length;
+            }
             const double wet = real * cosine - quadrature * sine;
             constexpr double limit = std::numeric_limits<float>::max();
             frame[c] = static_cast<float>(std::clamp(real * (1. - mix) + wet * mix, -limit, limit));
