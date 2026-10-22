@@ -25,6 +25,12 @@ public:
         }
         if (input[0].time != 0. || input[size-1].time != 1.) return false;
         std::copy_n (input, size, points.begin());
+        // Cache invariant segment math at configuration, never on audio.
+        for (int i = 0; i < size - 1; ++i)
+        {
+            invSpan[(size_t) i] = 1. / (points[(size_t) (i + 1)].time - points[(size_t) i].time);
+            curveExponent[(size_t) i] = std::exp2 ((double) points[(size_t) i].curve);
+        }
         count = size;
         return true;
     }
@@ -40,8 +46,10 @@ public:
             if (points[(size_t)mid].time <= position) lo=mid; else hi=mid;
         }
         const auto& a=points[(size_t)lo]; const auto& b=points[(size_t)hi];
-        const auto t=(position-a.time)/(b.time-a.time);
-        const auto shaped=std::pow(t,std::exp2((double)a.curve));
+        const double t=(position-a.time)*invSpan[(size_t)lo];
+        const double exponent=curveExponent[(size_t)lo];
+        // Curve 0 means linear; avoid pow() entirely for that common case.
+        const double shaped=exponent==1. ? t : std::pow(t,exponent);
         return a.value + (b.value-a.value)*(float)shaped;
     }
 
@@ -75,6 +83,8 @@ public:
     int size() const noexcept { return count; }
 private:
     std::array<Point,maxPoints> points {{{0.,0.f,0.f},{1.,1.f,0.f}}};
+    std::array<double,maxPoints> invSpan {1.};
+    std::array<double,maxPoints> curveExponent {1.};
     int count {2};
     double position {0.};
     bool active {false}, started {false}, previousGate {false};

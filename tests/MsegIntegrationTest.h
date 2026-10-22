@@ -57,6 +57,19 @@ public:
             expectEquals((int)allocations,0);
            #endif
         }
+        beginTest("MSEG cached segment exponents preserve nonlinear curves");
+        {
+            nk::MsegDSP curve;
+            const nk::MsegDSP::Point convex[] {{0.,0.f,1.f},{1.,1.f,0.f}};
+            expect(curve.configure(convex,2));
+            expectWithinAbsoluteError(curve.at(0.5),0.25f,1.e-6f);
+            const nk::MsegDSP::Point concave[] {{0.,0.f,-1.f},{1.,1.f,0.f}};
+            expect(curve.configure(concave,2));
+            expectWithinAbsoluteError(curve.at(0.5),std::sqrt(0.5f),1.e-6f);
+            const nk::MsegDSP::Point linear[] {{0.,0.f,0.f},{1.,1.f,0.f}};
+            expect(curve.configure(linear,2));
+            expectWithinAbsoluteError(curve.at(0.5),0.5f,1.e-6f);
+        }
         beginTest("MSEG rejects invalid points and loop ranges at compile time");
         for(const auto& args:{"points = 0:0,0:1", "points = 0:0,1:nan", "points = 0:0,1:1; loopstart = 1; loopend = 0", "points = 0:0,1:1; sustain = 4"})
         {
