@@ -23,10 +23,13 @@ float SignalChain::Shaper::foldCurve (float x) noexcept
     const float ax = std::abs (x);
     if (ax <= 1.0f)
         return x;
-    // Fold: triangle-wave style fold-back
-    const float folded = std::fmod (ax, 2.0f);
-    const float foldedFolded = (folded <= 1.0f) ? folded : 2.0f - folded;
-    return (x >= 0.0f) ? foldedFolded : -foldedFolded;
+    // A triangle fold has a *four*-unit period, not two. At +1 it
+    // turns downward, crosses zero at +2, reaches -1 at +3, then
+    // turns upward again. A 2-unit period would incorrectly return
+    // positive values for all input magnitudes above +2.
+    const float phase = std::fmod (ax - 1.0f, 4.0f);
+    const float folded = phase <= 2.0f ? 1.0f - phase : phase - 3.0f;
+    return std::copysign (folded, x);
 }
 
 void SignalChain::Shaper::prepare (const juce::dsp::ProcessSpec& spec)

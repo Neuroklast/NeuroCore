@@ -356,6 +356,18 @@ public:
             expect (wet.second > 0.9f, "automated dry/wet mix must engage the shaper");
         }
 
+        beginTest ("Shaper fold alternates polarity after repeated reflections");
+        {
+            // Triangle folds must alternate between positive and negative
+            // peaks; the old fmod(abs(x),2) stayed positive beyond 2.
+            const float inputs[] { 0.5f, 1.5f, 2.5f, 3.5f, 4.5f, -2.5f, -3.5f };
+            const float expected[] { 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f };
+            for (size_t i = 0; i < sizeof (inputs) / sizeof (inputs[0]); ++i)
+                expectWithinAbsoluteError (
+                    dsl::SignalChain::Shaper::foldCurve (inputs[i]),
+                    expected[i], 1.0e-6f);
+        }
+
         beginTest ("WaveFold keeps folding beyond one reflection");
         {
             dsl::SignalChain chain;
