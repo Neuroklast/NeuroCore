@@ -170,6 +170,10 @@ private:
     bool bypassActive { false };
     bool hostBypass { false };
     double silentSec { 0.0 };
+    // Refresh the longest audible tail at a bounded cadence, not once for
+    // every host/MIDI audio slice. Invalidate on script/spec/reset changes.
+    float cachedTailSeconds { 0.f };
+    int tailRefreshSamples { 0 };
     std::atomic<bool> idleActive { false };
 
     std::array<juce::SmoothedValue<float>, Config::kNumUserParams> smoothedParams;

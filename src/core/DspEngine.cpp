@@ -133,6 +133,8 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
 
     lastLoudness.store (-100.0f, std::memory_order_relaxed);
     silentSec = 0.0;
+    cachedTailSeconds = 0.f;
+    tailRefreshSamples = 0;
     idleActive.store (false, std::memory_order_relaxed);
 
     postDslLastGood.fill (0.0f);
@@ -167,6 +169,7 @@ void DspEngine::reset(double sampleRate, int blockSize)
     postDslLastGood.fill (0.0f);
     dryWetMix.polarity = 1.f;
     dryWetMix.corrAbs = 1.f;
+    tailRefreshSamples = 0;
 }
 
 void DspEngine::release()
@@ -209,6 +212,8 @@ void DspEngine::onFormulaChanged()
     postDslLastGood.fill (0.0f);
     gainCompValue.setCurrentAndTargetValue (1.0f);
     silentSec = 0.0;
+    cachedTailSeconds = 0.f;
+    tailRefreshSamples = 0;
     idleActive.store (false, std::memory_order_relaxed);
     diagLastIn.fill (0.0f);
     diagLastPost.fill (0.0f);
@@ -397,8 +402,17 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
         silentSec = 0.0;
     else
         silentSec += dt;
+    // Avoid graph traversal, RTTI and expression reads on every audio slice.
+    // A short time-based refresh catches tempo/parameter tail changes.
+    if (tailRefreshSamples <= 0)
+    {
+        const float v = signalChain.getMaxTailTime();
+        cachedTailSeconds = std::isfinite (v) ? juce::jmax (0.f, v) : 0.f;
+        tailRefreshSamples = juce::jmax (1, (int) std::lround (sr * 0.05));
+    }
+    tailRefreshSamples -= hostN;
     const double flushSec = (double) Config::kIdleHoldSec
-                          + (double) juce::jmax (0.f, signalChain.getMaxTailTime())
+                          + (double) cachedTailSeconds
                           + (double) juce::jmax (0, osLatencySamples) / sr;
     const bool idle = ! bypassActive && silentSec > flushSec;
     idleActive.store (idle, std::memory_order_relaxed);
