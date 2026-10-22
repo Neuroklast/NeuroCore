@@ -316,6 +316,7 @@ private:
     LicenseManager     licenseManager;
     std::atomic<bool>  isLicensed { false };
     double             demoStartMs { 0.0 };
+    mutable std::atomic<juce::int64> demoLastSeenMs { 0 };
 #if defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
     std::atomic<bool>  demoLockForTest { false };
 #endif

@@ -24,6 +24,7 @@
 #include "../utils/Localiser.h"
 #include "../dsp/LookupTables.h"
 #include "../core/Config.h"
+#include "../core/DemoClock.h"
 #include "../utils/UiSettings.h"
 #include "../dsl/GraphModel.h"
 
@@ -147,18 +148,29 @@ NeuroKoreAudioProcessor::NeuroKoreAudioProcessor()
     {
         isLicensed.store (licenseManager.verifyLicense());
 #if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
-        demoStartMs = 0.0;
-        const auto stamp = LicenseManager::getDemoStampFile();
-        if (stamp.existsAsFile())
-            demoStartMs = stamp.loadFileAsString().trim().getDoubleValue();
-        if (demoStartMs <= 0.0)
+        const auto nowMs = (double) juce::Time::currentTimeMillis();
+        const auto demoFile = LicenseManager::getDemoStampFile();
+        DemoClock::Stamp stamp;
+        if (demoFile.existsAsFile())
+            stamp = DemoClock::parse (demoFile.loadFileAsString(),
+                                      (double) demoFile.getLastModificationTime().toMilliseconds());
+        if (! stamp.valid)
         {
-            demoStartMs = (double) juce::Time::currentTimeMillis();
-            stamp.getParentDirectory().createDirectory();
-            stamp.replaceWithText (juce::String (demoStartMs, 0));
+            stamp.startedMs = nowMs;
+            stamp.lastSeenMs = nowMs;
+            stamp.valid = true;
         }
+        else if (nowMs > stamp.lastSeenMs)
+        {
+            stamp.lastSeenMs = nowMs;
+        }
+        demoStartMs = stamp.startedMs;
+        demoLastSeenMs.store ((juce::int64) stamp.lastSeenMs, std::memory_order_relaxed);
+        // Read-only data directories only lose persistence, never the demo itself.
+        LicenseManager::saveDemoStamp (stamp.startedMs, stamp.lastSeenMs);
 #else
         demoStartMs = (double) juce::Time::currentTimeMillis();
+        demoLastSeenMs.store ((juce::int64) demoStartMs, std::memory_order_relaxed);
 #endif
     }
 
@@ -185,7 +197,14 @@ int NeuroKoreAudioProcessor::demoSecondsRemaining() const noexcept
 {
     if (! Config::kEnableLicensing || isLicensed.load())
         return 0;
-    return Config::demoSecondsLeft (demoStartMs, (double) juce::Time::currentTimeMillis());
+    const auto nowMs = (double) juce::Time::currentTimeMillis();
+    auto lastSeen = demoLastSeenMs.load (std::memory_order_relaxed);
+    if ((juce::int64) nowMs > lastSeen)
+    {
+        lastSeen = (juce::int64) nowMs;
+        demoLastSeenMs.store (lastSeen, std::memory_order_relaxed);
+    }
+    return Config::demoSecondsLeft (demoStartMs, DemoClock::effectiveNow (nowMs, (double) lastSeen));
 }
 
 bool NeuroKoreAudioProcessor::importProductLicense (const juce::File& file)
@@ -211,6 +230,11 @@ NeuroKoreAudioProcessor::~NeuroKoreAudioProcessor()
     // Without this, unit tests (and some hosts) can deliver handleAsyncUpdate() on a
     // destroyed processor → access violation after setValueNotifyingHost / OS changes.
     cancelPendingUpdate();
+#if ! defined (NEUROKORE_SKIP_LICENSE_ENFORCEMENT)
+    if (Config::kEnableLicensing && demoStartMs > 0.0)
+        LicenseManager::saveDemoStamp (demoStartMs,
+            (double) demoLastSeenMs.load (std::memory_order_relaxed));
+#endif
     webViewHolder.reset();
     {
         std::unique_ptr<const IrPreviewSnap> live (

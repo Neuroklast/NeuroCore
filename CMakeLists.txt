@@ -388,6 +388,7 @@ target_sources(NeuroKoreTests PRIVATE
     tests/PresetManagerTest.h
     tests/NeuroKoreExtrasTest.h
     tests/LicenseTest.h
+  tests/DemoClockTest.h
     tests/EqSidechainTest.h
     tests/DynamicsBlocksTest.h
     tests/IrXoverTest.h
