@@ -384,14 +384,24 @@ public:
 
         beginTest ("Shaper fold alternates polarity after repeated reflections");
         {
-            // Triangle folds must alternate between positive and negative
-            // peaks; the old fmod(abs(x),2) stayed positive beyond 2.
+            // Exercise the public audio path; Shaper is a private DSL node.
+            // The old fmod(abs(x),2) incorrectly stayed positive beyond 2.
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript (
+                "shaper1: mode = fold; drive = 0; output = 0; mix = 1", err), err);
             const float inputs[] { 0.5f, 1.5f, 2.5f, 3.5f, 4.5f, -2.5f, -3.5f };
             const float expected[] { 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f };
+            juce::AudioBuffer<float> buffer (1, 128);
             for (size_t i = 0; i < sizeof (inputs) / sizeof (inputs[0]); ++i)
+            {
+                for (int sample = 0; sample < 128; ++sample)
+                    buffer.setSample (0, sample, inputs[i]);
+                chain.processBlock (buffer);
                 expectWithinAbsoluteError (
-                    dsl::SignalChain::Shaper::foldCurve (inputs[i]),
-                    expected[i], 1.0e-6f);
+                    buffer.getSample (0, 127), expected[i], 1.0e-5f);
+            }
         }
 
         beginTest ("WaveFold keeps folding beyond one reflection");
