@@ -12,7 +12,7 @@ it.each(['random','stepseq','adsr','samplehold','modmath','modmix'])('Circuit ro
   {id:'source1',type,args:{min:'0',max:'1'},busName:'',trailingComment:''},
   {id:'modmix1',type:'modmix',args:{levela:'1',levelb:'1'},busName:'',trailingComment:''}
  ],edges:[]});
- const source=graph.ports[portId('source1','out',true)]!;
+ const source=graph.ports[portId('source1',type === 'modmath' ? 'mod' : 'out',true)]!;
  for(const input of ['inA','inB']){
   const target=graph.ports[portId('modmix1',input,false)]!;
   expect(target?.kind).toBe('mod');
