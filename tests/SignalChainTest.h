@@ -566,6 +566,29 @@ public:
                         after.getSample (ch, i), baseline.getSample (ch, i), 1.0e-5f);
         }
 
+        beginTest ("failed replacement keeps old control variable slots valid");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript (
+                "stepseq1: steps = 1; values = 0.5\n"
+                "stage1: y = x * stepseq1\n", err), err);
+            juce::AudioBuffer<float> first (1, 128), later (1, 128);
+            for (int i = 0; i < 128; ++i)
+                first.setSample (0, i, 0.5f);
+            later.makeCopyOf (first);
+            chain.processBlock (first);
+            expect (! chain.loadScript (
+                "modmath1: ina = absent123; mode = add; amount = 1\n"
+                "stage2: y = x\n", err));
+            expect (err.containsIgnoreCase ("unknown modulation source"), err);
+            chain.processBlock (later);
+            expectWithinAbsoluteError (
+                later.getSample (0, 127), first.getSample (0, 127), 1.0e-4f);
+            expectWithinAbsoluteError (later.getSample (0, 127), 0.25f, 1.0e-3f);
+        }
+
         beginTest("send from processed main");
         {
             dsl::SignalChain c;
