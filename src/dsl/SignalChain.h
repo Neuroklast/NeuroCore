@@ -546,7 +546,8 @@ private:
         ExpressionEvaluator rateExpr, bitsExpr, jitterExpr, holdExpr;
         ExpressionEvaluator reconExpr, mixExpr, outputExpr;
         juce::SmoothedValue<float> rateSm, bitsSm, jitterSm, holdSm;
-        juce::SmoothedValue<float> reconSm, mixSm, outputSm;
+        juce::SmoothedValue<float> reconSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> outputSm;
         float sampleRate { 44100.f };
         int channels { 1 };
         float holdL { 0.f }, holdR { 0.f };

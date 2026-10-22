@@ -45,7 +45,8 @@ void SignalChain::Decimate::prepare (const juce::dsp::ProcessSpec& spec)
     holdSm.setCurrentAndTargetValue (snap (holdExpr, 0.0f));
     reconSm.setCurrentAndTargetValue (snap (reconExpr, 0.5f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 0.0f));
-    outputSm.setCurrentAndTargetValue (snap (outputExpr, 0.0f));
+    outputSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snap (outputExpr, 0.f))));
     bindings.prepare (varPtr, { &rateExpr, &bitsExpr, &jitterExpr, &holdExpr,
                                 &reconExpr, &mixExpr, &outputExpr });
     clearRuntimeState();
@@ -77,7 +78,8 @@ void SignalChain::Decimate::processBlock (juce::AudioBuffer<float>& buffer)
     holdSm.setTargetValue (target (holdExpr, 0.f, 0.f, 1.f));
     reconSm.setTargetValue (target (reconExpr, 0.5f, 0.f, 1.f));
     mixSm.setTargetValue (target (mixExpr, 1.f, 0.f, 1.f));
-    outputSm.setTargetValue (target (outputExpr, 0.f, -36.f, 12.f));
+    outputSm.setTargetValue (juce::Decibels::decibelsToGain (
+        target (outputExpr, 0.f, -36.f, 12.f)));
 
     const int useCh = juce::jmin (nCh, 2);
     float* out[2] {};
@@ -92,8 +94,7 @@ void SignalChain::Decimate::processBlock (juce::AudioBuffer<float>& buffer)
         const float hold   = juce::jlimit (0.f, 1.f, holdSm.getNextValue());
         const float recon  = juce::jlimit (0.f, 1.f, reconSm.getNextValue());
         const float mix    = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
-        const float trimLin = juce::Decibels::decibelsToGain (
-            juce::jlimit (-36.f, 12.f, outputSm.getNextValue()));
+        const float trimLin = outputSm.getNextValue();
 
         // A sample-and-hold interval is shared by L/R: stereo stays aligned.
         // Hold extends the normal decimation period, jitter perturbs its length.
