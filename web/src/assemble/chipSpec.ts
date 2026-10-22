@@ -249,7 +249,7 @@ add({
   typeCodePrefix: "SA",
   audioIns: ["in"],
   audioOuts: ["out"],
-  paramJacks: ["mode", "drive", "bias", "dynamics", "tone", "outputTrim", "mix", "autoGain"],
+  paramJacks: ["mode", "drive", "bias", "dynamics", "character", "tone", "outputTrim", "mix", "autoGain"],
   enums: {
     mode: ["tape", "tube", "transistor", "transformer", "diode"],
     autoGain: ["off", "on"],
@@ -258,11 +258,12 @@ add({
     drive: { min: -24, max: 36, unit: "dB" },
     bias: { min: -1, max: 1 },
     dynamics: { min: 0, max: 1 },
+    character: { min: 0, max: 1 },
     tone: { min: 0, max: 1 },
     outputTrim: { min: -36, max: 12, unit: "dB" },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { mode: "tube", drive: "0", bias: "0", dynamics: "0.5", tone: "0.5", outputTrim: "0", mix: "0", autoGain: "off" },
+  defaultArgs: { mode: "tube", drive: "0", bias: "0", dynamics: "0.5", tone: "0.5", character: "0.5", outputTrim: "0", mix: "1", autoGain: "off" },
   blurb: "Sättigung mit Tape/Tube/Transistor/Transformer/Diode, Auto Gain und Tone.",
 });
 
@@ -280,7 +281,7 @@ add({
     mix: { min: 0, max: 1, unit: "%" },
   },
   defaultArgs: { mode: "fold", drive: "0", outputTrim: "0", mix: "0" },
-  blurb: "Waveshaper mit Fold-Back, Drive, Output-Trim und Mix.",
+  blurb: "Waveshaper: Fold-Back oder Hard-Clip mit Drive, Output-Trim und Mix.",
 });
 
 add({

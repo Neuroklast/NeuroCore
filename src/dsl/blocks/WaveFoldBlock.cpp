@@ -11,6 +11,14 @@ namespace
         const float v = e.evaluateLive (0.0f);
         return std::isfinite (v) ? v : fallback;
     }
+
+    float foldTriangle (float x, float fold) noexcept
+    {
+        const float period = 4.0f * fold;
+        float t = std::fmod (x + fold, period);
+        if (t < 0.0f) t += period;
+        return fold - std::abs (t - 2.0f * fold);
+    }
 }
 
 void SignalChain::WaveFold::clearRuntimeState() noexcept {}
@@ -67,10 +75,7 @@ void SignalChain::WaveFold::processBlock (juce::AudioBuffer<float>& buffer)
         for (int c = 0; c < nCh; ++c)
         {
             float* w = buffer.getWritePointer (c);
-            float x = w[i] * drive;
-            // Fold into [-fold, +fold]: reflect at boundaries
-            if (x >  fold) x = 2.f * fold - x;
-            if (x < -fold) x = -2.f * fold - x;
+            const float x = foldTriangle (w[i] * drive, fold);
             w[i] = w[i] * dryG + x * wetG;
         }
     }

@@ -5,6 +5,38 @@
 namespace bridge
 {
 
+namespace
+{
+/** Peak + RMS in one pass (was peakOf + rmsOf = two sweeps). */
+void scanPeakRms (const juce::AudioBuffer<float>& src, float& peak, float& rms) noexcept
+{
+    peak = 0.f;
+    rms = 0.f;
+    const int n = src.getNumSamples();
+    const int ch = src.getNumChannels();
+    if (n <= 0 || ch <= 0)
+        return;
+    double acc = 0.0;
+    int count = 0;
+    float p = 0.f;
+    for (int c = 0; c < ch; ++c)
+    {
+        const float* s = src.getReadPointer (c);
+        for (int i = 0; i < n; ++i)
+        {
+            const float v = s[i];
+            const float a = std::abs (v);
+            if (a > p)
+                p = a;
+            acc += (double) v * (double) v;
+            ++count;
+        }
+    }
+    peak = p;
+    rms = (float) std::sqrt (acc / (double) count);
+}
+} // namespace
+
 int TelemetryPump::writeIndex (int published, int reading) noexcept
 {
     for (int i = 0; i < kSlotCount; ++i)
@@ -50,46 +82,6 @@ void TelemetryPump::captureScope (const juce::AudioBuffer<float>& src, float* de
             sum += src.getReadPointer (c)[n - take + i];
         dest[destN - take + i] = sum / (float) ch;
     }
-}
-
-float TelemetryPump::peakOf (const juce::AudioBuffer<float>& src) noexcept
-{
-    const int n = src.getNumSamples();
-    if (n <= 0)
-        return 0.f;
-    float p = 0.f;
-    for (int c = 0; c < src.getNumChannels(); ++c)
-    {
-        const float* s = src.getReadPointer (c);
-        for (int i = 0; i < n; ++i)
-        {
-            const float a = std::abs (s[i]);
-            if (a > p)
-                p = a;
-        }
-    }
-    return p;
-}
-
-float TelemetryPump::rmsOf (const juce::AudioBuffer<float>& src) noexcept
-{
-    const int n = src.getNumSamples();
-    if (n <= 0)
-        return 0.f;
-    double acc = 0.0;
-    int count = 0;
-    for (int c = 0; c < src.getNumChannels(); ++c)
-    {
-        const float* s = src.getReadPointer (c);
-        for (int i = 0; i < n; ++i)
-        {
-            acc += (double) s[i] * (double) s[i];
-            ++count;
-        }
-    }
-    if (count <= 0)
-        return 0.f;
-    return (float) std::sqrt (acc / (double) count);
 }
 
 void TelemetryPump::scanOnset (const juce::AudioBuffer<float>& src) noexcept
@@ -146,8 +138,7 @@ void TelemetryPump::noteInput (const juce::AudioBuffer<float>& in) noexcept
     if (! wanted.load (std::memory_order_relaxed))
         return;
     captureScope (in, scopeIn, kScopeN);
-    lastInPeak = peakOf (in);
-    lastInRms = rmsOf (in);
+    scanPeakRms (in, lastInPeak, lastInRms);
 }
 
 void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) noexcept
@@ -168,9 +159,8 @@ void TelemetryPump::publish (const juce::AudioBuffer<float>& out, float cpu01) n
 
     TelemetryDesc d;
     d.inPeak = lastInPeak;
-    d.outPeak = peakOf (out);
     d.inRms = lastInRms;
-    d.outRms = rmsOf (out);
+    scanPeakRms (out, d.outPeak, d.outRms);
     scanOnset (out);
     d.cpu01 = cpu01;
     d.scopeN = (std::uint16_t) kScopeN;

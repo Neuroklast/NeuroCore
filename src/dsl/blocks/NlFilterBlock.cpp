@@ -64,7 +64,7 @@ void SignalChain::NlFilter::processBlock (juce::AudioBuffer<float>& buffer)
     for (int i = 0; i < nS; ++i)
     {
         const float fcRaw = juce::jlimit (20.0f, 20000.0f, cutoffSm.getNextValue());
-        const float fc = 2.f * std::sin (twoPi * fcRaw / sampleRate);
+        const float coeff = 1.0f - std::exp (-twoPi * fcRaw / sampleRate);
         const float drive = juce::jlimit (0.0f, 10.0f, driveSm.getNextValue());
         const float mix = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
 
@@ -77,7 +77,7 @@ void SignalChain::NlFilter::processBlock (juce::AudioBuffer<float>& buffer)
                 float& z = z1[c % 2];
                 float x = w[i];
                 x = std::tanh (drive * x);
-                z = z + fc * (x - z);
+                z = z + coeff * (x - z);
                 w[i] = w[i] * dryG + z * wetG;
             }
     }

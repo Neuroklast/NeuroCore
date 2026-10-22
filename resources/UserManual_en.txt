@@ -295,6 +295,22 @@ Unit particle motion: input transients and sub attacks push the particles upward
 
 Unit resizing keeps the HUD, core readouts and diagnostic panels on a fixed design canvas. Field meters remain visible at rest. Window scaling changes the rendered resolution without reflowing the HUD. Pointer indicators and context menus follow the scaled controls. If WebGL is unavailable, the fallback visual stays inside the central lane.
 
+### Saturator and frequency shifter
+
+`saturate1: mode = tube; drive = 12; bias = 0; dynamics = 0.5; tone = 0.5; character = 0.5; outputTrim = -6; mix = 1; autoGain = off`
+
+Saturate offers five different transfer models: tape, tube, transistor, transformer and diode. These names describe their response, not exact hardware emulations. Tone is normalized 0–1 and sets a low-pass cutoff from 300 Hz to 18 kHz, limited below Nyquist. Dynamics controls stereo-linked envelope-dependent drive reduction. Character changes the curvature; transformer also adds low-frequency-dependent saturation. A 5 Hz DC blocker removes bias and asymmetric DC. Auto Gain applies inverse positive drive gain, independent of transients; it is not perceptual loudness matching. `outputTrim`, `output` and `trim` are output-gain aliases in dB. `mix = 0` preserves dry float levels. All continuous controls are smoothed. `sat` is an alias for `saturate`. Unknown parameters and invalid mode/Auto Gain values are rejected.
+
+Examples: `mode = tape; drive = 3; dynamics = 0.2; tone = 0.9; character = 0.25; outputTrim = -2; mix = 1` for restrained bus saturation; `mode = diode; drive = 18; dynamics = 0.1; tone = 0.65; character = 0.8; outputTrim = -8; mix = 0.6` for parallel drum distortion; `mode = transformer; drive = 9; dynamics = 0.8; tone = 0.4; character = 0.7; outputTrim = -4; mix = 1` for bass treatment. These are example settings, not listening-certified factory presets.
+
+`freqshift1: hz = 400; mix = 1` shifts frequencies by +400 Hz. Negative Hz shifts down. It uses a 129-tap FIR Hilbert transform with 64 processing-sample latency and an aligned dry path. The bus graph includes this latency when compensating parallel paths. The finite filter has transition bands near DC and Nyquist, where image rejection deteriorates. It has no feedback or independent stereo shift controls yet. At zero shift the result is the delayed input. Its finite tail is 128 processing samples.
+
+### Shaper
+
+`shaper1: mode = fold; drive = 12; outputTrim = -6; mix = 1`
+
+Shaper is a symmetric waveshaper with two modes. `fold` wraps signal beyond ±1 back into range; `clip` hard-limits at ±1. Drive feeds the shaper from -24 to +36 dB, `outputTrim` sets the output from -36 to +12 dB, and `mix` blends dry and shaped signal. `output` and `trim` are aliases for `outputTrim`, and `symmetric` remains an alias for `fold`.
+
 Circuit signal traces
 Connections remain visible during silence and retain a minimum screen width while zooming out. Wave mode sends measured impulses from each source contact along the routed trace. Motion speed eases over 150 ms. Emitted impulses fade independently when fresh measurements stop. The restrained glow is reduced in the overview. Motion Reduced/Off and Dots retain their existing stationary presentation.
 New installations default to Wave. An existing saved Dots preference is preserved. Change Cables to Wave in Settings to enable travelling impulses.

@@ -9,6 +9,8 @@
 #include "../dsp/LatencyAlignedSidechain.h"
 #include "../core/Config.h"
 #include "../dsp/DSPUtils.h"
+#include "../dsp/SaturationModels.h"
+#include "../dsp/FrequencyShifterDSP.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
 #include <array>
@@ -446,17 +448,15 @@ private:
     {
         enum class Mode { Tape = 0, Tube, Transistor, Transformer, Diode };
 
-        ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr;
+        ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr, characterExpr;
         ExpressionEvaluator modeExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm;
+        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm, characterSm;
         juce::SmoothedValue<float> outputSm, mixSm;
         Mode mode { Mode::Tube };
         bool autoGain { false };
         float sampleRate { 44100.f };
         int channels { 1 };
-        float peakEnv { 0.f };
-        float autoGainSm { 1.f };
-        float agcAtkC { 0.f }, agcRelC { 0.f };
+        neurokore::saturation::Processor processor;
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -469,16 +469,16 @@ private:
         static float diodeCurve (float x) noexcept;
     };
 
-    /** Eigenständiger Waveshaper: editierbare Transferkurve mit Kontrollpunkten.
-        Symmetrischer / asymmetrischer Modus, Drive, Output, Mix, optionaler DC-Blocker. */
+    /** Eigenständiger Waveshaper: Fold-Back oder Hard-Clip.
+        Drive, Output-Trim und Mix; `symmetric` bleibt ein Fold-Alias. */
     struct Shaper : Block
     {
-        enum class Mode { Symmetric = 0, Asymmetric };
+        enum class Mode { Fold = 0, Clip };
 
         ExpressionEvaluator driveExpr, outputExpr, mixExpr;
         ExpressionEvaluator modeExpr;
         juce::SmoothedValue<float> driveSm, outputSm, mixSm;
-        Mode mode { Mode::Symmetric };
+        Mode mode { Mode::Fold };
         float sampleRate { 44100.f };
         int channels { 1 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
@@ -486,7 +486,7 @@ private:
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
-        static float foldCurve (float x, float drive) noexcept;
+        static float foldCurve (float x) noexcept;
     };
 
     /** Eigenständiger Sample-Rate-Reducer (Decimator).
@@ -556,17 +556,16 @@ private:
         void clearRuntimeState() noexcept override;
     };
 
-    /** Single-sideband frequency shifter: Hz shift, mix. Uses an allpass
-        pair per channel for a ~90 deg Hilbert phase-shift network. */
+    /** Single-sideband frequency shifter: Hz shift, mix. Uses a 129-tap FIR Hilbert
+        transformer with aligned dry and real paths (64 samples). */
     struct FreqShift : Block
     {
         ExpressionEvaluator HzExpr, mixExpr;
         juce::SmoothedValue<float> HzSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float phase { 0.f };
-        struct AP1 { float a { 0.f }, z1 { 0.f }; };
-        AP1 ap0L, ap1L, ap0R, ap1R;
+        neurokore::FrequencyShifterDSP processor;
+        static constexpr int latencySamples = neurokore::FrequencyShifterDSP::latency;
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -724,11 +723,10 @@ private:
         juce::SmoothedValue<float> stopSm, depthSm, mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        std::vector<float> delayBuf;
+        std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
         float readPos { 0.0f };
         float rate { 1.0f };
-        bool active { false };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -1135,7 +1133,8 @@ private:
         ExpressionEvaluator mixExpr;
 
         float sampleRate { 44100.0f };
-        std::vector<float> delayBuf;
+        int channels { 1 };
+        std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
 
         juce::SmoothedValue<float> timeSm, feedbackSm, mixSm;
@@ -1146,6 +1145,7 @@ private:
         float process (int ch, float x);
         void processBlock (juce::AudioBuffer<float>& buffer) override;
         void clearRuntimeState() noexcept override;
+        float tailSeconds() const noexcept;
     };
 
     /** Schroeder/Freeverb-style multi-comb + allpass reverb (stereo). */

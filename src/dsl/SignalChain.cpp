@@ -1432,6 +1432,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                     parameterMappings[pn].add (d.name + " mode [tape/tube/transistor/transformer/diode]");
             }
 
+            bool validParameters = true;
             const auto parseAmt = [&] (const char* key, const char* alt,
                                        float lo, float hi, const char* fallback,
                                        ExpressionEvaluator& dest, const juce::String& label)
@@ -1440,7 +1441,11 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                                : (alt != nullptr && d.args.count (alt) ? d.args.at (alt)
                                                                        : juce::String (fallback));
                 auto expr = addDefaultMap (raw, lo, hi);
-                dest.parseFormula (expr.toStdString());
+                if (! dest.parseFormula (expr.toStdString()))
+                {
+                    validParameters = false;
+                    error = "Invalid saturate expression: " + juce::String (key);
+                }
                 auto pn = findParam (expr);
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
@@ -1448,8 +1453,9 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             parseAmt ("drive", nullptr, -24.f, 36.f, "0", sat->driveExpr, "drive [dB]");
             parseAmt ("bias", nullptr, -1.f, 1.f, "0", sat->biasExpr, "bias [-1..1]");
             parseAmt ("dynamics", nullptr, 0.f, 1.f, "0.5", sat->dynamicsExpr, "dynamics [0..1]");
-            parseAmt ("tone", nullptr, 20.f, 16000.f, "2000", sat->toneExpr, "tone [Hz]");
-            parseAmt ("output", "trim", -36.f, 12.f, "0", sat->outputExpr, "output [dB]");
+            parseAmt ("tone", nullptr, 0.f, 1.f, "0.5", sat->toneExpr, "tone [0..1]");
+            parseAmt (d.args.count ("outputtrim") ? "outputtrim" : "output", "trim", -36.f, 12.f, "0", sat->outputExpr, "output [dB]");
+            parseAmt ("character", nullptr, 0.f, 1.f, "0.5", sat->characterExpr, "character [0..1]");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", sat->mixExpr, "mix [0..1]");
 
             if (d.args.count ("autoGain") || d.args.count ("autogain"))
@@ -1461,6 +1467,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             else
                 sat->autoGain = false;
 
+            if (! validParameters) return false;
             newChain->push_back (std::move (sat));
         }
         else if (d.type.startsWith ("shaper"))
@@ -1469,15 +1476,15 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             sh->kind = NodeKind::Clip;
             sh->varPtr = &variables;
 
-            // Mode: symmetric / asymmetric (diskret, wird beim Prepare aufgelöst).
+            // Mode: fold / clip (diskret, wird beim Prepare aufgelöst).
             {
-                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("symmetric");
+                const auto modeRaw = d.args.count ("mode") ? d.args.at ("mode") : juce::String ("fold");
                 const auto m = modeRaw.trim().toLowerCase();
-                int mi = 0; // symmetric default
-                if (m == "asymmetric") mi = 1;
+                int mi = 0; // fold default; `symmetric` stays a legacy alias
+                if (m == "clip") mi = 1;
                 sh->modeExpr.parseFormula (juce::String (mi).toStdString());
                 if (auto pn = findParam (modeRaw); pn.isNotEmpty())
-                    parameterMappings[pn].add (d.name + " mode [symmetric/asymmetric]");
+                    parameterMappings[pn].add (d.name + " mode [fold/clip]");
             }
 
             const auto parseAmt = [&] (const char* key, const char* alt,
@@ -2537,6 +2544,7 @@ void SignalChain::prepareBusLatency (Chain& c, BusGraph& g)
             if (node->busIndex != (int) bi) continue;
             if (auto* ir = dynamic_cast<Ir*> (node.get())) end += ir->latencySamples;
             if (auto* pitch = dynamic_cast<Pitch*> (node.get())) end += pitch->latencySamples;
+            if (auto* shift = dynamic_cast<FreqShift*> (node.get())) end += shift->latencySamples;
             if (auto* lim = dynamic_cast<Limit*> (node.get())) end += lim->latencySamples;
             if (auto* co = dynamic_cast<Comp*> (node.get())) end += co->latencySamples;
             if (auto* xover = dynamic_cast<Xover*> (node.get()))
@@ -4513,6 +4521,10 @@ float SignalChain::getMaxTailTime() const noexcept
             return juce::jmax (0.0f, rv->tailSeconds());
         if (const auto* ot = dynamic_cast<const Ott*> (block))
             return juce::jmax (0.0f, ot->tailSeconds());
+        if (const auto* fs = dynamic_cast<const FreqShift*> (block))
+            return 2.0f * (float) FreqShift::latencySamples / juce::jmax (1.0f, fs->sampleRate);
+        if (const auto* rd = dynamic_cast<const ReverseDelay*> (block))
+            return juce::jmax (0.0f, rd->tailSeconds());
         return 0.0f;
     };
 
@@ -4688,13 +4700,8 @@ float SignalChain::Delay::tailSeconds() const noexcept
     }
     float fb = feedback.evaluateLive (0.f);
     if (! std::isfinite (fb)) fb = 0.35f;
-    fb = juce::jlimit (0.f, 0.95f, fb);
-    // Approximate audible tail: delay * log(noise)/log(fb)
     const float delaySec = juce::jlimit (0.001f, kMaxDelaySec, ms * 0.001f);
-    if (fb < 0.05f)
-        return delaySec * 1.5f;
-    const float n = std::log (0.001f) / std::log (juce::jmax (0.05f, fb));
-    return juce::jlimit (0.05f, 12.0f, delaySec * n);
+    return DSPUtils::feedbackTailSeconds (delaySec, fb);
 }
 
 float SignalChain::Delay::process (int ch, float x)

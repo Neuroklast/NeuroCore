@@ -9,6 +9,8 @@
 #include "IrXoverTest.h"
 #include "FxBench.h"
 #include <iostream>
+#include "dsp/ClipTest.h"
+#include "dsp/DspExpansionTest.h"
 int main(int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -16,6 +18,16 @@ int main(int argc, char** argv)
     if (argc == 2 && std::string(argv[1]) == "--benchmark") return runFxBenchmark();
     if (argc == 4 && std::string(argv[1]) == "--factory") return auditFactory(argv[2], argv[3]);
     if (argc == 4 && std::string(argv[1]) == "--factory-stress") return auditFactory(argv[2], argv[3], true);
+    if (argc == 2 && std::string(argv[1]) == "--expansion")
+    {
+        ClipTest clip;
+        DspExpansionTest expansion;
+        juce::UnitTestRunner runner;
+        runner.runTests ({ &clip, &expansion }, 12345);
+        int failures = 0;
+        for (int i = 0; i < runner.getNumResults(); ++i) failures += runner.getResult(i)->failures;
+        return failures ? 1 : 0;
+    }
     ComparisonBankTest comparisonBank;
     WebCompileTest webCompile;
     GlobalPreferencesTest globalPreferences;

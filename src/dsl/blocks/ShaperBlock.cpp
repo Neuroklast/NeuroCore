@@ -17,7 +17,7 @@ void SignalChain::Shaper::clearRuntimeState() noexcept
 {
 }
 
-float SignalChain::Shaper::foldCurve (float x, float drive) noexcept
+float SignalChain::Shaper::foldCurve (float x) noexcept
 {
     // Symmetric waveshaper with fold: maps |x| > 1 back into [-1, 1] range.
     const float ax = std::abs (x);
@@ -80,8 +80,8 @@ void SignalChain::Shaper::processBlock (juce::AudioBuffer<float>& buffer)
         for (int c = 0; c < useCh; ++c)
         {
             const float dry = out[c][i];
-            float x = dry * driveLin;
-            float y = foldCurve (x, driveLin);
+            const float x = dry * driveLin;
+            float y = (mode == Mode::Clip) ? juce::jlimit (-1.0f, 1.0f, x) : foldCurve (x);
             y *= trimLin;
             out[c][i] = dry * (1.0f - mix) + y * mix;
         }

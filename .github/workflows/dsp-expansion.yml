@@ -1,0 +1,37 @@
+name: DSP expansion contracts
+on:
+  push:
+    branches: ['fix/dsp-expansion-completion']
+  pull_request:
+    paths: ['src/dsp/**', 'src/dsl/**', 'tests/dsp/**', 'tests/fx_main.cpp', '.github/workflows/dsp-expansion.yml']
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Portable DSP kernels
+        run: |
+          g++ -std=c++17 -O2 tests/dsp/SaturationModelsContract.cpp -o /tmp/saturation-contract
+          /tmp/saturation-contract
+          g++ -std=c++17 -O2 tests/dsp/FrequencyShifterContract.cpp -o /tmp/frequency-contract
+          /tmp/frequency-contract
+      - uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: 8.0.6
+          path: .deps/JUCE
+      - name: Native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype-dev libfontconfig1-dev libasound2-dev libgl1-mesa-dev
+      - name: Configure native contracts
+        run: cmake -S tests/dsp -B build-contracts -G Ninja -DJUCE_DIR="$GITHUB_WORKSPACE/.deps/JUCE" -DCMAKE_BUILD_TYPE=Release
+      - name: Build native contracts
+        run: cmake --build build-contracts --parallel 2
+      - name: Native expansion contracts
+        run: build-contracts/NeuroKoreDspContracts --expansion
+      - name: Native FX regression
+        run: build-contracts/NeuroKoreDspContracts

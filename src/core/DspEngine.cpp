@@ -442,30 +442,26 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     // Idle waits out tails + OS flush so the next transient is not smeared.
     if (bypassActive || idle)
     {
-        // Advance knob smoothers at host rate so automation stays continuous
+        // Advance every smoother in one pass at host rate so automation stays continuous
+        gainCompValue.setTargetValue (1.0f);
+        userGainValue.setTargetValue (clamp (EffectParameters::outputGain,
+                                             getParam (EffectParameters::outputGain)));
+        float outGain = userGainValue.getCurrentValue();
         for (size_t i = 0; i < numSamplesEarly; ++i)
+        {
             for (int p = 0; p < Config::kNumUserParams; ++p)
                 smoothedParams[(size_t) p].getNextValue();
-        for (size_t i = 0; i < numSamplesEarly; ++i)
             wetValue.getNextValue();
-
-        gainCompValue.setTargetValue (1.0f);
-        for (size_t i = 0; i < numSamplesEarly; ++i)
             gainCompValue.getNextValue();
+            outGain = userGainValue.getNextValue();
+        }
 
-        userGainValue.setTargetValue(clamp(EffectParameters::outputGain,
-                                           getParam(EffectParameters::outputGain)));
-        if (numSamplesEarly > 0)
+        if (numSamplesEarly > 0
+            && (std::abs (outGain - 1.0f) > 1.0e-4f || userGainValue.isSmoothing()))
         {
-            float outGain = userGainValue.getCurrentValue();
-            for (size_t i = 0; i < numSamplesEarly; ++i)
-                outGain = userGainValue.getNextValue();
-            if (std::abs (outGain - 1.0f) > 1.0e-4f || userGainValue.isSmoothing())
-            {
-                userOutputGain.setGainLinear(outGain);
-                juce::dsp::ProcessContextReplacing<float> outCtx(block);
-                userOutputGain.process(outCtx);
-            }
+            userOutputGain.setGainLinear(outGain);
+            juce::dsp::ProcessContextReplacing<float> outCtx(block);
+            userOutputGain.process(outCtx);
         }
 
         // Host PDC already delays other tracks by OS+IR. Mix 0% must emit
@@ -538,13 +534,16 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     if (oversampler)
         upBlock = oversampler->processSamplesUp(block);
 
-    // Process DSL via scriptBuffer (OS domain) — never the leftover capacity.
+    // Process DSL in the OS domain on the upBlock view (exact callback length,
+    // never the prepare capacity).
     const int osN = (int) upBlock.getNumSamples();
     const int osCap = juce::jmin (scriptBuffer.getNumSamples(), preparedOsN);
     const int workN = juce::jmin (osN, osCap);
     jassert (osN <= osCap);
 
-    upBlock.copyTo (scriptBuffer);
+    // Process in place on the oversampler's output block: processSamplesDown
+    // reads that same buffer, so the scriptBuffer round-trip was a full copy
+    // each way for nothing.
     {
         if (hostScN > 0 && hostScL != nullptr)
         {
@@ -594,13 +593,14 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
         std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs {};
         for (int p = 0; p < Config::kNumUserParams; ++p)
             knobPtrs[(size_t) p] = &smoothedParams[(size_t) p];
-        juce::AudioBuffer<float> osWork (scriptBuffer.getArrayOfWritePointers(),
-                                         juce::jmin (scriptBuffer.getNumChannels(),
-                                                     (int) upBlock.getNumChannels()),
-                                         workN);
+        const int workCh = juce::jmin ((int) upBlock.getNumChannels(),
+                                       Config::kMaxChannels);
+        std::array<float*, Config::kMaxChannels> osChans {};
+        for (int ch = 0; ch < workCh; ++ch)
+            osChans[(size_t) ch] = upBlock.getChannelPointer ((size_t) ch);
+        juce::AudioBuffer<float> osWork (osChans.data(), workCh, workN);
         signalChain.processBlockSmoothed (osWork, knobPtrs);
     }
-    upBlock.copyFrom (scriptBuffer);
 
     // Post-DSL: NaN/Inf hold only
     {
