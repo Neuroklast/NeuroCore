@@ -26,7 +26,6 @@ export function inspectDefault(nodeType: string, key: string): string | null {
 type InspectKnobProps = {
   nodeId: string;
   nodeType: string;
-  key: string;
   field: InspectArgField;
   current: string;
   onCommit: (nodeId: string, key: string, value: string) => void;
@@ -37,15 +36,16 @@ const SWEEP_START = (Math.PI * 4) / 3;
 const SWEEP_END = (Math.PI * 8) / 3;
 
 export function InspectKnob({
-  nodeId, nodeType, key, field, current, onCommit, onReveal,
+  nodeId, nodeType, field, current, onCommit, onReveal,
 }: InspectKnobProps) {
+  const argKey = field.key;
   const [draft, setDraft] = useState<string | null>(null);
   const [edit, setEdit] = useState<string | null>(null);
   const gesture = useRef(false);
   const live = useRef(0);
   const moveRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
   const upRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
-  const label = key.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const label = argKey.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const value = draft ?? current;
 
   const isNum = isLiteralNumber(value) && field.kind !== "enum";
@@ -56,15 +56,15 @@ export function InspectKnob({
     setDraft(null);
     setEdit(null);
     gesture.current = false;
-    onCommit(nodeId, key, next);
-  }, [nodeId, key, onCommit]);
+    onCommit(nodeId, argKey, next);
+  }, [nodeId, argKey, onCommit]);
 
   const reset = useCallback(() => {
-    const def = inspectDefault(nodeType, key);
+    const def = inspectDefault(nodeType, argKey);
     if (def != null) {
       commit(def);
     }
-  }, [nodeType, key, commit]);
+  }, [nodeType, argKey, commit]);
 
   // Clean up window listeners on unmount so a drag that outlives the component
   // cannot leave stale listeners attached to window.

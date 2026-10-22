@@ -84,6 +84,10 @@ export interface HostState {
   clipsRmsR: Record<string, number>;
   /** Local-max fractions 0..1 from the source tap window. */
   clipsPeaks: Record<string, number[]>;
+  /** Live step index per step-sequencer node, or -1 when stopped. */
+  clipsStep: Record<string, number>;
+  /** Live trigger pulse state per envelope-trigger node. */
+  clipsTrigger: Record<string, number>;
   theme: ThemeId;
   knobGestures: Record<string, true>;
   knobMeta: Record<string, Partial<KnobState>>;
@@ -156,6 +160,8 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
   rmsL: Record<string, number>;
   rmsR: Record<string, number>;
   peaks: Record<string, number[]>;
+  step: Record<string, number>;
+  trigger: Record<string, number>;
 } {
   const peak: Record<string, number> = {};
   const peakL: Record<string, number> = {};
@@ -164,6 +170,8 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
   const rmsL: Record<string, number> = {};
   const rmsR: Record<string, number> = {};
   const peaks: Record<string, number[]> = {};
+  const step: Record<string, number> = {};
+  const trigger: Record<string, number> = {};
   for (const raw of rows) {
     const id = String(raw.id ?? "");
     if (! id) {
@@ -183,8 +191,15 @@ export function parseClipPeaks(rows: Array<Record<string, unknown>>): {
     aliasIoPeak(rmsL, id, eL);
     aliasIoPeak(rmsR, id, eR);
     aliasIoId(peaks, id, parsePeakFractions(raw.peaks));
+    const s = Number(raw.step);
+    if (Number.isFinite(s) && s >= 0) {
+      step[id] = Math.round(s);
+    }
+    if (Number(raw.trigger) > 0) {
+      trigger[id] = 1;
+    }
   }
-  return { peak, peakL, peakR, rms, rmsL, rmsR, peaks };
+  return { peak, peakL, peakR, rms, rmsL, rmsR, peaks, step, trigger };
 }
 
 export function osFactorFromIndex(index: number): number {
@@ -305,6 +320,8 @@ export const useHostStore = create<HostState>((set) => ({
   clipsRmsL: {},
   clipsRmsR: {},
   clipsPeaks: {},
+  clipsStep: {},
+  clipsTrigger: {},
   theme: DEFAULT_THEME,
   knobGestures: {} as Record<string, true>,
   knobMeta: {} as Record<string, Partial<KnobState>>,
@@ -375,6 +392,8 @@ export const useHostStore = create<HostState>((set) => ({
     clipsRmsL: parsedClips ? parsedClips.rmsL : s.clipsRmsL,
     clipsRmsR: parsedClips ? parsedClips.rmsR : s.clipsRmsR,
     clipsPeaks: parsedClips ? parsedClips.peaks : s.clipsPeaks,
+    clipsStep: parsedClips ? parsedClips.step : s.clipsStep,
+    clipsTrigger: parsedClips ? parsedClips.trigger : s.clipsTrigger,
   };
   }),
   applyPresets: (p) => set((s) => {

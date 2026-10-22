@@ -33,6 +33,7 @@ void SignalChain::ModMath::prepare (const juce::dsp::ProcessSpec& spec)
     amountSm.setCurrentAndTargetValue (snap (amountExpr, 1.0f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 1.0f));
     bindings.prepare (varPtr, { &amountExpr, &mixExpr });
+    reserveControlLane (spec);
 }
 
 float SignalChain::ModMath::process (int ch, float x)
@@ -44,39 +45,31 @@ float SignalChain::ModMath::process (int ch, float x)
 
 void SignalChain::ModMath::processBlock (juce::AudioBuffer<float>& buffer)
 {
-    const int nCh = buffer.getNumChannels();
-    const int nS  = buffer.getNumSamples();
-    if (nS <= 0 || nCh <= 0)
+    const int nS = buffer.getNumSamples();
+    if (nS <= 0)
         return;
+
+    if ((int) modLane.size() < nS)
+        modLane.resize ((size_t) nS);
 
     bindings.refresh();
 
     const float amount = juce::jlimit (0.0f, 4.0f, snapEval (amountExpr, 1.0f));
     const float mix    = juce::jlimit (0.0f, 1.0f, snapEval (mixExpr, 1.0f));
-    for (int i = 0; i < nS; ++i)
+    const float a = inputSlots.size() > 0 && inputSlots[0] != nullptr ? *inputSlots[0] : 0.0f;
+    const float b = inputSlots.size() > 1 && inputSlots[1] != nullptr ? *inputSlots[1] : 0.0f;
+
+    float math = a + b;
+    switch (op)
     {
-        const float a = (nCh > 0) ? buffer.getReadPointer (0)[i] : 0.0f;
-        const float b = (nCh > 1) ? buffer.getReadPointer (1)[i] : 0.0f;
-
-        float math = a + b;
-        switch (op)
-        {
-        case Op::Sub: math = a - b; break;
-        case Op::Mul: math = a * b; break;
-        case Op::Div: math = (std::fabs (b) > 1e-6f) ? a / b : a; break;
-        case Op::Min: math = juce::jmin (a, b); break;
-        case Op::Max: math = juce::jmax (a, b); break;
-        case Op::Add: break;
-        }
-        const float result = math * amount;
-        const float dryG = 1.0f - mix;
-        const float wetG = mix;
-
-        for (int c = 0; c < nCh; ++c)
-        {
-            float* w = buffer.getWritePointer (c);
-            const float dry = w[i];
-            w[i] = dry * dryG + result * wetG;
-        }
+    case Op::Sub: math = a - b; break;
+    case Op::Mul: math = a * b; break;
+    case Op::Div: math = (std::fabs (b) > 1e-6f) ? a / b : a; break;
+    case Op::Min: math = juce::jmin (a, b); break;
+    case Op::Max: math = juce::jmax (a, b); break;
+    case Op::Add: break;
     }
+
+    const float result = math * amount * mix;
+    std::fill (modLane.begin(), modLane.begin() + nS, result);
 }

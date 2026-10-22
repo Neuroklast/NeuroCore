@@ -1,9 +1,18 @@
 name: DSP expansion contracts
 on:
   push:
-    branches: ['fix/dsp-expansion-completion']
+    branches: ['main', 'fix/dsp-expansion-completion']
   pull_request:
-    paths: ['src/dsp/**', 'src/dsl/**', 'tests/dsp/**', 'tests/fx_main.cpp', '.github/workflows/dsp-expansion.yml']
+    paths:
+      - 'src/dsp/**'
+      - 'src/dsl/**'
+      - 'tests/dsp/**'
+      - 'tests/DSLParserTest.h'
+      - 'tests/fx_main.cpp'
+      - 'web/src/assemble/blockCatalog.ts'
+      - 'docs/manual/NEUROKORE.md'
+      - 'resources/UserManual_en.txt'
+      - '.github/workflows/dsp-expansion.yml'
 permissions:
   contents: read
 jobs:
@@ -35,3 +44,17 @@ jobs:
         run: build-contracts/NeuroKoreDspContracts --expansion
       - name: Native FX regression
         run: build-contracts/NeuroKoreDspContracts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Catalog contracts
+        working-directory: web
+        run: |
+          npm ci
+          npx vitest run src/assemble/blockCatalog.test.ts src/assemble/saturationContract.test.ts
+      - name: Living docs sync
+        run: |
+          node scripts/sync_living_docs.mjs
+          git diff --exit-code -- resources/UserManual_en.txt

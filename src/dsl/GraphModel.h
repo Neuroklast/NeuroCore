@@ -190,10 +190,19 @@ inline bool isEnv (const GraphNode& n)
     return n.type.toLowerCase().startsWith ("env");
 }
 
-/** LFO / envelope — control, not a serial audio through-node. */
+/** Pure or detector control sources: not a serial audio through-node. */
+inline bool isControlSource (const GraphNode& n)
+{
+    const auto t = n.type.toLowerCase();
+    return t.startsWith ("stepseq") || t.startsWith ("adsr")
+        || t.startsWith ("samplehold") || t.startsWith ("random")
+        || t.startsWith ("modmath") || t.startsWith ("modmix");
+}
+
+/** LFO / envelope / control generator — control, not a serial audio through-node. */
 inline bool isModulator (const GraphNode& n)
 {
-    return isLfo (n) || isEnv (n);
+    return isLfo (n) || isEnv (n) || isControlSource (n);
 }
 
 inline juce::String channelRail (const GraphNode& n)

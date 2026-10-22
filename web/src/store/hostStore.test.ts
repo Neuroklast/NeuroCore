@@ -143,6 +143,17 @@ describe("hostStore", () => {
     expect(useHostStore.getState().clipsPeaks.stage1).toEqual([0.25, 0.5]);
   });
 
+  it("stores the live step position from the host snapshot", () => {
+    useHostStore.getState().applyHost({
+      clips: [
+        { id: "stepseq1", peak: 0, step: 3 },
+        { id: "stepseq2", peak: 0, step: -1 },
+      ],
+    });
+    expect(useHostStore.getState().clipsStep.stepseq1).toBe(3);
+    expect(useHostStore.getState().clipsStep.stepseq2).toBeUndefined();
+  });
+
   it("falls back to peak when the host omits rms so old snapshots still stream", () => {
     useHostStore.getState().applyHost({
       clips: [{ id: "stage1", peak: 0.5, peakL: 0.5, peakR: 0.1 }],
