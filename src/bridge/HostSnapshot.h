@@ -18,6 +18,8 @@ struct PresetCmd
 {
     juce::String action; // load | save | prev | next | new
     juce::String name;
+    juce::String id;
+    juce::String packId;
     juce::String author;
     juce::String category;
     juce::String tags;
@@ -59,6 +61,7 @@ bool applyKnobMeta (NeuroKoreAudioProcessor& proc, const KnobMetaCmd& c, juce::S
 juce::var paramsVar (NeuroKoreAudioProcessor& proc);
 juce::var hostVar (NeuroKoreAudioProcessor& proc);
 juce::var presetStateVar (NeuroKoreAudioProcessor& proc);
+juce::var applyLibraryCmd (NeuroKoreAudioProcessor& proc, const juce::var& cmd, juce::String& error);
 juce::var licenseVar (NeuroKoreAudioProcessor& proc);
 juce::var irVar (NeuroKoreAudioProcessor& proc);
 juce::var catalogVar();

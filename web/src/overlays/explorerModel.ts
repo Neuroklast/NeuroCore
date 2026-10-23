@@ -2,11 +2,15 @@ import type { ExplorerScope } from "./explorerSession";
 import facets from "../presets/presetFacets.json";
 
 export type ExplorerRow = {
+  id?: string;
+  packId?: string;
   name: string;
   category: string;
   author?: string;
   description?: string;
   factory?: boolean;
+  sourceType?: string;
+  origin?: string;
   tags?: string[];
   soundSources?: string[];
   processingTypes?: string[];
@@ -80,12 +84,35 @@ export const PRESET_NINE_ROW_BUDGET_PX = PRESET_ROW_PX * 9 + PRESET_LIST_HEADING
 
 export function scopeRows(rows: ExplorerRow[], scope: ExplorerScope): ExplorerRow[] {
   if (scope === "factory") {
-    return rows.filter((p) => p.factory !== false);
+    return rows.filter((p) => p.factory !== false && p.sourceType !== "pack");
   }
   if (scope === "user") {
-    return rows.filter((p) => p.factory === false);
+    return rows.filter((p) => p.factory === false && p.sourceType !== "pack");
+  }
+  if (scope.startsWith("pack:")) {
+    const packId = scope.slice(5);
+    return rows.filter((p) => p.packId === packId);
   }
   return rows;
+}
+
+export function libraryFolders(
+  rows: ExplorerRow[],
+  packs: Array<{ id: string; name: string }>,
+): Array<{ id: ExplorerScope | "favorites"; label: string; count: number }> {
+  const factory = rows.filter((p) => p.factory !== false && p.sourceType !== "pack").length;
+  const user = rows.filter((p) => p.factory === false && p.sourceType !== "pack").length;
+  return [
+    { id: "all", label: "All Presets", count: rows.length },
+    { id: "factory", label: "Factory", count: factory },
+    { id: "user", label: "My Presets", count: user },
+    { id: "favorites", label: "Favorites", count: -1 },
+    ...packs.map((pack) => ({
+      id: `pack:${pack.id}` as ExplorerScope,
+      label: pack.name,
+      count: rows.filter((p) => p.packId === pack.id).length,
+    })),
+  ];
 }
 
 export function explorerFolders(rows: ExplorerRow[]): Array<{ name: string; label: string; count: number }> {
@@ -160,6 +187,14 @@ export function resolveSelectedName(filtered: ExplorerRow[], selectedName: strin
     return selectedName;
   }
   return filtered[0]?.name ?? "";
+}
+
+export function resolveSelectedRow(
+  filtered: ExplorerRow[],
+  selectedId: string,
+  selectedName: string,
+): ExplorerRow | undefined {
+  return filtered.find((p) => (p.id && p.id === selectedId) || p.name === selectedName) ?? filtered[0];
 }
 
 export function selectedRow(filtered: ExplorerRow[], selectedName: string): ExplorerRow | undefined {

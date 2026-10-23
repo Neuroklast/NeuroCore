@@ -8,6 +8,7 @@
 #include "GraphModelTest.h"
 #include "ExpressionEvaluatorTest.h"
 #include "PresetManagerTest.h"
+#include "PresetLibraryPackTest.h"
 #include "SignalChainTest.h"
 #include "WaveShaperTest.h"
 #include "LookupTableSmootherTest.h"
@@ -64,6 +65,7 @@ int main (int argc, char* argv[])
   WaveShaperTest shaperTest;
   SignalChainTest chainTest;
   PresetManagerTest presetTest;
+  PresetLibraryPackTest presetLibraryPackTest;
   LookupTableSmootherTest smootherTest;
   DSPUtilsTest dspUtilsTest;
   NeuroKoreExtrasTest extrasTest;

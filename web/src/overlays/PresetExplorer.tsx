@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { getNativeFunction } from "../bridge/juce";
+import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
+import { analyzeImport, installImport, libraryAction, type PackPreview } from "../presets/presetLibrary";
+import { migrateStarKeys, rowKey, starKey } from "../presets/presetIdentity";
 import { findFactory } from "../presets/factoryCatalog";
 import { explorerScriptBlocks } from "./explorerDetail";
 import { useHostStore } from "../store/hostStore";
@@ -11,8 +13,10 @@ import {
   activeFilterChips,
   emptyExplorerCopy,
   filterExplorer,
+  libraryFolders,
   neighborName,
   resolveSelectedName,
+  resolveSelectedRow,
   rowSources,
   rowStyles,
   rowTypes,
@@ -26,12 +30,16 @@ import {
   typeFolders,
   type ActiveFilterChip,
   type ExplorerFacets,
+  type ExplorerRow,
 } from "./explorerModel";
 import { explorerKeyFlags, explorerKeyIntent, explorerKeyZone } from "./explorerKey";
 
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
+  const packs = useHostStore((s) => s.packs);
+  const pendingImport = useHostStore((s) => s.pendingImport);
   const current = useHostStore((s) => s.presetName);
+  const currentId = useHostStore((s) => s.presetId);
   const setOverlay = useHostStore((s) => s.setOverlay);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -46,7 +54,12 @@ export function PresetExplorer() {
   const [types, setTypes] = useState<string[]>(explorerSession.types);
   const [styles, setStyles] = useState<string[]>(explorerSession.styles);
   const [selectedName, setSelectedName] = useState(explorerSession.selectedName);
-  const [stars, setStars] = useState(readPresetStars);
+  const [selectedId, setSelectedId] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [view, setView] = useState<"browse" | "import" | "packs" | "builder">("browse");
+  const [preview, setPreview] = useState<PackPreview | null>(null);
+  const [importMsg, setImportMsg] = useState("");
+  const [stars, setStars] = useState(() => migrateStarKeys(readPresetStars(), useHostStore.getState().presets));
   const [loadBusy, setLoadBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [favOnly, setFavOnly] = useState(false);
@@ -70,6 +83,13 @@ export function PresetExplorer() {
       listRef.current?.querySelector(`[data-name="${CSS.escape(name)}"]`)?.scrollIntoView({ block: "nearest" });
     });
   };
+  const selectRow = (row: ExplorerRow | undefined) => {
+    if (! row) {
+      return;
+    }
+    setSelectedId(row.id ?? "");
+    persist({ selectedName: row.name });
+  };
 
   useEffect(() => {
     forgetHiddenCategory(explorerSession);
@@ -92,6 +112,26 @@ export function PresetExplorer() {
     return () => { loadGen.current += 1; };
   }, []);
 
+  useEffect(() => {
+    if (pendingImport.length === 0) {
+      return;
+    }
+    void analyzeImport(pendingImport).then((p) => {
+      setPreview(p);
+      setView("import");
+    });
+  }, [pendingImport]);
+
+  useEffect(() => {
+    return onNativeEvent("presetLibraryResult", (payload) => {
+      const rec = payload as { ok?: unknown; error?: unknown };
+      if (rec?.ok === false) {
+        setImportMsg(typeof rec.error === "string" && rec.error ? rec.error : "Could not export pack");
+      }
+    });
+  }, []);
+
+  const libs = useMemo(() => libraryFolders(presets, packs), [packs, presets]);
   const catalog = useMemo(() => scopeRows(presets, scope), [presets, scope]);
   const facets = useMemo<ExplorerFacets>(() => ({ sources, types, styles }), [sources, styles, types]);
   const folders = useMemo(() => sourceFolders(catalog, q, facets), [catalog, facets, q]);
@@ -99,23 +139,28 @@ export function PresetExplorer() {
   const stylesList = useMemo(() => styleFolders(catalog, q, facets), [catalog, facets, q]);
   const filtered = useMemo(() => {
     const rows = filterExplorer(catalog, q, "", facets);
-    return favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+    return favOnly ? rows.filter((p) => isPresetFavorite(starKey(p), stars)) : rows;
   }, [catalog, facets, favOnly, q, stars]);
   const chips = useMemo(() => activeFilterChips(facets), [facets]);
   const emptyCopy = emptyExplorerCopy(catalog.length, filtered.length, Boolean(q.trim()) || chips.length > 0 || favOnly);
-  const row = selectedRow(filtered, selectedName);
-  const fav = row ? isPresetFavorite(row.name, stars) : false;
+  const row = resolveSelectedRow(filtered, selectedId, selectedName) ?? selectedRow(filtered, selectedName);
+  const favKey = row ? starKey(row) : "";
+  const fav = favKey ? isPresetFavorite(favKey, stars) : false;
   const blocks = useMemo(
     () => explorerScriptBlocks(findFactory(row?.name ?? "")?.script ?? ""),
     [row?.name],
   );
 
-  const load = (name: string) => {
+  const load = (row: ExplorerRow | string) => {
+    const name = typeof row === "string" ? row : row.name;
+    const id = typeof row === "string" ? "" : (row.id ?? "");
+    const packId = typeof row === "string" ? "" : (row.packId ?? "");
     const mine = ++loadGen.current;
     persist({ selectedName: name });
+    setSelectedId(id);
     setLoadBusy(true);
     setLoadError("");
-    void requestPresetAction({ action: "load", name }).then((ok) => {
+    void requestPresetAction({ action: "load", name, id, packId }).then((ok) => {
       if (mine !== loadGen.current) {
         return;
       }
@@ -147,13 +192,16 @@ export function PresetExplorer() {
       return;
     }
     if (intent === "move-down" || intent === "move-up") {
-      const next = neighborName(filtered, selectedName, intent === "move-down" ? "ArrowDown" : "ArrowUp");
-      persist({ selectedName: next });
+      const from = row?.name ?? selectedName;
+      const next = neighborName(filtered, from, intent === "move-down" ? "ArrowDown" : "ArrowUp");
+      const nextRow = filtered.find((p) => p.name === next && (! selectedId || p.id === selectedId || p.name !== from))
+        ?? filtered.find((p) => p.name === next);
+      selectRow(nextRow);
       showRow(next);
       return;
     }
     if (intent === "load" && row) {
-      load(row.name);
+      load(row);
     }
   };
 
@@ -190,7 +238,7 @@ export function PresetExplorer() {
     }
   };
 
-  const listed = (rows: typeof catalog) => favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+  const listed = (rows: typeof catalog) => favOnly ? rows.filter((p) => isPresetFavorite(starKey(p), stars)) : rows;
   const pickSource = (name: string) => {
     const nextSources = name === "" ? [] : toggleFacet(sources, name);
     const nextFacets = { sources: nextSources, types, styles };
@@ -250,7 +298,35 @@ export function PresetExplorer() {
       </div>
       <div className="nk-preset-body">
         <aside className="nk-preset-folders">
-          <div className="nk-archive-label mb-1 shrink-0">SOURCE</div>
+          <div className="nk-archive-label mb-1 shrink-0">LIBRARY</div>
+          <div className="nk-preset-folder-list" style={{ flex: "0 0 auto", maxHeight: 180 }}>
+            {libs.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                data-library={f.id}
+                aria-pressed={f.id === "favorites" ? favOnly : scope === f.id}
+                className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
+                  (f.id === "favorites" ? favOnly : scope === f.id) ? "bg-surface-high" : ""
+                }`}
+                onClick={() => {
+                  if (f.id === "favorites") {
+                    setFavOnly((on) => ! on);
+                    return;
+                  }
+                  setFavOnly(false);
+                  const nextScope = f.id as ExplorerScope;
+                  const nextIn = scopeRows(presets, nextScope);
+                  const next = listed(filterExplorer(nextIn, q, "", facets));
+                  persist({ scope: nextScope, selectedName: resolveSelectedName(next, selectedName) });
+                }}
+              >
+                <span>{f.label}</span>
+                <span className="text-muted">{f.count >= 0 ? f.count : ""}</span>
+              </button>
+            ))}
+          </div>
+          <div className="nk-archive-label mb-1 mt-2 shrink-0">SOURCE</div>
           <div
             ref={folderRef}
             className="nk-preset-folder-list"
@@ -357,23 +433,28 @@ export function PresetExplorer() {
           >
             {filtered.map((p) => (
               <div
-                key={p.name}
-                id={`nk-preset-opt-${encodeURIComponent(p.name)}`}
+                key={rowKey(p)}
+                id={`nk-preset-opt-${encodeURIComponent(rowKey(p))}`}
                 data-name={p.name}
-                data-selected={p.name === (row?.name ?? "")}
-                data-loaded={p.name === current}
+                data-id={p.id ?? ""}
+                data-selected={rowKey(p) === (row ? rowKey(row) : "")}
+                data-loaded={(p.id && p.id === currentId) || (! currentId && p.name === current)}
                 className="nk-preset-row"
                 role="option"
-                title={p.name}
-                aria-selected={p.name === (row?.name ?? "")}
-                onClick={() => {
-                  persist({ selectedName: p.name });
+                title={p.origin ? `${p.name} — ${p.origin}` : p.name}
+                aria-selected={rowKey(p) === (row ? rowKey(row) : "")}
+                onClick={(e) => {
+                  if (e.ctrlKey || e.metaKey) {
+                    const key = rowKey(p);
+                    setPicked((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
+                  }
+                  selectRow(p);
                   listRef.current?.focus();
                 }}
-                onDoubleClick={() => load(p.name)}
+                onDoubleClick={() => load(p)}
               >
                 <span>{p.name}</span>
-                {p.name === current ? <span className="nk-preset-loaded">LOADED</span> : null}
+                {(p.id && p.id === currentId) || (! currentId && p.name === current) ? <span className="nk-preset-loaded">LOADED</span> : null}
               </div>
             ))}
             {filtered.length === 0 ? <p className="p-5 text-muted">{emptyCopy}</p> : null}
@@ -386,13 +467,13 @@ export function PresetExplorer() {
                 <div className="nk-archive-label">SELECTED PRESET</div>
                 <div className="nk-preset-detail-name" title={row.name}>{row.name}</div>
                 <div className="nk-preset-detail-meta">
-                  <span>{row.factory === false ? "User" : "Factory"}</span>
+                  <span>{row.origin || (row.factory === false ? "User" : "Factory")}</span>
                   <button
                     type="button"
                     className="nk-preset-fav"
                     aria-pressed={fav}
                     aria-label={fav ? `Unfavorite ${row.name}` : `Favorite ${row.name}`}
-                    onClick={() => setStars(togglePresetStar(row.name, stars))}
+                    onClick={() => setStars(togglePresetStar(favKey, stars))}
                   >
                     {fav ? "★" : "☆"}
                   </button>
@@ -453,7 +534,7 @@ export function PresetExplorer() {
             className="nk-clip on nk-preset-load"
             disabled={! row || loadBusy}
             aria-busy={loadBusy}
-            onClick={() => row && load(row.name)}
+            onClick={() => row && load(row)}
           >
             {loadBusy ? "Loading…" : "LOAD PRESET"}
           </button>
@@ -486,12 +567,121 @@ export function PresetExplorer() {
           {saveErr ? <span className="w-full text-[12px] text-accent">{saveErr}</span> : null}
         </div>
       ) : null}
-      <div className="nk-preset-foot">
+      {view === "import" && preview ? (
+        <div className="flex shrink-0 flex-col gap-2 border border-panel p-2 text-[12px]">
+          <div className="nk-archive-label">IMPORT</div>
+          <div>{preview.name || "Preset"} — {preview.author}</div>
+          <div className="text-muted">{preview.description}</div>
+          <div>{preview.presetCount} presets{preview.version ? ` · v${preview.version}` : ""}</div>
+          {preview.warnings.map((w) => <div key={w} className="text-accent">{w}</div>)}
+          {preview.error ? <div className="text-accent">{preview.error}</div> : null}
+          {importMsg ? <div>{importMsg}</div> : null}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="nk-clip on"
+              disabled={! preview.ok || ! preview.source}
+              onClick={() => {
+                const paths = useHostStore.getState().pendingImport;
+                void installImport(paths.length ? paths : [preview.source]).then((r) => {
+                  setImportMsg(r.ok ? `${r.imported} presets installed successfully.` : r.error);
+                  if (r.ok) {
+                    useHostStore.setState({ pendingImport: [] });
+                    setView("browse");
+                    setPreview(null);
+                  }
+                });
+              }}
+            >
+              Install
+            </button>
+            <button type="button" className="nk-clip" onClick={() => {
+              useHostStore.setState({ pendingImport: [] });
+              setView("browse");
+              setPreview(null);
+            }}>Cancel</button>
+          </div>
+        </div>
+      ) : null}
+      {view === "packs" ? (
+        <div className="flex shrink-0 flex-col gap-2 border border-panel p-2 text-[12px]">
+          <div className="nk-archive-label">PACK MANAGER</div>
+          {packs.length === 0 ? <div className="text-muted">No packs installed.</div> : packs.map((pack) => (
+            <div key={pack.id} className="flex items-center justify-between gap-2">
+              <span>{pack.name}</span>
+              <span className="flex gap-1">
+                <button type="button" className="nk-clip" onClick={() => persist({ scope: `pack:${pack.id}` })}>Open</button>
+                <button
+                  type="button"
+                  className="nk-clip"
+                  onClick={() => void libraryAction({ action: "removePack", packId: pack.id })}
+                >
+                  Uninstall
+                </button>
+              </span>
+            </div>
+          ))}
+          <button type="button" className="nk-clip" onClick={() => void libraryAction({ action: "rescan" })}>Rescan Library</button>
+          <button type="button" className="nk-clip" onClick={() => setView("browse")}>Back</button>
+        </div>
+      ) : null}
+      {view === "builder" ? (
+        <div className="flex shrink-0 flex-col gap-2 border border-panel p-2 text-[12px]">
+          <div className="nk-archive-label">PACK BUILDER</div>
+          <div className="text-muted">{picked.length} selected. Ctrl-click rows, then export.</div>
+          <button
+            type="button"
+            className="nk-clip on"
+            disabled={picked.length === 0 || ! hasJuceBridge()}
+            onClick={() => void getNativeFunction("pickFile")({
+              kind: "exportPack",
+              presetIds: picked,
+              name: "My Pack",
+            })}
+          >
+            Export Pack
+          </button>
+          <button type="button" className="nk-clip" onClick={() => setView("browse")}>Back</button>
+        </div>
+      ) : null}
+      <div
+        className="nk-preset-foot"
+        onDragOver={(e) => { e.preventDefault(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const files = [...e.dataTransfer.files].map((f) => (f as File & { path?: string }).path).filter(Boolean) as string[];
+          if (files.length > 0) {
+            useHostStore.getState().offerImport(files);
+          }
+        }}
+      >
         <span className="text-muted">{catalog.length} PRESETS AVAILABLE</span>
-        <div className="flex gap-2">
+        {importMsg && view !== "import" ? <span className="text-accent">{importMsg}</span> : null}
+        <div className="flex flex-wrap gap-2">
           <button type="button" className="nk-clip" onClick={openSave}>Save As…</button>
-          <button type="button" className="nk-clip" onClick={() => void requestPresetAction({ action: "new" })}>New Blank</button>
-          <button type="button" className="nk-clip" onClick={() => void getNativeFunction("pickFile")({ kind: "preset" })}>Import</button>
+          <button type="button" className="nk-clip" onClick={() => void requestPresetAction({ action: "new" })}>New Preset</button>
+          <button
+            type="button"
+            className="nk-clip"
+            onClick={() => void getNativeFunction("pickFile")({ kind: "preset" })}
+          >
+            Import
+          </button>
+          <button
+            type="button"
+            className="nk-clip"
+            disabled={! row}
+            onClick={() => {
+              if (! row) {
+                return;
+              }
+              void getNativeFunction("pickFile")({ kind: "exportPreset", name: row.name, author: row.author ?? "", category: row.category });
+            }}
+          >
+            Export
+          </button>
+          <button type="button" className="nk-clip" onClick={() => setView("builder")}>New Pack</button>
+          <button type="button" className="nk-clip" onClick={() => setView("packs")}>Pack Manager</button>
         </div>
       </div>
     </div>

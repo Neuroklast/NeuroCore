@@ -707,6 +707,19 @@ private:
                           juce::String ("Mid"));
         }
 
+        beginTest ("header step keeps two same-name ids");
+        {
+            std::vector<presetstep::Item> items {
+                { "Heavy Drive", "Distortion", "pack-a" },
+                { "Heavy Drive", "Distortion", "pack-b" }
+            };
+            presetstep::sortItems (items);
+            expectEquals (items[(size_t) presetstep::indexAfterStep (items, "Heavy Drive", "", 1, "pack-a")].id,
+                          juce::String ("pack-b"));
+            expectEquals (items[(size_t) presetstep::indexAfterStep (items, "Heavy Drive", "", 1, "pack-b")].id,
+                          juce::String ("pack-a"));
+        }
+
         beginTest ("stepPreset stays in a category then jumps to the next folder");
         {
             auto& lib = FactoryPresetLibrary::getInstance();

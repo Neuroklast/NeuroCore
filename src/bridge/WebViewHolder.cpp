@@ -1,7 +1,9 @@
 #include "WebViewHolder.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"
+#include "../utils/FactoryPresetLibrary.h"
 #include "../utils/PresetLibrary.h"
+#include "../utils/PresetPack.h"
 #include "../utils/UiSettings.h"
 #include "CompileSession.h"
 #include "ComparisonBank.h"
@@ -625,6 +627,19 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 pushHost();
                                 complete (juce::var (true));
                             })
+                        .withNativeFunction ("presetLibrary",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                juce::String error;
+                                const auto result = applyLibraryCmd (proc, args.size() ? args[0] : juce::var(), error);
+                                if (error.isNotEmpty())
+                                {
+                                    complete (failVar (error));
+                                    return;
+                                }
+                                pushHost();
+                                complete (result.isVoid() ? juce::var (true) : result);
+                            })
                         .withNativeFunction ("setUi",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {
@@ -727,8 +742,8 @@ struct WebViewHolder::Impl : private juce::Timer,
                                         proc.importProductLicense (f);
                                     pushHost();
                                 }
-                                else
-                                    pickFile (kind, slot);
+                                 else
+                                    pickFile (kind, slot, args.size() ? args[0] : juce::var());
                                 complete (juce::var (true));
                             })
                         .withNativeFunction ("irSlot",
@@ -866,34 +881,95 @@ struct WebViewHolder::Impl : private juce::Timer,
         browser->emitEventIfBrowserIsVisible ("catalog", catalogVar());
     }
 
-    void pickFile (const juce::String& kind, const juce::String& slot)
+    void offerImport (const juce::StringArray& files)
+    {
+        juce::Array<juce::var> paths;
+        for (const auto& p : files)
+            if (p.isNotEmpty())
+                paths.add (p);
+        if (paths.isEmpty() || browser == nullptr)
+            return;
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("paths", paths);
+        browser->emitEventIfBrowserIsVisible ("presetImportOffer", juce::var (o));
+    }
+
+    void pickFile (const juce::String& kind, const juce::String& slot, const juce::var extra = {})
     {
         const bool lic = kind.equalsIgnoreCase ("license");
         const bool preset = kind.equalsIgnoreCase ("preset");
-        const char* title = lic ? "Install license" : preset ? "Import preset" : "Load IR";
-        const char* filter = lic ? "*.lic" : preset ? "*.nrk;*.zip" : "*.wav;*.aif;*.aiff;*.flac";
+        const bool exportPreset = kind.equalsIgnoreCase ("exportPreset");
+        const bool exportPack = kind.equalsIgnoreCase ("exportPack");
+        const char* title = lic ? "Install license"
+            : exportPreset ? "Export preset"
+            : exportPack ? "Export pack"
+            : preset ? "Import preset" : "Load IR";
+        const char* filter = lic ? "*.lic"
+            : exportPreset ? "*.nrk"
+            : exportPack ? "*.nrkpack"
+            : preset ? "*.nrk;*.zip;*.nrkpack" : "*.wav;*.aif;*.aiff;*.flac";
         fileChooser = std::make_unique<juce::FileChooser> (title, juce::File(), filter);
-        const int flags = juce::FileBrowserComponent::openMode
-                        | juce::FileBrowserComponent::canSelectFiles;
-        fileChooser->launchAsync (flags, [this, lic, preset, slot] (const juce::FileChooser& fc)
+        int flags = juce::FileBrowserComponent::canSelectFiles;
+        if (exportPreset || exportPack)
+            flags |= juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting;
+        else
+            flags |= juce::FileBrowserComponent::openMode
+                   | juce::FileBrowserComponent::canSelectMultipleItems;
+        fileChooser->launchAsync (flags, [this, lic, preset, exportPreset, exportPack, slot, extra] (const juce::FileChooser& fc)
         {
             const auto f = fc.getResult();
-            if (! f.existsAsFile())
+            if (f == juce::File())
                 return;
             if (lic)
-                proc.importProductLicense (f);
+            {
+                if (f.existsAsFile())
+                    proc.importProductLicense (f);
+            }
+            else if (exportPreset)
+            {
+                const auto name = extra.getProperty ("name", proc.getCurrentPresetName()).toString();
+                proc.presetManager.savePreset (f, name.isNotEmpty() ? name : juce::String ("Preset"),
+                                               extra.getProperty ("author", "").toString(),
+                                               extra.getProperty ("category", "").toString());
+            }
+            else if (exportPack)
+            {
+                juce::StringArray ids;
+                const auto raw = extra.getProperty ("presetIds", juce::var());
+                if (raw.isArray())
+                    for (int i = 0; i < raw.size(); ++i)
+                        ids.add (raw[i].toString());
+                if (proc.presetLibraryDirty)
+                {
+                    proc.presetLibrary.rebuild (proc.presetManager, FactoryPresetLibrary::getInstance(),
+                                                PresetLibrary::userPresetRoot());
+                    proc.presetLibraryDirty = false;
+                }
+                std::vector<juce::File> files;
+                for (const auto& id : ids)
+                    if (auto* e = proc.presetLibrary.findById (id))
+                        if (e->filePath.isNotEmpty())
+                            files.push_back (juce::File (e->filePath));
+                PackManifest m;
+                m.name = extra.getProperty ("name", "Pack").toString();
+                m.author = extra.getProperty ("author", "").toString();
+                juce::String err;
+                if (! PresetPack::exportNrkpack (files, f, m, err) && browser != nullptr)
+                {
+                    auto* o = new juce::DynamicObject();
+                    o->setProperty ("ok", false);
+                    o->setProperty ("error", err.isNotEmpty() ? err : juce::String ("Could not export pack"));
+                    browser->emitEventIfBrowserIsVisible ("presetLibraryResult", juce::var (o));
+                }
+            }
             else if (preset)
             {
-                PresetLibrary::importPaths (juce::StringArray { f.getFullPathName() });
-                if (PresetLibrary::isNrkFile (f) && proc.presetManager.loadPreset (f))
-                {
-                    PresetManager::Info info;
-                    proc.presetManager.readInfo (f, info);
-                    proc.setCurrentPresetName (
-                        info.name.isNotEmpty() ? info.name : f.getFileNameWithoutExtension());
-                    if (info.category.isNotEmpty())
-                        proc.setLastPresetBrowserCategory (info.category);
-                }
+                juce::StringArray paths;
+                for (const auto& picked : fc.getResults())
+                    paths.add (picked.getFullPathName());
+                if (paths.isEmpty() && f.existsAsFile())
+                    paths.add (f.getFullPathName());
+                offerImport (paths);
             }
             else
             {
@@ -1178,6 +1254,15 @@ void WebViewHolder::pushHost()
 {
 #if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
     impl->pushHost();
+#endif
+}
+
+void WebViewHolder::importDroppedFiles (const juce::StringArray& paths)
+{
+#if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
+    impl->offerImport (paths);
+#else
+    juce::ignoreUnused (paths);
 #endif
 }
 

@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "PresetManager.h"
+#include "PresetIdentity.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"
 #include "Log.h"
@@ -95,9 +96,20 @@ bool PresetManager::savePreset(const juce::File& file,
 {
     json meta;
 
+    juce::String id;
+    Info existing;
+    if (file.existsAsFile() && readInfo (file, existing) && existing.id.isNotEmpty()
+        && ! PresetIdentity::isFactoryId (existing.id))
+        id = existing.id;
+    else
+        id = PresetIdentity::newUuid();
+
     meta[kAttrName] = name.toStdString();
     meta[kAttrFileName] = file.getFileName().toStdString();
     meta[kAttrPluginName] = JucePlugin_Name;
+    meta["Id"] = id.toStdString();
+    meta["FormatVersion"] = kVersion;
+    meta["MinPluginVersion"] = std::string (PLUGIN_VERSION);
 
     meta["Author"] = (author.isNotEmpty() ? author : juce::String (JucePlugin_Manufacturer)).toStdString();
     if (category.isNotEmpty())
@@ -249,6 +261,10 @@ bool PresetManager::loadPreset(const juce::File& file)
     if (!decrypt(stateData, plain))
         return false;
 
+    juce::MemoryBlock previous;
+    processor.getStateInformation (previous);
+    const auto previousName = processor.getCurrentPresetName();
+    const auto previousId = processor.getCurrentPresetId();
     processor.setStateInformation(plain.getData(), (int)plain.getSize());
 
     std::array<juce::String, Config::kNumUserParams> namesFromState;
@@ -261,6 +277,9 @@ bool PresetManager::loadPreset(const juce::File& file)
         if (!processor.applyFormula(dscrScript, err))
         {
             logError("Failed to apply DSCR script while loading preset: " + err);
+            processor.setStateInformation (previous.getData(), (int) previous.getSize());
+            processor.setCurrentPresetName (previousName);
+            processor.setCurrentPresetId (previousId);
             return false;
         }
 
@@ -324,15 +343,31 @@ bool PresetManager::readInfo (const juce::File& file, Info& info) const
             if (n.isNotEmpty())
                 info.name = n;
         }
+        if (metaJson.contains ("Id") && metaJson["Id"].is_string())
+            info.id = juce::String (metaJson["Id"].get<std::string>()).trim();
+        if (metaJson.contains ("PackId") && metaJson["PackId"].is_string())
+            info.packId = juce::String (metaJson["PackId"].get<std::string>()).trim();
         if (metaJson.contains ("Author") && metaJson["Author"].is_string())
             info.author = juce::String (metaJson["Author"].get<std::string>()).trim();
         if (metaJson.contains ("Category") && metaJson["Category"].is_string())
             info.category = juce::String (metaJson["Category"].get<std::string>()).trim();
+        if (metaJson.contains ("Description") && metaJson["Description"].is_string())
+            info.description = juce::String (metaJson["Description"].get<std::string>()).trim();
+        if (metaJson.contains ("MinPluginVersion") && metaJson["MinPluginVersion"].is_string())
+            info.minimumPluginVersion = juce::String (metaJson["MinPluginVersion"].get<std::string>()).trim();
+        if (metaJson.contains ("FormatVersion") && metaJson["FormatVersion"].is_number_integer())
+            info.formatVersion = metaJson["FormatVersion"].get<int>();
         if (metaJson.contains ("Tags") && metaJson["Tags"].is_array())
         {
             for (const auto& t : metaJson["Tags"])
                 if (t.is_string())
                     info.tags.add (juce::String (t.get<std::string>()).trim());
+        }
+        if (metaJson.contains ("RequiredInputs") && metaJson["RequiredInputs"].is_array())
+        {
+            for (const auto& t : metaJson["RequiredInputs"])
+                if (t.is_string())
+                    info.requiredInputs.add (juce::String (t.get<std::string>()).trim());
         }
         return true;
     }

@@ -11,6 +11,7 @@ struct Item
 {
     juce::String name;
     juce::String category;
+    juce::String id;
 };
 
 inline void sortItems (std::vector<Item>& items)
@@ -20,7 +21,10 @@ inline void sortItems (std::vector<Item>& items)
         const int c = a.category.compareNatural (b.category);
         if (c != 0)
             return c < 0;
-        return a.name.compareNatural (b.name) < 0;
+        const int n = a.name.compareNatural (b.name);
+        if (n != 0)
+            return n < 0;
+        return a.id.compareNatural (b.id) < 0;
     });
 }
 
@@ -28,19 +32,28 @@ inline void sortItems (std::vector<Item>& items)
 inline int indexAfterStep (const std::vector<Item>& sorted,
                            const juce::String& current,
                            const juce::String& selectedCat,
-                           int delta) noexcept
+                           int delta,
+                           const juce::String& currentId = {}) noexcept
 {
     const int n = (int) sorted.size();
     if (n <= 0 || delta == 0)
         return -1;
 
     int cur = -1;
-    for (int i = 0; i < n; ++i)
-        if (sorted[(size_t) i].name == current)
-        {
-            cur = i;
-            break;
-        }
+    if (currentId.isNotEmpty())
+        for (int i = 0; i < n; ++i)
+            if (sorted[(size_t) i].id == currentId)
+            {
+                cur = i;
+                break;
+            }
+    if (cur < 0)
+        for (int i = 0; i < n; ++i)
+            if (sorted[(size_t) i].name == current)
+            {
+                cur = i;
+                break;
+            }
 
     const auto cat = selectedCat.trim();
     if (cat.isNotEmpty())

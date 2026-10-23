@@ -134,6 +134,9 @@ set(SOURCE_FILES
     src/dsp/InputRouter.cpp
     src/utils/PresetManager.cpp
     src/utils/PresetLibrary.cpp
+    src/utils/PresetIdentity.cpp
+    src/utils/PresetPack.cpp
+    src/utils/PresetLibraryIndex.cpp
     src/utils/FactoryPresetLibrary.cpp
     src/utils/FormulaQuality.cpp
     src/utils/AudioDiagnostics.cpp
@@ -387,6 +390,7 @@ target_sources(NeuroKoreTests PRIVATE
     tests/WaveShaperTest.h
     tests/DSPUtilsTest.h
     tests/PresetManagerTest.h
+    tests/PresetLibraryPackTest.h
     tests/NeuroKoreExtrasTest.h
     tests/LicenseTest.h
   tests/DemoClockTest.h

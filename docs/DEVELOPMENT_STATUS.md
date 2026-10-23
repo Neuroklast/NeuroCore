@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `main`
+**Branch:** `feat/preset-library-pack-manager`
+
+## Preset library and packs (2026-10-23)
+
+Presets keep stable ids (`factory:Name` or a UUID in META). Display names may collide across packs. Legacy `.nrk` files without Id get a path-keyed catalog entry and are not rewritten. `PresetLibraryIndex` rebuilds only when the library changes; search of 5000 synthetic rows stays under 50 ms. `.nrkpack` is zip + `manifest.json` with sha256; `pack.json` and loose zip still import. Zip slip, absolute paths, symlinks, oversize entries and checksum mismatch are refused. Install stages then commits; a failed DSCR apply restores the previous processor state. Import does not load the playing sound. Explorer has Library / Pack Manager / New Pack. Native: PresetLibraryPackTest 78, PresetManagerTest 81, HostSnapshot 107. Focused web identity/explorer/actions 31 pass.
 
 ## Circuit connection integrity follow-up (2026-10-23)
 
@@ -37,7 +41,6 @@ Unit/Circuit now uses a disposable 220 ms SVG handoff anchored to the existing h
 Host connectors now occupy a reserved left column. MIDI/SC use 96 px housings when their physical ports allow it, instead of extending below the full DSP hull. Arrange/Compact reserve the column before routing; Reroute does not translate chips. Repeated geometry/factory routing and browser host-column checks pass.
 
 Still open: complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
-
 
 ## UI/UX stabilization (2026-10-23)
 

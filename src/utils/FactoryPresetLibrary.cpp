@@ -1,4 +1,5 @@
 #include "FactoryPresetLibrary.h"
+#include "PresetIdentity.h"
 #include "PresetSearch.h"
 #include "../core/PluginProcessor.h"
 #include "../core/EffectParameters.h"
@@ -365,7 +366,9 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
 
     // Name first — applyFormula notifies the editor synchronously.
     const auto previousName = processor.getCurrentPresetName();
+    const auto previousId = processor.getCurrentPresetId();
     processor.setCurrentPresetName (preset.name);
+    processor.setCurrentPresetId (PresetIdentity::factoryId (preset.name));
 
     // Positions stay out of the factory text. Circuit Auto-arrange runs at
     // the current zoom when the editor loads the script (no @x,y yet).
@@ -375,6 +378,7 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
     if (! processor.applyFormula (script, error, false))
     {
         processor.setCurrentPresetName (previousName);
+        processor.setCurrentPresetId (previousId);
         return false;
     }
 
@@ -385,6 +389,7 @@ bool FactoryPresetLibrary::applyPreset(NeuroKoreAudioProcessor& processor,
     }
 
     processor.setCurrentPresetName (preset.name);
+    processor.setCurrentPresetId (PresetIdentity::factoryId (preset.name));
     processor.setLastPresetBrowserCategory (preset.category);
 
     auto& apvts = processor.apvts;
