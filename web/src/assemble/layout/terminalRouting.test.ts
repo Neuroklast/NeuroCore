@@ -9,7 +9,7 @@ it("routes host sidechain and serial audio without shared conductor segments", a
  for (const length of [2,4,8,12]) {
   const script = Array.from({length},(_,i)=>`comp${i+1}: threshold = -18; source = sidechain`).join("\n");
   const graph = graphToLayout(hydrateBoard(parseDslSketch(script).doc));
-  const layout = await compact(graph.nodes,graph.edges,{w:1440,h:640});
+  const layout = await compact(graph.nodes,graph.edges,{w:1440,h:640}).catch(error => { throw new Error(`chain ${length}: ${error.message}`); });
   const spans = new Map<string,{lo:number;hi:number;id:string}[]>();
   for (const [id,path] of Object.entries(layout.edgePaths)) {
    const pts = parseRoutePath(path);

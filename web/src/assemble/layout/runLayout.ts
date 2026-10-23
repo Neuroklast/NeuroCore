@@ -203,7 +203,7 @@ export async function runLayout(
     }]))
     : packRows(freeNodes, freeEdges, view));
   pinHostTerminals(placed, pinNodes);
-  if(mode!=="REROUTE")reserveHostColumn(placed);
+  if(mode!=="REROUTE")reserveHostColumn(placed, new Set(edges.filter(e => ["IN", "MIDI", "SC"].includes(e.source)).map(e => e.net ?? e.id)).size);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const edgePaths: Record<string, string> = {};
