@@ -34,3 +34,9 @@ Full suite before a user-facing binary.
 2. Arrange the smallest script that can violate it.
 3. `expect (contract, dump)`.
 4. If it is still an open screenshot bug, put it in the soft list and in DEVELOPMENT_STATUS — do not mark the Circuit checklist `[x]`.
+
+## Native board endpoint audit
+
+`tests/dsp/NativeGraphExport.cpp` accepts the generated factory catalog JSON, parses each script with the production GraphModel, verifies its AstJson semantic round trip and writes `[{name,ast}]` JSON to stdout. Build it with GraphModel.cpp, DSLParser.cpp, AstJson.cpp and JUCE core using `tests/dsp/core-only/JuceHeader.h`. Newer JUCE releases also require juce_core_CompilationTime.cpp.
+
+Set `NK_NATIVE_AST_AUDIT` to the exported JSON path and run `npx vitest run src/assemble/nativeAst.audit.test.ts` from `web`. This optional integration audit checks actual host AST endpoint resolution; it is skipped when the export is absent. The always-on factoryConnectionIntegrity contracts independently check the browser sketch.
