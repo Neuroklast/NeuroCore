@@ -49,6 +49,7 @@ import {
   type ContainmentPose,
 } from "./containmentModel";
 import { createContainment } from "./containmentPass";
+import { GL_RESTORE_MS, glOnLost, glOnRestoreTimeout, glOnRestored, glShouldDraw, type GlLife } from "./glLife";
 
 const PIXEL_BUDGET = 4.5e6;
 const INTRO_SECONDS = 2.2;
@@ -431,6 +432,8 @@ type Arc = { start: number; span: number; curl: number; life: number; duration: 
 export function BallGl({ fallback }: { fallback: ReactNode }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
+  const [epoch, setEpoch] = useState(0);
+  const skipLose = useRef(false);
   const brushOn = typeof window !== "undefined"
     && /(?:^|[?&])nkbrush=1(?:&|$)/.test(window.location.search);
 
@@ -687,7 +690,7 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     };
 
     const frame = (now: number) => {
-      if (! alive) {
+      if (! alive || ! glShouldDraw(life)) {
         return;
       }
       gpu?.poll();
@@ -1036,11 +1039,32 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       perfEnd("ball");
     };
 
+    let life: GlLife = "live";
+    let restoreTimer = 0;
     const onLost = (e: Event) => {
       e.preventDefault();
-      setFailed(true);
+      const next = glOnLost(life);
+      life = next.life;
+      if (next.waitMs > 0) {
+        window.clearTimeout(restoreTimer);
+        restoreTimer = window.setTimeout(() => {
+          life = glOnRestoreTimeout(life);
+          if (life === "dead") {
+            setFailed(true);
+          }
+        }, next.waitMs);
+      }
+    };
+    const onRestored = () => {
+      if (glOnRestored(life) !== "live") {
+        return;
+      }
+      window.clearTimeout(restoreTimer);
+      skipLose.current = true;
+      setEpoch((n) => n + 1);
     };
     canvas.addEventListener("webglcontextlost", onLost, false);
+    canvas.addEventListener("webglcontextrestored", onRestored, false);
     const onBrush = (ev: PointerEvent) => {
       if (! brush || width < 2 || height < 2) {
         return;
@@ -1073,8 +1097,10 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
 
     return () => {
       alive = false;
+      window.clearTimeout(restoreTimer);
       unsubscribe();
       canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
       canvas.removeEventListener("pointermove", onBrush);
       gpu?.dispose();
       disposeDust();
@@ -1091,9 +1117,12 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
       if (stir) {
         gl.deleteProgram(stir);
       }
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      if (! skipLose.current) {
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+      }
+      skipLose.current = false;
     };
-  }, []);
+  }, [epoch]);
 
   if (failed) {
     return <>{fallback}</>;
