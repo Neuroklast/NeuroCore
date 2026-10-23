@@ -408,6 +408,7 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("buf", proc.getHostBlockSize());
     root->setProperty ("bpm", proc.getEffectiveBpm());
     root->setProperty ("tempoSource", proc.isHostTempo() ? "HOST" : "USER");
+    root->setProperty ("standalone", proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
     root->setProperty ("os", os);
     root->setProperty ("motion", juce::String (UiSettings::motionKey (UiSettings::get().motion())));
     root->setProperty ("cables", UiSettings::get().cableWaveform() ? "wave" : "dots");
