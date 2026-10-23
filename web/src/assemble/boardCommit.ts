@@ -34,6 +34,11 @@ function pushAst(nextEdges: AstEdge[]): void {
   }, { updateScript: false });
 }
 
+function reportRoutingError(error: unknown): void {
+  useAstStore.setState({ diagnostics: [{line: 1, column: 1,
+    message: error instanceof Error ? error.message : "Connections could not be routed."}] });
+}
+
 let layoutBusyOwner = 0;
 
 export async function layoutBoard(
@@ -87,6 +92,9 @@ export async function layoutBoard(
       const fitted = useBoardStore.getState();
       useBoardStore.getState().setCamera(fitBoardCamera(fitted, view));
     }
+  } catch (error) {
+    reportRoutingError(error);
+    throw error;
   } finally {
     if (owns && layoutBusyOwner === token) {
       useBoardStore.setState({ layoutBusy: false });
@@ -107,7 +115,7 @@ export function rerouteBoard(): void {
       routes[id] = parseRoutePath(d);
     }
     useBoardStore.getState().applyLayout(laid.nodes, routes, epoch);
-  }).catch(() => undefined);
+  }).catch(reportRoutingError);
 }
 
 /** Native emits the new AST and script only after a successful graph compile. */

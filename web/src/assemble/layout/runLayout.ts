@@ -49,7 +49,8 @@ function jackAt(
   side: "in" | "out",
 ): { pt: Pt; face: LayoutFace } {
   const list = side === "out" ? node?.outs : node?.ins;
-  const port = list?.find((p) => p.id === jackId) ?? list?.[0];
+  const port = list?.find((p) => p.id === jackId);
+  if (!port) throw new Error(`Missing ${side} contact ${node?.id ?? "unknown"}:${jackId}`);
   const face = resolvedFace(port, side);
   const local = resolvedLocal(port, placed.w, placed.h, face);
   return { pt: globalPort({ x: placed.x, y: placed.y }, local), face };
@@ -182,6 +183,14 @@ export async function runLayout(
   const pinIds = new Set(pinNodes.map((n) => n.id));
   const freeEdges = edges.filter((e) => ! pinIds.has(e.source) && ! pinIds.has(e.target));
   const extraEdges = edges.filter((e) => pinIds.has(e.source) || pinIds.has(e.target));
+  const model = new Map(nodes.map((node) => [node.id, node]));
+  for (const edge of edges) {
+    if (!model.has(edge.source) || !model.has(edge.target)) {
+      throw new Error(`Missing routing node for connection ${edge.id}`);
+    }
+    jackAt({x:0,y:0,w:model.get(edge.source)!.w,h:model.get(edge.source)!.h},model.get(edge.source),edge.fromJack,"out");
+    jackAt({x:0,y:0,w:model.get(edge.target)!.w,h:model.get(edge.target)!.h},model.get(edge.target),edge.toJack,"in");
+  }
 
   const serial = mode === "REROUTE" ? null : placeSerialChain(freeNodes, freeEdges, view);
   const placed = serial ?? (mode === "REROUTE"
@@ -196,7 +205,7 @@ export async function runLayout(
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const edgePaths: Record<string, string> = {};
-  if (serial) {
+  if (serial && extraEdges.length === 0) {
     for (const edge of freeEdges) {
       const s = placed[edge.source]!;
       const t = placed[edge.target]!;
@@ -221,7 +230,7 @@ export async function runLayout(
     map.markNode(n, p.x, p.y);
   }
 
-  const jobs = (serial ? extraEdges : edges).map((e) => {
+  const jobs = edges.map((e) => {
     const s = placed[e.source];
     const t = placed[e.target];
     const fromJack = s ? jackAt(s, byId.get(e.source), e.fromJack, "out") : { pt: { x: 0, y: 0 }, face: "e" as const };
