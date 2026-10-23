@@ -22,7 +22,9 @@ Compact port banks now distribute connected parameter contacts across north/sout
 
 StepSeq now renders an 8-column hardware LED matrix (up to 8 rows), with empty sockets, mute/current/stopped states and theme-lit cores. Host step updates are isolated to memoized ChipFunctionFace; a real React renderer test proves the chip shell does not rerender on a step update or unrelated macro change. Four-theme/1x/2x browser checks cover the 64-step matrix and unchanged chip bounds. The native DSP/integration suite now builds locally and passes (0 failures).
 
-Still open: signal-related Unit/Circuit transition, complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
+Unit/Circuit now uses a disposable 220 ms SVG handoff anchored to the existing host contact. It reads only fresh measured RMS; stale/silent data and reduced/off motion skip it. No extra Unit renderer is kept alive. Contracts and browser DOM lifecycle/motion checks pass at 1x/2x with WebGL disabled; 1x also passes with software WebGL. The 2x software-WebGL workspace switch exceeds the local test timeout and is not certified.
+
+Still open: complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
 
 
 ## Inspect integers and control cables (2026-10-23)

@@ -5,6 +5,7 @@ const EMPTY_WAVE = new Float32Array(0);
 
 interface TelemetryState {
   tick: number;
+  receivedAt: number;
   available: boolean;
   inPeak: number;
   outPeak: number;
@@ -26,6 +27,7 @@ interface TelemetryState {
 
 export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   tick: 0,
+  receivedAt: -Infinity,
   available: false,
   inPeak: 0,
   outPeak: 0,
@@ -52,6 +54,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
     s.gonioR.set(v.gonioY.subarray(0, s.gonioR.length));
     set({
       tick: s.tick + 1,
+      receivedAt: performance.now(),
       available,
       inPeak: v.inPeak,
       outPeak: v.outPeak,

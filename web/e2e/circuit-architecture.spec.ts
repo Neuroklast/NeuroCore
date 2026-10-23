@@ -49,4 +49,24 @@ test("compact connection banks keep geometry across all themes",async({page})=>{
   expect(leds[8]!.y).toBeGreaterThan(leds[0]!.y);
   expect(leds.every(r=>r.w>0&&r.h>0)).toBe(true);
   await page.screenshot({path:"/tmp/neurocore-stepseq-64.png"});
+  await page.emulateMedia({reducedMotion:"no-preference"});
+  await page.evaluate(()=>{
+    const seen:string[]=[];
+    (window as Window & {__handoffLog?:string[]}).__handoffLog=seen;
+    new MutationObserver(()=>document.querySelectorAll('[data-handoff]').forEach(el=>seen.push(el.getAttribute('data-handoff')!)))
+      .observe(document.querySelector('.nk-frame')!,{childList:true,subtree:true});
+    window.dispatchEvent(new CustomEvent("unit-contract-host",{detail:{motion:"full"}}));
+  });
+  await page.getByRole("button",{name:"Unit",exact:true}).click();
+  await expect(page.locator('[data-pane="face"]')).toBeVisible();
+  await expect(page.locator('.nk-workspace-handoff')).toHaveCount(0);
+  await page.getByRole("button",{name:"Circuit",exact:true}).click();
+  await expect(page.locator('[data-pane="face"]')).toHaveCount(0);
+  await expect(page.locator('.nk-workspace-handoff')).toHaveCount(0);
+  expect(await page.evaluate(()=>(window as Window & {__handoffLog?:string[]}).__handoffLog)).toContain("in");
+  await page.emulateMedia({reducedMotion:"reduce"});
+  await page.evaluate(()=>{(window as Window & {__handoffLog?:string[]}).__handoffLog!.length=0;});
+  await page.getByRole("button",{name:"Unit",exact:true}).click();
+  await expect(page.locator('.nk-workspace-handoff')).toHaveCount(0);
+  expect(await page.evaluate(()=>(window as Window & {__handoffLog?:string[]}).__handoffLog)).toEqual([]);
 });
