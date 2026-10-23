@@ -166,7 +166,7 @@ test.describe("step sequencer editor", () => {
     const result=await page.evaluate(async count => {
       const ids=["IN",...Array.from({length:count},(_,i)=>`filter${i+1}`),"OUT"];
       const emit=()=>window.dispatchEvent(new CustomEvent("unit-contract-host",{detail:{
-        motion:"full",cables:"dots",frameRate:60,
+        motion:"full",frameRate:60,
         clips:ids.map(id=>({id,peak:.7,rms:.3,peaks:[.3]}))
       }}));
       emit(); const timer=setInterval(emit,50);
