@@ -2566,6 +2566,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   color: var(--nk-ink);
   text-align: left;
   overflow: hidden;
+  cursor: pointer;
 }
 .nk-preset-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nk-preset-row:hover { background: rgba(var(--nk-accent-rgb), .07); }

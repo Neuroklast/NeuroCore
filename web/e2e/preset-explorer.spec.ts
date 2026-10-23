@@ -59,6 +59,23 @@ test.describe("preset explorer panes", () => {
     expect(await page.locator(".nk-preset-row").count()).toBeGreaterThan(0);
   });
 
+  test("arrows move the list selection and Enter on other buttons does not load", async ({ page }) => {
+    const list = page.locator(".nk-preset-list");
+    const first = page.locator(".nk-preset-row").first();
+    const second = page.locator(".nk-preset-row").nth(1);
+    await expect(first).toBeVisible();
+    await first.click();
+    await expect(first).toHaveAttribute("data-selected", "true");
+    await list.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(second).toHaveAttribute("data-selected", "true");
+    const selected = await second.getAttribute("data-name");
+    await page.locator("[data-type]").first().focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".nk-preset-browser")).toBeVisible();
+    await expect(page.locator(`.nk-preset-row[data-name="${selected}"]`)).toHaveAttribute("data-selected", "true");
+  });
+
   test("active filters stay visible, removable, and Clear all restores the list", async ({ page }) => {
     const style = page.locator("[data-style]").first();
     await expect(style).toBeVisible();

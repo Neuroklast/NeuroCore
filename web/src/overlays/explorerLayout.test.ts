@@ -33,6 +33,9 @@ describe("preset explorer layout", () => {
     expect(src).toContain("Clear all");
     expect(src).toContain("data-active-filters");
     expect(src).toContain("forgetHiddenCategory");
+    expect(src).toContain('role="listbox"');
+    expect(src).not.toContain('role="listitem"');
+    expect(src).not.toContain("window.addEventListener(\"keydown\"");
   });
 
   it("keeps detail as a column, not a block under the list", () => {

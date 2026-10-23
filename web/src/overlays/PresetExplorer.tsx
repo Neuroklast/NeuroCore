@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { getNativeFunction } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { findFactory } from "../presets/factoryCatalog";
@@ -23,6 +23,7 @@ import {
   type ActiveFilterChip,
   type ExplorerFacets,
 } from "./explorerModel";
+import { explorerKeyFlags, explorerKeyIntent, explorerKeyZone } from "./explorerKey";
 
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
@@ -101,30 +102,31 @@ export function PresetExplorer() {
     });
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t?.closest("input, textarea, select")) {
-        if (e.key === "Enter" && (t as HTMLInputElement).id === "preset-search" && row) {
-          e.preventDefault();
-          load(row.name);
-        }
-        return;
-      }
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const next = neighborName(filtered, selectedName, e.key);
-        persist({ selectedName: next });
-        showRow(next);
-      }
-      if (e.key === "Enter" && row) {
-        e.preventDefault();
-        load(row.name);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, row, selectedName]);
+  const onExplorerKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const intent = explorerKeyIntent(e.key, explorerKeyZone(explorerKeyFlags(e.target)), saveOpen);
+    if (intent === "none") {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    if (intent === "cancel-save") {
+      setSaveOpen(false);
+      return;
+    }
+    if (intent === "close") {
+      setOverlay(null);
+      return;
+    }
+    if (intent === "move-down" || intent === "move-up") {
+      const next = neighborName(filtered, selectedName, intent === "move-down" ? "ArrowDown" : "ArrowUp");
+      persist({ selectedName: next });
+      showRow(next);
+      return;
+    }
+    if (intent === "load" && row) {
+      load(row.name);
+    }
+  };
 
   const openSave = () => {
     setSaveName(current || "Untitled");
@@ -186,7 +188,7 @@ export function PresetExplorer() {
   };
 
   return (
-    <div className="nk-preset-browser">
+    <div className="nk-preset-browser" onKeyDown={onExplorerKey}>
       <div className="nk-preset-chrome">
         <label htmlFor="preset-search" className="nk-archive-label">SEARCH</label>
         <input
@@ -308,25 +310,30 @@ export function PresetExplorer() {
           <div
             ref={listRef}
             className="nk-preset-list"
-            role="list"
+            role="listbox"
+            tabIndex={0}
             aria-label="Presets"
+            aria-activedescendant={row ? `nk-preset-opt-${encodeURIComponent(row.name)}` : undefined}
             onScroll={(e) => { explorerSession.listScroll = e.currentTarget.scrollTop; }}
           >
             {filtered.map((p) => (
-              <button
+              <div
                 key={p.name}
-                type="button"
+                id={`nk-preset-opt-${encodeURIComponent(p.name)}`}
                 data-name={p.name}
                 data-selected={p.name === (row?.name ?? "")}
                 className="nk-preset-row"
-                role="listitem"
-                aria-pressed={p.name === (row?.name ?? "")}
-                onClick={() => persist({ selectedName: p.name })}
+                role="option"
+                aria-selected={p.name === (row?.name ?? "")}
+                onClick={() => {
+                  persist({ selectedName: p.name });
+                  listRef.current?.focus();
+                }}
                 onDoubleClick={() => load(p.name)}
               >
                 <span>{p.name}</span>
                 {p.name === current ? <span className="nk-preset-loaded">LOADED</span> : null}
-              </button>
+              </div>
             ))}
             {filtered.length === 0 ? <p className="p-5 text-muted">{emptyCopy}</p> : null}
           </div>
