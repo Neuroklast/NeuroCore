@@ -36,6 +36,9 @@ describe("preset explorer layout", () => {
     expect(src).toContain('role="listbox"');
     expect(src).not.toContain('role="listitem"');
     expect(src).not.toContain("window.addEventListener(\"keydown\"");
+    expect(src).toContain("data-favorites");
+    expect(src).toContain("explorerScriptBlocks");
+    expect(src).toContain("REQUIRED INPUTS");
   });
 
   it("keeps detail as a column, not a block under the list", () => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { getNativeFunction } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { findFactory } from "../presets/factoryCatalog";
+import { explorerScriptBlocks } from "./explorerDetail";
 import { useHostStore } from "../store/hostStore";
 import { explorerSession, forgetHiddenCategory, patchExplorer, type ExplorerScope } from "./explorerSession";
 import { isPresetFavorite, readPresetStars, togglePresetStar } from "../presets/presetStars";
@@ -12,6 +13,9 @@ import {
   filterExplorer,
   neighborName,
   resolveSelectedName,
+  rowSources,
+  rowStyles,
+  rowTypes,
   saveAsError,
   scopeRows,
   seedSelectedName,
@@ -45,6 +49,7 @@ export function PresetExplorer() {
   const [stars, setStars] = useState(readPresetStars);
   const [loadBusy, setLoadBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [favOnly, setFavOnly] = useState(false);
   const loadGen = useRef(0);
   const folderRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -87,7 +92,10 @@ export function PresetExplorer() {
     return () => { loadGen.current += 1; };
   }, []);
 
-  const inScope = useMemo(() => scopeRows(presets, scope), [presets, scope]);
+  const inScope = useMemo(() => {
+    const rows = scopeRows(presets, scope);
+    return favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+  }, [favOnly, presets, scope, stars]);
   const facets = useMemo<ExplorerFacets>(() => ({ sources, types, styles }), [sources, styles, types]);
   const folders = useMemo(() => sourceFolders(inScope, q, facets), [facets, inScope, q]);
   const typesList = useMemo(() => typeFolders(inScope, q, facets), [facets, inScope, q]);
@@ -97,6 +105,10 @@ export function PresetExplorer() {
   const emptyCopy = emptyExplorerCopy(inScope.length, filtered.length, Boolean(q.trim()) || chips.length > 0);
   const row = selectedRow(filtered, selectedName);
   const fav = row ? isPresetFavorite(row.name, stars) : false;
+  const blocks = useMemo(
+    () => explorerScriptBlocks(findFactory(row?.name ?? "")?.script ?? ""),
+    [row?.name],
+  );
 
   const load = (name: string) => {
     const mine = ++loadGen.current;
@@ -298,8 +310,17 @@ export function PresetExplorer() {
                 ))}
               </div>
             </>
-          ) : null}
-        </aside>
+           ) : null}
+          <button
+            type="button"
+            className="nk-preset-fav-filter"
+            data-favorites=""
+            aria-pressed={favOnly}
+            onClick={() => setFavOnly((on) => ! on)}
+          >
+            {favOnly ? "★ Favorites" : "☆ Favorites"}
+          </button>
+         </aside>
         <div className="nk-preset-results">
           {chips.length > 0 ? (
             <div className="nk-preset-active" data-active-filters="">
@@ -342,6 +363,7 @@ export function PresetExplorer() {
                 data-loaded={p.name === current}
                 className="nk-preset-row"
                 role="option"
+                title={p.name}
                 aria-selected={p.name === (row?.name ?? "")}
                 onClick={() => {
                   persist({ selectedName: p.name });
@@ -361,9 +383,9 @@ export function PresetExplorer() {
             {row ? (
               <>
                 <div className="nk-archive-label">SELECTED PRESET</div>
-                <div className="nk-preset-detail-name">{row.name}</div>
+                <div className="nk-preset-detail-name" title={row.name}>{row.name}</div>
                 <div className="nk-preset-detail-meta">
-                  <span>{row.factory === false ? "User" : "Factory"} · {row.category || "Unsorted"}{(row.soundSources ?? []).length ? ` · ${(row.soundSources ?? []).join(", ")}` : ""}</span>
+                  <span>{row.factory === false ? "User" : "Factory"}</span>
                   <button
                     type="button"
                     className="nk-preset-fav"
@@ -377,6 +399,39 @@ export function PresetExplorer() {
                 {row.name === current ? <div className="nk-preset-detail-loaded">Currently loaded</div> : null}
                 {loadError ? <p className="nk-preset-load-error" role="alert">{loadError}</p> : null}
                 <p className="nk-preset-detail-blurb">{row.description || "No description."}</p>
+                {rowSources(row).length ? (
+                  <div className="nk-preset-tags">
+                    <div className="nk-archive-label">SOUND SOURCE</div>
+                    <div className="nk-preset-tag-row">{rowSources(row).map((t) => <span key={t} className="nk-preset-tag">{t}</span>)}</div>
+                  </div>
+                ) : null}
+                {rowTypes(row).length ? (
+                  <div className="nk-preset-tags">
+                    <div className="nk-archive-label">PROCESSING</div>
+                    <div className="nk-preset-tag-row">{rowTypes(row).map((t) => <span key={t} className="nk-preset-tag">{t}</span>)}</div>
+                  </div>
+                ) : null}
+                {rowStyles(row).length ? (
+                  <div className="nk-preset-tags">
+                    <div className="nk-archive-label">STYLE</div>
+                    <div className="nk-preset-tag-row">{rowStyles(row).map((t) => <span key={t} className="nk-preset-tag">{t}</span>)}</div>
+                  </div>
+                ) : null}
+                {(row.requiredInputs ?? []).length ? (
+                  <div className="nk-preset-tags">
+                    <div className="nk-archive-label">REQUIRED INPUTS</div>
+                    <div className="nk-preset-tag-row">{(row.requiredInputs ?? []).map((t) => <span key={t} className="nk-preset-tag">{t}</span>)}</div>
+                  </div>
+                ) : null}
+                {blocks.dsp.length || blocks.mod.length ? (
+                  <div className="nk-preset-tags">
+                    <div className="nk-archive-label">BLOCKS</div>
+                    <div className="nk-preset-tag-row">{[...blocks.dsp, ...blocks.mod].map((t) => <span key={t} className="nk-preset-tag">{t}</span>)}</div>
+                  </div>
+                ) : null}
+                {blocks.chain.length ? (
+                  <p className="nk-preset-chain">{blocks.chain.join(" → ")}</p>
+                ) : null}
                 {(row.tags ?? []).length ? (
                   <div className="nk-preset-tags">
                     <div className="nk-archive-label">TAGS</div>

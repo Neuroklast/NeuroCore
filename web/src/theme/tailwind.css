@@ -2575,7 +2575,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-preset-loaded { flex-shrink: 0; color: var(--nk-accent); font: 10px "JetBrains Mono", monospace; letter-spacing: .12em; }
 .nk-preset-detail { display: flex; width: 280px; flex-shrink: 0; flex-direction: column; min-height: 0; border: 1px solid var(--nk-panel); border-left: 2px solid var(--nk-accent); background: linear-gradient(90deg, rgba(var(--nk-accent-rgb), .06), transparent); }
 .nk-preset-detail-body { min-height: 0; flex: 1; overflow: auto; padding: 12px; }
-.nk-preset-detail-name { margin: 6px 0 4px; color: var(--nk-ink); font: 18px "Apex", sans-serif; letter-spacing: .06em; }
+.nk-preset-detail-name { margin: 6px 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--nk-ink); font: 18px "Apex", sans-serif; letter-spacing: .06em; }
 .nk-preset-detail-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--nk-ink-muted); font-size: 12px; }
 .nk-preset-fav { min-width: 26px; min-height: 26px; color: var(--nk-cyan); }
 .nk-preset-detail-blurb { margin: 10px 0 0; color: var(--nk-ink-soft); font: 13px/1.5 "JetBrains Mono", monospace; }
@@ -2585,7 +2585,10 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-preset-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .nk-preset-tag { padding: 2px 8px; border: 1px solid var(--nk-line); color: var(--nk-ink-muted); font: 11px "JetBrains Mono", monospace; }
 .nk-preset-load { margin: 12px; min-height: 32px; flex-shrink: 0; }
-.nk-preset-foot { display: flex; height: 32px; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
+.nk-preset-foot { display: flex; min-height: 32px; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.nk-preset-fav-filter { margin-top: 8px; min-height: 26px; flex-shrink: 0; text-align: left; color: var(--nk-cyan); }
+.nk-preset-fav-filter[aria-pressed="true"] { color: var(--nk-accent); }
+.nk-preset-chain { margin: 10px 0 0; color: var(--nk-ink-muted); font: 11px/1.4 "JetBrains Mono", monospace; }
 .nk-preset-browser :is(button, input, select):focus-visible { outline: 1px solid var(--nk-cyan); outline-offset: -2px; }
 
 
