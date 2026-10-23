@@ -122,7 +122,7 @@ Cables
 - OUT grows when several buses mix in (low/mid/high, send returns). One input stays a compact tile.
 
 IN and OUT
-- **IN** is locked on the left. Two outputs on the right, stacked in the middle of the tile: **out** is the track, **sc** is the host sidechain. They sit under the title stripe and above the footer. There is no input jack on IN. `sc` is an output so you can feed a compressor, gate, or vocoder. The lamp next to IN is on when the host sidechain pin is enabled. If the pin is off, `sc` is silent.
+- **AUDIO IN**, **MIDI IN** and **SIDECHAIN IN** are fixed plates on the left of the board. They cannot be moved, copied or deleted. AUDIO IN has one output, **out**, for the track. SIDECHAIN IN is the host sidechain (`sc`); it is silent when the host pin is off. MIDI IN is the host MIDI input. Formula variables `midi_note`, `midi_freq`, `midi_vel`, `midi_gate`, `midi_bend` and `midi_mod` still come from that host MIDI. MIDI Learn on a knob is separate and is not a board cable. There is no MIDI output. **AUDIO OUT** is the fixed plate on the right.
 - **OUT** is the mix back to the host. Named buses (a Send row) land on their own west mix jacks — `main`, then each bus — not a leftover `in`. Expand it (chevron or right-click Details) for **gain** (−24 to +12 dB). Gain is not a slider on the closed tile.
 
 Blocks

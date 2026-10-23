@@ -2,7 +2,13 @@
 
 **Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
+**Branch:** `feat/circuit-board-architecture-v2`
+
+## Circuit board terminals (2026-10-23)
+
+Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout still packs IN/chips/OUT; MIDI/SC pin under IN after place. Four-sided `PortFace`, Unit↔Circuit motion, MIDI live lamps and SC cable routing through A* are not in this pass.
+
+Contracts: `boardArchitecture.test.ts` failed on unlocked IN and missing SC/MIDI, then passed. Focused assemble layout/model checks pass. Pre-existing chipSpec catalog (comp params) and BoardChip knobs-subscription source scans remain.
 
 ## Audio-thread correctness (2026-10-23)
 
