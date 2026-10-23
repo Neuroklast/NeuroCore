@@ -1,6 +1,6 @@
 import {useTelemetryStore} from "../store/telemetryStore";
 import {handoffPlan} from "./workspaceHandoff";
-import {WorkspaceHandoff,type HandoffVisual} from "./WorkspaceHandoff";
+import {WorkspaceHandoff,type HandoffVisual} from "./handoffStreak";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
 import type { AstEventPayload, CompileResultPayload, Origin } from "../bridge/ast";
