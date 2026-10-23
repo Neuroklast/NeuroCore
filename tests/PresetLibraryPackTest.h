@@ -123,6 +123,9 @@ public:
             expect (! PresetPack::zipPathSafe ("/tmp/x.nrk"));
             expect (! PresetPack::zipPathSafe ("C:/Windows/x.nrk"));
             expect (! PresetPack::zipPathSafe ("\\\\server\\share\\x.nrk"));
+            expect (! PresetPack::zipPathSafe ("CON"));
+            expect (! PresetPack::zipPathSafe ("presets/NUL.nrk"));
+            expect (! PresetPack::zipPathSafe ("COM1.nrk"));
 
             auto writeZip = [&] (const juce::String& stored, const juce::File& dest)
             {
@@ -330,6 +333,204 @@ public:
             expect (PresetPack::pluginVersionMeets ({}, "0.7.2-beta"));
             expect (PresetPack::pluginVersionMeets ("0.7.1", "0.7.2-beta"));
             expect (! PresetPack::pluginVersionMeets ("9.0.0", "0.7.2-beta"));
+        }
+
+        beginTest ("invalid pack ids are refused without silent rewrite");
+        {
+            PackManifest m;
+            juce::String err;
+            const auto refuse = [&] (const juce::String& id)
+            {
+                err = {};
+                const auto json = "{ \"format\": \"neurokore-pack\", \"formatVersion\": 1, \"id\": \""
+                                  + id + "\", \"name\": \"X\" }";
+                expect (! PresetPack::parseManifestText (json, m, err), id);
+                expect (err.isNotEmpty(), id);
+            };
+            refuse (".");
+            refuse ("..");
+            refuse ("...");
+            refuse ("foo/bar");
+            refuse ("foo\\\\bar");
+            refuse ("C:evil");
+            refuse ("CON");
+            refuse ("com1");
+            refuse ("NUL");
+            refuse ("LPT9");
+            refuse ("COM1.pack");
+            refuse ("..evil");
+            refuse ("");
+            expect (PresetPack::isValidPackId ("net.test.pack-one"));
+            expect (PresetPack::isValidPackId ("legacy.pack.zardonic-metal-bass"));
+            expect (! PresetPack::isValidPackId (".."));
+            expect (! PresetPack::isValidPackId ("CON"));
+            expect (PresetPack::parseManifestText (
+                "{ \"format\": \"neurokore-pack\", \"formatVersion\": 1, \"id\": \"net.test.pack-one\", \"name\": \"X\" }",
+                m, err), err);
+            expectEquals (m.id, juce::String ("net.test.pack-one"));
+        }
+
+        beginTest ("pack install cannot escape the Packs directory");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-esc-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto nrk = work.getChildFile ("A.nrk");
+            expect (mgr.savePreset (nrk, "A"));
+            auto lib = work.getChildFile ("lib");
+            lib.createDirectory();
+            lib.getChildFile ("Packs").createDirectory();
+            expect (lib.getChildFile ("keep-lib.txt").replaceWithText ("lib"));
+            expect (lib.getChildFile ("Packs").getChildFile ("keep-packs.txt").replaceWithText ("packs"));
+            const auto outside = work.getChildFile ("outside.txt");
+            expect (outside.replaceWithText ("outside"));
+
+            auto tryId = [&] (const juce::String& id)
+            {
+                auto dir = work.getChildFile ("src-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+                dir.createDirectory();
+                expect (nrk.copyFileTo (dir.getChildFile ("A.nrk")));
+                PackPreview crafted;
+                crafted.source = dir;
+                crafted.manifest.id = id;
+                crafted.manifest.name = "Crafted";
+                PackPresetRef ref;
+                ref.id = "A";
+                ref.file = "A.nrk";
+                crafted.manifest.presets.push_back (ref);
+                const auto r = PresetPack::installPreview (crafted, lib);
+                expect (! r.ok, id);
+                expect (r.error.isNotEmpty(), id);
+                dir.deleteRecursively();
+            };
+            tryId (".");
+            tryId ("..");
+            tryId ("...");
+            tryId ("../evil");
+            tryId ("..\\evil");
+            tryId ("CON");
+            tryId ("foo/../../x");
+
+            expect (lib.isDirectory());
+            expect (lib.getChildFile ("keep-lib.txt").loadFileAsString() == "lib");
+            expect (lib.getChildFile ("Packs").getChildFile ("keep-packs.txt").loadFileAsString() == "packs");
+            expect (outside.loadFileAsString() == "outside");
+            expect (! work.getChildFile ("evil").exists());
+            expect (! lib.getChildFile ("A.nrk").existsAsFile());
+            work.deleteRecursively();
+        }
+
+        beginTest ("failed install leaves the previous pack readable");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = tanh(x)", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-tx-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto goodNrk = work.getChildFile ("Good.nrk");
+            expect (mgr.savePreset (goodNrk, "Good"));
+            PackManifest m;
+            m.name = "Keep Pack";
+            m.id = "net.test.keep-pack";
+            const auto pack = work.getChildFile ("keep.nrkpack");
+            expect (PresetPack::exportNrkpack ({ goodNrk }, pack, m, err), err);
+            auto lib = work.getChildFile ("lib");
+            auto inst = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
+            expect (inst.ok, inst.error);
+            const auto dest = lib.getChildFile ("Packs").getChildFile ("net.test.keep-pack");
+            expect (dest.getChildFile ("presets").getChildFile ("Good.nrk").existsAsFile()
+                    || dest.getChildFile ("Good.nrk").existsAsFile());
+            juce::Array<juce::File> installed;
+            dest.findChildFiles (installed, juce::File::findFiles, true, "*.nrk");
+            expectEquals (installed.size(), 1);
+            const auto sentinel = dest.getChildFile ("user-note.txt");
+            expect (sentinel.replaceWithText ("do-not-lose"));
+            const auto before = dest.getChildFile ("manifest.json").loadFileAsString();
+
+            auto badDir = work.getChildFile ("bad");
+            badDir.createDirectory();
+            expect (goodNrk.copyFileTo (badDir.getChildFile ("Good.nrk")));
+            badDir.getChildFile ("manifest.json").replaceWithText (
+                "{ \"format\": \"neurokore-pack\", \"formatVersion\": 1, \"id\": \"net.test.keep-pack\", \"name\": \"Keep Pack\","
+                " \"presets\": [ { \"id\": \"Good\", \"file\": \"Missing.nrk\" } ] }");
+            auto missing = PresetPack::installPreview (PresetPack::analyzeDirectory (badDir), lib);
+            expect (! missing.ok);
+            expect (missing.error.containsIgnoreCase ("missing"));
+            expectEquals (sentinel.loadFileAsString(), juce::String ("do-not-lose"));
+            expectEquals (dest.getChildFile ("manifest.json").loadFileAsString(), before);
+
+            badDir.getChildFile ("manifest.json").replaceWithText (
+                "{ \"format\": \"neurokore-pack\", \"formatVersion\": 1, \"id\": \"net.test.keep-pack\", \"name\": \"Keep Pack\","
+                " \"presets\": [ { \"id\": \"Good\", \"file\": \"Good.nrk\", \"sha256\": \"deadbeef\" } ] }");
+            auto checksum = PresetPack::installPreview (PresetPack::analyzeDirectory (badDir), lib);
+            expect (! checksum.ok);
+            expect (checksum.error.containsIgnoreCase ("checksum"));
+            expectEquals (sentinel.loadFileAsString(), juce::String ("do-not-lose"));
+            expectEquals (dest.getChildFile ("manifest.json").loadFileAsString(), before);
+
+            PackPreview crafted;
+            crafted.source = dest;
+            crafted.manifest.id = "net.test.keep-pack";
+            crafted.manifest.name = "Keep Pack";
+            PackPresetRef badRef;
+            badRef.id = "Good";
+            badRef.file = installed[0].getRelativePathFrom (dest).replaceCharacter ('\\', '/');
+            badRef.sha256 = "deadbeef";
+            crafted.manifest.presets.push_back (badRef);
+            auto liveFail = PresetPack::installPreview (crafted, lib);
+            expect (! liveFail.ok);
+            expect (liveFail.error.containsIgnoreCase ("checksum"));
+            expectEquals (sentinel.loadFileAsString(), juce::String ("do-not-lose"));
+            expectEquals (dest.getChildFile ("manifest.json").loadFileAsString(), before);
+
+            NeuroKoreAudioProcessor loaded;
+            PresetManager loadedMgr (loaded);
+            expect (loadedMgr.loadPreset (installed[0]));
+            expect (loaded.getScript().contains ("tanh"));
+            work.deleteRecursively();
+        }
+
+        beginTest ("same-version reinstall commits only a complete pack");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-re-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto nrk = work.getChildFile ("Tone.nrk");
+            expect (mgr.savePreset (nrk, "Tone"));
+            PackManifest m;
+            m.name = "Tone Pack";
+            m.id = "net.test.tone-pack";
+            m.version = "1.0.0";
+            const auto pack = work.getChildFile ("tone.nrkpack");
+            expect (PresetPack::exportNrkpack ({ nrk }, pack, m, err), err);
+            auto lib = work.getChildFile ("lib");
+            auto first = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
+            expect (first.ok, first.error);
+            auto again = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
+            expect (again.ok, again.error);
+            expectEquals (again.installed, 1);
+            const auto dest = lib.getChildFile ("Packs").getChildFile ("net.test.tone-pack");
+            expect (dest.getChildFile ("manifest.json").existsAsFile());
+            PackManifest parsed;
+            expect (PresetPack::parseManifestText (dest.getChildFile ("manifest.json").loadFileAsString(), parsed, err), err);
+            expectEquals (parsed.id, juce::String ("net.test.tone-pack"));
+            juce::Array<juce::File> found;
+            dest.findChildFiles (found, juce::File::findFiles, true, "*.nrk");
+            expectEquals (found.size(), 1);
+            work.deleteRecursively();
         }
     }
 };

@@ -62,6 +62,7 @@ inline constexpr int kMaxCompressionRatio = 100;
 inline constexpr const char* kPackExtension = ".nrkpack";
 
 bool zipPathSafe (const juce::String& raw);
+bool isValidPackId (const juce::String& id);
 bool isPackArchive (const juce::File& f);
 bool pluginVersionMeets (const juce::String& minimum, const juce::String& current = {});
 

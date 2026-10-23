@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-23 (0.7.2-beta)
+**Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/preset-library-pack-manager`
+**Branch:** `fix/preset-pack-install-safety`
+
+## Pack install path and atomic commit (2026-10-24)
+
+Pack ids are now a closed charset (`[A-Za-z0-9][A-Za-z0-9._-]*`, no `..`, no reserved device names). Invalid ids error; they are not rewritten to `Pack` or `.`. Install resolves a single folder under `Packs` and refuses dest paths that escape it, including `.` / `..` / `...` and crafted previews that bypass analyze. Staging is in temp; the previous pack is moved aside only after manifest write+verify and checksums; backup is kept if restore fails. Native: PresetLibraryPackTest 183 passed / 0 failed.
 
 ## Preset library and packs (2026-10-23)
 

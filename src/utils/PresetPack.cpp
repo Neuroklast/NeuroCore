@@ -31,14 +31,104 @@ int versionTuple (const juce::String& v) noexcept
     return major * 10000 + minor * 100 + patch;
 }
 
+juce::File resolvedFile (juce::File f)
+{
+    int hops = 0;
+    while (f.isSymbolicLink() && hops++ < 8)
+    {
+        const auto next = f.getLinkedTarget();
+        if (next.getFullPathName().isEmpty())
+            break;
+        f = next;
+    }
+    return f;
+}
+
+juce::String pathKey (const juce::File& f)
+{
+    auto p = resolvedFile (f).getFullPathName();
+#if JUCE_WINDOWS
+    p = p.replaceCharacter ('/', '\\').toLowerCase();
+#endif
+    return p;
+}
+
 bool underRoot (const juce::File& root, const juce::File& child)
 {
-    const auto r = root.getFullPathName();
-    const auto c = child.getFullPathName();
+    const auto r = pathKey (root);
+    const auto c = pathKey (child);
     if (c == r)
         return true;
     const auto sep = juce::File::getSeparatorString();
     return c.startsWith (r.endsWith (sep) ? r : r + sep);
+}
+
+bool isReservedDeviceName (const juce::String& name)
+{
+    const auto stem = name.upToFirstOccurrenceOf (".", false, false).trim().toUpperCase();
+    static const char* const kDev[] = {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
+    for (auto* d : kDev)
+        if (stem == d)
+            return true;
+    return false;
+}
+
+bool isValidPackFolderName (const juce::String& name)
+{
+    if (name.isEmpty() || name.length() > 100)
+        return false;
+    if (name == "." || name == ".." || name.contains (".."))
+        return false;
+    if (name.startsWithChar ('.') || name.endsWithChar ('.') || name.endsWithChar (' '))
+        return false;
+    if (name.containsChar ('\0') || name.containsChar ('/') || name.containsChar ('\\')
+        || name.containsChar (':') || name.containsChar ('*') || name.containsChar ('?')
+        || name.containsChar ('"') || name.containsChar ('<') || name.containsChar ('>')
+        || name.containsChar ('|'))
+        return false;
+    return ! isReservedDeviceName (name);
+}
+
+bool resolvePackDest (const juce::File& destRoot, const PackManifest& m, juce::File& dest, juce::String& error)
+{
+    juce::String folder;
+    if (m.legacy)
+    {
+        folder = PresetLibrary::sanitizePackName (m.name);
+        if (! isValidPackFolderName (folder))
+        {
+            error = "Invalid pack folder";
+            return false;
+        }
+    }
+    else
+    {
+        if (! PresetPack::isValidPackId (m.id))
+        {
+            error = "Invalid pack id";
+            return false;
+        }
+        folder = m.id;
+    }
+
+    const auto packs = destRoot.getChildFile ("Packs");
+    dest = packs.getChildFile (folder);
+    if (dest.getFileName() != folder
+        || dest.getParentDirectory().getFullPathName() != packs.getFullPathName())
+    {
+        error = "Pack folder escaped Packs";
+        return false;
+    }
+    if (dest.exists() && ! underRoot (packs, dest))
+    {
+        error = "Pack folder escaped Packs";
+        return false;
+    }
+    return true;
 }
 
 json stringArray (const juce::StringArray& a)
@@ -63,6 +153,11 @@ juce::StringArray fromArray (const json& j)
 
 bool copyTree (const juce::File& src, const juce::File& dest, juce::String& error)
 {
+    if (src.isSymbolicLink())
+    {
+        error = "Symlinks are not allowed";
+        return false;
+    }
     if (! dest.createDirectory() && ! dest.isDirectory())
     {
         error = "Could not create " + dest.getFullPathName();
@@ -70,7 +165,17 @@ bool copyTree (const juce::File& src, const juce::File& dest, juce::String& erro
     }
     for (const auto& child : src.findChildFiles (juce::File::findFilesAndDirectories, false))
     {
+        if (child.isSymbolicLink())
+        {
+            error = "Symlinks are not allowed: " + child.getFileName();
+            return false;
+        }
         const auto target = dest.getChildFile (child.getFileName());
+        if (! underRoot (dest, target))
+        {
+            error = "Path escaped pack folder: " + child.getFileName();
+            return false;
+        }
         if (child.isDirectory())
         {
             if (! copyTree (child, target, error))
@@ -83,12 +188,6 @@ bool copyTree (const juce::File& src, const juce::File& dest, juce::String& erro
         }
     }
     return true;
-}
-
-juce::File packDestDir (const juce::File& destRoot, const PackManifest& m)
-{
-    const auto folder = PresetLibrary::sanitizePackName (m.legacy ? m.name : m.id);
-    return destRoot.getChildFile ("Packs").getChildFile (folder);
 }
 
 void collectCategories (const PackManifest& m, juce::StringArray& cats)
@@ -159,7 +258,35 @@ bool PresetPack::zipPathSafe (const juce::String& raw)
         return false;
     if (p.contains (".."))
         return false;
+    juce::StringArray parts;
+    parts.addTokens (p, "/", "");
+    for (const auto& part : parts)
+        if (part.isNotEmpty() && isReservedDeviceName (part))
+            return false;
     return true;
+}
+
+bool PresetPack::isValidPackId (const juce::String& id)
+{
+    if (id.isEmpty() || id.length() > 128 || id.containsChar ('\0'))
+        return false;
+    const auto first = id[0];
+    const bool firstOk = (first >= 'A' && first <= 'Z')
+                         || (first >= 'a' && first <= 'z')
+                         || (first >= '0' && first <= '9');
+    if (! firstOk)
+        return false;
+    for (int i = 0; i < id.length(); ++i)
+    {
+        const auto c = id[i];
+        const bool ok = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+                        || c == '.' || c == '_' || c == '-';
+        if (! ok)
+            return false;
+    }
+    if (id.contains ("..") || id.startsWithChar ('.') || id.endsWithChar ('.'))
+        return false;
+    return ! isReservedDeviceName (id);
 }
 
 bool PresetPack::isPackArchive (const juce::File& f)
@@ -247,6 +374,11 @@ bool PresetPack::parseManifestText (const juce::String& text, PackManifest& out,
     };
     if (! req ("id", out.id) || ! req ("name", out.name))
         return false;
+    if (! isValidPackId (out.id))
+    {
+        error = "Invalid pack id";
+        return false;
+    }
     if (j.contains ("version") && j["version"].is_string())
         out.version = juce::String (j["version"].get<std::string>()).trim();
     if (j.contains ("author") && j["author"].is_string())
@@ -406,6 +538,19 @@ bool PresetPack::extractSafe (const juce::File& archive, const juce::File& destD
         error = result.getErrorMessage();
         return false;
     }
+    for (const auto& f : destDir.findChildFiles (juce::File::findFilesAndDirectories, true))
+    {
+        if (f.isSymbolicLink())
+        {
+            error = "Symlinks are not allowed: " + f.getFileName();
+            return false;
+        }
+        if (! underRoot (destDir, f))
+        {
+            error = "Path escaped archive root: " + f.getFileName();
+            return false;
+        }
+    }
     return true;
 }
 
@@ -505,69 +650,167 @@ PackInstallResult PresetPack::installPreview (const PackPreview& preview, const 
         r.error = "Pack is missing id or name";
         return r;
     }
+    if (destRoot.exists() && ! destRoot.isDirectory())
+    {
+        r.error = "Library path is not a folder";
+        return r;
+    }
 
-    auto staging = destRoot.getChildFile (".staging-" + juce::String (juce::Random::getSystemRandom().nextInt()));
-    staging.deleteRecursively();
+    juce::File dest;
     juce::String err;
-    juce::File unpacked = staging;
+    if (! resolvePackDest (destRoot, preview.manifest, dest, err))
+    {
+        r.error = err;
+        return r;
+    }
+    if (dest.exists() && ! dest.isDirectory())
+    {
+        r.error = "Pack destination is not a folder";
+        return r;
+    }
+
+    auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                    .getChildFile ("nk-pack-install-" + juce::Uuid().toDashedString());
+    work.deleteRecursively();
+    auto cleanupWork = [&] { work.deleteRecursively(); };
+
+    juce::File unpacked = work;
     if (preview.source.isDirectory())
     {
-        if (! copyTree (preview.source, staging, err))
+        if (! copyTree (preview.source, work, err))
         {
             r.error = err;
-            staging.deleteRecursively();
+            cleanupWork();
             return r;
         }
     }
     else
     {
-        if (! extractSafe (preview.source, staging, err))
+        if (! extractSafe (preview.source, work, err))
         {
             r.error = err;
-            staging.deleteRecursively();
+            cleanupWork();
             return r;
         }
-        auto children = staging.findChildFiles (juce::File::findDirectories, false);
-        if (children.size() == 1 && staging.findChildFiles (juce::File::findFiles, false).isEmpty())
+        auto children = work.findChildFiles (juce::File::findDirectories, false);
+        if (children.size() == 1 && work.findChildFiles (juce::File::findFiles, false).isEmpty())
             unpacked = children[0];
     }
 
     auto manifest = preview.manifest;
     if (manifest.presets.empty())
         manifest = manifestFromNrks (unpacked, manifest.name);
+    if (! pluginVersionMeets (manifest.minimumPluginVersion))
+    {
+        r.error = "Pack needs plugin " + manifest.minimumPluginVersion + " or newer";
+        cleanupWork();
+        return r;
+    }
     if (! validateExtracted (unpacked, manifest, err))
     {
         r.error = err;
-        staging.deleteRecursively();
+        cleanupWork();
+        return r;
+    }
+    if (! resolvePackDest (destRoot, manifest, dest, err))
+    {
+        r.error = err;
+        cleanupWork();
         return r;
     }
 
-    const auto dest = packDestDir (destRoot, manifest);
-    dest.getParentDirectory().createDirectory();
-    auto backup = dest.getSiblingFile (dest.getFileName() + ".bak-"
-                                       + juce::String (juce::Random::getSystemRandom().nextInt()));
+    const auto mf = unpacked.getChildFile ("manifest.json");
+    if (! mf.replaceWithText (manifestToJson (manifest)))
+    {
+        r.error = "Could not write manifest";
+        cleanupWork();
+        return r;
+    }
+    PackManifest verified;
+    juce::String verifyErr;
+    if (! parseManifestText (mf.loadFileAsString(), verified, verifyErr)
+        || verified.id != manifest.id
+        || verified.presets.size() != manifest.presets.size())
+    {
+        r.error = verifyErr.isNotEmpty() ? verifyErr : juce::String ("Manifest verification failed");
+        cleanupWork();
+        return r;
+    }
+    if (! validateExtracted (unpacked, verified, err))
+    {
+        r.error = err;
+        cleanupWork();
+        return r;
+    }
+
+    const auto packs = dest.getParentDirectory();
+    if (! packs.createDirectory() && ! packs.isDirectory())
+    {
+        r.error = "Could not create Packs folder";
+        cleanupWork();
+        return r;
+    }
+
+    juce::File backup;
     const bool hadDest = dest.isDirectory();
-    if (hadDest && ! dest.moveFileTo (backup))
+    if (hadDest)
     {
-        r.error = "Could not replace existing pack";
-        staging.deleteRecursively();
+        backup = destRoot.getChildFile (".pack-bak-" + juce::Uuid().toDashedString());
+        backup.deleteRecursively();
+        if (! dest.moveFileTo (backup))
+        {
+            r.error = "Could not replace existing pack";
+            cleanupWork();
+            return r;
+        }
+    }
+
+    auto restorePrevious = [&]() -> bool
+    {
+        if (dest.exists())
+            dest.deleteRecursively();
+        if (! hadDest)
+            return ! dest.exists();
+        return backup.moveFileTo (dest);
+    };
+
+    bool committed = unpacked.moveFileTo (dest);
+    if (! committed)
+        committed = copyTree (unpacked, dest, err);
+    if (! committed)
+    {
+        if (! restorePrevious())
+            r.error = "Could not commit pack install; restore failed";
+        else
+            r.error = err.isNotEmpty() ? err : juce::String ("Could not commit pack install");
+        cleanupWork();
         return r;
     }
-    if (! unpacked.moveFileTo (dest))
+
+    juce::String committedErr;
+    PackManifest committedManifest;
+    const auto committedMf = dest.getChildFile ("manifest.json");
+    const bool ok = dest.isDirectory()
+                    && committedMf.existsAsFile()
+                    && parseManifestText (committedMf.loadFileAsString(), committedManifest, committedErr)
+                    && committedManifest.id == verified.id
+                    && validateExtracted (dest, committedManifest, committedErr);
+    if (! ok)
     {
-        if (hadDest)
-            backup.moveFileTo (dest);
-        r.error = "Could not commit pack install";
-        staging.deleteRecursively();
+        if (! restorePrevious())
+            r.error = "Install verification failed; restore failed";
+        else
+            r.error = committedErr.isNotEmpty() ? committedErr : juce::String ("Install verification failed");
+        cleanupWork();
         return r;
     }
-    dest.getChildFile ("manifest.json").replaceWithText (manifestToJson (manifest));
+
     backup.deleteRecursively();
-    staging.deleteRecursively();
+    cleanupWork();
     r.ok = true;
-    r.installed = (int) manifest.presets.size();
-    r.packId = manifest.id;
-    r.packName = manifest.name;
+    r.installed = (int) committedManifest.presets.size();
+    r.packId = committedManifest.id;
+    r.packName = committedManifest.name;
     return r;
 }
 
@@ -576,6 +819,12 @@ bool PresetPack::uninstallPack (const juce::File& destRoot, const juce::String& 
     if (packId.isEmpty() || PresetIdentity::isFactoryId (packId))
     {
         error = "Cannot remove this library";
+        return false;
+    }
+    if (packId.contains ("..") || packId.containsChar ('/') || packId.containsChar ('\\')
+        || packId.containsChar ('\0') || packId.containsChar (':'))
+    {
+        error = "Invalid pack id";
         return false;
     }
     const auto packs = destRoot.getChildFile ("Packs");
@@ -614,6 +863,11 @@ bool PresetPack::exportNrkpack (const std::vector<juce::File>& nrkFiles,
     if (nrkFiles.empty())
     {
         error = "No presets to export";
+        return false;
+    }
+    if (manifest.id.isNotEmpty() && ! isValidPackId (manifest.id))
+    {
+        error = "Invalid pack id";
         return false;
     }
     if (manifest.name.isEmpty())
