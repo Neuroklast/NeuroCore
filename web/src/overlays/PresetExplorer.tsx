@@ -43,6 +43,9 @@ export function PresetExplorer() {
   const [styles, setStyles] = useState<string[]>(explorerSession.styles);
   const [selectedName, setSelectedName] = useState(explorerSession.selectedName);
   const [stars, setStars] = useState(readPresetStars);
+  const [loadBusy, setLoadBusy] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const loadGen = useRef(0);
   const folderRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +84,7 @@ export function PresetExplorer() {
       showRow(name);
       folderRef.current?.querySelector(`[data-folder="${explorerSession.sources[0] || "all"}"]`)?.scrollIntoView({ block: "nearest" });
     });
+    return () => { loadGen.current += 1; };
   }, []);
 
   const inScope = useMemo(() => scopeRows(presets, scope), [presets, scope]);
@@ -95,10 +99,23 @@ export function PresetExplorer() {
   const fav = row ? isPresetFavorite(row.name, stars) : false;
 
   const load = (name: string) => {
+    const mine = ++loadGen.current;
+    persist({ selectedName: name });
+    setLoadBusy(true);
+    setLoadError("");
     void requestPresetAction({ action: "load", name }).then((ok) => {
+      if (mine !== loadGen.current) {
+        return;
+      }
+      setLoadBusy(false);
       if (ok) {
         setOverlay(null);
+        return;
       }
+      if (useHostStore.getState().overlay === "discard") {
+        return;
+      }
+      setLoadError("Could not load this preset.");
     });
   };
 
@@ -322,6 +339,7 @@ export function PresetExplorer() {
                 id={`nk-preset-opt-${encodeURIComponent(p.name)}`}
                 data-name={p.name}
                 data-selected={p.name === (row?.name ?? "")}
+                data-loaded={p.name === current}
                 className="nk-preset-row"
                 role="option"
                 aria-selected={p.name === (row?.name ?? "")}
@@ -356,6 +374,8 @@ export function PresetExplorer() {
                     {fav ? "★" : "☆"}
                   </button>
                 </div>
+                {row.name === current ? <div className="nk-preset-detail-loaded">Currently loaded</div> : null}
+                {loadError ? <p className="nk-preset-load-error" role="alert">{loadError}</p> : null}
                 <p className="nk-preset-detail-blurb">{row.description || "No description."}</p>
                 {(row.tags ?? []).length ? (
                   <div className="nk-preset-tags">
@@ -375,10 +395,11 @@ export function PresetExplorer() {
           <button
             type="button"
             className="nk-clip on nk-preset-load"
-            disabled={! row}
+            disabled={! row || loadBusy}
+            aria-busy={loadBusy}
             onClick={() => row && load(row.name)}
           >
-            LOAD PRESET
+            {loadBusy ? "Loading…" : "LOAD PRESET"}
           </button>
         </aside>
       </div>

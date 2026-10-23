@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryRows } from "./factoryCatalog";
+import { stepPresetName } from "./presetStep";
 import { explorerSession } from "../overlays/explorerSession";
-import { presetAction, requestPresetAction, seedFactoryPresets } from "./presetActions";
+import { cancelDiscard, confirmDiscard, presetAction, requestPresetAction, seedFactoryPresets } from "./presetActions";
 
 describe("preset actions without the JUCE bridge", () => {
   beforeEach(() => {
@@ -112,6 +113,44 @@ describe("preset actions without the JUCE bridge", () => {
     expect(useHostStore.getState().overlayReturn).toBe("presets");
     expect(useHostStore.getState().pendingPreset).toEqual({ action: "load", name: "Blues Break OD" });
     expect(useHostStore.getState().presetName).toBe("Airy Clean");
+  });
+
+  it("does not report success for an unknown preset name", async () => {
+    seedFactoryPresets();
+    await presetAction({ action: "load", name: "Airy Clean" });
+    const result = await presetAction({ action: "load", name: "No Such Preset" });
+    expect(result.ok).toBe(false);
+    expect(useHostStore.getState().presetName).toBe("Airy Clean");
+  });
+
+  it("loads the pending preset on discard confirm and restores the explorer on cancel", async () => {
+    seedFactoryPresets();
+    await presetAction({ action: "load", name: "Airy Clean" });
+    useHostStore.setState({ presetDirty: true, discardPrompt: true, overlay: "presets" });
+    await requestPresetAction({ action: "load", name: "Blues Break OD" });
+    cancelDiscard();
+    expect(useHostStore.getState().overlay).toBe("presets");
+    expect(useHostStore.getState().presetName).toBe("Airy Clean");
+    expect(useHostStore.getState().pendingPreset).toBeNull();
+
+    useHostStore.setState({ presetDirty: true, discardPrompt: true, overlay: "presets" });
+    await requestPresetAction({ action: "load", name: "Blues Break OD" });
+    await confirmDiscard();
+    expect(useHostStore.getState().presetName).toBe("Blues Break OD");
+    expect(useHostStore.getState().overlay).toBeNull();
+    expect(useHostStore.getState().presetDirty).toBe(false);
+  });
+
+  it("header prev/next walk the full catalog even if explorer filters are set", async () => {
+    seedFactoryPresets();
+    await presetAction({ action: "load", name: "Airy Clean" });
+    explorerSession.cat = "Distortion";
+    explorerSession.sources = ["Guitar"];
+    const walk = useHostStore.getState().presets;
+    const expected = stepPresetName(walk, "Airy Clean", 1, "");
+    const next = await presetAction({ action: "next" });
+    expect(next.ok).toBe(true);
+    expect(useHostStore.getState().presetName).toBe(expected);
   });
 });
 
