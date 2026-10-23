@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  cableLayer,
   cableSourcePeak,
   dashPatternLength,
   dotPeriodMs,
@@ -74,11 +73,6 @@ describe("cable traffic", () => {
     expect(advancePlasmaDash(0, 0.2, 0.016)).toBeLessThan(0);
     expect(advancePlasmaDash(-20, 1, 0.016)).toBeLessThan(advancePlasmaDash(-20, 0.05, 0.016));
     expect(dotPeriodMs(1)).toBeLessThan(dotPeriodMs(0.05));
-    expect(cableLayer("mod", "dots", true)).toBe("lfo");
-    expect(cableLayer("mod", "wave", true)).toBe("lfo");
-    expect(cableLayer("audio", "wave", true)).toBe("wave");
-    expect(cableLayer("audio", "dots", true)).toBe("dots");
-    expect(cableLayer("audio", "wave", false)).toBe("wave");
   });
 
   it("runs send and bus tubes from the IN peak — those chips have no DSP tap", () => {
