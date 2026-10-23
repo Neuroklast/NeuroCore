@@ -222,7 +222,8 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "AUDIO IN", "", true);
   addSidePorts(ports, "IN", inJacks, true);
 
-  const midiJacks: AstJack[] = MIDI_VARS.map((name) => ({
+  const usedMidi = [...new Set(visible.flatMap((n) => midiRefs(n.args)))];
+  const midiJacks: AstJack[] = usedMidi.map((name) => ({
     id: midiJack(name),
     label: midiJack(name),
     output: true,
@@ -240,7 +241,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     "",
     true,
   );
-  MIDI_VARS.forEach((name, index) => {
+  usedMidi.forEach((name, index) => {
     const id = portId("MIDI", midiJack(name), true);
     ports[id] = {
       id,
@@ -248,7 +249,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       jackId: midiJack(name),
       east: true,
       index,
-      count: MIDI_VARS.length,
+      count: usedMidi.length,
       kind: "mod",
     };
   });
@@ -281,7 +282,9 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     if (n.type === "in" || n.id === "IN" || n.id === "MIDI" || n.id === "SC") {
       continue;
     }
-    const jacks = visualJacksFor(n, visible).length ? visualJacksFor(n, visible) : (n.jacks ?? []);
+    const jacks = visualJacksFor(n, visible, ast.edges ?? []).length
+      ? visualJacksFor(n, visible, ast.edges ?? [])
+      : (n.jacks ?? []);
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     const role: "io" | "chip" = n.type === "out" ? "io" : "chip";
     const px = x;

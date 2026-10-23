@@ -29,8 +29,8 @@ describe("board architecture baseline", () => {
       ...emptyAst(),
       nodes: [node("comp1", "comp", chipSpec("comp").defaultArgs)],
     });
-    expect(seq.nodes.stepseq1!.w).toBeGreaterThanOrEqual(1000);
-    expect(comp.nodes.comp1!.w).toBeGreaterThanOrEqual(700);
+    expect(seq.nodes.stepseq1!.w).toBeLessThanOrEqual(448);
+    expect(comp.nodes.comp1!.w).toBeLessThanOrEqual(448);
   });
 });
 
