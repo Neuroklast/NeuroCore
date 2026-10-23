@@ -10,3 +10,5 @@ The completed first pass is in [the individual review](2026-10-22-review.md), wi
 Reproduce native reports with NeuroKoreDspContracts --factory, --factory-profile (transients/hot/silence) and --factory-stress. Pass the JSON outputs to scripts/audit_factory_presets.py. The baseline catalog is main d07c0ba1c3dc. The protected Mesa baseline and all deprecated originals are checked by node --test scripts/factory/curation.test.mjs.
 
 Final catalog: 353 active (25 new), including three initial MSEG examples. The final engine re-rendered every entry on five profiles with zero parse/nonfinite failures; 33 complete original versions remain archived. Source and decision counts in the individual review are authoritative. Windows/pluginval is tracked separately in the validation evidence.
+
+The 2026-10-23 library pass starts from this catalog. Inventory and use-case classification: [2026-10-23-review.md](2026-10-23-review.md) and [2026-10-23-inventory.json](2026-10-23-inventory.json). Listening, latency and CPU remain open.
