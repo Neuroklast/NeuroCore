@@ -75,6 +75,15 @@ describe("hostStore", () => {
     expect(s.scopeDelta).toBe(true);
   });
 
+  it("tracks standalone capability separately from host audio settings", () => {
+    useHostStore.getState().applyHost({ standalone: true });
+    expect(useHostStore.getState().standalone).toBe(true);
+    useHostStore.getState().applyHost({ frameRate: 30 });
+    expect(useHostStore.getState().standalone).toBe(true);
+    useHostStore.getState().applyHost({ standalone: false });
+    expect(useHostStore.getState().standalone).toBe(false);
+  });
+
   it("host snapshot applies LIVE", () => {
     useHostStore.getState().applyHost({
       mode: "LIVE",
