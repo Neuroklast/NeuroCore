@@ -42,6 +42,10 @@ describe("overlay chrome", () => {
     expect(src).not.toContain("h-[720px]");
   });
 
+  it("does not keep an exiting overlay in front of the board", () => {
+    expect(css).toMatch(/\.nk-overlay-host\[data-phase="exit"\]\s*\{[^}]*pointer-events:\s*none/s);
+  });
+
   it("keeps CRT under the overlay so Functions stays sharp", () => {
     expect(OVERLAY_Z).toBeGreaterThan(CRT_Z);
     expect(css).toMatch(/\.nk-overlay-host \{[\s\S]*?z-index:\s*40/);

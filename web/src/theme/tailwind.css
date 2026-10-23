@@ -2989,6 +2989,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-overlay-host[data-phase="exit"] {
   animation: nk-overlay-dim-out 0.28s ease both;
+  pointer-events: none;
 }
 
 .nk-overlay {
