@@ -75,7 +75,6 @@ export interface HostState {
   bypass: boolean;
   mixHeld: number;
   motion: "full" | "reduced" | "off";
-  cables: "dots" | "wave";
   formulaPt: number;
   scopeSource: "in" | "out" | "both";
   scopeDelta: boolean;
@@ -329,7 +328,6 @@ export const useHostStore = create<HostState>((set) => ({
   bypass: false,
   mixHeld: 1,
   motion: "full",
-  cables: "wave",
   formulaPt: 18,
   scopeSource: "both",
   scopeDelta: false,
@@ -376,7 +374,6 @@ export const useHostStore = create<HostState>((set) => ({
       ? now : s.midiLastEventAt;
     const prefs = applyUiPrefs(p, {
       motion: s.motion,
-      cables: s.cables,
       theme: s.theme,
       frameRate: s.frameRate,
       discardPrompt: s.discardPrompt,
@@ -404,7 +401,6 @@ export const useHostStore = create<HostState>((set) => ({
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     motion: prefs.motion ?? s.motion,
-    cables: prefs.cables ?? s.cables,
     theme: prefs.theme ?? s.theme,
     frameRate: prefs.frameRate ?? s.frameRate,
     discardPrompt: prefs.discardPrompt ?? s.discardPrompt,
