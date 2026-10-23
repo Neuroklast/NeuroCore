@@ -1,4 +1,4 @@
-import { placeHostTerminals } from "../hostTerminalGeometry";
+import { placeHostTerminals, reserveHostColumn } from "../hostTerminalGeometry";
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
 import { BOARD_GRID } from "../grid";
 import { globalPort, northPortLocals, southPortLocals } from "../portLayout";
@@ -202,6 +202,7 @@ export async function runLayout(
     }]))
     : packRows(freeNodes, freeEdges, view));
   pinHostTerminals(placed, pinNodes);
+  if(mode!=="REROUTE")reserveHostColumn(placed);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const edgePaths: Record<string, string> = {};

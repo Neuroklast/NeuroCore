@@ -36,6 +36,12 @@ test("compact connection banks keep geometry across all themes",async({page})=>{
   await expect(seq).toBeVisible();await expect(page.locator('[aria-label="Layout"]')).toHaveCount(0,{timeout:30000});
   await expect(seq.locator('[data-step-tick]')).toHaveCount(64);
   const bounds=await seq.boundingBox();
+  const hostBoxes=await page.locator('[data-terminal]').evaluateAll(nodes=>nodes.map(node=>{
+    const r=node.getBoundingClientRect();return {id:node.getAttribute('data-terminal'),x:r.x,y:r.y,w:r.width,h:r.height};
+  }));
+  const input=hostBoxes.find(box=>box.id==="in")!,midi=hostBoxes.find(box=>box.id==="midi")!,sc=hostBoxes.find(box=>box.id==="sidechain")!;
+  expect(midi.x).toBeCloseTo(input.x,2);expect(sc.x).toBeCloseTo(input.x,2);
+  expect(sc.y+sc.h-input.y).toBeLessThan((input.w/160)*448+.1);
   for(const step of [0,7,8,31,63,-1]) {
     await page.evaluate(step=>window.dispatchEvent(new CustomEvent("unit-contract-host",{detail:{clips:[{id:"stepseq1",peak:0,step}]}})),step);
     await expect(seq.locator('[data-glyph="steps"]')).toHaveAttribute("data-step-live",String(step));

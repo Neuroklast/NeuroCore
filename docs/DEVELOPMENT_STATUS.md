@@ -24,6 +24,8 @@ StepSeq now renders an 8-column hardware LED matrix (up to 8 rows), with empty s
 
 Unit/Circuit now uses a disposable 220 ms SVG handoff anchored to the existing host contact. It reads only fresh measured RMS; stale/silent data and reduced/off motion skip it. No extra Unit renderer is kept alive. Contracts and browser DOM lifecycle/motion checks pass at 1x/2x with WebGL disabled; 1x also passes with software WebGL. The 2x software-WebGL workspace switch exceeds the local test timeout and is not certified.
 
+Host connectors now occupy a reserved left column. MIDI/SC use 96 px housings when their physical ports allow it, instead of extending below the full DSP hull. Arrange/Compact reserve the column before routing; Reroute does not translate chips. Repeated geometry/factory routing and browser host-column checks pass.
+
 Still open: complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
 
 

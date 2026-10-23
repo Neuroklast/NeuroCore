@@ -182,6 +182,9 @@ function makeNode(
   locked: boolean,
 ): BoardNode {
   const box = chipBox(role === "io" && type === "sidechain" ? "in" : type, jacks, false, args);
+  if(role === "io" && (type === "sidechain" || type === "midi")) {
+    box.h=Math.max(BOARD_GRID*3,snapSize(sidePortMinHeight(jacks.length)+BOARD_GRID));
+  }
   return {
     id,
     type,
