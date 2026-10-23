@@ -36,6 +36,9 @@ jobs:
       - name: Circuit navigation and signal contracts
         working-directory: web
         run: npx vitest run src/assemble/boardNavigation.test.ts src/assemble/cableSignal.test.ts src/assemble/cablePaint.test.ts src/assemble/layout/pcbComposition.test.ts src/assemble/boardCamera.test.ts src/theme/versionLock.test.ts
+      - name: Settings regression contracts
+        working-directory: web
+        run: npx vitest run src/overlays/settingsBody.test.ts src/store/hostStore.test.ts
       - name: Upload layout evidence
         if: always()
         uses: actions/upload-artifact@v4
