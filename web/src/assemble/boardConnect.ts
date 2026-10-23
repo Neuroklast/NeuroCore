@@ -86,7 +86,7 @@ export function edgesAfterConnect(graph: BoardGraph, src: BoardPort, dst: BoardP
 export function edgesAfterCutPort(graph: BoardGraph, portId: string): Record<string, BoardEdge> {
   const next: Record<string, BoardEdge> = {};
   for (const [id, e] of Object.entries(graph.edges)) {
-    if (e.sourcePortId === portId || e.targetPortId === portId) {
+    if (e.dependency !== "midi" && (e.sourcePortId === portId || e.targetPortId === portId)) {
       continue;
     }
     next[id] = e;

@@ -233,3 +233,12 @@ it("repeated reroute keeps terminal placement and route endpoints stable", async
   }
  }
 });
+
+it("draws each real MIDI variable dependency and no substring matches", () => {
+ const g = hydrateBoard({...emptyAst(),nodes:[node("stage1","stage",{y:"x * midi_vel * midi_gate + not_midi_mod"})]});
+ const edges = Object.values(g.edges).filter(e=>e.sourceNodeId === "MIDI");
+ expect(edges.map(e=>g.ports[e.sourcePortId]!.jackId).sort()).toEqual(["gate","vel"]);
+ expect(edges.every(e=>g.ports[e.targetPortId]!.jackId === "y")).toBe(true);
+ expect(edges.every(e=>e.dependency === "midi")).toBe(true);
+ expect(g.connectionIssues).toEqual([]);
+});

@@ -46,6 +46,8 @@ export type BoardEdge = {
   targetPortId: string;
   kind: PortKind;
   route: Array<{ x: number; y: number }>;
+  /** Display-only dependency on a host MIDI variable, not an editable event cable. */
+  dependency?: "midi";
 };
 
 export type BoardConnectionIssue = {
@@ -285,7 +287,13 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   };
   x += nodes.IN.w + CHIP_GAP;
 
-  const inferred = inferModLinks(visible);
+  const midiDependencies: AstEdge[] = visible.flatMap((node) =>
+    Object.entries(node.args).flatMap(([key, expression]) =>
+      midiRefs({ [key]: expression }).map((name) => ({
+        from: "MIDI", to: node.id, kind: "mod", fromJack: midiJack(name), toJack: key,
+      }))),
+  );
+  const inferred = [...inferModLinks(visible), ...midiDependencies];
   const jackEdges = [...(ast.edges ?? []), ...inferred];
 
   for (const n of visible) {
@@ -356,6 +364,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       targetNodeId: ports[targetPortId]!.nodeId,
       targetPortId,
       kind,
+      ...(e.from === "MIDI" ? { dependency: "midi" as const } : {}),
       route: [],
     };
   });

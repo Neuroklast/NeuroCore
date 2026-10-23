@@ -158,7 +158,9 @@ export async function commitBoardConnect(src: BoardPort, dst: BoardPort): Promis
 
 export async function commitBoardCut(port: BoardPort): Promise<void> {
   const g = useBoardStore.getState();
-  const doomed = Object.values(g.edges).filter((e) => e.sourcePortId === port.id || e.targetPortId === port.id);
+  const doomed = Object.values(g.edges).filter((e) =>
+    e.dependency !== "midi" && (e.sourcePortId === port.id || e.targetPortId === port.id));
+  if (!doomed.length) return;
   if (hasJuceBridge()) {
     for (const e of doomed) {
       const src = g.ports[e.sourcePortId];
