@@ -30,7 +30,7 @@ export type BoardState = BoardGraph & {
   ) => void;
 };
 
-const empty: BoardGraph = { nodes: {}, ports: {}, edges: {} };
+const empty: BoardGraph = { nodes: {}, ports: {}, edges: {}, connectionIssues: [] };
 
 export const useBoardStore = create<BoardState>((set) => ({
   ...empty,

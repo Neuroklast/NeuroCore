@@ -85,3 +85,11 @@ it("keeps every parameter dependency from one modulation source", () => {
  const targets = Object.values(graph.edges).filter(e => e.sourceNodeId === "random1").map(e => e.targetPortId);
  expect(targets.sort()).toEqual([portId("filter1","cutoff",false),portId("filter1","resonance",false)].sort());
 });
+
+it("reports unresolved connection endpoints with their semantic edge", () => {
+ const edge = {from:"missing1",to:"filter1",kind:"mod",fromJack:"out",toJack:"cutoff"};
+ const graph = hydrateBoard({version:1,leadingComments:[],params:[],nodes:[
+  {id:"filter1",type:"filter",args:{cutoff:"1000"},busName:"",trailingComment:""}
+ ],edges:[edge]});
+ expect(graph.connectionIssues).toEqual([{code:"missing-port",edge,missingPortIds:[portId("missing1","out",true)]}]);
+});

@@ -48,7 +48,14 @@ export type BoardEdge = {
   route: Array<{ x: number; y: number }>;
 };
 
+export type BoardConnectionIssue = {
+  code: "missing-port";
+  edge: AstEdge;
+  missingPortIds: string[];
+};
+
 export type BoardGraph = {
+  connectionIssues?: BoardConnectionIssue[];
   nodes: Record<string, BoardNode>;
   ports: Record<string, BoardPort>;
   edges: Record<string, BoardEdge>;
@@ -329,12 +336,15 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     merged.push(e);
   }
   const edges: Record<string, BoardEdge> = {};
+  const connectionIssues: BoardConnectionIssue[] = [];
   merged.forEach((e, i) => {
     const fromJack = e.fromJack || (e.kind === "mod" ? "mod" : "out");
     const toJack = e.toJack || (e.kind === "mod" ? e.from : "in");
     const sourcePortId = portId(e.from, fromJack, true);
     const targetPortId = portId(e.to, toJack, false);
-    if (! ports[sourcePortId] || ! ports[targetPortId]) {
+    const missingPortIds = [sourcePortId, targetPortId].filter((id) => !ports[id]);
+    if (missingPortIds.length) {
+      connectionIssues.push({ code: "missing-port", edge: { ...e }, missingPortIds });
       return;
     }
     const kind: PortKind = e.kind === "mod" ? "mod" : (fromJack === "sc" ? "sc" : "audio");
@@ -366,7 +376,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     }
   }
   recountRails(nodes, ports);
-  return { nodes, ports, edges };
+  return { nodes, ports, edges, connectionIssues };
 }
 
 /** Occupancy is counted per face after every port exists. */
