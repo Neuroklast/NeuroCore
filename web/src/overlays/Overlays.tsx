@@ -23,6 +23,7 @@ import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose, overlaySizesToContent } from "./overlayChrome";
 import { useOverlayShell } from "./overlayMotion";
 import { persistUi } from "../chrome/persistUi";
+import { footerLicenseLabel } from "../chrome/footerLicense";
 import { PresetExplorer } from "./PresetExplorer";
 import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
@@ -242,18 +243,19 @@ export function SettingsBody() {
   const live = useHostStore((s) => s.live);
   const licensed = useHostStore((s) => s.licensed);
   const licenseEmail = useHostStore((s) => s.licenseEmail);
+  const demoRemainSec = useHostStore((s) => s.demoRemainSec);
   const standalone = useHostStore((s) => s.standalone);
   const frameRate = useHostStore((s) => s.frameRate);
   const discardPrompt = useHostStore((s) => s.discardPrompt);
   const setOverlay = useHostStore((s) => s.setOverlay);
   const [bpmDraft, setBpmDraft] = useState(String(Math.round(bpm)));
-  const [editingBpm, setEditingBpm] = useState(false);
+  const editingBpm = useRef(false);
   const [tempoError, setTempoError] = useState("");
   const cancelBpmBlur = useRef(false);
 
   useEffect(() => {
-    if (! editingBpm) setBpmDraft(String(Math.round(bpm)));
-  }, [bpm, editingBpm]);
+    if (! editingBpm.current) setBpmDraft(String(Math.round(bpm)));
+  }, [bpm]);
 
   const setTempo = (followHost: boolean) => {
     setTempoError("");
@@ -261,7 +263,7 @@ export function SettingsBody() {
       .catch(() => setTempoError("Could not change tempo source."));
   };
   const commitBpm = () => {
-    setEditingBpm(false);
+    editingBpm.current = false;
     if (cancelBpmBlur.current) {
       cancelBpmBlur.current = false;
       return;
@@ -286,7 +288,7 @@ export function SettingsBody() {
       <section className="nk-settings-license" aria-label="License">
         <div className="nk-settings-license-status">
           <h3>LICENSE</h3>
-          <p>{licensed ? (licenseEmail ? "Licensed to " + licenseEmail : "Licensed") : "Demo license"}</p>
+          <p>{licensed ? (licenseEmail ? "Licensed to " + licenseEmail : "Licensed") : footerLicenseLabel(licensed, demoRemainSec)}</p>
         </div>
         <button type="button" className="nk-clip" onClick={() => setOverlay("license")}>Manage license</button>
       </section>
@@ -342,7 +344,7 @@ export function SettingsBody() {
               aria-label={tempo === "USER" ? "Manual BPM" : "Host BPM"}
               disabled={tempo !== "USER"}
               value={tempo === "USER" ? bpmDraft : String(Math.round(bpm))}
-              onFocus={() => setEditingBpm(true)}
+              onFocus={() => { editingBpm.current = true; }}
               onChange={(e) => setBpmDraft(e.target.value)}
               onBlur={commitBpm}
               onKeyDown={(e) => {
@@ -351,7 +353,7 @@ export function SettingsBody() {
                   e.stopPropagation();
                   cancelBpmBlur.current = true;
                   setBpmDraft(String(Math.round(bpm)));
-                  setEditingBpm(false);
+                  editingBpm.current = false;
                   e.currentTarget.blur();
                 }
               }}
