@@ -19977,5 +19977,244 @@
     "style": "Electronic",
     "role": "Insert",
     "requiredInputs": []
+  },
+  {
+    "name": "Subsafe Groove Bass",
+    "category": "Bass",
+    "description": "Crossover keeps the low band on a clean path. The upper band gets a host-synced filter groove and light saturation. Blend is the upper return; it is not a measured brickwall for the sub.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Subsafe Groove Bass\n# Crossover keeps the low band on a clean path. The upper band gets a host-synced filter groove and light saturation. Blend is the upper return; it is not a measured brickwall for the sub.\nparam a = Crossover [80, 220]\nparam b = Motion [400, 6000]\nparam c = Drive [1, 8]\nparam d = Groove [0.25, 1]\nparam e = Tone [0.2, 0.85]\nparam f = Blend [0.2, 1]\nxover1: f1 = a\nstepseq1: steps = 8; sync = 1/16; values = 0.2,0.9,0.35,0.75,0.15,1,0.4,0.65; glide = 0.04\nbus high:\n  nlfilter1: cutoff = 600 + stepseq1 * b; drive = c; mix = d\n  saturate1: mode = transistor; drive = c; tone = e; mix = 0.3\nout: low = 1; high = f\n",
+    "tags": [
+      "bass",
+      "bus",
+      "drive",
+      "eq",
+      "equalizer",
+      "filter",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Crossover",
+      "min": 80,
+      "max": 220,
+      "default": 140
+    },
+    "paramB": {
+      "name": "Motion",
+      "min": 400,
+      "max": 6000,
+      "default": 2400
+    },
+    "paramC": {
+      "name": "Drive",
+      "min": 1,
+      "max": 8,
+      "default": 2.4
+    },
+    "paramD": {
+      "name": "Groove",
+      "min": 0.25,
+      "max": 1,
+      "default": 0.7
+    },
+    "paramE": {
+      "name": "Tone",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.5
+    },
+    "paramF": {
+      "name": "Blend",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.65
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
+  },
+  {
+    "name": "Resonant Drum Body",
+    "category": "Drums",
+    "description": "Onsets trigger a parallel resonant body. Tune and Resonance set the ring; Decay is the trigger hold. Dry transients stay on the main path.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Resonant Drum Body\n# Onsets trigger a parallel resonant body. Tune and Resonance set the ring; Decay is the trigger hold. Dry transients stay on the main path.\nparam a = Trigger [-36, -8]\nparam b = Tune [80, 1800]\nparam c = Resonance [1.2, 8]\nparam d = Decay [20, 220]\nparam e = Blend [0.1, 0.8]\nenvtrigger1: thresholddb = a; hysteresis = 5; holdoff = 25; hold = d; level = 1; source = peak\nstage1: y = x\nbus body:\n  resonator1: freq = b; res = c; gain = -4; mix = 1\n  stage2: y = x * envtrigger1\nout: main = 1; body = e\n",
+    "tags": [
+      "bus",
+      "drum",
+      "drums",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Trigger",
+      "min": -36,
+      "max": -8,
+      "default": -22
+    },
+    "paramB": {
+      "name": "Tune",
+      "min": 80,
+      "max": 1800,
+      "default": 220
+    },
+    "paramC": {
+      "name": "Resonance",
+      "min": 1.2,
+      "max": 8,
+      "default": 3.2
+    },
+    "paramD": {
+      "name": "Decay",
+      "min": 20,
+      "max": 220,
+      "default": 70
+    },
+    "paramE": {
+      "name": "Blend",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.35
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
+  },
+  {
+    "name": "Dynamic Hat Tamer",
+    "category": "Drums",
+    "description": "De-esser on hats and bright percussion. Amount only rises when the band exceeds the threshold. Not a static lowpass; Metal Cymbal Tamer remains the static overhead EQ.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Dynamic Hat Tamer\n# De-esser on hats and bright percussion. Amount only rises when the band exceeds the threshold. Not a static lowpass; Metal Cymbal Tamer remains the static overhead EQ.\nparam a = Frequency [4000, 11000]\nparam b = Threshold [-18, 0]\nparam c = Amount [0.2, 1]\nparam d = Release [0.02, 0.16]\nparam e = Air [-4, 2]\ndeesser1: freq = a; threshold = b; amount = c; attack = 0.002; release = d; mix = 1\neq1: type = highshelf; freq = 11000; q = 0.5; gain = e\n",
+    "tags": [
+      "air",
+      "drums",
+      "eq",
+      "equalizer",
+      "hat",
+      "lowpass",
+      "metal"
+    ],
+    "paramA": {
+      "name": "Frequency",
+      "min": 4000,
+      "max": 11000,
+      "default": 7500
+    },
+    "paramB": {
+      "name": "Threshold",
+      "min": -18,
+      "max": 0,
+      "default": -8
+    },
+    "paramC": {
+      "name": "Amount",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.65
+    },
+    "paramD": {
+      "name": "Release",
+      "min": 0.02,
+      "max": 0.16,
+      "default": 0.05
+    },
+    "paramE": {
+      "name": "Air",
+      "min": -4,
+      "max": 2,
+      "default": 0
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Restoration",
+      "EQ"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
+  },
+  {
+    "name": "Triggered Room Send",
+    "category": "Drums",
+    "description": "Audio onsets open a parallel room. The dry path is unchanged. Trigger must move the send into the reverb; a silent trigger leaves only the dry signal.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Triggered Room Send\n# Audio onsets open a parallel room. The dry path is unchanged. Trigger must move the send into the reverb; a silent trigger leaves only the dry signal.\nparam a = Trigger [-36, -8]\nparam b = Room [0.2, 0.85]\nparam c = Decay [0.2, 2.5]\nparam d = Tone [2500, 12000]\nparam e = Return [0.08, 0.7]\nenvtrigger1: thresholddb = a; hysteresis = 6; holdoff = 40; hold = 90; level = 1; source = peak\nstage1: y = x\nbus room:\n  send: in = 1\n  stage2: y = x * envtrigger1\n  reverb1: size = b; decay = c; damp = 0.55; mix = 1\n  filter1: type = lowpass; cutoff = d; resonance = 0.3\nout: main = 1; room = e\n",
+    "tags": [
+      "bus",
+      "drums",
+      "filter",
+      "lowpass",
+      "parallel",
+      "reverb",
+      "room",
+      "send",
+      "space"
+    ],
+    "paramA": {
+      "name": "Trigger",
+      "min": -36,
+      "max": -8,
+      "default": -20
+    },
+    "paramB": {
+      "name": "Room",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.45
+    },
+    "paramC": {
+      "name": "Decay",
+      "min": 0.2,
+      "max": 2.5,
+      "default": 0.7
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 2500,
+      "max": 12000,
+      "default": 6500
+    },
+    "paramE": {
+      "name": "Return",
+      "min": 0.08,
+      "max": 0.7,
+      "default": 0.28
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   }
 ]
