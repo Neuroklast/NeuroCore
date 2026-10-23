@@ -264,7 +264,7 @@ export function visualJacksFor(node: AstNode, nodes: AstNode[] = [], edges: AstE
   const taken = new Set([...side, ...sideExtra, ...params].map((j) => j.id));
   const inferredIns = [...connected]
     .filter((id) => id && ! taken.has(id))
-    .map((id) => extra.find((j) => j.id === id) ?? jack(id, false, "mod"));
+    .map((id) => extra.find((j) => j.id === id) ?? jack(id, false, id === "sc" ? "audio" : "mod"));
   return side.length ? [...side, ...sideExtra, ...params, ...inferredIns] : (node.jacks ?? []);
 }
 
@@ -480,5 +480,14 @@ export function visualAudioEdges(nodes: AstNode[], edges: AstEdge[]): AstEdge[] 
     push({ from: prev?.id ?? "IN", to: en.id, kind: "audio", fromJack: "out", toJack: "in" });
   }
 
+  next = next.map((edge) => {
+    const destination = byId.get(edge.to);
+    if (destination?.type !== "out" || edge.toJack !== "in") return edge;
+    const contacts = outMixJackIds(destination, nodes);
+    if (contacts.includes("in")) return edge;
+    const source = byId.get(edge.from);
+    const bus = source ? busOf(source) : "main";
+    return contacts.includes(bus) ? { ...edge, toJack: bus } : edge;
+  });
   return [...next, ...mods];
 }

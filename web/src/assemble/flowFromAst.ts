@@ -152,19 +152,11 @@ function channelOf(node: AstNode): string {
   return bus.toUpperCase();
 }
 
-function isSidechainType(type: string): boolean {
-  const t = type.toLowerCase();
-  return t === "sidechain" || t === "sc" || t === "scin";
-}
-
 export function visibleNodes(ast: AstDocument, _sidechainOn = false): AstNode[] {
   return ast.nodes.filter((n) => {
     if (n.type === "bus") {
       const name = (n.args.name || n.id || "").toLowerCase();
       return name !== "__park";
-    }
-    if (isSidechainType(n.type)) {
-      return false;
     }
     return true;
   });
@@ -206,11 +198,11 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     nodes.push({
       id: n.id,
-      type: n.type === "out" || isSidechainType(n.type) ? "io" : "chip",
+      type: n.type === "out" ? "io" : "chip",
       position: { x: px, y: py },
       data: {
-        label: custom ? n.id : (isSidechainType(n.type) ? "Sidechain" : kindLabel(n.type)),
-        type: isSidechainType(n.type) ? "sidechain" : n.type,
+        label: custom ? n.id : (kindLabel(n.type)),
+        type: n.type,
         jacks,
         letters: lettersOn(n),
         args: n.args,
@@ -223,7 +215,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       height: box.h,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      draggable: isSidechainType(n.type) ? false : undefined,
+      draggable: undefined,
     });
     x = px + box.w + CHIP_GAP;
   }

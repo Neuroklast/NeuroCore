@@ -10,3 +10,11 @@ it("every factory graph resolves all modulation connection endpoints", () => {
  });
  expect(failures).toEqual([]);
 });
+
+it("every factory graph resolves all audio connection endpoints", () => {
+ const failures = factoryRows().flatMap(p => {
+  const graph = hydrateBoard(parseDslSketch(p.script).doc);
+  return (graph.connectionIssues ?? []).filter(issue=>issue.edge.kind !== "mod").map(issue=>({preset:p.name,...issue}));
+ });
+ expect(failures).toEqual([]);
+});

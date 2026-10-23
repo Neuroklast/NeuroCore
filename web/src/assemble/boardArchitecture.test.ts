@@ -242,3 +242,14 @@ it("draws each real MIDI variable dependency and no substring matches", () => {
  expect(edges.every(e=>e.dependency === "midi")).toBe(true);
  expect(g.connectionIssues).toEqual([]);
 });
+
+it("retains the real Sidechain mixing processor between main audio contacts", () => {
+ const g = hydrateBoard({...emptyAst(),nodes:[node("sidechain1","sidechain",{mix:"0.5"})],edges:[
+  {from:"IN",to:"sidechain1",fromJack:"out",toJack:"in",kind:"audio"},
+  {from:"sidechain1",to:"OUT",fromJack:"out",toJack:"in",kind:"audio"}
+ ]});
+ expect(g.nodes.sidechain1?.role).toBe("chip");
+ expect(g.nodes.sidechain1?.locked).toBe(false);
+ expect(g.connectionIssues).toEqual([]);
+ expect(Object.values(g.edges).some(e=>e.sourceNodeId === "SC" && e.targetNodeId === "sidechain1")).toBe(true);
+});

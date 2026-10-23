@@ -104,6 +104,8 @@ StepSeq chips show up to 64 host-reported steps as eight LEDs per row, with at m
 
 Each chip keeps its full effect name above a separate typecode and control row. The gunmetal housing has lit upper facets, recessed controls and metallic contacts. A bounded central dot field carries a calculated function diagram; it is not a measured waveform. The function diagram remains readable at rest. Selecting or focusing a chip makes it clearer without moving its contacts. Numeric modulation parameters use 17 px captions and contact-aligned guide ticks above the node ID and live level. Enum and routing fields such as TYPE and CHANNEL remain in Inspect. Muting subdues the signal surface while keeping identification readable. Cyan parameter captions indicate macro bindings. Drag a macro onto the chip to choose a binding target, or use Inspect for the full parameter list. Connected audio contacts light from their source's measured signal. Unconnected or silent contacts remain metal. Clipping warnings appear only on a real overload.
 
+SIDECHAIN IN is the host input. A Sidechain processor in a patch remains a separate movable chip because its MIX control blends main and sidechain audio. Supported compressors, gates and envelopes that select the host sidechain show that dependency from the host plate.
+
 MIDI IN shows dependencies on MIDI variables explicitly used in parameter expressions. These lines describe host control values. Change the expression to change the dependency. MIDI IN does not provide an editable event connection or a MIDI output.
 
 The browser preview connects modulation to the selected parameter contact. Audio rail edits that require the native editor report this without changing the patch.

@@ -186,7 +186,7 @@ function makeNode(
   channel: string,
   locked: boolean,
 ): BoardNode {
-  const box = chipBox(type, jacks, false, args);
+  const box = chipBox(role === "io" && type === "sidechain" ? "in" : type, jacks, false, args);
   return {
     id,
     type,
@@ -293,7 +293,12 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
         from: "MIDI", to: node.id, kind: "mod", fromJack: midiJack(name), toJack: key,
       }))),
   );
-  const inferred = [...inferModLinks(visible), ...midiDependencies];
+  const sidechainDependencies: AstEdge[] = visible
+    .filter((node) => node.type === "sidechain" || node.type === "sc" || node.type === "scin"
+      || ["comp", "noisegate", "gate", "env"].includes(node.type)
+        && ["sidechain", "sc", "ext"].includes((node.args.source || node.args.input || node.args.sidechain || "").toLowerCase()))
+    .map((node) => ({ from: "IN", to: node.id, kind: "audio", fromJack: "sc", toJack: "sc" }));
+  const inferred = [...inferModLinks(visible), ...midiDependencies, ...sidechainDependencies];
   const jackEdges = [...(ast.edges ?? []), ...inferred];
 
   for (const n of visible) {
