@@ -23,6 +23,20 @@ export function LfoFace({ type, args, host }: FaceProps) {
     );
   }
 
+  if (type === "random") {
+    const min = parseFaceNumber(args.min, -1, -1, 1, host);
+    const max = parseFaceNumber(args.max, 1, -1, 1, host);
+    return (
+      <div className="nk-node-face" data-glyph="random" aria-label="Random modulation">
+        <div className="nk-face-plot"><svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
+          <path d="M8 20h84" opacity="0.25" />
+          <path d={`M8 ${20 - min * 12} H92 M8 ${20 - max * 12} H92`} opacity="0.45" />
+          <path d="M14 28 22 12 30 24 38 10 46 26 54 14 62 30 70 11 78 25 86 16" />
+        </svg></div>
+      </div>
+    );
+  }
+
   if (type === "modmix") {
     const weighted = [
       host?.controlA == null ? undefined : host.controlA * parseFaceNumber(args.levela ?? args.levelA, 1, -4, 4, host),
