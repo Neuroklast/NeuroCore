@@ -48,7 +48,7 @@ describe("board architecture baseline", () => {
       ],
     };
     const g = hydrateBoard(ast);
-    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && p.south).map((p) => p.jackId);
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && p.face === "s").map((p) => p.jackId);
     expect(south).toContain("threshold");
     expect(south).toContain("ceiling");
     expect(south).not.toContain("lookahead");
@@ -79,6 +79,16 @@ describe("host terminals", () => {
     expect(g.nodes.SC?.locked).toBe(true);
     expect(canDeleteChip(g.nodes.SC)).toBe(false);
     expect(Object.values(g.ports).filter((p) => p.nodeId === "IN").map((p) => p.jackId)).toEqual(["out"]);
+  });
+
+  it("gives every port an explicit face, not east/south flags", () => {
+    const g = hydrateBoard(emptyAst());
+    const faces = new Set(Object.values(g.ports).map((p) => p.face));
+    expect([...faces].every((f) => f === "n" || f === "e" || f === "s" || f === "w")).toBe(true);
+    expect(g.ports[portId("IN", "out", true)]?.face).toBe("e");
+    expect(g.ports[portId("OUT", "in", false)]?.face).toBe("w");
+    expect(g.ports[portId("IN", "sc", true)]?.face).toBe("e");
+    expect(Object.values(g.ports).some((p) => "east" in p || "south" in p)).toBe(false);
   });
 
   it("publishes SC cables as IN/sc, never as node SC", () => {

@@ -58,7 +58,7 @@ describe("board connect", () => {
   });
 
   it("leaves the bezier along the output normal", () => {
-    const b = bezierPreview({ x: 0, y: 40 }, { x: 200, y: 80 }, true);
+    const b = bezierPreview({ x: 0, y: 40 }, { x: 200, y: 80 }, "e");
     expect(b.c1.x).toBeGreaterThan(0);
     expect(b.c1.y).toBe(40);
     expect(b.c2.x).toBeLessThan(200);

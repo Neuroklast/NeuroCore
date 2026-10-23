@@ -20,7 +20,7 @@ import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute } from "./boardEdit";
-import { graphToLayout, portGlobal, previewBoardIds, type BoardPort } from "./boardModel";
+import { graphToLayout, portGlobal, portIsOutput, previewBoardIds, type BoardPort } from "./boardModel";
 import { applyChipDragStyle, chipDragGroupRef, chipDragRef, type ChipDrag } from "./boardDrag";
 import { useBoardStore } from "./boardStore";
 import { keepBoardXy } from "./boardSync";
@@ -563,7 +563,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
     if (drag?.snapPortId) {
       const dst = useBoardStore.getState().ports[drag.snapPortId];
       if (dst) {
-        void (drag.fromPort.east ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
+        void (portIsOutput(drag.fromPort) ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
       }
     }
     connectDragRef.current = null;

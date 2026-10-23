@@ -18,7 +18,7 @@ import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
 import { stepCountFromArgs } from "./stepSeqModel";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo, toggleGroupMute, toggleGroupSolo } from "./muteSoloApply";
-import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
+import { BOARD_HIT, portIsOutput, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { ChipParameters, ChipParameterCaption } from "./ChipParameters";
 import { ChipShell } from "./nodeFace/ChipShell";
@@ -72,7 +72,7 @@ export function BoardChip({
   const ioInset = node.role === "io" ? ioBodyInset() : null;
   const showExpand = chipExpandAction(node.role, node.type) === "inspect";
   const binds = node.role === "chip" ? paintedBindKeys(node.type, node.args) : [];
-  const macroOnly = binds.filter(key => !spec.paramJacks.includes(key) && !ports.some(p => p.south && p.jackId === key));
+  const macroOnly = binds.filter(key => !spec.paramJacks.includes(key) && !ports.some(p => p.face === "s" && p.jackId === key));
   const bindOpen = bindOver && node.role === "chip" && binds.length > 0;
   const lfoShape = parseLfoShape(node.args.shape ?? "sine");
   const lfoHz = node.type === "osc" ? resolveLfoHz(node.args, knobs, bpm) : 0;
@@ -159,7 +159,7 @@ export function BoardChip({
       />
       {ports.map(p => <ChipPort key={p.id} node={node} port={p} />)}
       <ChipParameters nodeId={node.id} hidden={bindOpen}
-        rows={ports.filter(p => p.south).map(p => ({
+        rows={ports.filter(p => p.face === "s").map(p => ({
           key: p.jackId, label: spec.paramJackLabels[p.jackId] || p.jackId,
           x: portLocal(node, p).x, formula: node.args[p.jackId] ?? "",
           bindable: binds.includes(p.jackId),
@@ -198,7 +198,7 @@ function ChipOverloadMarks({ node, ports }: { node: BoardNode; ports: BoardPort[
   return (
     <>
       {ports.map((p) => {
-        if (! p.east || p.kind !== "audio") {
+        if (p.face !== "e" || p.kind !== "audio") {
           return null;
         }
         const loc = portLocal(node, p);
@@ -248,7 +248,7 @@ function ClipWarnSvg() {
 /** Connected contacts light only from their source's measured signal. */
 function ChipPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
   const sourceId = useBoardStore(s => {
-    const edge = Object.values(s.edges).find(e => p.east ? e.sourcePortId === p.id : e.targetPortId === p.id);
+    const edge = Object.values(s.edges).find(e => portIsOutput(p) ? e.sourcePortId === p.id : e.targetPortId === p.id);
     return edge?.sourceNodeId ?? null;
   });
   const sourceType = useBoardStore(s => sourceId ? s.nodes[sourceId]?.type : undefined);
@@ -260,9 +260,9 @@ function ChipPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
   });
   const loc = portLocal(node, p);
   return <button type="button"
-    className={`nk-port ${p.south ? "nk-port-south" : p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
+    className={`nk-port nk-port-${p.face === "s" ? "south" : p.face === "n" ? "north" : p.face === "e" ? "east" : "west"} nk-port-${p.kind}`}
     data-port-id={p.id} data-tip={portBracket(p.jackId)} data-signal={active ? "on" : "off"}
-    aria-label={`${p.east ? "Output" : "Input"} ${p.jackId}`}
+    aria-label={`${portIsOutput(p) ? "Output" : "Input"} ${p.jackId}`}
     style={{ top: loc.y, left: loc.x, width: BOARD_HIT, height: BOARD_HIT }}>
     <i className="nk-port-contact" />
     <span className="nk-port-cap">{portBracket(p.jackId)}</span>

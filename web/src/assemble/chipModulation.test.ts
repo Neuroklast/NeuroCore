@@ -10,7 +10,7 @@ describe('chip parameter contacts', () => {
     const audio = graph.ports[portId('IN', 'out', true)]!;
     const cutoff = graph.ports[portId('filter1', 'cutoff', false)]!;
     expect(mod).toBeDefined();
-    expect(cutoff.south).toBe(true);
+    expect(cutoff.face).toBe("s");
     expect(canLink(mod, cutoff)).toBe(true);
     expect(canLink(audio, cutoff)).toBe(false);
   });

@@ -6,7 +6,7 @@
 
 ## Circuit board terminals (2026-10-23)
 
-Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Four-sided `PortFace`, Unit↔Circuit motion and MIDI live lamps are not in this pass.
+Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Ports use `face: n|e|s|w` (output is `::src`, not east). Unit↔Circuit motion and MIDI live lamps are not in this pass.
 
 Contracts: `boardArchitecture.test.ts` failed on unlocked IN and missing SC/MIDI, then passed. Focused assemble layout/model checks pass. Pre-existing chipSpec catalog (comp params) and BoardChip knobs-subscription source scans remain.
 

@@ -3,7 +3,7 @@ import { useBoardStore } from "./boardStore";
 import { useHostStore } from "../store/hostStore";
 import { chipExpandAction } from "./boardEdit";
 import { portBracket } from "./chipFace";
-import { BOARD_HIT, portLocal, type BoardNode, type BoardPort } from "./boardModel";
+import { BOARD_HIT, portIsOutput, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { nodeMeter } from "./nodeMeter";
 
 const LABEL: Record<string, string> = {
@@ -71,8 +71,8 @@ export function BoardTerminal({
 
 function TerminalPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
   const sourceId = useBoardStore((s) => {
-    const edge = Object.values(s.edges).find((e) => p.east ? e.sourcePortId === p.id : e.targetPortId === p.id);
-    return edge?.sourceNodeId ?? (p.east ? node.id : null);
+    const edge = Object.values(s.edges).find((e) => portIsOutput(p) ? e.sourcePortId === p.id : e.targetPortId === p.id);
+    return edge?.sourceNodeId ?? (portIsOutput(p) ? node.id : null);
   });
   const sourceType = useBoardStore((s) => sourceId ? s.nodes[sourceId]?.type : undefined);
   const active = useHostStore((s) => {
@@ -89,11 +89,11 @@ function TerminalPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
   return (
     <button
       type="button"
-      className={`nk-port ${p.south ? "nk-port-south" : p.east ? "nk-port-east" : "nk-port-west"} nk-port-${p.kind}`}
+      className={`nk-port nk-port-${p.face === "s" ? "south" : p.face === "n" ? "north" : p.face === "e" ? "east" : "west"} nk-port-${p.kind}`}
       data-port-id={p.id}
       data-tip={portBracket(p.jackId)}
       data-signal={active ? "on" : "off"}
-      aria-label={`${p.east ? "Output" : "Input"} ${p.jackId}`}
+      aria-label={`${portIsOutput(p) ? "Output" : "Input"} ${p.jackId}`}
       style={{ top: loc.y, left: loc.x, width: BOARD_HIT, height: BOARD_HIT } as CSSProperties}
     >
       <i className="nk-port-contact" />

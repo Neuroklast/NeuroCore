@@ -5,7 +5,7 @@ import type { AstEdge } from "../bridge/ast";
 import { publishScript } from "./addBlock";
 import { camerasDiffer, fitBoardCamera, shouldFitCameraOnLateLayout } from "./boardCamera";
 import { circuitHasOverlay } from "../chrome/shortcuts";
-import { graphOpEndpoints, graphToLayout, type BoardPort } from "./boardModel";
+import { graphOpEndpoints, graphToLayout, portIsOutput, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { edgesAfterCutPort } from "./boardConnect";
 import { scriptAfterConnect, scriptAfterDisconnect } from "./connectModel";
@@ -15,8 +15,8 @@ import { requestGraphLayout } from "./layout/layoutClient";
 function astEdgesAfterCut(edges: AstEdge[], port: BoardPort): AstEdge[] {
   const semantic = graphOpEndpoints(port);
   return edges.filter((e) => {
-    const from = e.from === semantic.nodeId && (e.fromJack || "out") === semantic.jackId && port.east;
-    const to = e.to === semantic.nodeId && (e.toJack || "in") === semantic.jackId && ! port.east;
+    const from = e.from === semantic.nodeId && (e.fromJack || "out") === semantic.jackId && portIsOutput(port);
+    const to = e.to === semantic.nodeId && (e.toJack || "in") === semantic.jackId && ! portIsOutput(port);
     return ! from && ! to;
   });
 }

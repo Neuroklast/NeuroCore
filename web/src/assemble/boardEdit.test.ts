@@ -20,10 +20,10 @@ function graph(): BoardGraph {
       OUT: { id: "OUT", type: "out", role: "io", x: 480, y: 32, w: 96, h: 96, args: {}, label: "OUT", channel: "", locked: false },
     },
     ports: {
-      "IN::out::src": { id: "IN::out::src", nodeId: "IN", jackId: "out", east: true, index: 0, count: 1, kind: "audio" },
-      "filter1::in::dst": { id: "filter1::in::dst", nodeId: "filter1", jackId: "in", east: false, index: 0, count: 1, kind: "audio" },
-      "filter1::out::src": { id: "filter1::out::src", nodeId: "filter1", jackId: "out", east: true, index: 0, count: 1, kind: "audio" },
-      "OUT::in::dst": { id: "OUT::in::dst", nodeId: "OUT", jackId: "in", east: false, index: 0, count: 1, kind: "audio" },
+      "IN::out::src": { id: "IN::out::src", nodeId: "IN", jackId: "out", face: "e", index: 0, count: 1, kind: "audio" },
+      "filter1::in::dst": { id: "filter1::in::dst", nodeId: "filter1", jackId: "in", face: "w", index: 0, count: 1, kind: "audio" },
+      "filter1::out::src": { id: "filter1::out::src", nodeId: "filter1", jackId: "out", face: "e", index: 0, count: 1, kind: "audio" },
+      "OUT::in::dst": { id: "OUT::in::dst", nodeId: "OUT", jackId: "in", face: "w", index: 0, count: 1, kind: "audio" },
     },
     edges: {
       e0: {

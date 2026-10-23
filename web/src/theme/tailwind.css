@@ -666,7 +666,8 @@ input, textarea, select, [contenteditable],
 }
 .nk-port-west,
 .nk-port-east,
-.nk-port-south {
+.nk-port-south,
+.nk-port-north {
   transform: translate(-50%, -50%);
   z-index: 10;
 }
@@ -679,7 +680,8 @@ input, textarea, select, [contenteditable],
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 2px 2px rgb(0 0 0 / .8);
   border-radius: 1px;
 }
-.nk-port-south .nk-port-contact {
+.nk-port-south .nk-port-contact,
+.nk-port-north .nk-port-contact {
   width: 6px;
   height: 16px;
   margin: 4px auto;
@@ -728,6 +730,15 @@ input, textarea, select, [contenteditable],
   bottom: 100%;
   left: 50%;
   transform: translate(-50%, -2px);
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-port-north .nk-port-cap {
+  top: 100%;
+  bottom: auto;
+  left: 50%;
+  transform: translate(-50%, 2px);
   max-width: 40px;
   overflow: hidden;
   text-overflow: ellipsis;
