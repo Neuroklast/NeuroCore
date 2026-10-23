@@ -34,18 +34,21 @@ function Seg({
   value,
   options,
   onPick,
+  label,
 }: {
   value: string;
   options: Array<{ id: string; label: string }>;
   onPick: (id: string) => void;
+  label: string;
 }) {
   return (
-    <div className="flex gap-1">
+    <div className="nk-settings-segment" role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
-          className={`nk-clip min-h-[32px] flex-1 ${value === o.id ? "on" : ""}`}
+          className={`nk-clip ${value === o.id ? "on" : ""}`}
+          aria-pressed={value === o.id}
           onClick={() => onPick(o.id)}
         >
           {o.label}
@@ -230,126 +233,145 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     );
   }
 
-  function SettingsBody() {
+export function SettingsBody() {
   const tempo = useHostStore((s) => s.tempoSource);
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);
   const cables = useHostStore((s) => s.cables);
   const theme = useHostStore((s) => s.theme) ?? "signal";
-  const mode = useHostStore((s) => s.mode);
   const live = useHostStore((s) => s.live);
   const licensed = useHostStore((s) => s.licensed);
+  const licenseEmail = useHostStore((s) => s.licenseEmail);
+  const standalone = useHostStore((s) => s.standalone);
   const frameRate = useHostStore((s) => s.frameRate);
   const discardPrompt = useHostStore((s) => s.discardPrompt);
   const setOverlay = useHostStore((s) => s.setOverlay);
+  const [bpmDraft, setBpmDraft] = useState(String(Math.round(bpm)));
+  const [editingBpm, setEditingBpm] = useState(false);
+  const [tempoError, setTempoError] = useState("");
+
+  useEffect(() => {
+    if (! editingBpm) setBpmDraft(String(Math.round(bpm)));
+  }, [bpm, editingBpm]);
+
+  const setTempo = (followHost: boolean) => {
+    setTempoError("");
+    void getNativeFunction("setUi")({ bpmFollow: followHost })
+      .catch(() => setTempoError("Could not change tempo source."));
+  };
+  const commitBpm = () => {
+    setEditingBpm(false);
+    if (tempo !== "USER") return;
+    const parsed = Number(bpmDraft);
+    if (! bpmDraft.trim() || ! Number.isFinite(parsed)) {
+      setBpmDraft(String(Math.round(bpm)));
+      setTempoError("Enter a valid BPM value.");
+      return;
+    }
+    const next = Math.max(20, Math.min(400, Math.round(parsed)));
+    setBpmDraft(String(next));
+    setTempoError("");
+    void getNativeFunction("setUi")({ bpmUser: next })
+      .catch(() => setTempoError("Could not update BPM."));
+  };
+
   return (
-    <div className="flex flex-col gap-4 text-[13px]">
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">LICENSE</div>
-        <div className="mb-2 text-[12px] text-muted">
-          {licensed ? "Licensed" : "Demo — Mix goes dry after 14 days"}
+    <div className="nk-settings" data-settings="">
+      <p className="nk-settings-intro">These settings are shared by every NEUROKORE instance on this computer.</p>
+      <section className="nk-settings-license" aria-label="License">
+        <div className="nk-settings-license-status">
+          <h3>LICENSE</h3>
+          <p>{licensed ? (licenseEmail ? "Licensed to " + licenseEmail : "Licensed") : "Demo license"}</p>
         </div>
-        <div className="flex gap-2">
-          <button type="button" className="nk-clip flex-1" onClick={() => setOverlay("license")}>License…</button>
-          <button type="button" className="nk-clip flex-1" onClick={() => void getNativeFunction("pickFile")({ kind: "license" })}>
-            Install .lic
-          </button>
-        </div>
+        <button type="button" className="nk-clip" onClick={() => setOverlay("license")}>Manage license</button>
       </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">ANIMATION</div>
-        <Seg
-          value={motion}
-          options={[{ id: "full", label: "Full" }, { id: "reduced", label: "Reduced" }, { id: "off", label: "Off" }]}
-          onPick={(id) => persistUi({ motion: id as typeof motion })}
-        />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">FRAME RATE</div>
-        <Seg
-          value={String(frameRate === 30 ? 30 : 60)}
-          options={[
-            { id: "30", label: "30" },
-            { id: "60", label: "60" },
-          ]}
-          onPick={(id) => persistUi({ frameRate: Number(id) === 30 ? 30 : 60 })}
-        />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">UNSAVED PROMPT</div>
-        <Seg
-          value={discardPrompt ? "on" : "off"}
-          options={[{ id: "on", label: "On" }, { id: "off", label: "Off" }]}
-          onPick={(id) => persistUi({ discardPrompt: id === "on" })}
-        />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">PROCESSING</div>
-        <Seg
-          value={live || mode === "LIVE" ? "live" : "studio"}
-          options={[{ id: "studio", label: "Studio" }, { id: "live", label: "Live" }]}
-          onPick={(id) => persistUi({ live: id === "live" })}
-        />
-        <p className="mt-2 text-[11px] leading-snug text-muted">
-          Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work — more delay, the host reports it as latency. CPU in the status bar is 0–100. SAFE means the plugin went dry to protect the session, not a percent over 100.
-        </p>
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">THEME</div>
-        <Seg
-          value={theme}
-          options={themeIds().map((id) => ({ id, label: themeOf(id).label }))}
-          onPick={(id) => {
-            if (! isThemeId(id)) {
-              return;
-            }
-            persistUi({ theme: id });
-          }}
-        />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">CIRCUIT CABLES</div>
-        <Seg
-          value={cables}
-          options={[{ id: "dots", label: "Dots" }, { id: "wave", label: "Wave" }]}
-          onPick={(id) => persistUi({ cables: id as typeof cables })}
-        />
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">TEMPO</div>
-        <Seg
-          value={tempo === "USER" ? "USER" : "HOST"}
-          options={[{ id: "HOST", label: "Host" }, { id: "USER", label: "User" }]}
-          onPick={(id) => void getNativeFunction("setUi")({ bpmFollow: id === "HOST" })}
-        />
-        <label className="mt-2 flex items-center gap-2">
-          BPM
-          <input
-            className="h-8 w-20 border border-accent bg-black px-2 text-ink"
-            type="number"
-            value={bpm}
-            onChange={(e) => void getNativeFunction("setUi")({ bpmUser: Number(e.target.value) })}
-          />
-        </label>
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">AUDIO</div>
-        <button type="button" className="nk-clip" onClick={() => void getNativeFunction("overlay")({ name: "audio" })}>
-          Audio device ...
-        </button>
-      </section>
-      <section>
-        <div className="mb-1 text-[11px] tracking-widest text-ink">ABOUT</div>
-        <div className="flex gap-2">
-          <button type="button" className="nk-clip flex-1" onClick={() => setOverlay(settingsAboutTarget())}>About</button>
-          <button type="button" className="nk-clip flex-1" onClick={() => setOverlay("license")}>License</button>
-          <button type="button" className="nk-clip flex-1" onClick={() => setOverlay("help")}>Help / Manual</button>
-        </div>
-      </section>
+      <div className="nk-settings-grid">
+        <section className="nk-settings-panel">
+          <h3>PROCESSING</h3>
+          <Seg label="Processing mode" value={live ? "live" : "studio"}
+            options={[{ id: "studio", label: "Studio" }, { id: "live", label: "Live" }]}
+            onPick={(id) => persistUi({ live: id === "live" })} />
+          <p>Live keeps latency low when playing. Studio uses linear-phase oversampling and adds latency.</p>
+        </section>
+        <section className="nk-settings-panel">
+          <h3>ANIMATION</h3>
+          <Seg label="Animation" value={motion}
+            options={[{ id: "full", label: "Full" }, { id: "reduced", label: "Reduced" }, { id: "off", label: "Off" }]}
+            onPick={(id) => persistUi({ motion: id as typeof motion })} />
+          <p>Reduced and Off limit visual motion, not audio processing.</p>
+        </section>
+        <section className="nk-settings-panel">
+          <h3>FRAME RATE</h3>
+          <Seg label="Interface frame rate" value={String(frameRate)}
+            options={[{ id: "30", label: "30 FPS" }, { id: "60", label: "60 FPS" }]}
+            onPick={(id) => persistUi({ frameRate: id === "30" ? 30 : 60 })} />
+          <p>Limits visual updates. Audio processing is unaffected.</p>
+        </section>
+        <section className="nk-settings-panel">
+          <h3>THEME</h3>
+          <Seg label="Color theme" value={theme}
+            options={themeIds().map((id) => ({ id, label: themeOf(id).label }))}
+            onPick={(id) => { if (isThemeId(id)) persistUi({ theme: id }); }} />
+        </section>
+        <section className="nk-settings-panel">
+          <h3>CIRCUIT SIGNAL</h3>
+          <Seg label="Circuit cable animation" value={cables}
+            options={[{ id: "dots", label: "Dots" }, { id: "wave", label: "Wave" }]}
+            onPick={(id) => persistUi({ cables: id as typeof cables })} />
+        </section>
+        <section className="nk-settings-panel">
+          <h3>UNSAVED CHANGES</h3>
+          <Seg label="Warn before discarding edits" value={discardPrompt ? "on" : "off"}
+            options={[{ id: "on", label: "Warn me" }, { id: "off", label: "No warning" }]}
+            onPick={(id) => persistUi({ discardPrompt: id === "on" })} />
+          <p>When off, preset edits can be discarded without confirmation.</p>
+        </section>
+        <section className="nk-settings-panel" data-settings-tempo="">
+          <h3>TEMPO</h3>
+          <Seg label="Tempo source" value={tempo === "USER" ? "USER" : "HOST"}
+            options={[{ id: "HOST", label: "Host" }, { id: "USER", label: "Manual" }]}
+            onPick={(id) => setTempo(id === "HOST")} />
+          <label className="nk-settings-bpm">
+            <span>BPM</span>
+            <input type="number" min={20} max={400} step={1}
+              aria-label={tempo === "USER" ? "Manual BPM" : "Host BPM"}
+              disabled={tempo !== "USER"}
+              value={tempo === "USER" ? bpmDraft : String(Math.round(bpm))}
+              onFocus={() => setEditingBpm(true)}
+              onChange={(e) => setBpmDraft(e.target.value)}
+              onBlur={commitBpm}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  setBpmDraft(String(Math.round(bpm)));
+                  setEditingBpm(false);
+                  e.currentTarget.blur();
+                }
+              }}
+            />
+          </label>
+          <p>{tempo === "USER" ? "Manual tempo for synced effects." : "Following your host tempo. Switch to Manual to edit."}</p>
+          {tempoError ? <p role="alert" className="nk-settings-error">{tempoError}</p> : null}
+        </section>
+        {standalone ? (
+          <section className="nk-settings-panel">
+            <h3>AUDIO DEVICE</h3>
+            <button type="button" className="nk-clip nk-settings-action"
+              onClick={() => void getNativeFunction("overlay")({ name: "audio" })}>
+              Audio device settings
+            </button>
+            <p>Choose your device and sample rate for the standalone app.</p>
+          </section>
+        ) : null}
+      </div>
+      <div className="nk-settings-footer" aria-label="Information">
+        <button type="button" className="nk-clip" onClick={() => setOverlay(settingsAboutTarget())}>About NEUROKORE</button>
+        <button type="button" className="nk-clip" onClick={() => setOverlay("help")}>Help / Manual</button>
+      </div>
     </div>
   );
 }
-
 export function Overlays() {
   const overlay = useHostStore((s) => s.overlay);
   const motion = useHostStore((s) => s.motion);
