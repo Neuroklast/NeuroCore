@@ -32,10 +32,16 @@ public:
 
     struct Info
     {
+        juce::String id;
+        juce::String packId;
         juce::String name;
         juce::String author;
         juce::String category;
+        juce::String description;
         juce::StringArray tags;
+        juce::StringArray requiredInputs;
+        int formatVersion { 2 };
+        juce::String minimumPluginVersion;
     };
 
     /** META fields from an .nrk file. Name falls back to the file stem. */

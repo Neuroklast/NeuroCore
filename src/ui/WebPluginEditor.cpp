@@ -1,6 +1,8 @@
 #include "WebPluginEditor.h"
 #include "../bridge/WebViewHolder.h"
 #include "../core/Config.h"
+#include "../utils/PresetLibrary.h"
+#include "../utils/PresetPack.h"
 #include "../utils/UiSettings.h"
 #include <cmath>
 
@@ -89,6 +91,22 @@ void WebPluginEditor::parentHierarchyChanged()
 void WebPluginEditor::visibilityChanged()
 {
     audioProcessor.getWebView().syncNativeAttachment (*this);
+}
+
+bool WebPluginEditor::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (const auto& p : files)
+    {
+        const juce::File f (p);
+        if (PresetLibrary::isNrkFile (f) || PresetPack::isPackArchive (f) || f.isDirectory())
+            return true;
+    }
+    return false;
+}
+
+void WebPluginEditor::filesDropped (const juce::StringArray& files, int, int)
+{
+    audioProcessor.getWebView().importDroppedFiles (files);
 }
 
 void WebPluginEditor::resized()

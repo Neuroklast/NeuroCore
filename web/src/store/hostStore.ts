@@ -37,13 +37,19 @@ export interface HostState {
   presetDirty: boolean;
   discardPrompt: boolean;
   frameRate: 30 | 60;
-  pendingPreset: { action: string; name?: string; author?: string; category?: string; tags?: string } | null;
+  pendingPreset: { action: string; name?: string; id?: string; packId?: string; author?: string; category?: string; tags?: string } | null;
+  presetId: string;
+  packs: Array<{ id: string; name: string }>;
   presets: Array<{
+    id?: string;
+    packId?: string;
     name: string;
     category: string;
     description: string;
     author: string;
     factory: boolean;
+    sourceType?: string;
+    origin?: string;
     tags: string[];
     soundSources?: string[];
     processingTypes?: string[];
@@ -297,6 +303,8 @@ export const useHostStore = create<HostState>((set) => ({
   discardPrompt: true,
   frameRate: 60,
   pendingPreset: null,
+  presetId: "",
+  packs: [],
   presets: [],
   licensed: true,
   demoRemainSec: 0,
@@ -413,20 +421,32 @@ export const useHostStore = create<HostState>((set) => ({
   }),
   applyPresets: (p) => set((s) => {
     const name = String(p.name ?? s.presetName);
-    const nameChanged = name !== s.presetName;
+    const id = String(p.id ?? s.presetId);
+    const nameChanged = name !== s.presetName || (id !== "" && id !== s.presetId);
     return {
     presetName: name,
+    presetId: id,
     originName: nameChanged ? name : (s.originName || name),
     presetDirty: nameChanged ? false : s.presetDirty,
     pendingPreset: nameChanged ? null : s.pendingPreset,
     knobMeta: nameChanged ? {} : s.knobMeta,
+    packs: Array.isArray(p.packs)
+      ? (p.packs as Array<Record<string, unknown>>).map((e) => ({
+          id: String(e.id ?? ""),
+          name: String(e.name ?? ""),
+        })).filter((e) => e.id)
+      : s.packs,
     presets: Array.isArray(p.list)
       ? (p.list as Array<Record<string, unknown>>).map((e) => ({
+          id: String(e.id ?? ""),
+          packId: String(e.packId ?? ""),
           name: String(e.name ?? ""),
           category: String(e.category ?? ""),
           description: String(e.description ?? ""),
           author: String(e.author ?? "Neuroklast"),
           factory: e.factory !== false,
+          sourceType: String(e.sourceType ?? (e.factory !== false ? "factory" : "user")),
+          origin: String(e.origin ?? ""),
           tags: Array.isArray(e.tags) ? e.tags.map(String) : [],
           soundSources: Array.isArray(e.soundSources) ? e.soundSources.map(String) : [],
           processingTypes: Array.isArray(e.processingTypes) ? e.processingTypes.map(String) : [],

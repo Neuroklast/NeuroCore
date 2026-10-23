@@ -17,6 +17,8 @@
 #include "../ui/WebPluginEditor.h"
 #endif
 #include "../utils/PresetManager.h"
+#include "../utils/PresetIdentity.h"
+#include "../utils/PresetLibrary.h"
 #include "../utils/FactoryPresetLibrary.h"
 #include "../utils/PresetStep.h"
 #include "../utils/FormulaHelper.h"
@@ -42,6 +44,7 @@ namespace
 constexpr const char* kDslScriptStateKey = "DSLScript";
 constexpr const char* kLanguageStateKey   = "language";
 constexpr const char* kPresetNameStateKey = "CurrentPresetName";
+constexpr const char* kPresetIdStateKey   = "CurrentPresetId";
 
 bool irGeometryOk (double sr, int ch, int n) noexcept
 {
@@ -659,6 +662,8 @@ void NeuroKoreAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         state.setProperty(kLanguageStateKey, "en", nullptr);
         if (currentPresetName.isNotEmpty())
             state.setProperty (kPresetNameStateKey, currentPresetName, nullptr);
+        if (currentPresetId.isNotEmpty())
+            state.setProperty (kPresetIdStateKey, currentPresetId, nullptr);
         for (int i = 0; i < Config::kNumUserParams; ++i)
             state.setProperty(variableNameStateKey(i), getVariableName(i), nullptr);
         state.addChild(midiLearnManager.getState(), -1, nullptr);
@@ -698,8 +703,11 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             auto tree = juce::ValueTree::fromXml (*xmlState);
             auto scriptFromState = tree.getProperty(kDslScriptStateKey).toString();
             juce::String pendingPresetName;
+            juce::String pendingPresetId;
             if (tree.hasProperty (kPresetNameStateKey))
                 pendingPresetName = tree.getProperty (kPresetNameStateKey).toString();
+            if (tree.hasProperty (kPresetIdStateKey))
+                pendingPresetId = tree.getProperty (kPresetIdStateKey).toString();
 
             if (pendingPresetName.isNotEmpty())
             {
@@ -760,6 +768,11 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
 
             if (tree.hasProperty (kPresetNameStateKey))
                 currentPresetName = pendingPresetName;
+            if (pendingPresetId.isNotEmpty())
+                currentPresetId = pendingPresetId;
+            else if (pendingPresetName.isNotEmpty()
+                     && FactoryPresetLibrary::getInstance().findByName (pendingPresetName) != nullptr)
+                currentPresetId = PresetIdentity::factoryId (pendingPresetName);
             restoringHostState = true;
             apvts.replaceState (tree);
             restoringHostState = false;
@@ -1447,44 +1460,76 @@ void NeuroKoreAudioProcessor::stepPreset (int delta)
     if (delta == 0)
         return;
     resolvePresetNameFromScript();
-
-    struct Row { juce::String name, category; int loadIndex; };
-    std::vector<Row> rows;
-    const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
-    for (int i = 0; i < (int) factory.size(); ++i)
-        rows.push_back ({ factory[(size_t) i].name, factory[(size_t) i].category, i });
-
-    auto base = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                    .getChildFile (Config::kUserPresetFolder);
-    auto files = presetManager.getAvailablePresets (base);
-    const int factoryN = (int) factory.size();
-    for (int i = 0; i < (int) files.size(); ++i)
-        rows.push_back ({ files[(size_t) i].getFileNameWithoutExtension(),
-                          juce::String ("User"), factoryN + i });
-
+    auto& factory = FactoryPresetLibrary::getInstance();
+    if (presetLibraryDirty)
+    {
+        presetLibrary.rebuild (presetManager, factory, PresetLibrary::userPresetRoot());
+        presetLibraryDirty = false;
+    }
+    const auto& rows = presetLibrary.entries();
     if (rows.empty())
         return;
 
     std::vector<presetstep::Item> items;
     items.reserve (rows.size());
     for (const auto& r : rows)
-        items.push_back ({ r.name, r.category });
+        items.push_back ({ r.displayName, r.category });
     presetstep::sortItems (items);
 
-    std::vector<int> loadOf (items.size(), -1);
+    std::vector<juce::String> ids (items.size());
     for (size_t i = 0; i < items.size(); ++i)
         for (const auto& r : rows)
-            if (r.name == items[i].name && r.category == items[i].category)
+            if (r.displayName == items[i].name && r.category == items[i].category)
             {
-                loadOf[i] = r.loadIndex;
+                ids[i] = r.presetId;
                 break;
             }
 
-    const int next = presetstep::indexAfterStep (items, currentPresetName,
-                                                 lastPresetBrowserCategory, delta);
-    if (next < 0 || loadOf[(size_t) next] < 0)
+    int cur = -1;
+    if (currentPresetId.isNotEmpty())
+        for (size_t i = 0; i < ids.size(); ++i)
+            if (ids[i] == currentPresetId)
+            {
+                cur = (int) i;
+                break;
+            }
+    const int next = cur >= 0
+        ? (int) (((size_t) cur + (size_t) delta + items.size()) % items.size())
+        : presetstep::indexAfterStep (items, currentPresetName, lastPresetBrowserCategory, delta);
+    if (next < 0 || ids[(size_t) next].isEmpty())
         return;
-    loadPreset (loadOf[(size_t) next]);
+    auto* hit = presetLibrary.findById (ids[(size_t) next]);
+    if (hit == nullptr)
+        return;
+    juce::String err;
+    if (hit->sourceType == "factory")
+    {
+        const auto* fac = factory.findByName (hit->displayName);
+        if (fac == nullptr)
+            return;
+        const auto& entries = factory.getEntries();
+        bool ok = false;
+        for (int i = 0; i < (int) entries.size(); ++i)
+            if (&entries[(size_t) i] == fac)
+            {
+                ok = factory.applyPreset (*this, i, err);
+                break;
+            }
+        if (! ok)
+            return;
+    }
+    else
+    {
+        if (! presetManager.loadPreset (juce::File (hit->filePath)))
+            return;
+        setCurrentPresetName (hit->displayName);
+        setCurrentPresetId (hit->presetId);
+        if (auto* p = apvts.getParameter (EffectParameters::outputGain))
+            p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
+        dspEngine.getDiagnostics().setPresetName (currentPresetName);
+        dspEngine.getDiagnostics().setFormulaHead (getScript());
+        sendChangeMessage();
+    }
     setLastPresetBrowserName (currentPresetName);
     setLastPresetBrowserCategory (items[(size_t) next].category);
 }

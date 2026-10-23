@@ -81,6 +81,8 @@ function loadLocal(name: string): boolean {
 export async function requestPresetAction(cmd: {
   action: string;
   name?: string;
+  id?: string;
+  packId?: string;
   author?: string;
   category?: string;
   tags?: string;
@@ -122,6 +124,8 @@ export function cancelDiscard(): void {
 async function invokePreset(cmd: {
   action: string;
   name?: string;
+  id?: string;
+  packId?: string;
   author?: string;
   category?: string;
   tags?: string;
@@ -136,6 +140,8 @@ async function invokePreset(cmd: {
 export async function presetAction(cmd: {
   action: string;
   name?: string;
+  id?: string;
+  packId?: string;
   author?: string;
   category?: string;
   tags?: string;
@@ -185,9 +191,10 @@ export async function presetAction(cmd: {
     useHostStore.setState({ presetDirty: false });
     return { ok: true };
   }
-  if (cmd.action === "load" && cmd.name) {
+  if (cmd.action === "load" && (cmd.name || cmd.id)) {
     resetMuteSolo();
-    if (! loadLocal(cmd.name)) {
+    const name = cmd.name || cmd.id?.replace(/^factory:/, "") || "";
+    if (! loadLocal(name)) {
       return { ok: false, error: "Unknown preset" };
     }
     return { ok: true };

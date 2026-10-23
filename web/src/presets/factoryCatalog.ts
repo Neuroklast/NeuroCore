@@ -107,8 +107,11 @@ export function factoryRows(): FactoryRow[] {
   return rows;
 }
 
-export function factoryExplorerRows(): Array<Omit<FactoryRow, "script" | "knobs" | "mix" | "irs" | "inputGain" | "outputGain">> {
+export function factoryExplorerRows(): Array<Omit<FactoryRow, "script" | "knobs" | "mix" | "irs" | "inputGain" | "outputGain"> & { id: string; sourceType: string; origin: string }> {
   return rows.map((row) => ({
+    id: `factory:${row.name}`,
+    sourceType: "factory",
+    origin: "Factory",
     name: row.name,
     category: row.category,
     description: row.description,

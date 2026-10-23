@@ -4,7 +4,8 @@
 #include "../core/PluginProcessor.h"
 
 /** Thin frame around the processor-owned WebView. Close does not destroy the browser. */
-class WebPluginEditor : public juce::AudioProcessorEditor
+class WebPluginEditor : public juce::AudioProcessorEditor,
+                        public juce::FileDragAndDropTarget
 {
 public:
     explicit WebPluginEditor (NeuroKoreAudioProcessor&);
@@ -15,6 +16,8 @@ public:
     void parentHierarchyChanged() override;
     void visibilityChanged() override;
     float getDesktopScaleFactor() const override { return 1.0f; }
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int, int) override;
 
 private:
     NeuroKoreAudioProcessor& audioProcessor;

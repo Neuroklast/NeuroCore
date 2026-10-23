@@ -1,4 +1,5 @@
 #include "PresetLibrary.h"
+#include "PresetPack.h"
 #include "../core/Config.h"
 #include "../third_party/nlohmann/json.hpp"
 
@@ -117,7 +118,19 @@ bool PresetLibrary::isNrkFile (const juce::File& f)
 
 bool PresetLibrary::isPackArchive (const juce::File& f)
 {
-    return f.existsAsFile() && f.hasFileExtension (".zip");
+    return PresetPack::isPackArchive (f);
+}
+
+bool PresetLibrary::looksLikePack (const juce::File& dir)
+{
+    if (! dir.isDirectory())
+        return false;
+    if (dir.getChildFile ("manifest.json").existsAsFile()
+        || dir.getChildFile ("pack.json").existsAsFile())
+        return true;
+    juce::Array<juce::File> nrks;
+    collectNrk (dir, nrks);
+    return nrks.size() > 1;
 }
 
 PresetImportResult PresetLibrary::importPaths (const juce::StringArray& paths)
@@ -129,29 +142,40 @@ PresetImportResult PresetLibrary::importPathsInto (const juce::StringArray& path
 {
     PresetImportResult r;
     destRoot.createDirectory();
+    auto takeInstall = [&] (const PackInstallResult& inst)
+    {
+        if (inst.ok)
+        {
+            r.imported += inst.installed;
+            if (inst.packName.isNotEmpty())
+                r.packName = inst.packName;
+            r.errors.addArray (inst.warnings);
+        }
+        else
+        {
+            ++r.skipped;
+            r.errors.add (inst.error.isNotEmpty() ? inst.error : juce::String ("Import failed"));
+        }
+    };
     for (const auto& p : paths)
     {
         const juce::File f (p);
         if (f.isDirectory())
         {
-            importDirectory (f, destRoot, f.getFileName(), r);
+            if (looksLikePack (f))
+            {
+                auto preview = PresetPack::analyzeDirectory (f);
+                takeInstall (PresetPack::installPreview (preview, destRoot));
+            }
+            else
+            {
+                importDirectory (f, destRoot, f.getFileName(), r);
+            }
         }
         else if (isPackArchive (f))
         {
-            auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                           .getChildFile ("neurokore-pack-"
-                                          + juce::String (juce::Random::getSystemRandom().nextInt()));
-            tmp.deleteRecursively();
-            tmp.createDirectory();
-            juce::ZipFile zip (f);
-            if (zip.uncompressTo (tmp).failed())
-            {
-                r.errors.add ("Could not read zip " + f.getFileName());
-                tmp.deleteRecursively();
-                continue;
-            }
-            importDirectory (tmp, destRoot, f.getFileNameWithoutExtension(), r);
-            tmp.deleteRecursively();
+            auto preview = PresetPack::analyzeArchive (f);
+            takeInstall (PresetPack::installPreview (preview, destRoot));
         }
         else if (isNrkFile (f))
         {
@@ -171,44 +195,9 @@ bool PresetLibrary::exportPack (const std::vector<juce::File>& nrkFiles,
                                 const juce::String& packName,
                                 const juce::String& author)
 {
-    if (nrkFiles.empty() || zipDest == juce::File())
-        return false;
-
-    const auto folder = sanitizePackName (packName);
-    json meta;
-    meta["name"] = folder.toStdString();
-    if (author.isNotEmpty())
-        meta["author"] = author.toStdString();
-    meta["format"] = "neurokore-pack";
-
-    auto tmpDir = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                      .getChildFile ("neurokore-pack-out-"
-                                     + juce::String (juce::Random::getSystemRandom().nextInt()));
-    tmpDir.createDirectory();
-    const auto manifest = tmpDir.getChildFile ("pack.json");
-    manifest.replaceWithText (juce::String (meta.dump (2)));
-
-    juce::ZipFile::Builder builder;
-    builder.addFile (manifest, 9, folder + "/pack.json");
-    for (const auto& f : nrkFiles)
-    {
-        if (! isNrkFile (f))
-            continue;
-        builder.addFile (f, 9, folder + "/" + f.getFileName());
-    }
-
-    auto dest = zipDest;
-    if (! dest.hasFileExtension (".zip"))
-        dest = dest.withFileExtension (".zip");
-    dest.deleteFile();
-    juce::FileOutputStream os (dest);
-    if (! os.openedOk())
-    {
-        tmpDir.deleteRecursively();
-        return false;
-    }
-    const bool ok = builder.writeToStream (os, nullptr);
-    os.flush();
-    tmpDir.deleteRecursively();
-    return ok;
+    PackManifest m;
+    m.name = sanitizePackName (packName);
+    m.author = author;
+    juce::String error;
+    return PresetPack::exportNrkpack (nrkFiles, zipDest, m, error);
 }

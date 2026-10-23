@@ -5,7 +5,9 @@
 #include "../dsl/GraphModel.h"
 #include "../licensing/HardwareFingerprint.h"
 #include "../utils/FactoryPresetLibrary.h"
+#include "../utils/PresetIdentity.h"
 #include "../utils/PresetLibrary.h"
+#include "../utils/PresetPack.h"
 #include "../utils/UiSettings.h"
 
 namespace bridge
@@ -61,6 +63,8 @@ bool presetCmdFromVar (const juce::var& v, PresetCmd& out, juce::String& error)
     }
     out.action = v.getProperty ("action", "").toString().toLowerCase();
     out.name = v.getProperty ("name", "").toString();
+    out.id = v.getProperty ("id", "").toString();
+    out.packId = v.getProperty ("packId", "").toString();
     out.author = v.getProperty ("author", "").toString();
     out.category = v.getProperty ("category", "").toString();
     out.tags = v.getProperty ("tags", "").toString();
@@ -237,6 +241,7 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
             return false;
         }
         proc.setCurrentPresetName ("Untitled");
+        proc.setCurrentPresetId ({});
         return true;
     }
     if (c.action == "save" || c.action == "saveas")
@@ -268,8 +273,12 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
             error = "Could not save preset";
             return false;
         }
+        PresetManager::Info info;
+        proc.presetManager.readInfo (file, info);
         proc.setCurrentPresetName (name);
+        proc.setCurrentPresetId (info.id);
         proc.setLastPresetBrowserCategory (c.category.isNotEmpty() ? c.category : juce::String ("User"));
+        proc.invalidatePresetLibrary();
         return true;
     }
     if (c.action == "load")
@@ -277,36 +286,49 @@ bool applyPresetCmd (NeuroKoreAudioProcessor& proc, const PresetCmd& c, juce::St
         auto& lib = FactoryPresetLibrary::getInstance();
         if (lib.getEntries().empty())
             lib.loadFromEmbedded();
-        int idx = -1;
-        const auto& entries = lib.getEntries();
-        for (int i = 0; i < (int) entries.size(); ++i)
-            if (entries[(size_t) i].name == c.name)
-            {
-                idx = i;
-                break;
-            }
-        if (idx >= 0)
-            return lib.applyPreset (proc, idx, error);
-
-        const auto files = proc.presetManager.getAvailablePresets (PresetLibrary::userPresetRoot());
-        for (const auto& f : files)
+        if (proc.presetLibraryDirty)
         {
-            PresetManager::Info info;
-            proc.presetManager.readInfo (f, info);
-            if (info.name != c.name && f.getFileNameWithoutExtension() != c.name)
-                continue;
-            if (! proc.presetManager.loadPreset (f))
+            proc.presetLibrary.rebuild (proc.presetManager, lib, PresetLibrary::userPresetRoot());
+            proc.presetLibraryDirty = false;
+        }
+        const PresetIndexEntry* hit = nullptr;
+        if (c.id.isNotEmpty())
+            hit = proc.presetLibrary.findById (c.id);
+        if (hit == nullptr && c.name.isNotEmpty())
+            hit = proc.presetLibrary.findByName (c.name, c.packId);
+        if (hit == nullptr)
+        {
+            error = "Unknown preset";
+            return false;
+        }
+        if (hit->sourceType == "factory")
+        {
+            const auto* fac = lib.findByName (PresetIdentity::factoryNameFromId (hit->presetId));
+            if (fac == nullptr)
+                fac = lib.findByName (hit->displayName);
+            if (fac == nullptr)
             {
-                error = "Could not load user preset";
+                error = "Unknown factory preset";
                 return false;
             }
-            proc.setCurrentPresetName (info.name.isNotEmpty() ? info.name : c.name);
-            if (info.category.isNotEmpty())
-                proc.setLastPresetBrowserCategory (info.category);
-            return true;
+            const auto& entries = lib.getEntries();
+            for (int i = 0; i < (int) entries.size(); ++i)
+                if (&entries[(size_t) i] == fac)
+                    return lib.applyPreset (proc, i, error);
+            error = "Unknown factory preset";
+            return false;
         }
-        error = "Unknown preset";
-        return false;
+        const juce::File file (hit->filePath);
+        if (! proc.presetManager.loadPreset (file))
+        {
+            error = "Could not load user preset";
+            return false;
+        }
+        proc.setCurrentPresetName (hit->displayName);
+        proc.setCurrentPresetId (hit->presetId);
+        if (hit->category.isNotEmpty())
+            proc.setLastPresetBrowserCategory (hit->category);
+        return true;
     }
     error = "Unknown preset action " + c.action;
     return false;
@@ -430,18 +452,28 @@ juce::var presetStateVar (NeuroKoreAudioProcessor& proc)
 {
     auto* root = new juce::DynamicObject();
     root->setProperty ("name", proc.getCurrentPresetName());
+    root->setProperty ("id", proc.getCurrentPresetId());
     juce::Array<juce::var> list;
     auto& lib = FactoryPresetLibrary::getInstance();
-    if (lib.getEntries().empty())
-        lib.loadFromEmbedded();
-    for (const auto& e : lib.getEntries())
+    if (proc.presetLibraryDirty)
+    {
+        proc.presetLibrary.rebuild (proc.presetManager, lib, PresetLibrary::userPresetRoot());
+        proc.presetLibraryDirty = false;
+    }
+    juce::Array<juce::var> packs;
+    juce::StringArray packSeen;
+    for (const auto& e : proc.presetLibrary.entries())
     {
         auto* o = new juce::DynamicObject();
-        o->setProperty ("name", e.name);
+        o->setProperty ("id", e.presetId);
+        o->setProperty ("packId", e.packId);
+        o->setProperty ("name", e.displayName);
         o->setProperty ("category", e.category);
         o->setProperty ("description", e.description);
-        o->setProperty ("author", "Neuroklast");
-        o->setProperty ("factory", true);
+        o->setProperty ("author", e.author);
+        o->setProperty ("factory", e.sourceType == "factory");
+        o->setProperty ("sourceType", e.sourceType);
+        o->setProperty ("origin", e.origin);
         juce::Array<juce::var> tags;
         for (const auto& t : e.tags)
             tags.add (t);
@@ -461,25 +493,215 @@ juce::var presetStateVar (NeuroKoreAudioProcessor& proc)
             required.add (r);
         o->setProperty ("requiredInputs", required);
         list.add (juce::var (o));
-    }
-    for (const auto& f : proc.presetManager.getAvailablePresets (PresetLibrary::userPresetRoot()))
-    {
-        PresetManager::Info info;
-        proc.presetManager.readInfo (f, info);
-        auto* o = new juce::DynamicObject();
-        o->setProperty ("name", info.name.isNotEmpty() ? info.name : f.getFileNameWithoutExtension());
-        o->setProperty ("category", info.category.isNotEmpty() ? info.category : juce::String ("User"));
-        o->setProperty ("description", juce::String());
-        o->setProperty ("author", info.author);
-        o->setProperty ("factory", false);
-        juce::Array<juce::var> tags;
-        for (const auto& t : info.tags)
-            tags.add (t);
-        o->setProperty ("tags", tags);
-        list.add (juce::var (o));
+        if (e.sourceType == "pack" && e.packId.isNotEmpty() && ! packSeen.contains (e.packId))
+        {
+            packSeen.add (e.packId);
+            auto* p = new juce::DynamicObject();
+            p->setProperty ("id", e.packId);
+            p->setProperty ("name", e.origin);
+            packs.add (juce::var (p));
+        }
     }
     root->setProperty ("list", list);
+    root->setProperty ("packs", packs);
     return juce::var (root);
+}
+
+namespace
+{
+juce::var previewVar (const PackPreview& p)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("ok", p.error.isEmpty());
+    o->setProperty ("error", p.error);
+    o->setProperty ("name", p.manifest.name);
+    o->setProperty ("id", p.manifest.id);
+    o->setProperty ("author", p.manifest.author);
+    o->setProperty ("description", p.manifest.description);
+    o->setProperty ("version", p.manifest.version);
+    o->setProperty ("presetCount", p.presetCount);
+    o->setProperty ("existing", p.existing);
+    o->setProperty ("source", p.source.getFullPathName());
+    juce::Array<juce::var> cats;
+    for (const auto& c : p.categories)
+        cats.add (c);
+    o->setProperty ("categories", cats);
+    juce::Array<juce::var> warns;
+    for (const auto& w : p.warnings)
+        warns.add (w);
+    o->setProperty ("warnings", warns);
+    return juce::var (o);
+}
+
+juce::StringArray varPaths (const juce::var& v)
+{
+    juce::StringArray out;
+    if (v.isArray())
+    {
+        for (int i = 0; i < v.size(); ++i)
+            out.add (v[i].toString());
+    }
+    else if (v.toString().isNotEmpty())
+        out.add (v.toString());
+    return out;
+}
+} // namespace
+
+juce::var applyLibraryCmd (NeuroKoreAudioProcessor& proc, const juce::var& cmd, juce::String& error)
+{
+    auto* ok = new juce::DynamicObject();
+    ok->setProperty ("ok", true);
+    if (! cmd.isObject())
+    {
+        error = "presetLibrary needs an object";
+        return {};
+    }
+    const auto action = cmd.getProperty ("action", "").toString().toLowerCase();
+    const auto root = PresetLibrary::userPresetRoot();
+    if (action == "list" || action == "scan" || action == "rescan")
+    {
+        if (action != "list")
+            proc.invalidatePresetLibrary();
+        return presetStateVar (proc);
+    }
+    if (action == "analyze")
+    {
+        const auto paths = varPaths (cmd.getProperty ("paths", juce::var()));
+        if (paths.isEmpty())
+        {
+            error = "analyze needs paths";
+            return {};
+        }
+        const juce::File f (paths[0]);
+        auto preview = PresetPack::isPackArchive (f) ? PresetPack::analyzeArchive (f)
+                      : f.isDirectory() ? PresetPack::analyzeDirectory (f)
+                      : PackPreview{};
+        if (! PresetPack::isPackArchive (f) && ! f.isDirectory())
+        {
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("ok", PresetLibrary::isNrkFile (f));
+            o->setProperty ("name", f.getFileNameWithoutExtension());
+            o->setProperty ("presetCount", PresetLibrary::isNrkFile (f) ? 1 : 0);
+            o->setProperty ("source", f.getFullPathName());
+            if (! PresetLibrary::isNrkFile (f))
+                o->setProperty ("error", "Not a preset or pack");
+            return juce::var (o);
+        }
+        return previewVar (preview);
+    }
+    if (action == "import" || action == "install")
+    {
+        const auto paths = varPaths (cmd.getProperty ("paths", juce::var()));
+        if (paths.isEmpty())
+        {
+            error = "import needs paths";
+            return {};
+        }
+        const auto r = PresetLibrary::importPathsInto (paths, root);
+        proc.invalidatePresetLibrary();
+        ok->setProperty ("imported", r.imported);
+        ok->setProperty ("skipped", r.skipped);
+        ok->setProperty ("packName", r.packName);
+        juce::Array<juce::var> errs;
+        for (const auto& e : r.errors)
+            errs.add (e);
+        ok->setProperty ("errors", errs);
+        if (r.imported <= 0)
+        {
+            error = r.errors.isEmpty() ? juce::String ("Import failed") : r.errors[0];
+            return {};
+        }
+        return juce::var (ok);
+    }
+    if (action == "exportpack")
+    {
+        const auto ids = varPaths (cmd.getProperty ("presetIds", juce::var()));
+        const auto dest = juce::File (cmd.getProperty ("dest", "").toString());
+        if (dest == juce::File() || ids.isEmpty())
+        {
+            error = "exportPack needs dest and presetIds";
+            return {};
+        }
+        if (proc.presetLibraryDirty)
+        {
+            proc.presetLibrary.rebuild (proc.presetManager, FactoryPresetLibrary::getInstance(), root);
+            proc.presetLibraryDirty = false;
+        }
+        std::vector<juce::File> files;
+        for (const auto& id : ids)
+            if (auto* e = proc.presetLibrary.findById (id))
+                if (e->filePath.isNotEmpty())
+                    files.push_back (juce::File (e->filePath));
+        PackManifest m;
+        m.name = cmd.getProperty ("name", "Pack").toString();
+        m.author = cmd.getProperty ("author", "").toString();
+        m.description = cmd.getProperty ("description", "").toString();
+        m.version = cmd.getProperty ("version", "1.0.0").toString();
+        if (! PresetPack::exportNrkpack (files, dest, m, error))
+            return {};
+        return juce::var (ok);
+    }
+    if (action == "exportpreset")
+    {
+        const auto dest = juce::File (cmd.getProperty ("dest", "").toString());
+        const auto name = cmd.getProperty ("name", proc.getCurrentPresetName()).toString();
+        if (dest == juce::File())
+        {
+            error = "exportPreset needs dest";
+            return {};
+        }
+        if (! proc.presetManager.savePreset (dest, name.isNotEmpty() ? name : juce::String ("Preset"),
+                                             cmd.getProperty ("author", "").toString(),
+                                             cmd.getProperty ("category", "").toString(),
+                                             cmd.getProperty ("tags", "").toString()))
+        {
+            error = "Could not export preset";
+            return {};
+        }
+        return juce::var (ok);
+    }
+    if (action == "removepack")
+    {
+        const auto packId = cmd.getProperty ("packId", "").toString();
+        if (! PresetPack::uninstallPack (root, packId, error))
+            return {};
+        proc.invalidatePresetLibrary();
+        return juce::var (ok);
+    }
+    if (action == "deletepreset")
+    {
+        const auto id = cmd.getProperty ("id", "").toString();
+        if (PresetIdentity::isFactoryId (id))
+        {
+            error = "Factory presets cannot be deleted";
+            return {};
+        }
+        if (proc.presetLibraryDirty)
+        {
+            proc.presetLibrary.rebuild (proc.presetManager, FactoryPresetLibrary::getInstance(), root);
+            proc.presetLibraryDirty = false;
+        }
+        auto* e = proc.presetLibrary.findById (id);
+        if (e == nullptr || e->filePath.isEmpty())
+        {
+            error = "Preset not found";
+            return {};
+        }
+        if (e->sourceType == "pack")
+        {
+            error = "Uninstall the pack to remove pack presets";
+            return {};
+        }
+        if (! juce::File (e->filePath).deleteFile())
+        {
+            error = "Could not delete preset";
+            return {};
+        }
+        proc.invalidatePresetLibrary();
+        return juce::var (ok);
+    }
+    error = "Unknown library action " + action;
+    return {};
 }
 
 juce::var licenseVar (NeuroKoreAudioProcessor& proc)

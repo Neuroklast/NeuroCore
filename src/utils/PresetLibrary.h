@@ -20,6 +20,7 @@ juce::String sanitizePackName (juce::String name);
 juce::File uniqueDest (const juce::File& dir, const juce::String& fileName);
 bool isNrkFile (const juce::File& f);
 bool isPackArchive (const juce::File& f);
+bool looksLikePack (const juce::File& dir);
 
 PresetImportResult importPaths (const juce::StringArray& paths);
 PresetImportResult importPathsInto (const juce::StringArray& paths, const juce::File& destRoot);

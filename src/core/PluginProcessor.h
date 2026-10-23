@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include "../utils/PresetManager.h"
+#include "../utils/PresetLibraryIndex.h"
 #include "../core/Config.h"
 #include "../core/CpuProtect.h"
 #include "../core/EffectParameters.h"
@@ -133,6 +134,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     PresetManager    presetManager;
+    PresetLibraryIndex presetLibrary;
+    bool presetLibraryDirty { true };
     MidiLearnManager midiLearnManager;
     juce::UndoManager undoManager;
 
@@ -168,6 +171,9 @@ public:
     /** Currently loaded preset name (empty if none / custom formula). */
     juce::String getCurrentPresetName() const { return currentPresetName; }
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
+    juce::String getCurrentPresetId() const { return currentPresetId; }
+    void setCurrentPresetId (const juce::String& id) { currentPresetId = id; }
+    void invalidatePresetLibrary() { presetLibraryDirty = true; }
     /** If the live script is a factory preset and no name is set, adopt that name. */
     bool resolvePresetNameFromScript();
 
@@ -312,6 +318,7 @@ private:
 
     juce::String currentLanguage;
     juce::String currentPresetName;
+    juce::String currentPresetId;
     juce::String lastPresetBrowserName;
     juce::String lastPresetBrowserCategory;
     int lastPresetBrowserScope { 1 };

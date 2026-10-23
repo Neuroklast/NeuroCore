@@ -5,6 +5,7 @@ import {
   emptyExplorerCopy,
   explorerFolders,
   filterExplorer,
+  libraryFolders,
   neighborName,
   PRESET_NINE_ROW_BUDGET_PX,
   PRESET_ROW_PX,
@@ -144,5 +145,16 @@ describe("explorer model", () => {
     expect(emptyExplorerCopy(0, 0, false)).toBe("No presets available.");
     expect(emptyExplorerCopy(5, 0, true)).toBe("No matching presets. Change the search or filters.");
     expect(emptyExplorerCopy(5, 0, true)).not.toBe("No presets available.");
+  });
+
+  it("keeps two Heavy Drive rows from different packs", () => {
+    const rows = [
+      { id: "a", packId: "one", name: "Heavy Drive", category: "Distortion", factory: false, sourceType: "pack", origin: "One" },
+      { id: "b", packId: "two", name: "Heavy Drive", category: "Distortion", factory: false, sourceType: "pack", origin: "Two" },
+    ];
+    expect(scopeRows(rows, "pack:one").map((p) => p.id)).toEqual(["a"]);
+    expect(scopeRows(rows, "pack:two").map((p) => p.id)).toEqual(["b"]);
+    expect(libraryFolders(rows, [{ id: "one", name: "One" }, { id: "two", name: "Two" }]).map((f) => f.label))
+      .toEqual(["All Presets", "Factory", "My Presets", "Favorites", "One", "Two"]);
   });
 });

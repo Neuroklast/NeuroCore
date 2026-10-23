@@ -41,6 +41,7 @@ public:
 
     void layout (juce::Rectangle<int> inner);
     void pushHost();
+    void importDroppedFiles (const juce::StringArray& paths);
 
 #if JUCE_WINDOWS
     /** HWND that should parent the park surface.

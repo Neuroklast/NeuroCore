@@ -1,4 +1,4 @@
-export type ExplorerScope = "all" | "factory" | "user";
+export type ExplorerScope = "all" | "factory" | "user" | `pack:${string}`;
 
 export type ExplorerSession = {
   q: string;

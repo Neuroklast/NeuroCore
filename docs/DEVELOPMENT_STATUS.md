@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/ui-ux-stabilization`
+**Branch:** `feat/preset-library-pack-manager`
+
+## Preset library and packs (2026-10-23)
+
+Presets keep stable ids (`factory:Name` or a UUID in META). Display names may collide across packs. Legacy `.nrk` files without Id get a path-keyed catalog entry and are not rewritten. `PresetLibraryIndex` rebuilds only when the library changes; search of 5000 synthetic rows stays under 50 ms. `.nrkpack` is zip + `manifest.json` with sha256; `pack.json` and loose zip still import. Zip slip, absolute paths, symlinks, oversize entries and checksum mismatch are refused. Install stages then commits; a failed DSCR apply restores the previous processor state. Import does not load the playing sound. Explorer has Library / Pack Manager / New Pack. Native: PresetLibraryPackTest 78, PresetManagerTest 81, HostSnapshot 107. Focused web identity/explorer/actions 31 pass.
 
 ## UI/UX stabilization (2026-10-23)
 

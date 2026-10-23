@@ -82,13 +82,14 @@ Unit meters
 
 ## Presets
 
-Click the preset name. Source, processing and style stay on the left. An active filter stays on screen even when another facet has zero hits; chips above the list remove one filter, and **Clear all** restores the catalog. Names sit in the middle. The right pane shows the selected sound, factory or user, sources, processing, style, required inputs (MIDI / sidechain) when documented, and the DSP/mod blocks parsed from that preset. The last search, filters and scroll come back when you reopen; the first open highlights the sound that is loaded. Click a name to read it, then Load Preset, or double-click / Enter to load. Enter on Search loads the highlighted row. Enter on Save As, Import or a filter only runs that control. Search includes names, tags and descriptions. A star on the detail pane marks a favourite; **Favorites** on the left shows only starred rows. The title X closes the library. Header `<` / `>` step the full catalog, not the filtered list.
+Click the preset name. Library (All, Factory, My Presets, Favorites, installed packs) sits above Source, processing and style on the left. An active filter stays on screen even when another facet has zero hits; chips above the list remove one filter, and **Clear all** restores the catalog. Names sit in the middle. Two packs may share a display name; the right pane shows origin so you can tell them apart. The right pane also shows sources, processing, style, required inputs (MIDI / sidechain) when documented, and the DSP/mod blocks parsed from that preset. The last search, filters and scroll come back when you reopen; the first open highlights the sound that is loaded. Click a name to read it, then Load Preset, or double-click / Enter to load. Enter on Search loads the highlighted row. Enter on Save As, Import or a filter only runs that control. Search includes names, tags and descriptions. A star on the detail pane marks a favourite; **Favorites** on the left shows only starred rows. The title X closes the library. Header `<` / `>` step the full catalog, not the filtered list.
 
 - **Factory** sounds are locked. You can load them and tweak knobs. Save As... to keep a copy under your name.
 - **Your** sounds live in your user preset folder as `.nrk` files. If save fails, the dialog stays open with the reason and unsaved edits stay marked.
 - A star on the name means unsaved edits. Next / previous / load another will ask to discard, keep editing, or Save As... (turn that prompt off in Settings if you want).
 - Discard restores the last loaded or saved version.
-- Import artist packs (a folder of `.nrk`, or a zip) from the explorer.
+- Import a `.nrk`, a folder, a zip, or a `.nrkpack`. Import does not replace the sound that is playing. Drop files on the plugin window or use Import. Pack Manager uninstalls a pack without deleting your own copies. New Pack (Ctrl-click rows) writes a `.nrkpack` with checksums.
+- DAW projects keep the full processor state, including impulse responses. Removing a pack later does not silence a saved session.
 
 ---
 
