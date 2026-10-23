@@ -110,13 +110,6 @@ export function zoomTier(zoom: number): ZoomTier {
   return "detail";
 }
 
-export function shouldPulse(cables: string, motion: string, reduced: boolean): boolean {
-  if (reduced || motion === "off") {
-    return false;
-  }
-  return cables === "wave";
-}
-
 export function alreadyLinked(
   edges: Array<{ source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null; className?: string }>,
   source: string,
