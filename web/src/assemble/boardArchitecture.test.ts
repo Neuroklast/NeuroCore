@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { canDeleteChip } from "./boardEdit";
-import { graphOpEndpoints, hydrateBoard, portGlobal, portId } from "./boardModel";
+import { graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
+import { parseRoutePath } from "./boardPath";
 import { chipSpec } from "./chipSpec";
+import { compact } from "./layout/runLayout";
 
 function emptyAst(): AstDocument {
   return {
@@ -100,6 +102,25 @@ describe("host terminals", () => {
     expect(edge?.sourceNodeId).toBe("SC");
     expect(portGlobal(g.nodes.SC!, sc).x).toBe(g.nodes.SC!.x + g.nodes.SC!.w);
     expect(graphOpEndpoints(sc)).toEqual({ nodeId: "IN", jackId: "sc" });
+  });
+
+  it("routes a sidechain cable from the SC plate after compact", async () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [node("comp1", "comp", chipSpec("comp").defaultArgs, [
+        { id: "in", label: "in", output: false, kind: "audio" },
+        { id: "out", label: "out", output: true, kind: "audio" },
+      ])],
+      edges: [{ from: "IN", to: "comp1", kind: "audio", fromJack: "sc", toJack: "in" }],
+    };
+    const g = hydrateBoard(ast);
+    const edge = Object.values(g.edges).find((e) => e.sourceNodeId === "SC");
+    expect(edge).toBeTruthy();
+    const laid = await compact(graphToLayout(g).nodes, graphToLayout(g).edges, { w: 896, h: 520 });
+    expect(laid.nodes.SC, "SC stays a pinned layout node").toBeTruthy();
+    const pts = parseRoutePath(laid.edgePaths[edge!.id] ?? "");
+    expect(pts.length).toBeGreaterThan(1);
+    expect(pts[0]!.x).toBe(laid.nodes.SC!.x + laid.nodes.SC!.w);
   });
 
   it("places SC below IN on the left, OUT to the right", () => {

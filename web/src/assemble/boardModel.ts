@@ -421,12 +421,8 @@ export function assignRanks(graph: BoardGraph): Record<string, number> {
   return rank;
 }
 
-function layoutOwned(n: BoardNode): boolean {
-  return n.id !== "MIDI" && n.id !== "SC";
-}
-
 export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
-  const nodes: LayoutNode[] = Object.values(graph.nodes).filter(layoutOwned).map((n) => {
+  const nodes: LayoutNode[] = Object.values(graph.nodes).map((n) => {
     const ins = Object.values(graph.ports).filter((p) => p.nodeId === n.id && ! p.east && ! p.south);
     const outs = Object.values(graph.ports).filter((p) => p.nodeId === n.id && p.east);
     return {
@@ -435,21 +431,19 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
       y: n.y,
       w: n.w,
       h: n.h,
+      pin: n.id === "MIDI" || n.id === "SC",
       rail: isLfoNode(n) || n.type === "env" ? "mod" : n.busName || "main",
       ins: ins.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
       outs: outs.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
     };
   });
-  const owned = new Set(nodes.map((n) => n.id));
-  const edges: LayoutEdge[] = Object.values(graph.edges)
-    .filter((e) => owned.has(e.sourceNodeId) && owned.has(e.targetNodeId))
-    .map((e) => ({
-      id: e.id,
-      source: e.sourceNodeId,
-      target: e.targetNodeId,
-      fromJack: e.sourcePortId,
-      toJack: e.targetPortId,
-    }));
+  const edges: LayoutEdge[] = Object.values(graph.edges).map((e) => ({
+    id: e.id,
+    source: e.sourceNodeId,
+    target: e.targetNodeId,
+    fromJack: e.sourcePortId,
+    toJack: e.targetPortId,
+  }));
   return { nodes, edges };
 }
 
@@ -468,12 +462,19 @@ export function applyPlaced(
   }
   if (nodes.IN) {
     const inn = nodes.IN;
+    const hullBottom = Math.max(
+      inn.y + inn.h,
+      ...Object.values(nodes)
+        .filter((n) => n.id !== "MIDI" && n.id !== "SC")
+        .map((n) => n.y + n.h),
+    );
+    let y = hullBottom + CHIP_GAP;
     if (nodes.MIDI) {
-      nodes.MIDI = { ...nodes.MIDI, x: inn.x, y: inn.y + inn.h + CHIP_GAP };
+      nodes.MIDI = { ...nodes.MIDI, x: inn.x, y };
+      y += nodes.MIDI.h + CHIP_GAP;
     }
     if (nodes.SC) {
-      const above = nodes.MIDI ?? inn;
-      nodes.SC = { ...nodes.SC, x: inn.x, y: above.y + above.h + CHIP_GAP };
+      nodes.SC = { ...nodes.SC, x: inn.x, y };
     }
   }
   const edges = { ...graph.edges };

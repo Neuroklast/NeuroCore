@@ -12,6 +12,8 @@ export type LayoutNode = {
   outs: LayoutPort[];
   /** Named bus / "main" / "mod". Compact packs each rail as its own row. */
   rail?: string;
+  /** Host plates stay at xy. Pack and serial skip them; A* still treats them as obstacles. */
+  pin?: boolean;
 };
 
 export type LayoutEdge = {

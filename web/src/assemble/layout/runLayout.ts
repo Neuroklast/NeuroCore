@@ -1,4 +1,5 @@
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
+import { CHIP_GAP } from "../chipLayout";
 import { BOARD_GRID } from "../grid";
 import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
 import { chamferWaypoints, hasLightning, waypointToSvgPath } from "./chamfer";
@@ -112,13 +113,45 @@ function claimInk(lines: InkLines, pts: Pt[]): boolean {
   return true;
 }
 
+function pinHostTerminals(
+  placed: Record<string, { x: number; y: number; w: number; h: number }>,
+  pinNodes: LayoutNode[],
+): void {
+  const inn = placed.IN;
+  if (! inn) {
+    for (const n of pinNodes) {
+      placed[n.id] = { x: n.x ?? 0, y: n.y ?? 0, w: n.w, h: n.h };
+    }
+    return;
+  }
+  const hullBottom = Math.max(
+    inn.y + inn.h,
+    ...Object.values(placed).map((p) => p.y + p.h),
+  );
+  let y = hullBottom + CHIP_GAP;
+  for (const id of ["MIDI", "SC"]) {
+    const n = pinNodes.find((p) => p.id === id);
+    if (! n) {
+      continue;
+    }
+    placed[id] = { x: inn.x, y, w: n.w, h: n.h };
+    y += n.h + CHIP_GAP;
+  }
+}
+
 export async function runLayout(
   mode: LayoutMode,
   nodes: LayoutNode[],
   edges: LayoutEdge[],
   view: LayoutView = { w: 960, h: 420 },
 ): Promise<LayoutResult> {
-  const serial = mode === "REROUTE" ? null : placeSerialChain(nodes, edges, view);
+  const pinNodes = nodes.filter((n) => n.pin);
+  const freeNodes = nodes.filter((n) => ! n.pin);
+  const pinIds = new Set(pinNodes.map((n) => n.id));
+  const freeEdges = edges.filter((e) => ! pinIds.has(e.source) && ! pinIds.has(e.target));
+  const extraEdges = edges.filter((e) => pinIds.has(e.source) || pinIds.has(e.target));
+
+  const serial = mode === "REROUTE" ? null : placeSerialChain(freeNodes, freeEdges, view);
   const placed = serial ?? (mode === "REROUTE"
     ? Object.fromEntries(nodes.map((n) => [n.id, {
       x: n.x ?? 0,
@@ -126,21 +159,25 @@ export async function runLayout(
       w: n.w,
       h: n.h,
     }]))
-    : packRows(nodes, edges, view));
+    : packRows(freeNodes, freeEdges, view));
+  pinHostTerminals(placed, pinNodes);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
+  const edgePaths: Record<string, string> = {};
   if (serial) {
-    const edgePaths: Record<string,string>={};
-    for(const edge of edges) {
-      const s=placed[edge.source]!,t=placed[edge.target]!;
-      const a={x:s.x+s.w,y:s.y+byId.get(edge.source)!.outs.find(p=>p.id===edge.fromJack)!.y};
-      const b={x:t.x,y:t.y+byId.get(edge.target)!.ins.find(p=>p.id===edge.toJack)!.y};
-      const sameRow=Math.abs(a.y-b.y)<1;
-      const channel=Math.max(...Object.values(placed).filter(p=>p.y<=a.y && p.y+p.h>=a.y).map(p=>p.y+p.h))+64;
-      const pts=sameRow?[a,b]:[a,{x:a.x+32,y:a.y},{x:a.x+32,y:channel},{x:b.x-32,y:channel},{x:b.x-32,y:b.y},b];
-      edgePaths[edge.id]=waypointToSvgPath(chamferWaypoints(pts));
+    for (const edge of freeEdges) {
+      const s = placed[edge.source]!;
+      const t = placed[edge.target]!;
+      const a = { x: s.x + s.w, y: s.y + byId.get(edge.source)!.outs.find((p) => p.id === edge.fromJack)!.y };
+      const b = { x: t.x, y: t.y + byId.get(edge.target)!.ins.find((p) => p.id === edge.toJack)!.y };
+      const sameRow = Math.abs(a.y - b.y) < 1;
+      const channel = Math.max(...Object.values(placed).filter((p) => p.y <= a.y && p.y + p.h >= a.y).map((p) => p.y + p.h)) + 64;
+      const pts = sameRow ? [a, b] : [a, { x: a.x + 32, y: a.y }, { x: a.x + 32, y: channel }, { x: b.x - 32, y: channel }, { x: b.x - 32, y: b.y }, b];
+      edgePaths[edge.id] = waypointToSvgPath(chamferWaypoints(pts));
     }
-    return {nodes:placed,edgePaths};
+    if (extraEdges.length === 0) {
+      return { nodes: placed, edgePaths };
+    }
   }
 
   const map = new GridMap();
@@ -152,7 +189,7 @@ export async function runLayout(
     map.markNode(n, p.x, p.y);
   }
 
-  const jobs = edges.map((e) => {
+  const jobs = (serial ? extraEdges : edges).map((e) => {
     const s = placed[e.source];
     const t = placed[e.target];
     const sn = byId.get(e.source);
@@ -181,15 +218,18 @@ export async function runLayout(
   map.finishHalo();
   jobs.sort((a, b) => a.man - b.man);
 
-  let edgePaths: Record<string, string> = {};
   const tried = new Set<string>();
+  let routed = { ...edgePaths };
   for (let attempt = 0; attempt <= jobs.length * 2; ++attempt) {
+    if (jobs.length === 0) {
+      break;
+    }
     const order = jobs.map(j => j.e.id).join("\0");
     if (tried.has(order)) throw new Error("Cable routing needs more space between blocks.");
     tried.add(order);
     map.cable.clear();
     map.turns.clear();
-    edgePaths = {};
+    const nextPaths = { ...edgePaths };
     const ink: InkLines = new Map();
     let failed = -1;
     for (let index = 0; index < jobs.length; ++index) {
@@ -204,15 +244,18 @@ export async function runLayout(
         painted = pts;
         if (!claimInk(ink, painted)) { failed = index; break; }
       }
-      edgePaths[job.e.id] = waypointToSvgPath(painted);
+      nextPaths[job.e.id] = waypointToSvgPath(painted);
     }
-    if (failed < 0) break;
+    if (failed < 0) {
+      routed = nextPaths;
+      break;
+    }
     if (attempt === jobs.length * 2) throw new Error("Cable routing needs more space between blocks.");
     // Reserve the constrained connection first, then reroute displaced nets.
     jobs.unshift(...jobs.splice(failed, 1));
   }
 
-  return { nodes: placed, edgePaths };
+  return { nodes: placed, edgePaths: routed };
 }
 
 export function arrange(nodes: LayoutNode[], edges: LayoutEdge[], view?: LayoutView): Promise<LayoutResult> {
