@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { canDeleteChip } from "./boardEdit";
-import { graphOpEndpoints, hydrateBoard, portId } from "./boardModel";
+import { graphOpEndpoints, hydrateBoard, portGlobal, portId } from "./boardModel";
 import { chipSpec } from "./chipSpec";
 
 function emptyAst(): AstDocument {
@@ -31,6 +31,26 @@ describe("board architecture baseline", () => {
     });
     expect(seq.nodes.stepseq1!.w).toBeLessThanOrEqual(448);
     expect(comp.nodes.comp1!.w).toBeLessThanOrEqual(448);
+  });
+
+  it("keeps a connected extra param jack after compact", () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [
+        node("osc1", "osc", { freq: "1" }),
+        node("comp1", "comp", chipSpec("comp").defaultArgs),
+      ],
+      edges: [
+        { from: "IN", to: "comp1", kind: "audio", fromJack: "out", toJack: "in" },
+        { from: "osc1", to: "comp1", kind: "mod", fromJack: "mod", toJack: "ceiling" },
+      ],
+    };
+    const g = hydrateBoard(ast);
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && p.south).map((p) => p.jackId);
+    expect(south).toContain("threshold");
+    expect(south).toContain("ceiling");
+    expect(south).not.toContain("lookahead");
+    expect(g.ports[portId("comp1", "ceiling", false)]).toBeTruthy();
   });
 });
 
@@ -63,6 +83,23 @@ describe("host terminals", () => {
     expect(graphOpEndpoints({ id: "IN::sc::src", jackId: "sc" })).toEqual({ nodeId: "IN", jackId: "sc" });
     expect(graphOpEndpoints({ id: "IN::out::src", jackId: "out" })).toEqual({ nodeId: "IN", jackId: "out" });
     expect(graphOpEndpoints({ id: "OUT::in::dst", jackId: "in" })).toEqual({ nodeId: "OUT", jackId: "in" });
+  });
+
+  it("draws sidechain cables from the SC plate, not AUDIO IN", () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [node("comp1", "comp", chipSpec("comp").defaultArgs, [
+        { id: "in", label: "in", output: false, kind: "audio" },
+        { id: "out", label: "out", output: true, kind: "audio" },
+      ])],
+      edges: [{ from: "IN", to: "comp1", kind: "audio", fromJack: "sc", toJack: "in" }],
+    };
+    const g = hydrateBoard(ast);
+    const sc = g.ports[portId("IN", "sc", true)]!;
+    const edge = Object.values(g.edges).find((e) => e.sourcePortId === sc.id);
+    expect(edge?.sourceNodeId).toBe("SC");
+    expect(portGlobal(g.nodes.SC!, sc).x).toBe(g.nodes.SC!.x + g.nodes.SC!.w);
+    expect(graphOpEndpoints(sc)).toEqual({ nodeId: "IN", jackId: "sc" });
   });
 
   it("places SC below IN on the left, OUT to the right", () => {

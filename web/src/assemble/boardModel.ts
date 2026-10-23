@@ -340,9 +340,9 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     const id = `e-${e.from}-${e.to}-${fromJack}-${toJack}-${i}`;
     edges[id] = {
       id,
-      sourceNodeId: e.from,
+      sourceNodeId: ports[sourcePortId]!.nodeId,
       sourcePortId,
-      targetNodeId: e.to,
+      targetNodeId: ports[targetPortId]!.nodeId,
       targetPortId,
       kind,
       route: [],
