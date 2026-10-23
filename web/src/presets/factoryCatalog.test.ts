@@ -75,6 +75,23 @@ describe("factory catalog", () => {
     expect(empty, empty.join(", ")).toEqual([]);
   });
 
+  it("ships the 2026-10-23 gap templates", () => {
+    const names = [
+      "Poly Synth Motion", "Velocity Driven Drive", "Hybrid Dynamic Wah",
+      "Subsafe Groove Bass", "Resonant Drum Body", "Dynamic Hat Tamer",
+      "Triggered Room Send", "Patterned Delay Throws", "Vocal Presence Duck",
+      "Metered Drive Template",
+    ];
+    for (const name of names) {
+      expect(findFactory(name)?.script.length, name).toBeGreaterThan(40);
+    }
+    expect(findFactory("Metered Drive Template")?.script).toMatch(/meter1:/);
+    expect(findFactory("Metered Drive Template")?.script).toMatch(/meter2:/);
+    expect(findFactory("Vocal Presence Duck")?.requiredInputs).toContain("sidechain");
+    expect(findFactory("Velocity Driven Drive")?.requiredInputs).toContain("midi");
+    expect(factoryRows().some((r) => /meter\d+:/.test(r.script))).toBe(true);
+  });
+
   it("keeps explicit source and type metadata off Mesa High Gain", () => {
     const mesa = findFactory("Mesa High Gain");
     expect(mesa?.soundSources ?? []).toEqual([]);

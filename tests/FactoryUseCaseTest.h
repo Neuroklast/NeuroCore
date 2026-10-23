@@ -52,6 +52,53 @@ public:
             expect (diff < peak * 0.2f, "L-R=" + juce::String (diff, 4) + " peak=" + juce::String (peak, 4));
         }
 
+        beginTest ("2026-10-23 templates parse and pass a mid tone");
+        {
+            const char* names[] = {
+                "Poly Synth Motion", "Velocity Driven Drive", "Hybrid Dynamic Wah",
+                "Subsafe Groove Bass", "Resonant Drum Body", "Dynamic Hat Tamer",
+                "Triggered Room Send", "Patterned Delay Throws", "Vocal Presence Duck",
+                "Metered Drive Template"
+            };
+            for (const char* name : names)
+            {
+                const auto* e = find (lib, name);
+                expect (e != nullptr, name);
+                if (e == nullptr)
+                    continue;
+                float peak = 0.f, diff = 0.f;
+                runTone (*e, 440.f, 0.4f, peak, diff);
+                expect (peak > 0.02f, juce::String (name) + " peak=" + juce::String (peak, 4));
+                juce::ignoreUnused (diff);
+            }
+        }
+
+        beginTest ("Vocal Presence Duck ducks when the sidechain is loud");
+        {
+            const auto* e = find (lib, "Vocal Presence Duck");
+            expect (e != nullptr);
+            if (e != nullptr)
+            {
+                const float open = runDuck (*e, false);
+                const float ducked = runDuck (*e, true);
+                expect (ducked < open * 0.95f,
+                        "duck=" + juce::String (ducked, 4) + " open=" + juce::String (open, 4));
+            }
+        }
+
+        beginTest ("Subsafe Groove Bass keeps an 80 Hz sub centred");
+        {
+            const auto* e = find (lib, "Subsafe Groove Bass");
+            expect (e != nullptr);
+            if (e != nullptr)
+            {
+                float peak = 0.f, diff = 0.f;
+                runTone (*e, 80.f, 0.4f, peak, diff);
+                expect (peak > 0.05f);
+                expect (diff < peak * 0.2f, "L-R=" + juce::String (diff, 4) + " peak=" + juce::String (peak, 4));
+            }
+        }
+
         beginTest ("Loudness Clip Master holds a hot tone at or under unity");
         {
             const auto* e = find (lib, "Loudness Clip Master");
