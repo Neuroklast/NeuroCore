@@ -1,3 +1,4 @@
+import { placeHostTerminals } from "./hostTerminalGeometry";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
@@ -460,23 +461,7 @@ export function applyPlaced(
     }
     nodes[id] = { ...n, x: snapToGrid(p.x), y: snapToGrid(p.y), w: p.w, h: p.h };
   }
-  if (nodes.IN) {
-    const inn = nodes.IN;
-    const hullBottom = Math.max(
-      inn.y + inn.h,
-      ...Object.values(nodes)
-        .filter((n) => n.id !== "MIDI" && n.id !== "SC")
-        .map((n) => n.y + n.h),
-    );
-    let y = hullBottom + CHIP_GAP;
-    if (nodes.MIDI) {
-      nodes.MIDI = { ...nodes.MIDI, x: inn.x, y };
-      y += nodes.MIDI.h + CHIP_GAP;
-    }
-    if (nodes.SC) {
-      nodes.SC = { ...nodes.SC, x: inn.x, y };
-    }
-  }
+  placeHostTerminals(nodes);
   const edges = { ...graph.edges };
   for (const [id, route] of Object.entries(routes)) {
     const e = edges[id];

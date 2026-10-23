@@ -1,5 +1,5 @@
+import { placeHostTerminals } from "../hostTerminalGeometry";
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
-import { CHIP_GAP } from "../chipLayout";
 import { BOARD_GRID } from "../grid";
 import { globalPort, northPortLocals, southPortLocals } from "../portLayout";
 import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
@@ -165,26 +165,10 @@ function pinHostTerminals(
   placed: Record<string, { x: number; y: number; w: number; h: number }>,
   pinNodes: LayoutNode[],
 ): void {
-  const inn = placed.IN;
-  if (! inn) {
-    for (const n of pinNodes) {
-      placed[n.id] = { x: n.x ?? 0, y: n.y ?? 0, w: n.w, h: n.h };
-    }
-    return;
+  for (const n of pinNodes) {
+    placed[n.id] = { x: n.x ?? 0, y: n.y ?? 0, w: n.w, h: n.h };
   }
-  const hullBottom = Math.max(
-    inn.y + inn.h,
-    ...Object.values(placed).map((p) => p.y + p.h),
-  );
-  let y = hullBottom + CHIP_GAP;
-  for (const id of ["MIDI", "SC"]) {
-    const n = pinNodes.find((p) => p.id === id);
-    if (! n) {
-      continue;
-    }
-    placed[id] = { x: inn.x, y, w: n.w, h: n.h };
-    y += n.h + CHIP_GAP;
-  }
+  placeHostTerminals(placed);
 }
 
 export async function runLayout(

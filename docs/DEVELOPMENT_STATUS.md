@@ -6,7 +6,7 @@
 
 ## Circuit connection integrity follow-up (2026-10-23)
 
-One modulation source now produces a separate edge for every referenced supported destination parameter. Reproduced missing resonance edge alongside cutoff; control-port and board-architecture contracts pass (33 tests). Remaining graph diagnostics, terminal rerouting, MIDI dependencies and routing validation are still open.
+One modulation source now produces a separate edge for every referenced supported destination parameter. Reproduced missing resonance edge alongside cutoff; control-port and board-architecture contracts pass (33 tests). Shared terminal placement now excludes MIDI/SC from their own hull and snaps routing/rendering positions identically. Repeated-reroute endpoint contract passes (34 focused tests total). Graph diagnostics, MIDI dependencies and routing validation remain open.
 
 ## Inspect integers and control cables (2026-10-23)
 

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { canDeleteChip } from "./boardEdit";
 import { midiPlateLit, sidechainPlateLive } from "./boardTerminalLive";
-import { graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
+import { applyPlaced, graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { chipSpec } from "./chipSpec";
-import { compact } from "./layout/runLayout";
+import { compact, reroute } from "./layout/runLayout";
 
 function emptyAst(): AstDocument {
   return {
@@ -208,4 +208,28 @@ describe("sidechain terminal live", () => {
     expect(sidechainPlateLive(false)).toBe(false);
     expect(sidechainPlateLive(true)).toBe(true);
   });
+});
+
+
+it("repeated reroute keeps terminal placement and route endpoints stable", async () => {
+ let graph = hydrateBoard({...emptyAst(), nodes:[node("comp1", "comp", chipSpec("comp").defaultArgs)], edges:[
+  {from:"IN",to:"comp1",kind:"audio",fromJack:"out",toJack:"in"},
+  {from:"IN",to:"comp1",kind:"audio",fromJack:"sc",toJack:"in"}
+ ]});
+ const firstLayout = graphToLayout(graph);
+ const first = await reroute(firstLayout.nodes, firstLayout.edges);
+ graph = applyPlaced(graph,first.nodes,{});
+ const initial = {MIDI:graph.nodes.MIDI!.y, SC:graph.nodes.SC!.y};
+ for (let i=0; i<3; ++i) {
+  const layout = graphToLayout(graph);
+  const result = await reroute(layout.nodes, layout.edges);
+  expect(result.nodes.MIDI!.y).toBe(initial.MIDI);
+  expect(result.nodes.SC!.y).toBe(initial.SC);
+  const routes = Object.fromEntries(Object.entries(result.edgePaths).map(([id,path])=>[id,parseRoutePath(path)]));
+  graph = applyPlaced(graph,result.nodes,routes);
+  for (const edge of Object.values(graph.edges)) {
+   const source = portGlobal(graph.nodes[edge.sourceNodeId]!,graph.ports[edge.sourcePortId]!);
+   expect(edge.route[0]).toEqual(source);
+  }
+ }
 });
