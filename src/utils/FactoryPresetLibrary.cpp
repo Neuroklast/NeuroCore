@@ -74,9 +74,25 @@ bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPreset
                 if (t.is_string())
                     PresetSearch::addTag (dest, t.get<std::string>());
         };
+        // Search tags are normalised to lower case, but facet values are
+        // display labels used for exact matching by the preset explorer.
+        // Keep their canonical casing (e.g. "Synth", "Bass Guitar").
+        auto readFacetStrings = [&item] (const char* key, juce::StringArray& dest)
+        {
+            if (! item.contains (key) || ! item[key].is_array())
+                return;
+            for (const auto& t : item[key])
+            {
+                if (! t.is_string())
+                    continue;
+                const auto value = juce::String (t.get<std::string>()).trim();
+                if (value.isNotEmpty() && ! dest.contains (value, true))
+                    dest.add (value);
+            }
+        };
         readStrings ("tags", e.tags);
-        readStrings ("soundSources", e.soundSources);
-        readStrings ("processingTypes", e.processingTypes);
+        readFacetStrings ("soundSources", e.soundSources);
+        readFacetStrings ("processingTypes", e.processingTypes);
         readStrings ("requiredInputs", e.requiredInputs);
         if (item.contains ("style") && item["style"].is_string())
             e.style = item["style"].get<std::string>();

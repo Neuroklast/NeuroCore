@@ -30,6 +30,45 @@ public:
             expect (! duck->tags.contains ("vocoder", true));
         }
 
+        beginTest ("native factory facet labels keep the explorer's canonical case");
+        {
+            const auto* acid = find (lib, "Acid Line");
+            const auto* drum = find (lib, "909 Newstyle");
+            const auto* guitar = find (lib, "Tight Lead Stack");
+            expect (acid != nullptr);
+            expect (drum != nullptr);
+            expect (guitar != nullptr);
+            if (acid != nullptr)
+            {
+                expect (acid->soundSources.contains ("Synth", false));
+                expect (acid->processingTypes.contains ("Saturation", false));
+                expect (acid->processingTypes.contains ("Modulation", false));
+                expect (! acid->soundSources.contains ("synth", false));
+            }
+            if (drum != nullptr)
+            {
+                expect (drum->soundSources.contains ("Drums", false));
+                expect (drum->processingTypes.contains ("Filter", false));
+            }
+            if (guitar != nullptr)
+            {
+                expect (guitar->soundSources.contains ("Guitar", false));
+                expect (guitar->processingTypes.contains ("Distortion", false));
+            }
+
+            int sourced = 0, typed = 0;
+            for (const auto& entry : lib.getEntries())
+            {
+                if (! entry.soundSources.isEmpty())
+                    ++sourced;
+                if (! entry.processingTypes.isEmpty())
+                    ++typed;
+            }
+            // Mesa High Gain is intentionally untouched by the metadata migration.
+            expectEquals (sourced, (int) lib.getEntries().size() - 1);
+            expectEquals (typed, (int) lib.getEntries().size() - 1);
+        }
+
         beginTest ("Sidechain Duck Bass ducks when the sidechain is loud");
         {
             if (duck == nullptr)
