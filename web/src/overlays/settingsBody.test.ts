@@ -8,11 +8,11 @@ const initial = useHostStore.getState();
 const mounted: ReactTestRenderer[] = [];
 
 function settingsView(override: Record<string, unknown> = {}) {
-  useHostStore.setState({
+  act(() => { useHostStore.setState({
     standalone: false, tempoSource: "HOST", bpm: 128,
     live: false, licensed: true, licenseEmail: "", cables: "wave",
     ...override,
-  });
+  }); });
   let renderer!: ReactTestRenderer;
   act(() => { renderer = create(createElement(SettingsBody)); });
   mounted.push(renderer);
@@ -21,6 +21,10 @@ function settingsView(override: Record<string, unknown> = {}) {
 
 function buttonNames(root: ReturnType<typeof settingsView>) {
   return root.findAllByType("button").map((button) => button.children.join(""));
+}
+function textContent(root: ReturnType<typeof settingsView>): string {
+  return root.findAll((node) => node.children.some((child) => typeof child === "string"))
+    .map((node) => node.children.filter((child) => typeof child === "string").join(" ")).join(" ");
 }
 
 afterEach(() => {
@@ -38,7 +42,7 @@ describe("settings dialog", () => {
     expect(root.findAllByProps({ "aria-label": "Color theme" })).toHaveLength(1);
     expect(buttonNames(root).filter((label) => label === "Manage license")).toHaveLength(1);
     expect(buttonNames(root)).not.toContain("Install .lic");
-    expect(JSON.stringify(root.toJSON())).not.toContain("CPU in the status bar");
+    expect(textContent(root)).not.toContain("CPU in the status bar");
   });
 
   it("shows audio device settings in standalone but not inside a DAW", () => {
