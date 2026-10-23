@@ -1806,8 +1806,7 @@
       "default": 0.52
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -4469,7 +4468,6 @@
       "default": 1
     },
     "soundSources": [
-      "Synth",
       "Speech",
       "Full Mix"
     ],
@@ -5045,8 +5043,7 @@
       "default": 0.52
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -5463,8 +5460,7 @@
       "default": 0.38
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -6841,8 +6837,7 @@
       "default": 0.09
     },
     "soundSources": [
-      "Vocals",
-      "Synth"
+      "Vocals"
     ],
     "processingTypes": [
       "Dynamics",
@@ -6937,8 +6932,7 @@
       "default": 1.6
     },
     "soundSources": [
-      "Vocals",
-      "Synth"
+      "Vocals"
     ],
     "processingTypes": [
       "Dynamics",
@@ -8095,8 +8089,7 @@
       "default": 0.16
     },
     "soundSources": [
-      "Vocals",
-      "Synth"
+      "Vocals"
     ],
     "processingTypes": [
       "Dynamics",
@@ -8366,8 +8359,7 @@
       "default": -38
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -8837,8 +8829,7 @@
       "default": 0.05
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -9254,8 +9245,7 @@
       "default": 0.28
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -10073,7 +10063,6 @@
       "default": 0.22
     },
     "soundSources": [
-      "Synth",
       "Vocals"
     ],
     "processingTypes": [
@@ -10555,8 +10544,7 @@
       "default": 0.75
     },
     "soundSources": [
-      "Guitar",
-      "Synth"
+      "Guitar"
     ],
     "processingTypes": [
       "Distortion",
@@ -11243,8 +11231,7 @@
       "default": 0.45
     },
     "soundSources": [
-      "Bass Guitar",
-      "Synth"
+      "Bass Guitar"
     ],
     "processingTypes": [
       "EQ",
@@ -14474,7 +14461,7 @@
       "default": 0.85
     },
     "soundSources": [
-      "Synth"
+      "Any"
     ],
     "processingTypes": [
       "Saturation",
@@ -14534,7 +14521,7 @@
       "default": 4800
     },
     "soundSources": [
-      "Synth"
+      "Any"
     ],
     "processingTypes": [
       "Saturation",
@@ -14977,8 +14964,7 @@
       "default": 1
     },
     "soundSources": [
-      "Drums",
-      "Full Mix"
+      "Drums"
     ],
     "processingTypes": [
       "Dynamics",
@@ -16106,8 +16092,7 @@
       "default": 1
     },
     "soundSources": [
-      "Drums",
-      "Full Mix"
+      "Drums"
     ],
     "processingTypes": [
       "Dynamics",

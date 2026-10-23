@@ -1,0 +1,14 @@
+{
+  "soundSources": [
+    "Any", "Guitar", "Bass Guitar", "Synth", "Synth Bass", "Drums", "Percussion",
+    "Vocals", "Speech", "Acoustic Instruments", "Full Mix", "FX / Field Recording"
+  ],
+  "processingTypes": [
+    "Distortion", "Saturation", "Dynamics", "Transient", "EQ", "Filter", "Modulation",
+    "Pitch", "Delay", "Reverb", "Stereo", "Spatial", "Multi-Band", "Glitch", "Utility", "Restoration"
+  ],
+  "styles": [
+    "Rock", "Metal", "Industrial", "Techno", "Hard Dance", "Drum & Bass",
+    "Electronic", "Ambient", "Cinematic", "Lo-Fi"
+  ]
+}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
+import { getNativeFunction } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { findFactory } from "../presets/factoryCatalog";
 import { useHostStore } from "../store/hostStore";
@@ -72,7 +72,7 @@ export function PresetExplorer() {
         listRef.current.scrollTop = explorerSession.listScroll;
       }
       showRow(name);
-      folderRef.current?.querySelector(`[data-folder="${explorerSession.cat || "all"}"]`)?.scrollIntoView({ block: "nearest" });
+      folderRef.current?.querySelector(`[data-folder="${explorerSession.sources[0] || "all"}"]`)?.scrollIntoView({ block: "nearest" });
     });
   }, []);
 
@@ -156,9 +156,6 @@ export function PresetExplorer() {
     const nextFacets = { sources: nextSources, types, styles };
     const next = filterExplorer(inScope, q, cat, nextFacets);
     persist({ sources: nextSources, selectedName: resolveSelectedName(next, selectedName) });
-    if (hasJuceBridge()) {
-      void getNativeFunction("setUi")({ explorerCat: name }).catch(() => undefined);
-    }
   };
   const pickType = (name: string) => {
     const nextTypes = toggleFacet(types, name);

@@ -1,4 +1,5 @@
 import type { ExplorerScope } from "./explorerSession";
+import facets from "../presets/presetFacets.json";
 
 export type ExplorerRow = {
   name: string;
@@ -14,18 +15,9 @@ export type ExplorerRow = {
   requiredInputs?: string[];
 };
 
-export const SOUND_SOURCES = [
-  "Any", "Guitar", "Bass Guitar", "Synth", "Synth Bass", "Drums", "Percussion",
-  "Vocals", "Speech", "Acoustic Instruments", "Full Mix", "FX / Field Recording",
-] as const;
-export const PROCESSING_TYPES = [
-  "Distortion", "Saturation", "Dynamics", "Transient", "EQ", "Filter", "Modulation",
-  "Pitch", "Delay", "Reverb", "Stereo", "Spatial", "Multi-Band", "Glitch", "Utility", "Restoration",
-] as const;
-export const STYLES = [
-  "Rock", "Metal", "Industrial", "Techno", "Hard Dance", "Drum & Bass",
-  "Electronic", "Ambient", "Cinematic", "Lo-Fi",
-] as const;
+export const SOUND_SOURCES = facets.soundSources;
+export const PROCESSING_TYPES = facets.processingTypes;
+export const STYLES = facets.styles;
 
 export type ExplorerFacets = {
   sources: string[];

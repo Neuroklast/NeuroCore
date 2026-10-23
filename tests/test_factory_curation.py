@@ -4,15 +4,11 @@ from pathlib import Path
 import re
 import unittest
 
-CATALOG = Path(__file__).resolve().parents[1] / 'resources' / 'factory_presets.json'
-SOURCES = {
-    'Any', 'Guitar', 'Bass Guitar', 'Synth', 'Synth Bass', 'Drums', 'Percussion',
-    'Vocals', 'Speech', 'Acoustic Instruments', 'Full Mix', 'FX / Field Recording',
-}
-TYPES = {
-    'Distortion', 'Saturation', 'Dynamics', 'Transient', 'EQ', 'Filter', 'Modulation',
-    'Pitch', 'Delay', 'Reverb', 'Stereo', 'Spatial', 'Multi-Band', 'Glitch', 'Utility', 'Restoration',
-}
+ROOT = Path(__file__).resolve().parents[1]
+CATALOG = ROOT / 'resources' / 'factory_presets.json'
+FACETS = json.loads((ROOT / 'web' / 'src' / 'presets' / 'presetFacets.json').read_text(encoding='utf-8'))
+SOURCES = set(FACETS['soundSources'])
+TYPES = set(FACETS['processingTypes'])
 
 class FactoryCuration(unittest.TestCase):
     def test_names_controls_and_expressions(self):

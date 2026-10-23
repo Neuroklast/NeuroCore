@@ -23,6 +23,7 @@ describe("preset explorer layout", () => {
     expect(src).toContain("data-type");
     expect(src).toContain("SOURCE");
     expect(src).toContain("TYPE");
+    expect(src).not.toContain("explorerCat");
     expect(css).toMatch(/nk-preset-facet-chip[^{]*\{[^}]*min-height:\s*26px/s);
     expect(src).toContain("nk-preset-list");
     expect(src).toContain("nk-preset-detail");

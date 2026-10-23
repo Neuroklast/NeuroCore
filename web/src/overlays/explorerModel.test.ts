@@ -10,10 +10,12 @@ import {
   scopeRows,
   seedSelectedName,
   selectedRow,
+  SOUND_SOURCES,
   sourceFolders,
   toggleFacet,
   typeFolders,
 } from "./explorerModel";
+import facets from "../presets/presetFacets.json";
 
 const presets = [
   { name: "Arp Shimmer", category: "Synth", author: "A", description: "shine", factory: true, tags: ["arp"], soundSources: ["Synth"], processingTypes: ["Modulation"], style: "Electronic" },
@@ -24,6 +26,10 @@ const presets = [
 ];
 
 describe("explorer model", () => {
+  it("uses the shared facet vocab", () => {
+    expect(SOUND_SOURCES).toEqual(facets.soundSources);
+  });
+
   it("keeps nine 44px rows plus heading inside 440px", () => {
     expect(PRESET_ROW_PX).toBe(44);
     expect(PRESET_NINE_ROW_BUDGET_PX).toBeLessThanOrEqual(440);

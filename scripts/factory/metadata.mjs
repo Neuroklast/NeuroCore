@@ -1,17 +1,15 @@
 /** Explicit factory metadata. Tag inference may add keywords; it does not own these fields. */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-export const SOUND_SOURCES = [
-  "Any", "Guitar", "Bass Guitar", "Synth", "Synth Bass", "Drums", "Percussion",
-  "Vocals", "Speech", "Acoustic Instruments", "Full Mix", "FX / Field Recording",
-];
-export const PROCESSING_TYPES = [
-  "Distortion", "Saturation", "Dynamics", "Transient", "EQ", "Filter", "Modulation",
-  "Pitch", "Delay", "Reverb", "Stereo", "Spatial", "Multi-Band", "Glitch", "Utility", "Restoration",
-];
-export const STYLES = [
-  "General", "Rock", "Metal", "Industrial", "Techno", "Hard Dance", "Drum & Bass",
-  "Electronic", "Ambient", "Cinematic", "Lo-Fi",
-];
+const vocab = JSON.parse(fs.readFileSync(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/src/presets/presetFacets.json"),
+  "utf8",
+));
+export const SOUND_SOURCES = vocab.soundSources;
+export const PROCESSING_TYPES = vocab.processingTypes;
+export const STYLES = vocab.styles;
 export const ROLES = ["Insert", "Send / Return", "Bus", "Master", "Parallel", "Creative", "Template"];
 export const REQUIRED_INPUTS = ["midi", "sidechain"];
 export const META_KEYS = ["soundSources", "processingTypes", "style", "role", "requiredInputs"];
@@ -71,7 +69,7 @@ function sourcesOf(p, text, blocks) {
   }
   if (word(text, "bass") && ! word(text, "guitar")) found.add("Bass Guitar");
   if (word(text, "reese") || word(text, "808") || /synth bass|sub bass/.test(text)) found.add("Synth Bass");
-  if (word(text, "synth") || word(text, "pad") || word(text, "arp") || word(text, "lead")) found.add("Synth");
+  if (word(text, "synth") || word(text, "pad") || word(text, "arp")) found.add("Synth");
   if (word(text, "kick") || word(text, "snare") || word(text, "hat") || word(text, "cymbal")
     || word(text, "drum") || word(text, "909")) found.add("Drums");
   if (word(text, "perc") || word(text, "tom") || word(text, "clap")) found.add("Percussion");
@@ -79,7 +77,7 @@ function sourcesOf(p, text, blocks) {
   if (word(text, "speech") || word(text, "podcast") || word(text, "dialogue") || word(text, "radio")
     || word(text, "telephone") || word(text, "phone")) found.add("Speech");
   if (word(text, "acoustic") || word(text, "piezo") || word(text, "nylon")) found.add("Acoustic Instruments");
-  if (word(text, "mixbus") || word(text, "master") || word(text, "streaming") || word(text, "full mix")) {
+  if (word(text, "mixbus") || word(text, "streaming") || word(text, "full mix")) {
     found.add("Full Mix");
   }
   if (word(text, "atmosphere") || word(text, "drone") || word(text, "texture") || word(text, "field")) {
@@ -163,14 +161,6 @@ export function classify(preset) {
     role: roleOf(preset, text, blocks),
     requiredInputs: requiredInputsOf(preset.script),
   };
-}
-
-export function pickMeta(preset) {
-  const out = {};
-  for (const k of META_KEYS) {
-    if (preset[k] !== undefined) out[k] = preset[k];
-  }
-  return out;
 }
 
 export function applyMetadata(preset) {

@@ -102,6 +102,9 @@ describe("factory catalog", () => {
     expect(duck?.requiredInputs).toContain("sidechain");
     const midi = findFactory("MIDI Pluck Filter");
     expect(midi?.requiredInputs).toContain("midi");
+    expect(findFactory("Tight Lead Stack")?.soundSources).toEqual(["Guitar"]);
+    expect(findFactory("Tight Gate Lead")?.soundSources).toEqual(["Guitar"]);
+    expect(findFactory("CTZ Kick Master")?.soundSources).not.toContain("Full Mix");
   });
 
   it("keeps factory IR and gain fields that native applyPreset reads", () => {
