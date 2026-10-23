@@ -32,6 +32,7 @@ export interface HostState {
   buf: number;
   bpm: number;
   tempoSource: string;
+  standalone: boolean;
   osFactor: number;
   presetName: string;
   originName: string;
@@ -302,6 +303,7 @@ export const useHostStore = create<HostState>((set) => ({
   buf: 0,
   bpm: 120,
   tempoSource: "HOST",
+  standalone: false,
   osFactor: 4,
   presetName: "",
   originName: "",
@@ -398,6 +400,7 @@ export const useHostStore = create<HostState>((set) => ({
     buf: Number(p.buf ?? 0),
     bpm: Number(p.bpm ?? 120),
     tempoSource: String(p.tempoSource ?? "HOST"),
+    standalone: typeof p.standalone === "boolean" ? p.standalone : s.standalone,
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     motion: prefs.motion ?? s.motion,
