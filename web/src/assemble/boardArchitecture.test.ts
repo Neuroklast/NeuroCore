@@ -195,11 +195,11 @@ describe("midi terminal contract", () => {
     expect(Object.values(g.edges).some((e) => e.sourceNodeId === "MIDI")).toBe(false);
   });
 
-  it("lights MIDI from host midiGate/vel/mod, not from a graph edge", () => {
-    expect(midiPlateLit(0, 0, 0)).toBe(false);
-    expect(midiPlateLit(1, 0, 0)).toBe(true);
-    expect(midiPlateLit(0, 0.8, 0)).toBe(true);
-    expect(midiPlateLit(0, 0, 0.4)).toBe(true);
+  it("expires MIDI event activity without inspecting held gate or CC values", () => {
+    expect(midiPlateLit(-Infinity, 1000)).toBe(false);
+    expect(midiPlateLit(1000, 1000)).toBe(true);
+    expect(midiPlateLit(1000, 1149)).toBe(true);
+    expect(midiPlateLit(1000, 1150)).toBe(false);
   });
 });
 

@@ -71,7 +71,12 @@ public:
     float getMidiBend() const noexcept  { return midiBend.load (std::memory_order_relaxed); }
     float getMidiMod()  const noexcept  { return midiMod.load (std::memory_order_relaxed); }
 
+    std::uint32_t getEventCount() const noexcept { return eventCount.load (std::memory_order_relaxed); }
+
 private:
+    static_assert (std::atomic<std::uint32_t>::is_always_lock_free,
+                   "MIDI activity counter must be lock-free");
+    std::atomic<std::uint32_t> eventCount { 0 };
     void noteOn (int note, float velocity) noexcept;
     void noteOff (int note) noexcept;
     void panic (bool zeroControllers) noexcept;

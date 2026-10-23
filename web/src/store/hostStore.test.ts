@@ -289,3 +289,17 @@ describe("hostStore", () => {
     expect(useHostStore.getState().osFactor).toBe(2);
   });
 });
+
+it("MIDI activity follows new events and expires while CC1 stays held", () => {
+ const store = useHostStore;
+ store.setState({midiEventCount:null,midiLastEventAt:-Infinity,midiActive:false});
+ store.getState().applyHost({midiEventCount:0,midiMod:0.7});
+ expect(store.getState().midiActive).toBe(false);
+ store.getState().applyHost({midiEventCount:1,midiMod:0.7});
+ expect(store.getState().midiActive).toBe(true);
+ store.setState({midiLastEventAt:performance.now()-1000});
+ store.getState().applyHost({midiEventCount:1,midiMod:0.7});
+ expect(store.getState().midiActive).toBe(false);
+ store.getState().applyHost({midiEventCount:2,midiMod:0.7});
+ expect(store.getState().midiActive).toBe(true);
+});

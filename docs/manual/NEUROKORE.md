@@ -106,6 +106,8 @@ Each chip keeps its full effect name above a separate typecode and control row. 
 
 SIDECHAIN IN is the host input. A Sidechain processor in a patch remains a separate movable chip because its MIX control blends main and sidechain audio. Supported compressors, gates and envelopes that select the host sidechain show that dependency from the host plate.
 
+The MIDI activity lamp flashes for newly received events. A held controller value does not keep it lit.
+
 MIDI IN shows dependencies on MIDI variables explicitly used in parameter expressions. These lines describe host control values. Change the expression to change the dependency. MIDI IN does not provide an editable event connection or a MIDI output.
 
 The browser preview connects modulation to the selected parameter contact. Audio rail edits that require the native editor report this without changing the patch.

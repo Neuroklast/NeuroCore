@@ -4,7 +4,7 @@ import { useHostStore } from "../store/hostStore";
 import { chipExpandAction } from "./boardEdit";
 import { portBracket } from "./chipFace";
 import { BOARD_HIT, portIsOutput, portLocal, type BoardNode, type BoardPort } from "./boardModel";
-import { midiPlateLit, sidechainPlateLive } from "./boardTerminalLive";
+import { sidechainPlateLive } from "./boardTerminalLive";
 import { nodeMeter } from "./nodeMeter";
 
 const LABEL: Record<string, string> = {
@@ -29,7 +29,7 @@ export function BoardTerminal({
 }) {
   const showInspect = chipExpandAction(node.role, node.type) === "inspect";
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
-  const midiLit = useHostStore((s) => node.type === "midi" && midiPlateLit(s.midiGate, s.midiVel, s.midiMod));
+  const midiLit = useHostStore((s) => node.type === "midi" && s.midiActive);
   const scLive = useHostStore((s) => node.type === "sidechain" && sidechainPlateLive(s.sidechainOn));
   return (
     <div
@@ -82,7 +82,7 @@ function TerminalPort({ node, port: p }: { node: BoardNode; port: BoardPort }) {
   const sourceType = useBoardStore((s) => sourceId ? s.nodes[sourceId]?.type : undefined);
   const active = useHostStore((s) => {
     if (node.type === "midi") {
-      return midiPlateLit(s.midiGate, s.midiVel, s.midiMod);
+      return s.midiActive;
     }
     if (node.type === "sidechain" && ! sidechainPlateLive(s.sidechainOn)) {
       return false;
