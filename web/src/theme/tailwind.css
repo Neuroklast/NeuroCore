@@ -3958,3 +3958,29 @@ html[data-motion="reduced"] .nk-step-leds > [data-state="current"] > i { box-sha
 @keyframes nk-view-handoff { from { stroke-dashoffset: .15; opacity: .1; } 30% { opacity: 1; } to { stroke-dashoffset: -1; opacity: 0; } }
 html[data-motion="off"] .nk-workspace-handoff, html[data-motion="reduced"] .nk-workspace-handoff { display: none; }
 @media (prefers-reduced-motion: reduce) { .nk-workspace-handoff { display: none; } }
+
+
+/* Settings: compact, grouped controls without stretching each toggle across the dialog. */
+.nk-settings { width: 100%; min-width: 0; display: grid; gap: 12px; }
+.nk-settings-intro { color: var(--nk-ink-muted); font-size: 11px; line-height: 1.45; margin: 0; }
+.nk-settings-license { display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 1px solid var(--nk-line); padding: 12px; background: var(--nk-well); }
+.nk-settings-license-status { min-width: 0; }
+.nk-settings-license-status p { margin: 3px 0 0; font-size: 12px; color: var(--nk-ink-soft); overflow-wrap: anywhere; }
+.nk-settings-license > .nk-clip { flex-shrink: 0; }
+.nk-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+.nk-settings-panel { min-width: 0; border: 1px solid var(--nk-line); padding: 12px; background: color-mix(in srgb, var(--nk-surface) 65%, var(--nk-well)); }
+.nk-settings h3 { margin: 0 0 10px; color: var(--nk-ink); font: inherit; font-size: 11px; letter-spacing: .14em; font-weight: 700; }
+.nk-settings-panel p { margin: 9px 0 0; color: var(--nk-ink-muted); font-size: 11px; line-height: 1.45; }
+.nk-settings-segment { display: flex; gap: 5px; min-width: 0; }
+.nk-settings-segment .nk-clip { flex: 1 1 0; min-width: 0; min-height: 34px; padding: 3px 6px; font-size: 11px; letter-spacing: .04em; }
+.nk-settings-segment .nk-clip:focus-visible, .nk-settings .nk-clip:focus-visible, .nk-settings-bpm input:focus-visible { outline: 2px solid var(--nk-cyan); outline-offset: 2px; }
+.nk-settings-bpm { margin-top: 10px; display: flex; align-items: center; gap: 12px; color: var(--nk-ink-soft); font-size: 11px; }
+.nk-settings-bpm input { width: 92px; max-width: 100%; height: 34px; border: 1px solid var(--nk-accent); padding: 0 8px; color: var(--nk-ink); background: var(--nk-well); font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+.nk-settings-bpm input:disabled { color: var(--nk-ink-muted); border-color: var(--nk-line); opacity: .7; cursor: not-allowed; }
+.nk-settings-panel .nk-settings-error { color: var(--nk-error); }
+.nk-settings-action { width: 100%; text-align: center; }
+.nk-settings-footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--nk-line); }
+@media (max-width: 620px) {
+  .nk-settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .nk-settings-license { flex-wrap: wrap; }
+}

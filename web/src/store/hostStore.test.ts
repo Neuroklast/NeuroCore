@@ -38,7 +38,7 @@ describe("hostStore", () => {
     expect(s.theme).toBe("signal");
     expect(s.frameRate).toBe(60);
     expect(s.discardPrompt).toBe(true);
-    expect(s.cables).toBe("dots");
+    expect(s.cables).toBe("wave"); // matches UiSettings default and hostStore initial state
   });
 
   it("host snapshot applies shared prefs from native UiSettings", () => {
@@ -73,6 +73,15 @@ describe("hostStore", () => {
     expect(s.scopeGrid).toBe(false);
     expect(s.scopeInvertY).toBe(true);
     expect(s.scopeDelta).toBe(true);
+  });
+
+  it("tracks standalone capability separately from host audio settings", () => {
+    useHostStore.getState().applyHost({ standalone: true });
+    expect(useHostStore.getState().standalone).toBe(true);
+    useHostStore.getState().applyHost({ frameRate: 30 });
+    expect(useHostStore.getState().standalone).toBe(true);
+    useHostStore.getState().applyHost({ standalone: false });
+    expect(useHostStore.getState().standalone).toBe(false);
   });
 
   it("host snapshot applies LIVE", () => {
